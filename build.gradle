@@ -181,13 +181,6 @@ subprojects {
         tests testJar
     }
 
-    jar {
-        manifest.attributes(
-            'Implementation-Title': 'Aeron',
-            'Implementation-Version': "${aeronVersion}",
-            'Implementation-Vendor': 'Real Logic Limited')
-    }
-
     signing {
         required { isReleasedVersion && gradle.taskGraph.hasTask("uploadArchives") }
         sign configurations.archives
@@ -215,6 +208,15 @@ project(':aeron-client') {
                 pom.project(projectPom)
             }
         }
+    }
+
+    jar {
+        manifest.attributes(
+            'Implementation-Title': 'Aeron',
+            'Implementation-Version': "${aeronVersion}",
+            'Implementation-Vendor': 'Real Logic Limited',
+            'Automatic-Module-Name': 'io.aeron.client'
+        )
     }
 
     task sourcesJar(type: Jar) {
@@ -271,6 +273,15 @@ project(':aeron-driver') {
         }
     }
 
+    jar {
+        manifest.attributes(
+            'Implementation-Title': 'Aeron',
+            'Implementation-Version': "${aeronVersion}",
+            'Implementation-Vendor': 'Real Logic Limited',
+            'Automatic-Module-Name': 'io.aeron.driver'
+        )
+    }
+
     task sourcesJar(type: Jar) {
         classifier = 'sources'
         from sourceSets.main.allSource
@@ -309,10 +320,15 @@ project(':aeron-agent') {
 
     jar {
         manifest.attributes(
+            'Implementation-Title': 'Aeron',
+            'Implementation-Version': "${aeronVersion}",
+            'Implementation-Vendor': 'Real Logic Limited',
             "Premain-Class": "io.aeron.agent.EventLogAgent",
             "Agent-Class": "io.aeron.agent.EventLogAgent",
             "Can-Redefine-Classes": "true",
-            "Can-Retransform-Classes": "true")
+            "Can-Retransform-Classes": "true",
+            'Automatic-Module-Name': 'io.aeron.agent'
+        )
     }
 
     shadowJar {
@@ -321,6 +337,17 @@ project(':aeron-agent') {
             exclude(project(':aeron-driver'))
             exclude(dependency('org.agrona:agrona'))
         }
+
+        manifest.attributes(
+            'Implementation-Title': 'Aeron',
+            'Implementation-Version': "${aeronVersion}",
+            'Implementation-Vendor': 'Real Logic Limited',
+            "Premain-Class": "io.aeron.agent.EventLogAgent",
+            "Agent-Class": "io.aeron.agent.EventLogAgent",
+            "Can-Redefine-Classes": "true",
+            "Can-Retransform-Classes": "true",
+            'Automatic-Module-Name': 'io.aeron.agent.all'
+        )
     }
 
     javadoc {
@@ -471,6 +498,13 @@ project(':aeron-archive') {
         from("${buildDir}/classes/java/generated") {
             include '**/*.class'
         }
+
+        manifest.attributes(
+            'Implementation-Title': 'Aeron',
+            'Implementation-Version': "${aeronVersion}",
+            'Implementation-Vendor': 'Real Logic Limited',
+            'Automatic-Module-Name': 'io.aeron.archive'
+        )
     }
 
     uploadArchives {
@@ -581,6 +615,13 @@ project(':aeron-cluster') {
         from("${buildDir}/classes/java/generated") {
             include '**/*.class'
         }
+
+        manifest.attributes(
+            'Implementation-Title': 'Aeron',
+            'Implementation-Version': "${aeronVersion}",
+            'Implementation-Vendor': 'Real Logic Limited',
+            'Automatic-Module-Name': 'io.aeron.cluster'
+        )
     }
 
     uploadArchives {
@@ -632,6 +673,12 @@ project(':aeron-samples') {
 
     shadowJar {
         archiveName = 'samples.jar'
+        manifest.attributes(
+            'Implementation-Title': 'Aeron',
+            'Implementation-Version': "${aeronVersion}",
+            'Implementation-Vendor': 'Real Logic Limited',
+            'Automatic-Module-Name': 'io.aeron.samples'
+        )
     }
 
     uploadArchives {
@@ -761,7 +808,9 @@ project(':aeron-all') {
         manifest.attributes(
             'Implementation-Title': 'Aeron',
             'Implementation-Version': "${aeronVersion}",
-            'Implementation-Vendor': 'Real Logic Limited')
+            'Implementation-Vendor': 'Real Logic Limited',
+            'Automatic-Module-Name': 'io.aeron.all'
+        )
     }
 
     uploadArchives {

@@ -202,11 +202,18 @@ int aeron_ipc_uri_parse(char *uri, aeron_ipc_channel_params_t *params)
 #define AERON_URI_UDP_TRANSPORT "udp"
 #define AERON_URI_IPC_TRANSPORT "ipc"
 
-int aeron_uri_parse(const char *uri, aeron_uri_t *params)
+int aeron_uri_parse(const char *uri, size_t uri_len, aeron_uri_t *params)
 {
     char *ptr = params->mutable_uri;
 
-    strncpy(params->mutable_uri, uri, sizeof(params->mutable_uri));
+    if (uri_len > sizeof(params->mutable_uri) - 1)
+    {
+        aeron_set_err(EINVAL, "URI scheme or transport too long: %.*s", uri_len, uri);
+        return -1;
+    }
+    memset(params->mutable_uri, 0, sizeof(params->mutable_uri));
+    memcpy(params->mutable_uri, uri, uri_len);
+//    strncpy(params->mutable_uri, uri, sizeof(params->mutable_uri));
     params->type = AERON_URI_UNKNOWN;
 
     if (strncmp(ptr, AERON_URI_SCHEME, strlen(AERON_URI_SCHEME)) == 0)

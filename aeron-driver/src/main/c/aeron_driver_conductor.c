@@ -1726,7 +1726,7 @@ int aeron_driver_conductor_on_add_ipc_publication(
     aeron_uri_t aeron_uri_params;
     aeron_uri_publication_params_t params;
 
-    if (aeron_uri_parse(uri, &aeron_uri_params) < 0 ||
+    if (aeron_uri_parse(uri, (size_t)uri_length, &aeron_uri_params) < 0 ||
         aeron_uri_publication_params(&aeron_uri_params, &params, conductor->context, is_exclusive) < 0)
     {
         goto error_cleanup;
@@ -1925,8 +1925,9 @@ int aeron_driver_conductor_on_add_ipc_subscription(
     const char *uri = (const char *)command + sizeof(aeron_subscription_command_t);
     aeron_uri_t aeron_uri_params;
     aeron_uri_subscription_params_t params;
+    int32_t uri_length = command->channel_length;
 
-    if (aeron_uri_parse(uri, &aeron_uri_params) < 0 ||
+    if (aeron_uri_parse(uri, (size_t)uri_length, &aeron_uri_params) < 0 ||
         aeron_uri_subscription_params(&aeron_uri_params, &params, conductor->context) < 0)
     {
         goto error_cleanup;
@@ -2303,7 +2304,7 @@ int aeron_driver_conductor_on_add_destination(
         }
 
         strncpy(buffer, command_uri, (size_t)command->channel_length);
-        if (aeron_uri_parse(buffer, &uri_params) < 0)
+        if (aeron_uri_parse(buffer, (size_t)command->channel_length, &uri_params) < 0)
         {
             return -1;
         }
@@ -2370,7 +2371,7 @@ int aeron_driver_conductor_on_remove_destination(
         }
 
         strncpy(buffer, command_uri, (size_t)command->channel_length);
-        if (aeron_uri_parse(buffer, &uri_params) < 0)
+        if (aeron_uri_parse(buffer, (size_t)command->channel_length, &uri_params) < 0)
         {
             return -1;
         }

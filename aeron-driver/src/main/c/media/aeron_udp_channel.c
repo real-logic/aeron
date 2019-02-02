@@ -195,7 +195,7 @@ int aeron_udp_channel_parse(const char *uri, size_t uri_length, aeron_udp_channe
         return -1;
     }
 
-    if (aeron_uri_parse(uri, &_channel->uri) < 0)
+    if (aeron_uri_parse(uri, uri_length, &_channel->uri) < 0)
     {
         goto error_cleanup;
     }

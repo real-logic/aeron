@@ -32,7 +32,7 @@ def aeronJavaVersion = '1.8'
 
 def agronaVersion = '0.9.31'
 def sbeVersion = '1.12.0'
-def byteBuddyVersion = '1.9.3'
+def byteBuddyVersion = '1.9.7'
 def hdrHistogramVersion = '2.1.11'
 
 group = aeronGroup
@@ -131,7 +131,7 @@ subprojects {
         compile "org.agrona:agrona:${agronaVersion}"
 
         testCompile 'junit:junit:4.12'
-        testCompile 'org.mockito:mockito-core:2.23.4'
+        testCompile 'org.mockito:mockito-core:2.24.0'
         testCompile 'org.hamcrest:hamcrest-library:1.3'
     }
 

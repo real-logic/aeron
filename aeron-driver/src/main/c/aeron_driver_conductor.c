@@ -848,7 +848,6 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                 snd_lmt_position.value_addr = aeron_counter_addr(
                     &conductor->counters_manager, (int32_t)snd_lmt_position.counter_id);
 
-
                 if (params->is_replay)
                 {
                     int64_t position = aeron_logbuffer_compute_position(
@@ -1753,7 +1752,7 @@ int aeron_driver_conductor_on_add_ipc_publication(
     aeron_uri_t aeron_uri_params;
     aeron_uri_publication_params_t params;
 
-    if (aeron_uri_parse(uri, &aeron_uri_params) < 0 ||
+    if (aeron_uri_parse((size_t)uri_length, uri, &aeron_uri_params) < 0 ||
         aeron_uri_publication_params(&aeron_uri_params, &params, conductor->context, is_exclusive) < 0)
     {
         goto error_cleanup;
@@ -1825,10 +1824,10 @@ int aeron_driver_conductor_on_add_network_publication(
     aeron_send_channel_endpoint_t *endpoint = NULL;
     aeron_network_publication_t *publication = NULL;
     const char *uri = (const char *)command + sizeof(aeron_publication_command_t);
-    int32_t uri_length = command->channel_length;
+    size_t uri_length = (size_t)command->channel_length;
     aeron_uri_publication_params_t params;
 
-    if (aeron_udp_channel_parse(uri, (size_t)uri_length, &udp_channel) < 0 ||
+    if (aeron_udp_channel_parse(uri_length, uri, &udp_channel) < 0 ||
         aeron_uri_publication_params(&udp_channel->uri, &params, conductor->context, is_exclusive) < 0)
     {
         return -1;
@@ -1952,8 +1951,9 @@ int aeron_driver_conductor_on_add_ipc_subscription(
     const char *uri = (const char *)command + sizeof(aeron_subscription_command_t);
     aeron_uri_t aeron_uri_params;
     aeron_uri_subscription_params_t params;
+    size_t uri_length = (size_t)command->channel_length;
 
-    if (aeron_uri_parse(uri, &aeron_uri_params) < 0 ||
+    if (aeron_uri_parse(uri_length, uri, &aeron_uri_params) < 0 ||
         aeron_uri_subscription_params(&aeron_uri_params, &params, conductor->context) < 0)
     {
         goto error_cleanup;
@@ -2030,7 +2030,7 @@ int aeron_driver_conductor_on_add_spy_subscription(
     const char *uri = (const char *)command + sizeof(aeron_subscription_command_t) + strlen(AERON_SPY_PREFIX);
     aeron_uri_subscription_params_t params;
 
-    if (aeron_udp_channel_parse(uri, (size_t)command->channel_length - strlen(AERON_SPY_PREFIX), &udp_channel) < 0 ||
+    if (aeron_udp_channel_parse(command->channel_length - strlen(AERON_SPY_PREFIX), uri, &udp_channel) < 0 ||
         aeron_uri_subscription_params(&udp_channel->uri, &params, conductor->context) < 0)
     {
         return -1;
@@ -2102,10 +2102,11 @@ int aeron_driver_conductor_on_add_network_subscription(
 {
     aeron_udp_channel_t *udp_channel = NULL;
     aeron_receive_channel_endpoint_t *endpoint = NULL;
+    size_t uri_length = (size_t)command->channel_length;
     const char *uri = (const char *)command + sizeof(aeron_subscription_command_t);
     aeron_uri_subscription_params_t params;
-
-    if (aeron_udp_channel_parse(uri, (size_t)command->channel_length, &udp_channel) < 0 ||
+    
+    if (aeron_udp_channel_parse(uri_length, uri, &udp_channel) < 0 ||
         aeron_uri_subscription_params(&udp_channel->uri, &params, conductor->context) < 0)
     {
         return -1;
@@ -2304,7 +2305,6 @@ int aeron_driver_conductor_on_add_destination(
     aeron_destination_command_t *command)
 {
     aeron_send_channel_endpoint_t *endpoint = NULL;
-    const char *command_uri = (const char *)command + sizeof(aeron_destination_command_t);
 
     for (size_t i = 0, length = conductor->network_publications.length; i < length; i++)
     {
@@ -2319,28 +2319,28 @@ int aeron_driver_conductor_on_add_destination(
 
     if (NULL != endpoint)
     {
-        char buffer[AERON_MAX_PATH];
+        size_t uri_length = (size_t)command->channel_length;
+        const char *command_uri = (const char *)command + sizeof(aeron_destination_command_t);
         aeron_uri_t uri_params;
-        struct sockaddr_storage destination_addr;
-
-        if (NULL != endpoint->destination_tracker || !endpoint->destination_tracker->is_manual_control_mode)
+        if (aeron_uri_parse(uri_length, command_uri, &uri_params) < 0)
         {
-            aeron_set_err(EINVAL, "channel does not allow manual control of destinations: %s", buffer);
             return -1;
         }
 
-        strncpy(buffer, command_uri, (size_t)command->channel_length);
-        if (aeron_uri_parse(buffer, &uri_params) < 0)
+        if (NULL != endpoint->destination_tracker || !endpoint->destination_tracker->is_manual_control_mode)
         {
+            aeron_set_err(
+                EINVAL, "channel does not allow manual control of destinations: %.*s", uri_length, command_uri);
             return -1;
         }
 
         if (uri_params.type != AERON_URI_UDP || NULL == uri_params.params.udp.endpoint_key)
         {
-            aeron_set_err(EINVAL, "incorrect URI format for destination: %s", buffer);
+            aeron_set_err(EINVAL, "incorrect URI format for destination: %.*s", uri_length, command_uri);
             return -1;
         }
 
+        struct sockaddr_storage destination_addr;
         if (aeron_host_and_port_parse_and_resolve(uri_params.params.udp.endpoint_key, &destination_addr) < 0)
         {
             aeron_set_err(
@@ -2371,7 +2371,6 @@ int aeron_driver_conductor_on_remove_destination(
     aeron_destination_command_t *command)
 {
     aeron_send_channel_endpoint_t *endpoint = NULL;
-    const char *command_uri = (const char *)command + sizeof(aeron_destination_command_t);
 
     for (size_t i = 0, length = conductor->network_publications.length; i < length; i++)
     {
@@ -2386,28 +2385,29 @@ int aeron_driver_conductor_on_remove_destination(
 
     if (NULL != endpoint)
     {
-        char buffer[AERON_MAX_PATH];
         aeron_uri_t uri_params;
-        struct sockaddr_storage destination_addr;
+        const char *command_uri = (const char *)command + sizeof(aeron_destination_command_t);
+        size_t uri_length = (size_t)command->channel_length;
+        if (aeron_uri_parse(uri_length, command_uri, &uri_params) < 0)
+        {
+            return -1;
+        }
 
         if (NULL != endpoint->destination_tracker || !endpoint->destination_tracker->is_manual_control_mode)
         {
-            aeron_set_err(EINVAL, "channel does not allow manual control of destinations: %s", buffer);
+            aeron_set_err(
+                EINVAL, "channel does not allow manual control of destinations: %.*s", uri_length, command_uri);
             return -1;
         }
 
-        strncpy(buffer, command_uri, (size_t)command->channel_length);
-        if (aeron_uri_parse(buffer, &uri_params) < 0)
-        {
-            return -1;
-        }
 
         if (uri_params.type != AERON_URI_UDP || NULL == uri_params.params.udp.endpoint_key)
         {
-            aeron_set_err(EINVAL, "incorrect URI format for destination: %s", buffer);
+            aeron_set_err(EINVAL, "incorrect URI format for destination: %.*s", uri_length, command_uri);
             return -1;
         }
 
+        struct sockaddr_storage destination_addr;
         if (aeron_host_and_port_parse_and_resolve(uri_params.params.udp.endpoint_key, &destination_addr) < 0)
         {
             aeron_set_err(

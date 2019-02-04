@@ -116,7 +116,7 @@ int aeron_uri_parse_params(char *uri, aeron_uri_parse_callback_t param_func, voi
 int aeron_udp_uri_parse(char *uri, aeron_udp_channel_params_t *params);
 int aeron_ipc_uri_parse(char *uri, aeron_ipc_channel_params_t *params);
 
-int aeron_uri_parse(const char *uri, aeron_uri_t *params);
+int aeron_uri_parse(size_t uri_length, const char *uri, aeron_uri_t *params);
 
 void aeron_uri_close(aeron_uri_t *params);
 

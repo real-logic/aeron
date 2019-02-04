@@ -202,11 +202,15 @@ int aeron_ipc_uri_parse(char *uri, aeron_ipc_channel_params_t *params)
 #define AERON_URI_UDP_TRANSPORT "udp"
 #define AERON_URI_IPC_TRANSPORT "ipc"
 
-int aeron_uri_parse(const char *uri, aeron_uri_t *params)
+int aeron_uri_parse(size_t uri_length, const char *uri, aeron_uri_t *params)
 {
-    char *ptr = params->mutable_uri;
+    size_t copy_length = sizeof(params->mutable_uri) - 1;
+    copy_length = uri_length < copy_length ? uri_length : copy_length;
 
-    strncpy(params->mutable_uri, uri, sizeof(params->mutable_uri));
+    memcpy(params->mutable_uri, uri, copy_length);
+    params->mutable_uri[copy_length] = '\0';
+
+    char *ptr = params->mutable_uri;
     params->type = AERON_URI_UNKNOWN;
 
     if (strncmp(ptr, AERON_URI_SCHEME, strlen(AERON_URI_SCHEME)) == 0)
@@ -238,6 +242,7 @@ int aeron_uri_parse(const char *uri, aeron_uri_t *params)
     }
 
     aeron_set_err(EINVAL, "invalid URI scheme or transport: %s", uri);
+
     return -1;
 }
 

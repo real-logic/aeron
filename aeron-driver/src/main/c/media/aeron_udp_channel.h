@@ -38,7 +38,8 @@ typedef struct aeron_udp_channel_stct
 }
 aeron_udp_channel_t;
 
-int aeron_udp_channel_parse(const char *uri, size_t uri_length, aeron_udp_channel_t **channel);
+int aeron_udp_channel_parse(size_t uri_length, const char *uri, aeron_udp_channel_t **channel);
+
 void aeron_udp_channel_delete(aeron_udp_channel_t *channel);
 
 #endif //AERON_UDP_CHANNEL_H

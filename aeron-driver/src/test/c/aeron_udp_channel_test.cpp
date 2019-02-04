@@ -82,7 +82,7 @@ public:
             aeron_udp_channel_delete(m_channel);
         }
 
-        return aeron_udp_channel_parse(uri, strlen(uri) - 1, &m_channel);
+        return aeron_udp_channel_parse(strlen(uri), uri, &m_channel);
     }
 
 protected:

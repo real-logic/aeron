@@ -848,7 +848,6 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                 snd_lmt_position.value_addr = aeron_counter_addr(
                     &conductor->counters_manager, (int32_t)snd_lmt_position.counter_id);
 
-
                 if (params->is_replay)
                 {
                     int64_t position = aeron_logbuffer_compute_position(

@@ -179,7 +179,7 @@ int aeron_uri_udp_canonicalise(
         canonical_form, length, "UDP-%s-%d-%s-%d", local_data_str, local_data_port, remote_data_str, remote_data_port);
 }
 
-int aeron_udp_channel_parse(const char *uri, size_t uri_length, aeron_udp_channel_t **channel)
+int aeron_udp_channel_parse(size_t uri_length, const char *uri, aeron_udp_channel_t **channel)
 {
     aeron_udp_channel_t *_channel = NULL;
     struct sockaddr_storage endpoint_addr, explicit_control_addr, interface_addr;
@@ -195,7 +195,7 @@ int aeron_udp_channel_parse(const char *uri, size_t uri_length, aeron_udp_channe
         return -1;
     }
 
-    if (aeron_uri_parse(uri, &_channel->uri) < 0)
+    if (aeron_uri_parse(uri_length, uri, &_channel->uri) < 0)
     {
         goto error_cleanup;
     }
@@ -203,7 +203,7 @@ int aeron_udp_channel_parse(const char *uri, size_t uri_length, aeron_udp_channe
     size_t copy_length = sizeof(_channel->original_uri) - 1;
     copy_length = uri_length < copy_length ? uri_length : copy_length;
 
-    strncpy(_channel->original_uri, uri, copy_length);
+    memcpy(_channel->original_uri, uri, copy_length);
     _channel->original_uri[copy_length] = '\0';
     _channel->uri_length = copy_length;
 

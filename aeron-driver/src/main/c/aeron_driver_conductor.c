@@ -2330,13 +2330,15 @@ int aeron_driver_conductor_on_add_destination(
         if (NULL != endpoint->destination_tracker || !endpoint->destination_tracker->is_manual_control_mode)
         {
             aeron_set_err(
-                EINVAL, "channel does not allow manual control of destinations: %.*s", uri_length, command_uri);
+                EINVAL,
+                "channel does not allow manual control of destinations: %.*s",
+                command->channel_length, command_uri);
             return -1;
         }
 
         if (uri_params.type != AERON_URI_UDP || NULL == uri_params.params.udp.endpoint_key)
         {
-            aeron_set_err(EINVAL, "incorrect URI format for destination: %.*s", uri_length, command_uri);
+            aeron_set_err(EINVAL, "incorrect URI format for destination: %.*s", command->channel_length, command_uri);
             return -1;
         }
 
@@ -2396,14 +2398,16 @@ int aeron_driver_conductor_on_remove_destination(
         if (NULL != endpoint->destination_tracker || !endpoint->destination_tracker->is_manual_control_mode)
         {
             aeron_set_err(
-                EINVAL, "channel does not allow manual control of destinations: %.*s", uri_length, command_uri);
+                EINVAL,
+                "channel does not allow manual control of destinations: %.*s",
+                command->channel_length, command_uri);
             return -1;
         }
 
 
         if (uri_params.type != AERON_URI_UDP || NULL == uri_params.params.udp.endpoint_key)
         {
-            aeron_set_err(EINVAL, "incorrect URI format for destination: %.*s", uri_length, command_uri);
+            aeron_set_err(EINVAL, "incorrect URI format for destination: %.*s", command->channel_length, command_uri);
             return -1;
         }
 

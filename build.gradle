@@ -788,9 +788,8 @@ project(':aeron-all') {
         compile project(':aeron-driver')
         compile project(':aeron-archive')
         compile project(':aeron-cluster')
+        compile project(':aeron-agent')
         compile project(':aeron-samples')
-        compile "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
-        compile "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
     }
 
     javadoc {
@@ -874,6 +873,7 @@ project(':aeron-all') {
     shadowJar {
         classifier = ''
         relocate 'org.HdrHistogram', 'io.aeron.shadow.org.HdrHistogram'
+        relocate 'net.bytebuddy', 'io.aeron.shadow.net.bytebuddy'
     }
 
     artifacts {

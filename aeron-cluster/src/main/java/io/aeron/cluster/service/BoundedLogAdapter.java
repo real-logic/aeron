@@ -19,11 +19,9 @@ import io.aeron.Image;
 import io.aeron.ImageControlledFragmentAssembler;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
-import io.aeron.logbuffer.ControlledFragmentHandler;
-import io.aeron.logbuffer.Header;
+import io.aeron.logbuffer.*;
 import io.aeron.status.ReadableCounter;
-import org.agrona.CloseHelper;
-import org.agrona.DirectBuffer;
+import org.agrona.*;
 
 /**
  * Adapter for reading a log with a upper bound applied beyond which the consumer cannot progress.
@@ -132,6 +130,8 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
                 openEventDecoder.getEncodedPrincipal(encodedPrincipal, 0, encodedPrincipal.length);
 
                 agent.onSessionOpen(
+                    openEventDecoder.leadershipTermId(),
+                    header.position(),
                     openEventDecoder.clusterSessionId(),
                     openEventDecoder.timestamp(),
                     openEventDecoder.responseStreamId(),
@@ -147,6 +147,8 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
                     messageHeaderDecoder.version());
 
                 agent.onSessionClose(
+                    closeEventDecoder.leadershipTermId(),
+                    header.position(),
                     closeEventDecoder.clusterSessionId(),
                     closeEventDecoder.timestamp(),
                     closeEventDecoder.closeReason());
@@ -160,8 +162,8 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
                     messageHeaderDecoder.version());
 
                 agent.onServiceAction(
-                    actionRequestDecoder.logPosition(),
                     actionRequestDecoder.leadershipTermId(),
+                    actionRequestDecoder.logPosition(),
                     actionRequestDecoder.timestamp(),
                     actionRequestDecoder.action());
                 break;

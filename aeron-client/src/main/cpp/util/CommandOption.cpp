@@ -32,7 +32,7 @@ CommandOption::CommandOption(char optionChar, size_t minParams, size_t maxParams
     m_optionChar(optionChar),
     m_minParams(minParams),
     m_maxParams(maxParams),
-    m_helpText(helpText),
+    m_helpText(std::move(helpText)),
     m_isPresent(false)
 {
 }

@@ -65,7 +65,7 @@ public:
         std::shared_ptr<LogBuffers> logBuffers);
     /// @endcond
 
-    virtual ~ExclusivePublication();
+    ~ExclusivePublication();
 
     /**
      * Media address for delivery to the channel.

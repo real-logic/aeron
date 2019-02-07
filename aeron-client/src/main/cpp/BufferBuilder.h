@@ -35,10 +35,6 @@ public:
     {
     }
 
-    virtual ~BufferBuilder()
-    {
-    }
-
     BufferBuilder(BufferBuilder &&builder) :
         m_capacity(builder.m_capacity),
         m_limit(builder.m_limit),

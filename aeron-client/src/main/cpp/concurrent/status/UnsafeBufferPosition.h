@@ -33,29 +33,15 @@ public:
     {
     }
 
-    UnsafeBufferPosition(const UnsafeBufferPosition& position)
-    {
-        m_buffer.wrap(position.m_buffer);
-        m_id = position.m_id;
-        m_offset = position.m_offset;
-    }
-
     UnsafeBufferPosition() :
         m_id(-1),
         m_offset(0)
     {
     }
 
-    UnsafeBufferPosition& operator=(const UnsafeBufferPosition& position)
-    {
-        wrap(position);
-
-        return *this;
-    }
-
     inline void wrap(const UnsafeBufferPosition& position)
     {
-        m_buffer.wrap(position.m_buffer);
+        m_buffer = position.m_buffer;
         m_id = position.m_id;
         m_offset = position.m_offset;
     }

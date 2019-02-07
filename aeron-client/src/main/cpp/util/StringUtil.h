@@ -41,7 +41,7 @@ inline std::string trimWSRight(std::string str, const char* wschars = " \t")
 
 inline std::string trimWSBoth(std::string str, const char* wschars = " \t")
 {
-    return trimWSLeft(trimWSRight(str, wschars), wschars);
+    return trimWSLeft(trimWSRight(std::move(str), wschars), wschars);
 }
 
 template<class valueType>

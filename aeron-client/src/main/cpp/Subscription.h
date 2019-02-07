@@ -56,7 +56,7 @@ public:
         std::int32_t streamId,
         std::int32_t channelStatusId);
     /// @endcond
-    virtual ~Subscription();
+    ~Subscription();
 
     /**
      * Media address for delivery to the channel.
@@ -311,7 +311,7 @@ public:
      * @param index in the array
      * @return image at given index or exception if out of range.
      */
-    inline Image& imageAtIndex(size_t index) const
+    inline Image& imageAtIndex(size_t index)
     {
         const struct ImageList *imageList = std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
         Image *images = imageList->m_images;

@@ -35,7 +35,7 @@ public:
     explicit LogBuffers(const char *filename);
     LogBuffers(std::uint8_t *address, std::int64_t logLength, std::int32_t termLength);
 
-    virtual ~LogBuffers();
+    ~LogBuffers();
 
     inline AtomicBuffer& atomicBuffer(int index)
     {

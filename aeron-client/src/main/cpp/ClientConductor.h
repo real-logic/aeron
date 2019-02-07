@@ -72,10 +72,10 @@ public:
         m_errorHandler(errorHandler),
         m_onAvailableCounterHandler(availableCounterHandler),
         m_onUnavailableCounterHandler(unavailableCounterHandler),
-        m_epochClock(epochClock),
-        m_timeOfLastKeepalive(epochClock()),
-        m_timeOfLastCheckManagedResources(epochClock()),
-        m_timeOfLastDoWork(epochClock()),
+        m_epochClock(std::move(epochClock)),
+        m_timeOfLastKeepalive(m_epochClock()),
+        m_timeOfLastCheckManagedResources(m_epochClock()),
+        m_timeOfLastDoWork(m_epochClock()),
         m_driverTimeoutMs(driverTimeoutMs),
         m_resourceLingerTimeoutMs(resourceLingerTimeoutMs),
         m_interServiceTimeoutMs(static_cast<long>(interServiceTimeoutNs / 1000000)),
@@ -347,7 +347,7 @@ private:
         std::shared_ptr<LogBuffers> m_logBuffers;
 
         LogBuffersLingerDefn(long long now, std::shared_ptr<LogBuffers> buffers) :
-            m_timeOfLastStatusChange(now), m_logBuffers(buffers)
+            m_timeOfLastStatusChange(now), m_logBuffers(std::move(buffers))
         {
         }
     };

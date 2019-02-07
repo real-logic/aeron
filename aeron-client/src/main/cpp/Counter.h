@@ -49,7 +49,7 @@ public:
     {
     }
 
-    virtual ~Counter();
+    ~Counter();
 
     inline std::int64_t registrationId() const
     {

@@ -79,7 +79,7 @@ public:
     }
 
 private:
-    std::size_t m_initialBufferLength;
+    const std::size_t m_initialBufferLength;
     controlled_poll_fragment_handler_t m_delegate;
     std::unordered_map<std::int32_t, BufferBuilder> m_builderBySessionIdMap;
 

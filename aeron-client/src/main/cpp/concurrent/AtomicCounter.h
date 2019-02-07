@@ -32,7 +32,7 @@ public:
     AtomicCounter(const AtomicBuffer& buffer, std::int32_t counterId, std::shared_ptr<CountersManager> countersManager) :
         m_buffer(buffer),
         m_counterId(counterId),
-        m_countersManager(countersManager),
+        m_countersManager(std::move(countersManager)),
         m_offset(CountersManager::counterOffset(counterId))
     {
         m_buffer.putInt64(m_offset, 0);
@@ -46,7 +46,7 @@ public:
     {
     }
 
-    virtual ~AtomicCounter()
+    ~AtomicCounter()
     {
         if (nullptr != m_countersManager)
         {

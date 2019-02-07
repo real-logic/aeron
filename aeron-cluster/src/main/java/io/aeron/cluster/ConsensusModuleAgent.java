@@ -289,7 +289,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     public String roleName()
     {
-        return "consensus-module";
+        return "consensus-module_" + memberId;
     }
 
     public void onSessionConnect(
@@ -1009,7 +1009,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 break;
 
             case SNAPSHOT:
-                replayClusterAction(leadershipTermId, logPosition, ConsensusModule.State.SNAPSHOT);
+                expectedAckPosition = logPosition;
+                state(ConsensusModule.State.SNAPSHOT);
                 break;
         }
     }
@@ -2444,13 +2445,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         logRecordingChannel = channel;
     }
 
-    private void replayClusterAction(
-        final long leadershipTermId, final long logPosition, final ConsensusModule.State newState)
-    {
-        this.leadershipTermId = leadershipTermId;
-        expectedAckPosition = logPosition;
-        state(newState);
-    }
 
     private void clusterMemberJoined(final int memberId, final ClusterMember[] newMembers)
     {

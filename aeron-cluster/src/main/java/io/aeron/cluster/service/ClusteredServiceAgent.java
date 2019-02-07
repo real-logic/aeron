@@ -169,7 +169,7 @@ class ClusteredServiceAgent implements Agent, Cluster
 
     public String roleName()
     {
-        return ctx.serviceName();
+        return ctx.serviceName() + "_" + memberId;
     }
 
     public Cluster.Role role()

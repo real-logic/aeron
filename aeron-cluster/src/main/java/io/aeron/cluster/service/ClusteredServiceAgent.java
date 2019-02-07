@@ -364,7 +364,7 @@ class ClusteredServiceAgent implements Agent, Cluster
 
         if (sessionByIdMap.containsKey(clusterSessionId))
         {
-            throw new ClusterException("clashing clusterSessionId=" + clusterSessionId +
+            throw new ClusterException("clashing open clusterSessionId=" + clusterSessionId +
                 " leadershipTermId=" + leadershipTermId + " logPosition=" + logPosition);
         }
 
@@ -393,7 +393,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         if (null == session)
         {
             throw new ClusterException(
-                "unknown clusterSessionId=" + clusterSessionId + " reason=" + closeReason +
+                "unknown clusterSessionId=" + clusterSessionId + " for close reason=" + closeReason +
                 " leadershipTermId=" + leadershipTermId + " logPosition=" + logPosition);
         }
 

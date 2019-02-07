@@ -285,7 +285,7 @@ public class TestCluster implements AutoCloseable
         return msgBuffer;
     }
 
-    void startClient()
+    void connectClient()
     {
         final String aeronDirName = CommonContext.getAeronDirectoryName();
 

@@ -20,7 +20,6 @@ import io.aeron.driver.media.UdpChannel;
 import org.agrona.concurrent.status.ReadablePosition;
 
 import java.util.IdentityHashMap;
-import java.util.Map;
 
 /**
  * Subscription registration from a client used for liveness tracking
@@ -32,11 +31,10 @@ public abstract class SubscriptionLink implements DriverManagedResource
     protected final int sessionId;
     protected final boolean hasSessionId;
     protected final boolean isSparse;
+    protected boolean reachedEndOfLife = false;
     protected final String channel;
     protected final AeronClient aeronClient;
-    protected final Map<Subscribable, ReadablePosition> positionBySubscribableMap = new IdentityHashMap<>();
-
-    protected boolean reachedEndOfLife = false;
+    protected final IdentityHashMap<Subscribable, ReadablePosition> positionBySubscribableMap;
 
     protected SubscriptionLink(
         final long registrationId,
@@ -52,6 +50,8 @@ public abstract class SubscriptionLink implements DriverManagedResource
         this.hasSessionId = params.hasSessionId;
         this.sessionId = params.sessionId;
         this.isSparse = params.isSparse;
+
+        positionBySubscribableMap = new IdentityHashMap<>(hasSessionId ? 1 : 8);
     }
 
     public long registrationId()
@@ -156,7 +156,7 @@ public abstract class SubscriptionLink implements DriverManagedResource
 
     public boolean isWildcardOrSessionIdMatch(final int sessionId)
     {
-        return !hasSessionId || (this.sessionId == sessionId);
+        return !hasSessionId || this.sessionId == sessionId;
     }
 }
 
@@ -252,7 +252,7 @@ class SpySubscriptionLink extends SubscriptionLink
     public boolean matches(final NetworkPublication publication)
     {
         return streamId == publication.streamId() &&
-            udpChannel.canonicalForm().equals(publication.channelEndpoint().udpChannel().canonicalForm()) &&
-            isWildcardOrSessionIdMatch(publication.sessionId());
+            isWildcardOrSessionIdMatch(publication.sessionId()) &&
+            udpChannel.canonicalForm().equals(publication.channelEndpoint().udpChannel().canonicalForm());
     }
 }

@@ -255,7 +255,6 @@ class ClientConductor implements Agent, DriverEventsListener
 
     public void onAvailableImage(
         final long correlationId,
-        final int streamId,
         final int sessionId,
         final long subscriptionRegistrationId,
         final int subscriberPositionId,
@@ -296,7 +295,7 @@ class ClientConductor implements Agent, DriverEventsListener
         }
     }
 
-    public void onUnavailableImage(final long correlationId, final long subscriptionRegistrationId, final int streamId)
+    public void onUnavailableImage(final long correlationId, final long subscriptionRegistrationId)
     {
         final Subscription subscription = (Subscription)resourceByRegIdMap.get(subscriptionRegistrationId);
         if (null != subscription)

@@ -24,7 +24,6 @@ interface DriverEventsListener
 
     void onAvailableImage(
         long correlationId,
-        int streamId,
         int sessionId,
         long subscriptionRegistrationId,
         int subscriberPositionId,
@@ -40,14 +39,9 @@ interface DriverEventsListener
         int statusIndicatorId,
         String logFileName);
 
-    void onNewSubscription(
-        long correlationId,
-        int statusIndicatorId);
+    void onNewSubscription(long correlationId, int statusIndicatorId);
 
-    void onUnavailableImage(
-        long correlationId,
-        long subscriptionRegistrationId,
-        int streamId);
+    void onUnavailableImage(long correlationId, long subscriptionRegistrationId);
 
     void onNewExclusivePublication(
         long correlationId,
@@ -58,21 +52,13 @@ interface DriverEventsListener
         int statusIndicatorId,
         String logFileName);
 
-    void onChannelEndpointError(
-        int statusIndicatorId,
-        String message);
+    void onChannelEndpointError(int statusIndicatorId, String message);
 
-    void onNewCounter(
-        long correlationId,
-        int counterId);
+    void onNewCounter(long correlationId, int counterId);
 
-    void onAvailableCounter(
-        long correlationId,
-        int counterId);
+    void onAvailableCounter(long correlationId, int counterId);
 
-    void onUnavailableCounter(
-        long correlationId,
-        int counterId);
+    void onUnavailableCounter(long correlationId, int counterId);
 
     void onClientTimeout();
 }

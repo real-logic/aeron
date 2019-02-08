@@ -96,12 +96,11 @@ public:
                         const ImageBuffersReadyFlyweight imageReady(buffer, offset);
 
                         m_driverListener.onAvailableImage(
-                            imageReady.streamId(),
                             imageReady.sessionId(),
                             imageReady.logFileName(),
                             imageReady.sourceIdentity(),
                             imageReady.subscriberPositionId(),
-                            imageReady.subscriberRegistrationId(),
+                            imageReady.subscriptionRegistrationId(),
                             imageReady.correlationId());
                         break;
                     }

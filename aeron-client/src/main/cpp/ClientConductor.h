@@ -158,12 +158,11 @@ public:
         const std::string& errorMessage);
 
     void onAvailableImage(
-        std::int32_t streamId,
         std::int32_t sessionId,
         const std::string &logFilename,
         const std::string &sourceIdentity,
-        std::int32_t subscriberPositionIndicatorId,
-        std::int64_t subscriberPositionRegistrationId,
+        std::int32_t subscriberPositionId,
+        std::int64_t subscriptionRegistrationId,
         std::int64_t correlationId);
 
     void onUnavailableImage(

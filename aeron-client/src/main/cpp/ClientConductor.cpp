@@ -629,12 +629,11 @@ void ClientConductor::onErrorResponse(
 }
 
 void ClientConductor::onAvailableImage(
-    std::int32_t streamId,
     std::int32_t sessionId,
     const std::string &logFilename,
     const std::string &sourceIdentity,
-    std::int32_t subscriberPositionIndicatorId,
-    std::int64_t subscriberPositionRegistrationId,
+    std::int32_t subscriberPositionId,
+    std::int64_t subscriptionRegistrationId,
     std::int64_t correlationId)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
@@ -642,22 +641,19 @@ void ClientConductor::onAvailableImage(
     std::for_each(m_subscriptions.begin(), m_subscriptions.end(),
         [&](const SubscriptionStateDefn &entry)
         {
-            if (streamId == entry.m_streamId)
+            if (subscriptionRegistrationId == entry.m_registrationId)
             {
                 std::shared_ptr<Subscription> subscription = entry.m_subscription.lock();
 
-                if (subscription != nullptr &&
-                    !(subscription->hasImage(correlationId)) &&
-                    subscriberPositionRegistrationId == subscription->registrationId())
+                if (subscription != nullptr && subscription->registrationId() == subscriptionRegistrationId)
                 {
                     std::shared_ptr<LogBuffers> logBuffers = std::make_shared<LogBuffers>(logFilename.c_str());
-
-                    UnsafeBufferPosition subscriberPosition(m_counterValuesBuffer, subscriberPositionIndicatorId);
+                    UnsafeBufferPosition subscriberPosition(m_counterValuesBuffer, subscriberPositionId);
 
                     Image image(
                         sessionId,
                         correlationId,
-                        subscription->registrationId(),
+                        subscriptionRegistrationId,
                         sourceIdentity,
                         subscriberPosition,
                         logBuffers,

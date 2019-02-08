@@ -713,7 +713,7 @@ TEST_F(ClientConductorTest, shouldCallInactiveConnecitonAfterInactiveConnection)
     m_conductor.onSubscriptionReady(id, CHANNEL_STATUS_INDICATOR_ID);
     std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
     m_conductor.onAvailableImage(STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, id, correlationId);
-    m_conductor.onUnavailableImage(STREAM_ID, correlationId, id);
+    m_conductor.onUnavailableImage(correlationId, id);
     EXPECT_FALSE(sub->hasImage(correlationId));
 }
 
@@ -731,7 +731,7 @@ TEST_F(ClientConductorTest, shouldNotCallInactiveConnectionIfNoOperationSuccess)
 
     // must be able to handle newImage even if findSubscription not called
     m_conductor.onAvailableImage(STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, id, correlationId);
-    m_conductor.onUnavailableImage(STREAM_ID, correlationId, id);
+    m_conductor.onUnavailableImage(correlationId, id);
 }
 
 TEST_F(ClientConductorTest, shouldNotCallInactiveConnectionIfUninterestingConnectionCorrelationId)
@@ -752,7 +752,7 @@ TEST_F(ClientConductorTest, shouldNotCallInactiveConnectionIfUninterestingConnec
     m_conductor.onSubscriptionReady(id, CHANNEL_STATUS_INDICATOR_ID);
     std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
     m_conductor.onAvailableImage(STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, id, correlationId);
-    m_conductor.onUnavailableImage(STREAM_ID, correlationId + 1, id);
+    m_conductor.onUnavailableImage(correlationId + 1, id);
     EXPECT_TRUE(sub->hasImage(correlationId));
 
     testing::Mock::VerifyAndClearExpectations(&m_handlers);  // avoid catching unavailable call on sub release

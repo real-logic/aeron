@@ -119,7 +119,6 @@ public:
                         const ImageMessageFlyweight imageMessage(buffer, offset);
 
                         m_driverListener.onUnavailableImage(
-                            imageMessage.streamId(),
                             imageMessage.correlationId(),
                             imageMessage.subscriptionRegistrationId());
                         break;

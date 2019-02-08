@@ -167,7 +167,6 @@ public:
         std::int64_t correlationId);
 
     void onUnavailableImage(
-        std::int32_t streamId,
         std::int64_t correlationId,
         std::int64_t subscriptionRegistrationId);
 
@@ -250,7 +249,10 @@ private:
 
         PublicationStateDefn(
             const std::string& channel, std::int64_t registrationId, std::int32_t streamId, long long now) :
-            m_channel(channel), m_registrationId(registrationId), m_streamId(streamId), m_timeOfRegistration(now)
+            m_channel(channel),
+            m_registrationId(registrationId),
+            m_streamId(streamId),
+            m_timeOfRegistration(now)
         {
         }
     };
@@ -347,7 +349,8 @@ private:
         std::shared_ptr<LogBuffers> m_logBuffers;
 
         LogBuffersLingerDefn(long long now, std::shared_ptr<LogBuffers> buffers) :
-            m_timeOfLastStatusChange(now), m_logBuffers(std::move(buffers))
+            m_timeOfLastStatusChange(now),
+            m_logBuffers(std::move(buffers))
         {
         }
     };

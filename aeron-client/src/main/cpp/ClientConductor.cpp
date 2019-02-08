@@ -193,8 +193,15 @@ std::shared_ptr<ExclusivePublication> ClientConductor::findExclusivePublication(
                 UnsafeBufferPosition publicationLimit(m_counterValuesBuffer, state.m_publicationLimitCounterId);
 
                 pub = std::make_shared<ExclusivePublication>(
-                    *this, state.m_channel, state.m_registrationId, state.m_originalRegistrationId, state.m_streamId,
-                    state.m_sessionId, publicationLimit, state.m_channelStatusId, state.m_buffers);
+                    *this,
+                    state.m_channel,
+                    state.m_registrationId,
+                    state.m_originalRegistrationId,
+                    state.m_streamId,
+                    state.m_sessionId,
+                    publicationLimit,
+                    state.m_channelStatusId,
+                    state.m_buffers);
 
                 state.m_publication = std::weak_ptr<ExclusivePublication>(pub);
                 break;
@@ -502,9 +509,7 @@ void ClientConductor::onNewExclusivePublication(
     }
 }
 
-void ClientConductor::onSubscriptionReady(
-    std::int64_t registrationId,
-    std::int32_t channelStatusId)
+void ClientConductor::onSubscriptionReady(std::int64_t registrationId, std::int32_t channelStatusId)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
@@ -527,9 +532,7 @@ void ClientConductor::onSubscriptionReady(
     }
 }
 
-void ClientConductor::onAvailableCounter(
-    std::int64_t registrationId,
-    std::int32_t counterId)
+void ClientConductor::onAvailableCounter(std::int64_t registrationId, std::int32_t counterId)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
@@ -552,9 +555,7 @@ void ClientConductor::onAvailableCounter(
     m_onAvailableCounterHandler(m_countersReader, registrationId, counterId);
 }
 
-void ClientConductor::onUnavailableCounter(
-    std::int64_t registrationId,
-    std::int32_t counterId)
+void ClientConductor::onUnavailableCounter(std::int64_t registrationId, std::int32_t counterId)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
@@ -566,9 +567,7 @@ void ClientConductor::onOperationSuccess(std::int64_t correlationId)
 }
 
 void ClientConductor::onErrorResponse(
-    std::int64_t offendingCommandCorrelationId,
-    std::int32_t errorCode,
-    const std::string &errorMessage)
+    std::int64_t offendingCommandCorrelationId, std::int32_t errorCode, const std::string &errorMessage)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
@@ -677,10 +676,7 @@ void ClientConductor::onAvailableImage(
         });
 }
 
-void ClientConductor::onUnavailableImage(
-    std::int32_t streamId,
-    std::int64_t correlationId,
-    std::int64_t subscriptionRegistrationId)
+void ClientConductor::onUnavailableImage(std::int64_t correlationId, std::int64_t subscriptionRegistrationId)
 {
     const long long now = m_epochClock();
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);

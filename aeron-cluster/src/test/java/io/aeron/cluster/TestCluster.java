@@ -307,15 +307,20 @@ public class TestCluster implements AutoCloseable
         for (int i = 0; i < messageCount; i++)
         {
             msgBuffer.putInt(0, i);
-            while (client.offer(msgBuffer, 0, BitUtil.SIZE_OF_INT) < 0)
-            {
-                TestUtil.checkInterruptedStatus();
-                client.pollEgress();
-                Thread.yield();
-            }
-
-            client.pollEgress();
+            sendMessage(BitUtil.SIZE_OF_INT);
         }
+    }
+
+    void sendMessage(final int messageLength)
+    {
+        while (client.offer(msgBuffer, 0, messageLength) < 0)
+        {
+            TestUtil.checkInterruptedStatus();
+            client.pollEgress();
+            Thread.yield();
+        }
+
+        client.pollEgress();
     }
 
     void awaitResponses(final int messageCount)

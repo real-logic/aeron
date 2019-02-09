@@ -43,7 +43,7 @@ LogBuffers::LogBuffers(const char *filename)
 
     for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
     {
-        m_buffers[i].wrap(basePtr + (i * termLength), termLength);
+        m_buffers[i].wrap(basePtr + (i * termLength), static_cast<size_t>(termLength));
     }
 }
 
@@ -55,7 +55,7 @@ LogBuffers::LogBuffers(std::uint8_t *address, std::int64_t logLength, std::int32
 
     for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
     {
-        m_buffers[i].wrap(address + (i * termLength), termLength);
+        m_buffers[i].wrap(address + (i * termLength), static_cast<size_t>(termLength));
     }
 }
 

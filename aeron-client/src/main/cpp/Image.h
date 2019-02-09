@@ -389,7 +389,7 @@ public:
             const int index = LogBufferDescriptor::indexByPosition(position, m_positionBitsToShift);
             assert(index >= 0 && index < LogBufferDescriptor::PARTITION_COUNT);
             AtomicBuffer &termBuffer = m_termBuffers[index];
-            TermReader::ReadOutcome readOutcome;
+            TermReader::ReadOutcome readOutcome{};
 
             TermReader::read(readOutcome, termBuffer, termOffset, fragmentHandler, fragmentLimit, m_header, m_exceptionHandler);
 

@@ -1,3 +1,7 @@
+#include <memory>
+
+#include <memory>
+
 /*
  * Copyright 2014-2019 Real Logic Ltd.
  *
@@ -300,7 +304,7 @@ public:
             }
         }
 
-        return (index != -1) ? std::shared_ptr<Image>(new Image(images[index])) : std::shared_ptr<Image>();
+        return index != -1 ? std::make_shared<Image>(images[index]) : std::shared_ptr<Image>();
     }
 
     /**
@@ -407,7 +411,6 @@ public:
         newArray[length] = image; // copy-assign
 
         auto newImageList = new struct ImageList(newArray, length + 1);
-
         std::atomic_store_explicit(&m_imageList, newImageList, std::memory_order_release);
 
         return oldImageList;
@@ -442,14 +445,11 @@ public:
                 }
             }
 
-            auto newImageList = new struct ImageList(newArray, length - 1);
-
+            auto newImageList = new struct ImageList(newArray, static_cast<size_t>(length - 1));
             std::atomic_store_explicit(&m_imageList, newImageList, std::memory_order_release);
         }
 
-        return std::pair<struct ImageList *, int>(
-                (-1 != index) ? oldImageList : nullptr,
-                index);
+        return std::pair<struct ImageList *, int>(-1 != index ? oldImageList : nullptr, index);
     }
 
     struct ImageList *removeAndCloseAllImages()

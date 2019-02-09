@@ -35,7 +35,7 @@ using namespace aeron::concurrent::ringbuffer;
 class DriverProxy
 {
 public:
-    DriverProxy(ManyToOneRingBuffer&toDriverCommandBuffer) :
+    DriverProxy(ManyToOneRingBuffer& toDriverCommandBuffer) :
         m_toDriverCommandBuffer(toDriverCommandBuffer),
         m_clientId(toDriverCommandBuffer.nextCorrelationId())
     {
@@ -108,7 +108,7 @@ public:
             removeMessage.correlationId(correlationId);
             removeMessage.registrationId(registrationId);
 
-            length = removeMessage.length();
+            length = RemoveMessageFlyweight::length();
 
             return ControlProtocolEvents::REMOVE_PUBLICATION;
         });
@@ -150,7 +150,7 @@ public:
             removeMessage.correlationId(correlationId);
             removeMessage.registrationId(registrationId);
 
-            length = removeMessage.length();
+            length = RemoveMessageFlyweight::length();
 
             return ControlProtocolEvents::REMOVE_SUBSCRIPTION;
         });
@@ -290,7 +290,7 @@ public:
             command.correlationId(correlationId);
             command.registrationId(registrationId);
 
-            length = command.length();
+            length = RemoveMessageFlyweight::length();
 
             return ControlProtocolEvents::REMOVE_COUNTER;
         });

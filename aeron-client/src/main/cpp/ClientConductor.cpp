@@ -645,7 +645,7 @@ void ClientConductor::onAvailableImage(
             {
                 std::shared_ptr<Subscription> subscription = entry.m_subscription.lock();
 
-                if (subscription != nullptr && subscription->registrationId() == subscriptionRegistrationId)
+                if (nullptr != subscription)
                 {
                     std::shared_ptr<LogBuffers> logBuffers = std::make_shared<LogBuffers>(logFilename.c_str());
                     UnsafeBufferPosition subscriberPosition(m_counterValuesBuffer, subscriberPositionId);

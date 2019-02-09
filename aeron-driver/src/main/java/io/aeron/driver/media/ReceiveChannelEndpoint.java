@@ -436,7 +436,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         final int streamId,
         final int termId,
         final int termOffset,
-        final int window,
+        final int windowLength,
         final short flags)
     {
         if (!isClosed)
@@ -447,7 +447,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
                 .streamId(streamId)
                 .consumptionTermId(termId)
                 .consumptionTermOffset(termOffset)
-                .receiverWindowLength(window)
+                .receiverWindowLength(windowLength)
                 .flags(flags);
 
             send(smBuffer, StatusMessageFlyweight.HEADER_LENGTH, controlAddresses);

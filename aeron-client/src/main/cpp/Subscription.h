@@ -1,7 +1,3 @@
-#include <memory>
-
-#include <memory>
-
 /*
  * Copyright 2014-2019 Real Logic Ltd.
  *
@@ -24,6 +20,7 @@
 #include <cstdint>
 #include <iostream>
 #include <atomic>
+#include <memory>
 #include <concurrent/logbuffer/TermReader.h>
 #include "concurrent/status/StatusIndicatorReader.h"
 #include "Image.h"

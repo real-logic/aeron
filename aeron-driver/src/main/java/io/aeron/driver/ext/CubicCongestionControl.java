@@ -179,7 +179,7 @@ public class CubicCongestionControl implements CongestionControl
             // if using TCP mode, then check to see if we are in the TCP region
             if (TCP_MODE && cwnd < w_max)
             {
-                // W_tcp(t) = w_max*(1-B) + 3*B/(2-B)* t/RTT
+                // W_tcp(t) = w_max * (1 - B) + 3 * B / (2 - B) * t / RTT
 
                 final double rttInSeconds = (double)rttInNs / (double)SECOND_IN_NS;
                 final double wTcp =

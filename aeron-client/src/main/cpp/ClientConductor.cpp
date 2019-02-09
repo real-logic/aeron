@@ -446,13 +446,13 @@ void ClientConductor::removeRcvDestination(std::int64_t subscriptionRegistration
 }
 
 void ClientConductor::onNewPublication(
+    std::int64_t registrationId,
+    std::int64_t originalRegistrationId,
     std::int32_t streamId,
     std::int32_t sessionId,
     std::int32_t publicationLimitCounterId,
     std::int32_t channelStatusIndicatorId,
-    const std::string &logFileName,
-    std::int64_t registrationId,
-    std::int64_t originalRegistrationId)
+    const std::string &logFileName)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
@@ -478,13 +478,13 @@ void ClientConductor::onNewPublication(
 }
 
 void ClientConductor::onNewExclusivePublication(
+    std::int64_t registrationId,
+    std::int64_t originalRegistrationId,
     std::int32_t streamId,
     std::int32_t sessionId,
     std::int32_t publicationLimitCounterId,
     std::int32_t channelStatusIndicatorId,
-    const std::string &logFileName,
-    std::int64_t registrationId,
-    std::int64_t originalRegistrationId)
+    const std::string &logFileName)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
@@ -629,12 +629,12 @@ void ClientConductor::onErrorResponse(
 }
 
 void ClientConductor::onAvailableImage(
+    std::int64_t correlationId,
     std::int32_t sessionId,
-    const std::string &logFilename,
-    const std::string &sourceIdentity,
     std::int32_t subscriberPositionId,
     std::int64_t subscriptionRegistrationId,
-    std::int64_t correlationId)
+    const std::string &logFilename,
+    const std::string &sourceIdentity)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 

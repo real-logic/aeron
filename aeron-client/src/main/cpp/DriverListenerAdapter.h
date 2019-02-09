@@ -56,13 +56,13 @@ public:
                         const PublicationBuffersReadyFlyweight publicationReady(buffer, offset);
 
                         m_driverListener.onNewPublication(
+                            publicationReady.correlationId(),
+                            publicationReady.registrationId(),
                             publicationReady.streamId(),
                             publicationReady.sessionId(),
                             publicationReady.positionLimitCounterId(),
                             publicationReady.channelStatusIndicatorId(),
-                            publicationReady.logFileName(),
-                            publicationReady.correlationId(),
-                            publicationReady.registrationId());
+                            publicationReady.logFileName());
                         break;
                     }
 
@@ -71,13 +71,13 @@ public:
                         const PublicationBuffersReadyFlyweight publicationReady(buffer, offset);
 
                         m_driverListener.onNewExclusivePublication(
+                            publicationReady.correlationId(),
+                            publicationReady.registrationId(),
                             publicationReady.streamId(),
                             publicationReady.sessionId(),
                             publicationReady.positionLimitCounterId(),
                             publicationReady.channelStatusIndicatorId(),
-                            publicationReady.logFileName(),
-                            publicationReady.correlationId(),
-                            publicationReady.registrationId());
+                            publicationReady.logFileName());
                         break;
                     }
 
@@ -96,12 +96,12 @@ public:
                         const ImageBuffersReadyFlyweight imageReady(buffer, offset);
 
                         m_driverListener.onAvailableImage(
+                            imageReady.correlationId(),
                             imageReady.sessionId(),
-                            imageReady.logFileName(),
-                            imageReady.sourceIdentity(),
                             imageReady.subscriberPositionId(),
                             imageReady.subscriptionRegistrationId(),
-                            imageReady.correlationId());
+                            imageReady.logFileName(),
+                            imageReady.sourceIdentity());
                         break;
                     }
 

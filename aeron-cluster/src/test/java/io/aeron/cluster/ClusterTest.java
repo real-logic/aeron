@@ -610,12 +610,14 @@ public class ClusterTest
         }
     }
 
+    @Ignore
     @Test(timeout = 30_000)
     public void shouldCatchUpAfterFollowerMissesOneMessage() throws Exception
     {
         shouldCatchUpAfterFollowerMissesMessage(TestMessages.NO_OP);
     }
 
+    @Ignore
     @Test(timeout = 30_000)
     public void shouldCatchUpAfterFollowerMissesTimerRegistration() throws Exception
     {
@@ -674,19 +676,11 @@ public class ClusterTest
                 final IdleStrategy idleStrategy = new YieldingIdleStrategy();
                 cluster.msgBuffer().putStringWithoutLengthAscii(0, MSG);
 
-                while (true)
+                while (!Thread.interrupted())
                 {
-                    while (cluster.client().offer(cluster.msgBuffer(), 0, MSG.length()) < 0)
+                    if (cluster.client().offer(cluster.msgBuffer(), 0, MSG.length()) < 0)
                     {
-                        if (Thread.interrupted())
-                        {
-                            return;
-                        }
-
-                        if (0 == cluster.client().pollEgress())
-                        {
-                            LockSupport.parkNanos(intervalNs);
-                        }
+                        LockSupport.parkNanos(intervalNs);
                     }
 
                     idleStrategy.idle(cluster.client().pollEgress());

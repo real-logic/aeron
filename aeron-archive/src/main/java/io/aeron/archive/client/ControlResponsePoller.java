@@ -28,7 +28,7 @@ import org.agrona.DirectBuffer;
  */
 public class ControlResponsePoller implements ControlledFragmentHandler
 {
-    private static final int FRAGMENT_LIMIT = 10;
+    private static final int FRAGMENT_LIMIT = 1;
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ControlResponseDecoder controlResponseDecoder = new ControlResponseDecoder();

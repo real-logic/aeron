@@ -190,15 +190,7 @@ public class ControlResponsePoller implements ControlledFragmentHandler
             correlationId = controlResponseDecoder.correlationId();
             relevantId = controlResponseDecoder.relevantId();
             code = controlResponseDecoder.code();
-
-            if (ControlResponseCode.ERROR == code)
-            {
-                errorMessage = controlResponseDecoder.errorMessage();
-            }
-            else
-            {
-                errorMessage = "";
-            }
+            errorMessage = controlResponseDecoder.errorMessage();
 
             pollComplete = true;
         }

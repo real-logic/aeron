@@ -17,6 +17,8 @@ package io.aeron.cluster;
 
 import io.aeron.cluster.service.Cluster;
 import org.agrona.collections.MutableInteger;
+import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.*;
 
@@ -310,7 +312,7 @@ public class ClusterTest
     }
 
     @Test(timeout = 30_000)
-    public void shouldAcceptMessagesAfterSingleNodeGoDownAndComeBackUpClean() throws Exception
+    public void shouldAcceptMessagesAfterSingleNodeCleanRestart() throws Exception
     {
         final int messageCount = 10;
 
@@ -395,7 +397,7 @@ public class ClusterTest
     }
 
     @Test(timeout = 30_000)
-    public void shouldAcceptMessagesAfterTwoNodesGoDownAndComeBackUpClean() throws Exception
+    public void shouldAcceptMessagesAfterTwoNodeCleanRestart() throws Exception
     {
         final int messageCount = 10;
 
@@ -609,18 +611,18 @@ public class ClusterTest
     }
 
     @Test(timeout = 30_000)
-    public void shouldCatchUpAfterFollowerMissesAMessage() throws Exception
+    public void shouldCatchUpAfterFollowerMissesOneMessage() throws Exception
     {
-        shouldCatchUpAfterFollowerMissesAMessageTo(TestMessages.NO_OP);
+        shouldCatchUpAfterFollowerMissesMessage(TestMessages.NO_OP);
     }
 
     @Test(timeout = 30_000)
     public void shouldCatchUpAfterFollowerMissesTimerRegistration() throws Exception
     {
-        shouldCatchUpAfterFollowerMissesAMessageTo(TestMessages.REGISTER_TIMER);
+        shouldCatchUpAfterFollowerMissesMessage(TestMessages.REGISTER_TIMER);
     }
 
-    private void shouldCatchUpAfterFollowerMissesAMessageTo(final String message) throws InterruptedException
+    private void shouldCatchUpAfterFollowerMissesMessage(final String message) throws InterruptedException
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -669,7 +671,7 @@ public class ClusterTest
         final Thread thread = new Thread(
             () ->
             {
-                //final IdleStrategy idleStrategy = new YieldingIdleStrategy();
+                final IdleStrategy idleStrategy = new YieldingIdleStrategy();
                 cluster.msgBuffer().putStringWithoutLengthAscii(0, MSG);
 
                 while (true)
@@ -681,12 +683,13 @@ public class ClusterTest
                             return;
                         }
 
-                        cluster.client().pollEgress();
-                        LockSupport.parkNanos(intervalNs);
+                        if (0 == cluster.client().pollEgress())
+                        {
+                            LockSupport.parkNanos(intervalNs);
+                        }
                     }
 
-                    cluster.client().pollEgress();
-                    //idleStrategy.idle();
+                    idleStrategy.idle(cluster.client().pollEgress());
                 }
             });
 

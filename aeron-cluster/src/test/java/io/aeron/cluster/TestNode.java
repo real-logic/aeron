@@ -41,6 +41,7 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 
 class TestNode implements AutoCloseable
 {
+
     private final ClusteredMediaDriver clusteredMediaDriver;
     private final ClusteredServiceContainer container;
     private final TestService service;
@@ -240,6 +241,12 @@ class TestNode implements AutoCloseable
             final int length,
             final Header header)
         {
+            final String message = buffer.getStringWithoutLengthAscii(offset, length);
+            if (message.equals(TestMessages.REGISTER_TIMER))
+            {
+                cluster.scheduleTimer(1, cluster.timeMs() + 1_000);
+            }
+
             while (session.offer(buffer, offset, length) < 0)
             {
                 cluster.idle();

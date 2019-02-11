@@ -608,6 +608,46 @@ public class ClusterTest
         }
     }
 
+    @Test(timeout = 30_000)
+    public void shouldCatchUpAfterFollowerMissesAMessage() throws Exception
+    {
+        shouldCatchUpAfterFollowerMissesAMessageTo(TestMessages.NO_OP);
+    }
+
+    @Test(timeout = 30_000)
+    public void shouldCatchUpAfterFollowerMissesTimerRegistration() throws Exception
+    {
+        shouldCatchUpAfterFollowerMissesAMessageTo(TestMessages.REGISTER_TIMER);
+    }
+
+    private void shouldCatchUpAfterFollowerMissesAMessageTo(final String message) throws InterruptedException
+    {
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        {
+            cluster.awaitLeader();
+
+            TestNode follower = cluster.followers().get(0);
+
+            cluster.stopNode(follower);
+
+            Thread.sleep(1_000);
+
+            cluster.connectClient();
+            cluster.msgBuffer().putStringWithoutLengthAscii(0, message);
+            cluster.sendMessage(message.length());
+            cluster.awaitResponses(1);
+
+            Thread.sleep(1_000);
+
+            follower = cluster.startStaticNode(follower.index(), false);
+
+            Thread.sleep(1_000);
+
+            assertThat(follower.role(), is(Cluster.Role.FOLLOWER));
+            assertThat(follower.electionState(), is((Election.State)null));
+        }
+    }
+
     private int countersOfType(final CountersReader countersReader, final int typeIdToCount)
     {
         final MutableInteger count = new MutableInteger();

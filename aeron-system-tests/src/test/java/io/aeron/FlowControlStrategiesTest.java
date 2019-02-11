@@ -347,7 +347,7 @@ public class FlowControlStrategiesTest
                 }
                 else if (Publication.NOT_CONNECTED == result)
                 {
-                    fail("Publication not connected");
+                    fail("Publication not connected, numMessagesLeftToSend=" + numMessagesLeftToSend);
                 }
             }
 
@@ -365,10 +365,10 @@ public class FlowControlStrategiesTest
                 {
                     if (subscriptionB.isClosed())
                     {
-                        fail("Subscription B is closed");
+                        fail("Subscription B is closed, numFragmentsFromB=" + numFragmentsFromB);
                     }
 
-                    fail("Subscription B not connected");
+                    fail("Subscription B not connected, numFragmentsFromB=" + numFragmentsFromB);
                 }
 
                 numFragmentsFromB += bFragments;

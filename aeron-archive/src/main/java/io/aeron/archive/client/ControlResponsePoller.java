@@ -28,7 +28,10 @@ import org.agrona.DirectBuffer;
  */
 public class ControlResponsePoller implements ControlledFragmentHandler
 {
-    private static final int FRAGMENT_LIMIT = 1;
+    /**
+     * Limit to apply when connecting so messages are not missed.
+     */
+    public static final int CONNECT_FRAGMENT_LIMIT = 1;
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ControlResponseDecoder controlResponseDecoder = new ControlResponseDecoder();
@@ -39,6 +42,7 @@ public class ControlResponsePoller implements ControlledFragmentHandler
     private long correlationId = Aeron.NULL_VALUE;
     private long relevantId = Aeron.NULL_VALUE;
     private int templateId = Aeron.NULL_VALUE;
+    private final int fragmentLimit;
     private ControlResponseCode code;
     private String errorMessage;
     private boolean pollComplete = false;
@@ -47,10 +51,23 @@ public class ControlResponsePoller implements ControlledFragmentHandler
      * Create a poller for a given subscription to an archive for control response messages.
      *
      * @param subscription  to poll for new events.
+     * @param fragmentLimit to apply when polling.
+     */
+    private ControlResponsePoller(final Subscription subscription, final int fragmentLimit)
+    {
+        this.subscription = subscription;
+        this.fragmentLimit = fragmentLimit;
+    }
+
+    /**
+     * Create a poller for a given subscription to an archive for control response messages with a default
+     * fragment limit for polling as {@link #CONNECT_FRAGMENT_LIMIT}.
+     *
+     * @param subscription  to poll for new events.
      */
     public ControlResponsePoller(final Subscription subscription)
     {
-        this.subscription = subscription;
+        this(subscription, CONNECT_FRAGMENT_LIMIT);
     }
 
     /**
@@ -76,7 +93,7 @@ public class ControlResponsePoller implements ControlledFragmentHandler
         templateId = -1;
         pollComplete = false;
 
-        return subscription.controlledPoll(fragmentAssembler, FRAGMENT_LIMIT);
+        return subscription.controlledPoll(fragmentAssembler, fragmentLimit);
     }
 
     /**

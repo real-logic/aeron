@@ -91,6 +91,7 @@ public class ControlResponsePoller implements ControlledFragmentHandler
         correlationId = -1;
         relevantId = -1;
         templateId = -1;
+        errorMessage = null;
         pollComplete = false;
 
         return subscription.controlledPoll(fragmentAssembler, fragmentLimit);

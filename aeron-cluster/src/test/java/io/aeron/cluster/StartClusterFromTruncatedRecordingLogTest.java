@@ -168,18 +168,18 @@ public class StartClusterFromTruncatedRecordingLogTest
         final int followerMemberIdB = (followerMemberIdA + 1) >= MEMBER_COUNT ? 0 : (followerMemberIdA + 1);
 
         takeSnapshot(leaderMemberId);
-        awaitsSnapshotCounter(leaderMemberId, 1);
-        awaitsSnapshotCounter(followerMemberIdA, 1);
-        awaitsSnapshotCounter(followerMemberIdB, 1);
+        awaitSnapshotCounter(leaderMemberId, 1);
+        awaitSnapshotCounter(followerMemberIdA, 1);
+        awaitSnapshotCounter(followerMemberIdB, 1);
 
         awaitNeutralCounter(leaderMemberId);
         awaitNeutralCounter(followerMemberIdA);
         awaitNeutralCounter(followerMemberIdB);
 
         shutdown(leaderMemberId);
-        awaitsSnapshotCounter(leaderMemberId, 2);
-        awaitsSnapshotCounter(followerMemberIdA, 2);
-        awaitsSnapshotCounter(followerMemberIdB, 2);
+        awaitSnapshotCounter(leaderMemberId, 2);
+        awaitSnapshotCounter(followerMemberIdA, 2);
+        awaitSnapshotCounter(followerMemberIdB, 2);
 
         stopNode(leaderMemberId);
         stopNode(followerMemberIdA);
@@ -474,11 +474,6 @@ public class StartClusterFromTruncatedRecordingLogTest
             this.latchTwo = latchTwo;
         }
 
-        int index()
-        {
-            return index;
-        }
-
         int messageCount()
         {
             return messageCount;
@@ -539,15 +534,16 @@ public class StartClusterFromTruncatedRecordingLogTest
     private Cluster.Role roleOf(final int index)
     {
         final ClusteredMediaDriver driver = clusteredMediaDrivers[index];
+
         return Cluster.Role.get((int)driver.consensusModule().context().clusterNodeCounter().get());
     }
 
     private void takeSnapshot(final int index)
     {
         final ClusteredMediaDriver driver = clusteredMediaDrivers[index];
-
         final CountersReader countersReader = driver.consensusModule().context().aeron().countersReader();
         final AtomicCounter controlToggle = ClusterControl.findControlToggle(countersReader);
+
         assertNotNull(controlToggle);
         assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
     }
@@ -564,8 +560,8 @@ public class StartClusterFromTruncatedRecordingLogTest
     private AtomicCounter getControlToggle(final int index)
     {
         final ClusteredMediaDriver driver = clusteredMediaDrivers[index];
-
         final CountersReader countersReader = driver.consensusModule().context().aeron().countersReader();
+
         return ClusterControl.findControlToggle(countersReader);
     }
 
@@ -579,12 +575,12 @@ public class StartClusterFromTruncatedRecordingLogTest
         }
     }
 
-    private void awaitsSnapshotCounter(final int index, final long value)
+    private void awaitSnapshotCounter(final int index, final long value)
     {
         final ClusteredMediaDriver driver = clusteredMediaDrivers[index];
         final Counter snapshotCounter = driver.consensusModule().context().snapshotCounter();
 
-        while (snapshotCounter.getWeak() != value)
+        while (snapshotCounter.get() != value)
         {
             TestUtil.checkInterruptedStatus();
             Thread.yield();

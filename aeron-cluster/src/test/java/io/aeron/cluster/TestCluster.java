@@ -413,7 +413,7 @@ public class TestCluster implements AutoCloseable
     void awaitSnapshotCounter(final TestNode node, final long value)
     {
         final Counter snapshotCounter = node.consensusModule().context().snapshotCounter();
-        while (snapshotCounter.getWeak() != value)
+        while (snapshotCounter.get() != value)
         {
             TestUtil.checkInterruptedStatus();
             Thread.yield();

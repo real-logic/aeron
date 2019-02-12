@@ -609,15 +609,13 @@ public class ClusterTest
             assertTrue(cluster.node(2).service().wasSnapshotTaken());
         }
     }
-
-    @Ignore
+    
     @Test(timeout = 30_000)
     public void shouldCatchUpAfterFollowerMissesOneMessage() throws Exception
     {
         shouldCatchUpAfterFollowerMissesMessage(TestMessages.NO_OP);
     }
 
-    @Ignore
     @Test(timeout = 30_000)
     public void shouldCatchUpAfterFollowerMissesTimerRegistration() throws Exception
     {

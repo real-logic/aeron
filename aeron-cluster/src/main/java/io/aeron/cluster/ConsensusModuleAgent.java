@@ -1422,12 +1422,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             result = true;
         }
 
-        cancelMissedTimers();
-        if (missedTimersSet.capacity() > LongHashSet.DEFAULT_INITIAL_CAPACITY)
-        {
-            missedTimersSet.compact();
-        }
-
         if (!ctx.ingressChannel().contains(ENDPOINT_PARAM_NAME))
         {
             final ChannelUri ingressUri = ChannelUri.parse(ctx.ingressChannel());
@@ -1440,6 +1434,12 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         {
             ingressAdapter.connect(aeron.addSubscription(
                 ctx.ingressChannel(), ctx.ingressStreamId(), null, this::onUnavailableIngressImage));
+        }
+
+        cancelMissedTimers();
+        if (missedTimersSet.capacity() > LongHashSet.DEFAULT_INITIAL_CAPACITY)
+        {
+            missedTimersSet.compact();
         }
 
         return result;
@@ -1487,21 +1487,9 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         if (pollImageAndLogAdapter(subscription, logSessionId))
         {
             final Image image = logAdapter.image();
-            if (logAdapter.poll(stopPosition) == 0)
+            if (logAdapter.poll(stopPosition) == 0 && image.isClosed())
             {
-                if (image.position() == stopPosition)
-                {
-                    while (!missedTimersSet.isEmpty())
-                    {
-                        idle();
-                        cancelMissedTimers();
-                    }
-                }
-
-                if (image.isClosed())
-                {
-                    throw new ClusterException("unexpected close of image when replaying log");
-                }
+                throw new ClusterException("unexpected close of image when replaying log");
             }
 
             final long appendedPosition = this.appendedPosition.get();

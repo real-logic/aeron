@@ -54,15 +54,21 @@ public class TestCluster implements AutoCloseable
     private final MutableInteger newLeaderEvent = new MutableInteger();
     private final EgressListener egressMessageListener = new EgressListener()
     {
-        @Override
-        public void onMessage(final long clusterSessionId, final long timestampMs, final DirectBuffer buffer,
-            final int offset, final int length, final Header header)
+        public void onMessage(
+            final long clusterSessionId,
+            final long timestampMs,
+            final DirectBuffer buffer,
+            final int offset,
+            final int length,
+            final Header header)
         {
             responseCount.value++;
         }
 
-        @Override
-        public void newLeader(final long clusterSessionId, final long leadershipTermId, final int leaderMemberId,
+        public void newLeader(
+            final long clusterSessionId,
+            final long leadershipTermId,
+            final int leaderMemberId,
             final String memberEndpoints)
         {
             newLeaderEvent.value++;

@@ -754,7 +754,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         for (final Iterator<ClusterSession> i = sessionByIdMap.values().iterator(); i.hasNext(); )
         {
             final ClusterSession session = i.next();
-            if (session.openedLogPosition() >= logPosition)
+            if (session.openedLogPosition() > logPosition)
             {
                 i.remove();
                 session.close();

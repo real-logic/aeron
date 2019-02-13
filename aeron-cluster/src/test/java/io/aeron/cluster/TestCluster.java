@@ -23,8 +23,10 @@ import io.aeron.cluster.client.EgressListener;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.MinMulticastFlowControlSupplier;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.logbuffer.Header;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -49,8 +51,23 @@ public class TestCluster implements AutoCloseable
 
     private final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
     private final MutableInteger responseCount = new MutableInteger();
-    private final EgressListener egressMessageListener =
-        (clusterSessionId, timestamp, buffer, offset, length, header) -> responseCount.value++;
+    private final MutableInteger newLeaderEvent = new MutableInteger();
+    private final EgressListener egressMessageListener = new EgressListener()
+    {
+        @Override
+        public void onMessage(final long clusterSessionId, final long timestampMs, final DirectBuffer buffer,
+            final int offset, final int length, final Header header)
+        {
+            responseCount.value++;
+        }
+
+        @Override
+        public void newLeader(final long clusterSessionId, final long leadershipTermId, final int leaderMemberId,
+            final String memberEndpoints)
+        {
+            newLeaderEvent.value++;
+        }
+    };
 
     private final TestNode[] nodes;
     private final String staticClusterMembers;
@@ -326,6 +343,16 @@ public class TestCluster implements AutoCloseable
     void awaitResponses(final int messageCount)
     {
         while (responseCount.get() < messageCount)
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.yield();
+            client.pollEgress();
+        }
+    }
+
+    void awaitLeadershipEvent(final int count)
+    {
+        while (newLeaderEvent.get() < count)
         {
             TestUtil.checkInterruptedStatus();
             Thread.yield();

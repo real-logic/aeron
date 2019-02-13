@@ -61,6 +61,21 @@ public class ClusterTest
     }
 
     @Test(timeout = 30_000)
+    public void clientShouldBeSentNewLeaderEventOnLeaderChange() throws Exception
+    {
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        {
+            final TestNode leader = cluster.awaitLeader();
+
+            cluster.connectClient();
+
+            cluster.stopNode(leader);
+
+            cluster.awaitLeadershipEvent(1);
+        }
+    }
+
+    @Test(timeout = 30_000)
     public void shouldStopLeaderAndFollowersAndRestartAllWithSnapshot() throws Exception
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))

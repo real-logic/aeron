@@ -164,6 +164,7 @@ class Election implements AutoCloseable
         this.ctx = ctx;
         this.consensusModuleAgent = consensusModuleAgent;
         this.random = ctx.random();
+        stateCounter = ctx.aeron().addCounter(ELECTION_STATE_TYPE_ID, "Election State");
     }
 
     public void close()
@@ -232,7 +233,8 @@ class Election implements AutoCloseable
         catch (final Exception ex)
         {
             ctx.countedErrorHandler().onError(ex);
-            state(State.CANVASS, nowMs);
+            logPosition = ctx.commitPositionCounter().get();
+            state(State.INIT, nowMs);
         }
 
         return workCount;
@@ -476,8 +478,6 @@ class Election implements AutoCloseable
 
     private int init(final long nowMs)
     {
-        stateCounter = ctx.aeron().addCounter(ELECTION_STATE_TYPE_ID, "Election State");
-
         if (!isStartup)
         {
             consensusModuleAgent.prepareForNewLeadership(logPosition);

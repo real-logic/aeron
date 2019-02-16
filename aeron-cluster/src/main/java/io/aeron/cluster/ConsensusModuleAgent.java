@@ -1535,7 +1535,15 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         {
             if (member.catchupReplaySessionId() != Aeron.NULL_VALUE)
             {
-                archive.stopReplay(member.catchupReplaySessionId());
+                try
+                {
+                    archive.stopReplay(member.catchupReplaySessionId());
+                }
+                catch (final Exception ex)
+                {
+                    ctx.countedErrorHandler().onError(ex);
+                }
+
                 member.catchupReplaySessionId(Aeron.NULL_VALUE);
             }
         }
@@ -2257,7 +2265,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             this);
 
         election.doWork(nowMs);
-
         serviceProxy.electionStartEvent(commitPosition.getWeak());
     }
 

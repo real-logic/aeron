@@ -110,7 +110,11 @@ namespace BitUtil
     inline int numberOfTrailingZeroes(value_t value) AERON_NOEXCEPT
     {
 #if defined(__GNUC__)
-        assert(value != 0);
+        if (0 == value)
+        {
+            return sizeof(value) * 4;
+        }
+
         return __builtin_ctz(value);
 #elif defined(_MSC_VER)
         unsigned long r;

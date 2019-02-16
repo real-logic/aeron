@@ -71,6 +71,20 @@ matrix:
             - llvm-toolchain-trusty-6.0
       script: cppbuild/cppbuild
 
+    - env: COMPILER=clang++-6.0
+      language: c++
+      compiler: clang
+      os: linux
+      addons:
+        apt:
+          packages:
+            - clang-6.0
+            - libstdc++-7-dev
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-trusty-6.0
+      script: cppbuild/cppbuild --debug-build
+
     - env: COMPILER=g++-6
       language: c++
       compiler: gcc

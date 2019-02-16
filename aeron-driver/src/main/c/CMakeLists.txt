@@ -232,6 +232,7 @@ set(AGENT_SOURCE
     concurrent/aeron_mpsc_rb.c
     concurrent/aeron_atomic.c
     concurrent/aeron_thread.c
+    concurrent/aeron_logbuffer_descriptor.c
     util/aeron_fileutil.c
     util/aeron_dlopen.c
     util/aeron_error.c    
@@ -242,6 +243,7 @@ set(AGENT_HEADERS
     agent/aeron_driver_agent.h
     concurrent/aeron_mpsc_rb.h
     concurrent/aeron_thread.h
+    concurrent/aeron_logbuffer_descriptor.h
     util/aeron_fileutil.h
     util/aeron_error.h
     util/aeron_dlopen.h

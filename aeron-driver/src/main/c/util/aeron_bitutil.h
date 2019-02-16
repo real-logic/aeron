@@ -34,7 +34,11 @@
 inline int aeron_number_of_trailing_zeroes(int32_t value)
 {
 #if defined(__GNUC__)
-    assert(value != 0);
+    if (0 == value)
+    {
+        return 32;
+    }
+
     return __builtin_ctz(value);
 #elif defined(_MSC_VER)
     unsigned long r;
@@ -66,7 +70,11 @@ inline int aeron_number_of_trailing_zeroes(int32_t value)
 inline int aeron_number_of_leading_zeroes(int32_t value)
 {
 #if defined(__GNUC__)
-    assert(value != 0);
+    if (0 == value)
+    {
+        return 32;
+    }
+
     return __builtin_clz(value);
 #elif defined(_MSC_VER)
     unsigned long r;

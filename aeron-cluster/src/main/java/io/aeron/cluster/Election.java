@@ -480,6 +480,7 @@ class Election implements AutoCloseable
     {
         if (!isStartup)
         {
+            cleanupReplay();
             consensusModuleAgent.prepareForNewLeadership(logPosition);
         }
 
@@ -906,7 +907,6 @@ class Election implements AutoCloseable
         if (State.CANVASS == newState)
         {
             consensusModuleAgent.stopAllCatchups();
-            cleanupReplay();
 
             ClusterMember.reset(clusterMembers);
             thisMember.leadershipTermId(leadershipTermId).logPosition(logPosition);

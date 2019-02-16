@@ -74,7 +74,6 @@ class LogReplay implements AutoCloseable
     public void close()
     {
         CloseHelper.close(logSubscription);
-        CloseHelper.close(logAdapter);
     }
 
     int doWork(@SuppressWarnings("unused") final long nowMs)
@@ -111,8 +110,6 @@ class LogReplay implements AutoCloseable
 
                     logSubscription.close();
                     logSubscription = null;
-
-                    logAdapter.close();
                     logAdapter = null;
 
                     state = State.DONE;

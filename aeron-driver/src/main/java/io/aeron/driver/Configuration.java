@@ -19,6 +19,7 @@ import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.Image;
 import io.aeron.Publication;
+import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ConfigurationException;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.SendChannelEndpoint;
@@ -1080,7 +1081,7 @@ public class Configuration
     {
         if (mtuLength > initialWindowLength)
         {
-            throw new IllegalStateException("Initial window length must be >= to MTU length: " + mtuLength);
+            throw new ConfigurationException("initial window length must be >= to MTU length: " + mtuLength);
         }
     }
 
@@ -1168,14 +1169,14 @@ public class Configuration
 
             if (ctx.initialWindowLength() > maxSoRcvBuf)
             {
-                throw new ConfigurationException("Window length greater than socket SO_RCVBUF, increase '" +
+                throw new ConfigurationException("window length greater than socket SO_RCVBUF, increase '" +
                     Configuration.INITIAL_WINDOW_LENGTH_PROP_NAME +
                     "' to match window: windowLength=" + ctx.initialWindowLength() + ", SO_RCVBUF=" + maxSoRcvBuf);
             }
         }
         catch (final IOException ex)
         {
-            throw new RuntimeException("probe socket: " + ex.toString(), ex);
+            throw new AeronException("probe socket: " + ex.toString(), ex);
         }
     }
 
@@ -1190,18 +1191,18 @@ public class Configuration
         if (pageSize < PAGE_MIN_SIZE)
         {
             throw new ConfigurationException(
-                "Page size less than min size of " + PAGE_MIN_SIZE + ": " + pageSize);
+                "page size less than min size of " + PAGE_MIN_SIZE + ": " + pageSize);
         }
 
         if (pageSize > PAGE_MAX_SIZE)
         {
             throw new ConfigurationException(
-                "Page size greater than max size of " + PAGE_MAX_SIZE + ": " + pageSize);
+                "page size greater than max size of " + PAGE_MAX_SIZE + ": " + pageSize);
         }
 
         if (!BitUtil.isPowerOfTwo(pageSize))
         {
-            throw new ConfigurationException("Page size not a power of 2: " + pageSize);
+            throw new ConfigurationException("page size not a power of 2: " + pageSize);
         }
     }
 }

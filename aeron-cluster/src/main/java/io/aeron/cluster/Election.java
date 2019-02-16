@@ -438,7 +438,7 @@ class Election implements AutoCloseable
             this.logLeadershipTermId = leadershipTermId;
             this.logPosition = logPosition;
 
-            if (!ctx.recordingLog().hasTermBeenAppended(leadershipTermId))
+            if (ctx.recordingLog().isUnknown(leadershipTermId))
             {
                 ctx.recordingLog().appendTerm(logRecordingId, leadershipTermId, logPosition, nowMs);
                 ctx.recordingLog().force();
@@ -797,7 +797,7 @@ class Election implements AutoCloseable
         }
 
         consensusModuleAgent.awaitImageAndCreateFollowerLogAdapter(logSubscription, logSessionId);
-        if (!ctx.recordingLog().hasTermBeenAppended(leadershipTermId))
+        if (ctx.recordingLog().isUnknown(leadershipTermId))
         {
             ctx.recordingLog().appendTerm(consensusModuleAgent.logRecordingId(), leadershipTermId, logPosition, nowMs);
             ctx.recordingLog().force();

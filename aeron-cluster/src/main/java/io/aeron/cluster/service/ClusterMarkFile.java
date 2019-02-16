@@ -16,7 +16,6 @@
 package io.aeron.cluster.service;
 
 import io.aeron.Aeron;
-import io.aeron.SemanticVersion;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.codecs.mark.MarkFileHeaderDecoder;

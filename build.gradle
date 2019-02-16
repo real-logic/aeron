@@ -466,10 +466,10 @@ project(':aeron-archive') {
         systemProperties(
             'sbe.output.dir': generatedCppDir,
             'sbe.target.language': 'Cpp',
+            'sbe.target.namespace': 'aeron.archive.client',
             'sbe.validation.xsd': 'src/main/resources/fpl/sbe.xsd',
             'sbe.validation.stop.on.error': 'true')
-        args = ['src/main/resources/aeron-archive-codecs.xml',
-                'src/main/resources/aeron-archive-mark-codecs.xml']
+        args = ['src/main/resources/aeron-archive-codecs.xml']
     }
 
     test {

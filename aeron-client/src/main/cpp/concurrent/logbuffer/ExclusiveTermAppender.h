@@ -170,7 +170,7 @@ public:
     {
         const int numMaxPayloads = length / maxPayloadLength;
         const util::index_t remainingPayload = length % maxPayloadLength;
-        const util::index_t lastFrameLength = (remainingPayload > 0) ?
+        const util::index_t lastFrameLength = remainingPayload > 0 ?
             util::BitUtil::align(remainingPayload + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT) : 0;
         const util::index_t requiredLength =
             (numMaxPayloads * (maxPayloadLength + DataFrameHeader::LENGTH)) + lastFrameLength;

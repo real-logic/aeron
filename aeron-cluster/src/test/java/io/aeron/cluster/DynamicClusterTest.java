@@ -77,7 +77,7 @@ public class DynamicClusterTest
 
             assertThat(dynamicMember.role(), is(Cluster.Role.FOLLOWER));
 
-            cluster.startClient();
+            cluster.connectClient();
             cluster.sendMessages(messageCount);
             cluster.awaitResponses(messageCount);
             cluster.awaitMessageCountForService(leader, messageCount);
@@ -94,7 +94,7 @@ public class DynamicClusterTest
         {
             final TestNode leader = cluster.awaitLeader();
 
-            cluster.startClient();
+            cluster.connectClient();
             cluster.sendMessages(messageCount);
             cluster.awaitResponses(messageCount);
             cluster.awaitMessageCountForService(leader, messageCount);
@@ -136,7 +136,7 @@ public class DynamicClusterTest
         {
             final TestNode leader = cluster.awaitLeader();
 
-            cluster.startClient();
+            cluster.connectClient();
             cluster.sendMessages(messageCount);
             cluster.awaitResponses(messageCount);
 
@@ -167,7 +167,7 @@ public class DynamicClusterTest
         {
             final TestNode leader = cluster.awaitLeader();
 
-            cluster.startClient();
+            cluster.connectClient();
             cluster.sendMessages(preSnapshotMessageCount);
             cluster.awaitResponses(preSnapshotMessageCount);
 

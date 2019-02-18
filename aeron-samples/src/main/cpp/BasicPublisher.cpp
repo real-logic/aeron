@@ -28,7 +28,7 @@ using namespace aeron;
 
 std::atomic<bool> running (true);
 
-void sigIntHandler (int param)
+void sigIntHandler(int param)
 {
     running = false;
 }
@@ -74,12 +74,12 @@ Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
 int main(int argc, char** argv)
 {
     CommandOptionParser cp;
-    cp.addOption(CommandOption (optHelp,     0, 0, "                Displays help information."));
-    cp.addOption(CommandOption (optPrefix,   1, 1, "dir             Prefix directory for aeron driver."));
-    cp.addOption(CommandOption (optChannel,  1, 1, "channel         Channel."));
-    cp.addOption(CommandOption (optStreamId, 1, 1, "streamId        Stream ID."));
-    cp.addOption(CommandOption (optMessages, 1, 1, "number          Number of Messages."));
-    cp.addOption(CommandOption (optLinger,   1, 1, "milliseconds    Linger timeout in milliseconds."));
+    cp.addOption(CommandOption(optHelp,     0, 0, "                Displays help information."));
+    cp.addOption(CommandOption(optPrefix,   1, 1, "dir             Prefix directory for aeron driver."));
+    cp.addOption(CommandOption(optChannel,  1, 1, "channel         Channel."));
+    cp.addOption(CommandOption(optStreamId, 1, 1, "streamId        Stream ID."));
+    cp.addOption(CommandOption(optMessages, 1, 1, "number          Number of Messages."));
+    cp.addOption(CommandOption(optLinger,   1, 1, "milliseconds    Linger timeout in milliseconds."));
 
     signal (SIGINT, sigIntHandler);
 
@@ -91,7 +91,7 @@ int main(int argc, char** argv)
 
         aeron::Context context;
 
-        if (settings.dirPrefix != "")
+        if (!settings.dirPrefix.empty())
         {
             context.aeronDir(settings.dirPrefix);
         }

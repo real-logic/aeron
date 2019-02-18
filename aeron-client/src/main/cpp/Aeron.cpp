@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#define _DISABLE_EXTENDED_ALIGNED_STORAGE
 #include "Aeron.h"
 
 namespace aeron {

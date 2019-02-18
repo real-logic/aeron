@@ -20,7 +20,6 @@
 #include <memory>
 #include <util/Exceptions.h>
 #include <concurrent/AgentRunner.h>
-#include <concurrent/ringbuffer/ManyToOneRingBuffer.h>
 #include <concurrent/broadcast/CopyBroadcastReceiver.h>
 #include <concurrent/CountersReader.h>
 #include <CncFileDescriptor.h>
@@ -28,7 +27,6 @@
 
 namespace aeron {
 
-using namespace aeron::concurrent::ringbuffer;
 using namespace aeron::concurrent::logbuffer;
 using namespace aeron::concurrent::broadcast;
 using namespace aeron::concurrent;
@@ -174,16 +172,6 @@ public:
     /// @cond HIDDEN_SYMBOLS
     this_t& conclude()
     {
-        if (NULL_TIMEOUT == m_mediaDriverTimeout)
-        {
-            m_mediaDriverTimeout = DEFAULT_MEDIA_DRIVER_TIMEOUT_MS;
-        }
-
-        if (NULL_TIMEOUT == m_resourceLingerTimeout)
-        {
-            m_resourceLingerTimeout = DEFAULT_RESOURCE_LINGER_MS;
-        }
-
         if (!m_isOnNewExclusivePublicationHandlerSet)
         {
             m_onNewExclusivePublicationHandler = m_onNewPublicationHandler;
@@ -332,6 +320,19 @@ public:
     }
 
     /**
+     * Get the amount of time, in milliseconds, that this client will wait until it determines the
+     * Media Driver is unavailable. When this happens a
+     * DriverTimeoutException will be generated for the error handler.
+     *
+     * @return value in number of milliseconds.
+     * @see errorHandler
+     */
+    long mediaDriverTimeout() const
+    {
+        return m_mediaDriverTimeout;
+    }
+
+    /**
      * Set the amount of time, in milliseconds, that this client will to linger inactive connections and internal
      * arrays before they are free'd.
      *
@@ -422,8 +423,8 @@ private:
     on_unavailable_image_t m_onUnavailableImageHandler = defaultOnUnavailableImageHandler;
     on_available_counter_t m_onAvailableCounterHandler = defaultOnAvailableCounterHandler;
     on_unavailable_counter_t m_onUnavailableCounterHandler = defaultOnUnavailableCounterHandler;
-    long m_mediaDriverTimeout = NULL_TIMEOUT;
-    long m_resourceLingerTimeout = NULL_TIMEOUT;
+    long m_mediaDriverTimeout = DEFAULT_MEDIA_DRIVER_TIMEOUT_MS;
+    long m_resourceLingerTimeout = DEFAULT_RESOURCE_LINGER_MS;
     bool m_useConductorAgentInvoker = false;
     bool m_isOnNewExclusivePublicationHandlerSet = false;
 };

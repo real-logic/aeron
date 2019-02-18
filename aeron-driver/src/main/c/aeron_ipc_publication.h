@@ -19,6 +19,7 @@
 
 #include "aeron_driver_common.h"
 #include "util/aeron_bitutil.h"
+#include "uri/aeron_uri.h"
 #include "aeron_driver_context.h"
 #include "util/aeron_fileutil.h"
 #include "concurrent/aeron_counters_manager.h"
@@ -80,12 +81,10 @@ int aeron_ipc_publication_create(
     int32_t session_id,
     int32_t stream_id,
     int64_t registration_id,
-    aeron_position_t *pub_lmt_position,
     aeron_position_t *pub_pos_position,
+    aeron_position_t *pub_lmt_position,
     int32_t initial_term_id,
-    size_t term_buffer_length,
-    size_t mtu_length,
-    bool is_sparse,
+    aeron_uri_publication_params_t *params,
     bool is_exclusive,
     aeron_system_counters_t *system_counters);
 

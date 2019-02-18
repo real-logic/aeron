@@ -16,6 +16,7 @@
 
 #include <stdio.h>
 #include <inttypes.h>
+#include "aeron_socket.h"
 #include "aeron_system_counters.h"
 #include "util/aeron_netutil.h"
 #include "util/aeron_error.h"

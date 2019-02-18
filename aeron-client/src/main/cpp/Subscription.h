@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <iostream>
 #include <atomic>
+#include <memory>
 #include <concurrent/logbuffer/TermReader.h>
 #include "concurrent/status/StatusIndicatorReader.h"
 #include "Image.h"
@@ -56,7 +57,7 @@ public:
         std::int32_t streamId,
         std::int32_t channelStatusId);
     /// @endcond
-    virtual ~Subscription();
+    ~Subscription();
 
     /**
      * Media address for delivery to the channel.
@@ -300,7 +301,7 @@ public:
             }
         }
 
-        return (index != -1) ? std::shared_ptr<Image>(new Image(images[index])) : std::shared_ptr<Image>();
+        return index != -1 ? std::make_shared<Image>(images[index]) : std::shared_ptr<Image>();
     }
 
     /**
@@ -311,7 +312,7 @@ public:
      * @param index in the array
      * @return image at given index or exception if out of range.
      */
-    inline Image& imageAtIndex(size_t index) const
+    inline Image& imageAtIndex(size_t index)
     {
         const struct ImageList *imageList = std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
         Image *images = imageList->m_images;
@@ -407,7 +408,6 @@ public:
         newArray[length] = image; // copy-assign
 
         auto newImageList = new struct ImageList(newArray, length + 1);
-
         std::atomic_store_explicit(&m_imageList, newImageList, std::memory_order_release);
 
         return oldImageList;
@@ -442,14 +442,11 @@ public:
                 }
             }
 
-            auto newImageList = new struct ImageList(newArray, length - 1);
-
+            auto newImageList = new struct ImageList(newArray, static_cast<size_t>(length - 1));
             std::atomic_store_explicit(&m_imageList, newImageList, std::memory_order_release);
         }
 
-        return std::pair<struct ImageList *, int>(
-                (-1 != index) ? oldImageList : nullptr,
-                index);
+        return std::pair<struct ImageList *, int>(-1 != index ? oldImageList : nullptr, index);
     }
 
     struct ImageList *removeAndCloseAllImages()

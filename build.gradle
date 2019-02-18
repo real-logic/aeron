@@ -30,9 +30,9 @@ def aeronGroup = 'io.aeron'
 def aeronVersion = file('version.txt').text.trim()
 def aeronJavaVersion = '1.8'
 
-def agronaVersion = '0.9.30'
-def sbeVersion = '1.11.0'
-def byteBuddyVersion = '1.9.3'
+def agronaVersion = '0.9.33'
+def sbeVersion = '1.12.2'
+def byteBuddyVersion = '1.9.7'
 def hdrHistogramVersion = '2.1.11'
 
 group = aeronGroup
@@ -126,17 +126,17 @@ subprojects {
     jar.enabled = true
 
     dependencies {
-        checkstyle 'com.puppycrawl.tools:checkstyle:8.16'
+        checkstyle 'com.puppycrawl.tools:checkstyle:8.17'
 
         compile "org.agrona:agrona:${agronaVersion}"
 
         testCompile 'junit:junit:4.12'
-        testCompile 'org.mockito:mockito-core:2.23.4'
+        testCompile 'org.mockito:mockito-core:2.24.0'
         testCompile 'org.hamcrest:hamcrest-library:1.3'
     }
 
     checkstyle {
-        toolVersion = '8.16'
+        toolVersion = '8.17'
     }
 
     compileJava {
@@ -162,7 +162,7 @@ subprojects {
 
     javadoc {
         title = '<h1>Aeron Message Transport</h1>'
-        options.bottom = '<i>Copyright &#169; 2014-2018 Real Logic Ltd. All Rights Reserved.</i>'
+        options.bottom = '<i>Copyright &#169; 2014-2019 Real Logic Ltd. All Rights Reserved.</i>'
         if (JavaVersion.current().ordinal() >= JavaVersion.VERSION_1_10.ordinal()) {
             options.addBooleanOption 'html5', true
         }
@@ -179,13 +179,6 @@ subprojects {
 
     artifacts {
         tests testJar
-    }
-
-    jar {
-        manifest.attributes(
-            'Implementation-Title': 'Aeron',
-            'Implementation-Version': "${aeronVersion}",
-            'Implementation-Vendor': 'Real Logic Limited')
     }
 
     signing {
@@ -215,6 +208,15 @@ project(':aeron-client') {
                 pom.project(projectPom)
             }
         }
+    }
+
+    jar {
+        manifest.attributes(
+            'Implementation-Title': 'Aeron',
+            'Implementation-Version': "${aeronVersion}",
+            'Implementation-Vendor': 'Real Logic Limited',
+            'Automatic-Module-Name': 'io.aeron.client'
+        )
     }
 
     task sourcesJar(type: Jar) {
@@ -271,6 +273,15 @@ project(':aeron-driver') {
         }
     }
 
+    jar {
+        manifest.attributes(
+            'Implementation-Title': 'Aeron',
+            'Implementation-Version': "${aeronVersion}",
+            'Implementation-Vendor': 'Real Logic Limited',
+            'Automatic-Module-Name': 'io.aeron.driver'
+        )
+    }
+
     task sourcesJar(type: Jar) {
         classifier = 'sources'
         from sourceSets.main.allSource
@@ -309,10 +320,15 @@ project(':aeron-agent') {
 
     jar {
         manifest.attributes(
+            'Implementation-Title': 'Aeron',
+            'Implementation-Version': "${aeronVersion}",
+            'Implementation-Vendor': 'Real Logic Limited',
             "Premain-Class": "io.aeron.agent.EventLogAgent",
             "Agent-Class": "io.aeron.agent.EventLogAgent",
             "Can-Redefine-Classes": "true",
-            "Can-Retransform-Classes": "true")
+            "Can-Retransform-Classes": "true",
+            'Automatic-Module-Name': 'io.aeron.agent'
+        )
     }
 
     shadowJar {
@@ -321,6 +337,17 @@ project(':aeron-agent') {
             exclude(project(':aeron-driver'))
             exclude(dependency('org.agrona:agrona'))
         }
+
+        manifest.attributes(
+            'Implementation-Title': 'Aeron',
+            'Implementation-Version': "${aeronVersion}",
+            'Implementation-Vendor': 'Real Logic Limited',
+            "Premain-Class": "io.aeron.agent.EventLogAgent",
+            "Agent-Class": "io.aeron.agent.EventLogAgent",
+            "Can-Redefine-Classes": "true",
+            "Can-Retransform-Classes": "true",
+            'Automatic-Module-Name': 'io.aeron.agent.all'
+        )
     }
 
     javadoc {
@@ -432,6 +459,19 @@ project(':aeron-archive') {
                 'src/main/resources/aeron-archive-mark-codecs.xml']
     }
 
+    def generatedCppDir = file(System.properties['codec.target.dir'] ?: "${rootDir}/cppbuild/Release/generated")
+    task generateCppCodecs(type: JavaExec) {
+        main = 'uk.co.real_logic.sbe.SbeTool'
+        classpath = configurations.codecGeneration
+        systemProperties(
+            'sbe.output.dir': generatedCppDir,
+            'sbe.target.language': 'Cpp',
+            'sbe.target.namespace': 'aeron.archive.client',
+            'sbe.validation.xsd': 'src/main/resources/fpl/sbe.xsd',
+            'sbe.validation.stop.on.error': 'true')
+        args = ['src/main/resources/aeron-archive-codecs.xml']
+    }
+
     test {
         systemProperties(
             'aeron.shared.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
@@ -458,6 +498,13 @@ project(':aeron-archive') {
         from("${buildDir}/classes/java/generated") {
             include '**/*.class'
         }
+
+        manifest.attributes(
+            'Implementation-Title': 'Aeron',
+            'Implementation-Version': "${aeronVersion}",
+            'Implementation-Vendor': 'Real Logic Limited',
+            'Automatic-Module-Name': 'io.aeron.archive'
+        )
     }
 
     uploadArchives {
@@ -568,6 +615,13 @@ project(':aeron-cluster') {
         from("${buildDir}/classes/java/generated") {
             include '**/*.class'
         }
+
+        manifest.attributes(
+            'Implementation-Title': 'Aeron',
+            'Implementation-Version': "${aeronVersion}",
+            'Implementation-Vendor': 'Real Logic Limited',
+            'Automatic-Module-Name': 'io.aeron.cluster'
+        )
     }
 
     uploadArchives {
@@ -619,6 +673,12 @@ project(':aeron-samples') {
 
     shadowJar {
         archiveName = 'samples.jar'
+        manifest.attributes(
+            'Implementation-Title': 'Aeron',
+            'Implementation-Version': "${aeronVersion}",
+            'Implementation-Vendor': 'Real Logic Limited',
+            'Automatic-Module-Name': 'io.aeron.samples'
+        )
     }
 
     uploadArchives {
@@ -728,9 +788,8 @@ project(':aeron-all') {
         compile project(':aeron-driver')
         compile project(':aeron-archive')
         compile project(':aeron-cluster')
+        compile project(':aeron-agent')
         compile project(':aeron-samples')
-        compile "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
-        compile "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
     }
 
     javadoc {
@@ -748,7 +807,9 @@ project(':aeron-all') {
         manifest.attributes(
             'Implementation-Title': 'Aeron',
             'Implementation-Version': "${aeronVersion}",
-            'Implementation-Vendor': 'Real Logic Limited')
+            'Implementation-Vendor': 'Real Logic Limited',
+            'Automatic-Module-Name': 'io.aeron.all'
+        )
     }
 
     uploadArchives {
@@ -812,6 +873,7 @@ project(':aeron-all') {
     shadowJar {
         classifier = ''
         relocate 'org.HdrHistogram', 'io.aeron.shadow.org.HdrHistogram'
+        relocate 'net.bytebuddy', 'io.aeron.shadow.net.bytebuddy'
     }
 
     artifacts {

@@ -52,7 +52,7 @@ public class MultiNodeTest
             assertThat(leader.index(), is(appointedLeaderIndex));
             assertThat(leader.role(), is(Cluster.Role.LEADER));
 
-            cluster.startClient();
+            cluster.connectClient();
             cluster.sendMessages(messageCount);
             cluster.awaitResponses(messageCount);
             cluster.awaitMessageCountForService(leader, messageCount);
@@ -82,7 +82,7 @@ public class MultiNodeTest
             assertThat(leader.index(), is(appointedLeaderIndex));
             assertThat(leader.role(), is(Cluster.Role.LEADER));
 
-            cluster.startClient();
+            cluster.connectClient();
             cluster.sendMessages(preCatchupMessageCount);
             cluster.awaitResponses(preCatchupMessageCount);
             cluster.awaitMessageCountForService(leader, preCatchupMessageCount);

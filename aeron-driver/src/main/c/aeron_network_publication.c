@@ -21,7 +21,7 @@
 
 #include <errno.h>
 #include <string.h>
-#include <sys/socket.h>
+#include "aeron_socket.h"
 #include <inttypes.h>
 #include "concurrent/aeron_term_scanner.h"
 #include "util/aeron_netutil.h"
@@ -48,15 +48,12 @@ int aeron_network_publication_create(
     int32_t session_id,
     int32_t stream_id,
     int32_t initial_term_id,
-    size_t mtu_length,
-    aeron_position_t *pub_lmt_position,
     aeron_position_t *pub_pos_position,
+    aeron_position_t *pub_lmt_position,
     aeron_position_t *snd_pos_position,
     aeron_position_t *snd_lmt_position,
     aeron_flow_control_strategy_t *flow_control_strategy,
-    uint64_t linger_timeout_ns,
-    size_t term_buffer_length,
-    bool is_sparse,
+    aeron_uri_publication_params_t *params,
     bool is_exclusive,
     bool spies_simulate_connection,
     aeron_system_counters_t *system_counters)
@@ -73,7 +70,7 @@ int aeron_network_publication_create(
 
     aeron_network_publication_t *_pub = NULL;
     const uint64_t usable_fs_space = context->usable_fs_space_func(context->aeron_dir);
-    const uint64_t log_length = aeron_logbuffer_compute_log_length(term_buffer_length, context->file_page_size);
+    const uint64_t log_length = aeron_logbuffer_compute_log_length(params->term_length, context->file_page_size);
     const int64_t now_ns = context->nano_clock();
 
     *publication = NULL;
@@ -112,7 +109,7 @@ int aeron_network_publication_create(
     }
 
     if (context->map_raw_log_func(
-        &_pub->mapped_raw_log, path, is_sparse, term_buffer_length, context->file_page_size) < 0)
+        &_pub->mapped_raw_log, path, params->is_sparse, params->term_length, context->file_page_size) < 0)
     {
         aeron_free(_pub->log_file_name);
         aeron_free(_pub);
@@ -126,17 +123,39 @@ int aeron_network_publication_create(
     _pub->log_file_name_length = (size_t)path_length;
     _pub->log_meta_data = (aeron_logbuffer_metadata_t *)(_pub->mapped_raw_log.log_meta_data.addr);
 
-    _pub->log_meta_data->term_tail_counters[0] = (int64_t)initial_term_id << 32;
-    for (int i = 1; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
+    if (params->is_replay)
     {
-        const int64_t expected_term_id = (initial_term_id + i) - AERON_LOGBUFFER_PARTITION_COUNT;
-        _pub->log_meta_data->term_tail_counters[i] = expected_term_id << 32;
+        int64_t term_id = params->term_id;
+        int32_t term_count = (int32_t)term_id - initial_term_id;
+        size_t active_index = aeron_logbuffer_index_by_term_count(term_count);
+
+        _pub->log_meta_data->term_tail_counters[active_index] =
+            (term_id * ((int64_t)1 << 32)) | params->term_offset;
+        
+        for (int i = 1; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
+        {
+            int64_t expected_term_id = (term_id + i) - AERON_LOGBUFFER_PARTITION_COUNT;
+            active_index = (active_index + 1) % AERON_LOGBUFFER_PARTITION_COUNT;
+            _pub->log_meta_data->term_tail_counters[active_index] = expected_term_id * ((int64_t)1 << 32);
+        }
+
+        _pub->log_meta_data->active_term_count = term_count;
+    }
+    else
+    {
+        _pub->log_meta_data->term_tail_counters[0] = initial_term_id * ((int64_t)1 << 32);
+        for (int i = 1; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
+        {
+            int64_t expected_term_id = (initial_term_id + i) - AERON_LOGBUFFER_PARTITION_COUNT;
+            _pub->log_meta_data->term_tail_counters[i] = expected_term_id * ((int64_t)1 << 32);
+        }
+
+        _pub->log_meta_data->active_term_count = 0;
     }
 
-    _pub->log_meta_data->active_term_count = 0;
     _pub->log_meta_data->initial_term_id = initial_term_id;
-    _pub->log_meta_data->mtu_length = (int32_t)mtu_length;
-    _pub->log_meta_data->term_length = (int32_t)term_buffer_length;
+    _pub->log_meta_data->mtu_length = (int32_t)params->mtu_length;
+    _pub->log_meta_data->term_length = (int32_t)params->term_length;
     _pub->log_meta_data->page_size = (int32_t)context->file_page_size;
     _pub->log_meta_data->correlation_id = registration_id;
     _pub->log_meta_data->is_connected = 0;
@@ -174,11 +193,11 @@ int aeron_network_publication_create(
     _pub->snd_lmt_position.counter_id = snd_lmt_position->counter_id;
     _pub->snd_lmt_position.value_addr = snd_lmt_position->value_addr;
     _pub->initial_term_id = initial_term_id;
-    _pub->term_length_mask = (int32_t)term_buffer_length - 1;
-    _pub->position_bits_to_shift = (size_t)aeron_number_of_trailing_zeroes((int32_t)term_buffer_length);
-    _pub->mtu_length = mtu_length;
-    _pub->term_window_length = (int64_t)aeron_network_publication_term_window_length(context, term_buffer_length);
-    _pub->linger_timeout_ns = (int64_t)linger_timeout_ns;
+    _pub->term_length_mask = (int32_t)params->term_length - 1;
+    _pub->position_bits_to_shift = (size_t)aeron_number_of_trailing_zeroes((int32_t)params->term_length);
+    _pub->mtu_length = params->mtu_length;
+    _pub->term_window_length = (int64_t)aeron_network_publication_term_window_length(context, params->term_length);
+    _pub->linger_timeout_ns = (int64_t)params->linger_timeout_ns;
     _pub->unblock_timeout_ns = (int64_t)context->publication_unblock_timeout_ns;
     _pub->connection_timeout_ns = (int64_t)context->publication_connection_timeout_ns;
     _pub->time_of_last_send_or_heartbeat_ns = now_ns - AERON_NETWORK_PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
@@ -215,8 +234,8 @@ void aeron_network_publication_close(
     {
         aeron_subscribable_t *subscribable = &publication->conductor_fields.subscribable;
 
-        aeron_counters_manager_free(counters_manager, (int32_t)publication->pub_lmt_position.counter_id);
         aeron_counters_manager_free(counters_manager, (int32_t)publication->pub_pos_position.counter_id);
+        aeron_counters_manager_free(counters_manager, (int32_t)publication->pub_lmt_position.counter_id);
         aeron_counters_manager_free(counters_manager, (int32_t)publication->snd_pos_position.counter_id);
         aeron_counters_manager_free(counters_manager, (int32_t)publication->snd_lmt_position.counter_id);
 

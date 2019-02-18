@@ -45,7 +45,7 @@ public class SingleNodeTest
             assertThat(leader.index(), is(0));
             assertThat(leader.role(), is(Cluster.Role.LEADER));
 
-            cluster.startClient();
+            cluster.connectClient();
             cluster.sendMessages(10);
             cluster.awaitResponses(10);
             cluster.awaitMessageCountForService(leader, 10);
@@ -59,7 +59,7 @@ public class SingleNodeTest
         {
             final TestNode leader = cluster.awaitLeader();
 
-            cluster.startClient();
+            cluster.connectClient();
             cluster.sendMessages(10);
             cluster.awaitResponses(10);
             cluster.awaitMessageCountForService(leader, 10);

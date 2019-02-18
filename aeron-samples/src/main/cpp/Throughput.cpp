@@ -32,9 +32,9 @@
 using namespace aeron::util;
 using namespace aeron;
 
-std::atomic<bool> running (true);
+std::atomic<bool> running(true);
 
-void sigIntHandler (int param)
+void sigIntHandler(int param)
 {
     running = false;
 }
@@ -80,6 +80,7 @@ Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
     s.lingerTimeoutMs = cp.getOption(optLinger).getParamAsInt(0, 0, 60 * 60 * 1000, s.lingerTimeoutMs);
     s.fragmentCountLimit = cp.getOption(optFrags).getParamAsInt(0, 1, INT32_MAX, s.fragmentCountLimit);
     s.progress = cp.getOption(optProgress).isPresent();
+
     return s;
 }
 
@@ -108,15 +109,15 @@ inline bool isRunning()
 int main(int argc, char **argv)
 {
     CommandOptionParser cp;
-    cp.addOption(CommandOption (optHelp,     0, 0, "                Displays help information."));
-    cp.addOption(CommandOption (optProgress, 0, 0, "                Print rate progress while sending."));
-    cp.addOption(CommandOption (optPrefix,   1, 1, "dir             Prefix directory for aeron driver."));
-    cp.addOption(CommandOption (optChannel,  1, 1, "channel         Channel."));
-    cp.addOption(CommandOption (optStreamId, 1, 1, "streamId        Stream ID."));
-    cp.addOption(CommandOption (optMessages, 1, 1, "number          Number of Messages."));
-    cp.addOption(CommandOption (optLength,   1, 1, "length          Length of Messages."));
-    cp.addOption(CommandOption (optLinger,   1, 1, "milliseconds    Linger timeout in milliseconds."));
-    cp.addOption(CommandOption (optFrags,    1, 1, "limit           Fragment Count Limit."));
+    cp.addOption(CommandOption(optHelp,     0, 0, "                Displays help information."));
+    cp.addOption(CommandOption(optProgress, 0, 0, "                Print rate progress while sending."));
+    cp.addOption(CommandOption(optPrefix,   1, 1, "dir             Prefix directory for aeron driver."));
+    cp.addOption(CommandOption(optChannel,  1, 1, "channel         Channel."));
+    cp.addOption(CommandOption(optStreamId, 1, 1, "streamId        Stream ID."));
+    cp.addOption(CommandOption(optMessages, 1, 1, "number          Number of Messages."));
+    cp.addOption(CommandOption(optLength,   1, 1, "length          Length of Messages."));
+    cp.addOption(CommandOption(optLinger,   1, 1, "milliseconds    Linger timeout in milliseconds."));
+    cp.addOption(CommandOption(optFrags,    1, 1, "limit           Fragment Count Limit."));
 
     signal (SIGINT, sigIntHandler);
 
@@ -133,7 +134,7 @@ int main(int argc, char **argv)
 
         aeron::Context context;
 
-        if (settings.dirPrefix != "")
+        if (!settings.dirPrefix.empty())
         {
             context.aeronDir(settings.dirPrefix);
         }

@@ -17,6 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.ControlledFragmentAssembler;
 import io.aeron.Subscription;
+import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
@@ -58,8 +59,14 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
     public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
-        final int templateId = messageHeaderDecoder.templateId();
 
+        final int schemaId = messageHeaderDecoder.sbeSchemaId();
+        if (schemaId != MessageHeaderDecoder.SCHEMA_ID)
+        {
+            throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
+        }
+
+        final int templateId = messageHeaderDecoder.templateId();
         if (templateId == IngressMessageHeaderDecoder.TEMPLATE_ID)
         {
             ingressMessageHeaderDecoder.wrap(

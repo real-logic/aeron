@@ -15,6 +15,7 @@
  */
 package io.aeron.archive;
 
+import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.*;
 import io.aeron.logbuffer.*;
 import org.agrona.DirectBuffer;
@@ -54,8 +55,14 @@ class ControlRequestAdapter implements FragmentHandler
     public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         headerDecoder.wrap(buffer, offset);
-        final int templateId = headerDecoder.templateId();
 
+        final int schemaId = headerDecoder.sbeSchemaId();
+        if (schemaId != MessageHeaderDecoder.SCHEMA_ID)
+        {
+            throw new ArchiveException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
+        }
+
+        final int templateId = headerDecoder.templateId();
         switch (templateId)
         {
             case ConnectRequestDecoder.TEMPLATE_ID:
@@ -305,9 +312,6 @@ class ControlRequestAdapter implements FragmentHandler
                     bytes);
                 break;
             }
-
-            default:
-                throw new IllegalArgumentException("unexpected template id:" + templateId);
         }
     }
 }

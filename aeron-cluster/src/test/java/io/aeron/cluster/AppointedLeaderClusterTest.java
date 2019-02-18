@@ -33,7 +33,7 @@ public class AppointedLeaderClusterTest
         {
             cluster.awaitLeader();
 
-            cluster.startClient();
+            cluster.connectClient();
             assertTrue(cluster.client().sendKeepAlive());
         }
     }
@@ -51,7 +51,7 @@ public class AppointedLeaderClusterTest
             assertThat(leader.index(), is(appointedLeaderIndex));
             assertThat(leader.role(), is(Cluster.Role.LEADER));
 
-            cluster.startClient();
+            cluster.connectClient();
             cluster.sendMessages(messageCount);
             cluster.awaitResponses(messageCount);
             cluster.awaitMessageCountForService(leader, messageCount);

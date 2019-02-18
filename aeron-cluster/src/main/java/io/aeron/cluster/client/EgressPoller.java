@@ -179,6 +179,12 @@ public class EgressPoller implements ControlledFragmentHandler
     {
         messageHeaderDecoder.wrap(buffer, offset);
 
+        final int schemaId = messageHeaderDecoder.sbeSchemaId();
+        if (schemaId != MessageHeaderDecoder.SCHEMA_ID)
+        {
+            throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
+        }
+
         templateId = messageHeaderDecoder.templateId();
         switch (templateId)
         {
@@ -195,6 +201,7 @@ public class EgressPoller implements ControlledFragmentHandler
                 leaderMemberId = sessionEventDecoder.leaderMemberId();
                 eventCode = sessionEventDecoder.code();
                 detail = sessionEventDecoder.detail();
+                pollComplete = true;
                 break;
 
             case NewLeaderEventDecoder.TEMPLATE_ID:
@@ -208,6 +215,7 @@ public class EgressPoller implements ControlledFragmentHandler
                 leadershipTermId = newLeaderEventDecoder.leadershipTermId();
                 leaderMemberId = newLeaderEventDecoder.leaderMemberId();
                 detail = newLeaderEventDecoder.memberEndpoints();
+                pollComplete = true;
                 break;
 
             case EgressMessageHeaderDecoder.TEMPLATE_ID:
@@ -219,6 +227,7 @@ public class EgressPoller implements ControlledFragmentHandler
 
                 leadershipTermId = egressMessageHeaderDecoder.leadershipTermId();
                 clusterSessionId = egressMessageHeaderDecoder.clusterSessionId();
+                pollComplete = true;
                 break;
 
             case ChallengeDecoder.TEMPLATE_ID:
@@ -233,13 +242,9 @@ public class EgressPoller implements ControlledFragmentHandler
 
                 clusterSessionId = challengeDecoder.clusterSessionId();
                 correlationId = challengeDecoder.correlationId();
+                pollComplete = true;
                 break;
-
-            default:
-                throw new ClusterException("unknown templateId: " + templateId);
         }
-
-        pollComplete = true;
 
         return ControlledFragmentAssembler.Action.BREAK;
     }

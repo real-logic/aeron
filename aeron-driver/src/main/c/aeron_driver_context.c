@@ -23,9 +23,15 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <ftw.h>
 #include <fcntl.h>
+
+#include "util/aeron_platform.h"
+#if  defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
+#include <io.h>
+#else
 #include <unistd.h>
+#endif
+
 #include <inttypes.h>
 #include <errno.h>
 #include <math.h>
@@ -37,6 +43,7 @@
 
 #endif
 
+#include "aeron_windows.h"
 #include "util/aeron_error.h"
 #include "protocol/aeron_udp_protocol.h"
 #include "util/aeron_parse_util.h"
@@ -48,17 +55,22 @@
 #include "aeron_agent.h"
 #include "concurrent/aeron_counters_manager.h"
 
+#if defined(__clang__)
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wunused-function"
+#endif
+
 inline static const char *tmp_dir()
 {
 #if defined(_MSC_VER)
-    static char buff[MAX_PATH+1];
+    static char buff[MAX_PATH + 1];
 
     if (GetTempPath(MAX_PATH, &buff[0]) > 0)
     {
-        dir = buff;
+        return buff;
     }
 
-    return buff;
+    return NULL;
 #else
     const char *dir = "/tmp";
 
@@ -79,6 +91,10 @@ inline static bool has_file_separator_at_end(const char *path)
     return path[strlen(path) - 1] == '/';
 #endif
 }
+
+#if defined(__clang__)
+    #pragma clang diagnostic pop
+#endif
 
 inline static const char *username()
 {
@@ -148,7 +164,6 @@ uint64_t aeron_config_parse_uint64(const char *name, const char *str, uint64_t d
 
     return result;
 }
-
 
 uint64_t aeron_config_parse_size64(const char *name, const char *str, uint64_t def, uint64_t min, uint64_t max)
 {
@@ -667,22 +682,6 @@ int aeron_driver_context_validate_mtu_length(uint64_t mtu_length)
     return 0;
 }
 
-static int unlink_func(const char *path, const struct stat *sb, int type_flag, struct FTW *ftw)
-{
-    if (remove(path) != 0)
-    {
-        int errcode = errno;
-        aeron_set_err(errcode, "could not remove %s: %s", path, strerror(errcode));
-    }
-
-    return 0;
-}
-
-int aeron_dir_delete(const char *dirname)
-{
-    return nftw(dirname, unlink_func, 64, FTW_DEPTH | FTW_PHYS);
-}
-
 bool aeron_is_driver_active_with_cnc(
     aeron_mapped_file_t *cnc_mmap, int64_t timeout, int64_t now, aeron_log_func_t log_func)
 {
@@ -698,7 +697,7 @@ bool aeron_is_driver_active_with_cnc(
             return false;
         }
 
-        usleep(1000);
+        aeron_micro_sleep(1000);
     }
 
     if (AERON_CNC_VERSION != cnc_version)
@@ -724,7 +723,7 @@ bool aeron_is_driver_active_with_cnc(
             int64_t timestamp = aeron_mpsc_rb_consumer_heartbeat_time_value(&rb);
             int64_t diff = now - timestamp;
 
-            snprintf(buffer, sizeof(buffer) - 1, "INFO: Aeron toDriver consumer heartbeat is %" PRId64 " ms old", diff);
+            snprintf(buffer, sizeof(buffer) - 1, "INFO: Aeron driver heartbeat is %" PRId64 " ms old", diff);
             log_func(buffer);
 
             if (diff <= timeout)
@@ -739,11 +738,10 @@ bool aeron_is_driver_active_with_cnc(
 
 bool aeron_is_driver_active(const char *dirname, int64_t timeout, int64_t now, aeron_log_func_t log_func)
 {
-    struct stat sb;
     char buffer[AERON_MAX_PATH];
     bool result = false;
 
-    if (stat(dirname, &sb) == 0 && S_ISDIR(sb.st_mode))
+    if (aeron_is_directory(dirname))
     {
         aeron_mapped_file_t cnc_map = { NULL, 0 };
 

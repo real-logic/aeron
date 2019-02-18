@@ -1968,7 +1968,7 @@ public class AeronArchive implements AutoCloseable
 
             if (1 == step)
             {
-                connectCorrelationId = ctx.aeron.nextCorrelationId();
+                connectCorrelationId = ctx.aeron().nextCorrelationId();
 
                 step = 2;
             }

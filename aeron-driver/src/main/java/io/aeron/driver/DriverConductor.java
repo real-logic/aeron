@@ -1318,13 +1318,13 @@ public class DriverConductor implements Agent
     private Position linkSpy(final NetworkPublication publication, final SubscriptionLink subscription)
     {
         final long joinPosition = publication.consumerPosition();
-        final long subscriberRegistrationId = subscription.registrationId();
+        final long subscriptionRegistrationId = subscription.registrationId();
         final int streamId = publication.streamId();
         final int sessionId = publication.sessionId();
         final String channel = subscription.channel();
 
         final Position position = SubscriberPos.allocate(
-            tempBuffer, countersManager, subscriberRegistrationId, sessionId, streamId, channel, joinPosition);
+            tempBuffer, countersManager, subscriptionRegistrationId, sessionId, streamId, channel, joinPosition);
 
         position.setOrdered(joinPosition);
         publication.addSubscriber(position);

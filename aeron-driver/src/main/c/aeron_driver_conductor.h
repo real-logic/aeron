@@ -687,12 +687,6 @@ inline aeron_publication_image_t * aeron_driver_conductor_find_publication_image
     return NULL;
 }
 
-inline int64_t * aeron_driver_conductor_system_counter_addr(
-    aeron_driver_conductor_t *conductor, aeron_system_counter_enum_t type)
-{
-    return aeron_system_counter_addr(&conductor->system_counters, type);
-}
-
 inline void aeron_driver_init_subscription_channel(
     int32_t uri_length, const char *uri, aeron_subscription_link_t *link)
 {

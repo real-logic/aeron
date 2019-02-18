@@ -36,7 +36,7 @@ using namespace std::chrono;
 
 std::atomic<bool> running (true);
 
-void sigIntHandler (int param)
+void sigIntHandler(int param)
 {
     running = false;
 }
@@ -48,7 +48,7 @@ static const char optPeriod = 'u';
 struct Settings
 {
     std::string basePath = Context::defaultAeronPath();
-    int updateIntervalms = 1000;
+    int updateIntervalMs = 1000;
 };
 
 Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
@@ -63,7 +63,7 @@ Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
     Settings s;
 
     s.basePath = cp.getOption(optPath).getParam(0, s.basePath);
-    s.updateIntervalms = cp.getOption(optPeriod).getParamAsInt(0, 1, 1000000, s.updateIntervalms);
+    s.updateIntervalMs = cp.getOption(optPeriod).getParamAsInt(0, 1, 1000000, s.updateIntervalMs);
 
     return s;
 }
@@ -71,9 +71,9 @@ Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
 int main (int argc, char** argv)
 {
     CommandOptionParser cp;
-    cp.addOption(CommandOption (optHelp,   0, 0, "                Displays help information."));
-    cp.addOption(CommandOption (optPath,   1, 1, "basePath        Base Path to shared memory. Default: " + Context::defaultAeronPath()));
-    cp.addOption(CommandOption (optPeriod, 1, 1, "update period   Update period in millseconds. Default: 1000ms"));
+    cp.addOption(CommandOption(optHelp,   0, 0, "                Displays help information."));
+    cp.addOption(CommandOption(optPath,   1, 1, "basePath        Base Path to shared memory. Default: " + Context::defaultAeronPath()));
+    cp.addOption(CommandOption(optPeriod, 1, 1, "update period   Update period in milliseconds. Default: 1000ms"));
 
     signal (SIGINT, sigIntHandler);
 
@@ -81,8 +81,8 @@ int main (int argc, char** argv)
     {
         Settings settings = parseCmdLine(cp, argc, argv);
 
-        MemoryMappedFile::ptr_t cncFile =
-            MemoryMappedFile::mapExisting((settings.basePath + "/" + CncFileDescriptor::CNC_FILE).c_str());
+        MemoryMappedFile::ptr_t cncFile = MemoryMappedFile::mapExisting(
+            (settings.basePath + "/" + CncFileDescriptor::CNC_FILE).c_str());
 
         const std::int32_t cncVersion = CncFileDescriptor::cncVersionVolatile(cncFile);
 
@@ -122,7 +122,7 @@ int main (int argc, char** argv)
                 std::printf("%3d: %20s - %s\n", counterId, toStringWithCommas(value).c_str(), l.c_str());
             });
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(settings.updateIntervalms));
+            std::this_thread::sleep_for(std::chrono::milliseconds(settings.updateIntervalMs));
         }
 
         std::cout << "Exiting..." << std::endl;

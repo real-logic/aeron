@@ -61,6 +61,12 @@ public class EgressAdapter implements FragmentHandler
     {
         messageHeaderDecoder.wrap(buffer, offset);
 
+        final int schemaId = messageHeaderDecoder.sbeSchemaId();
+        if (schemaId != MessageHeaderDecoder.SCHEMA_ID)
+        {
+            throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
+        }
+
         final int templateId = messageHeaderDecoder.templateId();
         if (EgressMessageHeaderDecoder.TEMPLATE_ID == templateId)
         {
@@ -128,12 +134,6 @@ public class EgressAdapter implements FragmentHandler
                 }
                 break;
             }
-
-            case ChallengeDecoder.TEMPLATE_ID:
-                break;
-
-            default:
-                throw new ClusterException("unknown templateId: " + templateId);
         }
     }
 }

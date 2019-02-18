@@ -30,4 +30,8 @@ int aeron_errcode();
 const char *aeron_errmsg();
 void aeron_set_err(int errcode, const char *format, ...);
 
+#ifdef _MSC_VER
+void aeron_set_windows_error();
+#endif
+
 #endif //AERON_ERROR_H

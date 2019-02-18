@@ -102,6 +102,12 @@ public class ControlResponseAdapter implements FragmentHandler
     {
         messageHeaderDecoder.wrap(buffer, offset);
 
+        final int schemaId = messageHeaderDecoder.sbeSchemaId();
+        if (schemaId != MessageHeaderDecoder.SCHEMA_ID)
+        {
+            throw new ArchiveException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
+        }
+
         final int templateId = messageHeaderDecoder.templateId();
         switch (templateId)
         {
@@ -112,9 +118,6 @@ public class ControlResponseAdapter implements FragmentHandler
             case RecordingDescriptorDecoder.TEMPLATE_ID:
                 handleRecordingDescriptor(listener, buffer, offset);
                 break;
-
-            default:
-                throw new ArchiveException("unknown templateId: " + templateId);
         }
     }
 

@@ -19,11 +19,11 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include <pthread.h>
 #include <stdbool.h>
 #include <aeron_alloc.h>
 #include "aeronmd.h"
 #include "util/aeron_bitutil.h"
+#include "concurrent/aeron_thread.h"
 #include "concurrent/aeron_atomic.h"
 
 #pragma pack(push)
@@ -68,7 +68,7 @@ typedef struct aeron_distinct_error_log_stct
     aeron_clock_func_t clock;
     aeron_resource_linger_func_t linger_resource;
     void *linger_resource_clientd;
-    pthread_mutex_t mutex;
+    AERON_MUTEX mutex;
 }
 aeron_distinct_error_log_t;
 

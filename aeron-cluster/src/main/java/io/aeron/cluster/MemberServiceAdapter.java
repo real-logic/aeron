@@ -16,6 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.Subscription;
+import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
@@ -56,28 +57,26 @@ class MemberServiceAdapter implements FragmentHandler, AutoCloseable
     {
         messageHeaderDecoder.wrap(buffer, offset);
 
-        final int templateId = messageHeaderDecoder.templateId();
-
-        switch (templateId)
+        final int schemaId = messageHeaderDecoder.sbeSchemaId();
+        if (schemaId != MessageHeaderDecoder.SCHEMA_ID)
         {
-            case JoinLogDecoder.TEMPLATE_ID:
-            case ServiceTerminationPositionDecoder.TEMPLATE_ID:
-            case ElectionStartEventDecoder.TEMPLATE_ID:
-                break;
+            throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
+        }
 
-            case ClusterMembersResponseDecoder.TEMPLATE_ID:
-                clusterMembersResponseDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
+        final int templateId = messageHeaderDecoder.templateId();
+        if (templateId == ClusterMembersResponseDecoder.TEMPLATE_ID)
+        {
+            clusterMembersResponseDecoder.wrap(
+                buffer,
+                offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                messageHeaderDecoder.blockLength(),
+                messageHeaderDecoder.version());
 
-                handler.onClusterMembersResponse(
-                    clusterMembersResponseDecoder.correlationId(),
-                    clusterMembersResponseDecoder.leaderMemberId(),
-                    clusterMembersResponseDecoder.activeMembers(),
-                    clusterMembersResponseDecoder.passiveFollowers());
-                break;
+            handler.onClusterMembersResponse(
+                clusterMembersResponseDecoder.correlationId(),
+                clusterMembersResponseDecoder.leaderMemberId(),
+                clusterMembersResponseDecoder.activeMembers(),
+                clusterMembersResponseDecoder.passiveFollowers());
         }
     }
 }

@@ -102,7 +102,6 @@ public class EventLogAgent
         }
     };
 
-    @SuppressWarnings("Indendation")
     private static void agent(final boolean shouldRedefine, final Instrumentation instrumentation)
     {
         if (EventLogger.ENABLED_EVENT_CODES == 0)

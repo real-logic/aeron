@@ -164,6 +164,7 @@ class Election implements AutoCloseable
         this.ctx = ctx;
         this.consensusModuleAgent = consensusModuleAgent;
         this.random = ctx.random();
+        stateCounter = ctx.aeron().addCounter(ELECTION_STATE_TYPE_ID, "Election State");
     }
 
     public void close()
@@ -176,55 +177,64 @@ class Election implements AutoCloseable
         int workCount = State.INIT == state ? init(nowMs) : 0;
         workCount += memberStatusAdapter.poll();
 
-        switch (state)
+        try
         {
-            case CANVASS:
-                workCount += canvass(nowMs);
-                break;
+            switch (state)
+            {
+                case CANVASS:
+                    workCount += canvass(nowMs);
+                    break;
 
-            case NOMINATE:
-                workCount += nominate(nowMs);
-                break;
+                case NOMINATE:
+                    workCount += nominate(nowMs);
+                    break;
 
-            case CANDIDATE_BALLOT:
-                workCount += candidateBallot(nowMs);
-                break;
+                case CANDIDATE_BALLOT:
+                    workCount += candidateBallot(nowMs);
+                    break;
 
-            case FOLLOWER_BALLOT:
-                workCount += followerBallot(nowMs);
-                break;
+                case FOLLOWER_BALLOT:
+                    workCount += followerBallot(nowMs);
+                    break;
 
-            case LEADER_REPLAY:
-                workCount += leaderReplay(nowMs);
-                break;
+                case LEADER_REPLAY:
+                    workCount += leaderReplay(nowMs);
+                    break;
 
-            case LEADER_TRANSITION:
-                workCount += leaderTransition(nowMs);
-                break;
+                case LEADER_TRANSITION:
+                    workCount += leaderTransition(nowMs);
+                    break;
 
-            case LEADER_READY:
-                workCount += leaderReady(nowMs);
-                break;
+                case LEADER_READY:
+                    workCount += leaderReady(nowMs);
+                    break;
 
-            case FOLLOWER_REPLAY:
-                workCount += followerReplay(nowMs);
-                break;
+                case FOLLOWER_REPLAY:
+                    workCount += followerReplay(nowMs);
+                    break;
 
-            case FOLLOWER_CATCHUP_TRANSITION:
-                workCount += followerCatchupTransition(nowMs);
-                break;
+                case FOLLOWER_CATCHUP_TRANSITION:
+                    workCount += followerCatchupTransition(nowMs);
+                    break;
 
-            case FOLLOWER_CATCHUP:
-                workCount += followerCatchup(nowMs);
-                break;
+                case FOLLOWER_CATCHUP:
+                    workCount += followerCatchup(nowMs);
+                    break;
 
-            case FOLLOWER_TRANSITION:
-                workCount += followerTransition(nowMs);
-                break;
+                case FOLLOWER_TRANSITION:
+                    workCount += followerTransition(nowMs);
+                    break;
 
-            case FOLLOWER_READY:
-                workCount += followerReady(nowMs);
-                break;
+                case FOLLOWER_READY:
+                    workCount += followerReady(nowMs);
+                    break;
+            }
+        }
+        catch (final Exception ex)
+        {
+            ctx.countedErrorHandler().onError(ex);
+            logPosition = ctx.commitPositionCounter().get();
+            state(State.INIT, nowMs);
         }
 
         return workCount;
@@ -428,7 +438,7 @@ class Election implements AutoCloseable
             this.logLeadershipTermId = leadershipTermId;
             this.logPosition = logPosition;
 
-            if (!ctx.recordingLog().hasTermBeenAppended(leadershipTermId))
+            if (ctx.recordingLog().isUnknown(leadershipTermId))
             {
                 ctx.recordingLog().appendTerm(logRecordingId, leadershipTermId, logPosition, nowMs);
                 ctx.recordingLog().force();
@@ -468,10 +478,9 @@ class Election implements AutoCloseable
 
     private int init(final long nowMs)
     {
-        stateCounter = ctx.aeron().addCounter(ELECTION_STATE_TYPE_ID, "Election State");
-
         if (!isStartup)
         {
+            cleanupReplay();
             consensusModuleAgent.prepareForNewLeadership(logPosition);
         }
 
@@ -623,9 +632,7 @@ class Election implements AutoCloseable
             workCount += logReplay.doWork(nowMs);
             if (logReplay.isDone())
             {
-                logReplay.close();
-                logReplay = null;
-                shouldReplay = false;
+                cleanupReplay();
                 state(State.LEADER_TRANSITION, nowMs);
             }
             else if (nowMs > (timeOfLastUpdateMs + leaderHeartbeatIntervalMs))
@@ -650,15 +657,16 @@ class Election implements AutoCloseable
     private int leaderTransition(final long nowMs)
     {
         consensusModuleAgent.becomeLeader(candidateTermId, logPosition, logSessionId);
+        final long recordingId = consensusModuleAgent.logRecordingId();
 
         for (long termId = leadershipTermId + 1; termId < candidateTermId; termId++)
         {
-            ctx.recordingLog().appendTerm(NULL_VALUE, termId, logPosition, nowMs);
+            ctx.recordingLog().appendTerm(recordingId, termId, logPosition, nowMs);
+            ctx.recordingLog().commitLogPosition(termId, logPosition);
         }
 
         leadershipTermId = candidateTermId;
-
-        ctx.recordingLog().appendTerm(consensusModuleAgent.logRecordingId(), leadershipTermId, logPosition, nowMs);
+        ctx.recordingLog().appendTerm(recordingId, leadershipTermId, logPosition, nowMs);
         ctx.recordingLog().force();
 
         state(State.LEADER_READY, nowMs);
@@ -719,9 +727,7 @@ class Election implements AutoCloseable
             workCount += logReplay.doWork(nowMs);
             if (logReplay.isDone())
             {
-                logReplay.close();
-                logReplay = null;
-                shouldReplay = false;
+                cleanupReplay();
                 state(nextState, nowMs);
             }
         }
@@ -793,7 +799,7 @@ class Election implements AutoCloseable
         }
 
         consensusModuleAgent.awaitImageAndCreateFollowerLogAdapter(logSubscription, logSessionId);
-        if (!ctx.recordingLog().hasTermBeenAppended(leadershipTermId))
+        if (ctx.recordingLog().isUnknown(leadershipTermId))
         {
             ctx.recordingLog().appendTerm(consensusModuleAgent.logRecordingId(), leadershipTermId, logPosition, nowMs);
             ctx.recordingLog().force();
@@ -902,6 +908,7 @@ class Election implements AutoCloseable
         if (State.CANVASS == newState)
         {
             consensusModuleAgent.stopAllCatchups();
+
             ClusterMember.reset(clusterMembers);
             thisMember.leadershipTermId(leadershipTermId).logPosition(logPosition);
             consensusModuleAgent.role(Cluster.Role.FOLLOWER);
@@ -930,5 +937,15 @@ class Election implements AutoCloseable
         this.state = newState;
         stateCounter.setOrdered(newState.code());
         timeOfLastStateChangeMs = nowMs;
+    }
+
+    private void cleanupReplay()
+    {
+        if (null != logReplay)
+        {
+            logReplay.close();
+            logReplay = null;
+            shouldReplay = false;
+        }
     }
 }

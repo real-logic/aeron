@@ -771,12 +771,13 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final int mtuLength = image.mtuLength();
         final int initialTermId = image.initialTermId();
         final long startPosition = image.joinPosition();
+        final int segmentFileLength = Math.max(ctx.segmentFileLength(), termBufferLength);
 
         final long recordingId = catalog.addNewRecording(
             startPosition,
             cachedEpochClock.time(),
             initialTermId,
-            ctx.segmentFileLength(),
+            segmentFileLength,
             termBufferLength,
             mtuLength,
             sessionId,
@@ -792,7 +793,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final RecordingSession session = new RecordingSession(
             recordingId,
             startPosition,
-            Math.max(ctx.segmentFileLength(), termBufferLength),
+            segmentFileLength,
             originalChannel,
             recordingEventsProxy,
             image,

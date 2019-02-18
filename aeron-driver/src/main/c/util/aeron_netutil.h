@@ -17,11 +17,11 @@
 #ifndef AERON_NETUTIL_H
 #define AERON_NETUTIL_H
 
+#include "aeron_socket.h"
 #include <stdbool.h>
-#include <netinet/in.h>
 #include <stdio.h>
-#include <arpa/inet.h>
 #include "aeron_driver_common.h"
+#include "aeron_socket.h"
 
 struct ifaddrs;
 struct addrinfo;

@@ -50,8 +50,11 @@ public class ClusterMarkFile implements AutoCloseable
     public static final String SERVICE_FILENAME_PREFIX = "cluster-mark-service-";
     public static final String SERVICE_FILENAME_FORMAT = SERVICE_FILENAME_PREFIX + "%d" + FILE_EXTENSION;
     public static final int HEADER_LENGTH = 8 * 1024;
-    public static final int VERSION_READY = MarkFileHeaderDecoder.SCHEMA_VERSION;
     public static final int VERSION_FAILED = -1;
+    public static final int MAJOR_VERSION = 0;
+    public static final int MINOR_VERSION = 0;
+    public static final int PATCH_VERSION = 1;
+    public static final int SEMANTIC_VERSION = SemanticVersion.compose(MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION);
 
     private final MarkFileHeaderDecoder headerDecoder = new MarkFileHeaderDecoder();
     private final MarkFileHeaderEncoder headerEncoder = new MarkFileHeaderEncoder();
@@ -78,17 +81,14 @@ public class ClusterMarkFile implements AutoCloseable
             epochClock,
             (version) ->
             {
-                if (version != MarkFileHeaderDecoder.SCHEMA_VERSION)
+                if (VERSION_FAILED == version && markFileExists)
                 {
-                    if (VERSION_FAILED == version && markFileExists)
-                    {
-                        System.err.println("mark file version -1 indicates error on previous startup.");
-                    }
-                    else
-                    {
-                        throw new ClusterException("mark file version " + version +
-                            " does not match software:" + MarkFileHeaderDecoder.SCHEMA_VERSION);
-                    }
+                    System.err.println("mark file version -1 indicates error on previous startup.");
+                }
+                else if (SemanticVersion.major(version) != MAJOR_VERSION)
+                {
+                    throw new IllegalArgumentException("mark file major version " + SemanticVersion.major(version) +
+                        " does not match software:" + MAJOR_VERSION);
                 }
             },
             null);
@@ -144,10 +144,10 @@ public class ClusterMarkFile implements AutoCloseable
             epochClock,
             (version) ->
             {
-                if (version != MarkFileHeaderDecoder.SCHEMA_VERSION)
+                if (SemanticVersion.major(version) != MAJOR_VERSION)
                 {
-                    throw new IllegalArgumentException("mark file version " + version +
-                        " does not match software:" + MarkFileHeaderDecoder.SCHEMA_VERSION);
+                    throw new IllegalArgumentException("mark file major version " + SemanticVersion.major(version) +
+                        " does not match software:" + MAJOR_VERSION);
                 }
             },
             logger);
@@ -197,7 +197,7 @@ public class ClusterMarkFile implements AutoCloseable
 
     public void signalReady()
     {
-        markFile.signalReady(VERSION_READY);
+        markFile.signalReady(SEMANTIC_VERSION);
         markFile.mappedByteBuffer().force();
     }
 

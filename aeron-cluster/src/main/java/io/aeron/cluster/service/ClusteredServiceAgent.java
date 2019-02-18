@@ -352,6 +352,8 @@ class ClusteredServiceAgent implements Agent, Cluster
     }
 
     void onSessionOpen(
+        final long leadershipTermId,
+        final long logPosition,
         final long clusterSessionId,
         final long timestampMs,
         final int responseStreamId,
@@ -359,6 +361,13 @@ class ClusteredServiceAgent implements Agent, Cluster
         final byte[] encodedPrincipal)
     {
         clusterTimeMs = timestampMs;
+
+        if (sessionByIdMap.containsKey(clusterSessionId))
+        {
+            throw new ClusterException("clashing open clusterSessionId=" + clusterSessionId +
+                " leadershipTermId=" + leadershipTermId + " logPosition=" + logPosition);
+        }
+
         final ClientSession session = new ClientSession(
             clusterSessionId, responseStreamId, responseChannel, encodedPrincipal, this);
 
@@ -371,16 +380,29 @@ class ClusteredServiceAgent implements Agent, Cluster
         service.onSessionOpen(session, timestampMs);
     }
 
-    void onSessionClose(final long clusterSessionId, final long timestampMs, final CloseReason closeReason)
+    void onSessionClose(
+        final long leadershipTermId,
+        final long logPosition,
+        final long clusterSessionId,
+        final long timestampMs,
+        final CloseReason closeReason)
     {
         clusterTimeMs = timestampMs;
         final ClientSession session = sessionByIdMap.remove(clusterSessionId);
+
+        if (null == session)
+        {
+            throw new ClusterException(
+                "unknown clusterSessionId=" + clusterSessionId + " for close reason=" + closeReason +
+                " leadershipTermId=" + leadershipTermId + " logPosition=" + logPosition);
+        }
+
         session.disconnect();
         service.onSessionClose(session, timestampMs, closeReason);
     }
 
     void onServiceAction(
-        final long logPosition, final long leadershipTermId, final long timestampMs, final ClusterAction action)
+        final long leadershipTermId, final long logPosition, final long timestampMs, final ClusterAction action)
     {
         clusterTimeMs = timestampMs;
         executeAction(action, logPosition, leadershipTermId);

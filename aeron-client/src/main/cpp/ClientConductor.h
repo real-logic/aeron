@@ -72,10 +72,10 @@ public:
         m_errorHandler(errorHandler),
         m_onAvailableCounterHandler(availableCounterHandler),
         m_onUnavailableCounterHandler(unavailableCounterHandler),
-        m_epochClock(epochClock),
-        m_timeOfLastKeepalive(epochClock()),
-        m_timeOfLastCheckManagedResources(epochClock()),
-        m_timeOfLastDoWork(epochClock()),
+        m_epochClock(std::move(epochClock)),
+        m_timeOfLastKeepalive(m_epochClock()),
+        m_timeOfLastCheckManagedResources(m_epochClock()),
+        m_timeOfLastDoWork(m_epochClock()),
         m_driverTimeoutMs(driverTimeoutMs),
         m_resourceLingerTimeoutMs(resourceLingerTimeoutMs),
         m_interServiceTimeoutMs(static_cast<long>(interServiceTimeoutNs / 1000000)),
@@ -128,23 +128,11 @@ public:
     std::shared_ptr<Counter> findCounter(std::int64_t registrationId);
     void releaseCounter(std::int64_t registrationId);
 
-    void onNewPublication(
-        std::int32_t streamId,
-        std::int32_t sessionId,
-        std::int32_t publicationLimitCounterId,
-        std::int32_t channelStatusIndicatorId,
-        const std::string& logFileName,
-        std::int64_t registrationId,
-        std::int64_t originalRegistrationId);
+    void onNewPublication(std::int64_t registrationId, std::int64_t originalRegistrationId, std::int32_t streamId, std::int32_t sessionId,
+        std::int32_t publicationLimitCounterId, std::int32_t channelStatusIndicatorId, const std::string &logFileName);
 
-    void onNewExclusivePublication(
-        std::int32_t streamId,
-        std::int32_t sessionId,
-        std::int32_t publicationLimitCounterId,
-        std::int32_t channelStatusIndicatorId,
-        const std::string& logFileName,
-        std::int64_t registrationId,
-        std::int64_t originalRegistrationId);
+    void onNewExclusivePublication(std::int64_t registrationId, std::int64_t originalRegistrationId, std::int32_t streamId,
+        std::int32_t sessionId, std::int32_t publicationLimitCounterId, std::int32_t channelStatusIndicatorId, const std::string &logFileName);
 
     void onSubscriptionReady(
         std::int64_t registrationId,
@@ -157,17 +145,10 @@ public:
         std::int32_t errorCode,
         const std::string& errorMessage);
 
-    void onAvailableImage(
-        std::int32_t streamId,
-        std::int32_t sessionId,
-        const std::string &logFilename,
-        const std::string &sourceIdentity,
-        std::int32_t subscriberPositionIndicatorId,
-        std::int64_t subscriberPositionRegistrationId,
-        std::int64_t correlationId);
+    void onAvailableImage(std::int64_t correlationId, std::int32_t sessionId, std::int32_t subscriberPositionId,
+        std::int64_t subscriptionRegistrationId, const std::string &logFilename, const std::string &sourceIdentity);
 
     void onUnavailableImage(
-        std::int32_t streamId,
         std::int64_t correlationId,
         std::int64_t subscriptionRegistrationId);
 
@@ -250,7 +231,10 @@ private:
 
         PublicationStateDefn(
             const std::string& channel, std::int64_t registrationId, std::int32_t streamId, long long now) :
-            m_channel(channel), m_registrationId(registrationId), m_streamId(streamId), m_timeOfRegistration(now)
+            m_channel(channel),
+            m_registrationId(registrationId),
+            m_streamId(streamId),
+            m_timeOfRegistration(now)
         {
         }
     };
@@ -347,7 +331,8 @@ private:
         std::shared_ptr<LogBuffers> m_logBuffers;
 
         LogBuffersLingerDefn(long long now, std::shared_ptr<LogBuffers> buffers) :
-            m_timeOfLastStatusChange(now), m_logBuffers(buffers)
+            m_timeOfLastStatusChange(now),
+            m_logBuffers(std::move(buffers))
         {
         }
     };

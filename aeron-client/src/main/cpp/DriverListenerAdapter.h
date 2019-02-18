@@ -56,13 +56,13 @@ public:
                         const PublicationBuffersReadyFlyweight publicationReady(buffer, offset);
 
                         m_driverListener.onNewPublication(
+                            publicationReady.correlationId(),
+                            publicationReady.registrationId(),
                             publicationReady.streamId(),
                             publicationReady.sessionId(),
                             publicationReady.positionLimitCounterId(),
                             publicationReady.channelStatusIndicatorId(),
-                            publicationReady.logFileName(),
-                            publicationReady.correlationId(),
-                            publicationReady.registrationId());
+                            publicationReady.logFileName());
                         break;
                     }
 
@@ -71,13 +71,13 @@ public:
                         const PublicationBuffersReadyFlyweight publicationReady(buffer, offset);
 
                         m_driverListener.onNewExclusivePublication(
+                            publicationReady.correlationId(),
+                            publicationReady.registrationId(),
                             publicationReady.streamId(),
                             publicationReady.sessionId(),
                             publicationReady.positionLimitCounterId(),
                             publicationReady.channelStatusIndicatorId(),
-                            publicationReady.logFileName(),
-                            publicationReady.correlationId(),
-                            publicationReady.registrationId());
+                            publicationReady.logFileName());
                         break;
                     }
 
@@ -96,13 +96,12 @@ public:
                         const ImageBuffersReadyFlyweight imageReady(buffer, offset);
 
                         m_driverListener.onAvailableImage(
-                            imageReady.streamId(),
+                            imageReady.correlationId(),
                             imageReady.sessionId(),
-                            imageReady.logFileName(),
-                            imageReady.sourceIdentity(),
                             imageReady.subscriberPositionId(),
-                            imageReady.subscriberRegistrationId(),
-                            imageReady.correlationId());
+                            imageReady.subscriptionRegistrationId(),
+                            imageReady.logFileName(),
+                            imageReady.sourceIdentity());
                         break;
                     }
 
@@ -119,7 +118,6 @@ public:
                         const ImageMessageFlyweight imageMessage(buffer, offset);
 
                         m_driverListener.onUnavailableImage(
-                            imageMessage.streamId(),
                             imageMessage.correlationId(),
                             imageMessage.subscriptionRegistrationId());
                         break;

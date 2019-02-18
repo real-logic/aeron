@@ -459,7 +459,7 @@ public class AuthenticationTest
             new ClusteredServiceContainer.Context()
                 .clusteredService(service)
                 .terminationHook(TestUtil.TERMINATION_HOOK)
-                .errorHandler(Throwable::printStackTrace));
+                .errorHandler(TestUtil.errorHandler(0)));
     }
 
     private AeronCluster connectToCluster(final CredentialsSupplier credentialsSupplier)
@@ -483,7 +483,7 @@ public class AuthenticationTest
             new MediaDriver.Context()
                 .warnIfDirectoryExists(true)
                 .threadingMode(ThreadingMode.SHARED)
-                .errorHandler(Throwable::printStackTrace)
+                .errorHandler(TestUtil.errorHandler(0))
                 .dirDeleteOnStart(true),
             new Archive.Context()
                 .maxCatalogEntries(MAX_CATALOG_ENTRIES)

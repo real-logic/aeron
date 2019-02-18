@@ -21,13 +21,13 @@
 
 #include <string.h>
 #include <stdio.h>
-#include <dlfcn.h>
-#include <sched.h>
 #include <errno.h>
+#include "concurrent/aeron_thread.h"
 #include "aeron_agent.h"
 #include "aeron_alloc.h"
 #include "aeron_driver_context.h"
 #include "util/aeron_error.h"
+#include "util/aeron_dlopen.h"
 
 static void aeron_idle_strategy_sleeping_idle(void *state, int work_count)
 {
@@ -36,7 +36,7 @@ static void aeron_idle_strategy_sleeping_idle(void *state, int work_count)
         return;
     }
 
-    nanosleep(&(struct timespec){.tv_nsec=1}, NULL);
+    aeron_nano_sleep(1);
 }
 
 static void aeron_idle_strategy_yielding_idle(void *state, int work_count)
@@ -56,7 +56,7 @@ static void aeron_idle_strategy_busy_spinning_idle(void *state, int work_count)
         return;
     }
 
-    __asm__ volatile("pause\n": : :"memory");
+    proc_yield();
 }
 
 static void aeron_idle_strategy_noop_idle(void *state, int work_count)
@@ -131,9 +131,9 @@ aeron_idle_strategy_func_t aeron_idle_strategy_load(
         aeron_idle_strategy_t *idle_strat = NULL;
 
         snprintf(idle_func_name, sizeof(idle_func_name) - 1, "%s", idle_strategy_name);
-        if ((idle_strat = (aeron_idle_strategy_t *)dlsym(RTLD_DEFAULT, idle_func_name)) == NULL)
+        if ((idle_strat = (aeron_idle_strategy_t *)aeron_dlsym(RTLD_DEFAULT, idle_func_name)) == NULL)
         {
-            aeron_set_err(EINVAL, "could not find idle strategy %s: dlsym - %s", idle_func_name, dlerror());
+            aeron_set_err(EINVAL, "could not find idle strategy %s: dlsym - %s", idle_func_name, aeron_dlerror());
             return NULL;
         }
 
@@ -154,9 +154,9 @@ aeron_idle_strategy_func_t aeron_idle_strategy_load(
 aeron_agent_on_start_func_t aeron_agent_on_start_load(const char *name)
 {
     aeron_agent_on_start_func_t func = NULL;
-    if ((func = (aeron_agent_on_start_func_t)dlsym(RTLD_DEFAULT, name)) == NULL)
+    if ((func = (aeron_agent_on_start_func_t)aeron_dlsym(RTLD_DEFAULT, name)) == NULL)
     {
-        aeron_set_err(EINVAL, "could not find agent on_start func %s: dlsym - %s", name, dlerror());
+        aeron_set_err(EINVAL, "could not find agent on_start func %s: dlsym - %s", name, aeron_dlerror());
         return NULL;
     }
 
@@ -209,9 +209,9 @@ static void *agent_main(void *arg)
     aeron_agent_runner_t *runner = (aeron_agent_runner_t *)arg;
 
 #if defined(Darwin)
-    pthread_setname_np(runner->role_name);
+    aeron_thread_set_name(runner->role_name);
 #else
-    pthread_setname_np(pthread_self(), runner->role_name);
+    aeron_thread_set_name(aeron_thread_self(), runner->role_name);
 #endif
 
     if (NULL != runner->on_start)
@@ -238,15 +238,15 @@ int aeron_agent_start(aeron_agent_runner_t *runner)
         return -1;
     }
 
-    if ((pthread_result = pthread_attr_init(&attr)) != 0)
+    if ((pthread_result = aeron_thread_attr_init(&attr)) != 0)
     {
-        aeron_set_err(pthread_result, "pthread_attr_init: %s", strerror(pthread_result));
+        aeron_set_err(pthread_result, "aeron_thread_attr_init: %s", strerror(pthread_result));
         return -1;
     }
 
-    if ((pthread_result = pthread_create(&runner->thread, &attr, agent_main, runner)) != 0)
+    if ((pthread_result = aeron_thread_create(&runner->thread, &attr, agent_main, runner)) != 0)
     {
-        aeron_set_err(pthread_result, "pthread_create: %s", strerror(pthread_result));
+        aeron_set_err(pthread_result, "aeron_thread_create: %s", strerror(pthread_result));
         return -1;
     }
 
@@ -275,11 +275,11 @@ int aeron_agent_stop(aeron_agent_runner_t *runner)
     {
         runner->state = AERON_AGENT_STATE_STOPPING;
 
-        /* TODO: should use timed pthread_join _np version when available? */
+        /* TODO: should use timed aeron_thread_join _np version when available? */
 
-        if ((pthread_result = pthread_join(runner->thread, NULL)))
+        if ((pthread_result = aeron_thread_join(runner->thread, NULL)))
         {
-            aeron_set_err(pthread_result, "pthread_join: %s", strerror(pthread_result));
+            aeron_set_err(pthread_result, "aeron_thread_join: %s", strerror(pthread_result));
             return -1;
         }
 

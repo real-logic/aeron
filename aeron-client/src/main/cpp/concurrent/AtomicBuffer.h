@@ -99,17 +99,7 @@ public:
         buffer.fill(initialValue);
     }
 
-    AtomicBuffer(const AtomicBuffer& buffer) = default;
-
-    AtomicBuffer(AtomicBuffer&& buffer) :
-        m_buffer(buffer.m_buffer),
-        m_length(buffer.m_length)
-    {
-    }
-
-    AtomicBuffer& operator=(const AtomicBuffer& buffer) = default;
-
-    virtual ~AtomicBuffer() = default;
+    COND_MOCK_VIRTUAL ~AtomicBuffer() = default;
 
     /**
      * Wrap a buffer of memory for a given length.

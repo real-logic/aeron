@@ -28,12 +28,18 @@ import static io.aeron.logbuffer.TermGapScanner.scanForGap;
  */
 public class LossDetector implements TermGapScanner.GapHandler
 {
+    private long deadlineNs = Aeron.NULL_VALUE;
+
+    private int scannedTermId;
+    private int scannedTermOffset = -1;
+    private int scannedLength;
+
+    private int activeTermId;
+    private int activeTermOffset = -1;
+    private int activeLength;
+
     private final FeedbackDelayGenerator delayGenerator;
     private final LossHandler lossHandler;
-    private final Gap scannedGap = new Gap();
-    private final Gap activeGap = new Gap();
-
-    private long deadlineNs = Aeron.NULL_VALUE;
 
     /**
      * Create a loss detector for a channel.
@@ -80,14 +86,14 @@ public class LossDetector implements TermGapScanner.GapHandler
 
             final int rebuildTermId = initialTermId + rebuildTermCount;
             final int hwmTermOffset = (int)hwmPosition & termLengthMask;
-            final int limitOffset = rebuildTermCount == hwmTermCount ? hwmTermOffset : termBuffer.capacity();
+            final int limitOffset = rebuildTermCount == hwmTermCount ? hwmTermOffset : termLengthMask + 1;
 
             rebuildOffset = scanForGap(termBuffer, rebuildTermId, rebuildOffset, limitOffset, this);
             if (rebuildOffset < limitOffset)
             {
-                if (!scannedGap.matches(activeGap))
+                if (scannedTermOffset != activeTermOffset || scannedTermId != activeTermId)
                 {
-                    activateGap(nowNs, scannedGap);
+                    activateGap(nowNs);
                     lossFound = true;
                 }
 
@@ -100,7 +106,9 @@ public class LossDetector implements TermGapScanner.GapHandler
 
     public void onGap(final int termId, final int offset, final int length)
     {
-        scannedGap.set(termId, offset, length);
+        scannedTermId = termId;
+        scannedTermOffset = offset;
+        scannedLength = length;
     }
 
     /**
@@ -137,9 +145,11 @@ public class LossDetector implements TermGapScanner.GapHandler
         return (int)(scanOutcome >>> 32);
     }
 
-    private void activateGap(final long nowNs, final Gap gap)
+    private void activateGap(final long nowNs)
     {
-        activeGap.set(gap.termId, gap.termOffset, gap.length);
+        activeTermId = scannedTermId;
+        activeTermOffset = scannedTermOffset;
+        activeLength = scannedLength;
 
         if (delayGenerator.shouldFeedbackImmediately())
         {
@@ -155,27 +165,8 @@ public class LossDetector implements TermGapScanner.GapHandler
     {
         if (deadlineNs - nowNs <= 0)
         {
-            lossHandler.onGapDetected(activeGap.termId, activeGap.termOffset, activeGap.length);
+            lossHandler.onGapDetected(activeTermId, activeTermOffset, activeLength);
             deadlineNs = nowNs + delayGenerator.generateDelay();
-        }
-    }
-
-    static final class Gap
-    {
-        int termId;
-        int termOffset = -1;
-        int length;
-
-        public void set(final int termId, final int termOffset, final int length)
-        {
-            this.termId = termId;
-            this.termOffset = termOffset;
-            this.length = length;
-        }
-
-        public boolean matches(final Gap other)
-        {
-            return other.termId == this.termId && other.termOffset == this.termOffset;
         }
     }
 }

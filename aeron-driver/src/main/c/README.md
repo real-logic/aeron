@@ -17,7 +17,10 @@ The driver binary requires the following dependencies.
     - `-lbsd` - BSD Library (optional - will use /dev/urandom directly instead of arc4random if not available)
     - `-luuid` - UUID Library (optional - will use pure random Receiver ID if not available)
     - `-lm` - Math Library
-
+- Windows Dependencies:
+	- Windows Version >= Vista 
+	- MSVC >= v141 (Visual Studio 2017)
+	
 ## Configuration
 
 All configuration for the C media driver is done, currently, via environment variables. The variables are directly related to the Java properties

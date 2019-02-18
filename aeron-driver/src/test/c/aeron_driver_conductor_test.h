@@ -23,7 +23,6 @@
 #include <exception>
 
 #include <gtest/gtest.h>
-#include <arpa/inet.h>
 #include <concurrent/CountersReader.h>
 
 extern "C"

@@ -119,7 +119,7 @@ public:
             logBuffers->atomicBuffer(0).capacity(),
             this),
         m_subscriberPosition(subscriberPosition),
-        m_logBuffers(logBuffers),
+        m_logBuffers(std::move(logBuffers)),
         m_sourceIdentity(sourceIdentity),
         m_isClosed(false),
         m_exceptionHandler(exceptionHandler),
@@ -129,7 +129,7 @@ public:
     {
         for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
         {
-            m_termBuffers[i] = logBuffers->atomicBuffer(i);
+            m_termBuffers[i] = m_logBuffers->atomicBuffer(i);
         }
 
         const util::index_t capacity = m_termBuffers[0].capacity();
@@ -181,7 +181,45 @@ public:
         return *this;
     }
 
-    virtual ~Image() = default;
+    Image(Image&& image) noexcept :
+        m_termBuffers(image.m_termBuffers),
+        m_header(image.m_header),
+        m_subscriberPosition(image.m_subscriberPosition),
+        m_logBuffers(std::move(image.m_logBuffers)),
+        m_sourceIdentity(std::move(image.m_sourceIdentity)),
+        m_isClosed(image.isClosed()),
+        m_exceptionHandler(std::move(image.m_exceptionHandler)),
+        m_correlationId(image.m_correlationId),
+        m_subscriptionRegistrationId(image.m_subscriptionRegistrationId),
+        m_joinPosition(image.m_joinPosition),
+        m_finalPosition(image.m_finalPosition),
+        m_sessionId(image.m_sessionId),
+        m_termLengthMask(image.m_termLengthMask),
+        m_positionBitsToShift(image.m_positionBitsToShift),
+        m_isEos(image.m_isEos)
+    {
+    }
+
+    Image& operator=(Image&& image) noexcept
+    {
+        m_termBuffers = image.m_termBuffers;
+        m_header = image.m_header;
+        m_subscriberPosition = image.m_subscriberPosition;
+        m_logBuffers = std::move(image.m_logBuffers);
+        m_sourceIdentity = std::move(image.m_sourceIdentity);
+        m_isClosed = image.isClosed();
+        m_exceptionHandler = std::move(image.m_exceptionHandler);
+        m_correlationId = image.m_correlationId;
+        m_subscriptionRegistrationId = image.m_subscriptionRegistrationId;
+        m_joinPosition = image.m_joinPosition;
+        m_finalPosition = image.m_finalPosition;
+        m_sessionId = image.m_sessionId;
+        m_termLengthMask = image.m_termLengthMask;
+        m_positionBitsToShift = image.m_positionBitsToShift;
+        m_isEos = image.m_isEos;
+
+        return *this;
+    }
 
     /**
      * Get the length in bytes for each term partition in the log buffer.
@@ -351,7 +389,7 @@ public:
             const int index = LogBufferDescriptor::indexByPosition(position, m_positionBitsToShift);
             assert(index >= 0 && index < LogBufferDescriptor::PARTITION_COUNT);
             AtomicBuffer &termBuffer = m_termBuffers[index];
-            TermReader::ReadOutcome readOutcome;
+            TermReader::ReadOutcome readOutcome{};
 
             TermReader::read(readOutcome, termBuffer, termOffset, fragmentHandler, fragmentLimit, m_header, m_exceptionHandler);
 

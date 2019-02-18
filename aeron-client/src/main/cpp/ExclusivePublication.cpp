@@ -45,7 +45,7 @@ ExclusivePublication::ExclusivePublication(
     m_activePartitionIndex(LogBufferDescriptor::indexByTermCount(LogBufferDescriptor::activeTermCount(m_logMetaDataBuffer))),
     m_publicationLimit(publicationLimit),
     m_channelStatusId(channelStatusId),
-    m_logBuffers(logBuffers),
+    m_logBuffers(std::move(logBuffers)),
     m_headerWriter(LogBufferDescriptor::defaultFrameHeader(m_logMetaDataBuffer))
 {
     for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
@@ -56,14 +56,14 @@ ExclusivePublication::ExclusivePublication(
          * locality.
          */
         m_appenders[i] = std::unique_ptr<ExclusiveTermAppender>(new ExclusiveTermAppender(
-            logBuffers->atomicBuffer(i),
-            logBuffers->atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX),
+            m_logBuffers->atomicBuffer(i),
+            m_logBuffers->atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX),
             i));
     }
 
     const std::int64_t rawTail = m_appenders[m_activePartitionIndex]->rawTail();
     m_termId = LogBufferDescriptor::termId(rawTail);
-    m_termOffset = LogBufferDescriptor::termOffset(rawTail, logBuffers->atomicBuffer(0).capacity());
+    m_termOffset = LogBufferDescriptor::termOffset(rawTail, m_logBuffers->atomicBuffer(0).capacity());
     m_termBeginPosition = LogBufferDescriptor::computeTermBeginPosition(m_termId, m_positionBitsToShift, m_initialTermId);
 }
 

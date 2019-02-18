@@ -36,19 +36,6 @@ public:
         m_positionBitsToShift = util::BitUtil::numberOfTrailingZeroes(capacity);
     }
 
-    Header(const Header& header) = default;
-
-    Header& operator=(const Header& header)
-    {
-        m_context = header.m_context;
-        m_buffer.wrap(header.m_buffer);
-        m_offset = header.m_offset;
-        m_initialTermId = header.m_initialTermId;
-        m_positionBitsToShift = header.m_positionBitsToShift;
-
-        return *this;
-    }
-
     /**
      * Get the initial term id this stream started at.
      *

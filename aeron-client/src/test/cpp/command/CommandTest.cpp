@@ -172,7 +172,7 @@ TEST (commandTests, testImageBuffersReadyFlyweight)
         ASSERT_EQ(cmd.correlationId(), -1);
         ASSERT_EQ(cmd.sessionId(), 0x02020202);
         ASSERT_EQ(cmd.streamId(), 0x01010101);
-        ASSERT_EQ(cmd.subscriberRegistrationId(), 2);
+        ASSERT_EQ(cmd.subscriptionRegistrationId(), 2);
         ASSERT_EQ(cmd.subscriberPositionId(), 1);
         ASSERT_EQ(cmd.logFileName(), logFileNameData);
         ASSERT_EQ(cmd.sourceIdentity(), sourceInfoData);

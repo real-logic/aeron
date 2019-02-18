@@ -95,7 +95,7 @@ public class EmbeddedPingPong
         System.out.println("Publishing Ping at " + PING_CHANNEL + " on stream Id " + PING_STREAM_ID);
         System.out.println("Subscribing Pong at " + PONG_CHANNEL + " on stream Id " + PONG_STREAM_ID);
         System.out.println("Message payload length of " + MESSAGE_LENGTH + " bytes");
-        System.out.println("Using exclusive publications " + EXCLUSIVE_PUBLICATIONS);
+        System.out.println("Using exclusive publications: " + EXCLUSIVE_PUBLICATIONS);
 
         final FragmentAssembler dataHandler = new FragmentAssembler(EmbeddedPingPong::pongHandler);
 
@@ -108,9 +108,8 @@ public class EmbeddedPingPong
             System.out.println("Waiting for new image from Pong...");
             PONG_IMAGE_LATCH.await();
 
-            System.out.println(
-                "Warming up... " + WARMUP_NUMBER_OF_ITERATIONS +
-                " iterations of " + WARMUP_NUMBER_OF_MESSAGES + " messages");
+            System.out.format("Warming up... %d iterations of %,d messages%n",
+                WARMUP_NUMBER_OF_ITERATIONS, WARMUP_NUMBER_OF_MESSAGES);
 
             for (int i = 0; i < WARMUP_NUMBER_OF_ITERATIONS; i++)
             {
@@ -123,7 +122,7 @@ public class EmbeddedPingPong
             do
             {
                 HISTOGRAM.reset();
-                System.out.println("Pinging " + NUMBER_OF_MESSAGES + " messages");
+                System.out.format("Pinging %,d messages%n", NUMBER_OF_MESSAGES);
 
                 roundTripMessages(dataHandler, pingPublication, pongSubscription, NUMBER_OF_MESSAGES);
 

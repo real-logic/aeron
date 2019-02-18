@@ -17,6 +17,7 @@
 #ifndef AERON_DRIVER_SENDER_H
 #define AERON_DRIVER_SENDER_H
 
+#include "aeron_socket.h"
 #include "aeron_driver_context.h"
 #include "aeron_driver_sender_proxy.h"
 #include "aeron_system_counters.h"

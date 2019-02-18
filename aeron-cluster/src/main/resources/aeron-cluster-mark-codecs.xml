@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
                    package="io.aeron.cluster.codecs.mark"
-                   id="1"
-                   version="1"
+                   id="110"
+                   version="0"
                    semanticVersion="5.2"
                    description="Codecs for Mark file of an Aeron Cluster"
                    byteOrder="littleEndian">

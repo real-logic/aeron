@@ -678,7 +678,7 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
 
             if (stream_id == pub_entry->stream_id &&
                 !pub_entry->is_exclusive &&
-                pub_entry->conductor_fields.status == AERON_IPC_PUBLICATION_STATUS_ACTIVE)
+                AERON_IPC_PUBLICATION_STATUS_ACTIVE == pub_entry->conductor_fields.status)
             {
                 publication = pub_entry;
                 break;
@@ -699,34 +699,47 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
             if (ensure_capacity_result >= 0)
             {
                 int32_t session_id = conductor->next_session_id++;
-                int32_t initial_term_id = aeron_randomised_int32();
-                aeron_position_t pub_lmt_position;
+                int32_t initial_term_id = params->is_replay ?
+                    (int32_t)params->initial_term_id : aeron_randomised_int32();
                 aeron_position_t pub_pos_position;
-
-                pub_lmt_position.counter_id = aeron_counter_publisher_limit_allocate(
-                    &conductor->counters_manager, registration_id, session_id, stream_id, channel_length, channel);
-                pub_lmt_position.value_addr = aeron_counter_addr(
-                    &conductor->counters_manager, (int32_t)pub_lmt_position.counter_id);
+                aeron_position_t pub_lmt_position;
 
                 pub_pos_position.counter_id = aeron_counter_publisher_position_allocate(
                     &conductor->counters_manager, registration_id, session_id, stream_id, channel_length, channel);
                 pub_pos_position.value_addr = aeron_counter_addr(
                     &conductor->counters_manager, (int32_t)pub_pos_position.counter_id);
+                pub_lmt_position.counter_id = aeron_counter_publisher_limit_allocate(
+                    &conductor->counters_manager, registration_id, session_id, stream_id, channel_length, channel);
+                pub_lmt_position.value_addr = aeron_counter_addr(
+                    &conductor->counters_manager, (int32_t)pub_lmt_position.counter_id);
 
-                if (pub_lmt_position.counter_id >= 0 &&
-                    pub_pos_position.counter_id >= 0 &&
-                    aeron_ipc_publication_create(
+                if (pub_pos_position.counter_id < 0 || pub_lmt_position.counter_id < 0)
+                {
+                    return NULL;
+                }
+
+                if (params->is_replay)
+                {
+                    int64_t position = aeron_logbuffer_compute_position(
+                        (int32_t)params->term_id,
+                        (int32_t)params->term_offset,
+                        (size_t)aeron_number_of_trailing_zeroes((int32_t)params->term_length),
+                        initial_term_id);
+
+                    aeron_counter_set_ordered(pub_pos_position.value_addr, position);
+                    aeron_counter_set_ordered(pub_lmt_position.value_addr, position);
+                }
+
+                if (aeron_ipc_publication_create(
                         &publication,
                         conductor->context,
                         session_id,
                         stream_id,
                         registration_id,
-                        &pub_lmt_position,
                         &pub_pos_position,
+                        &pub_lmt_position,
                         initial_term_id,
-                        params->term_length,
-                        params->mtu_length,
-                        params->is_sparse,
+                        params,
                         is_exclusive,
                         &conductor->system_counters) >= 0)
                 {
@@ -801,15 +814,17 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
             if (ensure_capacity_result >= 0)
             {
                 int32_t session_id = conductor->next_session_id++;
-                int32_t initial_term_id = aeron_randomised_int32();
-                aeron_position_t pub_lmt_position;
+                int32_t initial_term_id = params->is_replay ?
+                    (int32_t)params->initial_term_id : aeron_randomised_int32();
+
                 aeron_position_t pub_pos_position;
+                aeron_position_t pub_lmt_position;
                 aeron_position_t snd_pos_position;
                 aeron_position_t snd_lmt_position;
 
-                pub_lmt_position.counter_id = aeron_counter_publisher_limit_allocate(
-                    &conductor->counters_manager, registration_id, session_id, stream_id, uri_length, uri);
                 pub_pos_position.counter_id = aeron_counter_publisher_position_allocate(
+                    &conductor->counters_manager, registration_id, session_id, stream_id, uri_length, uri);
+                pub_lmt_position.counter_id = aeron_counter_publisher_limit_allocate(
                     &conductor->counters_manager, registration_id, session_id, stream_id, uri_length, uri);
                 snd_pos_position.counter_id = aeron_counter_sender_position_allocate(
                     &conductor->counters_manager, registration_id, session_id, stream_id, uri_length, uri);
@@ -824,14 +839,28 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                     return NULL;
                 }
 
-                pub_lmt_position.value_addr = aeron_counter_addr(
-                    &conductor->counters_manager, (int32_t)pub_lmt_position.counter_id);
                 pub_pos_position.value_addr = aeron_counter_addr(
                     &conductor->counters_manager, (int32_t)pub_pos_position.counter_id);
+                pub_lmt_position.value_addr = aeron_counter_addr(
+                    &conductor->counters_manager, (int32_t)pub_lmt_position.counter_id);
                 snd_pos_position.value_addr = aeron_counter_addr(
                     &conductor->counters_manager, (int32_t)snd_pos_position.counter_id);
                 snd_lmt_position.value_addr = aeron_counter_addr(
                     &conductor->counters_manager, (int32_t)snd_lmt_position.counter_id);
+
+                if (params->is_replay)
+                {
+                    int64_t position = aeron_logbuffer_compute_position(
+                        (int32_t)params->term_id,
+                        (int32_t)params->term_offset,
+                        (size_t)aeron_number_of_trailing_zeroes((int32_t)params->term_length),
+                        initial_term_id);
+
+                    aeron_counter_set_ordered(pub_pos_position.value_addr, position);
+                    aeron_counter_set_ordered(pub_lmt_position.value_addr, position);
+                    aeron_counter_set_ordered(snd_pos_position.value_addr, position);
+                    aeron_counter_set_ordered(snd_lmt_position.value_addr, position);
+                }
 
                 aeron_flow_control_strategy_supplier_func_t flow_control_strategy_supplier_func =
                     udp_channel->explicit_control || udp_channel->multicast ?
@@ -860,15 +889,12 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                         session_id,
                         stream_id,
                         initial_term_id,
-                        params->mtu_length,
-                        &pub_lmt_position,
                         &pub_pos_position,
+                        &pub_lmt_position,
                         &snd_pos_position,
                         &snd_lmt_position,
                         flow_control_strategy,
-                        params->linger_timeout_ns,
-                        params->term_length,
-                        params->is_sparse,
+                        params,
                         is_exclusive,
                         conductor->context->spies_simulate_connection,
                         &conductor->system_counters) >= 0)
@@ -1726,7 +1752,7 @@ int aeron_driver_conductor_on_add_ipc_publication(
     aeron_uri_t aeron_uri_params;
     aeron_uri_publication_params_t params;
 
-    if (aeron_uri_parse(uri, &aeron_uri_params) < 0 ||
+    if (aeron_uri_parse((size_t)uri_length, uri, &aeron_uri_params) < 0 ||
         aeron_uri_publication_params(&aeron_uri_params, &params, conductor->context, is_exclusive) < 0)
     {
         goto error_cleanup;
@@ -1798,10 +1824,10 @@ int aeron_driver_conductor_on_add_network_publication(
     aeron_send_channel_endpoint_t *endpoint = NULL;
     aeron_network_publication_t *publication = NULL;
     const char *uri = (const char *)command + sizeof(aeron_publication_command_t);
-    int32_t uri_length = command->channel_length;
+    size_t uri_length = (size_t)command->channel_length;
     aeron_uri_publication_params_t params;
 
-    if (aeron_udp_channel_parse(uri, (size_t)uri_length, &udp_channel) < 0 ||
+    if (aeron_udp_channel_parse(uri_length, uri, &udp_channel) < 0 ||
         aeron_uri_publication_params(&udp_channel->uri, &params, conductor->context, is_exclusive) < 0)
     {
         return -1;
@@ -1925,8 +1951,9 @@ int aeron_driver_conductor_on_add_ipc_subscription(
     const char *uri = (const char *)command + sizeof(aeron_subscription_command_t);
     aeron_uri_t aeron_uri_params;
     aeron_uri_subscription_params_t params;
+    size_t uri_length = (size_t)command->channel_length;
 
-    if (aeron_uri_parse(uri, &aeron_uri_params) < 0 ||
+    if (aeron_uri_parse(uri_length, uri, &aeron_uri_params) < 0 ||
         aeron_uri_subscription_params(&aeron_uri_params, &params, conductor->context) < 0)
     {
         goto error_cleanup;
@@ -2003,7 +2030,7 @@ int aeron_driver_conductor_on_add_spy_subscription(
     const char *uri = (const char *)command + sizeof(aeron_subscription_command_t) + strlen(AERON_SPY_PREFIX);
     aeron_uri_subscription_params_t params;
 
-    if (aeron_udp_channel_parse(uri, (size_t)command->channel_length - strlen(AERON_SPY_PREFIX), &udp_channel) < 0 ||
+    if (aeron_udp_channel_parse(command->channel_length - strlen(AERON_SPY_PREFIX), uri, &udp_channel) < 0 ||
         aeron_uri_subscription_params(&udp_channel->uri, &params, conductor->context) < 0)
     {
         return -1;
@@ -2075,10 +2102,11 @@ int aeron_driver_conductor_on_add_network_subscription(
 {
     aeron_udp_channel_t *udp_channel = NULL;
     aeron_receive_channel_endpoint_t *endpoint = NULL;
+    size_t uri_length = (size_t)command->channel_length;
     const char *uri = (const char *)command + sizeof(aeron_subscription_command_t);
     aeron_uri_subscription_params_t params;
-
-    if (aeron_udp_channel_parse(uri, (size_t)command->channel_length, &udp_channel) < 0 ||
+    
+    if (aeron_udp_channel_parse(uri_length, uri, &udp_channel) < 0 ||
         aeron_uri_subscription_params(&udp_channel->uri, &params, conductor->context) < 0)
     {
         return -1;
@@ -2277,7 +2305,6 @@ int aeron_driver_conductor_on_add_destination(
     aeron_destination_command_t *command)
 {
     aeron_send_channel_endpoint_t *endpoint = NULL;
-    const char *command_uri = (const char *)command + sizeof(aeron_destination_command_t);
 
     for (size_t i = 0, length = conductor->network_publications.length; i < length; i++)
     {
@@ -2292,28 +2319,30 @@ int aeron_driver_conductor_on_add_destination(
 
     if (NULL != endpoint)
     {
-        char buffer[AERON_MAX_PATH];
+        size_t uri_length = (size_t)command->channel_length;
+        const char *command_uri = (const char *)command + sizeof(aeron_destination_command_t);
         aeron_uri_t uri_params;
-        struct sockaddr_storage destination_addr;
-
-        if (NULL != endpoint->destination_tracker || !endpoint->destination_tracker->is_manual_control_mode)
+        if (aeron_uri_parse(uri_length, command_uri, &uri_params) < 0)
         {
-            aeron_set_err(EINVAL, "channel does not allow manual control of destinations: %s", buffer);
             return -1;
         }
 
-        strncpy(buffer, command_uri, (size_t)command->channel_length);
-        if (aeron_uri_parse(buffer, &uri_params) < 0)
+        if (NULL != endpoint->destination_tracker || !endpoint->destination_tracker->is_manual_control_mode)
         {
+            aeron_set_err(
+                EINVAL,
+                "channel does not allow manual control of destinations: %.*s",
+                command->channel_length, command_uri);
             return -1;
         }
 
         if (uri_params.type != AERON_URI_UDP || NULL == uri_params.params.udp.endpoint_key)
         {
-            aeron_set_err(EINVAL, "incorrect URI format for destination: %s", buffer);
+            aeron_set_err(EINVAL, "incorrect URI format for destination: %.*s", command->channel_length, command_uri);
             return -1;
         }
 
+        struct sockaddr_storage destination_addr;
         if (aeron_host_and_port_parse_and_resolve(uri_params.params.udp.endpoint_key, &destination_addr) < 0)
         {
             aeron_set_err(
@@ -2344,7 +2373,6 @@ int aeron_driver_conductor_on_remove_destination(
     aeron_destination_command_t *command)
 {
     aeron_send_channel_endpoint_t *endpoint = NULL;
-    const char *command_uri = (const char *)command + sizeof(aeron_destination_command_t);
 
     for (size_t i = 0, length = conductor->network_publications.length; i < length; i++)
     {
@@ -2359,28 +2387,31 @@ int aeron_driver_conductor_on_remove_destination(
 
     if (NULL != endpoint)
     {
-        char buffer[AERON_MAX_PATH];
         aeron_uri_t uri_params;
-        struct sockaddr_storage destination_addr;
+        const char *command_uri = (const char *)command + sizeof(aeron_destination_command_t);
+        size_t uri_length = (size_t)command->channel_length;
+        if (aeron_uri_parse(uri_length, command_uri, &uri_params) < 0)
+        {
+            return -1;
+        }
 
         if (NULL != endpoint->destination_tracker || !endpoint->destination_tracker->is_manual_control_mode)
         {
-            aeron_set_err(EINVAL, "channel does not allow manual control of destinations: %s", buffer);
+            aeron_set_err(
+                EINVAL,
+                "channel does not allow manual control of destinations: %.*s",
+                command->channel_length, command_uri);
             return -1;
         }
 
-        strncpy(buffer, command_uri, (size_t)command->channel_length);
-        if (aeron_uri_parse(buffer, &uri_params) < 0)
-        {
-            return -1;
-        }
 
         if (uri_params.type != AERON_URI_UDP || NULL == uri_params.params.udp.endpoint_key)
         {
-            aeron_set_err(EINVAL, "incorrect URI format for destination: %s", buffer);
+            aeron_set_err(EINVAL, "incorrect URI format for destination: %.*s", command->channel_length, command_uri);
             return -1;
         }
 
+        struct sockaddr_storage destination_addr;
         if (aeron_host_and_port_parse_and_resolve(uri_params.params.udp.endpoint_key, &destination_addr) < 0)
         {
             aeron_set_err(
@@ -2717,6 +2748,3 @@ extern aeron_publication_image_t *aeron_driver_conductor_find_publication_image(
 
 extern void aeron_driver_init_subscription_channel(
     int32_t uri_length, const char *uri, aeron_subscription_link_t *link);
-
-extern int64_t *aeron_driver_conductor_system_counter_addr(
-    aeron_driver_conductor_t *conductor, aeron_system_counter_enum_t type);

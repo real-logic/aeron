@@ -70,6 +70,7 @@ inline static int32_t aeron_mpsc_rb_claim_capacity(volatile aeron_mpsc_rb_t *rin
             AERON_PUT_ORDERED(ring_buffer->descriptor->head_cache_position, head);
         }
 
+        padding = 0;
         tail_index = (int32_t)tail & mask;
         to_buffer_end_length = ring_buffer->capacity - tail_index;
 

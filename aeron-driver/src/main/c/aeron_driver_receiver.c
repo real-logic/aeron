@@ -19,7 +19,7 @@
 #define _GNU_SOURCE
 #endif
 
-#include <sys/socket.h>
+#include "aeron_socket.h"
 #include <stdio.h>
 #include "util/aeron_arrayutil.h"
 #include "media/aeron_receive_channel_endpoint.h"

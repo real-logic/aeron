@@ -120,7 +120,7 @@ TEST_F(ClientConductorTest, shouldReturnPublicationAfterLogBuffersCreated)
     std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID);
 
     m_conductor.onNewPublication(
-        STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, CHANNEL_STATUS_INDICATOR_ID, m_logFileName, id, id);
+        id, id, STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, CHANNEL_STATUS_INDICATOR_ID, m_logFileName);
 
     std::shared_ptr<Publication> pub = m_conductor.findPublication(id);
 
@@ -136,14 +136,13 @@ TEST_F(ClientConductorTest, shouldReleasePublicationAfterGoingOutOfScope)
     std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID);
     static std::int32_t REMOVE_PUBLICATION = ControlProtocolEvents::REMOVE_PUBLICATION;
 
-    // drain ring buffer
     m_manyToOneRingBuffer.read(
         [&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
         {
         });
 
     m_conductor.onNewPublication(
-        STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, CHANNEL_STATUS_INDICATOR_ID, m_logFileName, id, id);
+        id, id, STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, CHANNEL_STATUS_INDICATOR_ID, m_logFileName);
 
     {
         std::shared_ptr<Publication> pub = m_conductor.findPublication(id);
@@ -179,7 +178,7 @@ TEST_F(ClientConductorTest, shouldReturnSamePublicationAfterLogBuffersCreated)
     std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID);
 
     m_conductor.onNewPublication(
-        STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, CHANNEL_STATUS_INDICATOR_ID, m_logFileName, id, id);
+        id, id, STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, CHANNEL_STATUS_INDICATOR_ID, m_logFileName);
 
     std::shared_ptr<Publication> pub1 = m_conductor.findPublication(id);
     std::shared_ptr<Publication> pub2 = m_conductor.findPublication(id);
@@ -194,7 +193,7 @@ TEST_F(ClientConductorTest, shouldIgnorePublicationReadyForUnknownCorrelationId)
     std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID);
 
     m_conductor.onNewPublication(
-        STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, CHANNEL_STATUS_INDICATOR_ID, m_logFileName, id + 1, id + 1);
+        id + 1, id + 1, STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, CHANNEL_STATUS_INDICATOR_ID, m_logFileName);
 
     std::shared_ptr<Publication> pub = m_conductor.findPublication(id);
 
@@ -265,7 +264,7 @@ TEST_F(ClientConductorTest, shouldReturnExclusivePublicationAfterLogBuffersCreat
     std::int64_t id = m_conductor.addExclusivePublication(CHANNEL, STREAM_ID);
 
     m_conductor.onNewExclusivePublication(
-        STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, CHANNEL_STATUS_INDICATOR_ID, m_logFileName, id, id);
+        id, id, STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, CHANNEL_STATUS_INDICATOR_ID, m_logFileName);
 
     std::shared_ptr<ExclusivePublication> pub = m_conductor.findExclusivePublication(id);
 
@@ -287,8 +286,8 @@ TEST_F(ClientConductorTest, shouldReleaseExclusivePublicationAfterGoingOutOfScop
         {
         });
 
-    m_conductor.onNewExclusivePublication(
-        STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, CHANNEL_STATUS_INDICATOR_ID, m_logFileName, id, id);
+    m_conductor.onNewExclusivePublication(id, id,
+        STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, CHANNEL_STATUS_INDICATOR_ID, m_logFileName);
 
     {
         std::shared_ptr<ExclusivePublication> pub = m_conductor.findExclusivePublication(id);
@@ -324,7 +323,7 @@ TEST_F(ClientConductorTest, shouldReturnSameExclusivePublicationAfterLogBuffersC
     std::int64_t id = m_conductor.addExclusivePublication(CHANNEL, STREAM_ID);
 
     m_conductor.onNewExclusivePublication(
-        STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, CHANNEL_STATUS_INDICATOR_ID, m_logFileName, id, id);
+        id, id, STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, CHANNEL_STATUS_INDICATOR_ID, m_logFileName);
 
     std::shared_ptr<ExclusivePublication> pub1 = m_conductor.findExclusivePublication(id);
     std::shared_ptr<ExclusivePublication> pub2 = m_conductor.findExclusivePublication(id);
@@ -339,7 +338,7 @@ TEST_F(ClientConductorTest, shouldIgnoreExclusivePublicationReadyForUnknownCorre
     std::int64_t id = m_conductor.addExclusivePublication(CHANNEL, STREAM_ID);
 
     m_conductor.onNewExclusivePublication(
-        STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, CHANNEL_STATUS_INDICATOR_ID, m_logFileName, id + 1, id + 1);
+        id + 1, id + 1, STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, CHANNEL_STATUS_INDICATOR_ID, m_logFileName);
 
     std::shared_ptr<ExclusivePublication> pub = m_conductor.findExclusivePublication(id);
 
@@ -620,8 +619,8 @@ TEST_F(ClientConductorTest, shouldCallOnNewPubAfterLogBuffersCreated)
     EXPECT_CALL(m_handlers, onNewPub(testing::StrEq(CHANNEL), STREAM_ID, SESSION_ID, id))
         .Times(1);
 
-    m_conductor.onNewPublication(
-        STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, CHANNEL_STATUS_INDICATOR_ID, m_logFileName, id, id);
+    m_conductor.onNewPublication(id, id,
+        STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, CHANNEL_STATUS_INDICATOR_ID, m_logFileName);
 }
 
 TEST_F(ClientConductorTest, shouldCallOnNewSubAfterOperationSuccess)
@@ -651,7 +650,7 @@ TEST_F(ClientConductorTest, shouldCallNewConnectionAfterOnNewConnection)
 
     m_conductor.onSubscriptionReady(id, CHANNEL_STATUS_INDICATOR_ID);
     // must be able to handle newImage even if findSubscription not called
-    m_conductor.onAvailableImage(STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, id, correlationId);
+    m_conductor.onAvailableImage(correlationId, SESSION_ID, 1, id, m_logFileName, SOURCE_IDENTITY);
 
     std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
     ASSERT_TRUE(sub != nullptr);
@@ -669,7 +668,7 @@ TEST_F(ClientConductorTest, shouldNotCallNewConnectionIfNoOperationSuccess)
         .Times(0);
 
     // must be able to handle newImage even if findSubscription not called
-    m_conductor.onAvailableImage(STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, id, correlationId);
+    m_conductor.onAvailableImage(correlationId, SESSION_ID, 1, id, m_logFileName, SOURCE_IDENTITY);
 
     std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
     ASSERT_TRUE(sub == nullptr);
@@ -687,7 +686,7 @@ TEST_F(ClientConductorTest, shouldNotCallNewConnectionIfUninterestingRegistratio
 
     m_conductor.onSubscriptionReady(id, CHANNEL_STATUS_INDICATOR_ID);
     // must be able to handle newImage even if findSubscription not called
-    m_conductor.onAvailableImage(STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, id + 1, correlationId);
+    m_conductor.onAvailableImage(correlationId, SESSION_ID, 1, id + 1, m_logFileName, SOURCE_IDENTITY);
 
     std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
     ASSERT_TRUE(sub != nullptr);
@@ -712,8 +711,8 @@ TEST_F(ClientConductorTest, shouldCallInactiveConnecitonAfterInactiveConnection)
 
     m_conductor.onSubscriptionReady(id, CHANNEL_STATUS_INDICATOR_ID);
     std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
-    m_conductor.onAvailableImage(STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, id, correlationId);
-    m_conductor.onUnavailableImage(STREAM_ID, correlationId, id);
+    m_conductor.onAvailableImage(correlationId, SESSION_ID, 1, id, m_logFileName, SOURCE_IDENTITY);
+    m_conductor.onUnavailableImage(correlationId, id);
     EXPECT_FALSE(sub->hasImage(correlationId));
 }
 
@@ -730,8 +729,8 @@ TEST_F(ClientConductorTest, shouldNotCallInactiveConnectionIfNoOperationSuccess)
         .Times(0);
 
     // must be able to handle newImage even if findSubscription not called
-    m_conductor.onAvailableImage(STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, id, correlationId);
-    m_conductor.onUnavailableImage(STREAM_ID, correlationId, id);
+    m_conductor.onAvailableImage(correlationId, SESSION_ID, 1, id, m_logFileName, SOURCE_IDENTITY);
+    m_conductor.onUnavailableImage(correlationId, id);
 }
 
 TEST_F(ClientConductorTest, shouldNotCallInactiveConnectionIfUninterestingConnectionCorrelationId)
@@ -751,8 +750,8 @@ TEST_F(ClientConductorTest, shouldNotCallInactiveConnectionIfUninterestingConnec
 
     m_conductor.onSubscriptionReady(id, CHANNEL_STATUS_INDICATOR_ID);
     std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
-    m_conductor.onAvailableImage(STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, id, correlationId);
-    m_conductor.onUnavailableImage(STREAM_ID, correlationId + 1, id);
+    m_conductor.onAvailableImage(correlationId, SESSION_ID, 1, id, m_logFileName, SOURCE_IDENTITY);
+    m_conductor.onUnavailableImage(correlationId + 1, id);
     EXPECT_TRUE(sub->hasImage(correlationId));
 
     testing::Mock::VerifyAndClearExpectations(&m_handlers);  // avoid catching unavailable call on sub release
@@ -775,7 +774,7 @@ TEST_F(ClientConductorTest, shouldCallUnavailableImageIfSubscriptionReleased)
 
     m_conductor.onSubscriptionReady(id, CHANNEL_STATUS_INDICATOR_ID);
     std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
-    m_conductor.onAvailableImage(STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, id, correlationId);
+    m_conductor.onAvailableImage(correlationId, SESSION_ID, 1, id, m_logFileName, SOURCE_IDENTITY);
     EXPECT_TRUE(sub->hasImage(correlationId));
 }
 
@@ -784,7 +783,7 @@ TEST_F(ClientConductorTest, shouldClosePublicationOnInterServiceTimeout)
     std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID);
 
     m_conductor.onNewPublication(
-        STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, CHANNEL_STATUS_INDICATOR_ID, m_logFileName, id, id);
+        id, id, STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, CHANNEL_STATUS_INDICATOR_ID, m_logFileName);
 
     std::shared_ptr<Publication> pub = m_conductor.findPublication(id);
 
@@ -799,7 +798,7 @@ TEST_F(ClientConductorTest, shouldCloseExclusivePublicationOnInterServiceTimeout
     std::int64_t id = m_conductor.addExclusivePublication(CHANNEL, STREAM_ID);
 
     m_conductor.onNewExclusivePublication(
-        STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, CHANNEL_STATUS_INDICATOR_ID, m_logFileName, id, id);
+        id, id, STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, CHANNEL_STATUS_INDICATOR_ID, m_logFileName);
 
     std::shared_ptr<ExclusivePublication> pub = m_conductor.findExclusivePublication(id);
 
@@ -831,9 +830,9 @@ TEST_F(ClientConductorTest, shouldCloseAllPublicationsAndSubscriptionsOnInterSer
     std::int64_t subId = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
 
     m_conductor.onNewPublication(
-        STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, CHANNEL_STATUS_INDICATOR_ID, m_logFileName, pubId, pubId);
-    m_conductor.onNewExclusivePublication(
-        STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID_2, CHANNEL_STATUS_INDICATOR_ID, m_logFileName2, exPubId, exPubId);
+        pubId, pubId, STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, CHANNEL_STATUS_INDICATOR_ID, m_logFileName);
+    m_conductor.onNewExclusivePublication(exPubId, exPubId,
+        STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID_2, CHANNEL_STATUS_INDICATOR_ID, m_logFileName2);
     m_conductor.onSubscriptionReady(subId, CHANNEL_STATUS_INDICATOR_ID);
 
     std::shared_ptr<Publication> pub = m_conductor.findPublication(pubId);
@@ -865,7 +864,7 @@ TEST_F(ClientConductorTest, shouldRemoveImageOnInterServiceTimeout)
 
     ASSERT_TRUE(sub != nullptr);
 
-    m_conductor.onAvailableImage(STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, id, correlationId);
+    m_conductor.onAvailableImage(correlationId, SESSION_ID, 1, id, m_logFileName, SOURCE_IDENTITY);
     ASSERT_TRUE(sub->hasImage(correlationId));
 
     m_conductor.closeAllResources(m_currentTime);
@@ -933,7 +932,6 @@ TEST_F(ClientConductorTest, shouldReleaseCounterAfterGoingOutOfScope)
     std::int64_t id = m_conductor.addCounter(COUNTER_TYPE_ID, NULL, 0, COUNTER_LABEL);
     static std::int32_t REMOVE_COUNTER = ControlProtocolEvents::REMOVE_COUNTER;
 
-    // drain ring buffer
     m_manyToOneRingBuffer.read(
         [&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
         {
@@ -1009,7 +1007,6 @@ TEST_F(ClientConductorTest, shouldNotFindCounterOnAvailableCounterForUnknownCorr
 {
     std::int64_t id = m_conductor.addCounter(COUNTER_TYPE_ID, NULL, 0, COUNTER_LABEL);
 
-    // but should see callback for it
     EXPECT_CALL(m_handlers, onAvailableCounter(testing::_, id + 1, COUNTER_ID))
         .Times(1);
 

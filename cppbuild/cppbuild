@@ -18,6 +18,10 @@ do
       echo "Enabling warnings as errors for c++"
       shift
       ;;
+    -d|--debug-build)
+      EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DCMAKE_BUILD_TYPE=Debug"
+      shift
+      ;;
     -b|--build-aeron-driver)
       echo "Enabling building of aeron driver is now the default"
       shift
@@ -39,7 +43,7 @@ do
       shift
       ;;
     -h|--help)
-      echo "$0 [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--build-aeron-driver] [--sanitise-build] [--coverage-build]"
+      echo "$0 [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--debug-build] [--build-aeron-driver] [--sanitise-build] [--coverage-build]"
       exit
       ;;
     *)

@@ -277,7 +277,7 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddSing
             EXPECT_EQ(response.streamId(), STREAM_ID_1);
             EXPECT_EQ(response.sessionId(), session_id);
 
-            EXPECT_EQ(response.subscriberRegistrationId(), sub_id);
+            EXPECT_EQ(response.subscriptionRegistrationId(), sub_id);
 
             EXPECT_EQ(log_file_name, response.logFileName());
             EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
@@ -334,7 +334,7 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToAddSingleIpcPublicationThenAddSingl
 
             EXPECT_EQ(response.streamId(), STREAM_ID_1);
             EXPECT_EQ(response.sessionId(), session_id);
-            EXPECT_EQ(response.subscriberRegistrationId(), sub_id);
+            EXPECT_EQ(response.subscriptionRegistrationId(), sub_id);
 
             EXPECT_EQ(log_file_name, response.logFileName());
             EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
@@ -401,7 +401,7 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToAddMultipleIpcSubscriptionWithSameS
 
             EXPECT_EQ(response.streamId(), STREAM_ID_1);
             EXPECT_EQ(response.sessionId(), session_id);
-            EXPECT_TRUE(response.subscriberRegistrationId() == sub_id_1 || response.subscriberRegistrationId() == sub_id_2);
+            EXPECT_TRUE(response.subscriptionRegistrationId() == sub_id_1 || response.subscriptionRegistrationId() == sub_id_2);
 
             EXPECT_EQ(log_file_name, response.logFileName());
             EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
@@ -463,7 +463,7 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddMult
             const command::ImageBuffersReadyFlyweight response(buffer, offset);
 
             EXPECT_EQ(response.streamId(), STREAM_ID_1);
-            EXPECT_EQ(response.subscriberRegistrationId(), sub_id);
+            EXPECT_EQ(response.subscriptionRegistrationId(), sub_id);
             EXPECT_EQ(response.sessionId(), session_id_1);
             EXPECT_EQ(response.correlationId(), pub_id_1);
             EXPECT_EQ(log_file_name_1, response.logFileName());
@@ -487,7 +487,7 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddMult
             const command::ImageBuffersReadyFlyweight response(buffer, offset);
 
             EXPECT_EQ(response.streamId(), STREAM_ID_1);
-            EXPECT_EQ(response.subscriberRegistrationId(), sub_id);
+            EXPECT_EQ(response.subscriptionRegistrationId(), sub_id);
             EXPECT_EQ(response.sessionId(), session_id_2);
             EXPECT_EQ(response.correlationId(), pub_id_2);
             EXPECT_EQ(log_file_name_2, response.logFileName());
@@ -547,7 +547,7 @@ TEST_F(DriverConductorIpcTest, shouldNotLinkSubscriptionOnAddPublicationAfterFir
             const command::ImageBuffersReadyFlyweight response(buffer, offset);
 
             EXPECT_EQ(response.streamId(), STREAM_ID_1);
-            EXPECT_EQ(response.subscriberRegistrationId(), sub_id);
+            EXPECT_EQ(response.subscriptionRegistrationId(), sub_id);
             EXPECT_EQ(response.sessionId(), session_id);
             EXPECT_EQ(response.correlationId(), pub_id_1);
             EXPECT_EQ(log_file_name, response.logFileName());

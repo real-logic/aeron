@@ -46,7 +46,7 @@ public:
     {
     }
 
-    inline virtual ~InvokeOnScopeExit()
+    inline ~InvokeOnScopeExit()
     {
         m_func();
     }

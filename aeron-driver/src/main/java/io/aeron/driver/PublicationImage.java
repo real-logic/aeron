@@ -459,14 +459,14 @@ public class PublicationImage
             newRebuildPosition,
             lossFound(scanOutcome));
 
-        final int window = CongestionControlUtil.receiverWindowLength(ccOutcome);
-        final long threshold = CongestionControlUtil.positionThreshold(window);
+        final int windowLength = CongestionControlUtil.receiverWindowLength(ccOutcome);
+        final long threshold = CongestionControlUtil.positionThreshold(windowLength);
 
         if (CongestionControlUtil.shouldForceStatusMessage(ccOutcome) ||
             ((timeOfLastStatusMessageScheduleNs + statusMessageTimeoutNs) - nowNs < 0) ||
             (minSubscriberPosition > (nextSmPosition + threshold)))
         {
-            scheduleStatusMessage(nowNs, minSubscriberPosition, window);
+            scheduleStatusMessage(nowNs, minSubscriberPosition, windowLength);
             cleanBufferTo(minSubscriberPosition - (termLengthMask + 1));
         }
     }

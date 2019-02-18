@@ -59,6 +59,12 @@ class ConsensusModuleSnapshotLoader implements ControlledFragmentHandler
     {
         messageHeaderDecoder.wrap(buffer, offset);
 
+        final int schemaId = messageHeaderDecoder.sbeSchemaId();
+        if (schemaId != MessageHeaderDecoder.SCHEMA_ID)
+        {
+            throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
+        }
+
         final int templateId = messageHeaderDecoder.templateId();
         switch (templateId)
         {
@@ -144,9 +150,6 @@ class ConsensusModuleSnapshotLoader implements ControlledFragmentHandler
                     clusterMembersDecoder.highMemberId(),
                     clusterMembersDecoder.clusterMembers());
                 break;
-
-            default:
-                throw new ClusterException("unknown template id: " + templateId);
         }
 
         return ControlledFragmentHandler.Action.CONTINUE;

@@ -19,16 +19,26 @@
 #define _GNU_SOURCE
 #endif
 
-#include <netdb.h>
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
-#include <arpa/inet.h>
-#include <ifaddrs.h>
-#include <net/if.h>
 #include "util/aeron_netutil.h"
 #include "util/aeron_error.h"
 #include "util/aeron_parse_util.h"
+#include "aeron_socket.h"
+#include "aeron_windows.h"
+
+#if defined(AERON_COMPILER_GCC)
+
+#elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
+#include <intrin.h>
+#define __builtin_bswap32 _byteswap_ulong
+#define __builtin_bswap64 _byteswap_uint64
+#define __builtin_popcount __popcnt
+#define __builtin_popcountll __popcnt64
+#else
+#error Unsupported platform!
+#endif
 
 static aeron_uri_hostname_resolver_func_t aeron_uri_hostname_resolver_func = NULL;
 
@@ -36,6 +46,8 @@ static void *aeron_uri_hostname_resolver_clientd = NULL;
 
 int aeron_ip_addr_resolver(const char *host, struct sockaddr_storage *sockaddr, int family_hint)
 {
+    aeron_net_init();
+
     struct addrinfo hints;
     struct addrinfo *info = NULL;
 
@@ -77,6 +89,7 @@ int aeron_ip_addr_resolver(const char *host, struct sockaddr_storage *sockaddr, 
     }
 
     freeaddrinfo(info);
+
     return result;
 }
 
@@ -360,6 +373,7 @@ void aeron_set_ipv4_wildcard_host_and_port(struct sockaddr_storage *sockaddr)
     addr->sin_port = htons(0);
 }
 
+#if defined(AERON_COMPILER_GCC)
 union _aeron_128b_as_64b
 {
     __uint128_t value;
@@ -399,6 +413,12 @@ bool aeron_ipv6_does_prefix_match(struct in6_addr *in6_addr1, struct in6_addr *i
 
     return (addr1 & netmask) == (addr2 & netmask);
 }
+#else
+union _aeron_128b_as_64b
+{
+    uint64_t q[2];
+};
+#endif
 
 size_t aeron_ipv6_netmask_to_prefixlen(struct in6_addr *netmask)
 {
@@ -457,7 +477,7 @@ int aeron_ip_lookup_func(
 {
     if (flags & IFF_UP)
     {
-        struct lookup_state *state = (struct lookup_state *) clientd;
+        struct lookup_state *state = (struct lookup_state *)clientd;
 
         if (aeron_ip_does_prefix_match((struct sockaddr *)&state->lookup_addr, addr, state->prefixlen))
         {

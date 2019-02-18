@@ -15,7 +15,12 @@
  */
 package io.aeron.archive;
 
+import io.aeron.archive.client.AeronArchive;
+import io.aeron.driver.MediaDriver;
+import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.junit.Test;
+
+import java.util.concurrent.*;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -32,5 +37,46 @@ public class ArchiveTest
         final String actual = Archive.segmentFileName(recordingId, segmentIndex);
 
         assertThat(actual, is(expected));
+    }
+
+    @Test
+    public void shouldAllowMultipleConnectionsInParallel() throws InterruptedException
+    {
+        final int numberOfArchiveClients = 5;
+        final CountDownLatch latch = new CountDownLatch(numberOfArchiveClients);
+        final ExecutorService executorService = Executors.newFixedThreadPool(numberOfArchiveClients);
+        final ManyToOneConcurrentLinkedQueue<AeronArchive> archiveClientQueue = new ManyToOneConcurrentLinkedQueue<>();
+        final MediaDriver.Context driverCtx = new MediaDriver.Context();
+        final Archive.Context archiveCtx = new Archive.Context();
+
+        try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(driverCtx, archiveCtx))
+        {
+            for (int i = 0; i < numberOfArchiveClients; i++)
+            {
+                executorService.execute(
+                    () ->
+                    {
+                        archiveClientQueue.add(AeronArchive.connect());
+                        latch.countDown();
+                    });
+            }
+
+            latch.await(10, TimeUnit.SECONDS);
+
+            assertThat(latch.getCount(), is(0L));
+        }
+        finally
+        {
+            executorService.shutdownNow();
+
+            AeronArchive archiveClient;
+            while (null != (archiveClient = archiveClientQueue.poll()))
+            {
+                archiveClient.close();
+            }
+
+            archiveCtx.deleteArchiveDirectory();
+            driverCtx.deleteAeronDirectory();
+        }
     }
 }

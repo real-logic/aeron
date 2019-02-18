@@ -76,6 +76,7 @@ class ControlRequestAdapter implements FragmentHandler
                 listener.onConnect(
                     connectRequestDecoder.correlationId(),
                     connectRequestDecoder.responseStreamId(),
+                    connectRequestDecoder.version(),
                     connectRequestDecoder.responseChannel());
                 break;
             }

@@ -640,6 +640,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     ControlSession newControlSession(
         final long correlationId,
         final int streamId,
+        @SuppressWarnings("unused") final int version,
         final String channel,
         final ControlSessionDemuxer demuxer)
     {

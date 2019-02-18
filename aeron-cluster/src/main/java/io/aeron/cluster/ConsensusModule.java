@@ -371,6 +371,11 @@ public class ConsensusModule implements AutoCloseable
         public static final String SESSION_REJECTED_MSG = "Session failed authentication";
 
         /**
+         * Message detail to be sent when a session has an invalid client version.
+         */
+        public static final String SESSION_INVALID_VERSION_MSG = "Incorrect client version";
+
+        /**
          * Channel to be used communicating cluster member status to each other. This can be used for default
          * configuration with the endpoints replaced with those provided by {@link #CLUSTER_MEMBERS_PROP_NAME}.
          */

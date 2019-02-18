@@ -22,7 +22,7 @@ import io.aeron.archive.codecs.SourceLocation;
  */
 interface ControlRequestListener
 {
-    void onConnect(long correlationId, int streamId, String channel);
+    void onConnect(long correlationId, int streamId, int version, String channel);
 
     void onCloseSession(long controlSessionId);
 

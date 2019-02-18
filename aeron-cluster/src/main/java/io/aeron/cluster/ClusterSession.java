@@ -35,7 +35,7 @@ class ClusterSession
 
     enum State
     {
-        INIT, CONNECTED, CHALLENGED, AUTHENTICATED, REJECTED, OPEN, CLOSED
+        INIT, CONNECTED, CHALLENGED, AUTHENTICATED, REJECTED, INVALID_VERSION, OPEN, CLOSED
     }
 
     private boolean hasNewLeaderEventPending = false;

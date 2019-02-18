@@ -2,7 +2,7 @@
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
                    package="io.aeron.archive.codecs"
                    id="101"
-                   version="0"
+                   version="2"
                    semanticVersion="5.2"
                    description="Message Codecs for communicating with an Aeron Archive"
                    byteOrder="littleEndian">
@@ -31,6 +31,8 @@
             <validValue name="REMOTE">1</validValue>
         </enum>
         <type name="time_t" primitiveType="int64" description="Epoch time in milliseconds since 1 Jan 1970 UTC"/>
+        <type name="version_t" primitiveType="int32" presence="optional" nullValue="0" minValue="2" maxValue="16777215"
+              sinceVersion="2" description="Protocol suite version"/>
     </types>
 
     <!--
@@ -38,17 +40,17 @@
         ========================
 
         Control Protocol:
-            -> connect, [*start-recording | *stop-recording | *stop-recording-subscription |
-                         *replay | *stop-replay |
-                         *list-recordings | *list-recordings-by-uri | *list-recording | *find-last-matching-recording |
-                         *extend-recording | *truncate-recording |
-                         *recording-position | *stop-position],
+            -> connect, *[start-recording | stop-recording | stop-recording-subscription |
+                         replay | stop-replay |
+                         list-recordings | list-recordings-by-uri | list-recording | find-last-matching-recording |
+                         extend-recording | truncate-recording |
+                         recording-position | stop-position],
                close
                       \
                       *control-response | *recording-descriptor
 
         Recording Events:
-            -> *[recording-started, *recording-progress, recording-stopped]
+            -> recording-started, *recording-progress, recording-stopped
 
 
        1. Connect
@@ -100,7 +102,8 @@
                  description="Request a connection to an archive and provide response details for the control session">
         <field name="correlationId"        id="1" type="int64"/>
         <field name="responseStreamId"     id="2" type="int32"/>
-        <data  name="responseChannel"      id="3" type="varAsciiEncoding"/>
+        <field name="version"              id="3" type="version_t" presence="optional" sinceVersion="2"/>
+        <data  name="responseChannel"      id="4" type="varAsciiEncoding"/>
     </sbe:message>
 
     <sbe:message name="CloseSessionRequest"

@@ -38,7 +38,7 @@ class ControlSession implements Session
 {
     enum State
     {
-        INIT, ACTIVE, INACTIVE, CLOSED
+        INIT, INVALID_VERSION, ACTIVE, INACTIVE, CLOSED
     }
 
     private final ArchiveConductor conductor;
@@ -84,6 +84,11 @@ class ControlSession implements Session
         state = State.INACTIVE;
     }
 
+    public void invalidVersion()
+    {
+        state = State.INVALID_VERSION;
+    }
+
     public void close()
     {
         state = State.CLOSED;
@@ -100,7 +105,7 @@ class ControlSession implements Session
     {
         int workCount = 0;
 
-        if (state == State.INIT)
+        if (state == State.INIT || state == State.INVALID_VERSION)
         {
             workCount += waitForConnection();
         }
@@ -366,9 +371,25 @@ class ControlSession implements Session
         }
         else if (controlPublication.isConnected())
         {
-            activityDeadlineMs = Aeron.NULL_VALUE;
-            state = State.ACTIVE;
-            sendConnectResponse();
+            if (state == State.INVALID_VERSION)
+            {
+                controlResponseProxy.sendResponse(
+                    controlSessionId,
+                    correlationId,
+                    controlSessionId,
+                    ERROR,
+                    "invalid client version",
+                    controlPublication);
+
+                state = State.INACTIVE;
+            }
+            else
+            {
+                activityDeadlineMs = Aeron.NULL_VALUE;
+                state = State.ACTIVE;
+                sendConnectResponse();
+            }
+
             workCount += 1;
         }
         else if (hasGoneInactive())

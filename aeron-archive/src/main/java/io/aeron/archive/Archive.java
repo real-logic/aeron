@@ -1112,7 +1112,7 @@ public class Archive implements AutoCloseable
          */
         public int maxConcurrentRecordings()
         {
-            return this.maxConcurrentRecordings;
+            return maxConcurrentRecordings;
         }
 
         /**
@@ -1134,7 +1134,7 @@ public class Archive implements AutoCloseable
          */
         public int maxConcurrentReplays()
         {
-            return this.maxConcurrentReplays;
+            return maxConcurrentReplays;
         }
 
         /**

@@ -275,6 +275,16 @@ public:
     }
 
     /**
+     * Return whether the AgentInvoker is used or not.
+     *
+     * @return true if AgentInvoker used or false if not.
+     */
+    inline bool usesAgentInvoker() const
+    {
+        return m_context.m_useConductorAgentInvoker;
+    }
+
+    /**
      * Get the CountersReader for the Aeron media driver counters.
      *
      * @return CountersReader for the Aeron media driver in use.

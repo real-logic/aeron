@@ -29,6 +29,7 @@ if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
 
 option(BUILD_AERON_DRIVER "Build Aeron driver" ON)
+option(BUILD_AERON_ARCHIVE_API "Build Aeron Archive API" OFF)
 
 option(C_WARNINGS_AS_ERRORS "Enable warnings as errors for C" OFF)
 option(CXX_WARNINGS_AS_ERRORS "Enable warnings as errors for C++" OFF)
@@ -241,9 +242,12 @@ set(AERON_CLIENT_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-client/src/main/
 
 set(AERON_DRIVER_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-driver/src/main/c")
 
+set(AERON_ARCHIVE_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-archive/src/main/cpp")
+
 if(AERON_TESTS)
     set(AERON_CLIENT_TEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-client/src/test/cpp")
     set(AERON_DRIVER_TEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-driver/src/test/c")
+    set(AERON_ARCHIVE_TEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}}/aeron-archive/src/test/cpp")
 
     # gmock - includes gtest
     include_directories(${GMOCK_SOURCE_DIR}/googletest/include)
@@ -279,6 +283,16 @@ if(BUILD_AERON_DRIVER)
    endif()
 endif(BUILD_AERON_DRIVER)
 
+if(BUILD_AERON_ARCHIVE_API)
+    set(ARCHIVE_CODEC_TARGET_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+    set(ARCHIVE_CODEC_SCHEMA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/aeron-archive/src/main/resources")
+    set(ARCHIVE_CODEC_WORKING_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+
+    add_subdirectory(${AERON_ARCHIVE_SOURCE_PATH})
+#   if(AERON_TESTS)
+#       add_subdirectory(${AERON_ARCHIVE_TEST_PATH})
+#   endif()
+endif(BUILD_AERON_ARCHIVE_API)
 ##########################################################
 # doc target
 

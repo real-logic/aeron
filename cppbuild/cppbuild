@@ -18,6 +18,10 @@ do
       echo "Enabling warnings as errors for c++"
       shift
       ;;
+    -a|--build-archive-api)
+      EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DBUILD_AERON_ARCHIVE_API=ON"
+      shift
+      ;;
     -d|--debug-build)
       EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DCMAKE_BUILD_TYPE=Debug"
       shift

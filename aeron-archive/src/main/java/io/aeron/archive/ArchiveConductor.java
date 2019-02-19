@@ -758,6 +758,12 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             sb.append(CommonContext.TAGS_PARAM_NAME).append('=').append(tagsStr).append('|');
         }
 
+        final String sessionIdStr = channelUri.get(CommonContext.SESSION_ID_PARAM_NAME);
+        if (null != tagsStr)
+        {
+            sb.append(CommonContext.SESSION_ID_PARAM_NAME).append('=').append(sessionIdStr).append('|');
+        }
+
         sb.setLength(sb.length() - 1);
 
         return sb.toString();

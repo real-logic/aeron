@@ -29,9 +29,9 @@ import org.agrona.DirectBuffer;
 public class ControlResponsePoller implements ControlledFragmentHandler
 {
     /**
-     * Limit to apply when connecting so messages are not missed.
+     * Limit to apply when polling response messages.
      */
-    public static final int CONNECT_FRAGMENT_LIMIT = 1;
+    public static final int FRAGMENT_LIMIT = 10;
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ControlResponseDecoder controlResponseDecoder = new ControlResponseDecoder();
@@ -61,13 +61,13 @@ public class ControlResponsePoller implements ControlledFragmentHandler
 
     /**
      * Create a poller for a given subscription to an archive for control response messages with a default
-     * fragment limit for polling as {@link #CONNECT_FRAGMENT_LIMIT}.
+     * fragment limit for polling as {@link #FRAGMENT_LIMIT}.
      *
      * @param subscription  to poll for new events.
      */
     public ControlResponsePoller(final Subscription subscription)
     {
-        this(subscription, CONNECT_FRAGMENT_LIMIT);
+        this(subscription, FRAGMENT_LIMIT);
     }
 
     /**

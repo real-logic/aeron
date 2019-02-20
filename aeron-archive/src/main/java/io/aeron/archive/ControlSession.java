@@ -36,19 +36,23 @@ import static io.aeron.archive.codecs.ControlResponseCode.*;
  */
 class ControlSession implements Session
 {
+    private static final long RESEND_INTERVAL_MS = 200L;
+
     enum State
     {
-        INIT, INVALID_VERSION, ACTIVE, INACTIVE, CLOSED
+        INIT, CONNECTED, ACTIVE, INACTIVE, CLOSED
     }
 
-    private final ArchiveConductor conductor;
-    private final EpochClock epochClock;
-    private final ArrayDeque<BooleanSupplier> queuedResponses = new ArrayDeque<>(8);
-    private final ControlResponseProxy controlResponseProxy;
+    private boolean isInvalidVersion;
     private final long controlSessionId;
     private final long correlationId;
     private final long connectTimeoutMs;
-    private long activityDeadlineMs = -1;
+    private long resendDeadlineMs;
+    private long activityDeadlineMs;
+    private final ArchiveConductor conductor;
+    private final EpochClock epochClock;
+    private final ControlResponseProxy controlResponseProxy;
+    private final ArrayDeque<BooleanSupplier> queuedResponses = new ArrayDeque<>(8);
     private final ControlSessionDemuxer demuxer;
     private final Publication controlPublication;
     private State state = State.INIT;
@@ -72,6 +76,7 @@ class ControlSession implements Session
         this.conductor = conductor;
         this.epochClock = epochClock;
         this.controlResponseProxy = controlResponseProxy;
+        this.activityDeadlineMs = epochClock.time() + connectTimeoutMs;
     }
 
     public long sessionId()
@@ -86,14 +91,14 @@ class ControlSession implements Session
 
     public void invalidVersion()
     {
-        state = State.INVALID_VERSION;
+        isInvalidVersion = true;
     }
 
     public void close()
     {
-        state = State.CLOSED;
-        demuxer.removeControlSession(this);
         CloseHelper.close(controlPublication);
+        demuxer.removeControlSession(this);
+        state = State.CLOSED;
     }
 
     public boolean isDone()
@@ -105,14 +110,19 @@ class ControlSession implements Session
     {
         int workCount = 0;
 
-        if (state == State.INIT || state == State.INVALID_VERSION)
+        switch (state)
         {
-            workCount += waitForConnection();
-        }
+            case INIT:
+                workCount += waitForConnection();
+                break;
 
-        if (state == State.ACTIVE)
-        {
-            workCount = sendQueuedResponses();
+            case CONNECTED:
+                workCount += sendConnectResponse();
+                break;
+
+            case ACTIVE:
+                workCount = sendQueuedResponses();
+                break;
         }
 
         return workCount;
@@ -130,18 +140,30 @@ class ControlSession implements Session
 
     public void onStopRecording(final long correlationId, final int streamId, final String channel)
     {
-        conductor.stopRecording(correlationId, this, streamId, channel);
+        updateState();
+        if (State.ACTIVE == state)
+        {
+            conductor.stopRecording(correlationId, this, streamId, channel);
+        }
     }
 
     public void onStopRecordingSubscription(final long correlationId, final long subscriptionId)
     {
-        conductor.stopRecordingSubscription(correlationId, this, subscriptionId);
+        updateState();
+        if (State.ACTIVE == state)
+        {
+            conductor.stopRecordingSubscription(correlationId, this, subscriptionId);
+        }
     }
 
     public void onStartRecording(
         final long correlationId, final String channel, final int streamId, final SourceLocation sourceLocation)
     {
-        conductor.startRecordingSubscription(correlationId, this, streamId, channel, sourceLocation);
+        updateState();
+        if (State.ACTIVE == state)
+        {
+            conductor.startRecordingSubscription(correlationId, this, streamId, channel, sourceLocation);
+        }
     }
 
     public void onListRecordingsForUri(
@@ -151,23 +173,35 @@ class ControlSession implements Session
         final int streamId,
         final byte[] channelFragment)
     {
-        conductor.newListRecordingsForUriSession(
-            correlationId,
-            fromRecordingId,
-            recordCount,
-            streamId,
-            channelFragment,
-            this);
+        updateState();
+        if (State.ACTIVE == state)
+        {
+            conductor.newListRecordingsForUriSession(
+                correlationId,
+                fromRecordingId,
+                recordCount,
+                streamId,
+                channelFragment,
+                this);
+        }
     }
 
     public void onListRecordings(final long correlationId, final long fromRecordingId, final int recordCount)
     {
-        conductor.newListRecordingsSession(correlationId, fromRecordingId, recordCount, this);
+        updateState();
+        if (State.ACTIVE == state)
+        {
+            conductor.newListRecordingsSession(correlationId, fromRecordingId, recordCount, this);
+        }
     }
 
     public void onListRecording(final long correlationId, final long recordingId)
     {
-        conductor.listRecording(correlationId, this, recordingId);
+        updateState();
+        if (State.ACTIVE == state)
+        {
+            conductor.listRecording(correlationId, this, recordingId);
+        }
     }
 
     public void onFindLastMatchingRecording(
@@ -177,13 +211,17 @@ class ControlSession implements Session
         final int streamId,
         final byte[] channelFragment)
     {
-        conductor.findLastMatchingRecording(
-            correlationId,
-            minRecordingId,
-            sessionId,
-            streamId,
-            channelFragment,
-            this);
+        updateState();
+        if (State.ACTIVE == state)
+        {
+            conductor.findLastMatchingRecording(
+                correlationId,
+                minRecordingId,
+                sessionId,
+                streamId,
+                channelFragment,
+                this);
+        }
     }
 
     public void onStartReplay(
@@ -194,19 +232,27 @@ class ControlSession implements Session
         final int replayStreamId,
         final String replayChannel)
     {
-        conductor.startReplay(
-            correlationId,
-            this,
-            recordingId,
-            position,
-            length,
-            replayStreamId,
-            replayChannel);
+        updateState();
+        if (State.ACTIVE == state)
+        {
+            conductor.startReplay(
+                correlationId,
+                this,
+                recordingId,
+                position,
+                length,
+                replayStreamId,
+                replayChannel);
+        }
     }
 
     public void onStopReplay(final long correlationId, final long replaySessionId)
     {
-        conductor.stopReplay(correlationId, this, replaySessionId);
+        updateState();
+        if (State.ACTIVE == state)
+        {
+            conductor.stopReplay(correlationId, this, replaySessionId);
+        }
     }
 
     public void onExtendRecording(
@@ -216,22 +262,38 @@ class ControlSession implements Session
         final int streamId,
         final SourceLocation sourceLocation)
     {
-        conductor.extendRecording(correlationId, this, recordingId, streamId, channel, sourceLocation);
+        updateState();
+        if (State.ACTIVE == state)
+        {
+            conductor.extendRecording(correlationId, this, recordingId, streamId, channel, sourceLocation);
+        }
     }
 
     public void onGetRecordingPosition(final long correlationId, final long recordingId)
     {
-        conductor.getRecordingPosition(correlationId, this, recordingId);
+        updateState();
+        if (State.ACTIVE == state)
+        {
+            conductor.getRecordingPosition(correlationId, this, recordingId);
+        }
     }
 
     public void onTruncateRecording(final long correlationId, final long recordingId, final long position)
     {
-        conductor.truncateRecording(correlationId, this, recordingId, position);
+        updateState();
+        if (State.ACTIVE == state)
+        {
+            conductor.truncateRecording(correlationId, this, recordingId, position);
+        }
     }
 
     public void onGetStopPosition(final long correlationId, final long recordingId)
     {
-        conductor.getStopPosition(correlationId, this, recordingId);
+        updateState();
+        if (State.ACTIVE == state)
+        {
+            conductor.getStopPosition(correlationId, this, recordingId);
+        }
     }
 
     void onListRecordingSessionClosed(final AbstractListRecordingsSession listRecordingsSession)
@@ -312,20 +374,6 @@ class ControlSession implements Session
         return controlPublication.maxPayloadLength();
     }
 
-    private void sendConnectResponse()
-    {
-        if (!controlResponseProxy.sendResponse(
-            controlSessionId,
-            correlationId,
-            controlSessionId,
-            OK,
-            null,
-            controlPublication))
-        {
-            queueResponse(correlationId, controlSessionId, OK, null);
-        }
-    }
-
     private int sendQueuedResponses()
     {
         int workCount = 0;
@@ -337,7 +385,7 @@ class ControlSession implements Session
         {
             if (!queuedResponses.isEmpty())
             {
-                if (sendFirst(queuedResponses))
+                if (queuedResponses.peekFirst().getAsBoolean())
                 {
                     queuedResponses.pollFirst();
                     activityDeadlineMs = Aeron.NULL_VALUE;
@@ -347,7 +395,7 @@ class ControlSession implements Session
                 {
                     activityDeadlineMs = epochClock.time() + connectTimeoutMs;
                 }
-                else if (hasGoneInactive())
+                else if (hasNoActivity(epochClock.time()))
                 {
                     state = State.INACTIVE;
                 }
@@ -355,54 +403,6 @@ class ControlSession implements Session
         }
 
         return workCount;
-    }
-
-    private static boolean sendFirst(final ArrayDeque<BooleanSupplier> responseQueue)
-    {
-        return responseQueue.peekFirst().getAsBoolean();
-    }
-
-    private int waitForConnection()
-    {
-        int workCount = 0;
-        if (activityDeadlineMs == Aeron.NULL_VALUE)
-        {
-            activityDeadlineMs = epochClock.time() + connectTimeoutMs;
-        }
-        else if (controlPublication.isConnected())
-        {
-            if (state == State.INVALID_VERSION)
-            {
-                controlResponseProxy.sendResponse(
-                    controlSessionId,
-                    correlationId,
-                    controlSessionId,
-                    ERROR,
-                    "invalid client version",
-                    controlPublication);
-
-                state = State.INACTIVE;
-            }
-            else
-            {
-                activityDeadlineMs = Aeron.NULL_VALUE;
-                state = State.ACTIVE;
-                sendConnectResponse();
-            }
-
-            workCount += 1;
-        }
-        else if (hasGoneInactive())
-        {
-            state = State.INACTIVE;
-        }
-
-        return workCount;
-    }
-
-    private boolean hasGoneInactive()
-    {
-        return activityDeadlineMs != Aeron.NULL_VALUE && epochClock.time() > activityDeadlineMs;
     }
 
     private void queueResponse(
@@ -415,5 +415,77 @@ class ControlSession implements Session
             code,
             message,
             controlPublication));
+    }
+
+    private int waitForConnection()
+    {
+        int workCount = 0;
+
+        if (controlPublication.isConnected())
+        {
+            state = State.CONNECTED;
+            workCount += 1;
+        }
+        else if (hasNoActivity(epochClock.time()))
+        {
+            state = State.INACTIVE;
+            workCount += 1;
+        }
+
+        return workCount;
+    }
+
+    private int sendConnectResponse()
+    {
+        int workCount = 0;
+
+        final long nowMs = epochClock.time();
+        if (hasNoActivity(nowMs))
+        {
+            state = State.INACTIVE;
+            workCount += 1;
+        }
+        else if (nowMs > resendDeadlineMs)
+        {
+            resendDeadlineMs = nowMs + RESEND_INTERVAL_MS;
+            if (isInvalidVersion)
+            {
+                controlResponseProxy.sendResponse(
+                    controlSessionId,
+                    correlationId,
+                    controlSessionId,
+                    ERROR,
+                    "invalid client version",
+                    controlPublication);
+
+                workCount += 1;
+            }
+            else if (controlResponseProxy.sendResponse(
+                controlSessionId,
+                correlationId,
+                controlSessionId,
+                OK,
+                null,
+                controlPublication))
+            {
+                activityDeadlineMs = Aeron.NULL_VALUE;
+                workCount += 1;
+            }
+        }
+
+        return workCount;
+    }
+
+    private boolean hasNoActivity(final long nowMs)
+    {
+        return activityDeadlineMs != Aeron.NULL_VALUE && nowMs > activityDeadlineMs;
+    }
+
+    private void updateState()
+    {
+        if (State.CONNECTED == state && !isInvalidVersion)
+        {
+            state = State.ACTIVE;
+        }
     }
 }

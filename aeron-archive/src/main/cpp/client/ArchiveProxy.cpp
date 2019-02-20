@@ -51,8 +51,7 @@ bool ArchiveProxy::connect(
     return false;
 }
 
-bool ArchiveProxy::tryClaimWithTimeout(
-    std::int32_t length, BufferClaim& bufferClaim, std::shared_ptr<Aeron> aeron)
+bool ArchiveProxy::tryClaimWithTimeout(std::int32_t length, BufferClaim& bufferClaim, std::shared_ptr<Aeron> aeron)
 {
     YieldingIdleStrategy idleStrategy;
 

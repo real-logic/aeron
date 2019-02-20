@@ -415,8 +415,8 @@ public final class MediaDriver implements AutoCloseable
         private long publicationUnblockTimeoutNs = Configuration.PUBLICATION_UNBLOCK_TIMEOUT_NS;
         private long publicationConnectionTimeoutNs = Configuration.PUBLICATION_CONNECTION_TIMEOUT_NS;
         private long publicationLingerTimeoutNs = Configuration.PUBLICATION_LINGER_NS;
-        private long statusMessageTimeoutNs = Configuration.statusMessageTimeout();
-        private long counterFreeToReuseTimeoutNs = Configuration.counterFreeToReuseTimeout();
+        private long statusMessageTimeoutNs = Configuration.statusMessageTimeoutNs();
+        private long counterFreeToReuseTimeoutNs = Configuration.counterFreeToReuseTimeoutNs();
         private int publicationTermBufferLength = Configuration.termBufferLength();
         private int ipcPublicationTermBufferLength = Configuration.ipcTermBufferLength(publicationTermBufferLength);
         private int initialWindowLength = Configuration.initialWindowLength();

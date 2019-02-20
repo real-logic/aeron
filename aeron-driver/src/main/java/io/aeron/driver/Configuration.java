@@ -942,7 +942,7 @@ public class Configuration
         return getSizeAsInt(INITIAL_WINDOW_LENGTH_PROP_NAME, INITIAL_WINDOW_LENGTH_DEFAULT);
     }
 
-    static long statusMessageTimeout()
+    static long statusMessageTimeoutNs()
     {
         return getDurationInNanos(STATUS_MESSAGE_TIMEOUT_PROP_NAME, STATUS_MESSAGE_TIMEOUT_DEFAULT_NS);
     }
@@ -952,7 +952,7 @@ public class Configuration
         return getInteger(SEND_TO_STATUS_POLL_RATIO_PROP_NAME, SEND_TO_STATUS_POLL_RATIO_DEFAULT);
     }
 
-    static long counterFreeToReuseTimeout()
+    static long counterFreeToReuseTimeoutNs()
     {
         return getDurationInNanos(COUNTER_FREE_TO_REUSE_TIMEOUT_PROP_NAME, DEFAULT_COUNTER_FREE_TO_REUSE_TIMEOUT_NS);
     }

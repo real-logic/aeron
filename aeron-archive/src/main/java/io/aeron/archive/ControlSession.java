@@ -17,6 +17,7 @@ package io.aeron.archive;
 
 import io.aeron.Aeron;
 import io.aeron.Publication;
+import io.aeron.Subscription;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.SourceLocation;
 import org.agrona.CloseHelper;
@@ -42,7 +43,7 @@ class ControlSession implements Session
         INIT, CONNECTED, ACTIVE, INACTIVE, CLOSED
     }
 
-    private boolean hasActiveListRecordingsSession;
+    private boolean hasActiveListing;
     private boolean isInvalidVersion;
     private final long controlSessionId;
     private final long correlationId;
@@ -88,7 +89,7 @@ class ControlSession implements Session
         state = State.INACTIVE;
     }
 
-    public void invalidVersion()
+    void invalidVersion()
     {
         isInvalidVersion = true;
     }
@@ -127,17 +128,17 @@ class ControlSession implements Session
         return workCount;
     }
 
-    public boolean hasActiveListRecordingsSession()
+    boolean hasActiveListing()
     {
-        return hasActiveListRecordingsSession;
+        return hasActiveListing;
     }
 
-    public void hasActiveListRecordingsSession(final boolean hasActiveListRecordingsSession)
+    void hasActiveListing(final boolean hasActiveListing)
     {
-        this.hasActiveListRecordingsSession = hasActiveListRecordingsSession;
+        this.hasActiveListing = hasActiveListing;
     }
 
-    public void onStopRecording(final long correlationId, final int streamId, final String channel)
+    void onStopRecording(final long correlationId, final int streamId, final String channel)
     {
         updateState();
         if (State.ACTIVE == state)
@@ -146,7 +147,7 @@ class ControlSession implements Session
         }
     }
 
-    public void onStopRecordingSubscription(final long correlationId, final long subscriptionId)
+    void onStopRecordingSubscription(final long correlationId, final long subscriptionId)
     {
         updateState();
         if (State.ACTIVE == state)
@@ -155,7 +156,7 @@ class ControlSession implements Session
         }
     }
 
-    public void onStartRecording(
+    void onStartRecording(
         final long correlationId, final String channel, final int streamId, final SourceLocation sourceLocation)
     {
         updateState();
@@ -165,7 +166,7 @@ class ControlSession implements Session
         }
     }
 
-    public void onListRecordingsForUri(
+    void onListRecordingsForUri(
         final long correlationId,
         final long fromRecordingId,
         final int recordCount,
@@ -185,7 +186,7 @@ class ControlSession implements Session
         }
     }
 
-    public void onListRecordings(final long correlationId, final long fromRecordingId, final int recordCount)
+    void onListRecordings(final long correlationId, final long fromRecordingId, final int recordCount)
     {
         updateState();
         if (State.ACTIVE == state)
@@ -194,7 +195,7 @@ class ControlSession implements Session
         }
     }
 
-    public void onListRecording(final long correlationId, final long recordingId)
+    void onListRecording(final long correlationId, final long recordingId)
     {
         updateState();
         if (State.ACTIVE == state)
@@ -203,7 +204,7 @@ class ControlSession implements Session
         }
     }
 
-    public void onFindLastMatchingRecording(
+    void onFindLastMatchingRecording(
         final long correlationId,
         final long minRecordingId,
         final int sessionId,
@@ -223,7 +224,7 @@ class ControlSession implements Session
         }
     }
 
-    public void onStartReplay(
+    void onStartReplay(
         final long correlationId,
         final long recordingId,
         final long position,
@@ -245,7 +246,7 @@ class ControlSession implements Session
         }
     }
 
-    public void onStopReplay(final long correlationId, final long replaySessionId)
+    void onStopReplay(final long correlationId, final long replaySessionId)
     {
         updateState();
         if (State.ACTIVE == state)
@@ -254,7 +255,7 @@ class ControlSession implements Session
         }
     }
 
-    public void onExtendRecording(
+    void onExtendRecording(
         final long correlationId,
         final long recordingId,
         final String channel,
@@ -268,7 +269,7 @@ class ControlSession implements Session
         }
     }
 
-    public void onGetRecordingPosition(final long correlationId, final long recordingId)
+    void onGetRecordingPosition(final long correlationId, final long recordingId)
     {
         updateState();
         if (State.ACTIVE == state)
@@ -277,7 +278,7 @@ class ControlSession implements Session
         }
     }
 
-    public void onTruncateRecording(final long correlationId, final long recordingId, final long position)
+    void onTruncateRecording(final long correlationId, final long recordingId, final long position)
     {
         updateState();
         if (State.ACTIVE == state)
@@ -286,12 +287,34 @@ class ControlSession implements Session
         }
     }
 
-    public void onGetStopPosition(final long correlationId, final long recordingId)
+    void onGetStopPosition(final long correlationId, final long recordingId)
     {
         updateState();
         if (State.ACTIVE == state)
         {
             conductor.getStopPosition(correlationId, this, recordingId);
+        }
+    }
+
+    void onListRecordingSubscriptions(
+        final long correlationId,
+        final int pseudoIndex,
+        final int subscriptionCount,
+        final boolean applyStreamId,
+        final int streamId,
+        final String channelFragment)
+    {
+        updateState();
+        if (State.ACTIVE == state)
+        {
+            conductor.listRecordingSubscriptions(
+                correlationId,
+                pseudoIndex,
+                subscriptionCount,
+                applyStreamId,
+                streamId,
+                channelFragment,
+                this);
         }
     }
 
@@ -322,6 +345,20 @@ class ControlSession implements Session
             controlPublication))
         {
             queueResponse(correlationId, recordingId, RECORDING_UNKNOWN, null);
+        }
+    }
+
+    void sendSubscriptionUnknown(final long correlationId, final ControlResponseProxy proxy)
+    {
+        if (!proxy.sendResponse(
+            controlSessionId,
+            correlationId,
+            0,
+            SUBSCRIPTION_UNKNOWN,
+            null,
+            controlPublication))
+        {
+            queueResponse(correlationId, 0, RECORDING_UNKNOWN, null);
         }
     }
 
@@ -356,6 +393,12 @@ class ControlSession implements Session
     int sendDescriptor(final long correlationId, final UnsafeBuffer descriptorBuffer, final ControlResponseProxy proxy)
     {
         return proxy.sendDescriptor(controlSessionId, correlationId, descriptorBuffer, controlPublication);
+    }
+
+    boolean sendSubscriptionDescriptor(
+        final long correlationId, final Subscription subscription, final ControlResponseProxy proxy)
+    {
+        return proxy.sendSubscriptionDescriptor(controlSessionId, correlationId, subscription, controlPublication);
     }
 
     int maxPayloadLength()

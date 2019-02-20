@@ -81,4 +81,13 @@ interface ControlRequestListener
         int sessionId,
         int streamId,
         byte[] channelFragment);
+
+    void onListRecordingSubscriptions(
+        long controlSessionId,
+        long correlationId,
+        int pseudoIndex,
+        int subscriptionCount,
+        boolean applyStreamId,
+        int streamId,
+        String channelFragment);
 }

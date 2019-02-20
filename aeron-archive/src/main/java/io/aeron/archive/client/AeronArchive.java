@@ -73,6 +73,7 @@ public class AeronArchive implements AutoCloseable
     private final IdleStrategy idleStrategy;
     private final ControlResponsePoller controlResponsePoller;
     private final RecordingDescriptorPoller recordingDescriptorPoller;
+    private final RecordingSubscriptionDescriptorPoller recordingSubscriptionDescriptorPoller;
     private final Lock lock;
     private final NanoClock nanoClock;
     private final AgentInvoker aeronClientInvoker;
@@ -110,6 +111,8 @@ public class AeronArchive implements AutoCloseable
             controlSessionId = awaitSessionOpened(correlationId);
             recordingDescriptorPoller = new RecordingDescriptorPoller(
                 subscription, ctx.errorHandler(), controlSessionId, FRAGMENT_LIMIT);
+            recordingSubscriptionDescriptorPoller = new RecordingSubscriptionDescriptorPoller(
+                subscription, ctx.errorHandler(), controlSessionId, FRAGMENT_LIMIT);
         }
         catch (final Exception ex)
         {
@@ -130,6 +133,7 @@ public class AeronArchive implements AutoCloseable
         final ControlResponsePoller controlResponsePoller,
         final ArchiveProxy archiveProxy,
         final RecordingDescriptorPoller recordingDescriptorPoller,
+        final RecordingSubscriptionDescriptorPoller recordingSubscriptionDescriptorPoller,
         final long controlSessionId)
     {
         context = ctx;
@@ -142,6 +146,7 @@ public class AeronArchive implements AutoCloseable
         this.controlResponsePoller = controlResponsePoller;
         this.archiveProxy = archiveProxy;
         this.recordingDescriptorPoller = recordingDescriptorPoller;
+        this.recordingSubscriptionDescriptorPoller = recordingSubscriptionDescriptorPoller;
         this.controlSessionId = controlSessionId;
     }
 
@@ -296,6 +301,17 @@ public class AeronArchive implements AutoCloseable
     public RecordingDescriptorPoller recordingDescriptorPoller()
     {
         return recordingDescriptorPoller;
+    }
+
+    /**
+     * The {@link RecordingSubscriptionDescriptorPoller} for polling subscription descriptors on the control channel.
+     *
+     * @return the {@link RecordingSubscriptionDescriptorPoller} for polling subscription descriptors on the control
+     * channel.
+     */
+    public RecordingSubscriptionDescriptorPoller recordingSubscriptionDescriptorPoller()
+    {
+        return recordingSubscriptionDescriptorPoller;
     }
 
     /**
@@ -997,6 +1013,52 @@ public class AeronArchive implements AutoCloseable
         }
     }
 
+    /**
+     * List active recording subscriptions in the archive.
+     *
+     * @param pseudoIndex       in the active list at which to begin for paging.
+     * @param subscriptionCount to get in a listing.
+     * @param channelFragment   to do a contains match on the stripped channel URI. Empty string is match all.
+     * @param streamId          to match on the subscription.
+     * @param applyStreamId     true if the stream id should be matched.
+     * @param consumer          for the matched subscription descriptors.
+     * @return the count of matched subscriptions.
+     */
+    public int listRecordingSubscriptions(
+        final int pseudoIndex,
+        final int subscriptionCount,
+        final String channelFragment,
+        final int streamId,
+        final boolean applyStreamId,
+        final RecordingSubscriptionDescriptorConsumer consumer)
+    {
+        lock.lock();
+        try
+        {
+            ensureOpen();
+
+            final long correlationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.listRecordingSubscriptions(
+                pseudoIndex,
+                subscriptionCount,
+                channelFragment,
+                streamId,
+                applyStreamId,
+                correlationId,
+                controlSessionId))
+            {
+                throw new ArchiveException("failed to send list recordings request");
+            }
+
+            return pollForSubscriptionDescriptors(correlationId, subscriptionCount, consumer);
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
     private void checkDeadline(final long deadlineNs, final String errorMessage, final long correlationId)
     {
         if (Thread.interrupted())
@@ -1168,6 +1230,48 @@ public class AeronArchive implements AutoCloseable
         }
     }
 
+    private int pollForSubscriptionDescriptors(
+        final long correlationId, final int recordCount, final RecordingSubscriptionDescriptorConsumer consumer)
+    {
+        int existingRemainCount = recordCount;
+        long deadlineNs = nanoClock.nanoTime() + messageTimeoutNs;
+        final RecordingSubscriptionDescriptorPoller poller = recordingSubscriptionDescriptorPoller;
+        poller.reset(correlationId, recordCount, consumer);
+        idleStrategy.reset();
+
+        while (true)
+        {
+            final int fragments = poller.poll();
+            final int remainingSubscriptionCount = poller.remainingSubscriptionCount();
+
+            if (poller.isDispatchComplete())
+            {
+                return recordCount - remainingSubscriptionCount;
+            }
+
+            if (remainingSubscriptionCount != existingRemainCount)
+            {
+                existingRemainCount = remainingSubscriptionCount;
+                deadlineNs = nanoClock.nanoTime() + messageTimeoutNs;
+            }
+
+            invokeAeronClient();
+
+            if (fragments > 0)
+            {
+                continue;
+            }
+
+            if (!poller.subscription().isConnected())
+            {
+                throw new ArchiveException("subscription to archive is not connected");
+            }
+
+            checkDeadline(deadlineNs, "awaiting subscription descriptors", correlationId);
+            idleStrategy.idle();
+        }
+    }
+
     private void invokeAeronClient()
     {
         if (null != aeronClientInvoker)
@@ -1190,7 +1294,7 @@ public class AeronArchive implements AutoCloseable
     public static class Configuration
     {
         public static final int MAJOR_VERSION = 0;
-        public static final int MINOR_VERSION = 0;
+        public static final int MINOR_VERSION = 1;
         public static final int PATCH_VERSION = 1;
         public static final int SEMANTIC_VERSION = SemanticVersion.compose(MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION);
 
@@ -2018,15 +2122,17 @@ public class AeronArchive implements AutoCloseable
                     throw new ArchiveException("unexpected response: code=" + code);
                 }
 
-                final long controlSessionId = controlResponsePoller.controlSessionId();
+                final long sessionId = controlResponsePoller.controlSessionId();
                 final Subscription subscription = controlResponsePoller.subscription();
+                final ErrorHandler errorHandler = ctx.errorHandler();
 
                 return new AeronArchive(
                     ctx,
                     controlResponsePoller,
                     archiveProxy,
-                    new RecordingDescriptorPoller(subscription, ctx.errorHandler(), controlSessionId, FRAGMENT_LIMIT),
-                    controlSessionId);
+                    new RecordingDescriptorPoller(subscription, errorHandler, sessionId, FRAGMENT_LIMIT),
+                    new RecordingSubscriptionDescriptorPoller(subscription, errorHandler, sessionId, FRAGMENT_LIMIT),
+                    sessionId);
             }
 
             return null;

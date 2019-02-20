@@ -16,13 +16,17 @@
 package io.aeron.archive;
 
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.RecordingSubscriptionDescriptorConsumer;
 import io.aeron.driver.MediaDriver;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.concurrent.*;
 
+import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 public class ArchiveTest
@@ -77,6 +81,93 @@ public class ArchiveTest
 
             archiveCtx.deleteArchiveDirectory();
             driverCtx.deleteAeronDirectory();
+        }
+    }
+
+    @Test(timeout = 10_000L)
+    public void shouldListRegisteredRecordingSubscriptions()
+    {
+        final int expectedStreamId = 7;
+        final String channelOne = "aeron:ipc";
+        final String channelTwo = "aeron:udp?endpoint=localhost:5678";
+        final String channelThree = "aeron:udp?endpoint=localhost:4321";
+
+        final ArrayList<SubscriptionDescriptor> descriptors = new ArrayList<>();
+        @SuppressWarnings("Indentation") final RecordingSubscriptionDescriptorConsumer consumer =
+            (controlSessionId, correlationId, subscriptionId, streamId, strippedChannel) ->
+                descriptors.add(new SubscriptionDescriptor(
+                    controlSessionId, correlationId, subscriptionId, streamId, strippedChannel));
+
+        final MediaDriver.Context driverCtx = new MediaDriver.Context();
+        final Archive.Context archiveCtx = new Archive.Context();
+
+        try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(driverCtx, archiveCtx);
+            AeronArchive archive = AeronArchive.connect())
+        {
+            final long subscriptionOne = archive.startRecording(channelOne, expectedStreamId, LOCAL);
+            final long subscriptionTwo = archive.startRecording(channelTwo, expectedStreamId + 1, LOCAL);
+            final long subscriptionThree = archive.startRecording(channelThree, expectedStreamId + 2, LOCAL);
+
+            final int countOne = archive.listRecordingSubscriptions(
+                0, 5, "ipc", expectedStreamId, true, consumer);
+
+            assertEquals(1, descriptors.size());
+            assertEquals(1, countOne);
+
+            descriptors.clear();
+            final int countTwo = archive.listRecordingSubscriptions(
+                0, 5, "", expectedStreamId, false, consumer);
+
+            assertEquals(3, descriptors.size());
+            assertEquals(3, countTwo);
+
+            archive.stopRecording(subscriptionTwo);
+
+            descriptors.clear();
+            final int countThree = archive.listRecordingSubscriptions(
+                0, 5, "", expectedStreamId, false, consumer);
+
+            assertEquals(2, descriptors.size());
+            assertEquals(2, countThree);
+        }
+        finally
+        {
+            archiveCtx.deleteArchiveDirectory();
+            driverCtx.deleteAeronDirectory();
+        }
+    }
+
+    static final class SubscriptionDescriptor
+    {
+        final long controlSessionId;
+        final long correlationId;
+        final long subscriptionId;
+        final int streamId;
+        final String strippedChannel;
+
+        private SubscriptionDescriptor(
+            final long controlSessionId,
+            final long correlationId,
+            final long subscriptionId,
+            final int streamId,
+            final String strippedChannel)
+        {
+            this.controlSessionId = controlSessionId;
+            this.correlationId = correlationId;
+            this.subscriptionId = subscriptionId;
+            this.streamId = streamId;
+            this.strippedChannel = strippedChannel;
+        }
+
+        public String toString()
+        {
+            return "SubscriptionDescriptor{" +
+                "controlSessionId=" + controlSessionId +
+                ", correlationId=" + correlationId +
+                ", subscriptionId=" + subscriptionId +
+                ", streamId=" + streamId +
+                ", strippedChannel='" + strippedChannel + '\'' +
+                '}';
         }
     }
 }

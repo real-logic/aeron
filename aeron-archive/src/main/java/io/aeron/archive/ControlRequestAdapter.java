@@ -45,6 +45,8 @@ class ControlRequestAdapter implements FragmentHandler
     private final StopPositionRequestDecoder stopPositionRequestDecoder = new StopPositionRequestDecoder();
     private final FindLastMatchingRecordingRequestDecoder findLastMatchingRecordingRequestDecoder =
         new FindLastMatchingRecordingRequestDecoder();
+    private final ListRecordingSubscriptionsRequestDecoder listRecordingSubscriptionsRequestDecoder =
+        new ListRecordingSubscriptionsRequestDecoder();
 
     ControlRequestAdapter(final ControlRequestListener listener)
     {
@@ -312,6 +314,24 @@ class ControlRequestAdapter implements FragmentHandler
                     findLastMatchingRecordingRequestDecoder.streamId(),
                     bytes);
                 break;
+            }
+
+            case ListRecordingSubscriptionsRequestDecoder.TEMPLATE_ID:
+            {
+                listRecordingSubscriptionsRequestDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                listener.onListRecordingSubscriptions(
+                    listRecordingSubscriptionsRequestDecoder.controlSessionId(),
+                    listRecordingSubscriptionsRequestDecoder.correlationId(),
+                    listRecordingSubscriptionsRequestDecoder.pseudoIndex(),
+                    listRecordingSubscriptionsRequestDecoder.subscriptionCount(),
+                    listRecordingSubscriptionsRequestDecoder.applyStreamId() == BooleanType.TRUE,
+                    listRecordingSubscriptionsRequestDecoder.streamId(),
+                    listRecordingSubscriptionsRequestDecoder.channel());
             }
         }
     }

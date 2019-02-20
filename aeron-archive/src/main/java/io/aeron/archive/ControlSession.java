@@ -17,7 +17,6 @@ package io.aeron.archive;
 
 import io.aeron.Aeron;
 import io.aeron.Publication;
-import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.SourceLocation;
 import org.agrona.CloseHelper;
@@ -43,6 +42,7 @@ class ControlSession implements Session
         INIT, CONNECTED, ACTIVE, INACTIVE, CLOSED
     }
 
+    private boolean hasActiveListRecordingsSession;
     private boolean isInvalidVersion;
     private final long controlSessionId;
     private final long correlationId;
@@ -56,7 +56,6 @@ class ControlSession implements Session
     private final ControlSessionDemuxer demuxer;
     private final Publication controlPublication;
     private State state = State.INIT;
-    private AbstractListRecordingsSession activeListRecordingsSession;
 
     ControlSession(
         final long controlSessionId,
@@ -128,14 +127,14 @@ class ControlSession implements Session
         return workCount;
     }
 
-    public AbstractListRecordingsSession activeListRecordingsSession()
+    public boolean hasActiveListRecordingsSession()
     {
-        return activeListRecordingsSession;
+        return hasActiveListRecordingsSession;
     }
 
-    public void activeListRecordingsSession(final AbstractListRecordingsSession session)
+    public void hasActiveListRecordingsSession(final boolean hasActiveListRecordingsSession)
     {
-        activeListRecordingsSession = session;
+        this.hasActiveListRecordingsSession = hasActiveListRecordingsSession;
     }
 
     public void onStopRecording(final long correlationId, final int streamId, final String channel)
@@ -294,16 +293,6 @@ class ControlSession implements Session
         {
             conductor.getStopPosition(correlationId, this, recordingId);
         }
-    }
-
-    void onListRecordingSessionClosed(final AbstractListRecordingsSession listRecordingsSession)
-    {
-        if (listRecordingsSession != activeListRecordingsSession)
-        {
-            throw new ArchiveException();
-        }
-
-        activeListRecordingsSession = null;
     }
 
     void sendOkResponse(final long correlationId, final ControlResponseProxy proxy)

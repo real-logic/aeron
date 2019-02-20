@@ -298,7 +298,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     void newListRecordingsSession(
         final long correlationId, final long fromId, final int count, final ControlSession controlSession)
     {
-        if (controlSession.activeListRecordingsSession() != null)
+        if (controlSession.hasActiveListRecordingsSession())
         {
             final String msg = "active listing already in progress";
             controlSession.sendErrorResponse(correlationId, ACTIVE_LISTING, msg, controlResponseProxy);
@@ -315,7 +315,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
                 descriptorBuffer);
 
             addSession(session);
-            controlSession.activeListRecordingsSession(session);
+            controlSession.hasActiveListRecordingsSession(true);
         }
     }
 
@@ -327,7 +327,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final byte[] channelFragment,
         final ControlSession controlSession)
     {
-        if (controlSession.activeListRecordingsSession() != null)
+        if (controlSession.hasActiveListRecordingsSession())
         {
             final String msg = "active listing already in progress";
             controlSession.sendErrorResponse(correlationId, ACTIVE_LISTING, msg, controlResponseProxy);
@@ -347,13 +347,13 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
                 recordingDescriptorDecoder);
 
             addSession(session);
-            controlSession.activeListRecordingsSession(session);
+            controlSession.hasActiveListRecordingsSession(true);
         }
     }
 
     void listRecording(final long correlationId, final ControlSession controlSession, final long recordingId)
     {
-        if (controlSession.activeListRecordingsSession() != null)
+        if (controlSession.hasActiveListRecordingsSession())
         {
             final String msg = "active listing already in progress";
             controlSession.sendErrorResponse(correlationId, ACTIVE_LISTING, msg, controlResponseProxy);

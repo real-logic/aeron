@@ -178,10 +178,10 @@ public class Archive implements AutoCloseable
         public static final String DEFAULT_IDLE_STRATEGY = "org.agrona.concurrent.BackoffIdleStrategy";
 
         public static final String MAX_CONCURRENT_RECORDINGS_PROP_NAME = "aeron.archive.max.concurrent.recordings";
-        public static final int MAX_CONCURRENT_RECORDINGS_DEFAULT = 128;
+        public static final int MAX_CONCURRENT_RECORDINGS_DEFAULT = 50;
 
         public static final String MAX_CONCURRENT_REPLAYS_PROP_NAME = "aeron.archive.max.concurrent.replays";
-        public static final int MAX_CONCURRENT_REPLAYS_DEFAULT = 128;
+        public static final int MAX_CONCURRENT_REPLAYS_DEFAULT = 50;
 
         public static final String MAX_CATALOG_ENTRIES_PROP_NAME = "aeron.archive.max.catalog.entries";
         public static final long MAX_CATALOG_ENTRIES_DEFAULT = Catalog.DEFAULT_MAX_ENTRIES;

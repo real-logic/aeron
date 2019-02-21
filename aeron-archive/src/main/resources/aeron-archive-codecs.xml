@@ -53,7 +53,7 @@
                          recording-position | stop-position],
                close
                       \
-                      *control-response | *recording-descriptor | *recording-subscription-descriptor
+                      +control-response, *[control-response | recording-descriptor | recording-subscription-descriptor]
 
         Recording Events:
             -> recording-started, *recording-progress, recording-stopped

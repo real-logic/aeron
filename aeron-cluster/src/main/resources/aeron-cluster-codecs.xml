@@ -66,7 +66,7 @@
         Session Protocol:
             -> session-connect, *[ingress-message | session-keep-alive], session-close
                       \
-            <-          *session-event, *[egress-message | session-event | new-leader-event]
+            <-          +session-event, *[session-event | egress-message | new-leader-event]
 
         1. Session Connect
           - An attempt is made to establish a connection with the cluster via multicast or multi-destination-cast.

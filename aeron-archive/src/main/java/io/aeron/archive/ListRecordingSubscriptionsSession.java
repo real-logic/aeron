@@ -83,18 +83,13 @@ class ListRecordingSubscriptionsSession implements Session
 
         for (final Subscription subscription : subscriptionByKeyMap.values())
         {
-            if (index++ >= pseudoIndex)
+            if (index >= pseudoIndex)
             {
-                if (applyStreamId && subscription.streamId() != streamId)
-                {
-                    continue;
-                }
-
-                if (subscription.channel().contains(channelFragment))
+                if (!(applyStreamId && subscription.streamId() != streamId) &&
+                    subscription.channel().contains(channelFragment))
                 {
                     if (!controlSession.sendSubscriptionDescriptor(correlationId, subscription, proxy))
                     {
-                        --index;
                         break;
                     }
 
@@ -107,9 +102,9 @@ class ListRecordingSubscriptionsSession implements Session
                     }
                 }
             }
-        }
 
-        pseudoIndex = index;
+            pseudoIndex = index++;
+        }
 
         if (!isDone && index >= size)
         {

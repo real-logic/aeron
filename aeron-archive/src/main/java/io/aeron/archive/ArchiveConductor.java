@@ -681,7 +681,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             final String msg = "active listing already in progress";
             controlSession.sendErrorResponse(correlationId, ACTIVE_LISTING, msg, controlResponseProxy);
         }
-        else if (pseudoIndex < 0 || pseudoIndex >= recordingSubscriptionMap.size())
+        else if (pseudoIndex < 0 || pseudoIndex >= recordingSubscriptionMap.size() || subscriptionCount <= 0)
         {
             controlSession.sendSubscriptionUnknown(correlationId, controlResponseProxy);
         }

@@ -1014,7 +1014,10 @@ public class AeronArchive implements AutoCloseable
     }
 
     /**
-     * List active recording subscriptions in the archive.
+     * List active recording subscriptions in the archive. These are the result of requesting one of
+     * {@link #startRecording(String, int, SourceLocation)} or a
+     * {@link #extendRecording(long, String, int, SourceLocation)}. The returned subscription id can be used for
+     * passing to {@link #stopRecording(long)}.
      *
      * @param pseudoIndex       in the active list at which to begin for paging.
      * @param subscriptionCount to get in a listing.

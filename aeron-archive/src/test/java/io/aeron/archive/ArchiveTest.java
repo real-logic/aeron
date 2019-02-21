@@ -104,9 +104,9 @@ public class ArchiveTest
         try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(driverCtx, archiveCtx);
             AeronArchive archive = AeronArchive.connect())
         {
-            final long subscriptionOne = archive.startRecording(channelOne, expectedStreamId, LOCAL);
-            final long subscriptionTwo = archive.startRecording(channelTwo, expectedStreamId + 1, LOCAL);
-            final long subscriptionThree = archive.startRecording(channelThree, expectedStreamId + 2, LOCAL);
+            final long subIdOne = archive.startRecording(channelOne, expectedStreamId, LOCAL);
+            final long subIdTwo = archive.startRecording(channelTwo, expectedStreamId + 1, LOCAL);
+            final long subOdThree = archive.startRecording(channelThree, expectedStreamId + 2, LOCAL);
 
             final int countOne = archive.listRecordingSubscriptions(
                 0, 5, "ipc", expectedStreamId, true, consumer);
@@ -121,7 +121,7 @@ public class ArchiveTest
             assertEquals(3, descriptors.size());
             assertEquals(3, countTwo);
 
-            archive.stopRecording(subscriptionTwo);
+            archive.stopRecording(subIdTwo);
 
             descriptors.clear();
             final int countThree = archive.listRecordingSubscriptions(
@@ -129,6 +129,9 @@ public class ArchiveTest
 
             assertEquals(2, descriptors.size());
             assertEquals(2, countThree);
+
+            assertEquals(1L, descriptors.stream().filter((sd) -> sd.subscriptionId == subIdOne).count());
+            assertEquals(1L, descriptors.stream().filter((sd) -> sd.subscriptionId == subOdThree).count());
         }
         finally
         {

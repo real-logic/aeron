@@ -94,6 +94,7 @@ class ListRecordingSubscriptionsSession implements Session
                 {
                     if (!controlSession.sendSubscriptionDescriptor(correlationId, subscription, proxy))
                     {
+                        --index;
                         break;
                     }
 

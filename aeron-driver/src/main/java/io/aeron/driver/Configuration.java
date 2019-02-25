@@ -771,18 +771,18 @@ public class Configuration
     /**
      * Default group RTT estimate for NAK delay randomization in milliseconds.
      */
-    public static final int NAK_GRTT_DEFAULT = 10;
+    public static final int NAK_GRTT_DEFAULT_MS = 10;
 
     /**
      * Default max backoff for NAK delay randomisation in milliseconds.
      */
-    public static final long NAK_MAX_BACKOFF_DEFAULT = TimeUnit.MILLISECONDS.toNanos(60);
+    public static final long NAK_MAX_BACKOFF_DEFAULT_MS = TimeUnit.MILLISECONDS.toNanos(60);
 
     /**
      * Multicast NAK delay is immediate initial with delayed subsequent delay.
      */
     public static final OptimalMulticastDelayGenerator NAK_MULTICAST_DELAY_GENERATOR =
-        new OptimalMulticastDelayGenerator(NAK_MAX_BACKOFF_DEFAULT, NAK_GROUPSIZE_DEFAULT, NAK_GRTT_DEFAULT);
+        new OptimalMulticastDelayGenerator(NAK_MAX_BACKOFF_DEFAULT_MS, NAK_GROUPSIZE_DEFAULT, NAK_GRTT_DEFAULT_MS);
 
     /**
      * Default Unicast NAK delay in nanoseconds.

@@ -72,8 +72,8 @@ inline int64_t aeron_loss_detector_nak_unicast_delay_generator()
 }
 
 #define AERON_LOSS_DETECTOR_NAK_MULTICAST_GROUPSIZE (10.0)
-#define AERON_LOSS_DETECTOR_NAK_MULTICAST_GRTT (10.0)
-#define AERON_LOSS_DETECTOR_NAK_MULTICAST_MAX_BACKOFF (60.0 * 1000.0 * 1000.0)
+#define AERON_LOSS_DETECTOR_NAK_MULTICAST_GRTT_MS (10.0)
+#define AERON_LOSS_DETECTOR_NAK_MULTICAST_MAX_BACKOFF_MS (60.0 * 1000.0 * 1000.0)
 
 int64_t aeron_loss_detector_nak_multicast_delay_generator();
 

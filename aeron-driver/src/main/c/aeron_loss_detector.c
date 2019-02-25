@@ -63,7 +63,8 @@ int32_t aeron_loss_detector_scan(
 
         const int32_t rebuild_term_id = initial_term_id + rebuild_term_count;
         const int32_t hwm_term_offset = (int32_t)(hwm_position & term_length_mask);
-        const int32_t limit_offset = rebuild_term_count == hwm_term_count ? hwm_term_offset : (int32_t)(term_length_mask + 1);
+        const int32_t limit_offset = rebuild_term_count == hwm_term_count ?
+            hwm_term_offset : (int32_t)(term_length_mask + 1);
 
         rebuild_offset =
             aeron_term_gap_scanner_scan_for_gap(
@@ -101,9 +102,9 @@ int64_t aeron_loss_detector_nak_multicast_delay_generator()
     if (!initialized)
     {
         lambda = log(AERON_LOSS_DETECTOR_NAK_MULTICAST_GROUPSIZE) + 1;
-        rand_max = lambda / AERON_LOSS_DETECTOR_NAK_MULTICAST_MAX_BACKOFF;
-        base_x = lambda / (AERON_LOSS_DETECTOR_NAK_MULTICAST_MAX_BACKOFF * (exp(lambda) - 1));
-        constant_t = AERON_LOSS_DETECTOR_NAK_MULTICAST_MAX_BACKOFF / lambda;
+        rand_max = lambda / AERON_LOSS_DETECTOR_NAK_MULTICAST_MAX_BACKOFF_MS;
+        base_x = lambda / (AERON_LOSS_DETECTOR_NAK_MULTICAST_MAX_BACKOFF_MS * (exp(lambda) - 1));
+        constant_t = AERON_LOSS_DETECTOR_NAK_MULTICAST_MAX_BACKOFF_MS / lambda;
         factor_t = (exp(lambda) - 1) * constant_t;
         aeron_srand48(aeron_nano_clock());
 

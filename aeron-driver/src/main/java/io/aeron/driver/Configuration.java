@@ -766,7 +766,7 @@ public class Configuration
     /**
      * Default group size estimate for NAK delay randomisation.
      */
-    public static final int NAK_GROUPSIZE_DEFAULT = 10;
+    public static final int NAK_GROUP_SIZE_DEFAULT = 10;
 
     /**
      * Default group RTT estimate for NAK delay randomization in nanoseconds.
@@ -782,7 +782,7 @@ public class Configuration
      * Multicast NAK delay is immediate initial with delayed subsequent delay.
      */
     public static final OptimalMulticastDelayGenerator NAK_MULTICAST_DELAY_GENERATOR =
-        new OptimalMulticastDelayGenerator(NAK_MAX_BACKOFF_DEFAULT_NS, NAK_GROUPSIZE_DEFAULT, NAK_GRTT_DEFAULT_NS);
+        new OptimalMulticastDelayGenerator(NAK_MAX_BACKOFF_DEFAULT_NS, NAK_GROUP_SIZE_DEFAULT, NAK_GRTT_DEFAULT_NS);
 
     /**
      * Default Unicast NAK delay in nanoseconds.

@@ -15,6 +15,7 @@
  */
 
 #include "ArchiveException.h"
+#include "Configuration.h"
 #include "ArchiveProxy.h"
 #include "concurrent/YieldingIdleStrategy.h"
 #include "aeron_archive_client/ConnectRequest.h"
@@ -43,7 +44,7 @@ bool ArchiveProxy::connect(
             .wrapAndApplyHeader(reinterpret_cast<char *>(bufferClaim.buffer().buffer()), 0, length)
             .correlationId(correlationId)
             .responseStreamId(responseStreamId)
-            .version(0x0)
+            .version(Configuration::ARCHIVE_SEMANTIC_VERSION)
             .putResponseChannel(responseChannel);
 
         bufferClaim.commit();

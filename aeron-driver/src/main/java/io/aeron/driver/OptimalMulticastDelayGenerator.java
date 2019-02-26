@@ -15,6 +15,8 @@
  */
 package io.aeron.driver;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 /**
  * Feedback delay used for NAKs as well as for some retransmission use cases.
  * <p>
@@ -120,6 +122,6 @@ public class OptimalMulticastDelayGenerator implements FeedbackDelayGenerator
      */
     public static double uniformRandom(final double max)
     {
-        return Math.random() * max;
+        return ThreadLocalRandom.current().nextDouble() * max;
     }
 }

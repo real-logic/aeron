@@ -18,7 +18,6 @@ package io.aeron.driver;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
-import java.util.stream.IntStream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
@@ -35,11 +34,10 @@ public class OptimalMulticastDelayGeneratorTest
     @Test
     public void shouldNotExceedTmaxBackoff()
     {
-        IntStream.range(0, 100000).forEach(
-            (i) ->
-            {
-                final double delay = generator.generateNewOptimalDelay();
-                assertThat(delay, lessThanOrEqualTo((double)MAX_BACKOFF));
-            });
+        for (int i = 0; i < 100_000; i++)
+        {
+            final double delay = generator.generateNewOptimalDelay();
+            assertThat(delay, lessThanOrEqualTo((double)MAX_BACKOFF));
+        }
     }
 }

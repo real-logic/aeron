@@ -26,10 +26,9 @@ public class OptimalMulticastDelayGeneratorTest
 {
     private static final long MAX_BACKOFF = TimeUnit.MILLISECONDS.toNanos(60);
     private static final long GROUP_SIZE = 10;
-    private static final long GRTT = TimeUnit.MILLISECONDS.toNanos(10);
 
     private final OptimalMulticastDelayGenerator generator = new OptimalMulticastDelayGenerator(
-        MAX_BACKOFF, GROUP_SIZE, GRTT);
+        MAX_BACKOFF, GROUP_SIZE);
 
     @Test
     public void shouldNotExceedTmaxBackoff()

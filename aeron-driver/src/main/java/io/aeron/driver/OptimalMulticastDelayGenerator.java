@@ -58,7 +58,6 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public class OptimalMulticastDelayGenerator implements FeedbackDelayGenerator
 {
-    private final double calculatedN;
     private final double randMax;
     private final double baseX;
     private final double constantT;
@@ -67,16 +66,13 @@ public class OptimalMulticastDelayGenerator implements FeedbackDelayGenerator
     /**
      * Create new feedback delay generator based on estimates. Pre-calculating some parameters upfront.
      * <p>
-     * {@code maxBackoffT} and {@code gRtt} must be expressed in the same units.
      *
      * @param maxBackoffT of the delay interval
      * @param groupSize   estimate
-     * @param gRtt        estimate
      */
-    public OptimalMulticastDelayGenerator(final double maxBackoffT, final double groupSize, final double gRtt)
+    public OptimalMulticastDelayGenerator(final double maxBackoffT, final double groupSize)
     {
         final double lambda = Math.log(groupSize) + 1;
-        this.calculatedN = Math.exp(1.2 * lambda / (2 * maxBackoffT / gRtt));
 
         this.randMax = lambda / maxBackoffT;
         this.baseX = lambda / (maxBackoffT * (Math.exp(lambda) - 1));
@@ -93,25 +89,15 @@ public class OptimalMulticastDelayGenerator implements FeedbackDelayGenerator
     }
 
     /**
-     * Generate a new randomized delay value in the units of {@code maxBackoffT} and {@code gRtt}.
+     * Generate a new randomized delay value in the units of {@code maxBackoffT}}.
      *
-     * @return delay in units of {@code maxBackoffT} and {@code gRtt}.
+     * @return delay in units of {@code maxBackoffT}.
      */
     public double generateNewOptimalDelay()
     {
         final double x = uniformRandom(randMax) + baseX;
 
         return constantT * Math.log(x * factorT);
-    }
-
-    /**
-     * The estimated number of feedback messages per RTT.
-     *
-     * @return the number of estimated feedback messages in units of {@code maxBackoffT} and {@code gRtt}.
-     */
-    public double calculatedN()
-    {
-        return calculatedN;
     }
 
     /**

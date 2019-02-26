@@ -101,7 +101,7 @@ int64_t aeron_loss_detector_nak_multicast_delay_generator()
 
     if (!initialized)
     {
-        lambda = log(AERON_LOSS_DETECTOR_NAK_MULTICAST_GROUPSIZE) + 1;
+        lambda = log(AERON_LOSS_DETECTOR_NAK_MULTICAST_GROUP_SIZE) + 1;
         rand_max = lambda / AERON_LOSS_DETECTOR_NAK_MULTICAST_MAX_BACKOFF_MS;
         base_x = lambda / (AERON_LOSS_DETECTOR_NAK_MULTICAST_MAX_BACKOFF_MS * (exp(lambda) - 1));
         constant_t = AERON_LOSS_DETECTOR_NAK_MULTICAST_MAX_BACKOFF_MS / lambda;
@@ -112,6 +112,7 @@ int64_t aeron_loss_detector_nak_multicast_delay_generator()
     }
 
     const double x = (aeron_drand48() * rand_max) + base_x;
+
     return (int64_t)(constant_t * log(x * factor_t));
 }
 

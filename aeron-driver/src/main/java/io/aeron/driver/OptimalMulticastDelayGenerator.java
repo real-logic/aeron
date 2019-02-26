@@ -34,7 +34,7 @@ package io.aeron.driver;
  * }</pre>
  * where {@code UniformRand(x)} is uniform distribution from {@code 0..max}
  * <p>
- * In this implementations calculation:
+ * In this implementation's calculation:
  * <ul>
  *     <li>the {@code groupSize} is a constant (could be configurable as system property)</li>
  *     <li>{@code maxBackoffT} is a constant (could be configurable as system property)</li>
@@ -56,7 +56,6 @@ package io.aeron.driver;
  */
 public class OptimalMulticastDelayGenerator implements FeedbackDelayGenerator
 {
-    private final double calculatedN;
     private final double randMax;
     private final double baseX;
     private final double constantT;
@@ -74,9 +73,7 @@ public class OptimalMulticastDelayGenerator implements FeedbackDelayGenerator
     public OptimalMulticastDelayGenerator(final double maxBackoffT, final double groupSize, final double gRtt)
     {
         final double lambda = Math.log(groupSize) + 1;
-        this.calculatedN = Math.exp(1.2 * lambda / (2 * maxBackoffT / gRtt));
 
-        // constant pieces of the calculation
         this.randMax = lambda / maxBackoffT;
         this.baseX = lambda / (maxBackoffT * (Math.exp(lambda) - 1));
         this.constantT = maxBackoffT / lambda;
@@ -101,16 +98,6 @@ public class OptimalMulticastDelayGenerator implements FeedbackDelayGenerator
         final double x = uniformRandom(randMax) + baseX;
 
         return constantT * Math.log(x * factorT);
-    }
-
-    /**
-     * Return the estimated number of feedback messages per RTT.
-     *
-     * @return number of estimated feedback messages in units of backoff and RTT
-     */
-    public double calculatedN()
-    {
-        return calculatedN;
     }
 
     /**

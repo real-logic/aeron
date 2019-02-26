@@ -57,8 +57,8 @@ int aeron_publication_image_create(
 
     aeron_publication_image_t *_image = NULL;
     const uint64_t usable_fs_space = context->usable_fs_space_func(context->aeron_dir);
-    const uint64_t log_length = aeron_logbuffer_compute_log_length((uint64_t)term_buffer_length,
-        context->file_page_size);
+    const uint64_t log_length = aeron_logbuffer_compute_log_length(
+        (uint64_t)term_buffer_length, context->file_page_size);
     bool is_multicast = endpoint->conductor_fields.udp_channel->multicast;
     int64_t now_ns = context->nano_clock();
 

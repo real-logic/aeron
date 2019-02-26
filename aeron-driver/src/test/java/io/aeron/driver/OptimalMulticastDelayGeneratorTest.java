@@ -17,6 +17,7 @@ package io.aeron.driver;
 
 import org.junit.Test;
 
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -24,9 +25,9 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 
 public class OptimalMulticastDelayGeneratorTest
 {
-    private static final long MAX_BACKOFF = 60;
+    private static final long MAX_BACKOFF = TimeUnit.MILLISECONDS.toNanos(60);
     private static final long GROUP_SIZE = 10;
-    private static final long GRTT = 10;
+    private static final long GRTT = TimeUnit.MILLISECONDS.toNanos(10);
 
     private final OptimalMulticastDelayGenerator generator = new OptimalMulticastDelayGenerator(
         MAX_BACKOFF, GROUP_SIZE, GRTT);

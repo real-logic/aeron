@@ -23,6 +23,10 @@ namespace aeron {
 namespace archive {
 namespace client {
 
+constexpr const std::int64_t NULL_TIMESTAMP = aeron::NULL_VALUE;
+constexpr const std::int64_t NULL_POSITION = aeron::NULL_VALUE;
+constexpr const std::int64_t NULL_LENGTH = aeron::NULL_VALUE;
+
 namespace Configuration
 {
 constexpr const std::uint8_t ARCHIVE_MAJOR_VERSION = 0;

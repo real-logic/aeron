@@ -36,7 +36,7 @@ using namespace aeron::concurrent;
 using namespace aeron::concurrent::logbuffer;
 using namespace aeron::concurrent::status;
 
-static UnsafeBufferPosition NULL_POSITION;
+static UnsafeBufferPosition NULL_UNSAFE_BUFFER_POSITION;
 
 enum class ControlledPollAction : int
 {
@@ -91,7 +91,7 @@ public:
 
     Image() :
         m_header(0, 0, this),
-        m_subscriberPosition(NULL_POSITION)
+        m_subscriberPosition(NULL_UNSAFE_BUFFER_POSITION)
     {
     }
 

@@ -81,6 +81,20 @@ public:
     }
 
     /**
+     * Create an Aeron instance and connect to the media driver.
+     * <p>
+     * Threads required for interacting with the media driver are created and managed within the Aeron instance.
+     *
+     * @return the new Aeron instance connected to the Media Driver.
+     */
+    inline static std::shared_ptr<Aeron> connect()
+    {
+        Context ctx;
+
+        return std::make_shared<Aeron>(ctx);
+    }
+
+    /**
      * Add a {@link Publication} for publishing messages to subscribers
      *
      * This function returns immediately and does not wait for the response from the media driver. The returned
@@ -304,12 +318,22 @@ public:
         return m_driverProxy.clientId();
     }
 
+    /**
+     * Get the Aeron Context object used in construction of the Aeron instance.
+     *
+     * @return Context instance in use.
+     */
+    inline Context& context()
+    {
+        return m_context;
+    }
+
 private:
     std::random_device m_randomDevice;
     std::default_random_engine m_randomEngine;
     std::uniform_int_distribution<std::int32_t> m_sessionIdDistribution;
 
-    Context& m_context;
+    Context m_context;
 
     MemoryMappedFile::ptr_t m_cncBuffer;
 

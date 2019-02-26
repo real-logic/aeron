@@ -31,7 +31,9 @@ SET(SOURCE
     client/ArchiveProxy.cpp)
 
 SET(HEADERS
-    client/ArchiveProxy.h)
+    client/ArchiveException.h
+    client/ArchiveProxy.h
+    client/AeronArchive.h)
 
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DDISABLE_BOUNDS_CHECKS")
 

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "ArchiveException.h"
 #include "ArchiveProxy.h"
 #include "concurrent/YieldingIdleStrategy.h"
 #include "aeron_archive_client/ConnectRequest.h"
@@ -27,7 +28,8 @@ bool ArchiveProxy::connect(
     std::int64_t correlationId,
     std::shared_ptr<Aeron> aeron)
 {
-    const std::size_t length = ConnectRequest::sbeBlockLength()
+    const std::size_t length = MessageHeader::encodedLength()
+        + ConnectRequest::sbeBlockLength()
         + ConnectRequest::responseChannelHeaderLength()
         + responseChannel.size();
 
@@ -66,12 +68,12 @@ bool ArchiveProxy::tryClaimWithTimeout(std::int32_t length, BufferClaim& bufferC
 
         if (result == PUBLICATION_CLOSED)
         {
-            throw util::IllegalArgumentException("connection to the archive has been closed", SOURCEINFO);
+            throw ArchiveException("connection to the archive has been closed", SOURCEINFO);
         }
 
         if (result == MAX_POSITION_EXCEEDED)
         {
-            throw util::IllegalArgumentException("offer failed due to max position being reached", SOURCEINFO);
+            throw ArchiveException("offer failed due to max position being reached", SOURCEINFO);
         }
 
         if (deadlineNs - m_nanoClock() < 0)

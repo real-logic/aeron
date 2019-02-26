@@ -48,16 +48,17 @@ public class ArchiveTest
     {
         final int numberOfArchiveClients = 5;
         final CountDownLatch latch = new CountDownLatch(numberOfArchiveClients);
-        final ExecutorService executorService = Executors.newFixedThreadPool(numberOfArchiveClients);
+        final ThreadPoolExecutor executor = (ThreadPoolExecutor)Executors.newFixedThreadPool(numberOfArchiveClients);
         final ManyToOneConcurrentLinkedQueue<AeronArchive> archiveClientQueue = new ManyToOneConcurrentLinkedQueue<>();
         final MediaDriver.Context driverCtx = new MediaDriver.Context();
         final Archive.Context archiveCtx = new Archive.Context();
+        executor.prestartAllCoreThreads();
 
-        try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(driverCtx, archiveCtx))
+        try (ArchivingMediaDriver driver = ArchivingMediaDriver.launch(driverCtx, archiveCtx))
         {
             for (int i = 0; i < numberOfArchiveClients; i++)
             {
-                executorService.execute(
+                executor.execute(
                     () ->
                     {
                         archiveClientQueue.add(AeronArchive.connect());
@@ -65,13 +66,13 @@ public class ArchiveTest
                     });
             }
 
-            latch.await(10, TimeUnit.SECONDS);
+            latch.await(driver.archive().context().connectTimeoutNs(), TimeUnit.NANOSECONDS);
 
             assertThat(latch.getCount(), is(0L));
         }
         finally
         {
-            executorService.shutdownNow();
+            executor.shutdownNow();
 
             AeronArchive archiveClient;
             while (null != (archiveClient = archiveClientQueue.poll()))

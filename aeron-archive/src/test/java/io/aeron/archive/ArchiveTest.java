@@ -18,6 +18,7 @@ package io.aeron.archive;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.RecordingSubscriptionDescriptorConsumer;
 import io.aeron.driver.MediaDriver;
+import io.aeron.driver.ThreadingMode;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.junit.Test;
 
@@ -50,8 +51,10 @@ public class ArchiveTest
         final CountDownLatch latch = new CountDownLatch(numberOfArchiveClients);
         final ThreadPoolExecutor executor = (ThreadPoolExecutor)Executors.newFixedThreadPool(numberOfArchiveClients);
         final ManyToOneConcurrentLinkedQueue<AeronArchive> archiveClientQueue = new ManyToOneConcurrentLinkedQueue<>();
-        final MediaDriver.Context driverCtx = new MediaDriver.Context();
-        final Archive.Context archiveCtx = new Archive.Context();
+        final MediaDriver.Context driverCtx = new MediaDriver.Context().threadingMode(ThreadingMode.SHARED);
+        final Archive.Context archiveCtx = new Archive.Context()
+            .threadingMode(ArchiveThreadingMode.SHARED)
+            .connectTimeoutNs(TimeUnit.SECONDS.toNanos(10));
         executor.prestartAllCoreThreads();
 
         try (ArchivingMediaDriver driver = ArchivingMediaDriver.launch(driverCtx, archiveCtx))
@@ -99,8 +102,8 @@ public class ArchiveTest
                 descriptors.add(new SubscriptionDescriptor(
                     controlSessionId, correlationId, subscriptionId, streamId, strippedChannel));
 
-        final MediaDriver.Context driverCtx = new MediaDriver.Context();
-        final Archive.Context archiveCtx = new Archive.Context();
+        final MediaDriver.Context driverCtx = new MediaDriver.Context().threadingMode(ThreadingMode.SHARED);
+        final Archive.Context archiveCtx = new Archive.Context().threadingMode(ArchiveThreadingMode.SHARED);
 
         try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(driverCtx, archiveCtx);
             AeronArchive archive = AeronArchive.connect())

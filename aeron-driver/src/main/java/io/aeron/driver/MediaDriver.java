@@ -33,6 +33,7 @@ import org.agrona.concurrent.status.*;
 import java.io.*;
 import java.nio.MappedByteBuffer;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -402,6 +403,7 @@ public final class MediaDriver implements AutoCloseable
      */
     public static class Context extends CommonContext
     {
+        private boolean printConfigurationOnStart = Configuration.printConfigurationOnStart();
         private boolean useWindowsHighResTimer = Configuration.useWindowsHighResTimer();
         private boolean warnIfDirectoryExists = Configuration.warnIfDirExists();
         private boolean dirDeleteOnStart = Configuration.dirDeleteOnStart();
@@ -562,6 +564,11 @@ public final class MediaDriver implements AutoCloseable
                 LangUtil.rethrowUnchecked(ex);
             }
 
+            if (printConfigurationOnStart)
+            {
+                System.out.println(this.toString());
+            }
+
             return this;
         }
 
@@ -602,6 +609,30 @@ public final class MediaDriver implements AutoCloseable
         public Context countersValuesBuffer(final UnsafeBuffer countersValuesBuffer)
         {
             super.countersValuesBuffer(countersValuesBuffer);
+            return this;
+        }
+
+        /**
+         * Should the driver print it's configuration on start to {@link System#out} at the end of {@link #conclude()}.
+         *
+         * @return true if the configuration should be printed on start.
+         * @see Configuration#PRINT_CONFIGURATION_ON_START_PROP_NAME
+         */
+        public boolean printConfigurationOnStart()
+        {
+            return printConfigurationOnStart;
+        }
+
+        /**
+         * Should the driver print it's configuration on start to {@link System#out} at the end of {@link #conclude()}.
+         *
+         * @param printConfigurationOnStart if the configuration should be printed on start.
+         * @return this for a fluent API.
+         * @see Configuration#PRINT_CONFIGURATION_ON_START_PROP_NAME
+         */
+        public Context printConfigurationOnStart(final boolean printConfigurationOnStart)
+        {
+            this.printConfigurationOnStart = printConfigurationOnStart;
             return this;
         }
 
@@ -2330,11 +2361,11 @@ public final class MediaDriver implements AutoCloseable
             }
 
             receiverProxy = new ReceiverProxy(
-                threadingMode, receiverCommandQueue(), systemCounters.get(RECEIVER_PROXY_FAILS));
+                threadingMode, receiverCommandQueue, systemCounters.get(RECEIVER_PROXY_FAILS));
             senderProxy = new SenderProxy(
-                threadingMode, senderCommandQueue(), systemCounters.get(SENDER_PROXY_FAILS));
+                threadingMode, senderCommandQueue, systemCounters.get(SENDER_PROXY_FAILS));
             driverConductorProxy = new DriverConductorProxy(
-                threadingMode, driverCommandQueue(), systemCounters.get(CONDUCTOR_PROXY_FAILS));
+                threadingMode, driverCommandQueue, systemCounters.get(CONDUCTOR_PROXY_FAILS));
 
             if (null == rawLogFactory)
             {
@@ -2463,5 +2494,87 @@ public final class MediaDriver implements AutoCloseable
             }
         }
 
+        public String toString()
+        {
+            return "MediaDriver.Context{" +
+                "printConfigurationOnStart=" + printConfigurationOnStart +
+                ", useWindowsHighResTimer=" + useWindowsHighResTimer +
+                ", warnIfDirectoryExists=" + warnIfDirectoryExists +
+                ", dirDeleteOnStart=" + dirDeleteOnStart +
+                ", termBufferSparseFile=" + termBufferSparseFile +
+                ", performStorageChecks=" + performStorageChecks +
+                ", spiesSimulateConnection=" + spiesSimulateConnection +
+                ", lowStorageWarningThreshold=" + lowStorageWarningThreshold +
+                ", timerIntervalNs=" + timerIntervalNs +
+                ", clientLivenessTimeoutNs=" + clientLivenessTimeoutNs +
+                ", imageLivenessTimeoutNs=" + imageLivenessTimeoutNs +
+                ", publicationUnblockTimeoutNs=" + publicationUnblockTimeoutNs +
+                ", publicationConnectionTimeoutNs=" + publicationConnectionTimeoutNs +
+                ", publicationLingerTimeoutNs=" + publicationLingerTimeoutNs +
+                ", retransmitUnicastDelayNs=" + retransmitUnicastDelayNs +
+                ", retransmitUnicastLingerNs=" + retransmitUnicastLingerNs +
+                ", statusMessageTimeoutNs=" + statusMessageTimeoutNs +
+                ", counterFreeToReuseTimeoutNs=" + counterFreeToReuseTimeoutNs +
+                ", publicationTermBufferLength=" + publicationTermBufferLength +
+                ", ipcPublicationTermBufferLength=" + ipcPublicationTermBufferLength +
+                ", initialWindowLength=" + initialWindowLength +
+                ", socketSndbufLength=" + socketSndbufLength +
+                ", socketRcvbufLength=" + socketRcvbufLength +
+                ", socketMulticastTtl=" + socketMulticastTtl +
+                ", mtuLength=" + mtuLength +
+                ", ipcMtuLength=" + ipcMtuLength +
+                ", filePageSize=" + filePageSize +
+                ", publicationReservedSessionIdLow=" + publicationReservedSessionIdLow +
+                ", publicationReservedSessionIdHigh=" + publicationReservedSessionIdHigh +
+                ", lossReportBufferLength=" + lossReportBufferLength +
+                ", epochClock=" + epochClock +
+                ", nanoClock=" + nanoClock +
+                ", cachedEpochClock=" + cachedEpochClock +
+                ", cachedNanoClock=" + cachedNanoClock +
+                ", threadingMode=" + threadingMode +
+                ", conductorThreadFactory=" + conductorThreadFactory +
+                ", senderThreadFactory=" + senderThreadFactory +
+                ", receiverThreadFactory=" + receiverThreadFactory +
+                ", sharedThreadFactory=" + sharedThreadFactory +
+                ", sharedNetworkThreadFactory=" + sharedNetworkThreadFactory +
+                ", conductorIdleStrategy=" + conductorIdleStrategy +
+                ", senderIdleStrategy=" + senderIdleStrategy +
+                ", receiverIdleStrategy=" + receiverIdleStrategy +
+                ", sharedNetworkIdleStrategy=" + sharedNetworkIdleStrategy +
+                ", sharedIdleStrategy=" + sharedIdleStrategy +
+                ", sendChannelEndpointSupplier=" + sendChannelEndpointSupplier +
+                ", receiveChannelEndpointSupplier=" + receiveChannelEndpointSupplier +
+                ", receiveChannelEndpointThreadLocals=" + receiveChannelEndpointThreadLocals +
+                ", tempBuffer=" + tempBuffer +
+                ", unicastFlowControlSupplier=" + unicastFlowControlSupplier +
+                ", multicastFlowControlSupplier=" + multicastFlowControlSupplier +
+                ", applicationSpecificFeedback=" + Arrays.toString(applicationSpecificFeedback) +
+                ", congestionControlSupplier=" + congestionControlSupplier +
+                ", unicastFeedbackDelayGenerator=" + unicastFeedbackDelayGenerator +
+                ", multicastFeedbackDelayGenerator=" + multicastFeedbackDelayGenerator +
+                ", retransmitUnicastDelayGenerator=" + retransmitUnicastDelayGenerator +
+                ", retransmitUnicastLingerGenerator=" + retransmitUnicastLingerGenerator +
+                ", errorLog=" + errorLog +
+                ", errorHandler=" + errorHandler +
+                ", useConcurrentCountersManager=" + useConcurrentCountersManager +
+                ", countersManager=" + countersManager +
+                ", systemCounters=" + systemCounters +
+                ", lossReport=" + lossReport +
+                ", rawLogFactory=" + rawLogFactory +
+                ", dataTransportPoller=" + dataTransportPoller +
+                ", controlTransportPoller=" + controlTransportPoller +
+                ", driverCommandQueue=" + driverCommandQueue +
+                ", receiverCommandQueue=" + receiverCommandQueue +
+                ", senderCommandQueue=" + senderCommandQueue +
+                ", receiverProxy=" + receiverProxy +
+                ", senderProxy=" + senderProxy +
+                ", driverConductorProxy=" + driverConductorProxy +
+                ", clientProxy=" + clientProxy +
+                ", toDriverCommands=" + toDriverCommands +
+                ", lossReportBuffer=" + lossReportBuffer +
+                ", cncByteBuffer=" + cncByteBuffer +
+                ", cncMetaDataBuffer=" + cncMetaDataBuffer +
+                '}';
+        }
     }
 }

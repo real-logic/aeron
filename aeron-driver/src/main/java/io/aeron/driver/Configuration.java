@@ -54,6 +54,11 @@ import static org.agrona.SystemUtil.*;
 public class Configuration
 {
     /**
+     * Should the driver print its configuration on start to {@link System#out}.
+     */
+    public static final String PRINT_CONFIGURATION_ON_START_PROP_NAME = "aeron.print.configuration";
+
+    /**
      * Warn if the Aeron directory exists.
      */
     public static final String DIR_WARN_IF_EXISTS_PROP_NAME = "aeron.dir.warn.if.exists";
@@ -611,6 +616,11 @@ public class Configuration
      * Default max number of active retransmissions per connected stream.
      */
     public static final int MAX_RETRANSMITS_DEFAULT = 16;
+
+    public static boolean printConfigurationOnStart()
+    {
+        return "true".equalsIgnoreCase(getProperty(PRINT_CONFIGURATION_ON_START_PROP_NAME, "false"));
+    }
 
     public static boolean useWindowsHighResTimer()
     {

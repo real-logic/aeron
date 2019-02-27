@@ -437,7 +437,7 @@ public final class MediaDriver implements AutoCloseable
         private NanoClock nanoClock;
         private CachedEpochClock cachedEpochClock;
         private CachedNanoClock cachedNanoClock;
-        private ThreadingMode threadingMode = Configuration.THREADING_MODE_DEFAULT;
+        private ThreadingMode threadingMode;
         private ThreadFactory conductorThreadFactory;
         private ThreadFactory senderThreadFactory;
         private ThreadFactory receiverThreadFactory;
@@ -2260,31 +2260,6 @@ public final class MediaDriver implements AutoCloseable
                 controlTransportPoller = new ControlTransportPoller();
             }
 
-            if (null == conductorThreadFactory)
-            {
-                conductorThreadFactory = Thread::new;
-            }
-
-            if (null == senderThreadFactory)
-            {
-                senderThreadFactory = Thread::new;
-            }
-
-            if (null == receiverThreadFactory)
-            {
-                receiverThreadFactory = Thread::new;
-            }
-
-            if (null == sharedThreadFactory)
-            {
-                sharedThreadFactory = Thread::new;
-            }
-
-            if (null == sharedNetworkThreadFactory)
-            {
-                sharedNetworkThreadFactory = Thread::new;
-            }
-
             if (null == receiveChannelEndpointThreadLocals)
             {
                 receiveChannelEndpointThreadLocals = new ReceiveChannelEndpointThreadLocals(this);
@@ -2329,6 +2304,11 @@ public final class MediaDriver implements AutoCloseable
             {
                 multicastFeedbackDelayGenerator = new OptimalMulticastDelayGenerator(
                     Configuration.nakMulticastMaxBackoffNs(), Configuration.nakMulticastGroupSize());
+            }
+
+            if (null == threadingMode)
+            {
+                threadingMode = Configuration.threadingMode();
             }
         }
 
@@ -2422,6 +2402,10 @@ public final class MediaDriver implements AutoCloseable
             switch (threadingMode)
             {
                 case SHARED:
+                    if (null == sharedThreadFactory)
+                    {
+                        sharedThreadFactory = Thread::new;
+                    }
                     if (null == sharedIdleStrategy)
                     {
                         sharedIdleStrategy = Configuration.sharedIdleStrategy(indicator);
@@ -2429,16 +2413,26 @@ public final class MediaDriver implements AutoCloseable
                     break;
 
                 case DEDICATED:
+                    if (null == conductorThreadFactory)
+                    {
+                        conductorThreadFactory = Thread::new;
+                    }
+                    if (null == senderThreadFactory)
+                    {
+                        senderThreadFactory = Thread::new;
+                    }
+                    if (null == receiverThreadFactory)
+                    {
+                        receiverThreadFactory = Thread::new;
+                    }
                     if (null == conductorIdleStrategy)
                     {
                         conductorIdleStrategy = Configuration.conductorIdleStrategy(indicator);
                     }
-
                     if (null == senderIdleStrategy)
                     {
                         senderIdleStrategy = Configuration.senderIdleStrategy(indicator);
                     }
-
                     if (null == receiverIdleStrategy)
                     {
                         receiverIdleStrategy = Configuration.receiverIdleStrategy(indicator);
@@ -2446,11 +2440,18 @@ public final class MediaDriver implements AutoCloseable
                     break;
 
                 case SHARED_NETWORK:
+                    if (null == conductorThreadFactory)
+                    {
+                        conductorThreadFactory = Thread::new;
+                    }
                     if (null == conductorIdleStrategy)
                     {
                         conductorIdleStrategy = Configuration.conductorIdleStrategy(indicator);
                     }
-
+                    if (null == sharedNetworkThreadFactory)
+                    {
+                        sharedNetworkThreadFactory = Thread::new;
+                    }
                     if (null == sharedNetworkIdleStrategy)
                     {
                         sharedNetworkIdleStrategy = Configuration.sharedNetworkIdleStrategy(indicator);

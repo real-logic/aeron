@@ -376,34 +376,15 @@ public class Configuration
     public static final String SENDER_IDLE_STRATEGY_PROP_NAME = "aeron.sender.idle.strategy";
 
     /**
-     * {@link IdleStrategy} to be employed by {@link Sender} for {@link ThreadingMode#DEDICATED}.
-     */
-    public static final String SENDER_IDLE_STRATEGY = getProperty(
-        SENDER_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
-
-    /**
      * Property name for {@link IdleStrategy} to be employed by {@link DriverConductor} for
      * {@link ThreadingMode#DEDICATED} and {@link ThreadingMode#SHARED_NETWORK}.
      */
     public static final String CONDUCTOR_IDLE_STRATEGY_PROP_NAME = "aeron.conductor.idle.strategy";
 
     /**
-     * {@link IdleStrategy} to be employed by {@link DriverConductor} for {@link ThreadingMode#DEDICATED}
-     * and {@link ThreadingMode#SHARED_NETWORK}.
-     */
-    public static final String CONDUCTOR_IDLE_STRATEGY = getProperty(
-        CONDUCTOR_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
-
-    /**
      * Property name for {@link IdleStrategy} to be employed by {@link Receiver} for {@link ThreadingMode#DEDICATED}.
      */
     public static final String RECEIVER_IDLE_STRATEGY_PROP_NAME = "aeron.receiver.idle.strategy";
-
-    /**
-     * {@link IdleStrategy} to be employed by {@link Receiver} for {@link ThreadingMode#DEDICATED}.
-     */
-    public static final String RECEIVER_IDLE_STRATEGY = getProperty(
-        RECEIVER_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
 
     /**
      * Property name for {@link IdleStrategy} to be employed by {@link Sender} and {@link Receiver} for
@@ -412,24 +393,10 @@ public class Configuration
     public static final String SHARED_NETWORK_IDLE_STRATEGY_PROP_NAME = "aeron.sharednetwork.idle.strategy";
 
     /**
-     * {@link IdleStrategy} to be employed by {@link Sender} and {@link Receiver} for
-     * {@link ThreadingMode#SHARED_NETWORK}.
-     */
-    public static final String SHARED_NETWORK_IDLE_STRATEGY = getProperty(
-        SHARED_NETWORK_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
-
-    /**
      * Property name for {@link IdleStrategy} to be employed by {@link Sender}, {@link Receiver},
      * and {@link DriverConductor} for {@link ThreadingMode#SHARED}.
      */
     public static final String SHARED_IDLE_STRATEGY_PROP_NAME = "aeron.shared.idle.strategy";
-
-    /**
-     * {@link IdleStrategy} to be employed by {@link Sender}, {@link Receiver}, and {@link DriverConductor}
-     * for {@link ThreadingMode#SHARED}.
-     */
-    public static final String SHARED_IDLE_STRATEGY = getProperty(
-        SHARED_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
 
     /**
      * Property name for {@link FlowControl} to be employed for unicast channels.
@@ -459,22 +426,10 @@ public class Configuration
     public static final String UNICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_PROP_NAME = "aeron.unicast.FlowControl.supplier";
 
     /**
-     * {@link FlowControlSupplier} to be employed for unicast channels.
-     */
-    public static final String UNICAST_FLOW_CONTROL_STRATEGY_SUPPLIER = getProperty(
-        UNICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_PROP_NAME, "io.aeron.driver.DefaultUnicastFlowControlSupplier");
-
-    /**
      * Property name for {@link FlowControlSupplier} to be employed for unicast channels.
      */
     public static final String MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_PROP_NAME =
         "aeron.multicast.FlowControl.supplier";
-
-    /**
-     * {@link FlowControlSupplier} to be employed for multicast channels.
-     */
-    public static final String MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER = getProperty(
-        MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_PROP_NAME, "io.aeron.driver.DefaultMulticastFlowControlSupplier");
 
     /**
      * Maximum UDP datagram payload size for IPv4. Jumbo datagrams from IPv6 are not supported.
@@ -509,12 +464,6 @@ public class Configuration
     public static final String THREADING_MODE_PROP_NAME = "aeron.threading.mode";
 
     /**
-     * {@link ThreadingMode} default used by the media driver unless overridden in context.
-     */
-    public static final ThreadingMode THREADING_MODE_DEFAULT = ThreadingMode.valueOf(
-        getProperty(THREADING_MODE_PROP_NAME, DEDICATED.name()));
-
-    /**
      * Interval in between checks for timers and timeouts.
      */
     public static final String TIMER_INTERVAL_PROP_NAME = "aeron.timer.interval";
@@ -540,21 +489,9 @@ public class Configuration
     public static final String SEND_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME = "aeron.SendChannelEndpoint.supplier";
 
     /**
-     * {@link SendChannelEndpointSupplier} to provide endpoint extension behaviour.
-     */
-    public static final String SEND_CHANNEL_ENDPOINT_SUPPLIER = getProperty(
-        SEND_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME, "io.aeron.driver.DefaultSendChannelEndpointSupplier");
-
-    /**
      * Property name for {@link ReceiveChannelEndpointSupplier}.
      */
     public static final String RECEIVE_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME = "aeron.ReceiveChannelEndpoint.supplier";
-
-    /**
-     * {@link ReceiveChannelEndpointSupplier} to provide endpoint extension behaviour.
-     */
-    public static final String RECEIVE_CHANNEL_ENDPOINT_SUPPLIER = getProperty(
-        RECEIVE_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME, "io.aeron.driver.DefaultReceiveChannelEndpointSupplier");
 
     /**
      * Property name for Application Specific Feedback added to Status Messages by the driver for flow control.
@@ -572,12 +509,6 @@ public class Configuration
      * Property name for {@link CongestionControlSupplier} to be employed for receivers.
      */
     public static final String CONGESTION_CONTROL_STRATEGY_SUPPLIER_PROP_NAME = "aeron.CongestionControl.supplier";
-
-    /**
-     * {@link CongestionControlSupplier} to be employed for receivers.
-     */
-    public static final String CONGESTION_CONTROL_STRATEGY_SUPPLIER = getProperty(
-        CONGESTION_CONTROL_STRATEGY_SUPPLIER_PROP_NAME, "io.aeron.driver.DefaultCongestionControlSupplier");
 
     /**
      * Property name for low end of the publication reserved session id range which will not be automatically assigned.
@@ -812,27 +743,32 @@ public class Configuration
 
     public static IdleStrategy senderIdleStrategy(final StatusIndicator controllableStatus)
     {
-        return agentIdleStrategy(SENDER_IDLE_STRATEGY, controllableStatus);
+        return agentIdleStrategy(
+            getProperty(SENDER_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY), controllableStatus);
     }
 
     public static IdleStrategy conductorIdleStrategy(final StatusIndicator controllableStatus)
     {
-        return agentIdleStrategy(CONDUCTOR_IDLE_STRATEGY, controllableStatus);
+        return agentIdleStrategy(
+            getProperty(CONDUCTOR_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY), controllableStatus);
     }
 
     public static IdleStrategy receiverIdleStrategy(final StatusIndicator controllableStatus)
     {
-        return agentIdleStrategy(RECEIVER_IDLE_STRATEGY, controllableStatus);
+        return agentIdleStrategy(
+            getProperty(RECEIVER_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY), controllableStatus);
     }
 
     public static IdleStrategy sharedNetworkIdleStrategy(final StatusIndicator controllableStatus)
     {
-        return agentIdleStrategy(SHARED_NETWORK_IDLE_STRATEGY, controllableStatus);
+        return agentIdleStrategy(
+            getProperty(SHARED_NETWORK_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY), controllableStatus);
     }
 
     public static IdleStrategy sharedIdleStrategy(final StatusIndicator controllableStatus)
     {
-        return agentIdleStrategy(SHARED_IDLE_STRATEGY, controllableStatus);
+        return agentIdleStrategy(
+            getProperty(SHARED_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY), controllableStatus);
     }
 
     public static int termBufferLength()
@@ -945,6 +881,11 @@ public class Configuration
         return getSizeAsInt(LOSS_REPORT_BUFFER_LENGTH_PROP_NAME, LOSS_REPORT_BUFFER_LENGTH_DEFAULT);
     }
 
+    public static ThreadingMode threadingMode()
+    {
+        return ThreadingMode.valueOf(getProperty(THREADING_MODE_PROP_NAME, DEDICATED.name()));
+    }
+
     /**
      * Get the supplier of {@link SendChannelEndpoint}s which can be used for
      * debugging, monitoring, or modifying the behaviour when sending to the channel.
@@ -956,9 +897,9 @@ public class Configuration
         SendChannelEndpointSupplier supplier = null;
         try
         {
-            supplier = (SendChannelEndpointSupplier)Class.forName(SEND_CHANNEL_ENDPOINT_SUPPLIER)
-                .getConstructor()
-                .newInstance();
+            final String className = getProperty(
+                SEND_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME, "io.aeron.driver.DefaultSendChannelEndpointSupplier");
+            supplier = (SendChannelEndpointSupplier)Class.forName(className).getConstructor().newInstance();
         }
         catch (final Exception ex)
         {
@@ -979,9 +920,9 @@ public class Configuration
         ReceiveChannelEndpointSupplier supplier = null;
         try
         {
-            supplier = (ReceiveChannelEndpointSupplier)Class.forName(RECEIVE_CHANNEL_ENDPOINT_SUPPLIER)
-                .getConstructor()
-                .newInstance();
+            final String className = getProperty(
+                RECEIVE_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME, "io.aeron.driver.DefaultReceiveChannelEndpointSupplier");
+            supplier = (ReceiveChannelEndpointSupplier)Class.forName(className).getConstructor().newInstance();
         }
         catch (final Exception ex)
         {
@@ -1002,9 +943,9 @@ public class Configuration
         FlowControlSupplier supplier = null;
         try
         {
-            supplier = (FlowControlSupplier)Class.forName(UNICAST_FLOW_CONTROL_STRATEGY_SUPPLIER)
-                .getConstructor()
-                .newInstance();
+            final String className = getProperty(
+                UNICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_PROP_NAME, "io.aeron.driver.DefaultUnicastFlowControlSupplier");
+            supplier = (FlowControlSupplier)Class.forName(className).getConstructor().newInstance();
         }
         catch (final Exception ex)
         {
@@ -1025,9 +966,10 @@ public class Configuration
         FlowControlSupplier supplier = null;
         try
         {
-            supplier = (FlowControlSupplier)Class.forName(MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER)
-                .getConstructor()
-                .newInstance();
+            final String className = getProperty(
+                MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_PROP_NAME,
+                "io.aeron.driver.DefaultMulticastFlowControlSupplier");
+            supplier = (FlowControlSupplier)Class.forName(className).getConstructor().newInstance();
         }
         catch (final Exception ex)
         {
@@ -1047,9 +989,9 @@ public class Configuration
         CongestionControlSupplier supplier = null;
         try
         {
-            supplier = (CongestionControlSupplier)Class.forName(CONGESTION_CONTROL_STRATEGY_SUPPLIER)
-                .getConstructor()
-                .newInstance();
+            final String className = getProperty(
+                CONGESTION_CONTROL_STRATEGY_SUPPLIER_PROP_NAME, "io.aeron.driver.DefaultCongestionControlSupplier");
+            supplier = (CongestionControlSupplier)Class.forName(className).getConstructor().newInstance();
         }
         catch (final Exception ex)
         {

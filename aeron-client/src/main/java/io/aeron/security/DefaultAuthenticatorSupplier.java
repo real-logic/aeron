@@ -50,4 +50,9 @@ public class DefaultAuthenticatorSupplier implements AuthenticatorSupplier
             sessionProxy.authenticate(NULL_ENCODED_PRINCIPAL);
         }
     }
+
+    public String toString()
+    {
+        return "DefaultAuthenticatorSupplier{}";
+    }
 }

@@ -29,4 +29,9 @@ public class DefaultSendChannelEndpointSupplier implements SendChannelEndpointSu
     {
         return new SendChannelEndpoint(udpChannel, statusIndicator, context);
     }
+
+    public String toString()
+    {
+        return "DefaultSendChannelEndpointSupplier{}";
+    }
 }

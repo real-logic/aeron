@@ -43,4 +43,9 @@ public class DefaultCongestionControlSupplier implements CongestionControlSuppli
             context,
             countersManager);
     }
+
+    public String toString()
+    {
+        return "DefaultCongestionControlSupplier{}";
+    }
 }

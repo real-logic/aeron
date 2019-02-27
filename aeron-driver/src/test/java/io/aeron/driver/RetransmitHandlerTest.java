@@ -52,9 +52,12 @@ public class RetransmitHandlerTest
     private static final int STREAM_ID = 0x5400E;
     private static final int TERM_ID = 0x7F003355;
 
-    private static final FeedbackDelayGenerator DELAY_GENERATOR = () -> TimeUnit.MILLISECONDS.toNanos(20);
-    private static final FeedbackDelayGenerator ZERO_DELAY_GENERATOR = () -> TimeUnit.MILLISECONDS.toNanos(0);
-    private static final FeedbackDelayGenerator LINGER_GENERATOR = () -> TimeUnit.MILLISECONDS.toNanos(40);
+    private static final FeedbackDelayGenerator DELAY_GENERATOR =
+        new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(20), false);
+    private static final FeedbackDelayGenerator ZERO_DELAY_GENERATOR =
+        new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(0), false);
+    private static final FeedbackDelayGenerator LINGER_GENERATOR =
+        new StaticDelayGenerator(TimeUnit.MILLISECONDS.toNanos(40), false);
     private static final ReservedValueSupplier RESERVED_VALUE_SUPPLIER = null;
 
     private final UnsafeBuffer termBuffer = new UnsafeBuffer(allocateDirect(TERM_BUFFER_LENGTH));

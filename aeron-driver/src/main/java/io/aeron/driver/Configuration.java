@@ -657,26 +657,24 @@ public class Configuration
     public static final long NAK_UNICAST_DELAY_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(60);
 
     /**
+     * Property for setting how long to delay before sending a retransmit following a NAK.
+     */
+    public static final String RETRANSMIT_UNICAST_DELAY_PROP_NAME = "aeron.retransmit.unicast.delay";
+
+    /**
      * Default delay before retransmission of data for unicast in nanoseconds.
      */
     public static final long RETRANSMIT_UNICAST_DELAY_DEFAULT_NS = TimeUnit.NANOSECONDS.toNanos(0);
 
     /**
-     * Source uses same for unicast and multicast. For ticks.
+     * Property for setting how long to linger after delay on a NAK.
      */
-    public static final FeedbackDelayGenerator RETRANSMIT_UNICAST_DELAY_GENERATOR =
-        () -> RETRANSMIT_UNICAST_DELAY_DEFAULT_NS;
+    public static final String RETRANSMIT_UNICAST_LINGER_PROP_NAME = "aeron.retransmit.unicast.linger";
 
     /**
      * Default delay for linger for unicast in nanoseconds.
      */
     public static final long RETRANSMIT_UNICAST_LINGER_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(60);
-
-    /**
-     * Delay for linger for unicast.
-     */
-    public static final FeedbackDelayGenerator RETRANSMIT_UNICAST_LINGER_GENERATOR =
-        () -> RETRANSMIT_UNICAST_LINGER_DEFAULT_NS;
 
     /**
      * Default max number of active retransmissions per connected stream.
@@ -930,6 +928,16 @@ public class Configuration
     public static long publicationLingerTimeoutNs()
     {
         return getDurationInNanos(PUBLICATION_LINGER_PROP_NAME, PUBLICATION_LINGER_DEFAULT_NS);
+    }
+
+    public static long retransmitUnicastDelayNs()
+    {
+        return getDurationInNanos(RETRANSMIT_UNICAST_DELAY_PROP_NAME, RETRANSMIT_UNICAST_DELAY_DEFAULT_NS);
+    }
+
+    public static long retransmitUnicastLingerNs()
+    {
+        return getDurationInNanos(RETRANSMIT_UNICAST_LINGER_PROP_NAME, RETRANSMIT_UNICAST_LINGER_DEFAULT_NS);
     }
 
     public static int lossReportBufferLength()

@@ -174,7 +174,7 @@ public class RetransmitHandler
             }
         }
 
-        throw new IllegalStateException("Maximum number of active RetransmitActions reached");
+        throw new IllegalStateException("maximum number of active RetransmitActions reached");
     }
 
     enum State

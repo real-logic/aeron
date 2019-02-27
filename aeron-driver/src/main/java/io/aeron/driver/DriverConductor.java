@@ -44,7 +44,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.ErrorCode.*;
-import static io.aeron.driver.Configuration.*;
 import static io.aeron.driver.PublicationParams.*;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
@@ -1024,8 +1023,8 @@ public class DriverConductor implements Agent
         final RetransmitHandler retransmitHandler = new RetransmitHandler(
             cachedNanoClock,
             ctx.systemCounters().get(INVALID_PACKETS),
-            RETRANSMIT_UNICAST_DELAY_GENERATOR,
-            RETRANSMIT_UNICAST_LINGER_GENERATOR);
+            ctx.retransmitUnicastDelayGenerator(),
+            ctx.retransmitUnicastLingerGenerator());
 
         final FlowControl flowControl = udpChannel.isMulticast() || udpChannel.hasExplicitControl() ?
             ctx.multicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId) :

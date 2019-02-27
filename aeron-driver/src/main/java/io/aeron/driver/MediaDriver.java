@@ -416,6 +416,8 @@ public final class MediaDriver implements AutoCloseable
         private long publicationUnblockTimeoutNs = Configuration.publicationUnlockTimeoutNs();
         private long publicationConnectionTimeoutNs = Configuration.publicationConnectionTimeoutNs();
         private long publicationLingerTimeoutNs = Configuration.publicationLingerTimeoutNs();
+        private long retransmitUnicastDelayNs = Configuration.retransmitUnicastDelayNs();
+        private long retransmitUnicastLingerNs = Configuration.retransmitUnicastLingerNs();
         private long statusMessageTimeoutNs = Configuration.statusMessageTimeoutNs();
         private long counterFreeToReuseTimeoutNs = Configuration.counterFreeToReuseTimeoutNs();
         private int publicationTermBufferLength = Configuration.termBufferLength();
@@ -456,6 +458,8 @@ public final class MediaDriver implements AutoCloseable
         private CongestionControlSupplier congestionControlSupplier;
         private FeedbackDelayGenerator unicastFeedbackDelayGenerator;
         private FeedbackDelayGenerator multicastFeedbackDelayGenerator;
+        private FeedbackDelayGenerator retransmitUnicastDelayGenerator;
+        private FeedbackDelayGenerator retransmitUnicastLingerGenerator;
 
         private DistinctErrorLog errorLog;
         private ErrorHandler errorHandler;
@@ -846,6 +850,54 @@ public final class MediaDriver implements AutoCloseable
         public Context publicationLingerTimeoutNs(final long timeoutNs)
         {
             this.publicationLingerTimeoutNs = timeoutNs;
+            return this;
+        }
+
+        /**
+         * The delay before retransmitting after a NAK.
+         *
+         * @return delay before retransmitting after a NAK.
+         * @see Configuration#RETRANSMIT_UNICAST_DELAY_PROP_NAME
+         */
+        public long retransmitUnicastDelayNs()
+        {
+            return retransmitUnicastDelayNs;
+        }
+
+        /**
+         * The delay before retransmitting after a NAK.
+         *
+         * @param retransmitUnicastDelayNs delay before retransmitting after a NAK.
+         * @return this for a fluent API.
+         * @see Configuration#RETRANSMIT_UNICAST_DELAY_PROP_NAME
+         */
+        public Context retransmitUnicastDelayNs(final long retransmitUnicastDelayNs)
+        {
+            this.retransmitUnicastDelayNs = retransmitUnicastDelayNs;
+            return this;
+        }
+
+        /**
+         * The delay for lingering after a retransmission.
+         *
+         * @return delay before retransmitting after a NAK.
+         * @see Configuration#RETRANSMIT_UNICAST_LINGER_PROP_NAME
+         */
+        public long retransmitUnicastLingerNs()
+        {
+            return retransmitUnicastLingerNs;
+        }
+
+        /**
+         * The delay for lingering after a retransmission.
+         *
+         * @param retransmitUnicastLingerNs delay before retransmitting after a NAK.
+         * @return this for a fluent API.
+         * @see Configuration#RETRANSMIT_UNICAST_LINGER_PROP_NAME
+         */
+        public Context retransmitUnicastLingerNs(final long retransmitUnicastLingerNs)
+        {
+            this.retransmitUnicastLingerNs = retransmitUnicastLingerNs;
             return this;
         }
 
@@ -1932,6 +1984,54 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
+         * {@link FeedbackDelayGenerator} for controlling the delay before sending a retransmit.
+         *
+         * @return {@link FeedbackDelayGenerator} for controlling the delay before sending a retransmit.
+         * @see Configuration#RETRANSMIT_UNICAST_DELAY_PROP_NAME
+         */
+        public FeedbackDelayGenerator retransmitUnicastDelayGenerator()
+        {
+            return retransmitUnicastDelayGenerator;
+        }
+
+        /**
+         * Set the {@link FeedbackDelayGenerator} for controlling the delay before sending a retransmit.
+         *
+         * @param feedbackDelayGenerator for controlling the delay before sending a retransmit.
+         * @return this for a fluent API
+         * @see Configuration#RETRANSMIT_UNICAST_DELAY_PROP_NAME
+         */
+        public Context retransmitUnicastDelayGenerator(final FeedbackDelayGenerator feedbackDelayGenerator)
+        {
+            retransmitUnicastDelayGenerator = feedbackDelayGenerator;
+            return this;
+        }
+
+        /**
+         * {@link FeedbackDelayGenerator} for controlling the linger after a retransmit.
+         *
+         * @return {@link FeedbackDelayGenerator} for controlling the linger after a retransmit.
+         * @see Configuration#RETRANSMIT_UNICAST_LINGER_PROP_NAME
+         */
+        public FeedbackDelayGenerator retransmitUnicastLingerGenerator()
+        {
+            return retransmitUnicastLingerGenerator;
+        }
+
+        /**
+         * Set the {@link FeedbackDelayGenerator} for controlling the linger after a retransmit.
+         *
+         * @param feedbackDelayGenerator for controlling the linger after a retransmit.
+         * @return this for a fluent API
+         * @see Configuration#RETRANSMIT_UNICAST_LINGER_PROP_NAME
+         */
+        public Context retransmitUnicastLingerGenerator(final FeedbackDelayGenerator feedbackDelayGenerator)
+        {
+            retransmitUnicastLingerGenerator = feedbackDelayGenerator;
+            return this;
+        }
+
+        /**
          * {@link FeedbackDelayGenerator} for controlling the delay of sending NAK feedback on unicast.
          *
          * @return {@link FeedbackDelayGenerator} for controlling the delay of sending NAK feedback.
@@ -2209,6 +2309,27 @@ public final class MediaDriver implements AutoCloseable
             {
                 senderCommandQueue = new OneToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY);
             }
+
+            if (null == retransmitUnicastDelayGenerator)
+            {
+                retransmitUnicastDelayGenerator = new StaticDelayGenerator(retransmitUnicastDelayNs, false);
+            }
+
+            if (null == retransmitUnicastLingerGenerator)
+            {
+                retransmitUnicastLingerGenerator = new StaticDelayGenerator(retransmitUnicastLingerNs, false);
+            }
+
+            if (null == unicastFeedbackDelayGenerator)
+            {
+                unicastFeedbackDelayGenerator = new StaticDelayGenerator(Configuration.nakUnicastDelayNs(), true);
+            }
+
+            if (null == multicastFeedbackDelayGenerator)
+            {
+                multicastFeedbackDelayGenerator = new OptimalMulticastDelayGenerator(
+                    Configuration.nakMulticastMaxBackoffNs(), Configuration.nakMulticastGroupSize());
+            }
         }
 
         private void concludeDependantProperties()
@@ -2245,17 +2366,6 @@ public final class MediaDriver implements AutoCloseable
             {
                 lossReportBuffer = mapLossReport(aeronDirectoryName(), align(lossReportBufferLength, filePageSize));
                 lossReport = new LossReport(new UnsafeBuffer(lossReportBuffer));
-            }
-
-            if (null == unicastFeedbackDelayGenerator)
-            {
-                unicastFeedbackDelayGenerator = new StaticDelayGenerator(Configuration.nakUnicastDelayNs(), true);
-            }
-
-            if (null == multicastFeedbackDelayGenerator)
-            {
-                multicastFeedbackDelayGenerator = new OptimalMulticastDelayGenerator(
-                    Configuration.nakMulticastMaxBackoffNs(), Configuration.nakMulticastGroupSize());
             }
         }
 

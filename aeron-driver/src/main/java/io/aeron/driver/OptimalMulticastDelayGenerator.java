@@ -89,6 +89,14 @@ public class OptimalMulticastDelayGenerator implements FeedbackDelayGenerator
     }
 
     /**
+     * {@inheritDoc}
+     */
+    public boolean shouldFeedbackImmediately()
+    {
+        return false;
+    }
+
+    /**
      * Generate a new randomized delay value in the units of {@code maxBackoffT}}.
      *
      * @return delay in units of {@code maxBackoffT}.

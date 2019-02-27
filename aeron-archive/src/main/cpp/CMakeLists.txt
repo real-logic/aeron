@@ -32,7 +32,7 @@ SET(SOURCE
 
 SET(HEADERS
     client/ArchiveException.h
-    client/Configuration.h
+    client/ArchiveConfiguration.h
     client/ArchiveProxy.h
     client/AeronArchive.h)
 

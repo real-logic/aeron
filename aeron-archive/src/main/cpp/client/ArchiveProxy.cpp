@@ -15,7 +15,7 @@
  */
 
 #include "ArchiveException.h"
-#include "Configuration.h"
+#include "ArchiveConfiguration.h"
 #include "ArchiveProxy.h"
 #include "concurrent/YieldingIdleStrategy.h"
 #include "aeron_archive_client/ConnectRequest.h"
@@ -58,7 +58,7 @@ bool ArchiveProxy::tryClaimWithTimeout(std::int32_t length, BufferClaim& bufferC
 {
     YieldingIdleStrategy idleStrategy;
 
-    const std::int64_t deadlineNs = m_nanoClock() + m_messageTimeoutNs;
+    const long long deadlineNs = m_nanoClock() + m_messageTimeoutNs;
     while (true)
     {
         const std::int64_t result = m_publication->tryClaim(length, bufferClaim);

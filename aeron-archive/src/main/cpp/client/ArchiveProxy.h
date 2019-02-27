@@ -29,7 +29,7 @@ public:
     ArchiveProxy(
         std::shared_ptr<Publication> publication,
         nano_clock_t nanoClock,
-        long messageTimeoutNs) :
+        long long messageTimeoutNs) :
         m_publication(std::move(publication)),
         m_nanoClock(std::move(nanoClock)),
         m_messageTimeoutNs(messageTimeoutNs)
@@ -45,7 +45,7 @@ public:
 private:
     std::shared_ptr<Publication> m_publication;
     nano_clock_t m_nanoClock;
-    const long m_messageTimeoutNs;
+    const long long m_messageTimeoutNs;
 
     bool tryClaimWithTimeout(std::int32_t length, BufferClaim& bufferClaim, std::shared_ptr<Aeron> aeron);
 };

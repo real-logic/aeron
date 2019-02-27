@@ -46,9 +46,7 @@ import java.util.concurrent.TimeUnit;
 import static io.aeron.ErrorCode.*;
 import static io.aeron.driver.Configuration.*;
 import static io.aeron.driver.PublicationParams.*;
-import static io.aeron.driver.status.SystemCounterDescriptor.ERRORS;
-import static io.aeron.driver.status.SystemCounterDescriptor.FREE_FAILS;
-import static io.aeron.driver.status.SystemCounterDescriptor.UNBLOCKED_COMMANDS;
+import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
 import static org.agrona.collections.ArrayListUtil.fastUnorderedRemove;
@@ -1025,7 +1023,7 @@ public class DriverConductor implements Agent
 
         final RetransmitHandler retransmitHandler = new RetransmitHandler(
             cachedNanoClock,
-            ctx.systemCounters(),
+            ctx.systemCounters().get(INVALID_PACKETS),
             RETRANSMIT_UNICAST_DELAY_GENERATOR,
             RETRANSMIT_UNICAST_LINGER_GENERATOR);
 

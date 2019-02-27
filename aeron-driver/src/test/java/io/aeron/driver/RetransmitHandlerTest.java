@@ -16,7 +16,7 @@
 package io.aeron.driver;
 
 import io.aeron.ReservedValueSupplier;
-import io.aeron.driver.status.SystemCounters;
+import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.Before;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
@@ -68,13 +68,13 @@ public class RetransmitHandlerTest
     private long currentTime = 0;
 
     private final RetransmitSender retransmitSender = mock(RetransmitSender.class);
-    private final SystemCounters systemCounters = mock(SystemCounters.class);
+    private final AtomicCounter invalidPackets = mock(AtomicCounter.class);
 
     private final HeaderWriter headerWriter = HeaderWriter.newInstance(
         DataHeaderFlyweight.createDefaultHeader(0, 0, 0));
 
     private RetransmitHandler handler = new RetransmitHandler(
-        () -> currentTime, systemCounters, DELAY_GENERATOR, LINGER_GENERATOR);
+        () -> currentTime, invalidPackets, DELAY_GENERATOR, LINGER_GENERATOR);
 
     @Before
     public void before()
@@ -229,7 +229,7 @@ public class RetransmitHandlerTest
 
     private RetransmitHandler newZeroDelayRetransmitHandler()
     {
-        return new RetransmitHandler(() -> currentTime, systemCounters, ZERO_DELAY_GENERATOR, LINGER_GENERATOR);
+        return new RetransmitHandler(() -> currentTime, invalidPackets, ZERO_DELAY_GENERATOR, LINGER_GENERATOR);
     }
 
     private void createTermBuffer(final BiConsumer<RetransmitHandlerTest, Integer> creator, final int num)

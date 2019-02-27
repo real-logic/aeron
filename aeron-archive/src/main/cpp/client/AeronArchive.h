@@ -17,10 +17,19 @@
 #define AERON_ARCHIVE_AERONARCHIVE_H
 
 #include "Aeron.h"
+#include "ArchiveConfiguration.h"
 
 namespace aeron {
 namespace archive {
 namespace client {
+
+class AeronArchive
+{
+public:
+
+private:
+    client::Context m_context;
+};
 
 }}}
 #endif //AERON_ARCHIVE_AERONARCHIVE_H

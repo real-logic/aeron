@@ -35,6 +35,29 @@ constexpr const std::uint8_t ARCHIVE_PATCH_VERSION = 1;
 constexpr const std::int32_t ARCHIVE_SEMANTIC_VERSION = aeron::util::semanticVersionCompose(
     ARCHIVE_MAJOR_VERSION, ARCHIVE_MINOR_VERSION, ARCHIVE_PATCH_VERSION);
 
+constexpr const long long MESSAGE_TIMEOUT_NS_DEFAULT = 5 * 1000 * 1000 * 1000L;
 
-}}}}
+}
+
+class Context
+{
+public:
+    using this_t = Context;
+
+    inline long long messageTimeoutNs()
+    {
+        return m_messageTimeoutNs;
+    }
+
+    inline this_t& messageTimeoutNs(long long timeoutNs)
+    {
+        m_messageTimeoutNs = timeoutNs;
+        return *this;
+    }
+
+private:
+    long long m_messageTimeoutNs = Configuration::MESSAGE_TIMEOUT_NS_DEFAULT;
+};
+
+}}}
 #endif //AERON_ARCHIVE_CONFIGURATION_H

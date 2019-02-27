@@ -90,11 +90,11 @@ public class RetransmitHandler
                 action.termOffset = termOffset;
                 action.length = Math.min(length, termLength - termOffset);
 
-                final long delay = determineRetransmitDelay();
+                final long delay = delayGenerator.generateDelay();
                 if (0 == delay)
                 {
                     retransmitSender.resend(termId, termOffset, action.length);
-                    action.linger(determineLingerTimeout(), nanoClock.nanoTime());
+                    action.linger(lingerTimeoutGenerator.generateDelay(), nanoClock.nanoTime());
                 }
                 else
                 {
@@ -141,7 +141,7 @@ public class RetransmitHandler
                 if (DELAYED == action.state && (action.expireNs - nowNs < 0))
                 {
                     retransmitSender.resend(action.termId, action.termOffset, action.length);
-                    action.linger(determineLingerTimeout(), nanoClock.nanoTime());
+                    action.linger(lingerTimeoutGenerator.generateDelay(), nanoClock.nanoTime());
                 }
                 else if (LINGERING == action.state && (action.expireNs - nowNs < 0))
                 {
@@ -162,16 +162,6 @@ public class RetransmitHandler
         }
 
         return isInvalid;
-    }
-
-    private long determineRetransmitDelay()
-    {
-        return delayGenerator.generateDelay();
-    }
-
-    private long determineLingerTimeout()
-    {
-        return lingerTimeoutGenerator.generateDelay();
     }
 
     private RetransmitAction assignRetransmitAction()

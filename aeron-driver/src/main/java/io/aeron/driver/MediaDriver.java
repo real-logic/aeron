@@ -578,6 +578,7 @@ public final class MediaDriver implements AutoCloseable
         /**
          * @return covariant return for fluent API.
          * @see CommonContext#aeronDirectoryName(String)
+         * @see CommonContext#AERON_DIR_PROP_NAME
          */
         public Context aeronDirectoryName(final String dirName)
         {
@@ -588,6 +589,7 @@ public final class MediaDriver implements AutoCloseable
         /**
          * @return covariant return for fluent API.
          * @see CommonContext#driverTimeoutMs(long)
+         * @see CommonContext#DRIVER_TIMEOUT_PROP_NAME
          */
         public Context driverTimeoutMs(final long value)
         {
@@ -644,6 +646,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param useWindowsHighResTimers Should an attempt be made to use the high-res timers for waiting on Windows.
          * @return this for a fluent API.
+         * @see Configuration#USE_WINDOWS_HIGH_RES_TIMER_PROP_NAME
          */
         public Context useWindowsHighResTimer(final boolean useWindowsHighResTimers)
         {
@@ -655,6 +658,7 @@ public final class MediaDriver implements AutoCloseable
          * Should an attempt be made to use the high resolution timers for waiting on Windows.
          *
          * @return true if an attempt be made to use the high resolution timers for waiting on Windows.
+         * @see Configuration#USE_WINDOWS_HIGH_RES_TIMER_PROP_NAME
          */
         public boolean useWindowsHighResTimer()
         {
@@ -665,6 +669,7 @@ public final class MediaDriver implements AutoCloseable
          * Should a warning be issued if the {@link #aeronDirectoryName()} exists?
          *
          * @return should a warning be issued if the {@link #aeronDirectoryName()} exists?
+         * @see Configuration#DIR_WARN_IF_EXISTS_PROP_NAME
          */
         public boolean warnIfDirectoryExists()
         {
@@ -676,6 +681,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param warnIfDirectoryExists warn if the {@link #aeronDirectoryName()} exists?
          * @return this for a fluent API.
+         * @see Configuration#DIR_WARN_IF_EXISTS_PROP_NAME
          */
         public Context warnIfDirectoryExists(final boolean warnIfDirectoryExists)
         {
@@ -687,6 +693,7 @@ public final class MediaDriver implements AutoCloseable
          * Will the driver attempt to immediately delete {@link #aeronDirectoryName()} on startup.
          *
          * @return true when directory will be deleted, otherwise false.
+         * @see Configuration#DIR_DELETE_ON_START_PROP_NAME
          */
         public boolean dirDeleteOnStart()
         {
@@ -698,6 +705,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param dirDeleteOnStart Attempt deletion.
          * @return this for a fluent API.
+         * @see Configuration#DIR_DELETE_ON_START_PROP_NAME
          */
         public Context dirDeleteOnStart(final boolean dirDeleteOnStart)
         {
@@ -709,6 +717,7 @@ public final class MediaDriver implements AutoCloseable
          * Should the term buffers be created with sparse files?
          *
          * @return should the term buffers be created with sparse files?
+         * @see Configuration#TERM_BUFFER_SPARSE_FILE_PROP_NAME
          */
         public boolean termBufferSparseFile()
         {
@@ -720,6 +729,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param termBufferSparseFile should the term buffers be created with sparse files?
          * @return this for a fluent API.
+         * @see Configuration#TERM_BUFFER_SPARSE_FILE_PROP_NAME
          */
         public Context termBufferSparseFile(final boolean termBufferSparseFile)
         {
@@ -803,6 +813,7 @@ public final class MediaDriver implements AutoCloseable
          * Page size for alignment of all files.
          *
          * @return page size for alignment of all files.
+         * @see Configuration#FILE_PAGE_SIZE_PROP_NAME
          */
         public int filePageSize()
         {
@@ -814,6 +825,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param filePageSize for alignment of file sizes.
          * @return this for a fluent API.
+         * @see Configuration#FILE_PAGE_SIZE_PROP_NAME
          */
         public Context filePageSize(final int filePageSize)
         {
@@ -825,6 +837,7 @@ public final class MediaDriver implements AutoCloseable
          * Interval in nanoseconds between checks for timers and timeouts.
          *
          * @return nanoseconds between checks for timers and timeouts.
+         * @see Configuration#TIMER_INTERVAL_PROP_NAME
          */
         public long timerIntervalNs()
         {
@@ -836,6 +849,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param timerIntervalNs nanoseconds between checks for timers and timeouts.
          * @return this for a fluent API.
+         * @see Configuration#TIMER_INTERVAL_PROP_NAME
          */
         public Context timerIntervalNs(final long timerIntervalNs)
         {
@@ -847,6 +861,7 @@ public final class MediaDriver implements AutoCloseable
          * Time in nanoseconds an Image will be kept alive for its subscribers to consume it once disconnected.
          *
          * @return nanoseconds that an Image will be kept alive for its subscribers to consume it.
+         * @see Configuration#IMAGE_LIVENESS_TIMEOUT_PROP_NAME
          */
         public long imageLivenessTimeoutNs()
         {
@@ -858,6 +873,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param timeout for keeping an image alive for its subscribers to consume it.
          * @return this for a fluent API.
+         * @see Configuration#IMAGE_LIVENESS_TIMEOUT_PROP_NAME
          */
         public Context imageLivenessTimeoutNs(final long timeout)
         {
@@ -869,6 +885,7 @@ public final class MediaDriver implements AutoCloseable
          * Time in nanoseconds a publication will linger once it is drained to recover potential tail loss.
          *
          * @return nanoseconds that a publication will linger once it is drained.
+         * @see Configuration#PUBLICATION_LINGER_PROP_NAME
          */
         public long publicationLingerTimeoutNs()
         {
@@ -880,6 +897,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param timeoutNs for keeping a publication once it is drained.
          * @return this for a fluent API.
+         * @see Configuration#PUBLICATION_LINGER_PROP_NAME
          */
         public Context publicationLingerTimeoutNs(final long timeoutNs)
         {
@@ -1011,6 +1029,7 @@ public final class MediaDriver implements AutoCloseable
          * Time in nanoseconds after which a client is considered dead if a keep alive is not received.
          *
          * @return time in nanoseconds after which a client is considered dead if a keep alive is not received.
+         * @see Configuration#CLIENT_LIVENESS_TIMEOUT_PROP_NAME
          */
         public long clientLivenessTimeoutNs()
         {
@@ -1022,6 +1041,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param timeoutNs in nanoseconds after which a client is considered dead if a keep alive is not received.
          * @return this for a fluent API.
+         * @see Configuration#CLIENT_LIVENESS_TIMEOUT_PROP_NAME
          */
         public Context clientLivenessTimeoutNs(final long timeoutNs)
         {
@@ -1033,6 +1053,7 @@ public final class MediaDriver implements AutoCloseable
          * Time in nanoseconds after which a status message will be sent if data is flowing slowly.
          *
          * @return time in nanoseconds after which a status message will be sent if data is flowing slowly.
+         * @see Configuration#STATUS_MESSAGE_TIMEOUT_PROP_NAME
          */
         public long statusMessageTimeoutNs()
         {
@@ -1044,6 +1065,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param statusMessageTimeoutNs after which a status message will be sent if data is flowing slowly.
          * @return this for a fluent API.
+         * @see Configuration#STATUS_MESSAGE_TIMEOUT_PROP_NAME
          */
         public Context statusMessageTimeoutNs(final long statusMessageTimeoutNs)
         {
@@ -1055,6 +1077,7 @@ public final class MediaDriver implements AutoCloseable
          * Time in nanoseconds after which a freed counter may be reused.
          *
          * @return time in nanoseconds after which a freed counter may be reused.
+         * @see Configuration#COUNTER_FREE_TO_REUSE_TIMEOUT_PROP_NAME
          */
         public long counterFreeToReuseTimeoutNs()
         {
@@ -1066,6 +1089,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param counterFreeToReuseTimeoutNs after which a freed counter may be reused.
          * @return this for a fluent API.
+         * @see Configuration#COUNTER_FREE_TO_REUSE_TIMEOUT_PROP_NAME
          */
         public Context counterFreeToReuseTimeoutNs(final long counterFreeToReuseTimeoutNs)
         {
@@ -1078,6 +1102,7 @@ public final class MediaDriver implements AutoCloseable
          * other publishers to make progress.
          *
          * @return timeout in nanoseconds after which a publication will be unblocked.
+         * @see Configuration#PUBLICATION_UNBLOCK_TIMEOUT_PROP_NAME
          */
         public long publicationUnblockTimeoutNs()
         {
@@ -1090,6 +1115,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param timeoutNs in nanoseconds after which a publication will be unblocked.
          * @return this for a fluent API.
+         * @see Configuration#PUBLICATION_UNBLOCK_TIMEOUT_PROP_NAME
          */
         public Context publicationUnblockTimeoutNs(final long timeoutNs)
         {
@@ -1102,6 +1128,7 @@ public final class MediaDriver implements AutoCloseable
          * received.
          *
          * @return timeout in nanoseconds after which a publication is considered not connected.
+         * @see Configuration#PUBLICATION_CONNECTION_TIMEOUT_PROP_NAME
          */
         public long publicationConnectionTimeoutNs()
         {
@@ -1114,6 +1141,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param timeoutNs in nanoseconds after which a publication will be considered not connected.
          * @return this for a fluent API.
+         * @see Configuration#PUBLICATION_CONNECTION_TIMEOUT_PROP_NAME
          */
         public Context publicationConnectionTimeoutNs(final long timeoutNs)
         {
@@ -1125,6 +1153,7 @@ public final class MediaDriver implements AutoCloseable
          * Does a spy subscription simulate a connection to a network publication.
          *
          * @return true if a spy subscription should simulate a connection to a network publication.
+         * @see Configuration#SPIES_SIMULATE_CONNECTION_PROP_NAME
          */
         public boolean spiesSimulateConnection()
         {
@@ -1136,6 +1165,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param spiesSimulateConnection true if a spy subscription simulates a connection to a network publication.
          * @return this for a fluent API.
+         * @see Configuration#SPIES_SIMULATE_CONNECTION_PROP_NAME
          */
         public Context spiesSimulateConnection(final boolean spiesSimulateConnection)
         {
@@ -1147,6 +1177,7 @@ public final class MediaDriver implements AutoCloseable
          * Default length for a term buffer on a network publication.
          *
          * @return default length for a term buffer on a network publication.
+         * @see Configuration#TERM_BUFFER_LENGTH_PROP_NAME
          */
         public int publicationTermBufferLength()
         {
@@ -1160,6 +1191,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param termBufferLength default length for a term buffer on a network publication.
          * @return this for a fluent API.
+         * @see Configuration#TERM_BUFFER_LENGTH_PROP_NAME
          */
         public Context publicationTermBufferLength(final int termBufferLength)
         {
@@ -1171,6 +1203,7 @@ public final class MediaDriver implements AutoCloseable
          * Default length for a term buffer on a IPC publication.
          *
          * @return default length for a term buffer on a IPC publication.
+         * @see Configuration#IPC_TERM_BUFFER_LENGTH_PROP_NAME
          */
         public int ipcTermBufferLength()
         {
@@ -1184,6 +1217,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param termBufferLength default length for a term buffer on a IPC publication.
          * @return this for a fluent API.
+         * @see Configuration#IPC_TERM_BUFFER_LENGTH_PROP_NAME
          */
         public Context ipcTermBufferLength(final int termBufferLength)
         {
@@ -1197,6 +1231,7 @@ public final class MediaDriver implements AutoCloseable
          * BDP.
          *
          * @return The initial window for in flight data on a connection
+         * @see Configuration#INITIAL_WINDOW_LENGTH_PROP_NAME
          */
         public int initialWindowLength()
         {
@@ -1210,6 +1245,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param initialWindowLength The initial window for in flight data on a connection
          * @return this for a fluent API.
+         * @see Configuration#INITIAL_WINDOW_LENGTH_PROP_NAME
          */
         public Context initialWindowLength(final int initialWindowLength)
         {
@@ -1444,6 +1480,7 @@ public final class MediaDriver implements AutoCloseable
          * {@link ThreadingMode} that should be used for the driver.
          *
          * @return {@link ThreadingMode} that should be used for the driver.
+         * @see Configuration#THREADING_MODE_PROP_NAME
          */
         public ThreadingMode threadingMode()
         {
@@ -1455,6 +1492,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param threadingMode that should be used for the driver.
          * @return this for a fluent API.
+         * @see Configuration#THREADING_MODE_PROP_NAME
          */
         public Context threadingMode(final ThreadingMode threadingMode)
         {
@@ -1596,6 +1634,7 @@ public final class MediaDriver implements AutoCloseable
          * {@link IdleStrategy} to be used by the {@link Sender} when in {@link ThreadingMode#DEDICATED}.
          *
          * @return {@link IdleStrategy} to be used by the {@link Sender} when in {@link ThreadingMode#DEDICATED}.
+         * @see Configuration#SENDER_IDLE_STRATEGY_PROP_NAME
          */
         public IdleStrategy senderIdleStrategy()
         {
@@ -1607,6 +1646,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param strategy to be used by the {@link Sender} when in {@link ThreadingMode#DEDICATED}.
          * @return this for a fluent API.
+         * @see Configuration#SENDER_IDLE_STRATEGY_PROP_NAME
          */
         public Context senderIdleStrategy(final IdleStrategy strategy)
         {
@@ -1618,6 +1658,7 @@ public final class MediaDriver implements AutoCloseable
          * {@link IdleStrategy} to be used by the {@link Receiver} when in {@link ThreadingMode#DEDICATED}.
          *
          * @return {@link IdleStrategy} used by the {@link Receiver} when in {@link ThreadingMode#DEDICATED}.
+         * @see Configuration#RECEIVER_IDLE_STRATEGY_PROP_NAME
          */
         public IdleStrategy receiverIdleStrategy()
         {
@@ -1629,6 +1670,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param strategy to be used by the {@link Receiver} when in {@link ThreadingMode#DEDICATED}.
          * @return this for a fluent API.
+         * @see Configuration#RECEIVER_IDLE_STRATEGY_PROP_NAME
          */
         public Context receiverIdleStrategy(final IdleStrategy strategy)
         {
@@ -1641,6 +1683,7 @@ public final class MediaDriver implements AutoCloseable
          * or {@link ThreadingMode#SHARED_NETWORK}.
          *
          * @return {@link IdleStrategy} used by the {@link DriverConductor}
+         * @see Configuration#CONDUCTOR_IDLE_STRATEGY_PROP_NAME
          */
         public IdleStrategy conductorIdleStrategy()
         {
@@ -1653,6 +1696,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param strategy to be used by the {@link DriverConductor}.
          * @return this for a fluent API.
+         * @see Configuration#CONDUCTOR_IDLE_STRATEGY_PROP_NAME
          */
         public Context conductorIdleStrategy(final IdleStrategy strategy)
         {
@@ -1665,6 +1709,7 @@ public final class MediaDriver implements AutoCloseable
          * {@link ThreadingMode#SHARED_NETWORK}.
          *
          * @return {@link IdleStrategy} used by the {@link Sender} and {@link Receiver}.
+         * @see Configuration#SHARED_NETWORK_IDLE_STRATEGY_PROP_NAME
          */
         public IdleStrategy sharedNetworkIdleStrategy()
         {
@@ -1677,6 +1722,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param strategy to be used by the {@link Sender} and {@link Receiver}.
          * @return this for a fluent API.
+         * @see Configuration#SHARED_NETWORK_IDLE_STRATEGY_PROP_NAME
          */
         public Context sharedNetworkIdleStrategy(final IdleStrategy strategy)
         {
@@ -1689,6 +1735,7 @@ public final class MediaDriver implements AutoCloseable
          * agents when in {@link ThreadingMode#SHARED}.
          *
          * @return {@link IdleStrategy} used by the {@link Sender}, {@link Receiver} and {@link DriverConductor}.
+         * @see Configuration#SHARED_IDLE_STRATEGY_PROP_NAME
          */
         public IdleStrategy sharedIdleStrategy()
         {
@@ -1701,6 +1748,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param strategy to be used by the {@link Sender}, {@link Receiver} and {@link DriverConductor}.
          * @return this for a fluent API.
+         * @see Configuration#SHARED_IDLE_STRATEGY_PROP_NAME
          */
         public Context sharedIdleStrategy(final IdleStrategy strategy)
         {
@@ -1713,6 +1761,7 @@ public final class MediaDriver implements AutoCloseable
          * with the send side of a network channel.
          *
          * @return the supplier of dynamically created {@link SendChannelEndpoint} subclasses.
+         * @see Configuration#SEND_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME
          */
         public SendChannelEndpointSupplier sendChannelEndpointSupplier()
         {
@@ -1725,6 +1774,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param supplier of dynamically created {@link SendChannelEndpoint} subclasses.
          * @return this for a fluent API.
+         * @see Configuration#SEND_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME
          */
         public Context sendChannelEndpointSupplier(final SendChannelEndpointSupplier supplier)
         {
@@ -1737,6 +1787,7 @@ public final class MediaDriver implements AutoCloseable
          * with the receive side of a network channel.
          *
          * @return the supplier of dynamically created {@link ReceiveChannelEndpoint} subclasses.
+         * @see Configuration#RECEIVE_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME
          */
         public ReceiveChannelEndpointSupplier receiveChannelEndpointSupplier()
         {
@@ -1749,6 +1800,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param supplier of dynamically created {@link ReceiveChannelEndpoint} subclasses.
          * @return this for a fluent API.
+         * @see Configuration#RECEIVE_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME
          */
         public Context receiveChannelEndpointSupplier(final ReceiveChannelEndpointSupplier supplier)
         {
@@ -1804,6 +1856,7 @@ public final class MediaDriver implements AutoCloseable
          * Supplier of dynamically created {@link FlowControl} strategies for unicast connections.
          *
          * @return supplier of dynamically created {@link FlowControl} strategies for unicast connections.
+         * @see Configuration#UNICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_PROP_NAME
          */
         public FlowControlSupplier unicastFlowControlSupplier()
         {
@@ -1815,6 +1868,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param flowControlSupplier of {@link FlowControl} strategies for unicast connections.
          * @return this for a fluent API.
+         * @see Configuration#UNICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_PROP_NAME
          */
         public Context unicastFlowControlSupplier(final FlowControlSupplier flowControlSupplier)
         {
@@ -1826,6 +1880,7 @@ public final class MediaDriver implements AutoCloseable
          * Supplier of dynamically created {@link FlowControl} strategies for multicast connections.
          *
          * @return supplier of dynamically created {@link FlowControl} strategies for multicast connections.
+         * @see Configuration#MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_PROP_NAME
          */
         public FlowControlSupplier multicastFlowControlSupplier()
         {
@@ -1837,6 +1892,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param flowControlSupplier of {@link FlowControl} strategies for multicast connections.
          * @return this for a fluent API.
+         * @see Configuration#MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_PROP_NAME
          */
         public Context multicastFlowControlSupplier(final FlowControlSupplier flowControlSupplier)
         {
@@ -1849,6 +1905,7 @@ public final class MediaDriver implements AutoCloseable
          * {@link PreferredMulticastFlowControl} strategy which is added to Status Messages (SMs)..
          *
          * @return Application specific feedback used to identify receivers for flow control.
+         * @see Configuration#SM_APPLICATION_SPECIFIC_FEEDBACK_PROP_NAME
          */
         public byte[] applicationSpecificFeedback()
         {
@@ -1861,6 +1918,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param asfBytes for identifying the receiver group.
          * @return this for a fluent API.
+         * @see Configuration#SM_APPLICATION_SPECIFIC_FEEDBACK_PROP_NAME
          */
         public Context applicationSpecificFeedback(final byte[] asfBytes)
         {
@@ -1872,6 +1930,7 @@ public final class MediaDriver implements AutoCloseable
          * Supplier of dynamically created {@link CongestionControl} strategies for individual connections.
          *
          * @return supplier of dynamically created {@link CongestionControl} strategies for individual connections.
+         * @see Configuration#CONGESTION_CONTROL_STRATEGY_SUPPLIER_PROP_NAME
          */
         public CongestionControlSupplier congestionControlSupplier()
         {
@@ -1883,6 +1942,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param supplier of dynamically created {@link CongestionControl} strategies for individual connections.
          * @return this for a fluent API.
+         * @see Configuration#CONGESTION_CONTROL_STRATEGY_SUPPLIER_PROP_NAME
          */
         public Context congestControlSupplier(final CongestionControlSupplier supplier)
         {

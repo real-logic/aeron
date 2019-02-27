@@ -2502,7 +2502,9 @@ public final class MediaDriver implements AutoCloseable
         public String toString()
         {
             return "MediaDriver.Context{" +
-                "printConfigurationOnStart=" + printConfigurationOnStart +
+                " aeronDirectoryName=" + aeronDirectoryName() +
+                ", driverTimeoutMs=" + driverTimeoutMs() +
+                ", printConfigurationOnStart=" + printConfigurationOnStart +
                 ", useWindowsHighResTimer=" + useWindowsHighResTimer +
                 ", warnIfDirectoryExists=" + warnIfDirectoryExists +
                 ", dirDeleteOnStart=" + dirDeleteOnStart +

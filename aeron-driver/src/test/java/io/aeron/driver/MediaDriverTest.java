@@ -41,7 +41,7 @@ public class MediaDriverTest
         try (MediaDriver ignore = MediaDriver.launch(context))
         {
             final String result = os.toString();
-            assertThat(result, containsString("MediaDriver.Context{printConfigurationOnStart=true"));
+            assertThat(result, containsString("printConfigurationOnStart=true"));
         }
         finally
         {

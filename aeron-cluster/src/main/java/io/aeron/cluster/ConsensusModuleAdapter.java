@@ -93,7 +93,7 @@ final class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                consensusModuleAgent.onCancelTimer(scheduleTimerDecoder.correlationId());
+                consensusModuleAgent.onCancelTimer(cancelTimerDecoder.correlationId());
                 break;
 
             case ServiceAckDecoder.TEMPLATE_ID:

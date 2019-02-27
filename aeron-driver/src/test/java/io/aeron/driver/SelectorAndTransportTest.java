@@ -16,6 +16,7 @@
 package io.aeron.driver;
 
 import io.aeron.driver.media.*;
+import org.agrona.collections.MutableInteger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,7 +31,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -129,12 +129,12 @@ public class SelectorAndTransportTest
     @Test(timeout = 1000)
     public void shouldSendEmptyDataFrameUnicastFromSourceToReceiver()
     {
-        final AtomicInteger dataHeadersReceived = new AtomicInteger(0);
+        final MutableInteger dataHeadersReceived = new MutableInteger(0);
 
         doAnswer(
             (invocation) ->
             {
-                dataHeadersReceived.incrementAndGet();
+                dataHeadersReceived.value++;
                 return null;
             })
             .when(mockDispatcher).onDataPacket(
@@ -179,12 +179,12 @@ public class SelectorAndTransportTest
     @Test(timeout = 1000)
     public void shouldSendMultipleDataFramesPerDatagramUnicastFromSourceToReceiver()
     {
-        final AtomicInteger dataHeadersReceived = new AtomicInteger(0);
+        final MutableInteger dataHeadersReceived = new MutableInteger(0);
 
         doAnswer(
             (invocation) ->
             {
-                dataHeadersReceived.incrementAndGet();
+                dataHeadersReceived.value++;
                 return null;
             })
             .when(mockDispatcher).onDataPacket(
@@ -242,12 +242,12 @@ public class SelectorAndTransportTest
     @Test(timeout = 1000)
     public void shouldHandleSmFrameFromReceiverToSender()
     {
-        final AtomicInteger controlMessagesReceived = new AtomicInteger(0);
+        final MutableInteger controlMessagesReceived = new MutableInteger(0);
 
         doAnswer(
             (invocation) ->
             {
-                controlMessagesReceived.incrementAndGet();
+                controlMessagesReceived.value++;
                 return null;
             })
             .when(mockPublication).onStatusMessage(any(), any());

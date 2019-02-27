@@ -58,8 +58,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
             udpChannel.remoteControl(),
             udpChannel.localControl(),
             !udpChannel.hasExplicitControl() ? udpChannel.remoteData() : null,
-            context.errorLog(),
-            context.systemCounters().get(INVALID_PACKETS));
+            context);
 
         nakMessagesReceived = context.systemCounters().get(NAK_MESSAGES_RECEIVED);
         statusMessagesReceived = context.systemCounters().get(STATUS_MESSAGES_RECEIVED);

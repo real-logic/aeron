@@ -245,12 +245,6 @@ public class Configuration
     public static final int SOCKET_RCVBUF_LENGTH_DEFAULT = 128 * 1024;
 
     /**
-     * SO_RCVBUF length, 0 means use OS default.
-     */
-    public static final int SOCKET_RCVBUF_LENGTH = getSizeAsInt(
-        SOCKET_RCVBUF_LENGTH_PROP_NAME, SOCKET_RCVBUF_LENGTH_DEFAULT);
-
-    /**
      * Property name for SO_SNDBUF setting on UDP sockets which must be sufficient for Bandwidth Delay Produce (BDP).
      */
     public static final String SOCKET_SNDBUF_LENGTH_PROP_NAME = "aeron.socket.so_sndbuf";
@@ -261,12 +255,6 @@ public class Configuration
     public static final int SOCKET_SNDBUF_LENGTH_DEFAULT = 0;
 
     /**
-     * SO_SNDBUF length, 0 means use OS default.
-     */
-    public static final int SOCKET_SNDBUF_LENGTH = getSizeAsInt(
-        SOCKET_SNDBUF_LENGTH_PROP_NAME, SOCKET_SNDBUF_LENGTH_DEFAULT);
-
-    /**
      * Property name for IP_MULTICAST_TTL setting on UDP sockets.
      */
     public static final String SOCKET_MULTICAST_TTL_PROP_NAME = "aeron.socket.multicast.ttl";
@@ -275,12 +263,6 @@ public class Configuration
      * Multicast TTL value, 0 means use OS default.
      */
     public static final int SOCKET_MULTICAST_TTL_DEFAULT = 0;
-
-    /**
-     * Multicast TTL value.
-     */
-    public static final int SOCKET_MULTICAST_TTL = getInteger(
-        SOCKET_MULTICAST_TTL_PROP_NAME, SOCKET_MULTICAST_TTL_DEFAULT);
 
     /**
      * Property name for linger timeout after draining on {@link Publication}s.
@@ -870,6 +852,21 @@ public class Configuration
         return getSizeAsInt(INITIAL_WINDOW_LENGTH_PROP_NAME, INITIAL_WINDOW_LENGTH_DEFAULT);
     }
 
+    public static int socketMulticastTtl()
+    {
+        return getInteger(SOCKET_MULTICAST_TTL_PROP_NAME, SOCKET_MULTICAST_TTL_DEFAULT);
+    }
+
+    public static int socketSndbufLength()
+    {
+        return getSizeAsInt(SOCKET_SNDBUF_LENGTH_PROP_NAME, SOCKET_SNDBUF_LENGTH_DEFAULT);
+    }
+
+    public static int socketRcvbufLength()
+    {
+        return getSizeAsInt(SOCKET_RCVBUF_LENGTH_PROP_NAME, SOCKET_RCVBUF_LENGTH_DEFAULT);
+    }
+
     public static int mtuLength()
     {
         return getSizeAsInt(MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT);
@@ -1118,28 +1115,28 @@ public class Configuration
             probe.setOption(StandardSocketOptions.SO_SNDBUF, Integer.MAX_VALUE);
             final int maxSoSndBuf = probe.getOption(StandardSocketOptions.SO_SNDBUF);
 
-            if (maxSoSndBuf < SOCKET_SNDBUF_LENGTH)
+            if (maxSoSndBuf < ctx.socketSndbufLength())
             {
                 System.err.format(
                     "WARNING: Could not get desired SO_SNDBUF, adjust OS to allow %s: attempted=%d, actual=%d%n",
                     SOCKET_SNDBUF_LENGTH_PROP_NAME,
-                    SOCKET_SNDBUF_LENGTH,
+                    ctx.socketSndbufLength(),
                     maxSoSndBuf);
             }
 
             probe.setOption(StandardSocketOptions.SO_RCVBUF, Integer.MAX_VALUE);
             final int maxSoRcvBuf = probe.getOption(StandardSocketOptions.SO_RCVBUF);
 
-            if (maxSoRcvBuf < SOCKET_RCVBUF_LENGTH)
+            if (maxSoRcvBuf < ctx.socketRcvbufLength())
             {
                 System.err.format(
                     "WARNING: Could not get desired SO_RCVBUF, adjust OS to allow %s: attempted=%d, actual=%d%n",
                     SOCKET_RCVBUF_LENGTH_PROP_NAME,
-                    SOCKET_RCVBUF_LENGTH,
+                    ctx.socketRcvbufLength(),
                     maxSoRcvBuf);
             }
 
-            final int soSndBuf = 0 == SOCKET_SNDBUF_LENGTH ? defaultSoSndBuf : SOCKET_SNDBUF_LENGTH;
+            final int soSndBuf = 0 == ctx.socketSndbufLength() ? defaultSoSndBuf : ctx.socketSndbufLength();
 
             if (ctx.mtuLength() > soSndBuf)
             {

@@ -68,13 +68,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         final AtomicCounter statusIndicator,
         final MediaDriver.Context context)
     {
-        super(
-            udpChannel,
-            udpChannel.remoteData(),
-            udpChannel.remoteData(),
-            null,
-            context.errorLog(),
-            context.systemCounters().get(INVALID_PACKETS));
+        super(udpChannel, udpChannel.remoteData(), udpChannel.remoteData(), null, context);
 
         this.dispatcher = dispatcher;
         this.statusIndicator = statusIndicator;

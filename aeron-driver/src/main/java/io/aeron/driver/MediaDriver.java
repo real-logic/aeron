@@ -421,6 +421,9 @@ public final class MediaDriver implements AutoCloseable
         private int publicationTermBufferLength = Configuration.termBufferLength();
         private int ipcPublicationTermBufferLength = Configuration.ipcTermBufferLength();
         private int initialWindowLength = Configuration.initialWindowLength();
+        private int socketSndbufLength = Configuration.socketSndbufLength();
+        private int socketRcvbufLength = Configuration.socketRcvbufLength();
+        private int socketMulticastTtl = Configuration.socketMulticastTtl();
         private int mtuLength = Configuration.mtuLength();
         private int ipcMtuLength = Configuration.ipcMtuLength();
         private int filePageSize = Configuration.filePageSize();
@@ -1032,7 +1035,8 @@ public final class MediaDriver implements AutoCloseable
 
         /**
          * The initial window for in flight data on a connection which must be less than
-         * {@link Configuration#SOCKET_RCVBUF_LENGTH}. This needs to be configured for throughput respecting BDP.
+         * {@link Configuration#SOCKET_RCVBUF_LENGTH_PROP_NAME}. This needs to be configured for throughput respecting
+         * BDP.
          *
          * @return The initial window for in flight data on a connection
          */
@@ -1043,7 +1047,8 @@ public final class MediaDriver implements AutoCloseable
 
         /**
          * The initial window for in flight data on a connection which must be less than
-         * {@link Configuration#SOCKET_RCVBUF_LENGTH}. This needs to be configured for throughput respecting BDP.
+         * {@link Configuration#SOCKET_RCVBUF_LENGTH_PROP_NAME}. This needs to be configured for throughput respecting
+         * BDP.
          *
          * @param initialWindowLength The initial window for in flight data on a connection
          * @return this for a fluent API.
@@ -1055,6 +1060,78 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
+         * The socket send buffer length which is the OS SO_SNDBUF.
+         *
+         * @return the socket send buffer length.
+         * @see Configuration#SOCKET_SNDBUF_LENGTH_PROP_NAME
+         */
+        public int socketSndbufLength()
+        {
+            return socketSndbufLength;
+        }
+
+        /**
+         * The socket send buffer length which is the OS SO_SNDBUF.
+         *
+         * @param socketSndbufLength which is the OS SO_SNDBUF.
+         * @return this for a fluent API.
+         * @see Configuration#SOCKET_SNDBUF_LENGTH_PROP_NAME
+         */
+        Context socketSndbufLength(final int socketSndbufLength)
+        {
+            this.socketSndbufLength = socketSndbufLength;
+            return this;
+        }
+
+        /**
+         * The socket send buffer length which is the OS SO_RCVBUF.
+         *
+         * @return the socket send buffer length.
+         * @see Configuration#SOCKET_RCVBUF_LENGTH_PROP_NAME
+         */
+        public int socketRcvbufLength()
+        {
+            return socketRcvbufLength;
+        }
+
+        /**
+         * The socket send buffer length which is the OS SO_RCVBUF.
+         *
+         * @param socketRcvbufLength which is the OS SO_RCVBUF.
+         * @return this for a fluent API.
+         * @see Configuration#SOCKET_RCVBUF_LENGTH_PROP_NAME
+         */
+        Context socketRcvbufLength(final int socketRcvbufLength)
+        {
+            this.socketRcvbufLength = socketRcvbufLength;
+            return this;
+        }
+
+        /**
+         * The TTL value to be used for multicast sockets.
+         *
+         * @return TTL value to be used for multicast sockets.
+         * @see Configuration#SOCKET_MULTICAST_TTL_PROP_NAME
+         */
+        public int socketMulticastTtl()
+        {
+            return socketMulticastTtl;
+        }
+
+        /**
+         * TTL value to be used for multicast sockets.
+         *
+         * @param ttl value to be used for multicast sockets.
+         * @return this for a fluent API.
+         * @see Configuration#SOCKET_MULTICAST_TTL_PROP_NAME
+         */
+        public Context socketMulticastTtl(final int ttl)
+        {
+            socketMulticastTtl = ttl;
+            return this;
+        }
+
+        /**
          * MTU in bytes for datagrams sent to the network. Messages larger than this are fragmented.
          * <p>
          * Larger MTUs reduce system call overhead at the expense of possible increase in loss which
@@ -1062,6 +1139,7 @@ public final class MediaDriver implements AutoCloseable
          * fragmented and can amplify the impact of loss.
          *
          * @return MTU in bytes for datagrams sent to the network.
+         * @see Configuration#MTU_LENGTH_PROP_NAME
          */
         public int mtuLength()
         {
@@ -1077,6 +1155,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param mtuLength in bytes for datagrams sent to the network.
          * @return this for a fluent API.
+         * @see Configuration#MTU_LENGTH_PROP_NAME
          */
         public Context mtuLength(final int mtuLength)
         {
@@ -1091,6 +1170,7 @@ public final class MediaDriver implements AutoCloseable
          * then a large MTU may be an issue.
          *
          * @return MTU in bytes for message fragments.
+         * @see Configuration#IPC_MTU_LENGTH_PROP_NAME
          */
         public int ipcMtuLength()
         {
@@ -1105,6 +1185,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param ipcMtuLength in bytes for message fragments.
          * @return this for a fluent API.
+         * @see Configuration#IPC_MTU_LENGTH_PROP_NAME
          */
         public Context ipcMtuLength(final int ipcMtuLength)
         {

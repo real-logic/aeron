@@ -18,17 +18,36 @@
 
 #include "Aeron.h"
 #include "ArchiveConfiguration.h"
+#include "concurrent/BackOffIdleStrategy.h"
 
 namespace aeron {
 namespace archive {
 namespace client {
 
+template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
 class AeronArchive
 {
 public:
+    using Context_t = aeron::archive::client::Context;
+
+    AeronArchive(Context_t& context);
+    ~AeronArchive();
+
+    inline static std::shared_ptr<AeronArchive> connect(Context_t& context)
+    {
+        return std::make_shared<AeronArchive>(context);
+    }
+
+    inline static std::shared_ptr<AeronArchive> connect()
+    {
+        Context_t ctx;
+        return connect(ctx);
+    }
 
 private:
-    client::Context m_context;
+    std::shared_ptr<Aeron> m_aeron;
+    Context_t m_context;
+    IdleStrategy m_idle;
 };
 
 }}}

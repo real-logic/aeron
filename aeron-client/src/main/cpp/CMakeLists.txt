@@ -69,6 +69,7 @@ SET(HEADERS
     concurrent/NoOpIdleStrategy.h
     concurrent/SleepingIdleStrategy.h
     concurrent/YieldingIdleStrategy.h
+    concurrent/BackOffIdleStrategy.h
     concurrent/atomic/Atomic64_gcc_cpp11.h
     concurrent/atomic/Atomic64_gcc_x86_64.h
     concurrent/atomic/Atomic64_msvc.h

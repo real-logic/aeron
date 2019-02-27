@@ -43,7 +43,7 @@ public class ExtendRecordingTest
     private static final long MAX_CATALOG_ENTRIES = 1024;
     private static final int FRAGMENT_LIMIT = 10;
     private static final int TERM_BUFFER_LENGTH = 64 * 1024;
-    private static final int MTU_LENGTH = Configuration.MTU_LENGTH;
+    private static final int MTU_LENGTH = Configuration.mtuLength();
 
     private static final int RECORDING_STREAM_ID = 33;
     private static final String RECORDING_CHANNEL = new ChannelUriStringBuilder()

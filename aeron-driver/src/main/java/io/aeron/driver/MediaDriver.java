@@ -402,29 +402,31 @@ public final class MediaDriver implements AutoCloseable
      */
     public static class Context extends CommonContext
     {
-        private boolean useWindowsHighResTimer = Configuration.USE_WINDOWS_HIGH_RES_TIMER;
-        private boolean warnIfDirectoryExists = Configuration.DIR_WARN_IF_EXISTS;
-        private boolean dirDeleteOnStart = Configuration.DIR_DELETE_ON_START;
-        private boolean termBufferSparseFile = Configuration.TERM_BUFFER_SPARSE_FILE;
-        private boolean performStorageChecks = Configuration.PERFORM_STORAGE_CHECKS;
-        private boolean spiesSimulateConnection = Configuration.SPIES_SIMULATE_CONNECTION;
+        private boolean useWindowsHighResTimer = Configuration.useWindowsHighResTimer();
+        private boolean warnIfDirectoryExists = Configuration.warnIfDirExists();
+        private boolean dirDeleteOnStart = Configuration.dirDeleteOnStart();
+        private boolean termBufferSparseFile = Configuration.termBufferSparseFile();
+        private boolean performStorageChecks = Configuration.performStorageChecks();
+        private boolean spiesSimulateConnection = Configuration.spiesSimulateConnection();
 
-        private long timerIntervalNs = Configuration.TIMER_INTERVAL_NS;
-        private long clientLivenessTimeoutNs = Configuration.CLIENT_LIVENESS_TIMEOUT_NS;
-        private long imageLivenessTimeoutNs = Configuration.IMAGE_LIVENESS_TIMEOUT_NS;
-        private long publicationUnblockTimeoutNs = Configuration.PUBLICATION_UNBLOCK_TIMEOUT_NS;
-        private long publicationConnectionTimeoutNs = Configuration.PUBLICATION_CONNECTION_TIMEOUT_NS;
-        private long publicationLingerTimeoutNs = Configuration.PUBLICATION_LINGER_NS;
+        private long lowStorageWarningThreshold = Configuration.lowStorageWarningThreshold();
+        private long timerIntervalNs = Configuration.timerIntervalNs();
+        private long clientLivenessTimeoutNs = Configuration.clientLivenessTimeoutNs();
+        private long imageLivenessTimeoutNs = Configuration.imageLivenessTimeoutNs();
+        private long publicationUnblockTimeoutNs = Configuration.publicationUnlockTimeoutNs();
+        private long publicationConnectionTimeoutNs = Configuration.publicationConnectionTimeoutNs();
+        private long publicationLingerTimeoutNs = Configuration.publicationLingerTimeoutNs();
         private long statusMessageTimeoutNs = Configuration.statusMessageTimeoutNs();
         private long counterFreeToReuseTimeoutNs = Configuration.counterFreeToReuseTimeoutNs();
         private int publicationTermBufferLength = Configuration.termBufferLength();
-        private int ipcPublicationTermBufferLength = Configuration.ipcTermBufferLength(publicationTermBufferLength);
+        private int ipcPublicationTermBufferLength = Configuration.ipcTermBufferLength();
         private int initialWindowLength = Configuration.initialWindowLength();
-        private int mtuLength = Configuration.MTU_LENGTH;
-        private int ipcMtuLength = Configuration.IPC_MTU_LENGTH;
-        private int filePageSize = Configuration.FILE_PAGE_SIZE;
-        private int publicationReservedSessionIdLow = Configuration.PUBLICATION_RESERVED_SESSION_ID_LOW;
-        private int publicationReservedSessionIdHigh = Configuration.PUBLICATION_RESERVED_SESSION_ID_HIGH;
+        private int mtuLength = Configuration.mtuLength();
+        private int ipcMtuLength = Configuration.ipcMtuLength();
+        private int filePageSize = Configuration.filePageSize();
+        private int publicationReservedSessionIdLow = Configuration.publicationReservedSessionIdLow();
+        private int publicationReservedSessionIdHigh = Configuration.publicationReservedSessionIdHigh();
+        private int lossReportBufferLength = Configuration.lossReportBufferLength();
 
         private EpochClock epochClock;
         private NanoClock nanoClock;
@@ -449,6 +451,8 @@ public final class MediaDriver implements AutoCloseable
         private FlowControlSupplier multicastFlowControlSupplier;
         private byte[] applicationSpecificFeedback = Configuration.SM_APPLICATION_SPECIFIC_FEEDBACK;
         private CongestionControlSupplier congestionControlSupplier;
+        private FeedbackDelayGenerator unicastFeedbackDelayGenerator;
+        private FeedbackDelayGenerator multicastFeedbackDelayGenerator;
 
         private DistinctErrorLog errorLog;
         private ErrorHandler errorHandler;
@@ -515,8 +519,7 @@ public final class MediaDriver implements AutoCloseable
 
                 LogBufferDescriptor.checkTermLength(publicationTermBufferLength);
                 LogBufferDescriptor.checkTermLength(ipcPublicationTermBufferLength);
-
-                Configuration.validateInitialWindowLength(initialWindowLength, mtuLength);
+                validateInitialWindowLength(initialWindowLength, mtuLength);
 
                 cncByteBuffer = mapNewFile(
                     cncFile(),
@@ -687,6 +690,7 @@ public final class MediaDriver implements AutoCloseable
          * Should the driver perform storage checks when allocating files.
          *
          * @return true if the driver should perform storage checks when allocating files.
+         * @see Configuration#PERFORM_STORAGE_CHECKS_PROP_NAME
          */
         public boolean performStorageChecks()
         {
@@ -698,10 +702,59 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param performStorageChecks true if the driver should perform storage checks when allocating files.
          * @return this for a fluent API.
+         * @see Configuration#PERFORM_STORAGE_CHECKS_PROP_NAME
          */
         public Context performStorageChecks(final boolean performStorageChecks)
         {
             this.performStorageChecks = performStorageChecks;
+            return this;
+        }
+
+        /**
+         * Get the threshold in bytes below which storage warnings are issued.
+         *
+         * @return the threshold below which storage warnings are issued.
+         * @see Configuration#LOW_FILE_STORE_WARNING_THRESHOLD_PROP_NAME
+         */
+        public long lowStorageWarningThreshold()
+        {
+            return lowStorageWarningThreshold;
+        }
+
+        /**
+         * Get the threshold in bytes below which storage warnings are issued.
+         *
+         * @param lowStorageWarningThreshold to be set in bytes.
+         * @return this for a fluent API.
+         * @see Configuration#LOW_FILE_STORE_WARNING_THRESHOLD_PROP_NAME
+         */
+        public Context lowStorageWarningThreshold(final long lowStorageWarningThreshold)
+        {
+            this.lowStorageWarningThreshold = lowStorageWarningThreshold;
+            return this;
+        }
+
+        /**
+         * The length in bytes of the loss report buffer.
+         *
+         * @return the length in bytes of the loss report buffer.
+         * @see Configuration#LOSS_REPORT_BUFFER_LENGTH_PROP_NAME
+         */
+        public int lossReportBufferLength()
+        {
+            return lossReportBufferLength;
+        }
+
+        /**
+         * The length in bytes of the loss report buffer.
+         *
+         * @param length of the buffer to be used for the loss report.
+         * @return this for a fluent API.
+         * @see Configuration#LOSS_REPORT_BUFFER_LENGTH_PROP_NAME
+         */
+        public Context lossReportBufferLength(final int length)
+        {
+            lossReportBufferLength = length;
             return this;
         }
 
@@ -1797,6 +1850,56 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
+        /**
+         * {@link FeedbackDelayGenerator} for controlling the delay of sending NAK feedback on unicast.
+         *
+         * @return {@link FeedbackDelayGenerator} for controlling the delay of sending NAK feedback.
+         * @see Configuration#NAK_UNICAST_DELAY_PROP_NAME
+         */
+        public FeedbackDelayGenerator unicastFeedbackDelayGenerator()
+        {
+            return unicastFeedbackDelayGenerator;
+        }
+
+        /**
+         * Set the {@link FeedbackDelayGenerator} for controlling the delay of sending NAK feedback on unicast.
+         *
+         * @param feedbackDelayGenerator  for controlling the delay of sending NAK feedback.
+         * @return this for a fluent API
+         * @see Configuration#NAK_UNICAST_DELAY_PROP_NAME
+         */
+        public Context unicastFeedbackDelayGenerator(final FeedbackDelayGenerator feedbackDelayGenerator)
+        {
+            unicastFeedbackDelayGenerator = feedbackDelayGenerator;
+            return this;
+        }
+
+        /**
+         * {@link FeedbackDelayGenerator} for controlling the delay of sending NAK feedback on multicast.
+         *
+         * @return {@link FeedbackDelayGenerator} for controlling the delay of sending NAK feedback.
+         * @see Configuration#NAK_MULTICAST_MAX_BACKOFF_PROP_NAME
+         * @see Configuration#NAK_MULTICAST_GROUP_SIZE_PROP_NAME
+         */
+        public FeedbackDelayGenerator multicastFeedbackDelayGenerator()
+        {
+            return multicastFeedbackDelayGenerator;
+        }
+
+        /**
+         * Set the {@link FeedbackDelayGenerator} for controlling the delay of sending NAK feedback on multicast.
+         *
+         * @param feedbackDelayGenerator  for controlling the delay of sending NAK feedback.
+         * @return this for a fluent API
+         * @see Configuration#NAK_MULTICAST_MAX_BACKOFF_PROP_NAME
+         * @see Configuration#NAK_MULTICAST_GROUP_SIZE_PROP_NAME
+         */
+        public Context multicastFeedbackDelayGenerator(final FeedbackDelayGenerator feedbackDelayGenerator)
+        {
+            multicastFeedbackDelayGenerator = feedbackDelayGenerator;
+            return this;
+        }
+
         OneToOneConcurrentArrayQueue<Runnable> receiverCommandQueue()
         {
             return receiverCommandQueue;
@@ -2054,14 +2157,24 @@ public final class MediaDriver implements AutoCloseable
             if (null == rawLogFactory)
             {
                 rawLogFactory = new RawLogFactory(
-                    aeronDirectoryName(), filePageSize, performStorageChecks, errorHandler);
+                    aeronDirectoryName(), filePageSize, performStorageChecks, lowStorageWarningThreshold, errorHandler);
             }
 
             if (null == lossReport)
             {
-                lossReportBuffer = mapLossReport(
-                    aeronDirectoryName(), align(Configuration.LOSS_REPORT_BUFFER_LENGTH, filePageSize));
+                lossReportBuffer = mapLossReport(aeronDirectoryName(), align(lossReportBufferLength, filePageSize));
                 lossReport = new LossReport(new UnsafeBuffer(lossReportBuffer));
+            }
+
+            if (null == unicastFeedbackDelayGenerator)
+            {
+                unicastFeedbackDelayGenerator = new StaticDelayGenerator(Configuration.nakUnicastDelayNs(), true);
+            }
+
+            if (null == multicastFeedbackDelayGenerator)
+            {
+                multicastFeedbackDelayGenerator = new OptimalMulticastDelayGenerator(
+                    Configuration.nakMulticastMaxBackoffNs(), Configuration.nakMulticastGroupSize());
             }
         }
 
@@ -2158,17 +2271,5 @@ public final class MediaDriver implements AutoCloseable
             }
         }
 
-        private static void validateSessionIdRange(final int low, final int high)
-        {
-            if (low > high)
-            {
-                throw new IllegalArgumentException("low session id value " + low + " must be <= high value " + high);
-            }
-
-            if (Math.abs((long)high - low) > Integer.MAX_VALUE)
-            {
-                throw new IllegalArgumentException("reserved range to too large");
-            }
-        }
     }
 }

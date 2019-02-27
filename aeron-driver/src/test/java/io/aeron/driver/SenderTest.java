@@ -150,9 +150,9 @@ public class SenderTest
             flowControl,
             mockRetransmitHandler,
             new NetworkPublicationThreadLocals(),
-            Configuration.PUBLICATION_UNBLOCK_TIMEOUT_NS,
-            Configuration.PUBLICATION_CONNECTION_TIMEOUT_NS,
-            Configuration.PUBLICATION_LINGER_NS,
+            Configuration.publicationUnlockTimeoutNs(),
+            Configuration.publicationConnectionTimeoutNs(),
+            Configuration.publicationLingerTimeoutNs(),
             false,
             false);
 

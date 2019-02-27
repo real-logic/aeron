@@ -1422,7 +1422,7 @@ public class AeronArchive implements AutoCloseable
         /**
          * MTU to reflect default for the control streams.
          */
-        public static final int CONTROL_MTU_LENGTH_DEFAULT = io.aeron.driver.Configuration.MTU_LENGTH;
+        public static final int CONTROL_MTU_LENGTH_DEFAULT = io.aeron.driver.Configuration.mtuLength();
 
         /**
          * The timeout in nanoseconds to wait for a message.

@@ -191,7 +191,7 @@ public class Archive implements AutoCloseable
 
         public static final String REPLAY_LINGER_TIMEOUT_PROP_NAME = "aeron.archive.replay.linger.timeout";
         public static final long REPLAY_LINGER_TIMEOUT_DEFAULT_NS =
-            io.aeron.driver.Configuration.PUBLICATION_LINGER_NS;
+            io.aeron.driver.Configuration.publicationLingerTimeoutNs();
 
         static final String CATALOG_FILE_NAME = "archive.catalog";
         static final String RECORDING_SEGMENT_POSTFIX = ".rec";

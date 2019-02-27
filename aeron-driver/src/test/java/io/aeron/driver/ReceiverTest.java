@@ -119,11 +119,13 @@ public class ReceiverTest
             new DriverConductorProxy(ThreadingMode.DEDICATED, toConductorQueue, mock(AtomicCounter.class));
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
+            .applicationSpecificFeedback(Configuration.applicationSpecificFeedback())
             .driverCommandQueue(toConductorQueue)
             .dataTransportPoller(mockDataTransportPoller)
             .controlTransportPoller(mockControlTransportPoller)
             .rawLogBuffersFactory(mockRawLogFactory)
             .systemCounters(mockSystemCounters)
+            .applicationSpecificFeedback(Configuration.applicationSpecificFeedback())
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
             .nanoClock(() -> currentTime)
             .cachedNanoClock(mockCachedNanoClock)
@@ -144,6 +146,7 @@ public class ReceiverTest
         termBuffers = rawLog.termBuffers();
 
         final MediaDriver.Context context = new MediaDriver.Context()
+            .applicationSpecificFeedback(Configuration.applicationSpecificFeedback())
             .systemCounters(mockSystemCounters);
 
         context.receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals(context));

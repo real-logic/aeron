@@ -27,6 +27,7 @@ import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.BitUtil;
 import org.agrona.LangUtil;
+import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.ControllableIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
@@ -505,12 +506,6 @@ public class Configuration
         "aeron.flow.control.sm.applicationSpecificFeedback";
 
     /**
-     * Value to use for all Status Message Application Specific Feedback values from the driver for flow control.
-     */
-    public static final byte[] SM_APPLICATION_SPECIFIC_FEEDBACK = fromHex(getProperty(
-        SM_APPLICATION_SPECIFIC_FEEDBACK_PROP_NAME, ""));
-
-    /**
      * Property name for {@link CongestionControlSupplier} to be employed for receivers.
      */
     public static final String CONGESTION_CONTROL_STRATEGY_SUPPLIER_PROP_NAME = "aeron.CongestionControl.supplier";
@@ -893,7 +888,24 @@ public class Configuration
 
     public static ThreadingMode threadingMode()
     {
-        return ThreadingMode.valueOf(getProperty(THREADING_MODE_PROP_NAME, DEDICATED.name()));
+        final String propertyValue = getProperty(THREADING_MODE_PROP_NAME);
+        if (null == propertyValue)
+        {
+            return DEDICATED;
+        }
+
+        return ThreadingMode.valueOf(propertyValue);
+    }
+
+    public static byte[] applicationSpecificFeedback()
+    {
+        final String propertyValue = getProperty(SM_APPLICATION_SPECIFIC_FEEDBACK_PROP_NAME);
+        if (null == propertyValue)
+        {
+            return ArrayUtil.EMPTY_BYTE_ARRAY;
+        }
+
+        return fromHex(propertyValue);
     }
 
     /**
@@ -907,8 +919,12 @@ public class Configuration
         SendChannelEndpointSupplier supplier = null;
         try
         {
-            final String className = getProperty(
-                SEND_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME, "io.aeron.driver.DefaultSendChannelEndpointSupplier");
+            final String className = getProperty(SEND_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME);
+            if (null == className)
+            {
+                return new DefaultSendChannelEndpointSupplier();
+            }
+
             supplier = (SendChannelEndpointSupplier)Class.forName(className).getConstructor().newInstance();
         }
         catch (final Exception ex)
@@ -930,8 +946,12 @@ public class Configuration
         ReceiveChannelEndpointSupplier supplier = null;
         try
         {
-            final String className = getProperty(
-                RECEIVE_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME, "io.aeron.driver.DefaultReceiveChannelEndpointSupplier");
+            final String className = getProperty(RECEIVE_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME);
+            if (null == className)
+            {
+                return new DefaultReceiveChannelEndpointSupplier();
+            }
+
             supplier = (ReceiveChannelEndpointSupplier)Class.forName(className).getConstructor().newInstance();
         }
         catch (final Exception ex)
@@ -953,8 +973,12 @@ public class Configuration
         FlowControlSupplier supplier = null;
         try
         {
-            final String className = getProperty(
-                UNICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_PROP_NAME, "io.aeron.driver.DefaultUnicastFlowControlSupplier");
+            final String className = getProperty(UNICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_PROP_NAME);
+            if (null == className)
+            {
+                return new DefaultUnicastFlowControlSupplier();
+            }
+
             supplier = (FlowControlSupplier)Class.forName(className).getConstructor().newInstance();
         }
         catch (final Exception ex)
@@ -976,9 +1000,12 @@ public class Configuration
         FlowControlSupplier supplier = null;
         try
         {
-            final String className = getProperty(
-                MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_PROP_NAME,
-                "io.aeron.driver.DefaultMulticastFlowControlSupplier");
+            final String className = getProperty(MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_PROP_NAME);
+            if (null == className)
+            {
+                return new DefaultMulticastFlowControlSupplier();
+            }
+
             supplier = (FlowControlSupplier)Class.forName(className).getConstructor().newInstance();
         }
         catch (final Exception ex)
@@ -999,8 +1026,12 @@ public class Configuration
         CongestionControlSupplier supplier = null;
         try
         {
-            final String className = getProperty(
-                CONGESTION_CONTROL_STRATEGY_SUPPLIER_PROP_NAME, "io.aeron.driver.DefaultCongestionControlSupplier");
+            final String className = getProperty(CONGESTION_CONTROL_STRATEGY_SUPPLIER_PROP_NAME);
+            if (null == className)
+            {
+                return new DefaultCongestionControlSupplier();
+            }
+
             supplier = (CongestionControlSupplier)Class.forName(className).getConstructor().newInstance();
         }
         catch (final Exception ex)

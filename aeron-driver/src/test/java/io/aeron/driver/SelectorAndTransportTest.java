@@ -79,8 +79,10 @@ public class SelectorAndTransportTest
         when(mockPublication.streamId()).thenReturn(STREAM_ID);
         when(mockPublication.sessionId()).thenReturn(SESSION_ID);
 
-        context.systemCounters(mockSystemCounters);
-        context.receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals(context));
+        context
+            .applicationSpecificFeedback(Configuration.applicationSpecificFeedback())
+            .systemCounters(mockSystemCounters)
+            .receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals(context));
     }
 
     @After

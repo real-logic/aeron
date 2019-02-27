@@ -151,6 +151,7 @@ public class DriverConductorTest
             .tempBuffer(new UnsafeBuffer(new byte[METADATA_LENGTH]))
             .publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .ipcTermBufferLength(TERM_BUFFER_LENGTH)
+            .applicationSpecificFeedback(Configuration.applicationSpecificFeedback())
             .unicastFlowControlSupplier(Configuration.unicastFlowControlSupplier())
             .multicastFlowControlSupplier(Configuration.multicastFlowControlSupplier())
             .driverCommandQueue(new ManyToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))

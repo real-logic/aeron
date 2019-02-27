@@ -456,7 +456,7 @@ public final class MediaDriver implements AutoCloseable
         private MutableDirectBuffer tempBuffer;
         private FlowControlSupplier unicastFlowControlSupplier;
         private FlowControlSupplier multicastFlowControlSupplier;
-        private byte[] applicationSpecificFeedback = Configuration.SM_APPLICATION_SPECIFIC_FEEDBACK;
+        private byte[] applicationSpecificFeedback;
         private CongestionControlSupplier congestionControlSupplier;
         private FeedbackDelayGenerator unicastFeedbackDelayGenerator;
         private FeedbackDelayGenerator multicastFeedbackDelayGenerator;
@@ -2234,7 +2234,7 @@ public final class MediaDriver implements AutoCloseable
         }
 
         @SuppressWarnings("MethodLength")
-        private void concludeNullProperties()
+        void concludeNullProperties()
         {
             if (null == tempBuffer)
             {
@@ -2289,6 +2289,11 @@ public final class MediaDriver implements AutoCloseable
             if (null == controlTransportPoller)
             {
                 controlTransportPoller = new ControlTransportPoller();
+            }
+
+            if (null == applicationSpecificFeedback)
+            {
+                applicationSpecificFeedback = Configuration.applicationSpecificFeedback();
             }
 
             if (null == receiveChannelEndpointThreadLocals)

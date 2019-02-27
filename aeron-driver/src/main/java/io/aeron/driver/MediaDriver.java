@@ -418,10 +418,13 @@ public final class MediaDriver implements AutoCloseable
         private long publicationUnblockTimeoutNs = Configuration.publicationUnlockTimeoutNs();
         private long publicationConnectionTimeoutNs = Configuration.publicationConnectionTimeoutNs();
         private long publicationLingerTimeoutNs = Configuration.publicationLingerTimeoutNs();
-        private long retransmitUnicastDelayNs = Configuration.retransmitUnicastDelayNs();
-        private long retransmitUnicastLingerNs = Configuration.retransmitUnicastLingerNs();
         private long statusMessageTimeoutNs = Configuration.statusMessageTimeoutNs();
         private long counterFreeToReuseTimeoutNs = Configuration.counterFreeToReuseTimeoutNs();
+        private long retransmitUnicastDelayNs = Configuration.retransmitUnicastDelayNs();
+        private long retransmitUnicastLingerNs = Configuration.retransmitUnicastLingerNs();
+        private long nakUnicastDelayNs = Configuration.nakUnicastDelayNs();
+        private long nakMulticastMaxBackoffNs = Configuration.nakMulticastMaxBackoffNs();
+        private int nakMulticastGroupSize = Configuration.nakMulticastGroupSize();
         private int publicationTermBufferLength = Configuration.termBufferLength();
         private int ipcPublicationTermBufferLength = Configuration.ipcTermBufferLength();
         private int initialWindowLength = Configuration.initialWindowLength();
@@ -929,6 +932,78 @@ public final class MediaDriver implements AutoCloseable
         public Context retransmitUnicastLingerNs(final long retransmitUnicastLingerNs)
         {
             this.retransmitUnicastLingerNs = retransmitUnicastLingerNs;
+            return this;
+        }
+
+        /**
+         * The delay before retransmission after an NAK on unicast.
+         *
+         * @return delay before retransmitting after a NAK.
+         * @see Configuration#NAK_UNICAST_DELAY_PROP_NAME
+         */
+        public long nakUnicastDelayNs()
+        {
+            return nakUnicastDelayNs;
+        }
+
+        /**
+         * The delay before retransmission after an NAK on unicast.
+         *
+         * @param nakUnicastDelayNs delay before retransmission after an NAK on unicast.
+         * @return this for a fluent API.
+         * @see Configuration#NAK_UNICAST_DELAY_PROP_NAME
+         */
+        public Context nakUnicastDelayNs(final long nakUnicastDelayNs)
+        {
+            this.nakUnicastDelayNs = nakUnicastDelayNs;
+            return this;
+        }
+
+        /**
+         * The maximum time to backoff before sending a NAK on multicast.
+         *
+         * @return maximum time to backoff before sending a NAK on multicast.
+         * @see Configuration#NAK_MULTICAST_MAX_BACKOFF_PROP_NAME
+         */
+        public long nakMulticastMaxBackoffNs()
+        {
+            return nakMulticastMaxBackoffNs;
+        }
+
+        /**
+         * The maximum time to backoff before sending a NAK on multicast.
+         *
+         * @param nakMulticastMaxBackoffNs maximum time to backoff before sending a NAK on multicast.
+         * @return this for a fluent API.
+         * @see Configuration#NAK_MULTICAST_MAX_BACKOFF_PROP_NAME
+         */
+        public Context nakMulticastMaxBackoffNs(final long nakMulticastMaxBackoffNs)
+        {
+            this.nakMulticastMaxBackoffNs = nakUnicastDelayNs;
+            return this;
+        }
+
+        /**
+         * Estimate of the multicast receiver group size on a stream.
+         *
+         * @return estimate of the multicast receiver group size on a stream.
+         * @see Configuration#NAK_MULTICAST_GROUP_SIZE_PROP_NAME
+         */
+        public int nakMulticastGroupSize()
+        {
+            return nakMulticastGroupSize;
+        }
+
+        /**
+         * Estimate of the multicast receiver group size on a stream.
+         *
+         * @param nakMulticastGroupSize estimate of the multicast receiver group size on a stream.
+         * @return this for a fluent API.
+         * @see Configuration#NAK_MULTICAST_GROUP_SIZE_PROP_NAME
+         */
+        public Context nakMulticastGroupSize(final int nakMulticastGroupSize)
+        {
+            this.nakMulticastGroupSize = nakMulticastGroupSize;
             return this;
         }
 
@@ -2333,13 +2408,13 @@ public final class MediaDriver implements AutoCloseable
 
             if (null == unicastFeedbackDelayGenerator)
             {
-                unicastFeedbackDelayGenerator = new StaticDelayGenerator(Configuration.nakUnicastDelayNs(), true);
+                unicastFeedbackDelayGenerator = new StaticDelayGenerator(nakUnicastDelayNs, true);
             }
 
             if (null == multicastFeedbackDelayGenerator)
             {
                 multicastFeedbackDelayGenerator = new OptimalMulticastDelayGenerator(
-                    Configuration.nakMulticastMaxBackoffNs(), Configuration.nakMulticastGroupSize());
+                    nakMulticastMaxBackoffNs, nakMulticastGroupSize);
             }
 
             if (null == threadingMode)
@@ -2520,6 +2595,9 @@ public final class MediaDriver implements AutoCloseable
                 ", publicationLingerTimeoutNs=" + publicationLingerTimeoutNs +
                 ", retransmitUnicastDelayNs=" + retransmitUnicastDelayNs +
                 ", retransmitUnicastLingerNs=" + retransmitUnicastLingerNs +
+                ", nakUnicastDelayNs=" + nakUnicastDelayNs +
+                ", nakMulticastMaxBackoffNs=" + nakMulticastMaxBackoffNs +
+                ", nakMulticastGroupSize=" + nakMulticastGroupSize +
                 ", statusMessageTimeoutNs=" + statusMessageTimeoutNs +
                 ", counterFreeToReuseTimeoutNs=" + counterFreeToReuseTimeoutNs +
                 ", publicationTermBufferLength=" + publicationTermBufferLength +

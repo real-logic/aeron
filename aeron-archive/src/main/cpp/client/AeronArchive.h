@@ -32,8 +32,12 @@ class AeronArchive
 public:
     using Context_t = aeron::archive::client::Context;
 
-    AeronArchive(Context_t& context);
-    ~AeronArchive();
+    AeronArchive(
+        std::unique_ptr<Context_t> ctx,
+        std::unique_ptr<ArchiveProxy> archiveProxy,
+        std::unique_ptr<ControlResponsePoller> controlResponsePoller,
+        std::shared_ptr<Aeron> aeron,
+        std::int64_t sessionId);
 
     class AsyncConnect
     {
@@ -67,11 +71,17 @@ public:
     inline static std::shared_ptr<AeronArchive> connect(Context_t& context)
     {
         std::shared_ptr<AsyncConnect> asyncConnect = AeronArchive::asyncConnect(context);
+        std::shared_ptr<Aeron> aeron = context.aeron();
         ConnectIdleStrategy idle;
 
         std::shared_ptr<AeronArchive> archive = asyncConnect->poll();
         while (!archive)
         {
+            if (aeron->usesAgentInvoker())
+            {
+                aeron->conductorAgentInvoker().invoke();
+            }
+
             idle.idle();
             archive = asyncConnect->poll();
         }
@@ -101,8 +111,12 @@ public:
     }
 
 private:
+    std::unique_ptr<Context_t> m_ctx;
+    std::unique_ptr<ArchiveProxy> m_archiveProxy;
+    std::unique_ptr<ControlResponsePoller> m_controlResponsePoller;
     std::shared_ptr<Aeron> m_aeron;
-    Context_t m_ctx;
+
+    const std::int64_t m_sessionId;
 
     template<typename IdleStrategy>
     int pollForResponse(std::int64_t correlationId)

@@ -56,7 +56,7 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
 
     if (0 == m_step && m_archiveProxy)
     {
-        if (m_archiveProxy->publication()->isConnected())
+        if (!m_archiveProxy->publication()->isConnected())
         {
             return std::shared_ptr<AeronArchive>();
         }
@@ -114,13 +114,33 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
                     "unexpected response: code=" + std::to_string(m_controlResponsePoller->codeValue()), SOURCEINFO);
             }
 
-            //const std::int64_t sessionId = m_controlResponsePoller->controlSessionId();
+            const std::int64_t sessionId = m_controlResponsePoller->controlSessionId();
 
-            // TODO: finish by creating AeronArchive and returning shared_ptr to it.
+            return std::make_shared<AeronArchive>(
+                std::move(m_ctx),
+                std::move(m_archiveProxy),
+                std::move(m_controlResponsePoller),
+                m_aeron,
+                sessionId);
         }
     }
 
     return std::shared_ptr<AeronArchive>();
+}
+
+AeronArchive::AeronArchive(
+    std::unique_ptr<Context_t> ctx,
+    std::unique_ptr<ArchiveProxy> archiveProxy,
+    std::unique_ptr<ControlResponsePoller> controlResponsePoller,
+    std::shared_ptr<Aeron> aeron,
+    std::int64_t sessionId)
+    :
+    m_ctx(std::move(ctx)),
+    m_archiveProxy(std::move(archiveProxy)),
+    m_controlResponsePoller(std::move(controlResponsePoller)),
+    m_aeron(std::move(aeron)),
+    m_sessionId(sessionId)
+{
 }
 
 std::shared_ptr<AeronArchive::AsyncConnect> AeronArchive::asyncConnect(AeronArchive::Context_t &ctx)

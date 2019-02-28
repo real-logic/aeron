@@ -28,12 +28,14 @@ add_custom_command(OUTPUT ${GENERATED_CODECS}
 add_custom_target(codecs DEPENDS ${GENERATED_CODECS})
 
 SET(SOURCE
-    client/ArchiveProxy.cpp)
+    client/ArchiveProxy.cpp
+    client/AeronArchive.cpp)
 
 SET(HEADERS
     client/ArchiveException.h
     client/ArchiveConfiguration.h
     client/ArchiveProxy.h
+    client/ControlResponsePoller.h
     client/AeronArchive.h)
 
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DDISABLE_BOUNDS_CHECKS")

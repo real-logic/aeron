@@ -18,7 +18,9 @@
 
 #include "Aeron.h"
 #include "ArchiveConfiguration.h"
+#include "ControlResponsePoller.h"
 #include "concurrent/BackOffIdleStrategy.h"
+#include "concurrent/YieldingIdleStrategy.h"
 
 namespace aeron {
 namespace archive {
@@ -33,20 +35,50 @@ public:
     AeronArchive(Context_t& context);
     ~AeronArchive();
 
+    class AsyncConnect
+    {
+    public:
+        AsyncConnect(Context_t& context);
+        ~AsyncConnect();
+
+        std::shared_ptr<AeronArchive> poll();
+    private:
+        Context_t m_ctx;
+    };
+
+    static std::unique_ptr<AsyncConnect> asyncConnect(Context_t& context);
+
+    inline static std::unique_ptr<AsyncConnect> asyncConnect()
+    {
+        Context_t ctx;
+        return AeronArchive::asyncConnect(ctx);
+    }
+
+    template<typename ConnectIdleStrategy = aeron::concurrent::YieldingIdleStrategy>
     inline static std::shared_ptr<AeronArchive> connect(Context_t& context)
     {
-        return std::make_shared<AeronArchive>(context);
+        std::unique_ptr<AsyncConnect> asyncConnect = AeronArchive::asyncConnect(context);
+        ConnectIdleStrategy idle;
+
+        std::shared_ptr<AeronArchive> archive = asyncConnect->poll();
+        while (nullptr == *archive)
+        {
+            idle.idle();
+            archive = asyncConnect->poll();
+        }
+
+        return archive;
     }
 
     inline static std::shared_ptr<AeronArchive> connect()
     {
         Context_t ctx;
-        return connect(ctx);
+        return AeronArchive::connect(ctx);
     }
 
 private:
     std::shared_ptr<Aeron> m_aeron;
-    Context_t m_context;
+    Context_t m_ctx;
     IdleStrategy m_idle;
 };
 

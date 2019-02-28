@@ -36,6 +36,16 @@ public:
     {
     }
 
+    inline std::shared_ptr<Publication> publication()
+    {
+        return m_publication;
+    }
+
+    inline void publication(std::shared_ptr<Publication> publication)
+    {
+        m_publication = std::move(publication);
+    }
+
     bool connect(
         const std::string& responseChannel,
         std::int32_t responseStreamId,

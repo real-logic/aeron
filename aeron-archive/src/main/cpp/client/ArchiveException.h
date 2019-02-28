@@ -22,7 +22,48 @@ namespace aeron {
 namespace archive {
 namespace client {
 
-DECLARE_SOURCED_EXCEPTION(ArchiveException);
+constexpr const std::int32_t ARCHIVE_ERROR_CODE_GENERIC = 0;
+constexpr const std::int32_t ARCHIVE_ERROR_CODE_ACTIVE_LISTING = 1;
+constexpr const std::int32_t ARCHIVE_ERROR_CODE_ACTIVE_RECORDING = 2;
+constexpr const std::int32_t ARCHIVE_ERROR_CODE_ACTIVE_SUBSCRIPTION = 3;
+constexpr const std::int32_t ARCHIVE_ERROR_CODE_UNKNOWN_SUBSCRIPTION = 4;
+constexpr const std::int32_t ARCHIVE_ERROR_CODE_UNKNOWN_RECORDING = 5;
+constexpr const std::int32_t ARCHIVE_ERROR_CODE_UNKNOWN_REPLAY = 6;
+constexpr const std::int32_t ARCHIVE_ERROR_CODE_MAX_REPLAYS = 7;
+constexpr const std::int32_t ARCHIVE_ERROR_CODE_MAX_RECORDINGS = 8;
+constexpr const std::int32_t ARCHIVE_ERROR_CODE_INVALID_EXTENSION = 9;
+
+class ArchiveException : public SourcedException
+{
+private:
+    std::int32_t m_errorCode = ARCHIVE_ERROR_CODE_GENERIC;
+
+public:
+    ArchiveException(
+        const std::string& what,
+        const std::string& function,
+        const std::string& file,
+        const int line) :
+        SourcedException(what, function, file, line)
+    {
+    }
+
+    ArchiveException(
+        std::int32_t errorCode,
+        const std::string& what,
+        const std::string& function,
+        const std::string& file,
+        const int line) :
+        SourcedException(what, function, file, line),
+        m_errorCode(errorCode)
+    {
+    }
+
+    std::int32_t errorCode() const
+    {
+        return m_errorCode;
+    }
+};
 
 }}}
 #endif //AERON_ARCHIVE_ARCHIVEEXCEPTION_H

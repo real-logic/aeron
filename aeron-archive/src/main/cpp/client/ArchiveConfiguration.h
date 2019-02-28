@@ -39,16 +39,24 @@ constexpr const std::int32_t ARCHIVE_SEMANTIC_VERSION = aeron::util::semanticVer
 
 constexpr const long long MESSAGE_TIMEOUT_NS_DEFAULT = 5 * 1000 * 1000 * 1000L;
 
+constexpr const char CONTROL_REQUEST_CHANNEL_DEFAULT[] = "aeron:udp?endpoint=localhost:8010";
+constexpr const std::int32_t CONTROL_REQUEST_STREAM_ID_DEFAULT = 10;
+
+constexpr const char LOCAL_CONTROL_REQUEST_CHANNEL_DEFAULT[] = "aeron:ipc";
+constexpr const std::int32_t LOCAL_CONTTROL_REQUEST_STREAM_ID_DEFAULT = 11;
+
+constexpr const char CONTROL_RESPONSE_CHANNEL_DEFAULT[] = "aeron:udp?endpoint=localhost:8020";
+constexpr const std::int32_t CONTROL_RESPONSE_STREAM_ID_DEFAULT = 20;
+
+constexpr const char RECORDING_EVENTS_CHANNEL_DEFAULT[] = "aeron:udp?endpoint=localhost:8030";
+constexpr const std::int32_t RECORDING_EVENTS_STREAM_ID_DEFAULT = 30;
+
 }
 
 class Context
 {
 public:
     using this_t = Context;
-
-    Context() : m_aeronDirectoryName(aeron::Context::defaultAeronPath())
-    {
-    }
 
     void conclude()
     {
@@ -84,10 +92,61 @@ public:
         return *this;
     }
 
+    inline std::string controlResponseChannel()
+    {
+        return m_controlResponseChannel;
+    }
+
+    inline this_t& controlResponseChannel(const std::string& channel)
+    {
+        m_controlResponseChannel = channel;
+        return *this;
+    }
+
+    inline std::int32_t controlResponseStreamId()
+    {
+        return m_controlResponseStreamId;
+    }
+
+    inline this_t& controlResponseStreamId(std::int32_t streamId)
+    {
+        m_controlResponseStreamId = streamId;
+        return *this;
+    }
+
+    inline std::string controlRequestChannel()
+    {
+        return m_controlRequestChannel;
+    }
+
+    inline this_t& controlRequestChannel(const std::string& channel)
+    {
+        m_controlRequestChannel = channel;
+        return *this;
+    }
+
+    inline std::int32_t controlRequestStreamId()
+    {
+        return m_controlRequestStreamId;
+    }
+
+    inline this_t& controlRequestStreamId(std::int32_t streamId)
+    {
+        m_controlRequestStreamId = streamId;
+        return *this;
+    }
+
 private:
     std::shared_ptr<Aeron> m_aeron;
-    std::string m_aeronDirectoryName;
+    std::string m_aeronDirectoryName = aeron::Context::defaultAeronPath();
     long long m_messageTimeoutNs = Configuration::MESSAGE_TIMEOUT_NS_DEFAULT;
+
+    std::string m_controlResponseChannel = Configuration::CONTROL_RESPONSE_CHANNEL_DEFAULT;
+    std::int32_t m_controlResponseStreamId = Configuration::CONTROL_RESPONSE_STREAM_ID_DEFAULT;
+
+    std::string m_controlRequestChannel = Configuration::CONTROL_REQUEST_CHANNEL_DEFAULT;
+    std::int32_t m_controlRequestStreamId = Configuration::CONTROL_REQUEST_STREAM_ID_DEFAULT;
+
     bool m_ownsAeronClient = false;
 };
 

@@ -23,6 +23,34 @@
 using namespace aeron::concurrent;
 using namespace aeron::archive::client;
 
+bool ArchiveProxy::tryConnect(
+    const std::string& responseChannel, std::int32_t responseStreamId, std::int64_t correlationId)
+{
+    const std::size_t length = MessageHeader::encodedLength()
+        + ConnectRequest::sbeBlockLength()
+        + ConnectRequest::responseChannelHeaderLength()
+        + responseChannel.size();
+
+    BufferClaim bufferClaim;
+
+    if (m_publication->tryClaim(static_cast<std::int32_t>(length), bufferClaim) > 0)
+    {
+        ConnectRequest connectRequest;
+
+        connectRequest
+            .wrapAndApplyHeader(reinterpret_cast<char *>(bufferClaim.buffer().buffer()), 0, length)
+            .correlationId(correlationId)
+            .responseStreamId(responseStreamId)
+            .version(Configuration::ARCHIVE_SEMANTIC_VERSION)
+            .putResponseChannel(responseChannel);
+
+        bufferClaim.commit();
+        return true;
+    }
+
+    return false;
+}
+
 bool ArchiveProxy::connect(
     const std::string& responseChannel,
     std::int32_t responseStreamId,

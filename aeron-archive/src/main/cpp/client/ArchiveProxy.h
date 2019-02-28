@@ -27,7 +27,7 @@ class ArchiveProxy
 {
 public:
     ArchiveProxy(
-        std::shared_ptr<Publication> publication,
+        std::shared_ptr<ExclusivePublication> publication,
         nano_clock_t nanoClock,
         long long messageTimeoutNs) :
         m_publication(std::move(publication)),
@@ -36,15 +36,12 @@ public:
     {
     }
 
-    inline std::shared_ptr<Publication> publication()
+    inline std::shared_ptr<ExclusivePublication> publication()
     {
         return m_publication;
     }
 
-    inline void publication(std::shared_ptr<Publication> publication)
-    {
-        m_publication = std::move(publication);
-    }
+    bool tryConnect(const std::string& responseChannel, std::int32_t responseStreamId, std::int64_t correlationId);
 
     bool connect(
         const std::string& responseChannel,
@@ -53,7 +50,7 @@ public:
         std::shared_ptr<Aeron> aeron);
 
 private:
-    std::shared_ptr<Publication> m_publication;
+    std::shared_ptr<ExclusivePublication> m_publication;
     nano_clock_t m_nanoClock;
     const long long m_messageTimeoutNs;
 

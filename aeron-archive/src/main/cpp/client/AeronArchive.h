@@ -18,6 +18,7 @@
 
 #include "Aeron.h"
 #include "ArchiveConfiguration.h"
+#include "ArchiveProxy.h"
 #include "ControlResponsePoller.h"
 #include "concurrent/BackOffIdleStrategy.h"
 #include "concurrent/YieldingIdleStrategy.h"
@@ -37,15 +38,24 @@ public:
     class AsyncConnect
     {
     public:
-        AsyncConnect(Context_t& context);
-        ~AsyncConnect();
+        AsyncConnect(
+            Context_t& context, std::shared_ptr<Aeron> aeron, std::int64_t subscriptionId, std::int64_t publicationId);
 
         std::shared_ptr<AeronArchive> poll();
     private:
-        Context_t m_ctx;
+        std::unique_ptr<Context_t> m_ctx;
+        std::unique_ptr<ArchiveProxy> m_archiveProxy;
+        std::unique_ptr<ControlResponsePoller> m_controlResponsePoller;
+        std::shared_ptr<Aeron> m_aeron;
+        std::shared_ptr<Subscription> m_subscription;
+        std::shared_ptr<ExclusivePublication> m_publication;
+        const std::int64_t m_subscriptionId;
+        const std::int64_t m_publicationId;
+        std::int64_t m_connectCorrelationId = aeron::NULL_VALUE;
+        std::uint8_t m_step = 0;
     };
 
-    static std::shared_ptr<AsyncConnect> asyncConnect(Context_t& context);
+    static std::shared_ptr<AsyncConnect> asyncConnect(Context_t& ctx);
 
     inline static std::shared_ptr<AsyncConnect> asyncConnect()
     {

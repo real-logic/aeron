@@ -29,6 +29,7 @@ add_custom_target(codecs DEPENDS ${GENERATED_CODECS})
 
 SET(SOURCE
     client/ArchiveProxy.cpp
+    client/ControlResponsePoller.cpp
     client/AeronArchive.cpp)
 
 SET(HEADERS

@@ -173,9 +173,6 @@ public class Configuration
     public static final int COUNTERS_VALUES_BUFFER_LENGTH = getSizeAsInt(
         COUNTERS_VALUES_BUFFER_LENGTH_PROP_NAME, COUNTERS_VALUES_BUFFER_LENGTH_DEFAULT);
 
-    public static final int COUNTERS_METADATA_BUFFER_LENGTH =
-        COUNTERS_VALUES_BUFFER_LENGTH * (CountersReader.METADATA_LENGTH / CountersReader.COUNTER_LENGTH);
-
     /**
      * Property name for length of the memory mapped buffer for the distinct error log.
      */
@@ -469,12 +466,12 @@ public class Configuration
     public static final long DEFAULT_TIMER_INTERVAL_NS = TimeUnit.SECONDS.toNanos(1);
 
     /**
-     *  Timeout between a counter being freed and being reused.
+     *  Timeout between a counter being freed and being available to be reused.
      */
     public static final String COUNTER_FREE_TO_REUSE_TIMEOUT_PROP_NAME = "aeron.counters.free.to.reuse.timeout";
 
     /**
-     *  Timeout between a counter being freed and being reused
+     *  Timeout between a counter being freed and being available to be reused.
      */
     public static final long DEFAULT_COUNTER_FREE_TO_REUSE_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(1);
 
@@ -500,24 +497,24 @@ public class Configuration
     public static final String CONGESTION_CONTROL_STRATEGY_SUPPLIER_PROP_NAME = "aeron.CongestionControl.supplier";
 
     /**
-     * Property name for low end of the publication reserved session id range which will not be automatically assigned.
+     * Property name for low end of the publication reserved session-id range which will not be automatically assigned.
      */
     public static final String PUBLICATION_RESERVED_SESSION_ID_LOW_PROP_NAME =
         "aeron.publication.reserved.session.id.low";
 
     /**
-     * Low end of the publication reserved session id range which will not be automatically assigned.
+     * Low end of the publication reserved session-id range which will not be automatically assigned.
      */
     public static final int PUBLICATION_RESERVED_SESSION_ID_LOW_DEFAULT = -1;
 
     /**
-     * Property name for high end of the publication reserved session id range which will not be automatically assigned.
+     * Property name for high end of the publication reserved session-id range which will not be automatically assigned.
      */
     public static final String PUBLICATION_RESERVED_SESSION_ID_HIGH_PROP_NAME =
         "aeron.publication.reserved.session.id.high";
 
     /**
-     * High end of the publication reserved session id range which will not be automatically assigned.
+     * High end of the publication reserved session-id range which will not be automatically assigned.
      */
     public static final int PUBLICATION_RESERVED_SESSION_ID_HIGH_DEFAULT = 1000;
 
@@ -532,12 +529,12 @@ public class Configuration
     public static final int CMD_QUEUE_CAPACITY = 256;
 
     /**
-     * Timeout on cleaning up pending SETUP state on subscriber.
+     * Timeout on cleaning up pending SETUP message state on subscriber.
      */
     public static final long PENDING_SETUPS_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(1000);
 
     /**
-     * Timeout between SETUP frames for publications during initial setup phase.
+     * Timeout between SETUP messages for publications during initial setup phase.
      */
     public static final long PUBLICATION_SETUP_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(100);
 
@@ -1170,5 +1167,10 @@ public class Configuration
         {
             throw new ConfigurationException("reserved range to too large");
         }
+    }
+
+    public static int countersMetadataBufferLength(final int counterValuesBufferLength)
+    {
+        return counterValuesBufferLength * (CountersReader.METADATA_LENGTH / CountersReader.COUNTER_LENGTH);
     }
 }

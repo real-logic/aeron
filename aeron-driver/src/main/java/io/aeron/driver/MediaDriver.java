@@ -540,7 +540,7 @@ public final class MediaDriver implements AutoCloseable
                     CncFileDescriptor.computeCncFileLength(
                         CONDUCTOR_BUFFER_LENGTH +
                             TO_CLIENTS_BUFFER_LENGTH +
-                            COUNTERS_METADATA_BUFFER_LENGTH +
+                            Configuration.countersMetadataBufferLength(COUNTERS_VALUES_BUFFER_LENGTH) +
                             COUNTERS_VALUES_BUFFER_LENGTH +
                             ERROR_BUFFER_LENGTH,
                         filePageSize));
@@ -550,7 +550,7 @@ public final class MediaDriver implements AutoCloseable
                     cncMetaDataBuffer,
                     CONDUCTOR_BUFFER_LENGTH,
                     TO_CLIENTS_BUFFER_LENGTH,
-                    COUNTERS_METADATA_BUFFER_LENGTH,
+                    Configuration.countersMetadataBufferLength(COUNTERS_VALUES_BUFFER_LENGTH),
                     COUNTERS_VALUES_BUFFER_LENGTH,
                     clientLivenessTimeoutNs,
                     ERROR_BUFFER_LENGTH,

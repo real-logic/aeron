@@ -86,12 +86,12 @@ public class DriverConductorTest
     private static final long PUBLICATION_LINGER_TIMEOUT_NS = publicationLingerTimeoutNs();
     private static final int MTU_LENGTH = Configuration.mtuLength();
 
-    private final ByteBuffer toDriverBuffer = ByteBuffer.allocateDirect(Configuration.CONDUCTOR_BUFFER_LENGTH);
+    private final ByteBuffer conductorBuffer = ByteBuffer.allocateDirect(CONDUCTOR_BUFFER_LENGTH_DEFAULT);
     private final UnsafeBuffer counterKeyAndLabel = new UnsafeBuffer(new byte[BUFFER_LENGTH]);
 
     private final RawLogFactory mockRawLogFactory = mock(RawLogFactory.class);
 
-    private final RingBuffer fromClientCommands = new ManyToOneRingBuffer(new UnsafeBuffer(toDriverBuffer));
+    private final RingBuffer toDriverCommands = new ManyToOneRingBuffer(new UnsafeBuffer(conductorBuffer));
     private final ClientProxy mockClientProxy = mock(ClientProxy.class);
 
     private final ErrorHandler mockErrorHandler = mock(ErrorHandler.class);
@@ -166,7 +166,7 @@ public class DriverConductorTest
             .receiveChannelEndpointSupplier(Configuration.receiveChannelEndpointSupplier())
             .congestControlSupplier(Configuration.congestionControlSupplier());
 
-        ctx.toDriverCommands(fromClientCommands)
+        ctx.toDriverCommands(toDriverCommands)
             .clientProxy(mockClientProxy)
             .countersValuesBuffer(counterBuffer);
 
@@ -179,7 +179,7 @@ public class DriverConductorTest
             .driverConductorProxy(driverConductorProxy)
             .receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals(ctx));
 
-        driverProxy = new DriverProxy(fromClientCommands, fromClientCommands.nextCorrelationId());
+        driverProxy = new DriverProxy(toDriverCommands, toDriverCommands.nextCorrelationId());
         driverConductor = new DriverConductor(ctx);
 
         doAnswer(closeChannelEndpointAnswer).when(receiverProxy).closeReceiveChannelEndpoint(any());
@@ -1122,8 +1122,8 @@ public class DriverConductorTest
     @Test
     public void shouldTimeoutNetworkPublicationWithSpy()
     {
-        final long clientId = fromClientCommands.nextCorrelationId();
-        final DriverProxy spyDriverProxy = new DriverProxy(fromClientCommands, clientId);
+        final long clientId = toDriverCommands.nextCorrelationId();
+        final DriverProxy spyDriverProxy = new DriverProxy(toDriverCommands, clientId);
 
         driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
         final long subId = spyDriverProxy.addSubscription(spyForChannel(CHANNEL_4000), STREAM_ID_1);

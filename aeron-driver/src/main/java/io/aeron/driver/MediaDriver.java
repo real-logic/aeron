@@ -424,6 +424,10 @@ public final class MediaDriver implements AutoCloseable
         private long retransmitUnicastLingerNs = Configuration.retransmitUnicastLingerNs();
         private long nakUnicastDelayNs = Configuration.nakUnicastDelayNs();
         private long nakMulticastMaxBackoffNs = Configuration.nakMulticastMaxBackoffNs();
+        private int conductorBufferLength = Configuration.conductorBufferLength();
+        private int toClientsBufferLength = Configuration.toClientsBufferLength();
+        private int counterValuesBufferLength = Configuration.counterValuesBufferLength();
+        private int errorBufferLength = Configuration.errorBufferLength();
         private int nakMulticastGroupSize = Configuration.nakMulticastGroupSize();
         private int publicationTermBufferLength = Configuration.termBufferLength();
         private int ipcTermBufferLength = Configuration.ipcTermBufferLength();
@@ -538,22 +542,22 @@ public final class MediaDriver implements AutoCloseable
                 cncByteBuffer = mapNewFile(
                     cncFile(),
                     CncFileDescriptor.computeCncFileLength(
-                        CONDUCTOR_BUFFER_LENGTH +
-                            TO_CLIENTS_BUFFER_LENGTH +
-                            Configuration.countersMetadataBufferLength(COUNTERS_VALUES_BUFFER_LENGTH) +
-                            COUNTERS_VALUES_BUFFER_LENGTH +
-                            ERROR_BUFFER_LENGTH,
+                        conductorBufferLength +
+                            toClientsBufferLength +
+                            Configuration.countersMetadataBufferLength(counterValuesBufferLength) +
+                            counterValuesBufferLength +
+                            errorBufferLength,
                         filePageSize));
 
                 cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
                 CncFileDescriptor.fillMetaData(
                     cncMetaDataBuffer,
-                    CONDUCTOR_BUFFER_LENGTH,
-                    TO_CLIENTS_BUFFER_LENGTH,
-                    Configuration.countersMetadataBufferLength(COUNTERS_VALUES_BUFFER_LENGTH),
-                    COUNTERS_VALUES_BUFFER_LENGTH,
+                    conductorBufferLength,
+                    toClientsBufferLength,
+                    Configuration.countersMetadataBufferLength(counterValuesBufferLength),
+                    counterValuesBufferLength,
                     clientLivenessTimeoutNs,
-                    ERROR_BUFFER_LENGTH,
+                    errorBufferLength,
                     epochClock.time(),
                     SystemUtil.getPid());
 
@@ -748,6 +752,102 @@ public final class MediaDriver implements AutoCloseable
         public boolean performStorageChecks()
         {
             return performStorageChecks;
+        }
+
+        /**
+         * Length of the {@link RingBuffer} for sending commands to the driver conductor from clients.
+         *
+         * @return length of the {@link RingBuffer} for sending commands to the driver conductor from clients.
+         * @see Configuration#CONDUCTOR_BUFFER_LENGTH_PROP_NAME
+         */
+        public int conductorBufferLength()
+        {
+            return conductorBufferLength;
+        }
+
+        /**
+         * Length of the {@link RingBuffer} for sending commands to the driver conductor from clients.
+         *
+         * @param length of the {@link RingBuffer} for sending commands to the driver conductor from clients.
+         * @return this for a fluent API.
+         * @see Configuration#CONDUCTOR_BUFFER_LENGTH_PROP_NAME
+         */
+        public Context conductorBufferLength(final int length)
+        {
+            conductorBufferLength = length;
+            return this;
+        }
+
+        /**
+         * Length of the {@link BroadcastTransmitter} buffer for sending events to the clients.
+         *
+         * @return length of the {@link BroadcastTransmitter} buffer for sending events to the clients.
+         * @see Configuration#TO_CLIENTS_BUFFER_LENGTH_PROP_NAME
+         */
+        public int toClientsBufferLength()
+        {
+            return toClientsBufferLength;
+        }
+
+        /**
+         * Length of the {@link BroadcastTransmitter} buffer for sending events to the clients.
+         *
+         * @param length of the {@link BroadcastTransmitter} buffer for sending events to the clients.
+         * @return this for a fluent API.
+         * @see Configuration#TO_CLIENTS_BUFFER_LENGTH_PROP_NAME
+         */
+        public Context toClientsBufferLength(final int length)
+        {
+            toClientsBufferLength = length;
+            return this;
+        }
+
+        /**
+         * Length of the buffer for storing values by the {@link CountersManager}.
+         *
+         * @return length of the of the buffer for storing values by the {@link CountersManager}.
+         * @see Configuration#COUNTERS_VALUES_BUFFER_LENGTH_PROP_NAME
+         */
+        public int counterValuesBufferLength()
+        {
+            return counterValuesBufferLength;
+        }
+
+        /**
+         * Length of the buffer for storing values by the {@link CountersManager}.
+         *
+         * @param length of the buffer for storing values by the {@link CountersManager}.
+         * @return this for a fluent API.
+         * @see Configuration#COUNTERS_VALUES_BUFFER_LENGTH_PROP_NAME
+         */
+        public Context counterValuesBufferLength(final int length)
+        {
+            counterValuesBufferLength = length;
+            return this;
+        }
+
+        /**
+         * Length of the {@link DistinctErrorLog} buffer for recording exceptions.
+         *
+         * @return length of the {@link DistinctErrorLog} buffer for recording exceptions.
+         * @see Configuration#ERROR_BUFFER_LENGTH_PROP_NAME
+         */
+        public int errorBufferLength()
+        {
+            return errorBufferLength;
+        }
+
+        /**
+         * Length of the {@link DistinctErrorLog} buffer for recording exceptions.
+         *
+         * @param length of the {@link DistinctErrorLog} buffer for recording exceptions.
+         * @return this for a fluent API.
+         * @see Configuration#ERROR_BUFFER_LENGTH_PROP_NAME
+         */
+        public Context errorBufferLength(final int length)
+        {
+            errorBufferLength = length;
+            return this;
         }
 
         /**
@@ -2696,6 +2796,10 @@ public final class MediaDriver implements AutoCloseable
                 "\n    termBufferSparseFile=" + termBufferSparseFile +
                 "\n    performStorageChecks=" + performStorageChecks +
                 "\n    spiesSimulateConnection=" + spiesSimulateConnection +
+                "\n    conductorBufferLength=" + conductorBufferLength +
+                "\n    toClientsBufferLength=" + toClientsBufferLength +
+                "\n    counterValuesBufferLength=" + counterValuesBufferLength +
+                "\n    errorBufferLength=" + errorBufferLength +
                 "\n    lowStorageWarningThreshold=" + lowStorageWarningThreshold +
                 "\n    timerIntervalNs=" + timerIntervalNs +
                 "\n    clientLivenessTimeoutNs=" + clientLivenessTimeoutNs +

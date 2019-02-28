@@ -136,12 +136,6 @@ public class Configuration
     public static final int CONDUCTOR_BUFFER_LENGTH_DEFAULT = (1024 * 1024) + RingBufferDescriptor.TRAILER_LENGTH;
 
     /**
-     * Conductor buffer length in bytes.
-     */
-    public static final int CONDUCTOR_BUFFER_LENGTH = getSizeAsInt(
-        CONDUCTOR_BUFFER_LENGTH_PROP_NAME, CONDUCTOR_BUFFER_LENGTH_DEFAULT);
-
-    /**
      * Length (in bytes) of the broadcast buffers from the media driver to the clients.
      */
     public static final String TO_CLIENTS_BUFFER_LENGTH_PROP_NAME = "aeron.clients.buffer.length";
@@ -150,12 +144,6 @@ public class Configuration
      * Default buffer length for broadcast buffers from the media driver and the clients.
      */
     public static final int TO_CLIENTS_BUFFER_LENGTH_DEFAULT = (1024 * 1024) + BroadcastBufferDescriptor.TRAILER_LENGTH;
-
-    /**
-     * Length for broadcast buffers from the media driver and the clients.
-     */
-    public static final int TO_CLIENTS_BUFFER_LENGTH = getSizeAsInt(
-        TO_CLIENTS_BUFFER_LENGTH_PROP_NAME, TO_CLIENTS_BUFFER_LENGTH_DEFAULT);
 
     /**
      * Property name for length of the error buffer for the system counters.
@@ -168,12 +156,6 @@ public class Configuration
     public static final int COUNTERS_VALUES_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
 
     /**
-     * Length of the memory mapped buffers for the system counters file.
-     */
-    public static final int COUNTERS_VALUES_BUFFER_LENGTH = getSizeAsInt(
-        COUNTERS_VALUES_BUFFER_LENGTH_PROP_NAME, COUNTERS_VALUES_BUFFER_LENGTH_DEFAULT);
-
-    /**
      * Property name for length of the memory mapped buffer for the distinct error log.
      */
     public static final String ERROR_BUFFER_LENGTH_PROP_NAME = "aeron.error.buffer.length";
@@ -183,11 +165,6 @@ public class Configuration
      */
     public static final int ERROR_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
 
-    /**
-     * Buffer length for the error buffer for the media driver.
-     */
-    public static final int ERROR_BUFFER_LENGTH = getSizeAsInt(
-        ERROR_BUFFER_LENGTH_PROP_NAME, ERROR_BUFFER_LENGTH_DEFAULT);
     /**
      * Property name for length of the memory mapped buffer for the loss report buffer.
      */
@@ -631,6 +608,26 @@ public class Configuration
     public static boolean spiesSimulateConnection()
     {
         return "true".equalsIgnoreCase(getProperty(SPIES_SIMULATE_CONNECTION_PROP_NAME, "false"));
+    }
+
+    public static int conductorBufferLength()
+    {
+        return getSizeAsInt(CONDUCTOR_BUFFER_LENGTH_PROP_NAME, CONDUCTOR_BUFFER_LENGTH_DEFAULT);
+    }
+
+    public static int toClientsBufferLength()
+    {
+        return getSizeAsInt(TO_CLIENTS_BUFFER_LENGTH_PROP_NAME, TO_CLIENTS_BUFFER_LENGTH_DEFAULT);
+    }
+
+    public static int counterValuesBufferLength()
+    {
+        return getSizeAsInt(COUNTERS_VALUES_BUFFER_LENGTH_PROP_NAME, COUNTERS_VALUES_BUFFER_LENGTH_DEFAULT);
+    }
+
+    public static int errorBufferLength()
+    {
+        return getSizeAsInt(ERROR_BUFFER_LENGTH_PROP_NAME, ERROR_BUFFER_LENGTH_DEFAULT);
     }
 
     public static int nakMulticastGroupSize()

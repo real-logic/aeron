@@ -306,21 +306,10 @@ public class Configuration
     public static final String PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME = "aeron.publication.term.window.length";
 
     /**
-     * Publication term window length for flow control in bytes.
-     */
-    public static final int PUBLICATION_TERM_WINDOW_LENGTH = getSizeAsInt(PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME, 0);
-
-    /**
      * Property name for window limit for IPC publications.
      */
     public static final String IPC_PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME =
         "aeron.ipc.publication.term.window.length";
-
-    /**
-     * IPC Publication term window length for flow control in bytes.
-     */
-    public static final int IPC_PUBLICATION_TERM_WINDOW_LENGTH = getSizeAsInt(
-        IPC_PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME, 0);
 
     /**
      * Property name for {@link Publication} unblock timeout.
@@ -672,40 +661,33 @@ public class Configuration
         return getSizeAsLong(LOW_FILE_STORE_WARNING_THRESHOLD_PROP_NAME, LOW_FILE_STORE_WARNING_THRESHOLD_DEFAULT);
     }
 
-    /**
-     * How far ahead the publisher can get from the sender position.
-     *
-     * @param termBufferLength to be used when {@link #PUBLICATION_TERM_WINDOW_LENGTH} is not set.
-     * @return the length to be used for the publication window.
-     */
-    public static int publicationTermWindowLength(final int termBufferLength)
+    public static int publicationTermWindowLength()
     {
-        int publicationTermWindowLength = termBufferLength / 2;
+        return getSizeAsInt(PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME, 0);
+    }
 
-        if (0 != PUBLICATION_TERM_WINDOW_LENGTH)
-        {
-            publicationTermWindowLength = Math.min(PUBLICATION_TERM_WINDOW_LENGTH, publicationTermWindowLength);
-        }
-
-        return publicationTermWindowLength;
+    public static int ipcPublicationTermWindowLength()
+    {
+        return getSizeAsInt(IPC_PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME, 0);
     }
 
     /**
-     * How far ahead the publisher can get from the minimum subscriber position for IPC only.
+     * How far ahead a producer can get from a consumer position.
      *
-     * @param termBufferLength to be used when {@link #IPC_PUBLICATION_TERM_WINDOW_LENGTH} is not set.
-     * @return the length to be used for the publication window.
+     * @param termBufferLength        for when default is not set and considering an appropriate minimum.
+     * @param defaultTermWindowLength to take priority.
+     * @return the length to be used for the producer window.
      */
-    public static int ipcPublicationTermWindowLength(final int termBufferLength)
+    public static int producerWindowLength(final int termBufferLength, final int defaultTermWindowLength)
     {
-        int publicationTermWindowLength = termBufferLength;
+        int termWindowLength = termBufferLength / 2;
 
-        if (0 != IPC_PUBLICATION_TERM_WINDOW_LENGTH)
+        if (0 != defaultTermWindowLength)
         {
-            publicationTermWindowLength = Math.min(IPC_PUBLICATION_TERM_WINDOW_LENGTH, publicationTermWindowLength);
+            termWindowLength = Math.min(defaultTermWindowLength, termWindowLength);
         }
 
-        return publicationTermWindowLength;
+        return termWindowLength;
     }
 
     /**

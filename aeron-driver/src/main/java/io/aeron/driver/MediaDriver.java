@@ -426,7 +426,9 @@ public final class MediaDriver implements AutoCloseable
         private long nakMulticastMaxBackoffNs = Configuration.nakMulticastMaxBackoffNs();
         private int nakMulticastGroupSize = Configuration.nakMulticastGroupSize();
         private int publicationTermBufferLength = Configuration.termBufferLength();
-        private int ipcPublicationTermBufferLength = Configuration.ipcTermBufferLength();
+        private int ipcTermBufferLength = Configuration.ipcTermBufferLength();
+        private int publicationTermWindowLength = Configuration.publicationTermWindowLength();
+        private int ipcPublicationTermWindowLength = Configuration.ipcPublicationTermWindowLength();
         private int initialWindowLength = Configuration.initialWindowLength();
         private int socketSndbufLength = Configuration.socketSndbufLength();
         private int socketRcvbufLength = Configuration.socketRcvbufLength();
@@ -530,7 +532,7 @@ public final class MediaDriver implements AutoCloseable
                 validateSessionIdRange(publicationReservedSessionIdLow, publicationReservedSessionIdHigh);
 
                 LogBufferDescriptor.checkTermLength(publicationTermBufferLength);
-                LogBufferDescriptor.checkTermLength(ipcPublicationTermBufferLength);
+                LogBufferDescriptor.checkTermLength(ipcTermBufferLength);
                 validateInitialWindowLength(initialWindowLength, mtuLength);
 
                 cncByteBuffer = mapNewFile(
@@ -1207,7 +1209,7 @@ public final class MediaDriver implements AutoCloseable
          */
         public int ipcTermBufferLength()
         {
-            return ipcPublicationTermBufferLength;
+            return ipcTermBufferLength;
         }
 
         /**
@@ -1221,7 +1223,55 @@ public final class MediaDriver implements AutoCloseable
          */
         public Context ipcTermBufferLength(final int termBufferLength)
         {
-            this.ipcPublicationTermBufferLength = termBufferLength;
+            this.ipcTermBufferLength = termBufferLength;
+            return this;
+        }
+
+        /**
+         * Default length for a term buffer window on a network publication.
+         *
+         * @return default length for a term buffer window on a network publication.
+         * @see Configuration#PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME
+         */
+        public int publicationTermWindowLength()
+        {
+            return publicationTermWindowLength;
+        }
+
+        /**
+         * Default length for a term buffer window on a network publication.
+         *
+         * @param termWindowLength default length for a term buffer window on a network publication.
+         * @return this for a fluent API.
+         * @see Configuration#PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME
+         */
+        public Context publicationTermWindowLength(final int termWindowLength)
+        {
+            this.publicationTermWindowLength = termWindowLength;
+            return this;
+        }
+
+        /**
+         * Default length for a term buffer window on a IPC publication.
+         *
+         * @return default length for a term buffer window on a IPC publication.
+         * @see Configuration#IPC_PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME
+         */
+        public int ipcPublicationTermWindowLength()
+        {
+            return ipcPublicationTermWindowLength;
+        }
+
+        /**
+         * Default length for a term buffer window on a IPC publication.
+         *
+         * @param termWindowLength default length for a term buffer window on a IPC publication.
+         * @return this for a fluent API.
+         * @see Configuration#IPC_PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME
+         */
+        public Context ipcPublicationTermWindowLength(final int termWindowLength)
+        {
+            this.ipcPublicationTermWindowLength = termWindowLength;
             return this;
         }
 
@@ -2572,6 +2622,9 @@ public final class MediaDriver implements AutoCloseable
 
             switch (threadingMode)
             {
+                case INVOKER:
+                    break;
+
                 case SHARED:
                     if (null == sharedThreadFactory)
                     {
@@ -2580,6 +2633,25 @@ public final class MediaDriver implements AutoCloseable
                     if (null == sharedIdleStrategy)
                     {
                         sharedIdleStrategy = Configuration.sharedIdleStrategy(indicator);
+                    }
+                    break;
+
+                case SHARED_NETWORK:
+                    if (null == conductorThreadFactory)
+                    {
+                        conductorThreadFactory = Thread::new;
+                    }
+                    if (null == conductorIdleStrategy)
+                    {
+                        conductorIdleStrategy = Configuration.conductorIdleStrategy(indicator);
+                    }
+                    if (null == sharedNetworkThreadFactory)
+                    {
+                        sharedNetworkThreadFactory = Thread::new;
+                    }
+                    if (null == sharedNetworkIdleStrategy)
+                    {
+                        sharedNetworkIdleStrategy = Configuration.sharedNetworkIdleStrategy(indicator);
                     }
                     break;
 
@@ -2609,117 +2681,97 @@ public final class MediaDriver implements AutoCloseable
                         receiverIdleStrategy = Configuration.receiverIdleStrategy(indicator);
                     }
                     break;
-
-                case SHARED_NETWORK:
-                    if (null == conductorThreadFactory)
-                    {
-                        conductorThreadFactory = Thread::new;
-                    }
-                    if (null == conductorIdleStrategy)
-                    {
-                        conductorIdleStrategy = Configuration.conductorIdleStrategy(indicator);
-                    }
-                    if (null == sharedNetworkThreadFactory)
-                    {
-                        sharedNetworkThreadFactory = Thread::new;
-                    }
-                    if (null == sharedNetworkIdleStrategy)
-                    {
-                        sharedNetworkIdleStrategy = Configuration.sharedNetworkIdleStrategy(indicator);
-                    }
-                    break;
-
-                case INVOKER:
-                    break;
             }
         }
 
         public String toString()
         {
             return "MediaDriver.Context{" +
-                " aeronDirectoryName=" + aeronDirectoryName() +
-                ", driverTimeoutMs=" + driverTimeoutMs() +
-                ", printConfigurationOnStart=" + printConfigurationOnStart +
-                ", useWindowsHighResTimer=" + useWindowsHighResTimer +
-                ", warnIfDirectoryExists=" + warnIfDirectoryExists +
-                ", dirDeleteOnStart=" + dirDeleteOnStart +
-                ", termBufferSparseFile=" + termBufferSparseFile +
-                ", performStorageChecks=" + performStorageChecks +
-                ", spiesSimulateConnection=" + spiesSimulateConnection +
-                ", lowStorageWarningThreshold=" + lowStorageWarningThreshold +
-                ", timerIntervalNs=" + timerIntervalNs +
-                ", clientLivenessTimeoutNs=" + clientLivenessTimeoutNs +
-                ", imageLivenessTimeoutNs=" + imageLivenessTimeoutNs +
-                ", publicationUnblockTimeoutNs=" + publicationUnblockTimeoutNs +
-                ", publicationConnectionTimeoutNs=" + publicationConnectionTimeoutNs +
-                ", publicationLingerTimeoutNs=" + publicationLingerTimeoutNs +
-                ", retransmitUnicastDelayNs=" + retransmitUnicastDelayNs +
-                ", retransmitUnicastLingerNs=" + retransmitUnicastLingerNs +
-                ", nakUnicastDelayNs=" + nakUnicastDelayNs +
-                ", nakMulticastMaxBackoffNs=" + nakMulticastMaxBackoffNs +
-                ", nakMulticastGroupSize=" + nakMulticastGroupSize +
-                ", statusMessageTimeoutNs=" + statusMessageTimeoutNs +
-                ", counterFreeToReuseTimeoutNs=" + counterFreeToReuseTimeoutNs +
-                ", publicationTermBufferLength=" + publicationTermBufferLength +
-                ", ipcPublicationTermBufferLength=" + ipcPublicationTermBufferLength +
-                ", initialWindowLength=" + initialWindowLength +
-                ", socketSndbufLength=" + socketSndbufLength +
-                ", socketRcvbufLength=" + socketRcvbufLength +
-                ", socketMulticastTtl=" + socketMulticastTtl +
-                ", mtuLength=" + mtuLength +
-                ", ipcMtuLength=" + ipcMtuLength +
-                ", filePageSize=" + filePageSize +
-                ", publicationReservedSessionIdLow=" + publicationReservedSessionIdLow +
-                ", publicationReservedSessionIdHigh=" + publicationReservedSessionIdHigh +
-                ", lossReportBufferLength=" + lossReportBufferLength +
-                ", epochClock=" + epochClock +
-                ", nanoClock=" + nanoClock +
-                ", cachedEpochClock=" + cachedEpochClock +
-                ", cachedNanoClock=" + cachedNanoClock +
-                ", threadingMode=" + threadingMode +
-                ", conductorThreadFactory=" + conductorThreadFactory +
-                ", senderThreadFactory=" + senderThreadFactory +
-                ", receiverThreadFactory=" + receiverThreadFactory +
-                ", sharedThreadFactory=" + sharedThreadFactory +
-                ", sharedNetworkThreadFactory=" + sharedNetworkThreadFactory +
-                ", conductorIdleStrategy=" + conductorIdleStrategy +
-                ", senderIdleStrategy=" + senderIdleStrategy +
-                ", receiverIdleStrategy=" + receiverIdleStrategy +
-                ", sharedNetworkIdleStrategy=" + sharedNetworkIdleStrategy +
-                ", sharedIdleStrategy=" + sharedIdleStrategy +
-                ", sendChannelEndpointSupplier=" + sendChannelEndpointSupplier +
-                ", receiveChannelEndpointSupplier=" + receiveChannelEndpointSupplier +
-                ", receiveChannelEndpointThreadLocals=" + receiveChannelEndpointThreadLocals +
-                ", tempBuffer=" + tempBuffer +
-                ", unicastFlowControlSupplier=" + unicastFlowControlSupplier +
-                ", multicastFlowControlSupplier=" + multicastFlowControlSupplier +
-                ", applicationSpecificFeedback=" + Arrays.toString(applicationSpecificFeedback) +
-                ", congestionControlSupplier=" + congestionControlSupplier +
-                ", unicastFeedbackDelayGenerator=" + unicastFeedbackDelayGenerator +
-                ", multicastFeedbackDelayGenerator=" + multicastFeedbackDelayGenerator +
-                ", retransmitUnicastDelayGenerator=" + retransmitUnicastDelayGenerator +
-                ", retransmitUnicastLingerGenerator=" + retransmitUnicastLingerGenerator +
-                ", errorLog=" + errorLog +
-                ", errorHandler=" + errorHandler +
-                ", useConcurrentCountersManager=" + useConcurrentCountersManager +
-                ", countersManager=" + countersManager +
-                ", systemCounters=" + systemCounters +
-                ", lossReport=" + lossReport +
-                ", rawLogFactory=" + rawLogFactory +
-                ", dataTransportPoller=" + dataTransportPoller +
-                ", controlTransportPoller=" + controlTransportPoller +
-                ", driverCommandQueue=" + driverCommandQueue +
-                ", receiverCommandQueue=" + receiverCommandQueue +
-                ", senderCommandQueue=" + senderCommandQueue +
-                ", receiverProxy=" + receiverProxy +
-                ", senderProxy=" + senderProxy +
-                ", driverConductorProxy=" + driverConductorProxy +
-                ", clientProxy=" + clientProxy +
-                ", toDriverCommands=" + toDriverCommands +
-                ", lossReportBuffer=" + lossReportBuffer +
-                ", cncByteBuffer=" + cncByteBuffer +
-                ", cncMetaDataBuffer=" + cncMetaDataBuffer +
-                '}';
+                "\n    aeronDirectoryName=" + aeronDirectoryName() +
+                "\n    driverTimeoutMs=" + driverTimeoutMs() +
+                "\n    printConfigurationOnStart=" + printConfigurationOnStart +
+                "\n    useWindowsHighResTimer=" + useWindowsHighResTimer +
+                "\n    warnIfDirectoryExists=" + warnIfDirectoryExists +
+                "\n    dirDeleteOnStart=" + dirDeleteOnStart +
+                "\n    termBufferSparseFile=" + termBufferSparseFile +
+                "\n    performStorageChecks=" + performStorageChecks +
+                "\n    spiesSimulateConnection=" + spiesSimulateConnection +
+                "\n    lowStorageWarningThreshold=" + lowStorageWarningThreshold +
+                "\n    timerIntervalNs=" + timerIntervalNs +
+                "\n    clientLivenessTimeoutNs=" + clientLivenessTimeoutNs +
+                "\n    imageLivenessTimeoutNs=" + imageLivenessTimeoutNs +
+                "\n    publicationUnblockTimeoutNs=" + publicationUnblockTimeoutNs +
+                "\n    publicationConnectionTimeoutNs=" + publicationConnectionTimeoutNs +
+                "\n    publicationLingerTimeoutNs=" + publicationLingerTimeoutNs +
+                "\n    retransmitUnicastDelayNs=" + retransmitUnicastDelayNs +
+                "\n    retransmitUnicastLingerNs=" + retransmitUnicastLingerNs +
+                "\n    nakUnicastDelayNs=" + nakUnicastDelayNs +
+                "\n    nakMulticastMaxBackoffNs=" + nakMulticastMaxBackoffNs +
+                "\n    nakMulticastGroupSize=" + nakMulticastGroupSize +
+                "\n    statusMessageTimeoutNs=" + statusMessageTimeoutNs +
+                "\n    counterFreeToReuseTimeoutNs=" + counterFreeToReuseTimeoutNs +
+                "\n    publicationTermBufferLength=" + publicationTermBufferLength +
+                "\n    ipcTermBufferLength=" + ipcTermBufferLength +
+                "\n    publicationTermWindowLength=" + publicationTermWindowLength +
+                "\n    ipcPublicationTermWindowLength=" + ipcPublicationTermWindowLength +
+                "\n    initialWindowLength=" + initialWindowLength +
+                "\n    socketSndbufLength=" + socketSndbufLength +
+                "\n    socketRcvbufLength=" + socketRcvbufLength +
+                "\n    socketMulticastTtl=" + socketMulticastTtl +
+                "\n    mtuLength=" + mtuLength +
+                "\n    ipcMtuLength=" + ipcMtuLength +
+                "\n    filePageSize=" + filePageSize +
+                "\n    publicationReservedSessionIdLow=" + publicationReservedSessionIdLow +
+                "\n    publicationReservedSessionIdHigh=" + publicationReservedSessionIdHigh +
+                "\n    lossReportBufferLength=" + lossReportBufferLength +
+                "\n    epochClock=" + epochClock +
+                "\n    nanoClock=" + nanoClock +
+                "\n    cachedEpochClock=" + cachedEpochClock +
+                "\n    cachedNanoClock=" + cachedNanoClock +
+                "\n    threadingMode=" + threadingMode +
+                "\n    conductorThreadFactory=" + conductorThreadFactory +
+                "\n    senderThreadFactory=" + senderThreadFactory +
+                "\n    receiverThreadFactory=" + receiverThreadFactory +
+                "\n    sharedThreadFactory=" + sharedThreadFactory +
+                "\n    sharedNetworkThreadFactory=" + sharedNetworkThreadFactory +
+                "\n    conductorIdleStrategy=" + conductorIdleStrategy +
+                "\n    senderIdleStrategy=" + senderIdleStrategy +
+                "\n    receiverIdleStrategy=" + receiverIdleStrategy +
+                "\n    sharedNetworkIdleStrategy=" + sharedNetworkIdleStrategy +
+                "\n    sharedIdleStrategy=" + sharedIdleStrategy +
+                "\n    sendChannelEndpointSupplier=" + sendChannelEndpointSupplier +
+                "\n    receiveChannelEndpointSupplier=" + receiveChannelEndpointSupplier +
+                "\n    receiveChannelEndpointThreadLocals=" + receiveChannelEndpointThreadLocals +
+                "\n    tempBuffer=" + tempBuffer +
+                "\n    unicastFlowControlSupplier=" + unicastFlowControlSupplier +
+                "\n    multicastFlowControlSupplier=" + multicastFlowControlSupplier +
+                "\n    applicationSpecificFeedback=" + Arrays.toString(applicationSpecificFeedback) +
+                "\n    congestionControlSupplier=" + congestionControlSupplier +
+                "\n    unicastFeedbackDelayGenerator=" + unicastFeedbackDelayGenerator +
+                "\n    multicastFeedbackDelayGenerator=" + multicastFeedbackDelayGenerator +
+                "\n    retransmitUnicastDelayGenerator=" + retransmitUnicastDelayGenerator +
+                "\n    retransmitUnicastLingerGenerator=" + retransmitUnicastLingerGenerator +
+                "\n    errorLog=" + errorLog +
+                "\n    errorHandler=" + errorHandler +
+                "\n    useConcurrentCountersManager=" + useConcurrentCountersManager +
+                "\n    countersManager=" + countersManager +
+                "\n    systemCounters=" + systemCounters +
+                "\n    lossReport=" + lossReport +
+                "\n    rawLogFactory=" + rawLogFactory +
+                "\n    dataTransportPoller=" + dataTransportPoller +
+                "\n    controlTransportPoller=" + controlTransportPoller +
+                "\n    driverCommandQueue=" + driverCommandQueue +
+                "\n    receiverCommandQueue=" + receiverCommandQueue +
+                "\n    senderCommandQueue=" + senderCommandQueue +
+                "\n    receiverProxy=" + receiverProxy +
+                "\n    senderProxy=" + senderProxy +
+                "\n    driverConductorProxy=" + driverConductorProxy +
+                "\n    clientProxy=" + clientProxy +
+                "\n    toDriverCommands=" + toDriverCommands +
+                "\n    lossReportBuffer=" + lossReportBuffer +
+                "\n    cncByteBuffer=" + cncByteBuffer +
+                "\n    cncMetaDataBuffer=" + cncMetaDataBuffer +
+                "\n}";
         }
     }
 }

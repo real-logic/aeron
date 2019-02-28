@@ -138,6 +138,7 @@ public class SenderTest
             mockSendChannelEndpoint,
             () -> currentTimestamp,
             rawLog,
+            Configuration.producerWindowLength(TERM_BUFFER_LENGTH, Configuration.publicationTermWindowLength()),
             mock(Position.class),
             mock(Position.class),
             new AtomicLongPosition(),

@@ -144,6 +144,7 @@ public class NetworkPublication
         final SendChannelEndpoint channelEndpoint,
         final NanoClock nanoClock,
         final RawLog rawLog,
+        final int termWindowLength,
         final Position publisherPos,
         final Position publisherLimit,
         final Position senderPosition,
@@ -211,7 +212,7 @@ public class NetworkPublication
         statusMessageDeadlineNs = spiesSimulateConnection ? nowNs : (nowNs + connectionTimeoutNs);
 
         positionBitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
-        termWindowLength = Configuration.publicationTermWindowLength(termLength);
+        this.termWindowLength = termWindowLength;
 
         lastSenderPosition = senderPosition.get();
         cleanPosition = lastSenderPosition;

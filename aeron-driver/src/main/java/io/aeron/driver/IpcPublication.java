@@ -77,6 +77,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         final Position publisherPos,
         final Position publisherLimit,
         final RawLog rawLog,
+        final int termWindowLength,
         final long unblockTimeoutNs,
         final long lingerTimeoutNs,
         final long nowNs,
@@ -94,7 +95,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         final int termLength = rawLog.termLength();
         this.termBufferLength = termLength;
         this.positionBitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
-        this.termWindowLength = Configuration.ipcPublicationTermWindowLength(termLength);
+        this.termWindowLength = termWindowLength;
         this.tripGain = termWindowLength / 8;
         this.publisherPos = publisherPos;
         this.publisherLimit = publisherLimit;

@@ -19,6 +19,7 @@
 #include "ArchiveProxy.h"
 #include "concurrent/YieldingIdleStrategy.h"
 #include "aeron_archive_client/ConnectRequest.h"
+#include "aeron_archive_client/ReplayRequest.h"
 
 using namespace aeron::concurrent;
 using namespace aeron::archive::client;
@@ -51,29 +52,36 @@ bool ArchiveProxy::tryConnect(
     return false;
 }
 
-bool ArchiveProxy::connect(
-    const std::string& responseChannel,
-    std::int32_t responseStreamId,
+template<typename IdleStrategy>
+bool ArchiveProxy::replay(
+    std::int64_t recordingId,
+    std::int64_t position,
+    std::int64_t length,
+    const std::string& replayChannel,
+    std::int32_t replayStreamId,
     std::int64_t correlationId,
-    std::shared_ptr<Aeron> aeron)
+    std::int64_t controlSessionId)
 {
-    const std::size_t length = MessageHeader::encodedLength()
-        + ConnectRequest::sbeBlockLength()
-        + ConnectRequest::responseChannelHeaderLength()
-        + responseChannel.size();
+    const std::uint64_t replayRequestLength = MessageHeader::encodedLength()
+        + ReplayRequest::sbeBlockLength()
+        + ReplayRequest::replayChannelHeaderLength()
+        + replayChannel.size();
 
     BufferClaim bufferClaim;
 
-    if (tryClaimWithTimeout(static_cast<std::int32_t>(length), bufferClaim, std::move(aeron)))
+    if (tryClaim<IdleStrategy>(static_cast<std::int32_t>(length), bufferClaim) > 0)
     {
-        ConnectRequest connectRequest;
+        ReplayRequest request;
 
-        connectRequest
-            .wrapAndApplyHeader(reinterpret_cast<char *>(bufferClaim.buffer().buffer()), 0, length)
+        request
+            .wrapAndApplyHeader(reinterpret_cast<char *>(bufferClaim.buffer().buffer()), 0, replayRequestLength)
+            .controlSessionId(controlSessionId)
             .correlationId(correlationId)
-            .responseStreamId(responseStreamId)
-            .version(Configuration::ARCHIVE_SEMANTIC_VERSION)
-            .putResponseChannel(responseChannel);
+            .recordingId(recordingId)
+            .position(position)
+            .length(length)
+            .replayStreamId(replayStreamId)
+            .putReplayChannel(replayChannel);
 
         bufferClaim.commit();
         return true;
@@ -82,14 +90,15 @@ bool ArchiveProxy::connect(
     return false;
 }
 
-bool ArchiveProxy::tryClaimWithTimeout(std::int32_t length, BufferClaim& bufferClaim, std::shared_ptr<Aeron> aeron)
+template<typename IdleStrategy>
+bool ArchiveProxy::tryClaim(std::int32_t length, BufferClaim& bufferClaim)
 {
-    YieldingIdleStrategy idleStrategy;
+    IdleStrategy idle;
 
-    const long long deadlineNs = m_nanoClock() + m_messageTimeoutNs;
+    int attempts = m_retryAttempts;
     while (true)
     {
-        const std::int64_t result = m_publication->tryClaim(length, bufferClaim);
+        const long result = m_publication->tryClaim(length, bufferClaim);
         if (result > 0)
         {
             return true;
@@ -100,21 +109,21 @@ bool ArchiveProxy::tryClaimWithTimeout(std::int32_t length, BufferClaim& bufferC
             throw ArchiveException("connection to the archive has been closed", SOURCEINFO);
         }
 
-        if (result == MAX_POSITION_EXCEEDED)
+        if (result == NOT_CONNECTED)
         {
-            throw ArchiveException("offer failed due to max position being reached", SOURCEINFO);
+            throw ArchiveException("connection to the archive is no longer available", SOURCEINFO);
         }
 
-        if (deadlineNs - m_nanoClock() < 0)
+        if (result == MAX_POSITION_EXCEEDED)
+        {
+            throw ArchiveException("tryClaim failed due to max position being reached", SOURCEINFO);
+        }
+
+        if (--attempts <= 0)
         {
             return false;
         }
 
-        if (aeron->usesAgentInvoker())
-        {
-            aeron->conductorAgentInvoker().invoke();
-        }
-
-        idleStrategy.idle();
+        idle.idle();
     }
 }

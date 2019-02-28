@@ -18,6 +18,7 @@
 #define AERON_ARCHIVE_ARCHIVEPROXY_H
 
 #include "Aeron.h"
+#include "concurrent/BackOffIdleStrategy.h"
 
 namespace aeron {
 namespace archive {
@@ -29,10 +30,12 @@ public:
     ArchiveProxy(
         std::shared_ptr<ExclusivePublication> publication,
         nano_clock_t nanoClock,
-        long long messageTimeoutNs) :
+        long long messageTimeoutNs,
+        int retryAttempts = 3) :
         m_publication(std::move(publication)),
         m_nanoClock(std::move(nanoClock)),
-        m_messageTimeoutNs(messageTimeoutNs)
+        m_messageTimeoutNs(messageTimeoutNs),
+        m_retryAttempts(retryAttempts)
     {
     }
 
@@ -43,18 +46,24 @@ public:
 
     bool tryConnect(const std::string& responseChannel, std::int32_t responseStreamId, std::int64_t correlationId);
 
-    bool connect(
-        const std::string& responseChannel,
-        std::int32_t responseStreamId,
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool replay(
+        std::int64_t recordingId,
+        std::int64_t position,
+        std::int64_t length,
+        const std::string& replayChannel,
+        std::int32_t replayStreamId,
         std::int64_t correlationId,
-        std::shared_ptr<Aeron> aeron);
+        std::int64_t controlSessionId);
 
 private:
     std::shared_ptr<ExclusivePublication> m_publication;
     nano_clock_t m_nanoClock;
     const long long m_messageTimeoutNs;
+    const int m_retryAttempts;
 
-    bool tryClaimWithTimeout(std::int32_t length, BufferClaim& bufferClaim, std::shared_ptr<Aeron> aeron);
+    template<typename IdleStrategy>
+    bool tryClaim(std::int32_t length, BufferClaim& bufferClaim);
 };
 
 }}};

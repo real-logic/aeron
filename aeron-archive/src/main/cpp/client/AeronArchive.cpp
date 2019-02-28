@@ -133,13 +133,13 @@ AeronArchive::AeronArchive(
     std::unique_ptr<ArchiveProxy> archiveProxy,
     std::unique_ptr<ControlResponsePoller> controlResponsePoller,
     std::shared_ptr<Aeron> aeron,
-    std::int64_t sessionId)
+    std::int64_t controlSessionId)
     :
     m_ctx(std::move(ctx)),
     m_archiveProxy(std::move(archiveProxy)),
     m_controlResponsePoller(std::move(controlResponsePoller)),
     m_aeron(std::move(aeron)),
-    m_sessionId(sessionId)
+    m_controlSessionId(controlSessionId)
 {
 }
 

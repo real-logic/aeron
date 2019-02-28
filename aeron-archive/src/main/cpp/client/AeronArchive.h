@@ -22,6 +22,7 @@
 #include "ControlResponsePoller.h"
 #include "concurrent/BackOffIdleStrategy.h"
 #include "concurrent/YieldingIdleStrategy.h"
+#include "ArchiveException.h"
 
 namespace aeron {
 namespace archive {
@@ -37,7 +38,8 @@ public:
         std::unique_ptr<ArchiveProxy> archiveProxy,
         std::unique_ptr<ControlResponsePoller> controlResponsePoller,
         std::shared_ptr<Aeron> aeron,
-        std::int64_t sessionId);
+        std::int64_t controlSessionId);
+    ~AeronArchive();
 
     class AsyncConnect
     {
@@ -95,6 +97,26 @@ public:
         return AeronArchive::connect(ctx);
     }
 
+    inline Context_t& context()
+    {
+        return *m_ctx;
+    }
+
+    inline std::int64_t controlSessionId()
+    {
+        return m_controlSessionId;
+    }
+
+    inline ArchiveProxy& archiveProxy()
+    {
+        return *m_archiveProxy;
+    }
+
+    inline ControlResponsePoller& controlResponsePoller()
+    {
+        return *m_controlResponsePoller;
+    }
+
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     std::int64_t startReplay(
         std::int64_t recordingId,
@@ -103,9 +125,17 @@ public:
         const std::string& replayChannel,
         std::int32_t replayStreamId)
     {
+        std::lock_guard<std::recursive_mutex> lock(m_lock);
+
+        ensureOpen();
+
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
 
-        // TODO: finish
+        if (!m_archiveProxy->replay<IdleStrategy>(
+            recordingId, position, length, replayChannel, replayStreamId, correlationId, m_controlSessionId))
+        {
+            throw ArchiveException("fialed to send replay request", SOURCEINFO);
+        }
 
         return pollForResponse<IdleStrategy>(correlationId);
     }
@@ -116,7 +146,18 @@ private:
     std::unique_ptr<ControlResponsePoller> m_controlResponsePoller;
     std::shared_ptr<Aeron> m_aeron;
 
-    const std::int64_t m_sessionId;
+    std::recursive_mutex m_lock;
+
+    const std::int64_t m_controlSessionId;
+    bool m_isClosed = false;
+
+    inline void ensureOpen()
+    {
+        if (m_isClosed)
+        {
+            throw ArchiveException("client is closed", SOURCEINFO);
+        }
+    }
 
     template<typename IdleStrategy>
     int pollForResponse(std::int64_t correlationId)

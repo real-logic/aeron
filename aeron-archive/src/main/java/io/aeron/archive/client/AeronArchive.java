@@ -1396,7 +1396,7 @@ public class AeronArchive implements AutoCloseable
         /**
          * Sparse term buffer indicator for control streams.
          */
-        public static final String CONTROL_TERM_BUFFER_SPARSE_PARAM_NAME = "aeron.archive.control.term.buffer.sparse";
+        public static final String CONTROL_TERM_BUFFER_SPARSE_PROP_NAME = "aeron.archive.control.term.buffer.sparse";
 
         /**
          * Overrides {@link io.aeron.driver.Configuration#TERM_BUFFER_SPARSE_FILE_PROP_NAME} for if term buffer files
@@ -1407,7 +1407,7 @@ public class AeronArchive implements AutoCloseable
         /**
          * Term length for control streams.
          */
-        public static final String CONTROL_TERM_BUFFER_LENGTH_PARAM_NAME = "aeron.archive.control.term.buffer.length";
+        public static final String CONTROL_TERM_BUFFER_LENGTH_PROP_NAME = "aeron.archive.control.term.buffer.length";
 
         /**
          * Low term length for control channel reflects expected low bandwidth usage.
@@ -1417,7 +1417,7 @@ public class AeronArchive implements AutoCloseable
         /**
          * MTU length for control streams.
          */
-        public static final String CONTROL_MTU_LENGTH_PARAM_NAME = "aeron.archive.control.mtu.length";
+        public static final String CONTROL_MTU_LENGTH_PROP_NAME = "aeron.archive.control.mtu.length";
 
         /**
          * MTU to reflect default for the control streams.
@@ -1439,11 +1439,11 @@ public class AeronArchive implements AutoCloseable
          * Should term buffer files be sparse for control request and response streams.
          *
          * @return true if term buffer files should be sparse for control request and response streams.
-         * @see #CONTROL_TERM_BUFFER_SPARSE_PARAM_NAME
+         * @see #CONTROL_TERM_BUFFER_SPARSE_PROP_NAME
          */
         public static boolean controlTermBufferSparse()
         {
-            final String propValue = System.getProperty(CONTROL_TERM_BUFFER_SPARSE_PARAM_NAME);
+            final String propValue = System.getProperty(CONTROL_TERM_BUFFER_SPARSE_PROP_NAME);
             return null != propValue ? "true".equals(propValue) : CONTROL_TERM_BUFFER_SPARSE_DEFAULT;
         }
 
@@ -1451,22 +1451,22 @@ public class AeronArchive implements AutoCloseable
          * Term buffer length to be used for control request and response streams.
          *
          * @return term buffer length to be used for control request and response streams.
-         * @see #CONTROL_TERM_BUFFER_LENGTH_PARAM_NAME
+         * @see #CONTROL_TERM_BUFFER_LENGTH_PROP_NAME
          */
         public static int controlTermBufferLength()
         {
-            return getSizeAsInt(CONTROL_TERM_BUFFER_LENGTH_PARAM_NAME, CONTROL_TERM_BUFFER_LENGTH_DEFAULT);
+            return getSizeAsInt(CONTROL_TERM_BUFFER_LENGTH_PROP_NAME, CONTROL_TERM_BUFFER_LENGTH_DEFAULT);
         }
 
         /**
          * MTU length to be used for control request and response streams.
          *
          * @return MTU length to be used for control request and response streams.
-         * @see #CONTROL_MTU_LENGTH_PARAM_NAME
+         * @see #CONTROL_MTU_LENGTH_PROP_NAME
          */
         public static int controlMtuLength()
         {
-            return getSizeAsInt(CONTROL_MTU_LENGTH_PARAM_NAME, CONTROL_MTU_LENGTH_DEFAULT);
+            return getSizeAsInt(CONTROL_MTU_LENGTH_PROP_NAME, CONTROL_MTU_LENGTH_DEFAULT);
         }
 
         /**
@@ -1810,7 +1810,7 @@ public class AeronArchive implements AutoCloseable
          *
          * @param controlTermBufferSparse for the control stream.
          * @return this for a fluent API.
-         * @see Configuration#CONTROL_TERM_BUFFER_SPARSE_PARAM_NAME
+         * @see Configuration#CONTROL_TERM_BUFFER_SPARSE_PROP_NAME
          */
         public Context controlTermBufferSparse(final boolean controlTermBufferSparse)
         {
@@ -1822,7 +1822,7 @@ public class AeronArchive implements AutoCloseable
          * Should the control streams use sparse file term buffers.
          *
          * @return true if the control stream should use sparse file term buffers.
-         * @see Configuration#CONTROL_TERM_BUFFER_SPARSE_PARAM_NAME
+         * @see Configuration#CONTROL_TERM_BUFFER_SPARSE_PROP_NAME
          */
         public boolean controlTermBufferSparse()
         {
@@ -1834,7 +1834,7 @@ public class AeronArchive implements AutoCloseable
          *
          * @param controlTermBufferLength for the control streams.
          * @return this for a fluent API.
-         * @see Configuration#CONTROL_TERM_BUFFER_LENGTH_PARAM_NAME
+         * @see Configuration#CONTROL_TERM_BUFFER_LENGTH_PROP_NAME
          */
         public Context controlTermBufferLength(final int controlTermBufferLength)
         {
@@ -1846,7 +1846,7 @@ public class AeronArchive implements AutoCloseable
          * Get the term buffer length for the control streams.
          *
          * @return the term buffer length for the control streams.
-         * @see Configuration#CONTROL_TERM_BUFFER_LENGTH_PARAM_NAME
+         * @see Configuration#CONTROL_TERM_BUFFER_LENGTH_PROP_NAME
          */
         public int controlTermBufferLength()
         {
@@ -1858,7 +1858,7 @@ public class AeronArchive implements AutoCloseable
          *
          * @param controlMtuLength for the control streams.
          * @return this for a fluent API.
-         * @see Configuration#CONTROL_MTU_LENGTH_PARAM_NAME
+         * @see Configuration#CONTROL_MTU_LENGTH_PROP_NAME
          */
         public Context controlMtuLength(final int controlMtuLength)
         {
@@ -1870,7 +1870,7 @@ public class AeronArchive implements AutoCloseable
          * Get the MTU length for the control streams.
          *
          * @return the MTU length for the control streams.
-         * @see Configuration#CONTROL_MTU_LENGTH_PARAM_NAME
+         * @see Configuration#CONTROL_MTU_LENGTH_PROP_NAME
          */
         public int controlMtuLength()
         {

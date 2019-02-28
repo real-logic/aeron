@@ -32,9 +32,4 @@ public class DefaultReceiveChannelEndpointSupplier implements ReceiveChannelEndp
     {
         return new ReceiveChannelEndpoint(udpChannel, dispatcher, statusIndicator, context);
     }
-
-    public String toString()
-    {
-        return "DefaultReceiveChannelEndpointSupplier{}";
-    }
 }

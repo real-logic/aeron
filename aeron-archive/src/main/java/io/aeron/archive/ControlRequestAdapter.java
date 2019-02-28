@@ -58,7 +58,7 @@ class ControlRequestAdapter implements FragmentHandler
     {
         headerDecoder.wrap(buffer, offset);
 
-        final int schemaId = headerDecoder.sbeSchemaId();
+        final int schemaId = headerDecoder.schemaId();
         if (schemaId != MessageHeaderDecoder.SCHEMA_ID)
         {
             throw new ArchiveException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);

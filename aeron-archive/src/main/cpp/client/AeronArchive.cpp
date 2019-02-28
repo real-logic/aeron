@@ -18,8 +18,12 @@
 
 using namespace aeron::archive::client;
 
-template<typename IdleStrategy>
-std::shared_ptr<AeronArchive<IdleStrategy>> AeronArchive<IdleStrategy>::AsyncConnect::poll()
+std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
 {
-    return std::make_shared<AeronArchive<IdleStrategy>>();
+    return std::shared_ptr<AeronArchive>();
+}
+
+std::shared_ptr<AeronArchive::AsyncConnect> AeronArchive::asyncConnect(AeronArchive::Context_t &context)
+{
+    return std::shared_ptr<AeronArchive::AsyncConnect>();
 }

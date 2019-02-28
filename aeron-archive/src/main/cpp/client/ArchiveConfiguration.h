@@ -17,6 +17,8 @@
 #define AERON_ARCHIVE_CONFIGURATION_H
 
 #include <cstdint>
+
+#include "Aeron.h"
 #include "util/MacroUtil.h"
 
 namespace aeron {
@@ -44,6 +46,33 @@ class Context
 public:
     using this_t = Context;
 
+    Context() : m_aeronDirectoryName(aeron::Context::defaultAeronPath())
+    {
+    }
+
+    void conclude()
+    {
+        if (!m_aeron)
+        {
+            aeron::Context ctx;
+
+            ctx.aeronDir(m_aeronDirectoryName);
+            m_aeron = Aeron::connect(ctx);
+            m_ownsAeronClient = true;
+        }
+    }
+
+    inline std::shared_ptr<Aeron> aeron()
+    {
+        return m_aeron;
+    }
+
+    inline this_t& aeron(std::shared_ptr<Aeron> aeron)
+    {
+        m_aeron = std::move(aeron);
+        return *this;
+    }
+
     inline long long messageTimeoutNs()
     {
         return m_messageTimeoutNs;
@@ -56,7 +85,10 @@ public:
     }
 
 private:
+    std::shared_ptr<Aeron> m_aeron;
+    std::string m_aeronDirectoryName;
     long long m_messageTimeoutNs = Configuration::MESSAGE_TIMEOUT_NS_DEFAULT;
+    bool m_ownsAeronClient = false;
 };
 
 }}}

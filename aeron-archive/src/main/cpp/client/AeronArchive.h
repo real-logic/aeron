@@ -26,7 +26,6 @@ namespace aeron {
 namespace archive {
 namespace client {
 
-template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
 class AeronArchive
 {
 public:
@@ -46,9 +45,9 @@ public:
         Context_t m_ctx;
     };
 
-    static std::unique_ptr<AsyncConnect> asyncConnect(Context_t& context);
+    static std::shared_ptr<AsyncConnect> asyncConnect(Context_t& context);
 
-    inline static std::unique_ptr<AsyncConnect> asyncConnect()
+    inline static std::shared_ptr<AsyncConnect> asyncConnect()
     {
         Context_t ctx;
         return AeronArchive::asyncConnect(ctx);
@@ -57,11 +56,11 @@ public:
     template<typename ConnectIdleStrategy = aeron::concurrent::YieldingIdleStrategy>
     inline static std::shared_ptr<AeronArchive> connect(Context_t& context)
     {
-        std::unique_ptr<AsyncConnect> asyncConnect = AeronArchive::asyncConnect(context);
+        std::shared_ptr<AsyncConnect> asyncConnect = AeronArchive::asyncConnect(context);
         ConnectIdleStrategy idle;
 
         std::shared_ptr<AeronArchive> archive = asyncConnect->poll();
-        while (nullptr == *archive)
+        while (!archive)
         {
             idle.idle();
             archive = asyncConnect->poll();
@@ -76,10 +75,34 @@ public:
         return AeronArchive::connect(ctx);
     }
 
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    std::int64_t startReplay(
+        std::int64_t recordingId,
+        std::int64_t position,
+        std::int64_t length,
+        const std::string& replayChannel,
+        std::int32_t replayStreamId)
+    {
+        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+
+        // TODO: finish
+
+        return pollForResponse<IdleStrategy>(correlationId);
+    }
+
 private:
     std::shared_ptr<Aeron> m_aeron;
     Context_t m_ctx;
-    IdleStrategy m_idle;
+
+    template<typename IdleStrategy>
+    int pollForResponse(std::int64_t correlationId)
+    {
+        IdleStrategy idle;
+
+        // TODO: finish
+
+        return 0;
+    }
 };
 
 }}}

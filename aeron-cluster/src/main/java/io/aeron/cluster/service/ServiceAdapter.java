@@ -16,6 +16,7 @@
 package io.aeron.cluster.service;
 
 import io.aeron.Subscription;
+import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.ElectionStartEventDecoder;
 import io.aeron.cluster.codecs.JoinLogDecoder;
 import io.aeron.cluster.codecs.MessageHeaderDecoder;
@@ -56,8 +57,13 @@ final class ServiceAdapter implements FragmentHandler, AutoCloseable
     {
         messageHeaderDecoder.wrap(buffer, offset);
 
-        final int templateId = messageHeaderDecoder.templateId();
+        final int schemaId = messageHeaderDecoder.schemaId();
+        if (schemaId != MessageHeaderDecoder.SCHEMA_ID)
+        {
+            throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
+        }
 
+        final int templateId = messageHeaderDecoder.templateId();
         switch (templateId)
         {
             case JoinLogDecoder.TEMPLATE_ID:

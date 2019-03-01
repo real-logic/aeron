@@ -31,6 +31,11 @@ AeronArchive::AsyncConnect::AsyncConnect(
 {
 }
 
+AeronArchive::~AeronArchive()
+{
+    m_archiveProxy->closeSession(m_controlSessionId);
+}
+
 std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
 {
     if (!m_subscription)

@@ -136,6 +136,22 @@ public:
         return *this;
     }
 
+    inline bool ownsAeronClient()
+    {
+        return m_ownsAeronClient;
+    }
+
+    inline exception_handler_t errorHandler()
+    {
+        return m_errorHandler;
+    }
+
+    inline this_t& errorHandler(const exception_handler_t& errorHandler)
+    {
+        m_errorHandler = errorHandler;
+        return *this;
+    }
+
 private:
     std::shared_ptr<Aeron> m_aeron;
     std::string m_aeronDirectoryName = aeron::Context::defaultAeronPath();
@@ -148,6 +164,8 @@ private:
     std::int32_t m_controlRequestStreamId = Configuration::CONTROL_REQUEST_STREAM_ID_DEFAULT;
 
     bool m_ownsAeronClient = false;
+
+    exception_handler_t m_errorHandler = nullptr;
 };
 
 }}}

@@ -41,6 +41,12 @@ public:
         std::int64_t controlSessionId);
     ~AeronArchive();
 
+    enum SourceLocation: int
+    {
+        LOCAL = 0,
+        REMOTE = 1
+    };
+
     class AsyncConnect
     {
     public:
@@ -117,8 +123,79 @@ public:
         return *m_controlResponsePoller;
     }
 
+    inline std::string pollForErrorResponse()
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_lock);
+
+        ensureOpen();
+
+        if (m_controlResponsePoller->poll() != 0 && m_controlResponsePoller->isPollComplete())
+        {
+            if (m_controlResponsePoller->controlSessionId() == m_controlSessionId &&
+                m_controlResponsePoller->isControlResponse() &&
+                m_controlResponsePoller->isCodeError())
+            {
+                return m_controlResponsePoller->errorMessage();
+            }
+        }
+
+        return std::string();
+    }
+
+    inline void checkForErrorResponse()
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_lock);
+
+        ensureOpen();
+
+        if (m_controlResponsePoller->poll() != 0 && m_controlResponsePoller->isPollComplete())
+        {
+            if (m_controlResponsePoller->controlSessionId() == m_controlSessionId &&
+                m_controlResponsePoller->isControlResponse() &&
+                m_controlResponsePoller->isCodeError())
+            {
+                if (m_ctx->errorHandler() != nullptr)
+                {
+                    ArchiveException ex(
+                        static_cast<std::int32_t>(m_controlResponsePoller->relevantId()),
+                        m_controlResponsePoller->errorMessage(),
+                        SOURCEINFO);
+                    m_ctx->errorHandler()(ex);
+                }
+                else
+                {
+                    throw ArchiveException(
+                        static_cast<std::int32_t>(m_controlResponsePoller->relevantId()),
+                        m_controlResponsePoller->errorMessage(),
+                        SOURCEINFO);
+                }
+            }
+        }
+    }
+
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
-    std::int64_t startReplay(
+    inline std::int64_t startRecording(
+        const std::string& channel,
+        std::int32_t streamId,
+        SourceLocation sourceLocation)
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_lock);
+
+        ensureOpen();
+
+        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+
+        if (!m_archiveProxy->startRecording<IdleStrategy>(
+            channel, streamId, (sourceLocation == SourceLocation::LOCAL), correlationId, m_controlSessionId))
+        {
+            throw ArchiveException("fialed to send start recording request", SOURCEINFO);
+        }
+
+        return pollForResponse<IdleStrategy>(correlationId);
+    }
+
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    inline std::int64_t startReplay(
         std::int64_t recordingId,
         std::int64_t position,
         std::int64_t length,

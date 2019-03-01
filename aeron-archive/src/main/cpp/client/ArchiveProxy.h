@@ -43,6 +43,17 @@ public:
     bool tryConnect(const std::string& responseChannel, std::int32_t responseStreamId, std::int64_t correlationId);
 
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool closeSession(std::int64_t controlSessionId);
+
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool startRecording(
+        const std::string& channel,
+        std::int32_t streamId,
+        bool localSource,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId);
+
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     bool replay(
         std::int64_t recordingId,
         std::int64_t position,

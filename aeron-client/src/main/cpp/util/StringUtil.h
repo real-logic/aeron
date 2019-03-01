@@ -44,6 +44,24 @@ inline std::string trimWSBoth(std::string str, const char* wschars = " \t")
     return trimWSLeft(trimWSRight(std::move(str), wschars), wschars);
 }
 
+inline bool startsWith(const std::string& input, std::size_t position, const std::string& prefix)
+{
+    if ((input.length() - position) < prefix.length())
+    {
+        return false;
+    }
+
+    for (std::size_t i = 0; i < prefix.length(); i++)
+    {
+        if (input[position + i] != prefix[i])
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 template<class valueType>
 valueType parse(const std::string& input)
 {

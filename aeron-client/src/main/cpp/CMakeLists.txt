@@ -42,6 +42,8 @@ SET(HEADERS
     ControlledFragmentAssembler.h
     ExclusivePublication.h
     Counter.h
+    ChannelUri.h
+    ChannelUriStringBuilder.h
     command/ImageMessageFlyweight.h
     command/ImageBuffersReadyFlyweight.h
     command/ControlProtocolEvents.h

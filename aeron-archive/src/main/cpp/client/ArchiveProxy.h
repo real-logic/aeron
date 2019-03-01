@@ -27,14 +27,10 @@ namespace client {
 class ArchiveProxy
 {
 public:
-    ArchiveProxy(
+    explicit ArchiveProxy(
         std::shared_ptr<ExclusivePublication> publication,
-        nano_clock_t nanoClock,
-        long long messageTimeoutNs,
         int retryAttempts = 3) :
         m_publication(std::move(publication)),
-        m_nanoClock(std::move(nanoClock)),
-        m_messageTimeoutNs(messageTimeoutNs),
         m_retryAttempts(retryAttempts)
     {
     }
@@ -58,8 +54,6 @@ public:
 
 private:
     std::shared_ptr<ExclusivePublication> m_publication;
-    nano_clock_t m_nanoClock;
-    const long long m_messageTimeoutNs;
     const int m_retryAttempts;
 
     template<typename IdleStrategy>

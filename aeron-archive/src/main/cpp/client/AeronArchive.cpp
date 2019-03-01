@@ -50,8 +50,7 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
 
     if (!m_archiveProxy && m_publication)
     {
-        m_archiveProxy = std::unique_ptr<ArchiveProxy>(new ArchiveProxy(
-            m_publication, aeron::systemNanoClock, m_ctx->messageTimeoutNs()));
+        m_archiveProxy = std::unique_ptr<ArchiveProxy>(new ArchiveProxy(m_publication));
     }
 
     if (0 == m_step && m_archiveProxy)

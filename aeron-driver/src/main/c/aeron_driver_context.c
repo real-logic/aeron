@@ -390,6 +390,10 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         getenv(AERON_DIR_DELETE_ON_START_ENV_VAR),
         _context->dirs_delete_on_start);
 
+    _context->warn_if_dirs_exist = aeron_config_parse_bool(
+        getenv(AERON_DIR_WARN_IF_EXISTS_ENV_VAR),
+        _context->warn_if_dirs_exist);
+
     _context->term_buffer_sparse_file = aeron_config_parse_bool(
         getenv(AERON_TERM_BUFFER_SPARSE_FILE_ENV_VAR),
         _context->term_buffer_sparse_file);

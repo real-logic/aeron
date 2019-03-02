@@ -21,7 +21,7 @@ buildscript {
 
 plugins {
     id 'java'
-    id 'com.github.johnrengelman.shadow' version '4.0.4' apply false
+    id 'com.github.johnrengelman.shadow' version '5.0.0' apply false
     id "io.freefair.javadoc-links" version "3.1.4"
 }
 
@@ -121,7 +121,7 @@ subprojects {
     apply plugin: 'signing'
     apply plugin: 'eclipse'
     apply plugin: 'io.freefair.javadoc-links'
-    
+
     group = aeronGroup
     version = aeronVersion
 
@@ -191,8 +191,6 @@ subprojects {
 }
 
 project(':aeron-client') {
-    apply plugin: 'osgi'
-
     uploadArchives {
         repositories {
             mavenDeployer {
@@ -240,7 +238,6 @@ project(':aeron-client') {
 
 project(':aeron-driver') {
     apply plugin: 'application'
-    apply plugin: 'osgi'
 
     mainClassName = 'io.aeron.driver.MediaDriver'
 
@@ -410,8 +407,6 @@ project(':aeron-agent') {
 }
 
 project(':aeron-archive') {
-    apply plugin: 'osgi'
-
     configurations{
         codecGeneration
     }
@@ -528,8 +523,6 @@ project(':aeron-archive') {
 }
 
 project(':aeron-cluster') {
-    apply plugin: 'osgi'
-
     configurations{
         codecGeneration
     }
@@ -873,6 +866,6 @@ task uploadToMavenCentral {
 }
 
 wrapper {
-    gradleVersion = '4.10.3'
+    gradleVersion = '5.2.1'
     distributionType = 'ALL'
 }

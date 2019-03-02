@@ -1,3 +1,3 @@
-include 'aeron-client', 'aeron-driver', 'aeron-samples', 'aeron-system-tests', 'aeron-all', 'aeron-agent', 'aeron-archive', 'aeron-cluster'
-enableFeaturePreview('IMPROVED_POM_SUPPORT')
+include 'aeron-client', 'aeron-driver', 'aeron-archive', 'aeron-cluster', 'aeron-agent', 'aeron-samples', 'aeron-system-tests', 'aeron-all'
+
 

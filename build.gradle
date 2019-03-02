@@ -22,6 +22,7 @@ buildscript {
 plugins {
     id 'java'
     id 'com.github.johnrengelman.shadow' version '4.0.4' apply false
+    id "io.freefair.javadoc-links" version "3.1.4"
 }
 
 defaultTasks 'clean', 'build', 'shadowJar', 'install'
@@ -119,7 +120,8 @@ subprojects {
     apply plugin: 'checkstyle'
     apply plugin: 'signing'
     apply plugin: 'eclipse'
-
+    apply plugin: 'io.freefair.javadoc-links'
+    
     group = aeronGroup
     version = aeronVersion
 
@@ -163,6 +165,7 @@ subprojects {
     javadoc {
         title = '<h1>Aeron Message Transport</h1>'
         options.bottom = '<i>Copyright &#169; 2014-2019 Real Logic Ltd. All Rights Reserved.</i>'
+        options.links('http://docs.oracle.com/javase/8/docs/api/')
         if (JavaVersion.current().ordinal() >= JavaVersion.VERSION_1_10.ordinal()) {
             options.addBooleanOption 'html5', true
         }
@@ -287,13 +290,6 @@ project(':aeron-driver') {
         from sourceSets.main.allSource
     }
 
-    javadoc {
-        source += project(':aeron-client').sourceSets.main.allJava
-        source += sourceSets.main.allJava
-
-        classpath += configurations.compile
-    }
-
     task javadocJar(type: Jar, dependsOn: javadoc) {
         classifier = 'javadoc'
         from javadoc.destinationDir
@@ -348,10 +344,6 @@ project(':aeron-agent') {
             "Can-Retransform-Classes": "true",
             'Automatic-Module-Name': 'io.aeron.agent.all'
         )
-    }
-
-    javadoc {
-        classpath += configurations.compile
     }
 
     uploadArchives {
@@ -485,15 +477,6 @@ project(':aeron-archive') {
             'aeron.perform.storage.checks': 'false')
     }
 
-    javadoc {
-        source += project(':aeron-client').sourceSets.main.allJava
-        source += project(':aeron-driver').sourceSets.main.allJava
-        source += sourceSets.main.allJava
-        source += sourceSets.generated.allJava
-
-        classpath += configurations.compile
-    }
-
     jar {
         from("${buildDir}/classes/java/generated") {
             include '**/*.class'
@@ -598,17 +581,6 @@ project(':aeron-cluster') {
             'aeron.dir.delete.on.start': 'true',
             'aeron.term.buffer.sparse.file': 'true',
             'aeron.perform.storage.checks': 'false')
-    }
-
-    javadoc {
-        source += project(':aeron-client').sourceSets.main.allJava
-        source += project(':aeron-driver').sourceSets.main.allJava
-        source += project(':aeron-archive').sourceSets.main.allJava
-        source += project(':aeron-archive').sourceSets.generated.allJava
-        source += sourceSets.main.allJava
-        source += sourceSets.generated.allJava
-
-        classpath += configurations.compile
     }
 
     jar {

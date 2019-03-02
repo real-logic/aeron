@@ -1849,8 +1849,18 @@ int aeron_driver_conductor_on_add_network_publication(
         return -1;
     }
 
-    if ((publication = aeron_driver_conductor_get_or_add_network_publication(
-        conductor, client, endpoint, uri_length, uri, &params, correlation_id, command->stream_id, is_exclusive)) == NULL)
+    publication = aeron_driver_conductor_get_or_add_network_publication(
+        conductor,
+        client,
+        endpoint,
+        (int32_t)uri_length,
+        uri,
+        &params,
+        correlation_id,
+        command->stream_id,
+        is_exclusive);
+
+    if (publication == NULL)
     {
         return -1;
     }
@@ -2324,7 +2334,7 @@ int aeron_driver_conductor_on_add_destination(
         aeron_uri_t uri_params;
         if (aeron_uri_parse(uri_length, command_uri, &uri_params) < 0)
         {
-            return -1;
+            goto error_cleanup;
         }
 
         if (NULL != endpoint->destination_tracker || !endpoint->destination_tracker->is_manual_control_mode)
@@ -2333,13 +2343,13 @@ int aeron_driver_conductor_on_add_destination(
                 EINVAL,
                 "channel does not allow manual control of destinations: %.*s",
                 command->channel_length, command_uri);
-            return -1;
+            goto error_cleanup;
         }
 
         if (uri_params.type != AERON_URI_UDP || NULL == uri_params.params.udp.endpoint_key)
         {
             aeron_set_err(EINVAL, "incorrect URI format for destination: %.*s", command->channel_length, command_uri);
-            return -1;
+            goto error_cleanup;
         }
 
         struct sockaddr_storage destination_addr;
@@ -2350,13 +2360,18 @@ int aeron_driver_conductor_on_add_destination(
                 "could not resolve destination address=(%s): %s",
                 uri_params.params.udp.endpoint_key,
                 aeron_errmsg());
-            return -1;
+            goto error_cleanup;
         }
 
         aeron_driver_sender_proxy_on_add_destination(conductor->context->sender_proxy, endpoint, &destination_addr);
         aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);
 
+        aeron_uri_close(&uri_params);
         return 0;
+
+        error_cleanup:
+        aeron_uri_close(&uri_params);
+        return -1;
     }
 
     aeron_set_err(
@@ -2392,7 +2407,7 @@ int aeron_driver_conductor_on_remove_destination(
         size_t uri_length = (size_t)command->channel_length;
         if (aeron_uri_parse(uri_length, command_uri, &uri_params) < 0)
         {
-            return -1;
+            goto error_cleanup;
         }
 
         if (NULL != endpoint->destination_tracker || !endpoint->destination_tracker->is_manual_control_mode)
@@ -2401,14 +2416,14 @@ int aeron_driver_conductor_on_remove_destination(
                 EINVAL,
                 "channel does not allow manual control of destinations: %.*s",
                 command->channel_length, command_uri);
-            return -1;
+            goto error_cleanup;
         }
 
 
         if (uri_params.type != AERON_URI_UDP || NULL == uri_params.params.udp.endpoint_key)
         {
             aeron_set_err(EINVAL, "incorrect URI format for destination: %.*s", command->channel_length, command_uri);
-            return -1;
+            goto error_cleanup;
         }
 
         struct sockaddr_storage destination_addr;
@@ -2419,13 +2434,18 @@ int aeron_driver_conductor_on_remove_destination(
                 "could not resolve destination address=(%s): %s",
                 uri_params.params.udp.endpoint_key,
                 aeron_errmsg());
-            return -1;
+            goto error_cleanup;
         }
 
         aeron_driver_sender_proxy_on_remove_destination(conductor->context->sender_proxy, endpoint, &destination_addr);
         aeron_driver_conductor_on_operation_succeeded(conductor, command->correlated.correlation_id);
 
+        aeron_uri_close(&uri_params);
         return 0;
+
+        error_cleanup:
+        aeron_uri_close(&uri_params);
+        return -1;
     }
 
     aeron_set_err(

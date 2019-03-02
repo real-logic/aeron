@@ -58,3 +58,5 @@ aeron_client_test(manyToOneRingBufferTest concurrent/ManyToOneRingBufferTest.cpp
 aeron_client_test(distinctErrorLogTest concurrent/DistinctErrorLogTest.cpp)
 aeron_client_test(errorLogReaderTest concurrent/ErrorLogReaderTest.cpp)
 aeron_client_test(oneToOneRingBufferTest concurrent/OneToOneRingBufferTest.cpp)
+aeron_client_test(channelUriStringBuilderTest ChannelUriStringBuilderTest.cpp)
+aeron_client_test(channelUriTest ChannelUriTest.cpp)

@@ -197,7 +197,7 @@ public:
         if (startsWith(uri, 0, SPY_PREFIX))
         {
             prefix = SPY_QUALIFIER;
-            position = sizeof(SPY_PREFIX);
+            position = sizeof(SPY_PREFIX) - 1;
         }
         else
         {
@@ -210,11 +210,12 @@ public:
         }
         else
         {
-            position += sizeof(AERON_PREFIX);
+            position += sizeof(AERON_PREFIX) - 1;
         }
 
         std::string builder;
-        std::unique_ptr<std::unordered_map<std::string, std::string>> params;
+        std::unique_ptr<std::unordered_map<std::string, std::string>> params(
+            new std::unordered_map<std::string, std::string>());
         std::string media;
         std::string key;
         State state = State::MEDIA;

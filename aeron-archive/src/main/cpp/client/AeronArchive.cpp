@@ -138,7 +138,9 @@ AeronArchive::AeronArchive(
     m_archiveProxy(std::move(archiveProxy)),
     m_controlResponsePoller(std::move(controlResponsePoller)),
     m_aeron(std::move(aeron)),
-    m_controlSessionId(controlSessionId)
+    m_nanoClock(systemNanoClock),
+    m_controlSessionId(controlSessionId),
+    m_messageTimeoutNs(m_ctx->messageTimeoutNs())
 {
 }
 
@@ -160,4 +162,83 @@ std::shared_ptr<AeronArchive::AsyncConnect> AeronArchive::asyncConnect(AeronArch
         ctx.controlRequestChannel(), ctx.controlRequestStreamId());
 
     return std::make_shared<AeronArchive::AsyncConnect>(ctx, aeron, subscriptionId, publicationId);
+}
+
+template<typename IdleStrategy>
+void AeronArchive::pollNextResponse(std::int64_t correlationId, long long deadlineNs, ControlResponsePoller& poller)
+{
+    IdleStrategy idle;
+
+    while (true)
+    {
+        const int fragments = poller.poll();
+
+        if (poller.isPollComplete())
+        {
+            break;
+        }
+
+        if (fragments > 0)
+        {
+            continue;
+        }
+
+        if (!poller.subscription()->isConnected())
+        {
+            throw ArchiveException("subscription to archive is not connected", SOURCEINFO);
+        }
+
+        checkDeadline(deadlineNs, "awaiting response", correlationId);
+        idle.idle();
+        invokeAeronClient();
+    }
+}
+
+template<typename IdleStrategy>
+std::int64_t AeronArchive::pollForResponse(std::int64_t correlationId)
+{
+    const long long deadlineNs = m_nanoClock() + m_messageTimeoutNs;
+
+    while (true)
+    {
+        pollNextResponse<IdleStrategy>(correlationId, deadlineNs, *m_controlResponsePoller);
+
+        if (m_controlResponsePoller->controlSessionId() != controlSessionId() ||
+            !m_controlResponsePoller->isControlResponse())
+        {
+            invokeAeronClient();
+            continue;
+        }
+
+        if (m_controlResponsePoller->isCodeError())
+        {
+            if (m_controlResponsePoller->correlationId() == correlationId)
+            {
+                throw ArchiveException(
+                    static_cast<std::int32_t>(m_controlResponsePoller->relevantId()),
+                    "response for correlationId=" + std::to_string(correlationId)
+                    + ", error: " + m_controlResponsePoller->errorMessage(),
+                    SOURCEINFO);
+            }
+            else if (m_ctx->errorHandler() != nullptr)
+            {
+                ArchiveException ex(
+                    static_cast<std::int32_t>(m_controlResponsePoller->relevantId()),
+                    "response for correlationId=" + std::to_string(correlationId)
+                    + ", error: " + m_controlResponsePoller->errorMessage(),
+                    SOURCEINFO);
+                m_ctx->errorHandler()(ex);
+            }
+        }
+        else if (m_controlResponsePoller->correlationId() == correlationId)
+        {
+            if (!m_controlResponsePoller->isCodeOk())
+            {
+                throw ArchiveException(
+                    "unexpected response code: " + std::to_string(m_controlResponsePoller->codeValue()), SOURCEINFO);
+            }
+
+            return m_controlResponsePoller->relevantId();
+        }
+    }
 }

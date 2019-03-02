@@ -122,5 +122,19 @@ public:
     }
 };
 
+class TimeoutException : public AeronException
+{
+public:
+    TimeoutException(
+        const std::string& what,
+        const std::string& function,
+        const std::string& file,
+        const int line)
+        :
+        AeronException(what, function, file, line)
+    {
+    }
+};
+
 }}
 #endif

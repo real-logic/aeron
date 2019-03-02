@@ -412,8 +412,8 @@ public:
         std::int64_t length,
         const std::string& replayChannel,
         std::int32_t replayStreamId,
-        on_available_image_t availableImageHandler,
-        on_unavailable_image_t unavailableImageHandler)
+        const on_available_image_t& availableImageHandler,
+        const on_unavailable_image_t& unavailableImageHandler)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
 
@@ -452,8 +452,10 @@ private:
     std::shared_ptr<Aeron> m_aeron;
 
     std::recursive_mutex m_lock;
+    nano_clock_t m_nanoClock;
 
     const std::int64_t m_controlSessionId;
+    const long long m_messageTimeoutNs;
     bool m_isClosed = false;
 
     inline void ensureOpen()
@@ -464,15 +466,27 @@ private:
         }
     }
 
-    template<typename IdleStrategy>
-    int pollForResponse(std::int64_t correlationId)
+    inline void checkDeadline(long long deadlineNs, const std::string& errorMessage, std::int64_t correlationId)
     {
-        IdleStrategy idle;
-
-        // TODO: finish
-
-        return 0;
+        if ((deadlineNs - m_nanoClock()) < 0)
+        {
+            throw TimeoutException(errorMessage + " - correlationId=" + std::to_string(correlationId), SOURCEINFO);
+        }
     }
+
+    inline void invokeAeronClient()
+    {
+        if (m_aeron->usesAgentInvoker())
+        {
+            m_aeron->conductorAgentInvoker().invoke();
+        }
+    }
+
+    template<typename IdleStrategy>
+    void pollNextResponse(std::int64_t correlationId, long long deadlineNs, ControlResponsePoller& poller);
+
+    template<typename IdleStrategy>
+    std::int64_t pollForResponse(std::int64_t correlationId);
 };
 
 }}}

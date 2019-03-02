@@ -17,6 +17,7 @@
 #define AERON_ARCHIVE_AERONARCHIVE_H
 
 #include "Aeron.h"
+#include "ChannelUri.h"
 #include "ArchiveConfiguration.h"
 #include "ArchiveProxy.h"
 #include "ControlResponsePoller.h"
@@ -171,6 +172,62 @@ public:
                 }
             }
         }
+    }
+
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    inline std::shared_ptr<Publication> addRecordedPublication(const std::string& channel, std::int32_t streamId)
+    {
+        std::shared_ptr<Publication> publication;
+        IdleStrategy idle;
+
+        std::lock_guard<std::recursive_mutex> lock(m_lock);
+
+        ensureOpen();
+
+        const std::int64_t publicationId = m_aeron->addPublication(channel, streamId);
+        publication = m_aeron->findPublication(publicationId);
+        while (!publication)
+        {
+            idle.idle();
+            publication = m_aeron->findPublication(publicationId);
+        }
+
+        if (!publication->isOriginal())
+        {
+            throw ArchiveException(
+                "publication already added for channel=" + channel + " streamId=" + std::to_string(streamId),
+                SOURCEINFO);
+        }
+
+        startRecording<IdleStrategy>(
+            ChannelUri::addSessionId(channel, publication->sessionId()), streamId, SourceLocation::LOCAL);
+
+        return publication;
+    }
+
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    inline std::shared_ptr<ExclusivePublication> addRecordedExclusivePublication(
+        const std::string& channel, std::int32_t streamId)
+    {
+        std::shared_ptr<ExclusivePublication> publication;
+        IdleStrategy idle;
+
+        std::lock_guard<std::recursive_mutex> lock(m_lock);
+
+        ensureOpen();
+
+        const std::int64_t publicationId = m_aeron->addExclusivePublication(channel, streamId);
+        publication = m_aeron->findExclusivePublication(publicationId);
+        while (!publication)
+        {
+            idle.idle();
+            publication = m_aeron->findExclusivePublication(publicationId);
+        }
+
+        startRecording<IdleStrategy>(
+            ChannelUri::addSessionId(channel, publication->sessionId()), streamId, SourceLocation::LOCAL);
+
+        return publication;
     }
 
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>

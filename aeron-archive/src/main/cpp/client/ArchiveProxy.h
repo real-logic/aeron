@@ -54,12 +54,40 @@ public:
         std::int64_t controlSessionId);
 
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool extendRecording(
+        const std::string& channel,
+        std::int32_t streamId,
+        bool localSource,
+        std::int64_t recordingId,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId);
+
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool stopRecording(
+        const std::string& channel,
+        std::int32_t streamId,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId);
+
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool stopRecording(
+        std::int64_t subscriptionId,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId);
+
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     bool replay(
         std::int64_t recordingId,
         std::int64_t position,
         std::int64_t length,
         const std::string& replayChannel,
         std::int32_t replayStreamId,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId);
+
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool stopReplay(
+        std::int64_t replaySessionId,
         std::int64_t correlationId,
         std::int64_t controlSessionId);
 

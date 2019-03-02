@@ -245,10 +245,87 @@ public:
         if (!m_archiveProxy->startRecording<IdleStrategy>(
             channel, streamId, (sourceLocation == SourceLocation::LOCAL), correlationId, m_controlSessionId))
         {
-            throw ArchiveException("fialed to send start recording request", SOURCEINFO);
+            throw ArchiveException("failed to send start recording request", SOURCEINFO);
         }
 
         return pollForResponse<IdleStrategy>(correlationId);
+    }
+
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    inline std::int64_t extendRecording(
+        std::int64_t recordingId,
+        const std::string& channel,
+        std::int32_t streamId,
+        SourceLocation sourceLocation)
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_lock);
+
+        ensureOpen();
+
+        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+
+        if (!m_archiveProxy->extendRecording<IdleStrategy>(
+            channel, streamId, (sourceLocation == SourceLocation::LOCAL), recordingId, correlationId, m_controlSessionId))
+        {
+            throw ArchiveException("failed to send extend recording request", SOURCEINFO);
+        }
+
+        return pollForResponse<IdleStrategy>(correlationId);
+    }
+
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    inline void stopRecording(
+        const std::string& channel,
+        std::int32_t streamId)
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_lock);
+
+        ensureOpen();
+
+        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+
+        if (!m_archiveProxy->stopRecording<IdleStrategy>(
+            channel, streamId, correlationId, m_controlSessionId))
+        {
+            throw ArchiveException("failed to send stop recording request", SOURCEINFO);
+        }
+
+        pollForResponse<IdleStrategy>(correlationId);
+    }
+
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    inline void stopRecording(std::shared_ptr<Publication> publication)
+    {
+        const std::string& recordingChannel = ChannelUri::addSessionId(
+            publication->channel(), publication->sessionId());
+
+        stopRecording<IdleStrategy>(recordingChannel, publication->streamId());
+    }
+
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    inline void stopRecording(std::shared_ptr<ExclusivePublication> publication)
+    {
+        const std::string& recordingChannel = ChannelUri::addSessionId(
+            publication->channel(), publication->sessionId());
+
+        stopRecording<IdleStrategy>(recordingChannel, publication->streamId());
+    }
+
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    inline void stopRecording(std::int64_t subscriptionId)
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_lock);
+
+        ensureOpen();
+
+        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+
+        if (!m_archiveProxy->stopRecording<IdleStrategy>(subscriptionId, correlationId, m_controlSessionId))
+        {
+            throw ArchiveException("failed to send stop recording request", SOURCEINFO);
+        }
+
+        pollForResponse<IdleStrategy>(correlationId);
     }
 
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
@@ -268,10 +345,104 @@ public:
         if (!m_archiveProxy->replay<IdleStrategy>(
             recordingId, position, length, replayChannel, replayStreamId, correlationId, m_controlSessionId))
         {
-            throw ArchiveException("fialed to send replay request", SOURCEINFO);
+            throw ArchiveException("failed to send replay request", SOURCEINFO);
         }
 
         return pollForResponse<IdleStrategy>(correlationId);
+    }
+
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    inline void stopReplay(std::int64_t replaySessionId)
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_lock);
+
+        ensureOpen();
+
+        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+
+        if (!m_archiveProxy->stopReplay<IdleStrategy>(replaySessionId, correlationId, m_controlSessionId))
+        {
+            throw ArchiveException("failed to send stop replay request", SOURCEINFO);
+        }
+
+        pollForResponse<IdleStrategy>(correlationId);
+    }
+
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    inline std::shared_ptr<Subscription> replay(
+        std::int64_t recordingId,
+        std::int64_t position,
+        std::int64_t length,
+        const std::string& replayChannel,
+        std::int32_t replayStreamId)
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_lock);
+
+        ensureOpen();
+
+        std::shared_ptr<ChannelUri> replayChannelUri = ChannelUri::parse(replayChannel);
+        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+
+        if (!m_archiveProxy->replay<IdleStrategy>(
+            recordingId, position, length, replayChannel, replayStreamId, correlationId, m_controlSessionId))
+        {
+            throw ArchiveException("failed to send replay request", SOURCEINFO);
+        }
+
+        auto replaySessionId = static_cast<std::int32_t>(pollForResponse<IdleStrategy>(correlationId));
+        replayChannelUri->put(SESSION_ID_PARAM_NAME, std::to_string(replaySessionId));
+
+        const std::int64_t subscriptionId = m_aeron->addSubscription(replayChannelUri->toString(), replayStreamId);
+        IdleStrategy idle;
+
+        std::shared_ptr<Subscription> subscription = m_aeron->findSubscription(subscriptionId);
+        while (!subscription)
+        {
+            idle.idle();
+            subscription = m_aeron->findSubscription(subscriptionId);
+        }
+
+        return subscription;
+    }
+
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    inline std::shared_ptr<Subscription> replay(
+        std::int64_t recordingId,
+        std::int64_t position,
+        std::int64_t length,
+        const std::string& replayChannel,
+        std::int32_t replayStreamId,
+        on_available_image_t availableImageHandler,
+        on_unavailable_image_t unavailableImageHandler)
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_lock);
+
+        ensureOpen();
+
+        std::shared_ptr<ChannelUri> replayChannelUri = ChannelUri::parse(replayChannel);
+        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+
+        if (!m_archiveProxy->replay<IdleStrategy>(
+            recordingId, position, length, replayChannel, replayStreamId, correlationId, m_controlSessionId))
+        {
+            throw ArchiveException("failed to send replay request", SOURCEINFO);
+        }
+
+        auto replaySessionId = static_cast<std::int32_t>(pollForResponse<IdleStrategy>(correlationId));
+        replayChannelUri->put(SESSION_ID_PARAM_NAME, std::to_string(replaySessionId));
+
+        const std::int64_t subscriptionId = m_aeron->addSubscription(
+            replayChannelUri->toString(), replayStreamId, availableImageHandler, unavailableImageHandler);
+        IdleStrategy idle;
+
+        std::shared_ptr<Subscription> subscription = m_aeron->findSubscription(subscriptionId);
+        while (!subscription)
+        {
+            idle.idle();
+            subscription = m_aeron->findSubscription(subscriptionId);
+        }
+
+        return subscription;
     }
 
 private:

@@ -21,7 +21,11 @@
 #include "aeron_archive_client/ConnectRequest.h"
 #include "aeron_archive_client/CloseSessionRequest.h"
 #include "aeron_archive_client/StartRecordingRequest.h"
+#include "aeron_archive_client/ExtendRecordingRequest.h"
+#include "aeron_archive_client/StopRecordingRequest.h"
+#include "aeron_archive_client/StopRecordingSubscriptionRequest.h"
 #include "aeron_archive_client/ReplayRequest.h"
+#include "aeron_archive_client/StopReplayRequest.h"
 
 using namespace aeron::concurrent;
 using namespace aeron::archive::client;
@@ -111,6 +115,102 @@ bool ArchiveProxy::startRecording(
 }
 
 template<typename IdleStrategy>
+bool ArchiveProxy::extendRecording(
+    const std::string& channel,
+    std::int32_t streamId,
+    bool localSource,
+    std::int64_t recordingId,
+    std::int64_t correlationId,
+    std::int64_t controlSessionId)
+{
+    const std::uint64_t extendRecordingRequestLength = MessageHeader::encodedLength()
+        + ExtendRecordingRequest::sbeBlockLength()
+        + ExtendRecordingRequest::channelHeaderLength()
+        + channel.size();
+
+    BufferClaim bufferClaim;
+
+    if (tryClaim<IdleStrategy>(static_cast<std::int32_t>(extendRecordingRequestLength), bufferClaim) > 0)
+    {
+        ExtendRecordingRequest request;
+
+        request
+            .wrapAndApplyHeader(reinterpret_cast<char *>(bufferClaim.buffer().buffer()), 0, extendRecordingRequestLength)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .recordingId(recordingId)
+            .streamId(streamId)
+            .sourceLocation(localSource ? SourceLocation::LOCAL : SourceLocation::REMOTE)
+            .putChannel(channel);
+
+        bufferClaim.commit();
+        return true;
+    }
+
+    return false;
+}
+
+template<typename IdleStrategy>
+bool ArchiveProxy::stopRecording(
+    const std::string& channel,
+    std::int32_t streamId,
+    std::int64_t correlationId,
+    std::int64_t controlSessionId)
+{
+    const std::uint64_t stopRecordingRequestLength = MessageHeader::encodedLength()
+        + StopRecordingRequest::sbeBlockLength()
+        + StopRecordingRequest::channelHeaderLength()
+        + channel.size();
+
+    BufferClaim bufferClaim;
+
+    if (tryClaim<IdleStrategy>(static_cast<std::int32_t>(stopRecordingRequestLength), bufferClaim) > 0)
+    {
+        StopRecordingRequest request;
+
+        request
+            .wrapAndApplyHeader(reinterpret_cast<char *>(bufferClaim.buffer().buffer()), 0, stopRecordingRequestLength)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .streamId(streamId)
+            .putChannel(channel);
+
+        bufferClaim.commit();
+        return true;
+    }
+
+    return false;
+}
+
+template<typename IdleStrategy>
+bool ArchiveProxy::stopRecording(
+    std::int64_t subscriptionId,
+    std::int64_t correlationId,
+    std::int64_t controlSessionId)
+{
+    const std::uint64_t stopRecordingSubscriptionRequestLength = MessageHeader::encodedLength()
+        + StopRecordingSubscriptionRequest::sbeBlockLength();
+
+    BufferClaim bufferClaim;
+
+    if (tryClaim<IdleStrategy>(static_cast<std::int32_t>(stopRecordingSubscriptionRequestLength), bufferClaim) > 0)
+    {
+        StopRecordingSubscriptionRequest request;
+
+        request
+            .wrapAndApplyHeader(reinterpret_cast<char *>(bufferClaim.buffer().buffer()), 0, stopRecordingSubscriptionRequestLength)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .subscriptionId(subscriptionId);
+
+        bufferClaim.commit();
+        return true;
+    }
+
+    return false;
+}
+
+template<typename IdleStrategy>
 bool ArchiveProxy::replay(
     std::int64_t recordingId,
     std::int64_t position,
@@ -140,6 +240,34 @@ bool ArchiveProxy::replay(
             .length(length)
             .replayStreamId(replayStreamId)
             .putReplayChannel(replayChannel);
+
+        bufferClaim.commit();
+        return true;
+    }
+
+    return false;
+}
+
+template<typename IdleStrategy>
+bool ArchiveProxy::stopReplay(
+    std::int64_t replaySessionId,
+    std::int64_t correlationId,
+    std::int64_t controlSessionId)
+{
+    const std::uint64_t stopReplayRequestLength = MessageHeader::encodedLength()
+        + StopReplayRequest::sbeBlockLength();
+
+    BufferClaim bufferClaim;
+
+    if (tryClaim<IdleStrategy>(static_cast<std::int32_t>(stopReplayRequestLength), bufferClaim) > 0)
+    {
+        StopReplayRequest request;
+
+        request
+            .wrapAndApplyHeader(reinterpret_cast<char *>(bufferClaim.buffer().buffer()), 0, stopReplayRequestLength)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .replaySessionId(replaySessionId);
 
         bufferClaim.commit();
         return true;

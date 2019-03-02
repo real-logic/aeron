@@ -16,6 +16,7 @@
 #ifndef AERON_CHANNEL_URI_H
 #define AERON_CHANNEL_URI_H
 
+#include <memory>
 #include <string>
 #include <unordered_map>
 

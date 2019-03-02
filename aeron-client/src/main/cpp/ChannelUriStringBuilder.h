@@ -16,6 +16,7 @@
 #ifndef AERON_CHANNEL_URI_STRING_BUILDER_H
 #define AERON_CHANNEL_URI_STRING_BUILDER_H
 
+#include <memory>
 #include <string>
 #include <sstream>
 

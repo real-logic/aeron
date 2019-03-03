@@ -30,6 +30,8 @@ add_custom_target(codecs DEPENDS ${GENERATED_CODECS})
 SET(SOURCE
     client/ArchiveProxy.cpp
     client/ControlResponsePoller.cpp
+    client/RecordingDescriptorPoller.cpp
+    client/RecordingSubscriptionDescriptorPoller.cpp
     client/AeronArchive.cpp)
 
 SET(HEADERS
@@ -37,6 +39,8 @@ SET(HEADERS
     client/ArchiveConfiguration.h
     client/ArchiveProxy.h
     client/ControlResponsePoller.h
+    client/RecordingDescriptorPoller.h
+    client/RecordingSubscriptionDescriptorPoller.h
     client/AeronArchive.h)
 
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DDISABLE_BOUNDS_CHECKS")

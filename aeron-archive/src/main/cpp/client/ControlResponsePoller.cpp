@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include <sys/socket.h>
 #include "ControlResponsePoller.h"
 #include "ArchiveException.h"
 #include "aeron_archive_client/MessageHeader.h"

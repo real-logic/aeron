@@ -32,6 +32,8 @@ SET(SOURCE
     client/ControlResponsePoller.cpp
     client/RecordingDescriptorPoller.cpp
     client/RecordingSubscriptionDescriptorPoller.cpp
+    client/RecordingEventsPoller.cpp
+    client/RecordingEventsAdapter.cpp
     client/AeronArchive.cpp)
 
 SET(HEADERS
@@ -41,6 +43,8 @@ SET(HEADERS
     client/ControlResponsePoller.h
     client/RecordingDescriptorPoller.h
     client/RecordingSubscriptionDescriptorPoller.h
+    client/RecordingEventsPoller.h
+    client/RecordingEventsAdapter.h
     client/AeronArchive.h)
 
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DDISABLE_BOUNDS_CHECKS")

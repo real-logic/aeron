@@ -47,6 +47,11 @@ public:
         return m_subscription->controlledPoll(m_fragmentHandler, m_fragmentLimit);
     }
 
+    inline std::shared_ptr<Subscription> subscription()
+    {
+        return m_subscription;
+    }
+
     inline std::int64_t controlSessionId()
     {
         return m_controlSessionId;
@@ -57,14 +62,14 @@ public:
         return m_isDispatchComplete;
     }
 
-    inline std::size_t remainingRecordCount()
+    inline std::int32_t remainingSubscriptionCount()
     {
         return m_remainingSubscriptionCount;
     }
 
     inline void reset(
         std::int64_t correlationId,
-        std::size_t subscriptionCount,
+        std::int32_t subscriptionCount,
         const recording_subscription_descriptor_consumer_t& consumer)
     {
         m_correlationId = correlationId;
@@ -86,7 +91,7 @@ private:
     const int m_fragmentLimit;
 
     std::int64_t m_correlationId = -1;
-    std::size_t m_remainingSubscriptionCount = 0;
+    std::int32_t m_remainingSubscriptionCount = 0;
     bool m_isDispatchComplete = false;
 };
 

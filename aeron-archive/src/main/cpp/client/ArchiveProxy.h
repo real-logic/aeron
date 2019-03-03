@@ -91,6 +91,66 @@ public:
         std::int64_t correlationId,
         std::int64_t controlSessionId);
 
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool listRecordings(
+        std::int64_t fromRecordingId,
+        std::int32_t recordCount,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId);
+
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool listRecordingsForUri(
+        std::int64_t fromRecordingId,
+        std::int32_t recordCount,
+        const std::string& channelFragment,
+        std::int32_t streamId,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId);
+
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool listRecording(
+        std::int64_t recordingId,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId);
+
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool getRecordingPosition(
+        std::int64_t recordingId,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId);
+
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool getStopPosition(
+        std::int64_t recordingId,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId);
+
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool findLastMatchingRecording(
+        std::int64_t minRecordingId,
+        const std::string& channelFragment,
+        std::int32_t streamId,
+        std::int32_t sessionId,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId);
+
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool truncateRecording(
+        std::int64_t recordingId,
+        std::int64_t position,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId);
+
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool listRecordingSubscriptions(
+        std::int32_t pseudoIndex,
+        std::int32_t subscriptionCount,
+        const std::string& channelFragment,
+        std::int32_t streamId,
+        bool applyStreamId,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId);
+
 private:
     std::shared_ptr<ExclusivePublication> m_publication;
     const int m_retryAttempts;

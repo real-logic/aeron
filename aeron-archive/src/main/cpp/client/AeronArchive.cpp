@@ -115,10 +115,17 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
 
             const std::int64_t sessionId = m_controlResponsePoller->controlSessionId();
 
+            std::unique_ptr<RecordingDescriptorPoller> recordingDescriptorPoller(
+                new RecordingDescriptorPoller(m_subscription, m_ctx->errorHandler(), sessionId));
+            std::unique_ptr<RecordingSubscriptionDescriptorPoller> recordingSubscriptionDescriptorPoller(
+                new RecordingSubscriptionDescriptorPoller(m_subscription, m_ctx->errorHandler(), sessionId));
+
             return std::make_shared<AeronArchive>(
                 std::move(m_ctx),
                 std::move(m_archiveProxy),
                 std::move(m_controlResponsePoller),
+                std::move(recordingDescriptorPoller),
+                std::move(recordingSubscriptionDescriptorPoller),
                 m_aeron,
                 sessionId);
         }
@@ -131,12 +138,16 @@ AeronArchive::AeronArchive(
     std::unique_ptr<Context_t> ctx,
     std::unique_ptr<ArchiveProxy> archiveProxy,
     std::unique_ptr<ControlResponsePoller> controlResponsePoller,
+    std::unique_ptr<RecordingDescriptorPoller> recordingDescriptorPoller,
+    std::unique_ptr<RecordingSubscriptionDescriptorPoller> recordingSubscriptionDescriptorPoller,
     std::shared_ptr<Aeron> aeron,
     std::int64_t controlSessionId)
     :
     m_ctx(std::move(ctx)),
     m_archiveProxy(std::move(archiveProxy)),
     m_controlResponsePoller(std::move(controlResponsePoller)),
+    m_recordingDescriptorPoller(std::move(recordingDescriptorPoller)),
+    m_recordingSubscriptionDescriptorPoller(std::move(recordingSubscriptionDescriptorPoller)),
     m_aeron(std::move(aeron)),
     m_nanoClock(systemNanoClock),
     m_controlSessionId(controlSessionId),
@@ -240,5 +251,91 @@ std::int64_t AeronArchive::pollForResponse(std::int64_t correlationId)
 
             return m_controlResponsePoller->relevantId();
         }
+    }
+}
+
+template<typename F, typename IdleStrategy>
+std::int32_t AeronArchive::pollForDescriptors(std::int64_t correlationId, std::int32_t recordCount, F&& consumer)
+{
+    std::int32_t existingRemainCount = recordCount;
+    long long deadlineNs = m_nanoClock() + m_messageTimeoutNs;
+    IdleStrategy idle;
+
+    m_recordingDescriptorPoller->reset(correlationId, recordCount, consumer);
+
+    while (true)
+    {
+        const int fragments = m_recordingDescriptorPoller->poll();
+        const std::int32_t remainingRecordCount = m_recordingDescriptorPoller->remainingRecordCount();
+
+        if (m_recordingDescriptorPoller->isDispatchComplete())
+        {
+            return recordCount - remainingRecordCount;
+        }
+
+        if (remainingRecordCount != existingRemainCount)
+        {
+            existingRemainCount = remainingRecordCount;
+            deadlineNs = m_nanoClock() + m_messageTimeoutNs;
+        }
+
+        invokeAeronClient();
+
+        if (fragments > 0)
+        {
+            continue;
+        }
+
+        if (!m_recordingDescriptorPoller->subscription()->isConnected())
+        {
+            throw ArchiveException("subscription to archive is not connected", SOURCEINFO);
+        }
+
+        checkDeadline(deadlineNs, "awaiting recording descriptors", correlationId);
+        idle.idle();
+    }
+}
+
+template<typename F, typename IdleStrategy>
+std::int32_t AeronArchive::pollForSubscriptionDescriptors(
+    std::int64_t correlationId, std::int32_t subscriptionCount, F&& consumer)
+{
+    std::int32_t existingRemainCount = subscriptionCount;
+    long long deadlineNs = m_nanoClock() + m_messageTimeoutNs;
+    IdleStrategy idle;
+
+    m_recordingSubscriptionDescriptorPoller->reset(correlationId, subscriptionCount, consumer);
+
+    while (true)
+    {
+        const int fragments = m_recordingSubscriptionDescriptorPoller->poll();
+        const std::int32_t remainingSubscriptionCount =
+            m_recordingSubscriptionDescriptorPoller->remainingSubscriptionCount();
+
+        if (m_recordingSubscriptionDescriptorPoller->isDispatchComplete())
+        {
+            return subscriptionCount - remainingSubscriptionCount;
+        }
+
+        if (remainingSubscriptionCount != existingRemainCount)
+        {
+            existingRemainCount = remainingSubscriptionCount;
+            deadlineNs = m_nanoClock() + m_messageTimeoutNs;
+        }
+
+        invokeAeronClient();
+
+        if (fragments > 0)
+        {
+            continue;
+        }
+
+        if (!m_recordingSubscriptionDescriptorPoller->subscription()->isConnected())
+        {
+            throw ArchiveException("subscription to archive is not connected", SOURCEINFO);
+        }
+
+        checkDeadline(deadlineNs, "awaiting subscription descriptors", correlationId);
+        idle.idle();
     }
 }

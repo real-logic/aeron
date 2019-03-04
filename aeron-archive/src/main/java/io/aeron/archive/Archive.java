@@ -40,6 +40,7 @@ import java.util.function.Supplier;
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
+import static java.lang.System.getProperty;
 import static org.agrona.SystemUtil.getDurationInNanos;
 import static org.agrona.SystemUtil.getSizeAsInt;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
@@ -193,6 +194,8 @@ public class Archive implements AutoCloseable
         public static final long REPLAY_LINGER_TIMEOUT_DEFAULT_NS =
             io.aeron.driver.Configuration.publicationLingerTimeoutNs();
 
+        public static final String ARCHIVE_DIR_DELETE_ON_START_PROP_NAME = "aeron.archive.dir.delete.on.start";
+
         static final String CATALOG_FILE_NAME = "archive.catalog";
         static final String RECORDING_SEGMENT_POSTFIX = ".rec";
         static final int MAX_BLOCK_LENGTH = 2 * 1024 * 1024;
@@ -327,6 +330,17 @@ public class Archive implements AutoCloseable
         {
             return getDurationInNanos(REPLAY_LINGER_TIMEOUT_PROP_NAME, REPLAY_LINGER_TIMEOUT_DEFAULT_NS);
         }
+
+        /**
+         * Whether to delete directory on start or not.
+         *
+         * @return whether to delete directory on start or not.
+         * @see #ARCHIVE_DIR_DELETE_ON_START_PROP_NAME
+         */
+        public static boolean deleteArchiveOnStart()
+        {
+            return "true".equalsIgnoreCase(getProperty(ARCHIVE_DIR_DELETE_ON_START_PROP_NAME, "false"));
+        }
     }
 
     /**
@@ -337,7 +351,7 @@ public class Archive implements AutoCloseable
      */
     public static class Context implements Cloneable
     {
-        private boolean deleteArchiveOnStart = false;
+        private boolean deleteArchiveOnStart = Configuration.deleteArchiveOnStart();
         private boolean ownsAeronClient = false;
         private String aeronDirectoryName = CommonContext.getAeronDirectoryName();
         private Aeron aeron;

@@ -17,6 +17,8 @@
 #if defined(__linux__) || defined(Darwin)
 #include <unistd.h>
 #include <signal.h>
+#include <ftw.h>
+#include <stdio.h>
 #else
 #error "must spawn Java archive per test"
 #endif
@@ -33,6 +35,22 @@ using namespace aeron::archive::client;
 class AeronArchiveTest : public testing::Test
 {
 public:
+
+    static int unlink_func(const char *path, const struct stat *sb, int type_flag, struct FTW *ftw)
+    {
+        if (remove(path) != 0)
+        {
+            perror("remove");
+        }
+
+        return 0;
+    }
+
+    static int deleteDir(const std::string& dirname)
+    {
+        return nftw(dirname.c_str(), unlink_func, 64, FTW_DEPTH | FTW_PHYS);
+    }
+
     virtual void SetUp()
     {
         m_pid = ::fork();
@@ -41,6 +59,13 @@ public:
             if (::execl(m_java.c_str(),
                 "java",
                 "-Daeron.dir.delete.on.start=true",
+                "-Daeron.threading.mode=INVOKER",
+                "-Daeron.archive.threading.mode=SHARED",
+                "-Daeron.archive.file.sync.level=0",
+                "-Daeron.spies.simulate.connection=true",
+                "-Daeron.mtu.length=4k",
+                "-Daeron.term.buffer.sparse.file=true",
+                ("-Daeron.archive.dir=" + m_archiveDir).c_str(),
                 "-cp",
                 m_aeronAllJar.c_str(),
                 "io.aeron.archive.ArchivingMediaDriver",
@@ -66,21 +91,28 @@ public:
             }
 
             ::wait(NULL);
+
+            std::cout << "Deleting " << aeron::Context::defaultAeronPath() << std::endl;
+            deleteDir(aeron::Context::defaultAeronPath());
+            std::cout << "Deleting " << m_archiveDir << std::endl;
+            deleteDir(m_archiveDir);
         }
     }
 protected:
     const std::string m_java = JAVA_EXECUTABLE;
     const std::string m_aeronAllJar = AERON_ALL_JAR;
+    const std::string m_archiveDir = ARCHIVE_DIR;
     pid_t m_pid = 0;
 };
 
-//TEST_F(AeronArchiveTest, shouldSpinUpArchiveAndShutdown)
-//{
-//    std::cout << m_java << std::endl;
-//    std::cout << m_aeronAllJar << std::endl;
-//
-//    std::this_thread::sleep_for(std::chrono::seconds(2));
-//}
+TEST_F(AeronArchiveTest, shouldSpinUpArchiveAndShutdown)
+{
+    std::cout << m_java << std::endl;
+    std::cout << m_aeronAllJar << std::endl;
+    std::cout << m_archiveDir << std::endl;
+
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+}
 
 TEST_F(AeronArchiveTest, shouldBeAbleToConnectToArchive)
 {

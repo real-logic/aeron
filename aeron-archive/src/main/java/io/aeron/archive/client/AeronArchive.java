@@ -669,7 +669,7 @@ public class AeronArchive implements AutoCloseable
 
             if (!archiveProxy.stopReplay(replaySessionId, correlationId, controlSessionId))
             {
-                throw new ArchiveException("failed to send stop recording request");
+                throw new ArchiveException("failed to send stop replay request");
             }
 
             pollForResponse(correlationId);
@@ -973,7 +973,7 @@ public class AeronArchive implements AutoCloseable
             if (!archiveProxy.findLastMatchingRecording(
                 minRecordingId, channelFragment, streamId, sessionId, correlationId, controlSessionId))
             {
-                throw new ArchiveException("failed to send find last matching request");
+                throw new ArchiveException("failed to send find last matching recording request");
             }
 
             return pollForResponse(correlationId);
@@ -1051,7 +1051,7 @@ public class AeronArchive implements AutoCloseable
                 correlationId,
                 controlSessionId))
             {
-                throw new ArchiveException("failed to send list recordings request");
+                throw new ArchiveException("failed to send list recording subscriptions request");
             }
 
             return pollForSubscriptionDescriptors(correlationId, subscriptionCount, consumer);

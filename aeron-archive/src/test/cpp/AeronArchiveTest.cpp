@@ -28,6 +28,8 @@
 
 #include "client/AeronArchive.h"
 
+using namespace aeron::archive::client;
+
 class AeronArchiveTest : public testing::Test
 {
 public:
@@ -38,6 +40,7 @@ public:
         {
             if (::execl(m_java.c_str(),
                 "java",
+                "-Daeron.dir.delete.on.start=true",
                 "-cp",
                 m_aeronAllJar.c_str(),
                 "io.aeron.archive.ArchivingMediaDriver",
@@ -48,7 +51,7 @@ public:
             }
         }
 
-        std::cout << "PID " << std::to_string(m_pid) << std::endl;
+        std::cout << "ArchivingMediaDriver PID " << std::to_string(m_pid) << std::endl;
     }
 
     virtual void TearDown()
@@ -56,7 +59,7 @@ public:
         if (0 != m_pid)
         {
             int result = ::kill(m_pid, SIGINT);
-            std::cout << "Shutting down " << m_pid << " " << result << std::endl;
+            std::cout << "Shutting down PID " << m_pid << " " << result << std::endl;
             if (result < 0)
             {
                 perror("kill");
@@ -71,11 +74,15 @@ protected:
     pid_t m_pid = 0;
 };
 
-TEST_F(AeronArchiveTest, shouldSpinUpArchiveAndShutdown)
+//TEST_F(AeronArchiveTest, shouldSpinUpArchiveAndShutdown)
+//{
+//    std::cout << m_java << std::endl;
+//    std::cout << m_aeronAllJar << std::endl;
+//
+//    std::this_thread::sleep_for(std::chrono::seconds(2));
+//}
+
+TEST_F(AeronArchiveTest, shouldBeAbleToConnectToArchive)
 {
-    std::cout << m_java << std::endl;
-    std::cout << m_aeronAllJar << std::endl;
-
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect();
 }
-

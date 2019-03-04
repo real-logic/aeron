@@ -643,16 +643,170 @@ private:
     }
 
     template<typename IdleStrategy>
-    void pollNextResponse(std::int64_t correlationId, long long deadlineNs, ControlResponsePoller& poller);
+    inline void pollNextResponse(std::int64_t correlationId, long long deadlineNs, ControlResponsePoller& poller)
+    {
+        IdleStrategy idle;
+
+        while (true)
+        {
+            const int fragments = poller.poll();
+
+            if (poller.isPollComplete())
+            {
+                break;
+            }
+
+            if (fragments > 0)
+            {
+                continue;
+            }
+
+            if (!poller.subscription()->isConnected())
+            {
+                throw ArchiveException("subscription to archive is not connected", SOURCEINFO);
+            }
+
+            checkDeadline(deadlineNs, "awaiting response", correlationId);
+            idle.idle();
+            invokeAeronClient();
+        }
+    }
 
     template<typename IdleStrategy>
-    std::int64_t pollForResponse(std::int64_t correlationId);
+    inline std::int64_t pollForResponse(std::int64_t correlationId)
+    {
+        const long long deadlineNs = m_nanoClock() + m_messageTimeoutNs;
+
+        while (true)
+        {
+            pollNextResponse<IdleStrategy>(correlationId, deadlineNs, *m_controlResponsePoller);
+
+            if (m_controlResponsePoller->controlSessionId() != controlSessionId() ||
+                !m_controlResponsePoller->isControlResponse())
+            {
+                invokeAeronClient();
+                continue;
+            }
+
+            if (m_controlResponsePoller->isCodeError())
+            {
+                if (m_controlResponsePoller->correlationId() == correlationId)
+                {
+                    throw ArchiveException(
+                        static_cast<std::int32_t>(m_controlResponsePoller->relevantId()),
+                        "response for correlationId=" + std::to_string(correlationId)
+                            + ", error: " + m_controlResponsePoller->errorMessage(),
+                        SOURCEINFO);
+                }
+                else if (m_ctx->errorHandler() != nullptr)
+                {
+                    ArchiveException ex(
+                        static_cast<std::int32_t>(m_controlResponsePoller->relevantId()),
+                        "response for correlationId=" + std::to_string(correlationId)
+                            + ", error: " + m_controlResponsePoller->errorMessage(),
+                        SOURCEINFO);
+                    m_ctx->errorHandler()(ex);
+                }
+            }
+            else if (m_controlResponsePoller->correlationId() == correlationId)
+            {
+                if (!m_controlResponsePoller->isCodeOk())
+                {
+                    throw ArchiveException(
+                        "unexpected response code: " + std::to_string(m_controlResponsePoller->codeValue()),
+                        SOURCEINFO);
+                }
+
+                return m_controlResponsePoller->relevantId();
+            }
+        }
+    }
 
     template<typename F, typename IdleStrategy>
-    std::int32_t pollForDescriptors(std::int64_t correlationId, std::int32_t recordCount, F&& consumer);
+    std::int32_t pollForDescriptors(std::int64_t correlationId, std::int32_t recordCount, F&& consumer)
+    {
+        std::int32_t existingRemainCount = recordCount;
+        long long deadlineNs = m_nanoClock() + m_messageTimeoutNs;
+        IdleStrategy idle;
+
+        m_recordingDescriptorPoller->reset(correlationId, recordCount, consumer);
+
+        while (true)
+        {
+            const int fragments = m_recordingDescriptorPoller->poll();
+            const std::int32_t remainingRecordCount = m_recordingDescriptorPoller->remainingRecordCount();
+
+            if (m_recordingDescriptorPoller->isDispatchComplete())
+            {
+                return recordCount - remainingRecordCount;
+            }
+
+            if (remainingRecordCount != existingRemainCount)
+            {
+                existingRemainCount = remainingRecordCount;
+                deadlineNs = m_nanoClock() + m_messageTimeoutNs;
+            }
+
+            invokeAeronClient();
+
+            if (fragments > 0)
+            {
+                continue;
+            }
+
+            if (!m_recordingDescriptorPoller->subscription()->isConnected())
+            {
+                throw ArchiveException("subscription to archive is not connected", SOURCEINFO);
+            }
+
+            checkDeadline(deadlineNs, "awaiting recording descriptors", correlationId);
+            idle.idle();
+        }
+    }
 
     template<typename F, typename IdleStrategy>
-    std::int32_t pollForSubscriptionDescriptors(std::int64_t correlationId, std::int32_t subscriptionCount, F&& consumer);
+    std::int32_t pollForSubscriptionDescriptors(
+        std::int64_t correlationId, std::int32_t subscriptionCount, F&& consumer)
+    {
+        std::int32_t existingRemainCount = subscriptionCount;
+        long long deadlineNs = m_nanoClock() + m_messageTimeoutNs;
+        IdleStrategy idle;
+
+        m_recordingSubscriptionDescriptorPoller->reset(correlationId, subscriptionCount, consumer);
+
+        while (true)
+        {
+            const int fragments = m_recordingSubscriptionDescriptorPoller->poll();
+            const std::int32_t remainingSubscriptionCount =
+                m_recordingSubscriptionDescriptorPoller->remainingSubscriptionCount();
+
+            if (m_recordingSubscriptionDescriptorPoller->isDispatchComplete())
+            {
+                return subscriptionCount - remainingSubscriptionCount;
+            }
+
+            if (remainingSubscriptionCount != existingRemainCount)
+            {
+                existingRemainCount = remainingSubscriptionCount;
+                deadlineNs = m_nanoClock() + m_messageTimeoutNs;
+            }
+
+            invokeAeronClient();
+
+            if (fragments > 0)
+            {
+                continue;
+            }
+
+            if (!m_recordingSubscriptionDescriptorPoller->subscription()->isConnected())
+            {
+                throw ArchiveException("subscription to archive is not connected", SOURCEINFO);
+            }
+
+            checkDeadline(deadlineNs, "awaiting subscription descriptors", correlationId);
+            idle.idle();
+        }
+    }
 };
 
 }}}

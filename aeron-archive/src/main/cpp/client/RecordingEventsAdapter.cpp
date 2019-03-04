@@ -52,7 +52,7 @@ void RecordingEventsAdapter<RecordingEventsListener>::onFragment(
     AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
 {
     MessageHeader msgHeader(
-        reinterpret_cast<char *>(buffer.buffer() + offset),
+        buffer.sbeData() + offset,
         static_cast<std::uint64_t>(length),
         MessageHeader::sbeSchemaVersion());
 
@@ -71,7 +71,7 @@ void RecordingEventsAdapter<RecordingEventsListener>::onFragment(
         case RecordingStarted::sbeTemplateId():
         {
             RecordingStarted event(
-                reinterpret_cast<char *>(buffer.buffer() + offset + MessageHeader::encodedLength()),
+                buffer.sbeData() + offset + MessageHeader::encodedLength(),
                 static_cast<std::uint64_t>(length) - MessageHeader::encodedLength(),
                 msgHeader.blockLength(),
                 msgHeader.version());
@@ -89,7 +89,7 @@ void RecordingEventsAdapter<RecordingEventsListener>::onFragment(
         case RecordingProgress::sbeTemplateId():
         {
             RecordingProgress event(
-                reinterpret_cast<char *>(buffer.buffer() + offset + MessageHeader::encodedLength()),
+                buffer.sbeData() + offset + MessageHeader::encodedLength(),
                 static_cast<std::uint64_t>(length) - MessageHeader::encodedLength(),
                 msgHeader.blockLength(),
                 msgHeader.version());
@@ -104,7 +104,7 @@ void RecordingEventsAdapter<RecordingEventsListener>::onFragment(
         case RecordingStopped::sbeTemplateId():
         {
             RecordingStopped event(
-                reinterpret_cast<char *>(buffer.buffer() + offset + MessageHeader::encodedLength()),
+                buffer.sbeData() + offset + MessageHeader::encodedLength(),
                 static_cast<std::uint64_t>(length) - MessageHeader::encodedLength(),
                 msgHeader.blockLength(),
                 msgHeader.version());

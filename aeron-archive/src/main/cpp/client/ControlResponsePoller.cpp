@@ -42,7 +42,7 @@ ControlledPollAction ControlResponsePoller::onFragment(
     AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
 {
     MessageHeader msgHeader(
-        reinterpret_cast<char *>(buffer.buffer() + offset),
+        buffer.sbeData() + offset,
         static_cast<std::uint64_t>(length),
         MessageHeader::sbeSchemaVersion());
 
@@ -59,7 +59,7 @@ ControlledPollAction ControlResponsePoller::onFragment(
     if (ControlResponse::sbeTemplateId() == m_templateId)
     {
         ControlResponse response(
-            reinterpret_cast<char *>(buffer.buffer() + offset + MessageHeader::encodedLength()),
+            buffer.sbeData() + offset + MessageHeader::encodedLength(),
             static_cast<std::uint64_t>(length) - MessageHeader::encodedLength(),
             msgHeader.blockLength(),
             msgHeader.version());

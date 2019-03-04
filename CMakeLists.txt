@@ -247,7 +247,7 @@ set(AERON_ARCHIVE_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-archive/src/mai
 if(AERON_TESTS)
     set(AERON_CLIENT_TEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-client/src/test/cpp")
     set(AERON_DRIVER_TEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-driver/src/test/c")
-    set(AERON_ARCHIVE_TEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}}/aeron-archive/src/test/cpp")
+    set(AERON_ARCHIVE_TEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-archive/src/test/cpp")
 
     # gmock - includes gtest
     include_directories(${GMOCK_SOURCE_DIR}/googletest/include)
@@ -289,9 +289,11 @@ if(BUILD_AERON_ARCHIVE_API)
     set(ARCHIVE_CODEC_WORKING_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 
     add_subdirectory(${AERON_ARCHIVE_SOURCE_PATH})
-#   if(AERON_TESTS)
-#       add_subdirectory(${AERON_ARCHIVE_TEST_PATH})
-#   endif()
+   if(AERON_TESTS)
+       set(AERON_ALL_JAR "${CMAKE_CURRENT_SOURCE_DIR}/aeron-all/build/libs/aeron-all-${AERON_VERSION_TXT}.jar")
+
+       add_subdirectory(${AERON_ARCHIVE_TEST_PATH})
+   endif()
 endif(BUILD_AERON_ARCHIVE_API)
 ##########################################################
 # doc target

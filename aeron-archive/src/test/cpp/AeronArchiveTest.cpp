@@ -25,8 +25,11 @@
 
 #include <chrono>
 #include <thread>
+#include <iostream>
+#include <iosfwd>
 
 #include <gtest/gtest.h>
+#include <client/RecordingEventsAdapter.h>
 
 #include "client/AeronArchive.h"
 
@@ -35,6 +38,13 @@ using namespace aeron::archive::client;
 class AeronArchiveTest : public testing::Test
 {
 public:
+    ~AeronArchiveTest()
+    {
+        if (m_debug)
+        {
+            std::cout << m_stream.str();
+        }
+    }
 
     static int unlink_func(const char *path, const struct stat *sb, int type_flag, struct FTW *ftw)
     {
@@ -51,7 +61,7 @@ public:
         return nftw(dirname.c_str(), unlink_func, 64, FTW_DEPTH | FTW_PHYS);
     }
 
-    virtual void SetUp()
+    void SetUp() final
     {
         m_pid = ::fork();
         if (0 == m_pid)
@@ -59,6 +69,7 @@ public:
             if (::execl(m_java.c_str(),
                 "java",
                 "-Daeron.dir.delete.on.start=true",
+                "-Daeron.archive.dir.delete.on.start=true",
                 "-Daeron.threading.mode=INVOKER",
                 "-Daeron.archive.threading.mode=SHARED",
                 "-Daeron.archive.file.sync.level=0",
@@ -76,15 +87,15 @@ public:
             }
         }
 
-        std::cout << "ArchivingMediaDriver PID " << std::to_string(m_pid) << std::endl;
+        m_stream << "ArchivingMediaDriver PID " << std::to_string(m_pid) << std::endl;
     }
 
-    virtual void TearDown()
+    void TearDown() final
     {
         if (0 != m_pid)
         {
             int result = ::kill(m_pid, SIGINT);
-            std::cout << "Shutting down PID " << m_pid << " " << result << std::endl;
+            m_stream << "Shutting down PID " << m_pid << " " << result << std::endl;
             if (result < 0)
             {
                 perror("kill");
@@ -92,9 +103,9 @@ public:
 
             ::wait(NULL);
 
-            std::cout << "Deleting " << aeron::Context::defaultAeronPath() << std::endl;
+            m_stream << "Deleting " << aeron::Context::defaultAeronPath() << std::endl;
             deleteDir(aeron::Context::defaultAeronPath());
-            std::cout << "Deleting " << m_archiveDir << std::endl;
+            m_stream << "Deleting " << m_archiveDir << std::endl;
             deleteDir(m_archiveDir);
         }
     }
@@ -103,18 +114,34 @@ protected:
     const std::string m_aeronAllJar = AERON_ALL_JAR;
     const std::string m_archiveDir = ARCHIVE_DIR;
     pid_t m_pid = 0;
+
+    std::ostringstream m_stream;
+    bool m_debug = false;
 };
 
 TEST_F(AeronArchiveTest, shouldSpinUpArchiveAndShutdown)
 {
-    std::cout << m_java << std::endl;
-    std::cout << m_aeronAllJar << std::endl;
-    std::cout << m_archiveDir << std::endl;
+    m_stream << m_java << std::endl;
+    m_stream << m_aeronAllJar << std::endl;
+    m_stream << m_archiveDir << std::endl;
 
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+    std::this_thread::sleep_for(std::chrono::seconds(1));
 }
 
 TEST_F(AeronArchiveTest, shouldBeAbleToConnectToArchive)
 {
     std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect();
+}
+
+TEST_F(AeronArchiveTest, shouldBeAbleToConnectToArchiveViaAsync)
+{
+    std::shared_ptr<AeronArchive::AsyncConnect> asyncConnect = AeronArchive::asyncConnect();
+    aeron::concurrent::YieldingIdleStrategy idle;
+
+    std::shared_ptr<AeronArchive> aeronArchive = asyncConnect->poll();
+    while (!aeronArchive)
+    {
+        idle.idle();
+        aeronArchive = asyncConnect->poll();
+    }
 }

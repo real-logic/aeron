@@ -19,6 +19,7 @@
 #include <cstdint>
 
 #include "Aeron.h"
+#include "ChannelUri.h"
 #include "util/MacroUtil.h"
 
 namespace aeron {
@@ -51,6 +52,10 @@ constexpr const std::int32_t CONTROL_RESPONSE_STREAM_ID_DEFAULT = 20;
 constexpr const char RECORDING_EVENTS_CHANNEL_DEFAULT[] = "aeron:udp?endpoint=localhost:8030";
 constexpr const std::int32_t RECORDING_EVENTS_STREAM_ID_DEFAULT = 30;
 
+constexpr const bool CONTROL_TERM_BUFFER_SPARSE_DEFAULT = true;
+constexpr const std::int32_t CONTROL_TERM_BUFFER_LENGTH_DEFAULT = 64 * 1024;
+constexpr const std::int32_t CONTROL_MTU_LENGTH_DEFAULT = 1408;
+
 }
 
 class Context
@@ -68,6 +73,12 @@ public:
             m_aeron = Aeron::connect(ctx);
             m_ownsAeronClient = true;
         }
+
+        std::shared_ptr<ChannelUri> channelUri = ChannelUri::parse(m_controlRequestChannel);
+        channelUri->put(TERM_LENGTH_PARAM_NAME, std::to_string(m_controlTermBufferLength));
+        channelUri->put(MTU_LENGTH_PARAM_NAME, std::to_string(m_controlMtuLength));
+        channelUri->put(SPARSE_PARAM_NAME, (m_controlTermBufferSparse ? "true" : "false"));
+        m_controlRequestChannel = channelUri->toString();
     }
 
     inline std::shared_ptr<Aeron> aeron()
@@ -89,6 +100,28 @@ public:
     inline this_t& messageTimeoutNs(long long timeoutNs)
     {
         m_messageTimeoutNs = timeoutNs;
+        return *this;
+    }
+
+    inline std::string recordingEventsChannel()
+    {
+        return m_recordingEventsChannel;
+    }
+
+    inline this_t& recordingEventsChannel(const std::string& recordingEventsChannel)
+    {
+        m_recordingEventsChannel = recordingEventsChannel;
+        return *this;
+    }
+
+    inline std::int32_t recordingEventsStreamId()
+    {
+        return m_recordingEventsStreamId;
+    }
+
+    inline this_t& recordingEventsStreamId(std::int32_t recordingEventsStreamId)
+    {
+        m_recordingEventsStreamId = recordingEventsStreamId;
         return *this;
     }
 
@@ -136,9 +169,59 @@ public:
         return *this;
     }
 
+    inline bool controlTermBufferSparse()
+    {
+        return m_controlTermBufferSparse;
+    }
+
+    inline this_t& controlTermBufferSparse(bool controlTermBufferSparse)
+    {
+        m_controlTermBufferSparse = controlTermBufferSparse;
+        return *this;
+    }
+
+    inline std::int32_t controlTermBufferLength()
+    {
+        return m_controlTermBufferLength;
+    }
+
+    inline this_t& controlTermBufferLength(std::int32_t controlTermBufferLength)
+    {
+        m_controlTermBufferLength = controlTermBufferLength;
+        return *this;
+    }
+
+    inline std::int32_t controlMtuLength()
+    {
+        return m_controlMtuLength;
+    }
+
+    inline this_t& controlMtuLength(std::int32_t controlMtuLength)
+    {
+        m_controlMtuLength = controlMtuLength;
+        return *this;
+    }
+
+    inline std::string aeronDirectoryName()
+    {
+        return m_aeronDirectoryName;
+    }
+
+    inline this_t& aeronDirectoryName(const std::string& aeronDirectoryName)
+    {
+        m_aeronDirectoryName = aeronDirectoryName;
+        return *this;
+    }
+
     inline bool ownsAeronClient()
     {
         return m_ownsAeronClient;
+    }
+
+    inline this_t& ownsAeronClient(bool ownsAeronClient)
+    {
+        m_ownsAeronClient = ownsAeronClient;
+        return *this;
     }
 
     inline exception_handler_t errorHandler()
@@ -162,6 +245,13 @@ private:
 
     std::string m_controlRequestChannel = Configuration::CONTROL_REQUEST_CHANNEL_DEFAULT;
     std::int32_t m_controlRequestStreamId = Configuration::CONTROL_REQUEST_STREAM_ID_DEFAULT;
+
+    std::string m_recordingEventsChannel = Configuration::RECORDING_EVENTS_CHANNEL_DEFAULT;
+    std::int32_t m_recordingEventsStreamId = Configuration::RECORDING_EVENTS_STREAM_ID_DEFAULT;
+
+    bool m_controlTermBufferSparse = Configuration::CONTROL_TERM_BUFFER_SPARSE_DEFAULT;
+    std::int32_t m_controlTermBufferLength = Configuration::CONTROL_TERM_BUFFER_LENGTH_DEFAULT;
+    std::int32_t m_controlMtuLength = Configuration::CONTROL_MTU_LENGTH_DEFAULT;
 
     bool m_ownsAeronClient = false;
 

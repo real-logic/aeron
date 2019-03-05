@@ -110,7 +110,7 @@ public:
         }
     }
 
-private:
+protected:
     std::uint8_t m_prePad[aeron::util::BitUtil::CACHE_LINE_LENGTH * 2];
     const std::int64_t m_maxSpins;
     const std::int64_t m_maxYields;

@@ -45,6 +45,7 @@ SET(HEADERS
     client/RecordingSubscriptionDescriptorPoller.h
     client/RecordingEventsPoller.h
     client/RecordingEventsAdapter.h
+    client/RecordingPos.h
     client/AeronArchive.h)
 
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DDISABLE_BOUNDS_CHECKS")

@@ -22,12 +22,28 @@ namespace aeron {
 namespace archive {
 namespace client {
 
-template<typename RecordingEventsListener>
+typedef std::function<void(
+    std::int64_t recordingId,
+    std::int64_t startPosition,
+    std::int32_t sessionId,
+    std::int32_t streamId,
+    const std::string& channel,
+    const std::string& sourceIdentity)> on_recording_start_t;
+
+typedef std::function<void(
+    std::int64_t recordingId,
+    std::int64_t startPosition,
+    std::int64_t position)> on_recording_event_t;
+
 class RecordingEventsAdapter
 {
 public:
     RecordingEventsAdapter(
-        RecordingEventsListener& listener, std::shared_ptr<Subscription> subscription, int fragmentLimit = 10);
+        const on_recording_start_t& onStart,
+        const on_recording_event_t& onProgress,
+        const on_recording_event_t& onStop,
+        std::shared_ptr<Subscription> subscription,
+        int fragmentLimit = 10);
 
     inline std::shared_ptr<Subscription> subscription()
     {
@@ -44,7 +60,9 @@ public:
 private:
     fragment_handler_t m_fragmentHandler;
     std::shared_ptr<Subscription> m_subscription;
-    RecordingEventsListener m_listener;
+    on_recording_start_t m_onStart;
+    on_recording_event_t m_onProgress;
+    on_recording_event_t m_onStop;
     const int m_fragmentLimit;
 };
 

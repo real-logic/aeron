@@ -25,8 +25,7 @@
 using namespace aeron;
 using namespace aeron::archive::client;
 
-template<typename RecordingEventsListener>
-static aeron::fragment_handler_t fragmentHandler(RecordingEventsAdapter<RecordingEventsListener>& poller)
+static aeron::fragment_handler_t fragmentHandler(RecordingEventsAdapter& poller)
 {
     return [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
     {
@@ -34,21 +33,23 @@ static aeron::fragment_handler_t fragmentHandler(RecordingEventsAdapter<Recordin
     };
 }
 
-template<typename RecordingEventsListener>
-RecordingEventsAdapter<RecordingEventsListener>::RecordingEventsAdapter(
-    RecordingEventsListener& listener,
+RecordingEventsAdapter::RecordingEventsAdapter(
+    const on_recording_start_t& onStart,
+    const on_recording_event_t& onProgress,
+    const on_recording_event_t& onStop,
     std::shared_ptr<aeron::Subscription> subscription,
     int fragmentLimit)
     :
-    m_fragmentHandler(fragmentHandler<RecordingEventsListener>(*this)),
+    m_fragmentHandler(fragmentHandler(*this)),
     m_subscription(std::move(subscription)),
-    m_listener(listener),
+    m_onStart(onStart),
+    m_onProgress(onProgress),
+    m_onStop(onStop),
     m_fragmentLimit(fragmentLimit)
 {
 }
 
-template<typename RecordingEventsListener>
-void RecordingEventsAdapter<RecordingEventsListener>::onFragment(
+void RecordingEventsAdapter::onFragment(
     AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
 {
     MessageHeader msgHeader(
@@ -76,7 +77,7 @@ void RecordingEventsAdapter<RecordingEventsListener>::onFragment(
                 msgHeader.blockLength(),
                 msgHeader.version());
 
-            m_listener.onStart(
+            m_onStart(
                 event.recordingId(),
                 event.startPosition(),
                 event.sessionId(),
@@ -94,7 +95,7 @@ void RecordingEventsAdapter<RecordingEventsListener>::onFragment(
                 msgHeader.blockLength(),
                 msgHeader.version());
 
-            m_listener.onProgress(
+            m_onProgress(
                 event.recordingId(),
                 event.startPosition(),
                 event.position());
@@ -109,7 +110,7 @@ void RecordingEventsAdapter<RecordingEventsListener>::onFragment(
                 msgHeader.blockLength(),
                 msgHeader.version());
 
-            m_listener.onStop(
+            m_onStop(
                 event.recordingId(),
                 event.startPosition(),
                 event.stopPosition());

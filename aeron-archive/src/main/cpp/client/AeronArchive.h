@@ -449,8 +449,9 @@ public:
         return subscription;
     }
 
-    template<typename F, typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
-    inline std::int32_t listRecordings(std::int64_t fromRecordingId, std::int32_t recordCount, F&& consumer)
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    inline std::int32_t listRecordings(
+        std::int64_t fromRecordingId, std::int32_t recordCount, const recording_descriptor_consumer_t& consumer)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
 
@@ -458,7 +459,8 @@ public:
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
 
-        if (!m_archiveProxy->listRecordings<IdleStrategy>(fromRecordingId, recordCount, correlationId, m_controlSessionId))
+        if (!m_archiveProxy->listRecordings<IdleStrategy>(
+            fromRecordingId, recordCount, correlationId, m_controlSessionId))
         {
             throw ArchiveException("failed to send list recordings request", SOURCEINFO);
         }
@@ -466,13 +468,13 @@ public:
         return pollForDescriptors<IdleStrategy>(correlationId, recordCount, consumer);
     }
 
-    template<typename F, typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline std::int32_t listRecordingsForUri(
         std::int64_t fromRecordingId,
         std::int32_t recordCount,
         const std::string& channelFragment,
         std::int32_t streamId,
-        F&& consumer)
+        const recording_descriptor_consumer_t& consumer)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
 
@@ -489,8 +491,8 @@ public:
         return pollForDescriptors<IdleStrategy>(correlationId, recordCount, consumer);
     }
 
-    template<typename F, typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
-    inline std::int32_t listRecording(std::int64_t recordingId, F&& consumer)
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    inline std::int32_t listRecording(std::int64_t recordingId, const recording_descriptor_consumer_t& consumer)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
 
@@ -579,14 +581,14 @@ public:
         pollForResponse<IdleStrategy>(correlationId);
     }
 
-    template<typename F, typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline std::int32_t listRecordingSubscriptions(
         std::int32_t pseudoIndex,
         std::int32_t subscriptionCount,
         const std::string& channelFragment,
         std::int32_t streamId,
         bool applyStreamId,
-        F&& consumer)
+        const recording_subscription_descriptor_consumer_t& consumer)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
 
@@ -722,8 +724,9 @@ private:
         }
     }
 
-    template<typename F, typename IdleStrategy>
-    std::int32_t pollForDescriptors(std::int64_t correlationId, std::int32_t recordCount, F&& consumer)
+    template<typename IdleStrategy>
+    std::int32_t pollForDescriptors(
+        std::int64_t correlationId, std::int32_t recordCount, const recording_descriptor_consumer_t& consumer)
     {
         std::int32_t existingRemainCount = recordCount;
         long long deadlineNs = m_nanoClock() + m_messageTimeoutNs;
@@ -764,9 +767,11 @@ private:
         }
     }
 
-    template<typename F, typename IdleStrategy>
+    template<typename IdleStrategy>
     std::int32_t pollForSubscriptionDescriptors(
-        std::int64_t correlationId, std::int32_t subscriptionCount, F&& consumer)
+        std::int64_t correlationId,
+        std::int32_t subscriptionCount,
+        const recording_subscription_descriptor_consumer_t& consumer)
     {
         std::int32_t existingRemainCount = subscriptionCount;
         long long deadlineNs = m_nanoClock() + m_messageTimeoutNs;

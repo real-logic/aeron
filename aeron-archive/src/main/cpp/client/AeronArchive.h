@@ -128,6 +128,16 @@ public:
         return *m_controlResponsePoller;
     }
 
+    inline RecordingDescriptorPoller& recordingDescriptorPoller()
+    {
+        return *m_recordingDescriptorPoller;
+    }
+
+    inline RecordingSubscriptionDescriptorPoller& recordingSubscriptionDescriptorPoller()
+    {
+        return *m_recordingSubscriptionDescriptorPoller;
+    }
+
     inline std::string pollForErrorResponse()
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);

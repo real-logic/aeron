@@ -27,6 +27,7 @@
 #include <thread>
 #include <iostream>
 #include <iosfwd>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -306,4 +307,316 @@ TEST_F(AeronArchiveTest, shouldRecordPublicationAndFindRecording)
         });
 
     EXPECT_EQ(count, 1);
+}
+
+TEST_F(AeronArchiveTest, shouldRecordThenReplay)
+{
+    const std::string messagePrefix = "Message ";
+    const std::size_t messageCount = 10;
+    std::int32_t sessionId = aeron::NULL_VALUE;
+    std::int64_t recordingIdFromCounter = aeron::NULL_VALUE;
+    std::int64_t stopPosition = aeron::NULL_VALUE;
+
+    std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect();
+
+    const std::int64_t subscriptionId = aeronArchive->startRecording(
+        m_recordingChannel, m_recordingStreamId, AeronArchive::SourceLocation::LOCAL);
+
+    {
+        std::shared_ptr<Publication> publication = addPublication(
+            *aeronArchive->context().aeron(), m_recordingChannel, m_recordingStreamId);
+        std::shared_ptr<Subscription> subscription = addSubscription(
+            *aeronArchive->context().aeron(), m_recordingChannel, m_recordingStreamId);
+
+        sessionId = publication->sessionId();
+
+        CountersReader& countersReader = aeronArchive->context().aeron()->countersReader();
+        const std::int32_t counterId = getRecordingCounterId(sessionId, countersReader);
+        recordingIdFromCounter = RecordingPos::getRecordingId(countersReader, counterId);
+
+        offerMessages(*publication, messageCount, messagePrefix);
+        consumeMessages(*subscription, messageCount, messagePrefix);
+
+        stopPosition = publication->position();
+
+        aeron::concurrent::YieldingIdleStrategy idle;
+        while (countersReader.getCounterValue(counterId) < stopPosition)
+        {
+            idle.idle();
+        }
+
+        EXPECT_EQ(aeronArchive->getRecordingPosition(recordingIdFromCounter), stopPosition);
+    }
+
+    aeronArchive->stopRecording(subscriptionId);
+
+    EXPECT_EQ(aeronArchive->getStopPosition(recordingIdFromCounter), stopPosition);
+
+    const std::int64_t position = 0L;
+    const std::int64_t length = stopPosition - position;
+
+    {
+        std::shared_ptr<Subscription> subscription = addSubscription(
+            *aeronArchive->context().aeron(), m_replayChannel, m_replayStreamId);
+
+        aeronArchive->startReplay(recordingIdFromCounter, position, length, m_replayChannel, m_replayStreamId);
+
+        consumeMessages(*subscription, messageCount, messagePrefix);
+        EXPECT_EQ(stopPosition, subscription->imageAtIndex(0).position());
+    }
+}
+
+TEST_F(AeronArchiveTest, shouldRecordThenReplayThenTruncate)
+{
+    const std::string messagePrefix = "Message ";
+    const std::size_t messageCount = 10;
+    std::int32_t sessionId = aeron::NULL_VALUE;
+    std::int64_t recordingIdFromCounter = aeron::NULL_VALUE;
+    std::int64_t stopPosition = aeron::NULL_VALUE;
+
+    std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect();
+
+    const std::int64_t subscriptionId = aeronArchive->startRecording(
+        m_recordingChannel, m_recordingStreamId, AeronArchive::SourceLocation::LOCAL);
+
+    {
+        std::shared_ptr<Publication> publication = addPublication(
+            *aeronArchive->context().aeron(), m_recordingChannel, m_recordingStreamId);
+        std::shared_ptr<Subscription> subscription = addSubscription(
+            *aeronArchive->context().aeron(), m_recordingChannel, m_recordingStreamId);
+
+        sessionId = publication->sessionId();
+
+        CountersReader& countersReader = aeronArchive->context().aeron()->countersReader();
+        const std::int32_t counterId = getRecordingCounterId(sessionId, countersReader);
+        recordingIdFromCounter = RecordingPos::getRecordingId(countersReader, counterId);
+
+        offerMessages(*publication, messageCount, messagePrefix);
+        consumeMessages(*subscription, messageCount, messagePrefix);
+
+        stopPosition = publication->position();
+
+        aeron::concurrent::YieldingIdleStrategy idle;
+        while (countersReader.getCounterValue(counterId) < stopPosition)
+        {
+            idle.idle();
+        }
+
+        EXPECT_EQ(aeronArchive->getRecordingPosition(recordingIdFromCounter), stopPosition);
+        EXPECT_EQ(aeronArchive->getStopPosition(recordingIdFromCounter), aeron::NULL_VALUE);
+    }
+
+    aeronArchive->stopRecording(subscriptionId);
+
+    const std::int64_t recordingId = aeronArchive->findLastMatchingRecording(
+        0, "endpoint=localhost:3333", m_recordingStreamId, sessionId);
+
+    EXPECT_EQ(recordingIdFromCounter, recordingId);
+    EXPECT_EQ(aeronArchive->getStopPosition(recordingIdFromCounter), stopPosition);
+
+    const std::int64_t position = 0L;
+    const std::int64_t length = stopPosition - position;
+
+    {
+        std::shared_ptr<Subscription> subscription = aeronArchive->replay(
+            recordingId, position, length, m_replayChannel, m_replayStreamId);
+
+        consumeMessages(*subscription, messageCount, messagePrefix);
+        EXPECT_EQ(stopPosition, subscription->imageAtIndex(0).position());
+    }
+
+    aeronArchive->truncateRecording(recordingId, position);
+
+    const std::int32_t count = aeronArchive->listRecording(
+        recordingId,
+        [&](std::int64_t controlSessionId, std::int64_t correlationId, std::int64_t recordingId1,
+            std::int64_t startTimestamp, std::int64_t stopTimestamp, std::int64_t startPosition,
+            std::int64_t newStopPosition, std::int32_t initialTermId, std::int32_t segmentFileLength,
+            std::int32_t termBufferLength, std::int32_t mtuLength, std::int32_t sessionId1, std::int32_t streamId,
+            const std::string& strippedChannel, const std::string& originalChannel, const std::string& sourceIdentity)
+        {
+            EXPECT_EQ(startPosition, newStopPosition);
+        });
+
+    EXPECT_EQ(count, 1);
+}
+
+TEST_F(AeronArchiveTest, shouldRecordAndCancelReplayEarly)
+{
+    const std::string messagePrefix = "Message ";
+    const std::size_t messageCount = 10;
+    std::int64_t recordingId = aeron::NULL_VALUE;
+    std::int64_t stopPosition = aeron::NULL_VALUE;
+
+    std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect();
+
+    {
+        std::shared_ptr<Subscription> subscription = addSubscription(
+            *aeronArchive->context().aeron(), m_recordingChannel, m_recordingStreamId);
+        std::shared_ptr<Publication> publication = aeronArchive->addRecordedPublication(
+            m_recordingChannel, m_recordingStreamId);
+
+        CountersReader& countersReader = aeronArchive->context().aeron()->countersReader();
+        const std::int32_t counterId = getRecordingCounterId(publication->sessionId(), countersReader);
+        recordingId = RecordingPos::getRecordingId(countersReader, counterId);
+
+        offerMessages(*publication, messageCount, messagePrefix);
+        consumeMessages(*subscription, messageCount, messagePrefix);
+
+        stopPosition = publication->position();
+
+        aeron::concurrent::YieldingIdleStrategy idle;
+        while (countersReader.getCounterValue(counterId) < stopPosition)
+        {
+            idle.idle();
+        }
+
+        EXPECT_EQ(aeronArchive->getRecordingPosition(recordingId), stopPosition);
+
+        aeronArchive->stopRecording(publication);
+
+        while (NULL_POSITION != aeronArchive->getRecordingPosition(recordingId))
+        {
+            idle.idle();
+        }
+    }
+
+    const std::int64_t position = 0L;
+    const std::int64_t length = stopPosition - position;
+
+    const std::int64_t replaySessionId = aeronArchive->startReplay(
+        recordingId, position, length, m_replayChannel, m_replayStreamId);
+
+    aeronArchive->stopReplay(replaySessionId);
+}
+
+TEST_F(AeronArchiveTest, shouldReplayRecordingFromLateJoinPosition)
+{
+    const std::string messagePrefix = "Message ";
+    const std::size_t messageCount = 10;
+
+    std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect();
+
+    const std::int64_t subscriptionId = aeronArchive->startRecording(
+        m_recordingChannel, m_recordingStreamId, AeronArchive::SourceLocation::LOCAL);
+
+    {
+        std::shared_ptr<Publication> publication = addPublication(
+            *aeronArchive->context().aeron(), m_recordingChannel, m_recordingStreamId);
+        std::shared_ptr<Subscription> subscription = addSubscription(
+            *aeronArchive->context().aeron(), m_recordingChannel, m_recordingStreamId);
+
+        CountersReader& countersReader = aeronArchive->context().aeron()->countersReader();
+        const std::int32_t counterId = getRecordingCounterId(publication->sessionId(), countersReader);
+        const std::int64_t recordingId = RecordingPos::getRecordingId(countersReader, counterId);
+
+        offerMessages(*publication, messageCount, messagePrefix);
+        consumeMessages(*subscription, messageCount, messagePrefix);
+
+        const std::int64_t currentPosition = publication->position();
+
+        aeron::concurrent::YieldingIdleStrategy idle;
+        while (countersReader.getCounterValue(counterId) < currentPosition)
+        {
+            idle.idle();
+        }
+
+        {
+            std::shared_ptr<Subscription> replaySubscription = aeronArchive->replay(
+                recordingId, currentPosition, NULL_LENGTH, m_replayChannel, m_replayStreamId);
+
+            offerMessages(*publication, messageCount, messagePrefix);
+            consumeMessages(*subscription, messageCount, messagePrefix);
+            consumeMessages(*replaySubscription, messageCount, messagePrefix);
+
+            const std::int64_t endPosition = publication->position();
+            EXPECT_EQ(endPosition, replaySubscription->imageAtIndex(0).position());
+        }
+    }
+
+    aeronArchive->stopRecording(subscriptionId);
+}
+
+struct SubscriptionDescriptor
+{
+    const std::int64_t m_controlSessionId;
+    const std::int64_t m_correlationId;
+    const std::int64_t m_subscriptionId;
+    const std::int32_t m_streamId;
+    const std::string m_strippedChannel;
+
+    SubscriptionDescriptor(
+        std::int64_t controlSessionId,
+        std::int64_t correlationId,
+        std::int64_t subscriptionId,
+        std::int32_t streamId,
+        const std::string& strippedChannel)
+        :
+        m_controlSessionId(controlSessionId),
+        m_correlationId(correlationId),
+        m_subscriptionId(subscriptionId),
+        m_streamId(streamId),
+        m_strippedChannel(strippedChannel)
+    {
+    }
+};
+
+TEST_F(AeronArchiveTest, shouldListRegisteredRecordingSubscriptions)
+{
+    std::vector<SubscriptionDescriptor> descriptors;
+    recording_subscription_descriptor_consumer_t consumer = [&](
+        std::int64_t controlSessionId,
+        std::int64_t correlationId,
+        std::int64_t subscriptionId,
+        std::int32_t streamId,
+        const std::string& strippedChannel)
+    {
+        descriptors.emplace_back(controlSessionId, correlationId, subscriptionId, streamId, strippedChannel);
+    };
+
+    const std::int32_t expectedStreamId = 7;
+    const std::string channelOne = "aeron:ipc";
+    const std::string channelTwo = "aeron:udp?endpoint=localhost:5678";
+    const std::string channelThree = "aeron:udp?endpoint=localhost:4321";
+
+    std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect();
+
+    const std::int64_t subIdOne = aeronArchive->startRecording(
+        channelOne, expectedStreamId, AeronArchive::SourceLocation::LOCAL);
+    const std::int64_t subIdTwo = aeronArchive->startRecording(
+        channelTwo, expectedStreamId + 1, AeronArchive::SourceLocation::LOCAL);
+    const std::int64_t subIdThree = aeronArchive->startRecording(
+        channelThree, expectedStreamId + 2, AeronArchive::SourceLocation::LOCAL);
+
+    const std::int32_t countOne = aeronArchive->listRecordingSubscriptions(
+        0, 5, "ipc", expectedStreamId, true, consumer);
+
+    EXPECT_EQ(1uL, descriptors.size());
+    EXPECT_EQ(1L, countOne);
+
+    descriptors.clear();
+
+    const std::int32_t countTwo = aeronArchive->listRecordingSubscriptions(
+        0, 5, "", expectedStreamId, false, consumer);
+
+    EXPECT_EQ(3uL, descriptors.size());
+    EXPECT_EQ(3L, countTwo);
+
+    aeronArchive->stopRecording(subIdTwo);
+    descriptors.clear();
+
+    const std::int32_t countThree = aeronArchive->listRecordingSubscriptions(
+        0, 5, "", expectedStreamId, false, consumer);
+
+    EXPECT_EQ(2uL, descriptors.size());
+    EXPECT_EQ(2L, countThree);
+
+    EXPECT_EQ(1L, std::count_if(
+        descriptors.begin(),
+        descriptors.end(),
+        [=](SubscriptionDescriptor s){ return s.m_subscriptionId == subIdOne;}));
+    EXPECT_EQ(1L, std::count_if(
+        descriptors.begin(),
+        descriptors.end(),
+        [=](SubscriptionDescriptor s){ return s.m_subscriptionId == subIdThree;}));
 }

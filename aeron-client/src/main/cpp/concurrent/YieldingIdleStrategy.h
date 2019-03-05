@@ -24,9 +24,7 @@ namespace aeron { namespace concurrent {
 class YieldingIdleStrategy
 {
 public:
-    YieldingIdleStrategy()
-    {
-    }
+    YieldingIdleStrategy() = default;
 
     inline void idle(int workCount)
     {
@@ -36,6 +34,10 @@ public:
         }
 
         std::this_thread::yield();
+    }
+
+    inline void reset()
+    {
     }
 
     inline void idle()

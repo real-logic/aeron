@@ -22,11 +22,13 @@ namespace aeron { namespace concurrent {
 class NoOpIdleStrategy
 {
 public:
-    NoOpIdleStrategy()
+    NoOpIdleStrategy() = default;
+
+    inline void idle(int workCount)
     {
     }
 
-    inline void idle(int workCount)
+    inline void reset()
     {
     }
 

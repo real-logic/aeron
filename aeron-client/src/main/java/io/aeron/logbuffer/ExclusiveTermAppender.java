@@ -598,7 +598,7 @@ public final class ExclusiveTermAppender
         return resultingOffset;
     }
 
-    private int handleEndOfLogCondition(
+    private static int handleEndOfLogCondition(
         final UnsafeBuffer termBuffer,
         final long termOffset,
         final HeaderWriter header,

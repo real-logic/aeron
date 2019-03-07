@@ -51,7 +51,9 @@ public class ArchiveTest
         final CountDownLatch latch = new CountDownLatch(numberOfArchiveClients);
         final ThreadPoolExecutor executor = (ThreadPoolExecutor)Executors.newFixedThreadPool(numberOfArchiveClients);
         final ManyToOneConcurrentLinkedQueue<AeronArchive> archiveClientQueue = new ManyToOneConcurrentLinkedQueue<>();
-        final MediaDriver.Context driverCtx = new MediaDriver.Context().threadingMode(ThreadingMode.SHARED);
+        final MediaDriver.Context driverCtx = new MediaDriver.Context()
+            .clientLivenessTimeoutNs(TimeUnit.SECONDS.toNanos(10))
+            .threadingMode(ThreadingMode.SHARED);
         final Archive.Context archiveCtx = new Archive.Context()
             .threadingMode(ArchiveThreadingMode.SHARED)
             .connectTimeoutNs(TimeUnit.SECONDS.toNanos(10));

@@ -354,4 +354,3 @@ public class ConcurrentPublication extends Publication
         return ADMIN_ACTION;
     }
 }
-

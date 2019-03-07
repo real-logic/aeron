@@ -31,7 +31,7 @@ add_definitions(-DARCHIVE_DIR="${CMAKE_CURRENT_BINARY_DIR}/archive")
 function(aeron_archive_client_test name file)
     add_executable(${name} ${file})
     target_link_libraries(${name} aeron_client aeron_archive_client ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT})
-    add_dependencies(${name} gmock)
+    add_dependencies(${name} gmock aeron-all-jar)
     add_test(NAME ${name} COMMAND ${name})
 endfunction()
 

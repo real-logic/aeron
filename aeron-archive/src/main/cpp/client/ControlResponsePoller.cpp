@@ -58,6 +58,11 @@ ControlledPollAction ControlResponsePoller::onFragment(
     m_templateId = msgHeader.templateId();
     if (ControlResponse::sbeTemplateId() == m_templateId)
     {
+        if (m_pollComplete)
+        {
+            return ControlledPollAction::ABORT;
+        }
+
         ControlResponse response(
             buffer.sbeData() + offset + MessageHeader::encodedLength(),
             static_cast<std::uint64_t>(length) - MessageHeader::encodedLength(),
@@ -77,7 +82,9 @@ ControlledPollAction ControlResponsePoller::onFragment(
 
         m_isControlResponse = true;
         m_pollComplete = true;
+
+        return ControlledPollAction::BREAK;
     }
 
-    return ControlledPollAction::BREAK;
+    return ControlledPollAction::CONTINUE;
 }

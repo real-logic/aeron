@@ -185,6 +185,11 @@ public class EgressPoller implements ControlledFragmentHandler
             throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
         }
 
+        if (pollComplete)
+        {
+            return Action.ABORT;
+        }
+
         templateId = messageHeaderDecoder.templateId();
         switch (templateId)
         {
@@ -202,7 +207,7 @@ public class EgressPoller implements ControlledFragmentHandler
                 eventCode = sessionEventDecoder.code();
                 detail = sessionEventDecoder.detail();
                 pollComplete = true;
-                break;
+                return Action.BREAK;
 
             case NewLeaderEventDecoder.TEMPLATE_ID:
                 newLeaderEventDecoder.wrap(
@@ -216,7 +221,7 @@ public class EgressPoller implements ControlledFragmentHandler
                 leaderMemberId = newLeaderEventDecoder.leaderMemberId();
                 detail = newLeaderEventDecoder.memberEndpoints();
                 pollComplete = true;
-                break;
+                return Action.BREAK;
 
             case EgressMessageHeaderDecoder.TEMPLATE_ID:
                 egressMessageHeaderDecoder.wrap(
@@ -228,7 +233,7 @@ public class EgressPoller implements ControlledFragmentHandler
                 leadershipTermId = egressMessageHeaderDecoder.leadershipTermId();
                 clusterSessionId = egressMessageHeaderDecoder.clusterSessionId();
                 pollComplete = true;
-                break;
+                return Action.BREAK;
 
             case ChallengeDecoder.TEMPLATE_ID:
                 challengeDecoder.wrap(
@@ -243,9 +248,9 @@ public class EgressPoller implements ControlledFragmentHandler
                 clusterSessionId = challengeDecoder.clusterSessionId();
                 correlationId = challengeDecoder.correlationId();
                 pollComplete = true;
-                break;
+                return Action.BREAK;
         }
 
-        return ControlledFragmentAssembler.Action.BREAK;
+        return Action.CONTINUE;
     }
 }

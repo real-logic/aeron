@@ -50,7 +50,6 @@ public final class AeronCluster implements AutoCloseable
         MessageHeaderEncoder.ENCODED_LENGTH + EgressMessageHeaderEncoder.BLOCK_LENGTH;
 
     private static final int SEND_ATTEMPTS = 3;
-    private static final int CONNECT_FRAGMENT_LIMIT = 1;
     private static final int SESSION_FRAGMENT_LIMIT = 10;
 
     private long leadershipTermId = Aeron.NULL_VALUE;
@@ -617,7 +616,7 @@ public final class AeronCluster implements AutoCloseable
                 if (null != connectedMember)
                 {
                     publication = connectedMember.publication;
-                    final EgressPoller poller = new EgressPoller(subscription, CONNECT_FRAGMENT_LIMIT);
+                    final EgressPoller poller = new EgressPoller(subscription, SESSION_FRAGMENT_LIMIT);
                     final byte[] encodedCredentials = ctx.credentialsSupplier().encodedCredentials();
                     final long clusterSessionId = openSession(deadlineNs, poller, encodedCredentials);
 
@@ -637,7 +636,7 @@ public final class AeronCluster implements AutoCloseable
             awaitConnectedPublication(deadlineNs);
             final byte[] encodedCredentials = ctx.credentialsSupplier().encodedCredentials();
 
-            return openSession(deadlineNs, new EgressPoller(subscription, CONNECT_FRAGMENT_LIMIT), encodedCredentials);
+            return openSession(deadlineNs, new EgressPoller(subscription, SESSION_FRAGMENT_LIMIT), encodedCredentials);
         }
     }
 

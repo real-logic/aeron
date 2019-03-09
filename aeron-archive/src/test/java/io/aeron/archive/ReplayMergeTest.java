@@ -28,7 +28,6 @@ import org.agrona.ExpandableArrayBuffer;
 import org.agrona.IoUtil;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.status.CountersReader;
-import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,6 +36,7 @@ import java.io.File;
 
 import static io.aeron.archive.codecs.SourceLocation.REMOTE;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
 public class ReplayMergeTest
@@ -56,32 +56,32 @@ public class ReplayMergeTest
     private static final String LIVE_ENDPOINT = "localhost:43267";
     private static final String REPLAY_ENDPOINT = "localhost:43268";
 
-    private static final ChannelUriStringBuilder PUBLICATION_CHANNEL = new ChannelUriStringBuilder()
+    private final ChannelUriStringBuilder publicationChannel = new ChannelUriStringBuilder()
         .media(CommonContext.UDP_MEDIA)
         .tags("1," + PUBLICATION_TAG)
         .controlEndpoint(CONTROL_ENDPOINT)
         .controlMode(CommonContext.MDC_CONTROL_MODE_DYNAMIC)
         .termLength(TERM_BUFFER_LENGTH);
 
-    private static final ChannelUriStringBuilder RECORDING_CHANNEL = new ChannelUriStringBuilder()
+    private ChannelUriStringBuilder recordingChannel = new ChannelUriStringBuilder()
         .media(CommonContext.UDP_MEDIA)
         .endpoint(RECORDING_ENDPOINT)
         .controlEndpoint(CONTROL_ENDPOINT);
 
-    private static final ChannelUriStringBuilder SUBSCRIPTION_CHANNEL = new ChannelUriStringBuilder()
+    private ChannelUriStringBuilder subscriptionChannel = new ChannelUriStringBuilder()
         .media(CommonContext.UDP_MEDIA)
         .controlMode(CommonContext.MDC_CONTROL_MODE_MANUAL);
 
-    private static final ChannelUriStringBuilder LIVE_DESTINATION = new ChannelUriStringBuilder()
+    private final ChannelUriStringBuilder liveDestination = new ChannelUriStringBuilder()
         .media(CommonContext.UDP_MEDIA)
         .endpoint(LIVE_ENDPOINT)
         .controlEndpoint(CONTROL_ENDPOINT);
 
-    private static final ChannelUriStringBuilder REPLAY_DESTINATION = new ChannelUriStringBuilder()
+    private final ChannelUriStringBuilder replayDestination = new ChannelUriStringBuilder()
         .media(CommonContext.UDP_MEDIA)
         .endpoint(REPLAY_ENDPOINT);
 
-    private static final ChannelUriStringBuilder REPLAY_CHANNEL = new ChannelUriStringBuilder()
+    private final ChannelUriStringBuilder replayChannel = new ChannelUriStringBuilder()
         .media(CommonContext.UDP_MEDIA)
         .isSessionIdTagged(true)
         .sessionId(PUBLICATION_TAG)
@@ -149,12 +149,12 @@ public class ReplayMergeTest
         final int sessionId;
         final int counterId;
 
-        try (Publication publication = aeron.addPublication(PUBLICATION_CHANNEL.build(), STREAM_ID))
+        try (Publication publication = aeron.addPublication(publicationChannel.build(), STREAM_ID))
         {
             sessionId = publication.sessionId();
 
-            final String subscriptionChannel = SUBSCRIPTION_CHANNEL.sessionId(sessionId).build();
-            final String recordingChannel = RECORDING_CHANNEL.sessionId(sessionId).build();
+            final String subscriptionChannel = this.subscriptionChannel.sessionId(sessionId).build();
+            final String recordingChannel = this.recordingChannel.sessionId(sessionId).build();
 
             aeronArchive.startRecording(recordingChannel, STREAM_ID, REMOTE);
 
@@ -167,50 +167,52 @@ public class ReplayMergeTest
 
                 awaitPosition(counters, counterId, publication.position());
 
-                final ReplayMerge replayMerge = new ReplayMerge(
+                try (ReplayMerge replayMerge = new ReplayMerge(
                     subscription,
                     aeronArchive,
-                    REPLAY_CHANNEL.build(),
-                    REPLAY_DESTINATION.build(),
-                    LIVE_DESTINATION.build(),
+                    replayChannel.build(),
+                    replayDestination.build(),
+                    liveDestination.build(),
                     recordingId,
                     0,
                     sessionId,
-                    maxReceiverWindow);
-
-                final FragmentHandler fragmentHandler = new FragmentAssembler(
-                    (buffer, offset, length, header) ->
-                    {
-                        final String expected = MESSAGE_PREFIX + received.value;
-                        final String actual = buffer.getStringWithoutLengthAscii(offset, length);
-
-                        assertEquals(expected, actual);
-
-                        received.value++;
-                    });
-
-                for (int i = initialMessageCount; i < totalMessageCount; i++)
+                    maxReceiverWindow))
                 {
-                    offer(publication, i, MESSAGE_PREFIX);
+                    final FragmentHandler fragmentHandler = new FragmentAssembler(
+                        (buffer, offset, length, header) ->
+                        {
+                            final String expected = MESSAGE_PREFIX + received.value;
+                            final String actual = buffer.getStringWithoutLengthAscii(offset, length);
 
-                    if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
+                            assertEquals(expected, actual);
+
+                            received.value++;
+                        });
+
+                    for (int i = initialMessageCount; i < totalMessageCount; i++)
                     {
-                        checkInterruptedStatus();
-                        Thread.yield();
-                    }
-                }
+                        offer(publication, i, MESSAGE_PREFIX);
 
-                while (received.get() < totalMessageCount || !replayMerge.isCaughtUp())
-                {
-                    if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
+                        if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
+                        {
+                            checkInterruptedStatus();
+                            Thread.yield();
+                        }
+                    }
+
+                    while (received.get() < totalMessageCount || !replayMerge.isMerged())
                     {
-                        checkInterruptedStatus();
-                        Thread.yield();
+                        if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
+                        {
+                            checkInterruptedStatus();
+                            Thread.yield();
+                        }
                     }
-                }
 
-                assertThat(received.get(), CoreMatchers.is(totalMessageCount));
-                assertTrue(replayMerge.isCaughtUp());
+                    assertThat(received.get(), is(totalMessageCount));
+                    assertTrue(replayMerge.isMerged());
+                    assertEquals(ReplayMerge.State.MERGED, replayMerge.state());
+                }
             }
             finally
             {

@@ -19,20 +19,26 @@ import io.aeron.Aeron;
 import io.aeron.Image;
 import io.aeron.Subscription;
 import io.aeron.archive.codecs.ControlResponseCode;
-import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.FragmentHandler;
 
+/**
+ * Replay a recorded stream from a starting position and merge with live stream to consume a full history of a stream.
+ * <p>
+ * Once constructed the either of {@link #poll(FragmentHandler, int)} or {@link #doWork()} interleaved with consumption
+ * of the {@link #image()} should be called in a duty cycle loop until {@link #isMerged()} is {@code true},
+ * after which the {@link ReplayMerge} can be closed and continued usage can be made of the {@link Image} or its
+ * parent {@link Subscription}.
+ */
 public class ReplayMerge implements AutoCloseable
 {
-    enum State
+    public enum State
     {
-        INIT,
         AWAIT_INITIAL_RECORDING_POSITION,
         AWAIT_REPLAY,
         AWAIT_CATCH_UP,
-        AWAIT_UPDATED_RECORDING_POSITION,
+        AWAIT_CURRENT_RECORDING_POSITION,
         AWAIT_STOP_REPLAY,
-        CAUGHT_UP,
+        MERGED,
         CLOSED
     }
 
@@ -45,17 +51,16 @@ public class ReplayMerge implements AutoCloseable
     private final long startPosition;
     private final long liveAddThreshold;
     private final long replayRemoveThreshold;
-    private final int streamId;
     private final int sessionId;
 
-    private State state = State.INIT;
+    private State state = State.AWAIT_INITIAL_RECORDING_POSITION;
     private Image image;
     private long activeCorrelationId = Aeron.NULL_VALUE;
     private long initialMaxPosition = Aeron.NULL_VALUE;
     private long nextTargetPosition = Aeron.NULL_VALUE;
-    private long replaySubscriptionId = Aeron.NULL_VALUE;
-    private boolean liveAdded = false;
-    private boolean replayActive = false;
+    private long replaySessionId = Aeron.NULL_VALUE;
+    private boolean isLiveAdded = false;
+    private boolean isReplayActive = false;
 
     public ReplayMerge(
         final Subscription subscription,
@@ -77,30 +82,37 @@ public class ReplayMerge implements AutoCloseable
         this.startPosition = startPosition;
         this.liveAddThreshold = maxReceiverWindow / 2;
         this.replayRemoveThreshold = maxReceiverWindow / 4;
-        this.streamId = subscription.streamId();
         this.sessionId = sessionId;
+
+        subscription.addDestination(replayDestination);
     }
 
     public void close()
     {
-        if (replayActive)
+        final State state = this.state;
+        if (State.CLOSED != state)
         {
-            archive.stopReplay(sessionId);
-        }
+            state(State.CLOSED);
 
-        state(State.CLOSED);
+            if (isReplayActive)
+            {
+                archive.stopReplay(replaySessionId);
+                isReplayActive = false;
+            }
+
+            if (State.MERGED != state)
+            {
+                subscription.removeDestination(replayDestination);
+            }
+        }
     }
 
-    int doWork()
+    public int doWork()
     {
         int workCount = 0;
 
         switch (state)
         {
-            case INIT:
-                workCount += init();
-                break;
-
             case AWAIT_INITIAL_RECORDING_POSITION:
                 workCount += awaitInitialRecordingPosition();
                 break;
@@ -113,7 +125,7 @@ public class ReplayMerge implements AutoCloseable
                 workCount += awaitCatchUp();
                 break;
 
-            case AWAIT_UPDATED_RECORDING_POSITION:
+            case AWAIT_CURRENT_RECORDING_POSITION:
                 workCount += awaitUpdatedRecordingPosition();
                 break;
 
@@ -131,23 +143,19 @@ public class ReplayMerge implements AutoCloseable
         return null == image ? 0 : image.poll(fragmentHandler, fragmentLimit);
     }
 
-    public int boundedControlledPoll(
-        final ControlledFragmentHandler fragmentHandler, final long maxPosition, final int fragmentLimit)
+    public ReplayMerge.State state()
     {
-        doWork();
-        return null == image ? 0 : image.boundedControlledPoll(fragmentHandler, maxPosition, fragmentLimit);
+        return state;
     }
 
-    public boolean isCaughtUp()
+    public boolean isMerged()
     {
-        return (state == State.CAUGHT_UP);
+        return state == State.MERGED;
     }
 
-    private int init()
+    public Image image()
     {
-        subscription.addDestination(replayDestination);
-        state(State.AWAIT_INITIAL_RECORDING_POSITION);
-        return 1;
+        return image;
     }
 
     private int awaitInitialRecordingPosition()
@@ -158,8 +166,7 @@ public class ReplayMerge implements AutoCloseable
         {
             final long correlationId = archive.context().aeron().nextCorrelationId();
 
-            if (archive.archiveProxy().getRecordingPosition(
-                recordingId, correlationId, archive.controlSessionId()))
+            if (archive.archiveProxy().getRecordingPosition(recordingId, correlationId, archive.controlSessionId()))
             {
                 activeCorrelationId = correlationId;
                 workCount += 1;
@@ -167,10 +174,10 @@ public class ReplayMerge implements AutoCloseable
         }
         else if (pollForResponse(archive, activeCorrelationId))
         {
-            nextTargetPosition = pollerRelevantId(archive);
+            nextTargetPosition = polledRelevantId(archive);
             initialMaxPosition = nextTargetPosition;
-            state(State.AWAIT_REPLAY);
             activeCorrelationId = Aeron.NULL_VALUE;
+            state(State.AWAIT_REPLAY);
             workCount += 1;
         }
 
@@ -190,7 +197,7 @@ public class ReplayMerge implements AutoCloseable
                 startPosition,
                 Long.MAX_VALUE,
                 replayChannel,
-                streamId,
+                subscription.streamId(),
                 correlationId,
                 archive.controlSessionId()))
             {
@@ -201,11 +208,10 @@ public class ReplayMerge implements AutoCloseable
         }
         else if (pollForResponse(archive, activeCorrelationId))
         {
-            replayActive = true;
-            replaySubscriptionId = pollerRelevantId(archive);
-
-            state(State.AWAIT_CATCH_UP);
+            isReplayActive = true;
+            replaySessionId = polledRelevantId(archive);
             activeCorrelationId = Aeron.NULL_VALUE;
+            state(State.AWAIT_CATCH_UP);
             workCount += 1;
         }
 
@@ -223,8 +229,8 @@ public class ReplayMerge implements AutoCloseable
 
         if (null != image && image.position() >= nextTargetPosition)
         {
-            state(State.AWAIT_UPDATED_RECORDING_POSITION);
             activeCorrelationId = Aeron.NULL_VALUE;
+            state(State.AWAIT_CURRENT_RECORDING_POSITION);
             workCount += 1;
         }
 
@@ -239,8 +245,7 @@ public class ReplayMerge implements AutoCloseable
         {
             final long correlationId = archive.context().aeron().nextCorrelationId();
 
-            if (archive.archiveProxy().getRecordingPosition(
-                recordingId, correlationId, archive.controlSessionId()))
+            if (archive.archiveProxy().getRecordingPosition(recordingId, correlationId, archive.controlSessionId()))
             {
                 activeCorrelationId = correlationId;
                 workCount += 1;
@@ -248,7 +253,7 @@ public class ReplayMerge implements AutoCloseable
         }
         else if (pollForResponse(archive, activeCorrelationId))
         {
-            nextTargetPosition = pollerRelevantId(archive);
+            nextTargetPosition = polledRelevantId(archive);
             State nextState = State.AWAIT_CATCH_UP;
 
             if (null != image)
@@ -258,7 +263,7 @@ public class ReplayMerge implements AutoCloseable
                 if (shouldAddLiveDestination(position))
                 {
                     subscription.addDestination(liveDestination);
-                    liveAdded = true;
+                    isLiveAdded = true;
                 }
                 else if (shouldStopAndRemoveReplay(position))
                 {
@@ -266,8 +271,8 @@ public class ReplayMerge implements AutoCloseable
                 }
             }
 
-            state(nextState);
             activeCorrelationId = Aeron.NULL_VALUE;
+            state(nextState);
             workCount += 1;
         }
 
@@ -282,8 +287,7 @@ public class ReplayMerge implements AutoCloseable
         {
             final long correlationId = archive.context().aeron().nextCorrelationId();
 
-            if (archive.archiveProxy().stopReplay(
-                replaySubscriptionId, correlationId, archive.controlSessionId()))
+            if (archive.archiveProxy().stopReplay(replaySessionId, correlationId, archive.controlSessionId()))
             {
                 activeCorrelationId = correlationId;
                 workCount += 1;
@@ -291,12 +295,11 @@ public class ReplayMerge implements AutoCloseable
         }
         else if (pollForResponse(archive, activeCorrelationId))
         {
-            replayActive = false;
-            replaySubscriptionId = Aeron.NULL_VALUE;
-
-            subscription.removeDestination(replayDestination);
-            state(State.CAUGHT_UP);
+            isReplayActive = false;
+            replaySessionId = Aeron.NULL_VALUE;
             activeCorrelationId = Aeron.NULL_VALUE;
+            subscription.removeDestination(replayDestination);
+            state(State.MERGED);
             workCount += 1;
         }
 
@@ -311,14 +314,13 @@ public class ReplayMerge implements AutoCloseable
 
     private boolean shouldAddLiveDestination(final long position)
     {
-        return (!liveAdded && (nextTargetPosition - position) <= liveAddThreshold);
+        return !isLiveAdded && (nextTargetPosition - position) <= liveAddThreshold;
     }
 
     private boolean shouldStopAndRemoveReplay(final long position)
     {
-        return
-            (nextTargetPosition > initialMaxPosition) &&
-            (liveAdded && (nextTargetPosition - position) <= replayRemoveThreshold);
+        return nextTargetPosition > initialMaxPosition &&
+            isLiveAdded && (nextTargetPosition - position) <= replayRemoveThreshold;
     }
 
     private static boolean pollForResponse(final AeronArchive archive, final long correlationId)
@@ -342,7 +344,7 @@ public class ReplayMerge implements AutoCloseable
         return false;
     }
 
-    private static long pollerRelevantId(final AeronArchive archive)
+    private static long polledRelevantId(final AeronArchive archive)
     {
         return archive.controlResponsePoller().relevantId();
     }

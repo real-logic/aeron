@@ -137,22 +137,16 @@ public class ReplayMergeTest
         archivingMediaDriver.archive().context().deleteArchiveDirectory();
     }
 
-    @Test(timeout = 10_000)
-    public void shouldMergeFromReplayToLiveLockStep()
+    @Test(timeout = 20_000)
+    public void shouldMergeFromReplayToLive()
     {
-        final CountersReader counters = aeron.countersReader();
         final int initialMessageCount = MIN_MESSAGES_PER_TERM * 3;
         final int subsequentMessageCount = MIN_MESSAGES_PER_TERM * 3;
         final int totalMessageCount = initialMessageCount + subsequentMessageCount;
 
-        final long recordingId;
-        final int sessionId;
-        final int counterId;
-
         try (Publication publication = aeron.addPublication(publicationChannel.build(), STREAM_ID))
         {
-            sessionId = publication.sessionId();
-
+            final int sessionId = publication.sessionId();
             final String subscriptionChannel = this.subscriptionChannel.sessionId(sessionId).build();
             final String recordingChannel = this.recordingChannel.sessionId(sessionId).build();
 
@@ -162,8 +156,9 @@ public class ReplayMergeTest
             {
                 offerMessages(publication, 0, initialMessageCount, MESSAGE_PREFIX);
 
-                counterId = awaitCounterId(counters, publication.sessionId());
-                recordingId = RecordingPos.getRecordingId(counters, counterId);
+                final CountersReader counters = aeron.countersReader();
+                final int counterId = awaitCounterId(counters, publication.sessionId());
+                final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
                 awaitPosition(counters, counterId, publication.position());
 
@@ -262,9 +257,9 @@ public class ReplayMergeTest
         return counterId;
     }
 
-    private static void awaitPosition(final CountersReader counters, final int counterId, final long targetPosition)
+    private static void awaitPosition(final CountersReader counters, final int counterId, final long position)
     {
-        while (counters.getCounterValue(counterId) < targetPosition)
+        while (counters.getCounterValue(counterId) < position)
         {
             checkInterruptedStatus();
             Thread.yield();

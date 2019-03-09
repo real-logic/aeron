@@ -86,7 +86,7 @@ class ControlSession implements Session
 
     public void abort()
     {
-        state = State.INACTIVE;
+        state(State.INACTIVE);
     }
 
     void invalidVersion()
@@ -98,7 +98,7 @@ class ControlSession implements Session
     {
         CloseHelper.close(controlPublication);
         demuxer.removeControlSession(this);
-        state = State.CLOSED;
+        state(State.CLOSED);
     }
 
     public boolean isDone()
@@ -320,62 +320,45 @@ class ControlSession implements Session
 
     void sendOkResponse(final long correlationId, final ControlResponseProxy proxy)
     {
-        if (!proxy.sendResponse(controlSessionId, correlationId, 0L, OK, null, controlPublication))
-        {
-            queueResponse(correlationId, 0, OK, null);
-        }
+        sendResponse(correlationId, 0L, OK, null, proxy);
     }
 
     void sendOkResponse(final long correlationId, final long relevantId, final ControlResponseProxy proxy)
     {
-        if (!proxy.sendResponse(controlSessionId, correlationId, relevantId, OK, null, controlPublication))
-        {
-            queueResponse(correlationId, relevantId, OK, null);
-        }
-    }
-
-    void sendRecordingUnknown(final long correlationId, final long recordingId, final ControlResponseProxy proxy)
-    {
-        if (!proxy.sendResponse(
-            controlSessionId,
-            correlationId,
-            recordingId,
-            RECORDING_UNKNOWN,
-            null,
-            controlPublication))
-        {
-            queueResponse(correlationId, recordingId, RECORDING_UNKNOWN, null);
-        }
-    }
-
-    void sendSubscriptionUnknown(final long correlationId, final ControlResponseProxy proxy)
-    {
-        if (!proxy.sendResponse(
-            controlSessionId,
-            correlationId,
-            0,
-            SUBSCRIPTION_UNKNOWN,
-            null,
-            controlPublication))
-        {
-            queueResponse(correlationId, 0, RECORDING_UNKNOWN, null);
-        }
+        sendResponse(correlationId, relevantId, OK, null, proxy);
     }
 
     void sendErrorResponse(final long correlationId, final String errorMessage, final ControlResponseProxy proxy)
     {
-        if (!proxy.sendResponse(controlSessionId, correlationId, 0, ERROR, errorMessage, controlPublication))
-        {
-            queueResponse(correlationId, 0, ERROR, errorMessage);
-        }
+        sendResponse(correlationId, 0L, ERROR, errorMessage, proxy);
     }
 
     void sendErrorResponse(
         final long correlationId, final long relevantId, final String errorMessage, final ControlResponseProxy proxy)
     {
-        if (!proxy.sendResponse(controlSessionId, correlationId, relevantId, ERROR, errorMessage, controlPublication))
+        sendResponse(correlationId, relevantId, ERROR, errorMessage, proxy);
+    }
+
+    void sendRecordingUnknown(final long correlationId, final long recordingId, final ControlResponseProxy proxy)
+    {
+        sendResponse(correlationId, recordingId, RECORDING_UNKNOWN, null, proxy);
+    }
+
+    void sendSubscriptionUnknown(final long correlationId, final ControlResponseProxy proxy)
+    {
+        sendResponse(correlationId, 0L, SUBSCRIPTION_UNKNOWN, null, proxy);
+    }
+
+    void sendResponse(
+        final long correlationId,
+        final long relevantId,
+        final ControlResponseCode code,
+        final String errorMessage,
+        final ControlResponseProxy proxy)
+    {
+        if (!proxy.sendResponse(controlSessionId, correlationId, relevantId, code, errorMessage, controlPublication))
         {
-            queueResponse(correlationId, relevantId, ERROR, errorMessage);
+            queueResponse(correlationId, relevantId, code, errorMessage);
         }
     }
 
@@ -411,7 +394,7 @@ class ControlSession implements Session
         int workCount = 0;
         if (!controlPublication.isConnected())
         {
-            state = State.INACTIVE;
+            state(State.INACTIVE);
         }
         else
         {
@@ -429,7 +412,7 @@ class ControlSession implements Session
                 }
                 else if (hasNoActivity(epochClock.time()))
                 {
-                    state = State.INACTIVE;
+                    state(State.INACTIVE);
                 }
             }
         }
@@ -455,12 +438,12 @@ class ControlSession implements Session
 
         if (controlPublication.isConnected())
         {
-            state = State.CONNECTED;
+            state(State.CONNECTED);
             workCount += 1;
         }
         else if (hasNoActivity(epochClock.time()))
         {
-            state = State.INACTIVE;
+            state(State.INACTIVE);
             workCount += 1;
         }
 
@@ -474,7 +457,7 @@ class ControlSession implements Session
         final long nowMs = epochClock.time();
         if (hasNoActivity(nowMs))
         {
-            state = State.INACTIVE;
+            state(State.INACTIVE);
             workCount += 1;
         }
         else if (nowMs > resendDeadlineMs)
@@ -517,7 +500,13 @@ class ControlSession implements Session
     {
         if (State.CONNECTED == state && !isInvalidVersion)
         {
-            state = State.ACTIVE;
+            state(State.ACTIVE);
         }
+    }
+
+    private void state(final State state)
+    {
+        //System.out.println(controlSessionId + ": " + this.state + " -> " + state);
+        this.state = state;
     }
 }

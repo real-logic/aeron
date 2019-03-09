@@ -111,7 +111,7 @@ class ControlResponseProxy
             .correlationId(correlationId)
             .relevantId(relevantId)
             .code(code)
-            .errorMessage(null == errorMessage ? "" : errorMessage);
+            .errorMessage(errorMessage);
 
         return send(controlPublication, buffer, MESSAGE_HEADER_LENGTH + responseEncoder.encodedLength());
     }
@@ -129,7 +129,7 @@ class ControlResponseProxy
             .correlationId(correlationId)
             .relevantId(relevantId)
             .code(ControlResponseCode.ERROR)
-            .errorMessage(null == errorMessage ? "" : errorMessage);
+            .errorMessage(errorMessage);
 
         final int length = MESSAGE_HEADER_LENGTH + responseEncoder.encodedLength();
 

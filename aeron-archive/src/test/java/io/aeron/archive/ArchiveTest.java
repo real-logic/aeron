@@ -48,15 +48,17 @@ public class ArchiveTest
     public void shouldAllowMultipleConnectionsInParallel() throws InterruptedException
     {
         final int numberOfArchiveClients = 5;
+        final long connectTimeoutNs = TimeUnit.SECONDS.toNanos(10);
         final CountDownLatch latch = new CountDownLatch(numberOfArchiveClients);
         final ThreadPoolExecutor executor = (ThreadPoolExecutor)Executors.newFixedThreadPool(numberOfArchiveClients);
         final ManyToOneConcurrentLinkedQueue<AeronArchive> archiveClientQueue = new ManyToOneConcurrentLinkedQueue<>();
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
-            .clientLivenessTimeoutNs(TimeUnit.SECONDS.toNanos(10))
+            .errorHandler(Throwable::printStackTrace)
+            .clientLivenessTimeoutNs(connectTimeoutNs)
             .threadingMode(ThreadingMode.SHARED);
         final Archive.Context archiveCtx = new Archive.Context()
             .threadingMode(ArchiveThreadingMode.SHARED)
-            .connectTimeoutNs(TimeUnit.SECONDS.toNanos(10));
+            .connectTimeoutNs(connectTimeoutNs);
         executor.prestartAllCoreThreads();
 
         try (ArchivingMediaDriver driver = ArchivingMediaDriver.launch(driverCtx, archiveCtx))
@@ -66,12 +68,16 @@ public class ArchiveTest
                 executor.execute(
                     () ->
                     {
-                        archiveClientQueue.add(AeronArchive.connect());
+                        final AeronArchive.Context ctx = new AeronArchive.Context().messageTimeoutNs(connectTimeoutNs);
+                        final AeronArchive archive = AeronArchive.connect(ctx);
+                        archiveClientQueue.add(archive);
+
+                        archive.getRecordingPosition(0L);
                         latch.countDown();
                     });
             }
 
-            latch.await(driver.archive().context().connectTimeoutNs(), TimeUnit.NANOSECONDS);
+            latch.await(driver.archive().context().connectTimeoutNs() * 2, TimeUnit.NANOSECONDS);
 
             assertThat(latch.getCount(), is(0L));
         }

@@ -181,6 +181,11 @@ public class ControlResponsePoller implements ControlledFragmentHandler
         templateId = messageHeaderDecoder.templateId();
         if (templateId == ControlResponseDecoder.TEMPLATE_ID)
         {
+            if (pollComplete)
+            {
+                return Action.ABORT;
+            }
+
             controlResponseDecoder.wrap(
                 buffer,
                 offset + MessageHeaderEncoder.ENCODED_LENGTH,
@@ -192,10 +197,24 @@ public class ControlResponsePoller implements ControlledFragmentHandler
             relevantId = controlResponseDecoder.relevantId();
             code = controlResponseDecoder.code();
             errorMessage = controlResponseDecoder.errorMessage();
-
             pollComplete = true;
+
+            return Action.BREAK;
         }
 
-        return Action.BREAK;
+        return Action.CONTINUE;
+    }
+
+    public String toString()
+    {
+        return "ControlResponsePoller{" +
+            "controlSessionId=" + controlSessionId +
+            ", correlationId=" + correlationId +
+            ", relevantId=" + relevantId +
+            ", templateId=" + templateId +
+            ", code=" + code +
+            ", errorMessage='" + errorMessage + '\'' +
+            ", pollComplete=" + pollComplete +
+            '}';
     }
 }

@@ -177,17 +177,17 @@ public class EgressPoller implements ControlledFragmentHandler
     public ControlledFragmentAssembler.Action onFragment(
         final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
+        if (pollComplete)
+        {
+            return Action.ABORT;
+        }
+
         messageHeaderDecoder.wrap(buffer, offset);
 
         final int schemaId = messageHeaderDecoder.schemaId();
         if (schemaId != MessageHeaderDecoder.SCHEMA_ID)
         {
             throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
-        }
-
-        if (pollComplete)
-        {
-            return Action.ABORT;
         }
 
         templateId = messageHeaderDecoder.templateId();

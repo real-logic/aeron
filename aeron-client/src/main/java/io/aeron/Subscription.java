@@ -154,30 +154,6 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     }
 
     /**
-     * Poll the {@link Image}s under the subscription for having reached End of Stream (EOS). This method will miss
-     * {@link Image}s that have gone unavailable between calls unless using the {@link Aeron#conductorAgentInvoker()}.
-     *
-     * @param endOfStreamHandler callback for handling end of stream indication.
-     * @return number of {@link Image} that have reached End of Stream.
-     */
-    @Deprecated
-    public int pollEndOfStreams(final EndOfStreamHandler endOfStreamHandler)
-    {
-        int eosCount = 0;
-
-        for (final Image image : images)
-        {
-            if (image.isEndOfStream())
-            {
-                eosCount++;
-                endOfStreamHandler.onEndOfStream(image);
-            }
-        }
-
-        return eosCount;
-    }
-
-    /**
      * Poll the {@link Image}s under the subscription for available message fragments.
      * <p>
      * Each fragment read will be a whole message if it is under MTU length. If larger than MTU then it will come
@@ -186,7 +162,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
      * To assemble messages that span multiple fragments then use {@link FragmentAssembler}.
      *
      * @param fragmentHandler callback for handling each message fragment as it is read.
-     * @param fragmentLimit   number of message fragments to limit for the poll operation across multiple {@link Image}s.
+     * @param fragmentLimit   number of message fragments to limit when polling across multiple {@link Image}s.
      * @return the number of fragments received
      */
     public int poll(final FragmentHandler fragmentHandler, final int fragmentLimit)
@@ -225,7 +201,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
      * To assemble messages that span multiple fragments then use {@link ControlledFragmentAssembler}.
      *
      * @param fragmentHandler callback for handling each message fragment as it is read.
-     * @param fragmentLimit   number of message fragments to limit for the poll operation across multiple {@link Image}s.
+     * @param fragmentLimit   number of message fragments to limit when polling across multiple {@link Image}s.
      * @return the number of fragments received
      * @see ControlledFragmentHandler
      */

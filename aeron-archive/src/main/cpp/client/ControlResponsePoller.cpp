@@ -41,6 +41,11 @@ ControlResponsePoller::ControlResponsePoller(std::shared_ptr<Subscription> subsc
 ControlledPollAction ControlResponsePoller::onFragment(
     AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
 {
+    if (m_pollComplete)
+    {
+        return ControlledPollAction::ABORT;
+    }
+
     MessageHeader msgHeader(
         buffer.sbeData() + offset,
         static_cast<std::uint64_t>(length),
@@ -58,11 +63,6 @@ ControlledPollAction ControlResponsePoller::onFragment(
     m_templateId = msgHeader.templateId();
     if (ControlResponse::sbeTemplateId() == m_templateId)
     {
-        if (m_pollComplete)
-        {
-            return ControlledPollAction::ABORT;
-        }
-
         ControlResponse response(
             buffer.sbeData() + offset + MessageHeader::encodedLength(),
             static_cast<std::uint64_t>(length) - MessageHeader::encodedLength(),

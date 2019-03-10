@@ -170,6 +170,11 @@ public class ControlResponsePoller implements ControlledFragmentHandler
     public ControlledFragmentAssembler.Action onFragment(
         final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
+        if (pollComplete)
+        {
+            return Action.ABORT;
+        }
+
         messageHeaderDecoder.wrap(buffer, offset);
 
         final int schemaId = messageHeaderDecoder.schemaId();
@@ -181,11 +186,6 @@ public class ControlResponsePoller implements ControlledFragmentHandler
         templateId = messageHeaderDecoder.templateId();
         if (templateId == ControlResponseDecoder.TEMPLATE_ID)
         {
-            if (pollComplete)
-            {
-                return Action.ABORT;
-            }
-
             controlResponseDecoder.wrap(
                 buffer,
                 offset + MessageHeaderEncoder.ENCODED_LENGTH,

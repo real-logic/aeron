@@ -71,7 +71,8 @@ matrix:
             - llvm-toolchain-trusty-6.0
       script: cppbuild/cppbuild
 
-    - env: COMPILER=clang++-6.0
+    - name: "clang 6.0 debug build"
+      env: COMPILER=clang++-6.0
       language: c++
       compiler: clang
       os: linux

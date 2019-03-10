@@ -24,6 +24,7 @@ import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
+import org.agrona.SystemUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.*;
 import org.mockito.ArgumentCaptor;
@@ -54,7 +55,7 @@ public class ChannelEndpointStatusTest
     private static final int MESSAGE_LENGTH =
         (TERM_BUFFER_LENGTH / NUM_MESSAGES_PER_TERM) - DataHeaderFlyweight.HEADER_LENGTH;
     private static final String ROOT_DIR =
-        IoUtil.tmpDirName() + "aeron-system-tests-" + UUID.randomUUID().toString() + File.separator;
+        SystemUtil.tmpDirName() + "aeron-system-tests-" + UUID.randomUUID().toString() + File.separator;
 
     private Aeron clientA;
     private Aeron clientB;

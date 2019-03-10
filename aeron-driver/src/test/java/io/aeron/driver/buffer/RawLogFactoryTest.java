@@ -20,6 +20,7 @@ import io.aeron.driver.media.UdpChannel;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
+import org.agrona.SystemUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.*;
 
@@ -37,7 +38,7 @@ public class RawLogFactoryTest
     private static final int SESSION_ID = 100;
     private static final int STREAM_ID = 101;
     private static final int CREATION_ID = 102;
-    private static final File DATA_DIR = new File(IoUtil.tmpDirName(), "dataDirName");
+    private static final File DATA_DIR = new File(SystemUtil.tmpDirName(), "dataDirName");
     private static final int TERM_BUFFER_LENGTH = Configuration.TERM_BUFFER_LENGTH_DEFAULT;
     private static final long LOW_STORAGE_THRESHOLD = Configuration.LOW_FILE_STORE_WARNING_THRESHOLD_DEFAULT;
     private static final int PAGE_SIZE = 4 * 1024;

@@ -34,7 +34,7 @@ import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
-import org.agrona.IoUtil;
+import org.agrona.SystemUtil;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -116,7 +116,7 @@ public class ArchiveReplayLoadTest
         archive = Archive.launch(
             new Archive.Context()
                 .deleteArchiveOnStart(true)
-                .archiveDir(new File(IoUtil.tmpDirName(), "archive-test"))
+                .archiveDir(new File(SystemUtil.tmpDirName(), "archive-test"))
                 .fileSyncLevel(0)
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .errorCounter(driver.context().systemCounters().get(SystemCounterDescriptor.ERRORS))

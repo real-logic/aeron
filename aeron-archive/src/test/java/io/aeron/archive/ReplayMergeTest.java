@@ -25,7 +25,7 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
-import org.agrona.IoUtil;
+import org.agrona.SystemUtil;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.After;
@@ -99,7 +99,7 @@ public class ReplayMergeTest
     @Before
     public void before()
     {
-        final File archiveDir = new File(IoUtil.tmpDirName(), "archive");
+        final File archiveDir = new File(SystemUtil.tmpDirName(), "archive");
 
         archivingMediaDriver = ArchivingMediaDriver.launch(
             mediaDriverContext

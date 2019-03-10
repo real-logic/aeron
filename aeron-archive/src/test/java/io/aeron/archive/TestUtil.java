@@ -20,6 +20,7 @@ import io.aeron.archive.client.ControlResponseAdapter;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.exceptions.TimeoutException;
 import org.agrona.IoUtil;
+import org.agrona.SystemUtil;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 
@@ -43,7 +44,7 @@ public class TestUtil
 
     public static File makeTestDirectory()
     {
-        final File archiveDir = new File(IoUtil.tmpDirName(), "archive-test");
+        final File archiveDir = new File(SystemUtil.tmpDirName(), "archive-test");
         if (archiveDir.exists())
         {
             System.err.println("Warning archive directory exists, deleting: " + archiveDir.getAbsolutePath());

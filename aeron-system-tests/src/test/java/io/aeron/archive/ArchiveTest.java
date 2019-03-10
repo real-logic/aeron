@@ -153,7 +153,7 @@ public class ArchiveTest
                 .fileSyncLevel(SYNC_LEVEL)
                 .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
                 .deleteArchiveOnStart(true)
-                .archiveDir(new File(IoUtil.tmpDirName(), "archive-test"))
+                .archiveDir(new File(SystemUtil.tmpDirName(), "archive-test"))
                 .segmentFileLength(segmentFileLength)
                 .threadingMode(archiveThreadingMode)
                 .idleStrategySupplier(YieldingIdleStrategy::new)

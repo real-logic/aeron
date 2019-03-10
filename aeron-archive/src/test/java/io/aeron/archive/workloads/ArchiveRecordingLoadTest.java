@@ -30,7 +30,7 @@ import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
-import org.agrona.IoUtil;
+import org.agrona.SystemUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.*;
 import org.junit.rules.TestWatcher;
@@ -102,7 +102,7 @@ public class ArchiveRecordingLoadTest
             new Archive.Context()
                 .fileSyncLevel(0)
                 .deleteArchiveOnStart(true)
-                .archiveDir(new File(IoUtil.tmpDirName(), "archive-test"))
+                .archiveDir(new File(SystemUtil.tmpDirName(), "archive-test"))
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .errorCounter(driver.context().systemCounters().get(SystemCounterDescriptor.ERRORS))
                 .errorHandler(driver.context().errorHandler()));

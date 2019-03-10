@@ -16,6 +16,7 @@
 package io.aeron.cluster;
 
 import org.agrona.IoUtil;
+import org.agrona.SystemUtil;
 import org.junit.After;
 import org.junit.Test;
 
@@ -33,7 +34,7 @@ import static org.junit.Assert.assertThat;
 
 public class RecordingLogTest
 {
-    private static final File TEMP_DIR = new File(IoUtil.tmpDirName());
+    private static final File TEMP_DIR = new File(SystemUtil.tmpDirName());
     private boolean ignoreMissingRecordingFile = false;
 
     @After

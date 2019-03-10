@@ -223,7 +223,7 @@ public class CommonContext implements Cloneable
 
         if (null == baseDirName)
         {
-            baseDirName = IoUtil.tmpDirName() + "aeron";
+            baseDirName = SystemUtil.tmpDirName() + "aeron";
         }
 
         AERON_DIR_PROP_DEFAULT = baseDirName + '-' + System.getProperty("user.name", "default");

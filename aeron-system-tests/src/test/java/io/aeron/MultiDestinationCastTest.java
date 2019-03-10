@@ -24,6 +24,7 @@ import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
+import org.agrona.SystemUtil;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
@@ -55,7 +56,7 @@ public class MultiDestinationCastTest
     private static final int MESSAGE_LENGTH =
         (TERM_BUFFER_LENGTH / NUM_MESSAGES_PER_TERM) - DataHeaderFlyweight.HEADER_LENGTH;
     private static final String ROOT_DIR =
-        IoUtil.tmpDirName() + "aeron-system-tests-" + UUID.randomUUID().toString() + File.separator;
+        SystemUtil.tmpDirName() + "aeron-system-tests-" + UUID.randomUUID().toString() + File.separator;
 
     private final MediaDriver.Context driverBContext = new MediaDriver.Context();
 

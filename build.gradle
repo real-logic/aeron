@@ -22,7 +22,7 @@ buildscript {
 plugins {
     id 'java'
     id 'com.github.johnrengelman.shadow' version '5.0.0' apply false
-    id "io.freefair.javadoc-links" version "3.1.4"
+    id "io.freefair.javadoc-links" version "3.1.4" apply false
 }
 
 defaultTasks 'clean', 'build', 'shadowJar', 'install'
@@ -165,12 +165,12 @@ subprojects {
     javadoc {
         title = '<h1>Aeron Message Transport</h1>'
         options.bottom = '<i>Copyright &#169; 2014-2019 Real Logic Ltd. All Rights Reserved.</i>'
-        options.links('http://docs.oracle.com/javase/8/docs/api/')
+        options.links('https://docs.oracle.com/javase/8/docs/api/')
         if (JavaVersion.current().ordinal() >= JavaVersion.VERSION_1_10.ordinal()) {
             options.addBooleanOption 'html5', true
         }
     }
-
+    
     task testJar(type: Jar, dependsOn: testClasses) {
         archiveBaseName = "test-${project.archivesBaseName}"
         from sourceSets.test.output

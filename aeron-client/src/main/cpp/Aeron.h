@@ -399,6 +399,11 @@ public:
         return m_context;
     }
 
+    inline const Context& context() const
+    {
+        return m_context;
+    }
+
     /**
      * Return the static version and build string for the binary library.
      *

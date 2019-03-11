@@ -391,6 +391,6 @@ private:
         std::int64_t controlSessionId);
 };
 
-}}};
+}}}
 
 #endif //AERON_ARCHIVEPROXY_H

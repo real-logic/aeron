@@ -129,7 +129,7 @@ target_include_directories(aeron_client
 )
 
 target_compile_definitions(aeron_client
-    PUBLIC $<$<CONFIG:Release>:DISABLE_BOUNDS_CHECKS>
+    PUBLIC $<$<NOT:$<CONFIG:Debug>>:DISABLE_BOUNDS_CHECKS>
     # relative file paths for use in exceptions
     PUBLIC "__PROJECT_SOURCE_DIR__=\"${PROJECT_SOURCE_DIR}\""
 )

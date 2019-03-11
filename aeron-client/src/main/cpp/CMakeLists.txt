@@ -121,8 +121,6 @@ SET(HEADERS
     protocol/SetupFlyweight.h
     protocol/DataHeaderFlyweight.h)
 
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DDISABLE_BOUNDS_CHECKS")
-
 # static library
 add_library(aeron_client STATIC ${SOURCE} ${HEADERS})
 
@@ -130,8 +128,9 @@ target_include_directories(aeron_client
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-# relative file paths for use in exceptions
 target_compile_definitions(aeron_client
+    PUBLIC $<$<CONFIG:Release>:DISABLE_BOUNDS_CHECKS>
+    # relative file paths for use in exceptions
     PUBLIC "__PROJECT_SOURCE_DIR__=\"${PROJECT_SOURCE_DIR}\""
 )
 

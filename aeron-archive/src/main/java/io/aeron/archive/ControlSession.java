@@ -44,7 +44,6 @@ class ControlSession implements Session
     }
 
     private boolean hasActiveListing;
-    private boolean isInvalidVersion;
     private final long controlSessionId;
     private final long correlationId;
     private final long connectTimeoutMs;
@@ -56,12 +55,14 @@ class ControlSession implements Session
     private final ArrayDeque<BooleanSupplier> queuedResponses = new ArrayDeque<>(8);
     private final ControlSessionDemuxer demuxer;
     private final Publication controlPublication;
+    private final String invalidVersionMessage;
     private State state = State.INIT;
 
     ControlSession(
         final long controlSessionId,
         final long correlationId,
         final long connectTimeoutMs,
+        final String invalidVersionMessage,
         final ControlSessionDemuxer demuxer,
         final Publication controlPublication,
         final ArchiveConductor conductor,
@@ -71,6 +72,7 @@ class ControlSession implements Session
         this.controlSessionId = controlSessionId;
         this.correlationId = correlationId;
         this.connectTimeoutMs = connectTimeoutMs;
+        this.invalidVersionMessage = invalidVersionMessage;
         this.demuxer = demuxer;
         this.controlPublication = controlPublication;
         this.conductor = conductor;
@@ -87,11 +89,6 @@ class ControlSession implements Session
     public void abort()
     {
         state(State.INACTIVE);
-    }
-
-    void invalidVersion()
-    {
-        isInvalidVersion = true;
     }
 
     public void close()
@@ -463,14 +460,14 @@ class ControlSession implements Session
         else if (nowMs > resendDeadlineMs)
         {
             resendDeadlineMs = nowMs + RESEND_INTERVAL_MS;
-            if (isInvalidVersion)
+            if (null != invalidVersionMessage)
             {
                 controlResponseProxy.sendResponse(
                     controlSessionId,
                     correlationId,
                     controlSessionId,
                     ERROR,
-                    "invalid client version",
+                    invalidVersionMessage,
                     controlPublication);
 
                 workCount += 1;
@@ -493,12 +490,12 @@ class ControlSession implements Session
 
     private boolean hasNoActivity(final long nowMs)
     {
-        return activityDeadlineMs != Aeron.NULL_VALUE && nowMs > activityDeadlineMs;
+        return Aeron.NULL_VALUE != activityDeadlineMs & nowMs > activityDeadlineMs;
     }
 
     private void updateState()
     {
-        if (State.CONNECTED == state && !isInvalidVersion)
+        if (State.CONNECTED == state && null == invalidVersionMessage)
         {
             state(State.ACTIVE);
         }

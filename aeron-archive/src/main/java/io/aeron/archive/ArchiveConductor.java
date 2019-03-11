@@ -212,21 +212,25 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             .mtu(ctx.controlMtuLength())
             .build();
 
+        String invalidVersionMessage = null;
+        if (SemanticVersion.major(version) != AeronArchive.Configuration.MAJOR_VERSION)
+        {
+            invalidVersionMessage = "invalid client version " + SemanticVersion.toString(version) +
+                ", archive is " + SemanticVersion.toString(AeronArchive.Configuration.SEMANTIC_VERSION);
+        }
+
         final ControlSession controlSession = new ControlSession(
             nextControlSessionId++,
             correlationId,
             connectTimeoutMs,
+            invalidVersionMessage,
             demuxer,
             aeron.addExclusivePublication(controlChannel, streamId),
             this,
             cachedEpochClock,
             controlResponseProxy);
-        addSession(controlSession);
 
-        if (SemanticVersion.major(version) != AeronArchive.Configuration.MAJOR_VERSION)
-        {
-            controlSession.invalidVersion();
-        }
+        addSession(controlSession);
 
         return controlSession;
     }

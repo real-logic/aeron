@@ -19,6 +19,7 @@ import io.aeron.Aeron;
 import io.aeron.Publication;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.CloseReason;
+import io.aeron.cluster.codecs.EventCode;
 import io.aeron.driver.exceptions.InvalidChannelException;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.CloseHelper;
@@ -35,7 +36,7 @@ class ClusterSession
 
     enum State
     {
-        INIT, CONNECTED, CHALLENGED, AUTHENTICATED, REJECTED, INVALID_VERSION, OPEN, CLOSED
+        INIT, CONNECTED, CHALLENGED, AUTHENTICATED, REJECTED, OPEN, CLOSED
     }
 
     private boolean hasNewLeaderEventPending = false;
@@ -47,6 +48,8 @@ class ClusterSession
     private final String responseChannel;
     private Publication responsePublication;
     private State state = State.INIT;
+    private String responseDetail = null;
+    private EventCode eventCode = null;
     private CloseReason closeReason = CloseReason.NULL_VAL;
     private byte[] encodedPrincipal = NULL_PRINCIPAL;
 
@@ -200,6 +203,23 @@ class ClusterSession
         this.correlationId = correlationId;
     }
 
+    void reject(final EventCode code, final String responseDetail)
+    {
+        this.state = State.REJECTED;
+        this.eventCode = code;
+        this.responseDetail = responseDetail;
+    }
+
+    EventCode eventCode()
+    {
+        return eventCode;
+    }
+
+    String responseDetail()
+    {
+        return responseDetail;
+    }
+
     long timeOfLastActivityMs()
     {
         return timeOfLastActivityMs;
@@ -235,7 +255,7 @@ class ClusterSession
         if (null != encodedPrincipal && encodedPrincipal.length > MAX_ENCODED_PRINCIPAL_LENGTH)
         {
             throw new ClusterException(
-                "Encoded Principal max length " +
+                "encoded principal max length " +
                 MAX_ENCODED_PRINCIPAL_LENGTH +
                 " exceeded: length=" +
                 encodedPrincipal.length);

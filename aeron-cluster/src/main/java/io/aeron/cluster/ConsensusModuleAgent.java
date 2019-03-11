@@ -287,7 +287,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     public String roleName()
     {
-        return "consensus-module_" + memberId;
+        return "consensus-module";
     }
 
     public void onSessionConnect(
@@ -310,11 +310,14 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         {
             if (AeronCluster.Configuration.MAJOR_VERSION != SemanticVersion.major(version))
             {
-                session.state(INVALID_VERSION);
+                final String detail = SESSION_INVALID_VERSION_MSG + " " + SemanticVersion.toString(version) +
+                    ", cluster is " + SemanticVersion.toString(AeronCluster.Configuration.SEMANTIC_VERSION);
+                session.reject(EventCode.ERROR, detail);
                 rejectedSessions.add(session);
             }
             else if (pendingSessions.size() + sessionByIdMap.size() >= ctx.maxConcurrentSessions())
             {
+                session.reject(EventCode.ERROR, SESSION_LIMIT_MSG);
                 rejectedSessions.add(session);
             }
             else
@@ -1841,18 +1844,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         for (int lastIndex = rejectedSessions.size() - 1, i = lastIndex; i >= 0; i--)
         {
             final ClusterSession session = rejectedSessions.get(i);
-            String detail = ConsensusModule.Configuration.SESSION_LIMIT_MSG;
-            EventCode eventCode = EventCode.ERROR;
-
-            if (session.state() == REJECTED)
-            {
-                detail = ConsensusModule.Configuration.SESSION_REJECTED_MSG;
-                eventCode = EventCode.AUTHENTICATION_REJECTED;
-            }
-            else if (session.state() == INVALID_VERSION)
-            {
-                detail = ConsensusModule.Configuration.SESSION_INVALID_VERSION_MSG;
-            }
+            final String detail = session.responseDetail();
+            final EventCode eventCode = session.eventCode();
 
             if (egressPublisher.sendEvent(session, leadershipTermId, leaderMember.id(), eventCode, detail) ||
                 nowMs > (session.timeOfLastActivityMs() + sessionTimeoutMs))

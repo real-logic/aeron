@@ -582,9 +582,7 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * @return covariant return for fluent API.
-         * @see CommonContext#aeronDirectoryName(String)
-         * @see CommonContext#AERON_DIR_PROP_NAME
+         * {@inheritDoc}
          */
         public Context aeronDirectoryName(final String dirName)
         {
@@ -593,9 +591,7 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * @return covariant return for fluent API.
-         * @see CommonContext#driverTimeoutMs(long)
-         * @see CommonContext#DRIVER_TIMEOUT_PROP_NAME
+         * {@inheritDoc}
          */
         public Context driverTimeoutMs(final long value)
         {
@@ -604,8 +600,7 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * @return covariant return for fluent API.
-         * @see CommonContext#countersMetaDataBuffer(UnsafeBuffer)
+         * {@inheritDoc}
          */
         public Context countersMetaDataBuffer(final UnsafeBuffer countersMetaDataBuffer)
         {
@@ -614,8 +609,7 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * @return covariant return for fluent API.
-         * @see CommonContext#countersValuesBuffer(UnsafeBuffer)
+         * {@inheritDoc}
          */
         public Context countersValuesBuffer(final UnsafeBuffer countersValuesBuffer)
         {

@@ -214,6 +214,9 @@ public class PublicationImage
         rebuildPosition.setOrdered(position);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean free()
     {
         return rawLog.free();
@@ -235,6 +238,11 @@ public class PublicationImage
         rawLog.close();
     }
 
+    /**
+     * The correlation id assigned by the driver when created.
+     *
+     * @return the correlation id assigned by the driver when created.
+     */
     public long correlationId()
     {
         return correlationId;
@@ -294,7 +302,7 @@ public class PublicationImage
     /**
      * Called from the {@link LossDetector} when gap is detected by the {@link DriverConductor} thread.
      *
-     * @see LossHandler
+     * {@inheritDoc}
      */
     public void onGapDetected(final int termId, final int termOffset, final int length)
     {
@@ -371,6 +379,12 @@ public class PublicationImage
         state(ACTIVE);
     }
 
+    /**
+     * Add a destination to this image so it can merge streams.
+     *
+     * @param transportIndex from which packets will arrive.
+     * @param transport      from which packets will arrive.
+     */
     void addDestination(final int transportIndex, final ReceiveDestinationUdpTransport transport)
     {
         imageConnections = ArrayUtil.ensureCapacity(imageConnections, transportIndex + 1);
@@ -387,6 +401,11 @@ public class PublicationImage
         }
     }
 
+    /**
+     * Remove a destination to this image so it can merge streams.
+     *
+     * @param transportIndex from which packets arrive.
+     */
     void removeDestination(final int transportIndex)
     {
         imageConnections[transportIndex] = null;
@@ -395,25 +414,6 @@ public class PublicationImage
     void addDestinationConnectionIfUnknown(final int transportIndex, final InetSocketAddress remoteAddress)
     {
         trackConnection(transportIndex, remoteAddress, cachedNanoClock.nanoTime());
-    }
-
-    private void state(final State state)
-    {
-        timeOfLastStateChangeNs = cachedNanoClock.nanoTime();
-        this.state = state;
-    }
-
-    private void scheduleStatusMessage(final long nowNs, final long smPosition, final int receiverWindowLength)
-    {
-        final long changeNumber = beginSmChange + 1;
-        beginSmChange = changeNumber;
-
-        nextSmPosition = smPosition;
-        nextSmReceiverWindowLength = receiverWindowLength;
-
-        endSmChange = changeNumber;
-
-        timeOfLastStatusMessageScheduleNs = nowNs;
     }
 
     /**
@@ -482,6 +482,11 @@ public class PublicationImage
         }
     }
 
+    /**
+     * Is this image actively rebuilding and thus should be checked for loss.
+     *
+     * @return true if this image actively rebuilding and thus should be checked for loss.
+     */
     final boolean isTrackingRebuild()
     {
         return isTrackingRebuild;
@@ -490,10 +495,12 @@ public class PublicationImage
     /**
      * Insert frame into term buffer.
      *
-     * @param termId     for the data packet to insert into the appropriate term.
-     * @param termOffset for the start of the packet in the term.
-     * @param buffer     for the data packet to insert into the appropriate term.
-     * @param length     of the data packet
+     * @param termId         for the data packet to insert into the appropriate term.
+     * @param termOffset     for the start of the packet in the term.
+     * @param buffer         for the data packet to insert into the appropriate term.
+     * @param length         of the data packet
+     * @param transportIndex which the packet came from.
+     * @param srcAddress     which the packet came from.
      * @return number of bytes applied as a result of this insertion.
      */
     int insertPacket(
@@ -700,6 +707,9 @@ public class PublicationImage
         return rebuildPosition.get();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public void onTimeEvent(final long timeNs, final long timesMs, final DriverConductor conductor)
     {
         switch (state)
@@ -724,6 +734,9 @@ public class PublicationImage
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public boolean hasReachedEndOfLife()
     {
         return State.DONE == state;
@@ -809,5 +822,24 @@ public class PublicationImage
         }
 
         return true;
+    }
+
+    private void state(final State state)
+    {
+        timeOfLastStateChangeNs = cachedNanoClock.nanoTime();
+        this.state = state;
+    }
+
+    private void scheduleStatusMessage(final long nowNs, final long smPosition, final int receiverWindowLength)
+    {
+        final long changeNumber = beginSmChange + 1;
+        beginSmChange = changeNumber;
+
+        nextSmPosition = smPosition;
+        nextSmReceiverWindowLength = receiverWindowLength;
+
+        endSmChange = changeNumber;
+
+        timeOfLastStatusMessageScheduleNs = nowNs;
     }
 }

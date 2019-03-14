@@ -1,5 +1,6 @@
 package io.aeron.agent;
 
+import io.aeron.cluster.Election;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 
 final class ClusterEventLogger
@@ -13,7 +14,7 @@ final class ClusterEventLogger
     }
 
 
-    void logElectionStateChange(final Object newState, final long nowMs)
+    void logElectionStateChange(final Election.State newState, final long nowMs)
     {
 
     }

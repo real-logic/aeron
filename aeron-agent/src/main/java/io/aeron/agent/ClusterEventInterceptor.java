@@ -15,6 +15,7 @@
  */
 package io.aeron.agent;
 
+import io.aeron.cluster.Election;
 import net.bytebuddy.asm.Advice;
 
 import static io.aeron.agent.ClusterEventLogger.LOGGER;
@@ -22,12 +23,12 @@ import static io.aeron.agent.ClusterEventLogger.LOGGER;
 /**
  * Intercepts calls in the driver to log the clean up of major resources.
  */
-class ClusterEventInterceptor
+final class ClusterEventInterceptor
 {
     static class ElectionStateChange
     {
         @Advice.OnMethodEnter
-        static void electionStateChangeInterceptor(final Object /*(Election.State*/ newState, final long nowMs)
+        static void electionStateChangeInterceptor(final Election.State newState, final long nowMs)
         {
             LOGGER.logElectionStateChange(newState, nowMs);
         }

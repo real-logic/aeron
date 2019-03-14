@@ -22,6 +22,7 @@ import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.dynamic.scaffold.TypeValidation;
 import net.bytebuddy.matcher.ElementMatcher;
+import net.bytebuddy.matcher.ElementMatchers;
 import net.bytebuddy.utility.JavaModule;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.AgentRunner;
@@ -114,9 +115,31 @@ public class EventLogAgent
         readerAgentRunner = new AgentRunner(
             new SleepingMillisIdleStrategy(SLEEP_PERIOD_MS), Throwable::printStackTrace, null, getReaderAgent());
 
-        logTransformer = new AgentBuilder.Default(new ByteBuddy().with(TypeValidation.DISABLED))
+        AgentBuilder agentBuilder = new AgentBuilder.Default(new ByteBuddy().with(TypeValidation.DISABLED))
             .with(LISTENER)
-            .disableClassFormatChanges()
+            .disableClassFormatChanges();
+        agentBuilder = addDriverEventsInstrumentation(shouldRedefine, agentBuilder);
+        agentBuilder = addClusterEventsInstrumentation(agentBuilder);
+        logTransformer = agentBuilder.installOn(instrumentation);
+
+        final Thread thread = new Thread(readerAgentRunner);
+        thread.setName("event-log-reader");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private static AgentBuilder.Identified.Extendable addClusterEventsInstrumentation(final AgentBuilder agentBuilder)
+    {
+        return agentBuilder
+            .type(ElementMatchers.named("Election"))
+            .transform(((builder, typeDescription, classLoader, module) ->
+                builder.visit(to(ClusterEventInterceptor.ElectionStateChange.class).on(named("state")))));
+    }
+
+    private static AgentBuilder.Identified.Extendable addDriverEventsInstrumentation(
+        final boolean shouldRedefine, final AgentBuilder agentBuilder)
+    {
+        return agentBuilder
             .with(shouldRedefine ?
                 AgentBuilder.RedefinitionStrategy.RETRANSFORMATION : AgentBuilder.RedefinitionStrategy.DISABLED)
             .type(nameEndsWith("DriverConductor"))
@@ -153,13 +176,7 @@ public class EventLogAgent
                     .visit(to(ChannelEndpointInterceptor.UdpChannelTransportInterceptor.SendHook.class)
                         .on(named("sendHook")))
                     .visit(to(ChannelEndpointInterceptor.UdpChannelTransportInterceptor.ReceiveHook.class)
-                        .on(named("receiveHook"))))
-            .installOn(instrumentation);
-
-        final Thread thread = new Thread(readerAgentRunner);
-        thread.setName("event-log-reader");
-        thread.setDaemon(true);
-        thread.start();
+                        .on(named("receiveHook"))));
     }
 
     public static void premain(final String agentArgs, final Instrumentation instrumentation)

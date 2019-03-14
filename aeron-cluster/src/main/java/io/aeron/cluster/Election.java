@@ -31,7 +31,7 @@ import static io.aeron.cluster.ClusterMember.compareLog;
 /**
  * Election process to determine a new cluster leader.
  */
-class Election implements AutoCloseable
+public class Election implements AutoCloseable
 {
     /**
      * The multiplier applied to the {@link ConsensusModule.Configuration#ELECTION_STATUS_INTERVAL_PROP_NAME}
@@ -44,7 +44,7 @@ class Election implements AutoCloseable
      */
     static final int ELECTION_STATE_TYPE_ID = 207;
 
-    enum State
+    public enum State
     {
         INIT(0),
         CANVASS(1),

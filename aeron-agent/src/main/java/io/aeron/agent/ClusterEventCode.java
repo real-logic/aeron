@@ -48,8 +48,18 @@ public enum ClusterEventCode
         return id;
     }
 
+    public long tagBit()
+    {
+        return tagBit;
+    }
+
     public void decode(final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
         dissector.dissect(this, buffer, offset, builder);
+    }
+
+    public static boolean isEnabled(final ClusterEventCode code, final long mask)
+    {
+        return ((mask & code.tagBit()) == code.tagBit());
     }
 }

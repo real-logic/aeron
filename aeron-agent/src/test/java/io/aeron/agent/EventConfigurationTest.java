@@ -21,6 +21,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.EnumSet;
 import java.util.Set;
+import java.util.function.LongSupplier;
+import java.util.stream.Collectors;
 
 import static io.aeron.agent.EventConfiguration.ALL_LOGGER_EVENT_CODES;
 import static io.aeron.agent.EventConfiguration.getEnabledEventCodes;
@@ -71,7 +73,8 @@ public class EventConfigurationTest
     public void makeTagBitSet()
     {
         final Set<EventCode> eventCodes = EnumSet.of(EventCode.FRAME_OUT, EventCode.FRAME_IN);
-        final long bitSet = EventConfiguration.makeTagBitSet(eventCodes);
+        final long bitSet = EventConfiguration.makeTagBitSet(
+            eventCodes.stream().map(ec -> (LongSupplier)ec::tagBit).collect(Collectors.toSet()));
         assertThat(bitSet, is(EventCode.FRAME_OUT.tagBit() | EventCode.FRAME_IN.tagBit()));
     }
 }

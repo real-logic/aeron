@@ -21,7 +21,11 @@ import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.LongSupplier;
+import java.util.stream.Collectors;
 
 import static io.aeron.agent.EventCode.*;
 
@@ -44,6 +48,10 @@ public class EventConfiguration
      * </ul>
      */
     public static final String ENABLED_EVENT_CODES_PROP_NAME = "aeron.event.log";
+    /**
+     * TODO Javadoc
+     */
+    public static final String ENABLED_CLUSTER_EVENT_CODES_PROP_NAME = "aeron.event.cluster.log";
 
     public static final Set<EventCode> ADMIN_ONLY_EVENT_CODES = EnumSet.of(
         CMD_IN_ADD_PUBLICATION,
@@ -106,19 +114,32 @@ public class EventConfiguration
 
     public static long getEnabledEventCodes()
     {
-        return makeTagBitSet(getEnabledEventCodes(System.getProperty(ENABLED_EVENT_CODES_PROP_NAME)));
+        return makeTagBitSet(getEnabledEventCodes(System.getProperty(ENABLED_EVENT_CODES_PROP_NAME))
+            .stream().map(ec -> (LongSupplier)ec::tagBit).collect(Collectors.toSet()));
     }
 
-    static long makeTagBitSet(final Set<EventCode> eventCodes)
+    public static long getEnabledClusterEventCodes()
+    {
+        return makeTagBitSet(getEnabledClusterEventCodes(System.getProperty(ENABLED_CLUSTER_EVENT_CODES_PROP_NAME))
+            .stream().map(ec -> (LongSupplier)ec::tagBit).collect(Collectors.toSet()));
+    }
+
+    static long makeTagBitSet(final Set<LongSupplier> eventCodes)
     {
         long result = 0;
 
-        for (final EventCode eventCode : eventCodes)
+        for (final LongSupplier eventCode : eventCodes)
         {
-            result |= eventCode.tagBit();
+            result |= eventCode.getAsLong();
         }
 
         return result;
+    }
+
+    static Set<ClusterEventCode> getEnabledClusterEventCodes(final String enabledClusterEventCodes)
+    {
+        // TODO filter based on system property
+        return EnumSet.allOf(ClusterEventCode.class);
     }
 
     /**

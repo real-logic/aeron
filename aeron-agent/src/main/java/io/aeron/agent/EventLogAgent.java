@@ -105,7 +105,7 @@ public class EventLogAgent
 
     private static void agent(final boolean shouldRedefine, final Instrumentation instrumentation)
     {
-        if (EventLogger.ENABLED_EVENT_CODES == 0)
+        if (EventLogger.ENABLED_EVENT_CODES == 0 && ClusterEventLogger.ENABLED_EVENT_CODES == 0)
         {
             return;
         }

@@ -124,7 +124,7 @@ public class EventConfiguration
     /**
      * Get the {@link Set} of {@link EventCode}s that are enabled for the logger.
      *
-     * @param enabledLoggerEventCodes that can be "all", "prod", or a comma separated list of Event Code ids or names.
+     * @param enabledLoggerEventCodes that can be "all", "admin", or a comma separated list of Event Code ids or names.
      * @return the {@link Set} of {@link EventCode}s that are enabled for the logger.
      */
     static Set<EventCode> getEnabledEventCodes(final String enabledLoggerEventCodes)

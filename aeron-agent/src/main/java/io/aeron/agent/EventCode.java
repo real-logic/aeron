@@ -70,16 +70,9 @@ public enum EventCode
     private static final int MAX_ID = 63;
     private static final EventCode[] EVENT_CODE_BY_ID = new EventCode[MAX_ID];
 
-
-    @FunctionalInterface
-    interface DissectFunction
-    {
-        void dissect(EventCode code, MutableDirectBuffer buffer, int offset, StringBuilder builder);
-    }
-
     private final long tagBit;
     private final int id;
-    private final DissectFunction dissector;
+    private final DissectFunction/*<EventCode>*/ dissector;
 
     static
     {
@@ -95,7 +88,7 @@ public enum EventCode
         }
     }
 
-    EventCode(final int id, final DissectFunction dissector)
+    EventCode(final int id, final DissectFunction/*<EventCode>*/ dissector)
     {
         this.id = id;
         this.tagBit = 1L << id;

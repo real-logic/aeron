@@ -15,6 +15,7 @@
  */
 package io.aeron.agent;
 
+import io.aeron.cluster.Election;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.agent.builder.AgentBuilder;
 import net.bytebuddy.agent.builder.ResettableClassFileTransformer;
@@ -22,7 +23,6 @@ import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.dynamic.scaffold.TypeValidation;
 import net.bytebuddy.matcher.ElementMatcher;
-import net.bytebuddy.matcher.ElementMatchers;
 import net.bytebuddy.utility.JavaModule;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.AgentRunner;
@@ -32,8 +32,7 @@ import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
 
 import static net.bytebuddy.asm.Advice.to;
-import static net.bytebuddy.matcher.ElementMatchers.nameEndsWith;
-import static net.bytebuddy.matcher.ElementMatchers.named;
+import static net.bytebuddy.matcher.ElementMatchers.*;
 
 /**
  * A Java agent which when attached to a JVM will weave byte code to intercept events as defined by {@link DriverEventCode}.
@@ -118,8 +117,7 @@ public class EventLogAgent
         AgentBuilder agentBuilder = new AgentBuilder.Default(new ByteBuddy().with(TypeValidation.DISABLED))
             .with(LISTENER)
             .disableClassFormatChanges();
-        agentBuilder = addDriverEventsInstrumentation(shouldRedefine, agentBuilder);
-        agentBuilder = addClusterEventsInstrumentation(agentBuilder);
+        agentBuilder = addEventsInstrumentation(shouldRedefine, agentBuilder);
         logTransformer = agentBuilder.installOn(instrumentation);
 
         final Thread thread = new Thread(readerAgentRunner);
@@ -128,15 +126,7 @@ public class EventLogAgent
         thread.start();
     }
 
-    private static AgentBuilder.Identified.Extendable addClusterEventsInstrumentation(final AgentBuilder agentBuilder)
-    {
-        return agentBuilder
-            .type(ElementMatchers.named("Election"))
-            .transform(((builder, typeDescription, classLoader, module) ->
-                builder.visit(to(ClusterEventInterceptor.ElectionStateChange.class).on(named("state")))));
-    }
-
-    private static AgentBuilder.Identified.Extendable addDriverEventsInstrumentation(
+    private static AgentBuilder.Identified.Extendable addEventsInstrumentation(
         final boolean shouldRedefine, final AgentBuilder agentBuilder)
     {
         return agentBuilder
@@ -176,7 +166,11 @@ public class EventLogAgent
                     .visit(to(ChannelEndpointInterceptor.UdpChannelTransportInterceptor.SendHook.class)
                         .on(named("sendHook")))
                     .visit(to(ChannelEndpointInterceptor.UdpChannelTransportInterceptor.ReceiveHook.class)
-                        .on(named("receiveHook"))));
+                        .on(named("receiveHook"))))
+            .type(nameEndsWith("Election"))
+            .transform(((builder, typeDescription, classLoader, module) ->
+                builder.visit(to(ClusterEventInterceptor.ElectionStateChange.class).on(named("state")
+                    .and(takesArgument(0, Election.State.class))))));
     }
 
     public static void premain(final String agentArgs, final Instrumentation instrumentation)

@@ -22,8 +22,7 @@ import java.io.PrintStream;
 import java.util.EnumSet;
 import java.util.Set;
 
-import static io.aeron.agent.EventConfiguration.ALL_LOGGER_EVENT_CODES;
-import static io.aeron.agent.EventConfiguration.getEnabledEventCodes;
+import static io.aeron.agent.EventConfiguration.*;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThat;
@@ -65,6 +64,12 @@ public class EventConfigurationTest
     {
         final Set<DriverEventCode> expectedCodes = EnumSet.of(DriverEventCode.FRAME_OUT, DriverEventCode.FRAME_IN);
         assertThat(getEnabledEventCodes("FRAME_OUT,FRAME_IN"), is(expectedCodes));
+    }
+
+    @Test
+    public void allClusterEventsShouldBeEnabled()
+    {
+        assertThat(getEnabledClusterEventCodes(""), is(EnumSet.allOf(ClusterEventCode.class)));
     }
 
     @Test

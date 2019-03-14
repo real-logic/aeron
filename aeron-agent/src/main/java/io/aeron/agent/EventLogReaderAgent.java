@@ -94,7 +94,6 @@ public class EventLogReaderAgent implements Agent, MessageHandler
         if (DriverEventCode.EVENT_CODE_TYPE == identifier.eventCodeTypeId)
         {
             DriverEventCode.get(identifier.eventCodeId).decode(buffer, index, builder);
-            builder.append(System.lineSeparator());
         }
         else if (ClusterEventCode.EVENT_CODE_TYPE == identifier.eventCodeTypeId)
         {
@@ -102,9 +101,9 @@ public class EventLogReaderAgent implements Agent, MessageHandler
         }
         else
         {
-            builder.append("Unknown EventCodeType: ").append(identifier.eventCodeTypeId)
-                .append(System.lineSeparator());
+            builder.append("Unknown EventCodeType: ").append(identifier.eventCodeTypeId);
         }
+        builder.append(System.lineSeparator());
 
         if (null == fileChannel)
         {

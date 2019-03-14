@@ -9,10 +9,10 @@ import java.nio.ByteBuffer;
 
 import static io.aeron.agent.ClusterEventCode.ELECTION_STATE_CHANGE;
 
-final class ClusterEventLogger
+public final class ClusterEventLogger
 {
     static final long ENABLED_EVENT_CODES = EventConfiguration.getEnabledClusterEventCodes();
-    static final ClusterEventLogger LOGGER = new ClusterEventLogger(EventConfiguration.EVENT_RING_BUFFER);
+    public static final ClusterEventLogger LOGGER = new ClusterEventLogger(EventConfiguration.EVENT_RING_BUFFER);
     private static final ThreadLocal<MutableDirectBuffer> ENCODING_BUFFER = ThreadLocal.withInitial(
         () -> new UnsafeBuffer(ByteBuffer.allocateDirect(EventConfiguration.MAX_EVENT_LENGTH)));
 
@@ -23,7 +23,7 @@ final class ClusterEventLogger
         ringBuffer = eventRingBuffer;
     }
 
-    void logElectionStateChange(final Election.State newState, final long nowMs)
+    public void logElectionStateChange(final Election.State newState, final long nowMs)
     {
         if (ClusterEventCode.isEnabled(ELECTION_STATE_CHANGE, ENABLED_EVENT_CODES))
         {

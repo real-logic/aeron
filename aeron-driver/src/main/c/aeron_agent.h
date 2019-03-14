@@ -42,6 +42,11 @@ typedef struct aeron_idle_strategy_stct
 }
 aeron_idle_strategy_t;
 
+#define AERON_IDLE_STRATEGY_BACKOFF_MAX_SPINS (10)
+#define AERON_IDLE_STRATEGY_BACKOFF_MAX_YIELDS (20)
+#define AERON_IDLE_STRATEGY_BACKOFF_MIN_PARK_PERIOD_NS (1000)
+#define AERON_IDLE_STRATEGY_BACKOFF_MAX_PARK_PERIOD_NS (1 * 1000 * 1000)
+
 typedef struct aeron_agent_runner_stct
 {
     const char *role_name;

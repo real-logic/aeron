@@ -37,7 +37,7 @@ void aeron_nano_sleep(size_t nanoseconds)
     WaitForSingleObject(timer, INFINITE);
     CloseHandle(timer);
 #else
-    nanosleep(&(struct timespec) { .tv_nsec = 1 }, NULL);
+    nanosleep(&(struct timespec) { .tv_nsec = nanoseconds }, NULL);
 #endif
 }
 

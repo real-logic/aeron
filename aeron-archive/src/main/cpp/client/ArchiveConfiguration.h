@@ -26,8 +26,19 @@ namespace aeron {
 namespace archive {
 namespace client {
 
+/**
+ * Represents a timestamp that has not been set. Can be used when the time is not known.
+ */
 constexpr const std::int64_t NULL_TIMESTAMP = aeron::NULL_VALUE;
+
+/**
+ * Represents a position that has not been set. Can be used when the position is not known.
+ */
 constexpr const std::int64_t NULL_POSITION = aeron::NULL_VALUE;
+
+/**
+ * Represents a length that has not been set. If null length is provided then replay the whole recorded stream.
+ */
 constexpr const std::int64_t NULL_LENGTH = aeron::NULL_VALUE;
 
 namespace Configuration

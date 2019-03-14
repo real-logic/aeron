@@ -29,8 +29,19 @@
 
 namespace aeron {
 namespace archive {
+
+/// Archive client namespace
 namespace client {
 
+/**
+ * Client for interacting with a local or remote Aeron Archive that records and replays message streams.
+ * <p>
+ * This client provides a simple interaction model which is mostly synchronous and may not be optimal.
+ * The underlying components such as the ArchiveProxy and the ControlResponsePoller or
+ * RecordingDescriptorPoller may be used directly if a more asynchronous interaction is required.
+ * <p>
+ * Note: This class is threadsafe.
+ */
 class AeronArchive
 {
 public:
@@ -52,12 +63,20 @@ public:
         REMOTE = 1
     };
 
+    /**
+     * Allows for the async establishment of a archive session.
+     */
     class AsyncConnect
     {
     public:
         AsyncConnect(
             Context_t& context, std::shared_ptr<Aeron> aeron, std::int64_t subscriptionId, std::int64_t publicationId);
 
+        /**
+         * Poll for a complete connection.
+         *
+         * @return a new AeronArchive if successfully connected otherwise null.
+         */
         std::shared_ptr<AeronArchive> poll();
     private:
         std::unique_ptr<Context_t> m_ctx;
@@ -72,14 +91,34 @@ public:
         std::uint8_t m_step = 0;
     };
 
+    /**
+     * Begin an attempt at creating a connection which can be completed by calling AsyncConnect#poll.
+     *
+     * @param ctx for the archive connection.
+     * @return the AsyncConnect that can be polled for completion.
+     */
     static std::shared_ptr<AsyncConnect> asyncConnect(Context_t& ctx);
 
+    /**
+     * Begin an attempt at creating a connection which can be completed by calling AsyncConnect#poll.
+     *
+     * @return the AsyncConnect that can be polled for completion.
+     */
     inline static std::shared_ptr<AsyncConnect> asyncConnect()
     {
         Context_t ctx;
         return AeronArchive::asyncConnect(ctx);
     }
 
+    /**
+     * Connect to an Aeron archive by providing a Context. This will create a control session.
+     * <p>
+     * Before connecting Context#conclude will be called.
+     *
+     * @param context for connection configuration.
+     * @tparam ConnectIdleStrategy to use between polling calls.
+     * @return the newly created Aeron Archive client.
+     */
     template<typename ConnectIdleStrategy = aeron::concurrent::YieldingIdleStrategy>
     inline static std::shared_ptr<AeronArchive> connect(Context_t& context)
     {
@@ -102,42 +141,84 @@ public:
         return archive;
     }
 
+    /**
+     * Connect to an Aeron archive using a default Context. This will create a control session.
+     *
+     * @return the newly created AeronArchive client.
+     */
     inline static std::shared_ptr<AeronArchive> connect()
     {
         Context_t ctx;
         return AeronArchive::connect(ctx);
     }
 
+    /**
+     * Get the Context used to connect this archive client.
+     *
+     * @return the Context used to connect this archive client.
+     */
     inline Context_t& context()
     {
         return *m_ctx;
     }
 
+    /**
+     * The control session id allocated for this connection to the archive.
+     *
+     * @return control session id allocated for this connection to the archive.
+     */
     inline std::int64_t controlSessionId()
     {
         return m_controlSessionId;
     }
 
+    /**
+     * The ArchiveProxy for send asynchronous messages to the connected archive.
+     *
+     * @return the ArchiveProxy for send asynchronous messages to the connected archive.
+     */
     inline ArchiveProxy& archiveProxy()
     {
         return *m_archiveProxy;
     }
 
+    /**
+     * Get the ControlResponsePoller for polling additional events on the control channel.
+     *
+     * @return the ControlResponsePoller for polling additional events on the control channel.
+     */
     inline ControlResponsePoller& controlResponsePoller()
     {
         return *m_controlResponsePoller;
     }
 
+    /**
+     * Get the RecordingDescriptorPoller for polling recording descriptors on the control channel.
+     *
+     * @return the RecordingDescriptorPoller for polling recording descriptors on the control channel.
+     */
     inline RecordingDescriptorPoller& recordingDescriptorPoller()
     {
         return *m_recordingDescriptorPoller;
     }
 
+    /**
+     * The RecordingSubscriptionDescriptorPoller for polling subscription descriptors on the control channel.
+     *
+     * @return the RecordingSubscriptionDescriptorPoller for polling subscription descriptors on the control
+     * channel.
+     */
     inline RecordingSubscriptionDescriptorPoller& recordingSubscriptionDescriptorPoller()
     {
         return *m_recordingSubscriptionDescriptorPoller;
     }
 
+    /**
+     * Poll the response stream once for an error. If another message is present then it will be skipped over
+     * so only call when not expecting another response.
+     *
+     * @return the error String otherwise an empty string is returned if no error is found.
+     */
     inline std::string pollForErrorResponse()
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
@@ -157,6 +238,14 @@ public:
         return std::string();
     }
 
+    /**
+     * Check if an error has been returned for the control session and throw a ArchiveException if
+     * Context#errorHandler is not set.
+     * <p>
+     * To check for an error response without raising an exception then try #pollForErrorResponse.
+     *
+     * @see #pollForErrorResponse
+     */
     inline void checkForErrorResponse()
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);

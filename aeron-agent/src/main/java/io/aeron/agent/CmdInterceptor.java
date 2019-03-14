@@ -18,8 +18,8 @@ package io.aeron.agent;
 import net.bytebuddy.asm.Advice;
 import org.agrona.DirectBuffer;
 
-import static io.aeron.agent.EventCode.*;
-import static io.aeron.agent.EventLogger.LOGGER;
+import static io.aeron.agent.DriverEventCode.*;
+import static io.aeron.agent.DriverEventLogger.LOGGER;
 import static io.aeron.command.ControlProtocolEvents.*;
 
 /**

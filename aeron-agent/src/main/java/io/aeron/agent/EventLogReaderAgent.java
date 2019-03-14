@@ -91,9 +91,9 @@ public class EventLogReaderAgent implements Agent, MessageHandler
     {
         populateIdentifier(msgTypeId, identifier);
         builder.setLength(0);
-        if (EventCode.EVENT_CODE_TYPE == identifier.eventCodeTypeId)
+        if (DriverEventCode.EVENT_CODE_TYPE == identifier.eventCodeTypeId)
         {
-            EventCode.get(identifier.eventCodeId).decode(buffer, index, builder);
+            DriverEventCode.get(identifier.eventCodeId).decode(buffer, index, builder);
             builder.append(System.lineSeparator());
         }
         else if (ClusterEventCode.EVENT_CODE_TYPE == identifier.eventCodeTypeId)

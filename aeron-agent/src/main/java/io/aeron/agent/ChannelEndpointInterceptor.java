@@ -23,8 +23,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-import static io.aeron.agent.EventCode.*;
-import static io.aeron.agent.EventLogger.LOGGER;
+import static io.aeron.agent.DriverEventCode.*;
+import static io.aeron.agent.DriverEventLogger.LOGGER;
 
 /**
  * Intercepts calls on channel endpoints for logging.

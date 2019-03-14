@@ -22,13 +22,13 @@ import java.util.Set;
 
 import static org.junit.Assert.assertTrue;
 
-public class EventCodeTest
+public class DriverEventCodeTest
 {
     @Test
     public void allTagsBitsAreUnique()
     {
         final Set<Long> seenTagBits = new HashSet<>();
-        for (final EventCode code : EventCode.values())
+        for (final DriverEventCode code : DriverEventCode.values())
         {
             assertTrue(seenTagBits.add(code.tagBit()));
         }

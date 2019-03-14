@@ -21,8 +21,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.EnumSet;
 import java.util.Set;
-import java.util.function.LongSupplier;
-import java.util.stream.Collectors;
 
 import static io.aeron.agent.EventConfiguration.ALL_LOGGER_EVENT_CODES;
 import static io.aeron.agent.EventConfiguration.getEnabledEventCodes;
@@ -35,7 +33,7 @@ public class EventConfigurationTest
     @Test
     public void nullPropertyShouldDefaultToProductionEventCodes()
     {
-        assertThat(getEnabledEventCodes(null), is(EnumSet.noneOf(EventCode.class)));
+        assertThat(getEnabledEventCodes(null), is(EnumSet.noneOf(DriverEventCode.class)));
     }
 
     @Test
@@ -46,7 +44,7 @@ public class EventConfigurationTest
         System.setErr(new PrintStream(stderr));
         try
         {
-            final Set<EventCode> enabledEventCodes = getEnabledEventCodes("list of invalid options");
+            final Set<DriverEventCode> enabledEventCodes = getEnabledEventCodes("list of invalid options");
             assertThat(enabledEventCodes.size(), is(0));
             assertThat(stderr.toString(), startsWith("unknown event code: list of invalid options"));
         }
@@ -65,16 +63,15 @@ public class EventConfigurationTest
     @Test
     public void eventCodesPropertyShouldBeParsedAsListOfEventCodes()
     {
-        final Set<EventCode> expectedCodes = EnumSet.of(EventCode.FRAME_OUT, EventCode.FRAME_IN);
+        final Set<DriverEventCode> expectedCodes = EnumSet.of(DriverEventCode.FRAME_OUT, DriverEventCode.FRAME_IN);
         assertThat(getEnabledEventCodes("FRAME_OUT,FRAME_IN"), is(expectedCodes));
     }
 
     @Test
     public void makeTagBitSet()
     {
-        final Set<EventCode> eventCodes = EnumSet.of(EventCode.FRAME_OUT, EventCode.FRAME_IN);
-        final long bitSet = EventConfiguration.makeTagBitSet(
-            eventCodes.stream().map(ec -> (LongSupplier)ec::tagBit).collect(Collectors.toSet()));
-        assertThat(bitSet, is(EventCode.FRAME_OUT.tagBit() | EventCode.FRAME_IN.tagBit()));
+        final Set<DriverEventCode> eventCodes = EnumSet.of(DriverEventCode.FRAME_OUT, DriverEventCode.FRAME_IN);
+        final long bitSet = EventConfiguration.makeTagBitSet(eventCodes);
+        assertThat(bitSet, is(DriverEventCode.FRAME_OUT.tagBit() | DriverEventCode.FRAME_IN.tagBit()));
     }
 }

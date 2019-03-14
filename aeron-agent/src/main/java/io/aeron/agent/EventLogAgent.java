@@ -36,7 +36,7 @@ import static net.bytebuddy.matcher.ElementMatchers.nameEndsWith;
 import static net.bytebuddy.matcher.ElementMatchers.named;
 
 /**
- * A Java agent which when attached to a JVM will weave byte code to intercept events as defined by {@link EventCode}.
+ * A Java agent which when attached to a JVM will weave byte code to intercept events as defined by {@link DriverEventCode}.
  * These events are recorded to an in-memory {@link org.agrona.concurrent.ringbuffer.RingBuffer} which is consumed
  * and appended asynchronous to a log as defined by the class {@link #READER_CLASSNAME_PROP_NAME} which defaults to
  * {@link EventLogReaderAgent}.
@@ -105,7 +105,7 @@ public class EventLogAgent
 
     private static void agent(final boolean shouldRedefine, final Instrumentation instrumentation)
     {
-        if (EventLogger.ENABLED_EVENT_CODES == 0 && ClusterEventLogger.ENABLED_EVENT_CODES == 0)
+        if (DriverEventLogger.ENABLED_EVENT_CODES == 0 && ClusterEventLogger.ENABLED_EVENT_CODES == 0)
         {
             return;
         }

@@ -1,7 +1,7 @@
 package io.aeron.agent;
 
 /**
- * Super-type for {@link EventCode} that can be handled by the logging agent.
+ * Super-type for {@link DriverEventCode} that can be handled by the logging agent.
  */
 public enum EventCodeType
 {

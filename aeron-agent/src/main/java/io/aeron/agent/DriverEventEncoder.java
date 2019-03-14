@@ -29,7 +29,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 /**
  * Encoding of event types to a {@link MutableDirectBuffer} for logging.
  */
-public class EventEncoder
+public class DriverEventEncoder
 {
     private static final int LOG_HEADER_LENGTH = 16;
     private static final int SOCKET_ADDRESS_MAX_LENGTH = 24;

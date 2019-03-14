@@ -5,7 +5,7 @@ import org.agrona.MutableDirectBuffer;
 /**
  * Cluster events and codecs for encoding/decoding events recorded to the {@link EventConfiguration#EVENT_RING_BUFFER}.
  */
-public enum ClusterEventCode
+public enum ClusterEventCode implements EventCode
 {
     ELECTION_STATE_CHANGE(0, ClusterEventDissector::electionStateChange);
 

@@ -31,7 +31,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  * <p>
  * <b>Note:</b>The event consumer of the log should be single threaded.
  */
-public class EventDissector
+public class DriverEventDissector
 {
     private static final DataHeaderFlyweight DATA_HEADER = new DataHeaderFlyweight();
     private static final StatusMessageFlyweight SM_HEADER = new StatusMessageFlyweight();
@@ -54,7 +54,7 @@ public class EventDissector
     private static final ClientTimeoutFlyweight CLIENT_TIMEOUT = new ClientTimeoutFlyweight();
 
     public static void dissectAsFrame(
-        final EventCode code, final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
+        final DriverEventCode code, final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
         int relativeOffset = dissectLogHeader(code, buffer, offset, builder);
 
@@ -106,7 +106,7 @@ public class EventDissector
 
     @SuppressWarnings("MethodLength")
     public static void dissectAsCommand(
-        final EventCode code, final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
+        final DriverEventCode code, final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
         final int relativeOffset = dissectLogHeader(code, buffer, offset, builder);
 
@@ -214,7 +214,8 @@ public class EventDissector
     }
 
     public static void dissectAsInvocation(
-        final EventCode code, final MutableDirectBuffer buffer, final int initialOffset, final StringBuilder builder)
+        final DriverEventCode code, final MutableDirectBuffer buffer,
+        final int initialOffset, final StringBuilder builder)
     {
         final int relativeOffset = dissectLogHeader(code, buffer, initialOffset, builder);
         builder.append(": ");
@@ -223,7 +224,7 @@ public class EventDissector
     }
 
     public static void dissectAsString(
-        final EventCode code, final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
+        final DriverEventCode code, final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
         final int relativeOffset = dissectLogHeader(code, buffer, offset, builder);
         builder.append(": ");
@@ -260,7 +261,7 @@ public class EventDissector
     }
 
     private static int dissectLogHeader(
-        final EventCode code, final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
+        final DriverEventCode code, final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
         int relativeOffset = 0;
 

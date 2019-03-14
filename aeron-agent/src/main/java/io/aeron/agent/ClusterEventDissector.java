@@ -10,6 +10,6 @@ final class ClusterEventDissector
     {
         final String stateName = buffer.getStringAscii(offset);
         final long timestampMs = buffer.getLong(offset + stateName.length() + Integer.BYTES);
-        builder.append(stateName).append(' ').append(timestampMs);
+        builder.append("Election State->").append(stateName).append(' ').append(timestampMs);
     }
 }

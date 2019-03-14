@@ -9,7 +9,7 @@ public enum ClusterEventCode
 {
     ELECTION_STATE_CHANGE(0, ClusterEventDissector::electionStateChange);
 
-    static final int EVENT_CODE_TYPE = EventCodeType.DRIVER.getTypeCode();
+    static final int EVENT_CODE_TYPE = EventCodeType.CLUSTER.getTypeCode();
     private static final int MAX_ID = 63;
     private static final ClusterEventCode[] EVENT_CODE_BY_ID = new ClusterEventCode[MAX_ID];
 

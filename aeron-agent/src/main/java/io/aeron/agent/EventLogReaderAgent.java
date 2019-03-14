@@ -32,9 +32,7 @@ import java.nio.file.Paths;
 
 import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
-import static java.nio.file.StandardOpenOption.APPEND;
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.WRITE;
+import static java.nio.file.StandardOpenOption.*;
 
 /**
  * Simple reader of {@link EventConfiguration#EVENT_RING_BUFFER} that appends to {@link System#out} by default
@@ -97,6 +95,10 @@ public class EventLogReaderAgent implements Agent, MessageHandler
         {
             EventCode.get(identifier.eventCodeId).decode(buffer, index, builder);
             builder.append(System.lineSeparator());
+        }
+        else if (ClusterEventCode.EVENT_CODE_TYPE == identifier.eventCodeTypeId)
+        {
+            ClusterEventCode.get(identifier.eventCodeId).decode(buffer, index, builder);
         }
         else
         {

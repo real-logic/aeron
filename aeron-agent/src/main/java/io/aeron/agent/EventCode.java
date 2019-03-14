@@ -72,7 +72,7 @@ public enum EventCode
 
     private final long tagBit;
     private final int id;
-    private final DissectFunction/*<EventCode>*/ dissector;
+    private final DissectFunction<EventCode> dissector;
 
     static
     {
@@ -88,7 +88,7 @@ public enum EventCode
         }
     }
 
-    EventCode(final int id, final DissectFunction/*<EventCode>*/ dissector)
+    EventCode(final int id, final DissectFunction<EventCode> dissector)
     {
         this.id = id;
         this.tagBit = 1L << id;

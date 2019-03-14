@@ -3,7 +3,7 @@ package io.aeron.agent;
 import org.agrona.MutableDirectBuffer;
 
 @FunctionalInterface
-interface DissectFunction
+interface DissectFunction<T>
 {
-    void dissect(EventCode event, MutableDirectBuffer buffer, int offset, StringBuilder builder);
+    void dissect(T event, MutableDirectBuffer buffer, int offset, StringBuilder builder);
 }

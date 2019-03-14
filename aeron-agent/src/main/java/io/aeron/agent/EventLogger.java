@@ -55,7 +55,7 @@ public class EventLogger
             final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
             final int encodedLength = EventEncoder.encode(encodedBuffer, buffer, offset, length);
 
-            ringBuffer.write(code.id(), encodedBuffer, 0, encodedLength);
+            ringBuffer.write(toEventCodeId(code), encodedBuffer, 0, encodedLength);
         }
     }
 
@@ -67,7 +67,7 @@ public class EventLogger
             final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
             final int encodedLength = EventEncoder.encode(encodedBuffer, buffer, offset, length, dstAddress);
 
-            ringBuffer.write(EventCode.FRAME_IN.id(), encodedBuffer, 0, encodedLength);
+            ringBuffer.write(toEventCodeId(EventCode.FRAME_IN), encodedBuffer, 0, encodedLength);
         }
     }
 
@@ -79,7 +79,7 @@ public class EventLogger
             final int encodedLength = EventEncoder.encode(
                 encodedBuffer, buffer, buffer.position(), buffer.remaining(), dstAddress);
 
-            ringBuffer.write(EventCode.FRAME_OUT.id(), encodedBuffer, 0, encodedLength);
+            ringBuffer.write(toEventCodeId(EventCode.FRAME_OUT), encodedBuffer, 0, encodedLength);
         }
     }
 
@@ -123,6 +123,11 @@ public class EventLogger
         final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
         final int encodingLength = EventEncoder.encode(encodedBuffer, value);
 
-        ringBuffer.write(code.id(), encodedBuffer, 0, encodingLength);
+        ringBuffer.write(toEventCodeId(code), encodedBuffer, 0, encodingLength);
+    }
+
+    private static int toEventCodeId(final EventCode code)
+    {
+        return EventCode.EVENT_CODE_TYPE << 16 | (code.id() & 0xFFFF);
     }
 }

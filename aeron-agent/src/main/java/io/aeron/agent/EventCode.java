@@ -66,8 +66,10 @@ public enum EventCode
 
     CMD_OUT_ON_CLIENT_TIMEOUT(43, EventDissector::dissectAsCommand);
 
+    static final int EVENT_CODE_TYPE = EventCodeType.DRIVER.getTypeCode();
     private static final int MAX_ID = 63;
     private static final EventCode[] EVENT_CODE_BY_ID = new EventCode[MAX_ID];
+
 
     @FunctionalInterface
     interface DissectFunction

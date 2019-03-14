@@ -52,6 +52,7 @@ public class EventLogReaderAgent implements Agent, MessageHandler
     final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(
         EventConfiguration.MAX_EVENT_LENGTH + System.lineSeparator().length());
     private final StringBuilder builder = new StringBuilder();
+    private final EventCodeIdentifier identifier = new EventCodeIdentifier();
 
     public EventLogReaderAgent()
     {
@@ -90,9 +91,18 @@ public class EventLogReaderAgent implements Agent, MessageHandler
 
     public void onMessage(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
     {
+        populateIdentifier(msgTypeId, identifier);
         builder.setLength(0);
-        EventCode.get(msgTypeId).decode(buffer, index, builder);
-        builder.append(System.lineSeparator());
+        if (EventCode.EVENT_CODE_TYPE == identifier.eventCodeTypeId)
+        {
+            EventCode.get(identifier.eventCodeId).decode(buffer, index, builder);
+            builder.append(System.lineSeparator());
+        }
+        else
+        {
+            builder.append("Unknown EventCodeType: ").append(identifier.eventCodeTypeId)
+                .append(System.lineSeparator());
+        }
 
         if (null == fileChannel)
         {
@@ -129,5 +139,17 @@ public class EventLogReaderAgent implements Agent, MessageHandler
         {
             LangUtil.rethrowUnchecked(ex);
         }
+    }
+
+    private static void populateIdentifier(final int msgTypeId, final EventCodeIdentifier identifier)
+    {
+        identifier.eventCodeTypeId = msgTypeId >> 16;
+        identifier.eventCodeId = msgTypeId & 0xFFFF;
+    }
+
+    private static final class EventCodeIdentifier
+    {
+        private int eventCodeTypeId;
+        private int eventCodeId;
     }
 }

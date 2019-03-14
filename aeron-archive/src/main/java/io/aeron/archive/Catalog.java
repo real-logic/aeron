@@ -636,6 +636,8 @@ class Catalog implements AutoCloseable
      * On catalog load we verify entries are in coherent state and attempt to recover entries data where untimely
      * termination of recording has resulted in an unaccounted for stopPosition/stopTimestamp. This operation may be
      * expensive for large catalogs.
+     *
+     * @param fixOnRefresh set if the catalog should have its entries fixed.
      */
     private void refreshCatalog(final boolean fixOnRefresh)
     {

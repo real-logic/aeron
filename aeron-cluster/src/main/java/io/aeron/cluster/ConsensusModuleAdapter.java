@@ -55,7 +55,7 @@ final class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
     {
         messageHeaderDecoder.wrap(buffer, offset);
 
-        final int schemaId = messageHeaderDecoder.sbeSchemaId();
+        final int schemaId = messageHeaderDecoder.schemaId();
         if (schemaId != MessageHeaderDecoder.SCHEMA_ID)
         {
             throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
@@ -93,7 +93,7 @@ final class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                consensusModuleAgent.onCancelTimer(scheduleTimerDecoder.correlationId());
+                consensusModuleAgent.onCancelTimer(cancelTimerDecoder.correlationId());
                 break;
 
             case ServiceAckDecoder.TEMPLATE_ID:

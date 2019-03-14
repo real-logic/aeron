@@ -36,4 +36,10 @@ public class DefaultUnicastFlowControlSupplier implements FlowControlSupplier
 
         return flowControl;
     }
+
+    public String toString()
+    {
+        return "DefaultUnicastFlowControlSupplier{flowControlClass=" +
+            Configuration.UNICAST_FLOW_CONTROL_STRATEGY + "}";
+    }
 }

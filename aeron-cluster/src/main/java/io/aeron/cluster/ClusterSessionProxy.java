@@ -19,7 +19,6 @@ import io.aeron.cluster.codecs.EventCode;
 import io.aeron.security.SessionProxy;
 
 import static io.aeron.cluster.ClusterSession.State.CHALLENGED;
-import static io.aeron.cluster.ClusterSession.State.REJECTED;
 
 /**
  * Proxy for a session being authenticated by an {@link io.aeron.security.Authenticator}.
@@ -86,6 +85,6 @@ class ClusterSessionProxy implements SessionProxy
 
     public final void reject()
     {
-        clusterSession.state(REJECTED);
+        clusterSession.reject(EventCode.AUTHENTICATION_REJECTED, ConsensusModule.Configuration.SESSION_REJECTED_MSG);
     }
 }

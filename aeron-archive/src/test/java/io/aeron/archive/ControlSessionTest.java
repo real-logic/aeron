@@ -28,6 +28,7 @@ public class ControlSessionTest
             1,
             2,
             CONNECT_TIMEOUT_MS,
+            null,
             mockDemuxer,
             mockControlPublication,
             mockConductor,

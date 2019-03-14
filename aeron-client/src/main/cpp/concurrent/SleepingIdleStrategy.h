@@ -25,7 +25,7 @@ namespace aeron { namespace concurrent {
 class SleepingIdleStrategy
 {
 public:
-    SleepingIdleStrategy(const std::chrono::duration<long, std::milli> duration) :
+    explicit SleepingIdleStrategy(const std::chrono::duration<long, std::milli> duration) :
         m_duration(duration)
     {
     }
@@ -36,6 +36,10 @@ public:
         {
             std::this_thread::sleep_for(m_duration);
         }
+    }
+
+    inline void reset()
+    {
     }
 
     inline void idle()

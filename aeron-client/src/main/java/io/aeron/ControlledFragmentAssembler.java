@@ -109,6 +109,7 @@ public class ControlledFragmentAssembler implements ControlledFragmentHandler
      * @param offset at which the data begins.
      * @param length of the data in bytes.
      * @param header representing the meta data for the data.
+     * @return {@link io.aeron.logbuffer.ControlledFragmentHandler.Action} to be taken after processing fragment.
      */
     public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {

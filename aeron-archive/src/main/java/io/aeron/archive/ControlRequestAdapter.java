@@ -45,6 +45,8 @@ class ControlRequestAdapter implements FragmentHandler
     private final StopPositionRequestDecoder stopPositionRequestDecoder = new StopPositionRequestDecoder();
     private final FindLastMatchingRecordingRequestDecoder findLastMatchingRecordingRequestDecoder =
         new FindLastMatchingRecordingRequestDecoder();
+    private final ListRecordingSubscriptionsRequestDecoder listRecordingSubscriptionsRequestDecoder =
+        new ListRecordingSubscriptionsRequestDecoder();
 
     ControlRequestAdapter(final ControlRequestListener listener)
     {
@@ -56,7 +58,7 @@ class ControlRequestAdapter implements FragmentHandler
     {
         headerDecoder.wrap(buffer, offset);
 
-        final int schemaId = headerDecoder.sbeSchemaId();
+        final int schemaId = headerDecoder.schemaId();
         if (schemaId != MessageHeaderDecoder.SCHEMA_ID)
         {
             throw new ArchiveException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
@@ -76,6 +78,7 @@ class ControlRequestAdapter implements FragmentHandler
                 listener.onConnect(
                     connectRequestDecoder.correlationId(),
                     connectRequestDecoder.responseStreamId(),
+                    connectRequestDecoder.version(),
                     connectRequestDecoder.responseChannel());
                 break;
             }
@@ -311,6 +314,24 @@ class ControlRequestAdapter implements FragmentHandler
                     findLastMatchingRecordingRequestDecoder.streamId(),
                     bytes);
                 break;
+            }
+
+            case ListRecordingSubscriptionsRequestDecoder.TEMPLATE_ID:
+            {
+                listRecordingSubscriptionsRequestDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                listener.onListRecordingSubscriptions(
+                    listRecordingSubscriptionsRequestDecoder.controlSessionId(),
+                    listRecordingSubscriptionsRequestDecoder.correlationId(),
+                    listRecordingSubscriptionsRequestDecoder.pseudoIndex(),
+                    listRecordingSubscriptionsRequestDecoder.subscriptionCount(),
+                    listRecordingSubscriptionsRequestDecoder.applyStreamId() == BooleanType.TRUE,
+                    listRecordingSubscriptionsRequestDecoder.streamId(),
+                    listRecordingSubscriptionsRequestDecoder.channel());
             }
         }
     }

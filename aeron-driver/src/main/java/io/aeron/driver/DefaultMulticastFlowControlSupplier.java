@@ -36,4 +36,10 @@ public class DefaultMulticastFlowControlSupplier implements FlowControlSupplier
 
         return flowControl;
     }
+
+    public String toString()
+    {
+        return "DefaultMulticastFlowControlSupplier{flowControlClass=" +
+            Configuration.MULTICAST_FLOW_CONTROL_STRATEGY + "}";
+    }
 }

@@ -32,8 +32,5 @@ public interface FeedbackDelayGenerator
      *
      * @return whether feedback should be immediate or not
      */
-    default boolean shouldFeedbackImmediately()
-    {
-        return false;
-    }
+    boolean shouldFeedbackImmediately();
 }

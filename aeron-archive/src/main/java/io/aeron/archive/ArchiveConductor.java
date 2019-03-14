@@ -16,6 +16,7 @@
 package io.aeron.archive;
 
 import io.aeron.*;
+import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.SourceLocation;
@@ -24,6 +25,7 @@ import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
+import org.agrona.SemanticVersion;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.collections.Object2ObjectHashMap;
 import org.agrona.concurrent.AgentInvoker;
@@ -197,6 +199,42 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         return catalog;
     }
 
+    ControlSession newControlSession(
+        final long correlationId,
+        final int streamId,
+        final int version,
+        final String channel,
+        final ControlSessionDemuxer demuxer)
+    {
+        final String controlChannel = strippedChannelBuilder(ChannelUri.parse(channel))
+            .sparse(ctx.controlTermBufferSparse())
+            .termLength(ctx.controlTermBufferLength())
+            .mtu(ctx.controlMtuLength())
+            .build();
+
+        String invalidVersionMessage = null;
+        if (SemanticVersion.major(version) != AeronArchive.Configuration.MAJOR_VERSION)
+        {
+            invalidVersionMessage = "invalid client version " + SemanticVersion.toString(version) +
+                ", archive is " + SemanticVersion.toString(AeronArchive.Configuration.SEMANTIC_VERSION);
+        }
+
+        final ControlSession controlSession = new ControlSession(
+            nextControlSessionId++,
+            correlationId,
+            connectTimeoutMs,
+            invalidVersionMessage,
+            demuxer,
+            aeron.addExclusivePublication(controlChannel, streamId),
+            this,
+            cachedEpochClock,
+            controlResponseProxy);
+
+        addSession(controlSession);
+
+        return controlSession;
+    }
+
     void startRecordingSubscription(
         final long correlationId,
         final ControlSession controlSession,
@@ -296,24 +334,22 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     void newListRecordingsSession(
         final long correlationId, final long fromId, final int count, final ControlSession controlSession)
     {
-        if (controlSession.activeListRecordingsSession() != null)
+        if (controlSession.hasActiveListing())
         {
             final String msg = "active listing already in progress";
             controlSession.sendErrorResponse(correlationId, ACTIVE_LISTING, msg, controlResponseProxy);
         }
         else
         {
-            final ListRecordingsSession session = new ListRecordingsSession(
+            addSession(new ListRecordingsSession(
                 correlationId,
                 fromId,
                 count,
                 catalog,
                 controlResponseProxy,
                 controlSession,
-                descriptorBuffer);
-
-            addSession(session);
-            controlSession.activeListRecordingsSession(session);
+                descriptorBuffer));
+            controlSession.hasActiveListing(true);
         }
     }
 
@@ -325,14 +361,14 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         final byte[] channelFragment,
         final ControlSession controlSession)
     {
-        if (controlSession.activeListRecordingsSession() != null)
+        if (controlSession.hasActiveListing())
         {
             final String msg = "active listing already in progress";
             controlSession.sendErrorResponse(correlationId, ACTIVE_LISTING, msg, controlResponseProxy);
         }
         else
         {
-            final ListRecordingsForUriSession session = new ListRecordingsForUriSession(
+            addSession(new ListRecordingsForUriSession(
                 correlationId,
                 fromRecordingId,
                 count,
@@ -342,16 +378,14 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
                 controlResponseProxy,
                 controlSession,
                 descriptorBuffer,
-                recordingDescriptorDecoder);
-
-            addSession(session);
-            controlSession.activeListRecordingsSession(session);
+                recordingDescriptorDecoder));
+            controlSession.hasActiveListing(true);
         }
     }
 
     void listRecording(final long correlationId, final ControlSession controlSession, final long recordingId)
     {
-        if (controlSession.activeListRecordingsSession() != null)
+        if (controlSession.hasActiveListing())
         {
             final String msg = "active listing already in progress";
             controlSession.sendErrorResponse(correlationId, ACTIVE_LISTING, msg, controlResponseProxy);
@@ -637,30 +671,38 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         }
     }
 
-    ControlSession newControlSession(
+    void listRecordingSubscriptions(
         final long correlationId,
+        final int pseudoIndex,
+        final int subscriptionCount,
+        final boolean applyStreamId,
         final int streamId,
-        final String channel,
-        final ControlSessionDemuxer demuxer)
+        final String channelFragment,
+        final ControlSession controlSession)
     {
-        final String controlChannel = strippedChannelBuilder(ChannelUri.parse(channel))
-            .sparse(ctx.controlTermBufferSparse())
-            .termLength(ctx.controlTermBufferLength())
-            .mtu(ctx.controlMtuLength())
-            .build();
-
-        final ControlSession controlSession = new ControlSession(
-            nextControlSessionId++,
-            correlationId,
-            connectTimeoutMs,
-            demuxer,
-            aeron.addExclusivePublication(controlChannel, streamId),
-            this,
-            cachedEpochClock,
-            controlResponseProxy);
-        addSession(controlSession);
-
-        return controlSession;
+        if (controlSession.hasActiveListing())
+        {
+            final String msg = "active listing already in progress";
+            controlSession.sendErrorResponse(correlationId, ACTIVE_LISTING, msg, controlResponseProxy);
+        }
+        else if (pseudoIndex < 0 || pseudoIndex >= recordingSubscriptionMap.size() || subscriptionCount <= 0)
+        {
+            controlSession.sendSubscriptionUnknown(correlationId, controlResponseProxy);
+        }
+        else
+        {
+            addSession(new ListRecordingSubscriptionsSession(
+                recordingSubscriptionMap,
+                pseudoIndex,
+                subscriptionCount,
+                streamId,
+                applyStreamId,
+                channelFragment,
+                correlationId,
+                controlSession,
+                controlResponseProxy));
+            controlSession.hasActiveListing(true);
+        }
     }
 
     void closeRecordingSession(final RecordingSession session)
@@ -748,6 +790,12 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         if (null != tagsStr)
         {
             sb.append(CommonContext.TAGS_PARAM_NAME).append('=').append(tagsStr).append('|');
+        }
+
+        final String sessionIdStr = channelUri.get(CommonContext.SESSION_ID_PARAM_NAME);
+        if (null != tagsStr)
+        {
+            sb.append(CommonContext.SESSION_ID_PARAM_NAME).append('=').append(sessionIdStr).append('|');
         }
 
         sb.setLength(sb.length() - 1);

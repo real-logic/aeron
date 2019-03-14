@@ -59,7 +59,7 @@ class ConsensusModuleSnapshotLoader implements ControlledFragmentHandler
     {
         messageHeaderDecoder.wrap(buffer, offset);
 
-        final int schemaId = messageHeaderDecoder.sbeSchemaId();
+        final int schemaId = messageHeaderDecoder.schemaId();
         if (schemaId != MessageHeaderDecoder.SCHEMA_ID)
         {
             throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);

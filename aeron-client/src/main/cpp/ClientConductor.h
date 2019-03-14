@@ -442,6 +442,16 @@ private:
     }
 };
 
+inline long long systemNanoClock()
+{
+    using namespace std::chrono;
+
+    high_resolution_clock::time_point now = high_resolution_clock::now();
+    nanoseconds ns = duration_cast<nanoseconds>(now.time_since_epoch());
+
+    return ns.count();
+}
+
 }
 
 #endif

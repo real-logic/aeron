@@ -183,6 +183,11 @@ public:
         return m_buffer;
     }
 
+    inline char * sbeData() const
+    {
+        return reinterpret_cast<char *>(m_buffer);
+    }
+
     template <typename struct_t>
     struct_t& overlayStruct()
     {

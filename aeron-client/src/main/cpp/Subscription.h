@@ -114,33 +114,6 @@ public:
     void removeDestination(const std::string& endpointChannel);
 
     /**
-     * Poll the Image s under the subscription for having reached End of Stream.
-     *
-     * @param endOfStreamHandler callback for handling end of stream indication.
-     * @return number of Image s that have reached End of Stream.
-     * @deprecated
-     */
-    template <typename F>
-    inline int pollEndOfStreams(F&& endOfStreamHandler) const
-    {
-        const struct ImageList *imageList = std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
-        const std::size_t length = imageList->m_length;
-        Image *images = imageList->m_images;
-        int numEndOfStreams = 0;
-
-        for (std::size_t i = 0; i < length; i++)
-        {
-            if (images[i].isEndOfStream())
-            {
-                numEndOfStreams++;
-                endOfStreamHandler(images[i]);
-            }
-        }
-
-        return numEndOfStreams;
-    }
-
-    /**
      * Poll the {@link Image}s under the subscription for available message fragments.
      * <p>
      * Each fragment read will be a whole message if it is under MTU length. If larger than MTU then it will come

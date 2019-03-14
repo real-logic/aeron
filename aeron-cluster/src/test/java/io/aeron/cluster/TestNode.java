@@ -41,7 +41,6 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 
 class TestNode implements AutoCloseable
 {
-
     private final ClusteredMediaDriver clusteredMediaDriver;
     private final ClusteredServiceContainer container;
     private final TestService service;
@@ -80,8 +79,8 @@ class TestNode implements AutoCloseable
     {
         if (!isClosed)
         {
-            CloseHelper.close(clusteredMediaDriver);
             CloseHelper.close(container);
+            CloseHelper.close(clusteredMediaDriver);
 
             if (null != clusteredMediaDriver)
             {
@@ -294,15 +293,14 @@ class TestNode implements AutoCloseable
 
     static class TestNodeContext
     {
-        public final MediaDriver.Context mediaDriverContext = new MediaDriver.Context();
-        public final Archive.Context archiveContext = new Archive.Context();
-        public final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context();
-        public final ConsensusModule.Context consensusModuleContext = new ConsensusModule.Context();
-        public final ClusteredServiceContainer.Context serviceContainerContext =
-            new ClusteredServiceContainer.Context();
-        public final AtomicBoolean terminationExpected = new AtomicBoolean(false);
-        public final AtomicBoolean memberWasTerminated = new AtomicBoolean(false);
-        public final AtomicBoolean serviceWasTerminated = new AtomicBoolean(false);
-        public TestService service = null;
+        final MediaDriver.Context mediaDriverContext = new MediaDriver.Context();
+        final Archive.Context archiveContext = new Archive.Context();
+        final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context();
+        final ConsensusModule.Context consensusModuleContext = new ConsensusModule.Context();
+        final ClusteredServiceContainer.Context serviceContainerContext = new ClusteredServiceContainer.Context();
+        final AtomicBoolean terminationExpected = new AtomicBoolean(false);
+        final AtomicBoolean memberWasTerminated = new AtomicBoolean(false);
+        final AtomicBoolean serviceWasTerminated = new AtomicBoolean(false);
+        TestService service = null;
     }
 }

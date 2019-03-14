@@ -50,4 +50,12 @@ public class StaticDelayGenerator implements FeedbackDelayGenerator
     {
         return immediateFeedback;
     }
+
+    public String toString()
+    {
+        return "StaticDelayGenerator{" +
+            "delayInNs=" + delayInNs +
+            ", shouldFeedbackImmediately=" + shouldFeedbackImmediately() +
+            '}';
+    }
 }

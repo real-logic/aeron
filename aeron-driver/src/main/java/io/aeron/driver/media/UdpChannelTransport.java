@@ -15,7 +15,8 @@
  */
 package io.aeron.driver.media;
 
-import io.aeron.driver.Configuration;
+import io.aeron.driver.MediaDriver;
+import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.exceptions.AeronException;
 import io.aeron.protocol.HeaderFlyweight;
 import io.aeron.status.ChannelEndpointStatus;
@@ -39,6 +40,7 @@ import static java.net.StandardSocketOptions.SO_SNDBUF;
 
 public abstract class UdpChannelTransport implements AutoCloseable
 {
+    protected final MediaDriver.Context context;
     protected final UdpChannel udpChannel;
     protected final AtomicCounter invalidPackets;
     protected final DistinctErrorLog errorLog;
@@ -57,15 +59,15 @@ public abstract class UdpChannelTransport implements AutoCloseable
         final InetSocketAddress endPointAddress,
         final InetSocketAddress bindAddress,
         final InetSocketAddress connectAddress,
-        final DistinctErrorLog errorLog,
-        final AtomicCounter invalidPackets)
+        final MediaDriver.Context context)
     {
+        this.context = context;
         this.udpChannel = udpChannel;
-        this.errorLog = errorLog;
+        this.errorLog = context.errorLog();
         this.endPointAddress = endPointAddress;
         this.bindAddress = bindAddress;
         this.connectAddress = connectAddress;
-        this.invalidPackets = invalidPackets;
+        this.invalidPackets = context.systemCounters().get(SystemCounterDescriptor.INVALID_PACKETS);
     }
 
     /**
@@ -104,9 +106,14 @@ public abstract class UdpChannelTransport implements AutoCloseable
                 receiveDatagramChannel.join(endPointAddress.getAddress(), udpChannel.localInterface());
                 sendDatagramChannel.setOption(StandardSocketOptions.IP_MULTICAST_IF, udpChannel.localInterface());
 
-                if (0 != udpChannel.multicastTtl())
+                if (udpChannel.isHasMulticastTtl())
                 {
                     sendDatagramChannel.setOption(StandardSocketOptions.IP_MULTICAST_TTL, udpChannel.multicastTtl());
+                    multicastTtl = sendDatagramChannel.getOption(StandardSocketOptions.IP_MULTICAST_TTL);
+                }
+                else if (context.socketMulticastTtl() != 0)
+                {
+                    sendDatagramChannel.setOption(StandardSocketOptions.IP_MULTICAST_TTL, context.socketMulticastTtl());
                     multicastTtl = sendDatagramChannel.getOption(StandardSocketOptions.IP_MULTICAST_TTL);
                 }
             }
@@ -120,14 +127,14 @@ public abstract class UdpChannelTransport implements AutoCloseable
                 sendDatagramChannel.connect(connectAddress);
             }
 
-            if (0 != Configuration.SOCKET_SNDBUF_LENGTH)
+            if (0 != context.socketSndbufLength())
             {
-                sendDatagramChannel.setOption(SO_SNDBUF, Configuration.SOCKET_SNDBUF_LENGTH);
+                sendDatagramChannel.setOption(SO_SNDBUF, context.socketSndbufLength());
             }
 
-            if (0 != Configuration.SOCKET_RCVBUF_LENGTH)
+            if (0 != context.socketRcvbufLength())
             {
-                receiveDatagramChannel.setOption(SO_RCVBUF, Configuration.SOCKET_RCVBUF_LENGTH);
+                receiveDatagramChannel.setOption(SO_RCVBUF, context.socketRcvbufLength());
             }
 
             sendDatagramChannel.configureBlocking(false);

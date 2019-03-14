@@ -20,6 +20,7 @@ import io.aeron.driver.media.UdpChannel;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
+import org.agrona.SystemUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.*;
 
@@ -37,8 +38,9 @@ public class RawLogFactoryTest
     private static final int SESSION_ID = 100;
     private static final int STREAM_ID = 101;
     private static final int CREATION_ID = 102;
-    private static final File DATA_DIR = new File(IoUtil.tmpDirName(), "dataDirName");
+    private static final File DATA_DIR = new File(SystemUtil.tmpDirName(), "dataDirName");
     private static final int TERM_BUFFER_LENGTH = Configuration.TERM_BUFFER_LENGTH_DEFAULT;
+    private static final long LOW_STORAGE_THRESHOLD = Configuration.LOW_FILE_STORE_WARNING_THRESHOLD_DEFAULT;
     private static final int PAGE_SIZE = 4 * 1024;
     private static final boolean PRE_ZERO_LOG = false;
     private static final boolean PERFORM_STORAGE_CHECKS = false;
@@ -49,8 +51,9 @@ public class RawLogFactoryTest
     public void createDataDir()
     {
         IoUtil.ensureDirectoryExists(DATA_DIR, "data");
+        final String absolutePath = DATA_DIR.getAbsolutePath();
         rawLogFactory = new RawLogFactory(
-            DATA_DIR.getAbsolutePath(), PAGE_SIZE, PERFORM_STORAGE_CHECKS, mock(ErrorHandler.class));
+            absolutePath, PAGE_SIZE, PERFORM_STORAGE_CHECKS, LOW_STORAGE_THRESHOLD, mock(ErrorHandler.class));
     }
 
     @After

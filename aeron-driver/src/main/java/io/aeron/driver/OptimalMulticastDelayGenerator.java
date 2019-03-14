@@ -15,6 +15,8 @@
  */
 package io.aeron.driver;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 /**
  * Feedback delay used for NAKs as well as for some retransmission use cases.
  * <p>
@@ -34,7 +36,7 @@ package io.aeron.driver;
  * }</pre>
  * where {@code UniformRand(x)} is uniform distribution from {@code 0..max}
  * <p>
- * In this implementations calculation:
+ * In this implementation's calculation:
  * <ul>
  *     <li>the {@code groupSize} is a constant (could be configurable as system property)</li>
  *     <li>{@code maxBackoffT} is a constant (could be configurable as system property)</li>
@@ -56,7 +58,6 @@ package io.aeron.driver;
  */
 public class OptimalMulticastDelayGenerator implements FeedbackDelayGenerator
 {
-    private final double calculatedN;
     private final double randMax;
     private final double baseX;
     private final double constantT;
@@ -65,18 +66,14 @@ public class OptimalMulticastDelayGenerator implements FeedbackDelayGenerator
     /**
      * Create new feedback delay generator based on estimates. Pre-calculating some parameters upfront.
      * <p>
-     * {@code maxBackoffT} and {@code gRtt} must be expressed in the same units.
      *
      * @param maxBackoffT of the delay interval
      * @param groupSize   estimate
-     * @param gRtt        estimate
      */
-    public OptimalMulticastDelayGenerator(final double maxBackoffT, final double groupSize, final double gRtt)
+    public OptimalMulticastDelayGenerator(final double maxBackoffT, final double groupSize)
     {
         final double lambda = Math.log(groupSize) + 1;
-        this.calculatedN = Math.exp(1.2 * lambda / (2 * maxBackoffT / gRtt));
 
-        // constant pieces of the calculation
         this.randMax = lambda / maxBackoffT;
         this.baseX = lambda / (maxBackoffT * (Math.exp(lambda) - 1));
         this.constantT = maxBackoffT / lambda;
@@ -92,25 +89,23 @@ public class OptimalMulticastDelayGenerator implements FeedbackDelayGenerator
     }
 
     /**
-     * Generate a new randomized delay value in the units of backoff and {@code gRtt}.
+     * {@inheritDoc}
+     */
+    public boolean shouldFeedbackImmediately()
+    {
+        return false;
+    }
+
+    /**
+     * Generate a new randomized delay value in the units of {@code maxBackoffT}}.
      *
-     * @return delay in units of backoff and RTT
+     * @return delay in units of {@code maxBackoffT}.
      */
     public double generateNewOptimalDelay()
     {
         final double x = uniformRandom(randMax) + baseX;
 
         return constantT * Math.log(x * factorT);
-    }
-
-    /**
-     * Return the estimated number of feedback messages per RTT.
-     *
-     * @return number of estimated feedback messages in units of backoff and RTT
-     */
-    public double calculatedN()
-    {
-        return calculatedN;
     }
 
     /**
@@ -121,6 +116,17 @@ public class OptimalMulticastDelayGenerator implements FeedbackDelayGenerator
      */
     public static double uniformRandom(final double max)
     {
-        return Math.random() * max;
+        return ThreadLocalRandom.current().nextDouble() * max;
+    }
+
+    public String toString()
+    {
+        return "OptimalMulticastDelayGenerator{" +
+            "randMax=" + randMax +
+            ", baseX=" + baseX +
+            ", constantT=" + constantT +
+            ", factorT=" + factorT +
+            ", shouldFeedbackImmediately=" + shouldFeedbackImmediately() +
+            '}';
     }
 }

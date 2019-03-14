@@ -43,6 +43,7 @@ public class ReceiverTest
     private static final int POSITION_BITS_TO_SHIFT = LogBufferDescriptor.positionBitsToShift(TERM_BUFFER_LENGTH);
     private static final String URI = "aeron:udp?endpoint=localhost:45678";
     private static final UdpChannel UDP_CHANNEL = UdpChannel.parse(URI);
+    private static final long IMAGE_LIVENESS_TIMEOUT_NS = Configuration.imageLivenessTimeoutNs();
     private static final long CORRELATION_ID = 20;
     private static final int STREAM_ID = 10;
     private static final int INITIAL_TERM_ID = 3;
@@ -118,11 +119,13 @@ public class ReceiverTest
             new DriverConductorProxy(ThreadingMode.DEDICATED, toConductorQueue, mock(AtomicCounter.class));
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
+            .applicationSpecificFeedback(Configuration.applicationSpecificFeedback())
             .driverCommandQueue(toConductorQueue)
             .dataTransportPoller(mockDataTransportPoller)
             .controlTransportPoller(mockControlTransportPoller)
             .rawLogBuffersFactory(mockRawLogFactory)
             .systemCounters(mockSystemCounters)
+            .applicationSpecificFeedback(Configuration.applicationSpecificFeedback())
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
             .nanoClock(() -> currentTime)
             .cachedNanoClock(mockCachedNanoClock)
@@ -143,6 +146,7 @@ public class ReceiverTest
         termBuffers = rawLog.termBuffers();
 
         final MediaDriver.Context context = new MediaDriver.Context()
+            .applicationSpecificFeedback(Configuration.applicationSpecificFeedback())
             .systemCounters(mockSystemCounters);
 
         context.receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals(context));
@@ -175,7 +179,7 @@ public class ReceiverTest
 
         final PublicationImage image = new PublicationImage(
             CORRELATION_ID,
-            Configuration.IMAGE_LIVENESS_TIMEOUT_NS,
+            IMAGE_LIVENESS_TIMEOUT_NS,
             receiveChannelEndpoint,
             0,
             senderAddress,
@@ -247,7 +251,7 @@ public class ReceiverTest
             // pass in new term buffer from conductor, which should trigger SM
             final PublicationImage image = new PublicationImage(
                 CORRELATION_ID,
-                Configuration.IMAGE_LIVENESS_TIMEOUT_NS,
+                IMAGE_LIVENESS_TIMEOUT_NS,
                 receiveChannelEndpoint,
                 0,
                 senderAddress,
@@ -317,7 +321,7 @@ public class ReceiverTest
             // pass in new term buffer from conductor, which should trigger SM
             final PublicationImage image = new PublicationImage(
                 CORRELATION_ID,
-                Configuration.IMAGE_LIVENESS_TIMEOUT_NS,
+                IMAGE_LIVENESS_TIMEOUT_NS,
                 receiveChannelEndpoint,
                 0,
                 senderAddress,
@@ -390,7 +394,7 @@ public class ReceiverTest
             // pass in new term buffer from conductor, which should trigger SM
             final PublicationImage image = new PublicationImage(
                 CORRELATION_ID,
-                Configuration.IMAGE_LIVENESS_TIMEOUT_NS,
+                Configuration.imageLivenessTimeoutNs(),
                 receiveChannelEndpoint,
                 0,
                 senderAddress,
@@ -467,7 +471,7 @@ public class ReceiverTest
             // pass in new term buffer from conductor, which should trigger SM
             final PublicationImage image = new PublicationImage(
                 CORRELATION_ID,
-                Configuration.IMAGE_LIVENESS_TIMEOUT_NS,
+                IMAGE_LIVENESS_TIMEOUT_NS,
                 receiveChannelEndpoint,
                 0,
                 senderAddress,

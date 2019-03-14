@@ -138,6 +138,7 @@ public class SenderTest
             mockSendChannelEndpoint,
             () -> currentTimestamp,
             rawLog,
+            Configuration.producerWindowLength(TERM_BUFFER_LENGTH, Configuration.publicationTermWindowLength()),
             mock(Position.class),
             mock(Position.class),
             new AtomicLongPosition(),
@@ -150,9 +151,9 @@ public class SenderTest
             flowControl,
             mockRetransmitHandler,
             new NetworkPublicationThreadLocals(),
-            Configuration.PUBLICATION_UNBLOCK_TIMEOUT_NS,
-            Configuration.PUBLICATION_CONNECTION_TIMEOUT_NS,
-            Configuration.PUBLICATION_LINGER_NS,
+            Configuration.publicationUnlockTimeoutNs(),
+            Configuration.publicationConnectionTimeoutNs(),
+            Configuration.publicationLingerTimeoutNs(),
             false,
             false);
 

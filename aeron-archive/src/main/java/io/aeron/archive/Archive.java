@@ -40,6 +40,7 @@ import java.util.function.Supplier;
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
+import static java.lang.System.getProperty;
 import static org.agrona.SystemUtil.getDurationInNanos;
 import static org.agrona.SystemUtil.getSizeAsInt;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
@@ -178,10 +179,10 @@ public class Archive implements AutoCloseable
         public static final String DEFAULT_IDLE_STRATEGY = "org.agrona.concurrent.BackoffIdleStrategy";
 
         public static final String MAX_CONCURRENT_RECORDINGS_PROP_NAME = "aeron.archive.max.concurrent.recordings";
-        public static final int MAX_CONCURRENT_RECORDINGS_DEFAULT = 128;
+        public static final int MAX_CONCURRENT_RECORDINGS_DEFAULT = 50;
 
         public static final String MAX_CONCURRENT_REPLAYS_PROP_NAME = "aeron.archive.max.concurrent.replays";
-        public static final int MAX_CONCURRENT_REPLAYS_DEFAULT = 128;
+        public static final int MAX_CONCURRENT_REPLAYS_DEFAULT = 50;
 
         public static final String MAX_CATALOG_ENTRIES_PROP_NAME = "aeron.archive.max.catalog.entries";
         public static final long MAX_CATALOG_ENTRIES_DEFAULT = Catalog.DEFAULT_MAX_ENTRIES;
@@ -191,7 +192,9 @@ public class Archive implements AutoCloseable
 
         public static final String REPLAY_LINGER_TIMEOUT_PROP_NAME = "aeron.archive.replay.linger.timeout";
         public static final long REPLAY_LINGER_TIMEOUT_DEFAULT_NS =
-            io.aeron.driver.Configuration.PUBLICATION_LINGER_NS;
+            io.aeron.driver.Configuration.publicationLingerTimeoutNs();
+
+        public static final String ARCHIVE_DIR_DELETE_ON_START_PROP_NAME = "aeron.archive.dir.delete.on.start";
 
         static final String CATALOG_FILE_NAME = "archive.catalog";
         static final String RECORDING_SEGMENT_POSTFIX = ".rec";
@@ -327,6 +330,17 @@ public class Archive implements AutoCloseable
         {
             return getDurationInNanos(REPLAY_LINGER_TIMEOUT_PROP_NAME, REPLAY_LINGER_TIMEOUT_DEFAULT_NS);
         }
+
+        /**
+         * Whether to delete directory on start or not.
+         *
+         * @return whether to delete directory on start or not.
+         * @see #ARCHIVE_DIR_DELETE_ON_START_PROP_NAME
+         */
+        public static boolean deleteArchiveOnStart()
+        {
+            return "true".equalsIgnoreCase(getProperty(ARCHIVE_DIR_DELETE_ON_START_PROP_NAME, "false"));
+        }
     }
 
     /**
@@ -337,7 +351,7 @@ public class Archive implements AutoCloseable
      */
     public static class Context implements Cloneable
     {
-        private boolean deleteArchiveOnStart = false;
+        private boolean deleteArchiveOnStart = Configuration.deleteArchiveOnStart();
         private boolean ownsAeronClient = false;
         private String aeronDirectoryName = CommonContext.getAeronDirectoryName();
         private Aeron aeron;
@@ -658,7 +672,7 @@ public class Archive implements AutoCloseable
          *
          * @param controlTermBufferSparse for the control stream.
          * @return this for a fluent API.
-         * @see AeronArchive.Configuration#CONTROL_TERM_BUFFER_SPARSE_PARAM_NAME
+         * @see AeronArchive.Configuration#CONTROL_TERM_BUFFER_SPARSE_PROP_NAME
          */
         public Context controlTermBufferSparse(final boolean controlTermBufferSparse)
         {
@@ -670,7 +684,7 @@ public class Archive implements AutoCloseable
          * Should the control streams use sparse file term buffers.
          *
          * @return true if the control stream should use sparse file term buffers.
-         * @see AeronArchive.Configuration#CONTROL_TERM_BUFFER_SPARSE_PARAM_NAME
+         * @see AeronArchive.Configuration#CONTROL_TERM_BUFFER_SPARSE_PROP_NAME
          */
         public boolean controlTermBufferSparse()
         {
@@ -682,7 +696,7 @@ public class Archive implements AutoCloseable
          *
          * @param controlTermBufferLength for the control streams.
          * @return this for a fluent API.
-         * @see AeronArchive.Configuration#CONTROL_TERM_BUFFER_LENGTH_PARAM_NAME
+         * @see AeronArchive.Configuration#CONTROL_TERM_BUFFER_LENGTH_PROP_NAME
          */
         public Context controlTermBufferLength(final int controlTermBufferLength)
         {
@@ -694,7 +708,7 @@ public class Archive implements AutoCloseable
          * Get the term buffer length for the control streams.
          *
          * @return the term buffer length for the control streams.
-         * @see AeronArchive.Configuration#CONTROL_TERM_BUFFER_LENGTH_PARAM_NAME
+         * @see AeronArchive.Configuration#CONTROL_TERM_BUFFER_LENGTH_PROP_NAME
          */
         public int controlTermBufferLength()
         {
@@ -706,7 +720,7 @@ public class Archive implements AutoCloseable
          *
          * @param controlMtuLength for the control streams.
          * @return this for a fluent API.
-         * @see AeronArchive.Configuration#CONTROL_MTU_LENGTH_PARAM_NAME
+         * @see AeronArchive.Configuration#CONTROL_MTU_LENGTH_PROP_NAME
          */
         public Context controlMtuLength(final int controlMtuLength)
         {
@@ -718,7 +732,7 @@ public class Archive implements AutoCloseable
          * Get the MTU length for the control streams.
          *
          * @return the MTU length for the control streams.
-         * @see AeronArchive.Configuration#CONTROL_MTU_LENGTH_PARAM_NAME
+         * @see AeronArchive.Configuration#CONTROL_MTU_LENGTH_PROP_NAME
          */
         public int controlMtuLength()
         {
@@ -1112,7 +1126,7 @@ public class Archive implements AutoCloseable
          */
         public int maxConcurrentRecordings()
         {
-            return this.maxConcurrentRecordings;
+            return maxConcurrentRecordings;
         }
 
         /**
@@ -1134,7 +1148,7 @@ public class Archive implements AutoCloseable
          */
         public int maxConcurrentReplays()
         {
-            return this.maxConcurrentReplays;
+            return maxConcurrentReplays;
         }
 
         /**

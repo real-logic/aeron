@@ -15,6 +15,7 @@
  */
 package io.aeron.archive;
 
+import io.aeron.Aeron;
 import org.agrona.concurrent.UnsafeBuffer;
 
 abstract class AbstractListRecordingsSession implements Session
@@ -54,7 +55,7 @@ abstract class AbstractListRecordingsSession implements Session
 
     public long sessionId()
     {
-        return Catalog.NULL_RECORD_ID;
+        return Aeron.NULL_VALUE;
     }
 
     public int doWork()
@@ -71,7 +72,7 @@ abstract class AbstractListRecordingsSession implements Session
 
     public void close()
     {
-        controlSession.onListRecordingSessionClosed(this);
+        controlSession.hasActiveListing(false);
     }
 
     protected abstract int sendDescriptors();

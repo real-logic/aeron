@@ -38,12 +38,17 @@ typedef struct aeron_driver_stct aeron_driver_t;
 #define AERON_DIR_ENV_VAR "AERON_DIR"
 
 /**
+ * Warn if the top level Aeron directory exists when starting the driver.
+ */
+#define AERON_DIR_WARN_IF_EXISTS_ENV_VAR "AERON_DIR_WARN_IF_EXISTS"
+
+/**
  * Threading Mode to be used by the driver.
  */
 #define AERON_THREADING_MODE_ENV_VAR "AERON_THREADING_MODE"
 
 /**
- * Attempt to delete directories on start if they exist
+ * Attempt to delete directories on start if they exist.
  */
 #define AERON_DIR_DELETE_ON_START_ENV_VAR "AERON_DIR_DELETE_ON_START"
 
@@ -103,12 +108,12 @@ typedef struct aeron_driver_stct aeron_driver_t;
 #define AERON_FILE_PAGE_SIZE_ENV_VAR "AERON_FILE_PAGE_SIZE"
 
 /**
- * Length (in bytes) of the maximum transmission unit of the publication
+ * Length (in bytes) of the maximum transmission unit of the publication.
  */
 #define AERON_MTU_LENGTH_ENV_VAR "AERON_MTU_LENGTH"
 
 /**
- * Length (in bytes) of the maximum transmission unit of the IPC publication
+ * Length (in bytes) of the maximum transmission unit of the IPC publication.
  */
 #define AERON_IPC_MTU_LENGTH_ENV_VAR "AERON_IPC_MTU_LENGTH"
 
@@ -257,7 +262,7 @@ int aeron_driver_context_close(aeron_driver_context_t *context);
  *
  * The given aeron_driver_context_t struct will be used exclusively by the driver. Do not reuse between drivers.
  *
- * @param driver to create and initialize.
+ * @param driver  to create and initialize.
  * @param context to use for initialization.
  * @return 0 for success and -1 for error.
  */
@@ -334,9 +339,9 @@ typedef void (*aeron_log_func_t)(const char *);
 /**
  * Determine if an aeron driver is using a given aeron directory.
  *
- * @param dirname for aeron directory
- * @param timeout to use to determine activity for aeron directory
- * @param now current time in nanoseconds. @see aeron_nano_clock.
+ * @param dirname  for aeron directory
+ * @param timeout  to use to determine activity for aeron directory
+ * @param now      current time in nanoseconds. @see aeron_nano_clock.
  * @param log_func to call during activity check to log diagnostic information.
  * @return true for active driver or false for no active driver.
  */

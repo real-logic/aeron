@@ -16,6 +16,7 @@
 package io.aeron.archive;
 
 import io.aeron.Publication;
+import io.aeron.Subscription;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.*;
 import io.aeron.logbuffer.BufferClaim;
@@ -38,6 +39,8 @@ class ControlResponseProxy
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final ControlResponseEncoder responseEncoder = new ControlResponseEncoder();
     private final RecordingDescriptorEncoder recordingDescriptorEncoder = new RecordingDescriptorEncoder();
+    private final RecordingSubscriptionDescriptorEncoder recordingSubscriptionDescriptorEncoder =
+        new RecordingSubscriptionDescriptorEncoder();
 
     int sendDescriptor(
         final long controlSessionId,
@@ -75,6 +78,25 @@ class ControlResponseProxy
         return 0;
     }
 
+    boolean sendSubscriptionDescriptor(
+        final long controlSessionId,
+        final long correlationId,
+        final Subscription subscription,
+        final Publication controlPublication)
+    {
+        recordingSubscriptionDescriptorEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .subscriptionId(subscription.registrationId())
+            .streamId(subscription.streamId())
+            .strippedChannel(subscription.channel());
+
+        final int length = MESSAGE_HEADER_LENGTH + recordingSubscriptionDescriptorEncoder.encodedLength();
+
+        return send(controlPublication, buffer, length);
+    }
+
     boolean sendResponse(
         final long controlSessionId,
         final long correlationId,
@@ -89,7 +111,7 @@ class ControlResponseProxy
             .correlationId(correlationId)
             .relevantId(relevantId)
             .code(code)
-            .errorMessage(null == errorMessage ? "" : errorMessage);
+            .errorMessage(errorMessage);
 
         return send(controlPublication, buffer, MESSAGE_HEADER_LENGTH + responseEncoder.encodedLength());
     }
@@ -107,7 +129,7 @@ class ControlResponseProxy
             .correlationId(correlationId)
             .relevantId(relevantId)
             .code(ControlResponseCode.ERROR)
-            .errorMessage(null == errorMessage ? "" : errorMessage);
+            .errorMessage(errorMessage);
 
         final int length = MESSAGE_HEADER_LENGTH + responseEncoder.encodedLength();
 

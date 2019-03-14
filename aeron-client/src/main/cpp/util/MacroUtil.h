@@ -21,6 +21,16 @@
 
 #define CONCAT_SYMBOLS(x, y) x##y
 
+namespace aeron { namespace util {
+
+inline static constexpr std::int32_t semanticVersionCompose(
+    std::uint8_t major, std::uint8_t minor, std::uint8_t patch) noexcept
+{
+    return (major << 16) | (minor << 8) | patch;
+}
+
+}}
+
 #if COND_MOCK == 1
     #define COND_MOCK_VIRTUAL virtual
 #else

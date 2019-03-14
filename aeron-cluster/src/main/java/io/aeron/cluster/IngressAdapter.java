@@ -23,6 +23,7 @@ import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.status.AtomicCounter;
 
 class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
@@ -56,11 +57,12 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
         fragmentAssembler.clear();
     }
 
+    @SuppressWarnings("MethodLength")
     public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
 
-        final int schemaId = messageHeaderDecoder.sbeSchemaId();
+        final int schemaId = messageHeaderDecoder.schemaId();
         if (schemaId != MessageHeaderDecoder.SCHEMA_ID)
         {
             throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
@@ -94,13 +96,22 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
                     messageHeaderDecoder.version());
 
                 final String responseChannel = connectRequestDecoder.responseChannel();
-
-                final byte[] credentials = new byte[connectRequestDecoder.encodedCredentialsLength()];
-                connectRequestDecoder.getEncodedCredentials(credentials, 0, credentials.length);
+                final int credentialsLength = connectRequestDecoder.encodedCredentialsLength();
+                final byte[] credentials;
+                if (credentialsLength > 0)
+                {
+                    credentials = new byte[credentialsLength];
+                    connectRequestDecoder.getEncodedCredentials(credentials, 0, credentialsLength);
+                }
+                else
+                {
+                    credentials = ArrayUtil.EMPTY_BYTE_ARRAY;
+                }
 
                 consensusModuleAgent.onSessionConnect(
                     connectRequestDecoder.correlationId(),
                     connectRequestDecoder.responseStreamId(),
+                    connectRequestDecoder.version(),
                     responseChannel,
                     credentials);
                 break;

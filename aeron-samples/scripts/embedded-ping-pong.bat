@@ -24,5 +24,6 @@
     -Dagrona.disable.bounds.checks=true ^
     -Daeron.term.buffer.sparse.file=false ^
     -Daeron.sample.messageLength=32 ^
+    -Daeron.sample.messages=1000000 ^
     -Daeron.sample.exclusive.publications=true ^
     %JVM_OPTS% io.aeron.samples.EmbeddedPingPong %*

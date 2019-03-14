@@ -61,8 +61,8 @@ public class IpcPublicationTest
     @Before
     public void setUp()
     {
-        final RingBuffer fromClientCommands = new ManyToOneRingBuffer(new UnsafeBuffer(
-            ByteBuffer.allocateDirect(Configuration.CONDUCTOR_BUFFER_LENGTH)));
+        final RingBuffer toDriverCommands = new ManyToOneRingBuffer(new UnsafeBuffer(
+            ByteBuffer.allocateDirect(Configuration.CONDUCTOR_BUFFER_LENGTH_DEFAULT)));
 
         final RawLogFactory mockRawLogFactory = mock(RawLogFactory.class);
         final UnsafeBuffer counterBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(BUFFER_LENGTH));
@@ -75,7 +75,7 @@ public class IpcPublicationTest
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .tempBuffer(new UnsafeBuffer(new byte[METADATA_LENGTH]))
             .ipcTermBufferLength(TERM_BUFFER_LENGTH)
-            .toDriverCommands(fromClientCommands)
+            .toDriverCommands(toDriverCommands)
             .rawLogBuffersFactory(mockRawLogFactory)
             .clientProxy(mock(ClientProxy.class))
             .driverCommandQueue(mock(ManyToOneConcurrentArrayQueue.class))
@@ -88,7 +88,7 @@ public class IpcPublicationTest
 
         ctx.countersValuesBuffer(counterBuffer);
 
-        driverProxy = new DriverProxy(fromClientCommands, CLIENT_ID);
+        driverProxy = new DriverProxy(toDriverCommands, CLIENT_ID);
         driverConductor = new DriverConductor(ctx);
 
         driverProxy.addPublication(CommonContext.IPC_CHANNEL, STREAM_ID);

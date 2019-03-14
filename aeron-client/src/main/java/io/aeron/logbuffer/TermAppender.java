@@ -604,7 +604,7 @@ public final class TermAppender
         }
     }
 
-    private int handleEndOfLogCondition(
+    private static int handleEndOfLogCondition(
         final UnsafeBuffer termBuffer,
         final long termOffset,
         final HeaderWriter header,

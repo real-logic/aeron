@@ -1000,7 +1000,7 @@ public class Aeron implements AutoCloseable
         }
 
         /**
-         * @see CommonContext#aeronDirectoryName(String)
+         * {@inheritDoc}
          */
         public Context aeronDirectoryName(final String dirName)
         {

@@ -19,6 +19,7 @@ import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
+import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.Cluster;
@@ -31,10 +32,7 @@ import io.aeron.logbuffer.Header;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.security.Authenticator;
 import io.aeron.status.ReadableCounter;
-import org.agrona.BitUtil;
-import org.agrona.CloseHelper;
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
+import org.agrona.*;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.Long2ObjectHashMap;
@@ -289,36 +287,43 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     public String roleName()
     {
-        return "consensus-module_" + memberId;
+        return "consensus-module";
     }
 
     public void onSessionConnect(
         final long correlationId,
         final int responseStreamId,
+        final int version,
         final String responseChannel,
         final byte[] encodedCredentials)
     {
+        final long clusterSessionId = Cluster.Role.LEADER == role ? nextSessionId++ : NULL_VALUE;
+        final ClusterSession session = new ClusterSession(clusterSessionId, responseStreamId, responseChannel);
+        session.lastActivity(cachedTimeMs, correlationId);
+        session.connect(aeron);
+
         if (Cluster.Role.LEADER != role)
         {
-            final ClusterSession session = new ClusterSession(Aeron.NULL_VALUE, responseStreamId, responseChannel);
-            session.lastActivity(cachedTimeMs, correlationId);
-            session.connect(aeron);
             redirectSessions.add(session);
         }
         else
         {
-            final ClusterSession session = new ClusterSession(nextSessionId++, responseStreamId, responseChannel);
-            session.lastActivity(clusterTimeMs, correlationId);
-            session.connect(aeron);
-
-            if (pendingSessions.size() + sessionByIdMap.size() < ctx.maxConcurrentSessions())
+            if (AeronCluster.Configuration.MAJOR_VERSION != SemanticVersion.major(version))
             {
-                authenticator.onConnectRequest(session.id(), encodedCredentials, clusterTimeMs);
-                pendingSessions.add(session);
+                final String detail = SESSION_INVALID_VERSION_MSG + " " + SemanticVersion.toString(version) +
+                    ", cluster is " + SemanticVersion.toString(AeronCluster.Configuration.SEMANTIC_VERSION);
+                session.reject(EventCode.ERROR, detail);
+                rejectedSessions.add(session);
+            }
+            else if (pendingSessions.size() + sessionByIdMap.size() >= ctx.maxConcurrentSessions())
+            {
+                session.reject(EventCode.ERROR, SESSION_LIMIT_MSG);
+                rejectedSessions.add(session);
             }
             else
             {
-                rejectedSessions.add(session);
+                authenticator.onConnectRequest(session.id(), encodedCredentials, clusterTimeMs);
+                pendingSessions.add(session);
             }
         }
     }
@@ -1839,14 +1844,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         for (int lastIndex = rejectedSessions.size() - 1, i = lastIndex; i >= 0; i--)
         {
             final ClusterSession session = rejectedSessions.get(i);
-            String detail = ConsensusModule.Configuration.SESSION_LIMIT_MSG;
-            EventCode eventCode = EventCode.ERROR;
-
-            if (session.state() == REJECTED)
-            {
-                detail = ConsensusModule.Configuration.SESSION_REJECTED_MSG;
-                eventCode = EventCode.AUTHENTICATION_REJECTED;
-            }
+            final String detail = session.responseDetail();
+            final EventCode eventCode = session.eventCode();
 
             if (egressPublisher.sendEvent(session, leadershipTermId, leaderMember.id(), eventCode, detail) ||
                 nowMs > (session.timeOfLastActivityMs() + sessionTimeoutMs))

@@ -24,9 +24,7 @@ namespace aeron { namespace concurrent {
 class BusySpinIdleStrategy
 {
 public:
-    BusySpinIdleStrategy()
-    {
-    }
+    BusySpinIdleStrategy() = default;
 
     inline void idle(int workCount)
     {
@@ -36,6 +34,10 @@ public:
         }
 
         pause();
+    }
+
+    inline void reset()
+    {
     }
 
     inline void idle()

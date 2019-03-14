@@ -16,6 +16,7 @@
 package io.aeron.cluster.service;
 
 import io.aeron.Aeron;
+import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.codecs.mark.MarkFileHeaderDecoder;
@@ -51,10 +52,6 @@ public class ClusterMarkFile implements AutoCloseable
     public static final String SERVICE_FILENAME_FORMAT = SERVICE_FILENAME_PREFIX + "%d" + FILE_EXTENSION;
     public static final int HEADER_LENGTH = 8 * 1024;
     public static final int VERSION_FAILED = -1;
-    public static final int MAJOR_VERSION = 0;
-    public static final int MINOR_VERSION = 0;
-    public static final int PATCH_VERSION = 1;
-    public static final int SEMANTIC_VERSION = SemanticVersion.compose(MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION);
 
     private final MarkFileHeaderDecoder headerDecoder = new MarkFileHeaderDecoder();
     private final MarkFileHeaderEncoder headerEncoder = new MarkFileHeaderEncoder();
@@ -85,10 +82,10 @@ public class ClusterMarkFile implements AutoCloseable
                 {
                     System.err.println("mark file version -1 indicates error on previous startup.");
                 }
-                else if (SemanticVersion.major(version) != MAJOR_VERSION)
+                else if (SemanticVersion.major(version) != AeronCluster.Configuration.MAJOR_VERSION)
                 {
                     throw new IllegalArgumentException("mark file major version " + SemanticVersion.major(version) +
-                        " does not match software:" + MAJOR_VERSION);
+                        " does not match software:" + AeronCluster.Configuration.MAJOR_VERSION);
                 }
             },
             null);
@@ -144,10 +141,10 @@ public class ClusterMarkFile implements AutoCloseable
             epochClock,
             (version) ->
             {
-                if (SemanticVersion.major(version) != MAJOR_VERSION)
+                if (SemanticVersion.major(version) != AeronCluster.Configuration.MAJOR_VERSION)
                 {
                     throw new IllegalArgumentException("mark file major version " + SemanticVersion.major(version) +
-                        " does not match software:" + MAJOR_VERSION);
+                        " does not match software:" + AeronCluster.Configuration.MAJOR_VERSION);
                 }
             },
             logger);
@@ -197,7 +194,7 @@ public class ClusterMarkFile implements AutoCloseable
 
     public void signalReady()
     {
-        markFile.signalReady(SEMANTIC_VERSION);
+        markFile.signalReady(AeronCluster.Configuration.SEMANTIC_VERSION);
         markFile.mappedByteBuffer().force();
     }
 

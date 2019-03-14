@@ -75,14 +75,6 @@ fragment_handler_t printStringMessage()
     };
 }
 
-void printEndOfStream(Image &image)
-{
-    std::cout << "End Of Stream image correlationId=" << image.correlationId()
-        << " sessionId=" << image.sessionId()
-        << " from " << image.sourceIdentity()
-        << std::endl;
-}
-
 int main(int argc, char** argv)
 {
     CommandOptionParser cp;
@@ -140,27 +132,15 @@ int main(int argc, char** argv)
         const std::int64_t channelStatus = subscription->channelStatus();
 
         std::cout << "Subscription channel status (id=" << subscription->channelStatusId() << ") "
-            << ((channelStatus == ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE) ?
-                "ACTIVE" : std::to_string(channelStatus))
+            << ((channelStatus == ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE) ? "ACTIVE" : std::to_string(channelStatus))
             << std::endl;
 
         fragment_handler_t handler = printStringMessage();
         SleepingIdleStrategy idleStrategy(IDLE_SLEEP_MS);
 
-        bool reachedEos = false;
-
         while (running)
         {
             const int fragmentsRead = subscription->poll(handler, FRAGMENTS_LIMIT);
-
-            if (0 == fragmentsRead)
-            {
-                if (!reachedEos && subscription->pollEndOfStreams(printEndOfStream) > 0)
-                {
-                    reachedEos = true;
-                }
-            }
-
             idleStrategy.idle(fragmentsRead);
         }
 

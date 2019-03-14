@@ -353,22 +353,27 @@ public class ConsensusModule implements AutoCloseable
         /**
          * Message detail to be sent when max concurrent session limit is reached.
          */
-        public static final String SESSION_LIMIT_MSG = "Concurrent session limit";
+        public static final String SESSION_LIMIT_MSG = "concurrent session limit";
 
         /**
          * Message detail to be sent when a session timeout occurs.
          */
-        public static final String SESSION_TIMEOUT_MSG = "Session inactive";
+        public static final String SESSION_TIMEOUT_MSG = "session inactive";
 
         /**
          * Message detail to be sent when a session is terminated by a service.
          */
-        public static final String SESSION_TERMINATED_MSG = "Session terminated";
+        public static final String SESSION_TERMINATED_MSG = "session terminated";
 
         /**
          * Message detail to be sent when a session is rejected due to authentication.
          */
-        public static final String SESSION_REJECTED_MSG = "Session failed authentication";
+        public static final String SESSION_REJECTED_MSG = "session failed authentication";
+
+        /**
+         * Message detail to be sent when a session has an invalid client version.
+         */
+        public static final String SESSION_INVALID_VERSION_MSG = "invalid client version";
 
         /**
          * Channel to be used communicating cluster member status to each other. This can be used for default

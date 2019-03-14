@@ -15,7 +15,6 @@
  */
 package io.aeron.driver;
 
-import io.aeron.driver.status.SystemCounters;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.collections.BiInt2ObjectMap;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -24,7 +23,6 @@ import org.agrona.concurrent.NanoClock;
 import static io.aeron.driver.Configuration.MAX_RETRANSMITS_DEFAULT;
 import static io.aeron.driver.RetransmitHandler.State.DELAYED;
 import static io.aeron.driver.RetransmitHandler.State.LINGERING;
-import static io.aeron.driver.status.SystemCounterDescriptor.INVALID_PACKETS;
 
 /**
  * Tracking and handling of retransmit request, NAKs, for senders, and receivers.
@@ -45,18 +43,18 @@ public class RetransmitHandler
      * Create a retransmit handler.
      *
      * @param nanoClock              used to determine time
-     * @param systemCounters         for recording significant events.
+     * @param invalidPackets         for recording invalid packets
      * @param delayGenerator         to use for delay determination
      * @param lingerTimeoutGenerator to use for linger timeout
      */
     public RetransmitHandler(
         final NanoClock nanoClock,
-        final SystemCounters systemCounters,
+        final AtomicCounter invalidPackets,
         final FeedbackDelayGenerator delayGenerator,
         final FeedbackDelayGenerator lingerTimeoutGenerator)
     {
         this.nanoClock = nanoClock;
-        this.invalidPackets = systemCounters.get(INVALID_PACKETS);
+        this.invalidPackets = invalidPackets;
         this.delayGenerator = delayGenerator;
         this.lingerTimeoutGenerator = lingerTimeoutGenerator;
 
@@ -92,11 +90,11 @@ public class RetransmitHandler
                 action.termOffset = termOffset;
                 action.length = Math.min(length, termLength - termOffset);
 
-                final long delay = determineRetransmitDelay();
+                final long delay = delayGenerator.generateDelay();
                 if (0 == delay)
                 {
                     retransmitSender.resend(termId, termOffset, action.length);
-                    action.linger(determineLingerTimeout(), nanoClock.nanoTime());
+                    action.linger(lingerTimeoutGenerator.generateDelay(), nanoClock.nanoTime());
                 }
                 else
                 {
@@ -111,7 +109,7 @@ public class RetransmitHandler
     /**
      * Called to indicate a retransmission is received that may obviate the need to send one ourselves.
      * <p>
-     * NOTE: Currently only called from unit tests. Would be used for retransmitting from receivers for NAK suppression
+     * NOTE: Currently only called from unit tests. Would be used for retransmitting from receivers for NAK suppression.
      *
      * @param termId     of the data
      * @param termOffset of the data
@@ -143,7 +141,7 @@ public class RetransmitHandler
                 if (DELAYED == action.state && (action.expireNs - nowNs < 0))
                 {
                     retransmitSender.resend(action.termId, action.termOffset, action.length);
-                    action.linger(determineLingerTimeout(), nanoClock.nanoTime());
+                    action.linger(lingerTimeoutGenerator.generateDelay(), nanoClock.nanoTime());
                 }
                 else if (LINGERING == action.state && (action.expireNs - nowNs < 0))
                 {
@@ -166,16 +164,6 @@ public class RetransmitHandler
         return isInvalid;
     }
 
-    private long determineRetransmitDelay()
-    {
-        return delayGenerator.generateDelay();
-    }
-
-    private long determineLingerTimeout()
-    {
-        return lingerTimeoutGenerator.generateDelay();
-    }
-
     private RetransmitAction assignRetransmitAction()
     {
         for (final RetransmitAction action : retransmitActionPool)
@@ -186,7 +174,7 @@ public class RetransmitHandler
             }
         }
 
-        throw new IllegalStateException("Maximum number of active RetransmitActions reached");
+        throw new IllegalStateException("maximum number of active RetransmitActions reached");
     }
 
     enum State
@@ -204,19 +192,19 @@ public class RetransmitHandler
         int length;
         State state = State.INACTIVE;
 
-        public void delay(final long delayNs, final long nowNs)
+        void delay(final long delayNs, final long nowNs)
         {
             state = DELAYED;
             expireNs = nowNs + delayNs;
         }
 
-        public void linger(final long timeoutNs, final long nowNs)
+        void linger(final long timeoutNs, final long nowNs)
         {
             state = LINGERING;
             expireNs = nowNs + timeoutNs;
         }
 
-        public void cancel()
+        void cancel()
         {
             state = State.INACTIVE;
         }

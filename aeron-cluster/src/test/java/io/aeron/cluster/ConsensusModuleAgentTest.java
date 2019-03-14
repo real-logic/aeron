@@ -39,6 +39,7 @@ import java.util.concurrent.TimeUnit;
 
 import static io.aeron.cluster.ClusterControl.ToggleState.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
+import static io.aeron.cluster.client.AeronCluster.Configuration.SEMANTIC_VERSION;
 import static java.lang.Boolean.TRUE;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -103,7 +104,7 @@ public class ConsensusModuleAgentTest
         agent.state(ConsensusModule.State.ACTIVE);
         agent.role(Cluster.Role.LEADER);
         agent.appendedPositionCounter(mock(ReadableCounter.class));
-        agent.onSessionConnect(correlationIdOne, 2, RESPONSE_CHANNEL_ONE, new byte[0]);
+        agent.onSessionConnect(correlationIdOne, 2, SEMANTIC_VERSION, RESPONSE_CHANNEL_ONE, new byte[0]);
 
         clock.update(1);
         agent.doWork();
@@ -111,7 +112,7 @@ public class ConsensusModuleAgentTest
         verify(mockLogPublisher).appendSessionOpen(any(ClusterSession.class), anyLong(), anyLong());
 
         final long correlationIdTwo = 2L;
-        agent.onSessionConnect(correlationIdTwo, 3, RESPONSE_CHANNEL_TWO, new byte[0]);
+        agent.onSessionConnect(correlationIdTwo, 3, SEMANTIC_VERSION, RESPONSE_CHANNEL_TWO, new byte[0]);
         clock.update(2);
         agent.doWork();
 
@@ -134,7 +135,7 @@ public class ConsensusModuleAgentTest
         agent.state(ConsensusModule.State.ACTIVE);
         agent.role(Cluster.Role.LEADER);
         agent.appendedPositionCounter(mock(ReadableCounter.class));
-        agent.onSessionConnect(correlationId, 2, RESPONSE_CHANNEL_ONE, new byte[0]);
+        agent.onSessionConnect(correlationId, 2, SEMANTIC_VERSION, RESPONSE_CHANNEL_ONE, new byte[0]);
 
         agent.doWork();
 
@@ -169,7 +170,7 @@ public class ConsensusModuleAgentTest
         agent.state(ConsensusModule.State.ACTIVE);
         agent.role(Cluster.Role.LEADER);
         agent.appendedPositionCounter(mock(ReadableCounter.class));
-        agent.onSessionConnect(correlationId, 2, RESPONSE_CHANNEL_ONE, new byte[0]);
+        agent.onSessionConnect(correlationId, 2, SEMANTIC_VERSION, RESPONSE_CHANNEL_ONE, new byte[0]);
 
         agent.doWork();
 

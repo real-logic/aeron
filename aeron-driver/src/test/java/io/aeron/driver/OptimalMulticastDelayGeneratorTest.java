@@ -17,28 +17,26 @@ package io.aeron.driver;
 
 import org.junit.Test;
 
-import java.util.stream.IntStream;
+import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 
 public class OptimalMulticastDelayGeneratorTest
 {
-    private static final long MAX_BACKOFF = 60;
+    private static final long MAX_BACKOFF = TimeUnit.MILLISECONDS.toNanos(60);
     private static final long GROUP_SIZE = 10;
-    private static final long GRTT = 10;
 
     private final OptimalMulticastDelayGenerator generator = new OptimalMulticastDelayGenerator(
-        MAX_BACKOFF, GROUP_SIZE, GRTT);
+        MAX_BACKOFF, GROUP_SIZE);
 
     @Test
     public void shouldNotExceedTmaxBackoff()
     {
-        IntStream.range(0, 100000).forEach(
-            (i) ->
-            {
-                final double delay = generator.generateNewOptimalDelay();
-                assertThat(delay, lessThanOrEqualTo((double)MAX_BACKOFF));
-            });
+        for (int i = 0; i < 100_000; i++)
+        {
+            final double delay = generator.generateNewOptimalDelay();
+            assertThat(delay, lessThanOrEqualTo((double)MAX_BACKOFF));
+        }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018 Real Logic Ltd.
+ * Copyright 2014-2019 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,11 +76,11 @@ typedef struct aeron_driver_context_stct
     char *aeron_dir;                            /* aeron.dir */
     aeron_threading_mode_t threading_mode;      /* aeron.threading.mode = DEDICATED */
     bool dirs_delete_on_start;                  /* aeron.dir.delete.on.start = false */
-    bool warn_if_dirs_exist;
+    bool warn_if_dirs_exist;                    /* aeron.dir.warn.if.exists = true */
     bool term_buffer_sparse_file;               /* aeron.term.buffer.sparse.file = false */
     bool perform_storage_checks;                /* aeron.perform.storage.checks = true */
     bool spies_simulate_connection;             /* aeron.spies.simulate.connection = false */
-    uint64_t driver_timeout_ms;
+    uint64_t driver_timeout_ms;                 /* aeron.driver.timeout = 10s */
     uint64_t client_liveness_timeout_ns;        /* aeron.client.liveness.timeout = 5s */
     uint64_t publication_linger_timeout_ns;     /* aeron.publication.linger.timeout = 5s */
     uint64_t status_message_timeout_ns;         /* aeron.rcv.status.message.timeout = 200ms */

@@ -87,9 +87,9 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
         return workCount;
     }
 
-    public void onConnect(final long correlationId, final int streamId, final String channel)
+    public void onConnect(final long correlationId, final int streamId, final int version, final String channel)
     {
-        final ControlSession session = conductor.newControlSession(correlationId, streamId, channel, this);
+        final ControlSession session = conductor.newControlSession(correlationId, streamId, version, channel, this);
         controlSessionByIdMap.put(session.sessionId(), session);
     }
 
@@ -212,6 +212,25 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
     {
         final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
         controlSession.onFindLastMatchingRecording(correlationId, minRecordingId, sessionId, streamId, channelFragment);
+    }
+
+    public void onListRecordingSubscriptions(
+        final long controlSessionId,
+        final long correlationId,
+        final int pseudoIndex,
+        final int subscriptionCount,
+        final boolean applyStreamId,
+        final int streamId,
+        final String channelFragment)
+    {
+        final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
+        controlSession.onListRecordingSubscriptions(
+            correlationId,
+            pseudoIndex,
+            subscriptionCount,
+            applyStreamId,
+            streamId,
+            channelFragment);
     }
 
     void removeControlSession(final ControlSession controlSession)

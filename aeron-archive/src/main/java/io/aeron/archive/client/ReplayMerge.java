@@ -20,6 +20,7 @@ import io.aeron.Image;
 import io.aeron.Subscription;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.logbuffer.LogBufferDescriptor;
 
 /**
  * Replay a recorded stream from a starting position and merge with live stream to consume a full history of a stream.
@@ -31,6 +32,9 @@ import io.aeron.logbuffer.FragmentHandler;
  */
 public class ReplayMerge implements AutoCloseable
 {
+    private static final int LIVE_ADD_THRESHOLD = LogBufferDescriptor.TERM_MIN_LENGTH / 4;
+    private static final int REPLAY_REMOVE_THRESHOLD = 0;
+
     public enum State
     {
         AWAIT_INITIAL_RECORDING_POSITION,
@@ -70,8 +74,7 @@ public class ReplayMerge implements AutoCloseable
         final String liveDestination,
         final long recordingId,
         final long startPosition,
-        final int sessionId,
-        final int maxReceiverWindow)
+        final int sessionId)
     {
         this.archive = archive;
         this.subscription = subscription;
@@ -80,8 +83,8 @@ public class ReplayMerge implements AutoCloseable
         this.liveDestination = liveDestination;
         this.recordingId = recordingId;
         this.startPosition = startPosition;
-        this.liveAddThreshold = maxReceiverWindow / 2;
-        this.replayRemoveThreshold = maxReceiverWindow / 4;
+        this.liveAddThreshold = LIVE_ADD_THRESHOLD;
+        this.replayRemoveThreshold = REPLAY_REMOVE_THRESHOLD;
         this.sessionId = sessionId;
 
         subscription.addDestination(replayDestination);
@@ -267,25 +270,37 @@ public class ReplayMerge implements AutoCloseable
         else if (pollForResponse(archive, activeCorrelationId))
         {
             nextTargetPosition = polledRelevantId(archive);
-            State nextState = State.AWAIT_CATCH_UP;
-
-            if (null != image)
+            if (AeronArchive.NULL_POSITION == nextTargetPosition)
             {
-                final long position = image.position();
+                final long correlationId = archive.context().aeron().nextCorrelationId();
 
-                if (shouldAddLiveDestination(position))
+                if (archive.archiveProxy().getRecordingPosition(recordingId, correlationId, archive.controlSessionId()))
                 {
-                    subscription.addDestination(liveDestination);
-                    isLiveAdded = true;
-                }
-                else if (shouldStopAndRemoveReplay(position))
-                {
-                    nextState = State.AWAIT_STOP_REPLAY;
+                    activeCorrelationId = correlationId;
                 }
             }
+            else
+            {
+                State nextState = State.AWAIT_CATCH_UP;
 
-            activeCorrelationId = Aeron.NULL_VALUE;
-            state(nextState);
+                if (null != image)
+                {
+                    final long position = image.position();
+
+                    if (shouldAddLiveDestination(position))
+                    {
+                        subscription.addDestination(liveDestination);
+                        isLiveAdded = true;
+                    }
+                    else if (shouldStopAndRemoveReplay(position))
+                    {
+                        nextState = State.AWAIT_STOP_REPLAY;
+                    }
+                }
+
+                activeCorrelationId = Aeron.NULL_VALUE;
+                state(nextState);
+            }
             workCount += 1;
         }
 

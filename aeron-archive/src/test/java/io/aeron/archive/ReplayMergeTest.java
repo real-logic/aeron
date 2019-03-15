@@ -90,7 +90,6 @@ public class ReplayMergeTest
     private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
     private final MutableInteger received = new MutableInteger(0);
     private final MediaDriver.Context mediaDriverContext = new MediaDriver.Context();
-    private final int maxReceiverWindow = mediaDriverContext.initialWindowLength();
 
     private ArchivingMediaDriver archivingMediaDriver;
     private Aeron aeron;
@@ -170,8 +169,7 @@ public class ReplayMergeTest
                     liveDestination.build(),
                     recordingId,
                     0,
-                    sessionId,
-                    maxReceiverWindow))
+                    sessionId))
                 {
                     final FragmentHandler fragmentHandler = new FragmentAssembler(
                         (buffer, offset, length, header) ->

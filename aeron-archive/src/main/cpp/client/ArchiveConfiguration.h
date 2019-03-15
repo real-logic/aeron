@@ -55,12 +55,12 @@ constexpr const char CONTROL_REQUEST_CHANNEL_DEFAULT[] = "aeron:udp?endpoint=loc
 constexpr const std::int32_t CONTROL_REQUEST_STREAM_ID_DEFAULT = 10;
 
 constexpr const char LOCAL_CONTROL_REQUEST_CHANNEL_DEFAULT[] = "aeron:ipc";
-constexpr const std::int32_t LOCAL_CONTTROL_REQUEST_STREAM_ID_DEFAULT = 11;
+constexpr const std::int32_t LOCAL_CONTROL_REQUEST_STREAM_ID_DEFAULT = 11;
 
 constexpr const char CONTROL_RESPONSE_CHANNEL_DEFAULT[] = "aeron:udp?endpoint=localhost:8020";
 constexpr const std::int32_t CONTROL_RESPONSE_STREAM_ID_DEFAULT = 20;
 
-constexpr const char RECORDING_EVENTS_CHANNEL_DEFAULT[] = "aeron:udp?endpoint=localhost:8030";
+constexpr const char RECORDING_EVENTS_CHANNEL_DEFAULT[] = "aeron:udp?control=localhost:8030|control-mode=dynamic";
 constexpr const std::int32_t RECORDING_EVENTS_STREAM_ID_DEFAULT = 30;
 
 constexpr const bool CONTROL_TERM_BUFFER_SPARSE_DEFAULT = true;
@@ -88,7 +88,7 @@ public:
         std::shared_ptr<ChannelUri> channelUri = ChannelUri::parse(m_controlRequestChannel);
         channelUri->put(TERM_LENGTH_PARAM_NAME, std::to_string(m_controlTermBufferLength));
         channelUri->put(MTU_LENGTH_PARAM_NAME, std::to_string(m_controlMtuLength));
-        channelUri->put(SPARSE_PARAM_NAME, (m_controlTermBufferSparse ? "true" : "false"));
+        channelUri->put(SPARSE_PARAM_NAME, m_controlTermBufferSparse ? "true" : "false");
         m_controlRequestChannel = channelUri->toString();
     }
 

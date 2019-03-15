@@ -48,6 +48,8 @@ public class TestCluster implements AutoCloseable
         "aeron:udp?term-length=64k|endpoint=localhost:8010";
     private static final String ARCHIVE_CONTROL_RESPONSE_CHANNEL =
         "aeron:udp?term-length=64k|endpoint=localhost:8020";
+    private static final String ARCHIVE_RECORDING_EVENTS_CHANNEL =
+        "aeron:udp?control-mode=dynamic|control=localhost:8030";
 
     private final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
     private final MutableInteger responseCount = new MutableInteger();
@@ -166,6 +168,7 @@ public class TestCluster implements AutoCloseable
             .controlRequestStreamId(100)
             .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, index))
             .controlResponseStreamId(110 + index)
+            .recordingEventsChannel(memberSpecificPort(ARCHIVE_RECORDING_EVENTS_CHANNEL, index))
             .aeronDirectoryName(baseDirName);
 
         testNodeContext.mediaDriverContext
@@ -184,6 +187,7 @@ public class TestCluster implements AutoCloseable
             .controlStreamId(testNodeContext.aeronArchiveContext.controlRequestStreamId())
             .localControlChannel("aeron:ipc?term-length=64k")
             .localControlStreamId(testNodeContext.aeronArchiveContext.controlRequestStreamId())
+            .recordingEventsChannel(testNodeContext.aeronArchiveContext.recordingEventsChannel())
             .threadingMode(ArchiveThreadingMode.SHARED)
             .deleteArchiveOnStart(cleanStart);
 
@@ -224,6 +228,7 @@ public class TestCluster implements AutoCloseable
             .controlRequestStreamId(100)
             .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, index))
             .controlResponseStreamId(110 + index)
+            .recordingEventsChannel(memberSpecificPort(ARCHIVE_RECORDING_EVENTS_CHANNEL, index))
             .aeronDirectoryName(baseDirName);
 
         testNodeContext.mediaDriverContext

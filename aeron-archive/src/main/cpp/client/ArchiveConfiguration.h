@@ -49,31 +49,60 @@ constexpr const std::uint8_t ARCHIVE_PATCH_VERSION = 1;
 constexpr const std::int32_t ARCHIVE_SEMANTIC_VERSION = aeron::util::semanticVersionCompose(
     ARCHIVE_MAJOR_VERSION, ARCHIVE_MINOR_VERSION, ARCHIVE_PATCH_VERSION);
 
+/// Timeout when waiting on a message to be sent or received.
 constexpr const long long MESSAGE_TIMEOUT_NS_DEFAULT = 5 * 1000 * 1000 * 1000L;
 
+/// Channel for sending control messages to an archive.
 constexpr const char CONTROL_REQUEST_CHANNEL_DEFAULT[] = "aeron:udp?endpoint=localhost:8010";
+/// Stream id within a channel for sending control messages to an archive.
 constexpr const std::int32_t CONTROL_REQUEST_STREAM_ID_DEFAULT = 10;
 
+/// Channel for sending control messages to a driver local archive. Default to IPC.
 constexpr const char LOCAL_CONTROL_REQUEST_CHANNEL_DEFAULT[] = "aeron:ipc";
+/// Stream id within a channel for sending control messages to a driver local archive.
 constexpr const std::int32_t LOCAL_CONTROL_REQUEST_STREAM_ID_DEFAULT = 11;
 
+/// Channel for receiving control response messages from an archive.
 constexpr const char CONTROL_RESPONSE_CHANNEL_DEFAULT[] = "aeron:udp?endpoint=localhost:8020";
+/// Stream id within a channel for receiving control messages from an archive.
 constexpr const std::int32_t CONTROL_RESPONSE_STREAM_ID_DEFAULT = 20;
 
+/**
+ * Channel for receiving progress events of recordings from an archive.
+ * For production it is recommended that multicast or dynamic multi-destination-cast (MDC) is used to allow
+ * for dynamic subscribers, an endpoint can be added to the subscription side for controlling port usage.
+ */
 constexpr const char RECORDING_EVENTS_CHANNEL_DEFAULT[] = "aeron:udp?control=localhost:8030|control-mode=dynamic";
+/// Stream id within a channel for receiving progress of recordings from an archive.
 constexpr const std::int32_t RECORDING_EVENTS_STREAM_ID_DEFAULT = 30;
 
+/**
+ * Overrides term buffer sparse file configuration for if term buffer files
+ * are sparse on the control channel.
+ */
 constexpr const bool CONTROL_TERM_BUFFER_SPARSE_DEFAULT = true;
+
+/// Low term length for control channel reflects expected low bandwidth usage.
 constexpr const std::int32_t CONTROL_TERM_BUFFER_LENGTH_DEFAULT = 64 * 1024;
+/// MTU to reflect default for the control streams.
 constexpr const std::int32_t CONTROL_MTU_LENGTH_DEFAULT = 1408;
 
 }
 
+/**
+ * Specialised configuration options for communicating with an Aeron Archive.
+ * <p>
+ * The context will be copied after a successful
+ * AeronArchive#connect(Context) or AeronArchive::asyncConnect(Context).
+ */
 class Context
 {
 public:
     using this_t = Context;
 
+    /**
+     * Conclude configuration by setting up defaults when specifics are not provided.
+     */
     void conclude()
     {
         if (!m_aeron)
@@ -92,154 +121,321 @@ public:
         m_controlRequestChannel = channelUri->toString();
     }
 
+    /**
+     * Aeron client for communicating with the local Media Driver.
+     * <p>
+     * If not provided then a default will be established during #conclude by calling
+     * Aeron#connect.
+     *
+     * @return client for communicating with the local Media Driver.
+     */
     inline std::shared_ptr<Aeron> aeron()
     {
         return m_aeron;
     }
 
+    /**
+     * Aeron client for communicating with the local Media Driver.
+     * <p>
+     * This client will be closed when the AeronArchive goes out of scope if
+     * #ownsAeronClient is true.
+     *
+     * @param aeron client for communicating with the local Media Driver.
+     * @return this for a fluent API.
+     * @see Aeron#connect()
+     */
     inline this_t& aeron(std::shared_ptr<Aeron> aeron)
     {
         m_aeron = std::move(aeron);
         return *this;
     }
 
+    /**
+     * The message timeout in nanoseconds to wait for sending or receiving a message.
+     *
+     * @return the message timeout in nanoseconds to wait for sending or receiving a message.
+     * @see MESSAGE_TIMEOUT_NS_DEFAULT
+     */
     inline long long messageTimeoutNs()
     {
         return m_messageTimeoutNs;
     }
 
+    /**
+     * Set the message timeout in nanoseconds to wait for sending or receiving a message.
+     *
+     * @param messageTimeoutNs to wait for sending or receiving a message.
+     * @return this for a fluent API.
+     * @see MESSAGE_TIMEOUT_NS_DEFAULT
+     */
     inline this_t& messageTimeoutNs(long long timeoutNs)
     {
         m_messageTimeoutNs = timeoutNs;
         return *this;
     }
 
+    /**
+     * Get the channel URI on which the recording events publication will publish.
+     *
+     * @return the channel URI on which the recording events publication will publish.
+     */
     inline std::string recordingEventsChannel()
     {
         return m_recordingEventsChannel;
     }
 
+    /**
+     * Set the channel URI on which the recording events publication will publish.
+     * <p>
+     * To support dynamic subscribers then this can be set to multicast or MDC (Multi-Destination-Cast) if
+     * multicast cannot be supported for on the available the network infrastructure.
+     *
+     * @param recordingEventsChannel channel URI on which the recording events publication will publish.
+     * @return this for a fluent API.
+     * @see RECORDING_EVENTS_CHANNEL_DEFAULT
+     */
     inline this_t& recordingEventsChannel(const std::string& recordingEventsChannel)
     {
         m_recordingEventsChannel = recordingEventsChannel;
         return *this;
     }
 
+    /**
+     * Get the stream id on which the recording events publication will publish.
+     *
+     * @return the stream id on which the recording events publication will publish.
+     */
     inline std::int32_t recordingEventsStreamId()
     {
         return m_recordingEventsStreamId;
     }
 
+    /**
+     * Set the stream id on which the recording events publication will publish.
+     *
+     * @param recordingEventsStreamId stream id on which the recording events publication will publish.
+     * @return this for a fluent API.
+     */
     inline this_t& recordingEventsStreamId(std::int32_t recordingEventsStreamId)
     {
         m_recordingEventsStreamId = recordingEventsStreamId;
         return *this;
     }
 
+    /**
+     * Get the channel parameter for the control response channel.
+     *
+     * @return the channel parameter for the control response channel.
+     */
     inline std::string controlResponseChannel()
     {
         return m_controlResponseChannel;
     }
 
+    /**
+     * Set the channel parameter for the control response channel.
+     *
+     * @param channel parameter for the control response channel.
+     * @return this for a fluent API.
+     */
     inline this_t& controlResponseChannel(const std::string& channel)
     {
         m_controlResponseChannel = channel;
         return *this;
     }
 
+    /**
+     * Get the stream id for the control response channel.
+     *
+     * @return the stream id for the control response channel.
+     */
     inline std::int32_t controlResponseStreamId()
     {
         return m_controlResponseStreamId;
     }
 
+    /**
+     * Set the stream id for the control response channel.
+     *
+     * @param streamId for the control response channel.
+     * @return this for a fluent API
+     */
     inline this_t& controlResponseStreamId(std::int32_t streamId)
     {
         m_controlResponseStreamId = streamId;
         return *this;
     }
 
+    /**
+     * Get the channel parameter for the control request channel.
+     *
+     * @return the channel parameter for the control request channel.
+     */
     inline std::string controlRequestChannel()
     {
         return m_controlRequestChannel;
     }
 
+    /**
+     * Set the channel parameter for the control request channel.
+     *
+     * @param channel parameter for the control request channel.
+     * @return this for a fluent API.
+     */
     inline this_t& controlRequestChannel(const std::string& channel)
     {
         m_controlRequestChannel = channel;
         return *this;
     }
 
+    /**
+     * Get the stream id for the control request channel.
+     *
+     * @return the stream id for the control request channel.
+     */
     inline std::int32_t controlRequestStreamId()
     {
         return m_controlRequestStreamId;
     }
 
+    /**
+     * Set the stream id for the control request channel.
+     *
+     * @param streamId for the control request channel.
+     * @return this for a fluent API
+     */
     inline this_t& controlRequestStreamId(std::int32_t streamId)
     {
         m_controlRequestStreamId = streamId;
         return *this;
     }
 
+    /**
+     * Should the control streams use sparse file term buffers.
+     *
+     * @return true if the control stream should use sparse file term buffers.
+     */
     inline bool controlTermBufferSparse()
     {
         return m_controlTermBufferSparse;
     }
 
+    /**
+     * Should the control streams use sparse file term buffers.
+     *
+     * @param controlTermBufferSparse for the control stream.
+     * @return this for a fluent API.
+     */
     inline this_t& controlTermBufferSparse(bool controlTermBufferSparse)
     {
         m_controlTermBufferSparse = controlTermBufferSparse;
         return *this;
     }
 
+    /**
+     * Get the term buffer length for the control streams.
+     *
+     * @return the term buffer length for the control streams.
+     */
     inline std::int32_t controlTermBufferLength()
     {
         return m_controlTermBufferLength;
     }
 
+    /**
+     * Set the term buffer length for the control streams.
+     *
+     * @param controlTermBufferLength for the control streams.
+     * @return this for a fluent API.
+     */
     inline this_t& controlTermBufferLength(std::int32_t controlTermBufferLength)
     {
         m_controlTermBufferLength = controlTermBufferLength;
         return *this;
     }
 
+    /**
+     * Get the MTU length for the control streams.
+     *
+     * @return the MTU length for the control streams.
+     */
     inline std::int32_t controlMtuLength()
     {
         return m_controlMtuLength;
     }
 
+    /**
+     * Set the MTU length for the control streams.
+     *
+     * @param controlMtuLength for the control streams.
+     * @return this for a fluent API.
+     */
     inline this_t& controlMtuLength(std::int32_t controlMtuLength)
     {
         m_controlMtuLength = controlMtuLength;
         return *this;
     }
 
+    /**
+     * Get the top level Aeron directory used for communication between the Aeron client and Media Driver.
+     *
+     * @return The top level Aeron directory.
+     */
     inline std::string aeronDirectoryName()
     {
         return m_aeronDirectoryName;
     }
 
+    /**
+     * Set the top level Aeron directory used for communication between the Aeron client and Media Driver.
+     *
+     * @param aeronDirectoryName the top level Aeron directory.
+     * @return this for a fluent API.
+     */
     inline this_t& aeronDirectoryName(const std::string& aeronDirectoryName)
     {
         m_aeronDirectoryName = aeronDirectoryName;
         return *this;
     }
 
+    /**
+     * Does this context own the Aeron client and thus takes responsibility for closing it?
+     *
+     * @return does this context own the Aeron client and thus takes responsibility for closing it?
+     */
     inline bool ownsAeronClient()
     {
         return m_ownsAeronClient;
     }
 
+    /**
+     * Does this context own the Aeron client and thus takes responsibility for closing it?
+     *
+     * @param ownsAeronClient does this context own the Aeron client?
+     * @return this for a fluent API.
+     */
     inline this_t& ownsAeronClient(bool ownsAeronClient)
     {
         m_ownsAeronClient = ownsAeronClient;
         return *this;
     }
 
+    /**
+     * Get the error handler that will be called for asynchronous errors.
+     *
+     * @return the error handler that will be called for asynchronous errors.
+     */
     inline exception_handler_t errorHandler()
     {
         return m_errorHandler;
     }
 
+    /**
+     * Handle errors returned asynchronously from the archive for a control session.
+     *
+     * @param errorHandler method to handle objects of type std::exception.
+     * @return this for a fluent API.
+     */
     inline this_t& errorHandler(const exception_handler_t& errorHandler)
     {
         m_errorHandler = errorHandler;

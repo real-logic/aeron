@@ -23,16 +23,29 @@ namespace aeron {
 namespace archive {
 namespace client {
 
+/**
+ * Encapsulate the polling and decoding of archive control protocol response messages.
+ */
 class ControlResponsePoller
 {
 public:
     explicit ControlResponsePoller(std::shared_ptr<Subscription> subscription, int fragmentLimit = 10);
 
+    /**
+     * Get the Subscription used for polling responses.
+     *
+     * @return the Subscription used for polling responses.
+     */
     inline std::shared_ptr<Subscription> subscription()
     {
         return m_subscription;
     }
 
+    /**
+     * Poll for control response events.
+     *
+     * @return the number of fragments read during the operation. Zero if no events are available.
+     */
     inline int poll()
     {
         m_controlSessionId = -1;
@@ -48,51 +61,101 @@ public:
         return m_subscription->controlledPoll(m_fragmentHandler, m_fragmentLimit);
     }
 
+    /**
+     * Control session id of the last polled message or Aeron#NULL_VALUE if poll returned nothing.
+     *
+     * @return control session id of the last polled message or Aeron#NULL_VALUE if poll returned nothing.
+     */
     inline std::int64_t controlSessionId()
     {
         return m_controlSessionId;
     }
 
+    /**
+     * Correlation id of the last polled message or Aeron#NULL_VALUE if poll returned nothing.
+     *
+     * @return correlation id of the last polled message or Aeron#NULL_VALUE if poll returned nothing.
+     */
     inline std::int64_t correlationId()
     {
         return m_correlationId;
     }
 
+    /**
+     * Get the relevant id returned with the response, e.g. replay session id.
+     *
+     * @return the relevant id returned with the response.
+     */
     inline std::int64_t relevantId()
     {
         return m_relevantId;
     }
 
+    /**
+     * Get the template id of the last received message.
+     *
+     * @return the template id of the last received message.
+     */
     inline std::int64_t templateId()
     {
         return m_templateId;
     }
 
+    /**
+     * Was last received message a Control Response?
+     *
+     * @return whether the last received message was a Control Response.
+     */
     inline bool isControlResponse()
     {
         return m_isControlResponse;
     }
 
+    /**
+     * Was the last polling action received a complete message?
+     *
+     * @return true if the last polling action received a complete message?
+     */
     inline bool isPollComplete()
     {
         return m_pollComplete;
     }
 
+    /**
+     * Get the error message of the last response.
+     *
+     * @return the error message of the last response.
+     */
     inline std::string errorMessage()
     {
         return m_errorMessage;
     }
 
+    /**
+     * Did the last received control response have a response code of OK?
+     *
+     * @return whether the last received control response had a response code of OK?
+     */
     inline bool isCodeOk()
     {
         return m_isCodeOk;
     }
 
+    /**
+     * Did the last received control response have a response code of ERROR?
+     *
+     * @return whether the last received control response had a response code of ERROR?
+     */
     inline bool isCodeError()
     {
         return m_isCodeError;
     }
 
+    /**
+     * Get the response code value of the last response.
+     *
+     * @return the response code value of the last response.
+     */
     inline int codeValue()
     {
         return m_codeValue;

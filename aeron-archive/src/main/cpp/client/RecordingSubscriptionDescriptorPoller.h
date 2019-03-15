@@ -24,6 +24,15 @@ namespace archive {
 namespace client
 {
 
+/**
+ * Descriptor for an active recording subscription on the archive.
+ *
+ * @param controlSessionId for the request.
+ * @param correlationId    for the request.
+ * @param subscriptionId   that can be used to stop the recording subscription.
+ * @param streamId         the subscription was registered with.
+ * @param strippedChannel  the subscription was registered with.
+ */
 typedef std::function<void(
     std::int64_t controlSessionId,
     std::int64_t correlationId,
@@ -31,6 +40,9 @@ typedef std::function<void(
     std::int32_t streamId,
     const std::string& strippedChannel)> recording_subscription_descriptor_consumer_t;
 
+/**
+ * Encapsulate the polling, decoding, dispatching of recording descriptors from an archive.
+ */
 class RecordingSubscriptionDescriptorPoller
 {
 public:
@@ -40,6 +52,11 @@ public:
         std::int64_t controlSessionId,
         int fragmentLimit = 10);
 
+    /**
+     * Poll for recording subscriptions.
+     *
+     * @return the number of fragments read during the operation. Zero if no events are available.
+     */
     inline int poll()
     {
         m_isDispatchComplete = false;
@@ -47,26 +64,53 @@ public:
         return m_subscription->controlledPoll(m_fragmentHandler, m_fragmentLimit);
     }
 
+    /**
+     * Get the Subscription used for polling responses.
+     *
+     * @return the Subscription used for polling responses.
+     */
     inline std::shared_ptr<Subscription> subscription()
     {
         return m_subscription;
     }
 
+    /**
+     * Control session id for filtering responses.
+     *
+     * @return control session id for filtering responses.
+     */
     inline std::int64_t controlSessionId()
     {
         return m_controlSessionId;
     }
 
+    /**
+     * Is the dispatch of descriptors complete?
+     *
+     * @return true if the dispatch of descriptors complete?
+     */
     inline bool isDispatchComplete()
     {
         return m_isDispatchComplete;
     }
 
+    /**
+     * Get the number of remaining subscriptions expected.
+     *
+     * @return the number of remaining subscriptions expected.
+     */
     inline std::int32_t remainingSubscriptionCount()
     {
         return m_remainingSubscriptionCount;
     }
 
+    /**
+     * Reset the poller to dispatch the descriptors returned from a query.
+     *
+     * @param correlationId     for the response.
+     * @param subscriptionCount of descriptors to expect.
+     * @param consumer          to which the recording subscription descriptors are to be dispatched.
+     */
     inline void reset(
         std::int64_t correlationId,
         std::int32_t subscriptionCount,

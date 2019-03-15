@@ -27,8 +27,12 @@ namespace aeron {
 namespace archive {
 namespace client {
 
+/// Length of buffer to use in proxy to hold messages for construction.
 constexpr const std::size_t PROXY_REQUEST_BUFFER_LENGTH = 8 * 1024;
 
+/**
+ * Proxy class for encapsulating encoding and sending of control protocol messages to an archive.
+ */
 class ArchiveProxy
 {
 public:
@@ -42,17 +46,38 @@ public:
     {
     }
 
+    /**
+     * Get the Publication used for sending control messages.
+     *
+     * @return the Publication used for sending control messages.
+     */
     inline std::shared_ptr<ExclusivePublication> publication()
     {
         return m_publication;
     }
 
+    /**
+     * Try Connect to an archive on its control interface providing the response stream details. Only one attempt will
+     * be made to offer the request.
+     *
+     * @param responseChannel  for the control message responses.
+     * @param responseStreamId for the control message responses.
+     * @param correlationId    for this request.
+     * @return true if successfully offered otherwise false.
+     */
     bool tryConnect(const std::string& responseChannel, std::int32_t responseStreamId, std::int64_t correlationId)
     {
         const util::index_t length = connectRequest(m_buffer, responseChannel, responseStreamId, correlationId);
         return (m_publication->offer(m_buffer, 0, length) > 0);
     }
 
+    /**
+     * Close this control session with the archive.
+     *
+     * @param controlSessionId with the archive.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     bool closeSession(std::int64_t controlSessionId)
     {
@@ -60,6 +85,17 @@ public:
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
 
+    /**
+     * Start recording streams for a given channel and stream id pairing.
+     *
+     * @param channel          to be recorded.
+     * @param streamId         to be recorded.
+     * @param sourceLocation   of the publication to be recorded.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     bool startRecording(
         const std::string& channel,
@@ -73,6 +109,18 @@ public:
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
 
+    /**
+     * Extend a recorded stream for a given channel and stream id pairing.
+     *
+     * @param channel          to be recorded.
+     * @param streamId         to be recorded.
+     * @param sourceLocation   of the publication to be recorded.
+     * @param recordingId      to be extended.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     bool extendRecording(
         const std::string& channel,
@@ -87,6 +135,16 @@ public:
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
 
+    /**
+     * Stop an active recording.
+     *
+     * @param channel          to be stopped.
+     * @param streamId         to be stopped.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     bool stopRecording(
         const std::string& channel,
@@ -99,6 +157,15 @@ public:
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
 
+    /**
+     * Stop an active recording by the Subscription#registrationId it was registered with.
+     *
+     * @param subscriptionId   that identifies the subscription in the archive doing the recording.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     bool stopRecording(
         std::int64_t subscriptionId,
@@ -110,6 +177,19 @@ public:
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
 
+    /**
+     * Replay a recording from a given position.
+     *
+     * @param recordingId      to be replayed.
+     * @param position         from which the replay should be started.
+     * @param length           of the stream to be replayed. Use std::numeric_limits<std::int64_t>::max to follow a live stream.
+     * @param replayChannel    to which the replay should be sent.
+     * @param replayStreamId   to which the replay should be sent.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     bool replay(
         std::int64_t recordingId,
@@ -125,6 +205,15 @@ public:
         return offer<IdleStrategy>(m_buffer, 0, msgLength);
     }
 
+    /**
+     * Stop an existing replay session.
+     *
+     * @param replaySessionId  that should be stopped.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     bool stopReplay(
         std::int64_t replaySessionId,
@@ -135,6 +224,16 @@ public:
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
 
+    /**
+     * List a range of recording descriptors.
+     *
+     * @param fromRecordingId  at which to begin listing.
+     * @param recordCount      for the number of descriptors to be listed.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     bool listRecordings(
         std::int64_t fromRecordingId,
@@ -147,6 +246,18 @@ public:
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
 
+    /**
+     * List a range of recording descriptors which match a channel URI fragment and stream id.
+     *
+     * @param fromRecordingId  at which to begin listing.
+     * @param recordCount      for the number of descriptors to be listed.
+     * @param channelFragment  to match recordings on from the original channel URI in the archive descriptor.
+     * @param streamId         to match recordings on.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     bool listRecordingsForUri(
         std::int64_t fromRecordingId,
@@ -161,6 +272,15 @@ public:
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
 
+    /**
+     * List a recording descriptor for a given recording id.
+     *
+     * @param recordingId      at which to begin listing.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     bool listRecording(
         std::int64_t recordingId,
@@ -171,6 +291,15 @@ public:
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
 
+    /**
+     * Get the recorded position of an active recording.
+     *
+     * @param recordingId      of the active recording that the position is being requested for.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     bool getRecordingPosition(
         std::int64_t recordingId,
@@ -181,6 +310,15 @@ public:
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
 
+    /**
+     * Get the stop position of a recording.
+     *
+     * @param recordingId      of the recording that the stop position is being requested for.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     bool getStopPosition(
         std::int64_t recordingId,
@@ -191,6 +329,18 @@ public:
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
 
+    /**
+     * Find the last recording that matches the given criteria.
+     *
+     * @param minRecordingId   to search back to.
+     * @param channelFragment  for a contains match on the original channel stored with the archive descriptor.
+     * @param streamId         of the recording to match.
+     * @param sessionId        of the recording to match.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     bool findLastMatchingRecording(
         std::int64_t minRecordingId,
@@ -205,6 +355,17 @@ public:
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
 
+    /**
+     * Truncate a stopped recording to a given position that is less than the stopped position. The provided position
+     * must be on a fragment boundary. Truncating a recording to the start position effectively deletes the recording.
+     *
+     * @param recordingId      of the stopped recording to be truncated.
+     * @param position         to which the recording will be truncated.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     bool truncateRecording(
         std::int64_t recordingId,
@@ -217,6 +378,19 @@ public:
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
 
+    /**
+     * List registered subscriptions in the archive which have been used to record streams.
+     *
+     * @param pseudoIndex       in the list of active recording subscriptions.
+     * @param subscriptionCount for the number of descriptors to be listed.
+     * @param channelFragment   for a contains match on the stripped channel used with the registered subscription.
+     * @param streamId          for the subscription.
+     * @param applyStreamId     when matching.
+     * @param correlationId     for this request.
+     * @param controlSessionId  for this request.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     bool listRecordingSubscriptions(
         std::int32_t pseudoIndex,

@@ -66,7 +66,7 @@ void RecordingEventsPoller::onFragment(
                 msgHeader.blockLength(),
                 msgHeader.version());
 
-            m_eventType = EventType::RECORDING_STARTTED;
+            m_eventType = EventType::RECORDING_STARTED;
             m_recordingId = event.recordingId();
             m_recordingStartPosition = event.startPosition();
             m_recordingPosition = m_recordingStartPosition;

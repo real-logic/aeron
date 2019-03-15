@@ -33,6 +33,9 @@ constexpr const std::int32_t ARCHIVE_ERROR_CODE_MAX_REPLAYS = 7;
 constexpr const std::int32_t ARCHIVE_ERROR_CODE_MAX_RECORDINGS = 8;
 constexpr const std::int32_t ARCHIVE_ERROR_CODE_INVALID_EXTENSION = 9;
 
+/**
+ * Exception raised when communicating with the AeronArchive.
+ */
 class ArchiveException : public SourcedException
 {
 private:
@@ -59,6 +62,11 @@ public:
     {
     }
 
+    /**
+     * Error code providing more detail into what went wrong.
+     *
+     * @return code providing more detail into what went wrong.
+     */
     std::int32_t errorCode() const
     {
         return m_errorCode;

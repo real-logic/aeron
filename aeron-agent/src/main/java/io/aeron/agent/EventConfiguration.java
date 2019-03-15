@@ -38,7 +38,7 @@ public class EventConfiguration
     public static final String BUFFER_LENGTH_PROP_NAME = "aeron.event.buffer.length";
 
     /**
-     * Event tags system property name. This is either:
+     * Driver Event tags system property name. This is either:
      * <ul>
      * <li>A comma separated list of {@link DriverEventCode}s to enable</li>
      * <li>"all" which enables all the codes</li>
@@ -46,8 +46,13 @@ public class EventConfiguration
      * </ul>
      */
     public static final String ENABLED_EVENT_CODES_PROP_NAME = "aeron.event.log";
+
     /**
-     * TODO Javadoc
+     * Cluster Event tags system property name. This is either:
+     * <ul>
+     * <li>A comma separated list of {@link ClusterEventCode}s to enable</li>
+     * <li>"all" which enables all the codes</li>
+     * </ul>
      */
     public static final String ENABLED_CLUSTER_EVENT_CODES_PROP_NAME = "aeron.event.cluster.log";
 
@@ -132,10 +137,65 @@ public class EventConfiguration
         return result;
     }
 
+    /**
+     * Get the {@link Set} of {@link ClusterEventCode}s that are enabled for the logger.
+     *
+     * @param enabledClusterEventCodes that can be "all" or a comma separated list of Event Code ids or names.
+     * @return the {@link Set} of {@link ClusterEventCode}s that are enabled for the logger.
+     */
     static Set<ClusterEventCode> getEnabledClusterEventCodes(final String enabledClusterEventCodes)
     {
-        // TODO filter based on system property
-        return EnumSet.allOf(ClusterEventCode.class);
+        if (null == enabledClusterEventCodes || "".equals(enabledClusterEventCodes))
+        {
+            return EnumSet.noneOf(ClusterEventCode.class);
+        }
+
+        final Set<ClusterEventCode> eventCodeSet = new HashSet<>();
+        final String[] codeIds = enabledClusterEventCodes.split(",");
+
+        for (final String codeId : codeIds)
+        {
+            switch (codeId)
+            {
+                case "all":
+                    eventCodeSet.addAll(EnumSet.allOf(ClusterEventCode.class));
+                    break;
+
+                default:
+                {
+                    ClusterEventCode code = null;
+                    try
+                    {
+                        code = ClusterEventCode.valueOf(codeId);
+                    }
+                    catch (final IllegalArgumentException ignore)
+                    {
+                    }
+
+                    if (null == code)
+                    {
+                        try
+                        {
+                            code = ClusterEventCode.get(Integer.parseInt(codeId));
+                        }
+                        catch (final IllegalArgumentException ignore)
+                        {
+                        }
+                    }
+
+                    if (null != code)
+                    {
+                        eventCodeSet.add(code);
+                    }
+                    else
+                    {
+                        System.err.println("unknown event code: " + codeId);
+                    }
+                }
+            }
+        }
+
+        return eventCodeSet;
     }
 
     /**

@@ -69,7 +69,7 @@ public class EventConfigurationTest
     @Test
     public void allClusterEventsShouldBeEnabled()
     {
-        assertThat(getEnabledClusterEventCodes(""), is(EnumSet.allOf(ClusterEventCode.class)));
+        assertThat(getEnabledClusterEventCodes("all"), is(EnumSet.allOf(ClusterEventCode.class)));
     }
 
     @Test

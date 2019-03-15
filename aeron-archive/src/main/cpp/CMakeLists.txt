@@ -30,6 +30,7 @@ add_custom_target(codecs DEPENDS ${GENERATED_CODECS})
 SET(SOURCE
     client/ArchiveProxy.cpp
     client/ControlResponsePoller.cpp
+    client/ControlResponseAdapter.cpp
     client/RecordingDescriptorPoller.cpp
     client/RecordingSubscriptionDescriptorPoller.cpp
     client/RecordingEventsPoller.cpp
@@ -41,6 +42,7 @@ SET(HEADERS
     client/ArchiveConfiguration.h
     client/ArchiveProxy.h
     client/ControlResponsePoller.h
+    client/ControlResponseAdapter.h
     client/RecordingDescriptorPoller.h
     client/RecordingSubscriptionDescriptorPoller.h
     client/RecordingEventsPoller.h

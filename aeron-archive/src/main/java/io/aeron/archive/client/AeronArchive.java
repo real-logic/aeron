@@ -1379,7 +1379,7 @@ public class AeronArchive implements AutoCloseable
         /**
          * Channel for receiving progress events of recordings from an archive.
          * For production it is recommended that multicast or dynamic multi-destination-cast (MDC) is used to allow
-         * for dynamic subscribers.
+         * for dynamic subscribers, an endpoint can be added to the subscription side for controlling port usage.
          */
         public static final String RECORDING_EVENTS_CHANNEL_DEFAULT =
             "aeron:udp?control=localhost:8030|control-mode=dynamic";

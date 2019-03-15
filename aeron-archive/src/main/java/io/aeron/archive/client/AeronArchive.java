@@ -1952,7 +1952,7 @@ public class AeronArchive implements AutoCloseable
         }
 
         /**
-         * Does this context own the {@link #aeron()} client and tuis takes responsibility for closing it?
+         * Does this context own the {@link #aeron()} client and thus takes responsibility for closing it?
          *
          * @param ownsAeronClient does this context own the {@link #aeron()} client?
          * @return this for a fluent API.

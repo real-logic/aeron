@@ -498,9 +498,6 @@ public class ArchiveProxy
     }
 
     /**
-     * Truncate a stopped recording to a given position that is less than the stopped position. The provided position
-     * must be on a fragment boundary. Truncating a recording to the start position effectively deletes the recording.
-     * <p>
      * Find the last recording that matches the given criteria.
      *
      * @param minRecordingId   to search back to.

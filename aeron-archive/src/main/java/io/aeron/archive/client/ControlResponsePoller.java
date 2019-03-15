@@ -81,7 +81,7 @@ public class ControlResponsePoller implements ControlledFragmentHandler
     }
 
     /**
-     * Poll for recording events.
+     * Poll for control response events.
      *
      * @return the number of fragments read during the operation. Zero if no events are available.
      */
@@ -100,7 +100,7 @@ public class ControlResponsePoller implements ControlledFragmentHandler
     /**
      * Control session id of the last polled message or {@link Aeron#NULL_VALUE} if poll returned nothing.
      *
-     * @return control session id of the last polled message or {@link Aeron#NULL_VALUE} if unrecognised template.
+     * @return control session id of the last polled message or {@link Aeron#NULL_VALUE} if poll returned nothing.
      */
     public long controlSessionId()
     {
@@ -110,7 +110,7 @@ public class ControlResponsePoller implements ControlledFragmentHandler
     /**
      * Correlation id of the last polled message or {@link Aeron#NULL_VALUE} if poll returned nothing.
      *
-     * @return correlation id of the last polled message or {@link Aeron#NULL_VALUE} if unrecognised template.
+     * @return correlation id of the last polled message or {@link Aeron#NULL_VALUE} if poll returned nothing.
      */
     public long correlationId()
     {

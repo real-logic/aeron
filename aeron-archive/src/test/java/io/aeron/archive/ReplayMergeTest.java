@@ -168,8 +168,7 @@ public class ReplayMergeTest
                     replayDestination.build(),
                     liveDestination.build(),
                     recordingId,
-                    0,
-                    sessionId))
+                    0))
                 {
                     final FragmentHandler fragmentHandler = new FragmentAssembler(
                         (buffer, offset, length, header) ->

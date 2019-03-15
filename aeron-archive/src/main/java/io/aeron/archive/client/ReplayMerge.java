@@ -55,7 +55,6 @@ public class ReplayMerge implements AutoCloseable
     private final long startPosition;
     private final long liveAddThreshold;
     private final long replayRemoveThreshold;
-    private final int sessionId;
 
     private State state = State.AWAIT_INITIAL_RECORDING_POSITION;
     private Image image;
@@ -73,8 +72,7 @@ public class ReplayMerge implements AutoCloseable
         final String replayDestination,
         final String liveDestination,
         final long recordingId,
-        final long startPosition,
-        final int sessionId)
+        final long startPosition)
     {
         this.archive = archive;
         this.subscription = subscription;
@@ -85,7 +83,6 @@ public class ReplayMerge implements AutoCloseable
         this.startPosition = startPosition;
         this.liveAddThreshold = LIVE_ADD_THRESHOLD;
         this.replayRemoveThreshold = REPLAY_REMOVE_THRESHOLD;
-        this.sessionId = sessionId;
 
         subscription.addDestination(replayDestination);
     }
@@ -240,7 +237,7 @@ public class ReplayMerge implements AutoCloseable
 
         if (null == image && subscription.isConnected())
         {
-            image = subscription.imageBySessionId(sessionId);
+            image = subscription.imageBySessionId((int)replaySessionId);
         }
 
         if (null != image && image.position() >= nextTargetPosition)

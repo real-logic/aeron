@@ -57,7 +57,7 @@ public class ControlResponseAdapter implements FragmentHandler
     }
 
     /**
-     * Poll for recording events and dispatch them to the {@link RecordingEventsListener} for this instance.
+     * Poll for recording events and dispatch them to the {@link ControlResponseListener} for this instance.
      *
      * @return the number of fragments read during the operation. Zero if no events are available.
      */

@@ -54,8 +54,8 @@ public class ArchivingMediaDriver implements AutoCloseable
     }
 
     /**
-     * Launch a new {@link ArchivingMediaDriver} with defaults for {@link MediaDriver.Context} and
-     * {@link Archive.Context}.
+     * Launch a new {@link ArchivingMediaDriver} with defaults for {@link io.aeron.driver.MediaDriver.Context} and
+     * {@link io.aeron.archive.Archive.Context}.
      *
      * @return a new {@link ArchivingMediaDriver} with default contexts.
      */

@@ -588,7 +588,7 @@ public class Archive implements AutoCloseable
          * Get the channel URI on which the control request subscription will listen.
          *
          * @return the channel URI on which the control request subscription will listen.
-         * @see AeronArchive.Configuration#CONTROL_CHANNEL_PROP_NAME
+         * @see io.aeron.archive.client.AeronArchive.Configuration#CONTROL_CHANNEL_PROP_NAME
          */
         public String controlChannel()
         {
@@ -600,7 +600,7 @@ public class Archive implements AutoCloseable
          *
          * @param controlChannel channel URI on which the control request subscription will listen.
          * @return this for a fluent API.
-         * @see AeronArchive.Configuration#CONTROL_CHANNEL_PROP_NAME
+         * @see io.aeron.archive.client.AeronArchive.Configuration#CONTROL_CHANNEL_PROP_NAME
          */
         public Context controlChannel(final String controlChannel)
         {
@@ -612,7 +612,7 @@ public class Archive implements AutoCloseable
          * Get the stream id on which the control request subscription will listen.
          *
          * @return the stream id on which the control request subscription will listen.
-         * @see AeronArchive.Configuration#CONTROL_STREAM_ID_PROP_NAME
+         * @see io.aeron.archive.client.AeronArchive.Configuration#CONTROL_STREAM_ID_PROP_NAME
          */
         public int controlStreamId()
         {
@@ -624,7 +624,7 @@ public class Archive implements AutoCloseable
          *
          * @param controlStreamId stream id on which the control request subscription will listen.
          * @return this for a fluent API.
-         * @see AeronArchive.Configuration#CONTROL_STREAM_ID_PROP_NAME
+         * @see io.aeron.archive.client.AeronArchive.Configuration#CONTROL_STREAM_ID_PROP_NAME
          */
         public Context controlStreamId(final int controlStreamId)
         {
@@ -636,7 +636,7 @@ public class Archive implements AutoCloseable
          * Get the driver local channel URI on which the control request subscription will listen.
          *
          * @return the channel URI on which the control request subscription will listen.
-         * @see AeronArchive.Configuration#LOCAL_CONTROL_CHANNEL_PROP_NAME
+         * @see io.aeron.archive.client.AeronArchive.Configuration#LOCAL_CONTROL_CHANNEL_PROP_NAME
          */
         public String localControlChannel()
         {
@@ -648,7 +648,7 @@ public class Archive implements AutoCloseable
          *
          * @param controlChannel channel URI on which the control request subscription will listen.
          * @return this for a fluent API.
-         * @see AeronArchive.Configuration#LOCAL_CONTROL_CHANNEL_PROP_NAME
+         * @see io.aeron.archive.client.AeronArchive.Configuration#LOCAL_CONTROL_CHANNEL_PROP_NAME
          */
         public Context localControlChannel(final String controlChannel)
         {
@@ -660,7 +660,7 @@ public class Archive implements AutoCloseable
          * Get the local stream id on which the control request subscription will listen.
          *
          * @return the stream id on which the control request subscription will listen.
-         * @see AeronArchive.Configuration#LOCAL_CONTROL_STREAM_ID_PROP_NAME
+         * @see io.aeron.archive.client.AeronArchive.Configuration#LOCAL_CONTROL_STREAM_ID_PROP_NAME
          */
         public int localControlStreamId()
         {
@@ -672,7 +672,7 @@ public class Archive implements AutoCloseable
          *
          * @param controlTermBufferSparse for the control stream.
          * @return this for a fluent API.
-         * @see AeronArchive.Configuration#CONTROL_TERM_BUFFER_SPARSE_PROP_NAME
+         * @see io.aeron.archive.client.AeronArchive.Configuration#CONTROL_TERM_BUFFER_SPARSE_PROP_NAME
          */
         public Context controlTermBufferSparse(final boolean controlTermBufferSparse)
         {
@@ -684,7 +684,7 @@ public class Archive implements AutoCloseable
          * Should the control streams use sparse file term buffers.
          *
          * @return true if the control stream should use sparse file term buffers.
-         * @see AeronArchive.Configuration#CONTROL_TERM_BUFFER_SPARSE_PROP_NAME
+         * @see io.aeron.archive.client.AeronArchive.Configuration#CONTROL_TERM_BUFFER_SPARSE_PROP_NAME
          */
         public boolean controlTermBufferSparse()
         {
@@ -696,7 +696,7 @@ public class Archive implements AutoCloseable
          *
          * @param controlTermBufferLength for the control streams.
          * @return this for a fluent API.
-         * @see AeronArchive.Configuration#CONTROL_TERM_BUFFER_LENGTH_PROP_NAME
+         * @see io.aeron.archive.client.AeronArchive.Configuration#CONTROL_TERM_BUFFER_LENGTH_PROP_NAME
          */
         public Context controlTermBufferLength(final int controlTermBufferLength)
         {
@@ -708,7 +708,7 @@ public class Archive implements AutoCloseable
          * Get the term buffer length for the control streams.
          *
          * @return the term buffer length for the control streams.
-         * @see AeronArchive.Configuration#CONTROL_TERM_BUFFER_LENGTH_PROP_NAME
+         * @see io.aeron.archive.client.AeronArchive.Configuration#CONTROL_TERM_BUFFER_LENGTH_PROP_NAME
          */
         public int controlTermBufferLength()
         {
@@ -720,7 +720,7 @@ public class Archive implements AutoCloseable
          *
          * @param controlMtuLength for the control streams.
          * @return this for a fluent API.
-         * @see AeronArchive.Configuration#CONTROL_MTU_LENGTH_PROP_NAME
+         * @see io.aeron.archive.client.AeronArchive.Configuration#CONTROL_MTU_LENGTH_PROP_NAME
          */
         public Context controlMtuLength(final int controlMtuLength)
         {
@@ -732,7 +732,7 @@ public class Archive implements AutoCloseable
          * Get the MTU length for the control streams.
          *
          * @return the MTU length for the control streams.
-         * @see AeronArchive.Configuration#CONTROL_MTU_LENGTH_PROP_NAME
+         * @see io.aeron.archive.client.AeronArchive.Configuration#CONTROL_MTU_LENGTH_PROP_NAME
          */
         public int controlMtuLength()
         {
@@ -744,7 +744,7 @@ public class Archive implements AutoCloseable
          *
          * @param controlStreamId stream id on which the control request subscription will listen.
          * @return this for a fluent API.
-         * @see AeronArchive.Configuration#LOCAL_CONTROL_STREAM_ID_PROP_NAME
+         * @see io.aeron.archive.client.AeronArchive.Configuration#LOCAL_CONTROL_STREAM_ID_PROP_NAME
          */
         public Context localControlStreamId(final int controlStreamId)
         {
@@ -756,7 +756,7 @@ public class Archive implements AutoCloseable
          * Get the channel URI on which the recording events publication will publish.
          *
          * @return the channel URI on which the recording events publication will publish.
-         * @see AeronArchive.Configuration#RECORDING_EVENTS_CHANNEL_PROP_NAME
+         * @see io.aeron.archive.client.AeronArchive.Configuration#RECORDING_EVENTS_CHANNEL_PROP_NAME
          */
         public String recordingEventsChannel()
         {
@@ -771,7 +771,7 @@ public class Archive implements AutoCloseable
          *
          * @param recordingEventsChannel channel URI on which the recording events publication will publish.
          * @return this for a fluent API.
-         * @see AeronArchive.Configuration#RECORDING_EVENTS_CHANNEL_PROP_NAME
+         * @see io.aeron.archive.client.AeronArchive.Configuration#RECORDING_EVENTS_CHANNEL_PROP_NAME
          * @see io.aeron.CommonContext#MDC_CONTROL_PARAM_NAME
          */
         public Context recordingEventsChannel(final String recordingEventsChannel)
@@ -784,7 +784,7 @@ public class Archive implements AutoCloseable
          * Get the stream id on which the recording events publication will publish.
          *
          * @return the stream id on which the recording events publication will publish.
-         * @see AeronArchive.Configuration#RECORDING_EVENTS_STREAM_ID_PROP_NAME
+         * @see io.aeron.archive.client.AeronArchive.Configuration#RECORDING_EVENTS_STREAM_ID_PROP_NAME
          */
         public int recordingEventsStreamId()
         {
@@ -796,7 +796,7 @@ public class Archive implements AutoCloseable
          *
          * @param recordingEventsStreamId stream id on which the recording events publication will publish.
          * @return this for a fluent API.
-         * @see AeronArchive.Configuration#RECORDING_EVENTS_STREAM_ID_PROP_NAME
+         * @see io.aeron.archive.client.AeronArchive.Configuration#RECORDING_EVENTS_STREAM_ID_PROP_NAME
          */
         public Context recordingEventsStreamId(final int recordingEventsStreamId)
         {

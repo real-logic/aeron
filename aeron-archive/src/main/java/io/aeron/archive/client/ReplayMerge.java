@@ -94,8 +94,8 @@ public class ReplayMerge implements AutoCloseable
         {
             if (isReplayActive)
             {
-                archive.stopReplay(replaySessionId);
                 isReplayActive = false;
+                archive.stopReplay(replaySessionId);
             }
 
             if (State.MERGED != state)

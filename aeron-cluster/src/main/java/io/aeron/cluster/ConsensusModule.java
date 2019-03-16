@@ -273,7 +273,8 @@ public class ConsensusModule implements AutoCloseable
          * </code>
          * <p>
          * The client facing endpoints will be used as the endpoint substituted into the
-         * {@link AeronCluster.Configuration#INGRESS_CHANNEL_PROP_NAME} if the endpoint is not provided when unicast.
+         * {@link io.aeron.cluster.client.AeronCluster.Configuration#INGRESS_CHANNEL_PROP_NAME} if the endpoint
+         * is not provided when unicast.
          */
         public static final String CLUSTER_MEMBERS_PROP_NAME = "aeron.cluster.members";
 
@@ -1418,7 +1419,7 @@ public class ConsensusModule implements AutoCloseable
          *
          * @param channel parameter for the ingress channel.
          * @return this for a fluent API.
-         * @see AeronCluster.Configuration#INGRESS_CHANNEL_PROP_NAME
+         * @see io.aeron.cluster.client.AeronCluster.Configuration#INGRESS_CHANNEL_PROP_NAME
          */
         public Context ingressChannel(final String channel)
         {
@@ -1430,7 +1431,7 @@ public class ConsensusModule implements AutoCloseable
          * Get the channel parameter for the ingress channel.
          *
          * @return the channel parameter for the ingress channel.
-         * @see AeronCluster.Configuration#INGRESS_CHANNEL_PROP_NAME
+         * @see io.aeron.cluster.client.AeronCluster.Configuration#INGRESS_CHANNEL_PROP_NAME
          */
         public String ingressChannel()
         {
@@ -1442,7 +1443,7 @@ public class ConsensusModule implements AutoCloseable
          *
          * @param streamId for the ingress channel.
          * @return this for a fluent API
-         * @see AeronCluster.Configuration#INGRESS_STREAM_ID_PROP_NAME
+         * @see io.aeron.cluster.client.AeronCluster.Configuration#INGRESS_STREAM_ID_PROP_NAME
          */
         public Context ingressStreamId(final int streamId)
         {
@@ -1454,7 +1455,7 @@ public class ConsensusModule implements AutoCloseable
          * Get the stream id for the ingress channel.
          *
          * @return the stream id for the ingress channel.
-         * @see AeronCluster.Configuration#INGRESS_STREAM_ID_PROP_NAME
+         * @see io.aeron.cluster.client.AeronCluster.Configuration#INGRESS_STREAM_ID_PROP_NAME
          */
         public int ingressStreamId()
         {

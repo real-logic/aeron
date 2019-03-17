@@ -81,10 +81,10 @@ class ClientConductor implements Agent, DriverEventsListener
         nanoClock = ctx.nanoClock();
         driverProxy = ctx.driverProxy();
         logBuffersFactory = ctx.logBuffersFactory();
-        keepAliveIntervalNs = ctx.keepAliveInterval();
+        keepAliveIntervalNs = ctx.keepAliveIntervalNs();
         driverTimeoutMs = ctx.driverTimeoutMs();
         driverTimeoutNs = MILLISECONDS.toNanos(driverTimeoutMs);
-        interServiceTimeoutNs = ctx.interServiceTimeout();
+        interServiceTimeoutNs = ctx.interServiceTimeoutNs();
         defaultAvailableImageHandler = ctx.availableImageHandler();
         defaultUnavailableImageHandler = ctx.unavailableImageHandler();
         availableCounterHandler = ctx.availableCounterHandler();

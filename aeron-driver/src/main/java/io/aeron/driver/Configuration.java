@@ -1058,13 +1058,13 @@ public class Configuration
      *
      * @param timeoutNs to be validated.
      * @param driverLingerTimeoutNs set for the driver operation.
+     * @throws ConfigurationException if the values are not valid.
      */
     public static void validatePublicationLingerTimeoutNs(final long timeoutNs, final long driverLingerTimeoutNs)
     {
         if (timeoutNs < driverLingerTimeoutNs)
         {
-            throw new ConfigurationException(
-                "linger must be greater than or equal to driver linger timeout: " + timeoutNs);
+            throw new ConfigurationException("linger=" + driverLingerTimeoutNs + " < timeoutNs =" + timeoutNs);
         }
     }
 
@@ -1153,6 +1153,13 @@ public class Configuration
         }
     }
 
+    /**
+     * Validate the range of session ids based on a high and low value provided which accounts for the values wrapping.
+     *
+     * @param low  value in the range.
+     * @param high value in the range.
+     * @throws ConfigurationException if the values are not valid.
+     */
     public static void validateSessionIdRange(final int low, final int high)
     {
         if (low > high)
@@ -1166,8 +1173,41 @@ public class Configuration
         }
     }
 
+    /**
+     * Compute the length of the {@link org.agrona.concurrent.status.CountersManager} metadata buffer based on the
+     * length of the counters value buffer length.
+     *
+     * @param counterValuesBufferLength to compute the metadata buffer length from as a ratio.
+     * @return the length that should be used for the metadata buffer for counters.
+     */
     public static int countersMetadataBufferLength(final int counterValuesBufferLength)
     {
         return counterValuesBufferLength * (CountersReader.METADATA_LENGTH / CountersReader.COUNTER_LENGTH);
+    }
+
+    /**
+     * Validate that the timeouts for unblocking publications from a client are valid.
+     *
+     * @param publicationUnblockTimeoutNs after which an uncommitted publication will be unblocked.
+     * @param clientLivenessTimeoutNs     after which a client will be considered not alive.
+     * @param timerIntervalNs             interval at which the driver will check timeouts.
+     * @throws ConfigurationException if the values are not valid.
+     */
+    public static void validateUnblockTimeout(
+        final long publicationUnblockTimeoutNs, final long clientLivenessTimeoutNs, final long timerIntervalNs)
+    {
+        if (publicationUnblockTimeoutNs < clientLivenessTimeoutNs)
+        {
+            throw new ConfigurationException(
+                "publicationUnblockTimeoutNs=" + publicationUnblockTimeoutNs +
+                " < clientLivenessTimeoutNs=" + clientLivenessTimeoutNs);
+        }
+
+        if (clientLivenessTimeoutNs < timerIntervalNs)
+        {
+            throw new ConfigurationException(
+                "clientLivenessTimeoutNs=" + clientLivenessTimeoutNs +
+                " < timerIntervalNs=" + timerIntervalNs);
+        }
     }
 }

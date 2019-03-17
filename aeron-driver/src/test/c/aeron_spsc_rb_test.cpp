@@ -21,7 +21,6 @@
 #include <limits>
 
 #include <gtest/gtest.h>
-#include <bits/types/struct_iovec.h>
 
 extern "C"
 {

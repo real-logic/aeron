@@ -35,7 +35,8 @@ SET(SOURCE
     client/RecordingSubscriptionDescriptorPoller.cpp
     client/RecordingEventsPoller.cpp
     client/RecordingEventsAdapter.cpp
-    client/AeronArchive.cpp)
+    client/AeronArchive.cpp
+    client/ReplayMerge.cpp)
 
 SET(HEADERS
     client/ArchiveException.h
@@ -48,7 +49,8 @@ SET(HEADERS
     client/RecordingEventsPoller.h
     client/RecordingEventsAdapter.h
     client/RecordingPos.h
-    client/AeronArchive.h)
+    client/AeronArchive.h
+    client/ReplayMerge.h)
 
 # static library
 add_library(aeron_archive_client STATIC ${SOURCE} ${HEADERS})

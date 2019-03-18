@@ -511,10 +511,10 @@ public class Aeron implements AutoCloseable
             }
 
             interServiceTimeoutNs = CncFileDescriptor.clientLivenessTimeout(cncMetaDataBuffer);
-            if (interServiceTimeoutNs < keepAliveIntervalNs)
+            if (interServiceTimeoutNs <= keepAliveIntervalNs)
             {
                 throw new ConfigurationException("interServiceTimeoutNs=" + interServiceTimeoutNs +
-                    " < keepAliveIntervalNs=" + keepAliveIntervalNs);
+                    " <= keepAliveIntervalNs=" + keepAliveIntervalNs);
             }
 
             if (null == toDriverBuffer)

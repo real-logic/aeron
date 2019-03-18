@@ -51,7 +51,7 @@ public class PublicationUnblockTest
         .threadingMode(ThreadingMode.SHARED)
         .errorHandler(Throwable::printStackTrace)
         .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
-        .clientLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500))
+        .clientLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(400))
         .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(10))
         .publicationUnblockTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500)));
 

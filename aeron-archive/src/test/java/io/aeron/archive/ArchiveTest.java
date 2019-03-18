@@ -55,6 +55,7 @@ public class ArchiveTest
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .errorHandler(Throwable::printStackTrace)
             .clientLivenessTimeoutNs(connectTimeoutNs)
+            .publicationUnblockTimeoutNs(connectTimeoutNs * 2)
             .threadingMode(ThreadingMode.SHARED);
         final Archive.Context archiveCtx = new Archive.Context()
             .threadingMode(ArchiveThreadingMode.SHARED)

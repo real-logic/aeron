@@ -1196,18 +1196,18 @@ public class Configuration
     public static void validateUnblockTimeout(
         final long publicationUnblockTimeoutNs, final long clientLivenessTimeoutNs, final long timerIntervalNs)
     {
-        if (publicationUnblockTimeoutNs < clientLivenessTimeoutNs)
+        if (publicationUnblockTimeoutNs <= clientLivenessTimeoutNs)
         {
             throw new ConfigurationException(
                 "publicationUnblockTimeoutNs=" + publicationUnblockTimeoutNs +
-                " < clientLivenessTimeoutNs=" + clientLivenessTimeoutNs);
+                " <= clientLivenessTimeoutNs=" + clientLivenessTimeoutNs);
         }
 
-        if (clientLivenessTimeoutNs < timerIntervalNs)
+        if (clientLivenessTimeoutNs <= timerIntervalNs)
         {
             throw new ConfigurationException(
                 "clientLivenessTimeoutNs=" + clientLivenessTimeoutNs +
-                " < timerIntervalNs=" + timerIntervalNs);
+                " <= timerIntervalNs=" + timerIntervalNs);
         }
     }
 }

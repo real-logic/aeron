@@ -8,7 +8,9 @@ import org.agrona.MutableDirectBuffer;
 public enum ClusterEventCode implements EventCode
 {
     ELECTION_STATE_CHANGE(0, ClusterEventDissector::electionStateChange),
-    NEW_LEADERSHIP_TERM(1, ClusterEventDissector::newLeadershipTerm);
+    NEW_LEADERSHIP_TERM(1, ClusterEventDissector::newLeadershipTerm),
+    STATE_CHANGE(2, ClusterEventDissector::stateChange),
+    ROLE_CHANGE(3, ClusterEventDissector::roleChange);
 
     static final int EVENT_CODE_TYPE = EventCodeType.CLUSTER.getTypeCode();
     private static final int MAX_ID = 63;

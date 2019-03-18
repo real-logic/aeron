@@ -1,6 +1,8 @@
 package io.aeron.agent;
 
+import io.aeron.cluster.ConsensusModule;
 import io.aeron.cluster.Election;
+import io.aeron.cluster.service.Cluster;
 import org.agrona.MutableDirectBuffer;
 
 final class ClusterEventEncoder
@@ -37,5 +39,15 @@ final class ClusterEventEncoder
         offset += Integer.BYTES;
         encodedBuffer.putInt(offset, logSessionId);
         return offset + Integer.BYTES;
+    }
+
+    static int stateChange(final MutableDirectBuffer encodedBuffer, final ConsensusModule.State state)
+    {
+        return encodedBuffer.putStringAscii(0, state.name());
+    }
+
+    static int roleChange(final MutableDirectBuffer encodedBuffer, final Cluster.Role role)
+    {
+        return encodedBuffer.putStringAscii(0, role.name());
     }
 }

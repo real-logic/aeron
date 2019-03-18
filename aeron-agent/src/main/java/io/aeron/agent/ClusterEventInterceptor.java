@@ -15,7 +15,9 @@
  */
 package io.aeron.agent;
 
+import io.aeron.cluster.ConsensusModule;
 import io.aeron.cluster.Election;
+import io.aeron.cluster.service.Cluster;
 import net.bytebuddy.asm.Advice;
 
 import static io.aeron.agent.ClusterEventLogger.LOGGER;
@@ -52,6 +54,24 @@ final class ClusterEventInterceptor
                 maxLogPosition,
                 leaderMemberId,
                 logSessionId);
+        }
+    }
+
+    static class StateChange
+    {
+        @Advice.OnMethodEnter
+        static void state(final ConsensusModule.State state)
+        {
+            LOGGER.logStateChange(state);
+        }
+    }
+
+    static class RoleChange
+    {
+        @Advice.OnMethodEnter
+        static void role(final Cluster.Role role)
+        {
+            LOGGER.logRoleChange(role);
         }
     }
 }

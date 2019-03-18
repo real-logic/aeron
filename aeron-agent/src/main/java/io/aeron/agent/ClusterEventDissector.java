@@ -10,7 +10,7 @@ final class ClusterEventDissector
     {
         final String stateName = buffer.getStringAscii(offset);
         final long timestampMs = buffer.getLong(offset + stateName.length() + Integer.BYTES);
-        builder.append("Election State->").append(stateName).append(' ').append(timestampMs);
+        builder.append("Election State -> ").append(stateName).append(' ').append(timestampMs);
     }
 
     static void newLeadershipTerm(
@@ -36,5 +36,19 @@ final class ClusterEventDissector
             .append(", maxLogPosition: ").append(maxLogPosition)
             .append(", leaderMemberId: ").append(leaderMemberId)
             .append(", logSessionId: ").append(logSessionId);
+    }
+
+    static void stateChange(
+        final ClusterEventCode event, final MutableDirectBuffer buffer,
+        final int offset, final StringBuilder builder)
+    {
+        builder.append("ConsensusModule State -> ").append(buffer.getStringAscii(offset));
+    }
+
+    static void roleChange(
+        final ClusterEventCode event, final MutableDirectBuffer buffer,
+        final int offset, final StringBuilder builder)
+    {
+        builder.append("Role -> ").append(buffer.getStringAscii(offset));
     }
 }

@@ -15,7 +15,6 @@
  */
 package io.aeron.agent;
 
-import io.aeron.cluster.Election;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.agent.builder.AgentBuilder;
 import net.bytebuddy.agent.builder.ResettableClassFileTransformer;
@@ -170,10 +169,14 @@ public class EventLogAgent
             .type(nameEndsWith("Election"))
             .transform(((builder, typeDescription, classLoader, module) ->
                 builder.visit(to(ClusterEventInterceptor.ElectionStateChange.class).on(named("state")
-                    .and(takesArgument(0, Election.State.class))))))
+                    .and(takesArgument(0, nameEndsWith("State")))))))
             .type(nameEndsWith("ConsensusModuleAgent"))
             .transform(((builder, typeDescription, classLoader, module) ->
-                builder.visit(to(ClusterEventInterceptor.NewLeadershipTerm.class).on(named("onNewLeadershipTerm")))));
+                builder
+                    .visit(to(ClusterEventInterceptor.NewLeadershipTerm.class).on(named("onNewLeadershipTerm")))
+                    .visit(to(ClusterEventInterceptor.StateChange.class).on(named("state")))
+                    .visit(to(ClusterEventInterceptor.RoleChange.class).on(named("role")
+                        .and(takesArgument(0, nameEndsWith("Role")))))));
     }
 
     public static void premain(final String agentArgs, final Instrumentation instrumentation)

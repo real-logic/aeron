@@ -94,6 +94,36 @@ TEST_F(SpscRbTest, shouldWriteToEmptyBuffer)
     EXPECT_EQ(rb.descriptor->tail_position, (int64_t)(tail + alignedRecordLength));
 }
 
+TEST_F(SpscRbTest, shouldWriteVectorToEmptyBuffer)
+{
+    aeron_spsc_rb_t rb;
+    size_t tail = 0;
+    size_t tailIndex = 0;
+
+    const int vec_len = 3;
+    struct iovec vec[vec_len];
+    vec[0].iov_base = m_buffer.data();
+    vec[0].iov_len = 8;
+    vec[1].iov_base = m_buffer.data() + (vec[0].iov_len);
+    vec[1].iov_len = 7;
+    vec[2].iov_base = m_buffer.data() + (vec[0].iov_len + vec[1].iov_len);
+    vec[2].iov_len = 11;
+    size_t length = vec[0].iov_len + vec[1].iov_len + vec[2].iov_len;
+
+    size_t recordLength = length + AERON_RB_RECORD_HEADER_LENGTH;
+    size_t alignedRecordLength = AERON_ALIGN(recordLength, AERON_RB_ALIGNMENT);
+
+    ASSERT_EQ(aeron_spsc_rb_init(&rb, m_buffer.data(), m_buffer.size()), 0);
+
+    ASSERT_EQ(aeron_spsc_rb_writev(&rb, MSG_TYPE_ID, vec, vec_len), AERON_RB_SUCCESS);
+
+    aeron_rb_record_descriptor_t *record = (aeron_rb_record_descriptor_t *)(m_buffer.data() + tailIndex);
+
+    EXPECT_EQ(record->length, (int32_t)recordLength);
+    EXPECT_EQ(record->msg_type_id, (int32_t)MSG_TYPE_ID);
+    EXPECT_EQ(rb.descriptor->tail_position, (int64_t)(tail + alignedRecordLength));
+}
+
 TEST_F(SpscRbTest, shouldRejectWriteWhenInsufficientSpace)
 {
     aeron_spsc_rb_t rb;
@@ -106,6 +136,32 @@ TEST_F(SpscRbTest, shouldRejectWriteWhenInsufficientSpace)
     rb.descriptor->tail_position = (int64_t)tail;
 
     ASSERT_EQ(aeron_spsc_rb_write(&rb, MSG_TYPE_ID, m_srcBuffer.data(), length), AERON_RB_FULL);
+
+    EXPECT_EQ(rb.descriptor->tail_position, (int64_t)tail);
+}
+
+TEST_F(SpscRbTest, shouldRejectWriteVectorWhenInsufficientSpace)
+{
+    aeron_spsc_rb_t rb;
+
+    const int vec_len = 3;
+    struct iovec vec[vec_len];
+    vec[0].iov_base = m_buffer.data();
+    vec[0].iov_len = 1;
+    vec[1].iov_base = m_buffer.data() + (vec[0].iov_len);
+    vec[1].iov_len = 1;
+    vec[2].iov_base = m_buffer.data() + (vec[0].iov_len + vec[1].iov_len);
+    vec[2].iov_len = 98;
+    size_t length = vec[0].iov_len + vec[1].iov_len + vec[2].iov_len;
+
+    size_t head = 0;
+    size_t tail = head + (CAPACITY - AERON_ALIGN(length - AERON_RB_ALIGNMENT, AERON_RB_ALIGNMENT));
+
+    ASSERT_EQ(aeron_spsc_rb_init(&rb, m_buffer.data(), m_buffer.size()), 0);
+    rb.descriptor->head_position = (int64_t)head;
+    rb.descriptor->tail_position = (int64_t)tail;
+
+    ASSERT_EQ(aeron_spsc_rb_writev(&rb, MSG_TYPE_ID, vec, vec_len), AERON_RB_FULL);
 
     EXPECT_EQ(rb.descriptor->tail_position, (int64_t)tail);
 }
@@ -409,6 +465,68 @@ TEST(SpscRbConcurrentTest, shouldExchangeMessages)
             *payload = m;
 
             while (AERON_RB_SUCCESS != aeron_spsc_rb_write(&rb, MSG_TYPE_ID, buffer.data(), 4))
+            {
+                std::this_thread::yield();
+            }
+        }
+    }));
+
+    while (msgCount < NUM_MESSAGES)
+    {
+        const size_t readCount = aeron_spsc_rb_read(
+            &rb, spsc_rb_concurrent_handler, &counts, std::numeric_limits<size_t>::max());
+
+        if (0 == readCount)
+        {
+            std::this_thread::yield();
+        }
+
+        msgCount += readCount;
+    }
+
+    for (std::thread &thr: threads)
+    {
+        thr.join();
+    }
+}
+
+TEST(SpscRbConcurrentTest, shouldExchangeVectorMessages)
+{
+    AERON_DECL_ALIGNED(buffer_t spsc_buffer, 16);
+    spsc_buffer.fill(0);
+
+    aeron_spsc_rb_t rb;
+    ASSERT_EQ(aeron_spsc_rb_init(&rb, spsc_buffer.data(), spsc_buffer.size()), 0);
+
+    std::atomic<int> countDown(1);
+
+    std::vector<std::thread> threads;
+    size_t msgCount = 0;
+    size_t counts = 0;
+
+    threads.push_back(std::thread([&]()
+    {
+        struct iovec vec[2];
+        AERON_DECL_ALIGNED(buffer_t buffer, 16);
+        buffer.fill(0);
+
+        countDown--;
+        while (countDown > 0)
+        {
+            std::this_thread::yield();
+        }
+
+        for (int m = 0; m < NUM_MESSAGES; m++)
+        {
+            int32_t *payload = (int32_t *)(buffer.data());
+            *payload = m;
+
+            vec[0].iov_len = 2;
+            vec[0].iov_base = payload;
+            vec[1].iov_len = 2;
+            vec[1].iov_base = ((uint8_t*) payload) + 2;
+
+            while (AERON_RB_SUCCESS != aeron_spsc_rb_writev(&rb, MSG_TYPE_ID, vec, 2))
             {
                 std::this_thread::yield();
             }

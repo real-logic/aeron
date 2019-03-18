@@ -19,6 +19,15 @@
 
 #include <concurrent/aeron_rb.h>
 
+// Not sure if this should be pulled from std headers or not.
+#if !defined(__iovec_defined)
+struct iovec
+{
+    void *iov_base;	/* Pointer to data.  */
+    size_t iov_len;	/* Length of data.  */
+};
+#endif
+
 typedef struct aeron_spsc_rb_stct
 {
     uint8_t *buffer;
@@ -35,6 +44,12 @@ aeron_rb_write_result_t aeron_spsc_rb_write(
     int32_t msg_type_id,
     const void *msg,
     size_t length);
+
+aeron_rb_write_result_t aeron_spsc_rb_writev(
+    volatile aeron_spsc_rb_t *ring_buffer,
+    int32_t msg_type_id,
+    const struct iovec* iov,
+    int iovcnt);
 
 size_t aeron_spsc_rb_read(
     volatile aeron_spsc_rb_t *ring_buffer,

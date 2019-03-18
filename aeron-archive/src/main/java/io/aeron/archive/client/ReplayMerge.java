@@ -16,11 +16,15 @@
 package io.aeron.archive.client;
 
 import io.aeron.Aeron;
+import io.aeron.ChannelUri;
 import io.aeron.Image;
 import io.aeron.Subscription;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.LogBufferDescriptor;
+
+import static io.aeron.CommonContext.MDC_CONTROL_MODE_MANUAL;
+import static io.aeron.CommonContext.MDC_CONTROL_MODE_PARAM_NAME;
 
 /**
  * Replay a recorded stream from a starting position and merge with live stream to consume a full history of a stream.
@@ -65,6 +69,18 @@ public class ReplayMerge implements AutoCloseable
     private boolean isLiveAdded = false;
     private boolean isReplayActive = false;
 
+    /**
+     * Create a {@link ReplayMerge} to manage the merging of a replayed stream and switching to live stream as
+     * appropriate.
+     *
+     * @param subscription to use for the replay and live stream. Must be a multi-destination subscription.
+     * @param archive to use for the replay.
+     * @param replayChannel to use for the replay.
+     * @param replayDestination to send the replay to and the destination added by the {@link Subscription}.
+     * @param liveDestination for the live stream and the destination added by the {@link Subscription}.
+     * @param recordingId for the replay.
+     * @param startPosition for the replay.
+     */
     public ReplayMerge(
         final Subscription subscription,
         final AeronArchive archive,
@@ -74,6 +90,14 @@ public class ReplayMerge implements AutoCloseable
         final long recordingId,
         final long startPosition)
     {
+        final ChannelUri subscriptionChannelUri = ChannelUri.parse(subscription.channel());
+
+        if (!MDC_CONTROL_MODE_MANUAL.equals(subscriptionChannelUri.get(MDC_CONTROL_MODE_PARAM_NAME)))
+        {
+            throw new IllegalArgumentException("Subscription channel must be manual control mode: mode=" +
+                subscriptionChannelUri.get(MDC_CONTROL_MODE_PARAM_NAME));
+        }
+
         this.archive = archive;
         this.subscription = subscription;
         this.replayDestination = replayDestination;
@@ -87,6 +111,10 @@ public class ReplayMerge implements AutoCloseable
         subscription.addDestination(replayDestination);
     }
 
+    /**
+     * Close the merge and stop any active replay. Will remove the replay destination from the subscription. Will
+     * NOT remove the live destination if it has been added.
+     */
     public void close()
     {
         final State state = this.state;
@@ -107,6 +135,11 @@ public class ReplayMerge implements AutoCloseable
         }
     }
 
+    /**
+     * Process the operation of the merge. Do not call the processing of fragments on the subscription.
+     *
+     * @return indication of work done processing the merge.
+     */
     public int doWork()
     {
         int workCount = 0;
@@ -137,25 +170,58 @@ public class ReplayMerge implements AutoCloseable
         return workCount;
     }
 
+    /**
+     * Poll the {@link Image} used for the merging replay and live stream. The {@link ReplayMerge#doWork()} method
+     * will be called before the poll so that processing of the merge can be done.
+     *
+     * @param fragmentHandler to call for fragments
+     * @param fragmentLimit for poll call
+     * @return number of fragments processed.
+     */
     public int poll(final FragmentHandler fragmentHandler, final int fragmentLimit)
     {
         doWork();
         return null == image ? 0 : image.poll(fragmentHandler, fragmentLimit);
     }
 
+    /**
+     * State of this {@link ReplayMerge}.
+     *
+     * @return state of this {@link ReplayMerge}.
+     */
     public ReplayMerge.State state()
     {
         return state;
     }
 
+    /**
+     * Is the live stream merged and the replay stopped?
+     *
+     * @return true if live stream is merged and the replay stopped or false if not.
+     */
     public boolean isMerged()
     {
         return state == State.MERGED;
     }
 
+    /**
+     * The {@link Image} used for the replay and live stream.
+     *
+     * @return the {@link Image} used for the replay and live stream.
+     */
     public Image image()
     {
         return image;
+    }
+
+    /**
+     * Is the live destination added to the subscription?
+     *
+     * @return true if live destination added or false if not.
+     */
+    public boolean isLiveAdded()
+    {
+        return isLiveAdded;
     }
 
     private int awaitInitialRecordingPosition()

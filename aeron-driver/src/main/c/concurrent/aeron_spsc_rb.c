@@ -53,8 +53,6 @@ aeron_rb_write_result_t aeron_spsc_rb_writev(
     int iovcnt)
 {
     size_t length = 0;
-    // TODO, more error checking.
-    // TODO should write just call this with a single vector??
     for (int i = 0; i < iovcnt; i++)
     {
         length += iov[i].iov_len;

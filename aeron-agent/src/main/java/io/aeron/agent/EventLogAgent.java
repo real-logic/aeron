@@ -170,7 +170,10 @@ public class EventLogAgent
             .type(nameEndsWith("Election"))
             .transform(((builder, typeDescription, classLoader, module) ->
                 builder.visit(to(ClusterEventInterceptor.ElectionStateChange.class).on(named("state")
-                    .and(takesArgument(0, Election.State.class))))));
+                    .and(takesArgument(0, Election.State.class))))))
+            .type(nameEndsWith("ConsensusModuleAgent"))
+            .transform(((builder, typeDescription, classLoader, module) ->
+                builder.visit(to(ClusterEventInterceptor.NewLeadershipTerm.class).on(named("onNewLeadershipTerm")))));
     }
 
     public static void premain(final String agentArgs, final Instrumentation instrumentation)
@@ -195,7 +198,9 @@ public class EventLogAgent
                 .or(nameEndsWith("ClientCommandAdapter"))
                 .or(nameEndsWith("SenderProxy"))
                 .or(nameEndsWith("ReceiverProxy"))
-                .or(nameEndsWith("UdpChannelTransport"));
+                .or(nameEndsWith("UdpChannelTransport"))
+                .or(nameEndsWith("Election"))
+                .or(nameEndsWith("ConsensusModuleAgent"));
 
             final ResettableClassFileTransformer transformer = new AgentBuilder.Default()
                 .type(orClause)

@@ -33,4 +33,25 @@ final class ClusterEventInterceptor
             LOGGER.logElectionStateChange(newState, nowMs);
         }
     }
+
+    static class NewLeadershipTerm
+    {
+        @Advice.OnMethodEnter
+        static void newLeadershipTermInterceptor(
+            final long logLeadershipTermId,
+            final long logPosition,
+            final long leadershipTermId,
+            final long maxLogPosition,
+            final int leaderMemberId,
+            final int logSessionId)
+        {
+            LOGGER.logNewLeadershipTerm(
+                logLeadershipTermId,
+                logPosition,
+                leadershipTermId,
+                maxLogPosition,
+                leaderMemberId,
+                logSessionId);
+        }
+    }
 }

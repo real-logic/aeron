@@ -12,4 +12,29 @@ final class ClusterEventDissector
         final long timestampMs = buffer.getLong(offset + stateName.length() + Integer.BYTES);
         builder.append("Election State->").append(stateName).append(' ').append(timestampMs);
     }
+
+    static void newLeadershipTerm(
+        final ClusterEventCode event, final MutableDirectBuffer buffer,
+        final int offset, final StringBuilder builder)
+    {
+        int relativeOffset = offset;
+        final long logLeadershipTermId = buffer.getLong(relativeOffset);
+        relativeOffset += Long.BYTES;
+        final long logPosition = buffer.getLong(relativeOffset);
+        relativeOffset += Long.BYTES;
+        final long leadershipTermId = buffer.getLong(relativeOffset);
+        relativeOffset += Long.BYTES;
+        final long maxLogPosition = buffer.getLong(relativeOffset);
+        relativeOffset += Long.BYTES;
+        final int leaderMemberId = buffer.getInt(relativeOffset);
+        relativeOffset += Integer.BYTES;
+        final int logSessionId = buffer.getInt(relativeOffset);
+
+        builder.append("New Leadership Term; logLeadershipTermId: ").append(logLeadershipTermId)
+            .append(", logPosition: ").append(logPosition)
+            .append(", leadershipTermId: ").append(leadershipTermId)
+            .append(", maxLogPosition: ").append(maxLogPosition)
+            .append(", leaderMemberId: ").append(leaderMemberId)
+            .append(", logSessionId: ").append(logSessionId);
+    }
 }

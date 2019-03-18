@@ -8,6 +8,7 @@ import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import java.nio.ByteBuffer;
 
 import static io.aeron.agent.ClusterEventCode.ELECTION_STATE_CHANGE;
+import static io.aeron.agent.ClusterEventCode.NEW_LEADERSHIP_TERM;
 
 public final class ClusterEventLogger
 {
@@ -28,10 +29,26 @@ public final class ClusterEventLogger
         if (ClusterEventCode.isEnabled(ELECTION_STATE_CHANGE, ENABLED_EVENT_CODES))
         {
             final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
-            final int encodedLength = ClusterEventEncoder.encode(encodedBuffer, newState, nowMs);
+            final int encodedLength = ClusterEventEncoder.encodeElectionStateChange(encodedBuffer, newState, nowMs);
 
             ringBuffer.write(toEventCodeId(ELECTION_STATE_CHANGE), encodedBuffer, 0, encodedLength);
         }
+    }
+
+    public void logNewLeadershipTerm(
+        final long logLeadershipTermId, final long logPosition, final long leadershipTermId,
+        final long maxLogPosition, final int leaderMemberId, final int logSessionId)
+    {
+        if (ClusterEventCode.isEnabled(NEW_LEADERSHIP_TERM, ENABLED_EVENT_CODES))
+        {
+            final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
+            final int encodedLength = ClusterEventEncoder.newLeadershipTerm(
+                encodedBuffer, logLeadershipTermId, logPosition, leadershipTermId, maxLogPosition,
+                leaderMemberId, logSessionId);
+
+            ringBuffer.write(toEventCodeId(NEW_LEADERSHIP_TERM), encodedBuffer, 0, encodedLength);
+        }
+
     }
 
     private static int toEventCodeId(final ClusterEventCode code)

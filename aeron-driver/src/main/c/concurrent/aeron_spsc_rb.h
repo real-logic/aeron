@@ -18,15 +18,7 @@
 #define AERON_SPSC_RB_H
 
 #include <concurrent/aeron_rb.h>
-
-// Not sure if this should be pulled from std headers or not.
-#if !defined(__iovec_defined)
-struct iovec
-{
-    void *iov_base;	/* Pointer to data.  */
-    size_t iov_len;	/* Length of data.  */
-};
-#endif
+#include <sys/uio.h>
 
 typedef struct aeron_spsc_rb_stct
 {

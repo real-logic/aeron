@@ -1,18 +1,17 @@
 package io.aeron.agent;
 
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
+import io.aeron.archive.codecs.*;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 
-import java.nio.ByteBuffer;
+import static io.aeron.agent.ArchiveEventCode.*;
 
 public final class ArchiveEventLogger
 {
     static final long ENABLED_EVENT_CODES = EventConfiguration.getEnabledArchiveEventCodes();
     public static final ArchiveEventLogger LOGGER = new ArchiveEventLogger(EventConfiguration.EVENT_RING_BUFFER);
-    private static final ThreadLocal<MutableDirectBuffer> ENCODING_BUFFER = ThreadLocal.withInitial(
-        () -> new UnsafeBuffer(ByteBuffer.allocateDirect(EventConfiguration.MAX_EVENT_LENGTH)));
 
+    private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     private final ManyToOneRingBuffer ringBuffer;
 
     private ArchiveEventLogger(final ManyToOneRingBuffer eventRingBuffer)
@@ -20,19 +19,89 @@ public final class ArchiveEventLogger
         ringBuffer = eventRingBuffer;
     }
 
-    public void logConnect(
-        final long correlationId,
-        final int streamId,
-        final int version,
-        final String channel)
+    public void logControlRequest(final DirectBuffer buffer, final int offset, final int length)
     {
-        if (ArchiveEventCode.isEnabled(ArchiveEventCode.CMD_IN_CONNECT, ENABLED_EVENT_CODES))
+        headerDecoder.wrap(buffer, offset);
+        final int templateId = headerDecoder.templateId();
+        switch (templateId)
         {
-            final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
-            final int encodedLength = ArchiveEventEncoder.encodeConnect(
-                encodedBuffer, correlationId, streamId, version, channel);
+            case ConnectRequestDecoder.TEMPLATE_ID:
+                dispatchIfEnabled(buffer, offset, length, CMD_IN_CONNECT);
+                break;
 
-            ringBuffer.write(toEventCodeId(ArchiveEventCode.CMD_IN_CONNECT), encodedBuffer, 0, encodedLength);
+            case CloseSessionRequestDecoder.TEMPLATE_ID:
+                dispatchIfEnabled(buffer, offset, length, CMD_IN_CLOSE_SESSION);
+                break;
+
+            case StartRecordingRequestDecoder.TEMPLATE_ID:
+                dispatchIfEnabled(buffer, offset, length, CMD_IN_START_RECORDING);
+                break;
+
+            case StopRecordingRequestDecoder.TEMPLATE_ID:
+                dispatchIfEnabled(buffer, offset, length, CMD_IN_STOP_RECORDING);
+                break;
+
+            case ReplayRequestDecoder.TEMPLATE_ID:
+                dispatchIfEnabled(buffer, offset, length, CMD_IN_REPLAY);
+                break;
+
+            case StopReplayRequestDecoder.TEMPLATE_ID:
+                dispatchIfEnabled(buffer, offset, length, CMD_IN_STOP_REPLAY);
+                break;
+
+            case ListRecordingsRequestDecoder.TEMPLATE_ID:
+                dispatchIfEnabled(buffer, offset, length, CMD_IN_LIST_RECORDINGS);
+                break;
+
+            case ListRecordingsForUriRequestDecoder.TEMPLATE_ID:
+                dispatchIfEnabled(buffer, offset, length, CMD_IN_LIST_RECORDINGS_FOR_URI);
+                break;
+
+            case ListRecordingRequestDecoder.TEMPLATE_ID:
+                dispatchIfEnabled(buffer, offset, length, CMD_IN_LIST_RECORDING);
+                break;
+
+            case ExtendRecordingRequestDecoder.TEMPLATE_ID:
+                dispatchIfEnabled(buffer, offset, length, CMD_IN_EXTEND_RECORDING);
+                break;
+
+            case RecordingPositionRequestDecoder.TEMPLATE_ID:
+                dispatchIfEnabled(buffer, offset, length, CMD_IN_RECORDING_POSITION);
+                break;
+
+            case TruncateRecordingRequestDecoder.TEMPLATE_ID:
+                dispatchIfEnabled(buffer, offset, length, CMD_IN_TRUNCATE_RECORDING);
+                break;
+
+            case StopRecordingSubscriptionRequestDecoder.TEMPLATE_ID:
+                dispatchIfEnabled(buffer, offset, length, CMD_IN_STOP_RECORDING_SUBSCRIPTION);
+                break;
+
+            case StopPositionRequestDecoder.TEMPLATE_ID:
+                dispatchIfEnabled(buffer, offset, length, CMD_IN_STOP_POSITION);
+                break;
+
+            case FindLastMatchingRecordingRequestDecoder.TEMPLATE_ID:
+                dispatchIfEnabled(buffer, offset, length, CMD_IN_FIND_LAST_MATCHING_RECORD);
+                break;
+
+            case ListRecordingSubscriptionsRequestDecoder.TEMPLATE_ID:
+                dispatchIfEnabled(buffer, offset, length, CMD_IN_LIST_RECORDING_SUBSCRIPTIONS);
+                break;
+
+            default:
+                throw new IllegalArgumentException("Unknown template id: " + templateId);
+        }
+
+    }
+
+    private void dispatchIfEnabled(
+        final DirectBuffer buffer, final int offset, final int length,
+        final ArchiveEventCode eventCode)
+    {
+        if (ArchiveEventCode.isEnabled(eventCode, ENABLED_EVENT_CODES))
+        {
+            ringBuffer.write(toEventCodeId(eventCode), buffer, offset, length);
         }
     }
 

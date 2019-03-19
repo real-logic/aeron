@@ -179,9 +179,9 @@ public class EventLogAgent
                     .visit(to(ClusterEventInterceptor.StateChange.class).on(named("state")))
                     .visit(to(ClusterEventInterceptor.RoleChange.class).on(named("role")
                         .and(takesArgument(0, nameEndsWith("Role")))))))
-            .type(nameEndsWith("ControlSessionDemuxer"))
+            .type(nameEndsWith("ControlRequestAdapter"))
             .transform(((builder, typeDescription, classLoader, module) ->
-                builder.visit(to(ControlRequestInterceptor.OnConnect.class).on(named("onConnect")))));
+                builder.visit(to(ControlRequestInterceptor.ControlRequest.class).on(named("onFragment")))));
     }
 
     public static void premain(final String agentArgs, final Instrumentation instrumentation)

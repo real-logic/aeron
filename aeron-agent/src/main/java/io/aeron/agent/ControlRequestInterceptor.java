@@ -1,6 +1,8 @@
 package io.aeron.agent;
 
+import io.aeron.logbuffer.Header;
 import net.bytebuddy.asm.Advice;
+import org.agrona.DirectBuffer;
 
 import static io.aeron.agent.ArchiveEventLogger.LOGGER;
 
@@ -9,14 +11,12 @@ import static io.aeron.agent.ArchiveEventLogger.LOGGER;
  */
 final class ControlRequestInterceptor
 {
-    static class OnConnect
+    static class ControlRequest
     {
         @Advice.OnMethodEnter
-        static void onConnect(
-            final long correlationId, final int streamId,
-            final int version, final String channel)
+        static void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
         {
-            LOGGER.logConnect(correlationId, streamId, version, channel);
+            LOGGER.logControlRequest(buffer, offset, length);
         }
     }
 

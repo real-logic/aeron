@@ -22,6 +22,7 @@
 #include <windows.h>
 #include <winnt.h>
 #include <stdint.h>
+#include <intrin.h>
 
 #define AERON_GET_VOLATILE(dst, src) \
 do \
@@ -45,7 +46,7 @@ do \
     _WriteBarrier(); \
     dst = src; \
     _ReadWriteBarrier(); \
-    _MemoryBarrier(); \
+    MemoryBarrier(); \
 } \
 while (false)
 
@@ -60,7 +61,7 @@ while (false)
 do \
 { \
     original = InterlockedAdd((long volatile*)&current, (long)value) - value; \
-}
+} \
 while (false)
 
 #define AERON_CMPXCHG64(original, dst, expected, desired) \

@@ -20,6 +20,8 @@
 #if !defined(_MSC_VER)
 #include <unistd.h>
 #include <stdlib.h>
+#else
+#include <windows.h>
 #endif
 
 #include <util/Exceptions.h>

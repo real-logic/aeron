@@ -18,7 +18,15 @@
 #define AERON_SPSC_RB_H
 
 #include <concurrent/aeron_rb.h>
+#if !defined(_MSC_VER)
 #include <sys/uio.h>
+#else
+struct iovec
+{
+    void  *iov_base;
+    size_t iov_len;
+};
+#endif
 
 typedef struct aeron_spsc_rb_stct
 {

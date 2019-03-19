@@ -135,9 +135,10 @@ int aeron_udp_port_resolver(const char *port_str, bool optional)
     }
 
     errno = 0;
-    unsigned long value = strtoul(port_str, NULL, 0);
+    char *end_ptr = NULL;
+    unsigned long value = strtoul(port_str, &end_ptr, 0);
 
-    if (0 == value && 0 != errno)
+    if ((0 == value && 0 != errno) || end_ptr == port_str)
     {
         aeron_set_err(EINVAL, "port invalid: %s", port_str);
         return -1;
@@ -172,12 +173,6 @@ int aeron_host_and_port_resolver(
 
     return result;
 }
-
-#if defined(Darwin)
-#define AERON_IPV4_REGCOMP_CFLAGS (REG_EXTENDED)
-#else
-#define AERON_IPV4_REGCOMP_CFLAGS (REG_EXTENDED)
-#endif
 
 int aeron_host_and_port_parse_and_resolve(const char *address_str, struct sockaddr_storage *sockaddr)
 {
@@ -214,9 +209,10 @@ int aeron_prefixlen_resolver(const char *prefixlen, unsigned long max)
     }
 
     errno = 0;
-    unsigned long value = strtoul(prefixlen, NULL, 0);
+    char *end_ptr = NULL;
+    unsigned long value = strtoul(prefixlen, &end_ptr, 0);
 
-    if (0 == value && 0 != errno)
+    if ((0 == value && 0 != errno) || end_ptr == prefixlen)
     {
         aeron_set_err(EINVAL, "prefixlen invalid: %s", prefixlen);
         return -1;

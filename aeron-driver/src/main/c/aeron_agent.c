@@ -216,8 +216,9 @@ static int aeron_idle_strategy_backoff_state_init_args(void **state, const char 
     }
 
     errno = 0;
-    uint64_t max_spins = strtoull(spins_str, NULL, 10);
-    if (0 == max_spins && 0 != errno)
+    char *end_ptr = NULL;
+    uint64_t max_spins = strtoull(spins_str, &end_ptr, 10);
+    if ((0 == max_spins && 0 != errno) || end_ptr == spins_str)
     {
         int err_code = errno;
 
@@ -226,8 +227,9 @@ static int aeron_idle_strategy_backoff_state_init_args(void **state, const char 
     }
 
     errno = 0;
-    uint64_t max_yields = strtoull(yields_str, NULL, 10);
-    if (0 == max_yields && 0 != errno)
+    end_ptr = NULL;
+    uint64_t max_yields = strtoull(yields_str, &end_ptr, 10);
+    if ((0 == max_yields && 0 != errno) || end_ptr == yields_str)
     {
         int err_code = errno;
 

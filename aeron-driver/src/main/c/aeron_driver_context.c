@@ -149,9 +149,10 @@ uint64_t aeron_config_parse_uint64(const char *name, const char *str, uint64_t d
     if (NULL != str)
     {
         errno = 0;
+        char *end_ptr = NULL;
         uint64_t value = strtoull(str, NULL, 0);
 
-        if (0 == value && 0 != errno)
+        if ((0 == value && 0 != errno) || end_ptr == str)
         {
             aeron_config_prop_warning(name, str);
             value = def;

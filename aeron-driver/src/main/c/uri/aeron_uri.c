@@ -396,6 +396,8 @@ int aeron_uri_publication_params(
 
         if (count > 0)
         {
+            char *end_ptr = NULL;
+
             if (count < 3)
             {
                 aeron_set_err(EINVAL, "params must be used as a complete set: %s %s %s",
@@ -404,21 +406,27 @@ int aeron_uri_publication_params(
             }
 
             errno = 0;
-            if ((params->initial_term_id = strtoll(initial_term_id_str, NULL, 0)) == 0 && 0 != errno)
+            end_ptr = NULL;
+            if (((params->initial_term_id = strtoll(initial_term_id_str, &end_ptr, 0)) == 0 && 0 != errno) ||
+                end_ptr == initial_term_id_str)
             {
                 aeron_set_err(EINVAL, "could not parse %s in URI", AERON_URI_INITIAL_TERM_ID_KEY);
                 return -1;
             }
 
             errno = 0;
-            if ((params->term_id = strtoll(term_id_str, NULL, 0)) == 0 && 0 != errno)
+            end_ptr = NULL;
+            if (((params->term_id = strtoll(term_id_str, &end_ptr, 0)) == 0 && 0 != errno) ||
+                end_ptr == term_id_str)
             {
                 aeron_set_err(EINVAL, "could not parse %s in URI", AERON_URI_TERM_ID_KEY);
                 return -1;
             }
 
             errno = 0;
-            if ((params->term_offset = strtoull(term_offset_str, NULL, 0)) == 0 && 0 != errno)
+            end_ptr = NULL;
+            if (((params->term_offset = strtoull(term_offset_str, &end_ptr, 0)) == 0 && 0 != errno) ||
+                end_ptr == term_offset_str)
             {
                 aeron_set_err(EINVAL, "could not parse %s in URI", AERON_URI_TERM_OFFSET_KEY);
                 return -1;

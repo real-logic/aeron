@@ -687,9 +687,19 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     void prepareForNewLeadership(final long logPosition)
     {
-        long recordingId = RecordingPos.getRecordingId(aeron.countersReader(), appendedPosition.counterId());
+        long recordingId = RecordingPos.NULL_RECORDING_ID;
+        if (null != appendedPosition)
+        {
+            recordingId = RecordingPos.getRecordingId(aeron.countersReader(), appendedPosition.counterId());
+        }
+
         if (RecordingPos.NULL_RECORDING_ID == recordingId)
         {
+            if (recordingLog.entries().isEmpty())
+            {
+                return;
+            }
+
             recordingId = recordingLog.getTermEntry(leadershipTermId).recordingId;
         }
 

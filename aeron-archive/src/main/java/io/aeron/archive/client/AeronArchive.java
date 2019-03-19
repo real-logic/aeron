@@ -206,7 +206,7 @@ public class AeronArchive implements AutoCloseable
     /**
      * Begin an attempt at creating a connection which can be completed by calling {@link AsyncConnect#poll()}.
      *
-     * @return the {@link AsyncConnect} that cannot be polled for completion.
+     * @return the {@link AsyncConnect} that can be polled for completion.
      */
     public static AsyncConnect asyncConnect()
     {
@@ -217,7 +217,7 @@ public class AeronArchive implements AutoCloseable
      * Begin an attempt at creating a connection which can be completed by calling {@link AsyncConnect#poll()}.
      *
      * @param ctx for the archive connection.
-     * @return the {@link AsyncConnect} that cannot be polled for completion.
+     * @return the {@link AsyncConnect} that can be polled for completion.
      */
     public static AsyncConnect asyncConnect(final Context ctx)
     {
@@ -428,7 +428,7 @@ public class AeronArchive implements AutoCloseable
     }
 
     /**
-     * Add a {@link ExclusivePublication} and set it up to be recorded.
+     * Add an {@link ExclusivePublication} and set it up to be recorded.
      * <p>
      * This is a sessionId specific recording.
      *
@@ -606,7 +606,7 @@ public class AeronArchive implements AutoCloseable
      * Start a replay for a length in bytes of a recording from a position. If the position is {@link #NULL_POSITION}
      * then the stream will be replayed from the start.
      * <p>
-     * The lower 32-bits of the returned value contain the {@link Image#sessionId()} of the received replay. All
+     * The lower 32-bits of the returned value contains the {@link Image#sessionId()} of the received replay. All
      * 64-bits are required to uniquely identify the replay when calling {@link #stopReplay(long)}. The lower 32-bits
      * can be obtained by casting the {@code long} value to an {@code int}.
      *
@@ -863,7 +863,7 @@ public class AeronArchive implements AutoCloseable
     }
 
     /**
-     * List all recording descriptors from a recording id with a limit of record count.
+     * List a recording descriptor for a single recording id.
      * <p>
      * If the recording id is greater than the largest known id then nothing is returned.
      *
@@ -1379,9 +1379,10 @@ public class AeronArchive implements AutoCloseable
         /**
          * Channel for receiving progress events of recordings from an archive.
          * For production it is recommended that multicast or dynamic multi-destination-cast (MDC) is used to allow
-         * for dynamic subscribers.
+         * for dynamic subscribers, an endpoint can be added to the subscription side for controlling port usage.
          */
-        public static final String RECORDING_EVENTS_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:8030";
+        public static final String RECORDING_EVENTS_CHANNEL_DEFAULT =
+            "aeron:udp?control=localhost:8030|control-mode=dynamic";
 
         /**
          * Stream id within a channel for receiving progress of recordings from an archive.
@@ -1951,9 +1952,9 @@ public class AeronArchive implements AutoCloseable
         }
 
         /**
-         * Does this context own the {@link #aeron()} client and this takes responsibility for closing it?
+         * Does this context own the {@link #aeron()} client and thus takes responsibility for closing it?
          *
-         * @param ownsAeronClient does this context own the {@link #aeron()} client.
+         * @param ownsAeronClient does this context own the {@link #aeron()} client?
          * @return this for a fluent API.
          */
         public Context ownsAeronClient(final boolean ownsAeronClient)
@@ -1963,9 +1964,9 @@ public class AeronArchive implements AutoCloseable
         }
 
         /**
-         * Does this context own the {@link #aeron()} client and this takes responsibility for closing it?
+         * Does this context own the {@link #aeron()} client and thus takes responsibility for closing it?
          *
-         * @return does this context own the {@link #aeron()} client and this takes responsibility for closing it?
+         * @return does this context own the {@link #aeron()} client and thus takes responsibility for closing it?
          */
         public boolean ownsAeronClient()
         {

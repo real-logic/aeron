@@ -24,6 +24,26 @@ namespace archive {
 namespace client
 {
 
+/**
+ * A recording descriptor returned as a result of requesting a listing of recordings.
+ *
+ * @param controlSessionId  of the originating session requesting to list recordings.
+ * @param correlationId     of the associated request to list recordings.
+ * @param recordingId       of this recording descriptor.
+ * @param startTimestamp    for the recording.
+ * @param stopTimestamp     for the recording.
+ * @param startPosition     for the recording against the recorded publication.
+ * @param stopPosition      reached for the recording.
+ * @param initialTermId     for the recorded publication.
+ * @param segmentFileLength for the recording which is a multiple of termBufferLength.
+ * @param termBufferLength  for the recorded publication.
+ * @param mtuLength         for the recorded publication.
+ * @param sessionId         for the recorded publication.
+ * @param streamId          for the recorded publication.
+ * @param strippedChannel   for the recorded publication.
+ * @param originalChannel   for the recorded publication.
+ * @param sourceIdentity    for the recorded publication.
+ */
 typedef std::function<void(
     std::int64_t controlSessionId,
     std::int64_t correlationId,
@@ -51,6 +71,11 @@ public:
         std::int64_t controlSessionId,
         int fragmentLimit = 10);
 
+    /**
+     * Poll for recording events.
+     *
+     * @return the number of fragments read during the operation. Zero if no events are available.
+     */
     inline int poll()
     {
         m_isDispatchComplete = false;
@@ -58,26 +83,53 @@ public:
         return m_subscription->controlledPoll(m_fragmentHandler, m_fragmentLimit);
     }
 
+    /**
+     * Get the Subscription used for polling responses.
+     *
+     * @return the Subscription used for polling responses.
+     */
     inline std::shared_ptr<Subscription> subscription()
     {
         return m_subscription;
     }
 
+    /**
+     * Control session id for filtering responses.
+     *
+     * @return control session id for filtering responses.
+     */
     inline std::int64_t controlSessionId()
     {
         return m_controlSessionId;
     }
 
+    /**
+     * Is the dispatch of descriptors complete?
+     *
+     * @return true if the dispatch of descriptors complete?
+     */
     inline bool isDispatchComplete()
     {
         return m_isDispatchComplete;
     }
 
+    /**
+     * Get the number of remaining records are expected.
+     *
+     * @return the number of remaining records are expected.
+     */
     inline std::int32_t remainingRecordCount()
     {
         return m_remainingRecordCount;
     }
 
+    /**
+     * Reset the poller to dispatch the descriptors returned from a query.
+     *
+     * @param correlationId for the response.
+     * @param recordCount   of descriptors to expect.
+     * @param consumer      to which the recording descriptors are to be dispatched.
+     */
     inline void reset(
         std::int64_t correlationId,
         std::int32_t recordCount,

@@ -26,7 +26,7 @@
 
 typedef void (*aeron_idle_strategy_func_t)(void *, int);
 
-typedef int (*aeron_idle_strategy_init_func_t)(void **);
+typedef int (*aeron_idle_strategy_init_func_t)(void **, const char *, const char *);
 
 typedef int64_t (*aeron_feedback_delay_generator_func_t)();
 

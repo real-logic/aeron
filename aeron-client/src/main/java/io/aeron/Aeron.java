@@ -16,6 +16,7 @@
 package io.aeron;
 
 import io.aeron.exceptions.AeronException;
+import io.aeron.exceptions.ConfigurationException;
 import io.aeron.exceptions.DriverTimeoutException;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.DirectBuffer;
@@ -406,7 +407,7 @@ public class Aeron implements AutoCloseable
                 if (throwable instanceof DriverTimeoutException)
                 {
                     System.err.printf(
-                        "%n***%n*** timeout from the MediaDriver - is it currently running? Exiting%n***%n");
+                        "%n***%n*** timeout for the Media Driver - is it currently running? exiting%n***%n");
                     System.exit(-1);
                 }
             };
@@ -457,8 +458,8 @@ public class Aeron implements AutoCloseable
         private UnavailableImageHandler unavailableImageHandler;
         private AvailableCounterHandler availableCounterHandler;
         private UnavailableCounterHandler unavailableCounterHandler;
-        private long keepAliveInterval = Configuration.KEEPALIVE_INTERVAL_NS;
-        private long interServiceTimeout = 0;
+        private long keepAliveIntervalNs = Configuration.KEEPALIVE_INTERVAL_NS;
+        private long interServiceTimeoutNs = 0;
         private long resourceLingerDurationNs = Configuration.resourceLingerDurationNs();
 
         private ThreadFactory threadFactory = Thread::new;
@@ -509,6 +510,13 @@ public class Aeron implements AutoCloseable
                 connectToDriver();
             }
 
+            interServiceTimeoutNs = CncFileDescriptor.clientLivenessTimeout(cncMetaDataBuffer);
+            if (interServiceTimeoutNs <= keepAliveIntervalNs)
+            {
+                throw new ConfigurationException("interServiceTimeoutNs=" + interServiceTimeoutNs +
+                    " <= keepAliveIntervalNs=" + keepAliveIntervalNs);
+            }
+
             if (null == toDriverBuffer)
             {
                 toDriverBuffer = new ManyToOneRingBuffer(
@@ -531,8 +539,6 @@ public class Aeron implements AutoCloseable
             {
                 countersValuesBuffer(CncFileDescriptor.createCountersValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
             }
-
-            interServiceTimeout = CncFileDescriptor.clientLivenessTimeout(cncMetaDataBuffer);
 
             if (null == logBuffersFactory)
             {
@@ -914,9 +920,9 @@ public class Aeron implements AutoCloseable
          * @param value the interval in nanoseconds for which the client will perform keep-alive operations.
          * @return this for a fluent API.
          */
-        public Context keepAliveInterval(final long value)
+        public Context keepAliveIntervalNs(final long value)
         {
-            keepAliveInterval = value;
+            keepAliveIntervalNs = value;
             return this;
         }
 
@@ -925,9 +931,9 @@ public class Aeron implements AutoCloseable
          *
          * @return the interval in nanoseconds for which the client will perform keep-alive operations.
          */
-        public long keepAliveInterval()
+        public long keepAliveIntervalNs()
         {
-            return keepAliveInterval;
+            return keepAliveIntervalNs;
         }
 
         /**
@@ -951,9 +957,9 @@ public class Aeron implements AutoCloseable
          * @param interServiceTimeout the timeout (ns) between service calls the to {@link ClientConductor} duty cycle.
          * @return this for a fluent API.
          */
-        Context interServiceTimeout(final long interServiceTimeout)
+        Context interServiceTimeoutNs(final long interServiceTimeout)
         {
-            this.interServiceTimeout = interServiceTimeout;
+            this.interServiceTimeoutNs = interServiceTimeout;
             return this;
         }
 
@@ -964,13 +970,13 @@ public class Aeron implements AutoCloseable
          * closed.
          * <p>
          * This value is controlled by the driver and included in the CnC file. It can be configured by adjusting
-         * the aeron.client.liveness.timeout property on the media driver.
+         * the {@code aeron.client.liveness.timeout} property on the media driver.
          *
-         * @return the timeout in nanoseconds between service calls.
+         * @return the timeout in nanoseconds between service calls as an allowed maximum.
          */
-        public long interServiceTimeout()
+        public long interServiceTimeoutNs()
         {
-            return interServiceTimeout;
+            return interServiceTimeoutNs;
         }
 
         /**

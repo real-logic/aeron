@@ -95,7 +95,7 @@
 
 // sched
 
-void aeron_nano_sleep(size_t nanoseconds);
+void aeron_nano_sleep(uint64_t nanoseconds);
 
 #if defined(AERON_COMPILER_GCC)
 

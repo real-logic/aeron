@@ -29,8 +29,19 @@
 
 namespace aeron {
 namespace archive {
+
+/// Archive client namespace
 namespace client {
 
+/**
+ * Client for interacting with a local or remote Aeron Archive that records and replays message streams.
+ * <p>
+ * This client provides a simple interaction model which is mostly synchronous and may not be optimal.
+ * The underlying components such as the ArchiveProxy and the ControlResponsePoller or
+ * RecordingDescriptorPoller may be used directly if a more asynchronous interaction is required.
+ * <p>
+ * Note: This class is threadsafe.
+ */
 class AeronArchive
 {
 public:
@@ -46,18 +57,30 @@ public:
         std::int64_t controlSessionId);
     ~AeronArchive();
 
+    /// Location of the source with respect to the archive.
     enum SourceLocation: int
     {
+        /// Source is local to the archive and will be recorded using a spy Subscription.
         LOCAL = 0,
+
+        /// Source is remote to the archive and will be recorded using a network Subscription.
         REMOTE = 1
     };
 
+    /**
+     * Allows for the async establishment of a archive session.
+     */
     class AsyncConnect
     {
     public:
         AsyncConnect(
             Context_t& context, std::shared_ptr<Aeron> aeron, std::int64_t subscriptionId, std::int64_t publicationId);
 
+        /**
+         * Poll for a complete connection.
+         *
+         * @return a new AeronArchive if successfully connected otherwise null.
+         */
         std::shared_ptr<AeronArchive> poll();
     private:
         std::unique_ptr<Context_t> m_ctx;
@@ -72,14 +95,34 @@ public:
         std::uint8_t m_step = 0;
     };
 
+    /**
+     * Begin an attempt at creating a connection which can be completed by calling AsyncConnect#poll.
+     *
+     * @param ctx for the archive connection.
+     * @return the AsyncConnect that can be polled for completion.
+     */
     static std::shared_ptr<AsyncConnect> asyncConnect(Context_t& ctx);
 
+    /**
+     * Begin an attempt at creating a connection which can be completed by calling AsyncConnect#poll.
+     *
+     * @return the AsyncConnect that can be polled for completion.
+     */
     inline static std::shared_ptr<AsyncConnect> asyncConnect()
     {
         Context_t ctx;
         return AeronArchive::asyncConnect(ctx);
     }
 
+    /**
+     * Connect to an Aeron archive by providing a Context. This will create a control session.
+     * <p>
+     * Before connecting Context#conclude will be called.
+     *
+     * @param context for connection configuration.
+     * @tparam ConnectIdleStrategy to use between polling calls.
+     * @return the newly created Aeron Archive client.
+     */
     template<typename ConnectIdleStrategy = aeron::concurrent::YieldingIdleStrategy>
     inline static std::shared_ptr<AeronArchive> connect(Context_t& context)
     {
@@ -102,42 +145,84 @@ public:
         return archive;
     }
 
+    /**
+     * Connect to an Aeron archive using a default Context. This will create a control session.
+     *
+     * @return the newly created AeronArchive client.
+     */
     inline static std::shared_ptr<AeronArchive> connect()
     {
         Context_t ctx;
         return AeronArchive::connect(ctx);
     }
 
+    /**
+     * Get the Context used to connect this archive client.
+     *
+     * @return the Context used to connect this archive client.
+     */
     inline Context_t& context()
     {
         return *m_ctx;
     }
 
+    /**
+     * The control session id allocated for this connection to the archive.
+     *
+     * @return control session id allocated for this connection to the archive.
+     */
     inline std::int64_t controlSessionId()
     {
         return m_controlSessionId;
     }
 
+    /**
+     * The ArchiveProxy for send asynchronous messages to the connected archive.
+     *
+     * @return the ArchiveProxy for send asynchronous messages to the connected archive.
+     */
     inline ArchiveProxy& archiveProxy()
     {
         return *m_archiveProxy;
     }
 
+    /**
+     * Get the ControlResponsePoller for polling additional events on the control channel.
+     *
+     * @return the ControlResponsePoller for polling additional events on the control channel.
+     */
     inline ControlResponsePoller& controlResponsePoller()
     {
         return *m_controlResponsePoller;
     }
 
+    /**
+     * Get the RecordingDescriptorPoller for polling recording descriptors on the control channel.
+     *
+     * @return the RecordingDescriptorPoller for polling recording descriptors on the control channel.
+     */
     inline RecordingDescriptorPoller& recordingDescriptorPoller()
     {
         return *m_recordingDescriptorPoller;
     }
 
+    /**
+     * The RecordingSubscriptionDescriptorPoller for polling subscription descriptors on the control channel.
+     *
+     * @return the RecordingSubscriptionDescriptorPoller for polling subscription descriptors on the control
+     * channel.
+     */
     inline RecordingSubscriptionDescriptorPoller& recordingSubscriptionDescriptorPoller()
     {
         return *m_recordingSubscriptionDescriptorPoller;
     }
 
+    /**
+     * Poll the response stream once for an error. If another message is present then it will be skipped over
+     * so only call when not expecting another response.
+     *
+     * @return the error String otherwise an empty string is returned if no error is found.
+     */
     inline std::string pollForErrorResponse()
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
@@ -157,6 +242,14 @@ public:
         return std::string();
     }
 
+    /**
+     * Check if an error has been returned for the control session and throw a ArchiveException if
+     * Context#errorHandler is not set.
+     * <p>
+     * To check for an error response without raising an exception then try #pollForErrorResponse.
+     *
+     * @see #pollForErrorResponse
+     */
     inline void checkForErrorResponse()
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
@@ -188,6 +281,18 @@ public:
         }
     }
 
+    /**
+     * Add a Publication and set it up to be recorded. If this is not the first,
+     * i.e. Publication#isOriginal is true, then an ArchiveException
+     * will be thrown and the recording not initiated.
+     * <p>
+     * This is a sessionId specific recording.
+     *
+     * @param channel  for the publication.
+     * @param streamId for the publication.
+     * @tparam IdleStrategy to use for polling operations.
+     * @return the Publication ready for use.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline std::shared_ptr<Publication> addRecordedPublication(const std::string& channel, std::int32_t streamId)
     {
@@ -219,6 +324,16 @@ public:
         return publication;
     }
 
+    /**
+     * Add an ExclusivePublication and set it up to be recorded.
+     * <p>
+     * This is a sessionId specific recording.
+     *
+     * @param channel  for the publication.
+     * @param streamId for the publication.
+     * @tparam IdleStrategy to use for polling operations.
+     * @return the ExclusivePublication ready for use.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline std::shared_ptr<ExclusivePublication> addRecordedExclusivePublication(
         const std::string& channel, std::int32_t streamId)
@@ -244,6 +359,19 @@ public:
         return publication;
     }
 
+    /**
+     * Start recording a channel and stream pairing.
+     * <p>
+     * Channels that include sessionId parameters are considered different than channels without sessionIds. If a
+     * publication matches both a sessionId specific channel recording and a non-sessionId specific recording, it will
+     * be recorded twice.
+     *
+     * @param channel        to be recorded.
+     * @param streamId       to be recorded.
+     * @param sourceLocation of the publication to be recorded.
+     * @tparam IdleStrategy  to use for polling operations.
+     * @return the subscriptionId, i.e. Subscription#registrationId, of the recording.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline std::int64_t startRecording(
         const std::string& channel,
@@ -265,6 +393,18 @@ public:
         return pollForResponse<IdleStrategy>(correlationId);
     }
 
+    /**
+     * Extend an existing, non-active recording of a channel and stream pairing.
+     * <p>
+     * Channel must be session specific and include the existing recording sessionId.
+     *
+     * @param recordingId    of the existing recording.
+     * @param channel        to be recorded.
+     * @param streamId       to be recorded.
+     * @param sourceLocation of the publication to be recorded.
+     * @tparam IdleStrategy  to use for polling operations.
+     * @return the subscriptionId, i.e. Subscription#registrationId, of the recording.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline std::int64_t extendRecording(
         std::int64_t recordingId,
@@ -287,6 +427,17 @@ public:
         return pollForResponse<IdleStrategy>(correlationId);
     }
 
+    /**
+     * Stop recording for a channel and stream pairing.
+     * <p>
+     * Channels that include sessionId parameters are considered different than channels without sessionIds. Stopping
+     * a recording on a channel without a sessionId parameter will not stop the recording of any sessionId specific
+     * recordings that use the same channel and streamId.
+     *
+     * @param channel  to stop recording for.
+     * @param streamId to stop recording for.
+     * @tparam IdleStrategy  to use for polling operations.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline void stopRecording(
         const std::string& channel,
@@ -307,6 +458,12 @@ public:
         pollForResponse<IdleStrategy>(correlationId);
     }
 
+    /**
+     * Stop recording a sessionId specific recording that pertains to the given Publication.
+     *
+     * @param publication to stop recording for.
+     * @tparam IdleStrategy  to use for polling operations.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline void stopRecording(std::shared_ptr<Publication> publication)
     {
@@ -316,6 +473,12 @@ public:
         stopRecording<IdleStrategy>(recordingChannel, publication->streamId());
     }
 
+    /**
+     * Stop recording a sessionId specific recording that pertains to the given ExclusivePublication.
+     *
+     * @param publication to stop recording for.
+     * @tparam IdleStrategy  to use for polling operations.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline void stopRecording(std::shared_ptr<ExclusivePublication> publication)
     {
@@ -325,6 +488,14 @@ public:
         stopRecording<IdleStrategy>(recordingChannel, publication->streamId());
     }
 
+    /**
+     * Stop recording for a subscriptionId that has been returned from
+     * #startRecording(String, int, SourceLocation) or
+     * #extendRecording(long, String, int, SourceLocation).
+     *
+     * @param subscriptionId is the Subscription#registrationId for the recording in the archive.
+     * @tparam IdleStrategy  to use for polling operations.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline void stopRecording(std::int64_t subscriptionId)
     {
@@ -342,6 +513,24 @@ public:
         pollForResponse<IdleStrategy>(correlationId);
     }
 
+    /**
+     * Start a replay for a length in bytes of a recording from a position. If the position is #NULL_POSITION
+     * then the stream will be replayed from the start.
+     * <p>
+     * The lower 32-bits of the returned value contains the Image#sessionId of the received replay. All
+     * 64-bits are required to uniquely identify the replay when calling #stopReplay. The lower 32-bits
+     * can be obtained by casting the std::int64_t value to an std::int32_t.
+     *
+     * @param recordingId    to be replayed.
+     * @param position       from which the replay should begin or #NULL_POSITION if from the start.
+     * @param length         of the stream to be replayed. Use std::numeric_limits<std::int64_t>::max to follow a live recording or
+     *                       #NULL_LENGTH to replay the whole stream of unknown length.
+     * @param replayChannel  to which the replay should be sent.
+     * @param replayStreamId to which the replay should be sent.
+     * @tparam IdleStrategy  to use for polling operations.
+     * @return the id of the replay session which will be the same as the Image#sessionId of the received
+     * replay for correlation with the matching channel and stream id in the lower 32 bits.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline std::int64_t startReplay(
         std::int64_t recordingId,
@@ -365,6 +554,12 @@ public:
         return pollForResponse<IdleStrategy>(correlationId);
     }
 
+    /**
+     * Stop a replay session.
+     *
+     * @param replaySessionId to stop replay for.
+     * @tparam IdleStrategy  to use for polling operations.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline void stopReplay(std::int64_t replaySessionId)
     {
@@ -382,6 +577,18 @@ public:
         pollForResponse<IdleStrategy>(correlationId);
     }
 
+    /**
+     * Replay a length in bytes of a recording from a position and for convenience create a Subscription
+     * to receive the replay. If the position is #NULL_POSITION then the stream will be replayed from the start.
+     *
+     * @param recordingId    to be replayed.
+     * @param position       from which the replay should begin or #NULL_POSITION if from the start.
+     * @param length         of the stream to be replayed or std::numeric_limits<std::int64_t>::max to follow a live recording.
+     * @param replayChannel  to which the replay should be sent.
+     * @param replayStreamId to which the replay should be sent.
+     * @tparam IdleStrategy  to use for polling operations.
+     * @return the Subscription for consuming the replay.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline std::shared_ptr<Subscription> replay(
         std::int64_t recordingId,
@@ -419,6 +626,20 @@ public:
         return subscription;
     }
 
+    /**
+     * Replay a length in bytes of a recording from a position and for convenience create a Subscription
+     * to receive the replay. If the position is #NULL_POSITION then the stream will be replayed from the start.
+     *
+     * @param recordingId             to be replayed.
+     * @param position                from which the replay should begin or #NULL_POSITION if from the start.
+     * @param length                  of the stream to be replayed or std::numeric_limits<std::int64_t>::max to follow a live recording.
+     * @param replayChannel           to which the replay should be sent.
+     * @param replayStreamId          to which the replay should be sent.
+     * @param availableImageHandler   to be called when the replay image becomes available.
+     * @param unavailableImageHandler to be called when the replay image goes unavailable.
+     * @tparam IdleStrategy  to use for polling operations.
+     * @return the Subscription for consuming the replay.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline std::shared_ptr<Subscription> replay(
         std::int64_t recordingId,
@@ -459,6 +680,17 @@ public:
         return subscription;
     }
 
+    /**
+     * List all recording descriptors from a recording id with a limit of record count.
+     * <p>
+     * If the recording id is greater than the largest known id then nothing is returned.
+     *
+     * @param fromRecordingId at which to begin the listing.
+     * @param recordCount     to limit for each query.
+     * @param consumer        to which the descriptors are dispatched.
+     * @tparam IdleStrategy  to use for polling operations.
+     * @return the number of descriptors found and consumed.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline std::int32_t listRecordings(
         std::int64_t fromRecordingId, std::int32_t recordCount, const recording_descriptor_consumer_t& consumer)
@@ -478,6 +710,20 @@ public:
         return pollForDescriptors<IdleStrategy>(correlationId, recordCount, consumer);
     }
 
+    /**
+     * List recording descriptors from a recording id with a limit of record count for a given channelFragment and
+     * stream id.
+     * <p>
+     * If the recording id is greater than the largest known id then nothing is returned.
+     *
+     * @param fromRecordingId at which to begin the listing.
+     * @param recordCount     to limit for each query.
+     * @param channelFragment for a contains match on the original channel stored with the archive descriptor.
+     * @param streamId        to match.
+     * @param consumer        to which the descriptors are dispatched.
+     * @tparam IdleStrategy  to use for polling operations.
+     * @return the number of descriptors found and consumed.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline std::int32_t listRecordingsForUri(
         std::int64_t fromRecordingId,
@@ -501,6 +747,16 @@ public:
         return pollForDescriptors<IdleStrategy>(correlationId, recordCount, consumer);
     }
 
+    /**
+     * List a recording descriptor for a single recording id.
+     * <p>
+     * If the recording id is greater than the largest known id then nothing is returned.
+     *
+     * @param recordingId at which to begin the listing.
+     * @param consumer    to which the descriptors are dispatched.
+     * @tparam IdleStrategy  to use for polling operations.
+     * @return the number of descriptors found and consumed.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline std::int32_t listRecording(std::int64_t recordingId, const recording_descriptor_consumer_t& consumer)
     {
@@ -518,6 +774,14 @@ public:
         return pollForDescriptors<IdleStrategy>(correlationId, 1, consumer);
     }
 
+    /**
+     * Get the position recorded for an active recording. If no active recording then return #NULL_POSITION.
+     *
+     * @param recordingId of the active recording for which the position is required.
+     * @tparam IdleStrategy  to use for polling operations.
+     * @return the recorded position for the active recording or #NULL_POSITION if recording not active.
+     * @see #getStopPosition
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline std::int64_t getRecordingPosition(std::int64_t recordingId)
     {
@@ -535,6 +799,14 @@ public:
         return pollForResponse<IdleStrategy>(correlationId);
     }
 
+    /**
+     * Get the stop position for a recording.
+     *
+     * @param recordingId of the active recording for which the position is required.
+     * @tparam IdleStrategy  to use for polling operations.
+     * @return the stop position, or #NULL_POSITION if still active.
+     * @see #getRecordingPosition
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline std::int64_t getStopPosition(std::int64_t recordingId)
     {
@@ -552,6 +824,16 @@ public:
         return pollForResponse<IdleStrategy>(correlationId);
     }
 
+    /**
+     * Find the last recording that matches the given criteria.
+     *
+     * @param minRecordingId  to search back to.
+     * @param channelFragment for a contains match on the original channel stored with the archive descriptor.
+     * @param streamId        of the recording to match.
+     * @param sessionId       of the recording to match.
+     * @tparam IdleStrategy  to use for polling operations.
+     * @return the recordingId if found otherwise Aeron#NULL_VALUE if not found.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline std::int64_t findLastMatchingRecording(
         std::int64_t minRecordingId,
@@ -574,6 +856,14 @@ public:
         return pollForResponse<IdleStrategy>(correlationId);
     }
 
+    /**
+     * Truncate a stopped recording to a given position that is less than the stopped position. The provided position
+     * must be on a fragment boundary. Truncating a recording to the start position effectively deletes the recording.
+     *
+     * @param recordingId of the stopped recording to be truncated.
+     * @param position    to which the recording will be truncated.
+     * @tparam IdleStrategy to use for polling operations.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline void truncateRecording(std::int64_t recordingId, std::int64_t position)
     {
@@ -591,6 +881,21 @@ public:
         pollForResponse<IdleStrategy>(correlationId);
     }
 
+    /**
+     * List active recording subscriptions in the archive. These are the result of requesting one of
+     * #startRecording(String, int, SourceLocation) or a
+     * #extendRecording(long, String, int, SourceLocation). The returned subscription id can be used for
+     * passing to #stopRecording(std::int64_t).
+     *
+     * @param pseudoIndex       in the active list at which to begin for paging.
+     * @param subscriptionCount to get in a listing.
+     * @param channelFragment   to do a contains match on the stripped channel URI. Empty string is match all.
+     * @param streamId          to match on the subscription.
+     * @param applyStreamId     true if the stream id should be matched.
+     * @param consumer          for the matched subscription descriptors.
+     * @tparam IdleStrategy to use for polling operations.
+     * @return the count of matched subscriptions.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline std::int32_t listRecordingSubscriptions(
         std::int32_t pseudoIndex,

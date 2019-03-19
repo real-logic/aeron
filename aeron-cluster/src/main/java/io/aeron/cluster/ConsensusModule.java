@@ -273,7 +273,8 @@ public class ConsensusModule implements AutoCloseable
          * </code>
          * <p>
          * The client facing endpoints will be used as the endpoint substituted into the
-         * {@link AeronCluster.Configuration#INGRESS_CHANNEL_PROP_NAME} if the endpoint is not provided when unicast.
+         * {@link io.aeron.cluster.client.AeronCluster.Configuration#INGRESS_CHANNEL_PROP_NAME} if the endpoint
+         * is not provided when unicast.
          */
         public static final String CLUSTER_MEMBERS_PROP_NAME = "aeron.cluster.members";
 
@@ -287,7 +288,7 @@ public class ConsensusModule implements AutoCloseable
          * Property name for the comma separated list of cluster member status endpoints used for adding passive
          * followers as well as dynamic join of a cluster.
          */
-        public static final String CLUSTER_MEMEBRS_STATUS_ENDPOINTS_PROP_NAME =
+        public static final String CLUSTER_MEMBERS_STATUS_ENDPOINTS_PROP_NAME =
             "aeron.cluster.members.status.endpoints";
 
         /**
@@ -614,15 +615,15 @@ public class ConsensusModule implements AutoCloseable
 
         /**
          * The value {@link #CLUSTER_MEMBERS_STATUS_ENDPOINTS_DEFAULT} or system property
-         * {@link #CLUSTER_MEMEBRS_STATUS_ENDPOINTS_PROP_NAME} if set.
+         * {@link #CLUSTER_MEMBERS_STATUS_ENDPOINTS_PROP_NAME} if set.
          *
          * @return {@link #CLUSTER_MEMBERS_STATUS_ENDPOINTS_DEFAULT} or system property
-         * {@link #CLUSTER_MEMEBRS_STATUS_ENDPOINTS_PROP_NAME} it set.
+         * {@link #CLUSTER_MEMBERS_STATUS_ENDPOINTS_PROP_NAME} it set.
          */
         public static String clusterMembersStatusEndpoints()
         {
             return System.getProperty(
-                CLUSTER_MEMEBRS_STATUS_ENDPOINTS_PROP_NAME, CLUSTER_MEMBERS_STATUS_ENDPOINTS_DEFAULT);
+                CLUSTER_MEMBERS_STATUS_ENDPOINTS_PROP_NAME, CLUSTER_MEMBERS_STATUS_ENDPOINTS_DEFAULT);
         }
 
         /**
@@ -670,10 +671,10 @@ public class ConsensusModule implements AutoCloseable
 
         /**
          * The value {@link #SNAPSHOT_CHANNEL_DEFAULT} or system property
-         * {@link ClusteredServiceContainer.Configuration#SNAPSHOT_CHANNEL_PROP_NAME} if set.
+         * {@link io.aeron.cluster.service.ClusteredServiceContainer.Configuration#SNAPSHOT_CHANNEL_PROP_NAME} if set.
          *
          * @return {@link #SNAPSHOT_CHANNEL_DEFAULT} or system property
-         * {@link ClusteredServiceContainer.Configuration#SNAPSHOT_CHANNEL_PROP_NAME} if set.
+         * {@link io.aeron.cluster.service.ClusteredServiceContainer.Configuration#SNAPSHOT_CHANNEL_PROP_NAME} if set.
          */
         public static String snapshotChannel()
         {
@@ -682,10 +683,10 @@ public class ConsensusModule implements AutoCloseable
 
         /**
          * The value {@link #SNAPSHOT_STREAM_ID_DEFAULT} or system property
-         * {@link ClusteredServiceContainer.Configuration#SNAPSHOT_STREAM_ID_PROP_NAME} if set.
+         * {@link io.aeron.cluster.service.ClusteredServiceContainer.Configuration#SNAPSHOT_STREAM_ID_PROP_NAME} if set.
          *
          * @return {@link #SNAPSHOT_STREAM_ID_DEFAULT} or system property
-         * {@link ClusteredServiceContainer.Configuration#SNAPSHOT_STREAM_ID_PROP_NAME} if set.
+         * {@link io.aeron.cluster.service.ClusteredServiceContainer.Configuration#SNAPSHOT_STREAM_ID_PROP_NAME} if set.
          */
         public static int snapshotStreamId()
         {
@@ -1210,7 +1211,7 @@ public class ConsensusModule implements AutoCloseable
          *
          * @param clusterDirectoryName to use.
          * @return this for a fluent API.
-         * @see ClusteredServiceContainer.Configuration#CLUSTER_DIR_PROP_NAME
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#CLUSTER_DIR_PROP_NAME
          */
         public Context clusterDirectoryName(final String clusterDirectoryName)
         {
@@ -1222,7 +1223,7 @@ public class ConsensusModule implements AutoCloseable
          * The directory name to use for the consensus module directory.
          *
          * @return directory name for the consensus module directory.
-         * @see ClusteredServiceContainer.Configuration#CLUSTER_DIR_PROP_NAME
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#CLUSTER_DIR_PROP_NAME
          */
         public String clusterDirectoryName()
         {
@@ -1234,7 +1235,7 @@ public class ConsensusModule implements AutoCloseable
          *
          * @param clusterDir to use.
          * @return this for a fluent API.
-         * @see ClusteredServiceContainer.Configuration#CLUSTER_DIR_PROP_NAME
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#CLUSTER_DIR_PROP_NAME
          */
         public Context clusterDir(final File clusterDir)
         {
@@ -1246,7 +1247,7 @@ public class ConsensusModule implements AutoCloseable
          * The directory used for for the consensus module directory.
          *
          * @return directory for for the consensus module directory.
-         * @see ClusteredServiceContainer.Configuration#CLUSTER_DIR_PROP_NAME
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#CLUSTER_DIR_PROP_NAME
          */
         public File clusterDir()
         {
@@ -1370,7 +1371,7 @@ public class ConsensusModule implements AutoCloseable
          *
          * @param endpoints which are to be contacted for joining the cluster.
          * @return this for a fluent API.
-         * @see Configuration#CLUSTER_MEMEBRS_STATUS_ENDPOINTS_PROP_NAME
+         * @see Configuration#CLUSTER_MEMBERS_STATUS_ENDPOINTS_PROP_NAME
          */
         public Context clusterMembersStatusEndpoints(final String endpoints)
         {
@@ -1382,7 +1383,7 @@ public class ConsensusModule implements AutoCloseable
          * The endpoints representing cluster members of the cluster to attempt to contact to join the cluster.
          *
          * @return members of the cluster to attempt to request to join from.
-         * @see Configuration#CLUSTER_MEMEBRS_STATUS_ENDPOINTS_PROP_NAME
+         * @see Configuration#CLUSTER_MEMBERS_STATUS_ENDPOINTS_PROP_NAME
          */
         public String clusterMembersStatusEndpoints()
         {
@@ -1418,7 +1419,7 @@ public class ConsensusModule implements AutoCloseable
          *
          * @param channel parameter for the ingress channel.
          * @return this for a fluent API.
-         * @see AeronCluster.Configuration#INGRESS_CHANNEL_PROP_NAME
+         * @see io.aeron.cluster.client.AeronCluster.Configuration#INGRESS_CHANNEL_PROP_NAME
          */
         public Context ingressChannel(final String channel)
         {
@@ -1430,7 +1431,7 @@ public class ConsensusModule implements AutoCloseable
          * Get the channel parameter for the ingress channel.
          *
          * @return the channel parameter for the ingress channel.
-         * @see AeronCluster.Configuration#INGRESS_CHANNEL_PROP_NAME
+         * @see io.aeron.cluster.client.AeronCluster.Configuration#INGRESS_CHANNEL_PROP_NAME
          */
         public String ingressChannel()
         {
@@ -1442,7 +1443,7 @@ public class ConsensusModule implements AutoCloseable
          *
          * @param streamId for the ingress channel.
          * @return this for a fluent API
-         * @see AeronCluster.Configuration#INGRESS_STREAM_ID_PROP_NAME
+         * @see io.aeron.cluster.client.AeronCluster.Configuration#INGRESS_STREAM_ID_PROP_NAME
          */
         public Context ingressStreamId(final int streamId)
         {
@@ -1454,7 +1455,7 @@ public class ConsensusModule implements AutoCloseable
          * Get the stream id for the ingress channel.
          *
          * @return the stream id for the ingress channel.
-         * @see AeronCluster.Configuration#INGRESS_STREAM_ID_PROP_NAME
+         * @see io.aeron.cluster.client.AeronCluster.Configuration#INGRESS_STREAM_ID_PROP_NAME
          */
         public int ingressStreamId()
         {
@@ -1538,7 +1539,7 @@ public class ConsensusModule implements AutoCloseable
          *
          * @param channel parameter for the cluster log replay channel.
          * @return this for a fluent API.
-         * @see ClusteredServiceContainer.Configuration#REPLAY_CHANNEL_PROP_NAME
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#REPLAY_CHANNEL_PROP_NAME
          */
         public Context replayChannel(final String channel)
         {
@@ -1550,7 +1551,7 @@ public class ConsensusModule implements AutoCloseable
          * Get the channel parameter for the cluster log and snapshot replay channel.
          *
          * @return the channel parameter for the cluster replay channel.
-         * @see ClusteredServiceContainer.Configuration#REPLAY_CHANNEL_PROP_NAME
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#REPLAY_CHANNEL_PROP_NAME
          */
         public String replayChannel()
         {
@@ -1562,7 +1563,7 @@ public class ConsensusModule implements AutoCloseable
          *
          * @param streamId for the cluster log replay channel.
          * @return this for a fluent API
-         * @see ClusteredServiceContainer.Configuration#REPLAY_STREAM_ID_PROP_NAME
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#REPLAY_STREAM_ID_PROP_NAME
          */
         public Context replayStreamId(final int streamId)
         {
@@ -1574,7 +1575,7 @@ public class ConsensusModule implements AutoCloseable
          * Get the stream id for the cluster log and snapshot replay channel.
          *
          * @return the stream id for the cluster log replay channel.
-         * @see ClusteredServiceContainer.Configuration#REPLAY_STREAM_ID_PROP_NAME
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#REPLAY_STREAM_ID_PROP_NAME
          */
         public int replayStreamId()
         {
@@ -1586,7 +1587,7 @@ public class ConsensusModule implements AutoCloseable
          *
          * @param channel parameter for bi-directional communications between the consensus module and services.
          * @return this for a fluent API.
-         * @see ClusteredServiceContainer.Configuration#SERVICE_CONTROL_CHANNEL_PROP_NAME
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#SERVICE_CONTROL_CHANNEL_PROP_NAME
          */
         public Context serviceControlChannel(final String channel)
         {
@@ -1598,7 +1599,7 @@ public class ConsensusModule implements AutoCloseable
          * Get the channel parameter for bi-directional communications between the consensus module and services.
          *
          * @return the channel parameter for bi-directional communications between the consensus module and services.
-         * @see ClusteredServiceContainer.Configuration#SERVICE_CONTROL_CHANNEL_PROP_NAME
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#SERVICE_CONTROL_CHANNEL_PROP_NAME
          */
         public String serviceControlChannel()
         {
@@ -1610,7 +1611,7 @@ public class ConsensusModule implements AutoCloseable
          *
          * @param streamId for communications from the consensus module and to the services.
          * @return this for a fluent API
-         * @see ClusteredServiceContainer.Configuration#SERVICE_STREAM_ID_PROP_NAME
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#SERVICE_STREAM_ID_PROP_NAME
          */
         public Context serviceStreamId(final int streamId)
         {
@@ -1622,7 +1623,7 @@ public class ConsensusModule implements AutoCloseable
          * Get the stream id for communications from the consensus module and to the services.
          *
          * @return the stream id for communications from the consensus module and to the services.
-         * @see ClusteredServiceContainer.Configuration#SERVICE_STREAM_ID_PROP_NAME
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#SERVICE_STREAM_ID_PROP_NAME
          */
         public int serviceStreamId()
         {
@@ -1634,7 +1635,7 @@ public class ConsensusModule implements AutoCloseable
          *
          * @param streamId for communications from the services to the consensus module.
          * @return this for a fluent API
-         * @see ClusteredServiceContainer.Configuration#CONSENSUS_MODULE_STREAM_ID_PROP_NAME
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#CONSENSUS_MODULE_STREAM_ID_PROP_NAME
          */
         public Context consensusModuleStreamId(final int streamId)
         {
@@ -1646,7 +1647,7 @@ public class ConsensusModule implements AutoCloseable
          * Get the stream id for communications from the services to the consensus module.
          *
          * @return the stream id for communications from the services to the consensus module.
-         * @see ClusteredServiceContainer.Configuration#CONSENSUS_MODULE_STREAM_ID_PROP_NAME
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#CONSENSUS_MODULE_STREAM_ID_PROP_NAME
          */
         public int consensusModuleStreamId()
         {
@@ -1658,7 +1659,7 @@ public class ConsensusModule implements AutoCloseable
          *
          * @param channel parameter for snapshot recordings
          * @return this for a fluent API.
-         * @see ClusteredServiceContainer.Configuration#SNAPSHOT_CHANNEL_PROP_NAME
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#SNAPSHOT_CHANNEL_PROP_NAME
          */
         public Context snapshotChannel(final String channel)
         {
@@ -1670,7 +1671,7 @@ public class ConsensusModule implements AutoCloseable
          * Get the channel parameter for snapshot recordings.
          *
          * @return the channel parameter for snapshot recordings.
-         * @see ClusteredServiceContainer.Configuration#SNAPSHOT_CHANNEL_PROP_NAME
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#SNAPSHOT_CHANNEL_PROP_NAME
          */
         public String snapshotChannel()
         {
@@ -1682,7 +1683,7 @@ public class ConsensusModule implements AutoCloseable
          *
          * @param streamId for snapshot recordings.
          * @return this for a fluent API
-         * @see ClusteredServiceContainer.Configuration#SNAPSHOT_STREAM_ID_PROP_NAME
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#SNAPSHOT_STREAM_ID_PROP_NAME
          */
         public Context snapshotStreamId(final int streamId)
         {
@@ -1694,7 +1695,7 @@ public class ConsensusModule implements AutoCloseable
          * Get the stream id for snapshot recordings.
          *
          * @return the stream id for snapshot recordings.
-         * @see ClusteredServiceContainer.Configuration#SNAPSHOT_STREAM_ID_PROP_NAME
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#SNAPSHOT_STREAM_ID_PROP_NAME
          */
         public int snapshotStreamId()
         {
@@ -1916,8 +1917,8 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Timeout to wait for hearing the status of all cluster members on startup after recovery before commencing an
-         * election if a majority of members has been heard from.
+         * Timeout to wait for hearing the status of all cluster members on startup after recovery before commencing
+         * an election if a majority of members has been heard from.
          *
          * @param timeoutNs to wait on startup after recovery before commencing an election.
          * @return this for a fluent API.
@@ -1930,8 +1931,8 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Timeout to wait for hearing the status of all cluster members on startup after recovery before commencing an
-         * election if a majority of members has been heard from.
+         * Timeout to wait for hearing the status of all cluster members on startup after recovery before commencing
+         * an election if a majority of members has been heard from.
          *
          * @return the timeout to wait on startup after recovery before commencing an election.
          * @see Configuration#STARTUP_CANVASS_TIMEOUT_PROP_NAME
@@ -2180,7 +2181,7 @@ public class ConsensusModule implements AutoCloseable
          * Get the counter for the current state of the consensus module.
          *
          * @return the counter for the current state of the consensus module.
-         * @see State
+         * @see ConsensusModule.State
          */
         public Counter moduleStateCounter()
         {
@@ -2192,7 +2193,7 @@ public class ConsensusModule implements AutoCloseable
          *
          * @param moduleState the counter for the current state of the consensus module.
          * @return this for a fluent API.
-         * @see State
+         * @see ConsensusModule.State
          */
         public Context moduleStateCounter(final Counter moduleState)
         {
@@ -2204,7 +2205,7 @@ public class ConsensusModule implements AutoCloseable
          * Get the counter for the commit position the cluster has reached for consensus.
          *
          * @return the counter for the commit position the cluster has reached for consensus.
-         * @see State
+         * @see CommitPos
          */
         public Counter commitPositionCounter()
         {
@@ -2216,7 +2217,7 @@ public class ConsensusModule implements AutoCloseable
          *
          * @param commitPosition counter for the commit position the cluster has reached for consensus.
          * @return this for a fluent API.
-         * @see State
+         * @see CommitPos
          */
         public Context commitPositionCounter(final Counter commitPosition)
         {
@@ -2225,10 +2226,12 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Get the counter for representing the current {@link Cluster.Role} of the consensus module node.
+         * Get the counter for representing the current {@link io.aeron.cluster.service.Cluster.Role} of the
+         * consensus module node.
          *
-         * @return the counter for representing the current {@link Cluster.Role} of the cluster node.
-         * @see Cluster.Role
+         * @return the counter for representing the current {@link io.aeron.cluster.service.Cluster.Role} of the
+         * cluster node.
+         * @see io.aeron.cluster.service.Cluster.Role
          */
         public Counter clusterNodeCounter()
         {
@@ -2236,11 +2239,13 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Set the counter for representing the current {@link Cluster.Role} of the cluster node.
+         * Set the counter for representing the current {@link io.aeron.cluster.service.Cluster.Role} of the
+         * cluster node.
          *
-         * @param moduleRole the counter for representing the current {@link Cluster.Role} of the cluster node.
+         * @param moduleRole the counter for representing the current {@link io.aeron.cluster.service.Cluster.Role}
+         *                   of the cluster node.
          * @return this for a fluent API.
-         * @see Cluster.Role
+         * @see io.aeron.cluster.service.Cluster.Role
          */
         public Context clusterNodeCounter(final Counter moduleRole)
         {
@@ -2412,7 +2417,8 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Set the {@link AeronArchive.Context} that should be used for communicating with the local Archive.
+         * Set the {@link io.aeron.archive.client.AeronArchive.Context} that should be used for communicating with the
+         * local Archive.
          *
          * @param archiveContext that should be used for communicating with the local Archive.
          * @return this for a fluent API.
@@ -2424,9 +2430,11 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Get the {@link AeronArchive.Context} that should be used for communicating with the local Archive.
+         * Get the {@link io.aeron.archive.client.AeronArchive.Context} that should be used for communicating with
+         * the local Archive.
          *
-         * @return the {@link AeronArchive.Context} that should be used for communicating with the local Archive.
+         * @return the {@link io.aeron.archive.client.AeronArchive.Context} that should be used for communicating
+         * with the local Archive.
          */
         public AeronArchive.Context archiveContext()
         {

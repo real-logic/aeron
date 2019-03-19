@@ -228,6 +228,31 @@ typedef struct aeron_driver_stct aeron_driver_t;
 #define AERON_SHARED_IDLE_STRATEGY_ENV_VAR "AERON_SHARED_IDLE_STRATEGY"
 
 /**
+ * Idle strategy init args to be employed by Sender for DEDICATED Threading Mode.
+ */
+#define AERON_SENDER_IDLE_STRATEGY_INIT_ARGS_ENV_VAR "AERON_SENDER_IDLE_STRATEGY_INIT_ARGS"
+
+/**
+ * Idle strategy init args to be employed by Conductor for DEDICATED or SHARED_NETWORK Threading Mode.
+ */
+#define AERON_CONDUCTOR_IDLE_STRATEGY_INIT_ARGS_ENV_VAR "AERON_CONDUCTOR_IDLE_STRATEGY_INIT_ARGS"
+
+/**
+ * Idle strategy init args to be employed by Receiver for DEDICATED Threading Mode.
+ */
+#define AERON_RECEIVER_IDLE_STRATEGY_INIT_ARGS_ENV_VAR "AERON_RECEIVER_IDLE_STRATEGY_INIT_ARGS"
+
+/**
+ * Idle strategy init args to be employed by Sender and Receiver for SHARED_NETWORK Threading Mode.
+ */
+#define AERON_SHAREDNETWORK_IDLE_STRATEGY_INIT_ARGS_ENV_VAR "AERON_SHAREDNETWORK_IDLE_STRATEGY_INIT_ARGS"
+
+/**
+ * Idle strategy init args to be employed by Conductor, Sender, and Receiver for SHARED Threading Mode.
+ */
+#define AERON_SHARED_IDLE_STRATEGY_ENV_INIT_ARGS_VAR "AERON_SHARED_IDLE_STRATEGY_INIT_ARGS"
+
+/**
  * Function name to call on start of each agent.
  */
 #define AERON_AGENT_ON_START_FUNCTION_ENV_VAR "AERON_AGENT_ON_START_FUNCTION"

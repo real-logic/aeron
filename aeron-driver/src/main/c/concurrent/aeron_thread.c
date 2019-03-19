@@ -16,7 +16,7 @@
 
 #include "concurrent/aeron_thread.h"
 
-void aeron_nano_sleep(size_t nanoseconds)
+void aeron_nano_sleep(uint64_t nanoseconds)
 {
 #ifdef AERON_COMPILER_MSVC
     HANDLE timer;
@@ -37,7 +37,7 @@ void aeron_nano_sleep(size_t nanoseconds)
     WaitForSingleObject(timer, INFINITE);
     CloseHandle(timer);
 #else
-    nanosleep(&(struct timespec) { .tv_nsec = 1 }, NULL);
+    nanosleep(&(struct timespec) { .tv_nsec = (long)nanoseconds }, NULL);
 #endif
 }
 

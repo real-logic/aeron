@@ -22,6 +22,16 @@ namespace aeron {
 namespace archive {
 namespace client {
 
+/**
+ * Fired when a recording is started.
+ *
+ * @param recordingId    assigned to the new recording.
+ * @param startPosition  in the stream at which the recording started.
+ * @param sessionId      of the publication being recorded.
+ * @param streamId       of the publication being recorded.
+ * @param channel        of the publication being recorded.
+ * @param sourceIdentity of the publication being recorded.
+ */
 typedef std::function<void(
     std::int64_t recordingId,
     std::int64_t startPosition,
@@ -30,14 +40,33 @@ typedef std::function<void(
     const std::string& channel,
     const std::string& sourceIdentity)> on_recording_start_t;
 
+/**
+ * Progress indication of an active recording or Indication of a stopped recording.
+ *
+ * @param recordingId   for which progress or stop is being reported.
+ * @param startPosition in the stream at which the recording started.
+ * @param position      reached in recording the publication.
+ */
 typedef std::function<void(
     std::int64_t recordingId,
     std::int64_t startPosition,
     std::int64_t position)> on_recording_event_t;
 
+/**
+ * Encapsulate the polling, decoding, and dispatching of recording events.
+ */
 class RecordingEventsAdapter
 {
 public:
+    /**
+     * Create an adaptoer for a given subscription to an archive for recording events.
+     *
+     * @param onStart to call when a recording started event is received.
+     * @param onProgress to call when a recording progress event is received.
+     * @param onStop to call when a recording stopped event is received.
+     * @param subscription  to poll for new events.
+     * @param fragmentLimit to apply for each polling operation.
+     */
     RecordingEventsAdapter(
         const on_recording_start_t& onStart,
         const on_recording_event_t& onProgress,
@@ -45,11 +74,21 @@ public:
         std::shared_ptr<Subscription> subscription,
         int fragmentLimit = 10);
 
+    /**
+     * Get the Subscription used for polling recording events.
+     *
+     * @return the Subscription used for polling recording events.
+     */
     inline std::shared_ptr<Subscription> subscription()
     {
         return m_subscription;
     }
 
+    /**
+     * Poll for recording events and dispatch them to the callbacks for this instance.
+     *
+     * @return the number of fragments read during the operation. Zero if no events are available.
+     */
     inline int poll()
     {
         return m_subscription->poll(m_fragmentHandler, m_fragmentLimit);

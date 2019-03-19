@@ -1056,7 +1056,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * Set the {@link AeronArchive.Context} that should be used for communicating with the local Archive.
+         * Set the context that should be used for communicating with the local Archive.
          *
          * @param archiveContext that should be used for communicating with the local Archive.
          * @return this for a fluent API.
@@ -1068,9 +1068,9 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * Get the {@link AeronArchive.Context} that should be used for communicating with the local Archive.
+         * Get the context that should be used for communicating with the local Archive.
          *
-         * @return the {@link AeronArchive.Context} that should be used for communicating with the local Archive.
+         * @return the context that should be used for communicating with the local Archive.
          */
         public AeronArchive.Context archiveContext()
         {

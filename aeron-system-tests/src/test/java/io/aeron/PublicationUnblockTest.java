@@ -51,10 +51,12 @@ public class PublicationUnblockTest
         .threadingMode(ThreadingMode.SHARED)
         .errorHandler(Throwable::printStackTrace)
         .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
-        .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
-        .publicationUnblockTimeoutNs(TimeUnit.MILLISECONDS.toNanos(100)));
+        .clientLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(400))
+        .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(10))
+        .publicationUnblockTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500)));
 
-    private final Aeron aeron = Aeron.connect();
+    private final Aeron aeron = Aeron.connect(new Aeron.Context()
+        .keepAliveIntervalNs(TimeUnit.MILLISECONDS.toNanos(100)));
 
     @After
     public void after()

@@ -75,7 +75,7 @@ public class RecordingSubscriptionDescriptorPoller implements ControlledFragment
     }
 
     /**
-     * Poll for recording events.
+     * Poll for recording subscriptions.
      *
      * @return the number of fragments read during the operation. Zero if no events are available.
      */
@@ -107,9 +107,9 @@ public class RecordingSubscriptionDescriptorPoller implements ControlledFragment
     }
 
     /**
-     * Get the number of remaining records are expected.
+     * Get the number of remaining subscriptions expected.
      *
-     * @return the number of remaining records are expected.
+     * @return the number of remaining subscriptions expected.
      */
     public int remainingSubscriptionCount()
     {
@@ -121,7 +121,7 @@ public class RecordingSubscriptionDescriptorPoller implements ControlledFragment
      *
      * @param correlationId     for the response.
      * @param subscriptionCount of descriptors to expect.
-     * @param consumer          to which the recording descriptors are to be dispatched.
+     * @param consumer          to which the recording subscription descriptors are to be dispatched.
      */
     public void reset(
         final long correlationId, final int subscriptionCount, final RecordingSubscriptionDescriptorConsumer consumer)

@@ -22,12 +22,16 @@ namespace aeron {
 namespace archive {
 namespace client {
 
+/**
+ * Encapsulate the polling and decoding of recording events.
+ */
 class RecordingEventsPoller
 {
 public:
+    /// Type of recording event.
     enum EventType: std::uint8_t
     {
-        RECORDING_STARTTED = 1,
+        RECORDING_STARTED = 1,
         RECORDING_PROGRESS = 2,
         RECORDING_STOPPED = 3,
         UNKNOWN_EVENT = 255
@@ -35,11 +39,21 @@ public:
 
     explicit RecordingEventsPoller(std::shared_ptr<Subscription> subscription);
 
+    /**
+     * Get the Subscription used for polling recording events.
+     *
+     * @return the Subscription used for polling recording events.
+     */
     inline std::shared_ptr<Subscription> subscription()
     {
         return m_subscription;
     }
 
+    /**
+     * Poll for recording events.
+     *
+     * @return the number of fragments read during the operation. Zero if no events are available.
+     */
     inline int poll()
     {
         m_eventType = EventType::UNKNOWN_EVENT;
@@ -48,31 +62,61 @@ public:
         return m_subscription->poll(m_fragmentHandler, 1);
     }
 
+    /**
+     * Has the last polling action received a complete message?
+     *
+     * @return true of the last polling action received a complete message?
+     */
     inline bool isPollComplete()
     {
         return m_pollComplete;
     }
 
+    /**
+     * Get the EventType of the last recording event.
+     *
+     * @return the EventType of the last recording event.
+     */
     inline EventType eventType()
     {
         return m_eventType;
     }
 
+    /**
+     * Get the recording id of the last received event.
+     *
+     * @return the recording id of the last received event.
+     */
     inline std::int64_t recordingId()
     {
         return m_recordingId;
     }
 
+    /**
+     * Get the position the recording started at.
+     *
+     * @return the position the recording started at.
+     */
     inline std::int64_t recordingStartPosition()
     {
         return m_recordingStartPosition;
     }
 
+    /**
+     * Get the current recording position.
+     *
+     * @return the current recording position.
+     */
     inline std::int64_t recordingPosition()
     {
         return m_recordingPosition;
     }
 
+    /**
+     * Get the position the recording stopped at.
+     *
+     * @return the position the recording stopped at.
+     */
     inline std::int64_t recordingStopPosition()
     {
         return m_recordingStopPosition;

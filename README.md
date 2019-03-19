@@ -99,7 +99,7 @@ You require the following to build the C++ API for Aeron:
 ```
 
 __Note__: Aeron is supported on Linux, Mac, and Windows. Windows builds require Visual Studio and are being developed
-with Visual Studio 2013 and 2015 with 64-bit builds only. Cygwin, MSys, etc. may work, but are not maintained at this time.
+with Visual Studio 2017 with 64-bit builds only. Cygwin, MSys, etc. may work, but are not maintained at this time.
 
 For convenience, a script is provided that does a full clean, build, and test of all targets as a Release build.
 
@@ -122,7 +122,7 @@ If you are comfortable with using CMake, then a full clean, build, and test look
 By default, the C Media Driver is built as part of the C++ Build. However, it can be disabled via the CMake
 option `BUILD_AERON_DRIVER` being set to `OFF`.
 
-__Note__: C Media Driver is currently only supported on Mac and Linux (Windows version is available as a proof-of-concept).
+__Note__: C Media Driver is currently only supported on Mac and Linux (Windows version is experimental).
 
 For dependencies and other information, see the
 [README](https://github.com/real-logic/aeron/blob/master/aeron-driver/src/main/c/README.md).

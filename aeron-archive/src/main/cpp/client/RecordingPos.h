@@ -21,9 +21,31 @@
 namespace aeron {
 namespace archive {
 namespace client {
+
+/**
+ * The position a recording has reached when being archived.
+ * <p>
+ * Key has the following layout:
+ * <pre>
+ *   0                   1                   2                   3
+ *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *  |                        Recording ID                           |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |                         Session ID                            |
+ *  +---------------------------------------------------------------+
+ *  |                Source Identity for the Image                  |
+ *  |                                                              ...
+ * ...                                                              |
+ *  +---------------------------------------------------------------+
+ * </pre>
+ */
 namespace RecordingPos {
 
+/// Type id of a recording position counter.
 constexpr const std::int32_t RECORDING_POSITION_TYPE_ID = 100;
+/// Represents a null recording id when not found.
 constexpr const std::int64_t NULL_RECORDING_ID = aeron::NULL_VALUE;
 
 #pragma pack(push)
@@ -36,6 +58,13 @@ struct RecordingPosKeyDefn
 };
 #pragma pack(pop)
 
+/**
+ * Find the active counter id for a stream based on the recording id.
+ *
+ * @param countersReader to search within.
+ * @param recordingId    for the active recording.
+ * @return the counter id if found otherwise #NULL_COUNTER_ID.
+ */
 inline static std::int32_t findCounterIdByRecording(CountersReader& countersReader, std::int64_t recordingId)
 {
     AtomicBuffer buffer = countersReader.metaDataBuffer();
@@ -59,6 +88,13 @@ inline static std::int32_t findCounterIdByRecording(CountersReader& countersRead
     return CountersReader::NULL_COUNTER_ID;
 }
 
+/**
+ * Find the active counter id for a stream based on the session id.
+ *
+ * @param countersReader to search within.
+ * @param sessionId      for the active recording.
+ * @return the counter id if found otherwise #NULL_COUNTER_ID.
+ */
 inline static std::int32_t findCounterIdBySession(CountersReader& countersReader, std::int32_t sessionId)
 {
     AtomicBuffer buffer = countersReader.metaDataBuffer();
@@ -82,6 +118,13 @@ inline static std::int32_t findCounterIdBySession(CountersReader& countersReader
     return CountersReader::NULL_COUNTER_ID;
 }
 
+/**
+ * Get the recording id for a given counter id.
+ *
+ * @param countersReader to search within.
+ * @param counterId      for the active recording.
+ * @return the counter id if found otherwise {#NULL_RECORDING_ID.
+ */
 inline static std::int64_t getRecordingId(CountersReader& countersReader, std::int32_t counterId)
 {
     AtomicBuffer buffer = countersReader.metaDataBuffer();
@@ -100,6 +143,13 @@ inline static std::int64_t getRecordingId(CountersReader& countersReader, std::i
     return CountersReader::NULL_COUNTER_ID;
 }
 
+/**
+ * Get the Image#sourceIdentity for the recording.
+ *
+ * @param countersReader to search within.
+ * @param counterId      for the active recording.
+ * @return Image#sourceIdentity for the recording or null if not found.
+ */
 inline static std::string getSourceIdentity(CountersReader& countersReader, std::int32_t counterId)
 {
     AtomicBuffer buffer = countersReader.metaDataBuffer();
@@ -120,6 +170,14 @@ inline static std::string getSourceIdentity(CountersReader& countersReader, std:
     return "";
 }
 
+/**
+ * Is the recording counter still active.
+ *
+ * @param countersReader to search within.
+ * @param counterId      to search for.
+ * @param recordingId    to confirm it is still the same value.
+ * @return true if the counter is still active otherwise false.
+ */
 inline static bool isActive(CountersReader& countersReader, std::int32_t counterId, std::int64_t recordingId)
 {
     AtomicBuffer buffer = countersReader.metaDataBuffer();

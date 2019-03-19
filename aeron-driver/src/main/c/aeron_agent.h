@@ -42,6 +42,23 @@ typedef struct aeron_idle_strategy_stct
 }
 aeron_idle_strategy_t;
 
+#define AERON_IDLE_STRATEGY_BACKOFF_MAX_SPINS (10)
+#define AERON_IDLE_STRATEGY_BACKOFF_MAX_YIELDS (20)
+#define AERON_IDLE_STRATEGY_BACKOFF_MIN_PARK_PERIOD_NS (1000)
+#define AERON_IDLE_STRATEGY_BACKOFF_MAX_PARK_PERIOD_NS (1 * 1000 * 1000)
+
+void aeron_idle_strategy_sleeping_idle(void *state, int work_count);
+void aeron_idle_strategy_yielding_idle(void *state, int work_count);
+void aeron_idle_strategy_busy_spinning_idle(void *state, int work_count);
+void aeron_idle_strategy_noop_idle(void *state, int work_count);
+
+void aeron_idle_strategy_backoff_idle(void *state, int work_count);
+
+int aeron_idle_strategy_backoff_state_init(
+    void **state, uint64_t max_spins, uint64_t max_yields, uint64_t min_park_period_ns, uint64_t max_park_period_ns);
+
+int aeron_idle_strategy_init_null(void **state, const char *env_var, const char *load_args);
+
 typedef struct aeron_agent_runner_stct
 {
     const char *role_name;
@@ -60,7 +77,9 @@ aeron_agent_runner_t;
 
 aeron_idle_strategy_func_t aeron_idle_strategy_load(
     const char *idle_strategy_name,
-    void **idle_strategy_state);
+    void **idle_strategy_state,
+    const char *env_var,
+    const char *load_args);
 
 aeron_agent_on_start_func_t aeron_agent_on_start_load(const char *name);
 

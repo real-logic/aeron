@@ -129,14 +129,23 @@ typedef struct aeron_driver_context_stct
 
     aeron_idle_strategy_func_t conductor_idle_strategy_func;
     void *conductor_idle_strategy_state;
+    char *conductor_idle_strategy_init_args;
+
     aeron_idle_strategy_func_t shared_idle_strategy_func;
     void *shared_idle_strategy_state;
+    char *shared_idle_strategy_init_args;
+
     aeron_idle_strategy_func_t shared_network_idle_strategy_func;
     void *shared_network_idle_strategy_state;
+    char *shared_network_idle_strategy_init_args;
+
     aeron_idle_strategy_func_t sender_idle_strategy_func;
     void *sender_idle_strategy_state;
+    char *sender_idle_strategy_init_args;
+
     aeron_idle_strategy_func_t receiver_idle_strategy_func;
     void *receiver_idle_strategy_state;
+    char *receiver_idle_strategy_init_args;
 
     aeron_usable_fs_space_func_t usable_fs_space_func;
     aeron_map_raw_log_func_t map_raw_log_func;

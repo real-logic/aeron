@@ -22,24 +22,51 @@
 #include <string.h>
 #include <stdio.h>
 #include <errno.h>
+#include <stdlib.h>
 #include "concurrent/aeron_thread.h"
 #include "aeron_agent.h"
 #include "aeron_alloc.h"
 #include "aeron_driver_context.h"
 #include "util/aeron_error.h"
 #include "util/aeron_dlopen.h"
+#include "util/aeron_parse_util.h"
 
-static void aeron_idle_strategy_sleeping_idle(void *state, int work_count)
+void aeron_idle_strategy_sleeping_idle(void *state, int work_count)
 {
+    uint64_t *duration = (uint64_t *)state;
+
     if (work_count > 0)
     {
         return;
     }
 
-    aeron_nano_sleep(1);
+    aeron_nano_sleep(*duration);
 }
 
-static void aeron_idle_strategy_yielding_idle(void *state, int work_count)
+int aeron_idle_strategy_sleeping_init_args(void **state, const char *env_var, const char *init_args)
+{
+    if (aeron_alloc((void **)state, sizeof(uint64_t)) < 0)
+    {
+        int err_code = errno;
+
+        aeron_set_err(err_code, "%s:%d: %s", __FILE__, __LINE__, strerror(err_code));
+        return -1;
+    }
+
+    uint64_t *duration = (uint64_t *)*state;
+    if (NULL == init_args)
+    {
+        *duration = 1;
+    }
+    else
+    {
+        return aeron_parse_duration_ns(init_args, duration);
+    }
+
+    return 0;
+}
+
+void aeron_idle_strategy_yielding_idle(void *state, int work_count)
 {
     if (work_count > 0)
     {
@@ -49,7 +76,7 @@ static void aeron_idle_strategy_yielding_idle(void *state, int work_count)
     sched_yield();
 }
 
-static void aeron_idle_strategy_busy_spinning_idle(void *state, int work_count)
+void aeron_idle_strategy_busy_spinning_idle(void *state, int work_count)
 {
     if (work_count > 0)
     {
@@ -59,11 +86,173 @@ static void aeron_idle_strategy_busy_spinning_idle(void *state, int work_count)
     proc_yield();
 }
 
-static void aeron_idle_strategy_noop_idle(void *state, int work_count)
+void aeron_idle_strategy_noop_idle(void *state, int work_count)
 {
 }
 
-static int aeron_idle_strategy_init_null(void **state)
+#define AERON_IDLE_STRATEGY_BACKOFF_STATE_NOT_IDLE 0
+#define AERON_IDLE_STRATEGY_BACKOFF_STATE_SPINNING 1
+#define AERON_IDLE_STRATEGY_BACKOFF_STATE_YIELDING 2
+#define AERON_IDLE_STRATEGY_BACKOFF_STATE_PARKING 3
+
+typedef struct aeron_idle_strategy_backoff_state_stct
+{
+    uint8_t pre_pad[AERON_CACHE_LINE_LENGTH * 2];
+    uint64_t max_spins;
+    uint64_t max_yields;
+    uint64_t min_park_period_ns;
+    uint64_t max_park_period_ns;
+    uint64_t spins;
+    uint64_t yields;
+    uint64_t park_period_ns;
+    uint8_t state;
+    uint8_t post_pad[AERON_CACHE_LINE_LENGTH * 2];
+}
+aeron_idle_strategy_backoff_state_t;
+
+void aeron_idle_strategy_backoff_idle(void *state, int work_count)
+{
+    aeron_idle_strategy_backoff_state_t *backoff_state = (aeron_idle_strategy_backoff_state_t *)state;
+
+    if (work_count > 0)
+    {
+        backoff_state->spins = 0;
+        backoff_state->yields = 0;
+        backoff_state->park_period_ns = backoff_state->min_park_period_ns;
+        backoff_state->state = AERON_IDLE_STRATEGY_BACKOFF_STATE_NOT_IDLE;
+    }
+    else
+    {
+        switch (backoff_state->state)
+        {
+            case AERON_IDLE_STRATEGY_BACKOFF_STATE_NOT_IDLE:
+                backoff_state->state = AERON_IDLE_STRATEGY_BACKOFF_STATE_SPINNING;
+                backoff_state->spins++;
+
+                break;
+
+            case AERON_IDLE_STRATEGY_BACKOFF_STATE_SPINNING:
+                proc_yield();
+                if (++backoff_state->spins > backoff_state->max_spins)
+                {
+                    backoff_state->state = AERON_IDLE_STRATEGY_BACKOFF_STATE_YIELDING;
+                    backoff_state->yields = 0;
+                }
+                break;
+
+            case AERON_IDLE_STRATEGY_BACKOFF_STATE_YIELDING:
+                if (++backoff_state->yields > backoff_state->max_yields)
+                {
+                    backoff_state->state = AERON_IDLE_STRATEGY_BACKOFF_STATE_PARKING;
+                    backoff_state->park_period_ns = backoff_state->min_park_period_ns;
+                }
+                else
+                {
+                    sched_yield();
+                }
+                break;
+
+            case AERON_IDLE_STRATEGY_BACKOFF_STATE_PARKING:
+            default:
+                aeron_nano_sleep(backoff_state->park_period_ns);
+                backoff_state->park_period_ns =
+                    ((backoff_state->park_period_ns << 1) < backoff_state->max_park_period_ns) ?
+                    backoff_state->park_period_ns << 1 : backoff_state->max_park_period_ns;
+                break;
+        }
+    }
+}
+
+int aeron_idle_strategy_backoff_state_init(
+    void **state, uint64_t max_spins, uint64_t max_yields, uint64_t min_park_period_ns, uint64_t max_park_period_ns)
+{
+    if (aeron_alloc((void **)state, sizeof(aeron_idle_strategy_backoff_state_t)) < 0)
+    {
+        int err_code = errno;
+
+        aeron_set_err(err_code, "%s:%d: %s", __FILE__, __LINE__, strerror(err_code));
+        return -1;
+    }
+
+    aeron_idle_strategy_backoff_state_t *backoff_state = (aeron_idle_strategy_backoff_state_t *)*state;
+
+    backoff_state->max_spins = max_spins;
+    backoff_state->max_yields = max_yields;
+    backoff_state->min_park_period_ns = min_park_period_ns;
+    backoff_state->max_park_period_ns = max_park_period_ns;
+    backoff_state->spins = 0;
+    backoff_state->yields = 0;
+    backoff_state->park_period_ns = backoff_state->min_park_period_ns;
+
+    return 0;
+}
+
+static int aeron_idle_strategy_backoff_state_init_args(void **state, const char *env_var, const char *init_args)
+{
+    if (NULL == init_args)
+    {
+        return aeron_idle_strategy_backoff_state_init(
+            state,
+            AERON_IDLE_STRATEGY_BACKOFF_MAX_SPINS,
+            AERON_IDLE_STRATEGY_BACKOFF_MAX_YIELDS,
+            AERON_IDLE_STRATEGY_BACKOFF_MIN_PARK_PERIOD_NS,
+            AERON_IDLE_STRATEGY_BACKOFF_MAX_PARK_PERIOD_NS);
+    }
+
+    char spins_str[17], yields_str[17], min_park_str[17], max_park_str[17];
+
+    int matches = sscanf(
+        init_args,
+        "%16[,.0-9]-%16[,.0-9]-%16[,.0-9mus]-%16[,.0-9mus]",
+        spins_str,
+        yields_str,
+        min_park_str,
+        max_park_str);
+
+    if (4 != matches)
+    {
+        aeron_set_err(EINVAL, "%s:%d: %s", __FILE__, __LINE__, "init args malformed");
+        return -1;
+    }
+
+    errno = 0;
+    uint64_t max_spins = strtoull(spins_str, NULL, 10);
+    if (0 == max_spins && 0 != errno)
+    {
+        int err_code = errno;
+
+        aeron_set_err(err_code, "%s:%d: %s", __FILE__, __LINE__, "max spins not parseable");
+        return -1;
+    }
+
+    errno = 0;
+    uint64_t max_yields = strtoull(yields_str, NULL, 10);
+    if (0 == max_yields && 0 != errno)
+    {
+        int err_code = errno;
+
+        aeron_set_err(err_code, "%s:%d: %s", __FILE__, __LINE__, "max yields not parseable");
+        return -1;
+    }
+
+    uint64_t min_park_ns;
+    if (aeron_parse_duration_ns(min_park_str, &min_park_ns) < 0)
+    {
+        aeron_set_err(EINVAL, "%s:%d: %s", __FILE__, __LINE__, "min park period ns not parseable");
+        return -1;
+    }
+
+    uint64_t max_park_ns;
+    if (aeron_parse_duration_ns(max_park_str, &max_park_ns) < 0)
+    {
+        aeron_set_err(EINVAL, "%s:%d: %s", __FILE__, __LINE__, "max park period ns not parseable");
+        return -1;
+    }
+
+    return aeron_idle_strategy_backoff_state_init(state, max_spins, max_yields, min_park_ns, max_park_ns);
+}
+
+int aeron_idle_strategy_init_null(void **state, const char *env_var, const char *init_args)
 {
     *state = NULL;
     return 0;
@@ -72,7 +261,7 @@ static int aeron_idle_strategy_init_null(void **state)
 aeron_idle_strategy_t aeron_idle_strategy_sleeping =
     {
         aeron_idle_strategy_sleeping_idle,
-        aeron_idle_strategy_init_null
+        aeron_idle_strategy_sleeping_init_args
     };
 
 aeron_idle_strategy_t aeron_idle_strategy_yielding =
@@ -93,9 +282,17 @@ aeron_idle_strategy_t aeron_idle_strategy_noop =
         aeron_idle_strategy_init_null
     };
 
+aeron_idle_strategy_t aeron_idle_strategy_backoff =
+    {
+        aeron_idle_strategy_backoff_idle,
+        aeron_idle_strategy_backoff_state_init_args
+    };
+
 aeron_idle_strategy_func_t aeron_idle_strategy_load(
     const char *idle_strategy_name,
-    void **idle_strategy_state)
+    void **idle_strategy_state,
+    const char *env_var,
+    const char *init_args)
 {
     char idle_func_name[AERON_MAX_PATH];
     aeron_idle_strategy_func_t idle_func = NULL;
@@ -112,19 +309,23 @@ aeron_idle_strategy_func_t aeron_idle_strategy_load(
 
     if (strncmp(idle_strategy_name, "sleeping", sizeof("sleeping")) == 0)
     {
-        idle_func = aeron_idle_strategy_sleeping_idle;
+        return aeron_idle_strategy_load("aeron_idle_strategy_sleeping", idle_strategy_state, env_var, init_args);
     }
     else if (strncmp(idle_strategy_name, "yielding", sizeof("yielding")) == 0)
     {
-        idle_func = aeron_idle_strategy_yielding_idle;
+        return aeron_idle_strategy_load("aeron_idle_strategy_yielding", idle_strategy_state, env_var, init_args);
     }
     else if (strncmp(idle_strategy_name, "spinning", sizeof("spinning")) == 0)
     {
-        idle_func = aeron_idle_strategy_busy_spinning_idle;
+        return aeron_idle_strategy_load("aeron_idle_strategy_busy_spinning", idle_strategy_state, env_var, init_args);
     }
     else if (strncmp(idle_strategy_name, "noop", sizeof("noop")) == 0)
     {
-        idle_func = aeron_idle_strategy_noop_idle;
+        return aeron_idle_strategy_load("aeron_idle_strategy_noop", idle_strategy_state, env_var, init_args);
+    }
+    else if (strncmp(idle_strategy_name, "backoff", sizeof("backoff")) == 0)
+    {
+        return aeron_idle_strategy_load("aeron_idle_strategy_backoff", idle_strategy_state, env_var, init_args);
     }
     else
     {
@@ -140,7 +341,7 @@ aeron_idle_strategy_func_t aeron_idle_strategy_load(
         idle_func = idle_strat->idle;
         idle_init_func = idle_strat->init;
 
-        if (idle_init_func(&idle_state) < 0)
+        if (idle_init_func(&idle_state, env_var, init_args) < 0)
         {
             return NULL;
         }
@@ -302,6 +503,7 @@ int aeron_agent_close(aeron_agent_runner_t *runner)
     }
 
     aeron_free((char *)runner->role_name);
+    aeron_free(runner->idle_strategy_state);
 
     if (NULL != runner->on_close)
     {

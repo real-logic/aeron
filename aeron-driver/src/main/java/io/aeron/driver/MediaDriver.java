@@ -538,6 +538,7 @@ public final class MediaDriver implements AutoCloseable
                 LogBufferDescriptor.checkTermLength(publicationTermBufferLength);
                 LogBufferDescriptor.checkTermLength(ipcTermBufferLength);
                 validateInitialWindowLength(initialWindowLength, mtuLength);
+                validateUnblockTimeout(publicationUnblockTimeoutNs, clientLivenessTimeoutNs, timerIntervalNs);
 
                 cncByteBuffer = mapNewFile(
                     cncFile(),

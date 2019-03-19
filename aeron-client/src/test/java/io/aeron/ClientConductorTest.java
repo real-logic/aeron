@@ -118,9 +118,9 @@ public class ClientConductorTest
             .errorHandler(mockClientErrorHandler)
             .availableImageHandler(mockAvailableImageHandler)
             .unavailableImageHandler(mockUnavailableImageHandler)
-            .keepAliveInterval(KEEP_ALIVE_INTERVAL)
+            .keepAliveIntervalNs(KEEP_ALIVE_INTERVAL)
             .driverTimeoutMs(AWAIT_TIMEOUT)
-            .interServiceTimeout(TimeUnit.MILLISECONDS.toNanos(INTER_SERVICE_TIMEOUT_MS));
+            .interServiceTimeoutNs(TimeUnit.MILLISECONDS.toNanos(INTER_SERVICE_TIMEOUT_MS));
 
         ctx.countersValuesBuffer(counterValuesBuffer);
 

@@ -594,25 +594,60 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->nano_clock = aeron_nano_clock;
     _context->epoch_clock = aeron_epoch_clock;
 
-    _context->conductor_idle_strategy_func = aeron_idle_strategy_load(
-        AERON_CONFIG_GETENV_OR_DEFAULT(AERON_CONDUCTOR_IDLE_STRATEGY_ENV_VAR, "yielding"),
-        &_context->conductor_idle_strategy_state);
+    _context->conductor_idle_strategy_init_args =
+        AERON_CONFIG_GETENV_OR_DEFAULT(AERON_CONDUCTOR_IDLE_STRATEGY_INIT_ARGS_ENV_VAR, NULL);
+    if ((_context->conductor_idle_strategy_func = aeron_idle_strategy_load(
+        AERON_CONFIG_GETENV_OR_DEFAULT(AERON_CONDUCTOR_IDLE_STRATEGY_ENV_VAR, "backoff"),
+        &_context->conductor_idle_strategy_state,
+        AERON_CONDUCTOR_IDLE_STRATEGY_ENV_VAR,
+        _context->conductor_idle_strategy_init_args)) == NULL)
+    {
+        return -1;
+    }
 
-    _context->shared_idle_strategy_func = aeron_idle_strategy_load(
-        AERON_CONFIG_GETENV_OR_DEFAULT(AERON_SHARED_IDLE_STRATEGY_ENV_VAR, "yielding"),
-        &_context->shared_idle_strategy_state);
+    _context->shared_idle_strategy_init_args =
+        AERON_CONFIG_GETENV_OR_DEFAULT(AERON_SHARED_IDLE_STRATEGY_ENV_INIT_ARGS_VAR, NULL);
+    if ((_context->shared_idle_strategy_func = aeron_idle_strategy_load(
+        AERON_CONFIG_GETENV_OR_DEFAULT(AERON_SHARED_IDLE_STRATEGY_ENV_VAR, "backoff"),
+        &_context->shared_idle_strategy_state,
+        AERON_SHARED_IDLE_STRATEGY_ENV_VAR,
+        _context->shared_idle_strategy_init_args)) == NULL)
+    {
+        return -1;
+    }
 
-    _context->shared_network_idle_strategy_func = aeron_idle_strategy_load(
-        AERON_CONFIG_GETENV_OR_DEFAULT(AERON_SHAREDNETWORK_IDLE_STRATEGY_ENV_VAR, "yielding"),
-        &_context->shared_network_idle_strategy_state);
+    _context->shared_network_idle_strategy_init_args =
+        AERON_CONFIG_GETENV_OR_DEFAULT(AERON_SHAREDNETWORK_IDLE_STRATEGY_INIT_ARGS_ENV_VAR, NULL);
+    if ((_context->shared_network_idle_strategy_func = aeron_idle_strategy_load(
+        AERON_CONFIG_GETENV_OR_DEFAULT(AERON_SHAREDNETWORK_IDLE_STRATEGY_ENV_VAR, "backoff"),
+        &_context->shared_network_idle_strategy_state,
+        AERON_SHARED_IDLE_STRATEGY_ENV_VAR,
+        _context->shared_network_idle_strategy_init_args)) == NULL)
+    {
+        return -1;
+    }
 
-    _context->sender_idle_strategy_func = aeron_idle_strategy_load(
-        AERON_CONFIG_GETENV_OR_DEFAULT(AERON_SENDER_IDLE_STRATEGY_ENV_VAR, "noop"),
-        &_context->sender_idle_strategy_state);
+    _context->sender_idle_strategy_init_args =
+        AERON_CONFIG_GETENV_OR_DEFAULT(AERON_SENDER_IDLE_STRATEGY_INIT_ARGS_ENV_VAR, NULL);
+    if ((_context->sender_idle_strategy_func = aeron_idle_strategy_load(
+        AERON_CONFIG_GETENV_OR_DEFAULT(AERON_SENDER_IDLE_STRATEGY_ENV_VAR, "backoff"),
+        &_context->sender_idle_strategy_state,
+        AERON_SENDER_IDLE_STRATEGY_ENV_VAR,
+        _context->sender_idle_strategy_init_args)) == NULL)
+    {
+        return -1;
+    }
 
-    _context->receiver_idle_strategy_func = aeron_idle_strategy_load(
-        AERON_CONFIG_GETENV_OR_DEFAULT(AERON_RECEIVER_IDLE_STRATEGY_ENV_VAR, "noop"),
-        &_context->receiver_idle_strategy_state);
+    _context->receiver_idle_strategy_init_args =
+        AERON_CONFIG_GETENV_OR_DEFAULT(AERON_RECEIVER_IDLE_STRATEGY_INIT_ARGS_ENV_VAR, NULL);
+    if ((_context->receiver_idle_strategy_func = aeron_idle_strategy_load(
+        AERON_CONFIG_GETENV_OR_DEFAULT(AERON_RECEIVER_IDLE_STRATEGY_ENV_VAR, "backoff"),
+        &_context->receiver_idle_strategy_state,
+        AERON_RECEIVER_IDLE_STRATEGY_ENV_VAR,
+        _context->receiver_idle_strategy_init_args)) == NULL)
+    {
+        return -1;
+    }
 
     _context->usable_fs_space_func = _context->perform_storage_checks ?
         aeron_usable_fs_space : aeron_usable_fs_space_disabled;

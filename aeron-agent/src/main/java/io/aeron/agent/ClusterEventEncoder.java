@@ -18,6 +18,7 @@ package io.aeron.agent;
 import io.aeron.cluster.ConsensusModule;
 import io.aeron.cluster.Election;
 import io.aeron.cluster.service.Cluster;
+import org.agrona.BitUtil;
 import org.agrona.MutableDirectBuffer;
 
 final class ClusterEventEncoder
@@ -29,7 +30,8 @@ final class ClusterEventEncoder
     {
         final int timestampOffset = encodedBuffer.putStringAscii(0, newState.name());
         encodedBuffer.putLong(timestampOffset, nowMs);
-        return timestampOffset + Long.BYTES;
+
+        return timestampOffset + BitUtil.SIZE_OF_LONG;
     }
 
     static int newLeadershipTerm(
@@ -43,17 +45,17 @@ final class ClusterEventEncoder
     {
         int offset = 0;
         encodedBuffer.putLong(0, logLeadershipTermId);
-        offset += Long.BYTES;
+        offset += BitUtil.SIZE_OF_LONG;
         encodedBuffer.putLong(offset, logPosition);
-        offset += Long.BYTES;
+        offset += BitUtil.SIZE_OF_LONG;
         encodedBuffer.putLong(offset, leadershipTermId);
-        offset += Long.BYTES;
+        offset += BitUtil.SIZE_OF_LONG;
         encodedBuffer.putLong(offset, maxLogPosition);
-        offset += Long.BYTES;
+        offset += BitUtil.SIZE_OF_LONG;
         encodedBuffer.putInt(offset, leaderMemberId);
-        offset += Integer.BYTES;
+        offset += BitUtil.SIZE_OF_INT;
         encodedBuffer.putInt(offset, logSessionId);
-        return offset + Integer.BYTES;
+        return offset + BitUtil.SIZE_OF_INT;
     }
 
     static int stateChange(final MutableDirectBuffer encodedBuffer, final ConsensusModule.State state)

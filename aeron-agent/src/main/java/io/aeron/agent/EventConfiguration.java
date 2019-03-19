@@ -168,6 +168,7 @@ public class EventConfiguration
         final Function<Integer, ClusterEventCode> eventCodeById = ClusterEventCode::get;
         final Function<String, ClusterEventCode> eventCodeByName = ClusterEventCode::valueOf;
         final EnumSet<ClusterEventCode> allEventsSet = EnumSet.allOf(ClusterEventCode.class);
+
         return parseEventCodes(enabledClusterEventCodes, eventCodeById, eventCodeByName, allEventsSet);
     }
 
@@ -187,6 +188,7 @@ public class EventConfiguration
         final Function<Integer, ArchiveEventCode> eventCodeById = ArchiveEventCode::get;
         final Function<String, ArchiveEventCode> eventCodeByName = ArchiveEventCode::valueOf;
         final EnumSet<ArchiveEventCode> allEventsSet = EnumSet.allOf(ArchiveEventCode.class);
+
         return parseEventCodes(enabledArchiveEventCodes, eventCodeById, eventCodeByName, allEventsSet);
     }
 
@@ -256,8 +258,10 @@ public class EventConfiguration
     }
 
     private static <T extends Enum<T>> Set<T> parseEventCodes(
-        final String enabledEventCodes, final Function<Integer, T> eventCodeById,
-        final Function<String, T> eventCodeByName, final EnumSet<T> allEventsSet)
+        final String enabledEventCodes,
+        final Function<Integer, T> eventCodeById,
+        final Function<String, T> eventCodeByName,
+        final EnumSet<T> allEventsSet)
     {
         final Set<T> eventCodeSet = new HashSet<>();
         final String[] codeIds = enabledEventCodes.split(",");

@@ -89,5 +89,4 @@ public enum ArchiveEventCode implements EventCode
     {
         return ((mask & code.tagBit()) == code.tagBit());
     }
-
 }

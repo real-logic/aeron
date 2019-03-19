@@ -37,6 +37,7 @@ public final class ArchiveEventLogger
     public void logControlRequest(final DirectBuffer buffer, final int offset, final int length)
     {
         headerDecoder.wrap(buffer, offset);
+
         final int templateId = headerDecoder.templateId();
         switch (templateId)
         {
@@ -107,11 +108,12 @@ public final class ArchiveEventLogger
             default:
                 throw new IllegalArgumentException("Unknown template id: " + templateId);
         }
-
     }
 
     private void dispatchIfEnabled(
-        final DirectBuffer buffer, final int offset, final int length,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length,
         final ArchiveEventCode eventCode)
     {
         if (ArchiveEventCode.isEnabled(eventCode, ENABLED_EVENT_CODES))

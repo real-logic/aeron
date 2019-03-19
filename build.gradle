@@ -305,9 +305,7 @@ project(':aeron-agent') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
     dependencies {
-        compile project(':aeron-client')
         compile project(':aeron-cluster')
-        compile project(':aeron-driver')
         compile "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
     }
 
@@ -412,7 +410,6 @@ project(':aeron-archive') {
     }
 
     dependencies {
-        compile project(':aeron-client')
         compile project(':aeron-driver')
         compile files('build/classes/java/generated')
         codecGeneration "uk.co.real-logic:sbe-tool:${sbeVersion}"
@@ -528,8 +525,6 @@ project(':aeron-cluster') {
     }
 
     dependencies {
-        compile project(':aeron-client')
-        compile project(':aeron-driver')
         compile project(':aeron-archive')
         compile files('build/classes/java/generated')
         codecGeneration "uk.co.real-logic:sbe-tool:${sbeVersion}"
@@ -630,8 +625,6 @@ project(':aeron-samples') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
     dependencies {
-        compile project(':aeron-client')
-        compile project(':aeron-driver')
         compile project(':aeron-archive')
         compile "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
     }
@@ -689,8 +682,6 @@ project(':aeron-samples') {
 
 project(':aeron-system-tests') {
     dependencies {
-        compile project(':aeron-client')
-        compile project(':aeron-driver')
         compile project(':aeron-archive')
         testCompile project(path: ':aeron-client', configuration: 'tests')
         testCompile project(path: ':aeron-archive', configuration: 'tests')

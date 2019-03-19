@@ -34,10 +34,10 @@ import static net.bytebuddy.asm.Advice.to;
 import static net.bytebuddy.matcher.ElementMatchers.*;
 
 /**
- * A Java agent which when attached to a JVM will weave byte code to intercept events as defined by {@link DriverEventCode}.
- * These events are recorded to an in-memory {@link org.agrona.concurrent.ringbuffer.RingBuffer} which is consumed
- * and appended asynchronous to a log as defined by the class {@link #READER_CLASSNAME_PROP_NAME} which defaults to
- * {@link EventLogReaderAgent}.
+ * A Java agent which when attached to a JVM will weave byte code to intercept events as defined by
+ * {@link DriverEventCode}. Events are recorded to an in-memory {@link org.agrona.concurrent.ringbuffer.RingBuffer}
+ * which is consumed and appended asynchronous to a log as defined by the class {@link #READER_CLASSNAME_PROP_NAME}
+ * which defaults to {@link EventLogReaderAgent}.
  */
 @SuppressWarnings("unused")
 public class EventLogAgent
@@ -101,7 +101,8 @@ public class EventLogAgent
         }
     };
 
-    private static void agent(final boolean shouldRedefine, final Instrumentation instrumentation)
+    private static void agent(
+        final AgentBuilder.RedefinitionStrategy redefinitionStrategy, final Instrumentation instrumentation)
     {
         if (DriverEventLogger.ENABLED_EVENT_CODES == 0 &&
             ClusterEventLogger.ENABLED_EVENT_CODES == 0 &&
@@ -115,10 +116,12 @@ public class EventLogAgent
         readerAgentRunner = new AgentRunner(
             new SleepingMillisIdleStrategy(SLEEP_PERIOD_MS), Throwable::printStackTrace, null, getReaderAgent());
 
-        AgentBuilder agentBuilder = new AgentBuilder.Default(new ByteBuddy().with(TypeValidation.DISABLED))
+        AgentBuilder agentBuilder = new AgentBuilder.Default(
+            new ByteBuddy().with(TypeValidation.DISABLED))
             .with(LISTENER)
             .disableClassFormatChanges();
-        agentBuilder = addEventsInstrumentation(shouldRedefine, agentBuilder);
+
+        agentBuilder = addEventsInstrumentation(redefinitionStrategy, agentBuilder);
         logTransformer = agentBuilder.installOn(instrumentation);
 
         final Thread thread = new Thread(readerAgentRunner);
@@ -128,11 +131,10 @@ public class EventLogAgent
     }
 
     private static AgentBuilder.Identified.Extendable addEventsInstrumentation(
-        final boolean shouldRedefine, final AgentBuilder agentBuilder)
+        final AgentBuilder.RedefinitionStrategy redefinitionStrategy, final AgentBuilder agentBuilder)
     {
         return agentBuilder
-            .with(shouldRedefine ?
-                AgentBuilder.RedefinitionStrategy.RETRANSFORMATION : AgentBuilder.RedefinitionStrategy.DISABLED)
+            .with(redefinitionStrategy)
             .type(nameEndsWith("DriverConductor"))
             .transform((builder, typeDescription, classLoader, javaModule) ->
                 builder
@@ -186,12 +188,12 @@ public class EventLogAgent
 
     public static void premain(final String agentArgs, final Instrumentation instrumentation)
     {
-        agent(false, instrumentation);
+        agent(AgentBuilder.RedefinitionStrategy.RETRANSFORMATION, instrumentation);
     }
 
     public static void agentmain(final String agentArgs, final Instrumentation instrumentation)
     {
-        agent(true, instrumentation);
+        agent(AgentBuilder.RedefinitionStrategy.DISABLED, instrumentation);
     }
 
     public static void removeTransformer()

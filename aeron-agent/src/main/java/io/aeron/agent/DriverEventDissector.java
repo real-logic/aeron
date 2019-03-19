@@ -99,7 +99,7 @@ public class DriverEventDissector
                 break;
 
             default:
-                builder.append("FRAME_UNKNOWN");
+                builder.append("FRAME_UNKNOWN: ").append(frameType(buffer, frameOffset));
                 break;
         }
     }
@@ -214,8 +214,10 @@ public class DriverEventDissector
     }
 
     public static void dissectAsInvocation(
-        final DriverEventCode code, final MutableDirectBuffer buffer,
-        final int initialOffset, final StringBuilder builder)
+        final DriverEventCode code,
+        final MutableDirectBuffer buffer,
+        final int initialOffset,
+        final StringBuilder builder)
     {
         final int relativeOffset = dissectLogHeader(code, buffer, initialOffset, builder);
         builder.append(": ");

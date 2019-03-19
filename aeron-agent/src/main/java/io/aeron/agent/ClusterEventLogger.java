@@ -52,15 +52,24 @@ public final class ClusterEventLogger
     }
 
     public void logNewLeadershipTerm(
-        final long logLeadershipTermId, final long logPosition, final long leadershipTermId,
-        final long maxLogPosition, final int leaderMemberId, final int logSessionId)
+        final long logLeadershipTermId,
+        final long logPosition,
+        final long leadershipTermId,
+        final long maxLogPosition,
+        final int leaderMemberId,
+        final int logSessionId)
     {
         if (ClusterEventCode.isEnabled(NEW_LEADERSHIP_TERM, ENABLED_EVENT_CODES))
         {
             final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
             final int encodedLength = ClusterEventEncoder.newLeadershipTerm(
-                encodedBuffer, logLeadershipTermId, logPosition, leadershipTermId, maxLogPosition,
-                leaderMemberId, logSessionId);
+                encodedBuffer,
+                logLeadershipTermId,
+                logPosition,
+                leadershipTermId,
+                maxLogPosition,
+                leaderMemberId,
+                logSessionId);
 
             ringBuffer.write(toEventCodeId(NEW_LEADERSHIP_TERM), encodedBuffer, 0, encodedLength);
         }

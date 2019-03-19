@@ -2,27 +2,21 @@ package io.aeron.agent;
 
 import org.agrona.MutableDirectBuffer;
 
-/**
- * Cluster events and codecs for encoding/decoding events recorded to the {@link EventConfiguration#EVENT_RING_BUFFER}.
- */
-public enum ClusterEventCode implements EventCode
+public enum ArchiveEventCode implements EventCode
 {
-    ELECTION_STATE_CHANGE(1, ClusterEventDissector::electionStateChange),
-    NEW_LEADERSHIP_TERM(2, ClusterEventDissector::newLeadershipTerm),
-    STATE_CHANGE(3, ClusterEventDissector::stateChange),
-    ROLE_CHANGE(4, ClusterEventDissector::roleChange);
+    CMD_IN_CONNECT(1, ArchiveEventDissector::connect);
 
-    static final int EVENT_CODE_TYPE = EventCodeType.CLUSTER.getTypeCode();
+    static final int EVENT_CODE_TYPE = EventCodeType.ARCHIVE.getTypeCode();
     private static final int MAX_ID = 63;
-    private static final ClusterEventCode[] EVENT_CODE_BY_ID = new ClusterEventCode[MAX_ID];
+    private static final ArchiveEventCode[] EVENT_CODE_BY_ID = new ArchiveEventCode[MAX_ID];
 
     private final long tagBit;
     private final int id;
-    private final DissectFunction<ClusterEventCode> dissector;
+    private final DissectFunction<ArchiveEventCode> dissector;
 
     static
     {
-        for (final ClusterEventCode code : ClusterEventCode.values())
+        for (final ArchiveEventCode code : ArchiveEventCode.values())
         {
             final int id = code.id();
             if (null != EVENT_CODE_BY_ID[id])
@@ -34,14 +28,14 @@ public enum ClusterEventCode implements EventCode
         }
     }
 
-    ClusterEventCode(final int id, final DissectFunction<ClusterEventCode> dissector)
+    ArchiveEventCode(final int id, final DissectFunction<ArchiveEventCode> dissector)
     {
         this.id = id;
         this.tagBit = 1L << id;
         this.dissector = dissector;
     }
 
-    static ClusterEventCode get(final int eventCodeId)
+    static ArchiveEventCode get(final int eventCodeId)
     {
         return EVENT_CODE_BY_ID[eventCodeId];
     }
@@ -61,8 +55,9 @@ public enum ClusterEventCode implements EventCode
         dissector.dissect(this, buffer, offset, builder);
     }
 
-    public static boolean isEnabled(final ClusterEventCode code, final long mask)
+    public static boolean isEnabled(final ArchiveEventCode code, final long mask)
     {
         return ((mask & code.tagBit()) == code.tagBit());
     }
+
 }

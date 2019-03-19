@@ -99,6 +99,10 @@ public class EventLogReaderAgent implements Agent, MessageHandler
         {
             ClusterEventCode.get(identifier.eventCodeId).decode(buffer, index, builder);
         }
+        else if (ArchiveEventCode.EVENT_CODE_TYPE == identifier.eventCodeTypeId)
+        {
+            ArchiveEventCode.get(identifier.eventCodeId).decode(buffer, index, builder);
+        }
         else
         {
             builder.append("Unknown EventCodeType: ").append(identifier.eventCodeTypeId);

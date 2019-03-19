@@ -103,7 +103,9 @@ public class EventLogAgent
 
     private static void agent(final boolean shouldRedefine, final Instrumentation instrumentation)
     {
-        if (DriverEventLogger.ENABLED_EVENT_CODES == 0 && ClusterEventLogger.ENABLED_EVENT_CODES == 0)
+        if (DriverEventLogger.ENABLED_EVENT_CODES == 0 &&
+            ClusterEventLogger.ENABLED_EVENT_CODES == 0 &&
+            ArchiveEventLogger.ENABLED_EVENT_CODES == 0)
         {
             return;
         }
@@ -176,7 +178,10 @@ public class EventLogAgent
                     .visit(to(ClusterEventInterceptor.NewLeadershipTerm.class).on(named("onNewLeadershipTerm")))
                     .visit(to(ClusterEventInterceptor.StateChange.class).on(named("state")))
                     .visit(to(ClusterEventInterceptor.RoleChange.class).on(named("role")
-                        .and(takesArgument(0, nameEndsWith("Role")))))));
+                        .and(takesArgument(0, nameEndsWith("Role")))))))
+            .type(nameEndsWith("ControlSessionDemuxer"))
+            .transform(((builder, typeDescription, classLoader, module) ->
+                builder.visit(to(ControlRequestInterceptor.OnConnect.class).on(named("onConnect")))));
     }
 
     public static void premain(final String agentArgs, final Instrumentation instrumentation)

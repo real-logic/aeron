@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 
 import static io.aeron.agent.DriverEventCode.*;
 
@@ -55,6 +56,15 @@ public class EventConfiguration
      * </ul>
      */
     public static final String ENABLED_CLUSTER_EVENT_CODES_PROP_NAME = "aeron.event.cluster.log";
+
+    /**
+     * Archive Event tags system property name. This is either:
+     * <ul>
+     * <li>A comma separated list of {@link ArchiveEventCode}s to enable</li>
+     * <li>"all" which enables all the codes</li>
+     * </ul>
+     */
+    public static final String ENABLED_ARCHIVE_EVENT_CODES_PROP_NAME = "aeron.event.archive.log";
 
     public static final Set<DriverEventCode> ADMIN_ONLY_EVENT_CODES = EnumSet.of(
         CMD_IN_ADD_PUBLICATION,
@@ -125,6 +135,11 @@ public class EventConfiguration
         return makeTagBitSet(getEnabledClusterEventCodes(System.getProperty(ENABLED_CLUSTER_EVENT_CODES_PROP_NAME)));
     }
 
+    public static long getEnabledArchiveEventCodes()
+    {
+        return makeTagBitSet(getEnabledArchiveEventCodes(System.getProperty(ENABLED_ARCHIVE_EVENT_CODES_PROP_NAME)));
+    }
+
     static long makeTagBitSet(final Set<? extends EventCode> eventCodes)
     {
         long result = 0;
@@ -150,52 +165,29 @@ public class EventConfiguration
             return EnumSet.noneOf(ClusterEventCode.class);
         }
 
-        final Set<ClusterEventCode> eventCodeSet = new HashSet<>();
-        final String[] codeIds = enabledClusterEventCodes.split(",");
+        final Function<Integer, ClusterEventCode> eventCodeById = ClusterEventCode::get;
+        final Function<String, ClusterEventCode> eventCodeByName = ClusterEventCode::valueOf;
+        final EnumSet<ClusterEventCode> allEventsSet = EnumSet.allOf(ClusterEventCode.class);
+        return parseEventCodes(enabledClusterEventCodes, eventCodeById, eventCodeByName, allEventsSet);
+    }
 
-        for (final String codeId : codeIds)
+    /**
+     * Get the {@link Set} of {@link ArchiveEventCode}s that are enabled for the logger.
+     *
+     * @param enabledArchiveEventCodes that can be "all" or a comma separated list of Event Code ids or names.
+     * @return the {@link Set} of {@link ArchiveEventCode}s that are enabled for the logger.
+     */
+    static Set<ArchiveEventCode> getEnabledArchiveEventCodes(final String enabledArchiveEventCodes)
+    {
+        if (null == enabledArchiveEventCodes || "".equals(enabledArchiveEventCodes))
         {
-            switch (codeId)
-            {
-                case "all":
-                    eventCodeSet.addAll(EnumSet.allOf(ClusterEventCode.class));
-                    break;
-
-                default:
-                {
-                    ClusterEventCode code = null;
-                    try
-                    {
-                        code = ClusterEventCode.valueOf(codeId);
-                    }
-                    catch (final IllegalArgumentException ignore)
-                    {
-                    }
-
-                    if (null == code)
-                    {
-                        try
-                        {
-                            code = ClusterEventCode.get(Integer.parseInt(codeId));
-                        }
-                        catch (final IllegalArgumentException ignore)
-                        {
-                        }
-                    }
-
-                    if (null != code)
-                    {
-                        eventCodeSet.add(code);
-                    }
-                    else
-                    {
-                        System.err.println("unknown event code: " + codeId);
-                    }
-                }
-            }
+            return EnumSet.noneOf(ArchiveEventCode.class);
         }
 
-        return eventCodeSet;
+        final Function<Integer, ArchiveEventCode> eventCodeById = ArchiveEventCode::get;
+        final Function<String, ArchiveEventCode> eventCodeByName = ArchiveEventCode::valueOf;
+        final EnumSet<ArchiveEventCode> allEventsSet = EnumSet.allOf(ArchiveEventCode.class);
+        return parseEventCodes(enabledArchiveEventCodes, eventCodeById, eventCodeByName, allEventsSet);
     }
 
     /**
@@ -256,6 +248,55 @@ public class EventConfiguration
                     {
                         System.err.println("unknown event code: " + codeId);
                     }
+                }
+            }
+        }
+
+        return eventCodeSet;
+    }
+
+    private static <T extends Enum<T>> Set<T> parseEventCodes(
+        final String enabledEventCodes, final Function<Integer, T> eventCodeById,
+        final Function<String, T> eventCodeByName, final EnumSet<T> allEventsSet)
+    {
+        final Set<T> eventCodeSet = new HashSet<>();
+        final String[] codeIds = enabledEventCodes.split(",");
+
+        for (final String codeId : codeIds)
+        {
+            if ("all".equals(codeId))
+            {
+                eventCodeSet.addAll(allEventsSet);
+            }
+            else
+            {
+                T code = null;
+                try
+                {
+                    code = eventCodeByName.apply(codeId);
+                }
+                catch (final IllegalArgumentException ignore)
+                {
+                }
+
+                if (null == code)
+                {
+                    try
+                    {
+                        code = eventCodeById.apply(Integer.parseInt(codeId));
+                    }
+                    catch (final IllegalArgumentException ignore)
+                    {
+                    }
+                }
+
+                if (null != code)
+                {
+                    eventCodeSet.add(code);
+                }
+                else
+                {
+                    System.err.println("unknown event code: " + codeId);
                 }
             }
         }

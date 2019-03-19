@@ -23,7 +23,7 @@ import net.bytebuddy.asm.Advice;
 import static io.aeron.agent.ClusterEventLogger.LOGGER;
 
 /**
- * Intercepts calls in the driver to log the clean up of major resources.
+ * Intercepts calls in the cluster that relate to state change.
  */
 final class ClusterEventInterceptor
 {

@@ -100,12 +100,12 @@ public class LoggingAgentTest
             driverCtx.deleteAeronDirectory();
         }
 
-        assertTrue(MSG_ID_SET.contains(EventCode.CMD_IN_ADD_PUBLICATION.id()));
-        assertTrue(MSG_ID_SET.contains(EventCode.CMD_IN_ADD_SUBSCRIPTION.id()));
-        assertTrue(MSG_ID_SET.contains(EventCode.FRAME_IN.id()));
-        assertTrue(MSG_ID_SET.contains(EventCode.FRAME_OUT.id()));
-        assertTrue(MSG_ID_SET.contains(EventCode.CMD_OUT_AVAILABLE_IMAGE.id()));
-        assertTrue(MSG_ID_SET.contains(EventCode.CMD_IN_CLIENT_CLOSE.id()));
+        assertTrue(MSG_ID_SET.contains(DriverEventCode.CMD_IN_ADD_PUBLICATION.id()));
+        assertTrue(MSG_ID_SET.contains(DriverEventCode.CMD_IN_ADD_SUBSCRIPTION.id()));
+        assertTrue(MSG_ID_SET.contains(DriverEventCode.FRAME_IN.id()));
+        assertTrue(MSG_ID_SET.contains(DriverEventCode.FRAME_OUT.id()));
+        assertTrue(MSG_ID_SET.contains(DriverEventCode.CMD_OUT_AVAILABLE_IMAGE.id()));
+        assertTrue(MSG_ID_SET.contains(DriverEventCode.CMD_IN_CLIENT_CLOSE.id()));
     }
 }
 
@@ -125,7 +125,7 @@ class StubEventLogReaderAgent implements Agent, MessageHandler
     {
         LoggingAgentTest.MSG_ID_SET.add(msgTypeId);
 
-        if (EventCode.CMD_IN_CLIENT_CLOSE.id() == msgTypeId)
+        if (DriverEventCode.CMD_IN_CLIENT_CLOSE.id() == msgTypeId)
         {
             LoggingAgentTest.LATCH.countDown();
         }

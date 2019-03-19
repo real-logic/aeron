@@ -20,7 +20,7 @@ import io.aeron.driver.NetworkPublication;
 import io.aeron.driver.PublicationImage;
 import net.bytebuddy.asm.Advice;
 
-import static io.aeron.agent.EventLogger.LOGGER;
+import static io.aeron.agent.DriverEventLogger.LOGGER;
 
 /**
  * Intercepts calls in the driver to log the clean up of major resources.

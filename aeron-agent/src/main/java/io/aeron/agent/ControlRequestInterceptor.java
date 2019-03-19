@@ -15,22 +15,23 @@
  */
 package io.aeron.agent;
 
-import org.junit.Test;
+import io.aeron.logbuffer.Header;
+import net.bytebuddy.asm.Advice;
+import org.agrona.DirectBuffer;
 
-import java.util.HashSet;
-import java.util.Set;
+import static io.aeron.agent.ArchiveEventLogger.LOGGER;
 
-import static org.junit.Assert.assertTrue;
-
-public class EventCodeTest
+/**
+ * Intercepts requests to the archive.
+ */
+final class ControlRequestInterceptor
 {
-    @Test
-    public void allTagsBitsAreUnique()
+    static class ControlRequest
     {
-        final Set<Long> seenTagBits = new HashSet<>();
-        for (final EventCode code : EventCode.values())
+        @Advice.OnMethodEnter
+        static void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
         {
-            assertTrue(seenTagBits.add(code.tagBit()));
+            LOGGER.logControlRequest(buffer, offset, length);
         }
     }
 }

@@ -16,21 +16,24 @@
 package io.aeron.agent;
 
 /**
- * Describes an event.
+ * Specifies the type of EventCode that can be handled by the logging agent.
  */
-interface EventCode
+public enum EventCodeType
 {
-    /**
-     * Returns the event id
-     *
-     * @return the id
-     */
-    int id();
+    DRIVER(0),
+    ARCHIVE(1),
+    CLUSTER(2),
+    USER(0xFFFF);
 
-    /**
-     * Returns the tag bit
-     *
-     * @return the tag bit
-     */
-    long tagBit();
+    private final int typeCode;
+
+    EventCodeType(final int typeCode)
+    {
+        this.typeCode = typeCode;
+    }
+
+    public int getTypeCode()
+    {
+        return typeCode;
+    }
 }

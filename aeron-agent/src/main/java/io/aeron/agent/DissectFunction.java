@@ -15,22 +15,15 @@
  */
 package io.aeron.agent;
 
-/**
- * Describes an event.
- */
-interface EventCode
-{
-    /**
-     * Returns the event id
-     *
-     * @return the id
-     */
-    int id();
+import org.agrona.MutableDirectBuffer;
 
-    /**
-     * Returns the tag bit
-     *
-     * @return the tag bit
-     */
-    long tagBit();
+/**
+ * Takes an event and serialises it to the supplied {@code StringBuilder}.
+ *
+ * @param <T> the type of the event
+ */
+@FunctionalInterface
+interface DissectFunction<T>
+{
+    void dissect(T event, MutableDirectBuffer buffer, int offset, StringBuilder builder);
 }

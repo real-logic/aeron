@@ -26,36 +26,36 @@ import java.nio.ByteBuffer;
 /**
  * Event logger interface used by interceptors for recording into a {@link RingBuffer}.
  */
-public class EventLogger
+public class DriverEventLogger
 {
     public static final long ENABLED_EVENT_CODES = EventConfiguration.getEnabledEventCodes();
 
     public static final boolean IS_FRAME_IN_ENABLED =
-        (ENABLED_EVENT_CODES & EventCode.FRAME_IN.tagBit()) == EventCode.FRAME_IN.tagBit();
+        (ENABLED_EVENT_CODES & DriverEventCode.FRAME_IN.tagBit()) == DriverEventCode.FRAME_IN.tagBit();
 
     public static final boolean IS_FRAME_OUT_ENABLED =
-        (ENABLED_EVENT_CODES & EventCode.FRAME_OUT.tagBit()) == EventCode.FRAME_OUT.tagBit();
+        (ENABLED_EVENT_CODES & DriverEventCode.FRAME_OUT.tagBit()) == DriverEventCode.FRAME_OUT.tagBit();
 
-    public static final EventLogger LOGGER = new EventLogger(EventConfiguration.EVENT_RING_BUFFER);
+    public static final DriverEventLogger LOGGER = new DriverEventLogger(EventConfiguration.EVENT_RING_BUFFER);
 
     private static final ThreadLocal<MutableDirectBuffer> ENCODING_BUFFER = ThreadLocal.withInitial(
         () -> new UnsafeBuffer(ByteBuffer.allocateDirect(EventConfiguration.MAX_EVENT_LENGTH)));
 
     private final RingBuffer ringBuffer;
 
-    public EventLogger(final RingBuffer ringBuffer)
+    public DriverEventLogger(final RingBuffer ringBuffer)
     {
         this.ringBuffer = ringBuffer;
     }
 
-    public void log(final EventCode code, final DirectBuffer buffer, final int offset, final int length)
+    public void log(final DriverEventCode code, final DirectBuffer buffer, final int offset, final int length)
     {
-        if (EventCode.isEnabled(code, ENABLED_EVENT_CODES))
+        if (DriverEventCode.isEnabled(code, ENABLED_EVENT_CODES))
         {
             final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
-            final int encodedLength = EventEncoder.encode(encodedBuffer, buffer, offset, length);
+            final int encodedLength = DriverEventEncoder.encode(encodedBuffer, buffer, offset, length);
 
-            ringBuffer.write(code.id(), encodedBuffer, 0, encodedLength);
+            ringBuffer.write(toEventCodeId(code), encodedBuffer, 0, encodedLength);
         }
     }
 
@@ -65,9 +65,9 @@ public class EventLogger
         if (IS_FRAME_IN_ENABLED)
         {
             final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
-            final int encodedLength = EventEncoder.encode(encodedBuffer, buffer, offset, length, dstAddress);
+            final int encodedLength = DriverEventEncoder.encode(encodedBuffer, buffer, offset, length, dstAddress);
 
-            ringBuffer.write(EventCode.FRAME_IN.id(), encodedBuffer, 0, encodedLength);
+            ringBuffer.write(toEventCodeId(DriverEventCode.FRAME_IN), encodedBuffer, 0, encodedLength);
         }
     }
 
@@ -76,53 +76,58 @@ public class EventLogger
         if (IS_FRAME_OUT_ENABLED)
         {
             final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
-            final int encodedLength = EventEncoder.encode(
+            final int encodedLength = DriverEventEncoder.encode(
                 encodedBuffer, buffer, buffer.position(), buffer.remaining(), dstAddress);
 
-            ringBuffer.write(EventCode.FRAME_OUT.id(), encodedBuffer, 0, encodedLength);
+            ringBuffer.write(toEventCodeId(DriverEventCode.FRAME_OUT), encodedBuffer, 0, encodedLength);
         }
     }
 
     public void logPublicationRemoval(final CharSequence uri, final int sessionId, final int streamId)
     {
-        if (EventCode.isEnabled(EventCode.REMOVE_PUBLICATION_CLEANUP, ENABLED_EVENT_CODES))
+        if (DriverEventCode.isEnabled(DriverEventCode.REMOVE_PUBLICATION_CLEANUP, ENABLED_EVENT_CODES))
         {
             final String msg = uri + " " + sessionId + ":" + streamId;
-            logString(EventCode.REMOVE_PUBLICATION_CLEANUP, msg);
+            logString(DriverEventCode.REMOVE_PUBLICATION_CLEANUP, msg);
         }
     }
 
     public void logSubscriptionRemoval(final CharSequence uri, final int streamId, final long id)
     {
-        if (EventCode.isEnabled(EventCode.REMOVE_SUBSCRIPTION_CLEANUP, ENABLED_EVENT_CODES))
+        if (DriverEventCode.isEnabled(DriverEventCode.REMOVE_SUBSCRIPTION_CLEANUP, ENABLED_EVENT_CODES))
         {
             final String msg = uri + " " + streamId + " [" + id + "]";
-            logString(EventCode.REMOVE_SUBSCRIPTION_CLEANUP, msg);
+            logString(DriverEventCode.REMOVE_SUBSCRIPTION_CLEANUP, msg);
         }
     }
 
     public void logImageRemoval(final CharSequence uri, final int sessionId, final int streamId, final long id)
     {
-        if (EventCode.isEnabled(EventCode.REMOVE_IMAGE_CLEANUP, ENABLED_EVENT_CODES))
+        if (DriverEventCode.isEnabled(DriverEventCode.REMOVE_IMAGE_CLEANUP, ENABLED_EVENT_CODES))
         {
             final String msg = uri + " " + sessionId + ":" + streamId + " [" + id + "]";
-            logString(EventCode.REMOVE_IMAGE_CLEANUP, msg);
+            logString(DriverEventCode.REMOVE_IMAGE_CLEANUP, msg);
         }
     }
 
-    public void logChannelCreated(final EventCode code, final String description)
+    public void logChannelCreated(final DriverEventCode code, final String description)
     {
-        if (EventCode.isEnabled(code, ENABLED_EVENT_CODES))
+        if (DriverEventCode.isEnabled(code, ENABLED_EVENT_CODES))
         {
             logString(code, description);
         }
     }
 
-    private void logString(final EventCode code, final String value)
+    private void logString(final DriverEventCode code, final String value)
     {
         final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
-        final int encodingLength = EventEncoder.encode(encodedBuffer, value);
+        final int encodingLength = DriverEventEncoder.encode(encodedBuffer, value);
 
-        ringBuffer.write(code.id(), encodedBuffer, 0, encodingLength);
+        ringBuffer.write(toEventCodeId(code), encodedBuffer, 0, encodingLength);
+    }
+
+    private static int toEventCodeId(final DriverEventCode code)
+    {
+        return DriverEventCode.EVENT_CODE_TYPE << 16 | (code.id() & 0xFFFF);
     }
 }

@@ -31,11 +31,10 @@ import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
 
 import static net.bytebuddy.asm.Advice.to;
-import static net.bytebuddy.matcher.ElementMatchers.nameEndsWith;
-import static net.bytebuddy.matcher.ElementMatchers.named;
+import static net.bytebuddy.matcher.ElementMatchers.*;
 
 /**
- * A Java agent which when attached to a JVM will weave byte code to intercept events as defined by {@link EventCode}.
+ * A Java agent which when attached to a JVM will weave byte code to intercept events as defined by {@link DriverEventCode}.
  * These events are recorded to an in-memory {@link org.agrona.concurrent.ringbuffer.RingBuffer} which is consumed
  * and appended asynchronous to a log as defined by the class {@link #READER_CLASSNAME_PROP_NAME} which defaults to
  * {@link EventLogReaderAgent}.
@@ -104,7 +103,9 @@ public class EventLogAgent
 
     private static void agent(final boolean shouldRedefine, final Instrumentation instrumentation)
     {
-        if (EventLogger.ENABLED_EVENT_CODES == 0)
+        if (DriverEventLogger.ENABLED_EVENT_CODES == 0 &&
+            ClusterEventLogger.ENABLED_EVENT_CODES == 0 &&
+            ArchiveEventLogger.ENABLED_EVENT_CODES == 0)
         {
             return;
         }
@@ -114,9 +115,22 @@ public class EventLogAgent
         readerAgentRunner = new AgentRunner(
             new SleepingMillisIdleStrategy(SLEEP_PERIOD_MS), Throwable::printStackTrace, null, getReaderAgent());
 
-        logTransformer = new AgentBuilder.Default(new ByteBuddy().with(TypeValidation.DISABLED))
+        AgentBuilder agentBuilder = new AgentBuilder.Default(new ByteBuddy().with(TypeValidation.DISABLED))
             .with(LISTENER)
-            .disableClassFormatChanges()
+            .disableClassFormatChanges();
+        agentBuilder = addEventsInstrumentation(shouldRedefine, agentBuilder);
+        logTransformer = agentBuilder.installOn(instrumentation);
+
+        final Thread thread = new Thread(readerAgentRunner);
+        thread.setName("event-log-reader");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private static AgentBuilder.Identified.Extendable addEventsInstrumentation(
+        final boolean shouldRedefine, final AgentBuilder agentBuilder)
+    {
+        return agentBuilder
             .with(shouldRedefine ?
                 AgentBuilder.RedefinitionStrategy.RETRANSFORMATION : AgentBuilder.RedefinitionStrategy.DISABLED)
             .type(nameEndsWith("DriverConductor"))
@@ -154,12 +168,20 @@ public class EventLogAgent
                         .on(named("sendHook")))
                     .visit(to(ChannelEndpointInterceptor.UdpChannelTransportInterceptor.ReceiveHook.class)
                         .on(named("receiveHook"))))
-            .installOn(instrumentation);
-
-        final Thread thread = new Thread(readerAgentRunner);
-        thread.setName("event-log-reader");
-        thread.setDaemon(true);
-        thread.start();
+            .type(nameEndsWith("Election"))
+            .transform(((builder, typeDescription, classLoader, module) ->
+                builder.visit(to(ClusterEventInterceptor.ElectionStateChange.class).on(named("state")
+                    .and(takesArgument(0, nameEndsWith("State")))))))
+            .type(nameEndsWith("ConsensusModuleAgent"))
+            .transform(((builder, typeDescription, classLoader, module) ->
+                builder
+                    .visit(to(ClusterEventInterceptor.NewLeadershipTerm.class).on(named("onNewLeadershipTerm")))
+                    .visit(to(ClusterEventInterceptor.StateChange.class).on(named("state")))
+                    .visit(to(ClusterEventInterceptor.RoleChange.class).on(named("role")
+                        .and(takesArgument(0, nameEndsWith("Role")))))))
+            .type(nameEndsWith("ControlRequestAdapter"))
+            .transform(((builder, typeDescription, classLoader, module) ->
+                builder.visit(to(ControlRequestInterceptor.ControlRequest.class).on(named("onFragment")))));
     }
 
     public static void premain(final String agentArgs, final Instrumentation instrumentation)
@@ -184,7 +206,9 @@ public class EventLogAgent
                 .or(nameEndsWith("ClientCommandAdapter"))
                 .or(nameEndsWith("SenderProxy"))
                 .or(nameEndsWith("ReceiverProxy"))
-                .or(nameEndsWith("UdpChannelTransport"));
+                .or(nameEndsWith("UdpChannelTransport"))
+                .or(nameEndsWith("Election"))
+                .or(nameEndsWith("ConsensusModuleAgent"));
 
             final ResettableClassFileTransformer transformer = new AgentBuilder.Default()
                 .type(orClause)

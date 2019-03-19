@@ -15,7 +15,7 @@
  */
 /**
  * A Java agent which when attached to a JVM will weave byte code to intercept and record events as defined by
- * {@link io.aeron.agent.EventCode}. These events are recorded to an in-memory
+ * {@link io.aeron.agent.DriverEventCode}. These events are recorded to an in-memory
  * {@link org.agrona.concurrent.ringbuffer.RingBuffer} which is consumed
  * and appended asynchronous to a log as defined by the class
  * {@link io.aeron.agent.EventLogAgent#READER_CLASSNAME_PROP_NAME} which defaults to

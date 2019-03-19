@@ -306,6 +306,7 @@ project(':aeron-agent') {
 
     dependencies {
         compile project(':aeron-client')
+        compile project(':aeron-cluster')
         compile project(':aeron-driver')
         compile "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
     }

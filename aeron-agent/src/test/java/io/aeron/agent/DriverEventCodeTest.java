@@ -15,22 +15,22 @@
  */
 package io.aeron.agent;
 
-/**
- * Describes an event.
- */
-interface EventCode
-{
-    /**
-     * Returns the event id
-     *
-     * @return the id
-     */
-    int id();
+import org.junit.Test;
 
-    /**
-     * Returns the tag bit
-     *
-     * @return the tag bit
-     */
-    long tagBit();
+import java.util.HashSet;
+import java.util.Set;
+
+import static org.junit.Assert.assertTrue;
+
+public class DriverEventCodeTest
+{
+    @Test
+    public void allTagsBitsAreUnique()
+    {
+        final Set<Long> seenTagBits = new HashSet<>();
+        for (final DriverEventCode code : DriverEventCode.values())
+        {
+            assertTrue(seenTagBits.add(code.tagBit()));
+        }
+    }
 }

@@ -113,6 +113,14 @@ void throwIllegalArgumentException()
 
 TEST(utilTests, sourcedException)
 {
+#if defined(_MSC_VER)
+    const std::string aeron_client_dir = " aeron-client\\";
+    const std::string testutils_h_filename = "testutils.h";
+#else
+    const std::string aeron_client_dir = " aeron-client/";
+    const std::string testutils_h_filename = "TestUtils.h";
+#endif
+
     EXPECT_THROW({
         try
         {
@@ -121,9 +129,9 @@ TEST(utilTests, sourcedException)
         catch(const SourcedException& e)
         {
             // Path must be relative and not have a prefix
-            EXPECT_THAT(e.where(), ::testing::HasSubstr(" aeron-client/"));
+            EXPECT_THAT(e.where(), ::testing::HasSubstr(aeron_client_dir));
             // The exception should point to the code before it was inlined
-            EXPECT_THAT(e.where(), ::testing::HasSubstr("TestUtils.h"));
+            EXPECT_THAT(e.where(), ::testing::HasSubstr(testutils_h_filename));
             throw;
         }
     }, SourcedException);

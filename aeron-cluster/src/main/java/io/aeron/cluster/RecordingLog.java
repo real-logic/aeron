@@ -16,6 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.client.ClusterException;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
@@ -478,6 +479,25 @@ public class RecordingLog implements AutoCloseable
         {
             LangUtil.rethrowUnchecked(ex);
         }
+    }
+
+    /**
+     * Find the last recording id used for a leader ship term. If not found then {@link RecordingPos#NULL_RECORDING_ID}.
+     *
+     * @return the last leadership term recording id or {@link RecordingPos#NULL_RECORDING_ID} if not found.
+     */
+    public long findLastTermRecordingId()
+    {
+        for (int i = entries.size() - 1; i >= 0; i--)
+        {
+            final Entry entry = entries.get(i);
+            if (ENTRY_TYPE_TERM == entry.type)
+            {
+                return entry.recordingId;
+            }
+        }
+
+        return RecordingPos.NULL_RECORDING_ID;
     }
 
     /**

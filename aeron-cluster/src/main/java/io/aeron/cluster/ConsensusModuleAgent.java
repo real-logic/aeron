@@ -695,12 +695,11 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         if (RecordingPos.NULL_RECORDING_ID == recordingId)
         {
-            if (recordingLog.entries().isEmpty())
+            recordingId = recordingLog.findLastTermRecordingId();
+            if (RecordingPos.NULL_RECORDING_ID == recordingId)
             {
                 return;
             }
-
-            recordingId = recordingLog.getTermEntry(leadershipTermId).recordingId;
         }
 
         stopLogRecording();
@@ -2432,10 +2431,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     private void startLogRecording(final String channel, final SourceLocation sourceLocation)
     {
-        if (!recoveryPlan.logs.isEmpty())
-        {
-            lastRecordingId = recoveryPlan.logs.get(0).recordingId;
-        }
+        lastRecordingId = recordingLog.findLastTermRecordingId();
 
         if (RecordingPos.NULL_RECORDING_ID == lastRecordingId)
         {

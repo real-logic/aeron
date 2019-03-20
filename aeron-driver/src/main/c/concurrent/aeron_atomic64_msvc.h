@@ -93,7 +93,7 @@ inline bool aeron_cmpxchgu64(volatile uint64_t* destination, uint64_t expected, 
 inline bool aeron_cmpxchg32(volatile int32_t* destination, int32_t expected, int32_t desired)
 {
     uint32_t original = _InterlockedCompareExchange(
-        (long volatile*)destination, (long volatile)desired, (long volatile)expected);
+        (long volatile*)destination, (long)desired, (long)expected);
 
     return original == expected;
 }
@@ -109,11 +109,8 @@ inline void aeron_acquire()
 /* storeFence */
 inline void aeron_release()
 {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-variable"
     volatile int64_t dummy = 0;
 }
-#pragma GCC diagnostic pop
 
 #define AERON_CMPXCHG32(original, dst, expected, desired) \
 do \
@@ -122,16 +119,6 @@ do \
 } \
 while (false)
 
-/*-------------------------------------
- *  Alignment
- *-------------------------------------
- * Note: May not work on local variables.
- * http://gcc.gnu.org/bugzilla/show_bug.cgi?id=24691
- */
-#define AERON_DECL_ALIGNED(declaration, amt) declaration __attribute__((aligned(amt)))
-
-#ifdef  AERON_COMPILER_MSVC
 #define AERON_DECL_ALIGNED(declaration, amt) __declspec(align(amt))  declaration
-#endif
 
 #endif //AERON_ATOMIC64_MSVC_H

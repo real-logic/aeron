@@ -129,11 +129,11 @@ static void initialize_agent_logging()
     if (0.0 != receive_data_loss_rate)
     {
         char *receive_loss_seed_str = getenv(AERON_AGENT_RECEIVE_DATA_LOSS_SEED_ENV_VAR);
-        long seed_value;
+        long long seed_value;
 
         if (receive_loss_seed_str)
         {
-            seed_value = strtol(receive_loss_seed_str, NULL, 0);
+            seed_value = strtoll(receive_loss_seed_str, NULL, 0);
         }
         else
         {

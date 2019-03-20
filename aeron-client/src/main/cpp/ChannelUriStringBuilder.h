@@ -333,7 +333,7 @@ private:
     struct Value
     {
         std::int64_t value;
-        explicit Value(long v)
+        explicit Value(std::int64_t v)
         {
             value = v;
         }

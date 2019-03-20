@@ -434,7 +434,7 @@ TEST_F(DriverConductorNetworkTest, shouldErrorOnAddPublicationWithInvalidUri)
     int64_t client_id = nextCorrelationId();
     int64_t pub_id = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id, INVALID_URI, STREAM_ID_1, -1), 0);
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id, INVALID_URI, STREAM_ID_1, false), 0);
     doWork();
     auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
     {

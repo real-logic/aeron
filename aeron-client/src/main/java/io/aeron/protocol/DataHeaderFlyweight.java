@@ -24,7 +24,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 
 /**
- * HeaderFlyweight for Data Frame header of a message fragment.
+ * Flyweight for Data Frame header of a message fragment.
  * <p>
  * <a target="_blank" href="https://github.com/real-logic/aeron/wiki/Protocol-Specification#data-frame">Data Frame</a>
  * wiki page.
@@ -32,32 +32,32 @@ import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 public class DataHeaderFlyweight extends HeaderFlyweight
 {
     /**
-     * Length of the Data Header
+     * Length of the Data Header.
      */
     public static final int HEADER_LENGTH = 32;
 
     /**
-     * Begin Flag
+     * (B) - Fragment that Begins a message Flag.
      */
     public static final short BEGIN_FLAG = 0x80;
 
     /**
-     * End Flag
+     * (E) - Fragment that Ends a message Flag.
      */
     public static final short END_FLAG = 0x40;
 
     /**
-     * Begin and End Flags
+     * Begin and End Flags.
      */
     public static final short BEGIN_AND_END_FLAGS = BEGIN_FLAG | END_FLAG;
 
     /**
-     * End of Stream Flag
+     * (S) - End of Stream (EOS) Flag for heartbeats after the publication is closed.
      */
     public static final short EOS_FLAG = 0x20;
 
     /**
-     * Begin, End, and End of Stream Flags
+     * Begin, End, and EOS Flags.
      */
     public static final short BEGIN_END_AND_EOS_FLAGS = BEGIN_FLAG | END_FLAG | EOS_FLAG;
 

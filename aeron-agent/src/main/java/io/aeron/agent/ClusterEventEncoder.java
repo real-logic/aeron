@@ -55,6 +55,7 @@ final class ClusterEventEncoder
         encodedBuffer.putInt(offset, leaderMemberId);
         offset += BitUtil.SIZE_OF_INT;
         encodedBuffer.putInt(offset, logSessionId);
+
         return offset + BitUtil.SIZE_OF_INT;
     }
 

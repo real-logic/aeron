@@ -23,16 +23,17 @@ import net.bytebuddy.asm.Advice;
 import static io.aeron.agent.ClusterEventLogger.LOGGER;
 
 /**
- * Intercepts calls in the cluster that relate to state change.
+ * Intercepts calls in the cluster which relate to state changes.
  */
 final class ClusterEventInterceptor
 {
     static class ElectionStateChange
     {
         @Advice.OnMethodEnter
-        static void electionStateChangeInterceptor(final Election.State newState, final long nowMs)
+        static void electionStateChangeInterceptor(
+            @Advice.This final Election election, final Election.State newState, final long nowMs)
         {
-            LOGGER.logElectionStateChange(newState, nowMs);
+            LOGGER.logElectionStateChange(election, newState, nowMs);
         }
     }
 

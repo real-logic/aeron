@@ -40,12 +40,13 @@ public final class ClusterEventLogger
         ringBuffer = eventRingBuffer;
     }
 
-    public void logElectionStateChange(final Election.State newState, final long nowMs)
+    public void logElectionStateChange(final Election election, final Election.State newState, final long nowMs)
     {
         if (ClusterEventCode.isEnabled(ELECTION_STATE_CHANGE, ENABLED_EVENT_CODES))
         {
             final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
-            final int encodedLength = ClusterEventEncoder.encodeElectionStateChange(encodedBuffer, newState, nowMs);
+            final int encodedLength = ClusterEventEncoder.encodeElectionStateChange(
+                encodedBuffer, election, newState, nowMs);
 
             ringBuffer.write(toEventCodeId(ELECTION_STATE_CHANGE), encodedBuffer, 0, encodedLength);
         }

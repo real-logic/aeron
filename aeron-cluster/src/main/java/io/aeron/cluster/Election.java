@@ -172,6 +172,36 @@ public class Election implements AutoCloseable
         CloseHelper.close(stateCounter);
     }
 
+    public State state()
+    {
+        return state;
+    }
+
+    public ClusterMember leader()
+    {
+        return leaderMember;
+    }
+
+    public long leadershipTermId()
+    {
+        return leadershipTermId;
+    }
+
+    public long candidateTermId()
+    {
+        return candidateTermId;
+    }
+
+    public long logPosition()
+    {
+        return logPosition;
+    }
+
+    void logSessionId(final int logSessionId)
+    {
+        this.logSessionId = logSessionId;
+    }
+
     int doWork(final long nowMs)
     {
         int workCount = State.INIT == state ? init(nowMs) : 0;
@@ -444,36 +474,6 @@ public class Election implements AutoCloseable
                 ctx.recordingLog().force();
             }
         }
-    }
-
-    State state()
-    {
-        return state;
-    }
-
-    ClusterMember leader()
-    {
-        return leaderMember;
-    }
-
-    long leadershipTermId()
-    {
-        return leadershipTermId;
-    }
-
-    long candidateTermId()
-    {
-        return candidateTermId;
-    }
-
-    void logSessionId(final int logSessionId)
-    {
-        this.logSessionId = logSessionId;
-    }
-
-    long logPosition()
-    {
-        return logPosition;
     }
 
     private int init(final long nowMs)

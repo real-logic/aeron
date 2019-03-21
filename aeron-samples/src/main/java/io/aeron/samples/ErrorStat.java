@@ -18,7 +18,6 @@ package io.aeron.samples;
 import io.aeron.CncFileDescriptor;
 import io.aeron.CommonContext;
 import org.agrona.DirectBuffer;
-import org.agrona.IoUtil;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.errors.ErrorLogReader;
 
@@ -43,7 +42,7 @@ public class ErrorStat
         final File cncFile = CommonContext.newDefaultCncFile();
         System.out.println("Command `n Control file " + cncFile);
 
-        final MappedByteBuffer cncByteBuffer = IoUtil.mapExistingFile(cncFile, "cnc");
+        final MappedByteBuffer cncByteBuffer = SamplesUtil.mapExistingFileReadOnly(cncFile);
         final DirectBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
         final int cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
 

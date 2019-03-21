@@ -17,7 +17,6 @@ package io.aeron.samples;
 
 import io.aeron.driver.reports.LossReportReader;
 import io.aeron.driver.reports.LossReportUtil;
-import org.agrona.IoUtil;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -48,7 +47,7 @@ public class LossStat
             System.exit(1);
         }
 
-        final MappedByteBuffer mappedByteBuffer = IoUtil.mapExistingFile(lossReportFile, "Loss Report");
+        final MappedByteBuffer mappedByteBuffer = SamplesUtil.mapExistingFileReadOnly(lossReportFile);
         final AtomicBuffer buffer = new UnsafeBuffer(mappedByteBuffer);
 
         System.out.println(

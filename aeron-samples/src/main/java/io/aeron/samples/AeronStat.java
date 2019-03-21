@@ -19,7 +19,6 @@ import io.aeron.CncFileDescriptor;
 import io.aeron.CommonContext;
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.DirectBuffer;
-import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.SigInt;
 import org.agrona.concurrent.status.CountersReader;
@@ -134,7 +133,7 @@ public class AeronStat
         final File cncFile = CommonContext.newDefaultCncFile();
         System.out.println("Command `n Control file " + cncFile);
 
-        final MappedByteBuffer cncByteBuffer = IoUtil.mapExistingFile(cncFile, "cnc");
+        final MappedByteBuffer cncByteBuffer = SamplesUtil.mapExistingFileReadOnly(cncFile);
         final DirectBuffer cncMetaData = createMetaDataBuffer(cncByteBuffer);
         final int cncVersion = cncMetaData.getInt(cncVersionOffset(0));
 
@@ -309,4 +308,5 @@ public class AeronStat
             System.out.print(ANSI_CLS + ANSI_HOME);
         }
     }
+
 }

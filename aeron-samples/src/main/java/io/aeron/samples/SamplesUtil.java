@@ -23,8 +23,15 @@ import org.agrona.LangUtil;
 import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+
+import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 
 /**
  * Utility functions for the samples.
@@ -174,5 +181,33 @@ public class SamplesUtil
         System.out.println(String.format(
             "Unavailable image on %s streamId=%d sessionId=%d",
             subscription.channel(), subscription.streamId(), image.sessionId()));
+    }
+
+    /**
+     * Map an existing file as a read only buffer.
+     *
+     * @param location of file to map.
+     * @return the mapped file.
+     */
+    public static MappedByteBuffer mapExistingFileReadOnly(final File location)
+    {
+        if (!location.exists())
+        {
+            final String msg = "file not found: " + location.getAbsolutePath();
+            throw new IllegalStateException(msg);
+        }
+
+        MappedByteBuffer mappedByteBuffer = null;
+        try (RandomAccessFile file = new RandomAccessFile(location, "r");
+            FileChannel channel = file.getChannel())
+        {
+            mappedByteBuffer = channel.map(READ_ONLY, 0, channel.size());
+        }
+        catch (final IOException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+
+        return mappedByteBuffer;
     }
 }

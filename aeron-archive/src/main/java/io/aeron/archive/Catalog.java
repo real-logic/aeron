@@ -175,12 +175,6 @@ class Catalog implements AutoCloseable
 
             if (catalogPreExists)
             {
-                if (catalogHeaderDecoder.version() != CatalogHeaderDecoder.SCHEMA_VERSION)
-                {
-                    throw new IllegalArgumentException("catalog file version " + catalogHeaderDecoder.version() +
-                        " does not match software:" + CatalogHeaderDecoder.SCHEMA_VERSION);
-                }
-
                 recordLength = catalogHeaderDecoder.entryLength();
             }
             else
@@ -237,12 +231,6 @@ class Catalog implements AutoCloseable
 
             catalogHeaderDecoder.wrap(
                 catalogBuffer, 0, CatalogHeaderDecoder.BLOCK_LENGTH, CatalogHeaderDecoder.SCHEMA_VERSION);
-
-            if (catalogHeaderDecoder.version() != CatalogHeaderDecoder.SCHEMA_VERSION)
-            {
-                throw new IllegalArgumentException("catalog file version " + catalogHeaderDecoder.version() +
-                    " does not match software:" + CatalogHeaderDecoder.SCHEMA_VERSION);
-            }
 
             recordLength = catalogHeaderDecoder.entryLength();
             maxDescriptorStringsCombinedLength =
@@ -584,7 +572,7 @@ class Catalog implements AutoCloseable
     {
         if (maxEntries < 1 || maxEntries > MAX_ENTRIES)
         {
-            throw new IllegalArgumentException(
+            throw new ArchiveException(
                 "Catalog max entries must be between 1 and " + MAX_ENTRIES + ": maxEntries=" + maxEntries);
         }
     }

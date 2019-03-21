@@ -696,7 +696,10 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
 
     aeron_free((void *)context->aeron_dir);
     aeron_free(context->conductor_idle_strategy_state);
+    aeron_free(context->receiver_idle_strategy_state);
+    aeron_free(context->sender_idle_strategy_state);
     aeron_free(context->shared_idle_strategy_state);
+    aeron_free(context->shared_network_idle_strategy_state);
     aeron_free(context);
 
     return 0;

@@ -505,7 +505,6 @@ int aeron_agent_close(aeron_agent_runner_t *runner)
     }
 
     aeron_free((char *)runner->role_name);
-    aeron_free(runner->idle_strategy_state);
 
     if (NULL != runner->on_close)
     {

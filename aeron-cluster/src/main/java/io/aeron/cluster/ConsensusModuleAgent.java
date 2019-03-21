@@ -2473,7 +2473,15 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     private void cancelMissedTimers()
     {
-        missedTimersSet.removeIf(timerService::cancelTimer);
+        final LongHashSet.LongIterator timerIdIterator = missedTimersSet.iterator();
+        while (timerIdIterator.hasNext())
+        {
+            final long missedTimerId = timerIdIterator.nextValue();
+            if (timerService.cancelTimer(missedTimerId))
+            {
+                timerIdIterator.remove();
+            }
+        }
     }
 
     private void onUnavailableIngressImage(final Image image)

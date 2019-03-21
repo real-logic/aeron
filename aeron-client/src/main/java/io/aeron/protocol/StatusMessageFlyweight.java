@@ -299,21 +299,16 @@ public class StatusMessageFlyweight extends HeaderFlyweight
 
     public String toString()
     {
-        final StringBuilder sb = new StringBuilder();
-        final String formattedFlags = String.format("%1$8s", Integer.toBinaryString(flags())).replace(' ', '0');
-
-        sb.append("STATUS Message{")
-            .append("frame_length=").append(frameLength())
-            .append(" version=").append(version())
-            .append(" flags=").append(formattedFlags)
-            .append(" type=").append(headerType())
-            .append(" session_id=").append(sessionId())
-            .append(" stream_id=").append(streamId())
-            .append(" consumption_term_id=").append(consumptionTermId())
-            .append(" consumption_term_offset=").append(consumptionTermOffset())
-            .append(" receiver_window_length=").append(receiverWindowLength())
-            .append("}");
-
-        return sb.toString();
+        return "STATUS{" +
+            "frame-length=" + frameLength() +
+            " version=" + version() +
+            " flags=" + String.valueOf(flagsToChars(flags())) +
+            " type=" + headerType() +
+            " session-id=" + sessionId() +
+            " stream-id=" + streamId() +
+            " consumption-term-id=" + consumptionTermId() +
+            " consumption-term-offset=" + consumptionTermOffset() +
+            " receiver-window-length=" + receiverWindowLength() +
+            "}";
     }
 }

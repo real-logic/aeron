@@ -22,6 +22,7 @@ import org.agrona.MutableDirectBuffer;
 
 import java.net.InetAddress;
 
+import static io.aeron.protocol.HeaderFlyweight.flagsToChars;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
@@ -208,7 +209,7 @@ public class DriverEventDissector
                 break;
 
             default:
-                builder.append("COMMAND_UNKNOWN");
+                builder.append("COMMAND_UNKNOWN: ").append(code);
                 break;
         }
     }
@@ -324,7 +325,7 @@ public class DriverEventDissector
         builder
             .append(msg.headerType() == HeaderFlyweight.HDR_TYPE_PAD ? "PAD" : "DATA")
             .append(' ')
-            .append(msg.flags())
+            .append(flagsToChars(msg.flags()))
             .append(" len ")
             .append(msg.frameLength())
             .append(' ')
@@ -341,7 +342,7 @@ public class DriverEventDissector
     {
         builder
             .append("SM ")
-            .append(msg.flags())
+            .append(flagsToChars(msg.flags()))
             .append(" len ")
             .append(msg.frameLength())
             .append(' ')
@@ -362,7 +363,7 @@ public class DriverEventDissector
     {
         builder
             .append("NAK ")
-            .append(msg.flags())
+            .append(flagsToChars(msg.flags()))
             .append(" len ")
             .append(msg.frameLength())
             .append(' ')
@@ -381,7 +382,7 @@ public class DriverEventDissector
     {
         builder
             .append("SETUP ")
-            .append(msg.flags())
+            .append(flagsToChars(msg.flags()))
             .append(" len ")
             .append(msg.frameLength())
             .append(' ')
@@ -406,7 +407,7 @@ public class DriverEventDissector
     {
         builder
             .append("RTT ")
-            .append(msg.flags())
+            .append(flagsToChars(msg.flags()))
             .append(" len ")
             .append(msg.frameLength())
             .append(' ')

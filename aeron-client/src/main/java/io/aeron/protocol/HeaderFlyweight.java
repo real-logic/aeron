@@ -192,4 +192,29 @@ public class HeaderFlyweight extends UnsafeBuffer
 
         return this;
     }
+
+    /**
+     * Convert header flags to an array of chars to be human readable.
+     *
+     * @param flags to be converted.
+     * @return header flags converted to an array of chars to be human readable.
+     */
+    public static char[] flagsToChars(final short flags)
+    {
+        final char[] chars = new char[]{ '0', '0', '0', '0', '0', '0', '0', '0' };
+        final int length = chars.length;
+        short mask = (short)(1 << (length - 1));
+
+        for (int i = 0; i < length; i++)
+        {
+            if ((flags & mask) == mask)
+            {
+                chars[i] = '1';
+            }
+
+            mask >>= 1;
+        }
+
+        return chars;
+    }
 }

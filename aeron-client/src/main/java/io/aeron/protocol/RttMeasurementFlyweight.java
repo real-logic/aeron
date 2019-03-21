@@ -136,21 +136,16 @@ public class RttMeasurementFlyweight extends HeaderFlyweight
 
     public String toString()
     {
-        final StringBuilder sb = new StringBuilder();
-        final String formattedFlags = String.format("%1$8s", Integer.toBinaryString(flags())).replace(' ', '0');
-
-        sb.append("RTT Measure Message{")
-            .append("frame_length=").append(frameLength())
-            .append(" version=").append(version())
-            .append(" flags=").append(formattedFlags)
-            .append(" type=").append(headerType())
-            .append(" session_id=").append(sessionId())
-            .append(" stream_id=").append(streamId())
-            .append(" echo_timestamp=").append(echoTimestampNs())
-            .append(" reception_delta=").append(receptionDelta())
-            .append(" receiver_id=").append(receiverId())
-            .append("}");
-
-        return sb.toString();
+        return "RTTM{" +
+            "frame-length=" + frameLength() +
+            " version=" + version() +
+            " flags=" + String.valueOf(flagsToChars(flags())) +
+            " type=" + headerType() +
+            " session-id=" + sessionId() +
+            " stream-id=" + streamId() +
+            " echo-timestamp=" + echoTimestampNs() +
+            " reception-delta=" + receptionDelta() +
+            " receiver-id=" + receiverId() +
+            "}";
     }
 }

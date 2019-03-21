@@ -65,7 +65,7 @@ inline static int read(
                 lastObservationTimestamp,
                 buffer.getStringWithoutLength(
                     offset + ErrorLogDescriptor::ENCODED_ERROR_OFFSET,
-                    length - ErrorLogDescriptor::HEADER_LENGTH));
+                    static_cast<size_t>(length - ErrorLogDescriptor::HEADER_LENGTH)));
         }
 
         offset += util::BitUtil::align(length, ErrorLogDescriptor::RECORD_ALIGNMENT);

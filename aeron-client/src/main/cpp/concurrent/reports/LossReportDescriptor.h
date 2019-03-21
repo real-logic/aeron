@@ -19,18 +19,13 @@
 #include "util/Index.h"
 #include "util/BitUtil.h"
 
-namespace aeron { namespace concurrent { namespace reports
-        {
+namespace aeron { namespace concurrent { namespace reports {
 
 /**
  * A report of loss events on a message stream.
  * <p>
  * The provided AtomicBuffer can wrap a memory-mapped file so logging can be out of process. This provides
  * the benefit that if a crash or lockup occurs then the log can be read externally without loss of data.
- * <p>
- * <b>Note:</b>This class is NOT threadsafe to be used from multiple logging threads.
- * <p>
- * The error records are recorded to the memory mapped buffer in the following format.
  * <pre>
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -76,7 +71,8 @@ struct LossReportEntryDefn
 #pragma pack(pop)
 
 static const util::index_t ENTRY_ALIGNMENT = sizeof(util::BitUtil::CACHE_LINE_LENGTH);
-static const util::index_t OBSERVATION_COUNT_OFFSET = offsetof(LossReportEntryDefn, observationCount);
+static const util::index_t OBSERVATION_COUNT_OFFSET =
+    static_cast<util::index_t>(offsetof(LossReportEntryDefn, observationCount));
 static const util::index_t CHANNEL_OFFSET = sizeof(LossReportEntryDefn);
 
 static const std::string LOSS_REPORT_FILE_NAME = "loss-report.dat";

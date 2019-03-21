@@ -118,7 +118,7 @@ int main(int argc, char** argv)
         const std::int64_t channelStatus = publication->channelStatus();
 
         std::cout << "Publication channel status (id=" << publication->channelStatusId() << ") "
-            << ((channelStatus == ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE) ?
+            << (channelStatus == ChannelEndpointStatus::CHANNEL_ENDPOINT_ACTIVE ?
                 "ACTIVE" : std::to_string(channelStatus))
             << std::endl;
 

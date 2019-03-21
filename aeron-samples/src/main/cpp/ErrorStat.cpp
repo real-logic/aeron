@@ -89,7 +89,7 @@ int main (int argc, char** argv)
     {
         Settings settings = parseCmdLine(cp, argc, argv);
 
-        MemoryMappedFile::ptr_t cncFile = MemoryMappedFile::mapExisting(
+        MemoryMappedFile::ptr_t cncFile = MemoryMappedFile::mapExistingReadOnly(
             (settings.basePath + "/" + CncFileDescriptor::CNC_FILE).c_str());
 
         const std::int32_t cncVersion = CncFileDescriptor::cncVersionVolatile(cncFile);

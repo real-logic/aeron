@@ -96,7 +96,7 @@ int main (int argc, char** argv)
             std::exit(1);
         }
 
-        MemoryMappedFile::ptr_t lossReportFile = MemoryMappedFile::mapExisting(filename.c_str());
+        MemoryMappedFile::ptr_t lossReportFile = MemoryMappedFile::mapExistingReadOnly(filename.c_str());
         AtomicBuffer buffer(lossReportFile->getMemoryPtr(), lossReportFile->getMemorySize());
 
         std::cout <<

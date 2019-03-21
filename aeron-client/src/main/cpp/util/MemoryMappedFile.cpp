@@ -76,10 +76,10 @@ MemoryMappedFile::ptr_t MemoryMappedFile::createNew(const char *filename, size_t
         throw IOException(std::string("Failed to write to file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
     }
 
-    return MemoryMappedFile::ptr_t(new MemoryMappedFile(fd, offset, size));
+    return MemoryMappedFile::ptr_t(new MemoryMappedFile(fd, offset, size, false));
 }
 
-MemoryMappedFile::ptr_t MemoryMappedFile::mapExisting(const char *filename, size_t offset, size_t size)
+MemoryMappedFile::ptr_t MemoryMappedFile::mapExisting(const char *filename, size_t offset, size_t size, bool readOnly)
 {
     FileHandle fd;
     fd.handle = CreateFile(filename, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -89,7 +89,7 @@ MemoryMappedFile::ptr_t MemoryMappedFile::mapExisting(const char *filename, size
         throw IOException(std::string("Failed to create file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
     }
 
-    return MemoryMappedFile::ptr_t(new MemoryMappedFile(fd, offset, size));
+    return MemoryMappedFile::ptr_t(new MemoryMappedFile(fd, offset, size, readOnly));
 }
 #else
 bool MemoryMappedFile::fill(FileHandle fd, size_t size, uint8_t value)
@@ -137,13 +137,13 @@ MemoryMappedFile::ptr_t MemoryMappedFile::createNew(const char *filename, off_t 
         throw IOException(std::string("failed to write to file: ") + filename, SOURCEINFO);
     }
 
-    return MemoryMappedFile::ptr_t(new MemoryMappedFile(fd, offset, size));
+    return MemoryMappedFile::ptr_t(new MemoryMappedFile(fd, offset, size, false));
 }
 
-MemoryMappedFile::ptr_t MemoryMappedFile::mapExisting(const char *filename, off_t offset, size_t length)
+MemoryMappedFile::ptr_t MemoryMappedFile::mapExisting(const char *filename, off_t offset, size_t length, bool readOnly)
 {
     FileHandle fd;
-    fd.handle = ::open(filename, O_RDWR, 0666);
+    fd.handle = ::open(filename, (readOnly ? O_RDONLY : O_RDWR), 0666);
 
     if (fd.handle < 0)
     {
@@ -155,13 +155,13 @@ MemoryMappedFile::ptr_t MemoryMappedFile::mapExisting(const char *filename, off_
         close(fd.handle);
     });
 
-    return MemoryMappedFile::ptr_t(new MemoryMappedFile(fd, offset, length));
+    return MemoryMappedFile::ptr_t(new MemoryMappedFile(fd, offset, length, readOnly));
 }
 #endif
 
-MemoryMappedFile::ptr_t MemoryMappedFile::mapExisting(const char *filename)
+MemoryMappedFile::ptr_t MemoryMappedFile::mapExisting(const char *filename, bool readOnly)
 {
-    return mapExisting(filename, 0, 0);
+    return mapExisting(filename, 0, 0, readOnly);
 }
 
 uint8_t* MemoryMappedFile::getMemoryPtr() const
@@ -177,7 +177,7 @@ size_t MemoryMappedFile::getMemorySize() const
 size_t MemoryMappedFile::m_page_size = getPageSize();
 
 #ifdef _WIN32
-MemoryMappedFile::MemoryMappedFile(FileHandle fd, size_t offset, size_t length)
+MemoryMappedFile::MemoryMappedFile(FileHandle fd, size_t offset, size_t length, bool readOnly)
 {
     if (0 == length && 0 == offset)
     {
@@ -224,7 +224,7 @@ MemoryMappedFile::~MemoryMappedFile()
     cleanUp();
 }
 
-uint8_t* MemoryMappedFile::doMapping(size_t size, FileHandle fd, size_t offset)
+uint8_t* MemoryMappedFile::doMapping(size_t size, FileHandle fd, size_t offset, bool readOnly)
 {
     m_mapping = CreateFileMapping(fd.handle, NULL, PAGE_READWRITE, 0, (DWORD)size, NULL);
     if (m_mapping == NULL)
@@ -237,7 +237,7 @@ uint8_t* MemoryMappedFile::doMapping(size_t size, FileHandle fd, size_t offset)
     return static_cast<uint8_t*>(memory);
 }
 
-size_t MemoryMappedFile::getPageSize()
+size_t MemoryMappedFile::getPageSize() noexcept
 {
     SYSTEM_INFO sinfo;
 
@@ -258,7 +258,7 @@ std::int64_t MemoryMappedFile::getFileSize(const char *filename)
 }
 
 #else
-MemoryMappedFile::MemoryMappedFile(FileHandle fd, off_t offset, size_t length)
+MemoryMappedFile::MemoryMappedFile(FileHandle fd, off_t offset, size_t length, bool readOnly)
 {
     if (0 == length && 0 == offset)
     {
@@ -268,7 +268,7 @@ MemoryMappedFile::MemoryMappedFile(FileHandle fd, off_t offset, size_t length)
     }
 
     m_memorySize = length;
-    m_memory = doMapping(m_memorySize, fd, offset);
+    m_memory = doMapping(m_memorySize, fd, offset, readOnly);
 }
 
 MemoryMappedFile::~MemoryMappedFile()
@@ -279,9 +279,15 @@ MemoryMappedFile::~MemoryMappedFile()
     }
 }
 
-uint8_t* MemoryMappedFile::doMapping(size_t length, FileHandle fd, size_t offset)
+uint8_t* MemoryMappedFile::doMapping(size_t length, FileHandle fd, size_t offset, bool readOnly)
 {
-    void* memory = ::mmap(NULL, length, PROT_READ|PROT_WRITE, MAP_SHARED, fd.handle, static_cast<off_t>(offset));
+    void* memory = ::mmap(
+        NULL,
+        length,
+        (readOnly ? PROT_READ : (PROT_READ|PROT_WRITE)),
+        MAP_SHARED,
+        fd.handle,
+        static_cast<off_t>(offset));
 
     if (MAP_FAILED == memory)
     {
@@ -291,7 +297,7 @@ uint8_t* MemoryMappedFile::doMapping(size_t length, FileHandle fd, size_t offset
     return static_cast<uint8_t*>(memory);
 }
 
-size_t MemoryMappedFile::getPageSize()
+size_t MemoryMappedFile::getPageSize() noexcept
 {
     return static_cast<size_t>(::getpagesize());
 }

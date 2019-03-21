@@ -38,13 +38,18 @@ public:
 
 #ifdef _WIN32
     static ptr_t createNew(const char* filename, size_t offset, size_t length);
-    static ptr_t mapExisting(const char* filename, size_t offset, size_t length);
+    static ptr_t mapExisting(const char* filename, size_t offset, size_t length, bool readOnly = false);
 #else
     static ptr_t createNew(const char* filename, off_t offset, size_t length);
-    static ptr_t mapExisting(const char* filename, off_t offset, size_t length);
+    static ptr_t mapExisting(const char* filename, off_t offset, size_t length, bool readOnly = false);
 #endif
 
-    static ptr_t mapExisting(const char* filename);
+    static ptr_t mapExisting(const char* filename, bool readOnly = false);
+
+    inline static ptr_t mapExistingReadOnly(const char* filename)
+    {
+        return mapExisting(filename, 0, 0, true);
+    }
 
     ~MemoryMappedFile ();
 
@@ -54,7 +59,7 @@ public:
     MemoryMappedFile(MemoryMappedFile const&) = delete;
     MemoryMappedFile& operator=(MemoryMappedFile const&) = delete;
 
-    static size_t getPageSize();
+    static size_t getPageSize() noexcept;
     static std::int64_t getFileSize(const char *filename);
 
 private:
@@ -63,17 +68,17 @@ private:
 #ifdef _WIN32
         HANDLE handle;
 #else
-        int handle;
+        int handle = -1;
 #endif
     };
 
 #ifdef _WIN32
-    MemoryMappedFile(const FileHandle fd, size_t offset, size_t length);
+    MemoryMappedFile(const FileHandle fd, size_t offset, size_t length, bool readOnly);
 #else
-    MemoryMappedFile(const FileHandle fd, off_t offset, size_t length);
+    MemoryMappedFile(const FileHandle fd, off_t offset, size_t length, bool readOnly);
 #endif
 
-    uint8_t* doMapping(size_t size, FileHandle fd, size_t offset);
+    uint8_t* doMapping(size_t size, FileHandle fd, size_t offset, bool readOnly);
 
     std::uint8_t* m_memory = 0;
     size_t m_memorySize = 0;

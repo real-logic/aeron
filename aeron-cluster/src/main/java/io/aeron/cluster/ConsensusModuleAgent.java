@@ -530,7 +530,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
             if (null != follower)
             {
-
                 final String replayChannel = new ChannelUriStringBuilder()
                     .media(CommonContext.UDP_MEDIA)
                     .endpoint(follower.transferEndpoint())
@@ -578,7 +577,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
         else if (null == election && Cluster.Role.FOLLOWER == role)
         {
-            // redirect add to leader. Leader will respond
             memberStatusPublisher.addPassiveMember(leaderMember.publication(), correlationId, memberEndpoints);
         }
     }
@@ -1048,7 +1046,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     }
 
     @SuppressWarnings("unused")
-    void onMembershipClusterChange(
+    void onMembershipChange(
         final long leadershipTermId,
         final long logPosition,
         final long timestamp,
@@ -1119,7 +1117,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
 
         // TODO: this must be superset of any configured cluster members, unless being overridden
-
         final ClusterMember[] snapshotClusterMembers = ClusterMember.parse(members);
 
         if (Aeron.NULL_VALUE == this.memberId)
@@ -1215,6 +1212,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     Subscription createAndRecordLogSubscriptionAsFollower(final String logChannel)
     {
         closeExistingLog();
+
         final Subscription subscription = aeron.addSubscription(logChannel, ctx.logStreamId());
         startLogRecording(logChannel, SourceLocation.REMOTE);
 

@@ -213,7 +213,7 @@ BOOL aeron_ipv6_does_prefix_match(struct in6_addr *in6_addr1, struct in6_addr *i
 
 void aeron_srand48(UINT64 aeron_nano_clock)
 {
-    srand(aeron_nano_clock);
+    srand((unsigned int)aeron_nano_clock);
 }
 
 double aeron_drand48()

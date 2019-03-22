@@ -23,6 +23,10 @@ extern "C"
 #include "collections/aeron_str_to_ptr_hash_map.h"
 }
 
+#ifdef _MSC_VER
+#define strdup _strdup
+#endif
+
 class StrToPtrHashMapTest : public testing::Test
 {
 public:

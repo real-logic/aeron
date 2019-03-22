@@ -550,6 +550,10 @@ TEST_F(UriResolverTest, shouldCalculateIpv6PrefixlenFromNetmask)
     EXPECT_EQ(ipv6_prefixlen("0000:0000:0000:0000:0000:0000:0000:0000"), 0u);
 }
 
+#ifdef _MSC_VER
+#define strdup _strdup
+#endif
+
 /*
  * WARNING: single threaded only due to global lookup func usage
  */
@@ -600,7 +604,7 @@ public:
             throw std::runtime_error("could not convert address");
         }
 
-        entry->ifa_name = strdup(name);
+        entry->ifa_name = ::strdup(name);
         entry->ifa_flags = flags;
         entry->ifa_next = global_ifaddrs;
         global_ifaddrs = entry;

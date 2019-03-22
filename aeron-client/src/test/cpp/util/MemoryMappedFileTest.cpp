@@ -23,6 +23,10 @@
 using namespace aeron::util;
 using namespace aeron::test;
 
+#ifdef _MSC_VER
+#define unlink _unlink
+#endif
+
 TEST(mmfileTest, failToOpen)
 {
     ASSERT_ANY_THROW({

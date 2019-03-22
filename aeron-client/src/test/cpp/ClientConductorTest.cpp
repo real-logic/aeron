@@ -35,6 +35,10 @@ static const std::int64_t LOG_FILE_LENGTH = (TERM_LENGTH * 3) + LogBufferDescrip
 static const std::string SOURCE_IDENTITY = "127.0.0.1:43567";
 static const std::string COUNTER_LABEL = "counter label";
 
+#ifdef _MSC_VER
+#define unlink _unlink
+#endif
+
 class ClientConductorTest : public testing::Test, public ClientConductorFixture
 {
 public:

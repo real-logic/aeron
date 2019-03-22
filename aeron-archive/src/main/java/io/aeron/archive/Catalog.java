@@ -16,6 +16,7 @@
 package io.aeron.archive;
 
 import io.aeron.Aeron;
+import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.*;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -43,7 +44,7 @@ import static org.agrona.BitUtil.align;
 /**
  * Catalog for the archive keeps details of recorded images, past and present, and used for browsing.
  * The format is simple, allocating a fixed 1KB record for each record descriptor. This allows offset
- * based look up of a descriptor in the file.
+ * based look up of a descriptor in the file. The first record contains the catalog header.
  * <p>
  * @see RecordingDescriptorHeaderDecoder
  * @see RecordingDescriptorDecoder
@@ -105,8 +106,6 @@ class Catalog implements AutoCloseable
 
     private final RecordingDescriptorEncoder descriptorEncoder = new RecordingDescriptorEncoder();
     private final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder();
-
-    private final CatalogHeaderDecoder catalogHeaderDecoder = new CatalogHeaderDecoder();
 
     private final MappedByteBuffer catalogByteBuffer;
     private final UnsafeBuffer catalogBuffer;
@@ -170,11 +169,19 @@ class Catalog implements AutoCloseable
             catalogBuffer = new UnsafeBuffer(catalogByteBuffer);
             fieldAccessBuffer = new UnsafeBuffer(catalogByteBuffer);
 
+            final CatalogHeaderDecoder catalogHeaderDecoder = new CatalogHeaderDecoder();
             catalogHeaderDecoder.wrap(
                 catalogBuffer, 0, CatalogHeaderDecoder.BLOCK_LENGTH, CatalogHeaderDecoder.SCHEMA_VERSION);
 
             if (catalogPreExists)
             {
+                final int version = catalogHeaderDecoder.version();
+                if (SemanticVersion.major(version) != AeronArchive.Configuration.MAJOR_VERSION)
+                {
+                    throw new ArchiveException("invalid version " + SemanticVersion.toString(version) +
+                        ", archive is " + SemanticVersion.toString(AeronArchive.Configuration.SEMANTIC_VERSION));
+                }
+
                 recordLength = catalogHeaderDecoder.entryLength();
             }
             else
@@ -185,7 +192,7 @@ class Catalog implements AutoCloseable
                 new CatalogHeaderEncoder()
                     .wrap(catalogBuffer, 0)
                     .entryLength(DEFAULT_RECORD_LENGTH)
-                    .version(CatalogHeaderEncoder.SCHEMA_VERSION);
+                    .version(AeronArchive.Configuration.SEMANTIC_VERSION);
             }
 
             maxDescriptorStringsCombinedLength =
@@ -229,8 +236,16 @@ class Catalog implements AutoCloseable
             catalogBuffer = new UnsafeBuffer(catalogByteBuffer);
             fieldAccessBuffer = new UnsafeBuffer(catalogByteBuffer);
 
+            final CatalogHeaderDecoder catalogHeaderDecoder = new CatalogHeaderDecoder();
             catalogHeaderDecoder.wrap(
                 catalogBuffer, 0, CatalogHeaderDecoder.BLOCK_LENGTH, CatalogHeaderDecoder.SCHEMA_VERSION);
+
+            final int version = catalogHeaderDecoder.version();
+            if (SemanticVersion.major(version) != AeronArchive.Configuration.MAJOR_VERSION)
+            {
+                throw new ArchiveException("invalid version " + SemanticVersion.toString(version) +
+                    ", archive is " + SemanticVersion.toString(AeronArchive.Configuration.SEMANTIC_VERSION));
+            }
 
             recordLength = catalogHeaderDecoder.entryLength();
             maxDescriptorStringsCombinedLength =

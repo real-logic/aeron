@@ -152,7 +152,7 @@ static aeron_distinct_observation_t *aeron_distinct_error_log_new_observation(
 
         aeron_distinct_error_log_observation_list_store(log, new_list);
 
-        AERON_PUT_ORDERED(entry->length, length);
+        AERON_PUT_ORDERED(entry->length, (int32_t)length);
 
         observation = &new_array[0];
 

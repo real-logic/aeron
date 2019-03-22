@@ -89,10 +89,10 @@ int32_t aeron_counters_manager_allocate(
 
     if (NULL != key && key_length > 0)
     {
-        memcpy(metadata->key, key, fmin(sizeof(metadata->key), key_length));
+        memcpy(metadata->key, key, (size_t)fmin((double)sizeof(metadata->key), (double)key_length));
     }
 
-    memcpy(metadata->label, label, fmin(sizeof(metadata->label), label_length));
+    memcpy(metadata->label, label, (size_t)fmin((double)sizeof(metadata->label), (double)label_length));
     metadata->label_length = (int32_t)label_length;
     AERON_PUT_ORDERED(metadata->state, AERON_COUNTER_RECORD_ALLOCATED);
 

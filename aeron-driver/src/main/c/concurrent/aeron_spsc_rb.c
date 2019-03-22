@@ -113,7 +113,7 @@ aeron_rb_write_result_t aeron_spsc_rb_writev(
         record_header = (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + record_index);
 
         record_header->msg_type_id = AERON_RB_PADDING_MSG_TYPE_ID;
-        AERON_PUT_ORDERED(record_header->length, padding);
+        AERON_PUT_ORDERED(record_header->length, (int32_t)padding);
         record_index = 0;
     }
 
@@ -128,7 +128,7 @@ aeron_rb_write_result_t aeron_spsc_rb_writev(
     }
     
     record_header->msg_type_id = msg_type_id;
-    AERON_PUT_ORDERED(record_header->length, record_length);
+    AERON_PUT_ORDERED(record_header->length, (int32_t)record_length);
     AERON_PUT_ORDERED(ring_buffer->descriptor->tail_position, tail + required_capacity + padding);
 
     return AERON_RB_SUCCESS;

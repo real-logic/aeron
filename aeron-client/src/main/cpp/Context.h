@@ -412,7 +412,7 @@ public:
 #if defined(__linux__)
         return "/dev/shm/aeron-" + getUserName();
 #elif (_MSC_VER)
-        return tmpDir() + "/aeron-" + getUserName();
+        return tmpDir() + "aeron-" + getUserName();
 #else
         return tmpDir() + "/aeron-" + getUserName();
 #endif

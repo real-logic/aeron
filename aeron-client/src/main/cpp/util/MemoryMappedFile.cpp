@@ -82,7 +82,9 @@ MemoryMappedFile::ptr_t MemoryMappedFile::createNew(const char *filename, size_t
 MemoryMappedFile::ptr_t MemoryMappedFile::mapExisting(const char *filename, size_t offset, size_t size, bool readOnly)
 {
     FileHandle fd;
-    fd.handle = CreateFile(filename, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    DWORD dwDesiredAccess = readOnly ? GENERIC_READ : (GENERIC_READ | GENERIC_WRITE);
+    DWORD dwSharedMode =FILE_SHARE_READ | FILE_SHARE_WRITE;
+    fd.handle = CreateFile(filename, dwDesiredAccess, dwSharedMode, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
     if (fd.handle == INVALID_HANDLE_VALUE)
     {
@@ -192,7 +194,7 @@ MemoryMappedFile::MemoryMappedFile(FileHandle fd, size_t offset, size_t length, 
     }
 
     m_memorySize = length;
-    m_memory = doMapping(m_memorySize, fd, offset);
+    m_memory = doMapping(m_memorySize, fd, offset, readOnly);
 
     if (!m_memory)
     {
@@ -226,13 +228,15 @@ MemoryMappedFile::~MemoryMappedFile()
 
 uint8_t* MemoryMappedFile::doMapping(size_t size, FileHandle fd, size_t offset, bool readOnly)
 {
-    m_mapping = CreateFileMapping(fd.handle, NULL, PAGE_READWRITE, 0, (DWORD)size, NULL);
+    DWORD flProtect = readOnly ? PAGE_READONLY : PAGE_READWRITE;
+    m_mapping = CreateFileMapping(fd.handle, NULL, flProtect, 0, (DWORD)size, NULL);
     if (m_mapping == NULL)
     {
         return NULL;
     }
 
-    void* memory = (LPTSTR)MapViewOfFile(m_mapping, FILE_MAP_ALL_ACCESS, 0, (DWORD)offset, size);
+    DWORD dwDesiredAccess = readOnly ? FILE_MAP_READ : FILE_MAP_ALL_ACCESS;
+    void* memory = (LPTSTR)MapViewOfFile(m_mapping, dwDesiredAccess, 0, (DWORD)offset, size);
 
     return static_cast<uint8_t*>(memory);
 }

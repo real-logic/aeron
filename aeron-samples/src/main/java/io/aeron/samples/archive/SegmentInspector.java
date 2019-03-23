@@ -18,8 +18,8 @@ package io.aeron.samples.archive;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.samples.LogInspector;
+import io.aeron.samples.SamplesUtil;
 import org.agrona.BitUtil;
-import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
@@ -49,7 +49,7 @@ public class SegmentInspector
         final String fileName = args[0];
         final int messageDumpLimit = args.length >= 2 ? Integer.parseInt(args[1]) : Integer.MAX_VALUE;
         final File file = new File(fileName);
-        final ByteBuffer byteBuffer = IoUtil.mapExistingFile(file, "Archive Segment File");
+        final ByteBuffer byteBuffer = SamplesUtil.mapExistingFileReadOnly(file);
         final UnsafeBuffer segmentBuffer = new UnsafeBuffer(byteBuffer);
 
         out.println("======================================================================");

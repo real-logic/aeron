@@ -136,15 +136,15 @@ int64_t aeron_min_flow_control_strategy_on_sm(
             is_existing = true;
         }
 
-        min_position = receiver->last_position_plus_window < min_position?
+        min_position = receiver->last_position_plus_window < min_position ?
             receiver->last_position_plus_window : min_position;
     }
 
     if (!is_existing)
     {
         int ensure_capacity_result = 0;
-
-        AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, strategy_state->receivers, aeron_min_flow_control_strategy_receiver_t);
+        AERON_ARRAY_ENSURE_CAPACITY(
+            ensure_capacity_result, strategy_state->receivers, aeron_min_flow_control_strategy_receiver_t);
 
         if (ensure_capacity_result >= 0)
         {
@@ -168,9 +168,7 @@ int64_t aeron_min_flow_control_strategy_on_sm(
     return snd_lmt > min_position ? snd_lmt : min_position;
 }
 
-bool aeron_min_flow_control_strategy_should_linger(
-    void *state,
-    int64_t now_ns)
+bool aeron_min_flow_control_strategy_should_linger(void *state, int64_t now_ns)
 {
     aeron_min_flow_control_strategy_state_t *strategy_state = (aeron_min_flow_control_strategy_state_t *)state;
 
@@ -188,10 +186,12 @@ int aeron_min_flow_control_strategy_fini(aeron_flow_control_strategy_t *strategy
     aeron_free(strategy_state->receivers.array);
     aeron_free(strategy->state);
     aeron_free(strategy);
+
     return 0;
 }
 
 static AERON_INIT_ONCE timeout_is_initialized = AERON_INIT_ONCE_VALUE;
+
 static int64_t aeron_min_flow_control_strategy_timeout_ns;
 
 static void initialize_aeron_min_flow_control_strategy_timeout()
@@ -204,7 +204,7 @@ static void initialize_aeron_min_flow_control_strategy_timeout()
         aeron_parse_duration_ns(timeout_str, &timeout_ns);
     }
 
-    aeron_min_flow_control_strategy_timeout_ns = (int64_t) timeout_ns;
+    aeron_min_flow_control_strategy_timeout_ns = (int64_t)timeout_ns;
 }
 
 int aeron_min_flow_control_strategy_supplier(

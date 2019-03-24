@@ -69,12 +69,12 @@ void aeron_distinct_error_log_close(aeron_distinct_error_log_t *log)
     aeron_distinct_error_log_observation_list_t *list = aeron_distinct_error_log_observation_list_load(log);
     aeron_distinct_observation_t *observations = list->observations;
     size_t num_observations = list->num_observations;
-    
+
     for (size_t i = 0; i < num_observations; i++)
     {
         aeron_free((void *)observations[i].description);
     }
-    
+
     aeron_free(log->observation_list);
 }
 
@@ -181,6 +181,7 @@ int aeron_distinct_error_log_record(
     aeron_distinct_error_log_observation_list_t *list = aeron_distinct_error_log_observation_list_load(log);
     size_t num_observations = list->num_observations;
     aeron_distinct_observation_t *observations = list->observations;
+
     if ((observation = aeron_distinct_error_log_find_observation(
         observations, num_observations, error_code, description)) == NULL)
     {
@@ -218,7 +219,8 @@ bool aeron_error_log_exists(const uint8_t *buffer, size_t buffer_size)
     int32_t length = 0;
 
     AERON_GET_VOLATILE(length, entry->length);
-    return (0 != length);
+
+    return 0 != length;
 }
 
 size_t aeron_error_log_read(
@@ -273,7 +275,9 @@ size_t aeron_distinct_error_log_num_observations(aeron_distinct_error_log_t *log
 
 extern int aeron_distinct_error_log_observation_list_alloc(
     aeron_distinct_error_log_observation_list_t **list, uint64_t num_observations);
+
 extern aeron_distinct_error_log_observation_list_t *aeron_distinct_error_log_observation_list_load(
     aeron_distinct_error_log_t *log);
+
 extern void aeron_distinct_error_log_observation_list_store(
     aeron_distinct_error_log_t *log, aeron_distinct_error_log_observation_list_t *list);

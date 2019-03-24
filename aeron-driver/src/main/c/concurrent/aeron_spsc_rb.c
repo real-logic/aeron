@@ -118,7 +118,7 @@ aeron_rb_write_result_t aeron_spsc_rb_writev(
     }
 
     record_header = (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + record_index);
-    
+
     size_t current_vector_offset = 0;
     for (int i = 0; i < iovcnt; i++)
     {
@@ -126,7 +126,7 @@ aeron_rb_write_result_t aeron_spsc_rb_writev(
         memcpy(offset, iov[i].iov_base, iov[i].iov_len);
         current_vector_offset += iov[i].iov_len;
     }
-    
+
     record_header->msg_type_id = msg_type_id;
     AERON_PUT_ORDERED(record_header->length, (int32_t)record_length);
     AERON_PUT_ORDERED(ring_buffer->descriptor->tail_position, tail + required_capacity + padding);
@@ -176,7 +176,6 @@ size_t aeron_spsc_rb_read(
             ring_buffer->buffer + AERON_RB_MESSAGE_OFFSET(record_index),
             record_length - AERON_RB_RECORD_HEADER_LENGTH,
             clientd);
-
     }
 
     if (0 != bytes_read)
@@ -192,6 +191,7 @@ int64_t aeron_spsc_rb_next_correlation_id(volatile aeron_spsc_rb_t *ring_buffer)
 {
     int64_t result = 0;
     AERON_GET_AND_ADD_INT64(result, ring_buffer->descriptor->correlation_counter, 1);
+
     return result;
 }
 

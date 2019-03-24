@@ -462,7 +462,6 @@ public final class AeronCluster implements AutoCloseable
     private void updateMemberEndpoints(final String memberEndpoints, final int leaderMemberId)
     {
         final Int2ObjectHashMap<MemberEndpoint> tempMap = parseMemberEndpoints(memberEndpoints);
-
         final MemberEndpoint existingLeaderEndpoint = endpointByMemberIdMap.get(leaderMemberId);
         final MemberEndpoint leaderEndpoint = tempMap.get(leaderMemberId);
 
@@ -474,7 +473,7 @@ public final class AeronCluster implements AutoCloseable
             existingLeaderEndpoint.publication = null;
         }
 
-        if (null != leaderEndpoint && null == leaderEndpoint.publication)
+        if (null == leaderEndpoint.publication)
         {
             final ChannelUri channelUri = ChannelUri.parse(ctx.ingressChannel());
             channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, leaderEndpoint.endpoint);
@@ -1524,15 +1523,26 @@ public final class AeronCluster implements AutoCloseable
 
         private void updateMembers()
         {
-            endpointByMemberIdMap.values().forEach(MemberEndpoint::disconnect);
-            endpointByMemberIdMap = parseMemberEndpoints(egressPoller.detail());
             leaderMemberId = egressPoller.leaderMemberId();
+            final MemberEndpoint leaderEndpoint = endpointByMemberIdMap.get(leaderMemberId);
+            if (null != leaderEndpoint)
+            {
+                ingressPublication = leaderEndpoint.publication;
+                leaderEndpoint.publication = null;
+                endpointByMemberIdMap.values().forEach(MemberEndpoint::disconnect);
+                endpointByMemberIdMap = parseMemberEndpoints(egressPoller.detail());
+            }
+            else
+            {
+                endpointByMemberIdMap.values().forEach(MemberEndpoint::disconnect);
+                endpointByMemberIdMap = parseMemberEndpoints(egressPoller.detail());
 
-            final MemberEndpoint memberEndpoint = endpointByMemberIdMap.get(leaderMemberId);
-            final ChannelUri channelUri = ChannelUri.parse(ctx.ingressChannel());
-            channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, memberEndpoint.endpoint);
-            memberEndpoint.publication = addIngressPublication(ctx, channelUri.toString(), ctx.ingressStreamId());
-            ingressPublication = memberEndpoint.publication;
+                final MemberEndpoint memberEndpoint = endpointByMemberIdMap.get(leaderMemberId);
+                final ChannelUri channelUri = ChannelUri.parse(ctx.ingressChannel());
+                channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, memberEndpoint.endpoint);
+                memberEndpoint.publication = addIngressPublication(ctx, channelUri.toString(), ctx.ingressStreamId());
+                ingressPublication = memberEndpoint.publication;
+            }
 
             state(1);
         }

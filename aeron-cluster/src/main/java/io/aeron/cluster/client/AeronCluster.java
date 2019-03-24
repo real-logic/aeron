@@ -63,7 +63,7 @@ public final class AeronCluster implements AutoCloseable
     private Int2ObjectHashMap<MemberEndpoint> endpointByMemberIdMap;
     private final BufferClaim bufferClaim = new BufferClaim();
     private final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[INGRESS_HEADER_LENGTH]);
-    private final DirectBufferVector headerVector = new DirectBufferVector(headerBuffer, 0, headerBuffer.capacity());
+    private final DirectBufferVector headerVector = new DirectBufferVector(headerBuffer, 0, INGRESS_HEADER_LENGTH);
     private final UnsafeBuffer keepaliveMsgBuffer;
     private final MessageHeaderEncoder messageHeaderEncoder;
     private final IngressMessageHeaderEncoder ingressMessageHeaderEncoder = new IngressMessageHeaderEncoder();
@@ -1445,7 +1445,6 @@ public final class AeronCluster implements AutoCloseable
                     }
                 }
             }
-
         }
 
         private void prepareConnectRequest()

@@ -204,7 +204,8 @@ public class AeronArchive implements AutoCloseable
     }
 
     /**
-     * Begin an attempt at creating a connection which can be completed by calling {@link AsyncConnect#poll()}.
+     * Begin an attempt at creating a connection which can be completed by calling {@link AsyncConnect#poll()} until
+     * it returns the client, before complete it will return null.
      *
      * @return the {@link AsyncConnect} that can be polled for completion.
      */
@@ -214,7 +215,8 @@ public class AeronArchive implements AutoCloseable
     }
 
     /**
-     * Begin an attempt at creating a connection which can be completed by calling {@link AsyncConnect#poll()}.
+     * Begin an attempt at creating a connection which can be completed by calling {@link AsyncConnect#poll()} until
+     * it returns the client, before complete it will return null.
      *
      * @param ctx for the archive connection.
      * @return the {@link AsyncConnect} that can be polled for completion.

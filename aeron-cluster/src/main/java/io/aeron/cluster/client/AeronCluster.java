@@ -52,23 +52,20 @@ public final class AeronCluster implements AutoCloseable
     private static final int SEND_ATTEMPTS = 3;
     private static final int FRAGMENT_LIMIT = 10;
 
-    private long leadershipTermId = Aeron.NULL_VALUE;
     private final long clusterSessionId;
-    private int leaderMemberId = Aeron.NULL_VALUE;
-    private final boolean isUnicast;
+    private long leadershipTermId;
+    private int leaderMemberId;
     private final Context ctx;
-    private final Aeron aeron;
     private final Subscription subscription;
     private Publication publication;
-    private final NanoClock nanoClock;
     private final IdleStrategy idleStrategy;
 
-    private Int2ObjectHashMap<MemberEndpoint> endpointByMemberIdMap = new Int2ObjectHashMap<>();
+    private Int2ObjectHashMap<MemberEndpoint> endpointByMemberIdMap;
     private final BufferClaim bufferClaim = new BufferClaim();
     private final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[INGRESS_HEADER_LENGTH]);
     private final DirectBufferVector headerVector = new DirectBufferVector(headerBuffer, 0, headerBuffer.capacity());
     private final UnsafeBuffer keepaliveMsgBuffer;
-    private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
+    private final MessageHeaderEncoder messageHeaderEncoder;
     private final IngressMessageHeaderEncoder ingressMessageHeaderEncoder = new IngressMessageHeaderEncoder();
     private final SessionKeepAliveEncoder sessionKeepAliveEncoder = new SessionKeepAliveEncoder();
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
@@ -98,58 +95,121 @@ public final class AeronCluster implements AutoCloseable
      */
     public static AeronCluster connect(final AeronCluster.Context ctx)
     {
-        return new AeronCluster(ctx);
-    }
-
-    private AeronCluster(final Context ctx)
-    {
         Subscription subscription = null;
-
+        AsyncConnect asyncConnect = null;
         try
         {
-            this.ctx = ctx;
             ctx.conclude();
 
-            this.aeron = ctx.aeron();
-            this.idleStrategy = ctx.idleStrategy();
-            this.nanoClock = aeron.context().nanoClock();
-            this.isUnicast = ctx.clusterMemberEndpoints() != null;
-            this.egressListener = ctx.egressListener();
-            this.fragmentAssembler = new FragmentAssembler(this::onFragment, 0, ctx.isDirectAssemblers());
-            this.controlledEgressListener = ctx.controlledEgressListener();
-            this.controlledFragmentAssembler = new ControlledFragmentAssembler(
-                this::onControlledFragment, 0, ctx.isDirectAssemblers());
-
+            final Aeron aeron = ctx.aeron();
             subscription = aeron.addSubscription(ctx.egressChannel(), ctx.egressStreamId());
-            this.subscription = subscription;
 
-            clusterSessionId = connectToCluster();
+            final IdleStrategy idleStrategy = ctx.idleStrategy();
+            asyncConnect = new AsyncConnect(ctx, subscription);
 
-            ingressMessageHeaderEncoder
-                .wrapAndApplyHeader(headerBuffer, 0, messageHeaderEncoder)
-                .clusterSessionId(clusterSessionId)
-                .leadershipTermId(leadershipTermId);
+            AeronCluster aeronCluster;
+            while (null == (aeronCluster = asyncConnect.poll()))
+            {
+                idleStrategy.idle();
+            }
 
-            keepaliveMsgBuffer = new UnsafeBuffer(new byte[
-                MessageHeaderEncoder.ENCODED_LENGTH + SessionKeepAliveEncoder.BLOCK_LENGTH]);
-
-            sessionKeepAliveEncoder
-                .wrapAndApplyHeader(keepaliveMsgBuffer, 0, messageHeaderEncoder)
-                .leadershipTermId(leadershipTermId)
-                .clusterSessionId(clusterSessionId);
+            return aeronCluster;
         }
         catch (final Exception ex)
         {
             if (!ctx.ownsAeronClient())
             {
-                endpointByMemberIdMap.values().forEach(MemberEndpoint::disconnect);
-                CloseHelper.quietClose(publication);
+                CloseHelper.close(subscription);
+                CloseHelper.close(asyncConnect);
+            }
+
+            ctx.close();
+
+            throw ex;
+        }
+    }
+
+    /**
+     * Begin an attempt at creating a connection which can be completed by calling {@link AsyncConnect#poll()} until
+     * it returns the client, before complete it will return null.
+     *
+     * @return the {@link AsyncConnect} that can be polled for completion.
+     */
+    public static AsyncConnect asyncConnect()
+    {
+        return asyncConnect(new Context());
+    }
+
+    /**
+     * Begin an attempt at creating a connection which can be completed by calling {@link AsyncConnect#poll()} until
+     * it returns the client, before complete it will return null.
+     *
+     * @param ctx for the cluster.
+     * @return the {@link AsyncConnect} that can be polled for completion.
+     */
+    public static AsyncConnect asyncConnect(final Context ctx)
+    {
+        Subscription subscription = null;
+        try
+        {
+            ctx.conclude();
+
+            final Aeron aeron = ctx.aeron();
+            subscription = aeron.addSubscription(ctx.egressChannel(), ctx.egressStreamId());
+
+            return new AsyncConnect(ctx, subscription);
+        }
+        catch (final Exception ex)
+        {
+            if (!ctx.ownsAeronClient())
+            {
                 CloseHelper.quietClose(subscription);
             }
 
             ctx.close();
+
             throw ex;
         }
+    }
+
+    private AeronCluster(
+        final Context ctx,
+        final MessageHeaderEncoder messageHeaderEncoder,
+        final Publication publication,
+        final Subscription subscription,
+        final Int2ObjectHashMap<MemberEndpoint> endpointByMemberIdMap,
+        final long clusterSessionId,
+        final long leadershipTermId,
+        final int leaderMemberId)
+    {
+        this.ctx = ctx;
+        this.messageHeaderEncoder = messageHeaderEncoder;
+        this.subscription = subscription;
+        this.endpointByMemberIdMap = endpointByMemberIdMap;
+        this.clusterSessionId = clusterSessionId;
+        this.leadershipTermId = leadershipTermId;
+        this.leaderMemberId = leaderMemberId;
+        this.publication = publication;
+
+        this.idleStrategy = ctx.idleStrategy();
+        this.egressListener = ctx.egressListener();
+        this.fragmentAssembler = new FragmentAssembler(this::onFragment, 0, ctx.isDirectAssemblers());
+        this.controlledEgressListener = ctx.controlledEgressListener();
+        this.controlledFragmentAssembler = new ControlledFragmentAssembler(
+            this::onControlledFragment, 0, ctx.isDirectAssemblers());
+
+        ingressMessageHeaderEncoder
+            .wrapAndApplyHeader(headerBuffer, 0, messageHeaderEncoder)
+            .clusterSessionId(clusterSessionId)
+            .leadershipTermId(leadershipTermId);
+
+        keepaliveMsgBuffer = new UnsafeBuffer(new byte[
+            MessageHeaderEncoder.ENCODED_LENGTH + SessionKeepAliveEncoder.BLOCK_LENGTH]);
+
+        sessionKeepAliveEncoder
+            .wrapAndApplyHeader(keepaliveMsgBuffer, 0, messageHeaderEncoder)
+            .leadershipTermId(leadershipTermId)
+            .clusterSessionId(clusterSessionId);
     }
 
     /**
@@ -365,7 +425,7 @@ public final class AeronCluster implements AutoCloseable
         ingressMessageHeaderEncoder.leadershipTermId(leadershipTermId);
         sessionKeepAliveEncoder.leadershipTermId(leadershipTermId);
 
-        if (isUnicast)
+        if (ctx.clusterMemberEndpoints() != null)
         {
             CloseHelper.close(publication);
             ctx.clusterMemberEndpoints(memberEndpoints);
@@ -397,7 +457,7 @@ public final class AeronCluster implements AutoCloseable
         {
             final ChannelUri channelUri = ChannelUri.parse(ctx.ingressChannel());
             channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, leaderEndpoint.endpoint);
-            publication = addIngressPublication(channelUri.toString(), ctx.ingressStreamId());
+            publication = addIngressPublication(ctx, channelUri.toString(), ctx.ingressStreamId());
             leaderEndpoint.publication = publication;
         }
 
@@ -409,16 +469,19 @@ public final class AeronCluster implements AutoCloseable
     {
         final Int2ObjectHashMap<MemberEndpoint> endpointByMemberIdMap = new Int2ObjectHashMap<>();
 
-        for (final String endpoint : memberEndpoints.split(","))
+        if (null != memberEndpoints)
         {
-            final int i = endpoint.indexOf('=');
-            if (-1 == i)
+            for (final String endpoint : memberEndpoints.split(","))
             {
-                throw new ConfigurationException("endpoint missing '=' separator: " + memberEndpoints);
-            }
+                final int i = endpoint.indexOf('=');
+                if (-1 == i)
+                {
+                    throw new ConfigurationException("endpoint missing '=' separator: " + memberEndpoints);
+                }
 
-            final int memberId = AsciiEncoding.parseIntAscii(endpoint, 0, i);
-            endpointByMemberIdMap.put(memberId, new MemberEndpoint(memberId, endpoint.substring(i + 1)));
+                final int memberId = AsciiEncoding.parseIntAscii(endpoint, 0, i);
+                endpointByMemberIdMap.put(memberId, new MemberEndpoint(memberId, endpoint.substring(i + 1)));
+            }
         }
 
         return endpointByMemberIdMap;
@@ -590,211 +653,15 @@ public final class AeronCluster implements AutoCloseable
         }
     }
 
-    private long connectToCluster()
-    {
-        final long deadlineNs = nanoClock.nanoTime() + ctx.messageTimeoutNs();
-
-        if (isUnicast)
-        {
-            updateMemberEndpoints(ctx.clusterMemberEndpoints(), Aeron.NULL_VALUE);
-
-            final ChannelUri channelUri = ChannelUri.parse(ctx.ingressChannel());
-            for (final MemberEndpoint member : endpointByMemberIdMap.values())
-            {
-                channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, member.endpoint);
-                member.publication = addIngressPublication(channelUri.toString(), ctx.ingressStreamId());
-            }
-
-            while (true)
-            {
-                MemberEndpoint connectedMember = null;
-                for (final MemberEndpoint member : endpointByMemberIdMap.values())
-                {
-                    if (member.publication.isConnected())
-                    {
-                        connectedMember = member;
-                        break;
-                    }
-                }
-
-                if (null != connectedMember)
-                {
-                    publication = connectedMember.publication;
-                    final EgressPoller poller = new EgressPoller(subscription, FRAGMENT_LIMIT);
-                    final byte[] encodedCredentials = ctx.credentialsSupplier().encodedCredentials();
-                    final long clusterSessionId = openSession(deadlineNs, poller, encodedCredentials);
-
-                    endpointByMemberIdMap.get(leaderMemberId).publication = null;
-                    endpointByMemberIdMap.values().forEach(MemberEndpoint::disconnect);
-
-                    return clusterSessionId;
-                }
-
-                checkDeadline(deadlineNs, "awaiting connection to cluster");
-                idleStrategy.idle();
-            }
-        }
-        else
-        {
-            publication = addIngressPublication(ctx.ingressChannel(), ctx.ingressStreamId());
-            awaitConnectedPublication(deadlineNs);
-            final byte[] encodedCredentials = ctx.credentialsSupplier().encodedCredentials();
-
-            return openSession(deadlineNs, new EgressPoller(subscription, FRAGMENT_LIMIT), encodedCredentials);
-        }
-    }
-
-    private Publication addIngressPublication(final String channel, final int streamId)
+    private static Publication addIngressPublication(final Context ctx, final String channel, final int streamId)
     {
         if (ctx.isIngressExclusive())
         {
-            return aeron.addExclusivePublication(channel, streamId);
+            return ctx.aeron().addExclusivePublication(channel, streamId);
         }
         else
         {
-            return aeron.addPublication(channel, streamId);
-        }
-    }
-
-    private long openSession(final long deadlineNs, final EgressPoller poller, final byte[] encodedCredentials)
-    {
-        long correlationId = sendConnectRequest(publication, encodedCredentials, deadlineNs);
-
-        while (true)
-        {
-            pollNextResponse(deadlineNs, poller);
-
-            if (poller.correlationId() == correlationId)
-            {
-                if (poller.isChallenged())
-                {
-                    correlationId = sendChallengeResponse(
-                        poller.clusterSessionId(),
-                        ctx.credentialsSupplier().onChallenge(poller.encodedChallenge()),
-                        deadlineNs);
-                    continue;
-                }
-
-                switch (poller.eventCode())
-                {
-                    case OK:
-                        this.leadershipTermId = poller.leadershipTermId();
-                        this.leaderMemberId = poller.leaderMemberId();
-                        return poller.clusterSessionId();
-
-                    case ERROR:
-                        throw new ClusterException(poller.detail());
-
-                    case REDIRECT:
-                        updateMemberEndpoints(poller.detail(), poller.leaderMemberId());
-                        awaitConnectedPublication(deadlineNs);
-                        return openSession(deadlineNs, poller, encodedCredentials);
-
-                    case AUTHENTICATION_REJECTED:
-                        throw new AuthenticationException(poller.detail());
-                }
-            }
-        }
-    }
-
-    private void awaitConnectedPublication(final long deadlineNs)
-    {
-        while (!publication.isConnected())
-        {
-            checkDeadline(deadlineNs, "awaiting connection to cluster");
-            idleStrategy.idle();
-        }
-    }
-
-    private void pollNextResponse(final long deadlineNs, final EgressPoller poller)
-    {
-        idleStrategy.reset();
-
-        while (poller.poll() <= 0 && !poller.isPollComplete())
-        {
-            checkDeadline(deadlineNs, "awaiting response");
-            idleStrategy.idle();
-        }
-    }
-
-    private long sendConnectRequest(
-        final Publication publication, final byte[] encodedCredentials, final long deadlineNs)
-    {
-        final long correlationId = aeron.nextCorrelationId();
-        final SessionConnectRequestEncoder sessionConnectRequestEncoder = new SessionConnectRequestEncoder();
-        final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
-
-        sessionConnectRequestEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
-            .correlationId(correlationId)
-            .responseStreamId(ctx.egressStreamId())
-            .version(Configuration.SEMANTIC_VERSION)
-            .responseChannel(ctx.egressChannel())
-            .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
-
-        idleStrategy.reset();
-
-        while (true)
-        {
-            final long result = publication.offer(buffer);
-            if (result > 0)
-            {
-                break;
-            }
-
-            if (Publication.CLOSED == result)
-            {
-                throw new ClusterException("unexpected close from cluster");
-            }
-
-            checkDeadline(deadlineNs, "failed to connect to cluster");
-            idleStrategy.idle();
-        }
-
-        return correlationId;
-    }
-
-    private long sendChallengeResponse(final long sessionId, final byte[] encodedCredentials, final long deadlineNs)
-    {
-        final long correlationId = aeron.nextCorrelationId();
-        final ChallengeResponseEncoder challengeResponseEncoder = new ChallengeResponseEncoder();
-        final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
-
-        challengeResponseEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
-            .correlationId(correlationId)
-            .clusterSessionId(sessionId)
-            .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
-
-        idleStrategy.reset();
-
-        while (true)
-        {
-            final long result = publication.offer(buffer);
-            if (result > 0)
-            {
-                break;
-            }
-
-            checkResult(result);
-            checkDeadline(deadlineNs, "failed to connect to cluster");
-
-            idleStrategy.idle();
-        }
-
-        return correlationId;
-    }
-
-    private void checkDeadline(final long deadlineNs, final String errorMessage)
-    {
-        if (Thread.interrupted())
-        {
-            LangUtil.rethrowUnchecked(new InterruptedException());
-        }
-
-        if (deadlineNs - nanoClock.nanoTime() < 0)
-        {
-            throw new TimeoutException(errorMessage);
+            return ctx.aeron().addPublication(channel, streamId);
         }
     }
 
@@ -1446,6 +1313,239 @@ public final class AeronCluster implements AutoCloseable
             {
                 CloseHelper.close(aeron);
             }
+        }
+    }
+
+    /**
+     * Allows for the async establishment of a cluster session.
+     */
+    public static class AsyncConnect implements AutoCloseable
+    {
+        private long deadlineNs;
+        private long correlationId;
+        private long clusterSessionId;
+        private long leadershipTermId;
+        private int leaderMemberId;
+        private int state = 0;
+        private final boolean isUnicast;
+
+        private final Context ctx;
+        private final NanoClock nanoClock;
+        private final EgressPoller egressPoller;
+        private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
+        private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
+        private Int2ObjectHashMap<MemberEndpoint> endpointByMemberIdMap;
+        private Publication ingressPublication;
+
+        AsyncConnect(final Context ctx, final Subscription egressSubscription)
+        {
+            this.ctx = ctx;
+
+            isUnicast = ctx.clusterMemberEndpoints() != null;
+            endpointByMemberIdMap = parseMemberEndpoints(ctx.clusterMemberEndpoints());
+            egressPoller = new EgressPoller(egressSubscription, FRAGMENT_LIMIT);
+            nanoClock = ctx.aeron().context().nanoClock();
+            deadlineNs = nanoClock.nanoTime() + ctx.messageTimeoutNs();
+        }
+
+        public void close()
+        {
+            endpointByMemberIdMap.values().forEach(MemberEndpoint::disconnect);
+        }
+
+        public int state()
+        {
+            return state;
+        }
+
+        private void state(final int state)
+        {
+            //System.out.println(this.state + " -> " + state);
+            this.state = state;
+        }
+
+        public AeronCluster poll()
+        {
+            checkDeadline();
+
+            switch (state)
+            {
+                case 0:
+                    createIngressPublications();
+                    break;
+
+                case 1:
+                    awaitPublicationConnected();
+                    break;
+
+                case 2:
+                    sendMessage();
+                    break;
+
+                case 3:
+                    pollResponse();
+                    break;
+            }
+
+            if (4 == state)
+            {
+                return newInstance();
+            }
+
+            return null;
+        }
+
+        private void checkDeadline()
+        {
+            if (Thread.interrupted())
+            {
+                LangUtil.rethrowUnchecked(new InterruptedException());
+            }
+
+            if (deadlineNs - nanoClock.nanoTime() < 0)
+            {
+                throw new TimeoutException("connect timeout");
+            }
+        }
+
+        private void createIngressPublications()
+        {
+            if (isUnicast)
+            {
+                final ChannelUri channelUri = ChannelUri.parse(ctx.ingressChannel());
+                for (final MemberEndpoint member : endpointByMemberIdMap.values())
+                {
+                    channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, member.endpoint);
+                    member.publication = addIngressPublication(ctx, channelUri.toString(), ctx.ingressStreamId());
+                }
+            }
+            else
+            {
+                ingressPublication = addIngressPublication(ctx, ctx.ingressChannel(), ctx.ingressStreamId());
+            }
+
+            state(1);
+        }
+
+        private void awaitPublicationConnected()
+        {
+            if (null != ingressPublication && ingressPublication.isConnected())
+            {
+                prepareConnectRequest();
+            }
+            else
+            {
+                for (final MemberEndpoint member : endpointByMemberIdMap.values())
+                {
+                    if (null != member.publication && member.publication.isConnected())
+                    {
+                        ingressPublication = member.publication;
+                        prepareConnectRequest();
+                        break;
+                    }
+                }
+            }
+
+        }
+
+        private void prepareConnectRequest()
+        {
+            correlationId = ctx.aeron().nextCorrelationId();
+            final byte[] encodedCredentials = ctx.credentialsSupplier().encodedCredentials();
+
+            new SessionConnectRequestEncoder()
+                .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+                .correlationId(correlationId)
+                .responseStreamId(ctx.egressStreamId())
+                .version(Configuration.SEMANTIC_VERSION)
+                .responseChannel(ctx.egressChannel())
+                .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
+
+            state(2);
+        }
+
+        private void sendMessage()
+        {
+            final long result = ingressPublication.offer(buffer);
+            if (result > 0)
+            {
+                state(3);
+            }
+            else if (Publication.CLOSED == result)
+            {
+                throw new ClusterException("unexpected close from cluster");
+            }
+        }
+
+        private void pollResponse()
+        {
+            if (egressPoller.poll() > 0 &&
+                egressPoller.isPollComplete() &&
+                egressPoller.correlationId() == correlationId)
+            {
+                if (egressPoller.isChallenged())
+                {
+                    clusterSessionId = egressPoller.clusterSessionId();
+                    prepareChallengeResponse(ctx.credentialsSupplier().onChallenge(egressPoller.encodedChallenge()));
+                    state(2);
+                    return;
+                }
+
+                switch (egressPoller.eventCode())
+                {
+                    case OK:
+                        this.leadershipTermId = egressPoller.leadershipTermId();
+                        this.leaderMemberId = egressPoller.leaderMemberId();
+                        clusterSessionId = egressPoller.clusterSessionId();
+                        state(4);
+                        break;
+
+                    case ERROR:
+                        throw new ClusterException(egressPoller.detail());
+
+                    case REDIRECT:
+                        endpointByMemberIdMap.values().forEach(MemberEndpoint::disconnect);
+                        endpointByMemberIdMap = parseMemberEndpoints(egressPoller.detail());
+                        leaderMemberId = egressPoller.leaderMemberId();
+                        final MemberEndpoint memberEndpoint = endpointByMemberIdMap.get(leaderMemberId);
+                        final ChannelUri channelUri = ChannelUri.parse(ctx.ingressChannel());
+                        channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, memberEndpoint.endpoint);
+                        memberEndpoint.publication = addIngressPublication(
+                            ctx, channelUri.toString(), ctx.ingressStreamId());
+                        ingressPublication = memberEndpoint.publication;
+                        state(1);
+                        break;
+
+                    case AUTHENTICATION_REJECTED:
+                        throw new AuthenticationException(egressPoller.detail());
+                }
+            }
+        }
+
+        private void prepareChallengeResponse(final byte[] encodedCredentials)
+        {
+            correlationId = ctx.aeron().nextCorrelationId();
+
+            new ChallengeResponseEncoder()
+                .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+                .correlationId(correlationId)
+                .clusterSessionId(clusterSessionId)
+                .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
+
+            state(2);
+        }
+
+        private AeronCluster newInstance()
+        {
+            return new AeronCluster(
+                ctx,
+                messageHeaderEncoder,
+                ingressPublication,
+                egressPoller.subscription(),
+                endpointByMemberIdMap,
+                clusterSessionId,
+                leadershipTermId,
+                leaderMemberId);
         }
     }
 

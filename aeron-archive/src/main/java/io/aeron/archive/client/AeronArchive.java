@@ -1384,7 +1384,7 @@ public class AeronArchive implements AutoCloseable
          * for dynamic subscribers, an endpoint can be added to the subscription side for controlling port usage.
          */
         public static final String RECORDING_EVENTS_CHANNEL_DEFAULT =
-            "aeron:udp?control=localhost:8030|control-mode=dynamic";
+            "aeron:udp?control-mode=dynamic|control=localhost:8030";
 
         /**
          * Stream id within a channel for receiving progress of recordings from an archive.

@@ -380,32 +380,17 @@ public final class AeronCluster implements AutoCloseable
 
     private void updateMemberEndpoints(final String memberEndpoints, final int leaderMemberId)
     {
-        final Int2ObjectHashMap<MemberEndpoint> tempMap = new Int2ObjectHashMap<>();
-
-        for (final String endpoint : memberEndpoints.split(","))
-        {
-            final int i = endpoint.indexOf('=');
-            if (-1 == i)
-            {
-                throw new ConfigurationException(
-                    "invalid format - endpoint missing '=' separator: " + memberEndpoints);
-            }
-
-            final int memberId = AsciiEncoding.parseIntAscii(endpoint, 0, i);
-            tempMap.put(memberId, new MemberEndpoint(memberId, endpoint.substring(i + 1)));
-        }
+        final Int2ObjectHashMap<MemberEndpoint> tempMap = parseMemberEndpoints(memberEndpoints);
 
         final MemberEndpoint existingLeaderEndpoint = endpointByMemberIdMap.get(leaderMemberId);
         final MemberEndpoint leaderEndpoint = tempMap.get(leaderMemberId);
 
-        if (null != existingLeaderEndpoint && null != existingLeaderEndpoint.publication)
+        if (null != existingLeaderEndpoint && null != existingLeaderEndpoint.publication &&
+            existingLeaderEndpoint.endpoint.equals(leaderEndpoint.endpoint))
         {
-            if (null != leaderEndpoint && leaderEndpoint.endpoint.equals(existingLeaderEndpoint.endpoint))
-            {
-                leaderEndpoint.publication = existingLeaderEndpoint.publication;
-                existingLeaderEndpoint.publication = null;
-                publication = leaderEndpoint.publication;
-            }
+            leaderEndpoint.publication = existingLeaderEndpoint.publication;
+            publication = existingLeaderEndpoint.publication;
+            existingLeaderEndpoint.publication = null;
         }
 
         if (null != leaderEndpoint && null == leaderEndpoint.publication)
@@ -418,6 +403,25 @@ public final class AeronCluster implements AutoCloseable
 
         endpointByMemberIdMap.values().forEach(MemberEndpoint::disconnect);
         endpointByMemberIdMap = tempMap;
+    }
+
+    private static Int2ObjectHashMap<MemberEndpoint> parseMemberEndpoints(final String memberEndpoints)
+    {
+        final Int2ObjectHashMap<MemberEndpoint> endpointByMemberIdMap = new Int2ObjectHashMap<>();
+
+        for (final String endpoint : memberEndpoints.split(","))
+        {
+            final int i = endpoint.indexOf('=');
+            if (-1 == i)
+            {
+                throw new ConfigurationException("endpoint missing '=' separator: " + memberEndpoints);
+            }
+
+            final int memberId = AsciiEncoding.parseIntAscii(endpoint, 0, i);
+            endpointByMemberIdMap.put(memberId, new MemberEndpoint(memberId, endpoint.substring(i + 1)));
+        }
+
+        return endpointByMemberIdMap;
     }
 
     private void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)

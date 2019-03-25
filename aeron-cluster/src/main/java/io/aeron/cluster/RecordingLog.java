@@ -501,6 +501,25 @@ public class RecordingLog implements AutoCloseable
     }
 
     /**
+     * Find the last leadership term in the recording log.
+     *
+     * @return the last leadership term in the recording log.
+     */
+    public Entry findLastTerm()
+    {
+        for (int i = entries.size() - 1; i >= 0; i--)
+        {
+            final Entry entry = entries.get(i);
+            if (ENTRY_TYPE_TERM == entry.type)
+            {
+                return entry;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Get the term {@link Entry} for a given leadership term id.
      *
      * @param leadershipTermId to get {@link Entry} for.

@@ -46,7 +46,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.Comparator;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -138,7 +137,7 @@ public class StartClusterFromTruncatedRecordingLogTest
 
         if (!executor.awaitTermination(5, TimeUnit.SECONDS))
         {
-            System.out.println("Warning: not all tasks completed promptly");
+            System.out.println("warning: not all tasks completed promptly");
         }
     }
 
@@ -234,24 +233,25 @@ public class StartClusterFromTruncatedRecordingLogTest
         deleteFile(new File(archiveDataDir, ArchiveMarkFile.FILENAME));
         deleteFile(new File(consensusModuleDataDir, ClusterMarkFile.FILENAME));
 
-        try (RecordingLog existingRecordingLog = new RecordingLog(consensusModuleDataDir))
+        try (RecordingLog recordingLog = new RecordingLog(consensusModuleDataDir))
         {
+            final RecordingLog.Entry lastTermEntry = recordingLog.findLastTerm();
+            if (null == lastTermEntry)
+            {
+                throw new IllegalStateException("no term found in recording log");
+            }
+
             try (RecordingLog newRecordingLog = new RecordingLog(new File(baseDirName)))
             {
-                final RecordingLog.Entry latestTermEntry = existingRecordingLog.entries().stream()
-                    .filter((e) -> e.type == RecordingLog.ENTRY_TYPE_TERM)
-                    .max(Comparator.comparingLong((e) -> e.logPosition))
-                    .orElseThrow(() -> new IllegalStateException("no term entry in recording log"));
-
                 newRecordingLog.appendTerm(
-                    latestTermEntry.recordingId,
-                    latestTermEntry.leadershipTermId,
-                    latestTermEntry.termBaseLogPosition,
-                    latestTermEntry.timestamp);
-                newRecordingLog.commitLogPosition(latestTermEntry.leadershipTermId, latestTermEntry.logPosition);
+                    lastTermEntry.recordingId,
+                    lastTermEntry.leadershipTermId,
+                    lastTermEntry.termBaseLogPosition,
+                    lastTermEntry.timestamp);
+                newRecordingLog.commitLogPosition(lastTermEntry.leadershipTermId, lastTermEntry.logPosition);
 
-                appendServiceSnapshot(existingRecordingLog, newRecordingLog, -1);
-                appendServiceSnapshot(existingRecordingLog, newRecordingLog, 0);
+                appendServiceSnapshot(recordingLog, newRecordingLog, 0);
+                appendServiceSnapshot(recordingLog, newRecordingLog, ConsensusModule.Configuration.SERVICE_ID);
             }
         }
 
@@ -318,7 +318,7 @@ public class StartClusterFromTruncatedRecordingLogTest
     {
         if (null == echoServices[index])
         {
-            echoServices[index] = new EchoService(index, latchOne, latchTwo);
+            echoServices[index] = new EchoService(latchOne, latchTwo);
         }
         final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + index;
         final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + index + "-driver";
@@ -467,13 +467,11 @@ public class StartClusterFromTruncatedRecordingLogTest
     static class EchoService extends StubClusteredService
     {
         private volatile int messageCount;
-        private final int index;
         private final CountDownLatch latchOne;
         private final CountDownLatch latchTwo;
 
-        EchoService(final int index, final CountDownLatch latchOne, final CountDownLatch latchTwo)
+        EchoService(final CountDownLatch latchOne, final CountDownLatch latchTwo)
         {
-            this.index = index;
             this.latchOne = latchOne;
             this.latchTwo = latchTwo;
         }

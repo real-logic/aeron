@@ -798,6 +798,7 @@ public class PublicationImage
 
     private void trackConnection(final int transportIndex, final InetSocketAddress srcAddress, final long nowNs)
     {
+        imageConnections = ArrayUtil.ensureCapacity(imageConnections, transportIndex + 1);
         ImageConnection imageConnection = imageConnections[transportIndex];
 
         if (null == imageConnection)

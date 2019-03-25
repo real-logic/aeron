@@ -27,7 +27,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.concurrent.status.CountersReader.MAX_LABEL_LENGTH;
 
 /**
- * Allocates {@link UnsafeBufferPosition} counters on a stream of messages.
+ * Allocates counters on a stream of messages.
  * <p>
  * Positions tracked in bytes include:
  * <ul>
@@ -43,7 +43,7 @@ import static org.agrona.concurrent.status.CountersReader.MAX_LABEL_LENGTH;
  * <b>Note:</b> All counters are real-time with the exception of {@link PublisherPos} which is sampled once per second
  * which means it can appear to be behind.
  */
-public class StreamPositionCounter
+public class StreamCounter
 {
     /**
      * Offset in the key meta data for the registration id of the counter.
@@ -236,6 +236,9 @@ public class StreamPositionCounter
 
             case PublisherPos.PUBLISHER_POS_TYPE_ID:
                 return PublisherPos.NAME;
+
+            case SenderBpe.SENDER_BPE_TYPE_ID:
+                return SenderBpe.NAME;
 
             default:
                 return "<unknown>";

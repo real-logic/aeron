@@ -51,7 +51,7 @@ public class PerImageIndicator
         final int streamId,
         final String channel)
     {
-        final int counterId = StreamPositionCounter.allocateCounterId(
+        final int counterId = StreamCounter.allocateCounterId(
             tempBuffer, name, PER_IMAGE_TYPE_ID, countersManager, registrationId, sessionId, streamId, channel);
 
         return new AtomicCounter(countersManager.valuesBuffer(), counterId, countersManager);

@@ -44,7 +44,7 @@ public class SubscriberPos
         final String channel,
         final long joinPosition)
     {
-        return StreamPositionCounter.allocate(
+        return StreamCounter.allocate(
             tempBuffer,
             NAME,
             SUBSCRIBER_POSITION_TYPE_ID,

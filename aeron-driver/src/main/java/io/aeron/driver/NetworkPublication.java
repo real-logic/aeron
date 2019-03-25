@@ -135,6 +135,7 @@ public class NetworkPublication
     private final AtomicCounter heartbeatsSent;
     private final AtomicCounter retransmitsSent;
     private final AtomicCounter senderFlowControlLimits;
+    private final AtomicCounter senderBpe;
     private final AtomicCounter shortSends;
     private final AtomicCounter unblockedPublications;
 
@@ -149,6 +150,7 @@ public class NetworkPublication
         final Position publisherLimit,
         final Position senderPosition,
         final Position senderLimit,
+        final AtomicCounter senderBpe,
         final int sessionId,
         final int streamId,
         final int initialTermId,
@@ -197,6 +199,7 @@ public class NetworkPublication
         retransmitsSent = systemCounters.get(RETRANSMITS_SENT);
         senderFlowControlLimits = systemCounters.get(SENDER_FLOW_CONTROL_LIMITS);
         unblockedPublications = systemCounters.get(UNBLOCKED_PUBLICATIONS);
+        this.senderBpe = senderBpe;
 
         termBuffers = rawLog.termBuffers();
         sendBuffers = rawLog.sliceTerms();
@@ -534,6 +537,7 @@ public class NetworkPublication
         else if (trackSenderLimits)
         {
             trackSenderLimits = false;
+            senderBpe.incrementOrdered();
             senderFlowControlLimits.incrementOrdered();
         }
 

@@ -42,7 +42,7 @@ public class SenderPos
         final int streamId,
         final String channel)
     {
-        return StreamPositionCounter.allocate(
+        return StreamCounter.allocate(
             tempBuffer, NAME, SENDER_POSITION_TYPE_ID, countersManager, registrationId, sessionId, streamId, channel);
     }
 }

@@ -16,27 +16,26 @@
 package io.aeron.driver.status;
 
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
-import org.agrona.concurrent.status.UnsafeBufferPosition;
 
 /**
- * The position in bytes a publication has reached appending to the log.
- * <p>
- * <b>Note:</b> This is a not a real-time value like the other and is updated one per second for monitoring purposes.
+ * Count of back-pressure events (BPE)s a sender has experienced on a stream. This is a per-stream event count for
+ * that which is aggregated in {@link SystemCounterDescriptor#SENDER_FLOW_CONTROL_LIMITS}.
  */
-public class PublisherPos
+public class SenderBpe
 {
     /**
-     * Type id of a publisher limit counter.
+     * Type id of a sender back-pressure event counter.
      */
-    public static final int PUBLISHER_POS_TYPE_ID = 12;
+    public static final int SENDER_BPE_TYPE_ID = 13;
 
     /**
      * Human readable name for the counter.
      */
-    public static final String NAME = "pub-pos (sample)";
+    public static final String NAME = "snd-bpe";
 
-    public static UnsafeBufferPosition allocate(
+    public static AtomicCounter allocate(
         final MutableDirectBuffer tempBuffer,
         final CountersManager countersManager,
         final long registrationId,
@@ -44,7 +43,9 @@ public class PublisherPos
         final int streamId,
         final String channel)
     {
-        return StreamCounter.allocate(
-            tempBuffer, NAME, PUBLISHER_POS_TYPE_ID, countersManager, registrationId, sessionId, streamId, channel);
+        final int counterId = StreamCounter.allocateCounterId(
+            tempBuffer, NAME, SENDER_BPE_TYPE_ID, countersManager, registrationId, sessionId, streamId, channel);
+
+        return new AtomicCounter(countersManager.valuesBuffer(), counterId, countersManager);
     }
 }

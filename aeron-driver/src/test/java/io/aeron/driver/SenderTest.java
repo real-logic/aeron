@@ -143,6 +143,7 @@ public class SenderTest
             mock(Position.class),
             new AtomicLongPosition(),
             new AtomicLongPosition(),
+            mock(AtomicCounter.class),
             SESSION_ID,
             STREAM_ID,
             INITIAL_TERM_ID,

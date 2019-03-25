@@ -1324,7 +1324,7 @@ public final class AeronCluster implements AutoCloseable
         private long clusterSessionId;
         private long leadershipTermId;
         private int leaderMemberId;
-        private int state = 0;
+        private int step = 0;
 
         private final Context ctx;
         private final NanoClock nanoClock;
@@ -1346,25 +1346,30 @@ public final class AeronCluster implements AutoCloseable
 
         public void close()
         {
-            endpointByMemberIdMap.values().forEach(MemberEndpoint::disconnect);
+            if (5 != step)
+            {
+                endpointByMemberIdMap.values().forEach(MemberEndpoint::disconnect);
+                ctx.close();
+            }
         }
 
-        public int state()
+        public int step()
         {
-            return state;
+            return step;
         }
 
-        private void state(final int state)
+        private void step(final int step)
         {
-            //System.out.println(this.state + " -> " + state);
-            this.state = state;
+            //System.out.println(this.step + " -> " + step);
+            this.step = step;
         }
 
         public AeronCluster poll()
         {
+            AeronCluster aeronCluster = null;
             checkDeadline();
 
-            switch (state)
+            switch (step)
             {
                 case 0:
                     createIngressPublications();
@@ -1383,12 +1388,13 @@ public final class AeronCluster implements AutoCloseable
                     break;
             }
 
-            if (4 == state)
+            if (4 == step)
             {
-                return newInstance();
+                aeronCluster = newInstance();
+                step(5);
             }
 
-            return null;
+            return aeronCluster;
         }
 
         private void checkDeadline()
@@ -1420,7 +1426,7 @@ public final class AeronCluster implements AutoCloseable
                 }
             }
 
-            state(1);
+            step(1);
         }
 
         private void awaitPublicationConnected()
@@ -1456,7 +1462,7 @@ public final class AeronCluster implements AutoCloseable
                 .responseChannel(ctx.egressChannel())
                 .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
 
-            state(2);
+            step(2);
         }
 
         private void sendMessage()
@@ -1464,7 +1470,7 @@ public final class AeronCluster implements AutoCloseable
             final long result = ingressPublication.offer(buffer);
             if (result > 0)
             {
-                state(3);
+                step(3);
             }
             else if (Publication.CLOSED == result)
             {
@@ -1482,7 +1488,7 @@ public final class AeronCluster implements AutoCloseable
                 {
                     clusterSessionId = egressPoller.clusterSessionId();
                     prepareChallengeResponse(ctx.credentialsSupplier().onChallenge(egressPoller.encodedChallenge()));
-                    state(2);
+                    step(2);
                     return;
                 }
 
@@ -1492,7 +1498,7 @@ public final class AeronCluster implements AutoCloseable
                         leadershipTermId = egressPoller.leadershipTermId();
                         leaderMemberId = egressPoller.leaderMemberId();
                         clusterSessionId = egressPoller.clusterSessionId();
-                        state(4);
+                        step(4);
                         break;
 
                     case ERROR:
@@ -1518,7 +1524,7 @@ public final class AeronCluster implements AutoCloseable
                 .clusterSessionId(clusterSessionId)
                 .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
 
-            state(2);
+            step(2);
         }
 
         private void updateMembers()
@@ -1544,7 +1550,7 @@ public final class AeronCluster implements AutoCloseable
                 ingressPublication = memberEndpoint.publication;
             }
 
-            state(1);
+            step(1);
         }
 
         private AeronCluster newInstance()

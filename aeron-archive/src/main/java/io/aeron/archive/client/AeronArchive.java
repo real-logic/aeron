@@ -2060,9 +2060,12 @@ public class AeronArchive implements AutoCloseable
          */
         public void close()
         {
-            CloseHelper.close(controlResponsePoller.subscription());
-            CloseHelper.close(archiveProxy.publication());
-            ctx.close();
+            if (5 != step)
+            {
+                CloseHelper.close(controlResponsePoller.subscription());
+                CloseHelper.close(archiveProxy.publication());
+                ctx.close();
+            }
         }
 
         /**
@@ -2072,6 +2075,8 @@ public class AeronArchive implements AutoCloseable
          */
         public AeronArchive poll()
         {
+            AeronArchive aeronArchive = null;
+
             if (0 == step)
             {
                 if (!archiveProxy.publication().isConnected())
@@ -2132,16 +2137,18 @@ public class AeronArchive implements AutoCloseable
                 final Subscription subscription = controlResponsePoller.subscription();
                 final ErrorHandler errorHandler = ctx.errorHandler();
 
-                return new AeronArchive(
+                aeronArchive = new AeronArchive(
                     ctx,
                     controlResponsePoller,
                     archiveProxy,
                     new RecordingDescriptorPoller(subscription, errorHandler, sessionId, FRAGMENT_LIMIT),
                     new RecordingSubscriptionDescriptorPoller(subscription, errorHandler, sessionId, FRAGMENT_LIMIT),
                     sessionId);
+
+                step = 5;
             }
 
-            return null;
+            return aeronArchive;
         }
     }
 }

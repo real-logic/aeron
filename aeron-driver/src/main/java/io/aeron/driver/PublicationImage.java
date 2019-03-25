@@ -459,10 +459,10 @@ public class PublicationImage
             newRebuildPosition,
             lossFound(scanOutcome));
 
-        final int windowLength = CongestionControlUtil.receiverWindowLength(ccOutcome);
-        final long threshold = CongestionControlUtil.positionThreshold(windowLength);
+        final int windowLength = CongestionControl.receiverWindowLength(ccOutcome);
+        final long threshold = CongestionControl.positionThreshold(windowLength);
 
-        if (CongestionControlUtil.shouldForceStatusMessage(ccOutcome) ||
+        if (CongestionControl.shouldForceStatusMessage(ccOutcome) ||
             ((timeOfLastStatusMessageScheduleNs + statusMessageTimeoutNs) - nowNs < 0) ||
             (minSubscriberPosition > (nextSmPosition + threshold)))
         {

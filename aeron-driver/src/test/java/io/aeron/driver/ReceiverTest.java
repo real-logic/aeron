@@ -109,7 +109,7 @@ public class ReceiverTest
         when(mockSystemCounters.get(any())).thenReturn(mock(AtomicCounter.class));
         when(congestionControl.onTrackRebuild(
             anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), anyLong(), anyBoolean()))
-            .thenReturn(CongestionControlUtil.packOutcome(INITIAL_WINDOW_LENGTH, false));
+            .thenReturn(CongestionControl.packOutcome(INITIAL_WINDOW_LENGTH, false));
         when(congestionControl.initialWindowLength()).thenReturn(INITIAL_WINDOW_LENGTH);
 
         final CachedNanoClock mockCachedNanoClock = mock(CachedNanoClock.class);

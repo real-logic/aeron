@@ -18,7 +18,7 @@ package io.aeron.driver;
 import org.agrona.concurrent.status.AtomicCounter;
 
 /**
- * Tracks a aeron client interest in a counter.
+ * Tracks an aeron client interest in a counter.
  */
 public class CounterLink implements DriverManagedResource
 {

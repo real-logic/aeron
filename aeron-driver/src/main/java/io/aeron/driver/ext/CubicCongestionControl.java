@@ -27,7 +27,7 @@ import org.agrona.concurrent.status.CountersManager;
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 
-import static io.aeron.driver.CongestionControlUtil.packOutcome;
+import static io.aeron.driver.CongestionControl.packOutcome;
 
 /**
  * CUBIC congestion control manipulation of the receiver window length.

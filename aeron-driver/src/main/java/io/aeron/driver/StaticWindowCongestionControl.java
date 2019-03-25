@@ -36,7 +36,7 @@ public class StaticWindowCongestionControl implements CongestionControl
         final MediaDriver.Context context,
         final CountersManager countersManager)
     {
-        ccOutcome = CongestionControlUtil.packOutcome(Math.min(termLength / 2, context.initialWindowLength()), false);
+        ccOutcome = CongestionControl.packOutcome(Math.min(termLength / 2, context.initialWindowLength()), false);
     }
 
     public void close()
@@ -70,6 +70,6 @@ public class StaticWindowCongestionControl implements CongestionControl
 
     public int initialWindowLength()
     {
-        return CongestionControlUtil.receiverWindowLength(ccOutcome);
+        return CongestionControl.receiverWindowLength(ccOutcome);
     }
 }

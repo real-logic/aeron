@@ -239,12 +239,15 @@ public class StartClusterFromTruncatedRecordingLogTest
             try (RecordingLog newRecordingLog = new RecordingLog(new File(baseDirName)))
             {
                 final RecordingLog.Entry latestTermEntry = existingRecordingLog.entries().stream()
-                    .filter(e -> e.type == RecordingLog.ENTRY_TYPE_TERM)
-                    .max(Comparator.comparingLong(e -> e.logPosition))
-                    .orElseThrow(() -> new IllegalStateException("No term entry in recording log"));
+                    .filter((e) -> e.type == RecordingLog.ENTRY_TYPE_TERM)
+                    .max(Comparator.comparingLong((e) -> e.logPosition))
+                    .orElseThrow(() -> new IllegalStateException("no term entry in recording log"));
 
-                newRecordingLog.appendTerm(latestTermEntry.recordingId, latestTermEntry.leadershipTermId,
-                    latestTermEntry.termBaseLogPosition, latestTermEntry.timestamp);
+                newRecordingLog.appendTerm(
+                    latestTermEntry.recordingId,
+                    latestTermEntry.leadershipTermId,
+                    latestTermEntry.termBaseLogPosition,
+                    latestTermEntry.timestamp);
                 newRecordingLog.commitLogPosition(latestTermEntry.leadershipTermId, latestTermEntry.logPosition);
 
                 appendServiceSnapshot(existingRecordingLog, newRecordingLog, -1);
@@ -259,7 +262,7 @@ public class StartClusterFromTruncatedRecordingLogTest
         try (RecordingLog copiedRecordingLog = new RecordingLog(consensusModuleDataDir))
         {
             final LongHashSet recordingIds = new LongHashSet();
-            copiedRecordingLog.entries().stream().mapToLong(e -> e.recordingId).forEach(recordingIds::add);
+            copiedRecordingLog.entries().stream().mapToLong((e) -> e.recordingId).forEach(recordingIds::add);
             try (Stream<Path> segments = Files.list(archiveDataDir.toPath())
                 .filter((p) -> p.getFileName().toString().endsWith(".rec")))
             {
@@ -270,10 +273,10 @@ public class StartClusterFromTruncatedRecordingLogTest
                         final long recording = Long.parseLong(fileName.split("-")[0]);
 
                         return !recordingIds.contains(recording);
-                    }).map(Path::toFile).forEach(this::deleteFile);
+                    })
+                    .map(Path::toFile).forEach(this::deleteFile);
             }
 
-            // assert that recording log is not growing
             assertTrue(copiedRecordingLog.entries().size() <= 3);
         }
     }

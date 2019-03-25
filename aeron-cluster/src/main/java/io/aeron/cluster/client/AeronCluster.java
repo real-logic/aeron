@@ -1348,6 +1348,7 @@ public final class AeronCluster implements AutoCloseable
         {
             if (5 != step)
             {
+                CloseHelper.close(ingressPublication);
                 endpointByMemberIdMap.values().forEach(MemberEndpoint::disconnect);
                 ctx.close();
             }
@@ -1391,6 +1392,14 @@ public final class AeronCluster implements AutoCloseable
             if (4 == step)
             {
                 aeronCluster = newInstance();
+                ingressPublication = null;
+                final MemberEndpoint endpoint = endpointByMemberIdMap.get(leaderMemberId);
+                if (null != endpoint)
+                {
+                    endpoint.publication = null;
+                }
+                endpointByMemberIdMap.values().forEach(MemberEndpoint::disconnect);
+
                 step(5);
             }
 

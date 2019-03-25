@@ -419,7 +419,7 @@ public:
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
 
         if (!m_archiveProxy->extendRecording<IdleStrategy>(
-            channel, streamId, (sourceLocation == SourceLocation::LOCAL), recordingId, correlationId, m_controlSessionId))
+            channel, streamId, sourceLocation == SourceLocation::LOCAL, recordingId, correlationId, m_controlSessionId))
         {
             throw ArchiveException("failed to send extend recording request", SOURCEINFO);
         }
@@ -523,8 +523,8 @@ public:
      *
      * @param recordingId    to be replayed.
      * @param position       from which the replay should begin or #NULL_POSITION if from the start.
-     * @param length         of the stream to be replayed. Use std::numeric_limits<std::int64_t>::max to follow a live recording or
-     *                       #NULL_LENGTH to replay the whole stream of unknown length.
+     * @param length         of the stream to be replayed. Use std::numeric_limits<std::int64_t>::max to follow a live
+     *                       recording or #NULL_LENGTH to replay the whole stream of unknown length.
      * @param replayChannel  to which the replay should be sent.
      * @param replayStreamId to which the replay should be sent.
      * @tparam IdleStrategy  to use for polling operations.
@@ -583,7 +583,8 @@ public:
      *
      * @param recordingId    to be replayed.
      * @param position       from which the replay should begin or #NULL_POSITION if from the start.
-     * @param length         of the stream to be replayed or std::numeric_limits<std::int64_t>::max to follow a live recording.
+     * @param length         of the stream to be replayed or std::numeric_limits<std::int64_t>::max to follow a live
+                             recording.
      * @param replayChannel  to which the replay should be sent.
      * @param replayStreamId to which the replay should be sent.
      * @tparam IdleStrategy  to use for polling operations.
@@ -632,7 +633,8 @@ public:
      *
      * @param recordingId             to be replayed.
      * @param position                from which the replay should begin or #NULL_POSITION if from the start.
-     * @param length                  of the stream to be replayed or std::numeric_limits<std::int64_t>::max to follow a live recording.
+     * @param length                  of the stream to be replayed or std::numeric_limits<std::int64_t>::max to follow
+     *                                a live recording.
      * @param replayChannel           to which the replay should be sent.
      * @param replayStreamId          to which the replay should be sent.
      * @param availableImageHandler   to be called when the replay image becomes available.
@@ -668,8 +670,8 @@ public:
 
         const std::int64_t subscriptionId = m_aeron->addSubscription(
             replayChannelUri->toString(), replayStreamId, availableImageHandler, unavailableImageHandler);
-        IdleStrategy idle;
 
+        IdleStrategy idle;
         std::shared_ptr<Subscription> subscription = m_aeron->findSubscription(subscriptionId);
         while (!subscription)
         {
@@ -754,7 +756,7 @@ public:
      *
      * @param recordingId at which to begin the listing.
      * @param consumer    to which the descriptors are dispatched.
-     * @tparam IdleStrategy  to use for polling operations.
+     * @tparam IdleStrategy to use for polling operations.
      * @return the number of descriptors found and consumed.
      */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
@@ -778,7 +780,7 @@ public:
      * Get the position recorded for an active recording. If no active recording then return #NULL_POSITION.
      *
      * @param recordingId of the active recording for which the position is required.
-     * @tparam IdleStrategy  to use for polling operations.
+     * @tparam IdleStrategy to use for polling operations.
      * @return the recorded position for the active recording or #NULL_POSITION if recording not active.
      * @see #getStopPosition
      */
@@ -803,7 +805,7 @@ public:
      * Get the stop position for a recording.
      *
      * @param recordingId of the active recording for which the position is required.
-     * @tparam IdleStrategy  to use for polling operations.
+     * @tparam IdleStrategy to use for polling operations.
      * @return the stop position, or #NULL_POSITION if still active.
      * @see #getRecordingPosition
      */
@@ -831,7 +833,7 @@ public:
      * @param channelFragment for a contains match on the original channel stored with the archive descriptor.
      * @param streamId        of the recording to match.
      * @param sessionId       of the recording to match.
-     * @tparam IdleStrategy  to use for polling operations.
+     * @tparam IdleStrategy to use for polling operations.
      * @return the recordingId if found otherwise Aeron#NULL_VALUE if not found.
      */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
@@ -1011,16 +1013,16 @@ private:
                 {
                     throw ArchiveException(
                         static_cast<std::int32_t>(m_controlResponsePoller->relevantId()),
-                        "response for correlationId=" + std::to_string(correlationId)
-                            + ", error: " + m_controlResponsePoller->errorMessage(),
+                        "response for correlationId=" + std::to_string(correlationId) +
+                        ", error: " + m_controlResponsePoller->errorMessage(),
                         SOURCEINFO);
                 }
                 else if (m_ctx->errorHandler() != nullptr)
                 {
                     ArchiveException ex(
                         static_cast<std::int32_t>(m_controlResponsePoller->relevantId()),
-                        "response for correlationId=" + std::to_string(correlationId)
-                            + ", error: " + m_controlResponsePoller->errorMessage(),
+                        "response for correlationId=" + std::to_string(correlationId) +
+                        ", error: " + m_controlResponsePoller->errorMessage(),
                         SOURCEINFO);
                     m_ctx->errorHandler()(ex);
                 }

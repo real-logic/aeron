@@ -72,7 +72,7 @@ constexpr const std::int32_t CONTROL_RESPONSE_STREAM_ID_DEFAULT = 20;
  * For production it is recommended that multicast or dynamic multi-destination-cast (MDC) is used to allow
  * for dynamic subscribers, an endpoint can be added to the subscription side for controlling port usage.
  */
-constexpr const char RECORDING_EVENTS_CHANNEL_DEFAULT[] = "aeron:udp?control=localhost:8030|control-mode=dynamic";
+constexpr const char RECORDING_EVENTS_CHANNEL_DEFAULT[] = "aeron:udp?control-mode=dynamic|control=localhost:8030";
 /// Stream id within a channel for receiving progress of recordings from an archive.
 constexpr const std::int32_t RECORDING_EVENTS_STREAM_ID_DEFAULT = 30;
 

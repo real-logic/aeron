@@ -17,7 +17,6 @@ package io.aeron.samples;
 
 import io.aeron.CncFileDescriptor;
 import io.aeron.CommonContext;
-import io.aeron.driver.status.StreamCounter;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.status.CountersReader;
 
@@ -141,7 +140,7 @@ public class StreamStat
             {
                 builder
                     .append(' ')
-                    .append(StreamCounter.labelName(streamPosition.typeId()))
+                    .append(labelName(streamPosition.typeId()))
                     .append(':').append(streamPosition.id())
                     .append(':').append(streamPosition.value());
             }

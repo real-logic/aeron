@@ -94,10 +94,10 @@ public class MultiDestinationSubscriptionTest
         final String baseDirB = ROOT_DIR + "B";
 
         driverContextB
-                .errorHandler(Throwable::printStackTrace)
-                .publicationTermBufferLength(TERM_BUFFER_LENGTH)
-                .aeronDirectoryName(baseDirB)
-                .threadingMode(ThreadingMode.SHARED);
+            .errorHandler(Throwable::printStackTrace)
+            .publicationTermBufferLength(TERM_BUFFER_LENGTH)
+            .aeronDirectoryName(baseDirB)
+            .threadingMode(ThreadingMode.SHARED);
 
         driverB = MediaDriver.launch(driverContextB);
         clientB = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverContextB.aeronDirectoryName()));
@@ -369,16 +369,16 @@ public class MultiDestinationSubscriptionTest
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder();
 
         builder
-                .clear()
-                .media(CommonContext.UDP_MEDIA)
-                .endpoint(UNICAST_ENDPOINT_A);
+            .clear()
+            .media(CommonContext.UDP_MEDIA)
+            .endpoint(UNICAST_ENDPOINT_A);
 
         final String publicationChannelA = builder.build();
 
         builder
-                .clear()
-                .media(CommonContext.UDP_MEDIA)
-                .endpoint(UNICAST_ENDPOINT_B);
+            .clear()
+            .media(CommonContext.UDP_MEDIA)
+            .endpoint(UNICAST_ENDPOINT_B);
 
         final String destinationB = builder.build();
 
@@ -389,11 +389,11 @@ public class MultiDestinationSubscriptionTest
         publicationA = clientA.addExclusivePublication(publicationChannelA, STREAM_ID);
 
         builder
-                .clear()
-                .media(CommonContext.UDP_MEDIA)
-                .initialPosition(0L, publicationA.initialTermId(), publicationA.termBufferLength())
-                .sessionId(publicationA.sessionId())
-                .endpoint(UNICAST_ENDPOINT_B);
+            .clear()
+            .media(CommonContext.UDP_MEDIA)
+            .initialPosition(0L, publicationA.initialTermId(), publicationA.termBufferLength())
+            .sessionId(publicationA.sessionId())
+            .endpoint(UNICAST_ENDPOINT_B);
 
         final String publicationChannelB = builder.build();
 

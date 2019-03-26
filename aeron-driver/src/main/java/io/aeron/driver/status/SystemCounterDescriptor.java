@@ -41,7 +41,7 @@ public enum SystemCounterDescriptor
     ERRORS(15, "Errors"),
     SHORT_SENDS(16, "Short sends"),
     FREE_FAILS(17, "Failed attempts to free log buffers"),
-    SENDER_FLOW_CONTROL_LIMITS(18, "Sender flow control limits applied, i.e. back pressure events"),
+    SENDER_FLOW_CONTROL_LIMITS(18, "Sender flow control limits, i.e. back-pressure events"),
     UNBLOCKED_PUBLICATIONS(19, "Unblocked Publications"),
     UNBLOCKED_COMMANDS(20, "Unblocked Control Commands"),
     POSSIBLE_TTL_ASYMMETRY(21, "Possible TTL Asymmetry"),

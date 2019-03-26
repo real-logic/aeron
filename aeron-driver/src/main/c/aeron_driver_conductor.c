@@ -821,6 +821,7 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                 aeron_position_t pub_lmt_position;
                 aeron_position_t snd_pos_position;
                 aeron_position_t snd_lmt_position;
+                aeron_counter_t snd_bpe_counter;
 
                 pub_pos_position.counter_id = aeron_counter_publisher_position_allocate(
                     &conductor->counters_manager, registration_id, session_id, stream_id, uri_length, uri);
@@ -830,11 +831,12 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                     &conductor->counters_manager, registration_id, session_id, stream_id, uri_length, uri);
                 snd_lmt_position.counter_id = aeron_counter_sender_limit_allocate(
                     &conductor->counters_manager, registration_id, session_id, stream_id, uri_length, uri);
+                snd_bpe_counter.counter_id = aeron_counter_sender_bpe_allocate(
+                    &conductor->counters_manager, registration_id, session_id, stream_id, uri_length, uri);
 
-                if (pub_lmt_position.counter_id < 0 ||
-                    pub_pos_position.counter_id < 0 ||
-                    snd_pos_position.counter_id < 0 ||
-                    snd_lmt_position.counter_id < 0)
+                if (pub_pos_position.counter_id < 0 || pub_lmt_position.counter_id < 0 ||
+                    snd_pos_position.counter_id < 0 || snd_lmt_position.counter_id < 0 ||
+                    snd_bpe_counter.counter_id < 0)
                 {
                     return NULL;
                 }
@@ -847,6 +849,8 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                     &conductor->counters_manager, (int32_t)snd_pos_position.counter_id);
                 snd_lmt_position.value_addr = aeron_counter_addr(
                     &conductor->counters_manager, (int32_t)snd_lmt_position.counter_id);
+                snd_bpe_counter.value_addr = aeron_counter_addr(
+                    &conductor->counters_manager, (int32_t)snd_bpe_counter.counter_id);
 
                 if (params->is_replay)
                 {
@@ -893,6 +897,7 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                         &pub_lmt_position,
                         &snd_pos_position,
                         &snd_lmt_position,
+                        &snd_bpe_counter,
                         flow_control_strategy,
                         params,
                         is_exclusive,

@@ -37,7 +37,6 @@ aeron_network_publication_status_t;
 
 #define AERON_NETWORK_PUBLICATION_HEARTBEAT_TIMEOUT_NS (100 * 1000 * 1000L)
 #define AERON_NETWORK_PUBLICATION_SETUP_TIMEOUT_NS (100 * 1000 * 1000L)
-#define AERON_NETWORK_PUBLICATION_CONNECTION_TIMEOUT_MS (5 * 1000L)
 
 #define AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND (2)
 
@@ -67,6 +66,7 @@ typedef struct aeron_network_publication_stct
     aeron_position_t pub_lmt_position;
     aeron_position_t snd_pos_position;
     aeron_position_t snd_lmt_position;
+    aeron_counter_t snd_bpe_counter;
     aeron_retransmit_handler_t retransmit_handler;
     aeron_logbuffer_metadata_t *log_meta_data;
     aeron_send_channel_endpoint_t *endpoint;
@@ -120,6 +120,7 @@ int aeron_network_publication_create(
     aeron_position_t *pub_lmt_position,
     aeron_position_t *snd_pos_position,
     aeron_position_t *snd_lmt_position,
+    aeron_counter_t *snd_bpe_counter,
     aeron_flow_control_strategy_t *flow_control_strategy,
     aeron_uri_publication_params_t *params,
     bool is_exclusive,

@@ -18,7 +18,7 @@
 
 #include "concurrent/aeron_counters_manager.h"
 
-int32_t aeron_stream_position_counter_allocate(
+int32_t aeron_stream_counter_allocate(
     aeron_counters_manager_t *counters_manager,
     const char *name,
     int32_t type_id,
@@ -141,6 +141,17 @@ int32_t aeron_counter_client_heartbeat_status_allocate(
 #define AERON_COUNTER_PUBLISHER_POSITION_TYPE_ID (12)
 
 int32_t aeron_counter_publisher_position_allocate(
+    aeron_counters_manager_t *counters_manager,
+    int64_t registration_id,
+    int32_t session_id,
+    int32_t stream_id,
+    int32_t channel_length,
+    const char *channel);
+
+#define AERON_COUNTER_SENDER_BPE_NAME "snd-bpe"
+#define AERON_COUNTER_SENDER_BPE_TYPE_ID  (13)
+
+int32_t aeron_counter_sender_bpe_allocate(
     aeron_counters_manager_t *counters_manager,
     int64_t registration_id,
     int32_t session_id,

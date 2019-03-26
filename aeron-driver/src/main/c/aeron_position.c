@@ -47,7 +47,7 @@ typedef struct aeron_heartbeat_status_key_layout_stct
 aeron_heartbeat_status_key_layout_t;
 #pragma pack(pop)
 
-int32_t aeron_stream_position_counter_allocate(
+int32_t aeron_stream_counter_allocate(
     aeron_counters_manager_t *counters_manager,
     const char *name,
     int32_t type_id,
@@ -85,7 +85,7 @@ int32_t aeron_counter_publisher_limit_allocate(
     int32_t channel_length,
     const char *channel)
 {
-    return aeron_stream_position_counter_allocate(
+    return aeron_stream_counter_allocate(
         counters_manager,
         AERON_COUNTER_PUBLISHER_LIMIT_NAME,
         AERON_COUNTER_PUBLISHER_LIMIT_TYPE_ID,
@@ -110,7 +110,7 @@ int32_t aeron_counter_subscription_position_allocate(
 
     snprintf(buffer, sizeof(buffer) - 1, "@%" PRId64, joining_position);
 
-    return aeron_stream_position_counter_allocate(
+    return aeron_stream_counter_allocate(
         counters_manager,
         AERON_COUNTER_SUBSCRIPTION_POSITION_NAME,
         AERON_COUNTER_SUBSCRIPTION_POSITION_TYPE_ID,
@@ -130,7 +130,7 @@ int32_t aeron_counter_sender_position_allocate(
     int32_t channel_length,
     const char *channel)
 {
-    return aeron_stream_position_counter_allocate(
+    return aeron_stream_counter_allocate(
         counters_manager,
         AERON_COUNTER_SENDER_POSITION_NAME,
         AERON_COUNTER_SENDER_POSITION_TYPE_ID,
@@ -150,7 +150,7 @@ int32_t aeron_counter_sender_limit_allocate(
     int32_t channel_length,
     const char *channel)
 {
-    return aeron_stream_position_counter_allocate(
+    return aeron_stream_counter_allocate(
         counters_manager,
         AERON_COUNTER_SENDER_LIMIT_NAME,
         AERON_COUNTER_SENDER_LIMIT_TYPE_ID,
@@ -170,7 +170,7 @@ int32_t aeron_counter_receiver_hwm_allocate(
     int32_t channel_length,
     const char *channel)
 {
-    return aeron_stream_position_counter_allocate(
+    return aeron_stream_counter_allocate(
         counters_manager,
         AERON_COUNTER_RECEIVER_HWM_NAME,
         AERON_COUNTER_RECEIVER_HWM_TYPE_ID,
@@ -190,7 +190,7 @@ int32_t aeron_counter_receiver_position_allocate(
     int32_t channel_length,
     const char *channel)
 {
-    return aeron_stream_position_counter_allocate(
+    return aeron_stream_counter_allocate(
         counters_manager,
         AERON_COUNTER_RECEIVER_POSITION_NAME,
         AERON_COUNTER_RECEIVER_POSITION_TYPE_ID,
@@ -284,10 +284,30 @@ int32_t aeron_counter_publisher_position_allocate(
     int32_t channel_length,
     const char *channel)
 {
-    return aeron_stream_position_counter_allocate(
+    return aeron_stream_counter_allocate(
         counters_manager,
         AERON_COUNTER_PUBLISHER_POSITION_NAME,
         AERON_COUNTER_PUBLISHER_POSITION_TYPE_ID,
+        registration_id,
+        session_id,
+        stream_id,
+        channel_length,
+        channel,
+        "");
+}
+
+int32_t aeron_counter_sender_bpe_allocate(
+    aeron_counters_manager_t *counters_manager,
+    int64_t registration_id,
+    int32_t session_id,
+    int32_t stream_id,
+    int32_t channel_length,
+    const char *channel)
+{
+    return aeron_stream_counter_allocate(
+        counters_manager,
+        AERON_COUNTER_SENDER_BPE_NAME,
+        AERON_COUNTER_SENDER_BPE_TYPE_ID,
         registration_id,
         session_id,
         stream_id,

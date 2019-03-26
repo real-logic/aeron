@@ -67,6 +67,7 @@ typedef struct aeron_system_counters_stct
 aeron_system_counters_t;
 
 int aeron_system_counters_init(aeron_system_counters_t *counters, aeron_counters_manager_t *manager);
+
 void aeron_system_counters_close(aeron_system_counters_t *counters);
 
 inline int64_t *aeron_system_counter_addr(aeron_system_counters_t *counters, aeron_system_counter_enum_t type)

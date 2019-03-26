@@ -40,7 +40,7 @@ static aeron_system_counter_t system_counters[] =
         { "Errors", AERON_SYSTEM_COUNTER_ERRORS },
         { "Short sends", AERON_SYSTEM_COUNTER_SHORT_SENDS },
         { "Failed attempt to free log buffers", AERON_SYSTEM_COUNTER_FREE_FAILS },
-        { "Sender flow control limits applied", AERON_SYSTEM_COUNTER_SENDER_FLOW_CONTROL_LIMITS },
+        { "Sender flow control limits, i.e. back-pressure events", AERON_SYSTEM_COUNTER_SENDER_FLOW_CONTROL_LIMITS },
         { "Unblocked Publications", AERON_SYSTEM_COUNTER_UNBLOCKED_PUBLICATIONS },
         { "Unblocked Control Commands", AERON_SYSTEM_COUNTER_UNBLOCKED_COMMANDS },
         { "Possible TTL Asymmetry", AERON_SYSTEM_COUNTER_POSSIBLE_TTL_ASYMMETRY },
@@ -70,19 +70,15 @@ int aeron_system_counters_init(aeron_system_counters_t *counters, aeron_counters
 
     for (int32_t i = 0; i < (int32_t)num_system_counters; i++)
     {
-        if (strncmp(system_counters[i].label, "RESERVED", sizeof("RESERVED")) != 0)
+        if ((counters->counter_ids[i] = aeron_counters_manager_allocate(
+             manager,
+             AERON_SYSTEM_COUNTER_TYPE_ID,
+             (const uint8_t *)&(system_counters[i].id),
+             sizeof(system_counters[i].id),
+             system_counters[i].label,
+             strlen(system_counters[i].label))) < 0)
         {
-            if ((counters->counter_ids[i] =
-                aeron_counters_manager_allocate(
-                    manager,
-                    AERON_SYSTEM_COUNTER_TYPE_ID,
-                    (const uint8_t *) &(system_counters[i].id),
-                    sizeof(system_counters[i].id),
-                    system_counters[i].label,
-                    strlen(system_counters[i].label))) < 0)
-            {
-                return -1;
-            }
+            return -1;
         }
     }
 

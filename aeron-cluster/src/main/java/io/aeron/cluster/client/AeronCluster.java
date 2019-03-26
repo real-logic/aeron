@@ -100,11 +100,11 @@ public final class AeronCluster implements AutoCloseable
         {
             ctx.conclude();
 
-            final Aeron aeron = ctx.aeron();
-            subscription = aeron.addSubscription(ctx.egressChannel(), ctx.egressStreamId());
+            final long deadlineNs = ctx.aeron().context().nanoClock().nanoTime() + ctx.messageTimeoutNs();
+            subscription = ctx.aeron().addSubscription(ctx.egressChannel(), ctx.egressStreamId());
 
             final IdleStrategy idleStrategy = ctx.idleStrategy();
-            asyncConnect = new AsyncConnect(ctx, subscription);
+            asyncConnect = new AsyncConnect(ctx, subscription, deadlineNs);
 
             AeronCluster aeronCluster;
             while (null == (aeronCluster = asyncConnect.poll()))
@@ -153,10 +153,10 @@ public final class AeronCluster implements AutoCloseable
         {
             ctx.conclude();
 
-            final Aeron aeron = ctx.aeron();
-            subscription = aeron.addSubscription(ctx.egressChannel(), ctx.egressStreamId());
+            final long deadlineNs = ctx.aeron().context().nanoClock().nanoTime() + ctx.messageTimeoutNs();
+            subscription = ctx.aeron().addSubscription(ctx.egressChannel(), ctx.egressStreamId());
 
-            return new AsyncConnect(ctx, subscription);
+            return new AsyncConnect(ctx, subscription, deadlineNs);
         }
         catch (final Exception ex)
         {
@@ -1315,11 +1315,13 @@ public final class AeronCluster implements AutoCloseable
     }
 
     /**
-     * Allows for the async establishment of a cluster session.
+     * Allows for the async establishment of a cluster session. {@link #poll()} should be called repeatedly until
+     * it returns a non-null value with the new {@link AeronCluster} client. On error {@link #close()} should be called
+     * to clean up allocated resources.
      */
     public static class AsyncConnect implements AutoCloseable
     {
-        private long deadlineNs;
+        private final long deadlineNs;
         private long correlationId;
         private long clusterSessionId;
         private long leadershipTermId;
@@ -1334,16 +1336,19 @@ public final class AeronCluster implements AutoCloseable
         private Int2ObjectHashMap<MemberEndpoint> endpointByMemberIdMap;
         private Publication ingressPublication;
 
-        AsyncConnect(final Context ctx, final Subscription egressSubscription)
+        AsyncConnect(final Context ctx, final Subscription egressSubscription, final long deadlineNs)
         {
             this.ctx = ctx;
 
             endpointByMemberIdMap = parseMemberEndpoints(ctx.clusterMemberEndpoints());
             egressPoller = new EgressPoller(egressSubscription, FRAGMENT_LIMIT);
             nanoClock = ctx.aeron().context().nanoClock();
-            deadlineNs = nanoClock.nanoTime() + ctx.messageTimeoutNs();
+            this.deadlineNs = deadlineNs;
         }
 
+        /**
+         * Close allocated resources. Must be called on error. On success this is a no op.
+         */
         public void close()
         {
             if (5 != step)
@@ -1354,6 +1359,11 @@ public final class AeronCluster implements AutoCloseable
             }
         }
 
+        /**
+         * Indicates which step in the connect process has been reached.
+         *
+         * @return which step in the connect process has been reached.
+         */
         public int step()
         {
             return step;
@@ -1365,6 +1375,11 @@ public final class AeronCluster implements AutoCloseable
             this.step = step;
         }
 
+        /**
+         * Poll to advance steps in the connection until complete or error.
+         *
+         * @return null if not yet complete then {@link AeronCluster} when complete.
+         */
         public AeronCluster poll()
         {
             AeronCluster aeronCluster = null;

@@ -100,15 +100,21 @@ public final class AeronCluster implements AutoCloseable
         {
             ctx.conclude();
 
-            final long deadlineNs = ctx.aeron().context().nanoClock().nanoTime() + ctx.messageTimeoutNs();
-            subscription = ctx.aeron().addSubscription(ctx.egressChannel(), ctx.egressStreamId());
+            final Aeron aeron = ctx.aeron();
+            final long deadlineNs = aeron.context().nanoClock().nanoTime() + ctx.messageTimeoutNs();
+            subscription = aeron.addSubscription(ctx.egressChannel(), ctx.egressStreamId());
 
             final IdleStrategy idleStrategy = ctx.idleStrategy();
             asyncConnect = new AsyncConnect(ctx, subscription, deadlineNs);
+            final AgentInvoker aeronClientInvoker = aeron.conductorAgentInvoker();
 
             AeronCluster aeronCluster;
             while (null == (aeronCluster = asyncConnect.poll()))
             {
+                if (null != aeronClientInvoker)
+                {
+                    aeronClientInvoker.invoke();
+                }
                 idleStrategy.idle();
             }
 
@@ -1430,7 +1436,7 @@ public final class AeronCluster implements AutoCloseable
 
             if (deadlineNs - nanoClock.nanoTime() < 0)
             {
-                throw new TimeoutException("connect timeout");
+                throw new TimeoutException("connect timeout, step=" + step);
             }
         }
 

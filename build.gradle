@@ -156,6 +156,12 @@ subprojects {
     }
 
     test {
+        if (JavaVersion.current().ordinal() >= JavaVersion.VERSION_1_9.ordinal()) {
+            jvmArgs('--add-opens', 'java.base/java.lang.reflect=ALL-UNNAMED')
+            jvmArgs('--add-opens', 'java.base/java.net=ALL-UNNAMED')
+            jvmArgs('--add-opens', 'java.base/sun.nio.ch=ALL-UNNAMED')
+        }
+        
         testLogging {
             showStandardStreams = true
             exceptionFormat = 'full'

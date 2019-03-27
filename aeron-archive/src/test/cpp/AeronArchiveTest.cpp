@@ -615,6 +615,7 @@ TEST_F(AeronArchiveTest, shouldListRegisteredRecordingSubscriptions)
         descriptors.begin(),
         descriptors.end(),
         [=](SubscriptionDescriptor s){ return s.m_subscriptionId == subIdOne;}));
+
     EXPECT_EQ(1L, std::count_if(
         descriptors.begin(),
         descriptors.end(),

@@ -35,8 +35,7 @@ ControlResponseAdapter::ControlResponseAdapter(
     const on_control_response_t& onResponse,
     const recording_descriptor_consumer_t& onRecordingDescriptor,
     std::shared_ptr<aeron::Subscription> subscription,
-    int fragmentLimit)
-    :
+    int fragmentLimit) :
     m_fragmentHandler(fragmentHandler(*this)),
     m_subscription(std::move(subscription)),
     m_onResponse(onResponse),

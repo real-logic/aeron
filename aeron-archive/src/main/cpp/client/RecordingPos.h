@@ -18,9 +18,7 @@
 
 #include "Aeron.h"
 
-namespace aeron {
-namespace archive {
-namespace client {
+namespace aeron { namespace archive { namespace client {
 
 /**
  * The position a recording has reached when being archived.

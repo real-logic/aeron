@@ -19,9 +19,7 @@
 #include "Aeron.h"
 #include "ControlledFragmentAssembler.h"
 
-namespace aeron {
-namespace archive {
-namespace client
+namespace aeron { namespace archive { namespace client
 {
 
 /**

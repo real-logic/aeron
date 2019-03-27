@@ -13,15 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef AERON_ARCHIVE_CONTROLRESPONSEPOLLER_H
-#define AERON_ARCHIVE_CONTROLRESPONSEPOLLER_H
+#ifndef AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_H
+#define AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_H
 
 #include "Aeron.h"
 #include "ControlledFragmentAssembler.h"
 
-namespace aeron {
-namespace archive {
-namespace client {
+namespace aeron { namespace archive { namespace client {
 
 /**
  * Encapsulate the polling and decoding of archive control protocol response messages.
@@ -182,4 +180,4 @@ private:
 };
 
 }}}
-#endif //AERON_ARCHIVE_CONTROLRESPONSEPOLLER_H
+#endif //AERON_ARCHIVE_CONTROL_RESPONSE_POLLER_H

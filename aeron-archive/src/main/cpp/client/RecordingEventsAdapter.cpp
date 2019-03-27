@@ -37,8 +37,7 @@ RecordingEventsAdapter::RecordingEventsAdapter(
     const on_recording_event_t& onProgress,
     const on_recording_event_t& onStop,
     std::shared_ptr<aeron::Subscription> subscription,
-    int fragmentLimit)
-    :
+    int fragmentLimit) :
     m_fragmentHandler(fragmentHandler(*this)),
     m_subscription(std::move(subscription)),
     m_onStart(onStart),

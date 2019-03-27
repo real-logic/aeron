@@ -18,9 +18,7 @@
 
 #include "Aeron.h"
 
-namespace aeron {
-namespace archive {
-namespace client {
+namespace aeron { namespace archive { namespace client {
 
 /**
  * Fired when a recording is started.
@@ -59,7 +57,7 @@ class RecordingEventsAdapter
 {
 public:
     /**
-     * Create an adaptoer for a given subscription to an archive for recording events.
+     * Create an adapter for a given subscription to an archive for recording events.
      *
      * @param onStart to call when a recording started event is received.
      * @param onProgress to call when a recording progress event is received.

@@ -20,9 +20,7 @@
 #include "RecordingDescriptorPoller.h"
 #include "RecordingEventsAdapter.h"
 
-namespace aeron {
-namespace archive {
-namespace client {
+namespace aeron { namespace archive { namespace client {
 
 /// Control Response Code of OK
 constexpr const std::int32_t CONTROL_RESPONSE_CODE_OK = 0;

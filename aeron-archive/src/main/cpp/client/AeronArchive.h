@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef AERON_ARCHIVE_AERONARCHIVE_H
-#define AERON_ARCHIVE_AERONARCHIVE_H
+#ifndef AERON_ARCHIVE_AERON_ARCHIVE_H
+#define AERON_ARCHIVE_AERON_ARCHIVE_H
 
 #include "Aeron.h"
 #include "ChannelUri.h"
@@ -27,11 +27,7 @@
 #include "concurrent/YieldingIdleStrategy.h"
 #include "ArchiveException.h"
 
-namespace aeron {
-namespace archive {
-
-/// Archive client namespace
-namespace client {
+namespace aeron { namespace archive { namespace client {
 
 /**
  * Client for interacting with a local or remote Aeron Archive that records and replays message streams.
@@ -91,7 +87,7 @@ public:
         std::shared_ptr<ExclusivePublication> m_publication;
         const std::int64_t m_subscriptionId;
         const std::int64_t m_publicationId;
-        std::int64_t m_connectCorrelationId = aeron::NULL_VALUE;
+        std::int64_t m_correlationId = aeron::NULL_VALUE;
         std::uint8_t m_step = 0;
     };
 
@@ -385,7 +381,7 @@ public:
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
 
         if (!m_archiveProxy->startRecording<IdleStrategy>(
-            channel, streamId, (sourceLocation == SourceLocation::LOCAL), correlationId, m_controlSessionId))
+            channel, streamId, sourceLocation == SourceLocation::LOCAL, correlationId, m_controlSessionId))
         {
             throw ArchiveException("failed to send start recording request", SOURCEINFO);
         }
@@ -1132,4 +1128,4 @@ private:
 };
 
 }}}
-#endif //AERON_ARCHIVE_AERONARCHIVE_H
+#endif //AERON_ARCHIVE_AERON_ARCHIVE_H

@@ -188,7 +188,7 @@ private:
         m_state = state;
     }
 
-    inline bool shouldAddLiveDestiantion(std::int64_t position)
+    inline bool shouldAddLiveDestination(std::int64_t position)
     {
         return !m_isLiveAdded && (m_nextTargetPosition - position) <= m_liveAddThreshold;
     }

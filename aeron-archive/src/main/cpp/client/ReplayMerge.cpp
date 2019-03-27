@@ -25,8 +25,7 @@ ReplayMerge::ReplayMerge(
     const std::string& replayDestination,
     const std::string& liveDestination,
     std::int64_t recordingId,
-    std::int64_t startPosition)
-    :
+    std::int64_t startPosition) :
     m_subscription(std::move(subscription)),
     m_archive(std::move(archive)),
     m_replayChannel(replayChannel),
@@ -41,7 +40,7 @@ ReplayMerge::ReplayMerge(
 
     if (subscriptionChannelUri->get(MDC_CONTROL_MODE_PARAM_NAME) != MDC_CONTROL_MODE_MANUAL)
     {
-        throw util::IllegalArgumentException("Subscription channel must be manual control mode: mode=" +
+        throw util::IllegalArgumentException("subscription channel must be manual control mode: mode=" +
             subscriptionChannelUri->get(MDC_CONTROL_MODE_PARAM_NAME), SOURCEINFO);
     }
 
@@ -194,7 +193,7 @@ int ReplayMerge::awaitUpdatedRecordingPosition()
             {
                 const std::int64_t position = m_image->position();
 
-                if (shouldAddLiveDestiantion(position))
+                if (shouldAddLiveDestination(position))
                 {
                     m_subscription->addDestination(m_liveDestination);
                     m_isLiveAdded = true;
@@ -203,7 +202,6 @@ int ReplayMerge::awaitUpdatedRecordingPosition()
                 {
                     nextState = State::AWAIT_STOP_REPLAY;
                 }
-
             }
 
             m_activeCorrelationId = aeron::NULL_VALUE;

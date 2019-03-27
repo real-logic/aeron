@@ -65,7 +65,7 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
 
     if (1 == m_step)
     {
-        m_connectCorrelationId = m_aeron->nextCorrelationId();
+        m_correlationId = m_aeron->nextCorrelationId();
 
         m_step = 2;
     }
@@ -73,7 +73,7 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
     if (2 == m_step)
     {
         if (!m_archiveProxy->tryConnect(
-            m_ctx->controlResponseChannel(), m_ctx->controlResponseStreamId(), m_connectCorrelationId))
+            m_ctx->controlResponseChannel(), m_ctx->controlResponseStreamId(), m_correlationId))
         {
             return std::shared_ptr<AeronArchive>();
         }
@@ -96,7 +96,7 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
         m_controlResponsePoller->poll();
 
         if (m_controlResponsePoller->isPollComplete() &&
-            m_controlResponsePoller->correlationId() == m_connectCorrelationId &&
+            m_controlResponsePoller->correlationId() == m_correlationId &&
             m_controlResponsePoller->isControlResponse())
         {
             if (!m_controlResponsePoller->isCodeOk())
@@ -141,8 +141,7 @@ AeronArchive::AeronArchive(
     std::unique_ptr<RecordingDescriptorPoller> recordingDescriptorPoller,
     std::unique_ptr<RecordingSubscriptionDescriptorPoller> recordingSubscriptionDescriptorPoller,
     std::shared_ptr<Aeron> aeron,
-    std::int64_t controlSessionId)
-    :
+    std::int64_t controlSessionId) :
     m_ctx(std::move(ctx)),
     m_archiveProxy(std::move(archiveProxy)),
     m_controlResponsePoller(std::move(controlResponsePoller)),

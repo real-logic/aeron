@@ -18,9 +18,7 @@
 
 #include "Aeron.h"
 
-namespace aeron {
-namespace archive {
-namespace client {
+namespace aeron { namespace archive { namespace client {
 
 /**
  * Encapsulate the polling and decoding of recording events.

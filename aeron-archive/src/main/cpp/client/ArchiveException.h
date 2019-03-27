@@ -13,14 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef AERON_ARCHIVE_ARCHIVEEXCEPTION_H
-#define AERON_ARCHIVE_ARCHIVEEXCEPTION_H
+#ifndef AERON_ARCHIVE_ARCHIVE_EXCEPTION_H
+#define AERON_ARCHIVE_ARCHIVE_EXCEPTION_H
 
 #include "Aeron.h"
 
-namespace aeron {
-namespace archive {
-namespace client {
+namespace aeron { namespace archive { namespace client {
 
 constexpr const std::int32_t ARCHIVE_ERROR_CODE_GENERIC = 0;
 constexpr const std::int32_t ARCHIVE_ERROR_CODE_ACTIVE_LISTING = 1;
@@ -74,4 +72,4 @@ public:
 };
 
 }}}
-#endif //AERON_ARCHIVE_ARCHIVEEXCEPTION_H
+#endif //AERON_ARCHIVE_ARCHIVE_EXCEPTION_H

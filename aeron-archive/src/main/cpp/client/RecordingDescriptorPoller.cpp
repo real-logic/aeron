@@ -32,7 +32,7 @@ static aeron::controlled_poll_fragment_handler_t controlHandler(RecordingDescrip
 }
 
 RecordingDescriptorPoller::RecordingDescriptorPoller(
-    std::shared_ptr<Subscription> subsciption,
+    std::shared_ptr<Subscription> subscription,
     const exception_handler_t& errorHandler,
     std::int64_t controlSessionId,
     int fragmentLimit)
@@ -40,7 +40,7 @@ RecordingDescriptorPoller::RecordingDescriptorPoller(
     m_fragmentAssembler(controlHandler(*this)),
     m_fragmentHandler(m_fragmentAssembler.handler()),
     m_errorHandler(errorHandler),
-    m_subscription(std::move(subsciption)),
+    m_subscription(std::move(subscription)),
     m_controlSessionId(controlSessionId),
     m_fragmentLimit(fragmentLimit)
 {
@@ -89,7 +89,7 @@ ControlledPollAction RecordingDescriptorPoller::onFragment(
                 {
                     ArchiveException ex(
                         static_cast<std::int32_t>(response.relevantId()),
-                        "response for corelationId=" + std::to_string(m_correlationId) +
+                        "response for correlationId=" + std::to_string(m_correlationId) +
                         ", error: " + response.errorMessage(),
                         SOURCEINFO);
 

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_ARCHIVE_ARCHIVEPROXY_H
-#define AERON_ARCHIVE_ARCHIVEPROXY_H
+#ifndef AERON_ARCHIVE_ARCHIVE_PROXY_H
+#define AERON_ARCHIVE_ARCHIVE_PROXY_H
 
 #include <array>
 
@@ -23,9 +23,7 @@
 #include "concurrent/BackOffIdleStrategy.h"
 #include "ArchiveException.h"
 
-namespace aeron {
-namespace archive {
-namespace client {
+namespace aeron { namespace archive { namespace client {
 
 /// Length of buffer to use in proxy to hold messages for construction.
 constexpr const std::size_t PROXY_REQUEST_BUFFER_LENGTH = 8 * 1024;
@@ -152,8 +150,7 @@ public:
         std::int64_t correlationId,
         std::int64_t controlSessionId)
     {
-        const util::index_t length = stopRecording(
-            m_buffer, channel, streamId, correlationId, controlSessionId);
+        const util::index_t length = stopRecording(m_buffer, channel, streamId, correlationId, controlSessionId);
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
 
@@ -172,8 +169,7 @@ public:
         std::int64_t correlationId,
         std::int64_t controlSessionId)
     {
-        const util::index_t length = stopRecording(
-            m_buffer, subscriptionId, correlationId, controlSessionId);
+        const util::index_t length = stopRecording(m_buffer, subscriptionId, correlationId, controlSessionId);
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
 
@@ -402,7 +398,15 @@ public:
         std::int64_t controlSessionId)
     {
         const util::index_t length = listRecordingSubscriptions(
-            m_buffer, pseudoIndex, subscriptionCount, channelFragment, streamId, applyStreamId, correlationId, controlSessionId);
+            m_buffer,
+            pseudoIndex,
+            subscriptionCount,
+            channelFragment,
+            streamId,
+            applyStreamId,
+            correlationId,
+            controlSessionId);
+
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
 
@@ -567,4 +571,4 @@ private:
 
 }}}
 
-#endif //AERON_ARCHIVEPROXY_H
+#endif //AERON_ARCHIVE_PROXY_H

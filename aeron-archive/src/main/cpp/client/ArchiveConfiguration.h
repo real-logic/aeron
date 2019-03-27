@@ -22,9 +22,7 @@
 #include "ChannelUri.h"
 #include "util/MacroUtil.h"
 
-namespace aeron {
-namespace archive {
-namespace client {
+namespace aeron { namespace archive { namespace client {
 
 /**
  * Represents a timestamp that has not been set. Can be used when the time is not known.

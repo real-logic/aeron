@@ -362,7 +362,7 @@ public:
         return *this;
     }
 
-    void requestDriverTermination(
+    static void requestDriverTermination(
         const std::string& directory, const std::uint8_t *tokenBuffer, std::size_t tokenLength);
 
     inline static std::string tmpDir()

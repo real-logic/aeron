@@ -80,6 +80,7 @@ public:
                 "-Daeron.spies.simulate.connection=false",
                 "-Daeron.mtu.length=4k",
                 "-Daeron.term.buffer.sparse.file=true",
+                "-Daeron.driver.termination.validator=io.aeron.driver.DefaultAllowTerminationValidator",
                 ("-Daeron.archive.dir=" + m_archiveDir).c_str(),
                 "-cp",
                 m_aeronAllJar.c_str(),
@@ -98,12 +99,8 @@ public:
     {
         if (0 != m_pid)
         {
-            int result = ::kill(m_pid, SIGINT);
-            m_stream << "Shutting down PID " << m_pid << " " << result << std::endl;
-            if (result < 0)
-            {
-                perror("kill");
-            }
+            m_stream << "Shutting down PID " << m_pid << std::endl;
+            aeron::Context::requestDriverTermination(aeron::Context::defaultAeronPath(), nullptr, 0);
 
             ::wait(NULL);
 

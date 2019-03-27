@@ -17,6 +17,8 @@ package io.aeron.samples;
 
 import io.aeron.CncFileDescriptor;
 import io.aeron.CommonContext;
+import io.aeron.DriverProxy;
+import io.aeron.exceptions.AeronException;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
@@ -37,6 +39,7 @@ public class DriverTool
     public static void main(final String[] args)
     {
         boolean printPidOnly = false;
+        boolean terminateDriver = false;
 
         if (0 != args.length)
         {
@@ -45,6 +48,10 @@ public class DriverTool
             if (args[0].equals("pid"))
             {
                 printPidOnly = true;
+            }
+            else if (args[0].equals("terminate"))
+            {
+                terminateDriver = true;
             }
         }
 
@@ -64,6 +71,15 @@ public class DriverTool
         if (printPidOnly)
         {
             System.out.println(pid(cncMetaData));
+        }
+        else if (terminateDriver)
+        {
+            final DriverProxy driverProxy = new DriverProxy(toDriver, toDriver.nextCorrelationId());
+
+            if (!driverProxy.terminateDriver(null, 0, 0))
+            {
+                throw new AeronException("could not send termination request.");
+            }
         }
         else
         {
@@ -88,8 +104,10 @@ public class DriverTool
         {
             if ("-?".equals(arg) || "-h".equals(arg) || "-help".equals(arg))
             {
-                System.out.println("\"Usage: [-Daeron.dir=<directory containing CnC file>] DriverTool <pid>");
+                System.out.println(
+                    "\"Usage: [-Daeron.dir=<directory containing CnC file>] DriverTool <pid> <terminate>");
                 System.out.println("  pid: prints PID of driver only.");
+                System.out.println("  terminate: request the driver to terminate.");
                 System.exit(0);
             }
         }

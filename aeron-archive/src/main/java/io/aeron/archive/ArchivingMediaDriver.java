@@ -45,10 +45,13 @@ public class ArchivingMediaDriver implements AutoCloseable
     {
         loadPropertiesFiles(args);
 
-        try (ArchivingMediaDriver ignore = launch())
-        {
-            new ShutdownSignalBarrier().await();
+        final ShutdownSignalBarrier barrier = new ShutdownSignalBarrier();
+        final MediaDriver.Context ctx = new MediaDriver.Context();
 
+        ctx.terminationHook(barrier::signal);
+
+        try (ArchivingMediaDriver ignore = launch(ctx, new Archive.Context()))
+        {
             System.out.println("Shutdown Archive...");
         }
     }

@@ -39,6 +39,7 @@ class ClientCommandAdapter implements MessageHandler
     private final RemoveMessageFlyweight removeMsgFlyweight = new RemoveMessageFlyweight();
     private final DestinationMessageFlyweight destinationMsgFlyweight = new DestinationMessageFlyweight();
     private final CounterMessageFlyweight counterMsgFlyweight = new CounterMessageFlyweight();
+    private final TerminateDriverFlyweight terminateDriverFlyweight = new TerminateDriverFlyweight();
     private final DriverConductor conductor;
     private final RingBuffer toDriverCommands;
     private final ClientProxy clientProxy;
@@ -225,6 +226,18 @@ class ClientCommandAdapter implements MessageHandler
                     final String channel = destinationMsgFlyweight.channel();
 
                     conductor.onRemoveRcvDestination(channelRegistrationId, channel, correlationId);
+                    break;
+                }
+
+                case TERMINATE_DRIVER:
+                {
+                    terminateDriverFlyweight.wrap(buffer, index);
+
+                    conductor.onTerminateDriver(
+                        buffer,
+                        terminateDriverFlyweight.tokenBufferOffset(),
+                        terminateDriverFlyweight.tokenBufferLength());
+
                     break;
                 }
             }

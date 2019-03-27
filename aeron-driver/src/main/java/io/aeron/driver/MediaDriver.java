@@ -80,9 +80,14 @@ public final class MediaDriver implements AutoCloseable
     {
         loadPropertiesFiles(args);
 
-        try (MediaDriver ignore = MediaDriver.launch())
+        final ShutdownSignalBarrier barrier = new ShutdownSignalBarrier();
+        final MediaDriver.Context ctx = new MediaDriver.Context();
+
+        ctx.terminationHook(barrier::signal);
+
+        try (MediaDriver ignore = MediaDriver.launch(ctx))
         {
-            new ShutdownSignalBarrier().await();
+            barrier.await();
 
             System.out.println("Shutdown Driver...");
         }
@@ -471,6 +476,8 @@ public final class MediaDriver implements AutoCloseable
         private FeedbackDelayGenerator multicastFeedbackDelayGenerator;
         private FeedbackDelayGenerator retransmitUnicastDelayGenerator;
         private FeedbackDelayGenerator retransmitUnicastLingerGenerator;
+        private TerminationValidator terminationValidator;
+        private Runnable terminationHook;
 
         private DistinctErrorLog errorLog;
         private ErrorHandler errorHandler;
@@ -2392,6 +2399,52 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
+        /**
+         * Set the {@link Runnable} that is called when the {@link MediaDriver} processes a valid termination request.
+         *
+         * @param terminationHook that can be used to terminate a driver.
+         * @return this for a fluent API.
+         */
+        public Context terminationHook(final Runnable terminationHook)
+        {
+            this.terminationHook = terminationHook;
+            return this;
+        }
+
+        /**
+         * Get the {@link Runnable} that is called when the {@link MediaDriver} processes a valid termination request.
+         * <p>
+         * The default action is nothing.
+         *
+         * @return the {@link Runnable} that can be used to terminate a consensus module.
+         */
+        public Runnable terminationHook()
+        {
+            return terminationHook;
+        }
+
+        /**
+         * Set the {@link TerminationValidator} to be used to validate termination requests.
+         *
+         * @param validator to validate termination requests.
+         * @return this for a fluent API.
+         */
+        public Context terminationValidator(final TerminationValidator validator)
+        {
+            this.terminationValidator = validator;
+            return this;
+        }
+
+        /**
+         * Get the {@link TerminationValidator} to be used to validate termination requests.
+         *
+         * @return {@link TerminationValidator} to validate termination requests.
+         */
+        public TerminationValidator terminationValidator()
+        {
+            return terminationValidator;
+        }
+
         OneToOneConcurrentArrayQueue<Runnable> receiverCommandQueue()
         {
             return receiverCommandQueue;
@@ -2625,6 +2678,11 @@ public final class MediaDriver implements AutoCloseable
             if (null == threadingMode)
             {
                 threadingMode = Configuration.threadingMode();
+            }
+
+            if (null == terminationValidator)
+            {
+                terminationValidator = Configuration.terminationValidator();
             }
         }
 

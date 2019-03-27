@@ -87,6 +87,11 @@ public class ControlProtocolEvents
      */
     public static final int REMOVE_RCV_DESTINATION = 0x0D;
 
+    /**
+     * Request the driver to terminate.
+     */
+    public static final int TERMINATE_DRIVER = 0x0E;
+
     // Media Driver to Clients
 
     /**

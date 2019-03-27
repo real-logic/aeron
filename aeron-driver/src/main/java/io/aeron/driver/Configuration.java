@@ -575,6 +575,8 @@ public class Configuration
      */
     public static final int MAX_RETRANSMITS_DEFAULT = 16;
 
+    public static final String TERMINATION_VALIDATOR_PROP_NAME = "aeron.driver.termination.validator";
+
     public static boolean printConfigurationOnStart()
     {
         return "true".equalsIgnoreCase(getProperty(PRINT_CONFIGURATION_ON_START_PROP_NAME, "false"));
@@ -1066,6 +1068,33 @@ public class Configuration
         {
             throw new ConfigurationException("linger=" + driverLingerTimeoutNs + " < timeoutNs =" + timeoutNs);
         }
+    }
+
+    /**
+     * Get the {@link TerminationValidator} implementations which can be used for validating a termination request
+     * sent to the driver.
+     *
+     * @return the {@link TerminationValidator}
+     */
+    public static TerminationValidator terminationValidator()
+    {
+        TerminationValidator validater = null;
+        try
+        {
+            final String className = getProperty(TERMINATION_VALIDATOR_PROP_NAME);
+            if (null == className)
+            {
+                return new DefaultDenyTerminationValidator();
+            }
+
+            validater = (TerminationValidator)Class.forName(className).getConstructor().newInstance();
+        }
+        catch (final Exception ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+
+        return validater;
     }
 
     /**

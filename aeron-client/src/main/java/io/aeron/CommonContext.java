@@ -17,6 +17,7 @@ package io.aeron;
 
 import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.DriverTimeoutException;
+import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.AtomicBuffer;
@@ -35,7 +36,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 import static io.aeron.Aeron.sleep;
-import static io.aeron.CncFileDescriptor.CNC_VERSION;
+import static io.aeron.CncFileDescriptor.*;
 import static java.lang.Long.getLong;
 import static java.lang.System.getProperty;
 
@@ -549,6 +550,54 @@ public class CommonContext implements Cloneable
         logger.accept("INFO: Aeron toDriver consumer heartbeat is (ms): " + timestampAge);
 
         return timestampAge <= driverTimeoutMs;
+    }
+
+    /**
+     * Request a driver to run its termination hook.
+     *
+     * @param directory for the driver.
+     * @param tokenBuffer containing the optional token for the request.
+     * @param tokenOffset within the tokenBuffer at which the token begins.
+     * @param tokenLength of the token in the tokenBuffer.
+     * @return true if request was sent or false if request could not be sent.
+     */
+    public static boolean requestDriverTermination(
+        final File directory,
+        final DirectBuffer tokenBuffer,
+        final int tokenOffset,
+        final int tokenLength)
+    {
+        final File cncFile = new File(directory, CncFileDescriptor.CNC_FILE);
+
+        if (cncFile.exists() && cncFile.length() > 0)
+        {
+            final MappedByteBuffer cncByteBuffer = IoUtil.mapExistingFile(cncFile, "CnC file");
+            try
+            {
+                final UnsafeBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
+                final int cncVersion = cncMetaDataBuffer.getIntVolatile(cncVersionOffset(0));
+
+                if (CncFileDescriptor.CNC_VERSION != cncVersion)
+                {
+                    throw new AeronException(
+                        "Aeron CnC version does not match: required=" + CNC_VERSION + " version=" + cncVersion);
+                }
+
+                final ManyToOneRingBuffer toDriverBuffer = new ManyToOneRingBuffer(
+                    CncFileDescriptor.createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer));
+                final long clientId = toDriverBuffer.nextCorrelationId();
+
+                final DriverProxy driverProxy = new DriverProxy(toDriverBuffer, clientId);
+
+                return driverProxy.terminateDriver(tokenBuffer, tokenOffset, tokenLength);
+            }
+            finally
+            {
+                IoUtil.unmap(cncByteBuffer);
+            }
+        }
+
+        return false;
     }
 
     /**

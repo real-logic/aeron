@@ -40,6 +40,7 @@ public class DriverProxy
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
     private final DestinationMessageFlyweight destinationMessage = new DestinationMessageFlyweight();
     private final CounterMessageFlyweight counterMessage = new CounterMessageFlyweight();
+    private final TerminateDriverFlyweight terminateDriver = new TerminateDriverFlyweight();
     private final RingBuffer toDriverCommandBuffer;
 
     public DriverProxy(final RingBuffer toDriverCommandBuffer, final long clientId)
@@ -52,6 +53,7 @@ public class DriverProxy
         removeMessage.wrap(buffer, 0);
         destinationMessage.wrap(buffer, 0);
         counterMessage.wrap(buffer, 0);
+        terminateDriver.wrap(buffer, 0);
 
         correlatedMessage.clientId(clientId);
     }
@@ -292,5 +294,14 @@ public class DriverProxy
     {
         correlatedMessage.correlationId(Aeron.NULL_VALUE);
         toDriverCommandBuffer.write(CLIENT_CLOSE, buffer, 0, CorrelatedMessageFlyweight.LENGTH);
+    }
+
+    public boolean terminateDriver(final DirectBuffer tokenBuffer, final int tokenOffset, final int tokenLength)
+    {
+        correlatedMessage.correlationId(Aeron.NULL_VALUE);
+
+        terminateDriver.tokenBuffer(tokenBuffer, tokenOffset, tokenLength);
+
+        return toDriverCommandBuffer.write(TERMINATE_DRIVER, buffer, 0, terminateDriver.length());
     }
 }

@@ -905,6 +905,14 @@ public class DriverConductor implements Agent
         clientProxy.operationSucceeded(correlationId);
     }
 
+    void onTerminateDriver(final DirectBuffer tokenBuffer, final int tokenOffset, final int tokenLength)
+    {
+        if (ctx.terminationValidator().allowTermination(ctx.aeronDirectory(), tokenBuffer, tokenOffset, tokenLength))
+        {
+            ctx.terminationHook().run();
+        }
+    }
+
     private void heartbeatAndCheckTimers(final long nowNs)
     {
         final long nowMs = cachedEpochClock.time();

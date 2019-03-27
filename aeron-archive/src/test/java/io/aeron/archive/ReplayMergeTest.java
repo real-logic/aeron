@@ -146,22 +146,20 @@ public class ReplayMergeTest
         try (Publication publication = aeron.addPublication(publicationChannel.build(), STREAM_ID))
         {
             final int sessionId = publication.sessionId();
-            final String subscriptionChannel = this.subscriptionChannel.sessionId(sessionId).build();
             final String recordingChannel = this.recordingChannel.sessionId(sessionId).build();
+            final String subscriptionChannel = this.subscriptionChannel.sessionId(sessionId).build();
 
             aeronArchive.startRecording(recordingChannel, STREAM_ID, REMOTE);
 
-            try (Subscription subscription = aeron.addSubscription(subscriptionChannel, STREAM_ID))
-            {
-                offerMessages(publication, 0, initialMessageCount, MESSAGE_PREFIX);
+            final CountersReader counters = aeron.countersReader();
+            final int counterId = awaitCounterId(counters, publication.sessionId());
+            final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
-                final CountersReader counters = aeron.countersReader();
-                final int counterId = awaitCounterId(counters, publication.sessionId());
-                final long recordingId = RecordingPos.getRecordingId(counters, counterId);
+            offerMessages(publication, 0, initialMessageCount, MESSAGE_PREFIX);
+            awaitPosition(counters, counterId, publication.position());
 
-                awaitPosition(counters, counterId, publication.position());
-
-                try (ReplayMerge replayMerge = new ReplayMerge(
+            try (Subscription subscription = aeron.addSubscription(subscriptionChannel, STREAM_ID);
+                ReplayMerge replayMerge = new ReplayMerge(
                     subscription,
                     aeronArchive,
                     replayChannel.build(),
@@ -169,42 +167,41 @@ public class ReplayMergeTest
                     liveDestination.build(),
                     recordingId,
                     0))
+            {
+                final FragmentHandler fragmentHandler = new FragmentAssembler(
+                    (buffer, offset, length, header) ->
+                    {
+                        final String expected = MESSAGE_PREFIX + received.value;
+                        final String actual = buffer.getStringWithoutLengthAscii(offset, length);
+
+                        assertEquals(expected, actual);
+
+                        received.value++;
+                    });
+
+                for (int i = initialMessageCount; i < totalMessageCount; i++)
                 {
-                    final FragmentHandler fragmentHandler = new FragmentAssembler(
-                        (buffer, offset, length, header) ->
-                        {
-                            final String expected = MESSAGE_PREFIX + received.value;
-                            final String actual = buffer.getStringWithoutLengthAscii(offset, length);
+                    offer(publication, i, MESSAGE_PREFIX);
 
-                            assertEquals(expected, actual);
-
-                            received.value++;
-                        });
-
-                    for (int i = initialMessageCount; i < totalMessageCount; i++)
+                    if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
                     {
-                        offer(publication, i, MESSAGE_PREFIX);
-
-                        if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
-                        {
-                            checkInterruptedStatus();
-                            Thread.yield();
-                        }
+                        checkInterruptedStatus();
+                        Thread.yield();
                     }
-
-                    while (received.get() < totalMessageCount || !replayMerge.isMerged())
-                    {
-                        if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
-                        {
-                            checkInterruptedStatus();
-                            Thread.yield();
-                        }
-                    }
-
-                    assertThat(received.get(), is(totalMessageCount));
-                    assertTrue(replayMerge.isMerged());
-                    assertEquals(ReplayMerge.State.MERGED, replayMerge.state());
                 }
+
+                while (received.get() < totalMessageCount || !replayMerge.isMerged())
+                {
+                    if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
+                    {
+                        checkInterruptedStatus();
+                        Thread.yield();
+                    }
+                }
+
+                assertThat(received.get(), is(totalMessageCount));
+                assertTrue(replayMerge.isMerged());
+                assertEquals(ReplayMerge.State.MERGED, replayMerge.state());
             }
             finally
             {

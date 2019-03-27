@@ -2430,6 +2430,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private void startLogRecording(final String channel, final SourceLocation sourceLocation)
     {
         lastRecordingId = recordingLog.findLastTermRecordingId();
+        logRecordingChannel = channel;
 
         if (RecordingPos.NULL_RECORDING_ID == lastRecordingId)
         {
@@ -2439,10 +2440,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         {
             archive.extendRecording(lastRecordingId, channel, ctx.logStreamId(), sourceLocation);
         }
-
-        logRecordingChannel = channel;
     }
-
 
     private void clusterMemberJoined(final int memberId, final ClusterMember[] newMembers)
     {
@@ -2450,9 +2448,9 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         final ClusterMember eventMember = ClusterMember.findMember(newMembers, memberId);
 
-        this.clusterMembers = ClusterMember.addMember(this.clusterMembers, eventMember);
+        clusterMembers = ClusterMember.addMember(clusterMembers, eventMember);
         clusterMemberByIdMap.put(memberId, eventMember);
-        rankedPositions = new long[this.clusterMembers.length];
+        rankedPositions = new long[clusterMembers.length];
     }
 
     private void clusterMemberQuit(final int memberId)

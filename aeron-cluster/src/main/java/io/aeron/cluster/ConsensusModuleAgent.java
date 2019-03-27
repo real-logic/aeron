@@ -73,7 +73,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private long timeOfLastAppendPosition = 0;
     private long cachedTimeMs;
     private long clusterTimeMs = NULL_VALUE;
-    private long lastRecordingId = RecordingPos.NULL_RECORDING_ID;
     private int logInitialTermId = NULL_VALUE;
     private int logTermBufferLength = NULL_VALUE;
     private int logMtuLength = NULL_VALUE;
@@ -729,7 +728,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         lastAppendedPosition = logPosition;
         followerCommitPosition = logPosition;
-        lastRecordingId = recordingId;
 
         commitPosition.setOrdered(logPosition);
         clearSessionsAfter(logPosition);
@@ -2429,16 +2427,16 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     private void startLogRecording(final String channel, final SourceLocation sourceLocation)
     {
-        lastRecordingId = recordingLog.findLastTermRecordingId();
         logRecordingChannel = channel;
 
-        if (RecordingPos.NULL_RECORDING_ID == lastRecordingId)
+        final long logRecordingId = recordingLog.findLastTermRecordingId();
+        if (RecordingPos.NULL_RECORDING_ID == logRecordingId)
         {
             archive.startRecording(channel, ctx.logStreamId(), sourceLocation);
         }
         else
         {
-            archive.extendRecording(lastRecordingId, channel, ctx.logStreamId(), sourceLocation);
+            archive.extendRecording(logRecordingId, channel, ctx.logStreamId(), sourceLocation);
         }
     }
 

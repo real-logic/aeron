@@ -70,7 +70,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private long followerCommitPosition = 0;
     private long terminationPosition = NULL_POSITION;
     private long timeOfLastLogUpdateMs = 0;
-    private long timeOfLastAppendPosition = 0;
+    private long timeOfLastAppendPositionMs = 0;
     private long cachedTimeMs;
     private long clusterTimeMs = NULL_VALUE;
     private int logInitialTermId = NULL_VALUE;
@@ -234,7 +234,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             }
 
             timeOfLastLogUpdateMs = cachedTimeMs = epochClock.time();
-            timeOfLastAppendPosition = cachedTimeMs;
+            timeOfLastAppendPositionMs = cachedTimeMs;
             leadershipTermId = recoveryPlan.lastLeadershipTermId;
 
             election = new Election(
@@ -1427,7 +1427,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         else
         {
             timeOfLastLogUpdateMs = cachedTimeMs;
-            timeOfLastAppendPosition = cachedTimeMs;
+            timeOfLastAppendPositionMs = cachedTimeMs;
             election = null;
             result = true;
         }
@@ -1509,7 +1509,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 if (memberStatusPublisher.appendedPosition(publication, leadershipTermId, appendedPosition, memberId))
                 {
                     lastAppendedPosition = appendedPosition;
-                    timeOfLastAppendPosition = cachedTimeMs;
+                    timeOfLastAppendPositionMs = cachedTimeMs;
                 }
             }
 
@@ -2230,11 +2230,11 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             final Publication publication = leaderMember.publication();
 
             if ((appendedPosition != lastAppendedPosition ||
-                nowMs >= (timeOfLastAppendPosition + leaderHeartbeatIntervalMs)) &&
+                nowMs >= (timeOfLastAppendPositionMs + leaderHeartbeatIntervalMs)) &&
                 memberStatusPublisher.appendedPosition(publication, leadershipTermId, appendedPosition, memberId))
             {
                 lastAppendedPosition = appendedPosition;
-                timeOfLastAppendPosition = nowMs;
+                timeOfLastAppendPositionMs = nowMs;
                 workCount += 1;
             }
 

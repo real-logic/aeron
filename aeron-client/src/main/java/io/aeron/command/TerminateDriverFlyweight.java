@@ -21,7 +21,7 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
- * Command message flyweight to ask the driver process to terminate
+ * Command message flyweight to ask the driver process to terminate.
  *
  * @see ControlProtocolEvents
  * <pre>
@@ -83,7 +83,7 @@ public class TerminateDriverFlyweight extends CorrelatedMessageFlyweight
     }
 
     /**
-     * Get the length of the current message
+     * Get the length of the current message.
      * <p>
      * NB: must be called after the data is written in order to be accurate.
      *

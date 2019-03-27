@@ -237,7 +237,6 @@ class ClientCommandAdapter implements MessageHandler
                         buffer,
                         terminateDriverFlyweight.tokenBufferOffset(),
                         terminateDriverFlyweight.tokenBufferLength());
-
                     break;
                 }
             }

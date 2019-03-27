@@ -19,18 +19,20 @@ import org.agrona.DirectBuffer;
 
 import java.io.File;
 
+/**
+ * Validate if the driver should terminate based on the provided token.
+ */
 @FunctionalInterface
 public interface TerminationValidator
 {
     /**
      * Should the given termination request be considered valid or not.
      *
-     * @param aeronDir of the driver
-     * @param tokenBuffer of the token in the request
-     * @param tokenOffset of the token within the buffer
-     * @param tokenLength of the token within the buffer
+     * @param aeronDir    of the driver.
+     * @param tokenBuffer of the token in the request.
+     * @param tokenOffset of the token within the buffer.
+     * @param tokenLength of the token within the buffer.
      * @return true if request is to be considered valid and the driver termination hook should be run or false if not.
      */
-    boolean allowTermination(
-        File aeronDir, DirectBuffer tokenBuffer, int tokenOffset, int tokenLength);
+    boolean allowTermination(File aeronDir, DirectBuffer tokenBuffer, int tokenOffset, int tokenLength);
 }

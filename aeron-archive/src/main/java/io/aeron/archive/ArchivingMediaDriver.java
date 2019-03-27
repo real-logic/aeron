@@ -52,6 +52,8 @@ public class ArchivingMediaDriver implements AutoCloseable
 
         try (ArchivingMediaDriver ignore = launch(ctx, new Archive.Context()))
         {
+            barrier.await();
+
             System.out.println("Shutdown Archive...");
         }
     }

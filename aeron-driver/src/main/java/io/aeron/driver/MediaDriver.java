@@ -2053,10 +2053,10 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Application specific feedback used to identify a receiver groups when using a
+         * Application specific feedback used to identify a receiver group when using a
          * {@link PreferredMulticastFlowControl} strategy which is added to Status Messages (SMs)..
          *
-         * @return Application specific feedback used to identify receivers for flow control.
+         * @return Application specific feedback used to identify receiver group for flow control.
          * @see Configuration#SM_APPLICATION_SPECIFIC_FEEDBACK_PROP_NAME
          */
         public byte[] applicationSpecificFeedback()
@@ -2065,10 +2065,10 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Application specific feedback used to identify a receiver groups when using a
+         * Application specific feedback used to identify a receiver group when using a
          * {@link PreferredMulticastFlowControl} strategy which is added to Status Messages (SMs).
          *
-         * @param asfBytes for identifying the receiver group.
+         * @param asfBytes for identifying a receiver group.
          * @return this for a fluent API.
          * @see Configuration#SM_APPLICATION_SPECIFIC_FEEDBACK_PROP_NAME
          */

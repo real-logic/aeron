@@ -62,6 +62,7 @@ typedef struct aeron_driver_receiver_proxy_stct aeron_driver_receiver_proxy_t;
 typedef aeron_rb_handler_t aeron_driver_conductor_to_driver_interceptor_func_t;
 typedef void (*aeron_driver_conductor_to_client_interceptor_func_t)(
     aeron_driver_conductor_t *conductor, int32_t msg_type_id, const void *message, size_t length);
+typedef void (*aeron_driver_termination_hook_func_t)(void *clientd);
 
 typedef enum aeron_threading_mode_enum
 {
@@ -162,6 +163,12 @@ typedef struct aeron_driver_context_stct
 
     aeron_driver_conductor_to_driver_interceptor_func_t to_driver_interceptor_func;
     aeron_driver_conductor_to_client_interceptor_func_t to_client_interceptor_func;
+
+    aeron_driver_termination_validator_func_t termination_validator_func;
+    void *termination_validator_state;
+
+    aeron_driver_termination_hook_func_t termination_hook_func;
+    void *termination_hook_state;
 
     int64_t receiver_id;
 }

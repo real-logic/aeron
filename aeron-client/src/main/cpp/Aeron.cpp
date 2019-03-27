@@ -26,16 +26,6 @@ static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_100(100);
 
 static const char* AGENT_NAME = "client-conductor";
 
-static long long currentTimeMillis()
-{
-    using namespace std::chrono;
-
-    system_clock::time_point now = system_clock::now();
-    milliseconds ms = duration_cast<milliseconds>(now.time_since_epoch());
-
-    return ms.count();
-}
-
 Aeron::Aeron(Context &context) :
     m_randomEngine(m_randomDevice()),
     m_sessionIdDistribution(-INT_MAX, INT_MAX),

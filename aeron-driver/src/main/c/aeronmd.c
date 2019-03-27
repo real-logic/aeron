@@ -26,10 +26,16 @@
 #include <stdio.h>
 #include "aeronmd.h"
 #include "concurrent/aeron_atomic.h"
+#include "aeron_driver_context.h"
 
 volatile bool running = true;
 
 void sigint_handler(int signal)
+{
+    AERON_PUT_ORDERED(running, false);
+}
+
+void termination_hook(void *state)
 {
     AERON_PUT_ORDERED(running, false);
 }
@@ -54,6 +60,8 @@ int main(int argc, char **argv)
         fprintf(stderr, "ERROR: context init (%d) %s\n", aeron_errcode(), aeron_errmsg());
         goto cleanup;
     }
+
+    context->termination_hook_func = termination_hook;
 
     if (aeron_driver_init(&driver, context) < 0)
     {

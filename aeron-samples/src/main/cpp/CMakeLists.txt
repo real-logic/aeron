@@ -33,6 +33,7 @@ add_executable(Ping Ping.cpp ${HEADERS})
 add_executable(Throughput Throughput.cpp ${HEADERS})
 add_executable(ErrorStat ErrorStat.cpp ${HEADERS})
 add_executable(LossStat LossStat.cpp ${HEADERS})
+add_executable(DriverTool DriverTool.cpp ${HEADERS})
 add_executable(ExclusiveThroughput ExclusiveThroughput.cpp ${HEADERS})
 add_executable(PingPong PingPong.cpp ${HEADERS})
 
@@ -72,6 +73,9 @@ target_link_libraries(ErrorStat
 target_link_libraries(LossStat
     aeron_client)
 
+target_link_libraries(DriverTool
+    aeron_client)
+
 target_link_libraries(ExclusiveThroughput
     aeron_client)
 
@@ -83,6 +87,6 @@ add_dependencies(PingPong hdr_histogram)
 
 if (AERON_INSTALL_TARGETS)
     install(
-        TARGETS AeronStat BasicPublisher TimeTests BasicSubscriber StreamingPublisher RateSubscriber Ping Pong Throughput ErrorStat LossStat ExclusiveThroughput PingPong
+        TARGETS AeronStat BasicPublisher TimeTests BasicSubscriber StreamingPublisher RateSubscriber Ping Pong Throughput ErrorStat LossStat DriverTool ExclusiveThroughput PingPong
         DESTINATION bin)
 endif()

@@ -55,6 +55,8 @@ struct ControlProtocolEvents
     static const std::int32_t ADD_RCV_DESTINATION = 0x0C;
     /** Remove Destination for existing Subscription */
     static const std::int32_t REMOVE_RCV_DESTINATION = 0x0D;
+    /** Request driver run termination hook */
+    static const std::int32_t TERMINATE_DRIVER = 0x0E;
 
     // Media Driver to Clients
 

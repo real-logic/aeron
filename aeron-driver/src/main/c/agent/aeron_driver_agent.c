@@ -505,6 +505,9 @@ static const char *dissect_command_type_id(int64_t cmd_type_id)
         case AERON_COMMAND_REMOVE_DESTINATION:
             return "REMOVE_DESTINATION";
 
+        case AERON_COMMAND_TERMINATE_DRIVER:
+            return "TERMINATE_DRIVER";
+
         default:
             return "unknown command";
     }
@@ -618,6 +621,17 @@ static const char *dissect_cmd_in(int64_t cmd_id, const void *message, size_t le
             snprintf(buffer, sizeof(buffer) - 1, "CLIENT_CLOSE [%" PRId64 ":%" PRId64 "]",
                 command->client_id,
                 command->correlation_id);
+            break;
+        }
+
+        case AERON_COMMAND_TERMINATE_DRIVER:
+        {
+            aeron_terminate_driver_command_t *command = (aeron_terminate_driver_command_t *)message;
+
+            snprintf(buffer, sizeof(buffer) - 1, "%s %" PRId64 " %d",
+                dissect_command_type_id(cmd_id),
+                command->correlated.client_id,
+                command->token_length);
             break;
         }
 

@@ -54,6 +54,7 @@
 #include "concurrent/aeron_broadcast_transmitter.h"
 #include "aeron_agent.h"
 #include "concurrent/aeron_counters_manager.h"
+#include "aeron_termination_validator.h"
 
 #if defined(__clang__)
     #pragma clang diagnostic push
@@ -657,6 +658,17 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
 
     _context->to_driver_interceptor_func = aeron_driver_conductor_to_driver_interceptor_null;
     _context->to_client_interceptor_func = aeron_driver_conductor_to_client_interceptor_null;
+
+    if ((_context->termination_validator_func = aeron_driver_termination_validator_load(
+        AERON_CONFIG_GETENV_OR_DEFAULT(AERON_DRIVER_TERMINATION_VALIDATOR_ENV_VAR, "deny"))) == NULL)
+    {
+        return -1;
+    }
+
+    _context->termination_validator_state = NULL;
+
+    _context->termination_hook_func = NULL;
+    _context->termination_hook_state = NULL;
 
 #ifdef HAVE_UUID_GENERATE
     uuid_t id;

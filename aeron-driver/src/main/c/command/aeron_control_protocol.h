@@ -31,6 +31,9 @@
 #define AERON_COMMAND_ADD_COUNTER (0x09)
 #define AERON_COMMAND_REMOVE_COUNTER (0x0A)
 #define AERON_COMMAND_CLIENT_CLOSE (0x0B)
+#define AERON_COMMAND_ADD_RCV_DESTINATION (0x0C)
+#define AERON_COMMAND_REMOVE_RCV_DESTINATION (0x0D)
+#define AERON_COMMAND_TERMINATE_DRIVER (0x0E)
 
 #define AERON_RESPONSE_ON_ERROR (0x0F01)
 #define AERON_RESPONSE_ON_AVAILABLE_IMAGE (0x0F02)
@@ -166,6 +169,13 @@ typedef struct aeron_client_timeout_stct
     int64_t client_id;
 }
 aeron_client_timeout_t;
+
+typedef struct aeron_terminate_driver_command_stct
+{
+    aeron_correlated_command_t correlated;
+    int32_t token_length;
+}
+aeron_terminate_driver_command_t;
 
 #pragma pack(pop)
 

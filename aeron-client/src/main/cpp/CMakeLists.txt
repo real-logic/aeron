@@ -22,6 +22,7 @@ SET(SOURCE
     Aeron.cpp
     LogBuffers.cpp
     Counter.cpp
+    Context.cpp
     util/MemoryMappedFile.cpp
     util/CommandOption.cpp
     util/CommandOptionParser.cpp)
@@ -60,6 +61,7 @@ SET(HEADERS
     command/CounterMessageFlyweight.h
     command/CounterUpdateFlyweight.h
     command/ClientTimeoutFlyweight.h
+    command/TerminateDriverFlyweight.h
     concurrent/AgentRunner.h
     concurrent/AgentInvoker.h
     concurrent/Atomic64.h

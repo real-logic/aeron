@@ -362,6 +362,9 @@ public:
         return *this;
     }
 
+    void requestDriverTermination(
+        const std::string& directory, const std::uint8_t *tokenBuffer, std::size_t tokenLength);
+
     inline static std::string tmpDir()
     {
 #if defined(_MSC_VER)

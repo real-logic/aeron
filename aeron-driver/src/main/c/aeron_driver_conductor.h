@@ -421,6 +421,9 @@ int aeron_driver_conductor_on_remove_counter(aeron_driver_conductor_t *conductor
 
 int aeron_driver_conductor_on_client_close(aeron_driver_conductor_t *conductor, aeron_correlated_command_t *command);
 
+int aeron_driver_conductor_on_terminate_driver(
+    aeron_driver_conductor_t *conductor, aeron_terminate_driver_command_t *command);
+
 void aeron_driver_conductor_on_create_publication_image(void *clientd, void *item);
 
 void aeron_driver_conductor_on_linger_buffer(void *clientd, void *item);

@@ -150,6 +150,7 @@ SET(SOURCE
     aeron_loss_detector.c
     aeron_retransmit_handler.c
     aeron_windows.c
+    aeron_termination_validator.c
     media/aeron_udp_channel_transport.c
     media/aeron_udp_channel.c
     media/aeron_send_channel_endpoint.c
@@ -217,6 +218,7 @@ SET(HEADERS
     aeron_congestion_control.h
     aeron_loss_detector.h
     aeron_retransmit_handler.h
+    aeron_termination_validator.h
     media/aeron_udp_channel_transport.h
     media/aeron_udp_channel.h
     media/aeron_send_channel_endpoint.h

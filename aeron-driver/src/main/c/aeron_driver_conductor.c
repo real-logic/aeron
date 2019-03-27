@@ -1449,6 +1449,20 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
             break;
         }
 
+        case AERON_COMMAND_TERMINATE_DRIVER:
+        {
+            aeron_terminate_driver_command_t *command = (aeron_terminate_driver_command_t *)message;
+
+            if (length < sizeof(aeron_terminate_driver_command_t))
+            {
+                goto malformed_command;
+            }
+
+            result = aeron_driver_conductor_on_terminate_driver(conductor, command);
+
+            break;
+        }
+
         default:
             AERON_FORMAT_BUFFER(error_message, "command=%d unknown", msg_type_id);
             aeron_driver_conductor_error(
@@ -2559,6 +2573,28 @@ int aeron_driver_conductor_on_client_close(
 
         client->time_of_last_keepalive_ms = 0;
         aeron_counter_set_ordered(client->heartbeat_status.value_addr, client->time_of_last_keepalive_ms);
+    }
+
+    return 0;
+}
+
+int aeron_driver_conductor_on_terminate_driver(
+    aeron_driver_conductor_t *conductor, aeron_terminate_driver_command_t *command)
+{
+    aeron_driver_context_t *ctx = conductor->context;
+    bool is_validated = false;
+
+    if (NULL != ctx->termination_validator_func)
+    {
+        uint8_t *token_buffer = (uint8_t *)command + sizeof(aeron_terminate_driver_command_t);
+
+        is_validated = ctx->termination_validator_func(
+            ctx->termination_validator_state, token_buffer, command->token_length);
+    }
+
+    if (NULL != ctx->termination_hook_func && is_validated)
+    {
+        ctx->termination_hook_func(ctx->termination_hook_state);
     }
 
     return 0;

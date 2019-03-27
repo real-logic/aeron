@@ -30,10 +30,12 @@
 #include <vector>
 
 #include <gtest/gtest.h>
+#include <ChannelUriStringBuilder.h>
 
 #include "client/AeronArchive.h"
 #include "client/RecordingEventsAdapter.h"
 #include "client/RecordingPos.h"
+#include "client/ReplayMerge.h"
 
 using namespace aeron;
 using namespace aeron::archive::client;
@@ -81,6 +83,7 @@ public:
                 "-Daeron.mtu.length=4k",
                 "-Daeron.term.buffer.sparse.file=true",
                 "-Daeron.driver.termination.validator=io.aeron.driver.DefaultAllowTerminationValidator",
+                "-Daeron.term.buffer.length=64k",
                 ("-Daeron.archive.dir=" + m_archiveDir).c_str(),
                 "-cp",
                 m_aeronAllJar.c_str(),
@@ -617,4 +620,134 @@ TEST_F(AeronArchiveTest, shouldListRegisteredRecordingSubscriptions)
         descriptors.begin(),
         descriptors.end(),
         [=](SubscriptionDescriptor s){ return s.m_subscriptionId == subIdThree;}));
+}
+
+TEST_F(AeronArchiveTest, shouldMergeFromReplayToLive)
+{
+    const std::size_t termLength = 64*1024;
+    const std::string messagePrefix = "Message ";
+    const std::size_t minMessagesPerTerm = termLength / (messagePrefix.length() + DataFrameHeader::LENGTH);
+    const std::string controlEndpoint = "localhost:43265";
+    const std::string recordingEndpoint = "localhost:43266";
+    const std::string liveEndpoint = "localhost:43267";
+    const std::string replayEndpoint = "localhost:43268";
+
+    ChannelUriStringBuilder publicationChannel, recordingChannel, subscriptionChannel;
+    ChannelUriStringBuilder liveDestination, replayDestination, replayChannel;
+
+    publicationChannel
+        .media(UDP_MEDIA)
+        .tags("1,2")
+        .controlEndpoint(controlEndpoint)
+        .controlMode(MDC_CONTROL_MODE_DYNAMIC)
+        .termLength(termLength);
+
+    recordingChannel
+        .media(UDP_MEDIA)
+        .endpoint(recordingEndpoint)
+        .controlEndpoint(controlEndpoint);
+
+    subscriptionChannel
+        .media(UDP_MEDIA)
+        .controlMode(MDC_CONTROL_MODE_MANUAL);
+
+    liveDestination
+        .media(UDP_MEDIA)
+        .endpoint(liveEndpoint)
+        .controlEndpoint(controlEndpoint);
+
+    replayDestination
+        .media(UDP_MEDIA)
+        .endpoint(replayEndpoint);
+
+    replayChannel
+        .media(UDP_MEDIA)
+        .isSessionIdTagged(true)
+        .sessionId(2)
+        .endpoint(replayEndpoint);
+
+    const std::size_t initialMessageCount = minMessagesPerTerm * 3;
+    const std::size_t subsequentMessageCount = minMessagesPerTerm * 3;
+    const std::size_t totalMessageCount = initialMessageCount + subsequentMessageCount;
+    aeron::concurrent::YieldingIdleStrategy idle;
+
+    std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect();
+
+    std::shared_ptr<Publication> publication = addPublication(
+        *aeronArchive->context().aeron(), publicationChannel.build(), m_recordingStreamId);
+
+    const std::int32_t sessionId = publication->sessionId();
+    recordingChannel.sessionId(sessionId);
+    subscriptionChannel.sessionId(sessionId);
+
+    const std::int64_t recordingSubscriptionId = aeronArchive->startRecording(
+        recordingChannel.build(), m_recordingStreamId, AeronArchive::SourceLocation::REMOTE);
+
+    CountersReader& countersReader = aeronArchive->context().aeron()->countersReader();
+    const std::int32_t counterId = getRecordingCounterId(sessionId, countersReader);
+    const std::int64_t recordingId = RecordingPos::getRecordingId(countersReader, counterId);
+
+    offerMessages(*publication, initialMessageCount, messagePrefix);
+    while (countersReader.getCounterValue(counterId) < publication->position())
+    {
+        idle.idle();
+    }
+
+    {
+        std::shared_ptr<Subscription> subscription = addSubscription(
+            *aeronArchive->context().aeron(), subscriptionChannel.build(), m_recordingStreamId);
+
+        ReplayMerge replayMerge(
+            subscription,
+            aeronArchive,
+            replayChannel.build(),
+            replayDestination.build(),
+            liveDestination.build(),
+            recordingId,
+            0);
+
+        std::size_t received = 0;
+        fragment_handler_t handler =
+            [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
+            {
+                const std::string expected = messagePrefix + std::to_string(received);
+                const std::string actual = buffer.getStringWithoutLength(offset, static_cast<std::size_t>(length));
+
+                EXPECT_EQ(expected, actual);
+
+                received++;
+            };
+
+        for (std::size_t i = initialMessageCount; i < totalMessageCount; i++)
+        {
+            BufferClaim bufferClaim;
+            const std::string message = messagePrefix + std::to_string(i);
+            while (publication->tryClaim(static_cast<util::index_t>(message.length()), bufferClaim) < 0)
+            {
+                idle.idle();
+            }
+
+            bufferClaim.buffer().putStringWithoutLength(bufferClaim.offset(), message);
+            bufferClaim.commit();
+
+            if (0 == replayMerge.poll(handler, m_fragmentLimit))
+            {
+                idle.idle();
+            }
+        }
+
+        while (received < totalMessageCount || !replayMerge.isMerged())
+        {
+            if (0 == replayMerge.poll(handler, m_fragmentLimit))
+            {
+                idle.idle();
+            }
+        }
+
+        EXPECT_EQ(received, totalMessageCount);
+        EXPECT_TRUE(replayMerge.isMerged());
+        EXPECT_EQ(replayMerge.state(), ReplayMerge::State::MERGED);
+    }
+
+    aeronArchive->stopRecording(recordingSubscriptionId);
 }

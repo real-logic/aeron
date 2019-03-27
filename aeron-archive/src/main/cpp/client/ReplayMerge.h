@@ -185,6 +185,7 @@ private:
 
     inline void state(State state)
     {
+        //std::cout << m_state << "->" << state << std::endl;
         m_state = state;
     }
 

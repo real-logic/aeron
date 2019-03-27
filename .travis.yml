@@ -41,7 +41,7 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
             - llvm-toolchain-trusty-4.0
-      script: cppbuild/cppbuild
+      script: cppbuild/cppbuild --build-archive-api
 
     - env: COMPILER=clang++-5.0
       language: c++
@@ -55,7 +55,7 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
             - llvm-toolchain-trusty-5.0
-      script: cppbuild/cppbuild
+      script: cppbuild/cppbuild --build-archive-api
 
     - env: COMPILER=clang++-6.0
       language: c++
@@ -69,7 +69,7 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
             - llvm-toolchain-trusty-6.0
-      script: cppbuild/cppbuild
+      script: cppbuild/cppbuild --build-archive-api
 
     - name: "clang 6.0 debug build"
       env: COMPILER=clang++-6.0
@@ -84,23 +84,7 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
             - llvm-toolchain-trusty-6.0
-      script: cppbuild/cppbuild --debug-build
-
-    - name: "clang 6.0 archive build"
-      env: COMPILER=clang++-6.0
-      language: c++
-      compiler: clang
-      os: linux
-      jdk: openjdk8
-      addons:
-        apt:
-          packages:
-            - clang-6.0
-            - libstdc++-7-dev
-          sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-trusty-6.0
-      script: cppbuild/cppbuild --build-archive-api
+      script: cppbuild/cppbuild --debug-build --build-archive-api
 
     - env: COMPILER=g++-6
       language: c++
@@ -112,7 +96,7 @@ matrix:
             - g++-6
           sources:
             - ubuntu-toolchain-r-test
-      script: cppbuild/cppbuild
+      script: cppbuild/cppbuild --build-archive-api
 
     - env: COMPILER=g++-7
       language: c++
@@ -124,7 +108,7 @@ matrix:
             - g++-7
           sources:
             - ubuntu-toolchain-r-test
-      script: cppbuild/cppbuild
+      script: cppbuild/cppbuild --build-archive-api
 
     - env: COMPILER=g++-8
       language: c++
@@ -136,27 +120,13 @@ matrix:
             - g++-8
           sources:
             - ubuntu-toolchain-r-test
-      script: cppbuild/cppbuild -b
-
-    - name: "g++ 8 archive build"
-      env: COMPILER=g++-8
-      language: c++
-      compiler: gcc
-      os: linux
-      jdk: openjdk8
-      addons:
-        apt:
-          packages:
-            - g++-8
-          sources:
-            - ubuntu-toolchain-r-test
-      script: cppbuild/cppbuild --build-archive-api
+      script: cppbuild/cppbuild ---build-archive-api
 
     - env: COMPILER=clang++
       language: c++
       compiler: clang
       os: osx
-      script: cppbuild/cppbuild
+      script: cppbuild/cppbuild --build-archive-api
 
 before_cache:
   - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock

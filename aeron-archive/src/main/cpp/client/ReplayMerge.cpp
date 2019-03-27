@@ -234,7 +234,7 @@ int ReplayMerge::awaitStopReplay()
         m_replaySessionId = aeron::NULL_VALUE;
         m_activeCorrelationId = aeron::NULL_VALUE;
         m_subscription->removeDestination(m_replayDestination);
-        state(State::AWAIT_CATCH_UP);
+        state(State::MERGED);
         workCount += 1;
     }
 

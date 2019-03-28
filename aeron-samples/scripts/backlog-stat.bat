@@ -17,4 +17,4 @@
 @echo off
 "%JAVA_HOME%\bin\java" ^
     -cp ..\build\libs\samples.jar ^
-    %JVM_OPTS% io.aeron.samples.BacklogStat %*
+    %JVM_OPTS% io.aeron.samples.BacklogStat

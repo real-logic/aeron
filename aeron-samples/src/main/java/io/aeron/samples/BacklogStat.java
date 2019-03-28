@@ -56,9 +56,9 @@ public class BacklogStat
     public static void main(final String[] args)
     {
         final CountersReader counters = SamplesUtil.mapCounters();
-        final BacklogStat streamStat = new BacklogStat(counters);
+        final BacklogStat backlogStat = new BacklogStat(counters);
 
-        streamStat.print(System.out);
+        backlogStat.print(System.out);
     }
 
     public BacklogStat(final CountersReader counters)
@@ -67,9 +67,9 @@ public class BacklogStat
     }
 
     /**
-     * Take a snapshot of all the backlog information and group by streams.
+     * Take a snapshot of all the backlog information and group by stream.
      *
-     * @return a snapshot of all the backlog information and group by streams.
+     * @return a snapshot of all the backlog information and group by stream.
      */
     public Map<StreamCompositeKey, StreamBacklog> snapshot()
     {
@@ -134,7 +134,7 @@ public class BacklogStat
     /**
      * Print a snapshot of the stream backlog with some explanation to a {@link PrintStream}.
      * <p>
-     * Each stream will be printed on its own section.
+     * Each stream will be printed in its own section.
      *
      * @param out to which the stream backlog will be written.
      */
@@ -291,7 +291,7 @@ public class BacklogStat
     }
 
     /**
-     * Represents a backlog info for a particular stream of messages.
+     * Represents the backlog information for a particular stream of messages.
      */
     public static class StreamBacklog
     {

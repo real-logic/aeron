@@ -74,7 +74,7 @@ public:
 
     inline this_t& tokenBuffer(const uint8_t *tokenBuffer, size_t tokenLength)
     {
-        m_struct.tokenLength = tokenLength;
+        m_struct.tokenLength = static_cast<std::int32_t>(tokenLength);
 
         if (tokenLength > 0)
         {

@@ -311,27 +311,27 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         _context->counters_values_buffer_length *
         (AERON_COUNTERS_MANAGER_METADATA_LENGTH / AERON_COUNTERS_MANAGER_VALUE_LENGTH);
     _context->error_buffer_length = 1024 * 1024;
-    _context->client_liveness_timeout_ns = 5 * 1000 * 1000 * 1000L;
-    _context->timer_interval_ns = 1 * 1000 * 1000 * 1000L;
+    _context->client_liveness_timeout_ns = 5 * 1000 * 1000 * 1000LL;
+    _context->timer_interval_ns = 1 * 1000 * 1000 * 1000LL;
     _context->term_buffer_length = 16 * 1024 * 1024;
     _context->ipc_term_buffer_length = 64 * 1024 * 1024;
     _context->mtu_length = 1408;
     _context->ipc_mtu_length = 1408;
     _context->ipc_publication_window_length = 0;
     _context->publication_window_length = 0;
-    _context->publication_linger_timeout_ns = 5 * 1000 * 1000 * 1000L;
+    _context->publication_linger_timeout_ns = 5 * 1000 * 1000 * 1000LL;
     _context->socket_rcvbuf = 128 * 1024;
     _context->socket_sndbuf = 0;
     _context->multicast_ttl = 0;
     _context->send_to_sm_poll_ratio = 4;
-    _context->status_message_timeout_ns = 200 * 1000 * 1000L;
-    _context->image_liveness_timeout_ns = 10 * 1000 * 1000 * 1000L;
+    _context->status_message_timeout_ns = 200 * 1000 * 1000LL;
+    _context->image_liveness_timeout_ns = 10 * 1000 * 1000 * 1000LL;
     _context->initial_window_length = 128 * 1024;
     _context->loss_report_length = 1024 * 1024;
     _context->file_page_size = 4 * 1024;
-    _context->publication_unblock_timeout_ns = 10 * 1000 * 1000 * 1000L;
-    _context->publication_connection_timeout_ns = 5 * 1000 * 1000 * 1000L;
-    _context->counter_free_to_reuse_ns = 1 * 1000 * 1000 * 1000L;
+    _context->publication_unblock_timeout_ns = 10 * 1000 * 1000 * 1000LL;
+    _context->publication_connection_timeout_ns = 5 * 1000 * 1000 * 1000LL;
+    _context->counter_free_to_reuse_ns = 1 * 1000 * 1000 * 1000LL;
 
     char *value = NULL;
 

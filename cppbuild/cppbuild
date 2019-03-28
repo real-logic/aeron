@@ -86,5 +86,5 @@ if [[ "$COVERAGE_BUILD" -eq 1 ]] ; then
   lcov -o coverage/cov.stripped.info --remove coverage/cov.info "/usr/include/*" "*/googletest/*" "*/test/cpp/*" "*/googlemock/*"
   genhtml coverage/cov.stripped.info --demangle-cpp -o coverage
 else
-  (cd ${BUILD_DIR} && cmake -G "CodeBlocks - Unix Makefiles" ${EXTRA_CMAKE_ARGS} ${SOURCE_DIR} && make clean && make -j "$ncpus" all && ctest -C Release -j "$ncpus")
+  (cd ${BUILD_DIR} && cmake -G "CodeBlocks - Unix Makefiles" ${EXTRA_CMAKE_ARGS} ${SOURCE_DIR} && make clean && make -j "$ncpus" all && ctest -C Release -j "$ncpus" --output-on-failure)
 fi

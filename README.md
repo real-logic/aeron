@@ -64,8 +64,7 @@ The project is built with [Gradle](http://gradle.org/) using this
 
 You require the following to build Aeron:
 
-* Latest stable [Oracle JDK 8](http://www.oracle.com/technetwork/java/), Java versions before 1.8.0_65 are very buggy
-   and can cause tests to fail.
+* Latest stable [JDK 8](http://www.oracle.com/technetwork/java/), Java versions before 1.8.0_65 are very buggy and can cause tests to fail.
 
 You must first build and install [Agrona](https://github.com/real-logic/agrona) and
 [Simple Binary Encoding (SBE)](https://github.com/real-logic/simple-binary-encoding) into the local maven repository 

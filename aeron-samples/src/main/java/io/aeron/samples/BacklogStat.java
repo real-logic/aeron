@@ -1,0 +1,496 @@
+/*
+ * Copyright 2014-2019 Real Logic Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.aeron.samples;
+
+import static io.aeron.CncFileDescriptor.cncVersionOffset;
+import static io.aeron.CncFileDescriptor.createCountersMetaDataBuffer;
+import static io.aeron.CncFileDescriptor.createCountersValuesBuffer;
+import static io.aeron.CncFileDescriptor.createMetaDataBuffer;
+import static io.aeron.driver.status.PerImageIndicator.PER_IMAGE_TYPE_ID;
+import static io.aeron.driver.status.PublisherLimit.PUBLISHER_LIMIT_TYPE_ID;
+import static io.aeron.driver.status.PublisherPos.PUBLISHER_POS_TYPE_ID;
+import static io.aeron.driver.status.ReceiverPos.RECEIVER_POS_TYPE_ID;
+import static io.aeron.driver.status.SenderLimit.SENDER_LIMIT_TYPE_ID;
+import static io.aeron.driver.status.StreamCounter.CHANNEL_OFFSET;
+import static io.aeron.driver.status.StreamCounter.REGISTRATION_ID_OFFSET;
+import static io.aeron.driver.status.StreamCounter.SESSION_ID_OFFSET;
+import static io.aeron.driver.status.StreamCounter.STREAM_ID_OFFSET;
+
+import io.aeron.CncFileDescriptor;
+import io.aeron.CommonContext;
+import io.aeron.driver.status.PublisherLimit;
+import io.aeron.driver.status.PublisherPos;
+import io.aeron.driver.status.ReceiverHwm;
+import io.aeron.driver.status.ReceiverPos;
+import io.aeron.driver.status.SenderLimit;
+import io.aeron.driver.status.SenderPos;
+import io.aeron.driver.status.SubscriberPos;
+import java.io.File;
+import java.io.PrintStream;
+import java.nio.MappedByteBuffer;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Objects;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.status.CountersReader;
+
+/**
+ * Tool for taking a snapshot of Aeron stream's backlog information and some explanation for the
+ * {@link StreamStat} counters.
+ * <p>
+ * Each stream managed by the {@link io.aeron.driver.MediaDriver} will be sampled and printed out on
+ * STDOUT.
+ * <p>
+ */
+public class BacklogStat
+{
+    private final CountersReader counters;
+
+    public static void main(final String[] args)
+    {
+        final CountersReader counters = mapCounters();
+        final BacklogStat streamStat = new BacklogStat(counters);
+
+        streamStat.print(System.out);
+    }
+
+    public static CountersReader mapCounters()
+    {
+        final File cncFile = CommonContext.newDefaultCncFile();
+        System.out.println("Command `n Control file " + cncFile);
+
+        final MappedByteBuffer cncByteBuffer = SamplesUtil.mapExistingFileReadOnly(cncFile);
+        final DirectBuffer cncMetaData = createMetaDataBuffer(cncByteBuffer);
+        final int cncVersion = cncMetaData.getInt(cncVersionOffset(0));
+
+        if (CncFileDescriptor.CNC_VERSION != cncVersion)
+        {
+            throw new IllegalStateException("CnC version not supported: file version=" + cncVersion);
+        }
+
+        return new CountersReader(
+            createCountersMetaDataBuffer(cncByteBuffer, cncMetaData),
+            createCountersValuesBuffer(cncByteBuffer, cncMetaData));
+    }
+
+    public BacklogStat(final CountersReader counters)
+    {
+        this.counters = counters;
+    }
+
+    /**
+     * Take a snapshot of all the backlog information and group them by streams.
+     *
+     * @return a snapshot of all the backlog information and group them by streams.
+     */
+    public Map<StreamCompositeKey, StreamBacklog> snapshot()
+    {
+        final Map<StreamCompositeKey, StreamBacklog> streams = new HashMap<>();
+
+        counters.forEach(
+            (counterId, typeId, keyBuffer, label) ->
+            {
+                if ((typeId >= PUBLISHER_LIMIT_TYPE_ID && typeId <= RECEIVER_POS_TYPE_ID) ||
+                    typeId == SENDER_LIMIT_TYPE_ID || typeId == PER_IMAGE_TYPE_ID || typeId == PUBLISHER_POS_TYPE_ID)
+                {
+                    final StreamCompositeKey key = new StreamCompositeKey(
+                        keyBuffer.getInt(SESSION_ID_OFFSET),
+                        keyBuffer.getInt(STREAM_ID_OFFSET),
+                        keyBuffer.getStringAscii(CHANNEL_OFFSET));
+
+
+                    final StreamBacklog streamBacklog =
+                        streams.computeIfAbsent(key, ignore -> new StreamBacklog());
+
+                    final long registrationId = keyBuffer.getLong(REGISTRATION_ID_OFFSET);
+                    final long value = counters.getCounterValue(counterId);
+                    switch (typeId)
+                    {
+                        case PublisherLimit.PUBLISHER_LIMIT_TYPE_ID:
+                            streamBacklog.createIfAbsentPublisherStat().registrationId(registrationId);
+                            streamBacklog.createIfAbsentPublisherStat().limit(value);
+                            break;
+                        case PublisherPos.PUBLISHER_POS_TYPE_ID:
+                            streamBacklog.createIfAbsentPublisherStat().registrationId(registrationId);
+                            streamBacklog.createIfAbsentPublisherStat().position(value);
+                            break;
+
+                        case SenderPos.SENDER_POSITION_TYPE_ID:
+                            streamBacklog.createIfAbsentSenderBacklog().registrationId(registrationId);
+                            streamBacklog.createIfAbsentSenderBacklog().position(value);
+                            break;
+                        case SenderLimit.SENDER_LIMIT_TYPE_ID:
+                            streamBacklog.createIfAbsentSenderBacklog().registrationId(registrationId);
+                            streamBacklog.createIfAbsentSenderBacklog().limit(value);
+                            break;
+
+                        case ReceiverHwm.RECEIVER_HWM_TYPE_ID:
+                            streamBacklog.createIfAbsentReceiverBacklog().registrationId(registrationId);
+                            streamBacklog.createIfAbsentReceiverBacklog().highWaterMark(value);
+                            break;
+                        case ReceiverPos.RECEIVER_POS_TYPE_ID:
+                            streamBacklog.createIfAbsentReceiverBacklog().registrationId(registrationId);
+                            streamBacklog.createIfAbsentReceiverBacklog().position(value);
+                            break;
+
+                        case SubscriberPos.SUBSCRIBER_POSITION_TYPE_ID:
+                            streamBacklog.subscriberBacklogs().put(registrationId, new SubscriberBacklog(value));
+                            break;
+                    }
+
+                }
+            });
+
+        return streams;
+    }
+
+    /**
+     * Print a snapshot of the stream backlog with some explanations to a {@link PrintStream}.
+     * <p>
+     * Each stream will be printed on its own section.
+     *
+     * @param out to which the stream backlog will be written.
+     * @return the number of streams printed.
+     */
+    public int print(final PrintStream out)
+    {
+        final Map<StreamCompositeKey, StreamBacklog> streams = snapshot();
+        final StringBuilder builder = new StringBuilder();
+
+        for (final Map.Entry<StreamCompositeKey, StreamBacklog> entry : streams.entrySet())
+        {
+            builder.setLength(0);
+            final StreamCompositeKey key = entry.getKey();
+
+            builder
+                .append("sessionId=").append(key.sessionId())
+                .append(" streamId=").append(key.streamId())
+                .append(" channel=").append(key.channel())
+                .append(" : ");
+
+
+            final StreamBacklog streamBacklog = entry.getValue();
+            if (streamBacklog.publisherStat() != null)
+            {
+                builder
+                        .append('\n')
+                        .append("┌─for publisher ")
+                        .append(streamBacklog.publisherStat().registrationId())
+                        .append(" the last known position is ")
+                        .append(streamBacklog.publisherStat().position())
+                        .append(" (~")
+                        .append(streamBacklog.publisherStat().distanceToBackPressure())
+                        .append(" bytes before a back-pressure)");
+
+                if (streamBacklog.senderBacklog() != null)
+                {
+                    final long senderBacklog = streamBacklog.senderBacklog()
+                        .backlog(streamBacklog.publisherStat().position());
+                    builder
+                            .append('\n')
+                            .append("└─sender ")
+                            .append(streamBacklog.senderBacklog().registrationId());
+                    if (senderBacklog >= 0)
+                    {
+                        builder
+                                .append(" has to publish ")
+                                .append(senderBacklog)
+                                .append(" bytes");
+                    }
+                    else
+                    {
+                        builder
+                                .append(" is up to position ")
+                                .append(streamBacklog.senderBacklog().position());
+                    }
+                    builder
+                            .append(" (")
+                            .append(streamBacklog.senderBacklog().window())
+                            .append(" bytes the sender may send up to ASAP.)");
+                }
+                else
+                {
+                    builder
+                            .append('\n')
+                            .append("└─no sender yet...");
+                }
+            }
+
+            if (streamBacklog.receiverBacklog() != null)
+            {
+                builder
+                        .append('\n')
+                        .append("┌─receiver ")
+                        .append(streamBacklog.receiverBacklog().registrationId())
+                        .append(" is up to position ")
+                        .append(streamBacklog.receiverBacklog().position());
+
+                final Iterator<Map.Entry<Long, SubscriberBacklog>> subscribersIterator =
+                    streamBacklog.subscriberBacklogs.entrySet().iterator();
+                while (subscribersIterator.hasNext())
+                {
+                    final Map.Entry<Long, SubscriberBacklog> subscriber = subscribersIterator.next();
+                    builder
+                            .append('\n')
+                            .append(subscribersIterator.hasNext() ? '├' : '└')
+                            .append("─subscriber ")
+                            .append(subscriber.getKey())
+                            .append(" has ")
+                            .append(subscriber.getValue().backlog(streamBacklog.receiverBacklog().highWaterMark()))
+                            .append(" bytes in backlog");
+                }
+            }
+
+            builder.append('\n');
+            out.println(builder);
+        }
+
+        return streams.size();
+    }
+
+    /**
+     * Composite key which identifies an Aeron stream of messages.
+     */
+    public static class StreamCompositeKey
+    {
+        private final int sessionId;
+        private final int streamId;
+        private final String channel;
+
+        public StreamCompositeKey(final int sessionId, final int streamId, final String channel)
+        {
+            Objects.requireNonNull(channel, "Channel cannot be null");
+
+            this.sessionId = sessionId;
+            this.streamId = streamId;
+            this.channel = channel;
+        }
+
+        public int sessionId()
+        {
+            return sessionId;
+        }
+
+        public int streamId()
+        {
+            return streamId;
+        }
+
+        public String channel()
+        {
+            return channel;
+        }
+
+        public boolean equals(final Object o)
+        {
+            if (this == o)
+            {
+                return true;
+            }
+
+            if (!(o instanceof StreamCompositeKey))
+            {
+                return false;
+            }
+
+            final StreamCompositeKey that = (StreamCompositeKey)o;
+
+            return this.sessionId == that.sessionId &&
+                this.streamId == that.streamId &&
+                this.channel.equals(that.channel);
+        }
+
+        public int hashCode()
+        {
+            int result = sessionId;
+            result = 31 * result + streamId;
+            result = 31 * result + channel.hashCode();
+
+            return result;
+        }
+
+        public String toString()
+        {
+            return "StreamCompositeKey{" +
+                "sessionId=" + sessionId +
+                ", streamId=" + streamId +
+                ", channel='" + channel + '\'' +
+                '}';
+        }
+    }
+
+    /**
+     * Represents a backlog info for a particular stream of messages.
+     */
+    public static class StreamBacklog
+    {
+        PublisherStat publisherStat;
+        SenderBacklog senderBacklog;
+        ReceiverBacklog receiverBacklog;
+        final SortedMap<Long, SubscriberBacklog> subscriberBacklogs = new TreeMap<>();
+
+        PublisherStat publisherStat()
+        {
+            return publisherStat;
+        }
+
+        SenderBacklog senderBacklog()
+        {
+            return senderBacklog;
+        }
+
+        ReceiverBacklog receiverBacklog()
+        {
+            return receiverBacklog;
+        }
+
+        Map<Long, SubscriberBacklog> subscriberBacklogs()
+        {
+            return subscriberBacklogs;
+        }
+
+        PublisherStat createIfAbsentPublisherStat()
+        {
+            return publisherStat == null ? publisherStat = new PublisherStat() : publisherStat;
+        }
+
+        SenderBacklog createIfAbsentSenderBacklog()
+        {
+            return senderBacklog == null ? senderBacklog = new SenderBacklog() : senderBacklog;
+        }
+
+        ReceiverBacklog createIfAbsentReceiverBacklog()
+        {
+            return receiverBacklog == null ? receiverBacklog = new ReceiverBacklog() : receiverBacklog;
+        }
+    }
+
+    private static class AeronEntity
+    {
+        private long registrationId;
+
+        long registrationId()
+        {
+            return registrationId;
+        }
+
+        void registrationId(final long registrationId)
+        {
+            this.registrationId = registrationId;
+        }
+    }
+
+    private static class PublisherStat extends AeronEntity
+    {
+        private long limit;
+        private long position;
+
+        void limit(final long limit)
+        {
+            this.limit = limit;
+        }
+
+        void position(final long position)
+        {
+            this.position = position;
+        }
+
+        long position()
+        {
+            return position;
+        }
+
+        long distanceToBackPressure()
+        {
+            return limit - position;
+        }
+    }
+
+    private static class SenderBacklog extends AeronEntity
+    {
+        private long position;
+        private long limit;
+
+        void position(final long publisherPosition)
+        {
+            this.position = publisherPosition;
+        }
+
+        long position()
+        {
+            return position;
+        }
+
+        void limit(final long limit)
+        {
+            this.limit = limit;
+        }
+
+        long backlog(final long publisherPosition)
+        {
+            return publisherPosition - position;
+        }
+
+        long window()
+        {
+            return limit - position;
+        }
+    }
+
+    private static class ReceiverBacklog extends AeronEntity
+    {
+        private long highWaterMark;
+        private long position;
+
+        void highWaterMark(final long highWaterMark)
+        {
+            this.highWaterMark = highWaterMark;
+        }
+
+        long highWaterMark()
+        {
+            return highWaterMark;
+        }
+
+        void position(final long position)
+        {
+            this.position = position;
+        }
+
+        long position()
+        {
+            return position;
+        }
+    }
+
+    private static class SubscriberBacklog
+    {
+        private final long position;
+
+        SubscriberBacklog(final long position)
+        {
+            this.position = position;
+        }
+
+        long backlog(final long receiverHwt)
+        {
+            return receiverHwt - position;
+        }
+    }
+}

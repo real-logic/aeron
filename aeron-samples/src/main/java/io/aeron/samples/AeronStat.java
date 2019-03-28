@@ -16,17 +16,13 @@
 package io.aeron.samples;
 
 import io.aeron.CncFileDescriptor;
-import io.aeron.CommonContext;
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.DirectBuffer;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.SigInt;
 import org.agrona.concurrent.status.CountersReader;
 
-import java.io.File;
 import java.io.PrintStream;
-import java.nio.MappedByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -128,27 +124,6 @@ public class AeronStat
         this.channelFilter = null;
     }
 
-    public static CountersReader mapCounters()
-    {
-        final File cncFile = CommonContext.newDefaultCncFile();
-        System.out.println("Command `n Control file " + cncFile);
-
-        final MappedByteBuffer cncByteBuffer = SamplesUtil.mapExistingFileReadOnly(cncFile);
-        final DirectBuffer cncMetaData = createMetaDataBuffer(cncByteBuffer);
-        final int cncVersion = cncMetaData.getInt(cncVersionOffset(0));
-
-        if (CNC_VERSION != cncVersion)
-        {
-            throw new IllegalStateException(
-                "Aeron CnC version does not match: version=" + cncVersion + " required=" + CNC_VERSION);
-        }
-
-        return new CountersReader(
-            createCountersMetaDataBuffer(cncByteBuffer, cncMetaData),
-            createCountersValuesBuffer(cncByteBuffer, cncMetaData),
-            StandardCharsets.US_ASCII);
-    }
-
     public static void main(final String[] args) throws Exception
     {
         long delayMs = 1000L;
@@ -208,7 +183,7 @@ public class AeronStat
         }
 
         final AeronStat aeronStat = new AeronStat(
-            mapCounters(), typeFilter, identityFilter, sessionFilter, streamFilter, channelFilter);
+            SamplesUtil.mapCounters(), typeFilter, identityFilter, sessionFilter, streamFilter, channelFilter);
         final AtomicBoolean running = new AtomicBoolean(true);
         SigInt.register(() -> running.set(false));
 
@@ -308,5 +283,4 @@ public class AeronStat
             System.out.print(ANSI_CLS + ANSI_HOME);
         }
     }
-
 }

@@ -15,13 +15,16 @@
  */
 package io.aeron.samples;
 
+import io.aeron.CommonContext;
 import io.aeron.Image;
 import io.aeron.Subscription;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.protocol.HeaderFlyweight;
+import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,6 +34,7 @@ import java.nio.channels.FileChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+import static io.aeron.CncFileDescriptor.*;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 
 /**
@@ -209,5 +213,29 @@ public class SamplesUtil
         }
 
         return mappedByteBuffer;
+    }
+
+    /**
+     * Map an existing CnC file.
+     *
+     * @return the {@link CountersReader} over the CnC file.
+     */
+    public static CountersReader mapCounters()
+    {
+        final File cncFile = CommonContext.newDefaultCncFile();
+        System.out.println("Command `n Control file " + cncFile);
+
+        final MappedByteBuffer cncByteBuffer = mapExistingFileReadOnly(cncFile);
+        final DirectBuffer cncMetaData = createMetaDataBuffer(cncByteBuffer);
+        final int cncVersion = cncMetaData.getInt(cncVersionOffset(0));
+
+        if (CNC_VERSION != cncVersion)
+        {
+            throw new IllegalStateException("CnC version not supported: file version=" + cncVersion);
+        }
+
+        return new CountersReader(
+            createCountersMetaDataBuffer(cncByteBuffer, cncMetaData),
+            createCountersValuesBuffer(cncByteBuffer, cncMetaData));
     }
 }

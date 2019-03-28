@@ -15,10 +15,6 @@
  */
 package io.aeron.samples;
 
-import static io.aeron.CncFileDescriptor.cncVersionOffset;
-import static io.aeron.CncFileDescriptor.createCountersMetaDataBuffer;
-import static io.aeron.CncFileDescriptor.createCountersValuesBuffer;
-import static io.aeron.CncFileDescriptor.createMetaDataBuffer;
 import static io.aeron.driver.status.PerImageIndicator.PER_IMAGE_TYPE_ID;
 import static io.aeron.driver.status.PublisherLimit.PUBLISHER_LIMIT_TYPE_ID;
 import static io.aeron.driver.status.PublisherPos.PUBLISHER_POS_TYPE_ID;
@@ -29,8 +25,6 @@ import static io.aeron.driver.status.StreamCounter.REGISTRATION_ID_OFFSET;
 import static io.aeron.driver.status.StreamCounter.SESSION_ID_OFFSET;
 import static io.aeron.driver.status.StreamCounter.STREAM_ID_OFFSET;
 
-import io.aeron.CncFileDescriptor;
-import io.aeron.CommonContext;
 import io.aeron.driver.status.PublisherLimit;
 import io.aeron.driver.status.PublisherPos;
 import io.aeron.driver.status.ReceiverHwm;
@@ -38,25 +32,22 @@ import io.aeron.driver.status.ReceiverPos;
 import io.aeron.driver.status.SenderLimit;
 import io.aeron.driver.status.SenderPos;
 import io.aeron.driver.status.SubscriberPos;
-import java.io.File;
+
 import java.io.PrintStream;
-import java.nio.MappedByteBuffer;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import org.agrona.DirectBuffer;
+
 import org.agrona.concurrent.status.CountersReader;
 
 /**
- * Tool for taking a snapshot of Aeron stream's backlog information and some explanation for the
+ * Tool for taking a snapshot of Aeron streams backlog information and some explanation for the
  * {@link StreamStat} counters.
  * <p>
- * Each stream managed by the {@link io.aeron.driver.MediaDriver} will be sampled and printed out on
- * STDOUT.
- * <p>
+ * Each stream managed by the {@link io.aeron.driver.MediaDriver} will be sampled and printed out on {@link System#out}.
  */
 public class BacklogStat
 {
@@ -64,29 +55,10 @@ public class BacklogStat
 
     public static void main(final String[] args)
     {
-        final CountersReader counters = mapCounters();
+        final CountersReader counters = SamplesUtil.mapCounters();
         final BacklogStat streamStat = new BacklogStat(counters);
 
         streamStat.print(System.out);
-    }
-
-    public static CountersReader mapCounters()
-    {
-        final File cncFile = CommonContext.newDefaultCncFile();
-        System.out.println("Command `n Control file " + cncFile);
-
-        final MappedByteBuffer cncByteBuffer = SamplesUtil.mapExistingFileReadOnly(cncFile);
-        final DirectBuffer cncMetaData = createMetaDataBuffer(cncByteBuffer);
-        final int cncVersion = cncMetaData.getInt(cncVersionOffset(0));
-
-        if (CncFileDescriptor.CNC_VERSION != cncVersion)
-        {
-            throw new IllegalStateException("CnC version not supported: file version=" + cncVersion);
-        }
-
-        return new CountersReader(
-            createCountersMetaDataBuffer(cncByteBuffer, cncMetaData),
-            createCountersValuesBuffer(cncByteBuffer, cncMetaData));
     }
 
     public BacklogStat(final CountersReader counters)
@@ -95,9 +67,9 @@ public class BacklogStat
     }
 
     /**
-     * Take a snapshot of all the backlog information and group them by streams.
+     * Take a snapshot of all the backlog information and group by streams.
      *
-     * @return a snapshot of all the backlog information and group them by streams.
+     * @return a snapshot of all the backlog information and group by streams.
      */
     public Map<StreamCompositeKey, StreamBacklog> snapshot()
     {
@@ -114,46 +86,45 @@ public class BacklogStat
                         keyBuffer.getInt(STREAM_ID_OFFSET),
                         keyBuffer.getStringAscii(CHANNEL_OFFSET));
 
-
-                    final StreamBacklog streamBacklog =
-                        streams.computeIfAbsent(key, ignore -> new StreamBacklog());
-
+                    final StreamBacklog streamBacklog = streams.computeIfAbsent(key, (ignore) -> new StreamBacklog());
                     final long registrationId = keyBuffer.getLong(REGISTRATION_ID_OFFSET);
                     final long value = counters.getCounterValue(counterId);
                     switch (typeId)
                     {
                         case PublisherLimit.PUBLISHER_LIMIT_TYPE_ID:
-                            streamBacklog.createIfAbsentPublisherStat().registrationId(registrationId);
-                            streamBacklog.createIfAbsentPublisherStat().limit(value);
+                            streamBacklog.createPublisherIfAbsent().registrationId(registrationId);
+                            streamBacklog.createPublisherIfAbsent().limit(value);
                             break;
+
                         case PublisherPos.PUBLISHER_POS_TYPE_ID:
-                            streamBacklog.createIfAbsentPublisherStat().registrationId(registrationId);
-                            streamBacklog.createIfAbsentPublisherStat().position(value);
+                            streamBacklog.createPublisherIfAbsent().registrationId(registrationId);
+                            streamBacklog.createPublisherIfAbsent().position(value);
                             break;
 
                         case SenderPos.SENDER_POSITION_TYPE_ID:
-                            streamBacklog.createIfAbsentSenderBacklog().registrationId(registrationId);
-                            streamBacklog.createIfAbsentSenderBacklog().position(value);
+                            streamBacklog.createSenderIfAbsent().registrationId(registrationId);
+                            streamBacklog.createSenderIfAbsent().position(value);
                             break;
+
                         case SenderLimit.SENDER_LIMIT_TYPE_ID:
-                            streamBacklog.createIfAbsentSenderBacklog().registrationId(registrationId);
-                            streamBacklog.createIfAbsentSenderBacklog().limit(value);
+                            streamBacklog.createSenderIfAbsent().registrationId(registrationId);
+                            streamBacklog.createSenderIfAbsent().limit(value);
                             break;
 
                         case ReceiverHwm.RECEIVER_HWM_TYPE_ID:
-                            streamBacklog.createIfAbsentReceiverBacklog().registrationId(registrationId);
-                            streamBacklog.createIfAbsentReceiverBacklog().highWaterMark(value);
+                            streamBacklog.createReceiverIfAbsent().registrationId(registrationId);
+                            streamBacklog.createReceiverIfAbsent().highWaterMark(value);
                             break;
+
                         case ReceiverPos.RECEIVER_POS_TYPE_ID:
-                            streamBacklog.createIfAbsentReceiverBacklog().registrationId(registrationId);
-                            streamBacklog.createIfAbsentReceiverBacklog().position(value);
+                            streamBacklog.createReceiverIfAbsent().registrationId(registrationId);
+                            streamBacklog.createReceiverIfAbsent().position(value);
                             break;
 
                         case SubscriberPos.SUBSCRIBER_POSITION_TYPE_ID:
-                            streamBacklog.subscriberBacklogs().put(registrationId, new SubscriberBacklog(value));
+                            streamBacklog.subscriberBacklogs().put(registrationId, new Subscriber(value));
                             break;
                     }
-
                 }
             });
 
@@ -161,19 +132,17 @@ public class BacklogStat
     }
 
     /**
-     * Print a snapshot of the stream backlog with some explanations to a {@link PrintStream}.
+     * Print a snapshot of the stream backlog with some explanation to a {@link PrintStream}.
      * <p>
      * Each stream will be printed on its own section.
      *
      * @param out to which the stream backlog will be written.
-     * @return the number of streams printed.
      */
-    public int print(final PrintStream out)
+    public void print(final PrintStream out)
     {
-        final Map<StreamCompositeKey, StreamBacklog> streams = snapshot();
         final StringBuilder builder = new StringBuilder();
 
-        for (final Map.Entry<StreamCompositeKey, StreamBacklog> entry : streams.entrySet())
+        for (final Map.Entry<StreamCompositeKey, StreamBacklog> entry : snapshot().entrySet())
         {
             builder.setLength(0);
             final StreamCompositeKey key = entry.getKey();
@@ -186,82 +155,68 @@ public class BacklogStat
 
 
             final StreamBacklog streamBacklog = entry.getValue();
-            if (streamBacklog.publisherStat() != null)
+            if (streamBacklog.publisher() != null)
             {
                 builder
-                        .append('\n')
-                        .append("┌─for publisher ")
-                        .append(streamBacklog.publisherStat().registrationId())
-                        .append(" the last known position is ")
-                        .append(streamBacklog.publisherStat().position())
-                        .append(" (~")
-                        .append(streamBacklog.publisherStat().distanceToBackPressure())
-                        .append(" bytes before a back-pressure)");
+                    .append("\n┌─for publisher ")
+                    .append(streamBacklog.publisher().registrationId())
+                    .append(" the last sampled position is ")
+                    .append(streamBacklog.publisher().position())
+                    .append(" (~")
+                    .append(streamBacklog.publisher().remainingWindow())
+                    .append(" bytes before back-pressure)");
 
-                if (streamBacklog.senderBacklog() != null)
+                final Sender sender = streamBacklog.sender();
+                if (sender != null)
                 {
-                    final long senderBacklog = streamBacklog.senderBacklog()
-                        .backlog(streamBacklog.publisherStat().position());
-                    builder
-                            .append('\n')
-                            .append("└─sender ")
-                            .append(streamBacklog.senderBacklog().registrationId());
+                    final long senderBacklog = sender.backlog(streamBacklog.publisher().position());
+
+                    builder.append("\n└─sender ").append(sender.registrationId());
+
                     if (senderBacklog >= 0)
                     {
-                        builder
-                                .append(" has to publish ")
-                                .append(senderBacklog)
-                                .append(" bytes");
+                        builder.append(" has to send ").append(senderBacklog).append(" bytes");
                     }
                     else
                     {
-                        builder
-                                .append(" is up to position ")
-                                .append(streamBacklog.senderBacklog().position());
+                        builder.append(" is at position ").append(sender.position());
                     }
-                    builder
-                            .append(" (")
-                            .append(streamBacklog.senderBacklog().window())
-                            .append(" bytes the sender may send up to ASAP.)");
+
+                    builder.append(" (").append(sender.window()).append(" bytes remaining in the sender window)");
                 }
                 else
                 {
-                    builder
-                            .append('\n')
-                            .append("└─no sender yet...");
+                    builder.append("\n└─no sender yet...");
                 }
             }
 
-            if (streamBacklog.receiverBacklog() != null)
+            if (streamBacklog.receiver() != null)
             {
                 builder
-                        .append('\n')
-                        .append("┌─receiver ")
-                        .append(streamBacklog.receiverBacklog().registrationId())
-                        .append(" is up to position ")
-                        .append(streamBacklog.receiverBacklog().position());
+                    .append("\n┌─receiver ")
+                    .append(streamBacklog.receiver().registrationId())
+                    .append(" is at position ")
+                    .append(streamBacklog.receiver().position());
 
-                final Iterator<Map.Entry<Long, SubscriberBacklog>> subscribersIterator =
-                    streamBacklog.subscriberBacklogs.entrySet().iterator();
-                while (subscribersIterator.hasNext())
+                final Iterator<Map.Entry<Long, Subscriber>> subscriberIterator =
+                    streamBacklog.subscriberBacklogs().entrySet().iterator();
+
+                while (subscriberIterator.hasNext())
                 {
-                    final Map.Entry<Long, SubscriberBacklog> subscriber = subscribersIterator.next();
+                    final Map.Entry<Long, Subscriber> subscriber = subscriberIterator.next();
                     builder
-                            .append('\n')
-                            .append(subscribersIterator.hasNext() ? '├' : '└')
-                            .append("─subscriber ")
-                            .append(subscriber.getKey())
-                            .append(" has ")
-                            .append(subscriber.getValue().backlog(streamBacklog.receiverBacklog().highWaterMark()))
-                            .append(" bytes in backlog");
+                        .append(subscriberIterator.hasNext() ? "\n├" : "\n└")
+                        .append("─subscriber ")
+                        .append(subscriber.getKey())
+                        .append(" has ")
+                        .append(subscriber.getValue().backlog(streamBacklog.receiver().highWaterMark()))
+                        .append(" backlog bytes");
                 }
             }
 
             builder.append('\n');
             out.println(builder);
         }
-
-        return streams.size();
     }
 
     /**
@@ -275,7 +230,7 @@ public class BacklogStat
 
         public StreamCompositeKey(final int sessionId, final int streamId, final String channel)
         {
-            Objects.requireNonNull(channel, "Channel cannot be null");
+            Objects.requireNonNull(channel, "channel cannot be null");
 
             this.sessionId = sessionId;
             this.streamId = streamId;
@@ -340,48 +295,48 @@ public class BacklogStat
      */
     public static class StreamBacklog
     {
-        PublisherStat publisherStat;
-        SenderBacklog senderBacklog;
-        ReceiverBacklog receiverBacklog;
-        final SortedMap<Long, SubscriberBacklog> subscriberBacklogs = new TreeMap<>();
+        private Publisher publisher;
+        private Sender sender;
+        private Receiver receiver;
+        private final SortedMap<Long, Subscriber> subscriberBacklogs = new TreeMap<>();
 
-        PublisherStat publisherStat()
+        Publisher publisher()
         {
-            return publisherStat;
+            return publisher;
         }
 
-        SenderBacklog senderBacklog()
+        Sender sender()
         {
-            return senderBacklog;
+            return sender;
         }
 
-        ReceiverBacklog receiverBacklog()
+        Receiver receiver()
         {
-            return receiverBacklog;
+            return receiver;
         }
 
-        Map<Long, SubscriberBacklog> subscriberBacklogs()
+        Map<Long, Subscriber> subscriberBacklogs()
         {
             return subscriberBacklogs;
         }
 
-        PublisherStat createIfAbsentPublisherStat()
+        Publisher createPublisherIfAbsent()
         {
-            return publisherStat == null ? publisherStat = new PublisherStat() : publisherStat;
+            return publisher == null ? publisher = new Publisher() : publisher;
         }
 
-        SenderBacklog createIfAbsentSenderBacklog()
+        Sender createSenderIfAbsent()
         {
-            return senderBacklog == null ? senderBacklog = new SenderBacklog() : senderBacklog;
+            return sender == null ? sender = new Sender() : sender;
         }
 
-        ReceiverBacklog createIfAbsentReceiverBacklog()
+        Receiver createReceiverIfAbsent()
         {
-            return receiverBacklog == null ? receiverBacklog = new ReceiverBacklog() : receiverBacklog;
+            return receiver == null ? receiver = new Receiver() : receiver;
         }
     }
 
-    private static class AeronEntity
+    static class AeronEntity
     {
         private long registrationId;
 
@@ -396,7 +351,7 @@ public class BacklogStat
         }
     }
 
-    private static class PublisherStat extends AeronEntity
+    static class Publisher extends AeronEntity
     {
         private long limit;
         private long position;
@@ -416,13 +371,13 @@ public class BacklogStat
             return position;
         }
 
-        long distanceToBackPressure()
+        long remainingWindow()
         {
             return limit - position;
         }
     }
 
-    private static class SenderBacklog extends AeronEntity
+    static class Sender extends AeronEntity
     {
         private long position;
         private long limit;
@@ -453,7 +408,7 @@ public class BacklogStat
         }
     }
 
-    private static class ReceiverBacklog extends AeronEntity
+    static class Receiver extends AeronEntity
     {
         private long highWaterMark;
         private long position;
@@ -479,18 +434,18 @@ public class BacklogStat
         }
     }
 
-    private static class SubscriberBacklog
+    static class Subscriber
     {
         private final long position;
 
-        SubscriberBacklog(final long position)
+        Subscriber(final long position)
         {
             this.position = position;
         }
 
-        long backlog(final long receiverHwt)
+        long backlog(final long receiverHwm)
         {
-            return receiverHwt - position;
+            return receiverHwm - position;
         }
     }
 }

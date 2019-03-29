@@ -527,8 +527,16 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     public void onCatchupPosition(final long leadershipTermId, final long logPosition, final int followerMemberId)
     {
+        if (leadershipTermId != this.leadershipTermId) {
+            System.out.println("dropping! onCatchupPosition: termId=" + leadershipTermId + ", logPosition=" + logPosition +
+                ", followerMemberId=" + followerMemberId + ", expectedTermId=" + this.leadershipTermId);
+        }
+
         if (Cluster.Role.LEADER == role && leadershipTermId == this.leadershipTermId)
         {
+            System.out.println("onCatchupPosition: termId=" + leadershipTermId + ", logPosition=" + logPosition +
+                ", followerMemberId=" + followerMemberId);
+
             final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
 
             if (null != follower)
@@ -543,6 +551,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
                 if (follower.catchupReplaySessionId() == Aeron.NULL_VALUE)
                 {
+                    System.out.println("onCatchupPosition: startReplay");
+
                     follower.catchupReplaySessionId(archive.startReplay(
                         logRecordingId(), logPosition, Long.MAX_VALUE, replayChannel, ctx.logStreamId()));
                 }
@@ -1161,6 +1171,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     void becomeLeader(final long leadershipTermId, final long logPosition, final int logSessionId)
     {
+        System.out.println("becomeLeader: leadershipTermId=" + leadershipTermId);
         this.leadershipTermId = leadershipTermId;
 
         final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());

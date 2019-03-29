@@ -239,9 +239,6 @@ class MemberStatusPublisher
     boolean catchupPosition(
         final Publication publication, final long leadershipTermId, final long logPosition, final int followerMemberId)
     {
-        System.out.println("memberStatusPublisher.catchupPosition (Sending catchup position): leadershipTermId=" +
-            leadershipTermId + ", logPosition=" + logPosition + ", followerMemberId=" + followerMemberId);
-
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + CatchupPositionEncoder.BLOCK_LENGTH;
 
         int attempts = SEND_ATTEMPTS;

@@ -926,7 +926,7 @@ public class Election implements AutoCloseable
 
     private void state(final State newState, final long nowMs)
     {
-        System.out.println("memberId=" + thisMember.id() + " nowMs=" + nowMs + " " + this.state + " -> " + newState);
+        //System.out.println("memberId=" + thisMember.id() + " nowMs=" + nowMs + " " + this.state + " -> " + newState);
 
         if (State.CANVASS == newState)
         {

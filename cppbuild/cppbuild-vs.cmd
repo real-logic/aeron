@@ -3,7 +3,10 @@ setlocal
 Setlocal EnableDelayedExpansion
 
 set SOURCE_DIR=%CD%
+set ZLIB_ZIP=%CD%\cppbuild\zlib1211.zip
 set BUILD_DIR=%CD%\cppbuild\Release
+set ZLIB_BUILD_DIR=%BUILD_DIR%\zlib-build
+set ZLIB_INSTALL_DIR=%BUILD_DIR%\zlib64
 
 for %%o in (%*) do (
 
@@ -35,7 +38,16 @@ if EXIST %BUILD_DIR% rd /S /Q %BUILD_DIR%
 
 md %BUILD_DIR%
 pushd %BUILD_DIR%
+md %ZLIB_BUILD_DIR%
+pushd %ZLIB_BUILD_DIR%
+7z x %ZLIB_ZIP%
+pushd zlib-1.2.11
+md build
+pushd build
+cmake -G "Visual Studio 15 2017 Win64" -DCMAKE_INSTALL_PREFIX=%ZLIB_INSTALL_DIR% ..
+cmake --build . --target install
 
+pushd %BUILD_DIR%
 cmake -G "Visual Studio 15 2017 Win64" %EXTRA_CMAKE_ARGS% %SOURCE_DIR%
-cmake --build . --clean-first --config Release
+cmake --build . --config Release
 ctest -C Release

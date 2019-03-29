@@ -99,6 +99,7 @@ You require the following to build the C++ API for Aeron:
 
 __Note__: Aeron is supported on Linux, Mac, and Windows. Windows builds require Visual Studio and are being developed
 with Visual Studio 2017 with 64-bit builds only. Cygwin, MSys, etc. may work, but are not maintained at this time.
+Windows builds require 7z to unzip the zlib source archive.
 
 For convenience, a script is provided that does a full clean, build, and test of all targets as a Release build.
 

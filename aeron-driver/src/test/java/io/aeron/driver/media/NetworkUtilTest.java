@@ -30,6 +30,8 @@ import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.junit.Assert.*;
 import static io.aeron.driver.media.NetworkUtil.filterBySubnet;
 import static io.aeron.driver.media.NetworkUtil.isMatchWithPrefix;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class NetworkUtilTest
 {
@@ -235,24 +237,10 @@ public class NetworkUtilTest
 
     private static InterfaceAddress newInterfaceAddress(final InetAddress inetAddress, final short maskLength)
     {
-        InterfaceAddress interfaceAddress = null;
-        try
-        {
-            final Constructor<InterfaceAddress> ctor = InterfaceAddress.class.getDeclaredConstructor();
-            ctor.setAccessible(true);
-            final Field addressField = InterfaceAddress.class.getDeclaredField("address");
-            addressField.setAccessible(true);
-            final Field maskLengthField = InterfaceAddress.class.getDeclaredField("maskLength");
-            maskLengthField.setAccessible(true);
+        final InterfaceAddress interfaceAddress = mock(InterfaceAddress.class);
 
-            interfaceAddress = ctor.newInstance();
-            addressField.set(interfaceAddress, inetAddress);
-            maskLengthField.set(interfaceAddress, maskLength);
-        }
-        catch (final Exception ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
+        when(interfaceAddress.getAddress()).thenReturn(inetAddress);
+        when(interfaceAddress.getNetworkPrefixLength()).thenReturn(maskLength);
 
         return interfaceAddress;
     }

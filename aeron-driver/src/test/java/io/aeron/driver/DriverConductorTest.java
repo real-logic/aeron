@@ -86,7 +86,7 @@ public class DriverConductorTest
     private static final long PUBLICATION_LINGER_TIMEOUT_NS = publicationLingerTimeoutNs();
     private static final int MTU_LENGTH = Configuration.mtuLength();
 
-    private final ByteBuffer conductorBuffer = ByteBuffer.allocateDirect(CONDUCTOR_BUFFER_LENGTH_DEFAULT);
+    private final ByteBuffer conductorBuffer = ByteBuffer.allocate(CONDUCTOR_BUFFER_LENGTH_DEFAULT);
     private final UnsafeBuffer counterKeyAndLabel = new UnsafeBuffer(new byte[BUFFER_LENGTH]);
 
     private final RawLogFactory mockRawLogFactory = mock(RawLogFactory.class);
@@ -143,9 +143,9 @@ public class DriverConductorTest
         counterKeyAndLabel.putInt(COUNTER_KEY_OFFSET, 42);
         counterKeyAndLabel.putStringAscii(COUNTER_LABEL_OFFSET, COUNTER_LABEL);
 
-        final UnsafeBuffer counterBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(BUFFER_LENGTH));
+        final UnsafeBuffer counterBuffer = new UnsafeBuffer(ByteBuffer.allocate(BUFFER_LENGTH));
         spyCountersManager = spy(new CountersManager(
-            new UnsafeBuffer(ByteBuffer.allocateDirect(BUFFER_LENGTH * 2)), counterBuffer, StandardCharsets.US_ASCII));
+            new UnsafeBuffer(ByteBuffer.allocate(BUFFER_LENGTH * 2)), counterBuffer, StandardCharsets.US_ASCII));
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .tempBuffer(new UnsafeBuffer(new byte[METADATA_LENGTH]))

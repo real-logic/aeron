@@ -207,57 +207,70 @@ public class Election implements AutoCloseable
     int doWork(final long nowMs)
     {
         int workCount = State.INIT == state ? init(nowMs) : 0;
-        workCount += memberStatusAdapter.poll();
 
         try
         {
             switch (state)
             {
                 case CANVASS:
+                    workCount += memberStatusAdapter.poll();
                     workCount += canvass(nowMs);
                     break;
 
                 case NOMINATE:
+                    workCount += memberStatusAdapter.poll();
                     workCount += nominate(nowMs);
                     break;
 
                 case CANDIDATE_BALLOT:
+                    workCount += memberStatusAdapter.poll();
                     workCount += candidateBallot(nowMs);
                     break;
 
                 case FOLLOWER_BALLOT:
+                    workCount += memberStatusAdapter.poll();
                     workCount += followerBallot(nowMs);
                     break;
 
                 case LEADER_REPLAY:
+                    // We don't poll for member status here to avoid processing catch-up positions etc. until
+                    // the leadership transition has completed
                     workCount += leaderReplay(nowMs);
                     break;
 
                 case LEADER_TRANSITION:
+                    // We don't poll for member status here to avoid processing catch-up positions etc. until
+                    // the leadership transition has completed
                     workCount += leaderTransition(nowMs);
                     break;
 
                 case LEADER_READY:
+                    workCount += memberStatusAdapter.poll();
                     workCount += leaderReady(nowMs);
                     break;
 
                 case FOLLOWER_REPLAY:
+                    workCount += memberStatusAdapter.poll();
                     workCount += followerReplay(nowMs);
                     break;
 
                 case FOLLOWER_CATCHUP_TRANSITION:
+                    workCount += memberStatusAdapter.poll();
                     workCount += followerCatchupTransition(nowMs);
                     break;
 
                 case FOLLOWER_CATCHUP:
+                    workCount += memberStatusAdapter.poll();
                     workCount += followerCatchup(nowMs);
                     break;
 
                 case FOLLOWER_TRANSITION:
+                    workCount += memberStatusAdapter.poll();
                     workCount += followerTransition(nowMs);
                     break;
 
                 case FOLLOWER_READY:
+                    workCount += memberStatusAdapter.poll();
                     workCount += followerReady(nowMs);
                     break;
             }

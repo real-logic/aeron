@@ -172,6 +172,7 @@ public class DriverConductorTest
     @After
     public void tearDown()
     {
+        driverConductor.closeChannelEndpoints();
         driverConductor.onClose();
     }
 

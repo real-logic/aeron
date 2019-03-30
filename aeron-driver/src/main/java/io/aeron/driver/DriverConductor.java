@@ -136,8 +136,6 @@ public class DriverConductor implements Agent
         publicationImages.forEach(PublicationImage::free);
         networkPublications.forEach(NetworkPublication::free);
         ipcPublications.forEach(IpcPublication::free);
-        receiveChannelEndpointByChannelMap.values().forEach(UdpChannelTransport::close);
-        sendChannelEndpointByChannelMap.values().forEach(UdpChannelTransport::close);
 
         ctx.close();
     }
@@ -290,6 +288,12 @@ public class DriverConductor implements Agent
     {
         final String errorMessage = error.getClass().getSimpleName() + " : " + error.getMessage();
         clientProxy.onError(statusIndicatorId, CHANNEL_ENDPOINT_ERROR, errorMessage);
+    }
+
+    void closeChannelEndpoints()
+    {
+        receiveChannelEndpointByChannelMap.values().forEach(UdpChannelTransport::close);
+        sendChannelEndpointByChannelMap.values().forEach(UdpChannelTransport::close);
     }
 
     SendChannelEndpoint senderChannelEndpoint(final UdpChannel channel)

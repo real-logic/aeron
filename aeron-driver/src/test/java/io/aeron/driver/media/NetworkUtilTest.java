@@ -16,10 +16,7 @@
 package io.aeron.driver.media;
 
 import org.junit.Test;
-import org.agrona.LangUtil;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.net.*;
 import java.util.*;
 
@@ -215,22 +212,9 @@ public class NetworkUtilTest
 
     private static NetworkInterface newNetworkInterface(final String name)
     {
-        NetworkInterface networkInterface = null;
-        try
-        {
-            final Constructor<NetworkInterface> ctor = NetworkInterface.class.getDeclaredConstructor();
-            ctor.setAccessible(true);
-            final Field nameField = NetworkInterface.class.getDeclaredField("name");
-            nameField.setAccessible(true);
+        final NetworkInterface networkInterface = mock(NetworkInterface.class);
 
-            networkInterface = ctor.newInstance();
-            nameField.set(networkInterface, name);
-
-        }
-        catch (final Exception ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
+        when(networkInterface.getName()).thenReturn(name);
 
         return networkInterface;
     }

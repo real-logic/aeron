@@ -64,7 +64,6 @@ public class ReceiverTest
     private final ControlTransportPoller mockControlTransportPoller = mock(ControlTransportPoller.class);
 
     private final SystemCounters mockSystemCounters = mock(SystemCounters.class);
-    private final RawLogFactory mockRawLogFactory = mock(RawLogFactory.class);
     private final Position mockHighestReceivedPosition = spy(new AtomicLongPosition());
     private final Position mockRebuildPosition = spy(new AtomicLongPosition());
     private final Position mockSubscriberPosition = mock(Position.class);
@@ -84,7 +83,7 @@ public class ReceiverTest
     private final EpochClock epochClock = mock(EpochClock.class);
     private final LossReport lossReport = mock(LossReport.class);
 
-    private final RawLog rawLog = LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH);
+    private final RawLog rawLog = TestLogFactory.newLogBuffers(TERM_BUFFER_LENGTH);
 
     private final Header header = new Header(INITIAL_TERM_ID, TERM_BUFFER_LENGTH);
     private UnsafeBuffer[] termBuffers;
@@ -123,7 +122,7 @@ public class ReceiverTest
             .driverCommandQueue(toConductorQueue)
             .dataTransportPoller(mockDataTransportPoller)
             .controlTransportPoller(mockControlTransportPoller)
-            .rawLogBuffersFactory(mockRawLogFactory)
+            .logFactory(new TestLogFactory())
             .systemCounters(mockSystemCounters)
             .applicationSpecificFeedback(Configuration.applicationSpecificFeedback())
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))

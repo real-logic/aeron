@@ -19,7 +19,7 @@ import io.aeron.CommonContext;
 import io.aeron.DriverProxy;
 import io.aeron.ErrorCode;
 import io.aeron.driver.buffer.RawLog;
-import io.aeron.driver.buffer.RawLogFactory;
+import io.aeron.driver.buffer.TestLogFactory;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.ReceiveChannelEndpointThreadLocals;
 import io.aeron.driver.media.UdpChannel;
@@ -75,7 +75,7 @@ public class DriverConductorTest
     private static final int STREAM_ID_2 = 20;
     private static final int STREAM_ID_3 = 30;
     private static final int STREAM_ID_4 = 40;
-    private static final int TERM_BUFFER_LENGTH = Configuration.TERM_BUFFER_LENGTH_DEFAULT;
+    private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int BUFFER_LENGTH = 16 * 1024;
     private static final int COUNTER_TYPE_ID = 101;
     private static final int COUNTER_KEY_OFFSET = 0;
@@ -88,8 +88,6 @@ public class DriverConductorTest
 
     private final ByteBuffer conductorBuffer = ByteBuffer.allocate(CONDUCTOR_BUFFER_LENGTH_DEFAULT);
     private final UnsafeBuffer counterKeyAndLabel = new UnsafeBuffer(new byte[BUFFER_LENGTH]);
-
-    private final RawLogFactory mockRawLogFactory = mock(RawLogFactory.class);
 
     private final RingBuffer toDriverCommands = new ManyToOneRingBuffer(new UnsafeBuffer(conductorBuffer));
     private final ClientProxy mockClientProxy = mock(ClientProxy.class);
@@ -124,20 +122,6 @@ public class DriverConductorTest
     @Before
     public void setUp()
     {
-        // System GC required in order to ensure that the direct byte buffers get cleaned and avoid OOM.
-        System.gc();
-
-        when(mockRawLogFactory.newNetworkPublication(
-            anyString(), anyInt(), anyInt(), anyLong(), anyInt(), anyBoolean()))
-            .thenReturn(LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH));
-
-        when(mockRawLogFactory.newNetworkedImage(
-            anyString(), anyInt(), anyInt(), anyLong(), eq(TERM_BUFFER_LENGTH), anyBoolean()))
-            .thenReturn(LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH));
-
-        when(mockRawLogFactory.newIpcPublication(anyInt(), anyInt(), anyLong(), anyInt(), anyBoolean()))
-            .thenReturn(LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH));
-
         currentTimeNs = 0;
 
         counterKeyAndLabel.putInt(COUNTER_KEY_OFFSET, 42);
@@ -156,7 +140,7 @@ public class DriverConductorTest
             .multicastFlowControlSupplier(Configuration.multicastFlowControlSupplier())
             .driverCommandQueue(new ManyToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
             .errorHandler(mockErrorHandler)
-            .rawLogBuffersFactory(mockRawLogFactory)
+            .logFactory(new TestLogFactory())
             .countersManager(spyCountersManager)
             .epochClock(epochClock)
             .nanoClock(nanoClock)
@@ -224,10 +208,6 @@ public class DriverConductorTest
             "|term-id=" + termId +
             "|term-offset=" + termOffset;
 
-        when(mockRawLogFactory.newNetworkPublication(
-            anyString(), anyInt(), anyInt(), anyLong(), eq(termLength), anyBoolean()))
-            .thenReturn(LogBufferHelper.newTestLogBuffers(termLength));
-
         driverProxy.addExclusivePublication(CHANNEL_4000 + params, STREAM_ID_1);
 
         driverConductor.doWork();
@@ -260,9 +240,6 @@ public class DriverConductorTest
             "|init-term-id=" + initialTermId +
             "|term-id=" + termId +
             "|term-offset=" + termOffset;
-
-        when(mockRawLogFactory.newIpcPublication(anyInt(), anyInt(), anyLong(), eq(termLength), anyBoolean()))
-            .thenReturn(LogBufferHelper.newTestLogBuffers(termLength));
 
         driverProxy.addExclusivePublication(CHANNEL_IPC + params, STREAM_ID_1);
 

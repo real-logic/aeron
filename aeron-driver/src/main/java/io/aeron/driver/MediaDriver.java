@@ -16,9 +16,10 @@
 package io.aeron.driver;
 
 import io.aeron.*;
+import io.aeron.driver.buffer.LogFactory;
 import io.aeron.driver.exceptions.ActiveDriverException;
 import io.aeron.driver.media.*;
-import io.aeron.driver.buffer.RawLogFactory;
+import io.aeron.driver.buffer.FileStoreLogFactory;
 import io.aeron.driver.reports.LossReport;
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.LogBufferDescriptor;
@@ -486,7 +487,7 @@ public final class MediaDriver implements AutoCloseable
         private SystemCounters systemCounters;
         private LossReport lossReport;
 
-        private RawLogFactory rawLogFactory;
+        private LogFactory logFactory;
         private DataTransportPoller dataTransportPoller;
         private ControlTransportPoller controlTransportPoller;
         private ManyToOneConcurrentArrayQueue<Runnable> driverCommandQueue;
@@ -2500,14 +2501,14 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        RawLogFactory rawLogBuffersFactory()
+        LogFactory logFactory()
         {
-            return rawLogFactory;
+            return logFactory;
         }
 
-        Context rawLogBuffersFactory(final RawLogFactory rawLogFactory)
+        Context logFactory(final LogFactory logFactory)
         {
-            this.rawLogFactory = rawLogFactory;
+            this.logFactory = logFactory;
             return this;
         }
 
@@ -2710,9 +2711,9 @@ public final class MediaDriver implements AutoCloseable
             driverConductorProxy = new DriverConductorProxy(
                 threadingMode, driverCommandQueue, systemCounters.get(CONDUCTOR_PROXY_FAILS));
 
-            if (null == rawLogFactory)
+            if (null == logFactory)
             {
-                rawLogFactory = new RawLogFactory(
+                logFactory = new FileStoreLogFactory(
                     aeronDirectoryName(), filePageSize, performStorageChecks, lowStorageWarningThreshold, errorHandler);
             }
 
@@ -2914,7 +2915,7 @@ public final class MediaDriver implements AutoCloseable
                 "\n    countersManager=" + countersManager +
                 "\n    systemCounters=" + systemCounters +
                 "\n    lossReport=" + lossReport +
-                "\n    rawLogFactory=" + rawLogFactory +
+                "\n    logFactory=" + logFactory +
                 "\n    dataTransportPoller=" + dataTransportPoller +
                 "\n    controlTransportPoller=" + controlTransportPoller +
                 "\n    driverCommandQueue=" + driverCommandQueue +

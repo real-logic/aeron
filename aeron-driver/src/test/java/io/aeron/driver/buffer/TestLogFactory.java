@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.driver;
+package io.aeron.driver.buffer;
 
-import io.aeron.driver.buffer.RawLog;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
@@ -23,17 +22,48 @@ import java.nio.ByteBuffer;
 import static io.aeron.logbuffer.LogBufferDescriptor.LOG_META_DATA_LENGTH;
 import static io.aeron.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
 
-public class LogBufferHelper
+public class TestLogFactory implements LogFactory
 {
-    public static RawLog newTestLogBuffers(final int termLength)
+    public RawLog newNetworkPublication(
+        final String channel,
+        final int sessionId,
+        final int streamId,
+        final long correlationId,
+        final int termBufferLength,
+        final boolean useSparseFiles)
+    {
+        return newLogBuffers(termBufferLength);
+    }
+
+    public RawLog newNetworkedImage(
+        final String channel,
+        final int sessionId, final int streamId,
+        final long correlationId,
+        final int termBufferLength,
+        final boolean useSparseFiles)
+    {
+        return newLogBuffers(termBufferLength);
+    }
+
+    public RawLog newIpcPublication(
+        final int sessionId,
+        final int streamId,
+        final long correlationId,
+        final int termBufferLength,
+        final boolean useSparseFiles)
+    {
+        return newLogBuffers(termBufferLength);
+    }
+
+    public static RawLog newLogBuffers(final int termLength)
     {
         return new RawLog()
         {
             private final UnsafeBuffer[] termBuffers = new UnsafeBuffer[]
             {
-                newTestLogBuffer(termLength),
-                newTestLogBuffer(termLength),
-                newTestLogBuffer(termLength),
+                newLogBuffer(termLength),
+                newLogBuffer(termLength),
+                newLogBuffer(termLength),
             };
 
             private final UnsafeBuffer logMetaData = new UnsafeBuffer(ByteBuffer.allocateDirect(LOG_META_DATA_LENGTH));
@@ -85,8 +115,8 @@ public class LogBufferHelper
         };
     }
 
-    private static UnsafeBuffer newTestLogBuffer(final int termBufferLength)
+    private static UnsafeBuffer newLogBuffer(final int termBufferLength)
     {
-        return new UnsafeBuffer(ByteBuffer.allocateDirect(termBufferLength));
+        return new UnsafeBuffer(ByteBuffer.allocate(termBufferLength));
     }
 }

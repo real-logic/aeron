@@ -30,7 +30,7 @@ import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
 /**
  * Factory for creating {@link RawLog}s in the source publications or publication images directories as appropriate.
  */
-public class RawLogFactory
+public class FileStoreLogFactory implements LogFactory
 {
     private static final String PUBLICATIONS = "publications";
     private static final String IMAGES = "images";
@@ -43,7 +43,7 @@ public class RawLogFactory
     private final File imagesDir;
     private final FileStore fileStore;
 
-    public RawLogFactory(
+    public FileStoreLogFactory(
         final String dataDirectoryName,
         final int filePageSize,
         final boolean checkStorage,

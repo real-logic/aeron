@@ -32,7 +32,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 
-public class RawLogFactoryTest
+public class FileStoreLogFactoryTest
 {
     private static final String CHANNEL = "aeron:udp?endpoint=localhost:4321";
     private static final int SESSION_ID = 100;
@@ -44,7 +44,7 @@ public class RawLogFactoryTest
     private static final int PAGE_SIZE = 4 * 1024;
     private static final boolean PRE_ZERO_LOG = false;
     private static final boolean PERFORM_STORAGE_CHECKS = false;
-    private RawLogFactory rawLogFactory;
+    private FileStoreLogFactory fileStoreLogFactory;
     private final UdpChannel udpChannel = UdpChannel.parse(CHANNEL);
 
     @Before
@@ -52,7 +52,7 @@ public class RawLogFactoryTest
     {
         IoUtil.ensureDirectoryExists(DATA_DIR, "data");
         final String absolutePath = DATA_DIR.getAbsolutePath();
-        rawLogFactory = new RawLogFactory(
+        fileStoreLogFactory = new FileStoreLogFactory(
             absolutePath, PAGE_SIZE, PERFORM_STORAGE_CHECKS, LOW_STORAGE_THRESHOLD, mock(ErrorHandler.class));
     }
 
@@ -66,7 +66,7 @@ public class RawLogFactoryTest
     public void shouldCreateCorrectLengthAndZeroedFilesForPublication()
     {
         final String canonicalForm = udpChannel.canonicalForm();
-        final RawLog rawLog = rawLogFactory.newNetworkPublication(
+        final RawLog rawLog = fileStoreLogFactory.newNetworkPublication(
             canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, TERM_BUFFER_LENGTH, PRE_ZERO_LOG);
 
         assertThat(rawLog.termLength(), is(TERM_BUFFER_LENGTH));
@@ -95,7 +95,7 @@ public class RawLogFactoryTest
     {
         final String canonicalForm = udpChannel.canonicalForm();
         final int imageTermBufferMaxLength = TERM_BUFFER_LENGTH / 2;
-        final RawLog rawLog = rawLogFactory.newNetworkedImage(
+        final RawLog rawLog = fileStoreLogFactory.newNetworkedImage(
             canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, imageTermBufferMaxLength, PRE_ZERO_LOG);
 
         assertThat(rawLog.termLength(), is(imageTermBufferMaxLength));
@@ -124,7 +124,7 @@ public class RawLogFactoryTest
     {
         final String canonicalForm = udpChannel.canonicalForm();
         final int imageTermBufferMaxLength = TERM_MAX_LENGTH + 1;
-        rawLogFactory.newNetworkedImage(
+        fileStoreLogFactory.newNetworkedImage(
             canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, imageTermBufferMaxLength, PRE_ZERO_LOG);
     }
 }

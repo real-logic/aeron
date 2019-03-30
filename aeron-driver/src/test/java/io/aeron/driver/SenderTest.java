@@ -16,6 +16,7 @@
 package io.aeron.driver;
 
 import io.aeron.driver.buffer.RawLog;
+import io.aeron.driver.buffer.TestLogFactory;
 import io.aeron.driver.media.ControlTransportPoller;
 import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.media.UdpChannel;
@@ -68,7 +69,7 @@ public class SenderTest
 
     private final ControlTransportPoller mockTransportPoller = mock(ControlTransportPoller.class);
 
-    private final RawLog rawLog = LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH);
+    private final RawLog rawLog = TestLogFactory.newLogBuffers(TERM_BUFFER_LENGTH);
 
     private TermAppender[] termAppenders;
     private NetworkPublication publication;

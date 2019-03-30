@@ -18,13 +18,10 @@ package io.aeron.driver;
 import io.aeron.ChannelUri;
 import io.aeron.CommonContext;
 import io.aeron.driver.MediaDriver.Context;
+import io.aeron.driver.buffer.LogFactory;
 import io.aeron.driver.buffer.RawLog;
-import io.aeron.driver.buffer.RawLogFactory;
 import io.aeron.driver.exceptions.ControlProtocolException;
-import io.aeron.driver.media.ReceiveChannelEndpoint;
-import io.aeron.driver.media.ReceiveDestinationUdpTransport;
-import io.aeron.driver.media.SendChannelEndpoint;
-import io.aeron.driver.media.UdpChannel;
+import io.aeron.driver.media.*;
 import io.aeron.driver.status.*;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -69,7 +66,7 @@ public class DriverConductor implements Agent
     private int nextSessionId = BitUtil.generateRandomisedId();
 
     private final Context ctx;
-    private final RawLogFactory rawLogFactory;
+    private final LogFactory logFactory;
     private final ReceiverProxy receiverProxy;
     private final SenderProxy senderProxy;
     private final ClientProxy clientProxy;
@@ -108,7 +105,7 @@ public class DriverConductor implements Agent
         driverCmdQueue = ctx.driverCommandQueue();
         receiverProxy = ctx.receiverProxy();
         senderProxy = ctx.senderProxy();
-        rawLogFactory = ctx.rawLogBuffersFactory();
+        logFactory = ctx.logFactory();
         epochClock = ctx.epochClock();
         nanoClock = ctx.nanoClock();
         cachedEpochClock = ctx.cachedEpochClock();
@@ -139,6 +136,8 @@ public class DriverConductor implements Agent
         publicationImages.forEach(PublicationImage::free);
         networkPublications.forEach(NetworkPublication::free);
         ipcPublications.forEach(IpcPublication::free);
+        receiveChannelEndpointByChannelMap.values().forEach(UdpChannelTransport::close);
+        sendChannelEndpointByChannelMap.values().forEach(UdpChannelTransport::close);
 
         ctx.close();
     }
@@ -1083,7 +1082,7 @@ public class DriverConductor implements Agent
         final long registrationId,
         final PublicationParams params)
     {
-        final RawLog rawLog = rawLogFactory.newNetworkPublication(
+        final RawLog rawLog = logFactory.newNetworkPublication(
             udpChannel.canonicalForm(), sessionId, streamId, registrationId, params.termLength, params.isSparse);
 
         initPublicationMetadata(sessionId, streamId, initialTermId, registrationId, params, rawLog);
@@ -1098,7 +1097,7 @@ public class DriverConductor implements Agent
         final long registrationId,
         final PublicationParams params)
     {
-        final RawLog rawLog = rawLogFactory.newIpcPublication(
+        final RawLog rawLog = logFactory.newIpcPublication(
             sessionId, streamId, registrationId, params.termLength, params.isSparse);
 
         initPublicationMetadata(sessionId, streamId, initialTermId, registrationId, params, rawLog);
@@ -1169,7 +1168,7 @@ public class DriverConductor implements Agent
         final UdpChannel udpChannel,
         final long correlationId)
     {
-        final RawLog rawLog = rawLogFactory.newNetworkedImage(
+        final RawLog rawLog = logFactory.newNetworkedImage(
             udpChannel.canonicalForm(), sessionId, streamId, correlationId, termBufferLength, isSparse);
 
         final UnsafeBuffer logMetaData = rawLog.metaData();

@@ -105,9 +105,7 @@ public class DriverConductorTest
     private final NanoClock nanoClock = () -> currentTimeNs;
 
     private CountersManager spyCountersManager;
-
     private DriverProxy driverProxy;
-
     private DriverConductor driverConductor;
 
     private final Answer<Void> closeChannelEndpointAnswer = (invocation) ->
@@ -131,6 +129,9 @@ public class DriverConductorTest
         spyCountersManager = spy(new CountersManager(
             new UnsafeBuffer(ByteBuffer.allocate(BUFFER_LENGTH * 2)), counterBuffer, StandardCharsets.US_ASCII));
 
+        final SystemCounters mockSystemCounters = mock(SystemCounters.class);
+        when(mockSystemCounters.get(any())).thenReturn(mockErrorCounter);
+
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .tempBuffer(new UnsafeBuffer(new byte[METADATA_LENGTH]))
             .publicationTermBufferLength(TERM_BUFFER_LENGTH)
@@ -148,20 +149,16 @@ public class DriverConductorTest
             .cachedNanoClock(new CachedNanoClock())
             .sendChannelEndpointSupplier(Configuration.sendChannelEndpointSupplier())
             .receiveChannelEndpointSupplier(Configuration.receiveChannelEndpointSupplier())
-            .congestControlSupplier(Configuration.congestionControlSupplier());
-
-        ctx.toDriverCommands(toDriverCommands)
+            .congestControlSupplier(Configuration.congestionControlSupplier())
+            .toDriverCommands(toDriverCommands)
             .clientProxy(mockClientProxy)
-            .countersValuesBuffer(counterBuffer);
-
-        final SystemCounters mockSystemCounters = mock(SystemCounters.class);
-        when(mockSystemCounters.get(any())).thenReturn(mockErrorCounter);
-
-        ctx.systemCounters(mockSystemCounters)
+            .countersValuesBuffer(counterBuffer)
+            .systemCounters(mockSystemCounters)
             .receiverProxy(receiverProxy)
             .senderProxy(senderProxy)
-            .driverConductorProxy(driverConductorProxy)
-            .receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals(ctx));
+            .driverConductorProxy(driverConductorProxy);
+
+        ctx.receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals(ctx));
 
         driverProxy = new DriverProxy(toDriverCommands, toDriverCommands.nextCorrelationId());
         driverConductor = new DriverConductor(ctx);

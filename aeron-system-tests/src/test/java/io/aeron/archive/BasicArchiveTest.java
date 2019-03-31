@@ -104,28 +104,6 @@ public class BasicArchiveTest
     }
 
     @Test(timeout = 10_000)
-    public void shouldPerformAsyncConnect()
-    {
-        final long lastControlSessionId = aeronArchive.controlSessionId();
-        aeronArchive.close();
-        aeronArchive = null;
-
-        final AeronArchive.AsyncConnect asyncConnect = AeronArchive.asyncConnect(
-            new AeronArchive.Context().aeron(aeron));
-
-        AeronArchive archive;
-        do
-        {
-            archive = asyncConnect.poll();
-        }
-        while (null == archive);
-
-        assertThat(archive.controlSessionId(), is(lastControlSessionId + 1));
-
-        archive.close();
-    }
-
-    @Test(timeout = 10_000)
     public void shouldRecordThenReplayThenTruncate()
     {
         final String messagePrefix = "Message-Prefix-";

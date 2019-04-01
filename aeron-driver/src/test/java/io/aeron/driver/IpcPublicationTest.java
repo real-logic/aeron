@@ -15,9 +15,9 @@
  */
 package io.aeron.driver;
 
-import io.aeron.driver.buffer.FileStoreLogFactory;
 import io.aeron.driver.buffer.TestLogFactory;
 import io.aeron.driver.status.SystemCounters;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import org.junit.Before;
 import org.junit.Test;
 import io.aeron.CommonContext;
@@ -36,17 +36,13 @@ import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class IpcPublicationTest
 {
     private static final long CLIENT_ID = 7L;
     private static final int STREAM_ID = 10;
-    private static final int TERM_BUFFER_LENGTH = Configuration.TERM_BUFFER_LENGTH_DEFAULT;
+    private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int BUFFER_LENGTH = 16 * 1024;
 
     private Position publisherLimit;
@@ -65,19 +61,15 @@ public class IpcPublicationTest
         final RingBuffer toDriverCommands = new ManyToOneRingBuffer(new UnsafeBuffer(
             ByteBuffer.allocateDirect(Configuration.CONDUCTOR_BUFFER_LENGTH_DEFAULT)));
 
-        final FileStoreLogFactory mockFileStoreLogFactory = mock(FileStoreLogFactory.class);
         final UnsafeBuffer counterBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(BUFFER_LENGTH));
         final CountersManager countersManager = new CountersManager(
             new UnsafeBuffer(ByteBuffer.allocateDirect(BUFFER_LENGTH * 2)), counterBuffer, StandardCharsets.US_ASCII);
-
-        when(mockFileStoreLogFactory.newIpcPublication(anyInt(), anyInt(), anyLong(), anyInt(), anyBoolean()))
-            .thenReturn(TestLogFactory.newLogBuffers(TERM_BUFFER_LENGTH));
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .tempBuffer(new UnsafeBuffer(new byte[METADATA_LENGTH]))
             .ipcTermBufferLength(TERM_BUFFER_LENGTH)
             .toDriverCommands(toDriverCommands)
-            .logFactory(mockFileStoreLogFactory)
+            .logFactory(new TestLogFactory())
             .clientProxy(mock(ClientProxy.class))
             .driverCommandQueue(mock(ManyToOneConcurrentArrayQueue.class))
             .epochClock(new SystemEpochClock())

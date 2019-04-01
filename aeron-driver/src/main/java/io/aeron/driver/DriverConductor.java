@@ -1086,7 +1086,7 @@ public class DriverConductor implements Agent
         final long registrationId,
         final PublicationParams params)
     {
-        final RawLog rawLog = logFactory.newNetworkPublication(
+        final RawLog rawLog = logFactory.newPublication(
             udpChannel.canonicalForm(), sessionId, streamId, registrationId, params.termLength, params.isSparse);
 
         initPublicationMetadata(sessionId, streamId, initialTermId, registrationId, params, rawLog);
@@ -1101,8 +1101,8 @@ public class DriverConductor implements Agent
         final long registrationId,
         final PublicationParams params)
     {
-        final RawLog rawLog = logFactory.newIpcPublication(
-            sessionId, streamId, registrationId, params.termLength, params.isSparse);
+        final RawLog rawLog = logFactory.newPublication(
+            CommonContext.IPC_MEDIA, sessionId, streamId, registrationId, params.termLength, params.isSparse);
 
         initPublicationMetadata(sessionId, streamId, initialTermId, registrationId, params, rawLog);
 
@@ -1172,7 +1172,7 @@ public class DriverConductor implements Agent
         final UdpChannel udpChannel,
         final long correlationId)
     {
-        final RawLog rawLog = logFactory.newNetworkedImage(
+        final RawLog rawLog = logFactory.newImage(
             udpChannel.canonicalForm(), sessionId, streamId, correlationId, termBufferLength, isSparse);
 
         final UnsafeBuffer logMetaData = rawLog.metaData();

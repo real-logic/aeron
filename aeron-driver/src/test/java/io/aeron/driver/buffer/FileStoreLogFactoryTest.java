@@ -66,7 +66,7 @@ public class FileStoreLogFactoryTest
     public void shouldCreateCorrectLengthAndZeroedFilesForPublication()
     {
         final String canonicalForm = udpChannel.canonicalForm();
-        final RawLog rawLog = fileStoreLogFactory.newNetworkPublication(
+        final RawLog rawLog = fileStoreLogFactory.newPublication(
             canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, TERM_BUFFER_LENGTH, PRE_ZERO_LOG);
 
         assertThat(rawLog.termLength(), is(TERM_BUFFER_LENGTH));
@@ -95,7 +95,7 @@ public class FileStoreLogFactoryTest
     {
         final String canonicalForm = udpChannel.canonicalForm();
         final int imageTermBufferMaxLength = TERM_BUFFER_LENGTH / 2;
-        final RawLog rawLog = fileStoreLogFactory.newNetworkedImage(
+        final RawLog rawLog = fileStoreLogFactory.newImage(
             canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, imageTermBufferMaxLength, PRE_ZERO_LOG);
 
         assertThat(rawLog.termLength(), is(imageTermBufferMaxLength));
@@ -124,7 +124,7 @@ public class FileStoreLogFactoryTest
     {
         final String canonicalForm = udpChannel.canonicalForm();
         final int imageTermBufferMaxLength = TERM_MAX_LENGTH + 1;
-        fileStoreLogFactory.newNetworkedImage(
+        fileStoreLogFactory.newImage(
             canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, imageTermBufferMaxLength, PRE_ZERO_LOG);
     }
 }

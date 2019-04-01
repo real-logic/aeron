@@ -24,7 +24,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 
-import static io.aeron.CommonContext.IPC_MEDIA;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
 
 /**
@@ -90,7 +89,7 @@ public class FileStoreLogFactory implements LogFactory
      * @param useSparseFiles   for the log buffer.
      * @return the newly allocated {@link RawLog}
      */
-    public RawLog newNetworkPublication(
+    public RawLog newPublication(
         final String channel,
         final int sessionId,
         final int streamId,
@@ -113,7 +112,7 @@ public class FileStoreLogFactory implements LogFactory
      * @param useSparseFiles   for the log buffer.
      * @return the newly allocated {@link RawLog}
      */
-    public RawLog newNetworkedImage(
+    public RawLog newImage(
         final String channel,
         final int sessionId,
         final int streamId,
@@ -122,27 +121,6 @@ public class FileStoreLogFactory implements LogFactory
         final boolean useSparseFiles)
     {
         return newInstance(imagesDir, channel, sessionId, streamId, correlationId, termBufferLength, useSparseFiles);
-    }
-
-    /**
-     * Create a new {@link RawLog} in the publication directory for the supplied parameters.
-     *
-     * @param sessionId        under which publications are made.
-     * @param streamId         within the IPC channel
-     * @param correlationId    to use to distinguish this shared log
-     * @param termBufferLength length of the each term
-     * @param useSparseFiles   for the log buffer.
-     * @return the newly allocated {@link RawLog}
-     */
-    public RawLog newIpcPublication(
-        final int sessionId,
-        final int streamId,
-        final long correlationId,
-        final int termBufferLength,
-        final boolean useSparseFiles)
-    {
-        return newInstance(
-            publicationsDir, IPC_MEDIA, sessionId, streamId, correlationId, termBufferLength, useSparseFiles);
     }
 
     private RawLog newInstance(

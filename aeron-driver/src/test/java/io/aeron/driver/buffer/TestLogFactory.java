@@ -24,7 +24,7 @@ import static io.aeron.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
 
 public class TestLogFactory implements LogFactory
 {
-    public RawLog newNetworkPublication(
+    public RawLog newPublication(
         final String channel,
         final int sessionId,
         final int streamId,
@@ -35,19 +35,9 @@ public class TestLogFactory implements LogFactory
         return newLogBuffers(termBufferLength);
     }
 
-    public RawLog newNetworkedImage(
+    public RawLog newImage(
         final String channel,
         final int sessionId, final int streamId,
-        final long correlationId,
-        final int termBufferLength,
-        final boolean useSparseFiles)
-    {
-        return newLogBuffers(termBufferLength);
-    }
-
-    public RawLog newIpcPublication(
-        final int sessionId,
-        final int streamId,
         final long correlationId,
         final int termBufferLength,
         final boolean useSparseFiles)

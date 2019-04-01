@@ -17,7 +17,7 @@ package io.aeron.driver.buffer;
 
 public interface LogFactory
 {
-    RawLog newNetworkPublication(
+    RawLog newPublication(
         String channel,
         int sessionId,
         int streamId,
@@ -25,15 +25,8 @@ public interface LogFactory
         int termBufferLength,
         boolean useSparseFiles);
 
-    RawLog newNetworkedImage(
+    RawLog newImage(
         String channel,
-        int sessionId,
-        int streamId,
-        long correlationId,
-        int termBufferLength,
-        boolean useSparseFiles);
-
-    RawLog newIpcPublication(
         int sessionId,
         int streamId,
         long correlationId,

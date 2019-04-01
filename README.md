@@ -29,7 +29,7 @@ For those who prefer to watch a video then try [Aeron Messaging](https://www.you
 StrangeLoop 2014. Things have moved on quite a bit with performance and some features but the basic design still applies.
 
 For the latest version information and changes see the [Change Log](https://github.com/real-logic/aeron/wiki/Change-Log)
-with **downloads** at [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Caeron).
+with Java **downloads** at [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Caeron).
 
 ### How do I use Aeron?
 

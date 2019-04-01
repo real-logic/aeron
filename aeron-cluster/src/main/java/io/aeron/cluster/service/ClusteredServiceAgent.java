@@ -312,6 +312,12 @@ class ClusteredServiceAgent implements Agent, Cluster
     {
         if (null != logAdapter && !logChannel.equals(this.logChannel))
         {
+            final long existingPosition = logAdapter.position();
+            if (existingPosition != logPosition)
+            {
+                throw new ClusterException("existing position " + existingPosition + " new position " + logPosition);
+            }
+
             logAdapter.close();
             logAdapter = null;
         }

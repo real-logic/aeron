@@ -16,11 +16,9 @@
 package io.aeron.cluster;
 
 import org.agrona.ErrorHandler;
+import org.agrona.SystemUtil;
 import org.agrona.concurrent.AgentTerminationException;
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadInfo;
-import java.lang.management.ThreadMXBean;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.fail;
@@ -66,28 +64,7 @@ class TestUtil
             ex.printStackTrace();
 
             System.err.println();
-            System.err.println(TestUtil.threadDump());
+            System.err.println(SystemUtil.threadDump());
         };
-    }
-
-    // TODO: Use version from Agrona after next release
-    public static String threadDump()
-    {
-        final StringBuilder sb = new StringBuilder();
-        final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
-
-        for (final ThreadInfo info : threadMXBean.getThreadInfo(threadMXBean.getAllThreadIds(), Integer.MAX_VALUE))
-        {
-            sb.append('"').append(info.getThreadName()).append("\": ").append(info.getThreadState());
-
-            for (final StackTraceElement stackTraceElement : info.getStackTrace())
-            {
-                sb.append("\n    at ").append(stackTraceElement.toString());
-            }
-
-            sb.append("\n\n");
-        }
-
-        return sb.toString();
     }
 }

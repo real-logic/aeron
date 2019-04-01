@@ -1499,7 +1499,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             final Image image = logAdapter.image();
             if (logAdapter.poll(stopPosition) == 0 && image.isClosed())
             {
-                throw new ClusterException("unexpected close of image when replaying log");
+                throw new ClusterException("unexpected image close replaying log at position " + image.position());
             }
 
             final long appendedPosition = this.appendedPosition.get();

@@ -156,6 +156,7 @@ class ClusteredServiceAgent implements Agent, Cluster
             {
                 if (logAdapter.isDone())
                 {
+                    checkLogPosition();
                     logAdapter.close();
                     logAdapter = null;
                 }
@@ -863,5 +864,15 @@ class ClusteredServiceAgent implements Agent, Cluster
 
         consensusModuleProxy.ack(logPosition, ackId++, serviceId);
         ctx.terminationHook().run();
+    }
+
+    private void checkLogPosition()
+    {
+        final long existingPosition = logAdapter.position();
+        if (null != activeLogEvent && existingPosition != activeLogEvent.logPosition)
+        {
+            throw new ClusterException(
+                "existing position " + existingPosition + " new position " + activeLogEvent.logPosition);
+        }
     }
 }

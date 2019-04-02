@@ -511,9 +511,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         while (null == activeLogEvent)
         {
             serviceAdapter.poll();
-            checkInterruptedStatus();
-            heartbeatCounter.setOrdered(epochClock.time());
-            idleStrategy.idle();
+            idle();
         }
     }
 
@@ -597,8 +595,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         Image image;
         while ((image = subscription.imageBySessionId(sessionId)) == null)
         {
-            checkInterruptedStatus();
-            idleStrategy.idle();
+            idle();
         }
 
         return image;
@@ -729,8 +726,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         idleStrategy.reset();
         do
         {
-            idleStrategy.idle();
-            checkInterruptedStatus();
+            idle();
 
             if (!RecordingPos.isActive(counters, counterId, recordingId))
             {
@@ -770,8 +766,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         int counterId = RecordingPos.findCounterIdBySession(counters, sessionId);
         while (NULL_COUNTER_ID == counterId)
         {
-            checkInterruptedStatus();
-            idleStrategy.idle();
+            idle();
             counterId = RecordingPos.findCounterIdBySession(counters, sessionId);
         }
 

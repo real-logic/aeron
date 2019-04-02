@@ -277,7 +277,6 @@ int aeron_fallocate(int fd, off_t length, bool fill_with_zeroes)
 #endif
     if (fill_with_zeroes)
     {
-        // TODO: finish
     }
 
     return 0;

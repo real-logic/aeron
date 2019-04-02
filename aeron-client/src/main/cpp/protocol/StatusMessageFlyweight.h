@@ -64,13 +64,6 @@ struct StatusMessageDefn
     std::int32_t consumptionTermId;
     std::int32_t consumptionTermOffset;
     std::int32_t receiverWindow;
-
-    // TODO: Lets not support this for now.
-//    struct
-//    {
-//        std::int32_t applicationSpecificFeedbackLength;
-//        std::uint8_t applicationSpecificFeedbackData[1];
-//    } applicationSpecificFeedback;
 };
 #pragma pack(pop)
 

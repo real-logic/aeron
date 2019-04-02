@@ -88,7 +88,6 @@ public:
      */
     inline std::int32_t frameLength() const
     {
-        // TODO: add LITTLE_ENDIAN check
         return m_buffer.getInt32(m_offset);
     }
 
@@ -99,7 +98,6 @@ public:
      */
     inline std::int32_t sessionId() const
     {
-        // TODO: add LITTLE_ENDIAN check
         return m_buffer.getInt32(m_offset + DataFrameHeader::SESSION_ID_FIELD_OFFSET);
     }
 
@@ -110,7 +108,6 @@ public:
      */
     inline std::int32_t streamId() const
     {
-        // TODO: add LITTLE_ENDIAN check
         return m_buffer.getInt32(m_offset + DataFrameHeader::STREAM_ID_FIELD_OFFSET);
     }
 
@@ -121,7 +118,6 @@ public:
      */
     inline std::int32_t termId() const
     {
-        // TODO: add LITTLE_ENDIAN check
         return m_buffer.getInt32(m_offset + DataFrameHeader::TERM_ID_FIELD_OFFSET);
     }
 
@@ -142,7 +138,6 @@ public:
      */
     inline std::uint16_t type() const
     {
-        // TODO: add LITTLE_ENDIAN check
         return m_buffer.getUInt16(m_offset + DataFrameHeader::TYPE_FIELD_OFFSET);
     }
 

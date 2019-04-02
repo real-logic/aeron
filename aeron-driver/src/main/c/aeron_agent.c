@@ -478,8 +478,6 @@ int aeron_agent_stop(aeron_agent_runner_t *runner)
     {
         runner->state = AERON_AGENT_STATE_STOPPING;
 
-        /* TODO: should use timed aeron_thread_join _np version when available? */
-
         if ((pthread_result = aeron_thread_join(runner->thread, NULL)))
         {
             aeron_set_err(pthread_result, "aeron_thread_join: %s", strerror(pthread_result));

@@ -51,7 +51,6 @@ ExclusivePublication::ExclusivePublication(
     for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
     {
         /*
-         * TODO:
          * perhaps allow copy-construction and be able to move appenders and AtomicBuffers directly into Publication for
          * locality.
          */

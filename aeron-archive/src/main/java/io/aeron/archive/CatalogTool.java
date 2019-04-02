@@ -114,8 +114,6 @@ public class CatalogTool
                 System.out.println(catalog.maxEntries());
             }
         }
-
-        // TODO: add a manual override tool to force mark entries as unusable
     }
 
     private static ArchiveMarkFile openMarkFile(final Consumer<String> logger)

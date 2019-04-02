@@ -366,8 +366,6 @@ public class DataPacketDispatcher
             {
                 if (RttMeasurementFlyweight.REPLY_FLAG == (header.flags() & RttMeasurementFlyweight.REPLY_FLAG))
                 {
-                    // TODO: check rate limit
-
                     final InetSocketAddress controlAddress = channelEndpoint.isMulticast(transportIndex) ?
                         channelEndpoint.udpChannel(transportIndex).remoteControl() : srcAddress;
 

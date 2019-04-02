@@ -150,7 +150,6 @@ class ClusteredServiceAgent implements Agent, Cluster
 
         if (null != logAdapter)
         {
-            // TODO: limit consumption up to roleChangePosition if set.
             final int polled = logAdapter.poll();
             if (0 == polled)
             {

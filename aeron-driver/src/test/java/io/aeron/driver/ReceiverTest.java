@@ -98,8 +98,6 @@ public class ReceiverTest
     private ReceiveChannelEndpoint receiveChannelEndpoint;
     private final CongestionControl congestionControl = mock(CongestionControl.class);
 
-    // TODO rework test to use proxies rather than the command queues.
-
     @Before
     public void setUp() throws Exception
     {

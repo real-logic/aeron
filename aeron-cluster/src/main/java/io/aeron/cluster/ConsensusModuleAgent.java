@@ -1114,7 +1114,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             return;
         }
 
-        // TODO: this must be superset of any configured cluster members, unless being overridden
         final ClusterMember[] snapshotClusterMembers = ClusterMember.parse(members);
 
         if (Aeron.NULL_VALUE == this.memberId)

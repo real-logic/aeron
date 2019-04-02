@@ -29,11 +29,13 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableInteger;
+import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static org.junit.Assert.assertNotNull;
@@ -354,11 +356,21 @@ public class TestCluster implements AutoCloseable
 
     void awaitResponses(final int messageCount)
     {
+        final EpochClock epochClock = client.context().aeron().context().epochClock();
+        long deadlineMs = epochClock.time() + TimeUnit.SECONDS.toMillis(1);
+
         while (responseCount.get() < messageCount)
         {
             TestUtil.checkInterruptedStatus();
             Thread.yield();
             client.pollEgress();
+
+            final long nowMs = epochClock.time();
+            if (nowMs > deadlineMs)
+            {
+                client.sendKeepAlive();
+                deadlineMs = nowMs + TimeUnit.SECONDS.toMillis(1);
+            }
         }
     }
 
@@ -475,10 +487,20 @@ public class TestCluster implements AutoCloseable
 
     void awaitMessageCountForService(final TestNode node, final int messageCount)
     {
+        final EpochClock epochClock = client.context().aeron().context().epochClock();
+        long deadlineMs = epochClock.time() + TimeUnit.SECONDS.toMillis(1);
+
         while (node.service().messageCount() < messageCount)
         {
             TestUtil.checkInterruptedStatus();
             Thread.yield();
+
+            final long nowMs = epochClock.time();
+            if (nowMs > deadlineMs)
+            {
+                client.sendKeepAlive();
+                deadlineMs = nowMs + TimeUnit.SECONDS.toMillis(1);
+            }
         }
     }
 

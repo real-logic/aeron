@@ -61,7 +61,9 @@ public class Election implements AutoCloseable
         FOLLOWER_CATCHUP_TRANSITION(9),
         FOLLOWER_CATCHUP(10),
         FOLLOWER_TRANSITION(11),
-        FOLLOWER_READY(12);
+        FOLLOWER_READY(12),
+
+        CLOSE(13);
 
         static final State[] STATES;
 
@@ -265,6 +267,11 @@ public class Election implements AutoCloseable
             ctx.countedErrorHandler().onError(ex);
             logPosition = ctx.commitPositionCounter().get();
             state(State.INIT, nowMs);
+        }
+
+        if (State.CLOSE == state)
+        {
+            close();
         }
 
         return workCount;
@@ -683,7 +690,7 @@ public class Election implements AutoCloseable
             if (consensusModuleAgent.electionComplete(nowMs))
             {
                 consensusModuleAgent.updateMemberDetails(this);
-                close();
+                state(State.CLOSE, nowMs);
             }
 
             workCount += 1;
@@ -819,7 +826,7 @@ public class Election implements AutoCloseable
             if (consensusModuleAgent.electionComplete(nowMs))
             {
                 consensusModuleAgent.updateMemberDetails(this);
-                close();
+                state(State.CLOSE, nowMs);
             }
         }
         else if (nowMs >= (timeOfLastStateChangeMs + leaderHeartbeatTimeoutMs))

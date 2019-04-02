@@ -111,6 +111,7 @@ public class ReplayMergeTest
             new Archive.Context()
                 .maxCatalogEntries(MAX_CATALOG_ENTRIES)
                 .aeronDirectoryName(mediaDriverContext.aeronDirectoryName())
+                .errorHandler(Throwable::printStackTrace)
                 .archiveDir(archiveDir)
                 .fileSyncLevel(0)
                 .threadingMode(ArchiveThreadingMode.SHARED)
@@ -118,16 +119,23 @@ public class ReplayMergeTest
 
         aeron = Aeron.connect(
             new Aeron.Context()
+                .errorHandler(Throwable::printStackTrace)
                 .aeronDirectoryName(mediaDriverContext.aeronDirectoryName()));
 
         aeronArchive = AeronArchive.connect(
             new AeronArchive.Context()
+                .errorHandler(Throwable::printStackTrace)
                 .aeron(aeron));
     }
 
     @After
     public void after()
     {
+        if (received.get() != MIN_MESSAGES_PER_TERM * 6)
+        {
+            System.out.println("received " + received.get() + "/" + (MIN_MESSAGES_PER_TERM * 6));
+        }
+
         CloseHelper.close(aeronArchive);
         CloseHelper.close(aeron);
         CloseHelper.close(archivingMediaDriver);

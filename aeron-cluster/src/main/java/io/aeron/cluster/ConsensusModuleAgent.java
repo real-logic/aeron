@@ -1247,7 +1247,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
     }
 
-    boolean pollImageAndLogAdapter(final Subscription subscription, final int logSessionId)
+    boolean findImageAndLogAdapter(final Subscription subscription, final int logSessionId)
     {
         boolean result = false;
 
@@ -1276,7 +1276,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         leadershipTermId = election.leadershipTermId();
         idleStrategy.reset();
-        while (!pollImageAndLogAdapter(subscription, logSessionId))
+        while (!findImageAndLogAdapter(subscription, logSessionId))
         {
             idle();
         }
@@ -1355,15 +1355,16 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     void replayLogPoll(final LogAdapter logAdapter, final long stopPosition)
     {
         final int workCount = logAdapter.poll(stopPosition);
+        final long logPosition = logAdapter.position();
         if (0 == workCount)
         {
-            if (logAdapter.isImageClosed() && logAdapter.position() != stopPosition)
+            if (logAdapter.isImageClosed() && logPosition != stopPosition)
             {
-                throw new ClusterException("unexpected close of image when replaying log");
+                throw new ClusterException("unexpected close of image when replaying log: position=");
             }
         }
 
-        commitPosition.setOrdered(logAdapter.position());
+        commitPosition.setOrdered(logPosition);
         consensusModuleAdapter.poll();
         cancelMissedTimers();
     }
@@ -1413,11 +1414,14 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     boolean electionComplete(final long nowMs)
     {
         boolean result = false;
+        final long logPosition = election.logPosition();
+        this.followerCommitPosition = logPosition;
+        commitPosition.setOrdered(logPosition);
 
         if (Cluster.Role.LEADER == role)
         {
             if (logPublisher.appendNewLeadershipTermEvent(
-                leadershipTermId, election.logPosition(), nowMs, memberId, logPublisher.sessionId()))
+                leadershipTermId, logPosition, nowMs, memberId, logPublisher.sessionId()))
             {
                 timeOfLastLogUpdateMs = cachedTimeMs - leaderHeartbeatIntervalMs;
                 election = null;
@@ -1494,7 +1498,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     void catchupLogPoll(final Subscription subscription, final int logSessionId, final long stopPosition)
     {
-        if (pollImageAndLogAdapter(subscription, logSessionId))
+        if (findImageAndLogAdapter(subscription, logSessionId))
         {
             final Image image = logAdapter.image();
             if (logAdapter.poll(stopPosition) == 0 && image.isClosed())
@@ -1502,9 +1506,11 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 throw new ClusterException("unexpected image close replaying log at position " + image.position());
             }
 
-            final long appendedPosition = this.appendedPosition.get();
+            final long archivePosition = this.appendedPosition.get();
+            final long appendedPosition = Math.min(image.position(), archivePosition);
             if (appendedPosition != lastAppendedPosition)
             {
+                commitPosition.setOrdered(appendedPosition);
                 final Publication publication = election.leader().publication();
                 if (memberStatusPublisher.appendedPosition(publication, leadershipTermId, appendedPosition, memberId))
                 {
@@ -1513,7 +1519,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 }
             }
 
-            commitPosition.setOrdered(Math.min(image.position(), appendedPosition));
             consensusModuleAdapter.poll();
             cancelMissedTimers();
         }
@@ -1521,19 +1526,19 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     boolean hasAppendReachedPosition(final Subscription subscription, final int logSessionId, final long position)
     {
-        return pollImageAndLogAdapter(subscription, logSessionId) && appendedPosition.get() >= position;
+        return findImageAndLogAdapter(subscription, logSessionId) && commitPosition.get() >= position;
     }
 
     boolean hasAppendReachedLivePosition(final Subscription subscription, final int logSessionId, final long position)
     {
         boolean result = false;
 
-        if (pollImageAndLogAdapter(subscription, logSessionId))
+        if (findImageAndLogAdapter(subscription, logSessionId))
         {
-            final long appendPosition = appendedPosition.get();
+            final long localPosition = commitPosition.get();
             final long window = logAdapter.image().termBufferLength() * 2L;
 
-            result = appendPosition >= (position - window);
+            result = localPosition >= (position - window);
         }
 
         return result;
@@ -1672,7 +1677,9 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             final int count = logAdapter.poll(followerCommitPosition);
             if (0 == count && logAdapter.isImageClosed())
             {
-                ctx.countedErrorHandler().onError(new ClusterException("lost connection to leader"));
+                ctx.countedErrorHandler().onError(new ClusterException(
+                    "lost leader connection: logPosition" + logPosition() + " commitPosition=" + commitPosition.get() +
+                    " leadershipTermId=" + leadershipTermId + " leaderId=" + leaderMember.id()));
                 enterElection(nowMs);
                 return 1;
             }

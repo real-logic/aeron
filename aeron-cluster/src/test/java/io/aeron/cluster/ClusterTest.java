@@ -187,8 +187,6 @@ public class ClusterTest
     @Test(timeout = 30_000)
     public void shouldAbortClusterOnTerminationTimeout() throws Exception
     {
-        final int messageCount = 10;
-
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
             final TestNode leader = cluster.awaitLeader();
@@ -205,6 +203,8 @@ public class ClusterTest
             cluster.stopNode(followerB);
 
             cluster.connectClient();
+
+            final int messageCount = 10;
             cluster.sendMessages(messageCount);
             cluster.awaitResponses(messageCount);
 
@@ -220,14 +220,14 @@ public class ClusterTest
     @Test(timeout = 30_000)
     public void shouldEchoMessagesThenContinueOnNewLeader() throws Exception
     {
-        final int preFailureMessageCount = 10;
-        final int postFailureMessageCount = 7;
-
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
             final TestNode originalLeader = cluster.awaitLeader();
-
             cluster.connectClient();
+
+            final int preFailureMessageCount = 10;
+            final int postFailureMessageCount = 7;
+
             cluster.sendMessages(preFailureMessageCount);
             cluster.awaitResponses(preFailureMessageCount);
             cluster.awaitMessageCountForService(cluster.node(0), preFailureMessageCount);
@@ -273,8 +273,6 @@ public class ClusterTest
     @Test(timeout = 30_000)
     public void shouldStopLeaderAndRestartAfterElectionAsFollowerWithSendingAfter() throws Exception
     {
-        final int messageCount = 10;
-
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
             final TestNode originalLeader = cluster.awaitLeader();
@@ -290,6 +288,8 @@ public class ClusterTest
             assertThat(follower.electionState(), is((Election.State)null));
 
             cluster.connectClient();
+
+            final int messageCount = 10;
             cluster.sendMessages(messageCount);
             cluster.awaitResponses(messageCount);
         }
@@ -298,8 +298,6 @@ public class ClusterTest
     @Test(timeout = 60_000)
     public void shouldStopLeaderAndRestartAfterElectionAsFollowerWithSendingAfterThenStopLeader() throws Exception
     {
-        final int messageCount = 10;
-
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
             final TestNode originalLeader = cluster.awaitLeader();
@@ -315,6 +313,8 @@ public class ClusterTest
             assertThat(follower.electionState(), is((Election.State)null));
 
             cluster.connectClient();
+
+            final int messageCount = 10;
             cluster.sendMessages(messageCount);
             cluster.awaitResponses(messageCount);
 
@@ -329,8 +329,6 @@ public class ClusterTest
     @Test(timeout = 30_000)
     public void shouldAcceptMessagesAfterSingleNodeCleanRestart() throws Exception
     {
-        final int messageCount = 10;
-
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
             cluster.awaitLeader();
@@ -348,6 +346,8 @@ public class ClusterTest
             assertThat(follower.role(), is(Cluster.Role.FOLLOWER));
 
             cluster.connectClient();
+
+            final int messageCount = 10;
             cluster.sendMessages(messageCount);
             cluster.awaitResponses(messageCount);
             cluster.awaitMessageCountForService(follower, messageCount);
@@ -357,8 +357,6 @@ public class ClusterTest
     @Test(timeout = 30_000)
     public void followerShouldRecoverWhenSnapshotTakenWhileDown() throws Exception
     {
-        final int messageCount = 10;
-
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
             final TestNode leader = cluster.awaitLeader();
@@ -372,6 +370,8 @@ public class ClusterTest
             cluster.awaitSnapshotCounter(leader, 1);
 
             cluster.connectClient();
+
+            final int messageCount = 10;
             cluster.sendMessages(messageCount);
             cluster.awaitResponses(messageCount);
 
@@ -390,8 +390,6 @@ public class ClusterTest
     @Test(timeout = 45_000)
     public void shouldTolerateMultipleLeaderFailures() throws Exception
     {
-        final int messageCount = 10;
-
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
             final TestNode firstLeader = cluster.awaitLeader();
@@ -406,6 +404,8 @@ public class ClusterTest
             cluster.awaitLeader();
 
             cluster.connectClient();
+
+            final int messageCount = 10;
             cluster.sendMessages(messageCount);
             cluster.awaitResponses(messageCount);
         }
@@ -552,8 +552,6 @@ public class ClusterTest
     @Test(timeout = 10_000)
     public void shouldCatchupFromEmptyLog() throws Exception
     {
-        final int messageCount = 10;
-
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
             cluster.awaitLeader();
@@ -564,6 +562,7 @@ public class ClusterTest
             cluster.stopNode(followerB);
 
             cluster.connectClient();
+            final int messageCount = 10;
             cluster.sendMessages(messageCount);
             cluster.awaitResponses(messageCount);
 
@@ -575,8 +574,6 @@ public class ClusterTest
     @Test(timeout = 30_000)
     public void shouldCatchupFromEmptyLogThenSnapshotAfterShutdownAndFollowerCleanStart() throws Exception
     {
-        final int messageCount = 10;
-
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
             final TestNode leader = cluster.awaitLeader();
@@ -585,6 +582,7 @@ public class ClusterTest
             final TestNode followerB = followers.get(1);
 
             cluster.connectClient();
+            final int messageCount = 10;
             cluster.sendMessages(messageCount);
             cluster.awaitResponses(messageCount);
 

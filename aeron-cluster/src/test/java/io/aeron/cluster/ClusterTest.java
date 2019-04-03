@@ -549,7 +549,7 @@ public class ClusterTest
         }
     }
 
-    @Test(timeout = 20_000)
+    @Test(timeout = 10_000)
     public void shouldCatchupFromEmptyLog() throws Exception
     {
         final int messageCount = 10;

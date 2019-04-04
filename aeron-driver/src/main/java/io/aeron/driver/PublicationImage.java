@@ -814,9 +814,15 @@ public class PublicationImage
     {
         imageConnections[transportIndex].isEos = true;
 
-        for (final ImageConnection imageConnection : imageConnections)
+        for (int i = 0, length = imageConnections.length; i < length; i++)
         {
+            final ImageConnection imageConnection = imageConnections[i];
+
             if (null != imageConnection && !imageConnection.isEos)
+            {
+                return false;
+            }
+            else if (null == imageConnection && channelEndpoint.hasDestination(i))
             {
                 return false;
             }

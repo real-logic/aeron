@@ -349,6 +349,11 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         return multiRcvDestination.transport(transportIndex);
     }
 
+    public boolean hasDestination(final int transportIndex)
+    {
+        return null == multiRcvDestination ? (0 == transportIndex) : multiRcvDestination.hasDestination(transportIndex);
+    }
+
     public int onDataPacket(
         final DataHeaderFlyweight header,
         final UnsafeBuffer buffer,

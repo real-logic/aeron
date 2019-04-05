@@ -91,6 +91,7 @@ typedef struct aeron_network_publication_stct
     size_t mtu_length;
     bool is_exclusive;
     bool spies_simulate_connection;
+    bool signal_eos;
     bool should_send_setup_frame;
     bool has_receivers;
     bool has_spies;

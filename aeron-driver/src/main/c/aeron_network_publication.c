@@ -209,6 +209,7 @@ int aeron_network_publication_create(
         now_ns : now_ns + (int64_t)context->publication_connection_timeout_ns;
     _pub->is_exclusive = is_exclusive;
     _pub->spies_simulate_connection = spies_simulate_connection;
+    _pub->signal_eos = params->signal_eos;
     _pub->should_send_setup_frame = true;
     _pub->has_receivers = false;
     _pub->has_spies = false;
@@ -318,7 +319,7 @@ int aeron_network_publication_heartbeat_message_check(
     int64_t now_ns,
     int32_t active_term_id,
     int32_t term_offset,
-    bool is_end_of_stream)
+    bool signal_end_of_stream)
 {
     int bytes_sent = 0;
 
@@ -339,7 +340,7 @@ int aeron_network_publication_heartbeat_message_check(
         data_header->term_id = active_term_id;
         data_header->reserved_value = 0l;
 
-        if (is_end_of_stream)
+        if (signal_end_of_stream)
         {
             data_header->frame_header.flags =
                 AERON_DATA_HEADER_BEGIN_FLAG | AERON_DATA_HEADER_END_FLAG | AERON_DATA_HEADER_EOS_FLAG;
@@ -464,7 +465,7 @@ int aeron_network_publication_send(aeron_network_publication_t *publication, int
         AERON_GET_VOLATILE(is_end_of_stream, publication->is_end_of_stream);
 
         bytes_sent = aeron_network_publication_heartbeat_message_check(
-            publication, now_ns, active_term_id, term_offset, is_end_of_stream);
+            publication, now_ns, active_term_id, term_offset, publication->signal_eos && is_end_of_stream);
         if (bytes_sent < 0)
         {
             return -1;

@@ -360,6 +360,7 @@ int aeron_uri_publication_params(
     params->term_id = 0;
     params->is_replay = false;
     params->is_sparse = context->term_buffer_sparse_file;
+    params->signal_eos = true;
     aeron_uri_params_t *uri_params = AERON_URI_IPC == uri->type ?
         &uri->params.ipc.additional_params : &uri->params.udp.additional_params;
 
@@ -491,6 +492,14 @@ int aeron_uri_publication_params(
         if (strncmp("true", value_str, strlen("true")) == 0)
         {
             params->is_sparse = true;
+        }
+    }
+
+    if ((value_str = aeron_uri_find_param_value(uri_params, AERON_URI_EOS_KEY)) != NULL)
+    {
+        if (strncmp("false", value_str, strlen("false")) == 0)
+        {
+            params->signal_eos = false;
         }
     }
 

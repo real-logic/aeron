@@ -52,6 +52,7 @@ aeron_uri_params_t;
 #define AERON_URI_LINGER_TIMEOUT_KEY "linger"
 #define AERON_URI_MTU_LENGTH_KEY "mtu"
 #define AERON_URI_SPARSE_TERM_KEY "sparse"
+#define AERON_URI_EOS_KEY "eos"
 
 typedef struct aeron_uri_publication_params_stct
 {
@@ -63,6 +64,7 @@ typedef struct aeron_uri_publication_params_stct
     size_t mtu_length;
     bool is_replay;
     bool is_sparse;
+    bool signal_eos;
 }
 aeron_uri_publication_params_t;
 

@@ -68,6 +68,7 @@ public enum DriverEventCode implements EventCode
     CMD_IN_TERMINATE_DRIVER(44, DriverEventDissector::dissectAsCommand);
 
     static final int EVENT_CODE_TYPE = EventCodeType.DRIVER.getTypeCode();
+
     private static final int MAX_ID = 63;
     private static final DriverEventCode[] EVENT_CODE_BY_ID = new DriverEventCode[MAX_ID];
 
@@ -96,20 +97,28 @@ public enum DriverEventCode implements EventCode
         this.dissector = dissector;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int id()
     {
         return id;
     }
 
     /**
-     * Get the event code's tag bit. Each tag bit is a unique identifier for the event code used
-     * when checking that the event code is enabled or not. Each DriverEventCode has a unique tag bit.
-     *
-     * @return the tag bit
+     * {@inheritDoc}
      */
     public long tagBit()
     {
         return tagBit;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public EventCodeType eventCodeType()
+    {
+        return EventCodeType.DRIVER;
     }
 
     public static DriverEventCode get(final int id)
@@ -131,7 +140,7 @@ public enum DriverEventCode implements EventCode
 
     public static boolean isEnabled(final DriverEventCode code, final long mask)
     {
-        return ((mask & code.tagBit()) == code.tagBit());
+        return (mask & code.tagBit()) == code.tagBit();
     }
 
     public void decode(final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)

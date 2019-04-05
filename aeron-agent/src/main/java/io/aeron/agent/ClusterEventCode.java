@@ -18,7 +18,7 @@ package io.aeron.agent;
 import org.agrona.MutableDirectBuffer;
 
 /**
- * Cluster events and codecs for encoding/decoding events recorded to the {@link EventConfiguration#EVENT_RING_BUFFER}.
+ * Events that can be enabled for logging in the cluster module.
  */
 public enum ClusterEventCode implements EventCode
 {
@@ -61,14 +61,28 @@ public enum ClusterEventCode implements EventCode
         return EVENT_CODE_BY_ID[eventCodeId];
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int id()
     {
         return id;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public long tagBit()
     {
         return tagBit;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public EventCodeType eventCodeType()
+    {
+        return EventCodeType.CLUSTER;
     }
 
     public void decode(final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
@@ -78,6 +92,6 @@ public enum ClusterEventCode implements EventCode
 
     public static boolean isEnabled(final ClusterEventCode code, final long mask)
     {
-        return ((mask & code.tagBit()) == code.tagBit());
+        return (mask & code.tagBit()) == code.tagBit();
     }
 }

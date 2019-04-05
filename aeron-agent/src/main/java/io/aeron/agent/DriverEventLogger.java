@@ -28,7 +28,7 @@ import java.nio.ByteBuffer;
  */
 public class DriverEventLogger
 {
-    public static final long ENABLED_EVENT_CODES = EventConfiguration.getEnabledEventCodes();
+    public static final long ENABLED_EVENT_CODES = EventConfiguration.getEnabledDriverEventCodes();
 
     public static final boolean IS_FRAME_IN_ENABLED =
         (ENABLED_EVENT_CODES & DriverEventCode.FRAME_IN.tagBit()) == DriverEventCode.FRAME_IN.tagBit();

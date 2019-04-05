@@ -16,21 +16,29 @@
 package io.aeron.agent;
 
 /**
- * Describes an event.
+ * Identifies an event that can be enabled for logging.
  */
 interface EventCode
 {
     /**
-     * Returns the event id
+     * Returns the unique event identifier withing an {@link EventCodeType}.
      *
-     * @return the id
+     * @return the unique event identifier withing an {@link EventCodeType}.
      */
     int id();
 
     /**
-     * Returns the tag bit
+     * Get the event code's tag bit. Each tag bit is a unique identifier for the event code used
+     * when checking that the event code is enabled or not. Each EventCode has a unique tag bit within the long word.
      *
-     * @return the tag bit
+     * @return the value with one bit set for the tag.
      */
     long tagBit();
+
+    /**
+     * Get the type of event code for classification.
+     *
+     * @return the type of event code for classification.
+     */
+    EventCodeType eventCodeType();
 }

@@ -17,6 +17,9 @@ package io.aeron.agent;
 
 import org.agrona.MutableDirectBuffer;
 
+/**
+ * Events that can be enabled for logging in the archive module.
+ */
 public enum ArchiveEventCode implements EventCode
 {
     CMD_IN_CONNECT(1, ArchiveEventDissector::controlRequest),
@@ -70,14 +73,28 @@ public enum ArchiveEventCode implements EventCode
         return EVENT_CODE_BY_ID[eventCodeId];
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public int id()
     {
         return id;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public long tagBit()
     {
         return tagBit;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public EventCodeType eventCodeType()
+    {
+        return EventCodeType.ARCHIVE;
     }
 
     public void decode(final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
@@ -87,6 +104,6 @@ public enum ArchiveEventCode implements EventCode
 
     public static boolean isEnabled(final ArchiveEventCode code, final long mask)
     {
-        return ((mask & code.tagBit()) == code.tagBit());
+        return (mask & code.tagBit()) == code.tagBit();
     }
 }

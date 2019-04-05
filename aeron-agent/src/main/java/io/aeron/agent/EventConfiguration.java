@@ -126,9 +126,9 @@ public class EventConfiguration
         EVENT_RING_BUFFER = new ManyToOneRingBuffer(new UnsafeBuffer(ByteBuffer.allocateDirect(bufferLength)));
     }
 
-    public static long getEnabledEventCodes()
+    public static long getEnabledDriverEventCodes()
     {
-        return makeTagBitSet(getEnabledEventCodes(System.getProperty(ENABLED_EVENT_CODES_PROP_NAME)));
+        return makeTagBitSet(getEnabledDriverEventCodes(System.getProperty(ENABLED_EVENT_CODES_PROP_NAME)));
     }
 
     public static long getEnabledClusterEventCodes()
@@ -199,7 +199,7 @@ public class EventConfiguration
      * @param enabledLoggerEventCodes that can be "all", "admin", or a comma separated list of Event Code ids or names.
      * @return the {@link Set} of {@link DriverEventCode}s that are enabled for the logger.
      */
-    static Set<DriverEventCode> getEnabledEventCodes(final String enabledLoggerEventCodes)
+    static Set<DriverEventCode> getEnabledDriverEventCodes(final String enabledLoggerEventCodes)
     {
         if (null == enabledLoggerEventCodes || "".equals(enabledLoggerEventCodes))
         {

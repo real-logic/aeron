@@ -107,6 +107,7 @@ public class NetworkPublication
     private final int streamId;
     private final boolean isExclusive;
     private final boolean spiesSimulateConnection;
+    private final boolean signalEos;
     private volatile boolean hasReceivers;
     private volatile boolean hasSpies;
     private volatile boolean isConnected;
@@ -163,7 +164,8 @@ public class NetworkPublication
         final long connectionTimeoutNs,
         final long lingerTimeoutNs,
         final boolean isExclusive,
-        final boolean spiesSimulateConnection)
+        final boolean spiesSimulateConnection,
+        final boolean signalEos)
     {
         this.registrationId = registrationId;
         this.unblockTimeoutNs = unblockTimeoutNs;
@@ -185,6 +187,7 @@ public class NetworkPublication
         this.streamId = streamId;
         this.isExclusive = isExclusive;
         this.spiesSimulateConnection = spiesSimulateConnection;
+        this.signalEos = signalEos;
 
         metaDataBuffer = rawLog.metaData();
         setupBuffer = threadLocals.setupBuffer();
@@ -282,7 +285,7 @@ public class NetworkPublication
         if (0 == bytesSent)
         {
             final boolean isEndOfStream = this.isEndOfStream;
-            bytesSent = heartbeatMessageCheck(nowNs, activeTermId, termOffset, isEndOfStream);
+            bytesSent = heartbeatMessageCheck(nowNs, activeTermId, termOffset, signalEos && isEndOfStream);
 
             if (spiesSimulateConnection && (statusMessageDeadlineNs - nowNs < 0) && hasSpies)
             {
@@ -573,7 +576,7 @@ public class NetworkPublication
     }
 
     private int heartbeatMessageCheck(
-        final long nowNs, final int activeTermId, final int termOffset, final boolean isEndOfStream)
+        final long nowNs, final int activeTermId, final int termOffset, final boolean signalEndOfStream)
     {
         int bytesSent = 0;
 
@@ -585,7 +588,7 @@ public class NetworkPublication
                 .streamId(streamId)
                 .termId(activeTermId)
                 .termOffset(termOffset)
-                .flags((byte)(isEndOfStream ? BEGIN_END_AND_EOS_FLAGS : BEGIN_AND_END_FLAGS));
+                .flags((byte)(signalEndOfStream ? BEGIN_END_AND_EOS_FLAGS : BEGIN_AND_END_FLAGS));
 
             bytesSent = channelEndpoint.send(heartbeatBuffer);
             if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)

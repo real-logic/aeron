@@ -1067,7 +1067,8 @@ public class DriverConductor implements Agent
             ctx.publicationConnectionTimeoutNs(),
             params.lingerTimeoutNs,
             isExclusive,
-            ctx.spiesSimulateConnection());
+            ctx.spiesSimulateConnection(),
+            params.signalEos);
 
         channelEndpoint.incRef();
         networkPublications.add(publication);

@@ -38,6 +38,7 @@ final class PublicationParams
     boolean hasSessionId = false;
     boolean isSessionIdTagged = false;
     boolean isSparse;
+    boolean signalEos = true;
 
     static PublicationParams getPublicationParams(
         final MediaDriver.Context context,
@@ -54,6 +55,7 @@ final class PublicationParams
         params.getMtuLength(channelUri);
         params.getLingerTimeoutNs(channelUri);
         params.getSparse(channelUri);
+        params.getEos(channelUri);
 
         if (isExclusive)
         {
@@ -256,6 +258,15 @@ final class PublicationParams
         if (null != sparseStr)
         {
             isSparse = "true".equals(sparseStr);
+        }
+    }
+
+    private void getEos(final ChannelUri channelUri)
+    {
+        final String eosStr = channelUri.get(EOS_PARAM_NAME);
+        if (null != eosStr)
+        {
+            signalEos = Boolean.parseBoolean(eosStr);
         }
     }
 

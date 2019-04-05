@@ -52,6 +52,7 @@ public class ChannelUriStringBuilder
     private Integer sessionId;
     private Long linger;
     private Boolean sparse;
+    private Boolean eos;
     private boolean isSessionIdTagged;
 
     /**
@@ -79,6 +80,7 @@ public class ChannelUriStringBuilder
         sessionId = null;
         linger = null;
         sparse = null;
+        eos = null;
         isSessionIdTagged = false;
 
         return this;
@@ -590,6 +592,30 @@ public class ChannelUriStringBuilder
     }
 
     /**
+     * Set to indicate if an EOS should be sent on the media or not.
+     *
+     * @param signalEos true if the EOS should be sent.
+     * @return this for a fluent API.
+     * @see CommonContext#EOS_PARAM_NAME
+     */
+    public ChannelUriStringBuilder eos(final Boolean signalEos)
+    {
+        this.eos = signalEos;
+        return this;
+    }
+
+    /**
+     * Get if an EOS should be sent on the media or not.
+     *
+     * @return true if the EOS should be sent.
+     * @see CommonContext#EOS_PARAM_NAME
+     */
+    public Boolean eos()
+    {
+        return eos;
+    }
+
+    /**
      * Set the tags for a channel used by a publication or subscription. Tags can be used to identify or tag a
      * channel so that a configuration can be referenced and reused.
      *
@@ -697,6 +723,7 @@ public class ChannelUriStringBuilder
      *
      * @return a channel URI String for the given parameters.
      */
+    @SuppressWarnings("MethodLength")
     public String build()
     {
         sb.setLength(0);
@@ -786,6 +813,11 @@ public class ChannelUriStringBuilder
         if (null != sparse)
         {
             sb.append(SPARSE_PARAM_NAME).append('=').append(sparse).append('|');
+        }
+
+        if (null != eos)
+        {
+            sb.append(EOS_PARAM_NAME).append('=').append(eos).append('|');
         }
 
         final char lastChar = sb.charAt(sb.length() - 1);

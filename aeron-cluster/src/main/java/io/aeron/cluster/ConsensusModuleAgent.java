@@ -534,6 +534,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                     .endpoint(follower.transferEndpoint())
                     .isSessionIdTagged(true)
                     .sessionId(ConsensusModule.Configuration.LOG_PUBLICATION_SESSION_ID_TAG)
+                    .eos(false)
                     .build();
 
                 if (follower.catchupReplaySessionId() == Aeron.NULL_VALUE)

@@ -157,7 +157,8 @@ public class SenderTest
             Configuration.publicationConnectionTimeoutNs(),
             Configuration.publicationLingerTimeoutNs(),
             false,
-            false);
+            false,
+            true);
 
         senderCommandQueue.offer(() -> sender.onNewNetworkPublication(publication));
     }

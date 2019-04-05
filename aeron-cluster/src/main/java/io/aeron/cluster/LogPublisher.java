@@ -78,6 +78,11 @@ class LogPublisher
         return publication.position();
     }
 
+    Publication publication()
+    {
+        return publication;
+    }
+
     int sessionId()
     {
         return publication.sessionId();

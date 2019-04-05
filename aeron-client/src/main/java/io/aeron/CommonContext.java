@@ -201,6 +201,11 @@ public class CommonContext implements Cloneable
      */
     public static final String ALIAS_PARAM_NAME = "alias";
 
+    /**
+     * Parameter name for channel URI param to indicate if End of Stream (EOS) should be sent or not. Value is boolean.
+     */
+    public static final String EOS_PARAM_NAME = "eos";
+
     private long driverTimeoutMs = DRIVER_TIMEOUT_MS;
     private String aeronDirectoryName = getAeronDirectoryName();
     private File aeronDirectory;

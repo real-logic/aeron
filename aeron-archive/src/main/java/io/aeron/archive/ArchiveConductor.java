@@ -737,6 +737,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     private ChannelUriStringBuilder strippedChannelBuilder(final ChannelUri channelUri)
     {
         final String sessionIdStr = channelUri.get(CommonContext.SESSION_ID_PARAM_NAME);
+        final String eosStr = channelUri.get(CommonContext.EOS_PARAM_NAME);
 
         channelBuilder
             .clear()
@@ -757,6 +758,11 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             {
                 channelBuilder.sessionId(Integer.valueOf(sessionIdStr));
             }
+        }
+
+        if (null != eosStr)
+        {
+            channelBuilder.eos(Boolean.valueOf(eosStr));
         }
 
         return channelBuilder;

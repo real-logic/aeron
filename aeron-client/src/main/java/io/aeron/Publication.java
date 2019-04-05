@@ -624,6 +624,7 @@ public abstract class Publication implements AutoCloseable
         return "Publication{" +
             "originalRegistrationId=" + originalRegistrationId +
             ", registrationId=" + registrationId +
+            ", isClosed=" + isClosed +
             ", initialTermId=" + initialTermId +
             ", termBufferLength=" + termBufferLength +
             ", sessionId=" + sessionId +

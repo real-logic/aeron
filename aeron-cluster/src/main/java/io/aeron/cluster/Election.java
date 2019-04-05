@@ -915,6 +915,7 @@ public class Election implements AutoCloseable
         if (State.CANVASS == newState)
         {
             consensusModuleAgent.stopAllCatchups();
+            catchupLogPosition = NULL_POSITION;
 
             ClusterMember.reset(clusterMembers);
             thisMember.leadershipTermId(leadershipTermId).logPosition(logPosition);

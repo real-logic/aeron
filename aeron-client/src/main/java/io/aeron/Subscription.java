@@ -518,6 +518,7 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     {
         return "Subscription{" +
             "registrationId=" + registrationId +
+            ", isClosed=" + isClosed +
             ", streamId=" + streamId +
             ", channel='" + channel + '\'' +
             ", imageCount=" + imageCount() +

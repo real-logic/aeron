@@ -133,7 +133,7 @@ public class Aeron implements AutoCloseable
             }
             else
             {
-                AgentRunner.startOnThread(aeron.conductorRunner, ctx.threadFactory);
+                AgentRunner.startOnThread(aeron.conductorRunner, ctx.threadFactory());
             }
 
             return aeron;
@@ -966,7 +966,7 @@ public class Aeron implements AutoCloseable
         /**
          * Return the timeout between service calls to the duty cycle for the client.
          * <p>
-         * When exceeded, {@link #errorHandler} will be called and the active {@link Publication}s and {@link Image}s
+         * When exceeded, {@link #errorHandler()} will be called and the active {@link Publication}s and {@link Image}s
          * closed.
          * <p>
          * This value is controlled by the driver and included in the CnC file. It can be configured by adjusting

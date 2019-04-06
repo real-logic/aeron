@@ -33,9 +33,9 @@ def aeronJavaVersion = JavaVersion.VERSION_1_8
 
 def agronaVersion = '0.9.35'
 def sbeVersion = '1.12.4'
-def byteBuddyVersion = '1.9.7'
+def byteBuddyVersion = '1.9.10'
 def hdrHistogramVersion = '2.1.11'
-def mockitoVersion = '2.25.1'
+def mockitoVersion = '2.26.0'
 
 group = aeronGroup
 version = aeronVersion
@@ -129,7 +129,7 @@ subprojects {
     jar.enabled = true
 
     dependencies {
-        checkstyle 'com.puppycrawl.tools:checkstyle:8.18'
+        checkstyle 'com.puppycrawl.tools:checkstyle:8.19'
 
         compile "org.agrona:agrona:${agronaVersion}"
 
@@ -139,7 +139,7 @@ subprojects {
     }
 
     checkstyle {
-        toolVersion = '8.18'
+        toolVersion = '8.19'
     }
 
     compileJava {
@@ -162,7 +162,7 @@ subprojects {
             jvmArgs('--add-opens', 'java.base/java.net=ALL-UNNAMED')
             jvmArgs('--add-opens', 'java.base/sun.nio.ch=ALL-UNNAMED')
         }
-        
+
         testLogging {
             showStandardStreams = true
             exceptionFormat = 'full'
@@ -176,7 +176,7 @@ subprojects {
             options.addBooleanOption 'html5', true
         }
     }
-    
+
     task testJar(type: Jar, dependsOn: testClasses) {
         archiveBaseName = "test-${project.archivesBaseName}"
         from sourceSets.test.output

@@ -478,7 +478,7 @@ public class TestCluster implements AutoCloseable
 
     void awaitNodeTermination(final TestNode node)
     {
-        while (!node.hasMemberTerminated())
+        while (!node.hasMemberTerminated() || !node.hasServiceTerminated())
         {
             TestUtil.checkInterruptedStatus();
             Thread.yield();

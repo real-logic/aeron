@@ -93,15 +93,15 @@ class TestNode implements AutoCloseable
 
     void cleanUp()
     {
+        if (null != container)
+        {
+            container.context().deleteDirectory();
+        }
+
         if (null != clusteredMediaDriver)
         {
             clusteredMediaDriver.consensusModule().context().deleteDirectory();
             clusteredMediaDriver.archive().context().deleteArchiveDirectory();
-        }
-
-        if (null != container)
-        {
-            container.context().deleteDirectory();
         }
     }
 
@@ -143,7 +143,7 @@ class TestNode implements AutoCloseable
 
     void terminationExpected(final boolean terminationExpected)
     {
-        context.terminationExpected.lazySet(terminationExpected);
+        context.terminationExpected.set(terminationExpected);
     }
 
     boolean hasServiceTerminated()
@@ -251,6 +251,7 @@ class TestNode implements AutoCloseable
                 cluster.idle();
             }
 
+            //noinspection NonAtomicOperationOnVolatileField
             ++messageCount;
         }
 

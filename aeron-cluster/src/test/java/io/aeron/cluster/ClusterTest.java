@@ -36,12 +36,6 @@ public class ClusterTest
 {
     private static final String MSG = "Hello World!";
 
-    @After
-    public void after()
-    {
-        System.gc();
-    }
-
     @Test(timeout = 30_000)
     public void shouldStopFollowerAndRestartFollower() throws Exception
     {
@@ -414,8 +408,6 @@ public class ClusterTest
     @Test(timeout = 30_000)
     public void shouldAcceptMessagesAfterTwoNodeCleanRestart() throws Exception
     {
-        final int messageCount = 10;
-
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
             cluster.awaitLeader();
@@ -437,6 +429,8 @@ public class ClusterTest
             assertThat(followerB.role(), is(Cluster.Role.FOLLOWER));
 
             cluster.connectClient();
+            final int messageCount = 10;
+
             cluster.sendMessages(messageCount);
             cluster.awaitResponses(messageCount);
             cluster.awaitMessageCountForService(followerA, messageCount);

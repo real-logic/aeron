@@ -44,10 +44,10 @@ class TestNode implements AutoCloseable
     private final ClusteredMediaDriver clusteredMediaDriver;
     private final ClusteredServiceContainer container;
     private final TestService service;
-    private final TestNodeContext context;
+    private final Context context;
     private boolean isClosed = false;
 
-    TestNode(final TestNodeContext context)
+    TestNode(final Context context)
     {
         clusteredMediaDriver = ClusteredMediaDriver.launch(
             context.mediaDriverContext,
@@ -292,7 +292,7 @@ class TestNode implements AutoCloseable
         }
     }
 
-    static class TestNodeContext
+    static class Context
     {
         final MediaDriver.Context mediaDriverContext = new MediaDriver.Context();
         final Archive.Context archiveContext = new Archive.Context();
@@ -302,6 +302,11 @@ class TestNode implements AutoCloseable
         final AtomicBoolean terminationExpected = new AtomicBoolean(false);
         final AtomicBoolean memberWasTerminated = new AtomicBoolean(false);
         final AtomicBoolean serviceWasTerminated = new AtomicBoolean(false);
-        TestService service = null;
+        final TestService service;
+
+        Context(final TestService service)
+        {
+            this.service = service;
+        }
     }
 }

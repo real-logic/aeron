@@ -496,7 +496,9 @@ public class AeronArchive implements AutoCloseable
     /**
      * Extend an existing, non-active recording of a channel and stream pairing.
      * <p>
-     * Channel must be session specific and include the existing recording sessionId.
+     * The channel must be configured for the initial position from which it will be extended. This can be done
+     * with {@link ChannelUriStringBuilder#initialPosition(long, int, int)}. The details required to initialise can
+     * be found by calling {@link #listRecording(long, RecordingDescriptorConsumer)}.
      *
      * @param recordingId    of the existing recording.
      * @param channel        to be recorded.

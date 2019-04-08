@@ -15,6 +15,7 @@
  */
 package io.aeron.archive.client;
 
+import io.aeron.ChannelUriStringBuilder;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.archive.codecs.*;
@@ -316,10 +317,7 @@ public class ArchiveProxy
      * @param controlSessionId for this request.
      * @return true if successfully offered otherwise false.
      */
-    public boolean stopReplay(
-        final long replaySessionId,
-        final long correlationId,
-        final long controlSessionId)
+    public boolean stopReplay(final long replaySessionId, final long correlationId, final long controlSessionId)
     {
         stopReplayRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
@@ -340,10 +338,7 @@ public class ArchiveProxy
      * @return true if successfully offered otherwise false.
      */
     public boolean listRecordings(
-        final long fromRecordingId,
-        final int recordCount,
-        final long correlationId,
-        final long controlSessionId)
+        final long fromRecordingId, final int recordCount, final long correlationId, final long controlSessionId)
     {
         listRecordingsRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
@@ -406,7 +401,11 @@ public class ArchiveProxy
     }
 
     /**
-     * Extend a recorded stream for a given channel and stream id pairing.
+     * Extend an existing, non-active, recorded stream for a the same channel and stream id.
+     *
+     * The channel must be configured for the initial position from which it will be extended. This can be done
+     * with {@link ChannelUriStringBuilder#initialPosition(long, int, int)}. The details required to initialise can
+     * be found by calling {@link #listRecording(long, long, long)}.
      *
      * @param channel          to be recorded.
      * @param streamId         to be recorded.

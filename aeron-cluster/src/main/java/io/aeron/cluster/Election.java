@@ -746,7 +746,8 @@ public class Election implements AutoCloseable
     {
         if (null == logSubscription)
         {
-            final ChannelUri logChannelUri = followerLogChannel(ctx.logChannel(), logSessionId);
+            final ChannelUri logChannelUri = followerLogChannel(
+                ctx.logChannel(), logSessionId, consensusModuleAgent.logSubscriptionTags());
 
             logSubscription = consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(logChannelUri.toString());
             consensusModuleAgent.awaitServicesReady(logChannelUri, logSessionId, logPosition);
@@ -794,7 +795,8 @@ public class Election implements AutoCloseable
     {
         if (null == logSubscription)
         {
-            final ChannelUri logChannelUri = followerLogChannel(ctx.logChannel(), logSessionId);
+            final ChannelUri logChannelUri = followerLogChannel(
+                ctx.logChannel(), logSessionId, consensusModuleAgent.logSubscriptionTags());
 
             logSubscription = consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(logChannelUri.toString());
             consensusModuleAgent.awaitServicesReady(logChannelUri, logSessionId, logPosition);
@@ -888,13 +890,14 @@ public class Election implements AutoCloseable
         consensusModuleAgent.liveLogDestination(liveLogDestination);
     }
 
-    private static ChannelUri followerLogChannel(final String logChannel, final int sessionId)
+    private static ChannelUri followerLogChannel(
+        final String logChannel, final int sessionId, final String logSubscriptiontags)
     {
         final ChannelUri channelUri = ChannelUri.parse(logChannel);
         channelUri.remove(CommonContext.MDC_CONTROL_PARAM_NAME);
         channelUri.put(CommonContext.MDC_CONTROL_MODE_PARAM_NAME, CommonContext.MDC_CONTROL_MODE_MANUAL);
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(sessionId));
-        channelUri.put(CommonContext.TAGS_PARAM_NAME, ConsensusModule.Configuration.LOG_SUBSCRIPTION_TAGS);
+        channelUri.put(CommonContext.TAGS_PARAM_NAME, logSubscriptiontags);
 
         return channelUri;
     }

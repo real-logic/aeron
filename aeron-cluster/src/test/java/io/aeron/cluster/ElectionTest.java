@@ -241,6 +241,7 @@ public class ElectionTest
         when(memberStatusPublisher.catchupPosition(any(), anyLong(), anyLong(), anyInt())).thenReturn(Boolean.TRUE);
         when(consensusModuleAgent.hasAppendReachedLivePosition(any(), anyInt(), anyLong())).thenReturn(Boolean.TRUE);
         when(consensusModuleAgent.hasAppendReachedPosition(any(), anyInt(), anyLong())).thenReturn(Boolean.TRUE);
+        when(consensusModuleAgent.logSubscriptionTags()).thenReturn("3,4");
         final long t3 = 3;
         election.doWork(t3);
         election.doWork(t3);

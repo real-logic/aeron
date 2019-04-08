@@ -62,6 +62,10 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private final long leaderHeartbeatIntervalMs;
     private final long leaderHeartbeatTimeoutMs;
     private final long serviceHeartbeatTimeoutMs;
+    private final int logPublicationTag;
+    private final int logPublicationChannelTag;
+    private final int logSubscriptionTag;
+    private final int logSubscriptionChannelTag;
     private long nextSessionId = 1;
     private long leadershipTermId = NULL_VALUE;
     private long expectedAckPosition = 0;
@@ -155,6 +159,10 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         this.serviceHeartbeats = ctx.serviceHeartbeatCounters();
         this.serviceAcks = ServiceAck.newArray(ctx.serviceCount());
         this.highMemberId = ClusterMember.highMemberId(clusterMembers);
+        this.logPublicationChannelTag = (int)aeron.nextCorrelationId();
+        this.logSubscriptionChannelTag = (int)aeron.nextCorrelationId();
+        this.logPublicationTag = (int)aeron.nextCorrelationId();
+        this.logSubscriptionTag = (int)aeron.nextCorrelationId();
 
         aeronClientInvoker = aeron.conductorAgentInvoker();
         aeronClientInvoker.invoke();
@@ -533,7 +541,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                     .media(CommonContext.UDP_MEDIA)
                     .endpoint(follower.transferEndpoint())
                     .isSessionIdTagged(true)
-                    .sessionId(ConsensusModule.Configuration.LOG_PUBLICATION_SESSION_ID_TAG)
+                    .sessionId(logPublicationTag)
                     .eos(false)
                     .build();
 
@@ -681,6 +689,11 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     Cluster.Role role()
     {
         return role;
+    }
+
+    String logSubscriptionTags()
+    {
+        return logSubscriptionChannelTag + "," + logSubscriptionTag;
     }
 
     void prepareForNewLeadership(final long logPosition)
@@ -2394,7 +2407,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private Publication createLogPublication(
         final ChannelUri channelUri, final RecordingLog.RecoveryPlan plan, final long position)
     {
-        channelUri.put(TAGS_PARAM_NAME, ConsensusModule.Configuration.LOG_PUBLICATION_TAGS);
+        channelUri.put(TAGS_PARAM_NAME, logPublicationChannelTag + "," + logPublicationTag);
 
         if (!plan.logs.isEmpty())
         {

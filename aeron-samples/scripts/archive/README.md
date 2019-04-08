@@ -1,7 +1,8 @@
 # Aeron Archive Samples
 
 The scripts in this directory can launch the sample applications for the [Aeron Archive](https://github.com/real-logic/aeron/tree/master/aeron-archive) service with the code samples
-[here](https://github.com/real-logic/aeron/tree/master/aeron-samples/src/main/java/io/aeron/samples/archive).
+[here](https://github.com/real-logic/aeron/tree/master/aeron-samples/src/main/java/io/aeron/samples/archive) and
+systems tests [here](https://github.com/real-logic/aeron/tree/master/aeron-system-tests/src/test/java/io/aeron/archive).
 
 ## Embedded Throughput Samples
 

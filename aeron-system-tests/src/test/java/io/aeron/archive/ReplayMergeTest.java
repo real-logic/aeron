@@ -193,7 +193,7 @@ public class ReplayMergeTest
 
                     if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
                     {
-                        checkInterruptedStatus();
+                        SystemTest.checkInterruptedStatus();
                         Thread.yield();
                     }
                 }
@@ -202,7 +202,7 @@ public class ReplayMergeTest
                 {
                     if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
                     {
-                        checkInterruptedStatus();
+                        SystemTest.checkInterruptedStatus();
                         Thread.yield();
                     }
                 }
@@ -224,7 +224,7 @@ public class ReplayMergeTest
 
         while (publication.offer(buffer, 0, length) <= 0)
         {
-            checkInterruptedStatus();
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
     }
@@ -238,21 +238,13 @@ public class ReplayMergeTest
         }
     }
 
-    private static void checkInterruptedStatus()
-    {
-        if (Thread.currentThread().isInterrupted())
-        {
-            fail("Unexpected interrupt - Test likely to have timed out");
-        }
-    }
-
     private static int awaitCounterId(final CountersReader counters, final int sessionId)
     {
         int counterId;
 
         while (NULL_COUNTER_ID == (counterId = RecordingPos.findCounterIdBySession(counters, sessionId)))
         {
-            checkInterruptedStatus();
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
 
@@ -263,7 +255,7 @@ public class ReplayMergeTest
     {
         while (counters.getCounterValue(counterId) < position)
         {
-            checkInterruptedStatus();
+            SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
     }

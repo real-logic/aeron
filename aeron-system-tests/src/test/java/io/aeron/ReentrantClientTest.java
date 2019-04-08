@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.archive;
+package io.aeron;
 
-import io.aeron.*;
 import io.aeron.driver.MediaDriver;
 import io.aeron.exceptions.AeronException;
+import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.collections.MutableReference;
 import org.junit.After;
@@ -34,7 +34,7 @@ public class ReentrantClientTest
     @After
     public void after()
     {
-        mediaDriver.close();
+        CloseHelper.close(mediaDriver);
         mediaDriver.context().deleteAeronDirectory();
     }
 

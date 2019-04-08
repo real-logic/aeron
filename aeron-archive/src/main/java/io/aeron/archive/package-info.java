@@ -15,10 +15,9 @@
  */
 
 /**
- * The aeron-archive is an service which enables Aeron data stream recording and replay support from a persistent
- * archive.
+ * The aeron-archive is an module which enables Aeron data stream recording and replay from persistent storage.
  * <p>
- * Currently implemented functionality:
+ * Features:
  * <ul>
  *     <li><b>Record:</b> service can record a particular subscription, described by {@code <channel, streamId>}. Each
  *     resulting image for the subscription will be recorded under a new {@code recordingId}. Local network publications
@@ -28,6 +27,8 @@
  *     <li><b>Query:</b> the catalog for existing recordings and the recorded position of an active recording.</li>
  *     <li><b>Truncate:</b> allows a stopped recording to have its length truncated, and if truncated to the start
  *     position then it is effectively deleted.</li>
+ *     <li><b>Replay Merge:</b> allows a late joining subscriber of a recorded stream to replay a recording and then
+ *     merge with the live stream for cut over if the consumer is fast enough to keep up.</li>
  * </ul>
  */
 package io.aeron.archive;

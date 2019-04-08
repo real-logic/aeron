@@ -509,8 +509,8 @@ class ClusteredServiceAgent implements Agent, Cluster
         idleStrategy.reset();
         while (null == activeLogEvent)
         {
-            serviceAdapter.poll();
             idle();
+            serviceAdapter.poll();
         }
     }
 

@@ -108,7 +108,11 @@ public:
     }
 
     /**
-     * Extend a recorded stream for a given channel and stream id pairing.
+     * Extend an existing, non-active, recorded stream for a the same channel and stream id.
+     *
+     * The channel must be configured for the initial position from which it will be extended. This can be done
+     * with ChannelUriStringBuilder#initialPosition(std::int64_t, std::int32_t, std::int32_t). The details required
+     * to initialise can be found by calling #listRecording(std::int64_t, std::int64_t, std::int64_t).
      *
      * @param channel          to be recorded.
      * @param streamId         to be recorded.

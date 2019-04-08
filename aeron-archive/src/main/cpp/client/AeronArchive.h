@@ -392,7 +392,9 @@ public:
     /**
      * Extend an existing, non-active recording of a channel and stream pairing.
      * <p>
-     * Channel must be session specific and include the existing recording sessionId.
+     * The channel must be configured for the initial position from which it will be extended. This can be done
+     * with ChannelUriStringBuilder#initialPosition(std::int64_t, std::int32_t, std::int32_t). The details required
+     * to initialise can be found by calling #listRecording(std::int64_t, RecordingDescriptorConsumer).
      *
      * @param recordingId    of the existing recording.
      * @param channel        to be recorded.

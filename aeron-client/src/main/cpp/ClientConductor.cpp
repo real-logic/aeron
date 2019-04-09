@@ -62,7 +62,7 @@ std::int64_t ClientConductor::addPublication(const std::string &channel, std::in
     }
     else
     {
-        id = (*it).m_registrationId;
+        id = it->m_registrationId;
     }
 
     return id;
@@ -306,11 +306,11 @@ void ClientConductor::releaseSubscription(std::int64_t registrationId, ImageList
 
     if (it != m_subscriptions.end())
     {
-        m_driverProxy.removeSubscription((*it).m_registrationId);
+        m_driverProxy.removeSubscription(it->m_registrationId);
 
         for (auto& image : *imageList)
         {
-            (*it).m_onUnavailableImageHandler(image);
+            it->m_onUnavailableImageHandler(image);
         }
 
         m_subscriptions.erase(it);
@@ -405,7 +405,7 @@ void ClientConductor::releaseCounter(std::int64_t registrationId)
 
     if (it != m_counters.end())
     {
-        m_driverProxy.removeCounter((*it).m_registrationId);
+        m_driverProxy.removeCounter(it->m_registrationId);
 
         m_counters.erase(it);
     }

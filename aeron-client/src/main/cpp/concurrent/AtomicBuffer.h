@@ -37,7 +37,7 @@ namespace aeron { namespace concurrent {
 class AtomicBuffer
 {
 public:
-    AtomicBuffer() :
+    constexpr AtomicBuffer() noexcept :
         m_buffer(nullptr),
         m_length(0)
     {

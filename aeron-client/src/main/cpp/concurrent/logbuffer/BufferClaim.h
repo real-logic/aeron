@@ -34,9 +34,7 @@ class BufferClaim
 public:
     typedef BufferClaim this_t;
 
-    inline BufferClaim()
-    {
-    }
+    BufferClaim() = default;
 
     /// @cond HIDDEN_SYMBOLS
     inline void wrap(std::uint8_t *buffer, util::index_t length)

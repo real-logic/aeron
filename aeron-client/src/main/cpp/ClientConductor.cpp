@@ -83,7 +83,7 @@ std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t regis
         return std::shared_ptr<Publication>();
     }
 
-    PublicationStateDefn &state = (*it);
+    PublicationStateDefn &state = *it;
     std::shared_ptr<Publication> pub(state.m_publication.lock());
 
     if (!pub)
@@ -172,7 +172,7 @@ std::shared_ptr<ExclusivePublication> ClientConductor::findExclusivePublication(
         return std::shared_ptr<ExclusivePublication>();
     }
 
-    ExclusivePublicationStateDefn &state = (*it);
+    ExclusivePublicationStateDefn &state = *it;
     std::shared_ptr<ExclusivePublication> pub(state.m_publication.lock());
 
     if (!pub)
@@ -462,7 +462,7 @@ void ClientConductor::onNewPublication(
 
     if (it != m_publications.end())
     {
-        PublicationStateDefn &state = (*it);
+        PublicationStateDefn &state = *it;
 
         state.m_status = RegistrationStatus::REGISTERED_MEDIA_DRIVER;
         state.m_sessionId = sessionId;
@@ -494,7 +494,7 @@ void ClientConductor::onNewExclusivePublication(
 
     if (it != m_exclusivePublications.end())
     {
-        ExclusivePublicationStateDefn &state = (*it);
+        ExclusivePublicationStateDefn &state = *it;
 
         state.m_status = RegistrationStatus::REGISTERED_MEDIA_DRIVER;
         state.m_sessionId = sessionId;

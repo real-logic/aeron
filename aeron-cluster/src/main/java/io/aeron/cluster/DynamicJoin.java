@@ -61,10 +61,10 @@ class DynamicJoin implements AutoCloseable
     private final String memberEndpoints;
     private final String memberStatusEndpoint;
     private final String transferEndpoint;
-    private final ArrayList<RecordingLog.Snapshot> leaderSnapshots = new ArrayList<>();
+    private final ArrayList<RecordingLog.Snapshot> leaderSnapshots = new ArrayList<>(4);
     private final long intervalMs;
 
-    private ExclusivePublication clusterPublication;
+    private ExclusivePublication memberStatusPublication;
     private State state = State.INIT;
     private ClusterMember[] clusterMembers;
     private ClusterMember leaderMember;
@@ -106,23 +106,23 @@ class DynamicJoin implements AutoCloseable
 
     public void close()
     {
-        CloseHelper.close(clusterPublication);
+        CloseHelper.close(memberStatusPublication);
         CloseHelper.close(snapshotRetrieveSubscription);
         CloseHelper.close(leaderArchive);
         CloseHelper.close(leaderArchiveAsyncConnect);
     }
 
-    public ClusterMember[] clusterMembers()
+    ClusterMember[] clusterMembers()
     {
         return clusterMembers;
     }
 
-    public ClusterMember leader()
+    ClusterMember leader()
     {
         return leaderMember;
     }
 
-    public int memberId()
+    int memberId()
     {
         return memberId;
     }
@@ -158,7 +158,7 @@ class DynamicJoin implements AutoCloseable
         return workCount;
     }
 
-    public void onClusterMembersChange(
+    void onClusterMembersChange(
         final long correlationId, final int leaderMemberId, final String activeMembers, final String passiveMembers)
     {
         if (State.INIT == state && correlationId == this.correlationId)
@@ -178,11 +178,11 @@ class DynamicJoin implements AutoCloseable
                         if (!leaderMember.memberFacingEndpoint().equals(
                             clusterMemberStatusEndpoints[clusterMembersStatusEndpointsCursor]))
                         {
-                            clusterPublication.close();
+                            memberStatusPublication.close();
 
                             final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
                             memberStatusUri.put(ENDPOINT_PARAM_NAME, leaderMember.memberFacingEndpoint());
-                            clusterPublication = ctx.aeron().addExclusivePublication(
+                            memberStatusPublication = ctx.aeron().addExclusivePublication(
                                 memberStatusUri.toString(), ctx.memberStatusStreamId());
                         }
 
@@ -196,7 +196,7 @@ class DynamicJoin implements AutoCloseable
         }
     }
 
-    public void onSnapshotRecordings(
+    void onSnapshotRecordings(
         final long correlationId, final SnapshotRecordingsDecoder snapshotRecordingsDecoder)
     {
         if (State.PASSIVE_FOLLOWER == state && correlationId == this.correlationId)
@@ -231,14 +231,13 @@ class DynamicJoin implements AutoCloseable
             else
             {
                 final ChannelUri leaderArchiveUri = ChannelUri.parse(ctx.archiveContext().controlRequestChannel());
-                final ChannelUri localArchiveUri = ChannelUri.parse(ctx.archiveContext().controlResponseChannel());
                 leaderArchiveUri.put(ENDPOINT_PARAM_NAME, leaderMember.archiveEndpoint());
 
                 final AeronArchive.Context leaderArchiveCtx = new AeronArchive.Context()
                     .aeron(ctx.aeron())
                     .controlRequestChannel(leaderArchiveUri.toString())
                     .controlRequestStreamId(ctx.archiveContext().controlRequestStreamId())
-                    .controlResponseChannel(localArchiveUri.toString())
+                    .controlResponseChannel(ctx.archiveContext().controlResponseChannel())
                     .controlResponseStreamId(ctx.archiveContext().controlResponseStreamId());
 
                 leaderArchiveAsyncConnect = AeronArchive.asyncConnect(leaderArchiveCtx);
@@ -254,15 +253,15 @@ class DynamicJoin implements AutoCloseable
             clusterMembersStatusEndpointsCursor = Math.min(
                 clusterMembersStatusEndpointsCursor + 1, clusterMemberStatusEndpoints.length - 1);
 
-            CloseHelper.close(clusterPublication);
+            CloseHelper.close(memberStatusPublication);
             final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
             memberStatusUri.put(ENDPOINT_PARAM_NAME, clusterMemberStatusEndpoints[clusterMembersStatusEndpointsCursor]);
-            clusterPublication = ctx.aeron().addExclusivePublication(
+            memberStatusPublication = ctx.aeron().addExclusivePublication(
                 memberStatusUri.toString(), ctx.memberStatusStreamId());
 
             correlationId = ctx.aeron().nextCorrelationId();
 
-            if (memberStatusPublisher.addPassiveMember(clusterPublication, correlationId, memberEndpoints))
+            if (memberStatusPublisher.addPassiveMember(memberStatusPublication, correlationId, memberEndpoints))
             {
                 timeOfLastActivityMs = nowMs;
                 return 1;
@@ -278,7 +277,7 @@ class DynamicJoin implements AutoCloseable
         {
             correlationId = ctx.aeron().nextCorrelationId();
 
-            if (memberStatusPublisher.snapshotRecordingQuery(clusterPublication, correlationId, memberId))
+            if (memberStatusPublisher.snapshotRecordingQuery(memberStatusPublication, correlationId, memberId))
             {
                 timeOfLastActivityMs = nowMs;
                 return 1;
@@ -295,7 +294,7 @@ class DynamicJoin implements AutoCloseable
         if (null == leaderArchive)
         {
             leaderArchive = leaderArchiveAsyncConnect.poll();
-            return (null == leaderArchive) ? 0 : 1;
+            return null == leaderArchive ? 0 : 1;
         }
 
         if (null != snapshotReader)
@@ -400,7 +399,7 @@ class DynamicJoin implements AutoCloseable
         int workCount = 0;
         final long leadershipTermId = leaderSnapshots.isEmpty() ? -1 : leaderSnapshots.get(0).leadershipTermId;
 
-        if (memberStatusPublisher.joinCluster(clusterPublication, leadershipTermId, memberId))
+        if (memberStatusPublisher.joinCluster(memberStatusPublication, leadershipTermId, memberId))
         {
             if (consensusModuleAgent.dynamicJoinComplete())
             {

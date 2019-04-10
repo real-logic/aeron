@@ -24,7 +24,6 @@ import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.Int2ObjectHashMap;
 
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
-import static io.aeron.CommonContext.UDP_MEDIA;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 
 /**
@@ -180,7 +179,7 @@ public final class ClusterMember
     /**
      * Has this member sent a termination ack?
      *
-     * @return has this member sent a termiantion ack?
+     * @return has this member sent a termination ack?
      */
     public boolean hasSentTerminationAck()
     {
@@ -870,28 +869,6 @@ public final class ClusterMember
     }
 
     /**
-     * Check that the archive endpoint is correctly configured for the cluster member.
-     *
-     * @param member                   to check the configuration.
-     * @param archiveControlRequestUri for the parsed URI string.
-     */
-    public static void checkArchiveEndpoint(final ClusterMember member, final ChannelUri archiveControlRequestUri)
-    {
-        if (!UDP_MEDIA.equals(archiveControlRequestUri.media()))
-        {
-            throw new ClusterException("archive control request channel must be udp");
-        }
-
-        final String archiveEndpoint = archiveControlRequestUri.get(ENDPOINT_PARAM_NAME);
-        if (archiveEndpoint != null && !archiveEndpoint.equals(member.archiveEndpoint))
-        {
-            throw new ClusterException(
-                "archive control request endpoint must match cluster member configuration: " + archiveEndpoint +
-                    " != " + member.archiveEndpoint);
-        }
-    }
-
-    /**
      * Check the member with the memberEndpoints
      *
      * @param member          to check memberEndpoints against
@@ -906,8 +883,7 @@ public final class ClusterMember
         if (!areSameEndpoints(member, endpointMember))
         {
             throw new ClusterException(
-                "clusterMembers and memberEndpoints differ on endpoints: " +
-                    member.endpointsDetail() + " != " + memberEndpoints);
+                "clusterMembers and memberEndpoints differ: " + member.endpointsDetail() + " != " + memberEndpoints);
         }
     }
 

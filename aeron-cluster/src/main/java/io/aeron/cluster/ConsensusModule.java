@@ -1116,7 +1116,10 @@ public class ConsensusModule implements AutoCloseable
 
             if (null == archiveContext)
             {
-                archiveContext = new AeronArchive.Context();
+                archiveContext = new AeronArchive.Context()
+                    .controlRequestChannel(AeronArchive.Configuration.localControlChannel())
+                    .controlResponseChannel(AeronArchive.Configuration.localControlChannel())
+                    .controlRequestStreamId(AeronArchive.Configuration.localControlStreamId());
             }
 
             archiveContext

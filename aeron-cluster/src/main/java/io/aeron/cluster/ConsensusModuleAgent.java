@@ -216,10 +216,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     public void onStart()
     {
-        final ChannelUri archiveUri = ChannelUri.parse(ctx.archiveContext().controlRequestChannel());
-        ClusterMember.checkArchiveEndpoint(thisMember, archiveUri);
-        archiveUri.put(ENDPOINT_PARAM_NAME, thisMember.archiveEndpoint());
-        ctx.archiveContext().controlRequestChannel(archiveUri.toString());
         archive = AeronArchive.connect(ctx.archiveContext().clone());
 
         recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());

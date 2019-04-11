@@ -157,6 +157,13 @@ public interface Cluster
     long timeMs();
 
     /**
+     * Position the log has reached in bytes as of the current message.
+     *
+     * @return position the log has reached in bytes as of the current message.
+     */
+    long logPosition();
+
+    /**
      * Schedule a timer for a given deadline and provide a correlation id to identify the timer when it expires or
      * for cancellation.
      * <p>

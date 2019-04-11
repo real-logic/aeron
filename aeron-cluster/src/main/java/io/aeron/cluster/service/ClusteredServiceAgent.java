@@ -61,6 +61,7 @@ class ClusteredServiceAgent implements Agent, Cluster
     private long ackId = 0;
     private long clusterTimeMs;
     private long cachedTimeMs;
+    private long clusterLogPosition = NULL_POSITION;
     private long terminationPosition = NULL_POSITION;
     private long roleChangePosition = NULL_POSITION;
     private int memberId = NULL_VALUE;
@@ -229,6 +230,11 @@ class ClusteredServiceAgent implements Agent, Cluster
         return clusterTimeMs;
     }
 
+    public long logPosition()
+    {
+        return clusterLogPosition;
+    }
+
     public boolean scheduleTimer(final long correlationId, final long deadlineMs)
     {
         return consensusModuleProxy.scheduleTimer(correlationId, deadlineMs);
@@ -338,6 +344,7 @@ class ClusteredServiceAgent implements Agent, Cluster
     }
 
     void onSessionMessage(
+        final long logPosition,
         final long clusterSessionId,
         final long timestampMs,
         final DirectBuffer buffer,
@@ -345,14 +352,16 @@ class ClusteredServiceAgent implements Agent, Cluster
         final int length,
         final Header header)
     {
+        clusterLogPosition = logPosition;
         clusterTimeMs = timestampMs;
         final ClientSession clientSession = sessionByIdMap.get(clusterSessionId);
 
         service.onSessionMessage(clientSession, timestampMs, buffer, offset, length, header);
     }
 
-    void onTimerEvent(final long correlationId, final long timestampMs)
+    void onTimerEvent(final long logPosition, final long correlationId, final long timestampMs)
     {
+        clusterLogPosition = logPosition;
         clusterTimeMs = timestampMs;
         service.onTimerEvent(correlationId, timestampMs);
     }
@@ -366,6 +375,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         final String responseChannel,
         final byte[] encodedPrincipal)
     {
+        clusterLogPosition = logPosition;
         clusterTimeMs = timestampMs;
 
         if (sessionByIdMap.containsKey(clusterSessionId))
@@ -393,6 +403,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         final long timestampMs,
         final CloseReason closeReason)
     {
+        clusterLogPosition = logPosition;
         clusterTimeMs = timestampMs;
         final ClientSession session = sessionByIdMap.remove(clusterSessionId);
 
@@ -410,6 +421,7 @@ class ClusteredServiceAgent implements Agent, Cluster
     void onServiceAction(
         final long leadershipTermId, final long logPosition, final long timestampMs, final ClusterAction action)
     {
+        clusterLogPosition = logPosition;
         clusterTimeMs = timestampMs;
         executeAction(action, logPosition, leadershipTermId);
     }
@@ -423,6 +435,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         final int logSessionId)
     {
         egressMessageHeaderEncoder.leadershipTermId(leadershipTermId);
+        clusterLogPosition = logPosition;
         clusterTimeMs = timestampMs;
     }
 
@@ -437,6 +450,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         final int memberId,
         final String clusterMembers)
     {
+        clusterLogPosition = logPosition;
         clusterTimeMs = timestampMs;
 
         if (memberId == this.memberId && changeType == ChangeType.QUIT)
@@ -471,6 +485,7 @@ class ClusteredServiceAgent implements Agent, Cluster
 
     private void checkForSnapshot(final CountersReader counters, final int recoveryCounterId)
     {
+        clusterLogPosition = RecoveryState.getLogPosition(counters, recoveryCounterId);
         clusterTimeMs = RecoveryState.getTimestamp(counters, recoveryCounterId);
         final long leadershipTermId = RecoveryState.getLeadershipTermId(counters, recoveryCounterId);
 
@@ -480,7 +495,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         }
 
         heartbeatCounter.setOrdered(epochClock.time());
-        consensusModuleProxy.ack(RecoveryState.getLogPosition(counters, recoveryCounterId), ackId++, serviceId);
+        consensusModuleProxy.ack(clusterLogPosition, ackId++, serviceId);
     }
 
     private void checkForReplay(final CountersReader counters, final int recoveryCounterId)

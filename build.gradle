@@ -35,7 +35,7 @@ def agronaVersion = '0.9.35'
 def sbeVersion = '1.12.4'
 def byteBuddyVersion = '1.9.10'
 def hdrHistogramVersion = '2.1.11'
-def mockitoVersion = '2.26.0'
+def mockitoVersion = '2.27.0'
 
 group = aeronGroup
 version = aeronVersion

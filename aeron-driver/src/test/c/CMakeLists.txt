@@ -51,6 +51,7 @@ aeron_driver_test(loss_reporter_test aeron_loss_reporter_test.cpp)
 aeron_driver_test(logbuffer_unblocker aeron_logbuffer_unblocker_test.cpp)
 aeron_driver_test(term_gap_filler_test aeron_term_gap_filler_test.cpp)
 aeron_driver_test(parse_util_test aeron_parse_util_test.cpp)
+aeron_driver_test(properties_test aeron_properties_test.cpp)
 
 function(aeron_driver_benchmark name file)
     add_executable(${name} ${file})

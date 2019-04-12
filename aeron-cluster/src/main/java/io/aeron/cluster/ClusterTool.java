@@ -315,9 +315,19 @@ public class ClusterTool
                 aeron.addSubscription(channel, toServiceStreamId), handler))
         {
             id.set(aeron.nextCorrelationId());
+            final long startTime = System.currentTimeMillis();
+
+            while (!consensusModuleProxy.isConnected())
+            {
+                if ((System.currentTimeMillis() - startTime) > timeoutMs)
+                {
+                    break;
+                }
+                Thread.yield();
+            }
+
             if (consensusModuleProxy.clusterMembersQuery(id.longValue()))
             {
-                final long startTime = System.currentTimeMillis();
                 do
                 {
                     if (memberServiceAdapter.poll() == 0)

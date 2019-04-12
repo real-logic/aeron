@@ -43,7 +43,7 @@ class ControlSession implements Session
         INIT, CONNECTED, ACTIVE, INACTIVE, CLOSED
     }
 
-    private boolean hasActiveListing;
+    private Session activeListing = null;
     private final long controlSessionId;
     private final long correlationId;
     private final long connectTimeoutMs;
@@ -89,10 +89,19 @@ class ControlSession implements Session
     public void abort()
     {
         state(State.INACTIVE);
+        if (null != activeListing)
+        {
+            activeListing.abort();
+        }
     }
 
     public void close()
     {
+        if (null != activeListing)
+        {
+            activeListing.abort();
+        }
+
         CloseHelper.close(controlPublication);
         demuxer.removeControlSession(this);
         state(State.CLOSED);
@@ -125,14 +134,19 @@ class ControlSession implements Session
         return workCount;
     }
 
-    boolean hasActiveListing()
+    Publication controlPublication()
     {
-        return hasActiveListing;
+        return controlPublication;
     }
 
-    void hasActiveListing(final boolean hasActiveListing)
+    boolean hasActiveListing()
     {
-        this.hasActiveListing = hasActiveListing;
+        return null != activeListing;
+    }
+
+    void activeListing(final Session activeListing)
+    {
+        this.activeListing = activeListing;
     }
 
     void onStopRecording(final long correlationId, final int streamId, final String channel)
@@ -353,7 +367,7 @@ class ControlSession implements Session
         final String errorMessage,
         final ControlResponseProxy proxy)
     {
-        if (!proxy.sendResponse(controlSessionId, correlationId, relevantId, code, errorMessage, controlPublication))
+        if (!proxy.sendResponse(controlSessionId, correlationId, relevantId, code, errorMessage, this))
         {
             queueResponse(correlationId, relevantId, code, errorMessage);
         }
@@ -372,13 +386,13 @@ class ControlSession implements Session
 
     int sendDescriptor(final long correlationId, final UnsafeBuffer descriptorBuffer, final ControlResponseProxy proxy)
     {
-        return proxy.sendDescriptor(controlSessionId, correlationId, descriptorBuffer, controlPublication);
+        return proxy.sendDescriptor(controlSessionId, correlationId, descriptorBuffer, this);
     }
 
     boolean sendSubscriptionDescriptor(
         final long correlationId, final Subscription subscription, final ControlResponseProxy proxy)
     {
-        return proxy.sendSubscriptionDescriptor(controlSessionId, correlationId, subscription, controlPublication);
+        return proxy.sendSubscriptionDescriptor(controlSessionId, correlationId, subscription, this);
     }
 
     int maxPayloadLength()
@@ -426,7 +440,7 @@ class ControlSession implements Session
             relevantId,
             code,
             message,
-            controlPublication));
+            this));
     }
 
     private int waitForConnection()
@@ -468,7 +482,7 @@ class ControlSession implements Session
                     controlSessionId,
                     ERROR,
                     invalidVersionMessage,
-                    controlPublication);
+                    this);
 
                 workCount += 1;
             }
@@ -478,7 +492,7 @@ class ControlSession implements Session
                 controlSessionId,
                 OK,
                 null,
-                controlPublication))
+                this))
             {
                 activityDeadlineMs = Aeron.NULL_VALUE;
                 workCount += 1;
@@ -505,5 +519,13 @@ class ControlSession implements Session
     {
         //System.out.println(controlSessionId + ": " + this.state + " -> " + state);
         this.state = state;
+    }
+
+    public String toString()
+    {
+        return "ControlSession{" +
+            "controlSessionId=" + controlSessionId +
+            ", controlPublication=" + controlPublication +
+            '}';
     }
 }

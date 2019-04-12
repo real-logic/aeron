@@ -72,7 +72,7 @@ abstract class AbstractListRecordingsSession implements Session
 
     public void close()
     {
-        controlSession.hasActiveListing(false);
+        controlSession.activeListing(null);
     }
 
     protected abstract int sendDescriptors();

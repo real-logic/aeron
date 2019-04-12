@@ -57,7 +57,7 @@ class ListRecordingSubscriptionsSession implements Session
 
     public void close()
     {
-        controlSession.hasActiveListing(false);
+        controlSession.activeListing(null);
     }
 
     public void abort()

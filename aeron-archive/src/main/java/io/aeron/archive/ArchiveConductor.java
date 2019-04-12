@@ -341,15 +341,16 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         }
         else
         {
-            addSession(new ListRecordingsSession(
+            final ListRecordingsSession session = new ListRecordingsSession(
                 correlationId,
                 fromId,
                 count,
                 catalog,
                 controlResponseProxy,
                 controlSession,
-                descriptorBuffer));
-            controlSession.hasActiveListing(true);
+                descriptorBuffer);
+            addSession(session);
+            controlSession.activeListing(session);
         }
     }
 
@@ -368,7 +369,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         }
         else
         {
-            addSession(new ListRecordingsForUriSession(
+            final ListRecordingsForUriSession session = new ListRecordingsForUriSession(
                 correlationId,
                 fromRecordingId,
                 count,
@@ -378,8 +379,9 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
                 controlResponseProxy,
                 controlSession,
                 descriptorBuffer,
-                recordingDescriptorDecoder));
-            controlSession.hasActiveListing(true);
+                recordingDescriptorDecoder);
+            addSession(session);
+            controlSession.activeListing(session);
         }
     }
 
@@ -691,7 +693,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         }
         else
         {
-            addSession(new ListRecordingSubscriptionsSession(
+            final ListRecordingSubscriptionsSession session = new ListRecordingSubscriptionsSession(
                 recordingSubscriptionMap,
                 pseudoIndex,
                 subscriptionCount,
@@ -700,8 +702,9 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
                 channelFragment,
                 correlationId,
                 controlSession,
-                controlResponseProxy));
-            controlSession.hasActiveListing(true);
+                controlResponseProxy);
+            addSession(session);
+            controlSession.activeListing(session);
         }
     }
 

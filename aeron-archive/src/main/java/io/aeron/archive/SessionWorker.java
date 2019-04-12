@@ -53,7 +53,15 @@ class SessionWorker<T extends Session> implements Agent
         for (int lastIndex = sessions.size() - 1, i = lastIndex; i >= 0; i--)
         {
             final T session = sessions.get(i);
-            workDone += session.doWork();
+            try
+            {
+                workDone += session.doWork();
+            }
+            catch (final Exception ex)
+            {
+                errorHandler.onError(ex);
+            }
+
             if (session.isDone())
             {
                 ArrayListUtil.fastUnorderedRemove(sessions, i, lastIndex--);

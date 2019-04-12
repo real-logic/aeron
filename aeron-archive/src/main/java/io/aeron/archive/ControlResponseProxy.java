@@ -46,14 +46,14 @@ class ControlResponseProxy
         final long controlSessionId,
         final long correlationId,
         final UnsafeBuffer descriptorBuffer,
-        final Publication controlPublication)
+        final ControlSession session)
     {
         final int messageLength = Catalog.descriptorLength(descriptorBuffer) + MESSAGE_HEADER_LENGTH;
         final int contentLength = messageLength - recordingIdEncodingOffset() - MESSAGE_HEADER_LENGTH;
 
         for (int i = 0; i < 3; i++)
         {
-            final long result = controlPublication.tryClaim(messageLength, bufferClaim);
+            final long result = session.controlPublication().tryClaim(messageLength, bufferClaim);
             if (result > 0)
             {
                 final MutableDirectBuffer buffer = bufferClaim.buffer();
@@ -72,7 +72,7 @@ class ControlResponseProxy
                 return messageLength;
             }
 
-            checkResult(controlPublication, result);
+            checkResult(session, result);
         }
 
         return 0;
@@ -82,7 +82,7 @@ class ControlResponseProxy
         final long controlSessionId,
         final long correlationId,
         final Subscription subscription,
-        final Publication controlPublication)
+        final ControlSession session)
     {
         recordingSubscriptionDescriptorEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
@@ -94,7 +94,7 @@ class ControlResponseProxy
 
         final int length = MESSAGE_HEADER_LENGTH + recordingSubscriptionDescriptorEncoder.encodedLength();
 
-        return send(controlPublication, buffer, length);
+        return send(session, buffer, length);
     }
 
     boolean sendResponse(
@@ -103,7 +103,7 @@ class ControlResponseProxy
         final long relevantId,
         final ControlResponseCode code,
         final String errorMessage,
-        final Publication controlPublication)
+        final ControlSession session)
     {
         responseEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
@@ -113,7 +113,7 @@ class ControlResponseProxy
             .code(code)
             .errorMessage(errorMessage);
 
-        return send(controlPublication, buffer, MESSAGE_HEADER_LENGTH + responseEncoder.encodedLength());
+        return send(session, buffer, MESSAGE_HEADER_LENGTH + responseEncoder.encodedLength());
     }
 
     void attemptErrorResponse(
@@ -143,37 +143,40 @@ class ControlResponseProxy
         }
     }
 
-    private boolean send(final Publication controlPublication, final DirectBuffer buffer, final int length)
+    private boolean send(final ControlSession session, final DirectBuffer buffer, final int length)
     {
         for (int i = 0; i < 3; i++)
         {
-            final long result = controlPublication.offer(buffer, 0, length);
+            final long result = session.controlPublication().offer(buffer, 0, length);
             if (result > 0)
             {
                 return true;
             }
 
-            checkResult(controlPublication, result);
+            checkResult(session, result);
         }
 
         return false;
     }
 
-    private static void checkResult(final Publication controlPublication, final long result)
+    private static void checkResult(final ControlSession session, final long result)
     {
         if (result == Publication.NOT_CONNECTED)
         {
-            throw new ArchiveException("response publication is not connected: " + controlPublication.channel());
+            session.abort();
+            throw new ArchiveException("response publication is not connected: " + session);
         }
 
         if (result == Publication.CLOSED)
         {
-            throw new ArchiveException("response publication is closed: " + controlPublication.channel());
+            session.abort();
+            throw new ArchiveException("response publication is closed: " + session);
         }
 
         if (result == Publication.MAX_POSITION_EXCEEDED)
         {
-            throw new ArchiveException("response publication at max position: " + controlPublication.channel());
+            session.abort();
+            throw new ArchiveException("response publication at max position: " + session);
         }
     }
 }

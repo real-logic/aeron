@@ -53,7 +53,7 @@ import static io.aeron.Aeron.NULL_VALUE;
  */
 public class ClusterTool
 {
-    public static final long TIMEOUT_MS = Long.getLong("aeron.ClusterTool.timeoutMs", 0);
+    private static final long TIMEOUT_MS = Long.getLong("aeron.ClusterTool.timeoutMs", 0);
 
     public static void main(final String[] args)
     {
@@ -126,7 +126,7 @@ public class ClusterTool
     {
         if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
         {
-            try (ClusterMarkFile markFile = openMarkFile(clusterDir, out::println, TIMEOUT_MS))
+            try (ClusterMarkFile markFile = openMarkFile(clusterDir, out::println))
             {
                 printTypeAndActivityTimestamp(out, markFile);
                 out.println(markFile.decoder());
@@ -137,7 +137,7 @@ public class ClusterTool
             out.println(ClusterMarkFile.FILENAME + " does not exist.");
         }
 
-        final ClusterMarkFile[] serviceMarkFiles = openServiceMarkFiles(clusterDir, out::println, TIMEOUT_MS);
+        final ClusterMarkFile[] serviceMarkFiles = openServiceMarkFiles(clusterDir, out::println);
         describe(out, serviceMarkFiles);
     }
 
@@ -145,7 +145,7 @@ public class ClusterTool
     {
         if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
         {
-            try (ClusterMarkFile markFile = openMarkFile(clusterDir, null, TIMEOUT_MS))
+            try (ClusterMarkFile markFile = openMarkFile(clusterDir, null))
             {
                 out.println(markFile.decoder().pid());
             }
@@ -177,7 +177,7 @@ public class ClusterTool
     {
         if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
         {
-            try (ClusterMarkFile markFile = openMarkFile(clusterDir, System.out::println, TIMEOUT_MS))
+            try (ClusterMarkFile markFile = openMarkFile(clusterDir, System.out::println))
             {
                 printTypeAndActivityTimestamp(out, markFile);
                 printErrors(out, markFile);
@@ -188,7 +188,7 @@ public class ClusterTool
             out.println(ClusterMarkFile.FILENAME + " does not exist.");
         }
 
-        final ClusterMarkFile[] serviceMarkFiles = openServiceMarkFiles(clusterDir, out::println, TIMEOUT_MS);
+        final ClusterMarkFile[] serviceMarkFiles = openServiceMarkFiles(clusterDir, out::println);
         errors(out, serviceMarkFiles);
     }
 
@@ -196,7 +196,7 @@ public class ClusterTool
     {
         if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
         {
-            try (ClusterMarkFile markFile = openMarkFile(clusterDir, System.out::println, TIMEOUT_MS))
+            try (ClusterMarkFile markFile = openMarkFile(clusterDir, System.out::println))
             {
                 final ClusterMembersInfo clusterMembersInfo = new ClusterMembersInfo();
                 final long timeoutMs = Math.max(TimeUnit.SECONDS.toMillis(1), TIMEOUT_MS);
@@ -225,7 +225,7 @@ public class ClusterTool
     {
         if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
         {
-            try (ClusterMarkFile markFile = openMarkFile(clusterDir, System.out::println, TIMEOUT_MS))
+            try (ClusterMarkFile markFile = openMarkFile(clusterDir, System.out::println))
             {
                 if (!removeMember(markFile, memberId, isPassive))
                 {
@@ -276,9 +276,9 @@ public class ClusterTool
     public static boolean listMembers(
         final ClusterMembersInfo clusterMembersInfo, final File clusterDir, final long timeoutMs)
     {
-        if (markFileExists(clusterDir) || timeoutMs > 0)
+        if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
         {
-            try (ClusterMarkFile markFile = openMarkFile(clusterDir, null, timeoutMs))
+            try (ClusterMarkFile markFile = openMarkFile(clusterDir, null))
             {
                 return queryClusterMembers(markFile, clusterMembersInfo, timeoutMs);
             }
@@ -291,6 +291,7 @@ public class ClusterTool
         final ClusterMarkFile markFile, final ClusterMembersInfo clusterMembersInfo, final long timeoutMs)
     {
         final String aeronDirectoryName = markFile.decoder().aeronDirectory();
+        markFile.decoder().archiveChannel();
         final String channel = markFile.decoder().serviceControlChannel();
         final int toServiceStreamId = markFile.decoder().serviceStreamId();
         final int toConsensusModuleStreamId = markFile.decoder().consensusModuleStreamId();
@@ -315,29 +316,17 @@ public class ClusterTool
                 aeron.addSubscription(channel, toServiceStreamId), handler))
         {
             id.set(aeron.nextCorrelationId());
-            final long startTime = System.currentTimeMillis();
-
-            while (!consensusModuleProxy.isConnected())
-            {
-                if ((System.currentTimeMillis() - startTime) > timeoutMs)
-                {
-                    return false;
-                }
-
-                Thread.yield();
-            }
-
             if (consensusModuleProxy.clusterMembersQuery(id.longValue()))
             {
+                final long startTime = System.currentTimeMillis();
                 do
                 {
                     if (memberServiceAdapter.poll() == 0)
                     {
                         if ((System.currentTimeMillis() - startTime) > timeoutMs)
                         {
-                            return false;
+                            break;
                         }
-
                         Thread.yield();
                     }
                 }
@@ -345,14 +334,14 @@ public class ClusterTool
             }
         }
 
-        return true;
+        return id.longValue() == NULL_VALUE;
     }
 
     public static boolean removeMember(final File clusterDir, final int memberId, final boolean isPassive)
     {
         if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
         {
-            try (ClusterMarkFile markFile = openMarkFile(clusterDir, null, TIMEOUT_MS))
+            try (ClusterMarkFile markFile = openMarkFile(clusterDir, null))
             {
                 return removeMember(markFile, memberId, isPassive);
             }
@@ -364,6 +353,7 @@ public class ClusterTool
     public static boolean removeMember(final ClusterMarkFile markFile, final int memberId, final boolean isPassive)
     {
         final String aeronDirectoryName = markFile.decoder().aeronDirectory();
+        markFile.decoder().archiveChannel();
         final String channel = markFile.decoder().serviceControlChannel();
         final int toConsensusModuleStreamId = markFile.decoder().consensusModuleStreamId();
 
@@ -381,14 +371,12 @@ public class ClusterTool
         return false;
     }
 
-    private static ClusterMarkFile openMarkFile(
-        final File clusterDir, final Consumer<String> logger, final long timeoutMs)
+    private static ClusterMarkFile openMarkFile(final File clusterDir, final Consumer<String> logger)
     {
-        return new ClusterMarkFile(clusterDir, ClusterMarkFile.FILENAME, System::currentTimeMillis, timeoutMs, logger);
+        return new ClusterMarkFile(clusterDir, ClusterMarkFile.FILENAME, System::currentTimeMillis, TIMEOUT_MS, logger);
     }
 
-    private static ClusterMarkFile[] openServiceMarkFiles(
-        final File clusterDir, final Consumer<String> logger, final long timeoutMs)
+    private static ClusterMarkFile[] openServiceMarkFiles(final File clusterDir, final Consumer<String> logger)
     {
         String[] clusterMarkFileNames =
             clusterDir.list((dir, name) ->
@@ -405,7 +393,7 @@ public class ClusterTool
         for (int i = 0, length = clusterMarkFiles.length; i < length; i++)
         {
             clusterMarkFiles[i] = new ClusterMarkFile(
-                clusterDir, clusterMarkFileNames[i], System::currentTimeMillis, timeoutMs, logger);
+                clusterDir, clusterMarkFileNames[i], System::currentTimeMillis, TIMEOUT_MS, logger);
         }
 
         return clusterMarkFiles;
@@ -438,7 +426,7 @@ public class ClusterTool
         {
             throw new AeronException(
                 "Aeron CnC version does not match: version=" + cncVersion +
-                    " required=" + CncFileDescriptor.CNC_VERSION);
+                " required=" + CncFileDescriptor.CNC_VERSION);
         }
 
         final AtomicBuffer buffer = CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer);

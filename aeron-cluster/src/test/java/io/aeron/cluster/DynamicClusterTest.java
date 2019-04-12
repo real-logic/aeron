@@ -47,7 +47,6 @@ public class DynamicClusterTest
         try (TestCluster cluster = TestCluster.startCluster(3, 1))
         {
             final TestNode leader = cluster.awaitLeader();
-
             final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
             Thread.sleep(1000);
@@ -65,12 +64,9 @@ public class DynamicClusterTest
     @Test(timeout = 10_000)
     public void shouldDynamicallyJoinClusterOfThreeNoSnapshotsThenSend() throws Exception
     {
-        final int messageCount = 10;
-
         try (TestCluster cluster = TestCluster.startCluster(3, 1))
         {
             final TestNode leader = cluster.awaitLeader();
-
             final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
             Thread.sleep(1000);
@@ -78,6 +74,7 @@ public class DynamicClusterTest
             assertThat(dynamicMember.role(), is(Cluster.Role.FOLLOWER));
 
             cluster.connectClient();
+            final int messageCount = 10;
             cluster.sendMessages(messageCount);
             cluster.awaitResponses(messageCount);
             cluster.awaitMessageCountForService(leader, messageCount);
@@ -88,13 +85,12 @@ public class DynamicClusterTest
     @Test(timeout = 10_000)
     public void shouldDynamicallyJoinClusterOfThreeNoSnapshotsWithCatchup() throws Exception
     {
-        final int messageCount = 10;
-
         try (TestCluster cluster = TestCluster.startCluster(3, 1))
         {
             final TestNode leader = cluster.awaitLeader();
 
             cluster.connectClient();
+            final int messageCount = 10;
             cluster.sendMessages(messageCount);
             cluster.awaitResponses(messageCount);
             cluster.awaitMessageCountForService(leader, messageCount);
@@ -130,13 +126,12 @@ public class DynamicClusterTest
     @Test(timeout = 10_000)
     public void shouldDynamicallyJoinClusterOfThreeWithSnapshot() throws Exception
     {
-        final int messageCount = 10;
-
         try (TestCluster cluster = TestCluster.startCluster(3, 1))
         {
             final TestNode leader = cluster.awaitLeader();
 
             cluster.connectClient();
+            final int messageCount = 10;
             cluster.sendMessages(messageCount);
             cluster.awaitResponses(messageCount);
 
@@ -159,15 +154,14 @@ public class DynamicClusterTest
     @Test(timeout = 10_000)
     public void shouldDynamicallyJoinClusterOfThreeWithSnapshotThenSend() throws Exception
     {
-        final int preSnapshotMessageCount = 10;
-        final int postSnapshotMessageCount = 7;
-        final int totalMessageCount = preSnapshotMessageCount + postSnapshotMessageCount;
-
         try (TestCluster cluster = TestCluster.startCluster(3, 1))
         {
             final TestNode leader = cluster.awaitLeader();
 
             cluster.connectClient();
+            final int preSnapshotMessageCount = 10;
+            final int postSnapshotMessageCount = 7;
+            final int totalMessageCount = preSnapshotMessageCount + postSnapshotMessageCount;
             cluster.sendMessages(preSnapshotMessageCount);
             cluster.awaitResponses(preSnapshotMessageCount);
 
@@ -197,11 +191,9 @@ public class DynamicClusterTest
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
             final TestNode leader = cluster.awaitLeader();
-
             final TestNode follower = cluster.followers().get(0);
 
             follower.terminationExpected(true);
-
             leader.removeMember(follower.index(), false);
 
             cluster.awaitNodeTermination(follower);
@@ -222,7 +214,6 @@ public class DynamicClusterTest
             TestNode leader = cluster.awaitLeader();
 
             leader.terminationExpected(true);
-
             leader.removeMember(leader.index(), false);
 
             cluster.awaitNodeTermination(leader);

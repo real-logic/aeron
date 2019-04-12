@@ -18,6 +18,8 @@
 #include <inttypes.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
 #include "aeron_properties_util.h"
 #include "aeron_error.h"
 
@@ -140,6 +142,41 @@ int aeron_properties_parse_line(
     }
 
     return result;
+}
+
+int aeron_properties_setenv(const char *name, const char *value)
+{
+    char env_name[AERON_PROPERTIES_MAX_LENGTH];
+
+    for (size_t i = 0; i < sizeof(env_name); i++)
+    {
+        const char c = name[i];
+
+        if ('.' == c)
+        {
+            env_name[i] = '_';
+        }
+        else if ('\0' == c)
+        {
+            env_name[i] = c;
+            break;
+        }
+        else
+        {
+            env_name[i] = toupper(c);
+        }
+    }
+
+    if ('\0' == *value)
+    {
+        unsetenv(env_name);
+    }
+    else
+    {
+        setenv(env_name, value, true);
+    }
+
+    return 0;
 }
 
 extern void aeron_properties_parse_init(aeron_properties_parser_state_t *state);

@@ -213,6 +213,33 @@ uint64_t aeron_config_parse_duration_ns(const char *name, const char *str, uint6
     return result;
 }
 
+aeron_threading_mode_t aeron_config_parse_threading_mode(const char *threading_mode, aeron_threading_mode_t def)
+{
+    aeron_threading_mode_t result = def;
+
+    if (NULL != threading_mode)
+    {
+        if (strncmp(threading_mode, "SHARED", sizeof("SHARED")) == 0)
+        {
+            result = AERON_THREADING_MODE_SHARED;
+        }
+        else if (strncmp(threading_mode, "SHARED_NETWORK", sizeof("SHARED_NETWORK")) == 0)
+        {
+            result = AERON_THREADING_MODE_SHARED_NETWORK;
+        }
+        else if (strncmp(threading_mode, "DEDICATED", sizeof("DEDICATED")) == 0)
+        {
+            result = AERON_THREADING_MODE_DEDICATED;
+        }
+        else
+        {
+            aeron_config_prop_warning(AERON_THREADING_MODE_ENV_VAR, threading_mode);
+        }
+    }
+
+    return result;
+}
+
 #define AERON_CONFIG_GETENV_OR_DEFAULT(e, d) ((NULL == getenv(e)) ? (d) : getenv(e))
 
 static void aeron_driver_conductor_to_driver_interceptor_null(
@@ -297,9 +324,10 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     snprintf(_context->aeron_dir, AERON_MAX_PATH - 1, "%s%saeron-%s", tmp_dir(), has_file_separator_at_end(tmp_dir()) ? "" : "/", username());
 #endif
 
-    _context->threading_mode = AERON_THREADING_MODE_DEDICATED;
+    _context->threading_mode = aeron_config_parse_threading_mode(
+        getenv(AERON_THREADING_MODE_ENV_VAR), AERON_THREADING_MODE_DEFAULT);
     _context->dirs_delete_on_start = false;
-    _context->warn_if_dirs_exist = true;
+    _context->warn_if_dirs_exist = AERON_DIR_WARN_IF_EXISTS_DEFAULT;
     _context->term_buffer_sparse_file = false;
     _context->perform_storage_checks = true;
     _context->spies_simulate_connection = false;
@@ -369,22 +397,6 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         if ((_context->congestion_control_supplier_func = aeron_congestion_control_strategy_supplier_load(value)) == NULL)
         {
             return -1;
-        }
-    }
-
-    if ((value = getenv(AERON_THREADING_MODE_ENV_VAR)))
-    {
-        if (strncmp(value, "SHARED", sizeof("SHARED")) == 0)
-        {
-            _context->threading_mode = AERON_THREADING_MODE_SHARED;
-        }
-        else if (strncmp(value, "SHARED_NETWORK", sizeof("SHARED_NETWORK")) == 0)
-        {
-            _context->threading_mode = AERON_THREADING_MODE_SHARED_NETWORK;
-        }
-        else if (strncmp(value, "DEDICATED", sizeof("DEDICATED")) == 0)
-        {
-            _context->threading_mode = AERON_THREADING_MODE_DEDICATED;
         }
     }
 
@@ -843,3 +855,54 @@ extern size_t aeron_cnc_length(aeron_driver_context_t *context);
 extern size_t aeron_ipc_publication_term_window_length(aeron_driver_context_t *context, size_t term_length);
 
 extern size_t aeron_network_publication_term_window_length(aeron_driver_context_t *context, size_t term_length);
+
+int aeron_driver_context_set_dir(aeron_driver_context_t *context, const char *value)
+{
+    if (NULL == context || NULL == value)
+    {
+        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        return -1;
+    }
+
+    snprintf(context->aeron_dir, AERON_MAX_PATH - 1, "%s", value);
+    return 0;
+}
+
+const char *aeron_driver_context_get_dir(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->aeron_dir : NULL;
+}
+
+int aeron_driver_context_set_dir_warn_if_exists(aeron_driver_context_t *context, bool value)
+{
+    if (NULL == context)
+    {
+        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        return -1;
+    }
+
+    context->warn_if_dirs_exist = value;
+    return 0;
+}
+
+bool aeron_driver_context_get_dir_warn_if_exists(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->warn_if_dirs_exist : AERON_DIR_WARN_IF_EXISTS_DEFAULT;
+}
+
+int aeron_driver_context_set_threading_mode(aeron_driver_context_t *context, aeron_threading_mode_t mode)
+{
+    if (NULL == context)
+    {
+        aeron_set_err(EINVAL, "%s", strerror(EINVAL));
+        return -1;
+    }
+
+    context->threading_mode = mode;
+    return 0;
+}
+
+aeron_threading_mode_t aeron_driver_context_get_threading_mode(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->threading_mode : AERON_THREADING_MODE_DEFAULT;
+}

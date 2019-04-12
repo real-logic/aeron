@@ -64,14 +64,6 @@ typedef void (*aeron_driver_conductor_to_client_interceptor_func_t)(
     aeron_driver_conductor_t *conductor, int32_t msg_type_id, const void *message, size_t length);
 typedef void (*aeron_driver_termination_hook_func_t)(void *clientd);
 
-typedef enum aeron_threading_mode_enum
-{
-    AERON_THREADING_MODE_DEDICATED,
-    AERON_THREADING_MODE_SHARED_NETWORK,
-    AERON_THREADING_MODE_SHARED,
-}
-aeron_threading_mode_t;
-
 typedef struct aeron_driver_context_stct
 {
     char *aeron_dir;                            /* aeron.dir */

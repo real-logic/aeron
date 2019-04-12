@@ -37,15 +37,34 @@ typedef struct aeron_driver_stct aeron_driver_t;
  */
 #define AERON_DIR_ENV_VAR "AERON_DIR"
 
+int aeron_driver_context_set_dir(aeron_driver_context_t *context, const char *value);
+const char *aeron_driver_context_get_dir(aeron_driver_context_t *context);
+
 /**
  * Warn if the top level Aeron directory exists when starting the driver.
  */
 #define AERON_DIR_WARN_IF_EXISTS_ENV_VAR "AERON_DIR_WARN_IF_EXISTS"
 
+#define AERON_DIR_WARN_IF_EXISTS_DEFAULT true
+int aeron_driver_context_set_dir_warn_if_exists(aeron_driver_context_t *context, bool value);
+bool aeron_driver_context_get_dir_warn_if_exists(aeron_driver_context_t *context);
+
 /**
  * Threading Mode to be used by the driver.
  */
 #define AERON_THREADING_MODE_ENV_VAR "AERON_THREADING_MODE"
+
+typedef enum aeron_threading_mode_enum
+{
+    AERON_THREADING_MODE_DEDICATED,
+    AERON_THREADING_MODE_SHARED_NETWORK,
+    AERON_THREADING_MODE_SHARED,
+}
+aeron_threading_mode_t;
+
+#define AERON_THREADING_MODE_DEFAULT AERON_THREADING_MODE_DEDICATED
+int aeron_driver_context_set_threading_mode(aeron_driver_context_t *context, aeron_threading_mode_t mode);
+aeron_threading_mode_t aeron_driver_context_get_threading_mode(aeron_driver_context_t *context);
 
 /**
  * Attempt to delete directories on start if they exist.

@@ -47,4 +47,6 @@ int aeron_properties_parse_line(
     aeron_properties_file_handler_func_t handler,
     void *clientd);
 
+int aeron_properties_setenv(const char *name, const char *value);
+
 #endif //AERON_PROPERTIES_UTIL_H

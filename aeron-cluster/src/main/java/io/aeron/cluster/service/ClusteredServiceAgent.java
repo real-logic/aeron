@@ -100,11 +100,10 @@ class ClusteredServiceAgent implements Agent, Cluster
         heartbeatCounter = awaitHeartbeatCounter(counters);
         commitPosition = awaitCommitPositionCounter(counters);
 
-        service.onStart(this);
-        isServiceActive = true;
-
         final int recoveryCounterId = awaitRecoveryCounter(counters);
         heartbeatCounter.setOrdered(epochClock.time());
+
+        isServiceActive = true;
         checkForSnapshot(counters, recoveryCounterId);
         checkForReplay(counters, recoveryCounterId);
     }
@@ -493,6 +492,10 @@ class ClusteredServiceAgent implements Agent, Cluster
         {
             loadSnapshot(RecoveryState.getSnapshotRecordingId(counters, recoveryCounterId, serviceId));
         }
+        else
+        {
+            service.onStart(this, null);
+        }
 
         heartbeatCounter.setOrdered(epochClock.time());
         consensusModuleProxy.ack(clusterLogPosition, ackId++, serviceId);
@@ -671,7 +674,7 @@ class ClusteredServiceAgent implements Agent, Cluster
             {
                 final Image image = awaitImage(sessionId, subscription);
                 loadState(image);
-                service.onLoadSnapshot(image);
+                service.onStart(this, image);
             }
         }
     }

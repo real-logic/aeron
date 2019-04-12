@@ -232,6 +232,31 @@ class TestNode implements AutoCloseable
             return roleChangedTo;
         }
 
+        public void onStart(final Cluster cluster, final Image snapshotImage)
+        {
+            super.onStart(cluster, snapshotImage);
+
+            if (null != snapshotImage)
+            {
+                final FragmentHandler handler =
+                    (buffer, offset, length, header) -> messageCount = buffer.getInt(offset);
+
+                while (true)
+                {
+                    final int fragments = snapshotImage.poll(handler, 1);
+
+                    if (snapshotImage.isClosed() || snapshotImage.isEndOfStream())
+                    {
+                        break;
+                    }
+
+                    cluster.idle(fragments);
+                }
+
+                wasSnapshotLoaded = true;
+            }
+        }
+
         public void onSessionMessage(
             final ClientSession session,
             final long timestampMs,
@@ -265,25 +290,6 @@ class TestNode implements AutoCloseable
 
             snapshotPublication.offer(buffer, 0, length);
             wasSnapshotTaken = true;
-        }
-
-        public void onLoadSnapshot(final Image snapshotImage)
-        {
-            final FragmentHandler handler = (buffer, offset, length, header) -> messageCount = buffer.getInt(offset);
-
-            while (true)
-            {
-                final int fragments = snapshotImage.poll(handler, 1);
-
-                if (fragments == 1)
-                {
-                    break;
-                }
-
-                cluster.idle();
-            }
-
-            wasSnapshotLoaded = true;
         }
 
         public void onRoleChange(final Cluster.Role newRole)

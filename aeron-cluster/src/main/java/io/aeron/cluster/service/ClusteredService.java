@@ -27,12 +27,16 @@ import org.agrona.DirectBuffer;
 public interface ClusteredService
 {
     /**
-     * Start event for the service where the service can perform any initialisation required. This will be called
-     * before any snapshot or logs are replayed.
+     * Start event for the service where the service can perform any initialisation required and load snapshot state.
+     * <p>
+     * <b>Note:</b> As this is a potentially long running operation the implementation should occasional call
+     * {@link Cluster#idle()} or {@link Cluster#idle(int)}, especially when polling the snapshot {@link Image}
+     * returns 0.
      *
      * @param cluster with which the service can interact.
+     * @param snapshotImage from which the service can load its archived state.
      */
-    void onStart(Cluster cluster);
+    void onStart(Cluster cluster, Image snapshotImage);
 
     /**
      * A session has been opened for a client to the cluster.
@@ -81,23 +85,11 @@ public interface ClusteredService
      * The service should take a snapshot and store its state to the provided archive {@link Publication}.
      * <p>
      * <b>Note:</b> As this is a potentially long running operation the implementation should occasional call
-     * {@link Thread#isInterrupted()} and if true then throw an {@link InterruptedException} or
-     * {@link org.agrona.concurrent.AgentTerminationException}.
+     * {@link Cluster#idle()} or {@link Cluster#idle(int)}, especially in the event of back pressure.
      *
      * @param snapshotPublication to which the state should be recorded.
      */
     void onTakeSnapshot(Publication snapshotPublication);
-
-    /**
-     * The service should load its state from a stored snapshot in the provided archived {@link Image}.
-     * <p>
-     * <b>Note:</b> As this is a potentially long running operation the implementation should occasional call
-     * {@link Thread#isInterrupted()} and if true then throw an {@link InterruptedException} or
-     * {@link org.agrona.concurrent.AgentTerminationException}.
-     *
-     * @param snapshotImage to which the service should store its state.
-     */
-    void onLoadSnapshot(Image snapshotImage);
 
     /**
      * Notify that the cluster node has changed role.

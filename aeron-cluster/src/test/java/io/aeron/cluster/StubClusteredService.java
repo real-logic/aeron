@@ -28,7 +28,7 @@ class StubClusteredService implements ClusteredService
 {
     protected Cluster cluster;
 
-    public void onStart(final Cluster cluster)
+    public void onStart(final Cluster cluster, final Image snapshotImage)
     {
         this.cluster = cluster;
     }
@@ -56,10 +56,6 @@ class StubClusteredService implements ClusteredService
     }
 
     public void onTakeSnapshot(final Publication snapshotPublication)
-    {
-    }
-
-    public void onLoadSnapshot(final Image snapshotImage)
     {
     }
 

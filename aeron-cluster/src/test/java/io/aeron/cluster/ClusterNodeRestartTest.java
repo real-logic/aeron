@@ -22,6 +22,7 @@ import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.service.ClientSession;
+import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusteredService;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
@@ -403,6 +404,39 @@ public class ClusterNodeRestartTest
                 private int nextCorrelationId = 0;
                 private int counterValue = 0;
 
+                public void onStart(final Cluster cluster, final Image snapshotImage)
+                {
+                    super.onStart(cluster, snapshotImage);
+
+                    if (null != snapshotImage)
+                    {
+                        while (true)
+                        {
+                            final int fragments = snapshotImage.poll(
+                                (buffer, offset, length, header) ->
+                                {
+                                    nextCorrelationId = buffer.getInt(offset);
+                                    offset += SIZE_OF_INT;
+
+                                    counterValue = buffer.getInt(offset);
+                                    offset += SIZE_OF_INT;
+
+                                    final String s = buffer.getStringAscii(offset);
+
+                                    serviceState.set(s);
+                                },
+                                1);
+
+                            if (fragments == 1)
+                            {
+                                break;
+                            }
+
+                            cluster.idle();
+                        }
+                    }
+                }
+
                 public void onSessionMessage(
                     final ClientSession session,
                     final long timestampMs,
@@ -441,34 +475,6 @@ public class ClusterNodeRestartTest
                     length += buffer.putStringAscii(length, Integer.toString(counterValue));
 
                     snapshotPublication.offer(buffer, 0, length);
-                }
-
-                public void onLoadSnapshot(final Image snapshotImage)
-                {
-                    while (true)
-                    {
-                        final int fragments = snapshotImage.poll(
-                            (buffer, offset, length, header) ->
-                            {
-                                nextCorrelationId = buffer.getInt(offset);
-                                offset += SIZE_OF_INT;
-
-                                counterValue = buffer.getInt(offset);
-                                offset += SIZE_OF_INT;
-
-                                final String s = buffer.getStringAscii(offset);
-
-                                serviceState.set(s);
-                            },
-                            1);
-
-                        if (fragments == 1)
-                        {
-                            break;
-                        }
-
-                        cluster.idle();
-                    }
                 }
             };
 

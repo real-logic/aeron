@@ -321,8 +321,9 @@ public class ClusterTool
             {
                 if ((System.currentTimeMillis() - startTime) > timeoutMs)
                 {
-                    break;
+                    return false;
                 }
+
                 Thread.yield();
             }
 
@@ -334,8 +335,9 @@ public class ClusterTool
                     {
                         if ((System.currentTimeMillis() - startTime) > timeoutMs)
                         {
-                            break;
+                            return false;
                         }
+
                         Thread.yield();
                     }
                 }
@@ -343,7 +345,7 @@ public class ClusterTool
             }
         }
 
-        return id.longValue() == NULL_VALUE;
+        return true;
     }
 
     public static boolean removeMember(final File clusterDir, final int memberId, final boolean isPassive)

@@ -176,7 +176,7 @@ class TestNode implements AutoCloseable
         final ClusterTool.ClusterMembersInfo clusterMembersInfo = new ClusterTool.ClusterMembersInfo();
         final File clusterDir = clusteredMediaDriver.consensusModule().context().clusterDir();
 
-        if (!ClusterTool.listMembers(clusterMembersInfo, clusterDir, TimeUnit.SECONDS.toMillis(1)))
+        if (!ClusterTool.listMembers(clusterMembersInfo, clusterDir, TimeUnit.SECONDS.toMillis(3)))
         {
             throw new IllegalStateException("timeout waiting for cluster members info");
         }

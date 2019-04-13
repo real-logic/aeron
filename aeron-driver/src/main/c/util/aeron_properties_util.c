@@ -34,7 +34,7 @@ int aeron_next_non_whitespace(const char *buffer, size_t start, size_t end)
             continue;
         }
 
-        return (c == '\0') ? -1 : i;
+        return '\0' == c ? -1 : (int)i;
     }
 
     return -1;
@@ -51,7 +51,7 @@ int aeron_properties_parse_line(
     aeron_properties_file_handler_func_t handler,
     void *clientd)
 {
-    bool in_name = (0 < state->name_end) ? false : true;
+    bool in_name = 0 < state->name_end ? false : true;
     int value_start = 0, result = 0;
 
     if (length >= (sizeof(state->property_str) - state->value_end))
@@ -78,8 +78,8 @@ int aeron_properties_parse_line(
                 state->property_str[state->name_end] = '\0';
                 value_start = i + 1;
 
-                /* trium back for whitespace after name */
-                for (size_t j = i - 1; j >= 0; j--)
+                /* trim back for whitespace after name */
+                for (int j = i - 1; j >= 0; j--)
                 {
                     if (' ' != line[j] && '\t' != line[j])
                     {
@@ -242,8 +242,8 @@ int aeron_properties_file_load(const char *filename)
     }
 
     cleanup:
-
     fclose(fpin);
+
     return result;
 }
 

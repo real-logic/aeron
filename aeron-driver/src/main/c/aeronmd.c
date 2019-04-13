@@ -77,6 +77,7 @@ int main(int argc, char **argv)
                 }
                 break;
             }
+
             default:
                 fprintf(stderr, "Usage: %s [-Dname=value]\n", argv[0]);
                 exit(status);

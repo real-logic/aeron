@@ -179,4 +179,72 @@ int aeron_properties_setenv(const char *name, const char *value)
     return 0;
 }
 
+int aeron_properties_setenv_property(void *clientd, const char *name, const char *value)
+{
+    return aeron_properties_setenv(name, value);
+}
+
+int aeron_properties_file_load(const char *filename)
+{
+    FILE *fpin;
+    int result = -1, lineno = 1;
+    char line[AERON_PROPERTIES_MAX_LENGTH];
+    aeron_properties_parser_state_t state;
+
+    if ((fpin = fopen(filename, "r")) == NULL)
+    {
+        aeron_set_err(EINVAL, "could not open filename %s", filename);
+        return -1;
+    }
+
+    aeron_properties_parse_init(&state);
+
+    while (fgets(line, sizeof(line), fpin) != NULL)
+    {
+        size_t length = strlen(line);
+
+        if ('\n' == line[length - 1])
+        {
+            line[length - 1] = '\0';
+            length--;
+
+            if ('\r' == line[length - 1])
+            {
+                line[length - 1] = '\0';
+                length--;
+            }
+
+            if (aeron_properties_parse_line(&state, line, length, aeron_properties_setenv_property, NULL) < 0)
+            {
+                aeron_set_err(EINVAL, "properties file line %" PRId64 " malformed", lineno);
+                goto cleanup;
+            }
+        }
+        else
+        {
+            aeron_set_err(EINVAL, "properties file line %" PRId64 " too long or does not end with newline", lineno);
+            goto cleanup;
+        }
+
+        lineno++;
+    }
+
+    if (!feof(fpin))
+    {
+        int err_code = errno;
+
+        aeron_set_err(err_code, "error reading file: %s", strerror(err_code));
+        goto cleanup;
+    }
+    else
+    {
+        result = 0;
+    }
+
+    cleanup:
+
+    fclose(fpin);
+    return result;
+}
+
 extern void aeron_properties_parse_init(aeron_properties_parser_state_t *state);

@@ -402,6 +402,15 @@ typedef void (*aeron_log_func_t)(const char *);
 bool aeron_is_driver_active(const char *dirname, int64_t timeout, int64_t now, aeron_log_func_t log_func);
 
 /**
+ * Load properties file and set appropriate environment variables of the process so that subsequent
+ * calls to aeron_driver_context_init will use those values.
+ *
+ * @param filename to load.
+ * @return 0 for success and -1 for error.
+ */
+int aeron_properties_file_load(const char *filename);
+
+/**
  * Return current aeron error code (errno) for calling thread.
  *
  * @return aeron error code for calling thread.

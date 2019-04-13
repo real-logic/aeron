@@ -49,4 +49,6 @@ int aeron_properties_parse_line(
 
 int aeron_properties_setenv(const char *name, const char *value);
 
+int aeron_properties_file_load(const char *filename);
+
 #endif //AERON_PROPERTIES_UTIL_H

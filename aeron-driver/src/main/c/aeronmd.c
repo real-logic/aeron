@@ -84,6 +84,15 @@ int main(int argc, char **argv)
     }
 #endif
 
+    if (argc > optind)
+    {
+        if (aeron_properties_file_load(argv[optind]) < 0)
+        {
+            fprintf(stderr, "ERROR: loading properties file (%d) %s\n", aeron_errcode(), aeron_errmsg());
+            exit(status);
+        }
+    }
+
     signal(SIGINT, sigint_handler);
 
     if (aeron_driver_context_init(&context) < 0)

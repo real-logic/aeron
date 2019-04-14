@@ -85,9 +85,9 @@ int main(int argc, char **argv)
     }
 #endif
 
-    if (argc > optind)
+    for (int i = optind; i < argc; i++)
     {
-        if (aeron_properties_file_load(argv[optind]) < 0)
+        if (aeron_properties_file_load(argv[i]) < 0)
         {
             fprintf(stderr, "ERROR: loading properties file (%d) %s\n", aeron_errcode(), aeron_errmsg());
             exit(status);

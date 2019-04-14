@@ -216,13 +216,13 @@ int aeron_properties_file_load(const char *filename)
 
             if (aeron_properties_parse_line(&state, line, length, aeron_properties_setenv_property, NULL) < 0)
             {
-                aeron_set_err(EINVAL, "properties file line %" PRId64 " malformed", lineno);
+                aeron_set_err(EINVAL, "properties file line %" PRId32 " malformed", lineno);
                 goto cleanup;
             }
         }
         else
         {
-            aeron_set_err(EINVAL, "properties file line %" PRId64 " too long or does not end with newline", lineno);
+            aeron_set_err(EINVAL, "properties file line %" PRId32 " too long or does not end with newline", lineno);
             goto cleanup;
         }
 

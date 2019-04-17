@@ -31,15 +31,16 @@ import static org.mockito.Mockito.*;
 public class UntetheredSubscriptionTest
 {
     private static final long REGISTRATION_ID = 1;
+    private static final int TAG_ID = 0;
     private static final int SESSION_ID = 777;
     private static final int STREAM_ID = 3;
     private static final String CHANNEL = CommonContext.IPC_CHANNEL;
     private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int TERM_WINDOW_LENGTH = TERM_BUFFER_LENGTH / 2;
-    public static final long TIME_NS = 1000;
-    public static final long IMAGE_LIVENESS_TIMEOUT_NS = Configuration.imageLivenessTimeoutNs();
-    public static final long UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS = Configuration.untetheredWindowLimitTimeoutNs();
-    public static final long UNTETHERED_RESTING_TIMEOUT_NS = Configuration.untetheredRestingTimeoutNs();
+    private static final long TIME_NS = 1000;
+    private static final long IMAGE_LIVENESS_TIMEOUT_NS = Configuration.imageLivenessTimeoutNs();
+    private static final long UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS = Configuration.untetheredWindowLimitTimeoutNs();
+    private static final long UNTETHERED_RESTING_TIMEOUT_NS = Configuration.untetheredRestingTimeoutNs();
 
     private final RawLog rawLog = TestLogFactory.newLogBuffers(TERM_BUFFER_LENGTH);
     private final AtomicLongPosition publisherLimit = new AtomicLongPosition();
@@ -50,7 +51,7 @@ public class UntetheredSubscriptionTest
     {
         ipcPublication = new IpcPublication(
             REGISTRATION_ID,
-            0,
+            TAG_ID,
             SESSION_ID,
             STREAM_ID,
             mock(Position.class),

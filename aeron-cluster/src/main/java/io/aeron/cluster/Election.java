@@ -763,6 +763,7 @@ public class Election implements AutoCloseable
 
         if (catchupPosition(leadershipTermId, logPosition))
         {
+            timeOfLastUpdateMs = nowMs;
             state(State.FOLLOWER_CATCHUP, nowMs);
         }
 
@@ -784,8 +785,17 @@ public class Election implements AutoCloseable
         if (consensusModuleAgent.hasAppendReachedPosition(logSubscription, logSessionId, catchupLogPosition))
         {
             logPosition = catchupLogPosition;
+            timeOfLastUpdateMs = 0;
             state(State.FOLLOWER_TRANSITION, nowMs);
             workCount += 1;
+        }
+        else if (nowMs > (timeOfLastUpdateMs + leaderHeartbeatIntervalMs))
+        {
+            if (consensusModuleAgent.hasReplayDestination() && catchupPosition(leadershipTermId, logPosition))
+            {
+                timeOfLastUpdateMs = nowMs;
+                workCount += 1;
+            }
         }
 
         return workCount;

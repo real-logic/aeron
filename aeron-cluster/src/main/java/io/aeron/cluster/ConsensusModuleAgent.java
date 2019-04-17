@@ -531,7 +531,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         {
             final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
 
-            if (null != follower)
+            if (null != follower && follower.catchupReplaySessionId() == Aeron.NULL_VALUE)
             {
                 final String replayChannel = new ChannelUriStringBuilder()
                     .media(CommonContext.UDP_MEDIA)
@@ -541,11 +541,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                     .eos(false)
                     .build();
 
-                if (follower.catchupReplaySessionId() == Aeron.NULL_VALUE)
-                {
-                    follower.catchupReplaySessionId(archive.startReplay(
-                        logRecordingId(), logPosition, Long.MAX_VALUE, replayChannel, ctx.logStreamId()));
-                }
+                follower.catchupReplaySessionId(archive.startReplay(
+                    logRecordingId(), logPosition, Long.MAX_VALUE, replayChannel, ctx.logStreamId()));
             }
         }
     }
@@ -1214,6 +1211,11 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     void replayLogDestination(final String replayLogDestination)
     {
         this.replayLogDestination = replayLogDestination;
+    }
+
+    boolean hasReplayDestination()
+    {
+        return null != replayLogDestination;
     }
 
     Subscription createAndRecordLogSubscriptionAsFollower(final String logChannel)

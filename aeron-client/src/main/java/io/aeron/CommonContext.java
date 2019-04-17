@@ -177,7 +177,8 @@ public class CommonContext implements Cloneable
     public static final String LINGER_PARAM_NAME = "linger";
 
     /**
-     * Parameter name for channel URI param to indicate if a subscribed must be reliable or not. Value is boolean.
+     * Parameter name for channel URI param to indicate if a subscribed stream must be reliable or not.
+     * Value is boolean with true to recover loss and false to gap fill.
      */
     public static final String RELIABLE_STREAM_PARAM_NAME = "reliable";
 
@@ -205,6 +206,13 @@ public class CommonContext implements Cloneable
      * Parameter name for channel URI param to indicate if End of Stream (EOS) should be sent or not. Value is boolean.
      */
     public static final String EOS_PARAM_NAME = "eos";
+
+    /**
+     * Parameter name for channel URI param to indicate if a subscription should tether for local flow control.
+     * Value is boolean. A tether only applies when there is more than one matching active subscription. If tether is
+     * true then that subscription is included in flow control. If only one subscription then it tethers pace.
+     */
+    public static final String TETHER_PARAM_NAME = "tether";
 
     private long driverTimeoutMs = DRIVER_TIMEOUT_MS;
     private String aeronDirectoryName = getAeronDirectoryName();

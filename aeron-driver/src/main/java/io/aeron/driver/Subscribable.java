@@ -23,19 +23,21 @@ import org.agrona.concurrent.status.ReadablePosition;
 public interface Subscribable
 {
     /**
-     * Add a subscriber identified by its position.
+     * Add a subscriber and its position used for tracking consumption.
      *
-     * @param subscriberPosition for tracking and identifying the subscriber.
+     * @param subscriptionLink   for identifying the subscriber.
+     * @param subscriberPosition for tracking the subscriber.
      */
-    void addSubscriber(ReadablePosition subscriberPosition);
+    void addSubscriber(SubscriptionLink subscriptionLink, ReadablePosition subscriberPosition);
 
     /**
-     * Remove a subscriber identified by its position.
+     * Remove a subscriber and its position used for tracking consumption.
      * <p>
      * <b>Note:</b> The {@link Subscribable} is responsible for calling {@link ReadablePosition#close()} on
      * removed positions.
      *
-     * @param subscriberPosition to be identified by.
+     * @param subscriptionLink   for identifying the subscriber.
+     * @param subscriberPosition for tracking the subscriber.
      */
-    void removeSubscriber(ReadablePosition subscriberPosition);
+    void removeSubscriber(SubscriptionLink subscriptionLink, ReadablePosition subscriberPosition);
 }

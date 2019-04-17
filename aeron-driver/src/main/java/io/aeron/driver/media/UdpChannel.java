@@ -427,7 +427,7 @@ public final class UdpChannel
      * @param udpChannel to match against.
      * @return true if there is a match otherwise false.
      */
-    public boolean doesTagMatch(final UdpChannel udpChannel)
+    public boolean matchesTag(final UdpChannel udpChannel)
     {
         if (!hasTag || !udpChannel.hasTag() || tag != udpChannel.tag())
         {

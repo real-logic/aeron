@@ -31,6 +31,7 @@ public abstract class SubscriptionLink implements DriverManagedResource
     protected final int sessionId;
     protected final boolean hasSessionId;
     protected final boolean isSparse;
+    protected final boolean isTether;
     protected boolean reachedEndOfLife = false;
     protected final String channel;
     protected final AeronClient aeronClient;
@@ -50,6 +51,7 @@ public abstract class SubscriptionLink implements DriverManagedResource
         this.hasSessionId = params.hasSessionId;
         this.sessionId = params.sessionId;
         this.isSparse = params.isSparse;
+        this.isTether = params.isTether;
 
         positionBySubscribableMap = new IdentityHashMap<>(hasSessionId ? 1 : 8);
     }
@@ -82,6 +84,11 @@ public abstract class SubscriptionLink implements DriverManagedResource
     public boolean isReliable()
     {
         return true;
+    }
+
+    public boolean isTether()
+    {
+        return isTether;
     }
 
     public boolean isSparse()
@@ -137,7 +144,7 @@ public abstract class SubscriptionLink implements DriverManagedResource
 
     public void close()
     {
-        positionBySubscribableMap.forEach(Subscribable::removeSubscriber);
+        positionBySubscribableMap.forEach((subscribable, position) -> subscribable.removeSubscriber(this, position));
     }
 
     public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
@@ -254,5 +261,24 @@ class SpySubscriptionLink extends SubscriptionLink
         return streamId == publication.streamId() &&
             isWildcardOrSessionIdMatch(publication.sessionId()) &&
             udpChannel.canonicalForm().equals(publication.channelEndpoint().udpChannel().canonicalForm());
+    }
+}
+
+class UntetheredSubscription
+{
+    static final int ACTIVE = 0;
+    static final int LINGER = 1;
+    static final int RESTING = 2;
+
+    int state = ACTIVE;
+    long timeOfLastUpdateNs;
+    final SubscriptionLink subscriptionLink;
+    final ReadablePosition position;
+
+    UntetheredSubscription(final SubscriptionLink subscriptionLink, final ReadablePosition position, final long timeNs)
+    {
+        this.subscriptionLink = subscriptionLink;
+        this.position = position;
+        this.timeOfLastUpdateNs = timeNs;
     }
 }

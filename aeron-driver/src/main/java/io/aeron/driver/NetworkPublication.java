@@ -375,7 +375,7 @@ public class NetworkPublication
         }
     }
 
-    public void addSubscriber(final ReadablePosition spyPosition)
+    public void addSubscriber(final SubscriptionLink subscriptionLink, final ReadablePosition spyPosition)
     {
         spyPositions = ArrayUtil.add(spyPositions, spyPosition);
         hasSpies = true;
@@ -387,7 +387,7 @@ public class NetworkPublication
         }
     }
 
-    public void removeSubscriber(final ReadablePosition spyPosition)
+    public void removeSubscriber(final SubscriptionLink subscriptionLink, final ReadablePosition spyPosition)
     {
         spyPositions = ArrayUtil.remove(spyPositions, spyPosition);
         hasSpies = spyPositions.length > 0;

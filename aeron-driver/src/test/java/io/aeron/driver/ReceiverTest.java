@@ -44,6 +44,8 @@ public class ReceiverTest
     private static final String URI = "aeron:udp?endpoint=localhost:45678";
     private static final UdpChannel UDP_CHANNEL = UdpChannel.parse(URI);
     private static final long IMAGE_LIVENESS_TIMEOUT_NS = Configuration.imageLivenessTimeoutNs();
+    private static final long UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS = Configuration.untetheredWindowLimitTimeoutNs();
+    private static final long UNTETHERED_RESTING_TIMEOUT_NS = Configuration.untetheredRestingTimeoutNs();
     private static final long CORRELATION_ID = 20;
     private static final int STREAM_ID = 10;
     private static final int INITIAL_TERM_ID = 3;
@@ -177,6 +179,8 @@ public class ReceiverTest
         final PublicationImage image = new PublicationImage(
             CORRELATION_ID,
             IMAGE_LIVENESS_TIMEOUT_NS,
+            UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS,
+            UNTETHERED_RESTING_TIMEOUT_NS,
             receiveChannelEndpoint,
             0,
             senderAddress,
@@ -249,6 +253,8 @@ public class ReceiverTest
             final PublicationImage image = new PublicationImage(
                 CORRELATION_ID,
                 IMAGE_LIVENESS_TIMEOUT_NS,
+                UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS,
+                UNTETHERED_RESTING_TIMEOUT_NS,
                 receiveChannelEndpoint,
                 0,
                 senderAddress,
@@ -319,6 +325,8 @@ public class ReceiverTest
             final PublicationImage image = new PublicationImage(
                 CORRELATION_ID,
                 IMAGE_LIVENESS_TIMEOUT_NS,
+                UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS,
+                UNTETHERED_RESTING_TIMEOUT_NS,
                 receiveChannelEndpoint,
                 0,
                 senderAddress,
@@ -391,7 +399,9 @@ public class ReceiverTest
             // pass in new term buffer from conductor, which should trigger SM
             final PublicationImage image = new PublicationImage(
                 CORRELATION_ID,
-                Configuration.imageLivenessTimeoutNs(),
+                IMAGE_LIVENESS_TIMEOUT_NS,
+                UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS,
+                UNTETHERED_RESTING_TIMEOUT_NS,
                 receiveChannelEndpoint,
                 0,
                 senderAddress,
@@ -469,6 +479,8 @@ public class ReceiverTest
             final PublicationImage image = new PublicationImage(
                 CORRELATION_ID,
                 IMAGE_LIVENESS_TIMEOUT_NS,
+                UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS,
+                UNTETHERED_RESTING_TIMEOUT_NS,
                 receiveChannelEndpoint,
                 0,
                 senderAddress,

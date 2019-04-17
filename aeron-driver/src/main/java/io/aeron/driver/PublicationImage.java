@@ -26,6 +26,7 @@ import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.logbuffer.TermRebuilder;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
+import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.NanoClock;
@@ -35,6 +36,7 @@ import org.agrona.concurrent.status.Position;
 import org.agrona.concurrent.status.ReadablePosition;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 
 import static io.aeron.driver.LossDetector.lossFound;
 import static io.aeron.driver.LossDetector.rebuildOffset;
@@ -54,6 +56,7 @@ class PublicationImagePadding1
 class PublicationImageConductorFields extends PublicationImagePadding1
 {
     protected long cleanPosition;
+    protected final ArrayList<UntetheredSubscription> untetheredSubscriptions = new ArrayList<>();
     protected ReadablePosition[] subscriberPositions;
     protected LossReport lossReport;
     protected LossReport.ReportEntry reportEntry;
@@ -111,6 +114,8 @@ public class PublicationImage
 
     private final long correlationId;
     private final long imageLivenessTimeoutNs;
+    private final long untetheredWindowLimitTimeoutNs;
+    private final long untetheredRestingTimeoutNs;
     private final int sessionId;
     private final int streamId;
     private final int positionBitsToShift;
@@ -142,6 +147,8 @@ public class PublicationImage
     public PublicationImage(
         final long correlationId,
         final long imageLivenessTimeoutNs,
+        final long untetheredWindowLimitTimeoutNs,
+        final long untetheredRestingTimeoutNs,
         final ReceiveChannelEndpoint channelEndpoint,
         final int transportIndex,
         final InetSocketAddress controlAddress,
@@ -166,6 +173,8 @@ public class PublicationImage
     {
         this.correlationId = correlationId;
         this.imageLivenessTimeoutNs = imageLivenessTimeoutNs;
+        this.untetheredWindowLimitTimeoutNs = untetheredWindowLimitTimeoutNs;
+        this.untetheredRestingTimeoutNs = untetheredRestingTimeoutNs;
         this.channelEndpoint = channelEndpoint;
         this.sessionId = sessionId;
         this.streamId = streamId;
@@ -234,6 +243,15 @@ public class PublicationImage
             position.close();
         }
 
+        for (int i = 0, size = untetheredSubscriptions.size(); i < size; i++)
+        {
+            final UntetheredSubscription untetheredSubscription = untetheredSubscriptions.get(i);
+            if (UntetheredSubscription.RESTING == untetheredSubscription.state)
+            {
+                untetheredSubscription.position.close();
+            }
+        }
+
         congestionControl.close();
         rawLog.close();
     }
@@ -279,24 +297,36 @@ public class PublicationImage
     }
 
     /**
-     * Remove a {@link ReadablePosition} for a subscriber that has been removed so it is not tracked for flow control.
-     *
-     * @param subscriberPosition for the subscriber that has been removed.
+     * {@inheritDoc}
      */
-    public void removeSubscriber(final ReadablePosition subscriberPosition)
+    public void addSubscriber(final SubscriptionLink subscriptionLink, final ReadablePosition subscriberPosition)
     {
-        subscriberPositions = ArrayUtil.remove(subscriberPositions, subscriberPosition);
-        subscriberPosition.close();
+        subscriberPositions = ArrayUtil.add(subscriberPositions, subscriberPosition);
+        if (!subscriptionLink.isTether())
+        {
+            untetheredSubscriptions.add(new UntetheredSubscription(
+                subscriptionLink, subscriberPosition, timeOfLastStatusMessageScheduleNs));
+        }
     }
 
     /**
-     * Add a new subscriber to this image so their position can be tracked for flow control.
-     *
-     * @param subscriberPosition for the subscriber to be added.
+     * {@inheritDoc}
      */
-    public void addSubscriber(final ReadablePosition subscriberPosition)
+    public void removeSubscriber(final SubscriptionLink subscriptionLink, final ReadablePosition subscriberPosition)
     {
-        subscriberPositions = ArrayUtil.add(subscriberPositions, subscriberPosition);
+        subscriberPositions = ArrayUtil.remove(subscriberPositions, subscriberPosition);
+        subscriberPosition.close();
+
+        if (!subscriptionLink.isTether())
+        {
+            for (int lastIndex = untetheredSubscriptions.size() - 1, i = lastIndex; i >= 0; i--)
+            {
+                if (untetheredSubscriptions.get(i).subscriptionLink == subscriptionLink)
+                {
+                    ArrayListUtil.fastUnorderedRemove(untetheredSubscriptions, i, lastIndex--);
+                }
+            }
+        }
     }
 
     /**
@@ -714,6 +744,10 @@ public class PublicationImage
     {
         switch (state)
         {
+            case ACTIVE:
+                checkUntetheredSubscriptions(timeNs, conductor);
+                break;
+
             case INACTIVE:
                 if (isDrained())
                 {
@@ -848,5 +882,73 @@ public class PublicationImage
         endSmChange = changeNumber;
 
         timeOfLastStatusMessageScheduleNs = nowNs;
+    }
+
+    private void checkUntetheredSubscriptions(final long nowNs, final DriverConductor conductor)
+    {
+        final ArrayList<UntetheredSubscription> untetheredSubscriptions = this.untetheredSubscriptions;
+        final int untetheredSubscriptionsSize = untetheredSubscriptions.size();
+        if (0 == untetheredSubscriptionsSize)
+        {
+            return;
+        }
+
+        long maxConsumerPosition = 0;
+        for (final ReadablePosition subscriberPosition : subscriberPositions)
+        {
+            final long position = subscriberPosition.getVolatile();
+            if (position > maxConsumerPosition)
+            {
+                maxConsumerPosition = position;
+            }
+        }
+
+        final int window = nextSmReceiverWindowLength;
+        final long untetheredWindowLimit = (maxConsumerPosition - window) + (window >> 3);
+
+        for (int lastIndex = untetheredSubscriptionsSize - 1, i = lastIndex; i >= 0; i--)
+        {
+            final UntetheredSubscription untethered = untetheredSubscriptions.get(i);
+            switch (untethered.state)
+            {
+                case UntetheredSubscription.ACTIVE:
+                    if (untethered.position.getVolatile() > untetheredWindowLimit)
+                    {
+                        untethered.timeOfLastUpdateNs = nowNs;
+                    }
+                    else if ((untethered.timeOfLastUpdateNs + untetheredWindowLimitTimeoutNs) - nowNs <= 0)
+                    {
+                        conductor.notifyUnavailableImageLink(correlationId, untethered.subscriptionLink);
+                        untethered.state = UntetheredSubscription.LINGER;
+                    }
+                    break;
+
+                case UntetheredSubscription.LINGER:
+                    if ((untethered.timeOfLastUpdateNs + imageLivenessTimeoutNs) - nowNs <= 0)
+                    {
+                        subscriberPositions = ArrayUtil.remove(subscriberPositions, untethered.position);
+                        untethered.state = UntetheredSubscription.RESTING;
+                        untethered.timeOfLastUpdateNs = nowNs;
+                    }
+                    break;
+
+                case UntetheredSubscription.RESTING:
+                    if ((untethered.timeOfLastUpdateNs + untetheredRestingTimeoutNs) - nowNs <= 0)
+                    {
+                        subscriberPositions = ArrayUtil.add(subscriberPositions, untethered.position);
+                        conductor.notifyAvailableImageLink(
+                            correlationId,
+                            sessionId,
+                            untethered.subscriptionLink,
+                            untethered.position.id(),
+                            rebuildPosition.get(),
+                            rawLog.fileName(),
+                            Configuration.sourceIdentity(sourceAddress));
+                        untethered.state = UntetheredSubscription.ACTIVE;
+                        untethered.timeOfLastUpdateNs = nowNs;
+                    }
+                    break;
+            }
+        }
     }
 }

@@ -32,6 +32,7 @@ class SubscriptionParams
     boolean hasSessionId = false;
     boolean isReliable = true;
     boolean isSparse = true;
+    boolean isTether = true;
 
     static SubscriptionParams getSubscriptionParams(final ChannelUri channelUri, final MediaDriver.Context context)
     {
@@ -45,8 +46,6 @@ class SubscriptionParams
         }
 
         int count = 0;
-
-        params.isReliable = !"false".equals(channelUri.get(RELIABLE_STREAM_PARAM_NAME, "true"));
 
         final String initialTermIdStr = channelUri.get(INITIAL_TERM_ID_PARAM_NAME);
         count = initialTermIdStr != null ? count + 1 : count;
@@ -93,15 +92,14 @@ class SubscriptionParams
             params.hasJoinPosition = true;
         }
 
+        final String reliableStr = channelUri.get(RELIABLE_STREAM_PARAM_NAME);
+        params.isReliable = null != reliableStr ? "true".equals(reliableStr) : context.reliableStream();
+
+        final String tetherStr = channelUri.get(TETHER_PARAM_NAME);
+        params.isTether = null != tetherStr ? "true".equals(tetherStr) : context.tetherSubscriptions();
+
         final String sparseStr = channelUri.get(SPARSE_PARAM_NAME);
-        if (null != sparseStr)
-        {
-            params.isSparse = "true".equals(sparseStr);
-        }
-        else
-        {
-            params.isSparse = context.termBufferSparseFile();
-        }
+        params.isSparse = null != sparseStr ? "true".equals(sparseStr) : context.termBufferSparseFile();
 
         return params;
     }

@@ -37,6 +37,7 @@ import org.agrona.concurrent.status.CountersReader;
 import org.agrona.concurrent.status.StatusIndicator;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.channels.DatagramChannel;
 import java.util.concurrent.TimeUnit;
@@ -74,6 +75,16 @@ public class Configuration
      * Should high resolution timer be used on Windows.
      */
     public static final String USE_WINDOWS_HIGH_RES_TIMER_PROP_NAME = "aeron.use.windows.high.res.timer";
+
+    /**
+     * Property name for default boolean value for if subscriptions should have a tether for flow control.
+     */
+    public static final String TETHER_SUBSCRIPTIONS_PROP_NAME = "aeron.tether.subscriptions";
+
+    /**
+     * Property name for default boolean value for if a stream is reliable. True to NAK, false to gap fill.
+     */
+    public static final String RELIABLE_STREAM_PROP_NAME = "aeron.reliable.stream";
 
     /**
      * Property name for boolean value of term buffers should be created sparse.
@@ -250,27 +261,27 @@ public class Configuration
     public static final String PUBLICATION_LINGER_PROP_NAME = "aeron.publication.linger.timeout";
 
     /**
-     * Default time for {@link Publication}s to linger before cleanup in nanoseconds.
+     * Default time for {@link Publication}s to linger after draining and before cleanup in nanoseconds.
      */
     public static final long PUBLICATION_LINGER_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
 
     /**
-     * Property name for {@link Aeron} client liveness timeout.
+     * Property name for {@link Aeron} client liveness timeout after which it is considered not alive.
      */
     public static final String CLIENT_LIVENESS_TIMEOUT_PROP_NAME = "aeron.client.liveness.timeout";
 
     /**
-     * Default timeout for client liveness in nanoseconds.
+     * Default timeout for client liveness timeout after which it is considered not alive.
      */
     public static final long CLIENT_LIVENESS_TIMEOUT_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(5000);
 
     /**
-     * Property name for {@link Image} liveness timeout.
+     * Property name for {@link Image} liveness timeout for how long it lingers around after being drained.
      */
     public static final String IMAGE_LIVENESS_TIMEOUT_PROP_NAME = "aeron.image.liveness.timeout";
 
     /**
-     * Default timeout for {@link Image} liveness in nanoseconds.
+     * Default timeout for {@link Image} liveness timeout for how long it lingers around after being drained.
      */
     public static final long IMAGE_LIVENESS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
 
@@ -337,7 +348,10 @@ public class Configuration
      */
     public static final long IDLE_MAX_PARK_NS = TimeUnit.MILLISECONDS.toNanos(1);
 
-    private static final String CONTROLLABLE_IDLE_STRATEGY = "org.agrona.concurrent.ControllableIdleStrategy";
+    /**
+     * {@link IdleStrategy} to be used when mode can be controlled via a counter.
+     */
+    public static final String CONTROLLABLE_IDLE_STRATEGY = "org.agrona.concurrent.ControllableIdleStrategy";
 
     /**
      * Property name for {@link IdleStrategy} to be employed by {@link Sender} for {@link ThreadingMode#DEDICATED}.
@@ -571,10 +585,37 @@ public class Configuration
     public static final long RETRANSMIT_UNICAST_LINGER_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(60);
 
     /**
+     * Property name of the timeout for when an untethered subscription that is outside the window limit will
+     * participate in local flow control.
+     */
+    public static final String UNTETHERED_WINDOW_LIMIT_TIMEOUT_PROP_NAME = "aeron.untethered.window.limit.timeout";
+
+    /**
+     * Default timeout for when an untethered subscription that is outside the window limit will participate in
+     * local flow control.
+     */
+    public static final long UNTETHERED_WINDOW_LIMIT_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
+
+    /**
+     * Property name of the timeout for when an untethered subscription is resting after not being able to keep up
+     * before it is allowed to rejoin a stream.
+     */
+    public static final String UNTETHERED_RESTING_TIMEOUT_PROP_NAME = "aeron.untethered.resting.timeout";
+
+    /**
+     * Default timeout for when an untethered subscription is resting after not being able to keep up
+     * before it is allowed to rejoin a stream.
+     */
+    public static final long UNTETHERED_RESTING_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
+
+    /**
      * Default max number of active retransmissions per connected stream.
      */
     public static final int MAX_RETRANSMITS_DEFAULT = 16;
 
+    /**
+     * Property name for the class used to validate if a driver should terminate based on token.
+     */
     public static final String TERMINATION_VALIDATOR_PROP_NAME = "aeron.driver.termination.validator";
 
     public static boolean printConfigurationOnStart()
@@ -600,6 +641,16 @@ public class Configuration
     public static boolean termBufferSparseFile()
     {
         return "true".equalsIgnoreCase(getProperty(TERM_BUFFER_SPARSE_FILE_PROP_NAME, "false"));
+    }
+
+    public static boolean tetherSubscriptions()
+    {
+        return "true".equalsIgnoreCase(getProperty(TETHER_SUBSCRIPTIONS_PROP_NAME, "true"));
+    }
+
+    public static boolean reliableStream()
+    {
+        return "true".equalsIgnoreCase(getProperty(RELIABLE_STREAM_PROP_NAME, "true"));
     }
 
     public static boolean performStorageChecks()
@@ -665,6 +716,18 @@ public class Configuration
     public static int ipcPublicationTermWindowLength()
     {
         return getSizeAsInt(IPC_PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME, 0);
+    }
+
+    public static long untetheredWindowLimitTimeoutNs()
+    {
+        return getDurationInNanos(
+            UNTETHERED_WINDOW_LIMIT_TIMEOUT_PROP_NAME, UNTETHERED_WINDOW_LIMIT_TIMEOUT_DEFAULT_NS);
+    }
+
+    public static long untetheredRestingTimeoutNs()
+    {
+        return getDurationInNanos(
+            UNTETHERED_RESTING_TIMEOUT_PROP_NAME, UNTETHERED_RESTING_TIMEOUT_DEFAULT_NS);
     }
 
     /**
@@ -834,7 +897,7 @@ public class Configuration
         return getDurationInNanos(IMAGE_LIVENESS_TIMEOUT_PROP_NAME, IMAGE_LIVENESS_TIMEOUT_DEFAULT_NS);
     }
 
-    public static long publicationUnlockTimeoutNs()
+    public static long publicationUnblockTimeoutNs()
     {
         return getDurationInNanos(PUBLICATION_UNBLOCK_TIMEOUT_PROP_NAME, PUBLICATION_UNBLOCK_TIMEOUT_DEFAULT_NS);
     }
@@ -1072,7 +1135,7 @@ public class Configuration
 
     /**
      * Get the {@link TerminationValidator} implementations which can be used for validating a termination request
-     * sent to the driver.
+     * sent to the driver to ensure the client has the right to terminate a driver.
      *
      * @return the {@link TerminationValidator}
      */
@@ -1238,5 +1301,16 @@ public class Configuration
                 "clientLivenessTimeoutNs=" + clientLivenessTimeoutNs +
                 " <= timerIntervalNs=" + timerIntervalNs);
         }
+    }
+
+    /**
+     * Create a source identity for a given source address.
+     *
+     * @param srcAddress to be used for the identity.
+     * @return a source identity string for a given address.
+     */
+    public static String sourceIdentity(final InetSocketAddress srcAddress)
+    {
+        return srcAddress.getHostString() + ':' + srcAddress.getPort();
     }
 }

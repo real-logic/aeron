@@ -696,9 +696,14 @@ class ClientConductor implements Agent, DriverEventsListener
 
     private void ensureActive()
     {
-        if (isClosed || isTerminating)
+        if (isClosed)
         {
-            throw new AeronException("Aeron client is closed or terminating");
+            throw new AeronException("Aeron client is closed");
+        }
+
+        if (isTerminating)
+        {
+            throw new AeronException("Aeron client is terminating");
         }
     }
 

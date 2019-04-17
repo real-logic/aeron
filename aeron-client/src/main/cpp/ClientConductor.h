@@ -128,11 +128,23 @@ public:
     std::shared_ptr<Counter> findCounter(std::int64_t registrationId);
     void releaseCounter(std::int64_t registrationId);
 
-    void onNewPublication(std::int64_t registrationId, std::int64_t originalRegistrationId, std::int32_t streamId, std::int32_t sessionId,
-        std::int32_t publicationLimitCounterId, std::int32_t channelStatusIndicatorId, const std::string &logFileName);
+    void onNewPublication(
+        std::int64_t registrationId,
+        std::int64_t originalRegistrationId,
+        std::int32_t streamId,
+        std::int32_t sessionId,
+        std::int32_t publicationLimitCounterId,
+        std::int32_t channelStatusIndicatorId,
+        const std::string &logFileName);
 
-    void onNewExclusivePublication(std::int64_t registrationId, std::int64_t originalRegistrationId, std::int32_t streamId,
-        std::int32_t sessionId, std::int32_t publicationLimitCounterId, std::int32_t channelStatusIndicatorId, const std::string &logFileName);
+    void onNewExclusivePublication(
+        std::int64_t registrationId,
+        std::int64_t originalRegistrationId,
+        std::int32_t streamId,
+        std::int32_t sessionId,
+        std::int32_t publicationLimitCounterId,
+        std::int32_t channelStatusIndicatorId,
+        const std::string &logFileName);
 
     void onSubscriptionReady(
         std::int64_t registrationId,
@@ -145,8 +157,13 @@ public:
         std::int32_t errorCode,
         const std::string& errorMessage);
 
-    void onAvailableImage(std::int64_t correlationId, std::int32_t sessionId, std::int32_t subscriberPositionId,
-        std::int64_t subscriptionRegistrationId, const std::string &logFilename, const std::string &sourceIdentity);
+    void onAvailableImage(
+        std::int64_t correlationId,
+        std::int32_t sessionId,
+        std::int32_t subscriberPositionId,
+        std::int64_t subscriptionRegistrationId,
+        const std::string &logFilename,
+        const std::string &sourceIdentity);
 
     void onUnavailableImage(
         std::int64_t correlationId,

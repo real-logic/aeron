@@ -34,10 +34,9 @@ void Context::requestDriverTermination(
         if (cncVersion != CncFileDescriptor::CNC_VERSION)
         {
             throw AeronException(
-                "Aeron CnC version does not match: required=" +
-                std::to_string(CncFileDescriptor::CNC_VERSION) +
-                " version=" +
-                std::to_string(cncVersion), SOURCEINFO);
+                "Aeron CnC version does not match: required=" + std::to_string(CncFileDescriptor::CNC_VERSION) +
+                " version=" + std::to_string(cncVersion),
+                SOURCEINFO);
         }
 
         AtomicBuffer toDriverBuffer(CncFileDescriptor::createToDriverBuffer(cncFile));

@@ -53,6 +53,7 @@ constexpr const char TAG_PREFIX[] = "tag:";
 constexpr const char SPARSE_PARAM_NAME[] = "sparse";
 constexpr const char ALIAS_PARAM_NAME[] = "alias";
 constexpr const char EOS_PARAM_NAME[] = "eos";
+constexpr const char TETHER_PARAM_NAME[] = "tether";
 
 using namespace aeron::util;
 
@@ -71,8 +72,7 @@ public:
     ChannelUri(
         const std::string& prefix,
         const std::string& media,
-        std::unique_ptr<std::unordered_map<std::string, std::string>> params)
-        :
+        std::unique_ptr<std::unordered_map<std::string, std::string>> params) :
         m_prefix(prefix),
         m_media(media),
         m_params(std::move(params))

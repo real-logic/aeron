@@ -323,7 +323,8 @@ public class PublicationImage
             {
                 if (untetheredSubscriptions.get(i).subscriptionLink == subscriptionLink)
                 {
-                    ArrayListUtil.fastUnorderedRemove(untetheredSubscriptions, i, lastIndex--);
+                    ArrayListUtil.fastUnorderedRemove(untetheredSubscriptions, i, lastIndex);
+                    break;
                 }
             }
         }

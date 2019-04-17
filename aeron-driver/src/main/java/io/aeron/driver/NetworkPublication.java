@@ -15,6 +15,7 @@
  */
 package io.aeron.driver;
 
+import io.aeron.CommonContext;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.status.SystemCounters;
@@ -24,6 +25,7 @@ import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.SetupFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
+import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -33,6 +35,7 @@ import org.agrona.concurrent.status.ReadablePosition;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 
 import static io.aeron.driver.Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS;
 import static io.aeron.driver.Configuration.PUBLICATION_SETUP_TIMEOUT_NS;
@@ -57,6 +60,7 @@ class NetworkPublicationConductorFields extends NetworkPublicationPadding1
     protected long lastSenderPosition = 0;
     protected int refCount = 0;
     protected ReadablePosition[] spyPositions = EMPTY_POSITIONS;
+    protected final ArrayList<UntetheredSubscription> untetheredSubscriptions = new ArrayList<>();
 }
 
 class NetworkPublicationPadding2 extends NetworkPublicationConductorFields
@@ -96,6 +100,9 @@ public class NetworkPublication
     private final long unblockTimeoutNs;
     private final long connectionTimeoutNs;
     private final long lingerTimeoutNs;
+    private final long imageLivenessTimeoutNs;
+    private final long untetheredWindowLimitTimeoutNs;
+    private final long untetheredRestingTimeoutNs;
     private final long tag;
     private final int positionBitsToShift;
     private final int initialTermId;
@@ -163,6 +170,9 @@ public class NetworkPublication
         final long unblockTimeoutNs,
         final long connectionTimeoutNs,
         final long lingerTimeoutNs,
+        final long imageLivenessTimeoutNs,
+        final long untetheredWindowLimitTimeoutNs,
+        final long untetheredRestingTimeoutNs,
         final boolean isExclusive,
         final boolean spiesSimulateConnection,
         final boolean signalEos)
@@ -171,6 +181,9 @@ public class NetworkPublication
         this.unblockTimeoutNs = unblockTimeoutNs;
         this.connectionTimeoutNs = connectionTimeoutNs;
         this.lingerTimeoutNs = lingerTimeoutNs;
+        this.imageLivenessTimeoutNs = imageLivenessTimeoutNs;
+        this.untetheredWindowLimitTimeoutNs = untetheredWindowLimitTimeoutNs;
+        this.untetheredRestingTimeoutNs = untetheredRestingTimeoutNs;
         this.tag = tag;
         this.channelEndpoint = channelEndpoint;
         this.rawLog = rawLog;
@@ -239,6 +252,15 @@ public class NetworkPublication
         for (final ReadablePosition position : spyPositions)
         {
             position.close();
+        }
+
+        for (int i = 0, size = untetheredSubscriptions.size(); i < size; i++)
+        {
+            final UntetheredSubscription untetheredSubscription = untetheredSubscriptions.get(i);
+            if (UntetheredSubscription.RESTING == untetheredSubscription.state)
+            {
+                untetheredSubscription.position.close();
+            }
         }
 
         rawLog.close();
@@ -380,6 +402,12 @@ public class NetworkPublication
         spyPositions = ArrayUtil.add(spyPositions, spyPosition);
         hasSpies = true;
 
+        if (!subscriptionLink.isTether())
+        {
+            untetheredSubscriptions.add(new UntetheredSubscription(
+                subscriptionLink, spyPosition, nanoClock.nanoTime()));
+        }
+
         if (spiesSimulateConnection)
         {
             LogBufferDescriptor.isConnected(metaDataBuffer, true);
@@ -392,6 +420,18 @@ public class NetworkPublication
         spyPositions = ArrayUtil.remove(spyPositions, spyPosition);
         hasSpies = spyPositions.length > 0;
         spyPosition.close();
+
+        if (!subscriptionLink.isTether())
+        {
+            for (int lastIndex = untetheredSubscriptions.size() - 1, i = lastIndex; i >= 0; i--)
+            {
+                if (untetheredSubscriptions.get(i).subscriptionLink == subscriptionLink)
+                {
+                    ArrayListUtil.fastUnorderedRemove(untetheredSubscriptions, i, lastIndex);
+                    break;
+                }
+            }
+        }
     }
 
     public void onNak(final int termId, final int termOffset, final int length)
@@ -696,12 +736,71 @@ public class NetworkPublication
         }
     }
 
+    private void checkUntetheredSubscriptions(final long nowNs, final DriverConductor conductor)
+    {
+        final ArrayList<UntetheredSubscription> untetheredSubscriptions = this.untetheredSubscriptions;
+        final int untetheredSubscriptionsSize = untetheredSubscriptions.size();
+        if (0 == untetheredSubscriptionsSize)
+        {
+            return;
+        }
+
+        final long untetheredWindowLimit = (senderPosition.getVolatile() - termWindowLength) + (termWindowLength >> 3);
+
+        for (int lastIndex = untetheredSubscriptionsSize - 1, i = lastIndex; i >= 0; i--)
+        {
+            final UntetheredSubscription untethered = untetheredSubscriptions.get(i);
+            switch (untethered.state)
+            {
+                case UntetheredSubscription.ACTIVE:
+                    if (untethered.position.getVolatile() > untetheredWindowLimit)
+                    {
+                        untethered.timeOfLastUpdateNs = nowNs;
+                    }
+                    else if ((untethered.timeOfLastUpdateNs + untetheredWindowLimitTimeoutNs) - nowNs <= 0)
+                    {
+                        conductor.notifyUnavailableImageLink(registrationId, untethered.subscriptionLink);
+                        untethered.state = UntetheredSubscription.LINGER;
+                    }
+                    break;
+
+                case UntetheredSubscription.LINGER:
+                    if ((untethered.timeOfLastUpdateNs + imageLivenessTimeoutNs) - nowNs <= 0)
+                    {
+                        spyPositions = ArrayUtil.remove(spyPositions, untethered.position);
+                        untethered.state = UntetheredSubscription.RESTING;
+                        untethered.timeOfLastUpdateNs = nowNs;
+                    }
+                    break;
+
+                case UntetheredSubscription.RESTING:
+                    if ((untethered.timeOfLastUpdateNs + untetheredRestingTimeoutNs) - nowNs <= 0)
+                    {
+                        spyPositions = ArrayUtil.add(spyPositions, untethered.position);
+                        conductor.notifyAvailableImageLink(
+                            registrationId,
+                            sessionId,
+                            untethered.subscriptionLink,
+                            untethered.position.id(),
+                            senderPosition.getVolatile(),
+                            rawLog.fileName(),
+                            CommonContext.IPC_CHANNEL);
+                        LogBufferDescriptor.isConnected(metaDataBuffer, true);
+                        untethered.state = UntetheredSubscription.ACTIVE;
+                        untethered.timeOfLastUpdateNs = nowNs;
+                    }
+                    break;
+            }
+        }
+    }
+
     public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
     {
         switch (state)
         {
             case ACTIVE:
             {
+                checkUntetheredSubscriptions(timeNs, conductor);
                 updateConnectedStatus();
                 final long producerPosition = producerPosition();
                 publisherPos.setOrdered(producerPosition);

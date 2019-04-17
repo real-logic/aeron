@@ -218,7 +218,8 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
             {
                 if (untetheredSubscriptions.get(i).subscriptionLink == subscriptionLink)
                 {
-                    ArrayListUtil.fastUnorderedRemove(untetheredSubscriptions, i, lastIndex--);
+                    ArrayListUtil.fastUnorderedRemove(untetheredSubscriptions, i, lastIndex);
+                    break;
                 }
             }
         }

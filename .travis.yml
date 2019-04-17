@@ -120,7 +120,7 @@ matrix:
             - g++-8
           sources:
             - ubuntu-toolchain-r-test
-      script: cppbuild/cppbuild ---build-archive-api
+      script: cppbuild/cppbuild --build-archive-api
 
     - env: COMPILER=clang++
       language: c++

@@ -100,7 +100,6 @@ public class NetworkPublication
     private final long unblockTimeoutNs;
     private final long connectionTimeoutNs;
     private final long lingerTimeoutNs;
-    private final long imageLivenessTimeoutNs;
     private final long untetheredWindowLimitTimeoutNs;
     private final long untetheredRestingTimeoutNs;
     private final long tag;
@@ -170,7 +169,6 @@ public class NetworkPublication
         final long unblockTimeoutNs,
         final long connectionTimeoutNs,
         final long lingerTimeoutNs,
-        final long imageLivenessTimeoutNs,
         final long untetheredWindowLimitTimeoutNs,
         final long untetheredRestingTimeoutNs,
         final boolean isExclusive,
@@ -181,7 +179,6 @@ public class NetworkPublication
         this.unblockTimeoutNs = unblockTimeoutNs;
         this.connectionTimeoutNs = connectionTimeoutNs;
         this.lingerTimeoutNs = lingerTimeoutNs;
-        this.imageLivenessTimeoutNs = imageLivenessTimeoutNs;
         this.untetheredWindowLimitTimeoutNs = untetheredWindowLimitTimeoutNs;
         this.untetheredRestingTimeoutNs = untetheredRestingTimeoutNs;
         this.tag = tag;
@@ -761,11 +758,12 @@ public class NetworkPublication
                     {
                         conductor.notifyUnavailableImageLink(registrationId, untethered.subscriptionLink);
                         untethered.state = UntetheredSubscription.LINGER;
+                        untethered.timeOfLastUpdateNs = nowNs;
                     }
                     break;
 
                 case UntetheredSubscription.LINGER:
-                    if ((untethered.timeOfLastUpdateNs + imageLivenessTimeoutNs) - nowNs <= 0)
+                    if ((untethered.timeOfLastUpdateNs + untetheredWindowLimitTimeoutNs) - nowNs <= 0)
                     {
                         spyPositions = ArrayUtil.remove(spyPositions, untethered.position);
                         untethered.state = UntetheredSubscription.RESTING;

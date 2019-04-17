@@ -921,11 +921,12 @@ public class PublicationImage
                     {
                         conductor.notifyUnavailableImageLink(correlationId, untethered.subscriptionLink);
                         untethered.state = UntetheredSubscription.LINGER;
+                        untethered.timeOfLastUpdateNs = nowNs;
                     }
                     break;
 
                 case UntetheredSubscription.LINGER:
-                    if ((untethered.timeOfLastUpdateNs + imageLivenessTimeoutNs) - nowNs <= 0)
+                    if ((untethered.timeOfLastUpdateNs + untetheredWindowLimitTimeoutNs) - nowNs <= 0)
                     {
                         subscriberPositions = ArrayUtil.remove(subscriberPositions, untethered.position);
                         untethered.state = UntetheredSubscription.RESTING;

@@ -156,7 +156,6 @@ public class SenderTest
             Configuration.publicationUnblockTimeoutNs(),
             Configuration.publicationConnectionTimeoutNs(),
             Configuration.publicationLingerTimeoutNs(),
-            Configuration.imageLivenessTimeoutNs(),
             Configuration.untetheredWindowLimitTimeoutNs(),
             Configuration.untetheredRestingTimeoutNs(),
             false,

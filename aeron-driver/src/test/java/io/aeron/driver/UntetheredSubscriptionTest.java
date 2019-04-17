@@ -93,7 +93,7 @@ public class UntetheredSubscriptionTest
         ipcPublication.updatePublisherLimit();
         assertEquals(TERM_WINDOW_LENGTH, publisherLimit.get());
 
-        final long afterLingerTimeoutNs = windowLimitTimeoutNs + IMAGE_LIVENESS_TIMEOUT_NS;
+        final long afterLingerTimeoutNs = windowLimitTimeoutNs + UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS;
         ipcPublication.onTimeEvent(afterLingerTimeoutNs, 0, conductor);
         ipcPublication.updatePublisherLimit();
         assertEquals(tetheredPosition.get() + TERM_WINDOW_LENGTH, publisherLimit.get());

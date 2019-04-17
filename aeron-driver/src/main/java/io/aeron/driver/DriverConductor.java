@@ -1082,7 +1082,6 @@ public class DriverConductor implements Agent
             ctx.publicationUnblockTimeoutNs(),
             ctx.publicationConnectionTimeoutNs(),
             params.lingerTimeoutNs,
-            ctx.imageLivenessTimeoutNs(),
             ctx.untetheredWindowLimitTimeoutNs(),
             ctx.untetheredRestingTimeoutNs(),
             isExclusive,

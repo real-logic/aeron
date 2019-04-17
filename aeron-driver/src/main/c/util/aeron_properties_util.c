@@ -247,4 +247,20 @@ int aeron_properties_file_load(const char *filename)
     return result;
 }
 
+int aeron_properties_url_load(const char *url)
+{
+    int result = -1;
+
+    if (strncmp("file://", url, strlen("file://")) == 0)
+    {
+        result = aeron_properties_file_load(url + strlen("file://"));
+    }
+    else
+    {
+        aeron_set_err(EINVAL, "URL type not supported: %s", url);
+    }
+
+    return result;
+}
+
 extern void aeron_properties_parse_init(aeron_properties_parser_state_t *state);

@@ -51,4 +51,6 @@ int aeron_properties_setenv(const char *name, const char *value);
 
 int aeron_properties_file_load(const char *filename);
 
+int aeron_properties_url_load(const char *url);
+
 #endif //AERON_PROPERTIES_UTIL_H

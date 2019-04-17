@@ -75,7 +75,15 @@ std::string formatDate(const char *format, std::int64_t millisecondsSinceEpoch)
 
     char timeBuffer[80];
 
-    std::strftime(timeBuffer, sizeof(timeBuffer) - 1, format, std::localtime(&tm));
+    struct tm localTm;
+
+#ifdef _MSC_VER
+    _localtime_s(&localTm, &tm);
+#else
+    ::localtime_r(&tm, &localTm);
+#endif
+
+    std::strftime(timeBuffer, sizeof(timeBuffer) - 1, format, &localTm);
 
     return std::string(timeBuffer);
 }

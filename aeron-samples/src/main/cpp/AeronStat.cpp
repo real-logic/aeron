@@ -106,7 +106,14 @@ int main (int argc, char** argv)
             char currentTime[80];
 
             ::time(&rawtime);
-            ::strftime(currentTime, sizeof(currentTime) - 1, "%H:%M:%S", localtime(&rawtime));
+            struct tm localTm;
+
+#ifdef _MSC_VER
+            _localtime_s(&localTm, &rawTime);
+#else
+            ::localtime_r(&rawtime, &localTm);
+#endif
+            ::strftime(currentTime, sizeof(currentTime) - 1, "%H:%M:%S", &localTm);
 
             std::printf("\033[H\033[2J");
 

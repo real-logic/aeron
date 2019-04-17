@@ -71,10 +71,17 @@ std::string formatDate(std::int64_t millisecondsSinceEpoch)
     char timeBuffer[80];
     char msecBuffer[8];
     char tzBuffer[8];
+    struct tm localTm;
 
-    std::strftime(timeBuffer, sizeof(timeBuffer) - 1, "%Y-%m-%d %H:%M:%S.", std::localtime(&tm));
+#ifdef _MSC_VER
+    _localtime_s(&localTm, &tm);
+#else
+    ::localtime_r(&tm, &localTm);
+#endif
+
+    std::strftime(timeBuffer, sizeof(timeBuffer) - 1, "%Y-%m-%d %H:%M:%S.", &localTm);
     std::snprintf(msecBuffer, sizeof(msecBuffer) - 1, "%03" PRId64, msAfterSec.count());
-    std::strftime(tzBuffer, sizeof(tzBuffer) - 1, "%z", std::localtime(&tm));
+    std::strftime(tzBuffer, sizeof(tzBuffer) - 1, "%z", &localTm);
 
     return std::string(timeBuffer) + std::string(msecBuffer) + std::string(tzBuffer);
 }

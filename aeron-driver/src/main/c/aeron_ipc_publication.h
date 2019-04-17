@@ -61,7 +61,7 @@ typedef struct aeron_ipc_publication_stct
     char *log_file_name;
     int64_t term_window_length;
     int64_t trip_gain;
-    int64_t linger_timeout_ns;
+    int64_t image_liveness_timeout_ns;
     int64_t unblock_timeout_ns;
     int32_t session_id;
     int32_t stream_id;

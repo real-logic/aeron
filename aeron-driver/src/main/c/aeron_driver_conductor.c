@@ -414,7 +414,7 @@ void aeron_ipc_publication_entry_on_time_event(
         case AERON_IPC_PUBLICATION_STATUS_LINGER:
             if (now_ns >
                 (publication->conductor_fields.managed_resource.time_of_last_status_change +
-                publication->linger_timeout_ns))
+                publication->image_liveness_timeout_ns))
             {
                 publication->conductor_fields.has_reached_end_of_life = true;
             }

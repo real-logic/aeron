@@ -156,7 +156,7 @@ int aeron_ipc_publication_create(
     _pub->position_bits_to_shift = (size_t)aeron_number_of_trailing_zeroes((int32_t)params->term_length);
     _pub->term_window_length = (int64_t)aeron_ipc_publication_term_window_length(context, params->term_length);
     _pub->trip_gain = _pub->term_window_length / 8;
-    _pub->linger_timeout_ns = (int64_t)context->publication_linger_timeout_ns;
+    _pub->image_liveness_timeout_ns = (int64_t)context->image_liveness_timeout_ns;
     _pub->unblock_timeout_ns = (int64_t)context->publication_unblock_timeout_ns;
     _pub->is_exclusive = is_exclusive;
 

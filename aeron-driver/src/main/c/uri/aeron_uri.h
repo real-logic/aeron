@@ -53,6 +53,7 @@ aeron_uri_params_t;
 #define AERON_URI_MTU_LENGTH_KEY "mtu"
 #define AERON_URI_SPARSE_TERM_KEY "sparse"
 #define AERON_URI_EOS_KEY "eos"
+#define AERON_URI_TETHER_KEY "tether"
 
 typedef struct aeron_uri_publication_params_stct
 {
@@ -72,6 +73,7 @@ typedef struct aeron_uri_subscription_params_stct
 {
     bool is_reliable;
     bool is_sparse;
+    bool is_tether;
 }
 aeron_uri_subscription_params_t;
 

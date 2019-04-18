@@ -92,6 +92,7 @@ typedef struct aeron_subscription_link_stct
     int32_t channel_length;
     bool is_reliable;
     bool is_sparse;
+    bool is_tether;
 
     aeron_receive_channel_endpoint_t *endpoint;
     aeron_udp_channel_t *spy_channel;

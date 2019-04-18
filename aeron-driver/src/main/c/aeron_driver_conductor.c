@@ -2008,6 +2008,8 @@ int aeron_driver_conductor_on_add_ipc_subscription(
     link->client_id = command->correlated.client_id;
     link->registration_id = command->correlated.correlation_id;
     link->is_reliable = true;
+    link->is_sparse = params.is_sparse;
+    link->is_tether = params.is_tether;
     link->subscribable_list.length = 0;
     link->subscribable_list.capacity = 0;
     link->subscribable_list.array = NULL;
@@ -2089,6 +2091,7 @@ int aeron_driver_conductor_on_add_spy_subscription(
     link->registration_id = command->correlated.correlation_id;
     link->is_reliable = params.is_reliable;
     link->is_sparse = params.is_sparse;
+    link->is_tether = params.is_tether;
     link->subscribable_list.length = 0;
     link->subscribable_list.capacity = 0;
     link->subscribable_list.array = NULL;
@@ -2185,6 +2188,7 @@ int aeron_driver_conductor_on_add_network_subscription(
         link->registration_id = command->correlated.correlation_id;
         link->is_reliable = params.is_reliable;
         link->is_sparse = params.is_sparse;
+        link->is_tether = params.is_tether;
         link->subscribable_list.length = 0;
         link->subscribable_list.capacity = 0;
         link->subscribable_list.array = NULL;

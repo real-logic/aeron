@@ -513,6 +513,7 @@ int aeron_uri_subscription_params(
 {
     params->is_reliable = true;
     params->is_sparse = context->term_buffer_sparse_file;
+    params->is_tether = true;
 
     const char *value_str;
     aeron_uri_params_t *uri_params = AERON_URI_IPC == uri->type ?
@@ -531,6 +532,14 @@ int aeron_uri_subscription_params(
         if (strncmp("true", value_str, strlen("true")) == 0)
         {
             params->is_sparse = true;
+        }
+    }
+
+    if ((value_str = aeron_uri_find_param_value(uri_params, AERON_URI_TETHER_KEY)) != NULL)
+    {
+        if (strncmp("true", value_str, strlen("true")) == 0)
+        {
+            params->is_tether = true;
         }
     }
 

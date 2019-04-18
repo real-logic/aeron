@@ -629,6 +629,51 @@ public class ClusterTest
         shouldCatchUpAfterFollowerMissesMessage(TestMessages.REGISTER_TIMER);
     }
 
+    @Test(timeout = 30_000)
+    public void shouldCatchUpTwoFreshNodesAfterRestart() throws Exception
+    {
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        {
+            final TestNode leader = cluster.awaitLeader();
+            final List<TestNode> followers = cluster.followers();
+
+            cluster.connectClient();
+            final int messageCount = 50_000;
+            for (int i = 0; i < messageCount; i++)
+            {
+                cluster.msgBuffer().putStringWithoutLengthAscii(0, TestMessages.NO_OP);
+                cluster.sendMessage(TestMessages.NO_OP.length());
+            }
+            cluster.awaitResponses(messageCount);
+
+            cluster.node(0).terminationExpected(true);
+            cluster.node(1).terminationExpected(true);
+            cluster.node(2).terminationExpected(true);
+
+            cluster.abortCluster(leader);
+            cluster.awaitNodeTermination(cluster.node(0));
+            cluster.awaitNodeTermination(cluster.node(1));
+            cluster.awaitNodeTermination(cluster.node(2));
+
+            cluster.stopNode(cluster.node(0));
+            cluster.stopNode(cluster.node(1));
+            cluster.stopNode(cluster.node(2));
+
+            final TestNode oldLeader = cluster.startStaticNode(leader.index(), false);
+            final TestNode oldFollower1 = cluster.startStaticNode(followers.get(0).index(), true);
+            final TestNode oldFollower2 = cluster.startStaticNode(followers.get(1).index(), true);
+
+            cluster.awaitLeader();
+
+            assertThat(oldLeader.errors(), is(0L));
+            assertThat(oldFollower1.errors(), is(0L));
+            assertThat(oldFollower2.errors(), is(0L));
+
+            assertThat(oldFollower1.electionState(), is((Election.State)null));
+            assertThat(oldFollower2.electionState(), is((Election.State)null));
+        }
+    }
+
     private void shouldCatchUpAfterFollowerMissesMessage(final String message) throws InterruptedException
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))

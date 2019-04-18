@@ -21,7 +21,6 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include "aeron_driver_common.h"
-#include "aeron_socket.h"
 
 struct ifaddrs;
 struct addrinfo;
@@ -37,6 +36,12 @@ typedef int (*aeron_ifaddr_func_t)
     (void *clientd, const char *name, struct sockaddr *addr, struct sockaddr *netmask, unsigned int flags);
 
 #define AERON_ADDR_LEN(a) (AF_INET6 == (a)->ss_family ? sizeof(struct sockaddr_in6) : sizeof(struct sockaddr_in))
+
+int aeron_udp_port_resolver(const char *port_str, bool optional);
+
+int aeron_ipv4_addr_resolver(const char *host, int protocol, struct sockaddr_storage *sockaddr);
+
+int aeron_ipv6_addr_resolver(const char *host, int protocol, struct sockaddr_storage *sockaddr);
 
 int aeron_lookup_interfaces(aeron_ifaddr_func_t func, void *clientd);
 

@@ -1141,7 +1141,7 @@ public class Configuration
      */
     public static TerminationValidator terminationValidator()
     {
-        TerminationValidator validater = null;
+        TerminationValidator validator = null;
         try
         {
             final String className = getProperty(TERMINATION_VALIDATOR_PROP_NAME);
@@ -1150,14 +1150,14 @@ public class Configuration
                 return new DefaultDenyTerminationValidator();
             }
 
-            validater = (TerminationValidator)Class.forName(className).getConstructor().newInstance();
+            validator = (TerminationValidator)Class.forName(className).getConstructor().newInstance();
         }
         catch (final Exception ex)
         {
             LangUtil.rethrowUnchecked(ex);
         }
 
-        return validater;
+        return validator;
     }
 
     /**

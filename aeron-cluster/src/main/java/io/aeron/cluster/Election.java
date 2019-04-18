@@ -130,9 +130,9 @@ public class Election implements AutoCloseable
     private long logLeadershipTermId;
     private long candidateTermId = NULL_VALUE;
     private int logSessionId = CommonContext.NULL_SESSION_ID;
+    private final Counter stateCounter;
     private ClusterMember leaderMember = null;
     private State state = State.INIT;
-    private Counter stateCounter;
     private Subscription logSubscription;
     private String liveLogDestination;
     private LogReplay logReplay = null;
@@ -900,14 +900,13 @@ public class Election implements AutoCloseable
         consensusModuleAgent.liveLogDestination(liveLogDestination);
     }
 
-    private static ChannelUri followerLogChannel(
-        final String logChannel, final int sessionId, final String logSubscriptiontags)
+    private static ChannelUri followerLogChannel(final String logChannel, final int sessionId, final String tags)
     {
         final ChannelUri channelUri = ChannelUri.parse(logChannel);
         channelUri.remove(CommonContext.MDC_CONTROL_PARAM_NAME);
         channelUri.put(CommonContext.MDC_CONTROL_MODE_PARAM_NAME, CommonContext.MDC_CONTROL_MODE_MANUAL);
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(sessionId));
-        channelUri.put(CommonContext.TAGS_PARAM_NAME, logSubscriptiontags);
+        channelUri.put(CommonContext.TAGS_PARAM_NAME, tags);
 
         return channelUri;
     }

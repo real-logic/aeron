@@ -39,7 +39,7 @@ public class RecordingEventsAdapter implements FragmentHandler
     private final Subscription subscription;
 
     /**
-     * Create an adaptoer for a given subscription to an archive for recording events.
+     * Create an adapter for a given subscription to an archive for recording events.
      *
      * @param listener      to which events are dispatched.
      * @param subscription  to poll for new events.

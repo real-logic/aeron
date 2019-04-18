@@ -1622,7 +1622,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldUseExistingChannelEndpointOnAddPublciationWithSameTagIdAndSameStreamId()
+    public void shouldUseExistingChannelEndpointOnAddPublicationWithSameTagIdAndSameStreamId()
     {
         final long id1 = driverProxy.addPublication(CHANNEL_4000_TAG_ID_1, STREAM_ID_1);
         final long id2 = driverProxy.addPublication(CHANNEL_TAG_ID_1, STREAM_ID_1);

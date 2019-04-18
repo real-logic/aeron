@@ -41,6 +41,7 @@ import static org.agrona.SystemUtil.getDurationInNanos;
  * <p>
  * <b>Note:</b> Instances of this class are not threadsafe.
  */
+@SuppressWarnings("unused")
 public final class AeronCluster implements AutoCloseable
 {
     public static final int INGRESS_HEADER_LENGTH =

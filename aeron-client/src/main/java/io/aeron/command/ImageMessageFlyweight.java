@@ -101,7 +101,7 @@ public class ImageMessageFlyweight
     }
 
     /**
-     * Set the tegistration ID for the subscription.
+     * Set the registration ID for the subscription.
      *
      * @param registrationId for the subscription
      * @return flyweight

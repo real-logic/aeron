@@ -27,7 +27,6 @@ import org.junit.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 
 public class CounterTest
@@ -150,7 +149,7 @@ public class CounterTest
             SystemTest.sleep(1);
         }
 
-        assertTrue(!readableCounter.isClosed());
+        assertFalse(readableCounter.isClosed());
         assertThat(readableCounter.state(), is(CountersReader.RECORD_ALLOCATED));
 
         counter.close();

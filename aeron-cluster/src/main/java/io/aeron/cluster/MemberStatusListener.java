@@ -45,7 +45,7 @@ interface MemberStatusListener
 
     void onCatchupPosition(long leadershipTermId, long logPosition, int followerMemberId);
 
-    void onStopCatchup(long leadershiptTermId, long logPosition, int followerMemberId);
+    void onStopCatchup(long leadershipTermId, long logPosition, int followerMemberId);
 
     void onAddPassiveMember(long correlationId, String memberEndpoints);
 

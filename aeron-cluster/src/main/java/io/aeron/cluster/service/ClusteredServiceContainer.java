@@ -40,6 +40,12 @@ import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE
 import static org.agrona.SystemUtil.getSizeAsInt;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 
+/**
+ * Container for a service in the cluster managed by the Consensus Module. This is where business logic resides and
+ * loaded via {@link ClusteredServiceContainer.Configuration#SERVICE_CLASS_NAME_PROP_NAME} or
+ * {@link ClusteredServiceContainer.Context#clusteredService(ClusteredService)}.
+ */
+@SuppressWarnings("unused")
 public final class ClusteredServiceContainer implements AutoCloseable
 {
     /**

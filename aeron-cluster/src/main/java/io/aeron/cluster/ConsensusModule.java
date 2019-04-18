@@ -45,8 +45,10 @@ import static org.agrona.SystemUtil.*;
 import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 
 /**
- * Component which resides on each node and is responsible for coordinating the consensus within a cluster.
+ * Component which resides on each node and is responsible for coordinating consensus within a cluster and the
+ * lifecycle of clustered services.
  */
+@SuppressWarnings("unused")
 public class ConsensusModule implements AutoCloseable
 {
     /**
@@ -791,10 +793,10 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Interval at which a dynamic joining member will send out add lcuster members and snapshot recording
+         * Interval at which a dynamic joining member will send out add cluster members and snapshot recording
          * queries.
          *
-         * @return Interval at which a dynamic joining member will send out add lcuster members and snapshot recording
+         * @return Interval at which a dynamic joining member will send out add cluster members and snapshot recording
          * queries.
          * @see #DYNAMIC_JOIN_INTERVAL_PROP_NAME
          */

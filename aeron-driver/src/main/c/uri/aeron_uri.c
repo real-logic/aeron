@@ -537,9 +537,9 @@ int aeron_uri_subscription_params(
 
     if ((value_str = aeron_uri_find_param_value(uri_params, AERON_URI_TETHER_KEY)) != NULL)
     {
-        if (strncmp("true", value_str, strlen("true")) == 0)
+        if (strncmp("false", value_str, strlen("false")) == 0)
         {
-            params->is_tether = true;
+            params->is_tether = false;
         }
     }
 

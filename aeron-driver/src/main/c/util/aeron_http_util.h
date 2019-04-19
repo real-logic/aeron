@@ -45,10 +45,11 @@ typedef struct aeron_http_response_stct
 {
     char *buffer;
     size_t cursor;
+    size_t headers_offset;
     size_t body_offset;
     size_t length;
     size_t capacity;
-    size_t response_code;
+    size_t status_code;
     size_t content_length;
     bool parse_err;
 }
@@ -86,5 +87,7 @@ inline void aeron_http_response_delete(aeron_http_response_t *response)
 }
 
 int aeron_http_retrieve(aeron_http_response_t **response, const char *url, int64_t timeout_ns);
+
+int aeron_http_header_get(aeron_http_response_t *response, const char *header_name, char *line, size_t max_length);
 
 #endif //AERON_HTTP_UTIL_H

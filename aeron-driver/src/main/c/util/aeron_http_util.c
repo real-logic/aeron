@@ -135,7 +135,7 @@ bool aeron_http_response_is_complete(aeron_http_response_t *response)
     char line[AERON_HTTP_MAX_HEADER_LENGTH];
     int line_result = 0;
 
-    if (0 == response->response_code)
+    if (0 == response->status_code)
     {
         if ((line_result = aeron_parse_get_line(line, sizeof(line), response->buffer)) == -1)
         {
@@ -144,9 +144,9 @@ bool aeron_http_response_is_complete(aeron_http_response_t *response)
         }
         else if (0 < line_result)
         {
-            char version[8], code_str[4], response_str[1024];
+            char version[8], code_str[4], reason_phrase[1024];
 
-            int matches = sscanf(line, "%7s %3[0-9] %s\r\n", version, code_str, response_str);
+            int matches = sscanf(line, "%7s %3[0-9] %s\r\n", version, code_str, reason_phrase);
 
             if (3 == matches)
             {
@@ -159,8 +159,9 @@ bool aeron_http_response_is_complete(aeron_http_response_t *response)
                     return true;
                 }
 
-                response->response_code = (size_t)code;
+                response->status_code = (size_t)code;
                 response->cursor = line_result;
+                response->headers_offset = line_result;
             }
             else
             {
@@ -185,7 +186,7 @@ bool aeron_http_response_is_complete(aeron_http_response_t *response)
             else if (strncmp(line, "Content-Length:", strlen("Content-Length:")) == 0)
             {
                 errno = 0;
-                unsigned long content_length = strtoul(line + strlen("Content-Length: "), NULL, 10);
+                unsigned long content_length = strtoul(line + strlen("Content-Length:"), NULL, 10);
 
                 if (0 == content_length)
                 {
@@ -212,6 +213,7 @@ bool aeron_http_response_is_complete(aeron_http_response_t *response)
 
 static char aeron_http_request_format[] =
     "GET %s HTTP/1.1\r\n"
+    "Host: %s\r\n"
     "Accept: text/plain, text/*, */*\r\n"
     "Accept-Encoding: identity\r\n"
     "\r\n";
@@ -245,7 +247,8 @@ int aeron_http_retrieve(aeron_http_response_t **response, const char *url, int64
     }
 
     char request[sizeof(parsed_url.path_and_query) + sizeof(aeron_http_request_format) + 1];
-    int length = snprintf(request, sizeof(request) - 1, aeron_http_request_format, parsed_url.path_and_query);
+    int length = snprintf(
+        request, sizeof(request) - 1, aeron_http_request_format, parsed_url.path_and_query, parsed_url.host_and_port);
     ssize_t sent_length = 0;
 
     if (length < 0 || (sent_length = send(sock, request, (size_t)length, 0)) < length)
@@ -273,11 +276,12 @@ int aeron_http_retrieve(aeron_http_response_t **response, const char *url, int64
     }
 
     _response->buffer = NULL;
+    _response->headers_offset = 0;
     _response->cursor = 0;
     _response->body_offset = 0;
     _response->length = 0;
     _response->capacity = 0;
-    _response->response_code = 0;
+    _response->status_code = 0;
     _response->content_length = 0;
     _response->parse_err = false;
 
@@ -339,6 +343,33 @@ int aeron_http_retrieve(aeron_http_response_t **response, const char *url, int64
 
         aeron_http_response_delete(_response);
         return -1;
+}
+
+int aeron_http_header_get(aeron_http_response_t *response, const char *header_name, char *line, size_t max_length)
+{
+    int line_result = 0, header_name_length = strlen(header_name);
+    size_t cursor = response->headers_offset;
+
+    while (cursor < response->body_offset)
+    {
+        if ((line_result = aeron_parse_get_line(line, max_length, response->buffer + cursor)) == -1)
+        {
+            return -1;
+        }
+        else if (0 == line_result)
+        {
+            break;
+        }
+
+        if (strncmp(line, header_name, header_name_length) == 0)
+        {
+            return 1;
+        }
+
+        cursor += line_result;
+    }
+
+    return 0;
 }
 
 extern void aeron_http_response_delete(aeron_http_response_t *response);

@@ -55,11 +55,12 @@ int aeron_http_parse_url(const char *url, aeron_http_parsed_url_t *parsed_url)
 
         i++;
     }
-    end_index = i - 1;
+    end_index = i;
 
     parsed_url->userinfo[0] = '\0';
     parsed_url->host_and_port[0] = '\0';
-    parsed_url->path_and_query[0] = '\0';
+    parsed_url->path_and_query[0] = '/';
+    parsed_url->path_and_query[1] = '\0';
 
     if (-1 != first_slash_index)
     {
@@ -130,6 +131,24 @@ int aeron_http_parse_url(const char *url, aeron_http_parsed_url_t *parsed_url)
     return result;
 }
 
+int aeron_http_response_ensure_capacity(aeron_http_response_t *response, size_t new_capacity)
+{
+    if (new_capacity > response->capacity)
+    {
+        new_capacity = aeron_find_next_power_of_two((int32_t)new_capacity);
+
+        if (aeron_array_ensure_capacity((uint8_t **)&response->buffer, 1, response->capacity, new_capacity) < 0)
+        {
+            return -1;
+        }
+
+        response->capacity = new_capacity;
+        return 0;
+    }
+
+    return 0;
+}
+
 bool aeron_http_response_is_complete(aeron_http_response_t *response)
 {
     char line[AERON_HTTP_MAX_HEADER_LENGTH];
@@ -146,7 +165,7 @@ bool aeron_http_response_is_complete(aeron_http_response_t *response)
         {
             char version[8], code_str[4], reason_phrase[1024];
 
-            int matches = sscanf(line, "%7s %3[0-9] %s\r\n", version, code_str, reason_phrase);
+            int matches = sscanf(line, "%8s %3[0-9] %s\r\n", version, code_str, reason_phrase);
 
             if (3 == matches)
             {
@@ -373,4 +392,3 @@ int aeron_http_header_get(aeron_http_response_t *response, const char *header_na
 }
 
 extern void aeron_http_response_delete(aeron_http_response_t *response);
-extern int aeron_http_response_ensure_capacity(aeron_http_response_t *response, size_t new_capacity);

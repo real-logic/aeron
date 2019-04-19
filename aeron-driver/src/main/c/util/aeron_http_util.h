@@ -23,8 +23,8 @@
 
 #include "aeron_socket.h"
 #include "aeron_parse_util.h"
-#include "aeron_arrayutil.h"
 #include "aeron_bitutil.h"
+#include "aeron_alloc.h"
 
 #define AERON_MAX_HTTP_USERINFO_LENGTH (384)
 #define AERON_MAX_HTTP_PATH_AND_QUERY_LENGTH (512)
@@ -55,27 +55,8 @@ typedef struct aeron_http_response_stct
 }
 aeron_http_response_t;
 
-#define AERON_HTTP_RESPONSE_INITIAL_BUFFER_CAPACITY (4 * 1024)
 #define AERON_HTTP_RESPONSE_RECV_LENGTH (4 * 1024)
 #define AERON_HTTP_MAX_HEADER_LENGTH (1024)
-
-inline int aeron_http_response_ensure_capacity(aeron_http_response_t *response, size_t new_capacity)
-{
-    if (new_capacity > response->capacity)
-    {
-        new_capacity = aeron_find_next_power_of_two((int32_t)new_capacity);
-
-        if (aeron_array_ensure_capacity((uint8_t **)&response->buffer, 1, response->capacity, new_capacity) < 0)
-        {
-            return -1;
-        }
-
-        response->capacity = new_capacity;
-        return 0;
-    }
-
-    return 0;
-}
 
 inline void aeron_http_response_delete(aeron_http_response_t *response)
 {

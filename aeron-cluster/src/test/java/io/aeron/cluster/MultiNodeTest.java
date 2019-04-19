@@ -43,7 +43,6 @@ public class MultiNodeTest
     public void shouldReplayWithAppointedLeaderWithThreeNodesWithNoSnapshot() throws Exception
     {
         final int appointedLeaderIndex = 1;
-        final int messageCount = 10;
 
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(appointedLeaderIndex))
         {
@@ -53,6 +52,7 @@ public class MultiNodeTest
             assertThat(leader.role(), is(Cluster.Role.LEADER));
 
             cluster.connectClient();
+            final int messageCount = 10;
             cluster.sendMessages(messageCount);
             cluster.awaitResponses(messageCount);
             cluster.awaitMessageCountForService(leader, messageCount);
@@ -71,9 +71,6 @@ public class MultiNodeTest
     public void shouldCatchUpWithAppointedLeaderWithThreeNodesWithNoSnapshot() throws Exception
     {
         final int appointedLeaderIndex = 1;
-        final int preCatchupMessageCount = 5;
-        final int postCatchupMessageCount = 10;
-        final int totalMessageCount = preCatchupMessageCount + postCatchupMessageCount;
 
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(appointedLeaderIndex))
         {
@@ -83,6 +80,9 @@ public class MultiNodeTest
             assertThat(leader.role(), is(Cluster.Role.LEADER));
 
             cluster.connectClient();
+            final int preCatchupMessageCount = 5;
+            final int postCatchupMessageCount = 10;
+            final int totalMessageCount = preCatchupMessageCount + postCatchupMessageCount;
             cluster.sendMessages(preCatchupMessageCount);
             cluster.awaitResponses(preCatchupMessageCount);
             cluster.awaitMessageCountForService(leader, preCatchupMessageCount);

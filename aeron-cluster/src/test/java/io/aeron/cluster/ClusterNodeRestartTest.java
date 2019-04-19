@@ -62,9 +62,9 @@ public class ClusterNodeRestartTest
 
     private ClusteredMediaDriver clusteredMediaDriver;
     private ClusteredServiceContainer container;
+    private AeronCluster aeronCluster;
 
     private final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
-    private AeronCluster aeronCluster;
     private final AtomicReference<String> serviceState = new AtomicReference<>();
     private final AtomicLong snapshotCount = new AtomicLong();
     private final Counter mockSnapshotCounter = mock(Counter.class);
@@ -174,7 +174,6 @@ public class ClusterNodeRestartTest
         }
 
         forceCloseForRestart();
-
 
         serviceState.set(null);
         launchClusteredMediaDriver(false);
@@ -400,7 +399,7 @@ public class ClusterNodeRestartTest
     {
         msgBuffer.putInt(MESSAGE_VALUE_OFFSET, value);
 
-        sendBufferIntoCluster(aeronCluster, msgBuffer, MESSAGE_LENGTH);
+        sendMessageIntoCluster(aeronCluster, msgBuffer, MESSAGE_LENGTH);
     }
 
     private void sendTimerMessageIntoCluster(final int value, final long timerCorrelationId, final long delayMs)
@@ -409,15 +408,14 @@ public class ClusterNodeRestartTest
         msgBuffer.putLong(TIMER_MESSAGE_ID_OFFSET, timerCorrelationId);
         msgBuffer.putLong(TIMER_MESSAGE_DELAY_OFFSET, delayMs);
 
-        sendBufferIntoCluster(aeronCluster, msgBuffer, TIMER_MESSAGE_LENGTH);
+        sendMessageIntoCluster(aeronCluster, msgBuffer, TIMER_MESSAGE_LENGTH);
     }
 
-    private static void sendBufferIntoCluster(
-        final AeronCluster aeronCluster, final DirectBuffer buffer, final int length)
+    private static void sendMessageIntoCluster(final AeronCluster cluster, final DirectBuffer buffer, final int length)
     {
         while (true)
         {
-            final long result = aeronCluster.offer(buffer, 0, length);
+            final long result = cluster.offer(buffer, 0, length);
             if (result > 0)
             {
                 break;
@@ -444,23 +442,22 @@ public class ClusterNodeRestartTest
 
                     if (null != snapshotImage)
                     {
+                        final FragmentHandler fragmentHandler = (buffer, offset, length, header) ->
+                        {
+                            nextCorrelationId = buffer.getInt(offset);
+                            offset += SIZE_OF_INT;
+
+                            counterValue = buffer.getInt(offset);
+                            offset += SIZE_OF_INT;
+
+                            final String s = buffer.getStringAscii(offset);
+
+                            serviceState.set(s);
+                        };
+
                         while (true)
                         {
-                            final int fragments = snapshotImage.poll(
-                                (buffer, offset, length, header) ->
-                                {
-                                    nextCorrelationId = buffer.getInt(offset);
-                                    offset += SIZE_OF_INT;
-
-                                    counterValue = buffer.getInt(offset);
-                                    offset += SIZE_OF_INT;
-
-                                    final String s = buffer.getStringAscii(offset);
-
-                                    serviceState.set(s);
-                                },
-                                1);
-
+                            final int fragments = snapshotImage.poll(fragmentHandler, 1);
                             if (fragments == 1)
                             {
                                 break;

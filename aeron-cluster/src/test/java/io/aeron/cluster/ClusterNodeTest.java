@@ -97,13 +97,12 @@ public class ClusterNodeTest
 
         final MutableInteger messageCount = new MutableInteger();
 
-        final EgressListener listener =
-            (clusterSessionId, timestamp, buffer, offset, length, header) ->
-            {
-                assertThat(buffer.getStringWithoutLengthAscii(offset, length), is(msg));
+        final EgressListener listener = (clusterSessionId, timestamp, buffer, offset, length, header) ->
+        {
+            assertThat(buffer.getStringWithoutLengthAscii(offset, length), is(msg));
 
-                messageCount.value += 1;
-            };
+            messageCount.value += 1;
+        };
 
         container = launchEchoService();
         aeronCluster = connectToCluster(listener);
@@ -133,13 +132,11 @@ public class ClusterNodeTest
 
         final MutableInteger messageCount = new MutableInteger();
 
-        final EgressListener listener =
-            (clusterSessionId, timestamp, buffer, offset, length, header) ->
-            {
-                assertThat(buffer.getStringWithoutLengthAscii(offset, length), is(msg + "-scheduled"));
-
-                messageCount.value += 1;
-            };
+        final EgressListener listener = (clusterSessionId, timestamp, buffer, offset, length, header) ->
+        {
+            assertThat(buffer.getStringWithoutLengthAscii(offset, length), is(msg + "-scheduled"));
+            messageCount.value += 1;
+        };
 
         container = launchTimedService();
         aeronCluster = connectToCluster(listener);

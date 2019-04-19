@@ -51,6 +51,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -146,10 +147,13 @@ public class StartClusterFromTruncatedRecordingLogTest
     {
         stopAndStartClusterWithTruncationOfRecordingLog();
         assertClusterIsFunctioningCorrectly();
+
         stopAndStartClusterWithTruncationOfRecordingLog();
         assertClusterIsFunctioningCorrectly();
+
         stopAndStartClusterWithTruncationOfRecordingLog();
         assertClusterIsFunctioningCorrectly();
+
         stopAndStartClusterWithTruncationOfRecordingLog();
         assertClusterIsFunctioningCorrectly();
     }
@@ -263,8 +267,9 @@ public class StartClusterFromTruncatedRecordingLogTest
         {
             final LongHashSet recordingIds = new LongHashSet();
             copiedRecordingLog.entries().stream().mapToLong((e) -> e.recordingId).forEach(recordingIds::add);
-            try (Stream<Path> segments = Files.list(archiveDataDir.toPath())
-                .filter((p) -> p.getFileName().toString().endsWith(".rec")))
+            final Predicate<Path> filterPredicate = (p) -> p.getFileName().toString().endsWith(".rec");
+
+            try (Stream<Path> segments = Files.list(archiveDataDir.toPath()).filter(filterPredicate))
             {
                 segments.filter(
                     (p) ->

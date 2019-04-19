@@ -31,7 +31,6 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
-import static io.aeron.cluster.Election.NOMINATION_TIMEOUT_MULTIPLIER;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
@@ -119,7 +118,7 @@ public class ElectionTest
         election.doWork(t2);
         assertThat(election.state(), is(Election.State.NOMINATE));
 
-        final long t3 = t2 + electionStatusIntervalMs * NOMINATION_TIMEOUT_MULTIPLIER;
+        final long t3 = t2 + (electionTimeoutMs / 2);
         clock.update(t3);
         election.doWork(t3);
         election.doWork(t3);
@@ -406,7 +405,7 @@ public class ElectionTest
         election.doWork(t2);
         assertThat(election.state(), is(Election.State.NOMINATE));
 
-        final long t3 = t2 + electionStatusIntervalMs * NOMINATION_TIMEOUT_MULTIPLIER;
+        final long t3 = t2 + (electionTimeoutMs / 2);
         election.doWork(t3);
         assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
 
@@ -442,7 +441,7 @@ public class ElectionTest
         election.doWork(t2);
         assertThat(election.state(), is(Election.State.NOMINATE));
 
-        final long t3 = t2 + electionStatusIntervalMs * NOMINATION_TIMEOUT_MULTIPLIER;
+        final long t3 = t2 + (electionTimeoutMs / 2);
         election.doWork(t3);
         assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
 
@@ -480,7 +479,7 @@ public class ElectionTest
         election.doWork(t2);
         assertThat(election.state(), is(Election.State.NOMINATE));
 
-        final long t3 = t2 + electionStatusIntervalMs * NOMINATION_TIMEOUT_MULTIPLIER;
+        final long t3 = t2 + (electionTimeoutMs / 2);
         election.doWork(t3);
         assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
 
@@ -513,7 +512,7 @@ public class ElectionTest
         election.doWork(t2);
         assertThat(election.state(), is(Election.State.NOMINATE));
 
-        final long t3 = t2 + electionStatusIntervalMs * NOMINATION_TIMEOUT_MULTIPLIER;
+        final long t3 = t2 + (electionTimeoutMs / 2);
         election.doWork(t3);
         assertThat(election.state(), is(Election.State.CANDIDATE_BALLOT));
 

@@ -484,7 +484,7 @@ public class ClusterTest
     }
 
     @Test(timeout = 30_000)
-    public void shouldLooseLeadershipWhenNoActiveQuorumOfFollowers() throws Exception
+    public void shouldLoseLeadershipWhenNoActiveQuorumOfFollowers() throws Exception
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {

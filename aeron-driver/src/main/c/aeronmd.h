@@ -411,6 +411,25 @@ bool aeron_is_driver_active(const char *dirname, int64_t timeout, int64_t now, a
 int aeron_properties_file_load(const char *filename);
 
 /**
+ * Load properties from HTTP URL and set environment variables for the process so that subsequent
+ * calls to aeron_driver_context_init will use those values.
+ *
+ * @param url to attempt to retrieve and load.
+ * @return 0 for success and -1 for error.
+ */
+int aeron_properties_http_load(const char *url);
+
+/**
+ * Load properties based on URL or filename. If string contains file or http URL, it will attempt
+ * to load properties from a file or http as indicated. If not a URL, then it will try to load the string
+ * as a filename.
+ *
+ * @param url_or_filename to load properties from.
+ * @return 0 for success and -1 for error.
+ */
+int aeron_properties_load(const char *url_or_filename);
+
+/**
  * Return current aeron error code (errno) for calling thread.
  *
  * @return aeron error code for calling thread.

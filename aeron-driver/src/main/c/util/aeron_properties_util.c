@@ -349,7 +349,7 @@ int aeron_properties_http_load(const char *url)
         }
         else
         {
-            aeron_set_err(EINVAL, "status code %" PRIu32 " from HTTP GET", response->status_code);
+            aeron_set_err(EINVAL, "status code %" PRIu32 " from HTTP GET", (uint32_t)response->status_code);
             goto cleanup;
         }
     }
@@ -363,21 +363,21 @@ int aeron_properties_http_load(const char *url)
         return result;
 }
 
-int aeron_properties_url_load(const char *url)
+int aeron_properties_load(const char *url_or_filename)
 {
     int result = -1;
 
-    if (strncmp("file://", url, strlen("file://")) == 0)
+    if (strncmp("file://", url_or_filename, strlen("file://")) == 0)
     {
-        result = aeron_properties_file_load(url + strlen("file://"));
+        result = aeron_properties_file_load(url_or_filename + strlen("file://"));
     }
-    else if (strncmp("http://", url, strlen("http://")) == 0)
+    else if (strncmp("http://", url_or_filename, strlen("http://")) == 0)
     {
-        result = aeron_properties_http_load(url);
+        result = aeron_properties_http_load(url_or_filename);
     }
     else
     {
-        aeron_set_err(EINVAL, "URL type not supported: %s", url);
+        result = aeron_properties_file_load(url_or_filename);
     }
 
     return result;

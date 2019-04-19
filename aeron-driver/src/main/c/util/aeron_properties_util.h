@@ -55,7 +55,7 @@ int aeron_properties_buffer_load(const char *buffer);
 #define AERON_HTTP_PROPERTIES_TIMEOUT_NS (10 * 1000 * 1000 * 1000L)
 int aeron_properties_http_load(const char *url);
 
-int aeron_properties_url_load(const char *url);
+int aeron_properties_load(const char *url_or_filename);
 
 
 #endif //AERON_PROPERTIES_UTIL_H

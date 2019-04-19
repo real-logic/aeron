@@ -27,6 +27,7 @@ import io.aeron.cluster.service.ClusteredService;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
@@ -35,6 +36,7 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -363,6 +365,7 @@ public class ClusterNodeRestartTest
         assertThat(serviceState.get(), is("5"));
     }
 
+    @Ignore
     @Test(timeout = 10_000)
     public void shouldTriggerRescheduledTimerAfterReplay()
     {
@@ -534,29 +537,24 @@ public class ClusterNodeRestartTest
                     scheduleNext(serviceCorrelationId(0), timestampMs + 100);
                 }
 
-                @Override
                 public void onTimerEvent(final long correlationId, final long timestampMs)
                 {
                     triggeredTimersCounter.getAndIncrement();
                     scheduleNext(correlationId, timestampMs + 100);
                 }
 
-                @Override
                 public void onStart(final Cluster cluster, final Image snapshotImage)
                 {
                     super.onStart(cluster, snapshotImage);
 
                     if (null != snapshotImage)
                     {
+                        final FragmentHandler fragmentHandler =
+                            (buffer, offset, length, header) -> triggeredTimersCounter.set(buffer.getInt(offset));
+
                         while (true)
                         {
-                            final int fragments = snapshotImage.poll(
-                                (buffer, offset, length, header) ->
-                                {
-                                    triggeredTimersCounter.set(buffer.getInt(offset));
-                                },
-                                1);
-
+                            final int fragments = snapshotImage.poll(fragmentHandler, 1);
                             if (fragments == 1)
                             {
                                 break;
@@ -567,7 +565,6 @@ public class ClusterNodeRestartTest
                     }
                 }
 
-                @Override
                 public void onTakeSnapshot(final Publication snapshotPublication)
                 {
                     final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();

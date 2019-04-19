@@ -179,7 +179,7 @@ public interface Cluster
      * If applied to other events then they are not guaranteed to be reliable.
      *
      * @param correlationId to identify the timer when it expires.
-     * @param deadlineMs Epoch time in milliseconds after which the timer will fire.
+     * @param deadlineMs    epoch time in milliseconds after which the timer will fire.
      * @return true if the event to schedule a timer request has been sent or false if back pressure is applied.
      * @see #cancelTimer(long)
      */

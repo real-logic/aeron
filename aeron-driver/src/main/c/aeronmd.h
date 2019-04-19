@@ -402,6 +402,15 @@ typedef void (*aeron_log_func_t)(const char *);
 bool aeron_is_driver_active(const char *dirname, int64_t timeout, int64_t now, aeron_log_func_t log_func);
 
 /**
+ * Load properties from a string containing name=value pairs and set appropriate environment variables for the
+ * process so that subsequent calls to aeron_driver_context_init will use those values.
+ *
+ * @param buffer containing properties and values.
+ * @return 0 for success and -1 for error.
+ */
+int aeron_properties_buffer_load(const char *buffer);
+
+/**
  * Load properties file and set appropriate environment variables for the process so that subsequent
  * calls to aeron_driver_context_init will use those values.
  *

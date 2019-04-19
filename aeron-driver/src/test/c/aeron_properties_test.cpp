@@ -23,6 +23,7 @@ extern "C"
 #include "util/aeron_properties_util.h"
 #include "util/aeron_error.h"
 #include "util/aeron_http_util.h"
+#include "aeronmd.h"
 }
 
 class PropertiesTest : public testing::Test

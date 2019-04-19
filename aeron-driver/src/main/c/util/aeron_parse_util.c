@@ -19,6 +19,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <ctype.h>
+#include <inttypes.h>
 #include "util/aeron_parse_util.h"
 #include "util/aeron_error.h"
 
@@ -437,6 +438,28 @@ int aeron_interface_split(const char *interface_str, aeron_parsed_interface_t *p
     return 0;
 }
 
+int aeron_parse_get_line(char *str, size_t max_length, const char *buffer)
+{
+    size_t i;
+
+    for (i = 0; i < max_length - 1; i++)
+    {
+        str[i] = buffer[i];
+        if ('\0' == buffer[i])
+        {
+            return 0;
+        }
+
+        if ('\n' == buffer[i])
+        {
+            str[i + 1] = '\0';
+            return i + 1;
+        }
+    }
+
+    aeron_set_err(EINVAL, "line too long: %" PRIu64 "/%" PRIu64, (uint64_t)i, (uint64_t)max_length);
+    return -1;
+}
 
 extern int aeron_parse_size64(const char *str, uint64_t *result);
 

@@ -48,4 +48,6 @@ int aeron_address_split(const char *address_str, aeron_parsed_address_t *parsed_
 
 int aeron_interface_split(const char *interface_str, aeron_parsed_interface_t *parsed_interface);
 
+int aeron_parse_get_line(char *line, size_t max_length, const char *buffer);
+
 #endif //AERON_AERON_PROP_UTIL_H

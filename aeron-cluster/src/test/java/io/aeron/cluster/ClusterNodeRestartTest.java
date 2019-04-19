@@ -38,6 +38,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -362,6 +363,36 @@ public class ClusterNodeRestartTest
         assertThat(serviceState.get(), is("5"));
     }
 
+    @Test(timeout = 10_000)
+    public void shouldTriggerRescheduledTimerAfterReplay()
+    {
+        final AtomicInteger triggeredTimersCounter = new AtomicInteger();
+
+        launchReschedulingService(triggeredTimersCounter);
+        connectClient();
+
+        sendCountedMessageIntoCluster(0);
+
+        while (triggeredTimersCounter.get() < 1)
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.yield();
+        }
+
+        forceCloseForRestart();
+
+        final int triggeredSinceStart = triggeredTimersCounter.getAndSet(0);
+
+        launchClusteredMediaDriver(false);
+        launchReschedulingService(triggeredTimersCounter);
+
+        while (triggeredTimersCounter.get() <= triggeredSinceStart)
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.yield();
+        }
+    }
+
     private void sendCountedMessageIntoCluster(final int value)
     {
         msgBuffer.putInt(MESSAGE_VALUE_OFFSET, value);
@@ -475,6 +506,83 @@ public class ClusterNodeRestartTest
                     length += buffer.putStringAscii(length, Integer.toString(counterValue));
 
                     snapshotPublication.offer(buffer, 0, length);
+                }
+            };
+
+        container = null;
+
+        container = ClusteredServiceContainer.launch(
+            new ClusteredServiceContainer.Context()
+                .clusteredService(service)
+                .terminationHook(TestUtil.TERMINATION_HOOK)
+                .errorHandler(TestUtil.errorHandler(0)));
+    }
+
+    private void launchReschedulingService(final AtomicInteger triggeredTimersCounter)
+    {
+        final ClusteredService service =
+            new StubClusteredService()
+            {
+                public void onSessionMessage(
+                    final ClientSession session,
+                    final long timestampMs,
+                    final DirectBuffer buffer,
+                    final int offset,
+                    final int length,
+                    final Header header)
+                {
+                    scheduleNext(serviceCorrelationId(0), timestampMs + 100);
+                }
+
+                @Override
+                public void onTimerEvent(final long correlationId, final long timestampMs)
+                {
+                    triggeredTimersCounter.getAndIncrement();
+                    scheduleNext(correlationId, timestampMs + 100);
+                }
+
+                @Override
+                public void onStart(final Cluster cluster, final Image snapshotImage)
+                {
+                    super.onStart(cluster, snapshotImage);
+
+                    if (null != snapshotImage)
+                    {
+                        while (true)
+                        {
+                            final int fragments = snapshotImage.poll(
+                                (buffer, offset, length, header) ->
+                                {
+                                    triggeredTimersCounter.set(buffer.getInt(offset));
+                                },
+                                1);
+
+                            if (fragments == 1)
+                            {
+                                break;
+                            }
+
+                            cluster.idle();
+                        }
+                    }
+                }
+
+                @Override
+                public void onTakeSnapshot(final Publication snapshotPublication)
+                {
+                    final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
+
+                    buffer.putInt(0, triggeredTimersCounter.get());
+
+                    snapshotPublication.offer(buffer, 0, SIZE_OF_INT);
+                }
+
+                private void scheduleNext(final long correlationId, final long deadlineMs)
+                {
+                    while (!cluster.scheduleTimer(correlationId, deadlineMs))
+                    {
+                        cluster.idle();
+                    }
                 }
             };
 

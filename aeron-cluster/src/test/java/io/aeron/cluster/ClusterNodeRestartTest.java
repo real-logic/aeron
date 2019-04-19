@@ -36,7 +36,6 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -364,7 +363,6 @@ public class ClusterNodeRestartTest
         assertThat(serviceState.get(), is("5"));
     }
 
-    @Ignore
     @Test(timeout = 10_000)
     public void shouldTriggerRescheduledTimerAfterReplay()
     {
@@ -531,7 +529,7 @@ public class ClusterNodeRestartTest
                     final int length,
                     final Header header)
                 {
-                    scheduleNext(serviceCorrelationId(0), timestampMs + 100);
+                    scheduleNext(serviceCorrelationId(7), timestampMs + 100);
                 }
 
                 public void onTimerEvent(final long correlationId, final long timestampMs)

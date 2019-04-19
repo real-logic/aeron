@@ -810,6 +810,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     void onScheduleTimer(final long correlationId, final long deadlineMs)
     {
         timerService.scheduleTimer(correlationId, deadlineMs);
+        missedTimersSet.remove(correlationId);
     }
 
     void onCancelTimer(final long correlationId)
@@ -952,7 +953,11 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         clusterTimeMs(timestamp);
 
-        if (!timerService.cancelTimer(correlationId))
+        if (timerService.cancelTimer(correlationId))
+        {
+            missedTimersSet.remove(correlationId);
+        }
+        else
         {
             missedTimersSet.add(correlationId);
         }

@@ -22,6 +22,8 @@
 #include <ctype.h>
 #include "aeron_properties_util.h"
 #include "aeron_error.h"
+#include "aeron_parse_util.h"
+#include "aeron_http_util.h"
 
 int aeron_next_non_whitespace(const char *buffer, size_t start, size_t end)
 {
@@ -247,6 +249,120 @@ int aeron_properties_file_load(const char *filename)
     return result;
 }
 
+int aeron_properties_buffer_load(const char *buffer)
+{
+    char line[AERON_PROPERTIES_MAX_LENGTH];
+    int line_length = 0, cursor = 0, lineno = 1;
+    aeron_properties_parser_state_t state;
+
+    aeron_properties_parse_init(&state);
+
+    while ((line_length = aeron_parse_get_line(line, sizeof(line), buffer + cursor)) > 0)
+    {
+        cursor += line_length;
+
+        if ('\n' == line[line_length - 1])
+        {
+            line[line_length - 1] = '\0';
+            line_length--;
+
+            if ('\r' == line[line_length - 1])
+            {
+                line[line_length - 1] = '\0';
+                line_length--;
+            }
+
+            if (aeron_properties_parse_line(&state, line, line_length, aeron_properties_setenv_property, NULL) < 0)
+            {
+                aeron_set_err(EINVAL, "properties buffer line %" PRId32 " malformed", lineno);
+                return -1;
+            }
+        }
+        else
+        {
+            aeron_set_err(EINVAL, "properties buffer line %" PRId32 " too long or does not end with newline", lineno);
+            return -1;
+        }
+
+        lineno++;
+    }
+
+    if (line_length < 0)
+    {
+        return -1;
+    }
+
+    return 0;
+}
+
+int aeron_properties_http_load(const char *url)
+{
+    char new_url[AERON_MAX_HTTP_URL_LENGTH];
+    aeron_http_response_t *response = NULL;
+    int remaining_redirects = 1, result = -1;
+
+    do
+    {
+        if (aeron_http_retrieve(&response, url, AERON_HTTP_PROPERTIES_TIMEOUT_NS) < 0)
+        {
+            return -1;
+        }
+
+        if (200 == response->status_code)
+        {
+            break;
+        }
+        else if (301 == response->status_code || 302 == response->status_code)
+        {
+            if (remaining_redirects-- > 0)
+            {
+
+                switch (aeron_http_header_get(response, "Location:", new_url, sizeof(new_url)))
+                {
+                    case -1:
+                        goto cleanup;
+
+                    case 0:
+                        aeron_set_err(EINVAL, "%s", "redirect specified, but no Location header found");
+                        goto cleanup;
+
+                    default:
+                    {
+                        url = new_url + strlen("Location:");
+
+                        while ('\0' != *url && (' ' == *url || '\t' == *url))
+                        {
+                            url++;
+                        }
+
+                        aeron_http_response_delete(response);
+                        response = NULL;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                aeron_set_err(EINVAL, "%s", "too many redirects for URL");
+                goto cleanup;
+            }
+        }
+        else
+        {
+            aeron_set_err(EINVAL, "status code %" PRIu32 " from HTTP GET", response->status_code);
+            goto cleanup;
+        }
+    }
+    while (true);
+
+    result = aeron_properties_buffer_load(response->buffer + response->body_offset);
+
+    cleanup:
+        aeron_http_response_delete(response);
+
+        return result;
+}
+
 int aeron_properties_url_load(const char *url)
 {
     int result = -1;
@@ -254,6 +370,10 @@ int aeron_properties_url_load(const char *url)
     if (strncmp("file://", url, strlen("file://")) == 0)
     {
         result = aeron_properties_file_load(url + strlen("file://"));
+    }
+    else if (strncmp("http://", url, strlen("http://")) == 0)
+    {
+        result = aeron_properties_http_load(url);
     }
     else
     {

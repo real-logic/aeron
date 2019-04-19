@@ -50,7 +50,12 @@ int aeron_properties_parse_line(
 int aeron_properties_setenv(const char *name, const char *value);
 
 int aeron_properties_file_load(const char *filename);
+int aeron_properties_buffer_load(const char *buffer);
+
+#define AERON_HTTP_PROPERTIES_TIMEOUT_NS (10 * 1000 * 1000 * 1000L)
+int aeron_properties_http_load(const char *url);
 
 int aeron_properties_url_load(const char *url);
+
 
 #endif //AERON_PROPERTIES_UTIL_H

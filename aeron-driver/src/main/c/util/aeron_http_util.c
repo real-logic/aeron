@@ -388,6 +388,7 @@ int aeron_http_header_get(aeron_http_response_t *response, const char *header_na
         cursor += line_result;
     }
 
+    line[0] = '\0';
     return 0;
 }
 

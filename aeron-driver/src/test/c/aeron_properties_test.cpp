@@ -189,3 +189,15 @@ TEST_F(PropertiesTest, DISABLED_shouldHttpRetrieve)
         std::cout << (response->buffer + response->body_offset) << std::endl;
     }
 }
+
+TEST_F(PropertiesTest, DISABLED_shouldHttpRetrieveProperties)
+{
+    int result = aeron_properties_http_load("http://localhost:8000/aeron-throughput.properties");
+
+    if (-1 == result)
+    {
+        std::cout << aeron_errmsg() << std::endl;
+    }
+
+    std::cout << getenv("AERON_MTU_LENGTH") << std::endl;
+}

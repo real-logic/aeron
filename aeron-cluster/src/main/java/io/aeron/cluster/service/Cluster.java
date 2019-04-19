@@ -167,7 +167,9 @@ public interface Cluster
      * Schedule a timer for a given deadline and provide a correlation id to identify the timer when it expires or
      * for cancellation.
      * <p>
-     * If the correlationId is for an existing scheduled timer then it will be reschedule to the new deadline.
+     * If the correlationId is for an existing scheduled timer then it will be reschedule to the new deadline. However
+     * it is best do generate correlationIds in a monotonic fashion and be aware of potential clashes with other
+     * services in the same cluster. Service isolation can be achieved by using the upper bits for service id.
      * <p>
      * Timers should only be scheduled or cancelled in the context of processing a
      * {@link ClusteredService#onSessionMessage(ClientSession, long, DirectBuffer, int, int, Header)},
@@ -178,7 +180,7 @@ public interface Cluster
      *
      * @param correlationId to identify the timer when it expires.
      * @param deadlineMs Epoch time in milliseconds after which the timer will fire.
-     * @return true if the event to schedule a timer has been sent or false if back pressure is applied.
+     * @return true if the event to schedule a timer request has been sent or false if back pressure is applied.
      * @see #cancelTimer(long)
      */
     boolean scheduleTimer(long correlationId, long deadlineMs);
@@ -194,7 +196,7 @@ public interface Cluster
      * If applied to other events then they are not guaranteed to be reliable.
      *
      * @param correlationId for the timer provided when it was scheduled.
-     * @return true if the event to cancel a scheduled timer has been sent or false if back pressure is applied.
+     * @return true if the event to cancel request has been sent or false if back pressure is applied.
      * @see #scheduleTimer(long, long)
      */
     boolean cancelTimer(long correlationId);

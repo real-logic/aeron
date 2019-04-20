@@ -1104,6 +1104,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
                 if (hasCurrentLeaderSteppedDown)
                 {
+                    commitPosition.proposeMaxOrdered(logPosition);
                     enterElection(cachedTimeMs);
                 }
             }
@@ -2272,7 +2273,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private void enterElection(final long nowMs)
     {
         ingressAdapter.close();
-        commitPosition.proposeMaxOrdered(followerCommitPosition);
 
         election = new Election(
             false,

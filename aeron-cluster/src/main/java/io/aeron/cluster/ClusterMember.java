@@ -632,10 +632,7 @@ public final class ClusterMember
      * @param aeron      from which the publication will be created.
      */
     public static void addMemberStatusPublication(
-        final ClusterMember member,
-        final ChannelUri channelUri,
-        final int streamId,
-        final Aeron aeron)
+        final ClusterMember member, final ChannelUri channelUri, final int streamId, final Aeron aeron)
     {
         channelUri.put(ENDPOINT_PARAM_NAME, member.memberFacingEndpoint());
         member.publication = aeron.addExclusivePublication(channelUri.toString(), streamId);

@@ -45,7 +45,6 @@ const char *aeron_driver_context_get_dir(aeron_driver_context_t *context);
  */
 #define AERON_DIR_WARN_IF_EXISTS_ENV_VAR "AERON_DIR_WARN_IF_EXISTS"
 
-#define AERON_DIR_WARN_IF_EXISTS_DEFAULT true
 int aeron_driver_context_set_dir_warn_if_exists(aeron_driver_context_t *context, bool value);
 bool aeron_driver_context_get_dir_warn_if_exists(aeron_driver_context_t *context);
 
@@ -62,7 +61,6 @@ typedef enum aeron_threading_mode_enum
 }
 aeron_threading_mode_t;
 
-#define AERON_THREADING_MODE_DEFAULT AERON_THREADING_MODE_DEDICATED
 int aeron_driver_context_set_threading_mode(aeron_driver_context_t *context, aeron_threading_mode_t mode);
 aeron_threading_mode_t aeron_driver_context_get_threading_mode(aeron_driver_context_t *context);
 
@@ -71,20 +69,32 @@ aeron_threading_mode_t aeron_driver_context_get_threading_mode(aeron_driver_cont
  */
 #define AERON_DIR_DELETE_ON_START_ENV_VAR "AERON_DIR_DELETE_ON_START"
 
+int aeron_driver_context_set_dir_delete_on_start(aeron_driver_context_t * context, bool value);
+bool aeron_driver_context_get_dir_delete_on_start(aeron_driver_context_t *context);
+
 /**
  * Length (in bytes) of the conductor buffer for control commands from the clients to the media driver conductor.
  */
 #define AERON_TO_CONDUCTOR_BUFFER_LENGTH_ENV_VAR "AERON_CONDUCTOR_BUFFER_LENGTH"
+
+int aeron_driver_context_set_to_conductor_buffer_length(aeron_driver_context_t *context, size_t length);
+size_t aeron_driver_context_get_to_conductor_buffer_length(aeron_driver_context_t *context);
 
 /**
  * Length (in bytes) of the broadcast buffers from the media driver to the clients.
  */
 #define AERON_TO_CLIENTS_BUFFER_LENGTH_ENV_VAR "AERON_CLIENTS_BUFFER_LENGTH"
 
+int aeron_driver_context_set_to_clients_buffer_length(aeron_driver_context_t *context, size_t length);
+size_t aeron_driver_context_get_to_clients_buffer_length(aeron_driver_context_t *context);
+
 /**
  * Length (in bytes) of the value buffer for the system counters.
  */
 #define AERON_COUNTERS_VALUES_BUFFER_LENGTH_ENV_VAR "AERON_COUNTERS_BUFFER_LENGTH"
+
+int aeron_driver_context_set_counters_buffer_length(aeron_driver_context_t *context, size_t length);
+size_t aeron_driver_context_get_counters_buffer_length(aeron_driver_context_t *context);
 
 /**
  * Length (in bytes) of the buffer for the distinct error log.

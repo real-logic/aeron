@@ -1151,8 +1151,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
         final Publication publication = createLogPublication(channelUri, recoveryPlan, election.logPosition());
-
-        logPublisher.connect(publication);
+        logPublisher.publication(publication);
 
         return publication;
     }
@@ -2217,10 +2216,11 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         final long appendedPosition = this.appendedPosition.get();
         if (Cluster.Role.LEADER == role)
         {
-            thisMember.logPosition(appendedPosition).timeOfLastAppendPositionMs(nowMs);
+            final long leaderPosition = Math.min(appendedPosition, logPublisher.position());
+            thisMember.logPosition(leaderPosition).timeOfLastAppendPositionMs(nowMs);
             final long quorumPosition = ClusterMember.quorumPosition(clusterMembers, rankedPositions);
 
-            if (commitPosition.proposeMaxOrdered(Math.min(quorumPosition, appendedPosition)) ||
+            if (commitPosition.proposeMaxOrdered(quorumPosition) ||
                 nowMs >= (timeOfLastLogUpdateMs + leaderHeartbeatIntervalMs))
             {
                 final long commitPosition = this.commitPosition.getWeak();

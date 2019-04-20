@@ -54,7 +54,7 @@ class LogPublisher
         sessionHeaderEncoder.wrapAndApplyHeader(sessionHeaderBuffer, 0, new MessageHeaderEncoder());
     }
 
-    void connect(final Publication publication)
+    void publication(final Publication publication)
     {
         this.publication = publication;
     }

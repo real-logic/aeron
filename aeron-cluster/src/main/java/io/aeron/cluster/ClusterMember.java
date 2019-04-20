@@ -1109,6 +1109,30 @@ public final class ClusterMember
         return highId;
     }
 
+    /**
+     * Create a string of member facing endpoints by id in format {@code id=endpoint,id=endpoint, ...}.
+     *
+     * @param members for which the endpoints string will be generated.
+     * @return  a string of member facing endpoints by id.
+     */
+    public static String clientFacingEndpoints(final ClusterMember[] members)
+    {
+        final StringBuilder builder = new StringBuilder(100);
+
+        for (int i = 0, length = members.length; i < length; i++)
+        {
+            if (0 != i)
+            {
+                builder.append(',');
+            }
+
+            final ClusterMember member = members[i];
+            builder.append(member.id()).append('=').append(member.clientFacingEndpoint());
+        }
+
+        return builder.toString();
+    }
+
     public String toString()
     {
         return "ClusterMember{" +

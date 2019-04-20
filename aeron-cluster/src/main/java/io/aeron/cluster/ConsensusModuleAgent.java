@@ -1201,7 +1201,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             clusterMember.isLeader(clusterMember.id() == leaderMember.id());
         }
 
-        updateClientFacingEndpoints(clusterMembers);
+        clientFacingEndpoints = ClusterMember.clientFacingEndpoints(clusterMembers);
     }
 
     void liveLogDestination(final String liveLogDestination)
@@ -2161,24 +2161,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 ", logPosition=" + logPosition + " expected " + expectedAckPosition +
                 ", ackId=" + ackId + " expected " + serviceAckId);
         }
-    }
-
-    private void updateClientFacingEndpoints(final ClusterMember[] members)
-    {
-        final StringBuilder builder = new StringBuilder(100);
-
-        for (int i = 0, length = members.length; i < length; i++)
-        {
-            if (0 != i)
-            {
-                builder.append(',');
-            }
-
-            final ClusterMember member = members[i];
-            builder.append(member.id()).append('=').append(member.clientFacingEndpoint());
-        }
-
-        clientFacingEndpoints = builder.toString();
     }
 
     private void handleMemberRemovals(final long commitPosition)

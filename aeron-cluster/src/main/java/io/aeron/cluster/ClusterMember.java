@@ -61,7 +61,7 @@ public final class ClusterMember
      * @param clientFacingEndpoint address and port endpoint to which cluster clients connect.
      * @param memberFacingEndpoint address and port endpoint to which other cluster members connect.
      * @param logEndpoint          address and port endpoint to which the log is replicated.
-     * @param transferEndpoint     address and port endpoint to which a stream is replayed to catchup the leader.
+     * @param transferEndpoint     address and port endpoint to which a stream is replayed to catchup to the leader.
      * @param archiveEndpoint      address and port endpoint to which the archive control channel can be reached.
      * @param endpointsDetail      comma separated list of endpoints.
      */
@@ -479,6 +479,15 @@ public final class ClusterMember
     }
 
     /**
+     * Close member status publication and null out reference.
+     */
+    public void closePublication()
+    {
+        CloseHelper.close(publication);
+        publication = null;
+    }
+
+    /**
      * Parse the details for a cluster members from a string.
      * <p>
      * <code>
@@ -596,8 +605,7 @@ public final class ClusterMember
             if (member != exclude)
             {
                 channelUri.put(ENDPOINT_PARAM_NAME, member.memberFacingEndpoint());
-                final String channel = channelUri.toString();
-                member.publication(aeron.addExclusivePublication(channel, streamId));
+                member.publication = aeron.addExclusivePublication(channelUri.toString(), streamId);
             }
         }
     }
@@ -630,8 +638,7 @@ public final class ClusterMember
         final Aeron aeron)
     {
         channelUri.put(ENDPOINT_PARAM_NAME, member.memberFacingEndpoint());
-        final String channel = channelUri.toString();
-        member.publication(aeron.addExclusivePublication(channel, streamId));
+        member.publication = aeron.addExclusivePublication(channelUri.toString(), streamId);
     }
 
     /**

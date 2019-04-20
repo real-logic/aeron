@@ -217,7 +217,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     public void onStart()
     {
         archive = AeronArchive.connect(ctx.archiveContext().clone());
-
         recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
 
         if (null == (dynamicJoin = requiresDynamicJoin()))
@@ -631,7 +630,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
 
                 ClusterMember.addMemberStatusPublication(member, memberStatusUri, ctx.memberStatusStreamId(), aeron);
-
                 logPublisher.addPassiveFollower(member.logEndpoint());
             }
 
@@ -678,8 +676,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             {
                 passiveMembers = ClusterMember.removeMember(passiveMembers, memberId);
 
-                member.publication().close();
-                member.publication(null);
+                member.closePublication();
 
                 logPublisher.removePassiveFollower(member.logEndpoint());
 
@@ -1069,10 +1066,9 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         clusterTimeMs(timestamp);
         this.leadershipTermId = leadershipTermId;
 
-        final ClusterMember[] newMembers = ClusterMember.parse(clusterMembers);
-
         if (ChangeType.JOIN == changeType)
         {
+            final ClusterMember[] newMembers = ClusterMember.parse(clusterMembers);
             if (memberId == this.memberId)
             {
                 this.clusterMembers = newMembers;
@@ -2203,8 +2199,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 clusterMemberByIdMap.remove(member.id());
                 clusterMemberByIdMap.compact();
 
-                CloseHelper.close(member.publication());
-                member.publication(null);
+                member.closePublication();
 
                 logPublisher.removePassiveFollower(member.logEndpoint());
                 pendingMemberRemovals--;

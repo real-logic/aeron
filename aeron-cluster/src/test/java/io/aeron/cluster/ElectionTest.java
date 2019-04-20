@@ -635,16 +635,16 @@ public class ElectionTest
         final ClusterMember[] clusterMembers,
         final ClusterMember thisMember)
     {
-        final Int2ObjectHashMap<ClusterMember> idToClusterMemberMap = new Int2ObjectHashMap<>();
+        final Int2ObjectHashMap<ClusterMember> clusterMemberByIdMap = new Int2ObjectHashMap<>();
 
-        ClusterMember.addClusterMemberIds(clusterMembers, idToClusterMemberMap);
+        ClusterMember.addClusterMemberIds(clusterMembers, clusterMemberByIdMap);
 
         return new Election(
             true,
             logLeadershipTermId,
             logPosition,
             clusterMembers,
-            idToClusterMemberMap,
+            clusterMemberByIdMap,
             thisMember,
             memberStatusAdapter,
             memberStatusPublisher,

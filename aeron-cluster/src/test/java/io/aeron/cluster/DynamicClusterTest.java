@@ -21,6 +21,7 @@ import org.junit.Test;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertThat;
 
 @Ignore
@@ -211,19 +212,19 @@ public class DynamicClusterTest
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
-            TestNode leader = cluster.awaitLeader();
+            final TestNode initialLeader = cluster.awaitLeader();
 
-            leader.terminationExpected(true);
-            leader.removeMember(leader.index(), false);
+            initialLeader.terminationExpected(true);
+            initialLeader.removeMember(initialLeader.index(), false);
 
-            cluster.awaitNodeTermination(leader);
-            cluster.stopNode(leader);
+            cluster.awaitNodeTermination(initialLeader);
+            cluster.stopNode(initialLeader);
 
-            leader = cluster.awaitLeader(leader.index());
+            final TestNode newLeader = cluster.awaitLeader(initialLeader.index());
+            final ClusterTool.ClusterMembersInfo clusterMembersInfo = newLeader.clusterMembersInfo();
 
-            final ClusterTool.ClusterMembersInfo clusterMembersInfo = leader.clusterMembersInfo();
-
-            assertThat(clusterMembersInfo.leaderMemberId, is(leader.index()));
+            assertThat(clusterMembersInfo.leaderMemberId, is(newLeader.index()));
+            assertThat(clusterMembersInfo.leaderMemberId, not(initialLeader.index()));
             assertThat(numberOfMembers(clusterMembersInfo), is(2));
         }
     }

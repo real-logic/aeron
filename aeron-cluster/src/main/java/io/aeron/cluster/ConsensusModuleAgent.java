@@ -113,7 +113,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private final ArrayList<ClusterSession> rejectedSessions = new ArrayList<>();
     private final ArrayList<ClusterSession> redirectSessions = new ArrayList<>();
     private final Int2ObjectHashMap<ClusterMember> clusterMemberByIdMap = new Int2ObjectHashMap<>();
-    private final LongHashSet missedTimersSet = new LongHashSet();
+    private final LongHashSet expiredTimerSet = new LongHashSet();
     private final Authenticator authenticator;
     private final ClusterSessionProxy sessionProxy;
     private final Aeron aeron;
@@ -858,8 +858,10 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     void onScheduleTimer(final long correlationId, final long deadlineMs)
     {
-        timerService.scheduleTimer(correlationId, deadlineMs);
-        missedTimersSet.remove(correlationId);
+        if (!expiredTimerSet.remove(correlationId))
+        {
+            timerService.scheduleTimer(correlationId, deadlineMs);
+        }
     }
 
     void onCancelTimer(final long correlationId)
@@ -950,13 +952,9 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         clusterTimeMs(timestamp);
 
-        if (timerService.cancelTimer(correlationId))
+        if (!timerService.cancelTimer(correlationId))
         {
-            missedTimersSet.remove(correlationId);
-        }
-        else
-        {
-            missedTimersSet.add(correlationId);
+            expiredTimerSet.add(correlationId);
         }
     }
 
@@ -1378,7 +1376,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         commitPosition.setOrdered(logPosition);
         consensusModuleAdapter.poll();
-        cancelMissedTimers();
     }
 
     long logRecordingId()
@@ -1462,11 +1459,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 ctx.ingressChannel(), ctx.ingressStreamId(), null, this::onUnavailableIngressImage));
         }
 
-        cancelMissedTimers();
-        if (missedTimersSet.capacity() > LongHashSet.DEFAULT_INITIAL_CAPACITY)
-        {
-            missedTimersSet.compact();
-        }
 
         return result;
     }
@@ -1532,7 +1524,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             }
 
             consensusModuleAdapter.poll();
-            cancelMissedTimers();
         }
     }
 
@@ -1658,10 +1649,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                     ctx.terminationHook().run();
                 }
             }
-        }
-        else
-        {
-            cancelMissedTimers();
         }
 
         if (null != archive)
@@ -2463,17 +2450,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         logPublisher.disconnect();
         CloseHelper.close(logAdapter);
         logAdapter = null;
-    }
-
-    private void cancelMissedTimers()
-    {
-        for (final LongHashSet.LongIterator iterator = missedTimersSet.iterator(); iterator.hasNext(); )
-        {
-            if (timerService.cancelTimer(iterator.nextValue()))
-            {
-                iterator.remove();
-            }
-        }
     }
 
     private void onUnavailableIngressImage(final Image image)

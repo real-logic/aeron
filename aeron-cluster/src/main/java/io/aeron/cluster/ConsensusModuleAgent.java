@@ -33,10 +33,7 @@ import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.security.Authenticator;
 import io.aeron.status.ReadableCounter;
 import org.agrona.*;
-import org.agrona.collections.ArrayListUtil;
-import org.agrona.collections.Int2ObjectHashMap;
-import org.agrona.collections.Long2ObjectHashMap;
-import org.agrona.collections.LongHashSet;
+import org.agrona.collections.*;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.EpochClock;
@@ -113,7 +110,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private final ArrayList<ClusterSession> rejectedSessions = new ArrayList<>();
     private final ArrayList<ClusterSession> redirectSessions = new ArrayList<>();
     private final Int2ObjectHashMap<ClusterMember> clusterMemberByIdMap = new Int2ObjectHashMap<>();
-    private final LongHashSet expiredTimerSet = new LongHashSet();
+    private final Long2LongCounterMap expiredTimerCountByCorrelationIdMap = new Long2LongCounterMap(0);
     private final Authenticator authenticator;
     private final ClusterSessionProxy sessionProxy;
     private final Aeron aeron;
@@ -665,8 +662,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
     }
 
-    public void onRemoveMember(
-        @SuppressWarnings("unused") final long correlationId, final int memberId, final boolean isPassive)
+    public void onRemoveMember(final long correlationId, final int memberId, final boolean isPassive)
     {
         final ClusterMember member = clusterMemberByIdMap.get(memberId);
 
@@ -858,9 +854,13 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     void onScheduleTimer(final long correlationId, final long deadlineMs)
     {
-        if (!expiredTimerSet.remove(correlationId))
+        if (expiredTimerCountByCorrelationIdMap.get(correlationId) == 0)
         {
             timerService.scheduleTimer(correlationId, deadlineMs);
+        }
+        else
+        {
+            expiredTimerCountByCorrelationIdMap.decrementAndGet(correlationId);
         }
     }
 
@@ -954,7 +954,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         if (!timerService.cancelTimer(correlationId))
         {
-            expiredTimerSet.add(correlationId);
+            expiredTimerCountByCorrelationIdMap.getAndIncrement(correlationId);
         }
     }
 

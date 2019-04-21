@@ -373,7 +373,7 @@ public class ClusterNodeRestartTest
 
         sendCountedMessageIntoCluster(0);
 
-        while (triggeredTimersCounter.get() < 1)
+        while (triggeredTimersCounter.get() < 2)
         {
             TestUtil.checkInterruptedStatus();
             Thread.yield();

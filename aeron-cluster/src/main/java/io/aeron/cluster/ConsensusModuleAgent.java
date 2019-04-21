@@ -171,7 +171,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         role(Cluster.Role.FOLLOWER);
 
         ClusterMember.addClusterMemberIds(clusterMembers, clusterMemberByIdMap);
-        thisMember = determineMemberAndCheckEndpoints(clusterMembers);
+        thisMember = ClusterMember.determineMember(clusterMembers, ctx.clusterMemberId(), ctx.memberEndpoints());
         leaderMember = thisMember;
 
         final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
@@ -2465,30 +2465,5 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
 
         clusterTimeMs = nowMs;
-    }
-
-    private ClusterMember determineMemberAndCheckEndpoints(final ClusterMember[] clusterMembers)
-    {
-        final int memberId = ctx.clusterMemberId();
-        ClusterMember member = NULL_VALUE != memberId ? ClusterMember.findMember(clusterMembers, memberId) : null;
-
-        if ((null == clusterMembers || 0 == clusterMembers.length) && null == member)
-        {
-            member = ClusterMember.parseEndpoints(NULL_VALUE, ctx.memberEndpoints());
-        }
-        else
-        {
-            if (null == member)
-            {
-                throw new ClusterException("memberId=" + memberId + " not found in clusterMembers");
-            }
-
-            if (!ctx.memberEndpoints().equals(""))
-            {
-                ClusterMember.validateMemberEndpoints(member, ctx.memberEndpoints());
-            }
-        }
-
-        return member;
     }
 }

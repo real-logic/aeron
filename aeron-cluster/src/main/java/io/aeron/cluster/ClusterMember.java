@@ -23,6 +23,7 @@ import org.agrona.CloseHelper;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.Int2ObjectHashMap;
 
+import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 
@@ -870,6 +871,39 @@ public final class ClusterMember
         }
 
         return votes >= ClusterMember.quorumThreshold(clusterMembers.length);
+    }
+
+    /**
+     * Determine which member of a cluster this is and check endpoints.
+     *
+     * @param clusterMembers  for the current cluster which can be null.
+     * @param memberId        for this member.
+     * @param memberEndpoints for this member.
+     * @return the {@link ClusterMember} determined.
+     */
+    public static ClusterMember determineMember(
+        final ClusterMember[] clusterMembers, final int memberId, final String memberEndpoints)
+    {
+        ClusterMember member = NULL_VALUE != memberId ? ClusterMember.findMember(clusterMembers, memberId) : null;
+
+        if ((null == clusterMembers || 0 == clusterMembers.length) && null == member)
+        {
+            member = ClusterMember.parseEndpoints(NULL_VALUE, memberEndpoints);
+        }
+        else
+        {
+            if (null == member)
+            {
+                throw new ClusterException("memberId=" + memberId + " not found in clusterMembers");
+            }
+
+            if (!"".equals(memberEndpoints))
+            {
+                ClusterMember.validateMemberEndpoints(member, memberEndpoints);
+            }
+        }
+
+        return member;
     }
 
     /**

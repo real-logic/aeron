@@ -173,3 +173,8 @@ std::shared_ptr<AeronArchive::AsyncConnect> AeronArchive::asyncConnect(AeronArch
 
     return std::make_shared<AeronArchive::AsyncConnect>(ctx, aeron, subscriptionId, publicationId);
 }
+
+std::string AeronArchive::version()
+{
+    return std::string("aeron version " AERON_VERSION_TXT " built " __DATE__ " " __TIME__);
+}

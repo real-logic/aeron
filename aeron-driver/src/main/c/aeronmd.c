@@ -62,7 +62,7 @@ int main(int argc, char **argv)
     aeron_driver_t *driver = NULL;
 
 #ifndef _MSC_VER
-    while ((opt = getopt(argc, argv, "D:")) != -1)
+    while ((opt = getopt(argc, argv, "D:v")) != -1)
     {
         switch (opt)
         {
@@ -78,8 +78,16 @@ int main(int argc, char **argv)
                 break;
             }
 
+            case 'v':
+            {
+                printf("%s <%s> major %d minor %d patch %d\n",
+                    argv[0], aeron_version_full(), aeron_version_major(), aeron_version_minor(), aeron_version_patch());
+                exit(EXIT_SUCCESS);
+                break;
+            }
+
             default:
-                fprintf(stderr, "Usage: %s [-Dname=value]\n", argv[0]);
+                fprintf(stderr, "Usage: %s [-v][-Dname=value]\n", argv[0]);
                 exit(status);
         }
     }

@@ -153,4 +153,9 @@ inline MemoryMappedFile::ptr_t Aeron::mapCncFile(Context &context)
     return cncBuffer;
 }
 
+std::string Aeron::version()
+{
+    return std::string("aeron version " AERON_VERSION_TXT " built " __DATE__ " " __TIME__);
+}
+
 }

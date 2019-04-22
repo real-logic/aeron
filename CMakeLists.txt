@@ -166,6 +166,11 @@ if(NOT DEFINED CMAKE_C_EXTENSIONS)
    set(CMAKE_C_EXTENSIONS OFF)
 endif()
 
+add_definitions(-DAERON_VERSION_TXT="${AERON_VERSION_TXT}")
+add_definitions(-DAERON_VERSION_MAJOR=${aeron_VERSION_MAJOR})
+add_definitions(-DAERON_VERSION_MINOR=${aeron_VERSION_MINOR})
+add_definitions(-DAERON_VERSION_PATCH=${aeron_VERSION_PATCH})
+
 # all UNIX-based platform compiler flags
 if(UNIX)
     add_compile_options(-Wall -Wpedantic -Wextra -Wno-unused-parameter)

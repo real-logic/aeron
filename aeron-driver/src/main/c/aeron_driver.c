@@ -58,6 +58,31 @@
 #include "aeron_driver.h"
 #include "aeron_socket.h"
 
+const char aeron_version_full_str[] = "aeron version " AERON_VERSION_TXT " built " __DATE__ " " __TIME__;
+int aeron_major_version = AERON_VERSION_MAJOR;
+int aeron_minor_version = AERON_VERSION_MINOR;
+int aeron_patch_version = AERON_VERSION_PATCH;
+
+const char *aeron_version_full()
+{
+    return aeron_version_full_str;
+}
+
+int aeron_version_major()
+{
+    return aeron_major_version;
+}
+
+int aeron_version_minor()
+{
+    return aeron_minor_version;
+}
+
+int aeron_version_patch()
+{
+    return aeron_patch_version;
+}
+
 void aeron_log_func_stderr(const char *str)
 {
     fprintf(stderr, "%s\n", str);

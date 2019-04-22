@@ -328,6 +328,13 @@ public:
         return m_context;
     }
 
+    /**
+     * Return the static version and build string for the binary library.
+     *
+     * @return static version and build string for the binary library.
+     */
+    static std::string version();
+
 private:
     std::random_device m_randomDevice;
     std::default_random_engine m_randomEngine;

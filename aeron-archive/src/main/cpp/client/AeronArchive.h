@@ -920,6 +920,13 @@ public:
         return pollForSubscriptionDescriptors<IdleStrategy>(correlationId, subscriptionCount, consumer);
     }
 
+    /**
+     * Return the static version string for the binary library.
+     *
+     * @return static version and build string
+     */
+    static std::string version();
+
 private:
     std::unique_ptr<Context_t> m_ctx;
     std::unique_ptr<ArchiveProxy> m_archiveProxy;

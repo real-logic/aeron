@@ -306,6 +306,34 @@ size_t aeron_driver_context_get_counters_buffer_length(aeron_driver_context_t *c
 #define AERON_SPY_PREFIX "aeron-spy:"
 
 /**
+ * Return full version and build string.
+ *
+ * @return full version and build string.
+ */
+const char *aeron_version_full();
+
+/**
+ * Return major version number.
+ *
+ * @return major version number.
+ */
+int aeron_version_major();
+
+/**
+ * Return minor version number.
+ *
+ * @return minor version number.
+ */
+int aeron_version_minor();
+
+/**
+ * Return patch version number.
+ *
+ * @return patch version number.
+ */
+int aeron_version_patch();
+
+/**
  * Create a aeron_driver_context_t struct and initialize with default values.
  *
  * @param context to create and initialize

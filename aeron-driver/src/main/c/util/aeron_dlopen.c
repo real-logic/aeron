@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+#if defined(__linux__)
+#define _BSD_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #include <stdio.h>
 #include "aeron_dlopen.h"
 
@@ -22,7 +27,7 @@
 const char *aeron_dlinfo(const void *addr, char *buffer, size_t max_buffer_length)
 {
     buffer[0] = '\0';
-    struct dl_info info;
+    Dl_info info;
 
     if (dladdr(addr, &info) <= 0)
     {

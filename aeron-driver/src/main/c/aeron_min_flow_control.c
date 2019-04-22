@@ -149,7 +149,7 @@ int64_t aeron_min_flow_control_strategy_on_sm(
         if (ensure_capacity_result >= 0)
         {
             aeron_min_flow_control_strategy_receiver_t *receiver =
-                &strategy_state->receivers.array[strategy_state->receivers.length];
+                &strategy_state->receivers.array[strategy_state->receivers.length++];
 
             receiver->last_position = position;
             receiver->last_position_plus_window = position + window_length;

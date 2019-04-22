@@ -57,6 +57,7 @@
 #include "util/aeron_fileutil.h"
 #include "aeron_driver.h"
 #include "aeron_socket.h"
+#include "util/aeron_dlopen.h"
 
 const char aeron_version_full_str[] = "aeron version " AERON_VERSION_TXT " built " __DATE__ " " __TIME__;
 int aeron_major_version = AERON_VERSION_MAJOR;
@@ -539,6 +540,33 @@ int aeron_driver_validate_page_size(aeron_driver_t *driver)
     return 0;
 }
 
+void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
+{
+    FILE *fpout = stdout;
+    char buffer[1024];
+
+    fprintf(fpout, "aeron_driver_context_t {");
+    fprintf(fpout, "\n    aeron_dir=%s", context->aeron_dir);
+    fprintf(fpout, "\n    driver_timeout_ms=%" PRIu64, context->driver_timeout_ms);
+    fprintf(fpout, "\n    print_configuration_on_start=%d", context->print_configuration_on_start);
+    fprintf(fpout, "\n    warn_if_dirs_exists=%d", context->warn_if_dirs_exist);
+    fprintf(fpout, "\n    term_buffer_sparse_file=%d", context->term_buffer_sparse_file);
+    fprintf(fpout, "\n    perform_storage_checks=%d", context->perform_storage_checks);
+    fprintf(fpout, "\n    spies_simulate_connection=%d", context->spies_simulate_connection);
+    fprintf(fpout, "\n    reliable_stream=%d", context->reliable_stream);
+    fprintf(fpout, "\n    tether_subscriptions=%d", context->tether_subscriptions);
+    fprintf(fpout, "\n    multicast_flow_control_supplier_func=%p%s",
+        (void *)context->multicast_flow_control_supplier_func,
+        aeron_dlinfo((const void *)context->multicast_flow_control_supplier_func, buffer, sizeof(buffer)));
+    fprintf(fpout, "\n    unicast_flow_control_supplier_func=%p%s",
+        (void *)context->unicast_flow_control_supplier_func,
+        aeron_dlinfo((const void *)context->unicast_flow_control_supplier_func, buffer, sizeof(buffer)));
+    fprintf(fpout, "\n    congestion_control_supplier_func=%p%s",
+        (void *)context->congestion_control_supplier_func,
+        aeron_dlinfo((const void *)context->congestion_control_supplier_func, buffer, sizeof(buffer)));
+    fprintf(fpout, "\n    }\n");
+}
+
 int aeron_driver_shared_do_work(void *clientd)
 {
     aeron_driver_t *driver = (aeron_driver_t *)clientd;
@@ -671,6 +699,11 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
 
     aeron_mpsc_rb_consumer_heartbeat_time(&_driver->conductor.to_driver_commands, aeron_epoch_clock());
     aeron_cnc_version_signal_cnc_ready((aeron_cnc_metadata_t *)context->cnc_map.addr, AERON_CNC_VERSION);
+
+    if (_driver->context->print_configuration_on_start)
+    {
+        aeron_driver_context_print_configuration(_driver->context);
+    }
 
     switch (_driver->context->threading_mode)
     {

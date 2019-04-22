@@ -14,10 +14,24 @@
  * limitations under the License.
  */
 
+#include <stdio.h>
 #include "aeron_dlopen.h"
 
-
 #if defined(AERON_COMPILER_GCC)
+
+const char *aeron_dlinfo(const void *addr, char *buffer, size_t max_buffer_length)
+{
+    buffer[0] = '\0';
+    struct dl_info info;
+
+    if (dladdr(addr, &info) <= 0)
+    {
+        return buffer;
+    }
+
+    snprintf(buffer, max_buffer_length - 1, "(%s:%s)", info.dli_fname, info.dli_sname);
+    return buffer;
+}
 
 #elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
 
@@ -183,6 +197,11 @@ char* aeron_dlerror()
     // Leak
 
     return messageBuffer;
+}
+
+const char *aeron_dlinfo(const void *addr)
+{
+    return "";
 }
 
 #else

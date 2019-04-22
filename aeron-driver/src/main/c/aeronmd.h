@@ -301,6 +301,21 @@ size_t aeron_driver_context_get_counters_buffer_length(aeron_driver_context_t *c
  */
 #define AERON_DRIVER_TERMINATION_VALIDATOR_ENV_VAR "AERON_DRIVER_TERMINATION_VALIDATOR"
 
+/**
+ * Should the driver print its configuration on start to stdout.
+ */
+#define AERON_PRINT_CONFIGURATION_ON_START_ENV_VAR "AERON_PRINT_CONFIGURATION"
+
+/**
+ * Property name for default boolean value for if a stream is reliable. True to NAK, false to gap fill.
+ */
+#define AERON_RELIABLE_STREAM_ENV_VAR "AERON_RELIABLE_STREAM"
+
+/**
+ * Property name for default boolean value for if subscriptions should have a tether for flow control.
+ */
+#define AERON_TETHER_SUBSCRIPTIONS_ENV_VAR "AERON_TETHER_SUBSCRIPTIONS"
+
 #define AERON_IPC_CHANNEL "aeron:ipc"
 #define AERON_IPC_CHANNEL_LEN strlen(AERON_IPC_CHANNEL)
 #define AERON_SPY_PREFIX "aeron-spy:"

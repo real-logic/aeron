@@ -338,6 +338,9 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->term_buffer_sparse_file = false;
     _context->perform_storage_checks = true;
     _context->spies_simulate_connection = false;
+    _context->print_configuration_on_start = false;
+    _context->reliable_stream = true;
+    _context->tether_subscriptions = true;
     _context->driver_timeout_ms = 10 * 1000;
     _context->to_driver_buffer_length = AERON_TO_CONDUCTOR_BUFFER_LENGTH_DEFAULT;
     _context->to_clients_buffer_length = AERON_TO_CLIENTS_BUFFER_LENGTH_DEFAULT;
@@ -426,6 +429,18 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->spies_simulate_connection = aeron_config_parse_bool(
         getenv(AERON_SPIES_SIMULATE_CONNECTION_ENV_VAR),
         _context->spies_simulate_connection);
+
+    _context->print_configuration_on_start = aeron_config_parse_bool(
+        getenv(AERON_PRINT_CONFIGURATION_ON_START_ENV_VAR),
+        _context->print_configuration_on_start);
+
+    _context->reliable_stream = aeron_config_parse_bool(
+        getenv(AERON_RELIABLE_STREAM_ENV_VAR),
+        _context->reliable_stream);
+
+    _context->tether_subscriptions = aeron_config_parse_bool(
+        getenv(AERON_TETHER_SUBSCRIPTIONS_ENV_VAR),
+        _context->tether_subscriptions);
 
     _context->to_driver_buffer_length = aeron_config_parse_size64(
         AERON_TO_CONDUCTOR_BUFFER_LENGTH_ENV_VAR,

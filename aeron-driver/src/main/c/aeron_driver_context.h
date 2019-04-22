@@ -73,6 +73,9 @@ typedef struct aeron_driver_context_stct
     bool term_buffer_sparse_file;               /* aeron.term.buffer.sparse.file = false */
     bool perform_storage_checks;                /* aeron.perform.storage.checks = true */
     bool spies_simulate_connection;             /* aeron.spies.simulate.connection = false */
+    bool print_configuration_on_start;          /* aeron.print.configuration = false */
+    bool reliable_stream;                       /* aeron.reliable.stream = true */
+    bool tether_subscriptions;                  /* aeron.tether.subscriptions = true */
     uint64_t driver_timeout_ms;                 /* aeron.driver.timeout = 10s */
     uint64_t client_liveness_timeout_ns;        /* aeron.client.liveness.timeout = 5s */
     uint64_t publication_linger_timeout_ns;     /* aeron.publication.linger.timeout = 5s */
@@ -165,6 +168,8 @@ typedef struct aeron_driver_context_stct
     int64_t receiver_id;
 }
 aeron_driver_context_t;
+
+void aeron_driver_context_print_configuration(aeron_driver_context_t *context);
 
 void aeron_driver_fill_cnc_metadata(aeron_driver_context_t *context);
 

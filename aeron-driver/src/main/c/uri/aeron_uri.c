@@ -511,9 +511,9 @@ int aeron_uri_subscription_params(
     aeron_uri_subscription_params_t *params,
     aeron_driver_context_t *context)
 {
-    params->is_reliable = true;
+    params->is_reliable = context->reliable_stream;
     params->is_sparse = context->term_buffer_sparse_file;
-    params->is_tether = true;
+    params->is_tether = context->tether_subscriptions;
 
     const char *value_str;
     aeron_uri_params_t *uri_params = AERON_URI_IPC == uri->type ?

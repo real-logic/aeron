@@ -22,10 +22,13 @@
 #if defined(AERON_COMPILER_GCC)
 
 #include <dlfcn.h>
+#include <stddef.h>
 
 #define aeron_dlsym dlsym
 #define aeron_dlopen(x) dlopen(x, RTLD_LAZY)
 #define aeron_dlerror dlerror
+
+const char *aeron_dlinfo(const void *addr, char *buffer, size_t max_buffer_length);
 
 #elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
 
@@ -38,6 +41,7 @@
 void* aeron_dlsym(HMODULE module, LPCSTR name);
 HMODULE aeron_dlopen(LPCSTR filename);
 char* aeron_dlerror();
+const char *aeron_dlinfo(const void *addr);
 
 #else
 #error Unsupported platform!

@@ -454,6 +454,7 @@ public final class MediaDriver implements AutoCloseable
         private int publicationReservedSessionIdLow = Configuration.publicationReservedSessionIdLow();
         private int publicationReservedSessionIdHigh = Configuration.publicationReservedSessionIdHigh();
         private int lossReportBufferLength = Configuration.lossReportBufferLength();
+        private int sendToStatusMessagePollRatio = Configuration.sendToStatusMessagePollRatio();
 
         private EpochClock epochClock;
         private NanoClock nanoClock;
@@ -2555,6 +2556,28 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
+         * Get the ratio for sending data to polling status messages in the Sender.
+         *
+         * @return ratio for sending data to polling status messages in the Sender.
+         */
+        public int sendToStatusMessagePollRatio()
+        {
+            return sendToStatusMessagePollRatio;
+        }
+
+        /**
+         * Set the ratio for sending data to polling status messages in the Sender.
+         *
+         * @param ratio to use.
+         * @return this for fluent API.
+         */
+        public Context sendToStatusMessagePollRatio(final int ratio)
+        {
+            this.sendToStatusMessagePollRatio = ratio;
+            return this;
+        }
+
+        /**
          * Get the {@link TerminationValidator} to be used to validate termination requests.
          *
          * @return {@link TerminationValidator} to validate termination requests.
@@ -3027,6 +3050,9 @@ public final class MediaDriver implements AutoCloseable
                 "\n    multicastFlowControlSupplier=" + multicastFlowControlSupplier +
                 "\n    applicationSpecificFeedback=" + Arrays.toString(applicationSpecificFeedback) +
                 "\n    congestionControlSupplier=" + congestionControlSupplier +
+                "\n    terminationValidator=" + terminationValidator +
+                "\n    terminationHook=" + terminationHook +
+                "\n    sendToStatusMessagePollRatio=" + sendToStatusMessagePollRatio +
                 "\n    unicastFeedbackDelayGenerator=" + unicastFeedbackDelayGenerator +
                 "\n    multicastFeedbackDelayGenerator=" + multicastFeedbackDelayGenerator +
                 "\n    retransmitUnicastDelayGenerator=" + retransmitUnicastDelayGenerator +

@@ -345,9 +345,6 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->to_driver_buffer_length = AERON_TO_CONDUCTOR_BUFFER_LENGTH_DEFAULT;
     _context->to_clients_buffer_length = AERON_TO_CLIENTS_BUFFER_LENGTH_DEFAULT;
     _context->counters_values_buffer_length = AERON_COUNTERS_VALUES_BUFFER_LENGTH_DEFAULT;
-    _context->counters_metadata_buffer_length =
-        _context->counters_values_buffer_length *
-        (AERON_COUNTERS_MANAGER_METADATA_LENGTH / AERON_COUNTERS_MANAGER_VALUE_LENGTH);
     _context->error_buffer_length = 1024 * 1024;
     _context->client_liveness_timeout_ns = 5 * 1000 * 1000 * 1000LL;
     _context->timer_interval_ns = 1 * 1000 * 1000 * 1000LL;
@@ -464,10 +461,6 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         _context->counters_values_buffer_length,
         1024,
         INT32_MAX);
-
-    _context->counters_metadata_buffer_length =
-        _context->counters_values_buffer_length *
-        (AERON_COUNTERS_MANAGER_METADATA_LENGTH / AERON_COUNTERS_MANAGER_VALUE_LENGTH);
 
     _context->error_buffer_length = aeron_config_parse_size64(
         AERON_ERROR_BUFFER_LENGTH_ENV_VAR,
@@ -872,6 +865,17 @@ bool aeron_is_driver_active(const char *dirname, int64_t timeout, int64_t now, a
     return result;
 }
 
+size_t aeron_cnc_length(aeron_driver_context_t *context)
+{
+    return aeron_cnc_computed_length(
+        context->to_driver_buffer_length +
+        context->to_clients_buffer_length +
+        AERON_COUNTERS_METADATA_BUFFER_LENGTH(context->counters_values_buffer_length) +
+        context->counters_values_buffer_length +
+        context->error_buffer_length,
+        context->file_page_size);
+}
+
 extern int32_t aeron_cnc_version_volatile(aeron_cnc_metadata_t *metadata);
 
 extern void aeron_cnc_version_signal_cnc_ready(aeron_cnc_metadata_t *metadata, int32_t cnc_version);
@@ -888,13 +892,11 @@ extern uint8_t *aeron_cnc_error_log_buffer(aeron_cnc_metadata_t *metadata);
 
 extern size_t aeron_cnc_computed_length(size_t total_length_of_buffers, size_t alignment);
 
-extern size_t aeron_cnc_length(aeron_driver_context_t *context);
-
 extern size_t aeron_ipc_publication_term_window_length(aeron_driver_context_t *context, size_t term_length);
 
 extern size_t aeron_network_publication_term_window_length(aeron_driver_context_t *context, size_t term_length);
 
-#define AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(a,r) \
+#define AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(r,a) \
 do \
 { \
     if (NULL == (a)) \
@@ -907,8 +909,8 @@ while (false)
 
 int aeron_driver_context_set_dir(aeron_driver_context_t *context, const char *value)
 {
-    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(context, -1);
-    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(value, -1);
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, value);
 
     snprintf(context->aeron_dir, AERON_MAX_PATH - 1, "%s", value);
     return 0;
@@ -921,7 +923,7 @@ const char *aeron_driver_context_get_dir(aeron_driver_context_t *context)
 
 int aeron_driver_context_set_dir_warn_if_exists(aeron_driver_context_t *context, bool value)
 {
-    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(context, -1);
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
 
     context->warn_if_dirs_exist = value;
     return 0;
@@ -934,7 +936,7 @@ bool aeron_driver_context_get_dir_warn_if_exists(aeron_driver_context_t *context
 
 int aeron_driver_context_set_threading_mode(aeron_driver_context_t *context, aeron_threading_mode_t mode)
 {
-    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(context, -1);
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
 
     context->threading_mode = mode;
     return 0;
@@ -947,7 +949,7 @@ aeron_threading_mode_t aeron_driver_context_get_threading_mode(aeron_driver_cont
 
 int aeron_driver_context_set_dir_delete_on_start(aeron_driver_context_t * context, bool value)
 {
-    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(context, -1);
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
 
     context->dirs_delete_on_start = value;
     return 0;
@@ -960,7 +962,7 @@ bool aeron_driver_context_get_dir_delete_on_start(aeron_driver_context_t *contex
 
 int aeron_driver_context_set_to_conductor_buffer_length(aeron_driver_context_t *context, size_t length)
 {
-    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(context, -1);
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
 
     context->to_driver_buffer_length = length;
     return 0;
@@ -973,7 +975,7 @@ size_t aeron_driver_context_get_to_conductor_buffer_length(aeron_driver_context_
 
 int aeron_driver_context_set_to_clients_buffer_length(aeron_driver_context_t *context, size_t length)
 {
-    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(context, -1);
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
 
     context->to_clients_buffer_length = length;
     return 0;
@@ -986,7 +988,7 @@ size_t aeron_driver_context_get_to_clients_buffer_length(aeron_driver_context_t 
 
 int aeron_driver_context_set_counters_buffer_length(aeron_driver_context_t *context, size_t length)
 {
-    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(context, -1);
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
 
     context->counters_values_buffer_length = length;
     return 0;

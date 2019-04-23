@@ -67,7 +67,7 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     if (aeron_counters_manager_init(
         &conductor->counters_manager,
         context->counters_metadata_buffer,
-        context->counters_metadata_buffer_length,
+        AERON_COUNTERS_METADATA_BUFFER_LENGTH(context->counters_values_buffer_length),
         context->counters_values_buffer,
         context->counters_values_buffer_length,
         clock_func,

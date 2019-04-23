@@ -316,6 +316,16 @@ size_t aeron_driver_context_get_counters_buffer_length(aeron_driver_context_t *c
  */
 #define AERON_TETHER_SUBSCRIPTIONS_ENV_VAR "AERON_TETHER_SUBSCRIPTIONS"
 
+/**
+ * Untethered subscriptions window limit timeout after which they are removed from flow control.
+ */
+#define AERON_UNTETHERED_WINDOW_LIMIT_TIMEOUT_ENV_VAR "AERON_UNTETHERED_WINDOW_LIMIT_TIMEOUT"
+
+/**
+ * Untethered subscriptions resting timeout before they are allowed to re join an active stream.
+ */
+#define AERON_UNTETHERED_RESTING_TIMEOUT_ENV_VAR "AERON_UNTETHERED_RESTING_TIMEOUT"
+
 #define AERON_IPC_CHANNEL "aeron:ipc"
 #define AERON_IPC_CHANNEL_LEN strlen(AERON_IPC_CHANNEL)
 #define AERON_SPY_PREFIX "aeron-spy:"

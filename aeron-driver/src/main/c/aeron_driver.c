@@ -565,8 +565,8 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
     fprintf(fpout, "\n    publication_unblock_timeout_ns=%" PRIu64, context->publication_unblock_timeout_ns);
     fprintf(fpout, "\n    publication_connection_timeout_ns=%" PRIu64, context->publication_connection_timeout_ns);
     fprintf(fpout, "\n    publication_linger_timeout_ns=%" PRIu64, context->publication_linger_timeout_ns);
-    /* untetheredWindowLimitTimeoutNs */
-    /* untetheredRestingTimeoutNs */
+    fprintf(fpout, "\n    untethered_window_limit_timeout_ns=%" PRIu64, context->untethered_window_limit_timeout_ns);
+    fprintf(fpout, "\n    untethered_resting_timeout_ns=%" PRIu64, context->untethered_resting_timeout_ns);
     /* retransmitUnicastDelayNs */
     /* retransmitUnicastLingerNs */
     /* nakUnicastDelayNs */

@@ -370,6 +370,8 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->publication_unblock_timeout_ns = 10 * 1000 * 1000 * 1000LL;
     _context->publication_connection_timeout_ns = 5 * 1000 * 1000 * 1000LL;
     _context->counter_free_to_reuse_ns = 1 * 1000 * 1000 * 1000LL;
+    _context->untethered_window_limit_timeout_ns = 5 * 1000 * 1000 * 1000LL;
+    _context->untethered_resting_timeout_ns = 10 * 1000 * 1000 * 1000LL;
 
     char *value = NULL;
 
@@ -619,6 +621,20 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         getenv(AERON_COUNTERS_FREE_TO_REUSE_TIMEOUT_ENV_VAR),
         _context->counter_free_to_reuse_ns,
         0,
+        INT64_MAX);
+
+    _context->untethered_window_limit_timeout_ns = aeron_config_parse_duration_ns(
+        AERON_UNTETHERED_WINDOW_LIMIT_TIMEOUT_ENV_VAR,
+        getenv(AERON_UNTETHERED_WINDOW_LIMIT_TIMEOUT_ENV_VAR),
+        _context->untethered_window_limit_timeout_ns,
+        1000,
+        INT64_MAX);
+
+    _context->untethered_resting_timeout_ns = aeron_config_parse_duration_ns(
+        AERON_UNTETHERED_RESTING_TIMEOUT_ENV_VAR,
+        getenv(AERON_UNTETHERED_RESTING_TIMEOUT_ENV_VAR),
+        _context->untethered_resting_timeout_ns,
+        1000,
         INT64_MAX);
 
     _context->to_driver_buffer = NULL;

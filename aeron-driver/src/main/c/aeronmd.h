@@ -101,195 +101,348 @@ size_t aeron_driver_context_get_counters_buffer_length(aeron_driver_context_t *c
  */
 #define AERON_ERROR_BUFFER_LENGTH_ENV_VAR "AERON_ERROR_BUFFER_LENGTH"
 
+int aeron_driver_context_set_error_buffer_length(aeron_driver_context_t *context, size_t length);
+size_t aeron_driver_context_get_error_buffer_length(aeron_driver_context_t *context);
+
 /**
  * Client liveness timeout in nanoseconds
  */
 #define AERON_CLIENT_LIVENESS_TIMEOUT_ENV_VAR "AERON_CLIENT_LIVENESS_TIMEOUT"
+
+int aeron_driver_context_set_client_liveness_timeout_ns(aeron_driver_context_t *context, uint64_t value);
+uint64_t aeron_driver_context_get_client_liveness_timeout_ns(aeron_driver_context_t *context);
 
 /**
  * Length (in bytes) of the log buffers for publication terms.
  */
 #define AERON_TERM_BUFFER_LENGTH_ENV_VAR "AERON_TERM_BUFFER_LENGTH"
 
+int aeron_driver_context_set_term_buffer_length(aeron_driver_context_t *context, size_t value);
+size_t aeron_driver_context_get_term_buffer_length(aeron_driver_context_t *context);
+
 /**
  * Length (in bytes) of the log buffers for IPC publication terms.
  */
 #define AERON_IPC_TERM_BUFFER_LENGTH_ENV_VAR "AERON_IPC_TERM_BUFFER_LENGTH"
+
+int aeron_driver_context_set_ipc_term_buffer_length(aeron_driver_context_t *context, size_t value);
+size_t aeron_driver_context_get_ipc_term_buffer_length(aeron_driver_context_t *context);
 
 /**
  * Should term buffers be created sparse.
  */
 #define AERON_TERM_BUFFER_SPARSE_FILE_ENV_VAR "AERON_TERM_BUFFER_SPARSE_FILE"
 
+int aeron_driver_context_set_term_buffer_sparse_file(aeron_driver_context_t *context, bool value);
+bool aeron_driver_context_get_term_buffer_sparse_file(aeron_driver_context_t *context);
+
 /**
  * Should storage checks should be performed when allocating files.
  */
 #define AERON_PERFORM_STORAGE_CHECKS_ENV_VAR "AERON_PERFORM_STORAGE_CHECKS"
+
+int aeron_driver_context_set_perform_storage_checks(aeron_driver_context_t *context, bool value);
+bool aeron_driver_context_get_perform_storage_checks(aeron_driver_context_t *context);
 
 /**
  * Should a spy subscription simulate a connection to a network publication.
  */
 #define AERON_SPIES_SIMULATE_CONNECTION_ENV_VAR "AERON_SPIES_SIMULATE_CONNECTION"
 
+int aeron_driver_context_set_spies_simulate_connection(aeron_driver_context_t *context, bool value);
+bool aeron_driver_context_get_spies_simulate_connection(aeron_driver_context_t *context);
+
 /**
  * Page size for alignment of all files.
  */
 #define AERON_FILE_PAGE_SIZE_ENV_VAR "AERON_FILE_PAGE_SIZE"
+
+int aeron_driver_context_set_file_page_size(aeron_driver_context_t *context, size_t value);
+size_t aeron_driver_context_get_file_page_size(aeron_driver_context_t *context);
 
 /**
  * Length (in bytes) of the maximum transmission unit of the publication.
  */
 #define AERON_MTU_LENGTH_ENV_VAR "AERON_MTU_LENGTH"
 
+int aeron_driver_context_set_mtu_length(aeron_driver_context_t *context, size_t value);
+size_t aeron_driver_context_get_mtu_length(aeron_driver_context_t *context);
+
 /**
  * Length (in bytes) of the maximum transmission unit of the IPC publication.
  */
 #define AERON_IPC_MTU_LENGTH_ENV_VAR "AERON_IPC_MTU_LENGTH"
+
+int aeron_driver_context_set_ipc_mtu_length(aeron_driver_context_t *context, size_t value);
+size_t aeron_driver_context_get_ipc_mtu_length(aeron_driver_context_t *context);
 
 /**
  * Window limit on IPC Publication side.
  */
 #define AERON_IPC_PUBLICATION_TERM_WINDOW_LENGTH_ENV_VAR "AERON_IPC_PUBLICATION_TERM_WINDOW_LENGTH"
 
+int aeron_driver_context_set_ipc_publication_term_window_length(aeron_driver_context_t *context, size_t value);
+size_t aeron_driver_context_get_ipc_publication_term_window_length(aeron_driver_context_t *context);
+
 /**
  * Window limit on Publication side.
  */
 #define AERON_PUBLICATION_TERM_WINDOW_LENGTH_ENV_VAR "AERON_PUBLICATION_TERM_WINDOW_LENGTH"
+
+int aeron_driver_context_set_publication_term_window_length(aeron_driver_context_t *context, size_t value);
+size_t aeron_driver_context_get_publication_term_window_length(aeron_driver_context_t *context);
 
 /**
  * Linger timeout in nanoseconds on publications.
  */
 #define AERON_PUBLICATION_LINGER_TIMEOUT_ENV_VAR "AERON_PUBLICATION_LINGER_TIMEOUT"
 
+int aeron_driver_context_set_publication_linger_timeout_ns(aeron_driver_context_t *context, uint64_t value);
+uint64_t aeron_driver_context_get_publication_linger_timeout_ns(aeron_driver_context_t *context);
+
 /**
  * SO_RCVBUF setting on UDP sockets which must be sufficient for Bandwidth Delay Product (BDP).
  */
 #define AERON_SOCKET_SO_RCVBUF_ENV_VAR "AERON_SOCKET_SO_RCVBUF"
+
+int aeron_driver_context_set_socket_so_rcvbuf(aeron_driver_context_t *context, size_t value);
+size_t aeron_driver_context_get_socket_so_rcvbuf(aeron_driver_context_t *context);
 
 /**
  * SO_SNDBUF setting on UDP sockets which must be sufficient for Bandwidth Delay Product (BDP).
  */
 #define AERON_SOCKET_SO_SNDBUF_ENV_VAR "AERON_SOCKET_SO_SNDBUF"
 
+int aeron_driver_context_set_socket_so_sndbuf(aeron_driver_context_t *context, size_t value);
+size_t aeron_driver_context_get_socket_so_sndbuf(aeron_driver_context_t *context);
+
 /**
  * IP_MULTICAST_TTL setting on outgoing UDP sockets.
  */
 #define AERON_SOCKET_MULTICAST_TTL_ENV_VAR "AERON_SOCKET_MULTICAST_TTL"
+
+int aeron_driver_context_set_socket_multicast_ttl(aeron_driver_context_t *context, uint8_t value);
+uint8_t aeron_driver_context_get_socket_multicast_ttl(aeron_driver_context_t *context);
 
 /**
  * Ratio of sending data to polling status messages in the Sender.
  */
 #define AERON_SEND_TO_STATUS_POLL_RATIO_ENV_VAR "AERON_SEND_TO_STATUS_POLL_RATIO"
 
+int aeron_driver_context_set_send_to_status_poll_ratio(aeron_driver_context_t *context, size_t value);
+size_t aeron_driver_context_get_send_to_status_poll_ratio(aeron_driver_context_t *context);
+
 /**
  * Status Message timeout in nanoseconds.
  */
 #define AERON_RCV_STATUS_MESSAGE_TIMEOUT_ENV_VAR "AERON_RCV_STATUS_MESSAGE_TIMEOUT"
+
+int aeron_driver_context_set_rcv_status_message_timeout_ns(aeron_driver_context_t *context, uint64_t value);
+uint64_t aeron_driver_context_get_rcv_status_message_timeout_ns(aeron_driver_context_t *context);
+
+typedef struct aeron_flow_control_strategy_stct aeron_flow_control_strategy_t;
+
+typedef int (*aeron_flow_control_strategy_supplier_func_t)(
+    aeron_flow_control_strategy_t **strategy,
+    int32_t channel_length,
+    const char *channel,
+    int32_t stream_id,
+    int64_t registration_id,
+    int32_t initial_term_id,
+    size_t term_buffer_capacity);
 
 /**
  * Supplier for flow control structure to be employed for multicast channels.
  */
 #define AERON_MULTICAST_FLOWCONTROL_SUPPLIER_ENV_VAR "AERON_MULTICAST_FLOWCONTROL_SUPPLIER"
 
+int aeron_driver_context_set_multicast_flowcontrol_supplier(
+    aeron_driver_context_t *context, aeron_flow_control_strategy_supplier_func_t value);
+aeron_flow_control_strategy_supplier_func_t aeron_driver_context_get_multicast_flowcontrol_supplier(
+    aeron_driver_context_t *context);
+
 /**
  * Supplier for flow control structure to be employed for unicast channels.
  */
 #define AERON_UNICAST_FLOWCONTROL_SUPPLIER_ENV_VAR "AERON_UNICAST_FLOWCONTROL_SUPPLIER"
+
+int aeron_driver_context_set_unicast_flowcontrol_supplier(
+    aeron_driver_context_t *context, aeron_flow_control_strategy_supplier_func_t value);
+aeron_flow_control_strategy_supplier_func_t aeron_driver_context_get_unicast_flowcontrol_supplier(
+    aeron_driver_context_t *context);
 
 /**
  * Image liveness timeout in nanoseconds
  */
 #define AERON_IMAGE_LIVENESS_TIMEOUT_ENV_VAR "AERON_IMAGE_LIVENESS_TIMEOUT"
 
+int aeron_driver_context_set_image_liveness_timeout_ns(aeron_driver_context_t *context, uint64_t value);
+uint64_t aeron_driver_context_get_image_liveness_timeout_ns(aeron_driver_context_t *context);
+
 /**
  * Length of the initial window which must be sufficient for Bandwidth Delay Product (BDP).
  */
 #define AERON_RCV_INITIAL_WINDOW_LENGTH_ENV_VAR "AERON_RCV_INITIAL_WINDOW_LENGTH"
+
+int aeron_driver_context_set_rcv_initial_window_length(aeron_driver_context_t *context, size_t value);
+size_t aeron_driver_context_get_rcv_initial_window_length(aeron_driver_context_t *context);
 
 /**
  * Supplier for congestion control structure to be employed for Images.
  */
 #define AERON_CONGESTIONCONTROL_SUPPLIER_ENV_VAR "AERON_CONGESTIONCONTROL_SUPPLIER"
 
+typedef struct aeron_congestion_control_strategy_stct aeron_congestion_control_strategy_t;
+typedef struct aeron_counters_manager_stct aeron_counters_manager_t;
+
+typedef int (*aeron_congestion_control_strategy_supplier_func_t)(
+    aeron_congestion_control_strategy_t **strategy,
+    int32_t channel_length,
+    const char *channel,
+    int32_t stream_id,
+    int32_t session_id,
+    int64_t registration_id,
+    int32_t term_length,
+    int32_t sender_mtu_length,
+    aeron_driver_context_t *context,
+    aeron_counters_manager_t *counters_manager);
+
+int aeron_driver_context_set_congestioncontrol_supplier(
+    aeron_driver_context_t *context, aeron_congestion_control_strategy_supplier_func_t value);
+aeron_congestion_control_strategy_supplier_func_t aeron_driver_context_get_congestioncontrol_supplier(
+    aeron_driver_context_t *context);
+
 /**
  * Length (in bytes) of the buffer for the loss report log.
  */
 #define AERON_LOSS_REPORT_BUFFER_LENGTH_ENV_VAR "AERON_LOSS_REPORT_BUFFER_LENGTH"
+
+int aeron_driver_context_set_loss_report_buffer_length(aeron_driver_context_t *context, size_t value);
+size_t aeron_driver_context_get_loss_report_buffer_length(aeron_driver_context_t *context);
 
 /**
  * Timeout for publication unblock in nanoseconds.
  */
 #define AERON_PUBLICATION_UNBLOCK_TIMEOUT_ENV_VAR "AERON_PUBLICATION_UNBLOCK_TIMEOUT"
 
+int aeron_driver_context_set_publication_unblock_timeout_ns(aeron_driver_context_t *context, uint64_t value);
+uint64_t aeron_driver_context_get_publication_unblock_timeout_ns(aeron_driver_context_t *context);
+
 /**
  * Timeout for publication connection in nanoseconds.
  */
 #define AERON_PUBLICATION_CONNECTION_TIMEOUT_ENV_VAR "AERON_PUBLICATION_CONNECTION_TIMEOUT"
+
+int aeron_driver_context_set_publication_connection_timeout_ns(aeron_driver_context_t *context, uint64_t value);
+uint64_t aeron_driver_context_get_publication_connection_timeout_ns(aeron_driver_context_t *context);
 
 /**
  * Interval (in nanoseconds) between checks for timers and timeouts.
  */
 #define AERON_TIMER_INTERVAL_ENV_VAR "AERON_TIMER_INTERVAL"
 
+int aeron_driver_context_set_timer_interval_ns(aeron_driver_context_t *context, uint64_t value);
+uint64_t aeron_driver_context_get_timer_interval_ns(aeron_driver_context_t *context);
+
 /**
  * Idle strategy to be employed by Sender for DEDICATED Threading Mode.
  */
 #define AERON_SENDER_IDLE_STRATEGY_ENV_VAR "AERON_SENDER_IDLE_STRATEGY"
+
+int aeron_driver_context_set_sender_idle_strategy(aeron_driver_context_t *context, const char *value);
+const char *aeron_driver_context_get_sender_idle_strategy(aeron_driver_context_t *context);
 
 /**
  * Idle strategy to be employed by Conductor for DEDICATED or SHARED_NETWORK Threading Mode.
  */
 #define AERON_CONDUCTOR_IDLE_STRATEGY_ENV_VAR "AERON_CONDUCTOR_IDLE_STRATEGY"
 
+int aeron_driver_context_set_conductor_idle_strategy(aeron_driver_context_t *context, const char *value);
+const char *aeron_driver_context_get_conductor_idle_strategy(aeron_driver_context_t *context);
+
 /**
  * Idle strategy to be employed by Receiver for DEDICATED Threading Mode.
  */
 #define AERON_RECEIVER_IDLE_STRATEGY_ENV_VAR "AERON_RECEIVER_IDLE_STRATEGY"
+
+int aeron_driver_context_set_receiver_idle_strategy(aeron_driver_context_t *context, const char *value);
+const char *aeron_driver_context_get_receiver_idle_strategy(aeron_driver_context_t *context);
 
 /**
  * Idle strategy to be employed by Sender and Receiver for SHARED_NETWORK Threading Mode.
  */
 #define AERON_SHAREDNETWORK_IDLE_STRATEGY_ENV_VAR "AERON_SHAREDNETWORK_IDLE_STRATEGY"
 
+int aeron_driver_context_set_sharednetwork_idle_strategy(aeron_driver_context_t *context, const char *value);
+const char *aeron_driver_context_get_sharednetwork_idle_strategy(aeron_driver_context_t *context);
+
 /**
  * Idle strategy to be employed by Conductor, Sender, and Receiver for SHARED Threading Mode.
  */
 #define AERON_SHARED_IDLE_STRATEGY_ENV_VAR "AERON_SHARED_IDLE_STRATEGY"
+
+int aeron_driver_context_set_shared_idle_strategy(aeron_driver_context_t *context, const char *value);
+const char *aeron_driver_context_get_shared_idle_strategy(aeron_driver_context_t *context);
 
 /**
  * Idle strategy init args to be employed by Sender for DEDICATED Threading Mode.
  */
 #define AERON_SENDER_IDLE_STRATEGY_INIT_ARGS_ENV_VAR "AERON_SENDER_IDLE_STRATEGY_INIT_ARGS"
 
+int aeron_driver_context_set_sender_idle_strategy_init_args(aeron_driver_context_t *context, const char *value);
+const char *aeron_driver_context_get_sender_idle_strategy_init_args(aeron_driver_context_t *context);
+
 /**
  * Idle strategy init args to be employed by Conductor for DEDICATED or SHARED_NETWORK Threading Mode.
  */
 #define AERON_CONDUCTOR_IDLE_STRATEGY_INIT_ARGS_ENV_VAR "AERON_CONDUCTOR_IDLE_STRATEGY_INIT_ARGS"
+
+int aeron_driver_context_set_conductor_idle_strategy_init_args(aeron_driver_context_t *context, const char *value);
+const char *aeron_driver_context_get_conductor_idle_strategy_init_args(aeron_driver_context_t *context);
 
 /**
  * Idle strategy init args to be employed by Receiver for DEDICATED Threading Mode.
  */
 #define AERON_RECEIVER_IDLE_STRATEGY_INIT_ARGS_ENV_VAR "AERON_RECEIVER_IDLE_STRATEGY_INIT_ARGS"
 
+int aeron_driver_context_set_receiver_idle_strategy_init_args(aeron_driver_context_t *context, const char *value);
+const char *aeron_driver_context_get_receiver_idle_strategy_init_args(aeron_driver_context_t *context);
+
 /**
  * Idle strategy init args to be employed by Sender and Receiver for SHARED_NETWORK Threading Mode.
  */
 #define AERON_SHAREDNETWORK_IDLE_STRATEGY_INIT_ARGS_ENV_VAR "AERON_SHAREDNETWORK_IDLE_STRATEGY_INIT_ARGS"
+
+int aeron_driver_context_set_sharednetwork_idle_strategy_init_args(aeron_driver_context_t *context, const char *value);
+const char *aeron_driver_context_get_sharednetwork_idle_strategy_init_args(aeron_driver_context_t *context);
 
 /**
  * Idle strategy init args to be employed by Conductor, Sender, and Receiver for SHARED Threading Mode.
  */
 #define AERON_SHARED_IDLE_STRATEGY_ENV_INIT_ARGS_VAR "AERON_SHARED_IDLE_STRATEGY_INIT_ARGS"
 
+int aeron_driver_context_set_shared_idle_strategy_init_args(aeron_driver_context_t *context, const char *value);
+const char *aeron_driver_context_get_shared_idle_strategy_init_args(aeron_driver_context_t *context);
+
 /**
  * Function name to call on start of each agent.
  */
 #define AERON_AGENT_ON_START_FUNCTION_ENV_VAR "AERON_AGENT_ON_START_FUNCTION"
 
+typedef void (*aeron_agent_on_start_func_t)(void *state, const char *role_name);
+
+int aeron_driver_context_set_agent_on_start_function(
+    aeron_driver_context_t *context, aeron_agent_on_start_func_t value, void *state);
+aeron_agent_on_start_func_t aeron_driver_context_get_agent_on_start_function(aeron_driver_context_t *context);
+void *aeron_driver_context_get_agent_on_start_state(aeron_driver_context_t *context);
+
 /**
  * Timeout for freed counters before they can be reused.
  */
 #define AERON_COUNTERS_FREE_TO_REUSE_TIMEOUT_ENV_VAR "AERON_COUNTERS_FREE_TO_REUSE_TIMEOUT"
+
+int aeron_driver_context_set_counters_free_to_reuse_timeout_ns(aeron_driver_context_t *context, uint64_t value);
+uint64_t aeron_driver_context_get_counters_free_to_reuse_timeout_ns(aeron_driver_context_t *context);
 
 /**
  * Timeout for a receiver to be tracked.
@@ -301,30 +454,71 @@ size_t aeron_driver_context_get_counters_buffer_length(aeron_driver_context_t *c
  */
 #define AERON_DRIVER_TERMINATION_VALIDATOR_ENV_VAR "AERON_DRIVER_TERMINATION_VALIDATOR"
 
+typedef bool (*aeron_driver_termination_validator_func_t)(void *state, uint8_t *buffer, int32_t length);
+
+int aeron_driver_context_set_driver_termination_validator(
+    aeron_driver_context_t *context, aeron_driver_termination_validator_func_t value, void *state);
+aeron_driver_termination_validator_func_t aeron_driver_context_get_driver_termination_validator(
+    aeron_driver_context_t *context);
+void *aeron_driver_context_get_driver_termination_validator_state(
+    aeron_driver_context_t *context);
+
+typedef void (*aeron_driver_termination_hook_func_t)(void *clientd);
+
+int aeron_driver_context_set_driver_termination_hook(
+    aeron_driver_context_t *context, aeron_driver_termination_hook_func_t value, void *state);
+aeron_driver_termination_hook_func_t aeron_driver_context_get_driver_termination_hook(
+    aeron_driver_context_t *context);
+void *aeron_driver_context_get_driver_termination_hook_state(
+    aeron_driver_context_t *context);
+
 /**
  * Should the driver print its configuration on start to stdout.
  */
 #define AERON_PRINT_CONFIGURATION_ON_START_ENV_VAR "AERON_PRINT_CONFIGURATION"
+
+int aeron_driver_context_set_print_configuration(aeron_driver_context_t *context, bool value);
+bool aeron_driver_context_get_print_configuration(aeron_driver_context_t *context);
 
 /**
  * Property name for default boolean value for if a stream is reliable. True to NAK, false to gap fill.
  */
 #define AERON_RELIABLE_STREAM_ENV_VAR "AERON_RELIABLE_STREAM"
 
+int aeron_driver_context_set_reliable_stream(aeron_driver_context_t *context, bool value);
+bool aeron_driver_context_get_reliable_stream(aeron_driver_context_t *context);
+
 /**
  * Property name for default boolean value for if subscriptions should have a tether for flow control.
  */
 #define AERON_TETHER_SUBSCRIPTIONS_ENV_VAR "AERON_TETHER_SUBSCRIPTIONS"
+
+int aeron_driver_context_set_tether_subscriptions(aeron_driver_context_t *context, bool value);
+bool aeron_driver_context_get_tether_subscriptions(aeron_driver_context_t *context);
 
 /**
  * Untethered subscriptions window limit timeout after which they are removed from flow control.
  */
 #define AERON_UNTETHERED_WINDOW_LIMIT_TIMEOUT_ENV_VAR "AERON_UNTETHERED_WINDOW_LIMIT_TIMEOUT"
 
+int aeron_driver_context_set_untethered_window_limit_timeout_ns(aeron_driver_context_t *context, uint64_t value);
+uint64_t aeron_driver_context_get_untethered_window_limit_timeout_ns(aeron_driver_context_t *context);
+
 /**
  * Untethered subscriptions resting timeout before they are allowed to re join an active stream.
  */
 #define AERON_UNTETHERED_RESTING_TIMEOUT_ENV_VAR "AERON_UNTETHERED_RESTING_TIMEOUT"
+
+int aeron_driver_context_set_untethered_resting_timeout_ns(aeron_driver_context_t *context, uint64_t value);
+uint64_t aeron_driver_context_get_untethered_resting_timeout_ns(aeron_driver_context_t *context);
+
+/**
+ * Timeout in which the driver is expected to respond or heartbeat.
+ */
+#define AERON_DRIVER_TIMEOUT_ENV_VAR "AERON_DRIVER_TIMEOUT"
+
+int aeron_driver_context_set_driver_timeout_ms(aeron_driver_context_t *context, uint64_t value);
+uint64_t aeron_driver_context_get_driver_timeout_ms(aeron_driver_context_t *context);
 
 #define AERON_IPC_CHANNEL "aeron:ipc"
 #define AERON_IPC_CHANNEL_LEN strlen(AERON_IPC_CHANNEL)

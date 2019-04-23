@@ -62,7 +62,6 @@ typedef struct aeron_driver_receiver_proxy_stct aeron_driver_receiver_proxy_t;
 typedef aeron_rb_handler_t aeron_driver_conductor_to_driver_interceptor_func_t;
 typedef void (*aeron_driver_conductor_to_client_interceptor_func_t)(
     aeron_driver_conductor_t *conductor, int32_t msg_type_id, const void *message, size_t length);
-typedef void (*aeron_driver_termination_hook_func_t)(void *clientd);
 
 typedef struct aeron_driver_context_stct
 {
@@ -127,22 +126,27 @@ typedef struct aeron_driver_context_stct
     aeron_idle_strategy_func_t conductor_idle_strategy_func;
     void *conductor_idle_strategy_state;
     char *conductor_idle_strategy_init_args;
+    const char *conductor_idle_styrategy_name;
 
     aeron_idle_strategy_func_t shared_idle_strategy_func;
     void *shared_idle_strategy_state;
     char *shared_idle_strategy_init_args;
+    const char *shared_idle_styrategy_name;
 
     aeron_idle_strategy_func_t shared_network_idle_strategy_func;
     void *shared_network_idle_strategy_state;
     char *shared_network_idle_strategy_init_args;
+    const char *shared_network_idle_styrategy_name;
 
     aeron_idle_strategy_func_t sender_idle_strategy_func;
     void *sender_idle_strategy_state;
     char *sender_idle_strategy_init_args;
+    const char *sender_idle_styrategy_name;
 
     aeron_idle_strategy_func_t receiver_idle_strategy_func;
     void *receiver_idle_strategy_state;
     char *receiver_idle_strategy_init_args;
+    const char *receiver_idle_styrategy_name;
 
     aeron_usable_fs_space_func_t usable_fs_space_func;
     aeron_map_raw_log_func_t map_raw_log_func;

@@ -17,6 +17,10 @@
 #define AERON_TERMINATION_VALIDATOR_H
 
 #include "aeron_driver_common.h"
+#include "aeronmd.h"
+
+bool aeron_driver_termination_validator_default_allow(void *state, uint8_t *token_buffer, int32_t token_length);
+bool aeron_driver_termination_validator_default_deny(void *state, uint8_t *token_buffer, int32_t token_length);
 
 aeron_driver_termination_validator_func_t aeron_driver_termination_validator_load(const char *validator_name);
 

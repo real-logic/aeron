@@ -24,13 +24,10 @@
 #define AERON_MAX_PATH (384)
 #define AERON_CHANNEL_STATUS_INDICATOR_NOT_ALLOCATED (-1)
 
-typedef void (*aeron_idle_strategy_func_t)(void *, int);
-
-typedef int (*aeron_idle_strategy_init_func_t)(void **, const char *, const char *);
+typedef void (*aeron_idle_strategy_func_t)(void *state, int work_count);
+typedef int (*aeron_idle_strategy_init_func_t)(void **state, const char *env_var, const char *init_args);
 
 typedef int64_t (*aeron_feedback_delay_generator_func_t)();
-
-typedef bool (*aeron_driver_termination_validator_func_t)(void *, uint8_t *, int32_t);
 
 typedef struct aeron_driver_managed_resource_stct
 {

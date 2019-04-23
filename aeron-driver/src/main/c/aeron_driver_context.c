@@ -241,6 +241,7 @@ aeron_threading_mode_t aeron_config_parse_threading_mode(const char *threading_m
 }
 
 #define AERON_CONFIG_GETENV_OR_DEFAULT(e, d) ((NULL == getenv(e)) ? (d) : getenv(e))
+#define AERON_CONFIG_STRNDUP_GETENV_OR_NULL(e) ((NULL == getenv(e)) ? (NULL) : strndup(getenv(e), AERON_MAX_PATH))
 
 static void aeron_driver_conductor_to_driver_interceptor_null(
     int32_t msg_type_id, const void *message, size_t length, void *clientd)
@@ -258,6 +259,41 @@ static void aeron_driver_conductor_to_client_interceptor_null(
 #define AERON_TO_CONDUCTOR_BUFFER_LENGTH_DEFAULT (1024 * 1024 + AERON_RB_TRAILER_LENGTH)
 #define AERON_TO_CLIENTS_BUFFER_LENGTH_DEFAULT (1024 * 1024 + AERON_BROADCAST_BUFFER_TRAILER_LENGTH)
 #define AERON_COUNTERS_VALUES_BUFFER_LENGTH_DEFAULT (1024 * 1024)
+#define AERON_ERROR_BUFFER_LENGTH_DEFAULT (1024 * 1024)
+#define AERON_CLIENT_LIVENESS_TIMEOUT_NS_DEFAULT (5 * 1000 * 1000 * 1000LL)
+#define AERON_TERM_BUFFER_LENGTH_DEFAULT (16 * 1024 * 1024)
+#define AERON_IPC_TERM_BUFFER_LENGTH_DEFAULT (64 * 1024 * 1024)
+#define AERON_TERM_BUFFER_SPARSE_FILE_DEFAULT (false)
+#define AERON_PERFORM_STORAGE_CHECKS_DEFAULT (true)
+#define AERON_SPIES_SIMULATE_CONNECTION_DEFAULT (false)
+#define AERON_FILE_PAGE_SIZE_DEFAULT (4 * 1024)
+#define AERON_MTU_LENGTH_DEFAULT (1408)
+#define AERON_IPC_MTU_LENGTH_DEFAULT (1408)
+#define AERON_IPC_PUBLICATION_TERM_WINDOW_LENGTH_DEFAULT (0)
+#define AERON_PUBLICATION_TERM_WINDOW_LENGTH_DEFAULT (0)
+#define AERON_PUBLICATION_LINGER_TIMEOUT_NS_DEFAULT (5 * 1000 * 1000 * 1000LL)
+#define AERON_SOCKET_SO_RCVBUF_DEFAULT (128 * 1024)
+#define AERON_SOCKET_SO_SNDBUF_DEFAULT (0)
+#define AERON_SOCKET_MULTICAST_TTL_DEFAULT (0)
+#define AERON_SEND_TO_STATUS_POLL_RATIO_DEFAULT (4)
+#define AERON_RCV_STATUS_MESSAGE_TIMEOUT_NS_DEFAULT (200 * 1000 * 1000LL)
+#define AERON_MULTICAST_FLOWCONTROL_SUPPLIER_DEFAULT ("aeron_max_multicast_flow_control_strategy_supplier")
+#define AERON_UNICAST_FLOWCONTROL_SUPPLIER_DEFAULT ("aeron_unicast_flow_control_strategy_supplier")
+#define AERON_CONGESTIONCONTROL_SUPPLIER_DEFAULT ("aeron_static_window_congestion_control_strategy_supplier")
+#define AERON_IMAGE_LIVENESS_TIMEOUT_NS_DEFAULT (10 * 1000 * 1000 * 1000LL)
+#define AERON_RCV_INITIAL_WINDOW_LENGTH_DEFAULT (128 * 1024)
+#define AERON_LOSS_REPORT_BUFFER_LENGTH_DEFAULT (1024 * 1024)
+#define AERON_PUBLICATION_UNBLOCK_TIMEOUT_NS_DEFAULT (10 * 1000 * 1000 * 1000LL)
+#define AERON_PUBLICATION_CONNECTION_TIMEOUT_NS_DEFAULT (5 * 1000 * 1000 * 1000LL)
+#define AERON_TIMER_INTERVAL_NS_DEFAULT (1 * 1000 * 1000 * 1000LL)
+#define AERON_IDLE_STRATEGY_BACKOFF_DEFAULT "aeron_idle_strategy_backoff"
+#define AERON_COUNTERS_FREE_TO_REUSE_TIMEOUT_NS_DEFAULT (1 * 1000 * 1000 * 1000LL)
+#define AERON_PRINT_CONFIGURATION_DEFAULT (false)
+#define AERON_RELIABLE_STREAM_DEFAULT (true)
+#define AERON_TETHER_SUBSCRIPTIONS_DEFAULT (true)
+#define AERON_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_DEFAULT (5 * 1000 * 1000 * 1000LL)
+#define AERON_UNTETHERED_RESTING_TIMEOUT_NS_DEFAULT (10 * 1000 * 1000 * 1000LL)
+#define AERON_DRIVER_TIMEOUT_MS_DEFAULT (10 * 1000)
 
 int aeron_driver_context_init(aeron_driver_context_t **context)
 {
@@ -306,19 +342,19 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->agent_on_start_state = NULL;
 
     if ((_context->unicast_flow_control_supplier_func = aeron_flow_control_strategy_supplier_load(
-        "aeron_unicast_flow_control_strategy_supplier")) == NULL)
+        AERON_UNICAST_FLOWCONTROL_SUPPLIER_DEFAULT)) == NULL)
     {
         return -1;
     }
 
     if ((_context->multicast_flow_control_supplier_func = aeron_flow_control_strategy_supplier_load(
-        "aeron_max_multicast_flow_control_strategy_supplier")) == NULL)
+        AERON_MULTICAST_FLOWCONTROL_SUPPLIER_DEFAULT)) == NULL)
     {
         return -1;
     }
 
     if ((_context->congestion_control_supplier_func = aeron_congestion_control_strategy_supplier_load(
-        "aeron_static_window_congestion_control_strategy_supplier")) == NULL)
+        AERON_CONGESTIONCONTROL_SUPPLIER_DEFAULT)) == NULL)
     {
         return -1;
     }
@@ -335,40 +371,40 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         getenv(AERON_THREADING_MODE_ENV_VAR), AERON_THREADING_MODE_DEFAULT);
     _context->dirs_delete_on_start = AERON_DIR_DELKETE_ON_START_DEFAULT;
     _context->warn_if_dirs_exist = AERON_DIR_WARN_IF_EXISTS_DEFAULT;
-    _context->term_buffer_sparse_file = false;
-    _context->perform_storage_checks = true;
-    _context->spies_simulate_connection = false;
-    _context->print_configuration_on_start = false;
-    _context->reliable_stream = true;
-    _context->tether_subscriptions = true;
-    _context->driver_timeout_ms = 10 * 1000;
+    _context->term_buffer_sparse_file = AERON_TERM_BUFFER_SPARSE_FILE_DEFAULT;
+    _context->perform_storage_checks = AERON_PERFORM_STORAGE_CHECKS_DEFAULT;
+    _context->spies_simulate_connection = AERON_SPIES_SIMULATE_CONNECTION_DEFAULT;
+    _context->print_configuration_on_start = AERON_PRINT_CONFIGURATION_DEFAULT;
+    _context->reliable_stream = AERON_RELIABLE_STREAM_DEFAULT;
+    _context->tether_subscriptions = AERON_TETHER_SUBSCRIPTIONS_DEFAULT;
+    _context->driver_timeout_ms = AERON_DRIVER_TIMEOUT_MS_DEFAULT;
     _context->to_driver_buffer_length = AERON_TO_CONDUCTOR_BUFFER_LENGTH_DEFAULT;
     _context->to_clients_buffer_length = AERON_TO_CLIENTS_BUFFER_LENGTH_DEFAULT;
     _context->counters_values_buffer_length = AERON_COUNTERS_VALUES_BUFFER_LENGTH_DEFAULT;
-    _context->error_buffer_length = 1024 * 1024;
-    _context->client_liveness_timeout_ns = 5 * 1000 * 1000 * 1000LL;
-    _context->timer_interval_ns = 1 * 1000 * 1000 * 1000LL;
-    _context->term_buffer_length = 16 * 1024 * 1024;
-    _context->ipc_term_buffer_length = 64 * 1024 * 1024;
-    _context->mtu_length = 1408;
-    _context->ipc_mtu_length = 1408;
-    _context->ipc_publication_window_length = 0;
-    _context->publication_window_length = 0;
-    _context->publication_linger_timeout_ns = 5 * 1000 * 1000 * 1000LL;
-    _context->socket_rcvbuf = 128 * 1024;
-    _context->socket_sndbuf = 0;
-    _context->multicast_ttl = 0;
-    _context->send_to_sm_poll_ratio = 4;
-    _context->status_message_timeout_ns = 200 * 1000 * 1000LL;
-    _context->image_liveness_timeout_ns = 10 * 1000 * 1000 * 1000LL;
-    _context->initial_window_length = 128 * 1024;
-    _context->loss_report_length = 1024 * 1024;
-    _context->file_page_size = 4 * 1024;
-    _context->publication_unblock_timeout_ns = 10 * 1000 * 1000 * 1000LL;
-    _context->publication_connection_timeout_ns = 5 * 1000 * 1000 * 1000LL;
-    _context->counter_free_to_reuse_ns = 1 * 1000 * 1000 * 1000LL;
-    _context->untethered_window_limit_timeout_ns = 5 * 1000 * 1000 * 1000LL;
-    _context->untethered_resting_timeout_ns = 10 * 1000 * 1000 * 1000LL;
+    _context->error_buffer_length = AERON_ERROR_BUFFER_LENGTH_DEFAULT;
+    _context->client_liveness_timeout_ns = AERON_CLIENT_LIVENESS_TIMEOUT_NS_DEFAULT;
+    _context->timer_interval_ns = AERON_TIMER_INTERVAL_NS_DEFAULT;
+    _context->term_buffer_length = AERON_TERM_BUFFER_LENGTH_DEFAULT;
+    _context->ipc_term_buffer_length = AERON_IPC_TERM_BUFFER_LENGTH_DEFAULT;
+    _context->mtu_length = AERON_MTU_LENGTH_DEFAULT;
+    _context->ipc_mtu_length = AERON_IPC_MTU_LENGTH_DEFAULT;
+    _context->ipc_publication_window_length = AERON_IPC_PUBLICATION_TERM_WINDOW_LENGTH_DEFAULT;
+    _context->publication_window_length = AERON_PUBLICATION_TERM_WINDOW_LENGTH_DEFAULT;
+    _context->publication_linger_timeout_ns = AERON_PUBLICATION_LINGER_TIMEOUT_NS_DEFAULT;
+    _context->socket_rcvbuf = AERON_SOCKET_SO_RCVBUF_DEFAULT;
+    _context->socket_sndbuf = AERON_SOCKET_SO_SNDBUF_DEFAULT;
+    _context->multicast_ttl = AERON_SOCKET_MULTICAST_TTL_DEFAULT;
+    _context->send_to_sm_poll_ratio = AERON_SEND_TO_STATUS_POLL_RATIO_DEFAULT;
+    _context->status_message_timeout_ns = AERON_RCV_STATUS_MESSAGE_TIMEOUT_NS_DEFAULT;
+    _context->image_liveness_timeout_ns = AERON_IMAGE_LIVENESS_TIMEOUT_NS_DEFAULT;
+    _context->initial_window_length = AERON_RCV_INITIAL_WINDOW_LENGTH_DEFAULT;
+    _context->loss_report_length = AERON_LOSS_REPORT_BUFFER_LENGTH_DEFAULT;
+    _context->file_page_size = AERON_FILE_PAGE_SIZE_DEFAULT;
+    _context->publication_unblock_timeout_ns = AERON_PUBLICATION_UNBLOCK_TIMEOUT_NS_DEFAULT;
+    _context->publication_connection_timeout_ns = AERON_PUBLICATION_CONNECTION_TIMEOUT_NS_DEFAULT;
+    _context->counter_free_to_reuse_ns = AERON_COUNTERS_FREE_TO_REUSE_TIMEOUT_NS_DEFAULT;
+    _context->untethered_window_limit_timeout_ns = AERON_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_DEFAULT;
+    _context->untethered_resting_timeout_ns = AERON_UNTETHERED_RESTING_TIMEOUT_NS_DEFAULT;
 
     char *value = NULL;
 
@@ -553,6 +589,13 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         1,
         INT32_MAX);
 
+    _context->driver_timeout_ms = aeron_config_parse_uint64(
+        AERON_DRIVER_TIMEOUT_ENV_VAR,
+        getenv(AERON_DRIVER_TIMEOUT_ENV_VAR),
+        _context->driver_timeout_ms,
+        0,
+        INT64_MAX);
+
     _context->status_message_timeout_ns = aeron_config_parse_duration_ns(
         AERON_RCV_STATUS_MESSAGE_TIMEOUT_ENV_VAR,
         getenv(AERON_RCV_STATUS_MESSAGE_TIMEOUT_ENV_VAR),
@@ -639,8 +682,14 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->nano_clock = aeron_nano_clock;
     _context->epoch_clock = aeron_epoch_clock;
 
+    _context->conductor_idle_styrategy_name = strndup("backoff", AERON_MAX_PATH);
+    _context->shared_idle_styrategy_name = strndup("backoff", AERON_MAX_PATH);
+    _context->shared_network_idle_styrategy_name = strndup("backoff", AERON_MAX_PATH);
+    _context->sender_idle_styrategy_name = strndup("backoff", AERON_MAX_PATH);
+    _context->receiver_idle_styrategy_name = strndup("backoff", AERON_MAX_PATH);
+
     _context->conductor_idle_strategy_init_args =
-        AERON_CONFIG_GETENV_OR_DEFAULT(AERON_CONDUCTOR_IDLE_STRATEGY_INIT_ARGS_ENV_VAR, NULL);
+        AERON_CONFIG_STRNDUP_GETENV_OR_NULL(AERON_CONDUCTOR_IDLE_STRATEGY_INIT_ARGS_ENV_VAR);
     if ((_context->conductor_idle_strategy_func = aeron_idle_strategy_load(
         AERON_CONFIG_GETENV_OR_DEFAULT(AERON_CONDUCTOR_IDLE_STRATEGY_ENV_VAR, "backoff"),
         &_context->conductor_idle_strategy_state,
@@ -651,7 +700,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     }
 
     _context->shared_idle_strategy_init_args =
-        AERON_CONFIG_GETENV_OR_DEFAULT(AERON_SHARED_IDLE_STRATEGY_ENV_INIT_ARGS_VAR, NULL);
+        AERON_CONFIG_STRNDUP_GETENV_OR_NULL(AERON_SHARED_IDLE_STRATEGY_ENV_INIT_ARGS_VAR);
     if ((_context->shared_idle_strategy_func = aeron_idle_strategy_load(
         AERON_CONFIG_GETENV_OR_DEFAULT(AERON_SHARED_IDLE_STRATEGY_ENV_VAR, "backoff"),
         &_context->shared_idle_strategy_state,
@@ -662,18 +711,18 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     }
 
     _context->shared_network_idle_strategy_init_args =
-        AERON_CONFIG_GETENV_OR_DEFAULT(AERON_SHAREDNETWORK_IDLE_STRATEGY_INIT_ARGS_ENV_VAR, NULL);
+        AERON_CONFIG_STRNDUP_GETENV_OR_NULL(AERON_SHAREDNETWORK_IDLE_STRATEGY_INIT_ARGS_ENV_VAR);
     if ((_context->shared_network_idle_strategy_func = aeron_idle_strategy_load(
         AERON_CONFIG_GETENV_OR_DEFAULT(AERON_SHAREDNETWORK_IDLE_STRATEGY_ENV_VAR, "backoff"),
         &_context->shared_network_idle_strategy_state,
-        AERON_SHARED_IDLE_STRATEGY_ENV_VAR,
+        AERON_SHAREDNETWORK_IDLE_STRATEGY_ENV_VAR,
         _context->shared_network_idle_strategy_init_args)) == NULL)
     {
         return -1;
     }
 
     _context->sender_idle_strategy_init_args =
-        AERON_CONFIG_GETENV_OR_DEFAULT(AERON_SENDER_IDLE_STRATEGY_INIT_ARGS_ENV_VAR, NULL);
+        AERON_CONFIG_STRNDUP_GETENV_OR_NULL(AERON_SENDER_IDLE_STRATEGY_INIT_ARGS_ENV_VAR);
     if ((_context->sender_idle_strategy_func = aeron_idle_strategy_load(
         AERON_CONFIG_GETENV_OR_DEFAULT(AERON_SENDER_IDLE_STRATEGY_ENV_VAR, "backoff"),
         &_context->sender_idle_strategy_state,
@@ -684,7 +733,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     }
 
     _context->receiver_idle_strategy_init_args =
-        AERON_CONFIG_GETENV_OR_DEFAULT(AERON_RECEIVER_IDLE_STRATEGY_INIT_ARGS_ENV_VAR, NULL);
+        AERON_CONFIG_STRNDUP_GETENV_OR_NULL(AERON_RECEIVER_IDLE_STRATEGY_INIT_ARGS_ENV_VAR);
     if ((_context->receiver_idle_strategy_func = aeron_idle_strategy_load(
         AERON_CONFIG_GETENV_OR_DEFAULT(AERON_RECEIVER_IDLE_STRATEGY_ENV_VAR, "backoff"),
         &_context->receiver_idle_strategy_state,
@@ -755,6 +804,16 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
     aeron_free(context->sender_idle_strategy_state);
     aeron_free(context->shared_idle_strategy_state);
     aeron_free(context->shared_network_idle_strategy_state);
+    aeron_free((void *)context->conductor_idle_styrategy_name);
+    aeron_free((void *)context->shared_network_idle_styrategy_name);
+    aeron_free((void *)context->shared_idle_styrategy_name);
+    aeron_free((void *)context->sender_idle_styrategy_name);
+    aeron_free((void *)context->receiver_idle_styrategy_name);
+    aeron_free((void *)context->conductor_idle_strategy_init_args);
+    aeron_free((void *)context->sender_idle_strategy_init_args);
+    aeron_free((void *)context->receiver_idle_strategy_init_args);
+    aeron_free((void *)context->shared_idle_strategy_init_args);
+    aeron_free((void *)context->shared_network_idle_strategy_init_args);
     aeron_free(context);
 
     return 0;
@@ -997,4 +1056,728 @@ int aeron_driver_context_set_counters_buffer_length(aeron_driver_context_t *cont
 size_t aeron_driver_context_get_counters_buffer_length(aeron_driver_context_t *context)
 {
     return NULL != context ? context->counters_values_buffer_length : AERON_COUNTERS_VALUES_BUFFER_LENGTH_DEFAULT;
+}
+
+int aeron_driver_context_set_error_buffer_length(aeron_driver_context_t *context, size_t length)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->error_buffer_length = length;
+    return 0;
+}
+
+size_t aeron_driver_context_get_error_buffer_length(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->error_buffer_length : AERON_ERROR_BUFFER_LENGTH_DEFAULT;
+}
+
+int aeron_driver_context_set_client_liveness_timeout_ns(aeron_driver_context_t *context, uint64_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->client_liveness_timeout_ns = value;
+    return 0;
+}
+
+uint64_t aeron_driver_context_get_client_liveness_timeout_ns(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->client_liveness_timeout_ns : AERON_CLIENT_LIVENESS_TIMEOUT_NS_DEFAULT;
+}
+
+int aeron_driver_context_set_term_buffer_length(aeron_driver_context_t *context, size_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->term_buffer_length = value;
+    return 0;
+}
+
+size_t aeron_driver_context_get_term_buffer_length(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->term_buffer_length : AERON_TERM_BUFFER_LENGTH_DEFAULT;
+}
+
+int aeron_driver_context_set_ipc_term_buffer_length(aeron_driver_context_t *context, size_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->ipc_term_buffer_length = value;
+    return 0;
+}
+
+size_t aeron_driver_context_get_ipc_term_buffer_length(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->ipc_term_buffer_length : AERON_IPC_TERM_BUFFER_LENGTH_DEFAULT;
+}
+
+int aeron_driver_context_set_term_buffer_sparse_file(aeron_driver_context_t *context, bool value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->term_buffer_sparse_file = value;
+    return 0;
+}
+
+bool aeron_driver_context_get_term_buffer_sparse_file(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->term_buffer_sparse_file : AERON_TERM_BUFFER_SPARSE_FILE_DEFAULT;
+}
+
+int aeron_driver_context_set_perform_storage_checks(aeron_driver_context_t *context, bool value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->perform_storage_checks = value;
+    return 0;
+}
+
+bool aeron_driver_context_get_perform_storage_checks(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->perform_storage_checks : AERON_PERFORM_STORAGE_CHECKS_DEFAULT;
+}
+
+int aeron_driver_context_set_spies_simulate_connection(aeron_driver_context_t *context, bool value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->spies_simulate_connection = value;
+    return 0;
+}
+
+bool aeron_driver_context_get_spies_simulate_connection(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->spies_simulate_connection : AERON_SPIES_SIMULATE_CONNECTION_DEFAULT;
+}
+
+int aeron_driver_context_set_file_page_size(aeron_driver_context_t *context, size_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->file_page_size = value;
+    return 0;
+}
+
+size_t aeron_driver_context_get_file_page_size(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->file_page_size : AERON_FILE_PAGE_SIZE_DEFAULT;
+}
+
+int aeron_driver_context_set_mtu_length(aeron_driver_context_t *context, size_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->mtu_length = value;
+    return 0;
+}
+
+size_t aeron_driver_context_get_mtu_length(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->mtu_length : AERON_MTU_LENGTH_DEFAULT;
+}
+
+int aeron_driver_context_set_ipc_mtu_length(aeron_driver_context_t *context, size_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->ipc_mtu_length = value;
+    return 0;
+}
+
+size_t aeron_driver_context_get_ipc_mtu_length(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->ipc_mtu_length : AERON_IPC_MTU_LENGTH_DEFAULT;
+}
+
+int aeron_driver_context_set_ipc_publication_term_window_length(aeron_driver_context_t *context, size_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->ipc_publication_window_length = value;
+    return 0;
+}
+
+size_t aeron_driver_context_get_ipc_publication_term_window_length(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->ipc_publication_window_length : AERON_IPC_PUBLICATION_TERM_WINDOW_LENGTH_DEFAULT;
+}
+
+int aeron_driver_context_set_publication_term_window_length(aeron_driver_context_t *context, size_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->publication_window_length = value;
+    return 0;
+}
+
+size_t aeron_driver_context_get_publication_term_window_length(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->publication_window_length : AERON_PUBLICATION_TERM_WINDOW_LENGTH_DEFAULT;
+}
+
+int aeron_driver_context_set_publication_linger_timeout_ns(aeron_driver_context_t *context, uint64_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->publication_linger_timeout_ns = value;
+    return 0;
+}
+
+uint64_t aeron_driver_context_get_publication_linger_timeout_ns(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->publication_linger_timeout_ns : AERON_PUBLICATION_LINGER_TIMEOUT_NS_DEFAULT;
+}
+
+int aeron_driver_context_set_socket_so_rcvbuf(aeron_driver_context_t *context, size_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->socket_rcvbuf = value;
+    return 0;
+}
+
+size_t aeron_driver_context_get_socket_so_rcvbuf(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->socket_rcvbuf : AERON_SOCKET_SO_RCVBUF_DEFAULT;
+}
+
+int aeron_driver_context_set_socket_so_sndbuf(aeron_driver_context_t *context, size_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->socket_sndbuf = value;
+    return 0;
+}
+
+size_t aeron_driver_context_get_socket_so_sndbuf(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->socket_sndbuf : AERON_SOCKET_SO_SNDBUF_DEFAULT;
+}
+
+int aeron_driver_context_set_socket_multicast_ttl(aeron_driver_context_t *context, uint8_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->multicast_ttl = value;
+    return 0;
+}
+
+uint8_t aeron_driver_context_get_socket_multicast_ttl(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->multicast_ttl : AERON_SOCKET_MULTICAST_TTL_DEFAULT;
+}
+
+int aeron_driver_context_set_send_to_status_poll_ratio(aeron_driver_context_t *context, size_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->send_to_sm_poll_ratio = value;
+    return 0;
+}
+
+size_t aeron_driver_context_get_send_to_status_poll_ratio(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->send_to_sm_poll_ratio : AERON_SEND_TO_STATUS_POLL_RATIO_DEFAULT;
+}
+
+int aeron_driver_context_set_rcv_status_message_timeout_ns(aeron_driver_context_t *context, uint64_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->status_message_timeout_ns = value;
+    return 0;
+}
+
+uint64_t aeron_driver_context_get_rcv_status_message_timeout_ns(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->status_message_timeout_ns : AERON_RCV_STATUS_MESSAGE_TIMEOUT_NS_DEFAULT;
+}
+
+int aeron_driver_context_set_multicast_flowcontrol_supplier(
+    aeron_driver_context_t *context, aeron_flow_control_strategy_supplier_func_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, value);
+
+    context->multicast_flow_control_supplier_func = value;
+    return 0;
+}
+
+aeron_flow_control_strategy_supplier_func_t aeron_driver_context_get_multicast_flowcontrol_supplier(
+    aeron_driver_context_t *context)
+{
+    return NULL != context ? context->multicast_flow_control_supplier_func : 
+        aeron_flow_control_strategy_supplier_load(AERON_MULTICAST_FLOWCONTROL_SUPPLIER_DEFAULT);
+}
+
+int aeron_driver_context_set_unicast_flowcontrol_supplier(
+    aeron_driver_context_t *context, aeron_flow_control_strategy_supplier_func_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, value);
+
+    context->unicast_flow_control_supplier_func = value;
+    return 0;
+}
+
+aeron_flow_control_strategy_supplier_func_t aeron_driver_context_get_unicast_flowcontrol_supplier(
+    aeron_driver_context_t *context)
+{
+    return NULL != context ? context->unicast_flow_control_supplier_func :
+        aeron_flow_control_strategy_supplier_load(AERON_UNICAST_FLOWCONTROL_SUPPLIER_DEFAULT);
+}
+
+int aeron_driver_context_set_image_liveness_timeout_ns(aeron_driver_context_t *context, uint64_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->image_liveness_timeout_ns = value;
+    return 0;
+}
+
+uint64_t aeron_driver_context_get_image_liveness_timeout_ns(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->image_liveness_timeout_ns : AERON_IMAGE_LIVENESS_TIMEOUT_NS_DEFAULT;
+}
+
+int aeron_driver_context_set_rcv_initial_window_length(aeron_driver_context_t *context, size_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->initial_window_length = value;
+    return 0;
+}
+
+size_t aeron_driver_context_get_rcv_initial_window_length(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->initial_window_length : AERON_RCV_INITIAL_WINDOW_LENGTH_DEFAULT;
+}
+
+int aeron_driver_context_set_congestioncontrol_supplier(
+    aeron_driver_context_t *context, aeron_congestion_control_strategy_supplier_func_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, value);
+
+    context->congestion_control_supplier_func = value;
+    return 0;
+}
+
+aeron_congestion_control_strategy_supplier_func_t aeron_driver_context_get_congestioncontrol_supplier(
+    aeron_driver_context_t *context)
+{
+    return NULL != context ? context->congestion_control_supplier_func :
+    aeron_congestion_control_strategy_supplier_load(AERON_CONGESTIONCONTROL_SUPPLIER_DEFAULT);
+}
+
+int aeron_driver_context_set_loss_report_buffer_length(aeron_driver_context_t *context, size_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->loss_report_length = value;
+    return 0;
+}
+
+size_t aeron_driver_context_get_loss_report_buffer_length(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->loss_report_length : AERON_LOSS_REPORT_BUFFER_LENGTH_DEFAULT;
+}
+
+int aeron_driver_context_set_publication_unblock_timeout_ns(aeron_driver_context_t *context, uint64_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->publication_unblock_timeout_ns = value;
+    return 0;
+}
+
+uint64_t aeron_driver_context_get_publication_unblock_timeout_ns(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->publication_unblock_timeout_ns : AERON_PUBLICATION_UNBLOCK_TIMEOUT_NS_DEFAULT;
+}
+
+int aeron_driver_context_set_publication_connection_timeout_ns(aeron_driver_context_t *context, uint64_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->publication_connection_timeout_ns = value;
+    return 0;
+}
+
+uint64_t aeron_driver_context_get_publication_connection_timeout_ns(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->publication_connection_timeout_ns :
+        AERON_PUBLICATION_CONNECTION_TIMEOUT_NS_DEFAULT;
+}
+
+int aeron_driver_context_set_timer_interval_ns(aeron_driver_context_t *context, uint64_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->timer_interval_ns = value;
+    return 0;
+}
+
+uint64_t aeron_driver_context_get_timer_interval_ns(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->timer_interval_ns : AERON_TIMER_INTERVAL_NS_DEFAULT;
+}
+
+int aeron_driver_context_set_sender_idle_strategy(aeron_driver_context_t *context, const char *value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, value);
+
+    aeron_free(context->sender_idle_strategy_state);
+    aeron_free((void *)context->sender_idle_styrategy_name);
+
+    if ((context->sender_idle_strategy_func = aeron_idle_strategy_load(
+        value,
+        &context->sender_idle_strategy_state,
+        AERON_SENDER_IDLE_STRATEGY_ENV_VAR,
+        context->sender_idle_strategy_init_args)) == NULL)
+    {
+        return -1;
+    }
+
+    context->sender_idle_styrategy_name = strndup(value, AERON_MAX_PATH);
+    return 0;
+}
+
+const char *aeron_driver_context_get_sender_idle_strategy(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->sender_idle_styrategy_name : AERON_IDLE_STRATEGY_BACKOFF_DEFAULT;
+}
+
+int aeron_driver_context_set_conductor_idle_strategy(aeron_driver_context_t *context, const char *value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, value);
+
+    aeron_free(context->conductor_idle_strategy_state);
+    aeron_free((void *)context->conductor_idle_styrategy_name);
+
+    if ((context->conductor_idle_strategy_func = aeron_idle_strategy_load(
+        value,
+        &context->conductor_idle_strategy_state,
+        AERON_CONDUCTOR_IDLE_STRATEGY_ENV_VAR,
+        context->conductor_idle_strategy_init_args)) == NULL)
+    {
+        return -1;
+    }
+
+    context->conductor_idle_styrategy_name = strndup(value, AERON_MAX_PATH);
+    return 0;
+}
+
+const char *aeron_driver_context_get_conductor_idle_strategy(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->conductor_idle_styrategy_name : AERON_IDLE_STRATEGY_BACKOFF_DEFAULT;
+}
+
+int aeron_driver_context_set_receiver_idle_strategy(aeron_driver_context_t *context, const char *value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, value);
+
+    aeron_free(context->receiver_idle_strategy_state);
+    aeron_free((void *)context->receiver_idle_styrategy_name);
+
+    if ((context->receiver_idle_strategy_func = aeron_idle_strategy_load(
+        value,
+        &context->receiver_idle_strategy_state,
+        AERON_RECEIVER_IDLE_STRATEGY_ENV_VAR,
+        context->receiver_idle_strategy_init_args)) == NULL)
+    {
+        return -1;
+    }
+
+    context->receiver_idle_styrategy_name = strndup(value, AERON_MAX_PATH);
+    return 0;
+}
+
+const char *aeron_driver_context_get_receiver_idle_strategy(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->receiver_idle_styrategy_name : AERON_IDLE_STRATEGY_BACKOFF_DEFAULT;
+}
+
+int aeron_driver_context_set_sharednetwork_idle_strategy(aeron_driver_context_t *context, const char *value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, value);
+
+    aeron_free(context->shared_network_idle_strategy_state);
+    aeron_free((void *)context->shared_network_idle_styrategy_name);
+
+    if ((context->shared_network_idle_strategy_func = aeron_idle_strategy_load(
+        value,
+        &context->shared_network_idle_strategy_state,
+        AERON_SHAREDNETWORK_IDLE_STRATEGY_ENV_VAR,
+        context->shared_network_idle_strategy_init_args)) == NULL)
+    {
+        return -1;
+    }
+
+    context->shared_network_idle_styrategy_name = strndup(value, AERON_MAX_PATH);
+    return 0;
+}
+
+const char *aeron_driver_context_get_sharednetwork_idle_strategy(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->shared_network_idle_styrategy_name : AERON_IDLE_STRATEGY_BACKOFF_DEFAULT;
+}
+
+int aeron_driver_context_set_shared_idle_strategy(aeron_driver_context_t *context, const char *value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, value);
+
+    aeron_free(context->shared_idle_strategy_state);
+    aeron_free((void *)context->shared_idle_styrategy_name);
+
+    if ((context->shared_idle_strategy_func = aeron_idle_strategy_load(
+        value,
+        &context->shared_idle_strategy_state,
+        AERON_SHARED_IDLE_STRATEGY_ENV_VAR,
+        context->shared_idle_strategy_init_args)) == NULL)
+    {
+        return -1;
+    }
+
+    context->shared_idle_styrategy_name = strndup(value, AERON_MAX_PATH);
+    return 0;
+}
+
+const char *aeron_driver_context_get_shared_idle_strategy(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->shared_idle_styrategy_name : AERON_IDLE_STRATEGY_BACKOFF_DEFAULT;
+}
+
+int aeron_driver_context_set_sender_idle_strategy_init_args(aeron_driver_context_t *context, const char *value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    aeron_free((void *)context->sender_idle_strategy_init_args);
+    context->sender_idle_strategy_init_args = NULL == value ? NULL : strndup(value, AERON_MAX_PATH);
+
+    return 0;
+}
+
+const char *aeron_driver_context_get_sender_idle_strategy_init_args(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->sender_idle_strategy_init_args : NULL;
+}
+
+int aeron_driver_context_set_conductor_idle_strategy_init_args(aeron_driver_context_t *context, const char *value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    aeron_free((void *)context->conductor_idle_strategy_init_args);
+    context->conductor_idle_strategy_init_args = NULL == value ? NULL : strndup(value, AERON_MAX_PATH);
+
+    return 0;
+}
+
+const char *aeron_driver_context_get_conductor_idle_strategy_init_args(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->conductor_idle_strategy_init_args : NULL;
+}
+
+int aeron_driver_context_set_receiver_idle_strategy_init_args(aeron_driver_context_t *context, const char *value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    aeron_free((void *)context->receiver_idle_strategy_init_args);
+    context->receiver_idle_strategy_init_args = NULL == value ? NULL : strndup(value, AERON_MAX_PATH);
+
+    return 0;
+}
+
+const char *aeron_driver_context_get_receiver_idle_strategy_init_args(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->receiver_idle_strategy_init_args : NULL;
+}
+
+int aeron_driver_context_set_sharednetwork_idle_strategy_init_args(aeron_driver_context_t *context, const char *value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    aeron_free((void *)context->shared_network_idle_strategy_init_args);
+    context->shared_network_idle_strategy_init_args = NULL == value ? NULL : strndup(value, AERON_MAX_PATH);
+
+    return 0;
+}
+
+const char *aeron_driver_context_get_sharednetwork_idle_strategy_init_args(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->shared_network_idle_strategy_init_args : NULL;
+}
+
+int aeron_driver_context_set_shared_idle_strategy_init_args(aeron_driver_context_t *context, const char *value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    aeron_free((void *)context->shared_idle_strategy_init_args);
+    context->shared_idle_strategy_init_args = NULL == value ? NULL : strndup(value, AERON_MAX_PATH);
+
+    return 0;
+}
+
+const char *aeron_driver_context_get_shared_idle_strategy_init_args(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->shared_idle_strategy_init_args : NULL;
+}
+
+int aeron_driver_context_set_agent_on_start_function(
+    aeron_driver_context_t *context, aeron_agent_on_start_func_t value, void *state)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->agent_on_start_func = value;
+    context->agent_on_start_state = state;
+    return 0;
+}
+
+aeron_agent_on_start_func_t aeron_driver_context_get_agent_on_start_function(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->agent_on_start_func : NULL;
+}
+
+void *aeron_driver_context_get_agent_on_start_state(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->agent_on_start_state : NULL;
+}
+
+int aeron_driver_context_set_counters_free_to_reuse_timeout_ns(aeron_driver_context_t *context, uint64_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->counter_free_to_reuse_ns = value;
+    return 0;
+}
+
+uint64_t aeron_driver_context_get_counters_free_to_reuse_timeout_ns(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->counter_free_to_reuse_ns : AERON_COUNTERS_FREE_TO_REUSE_TIMEOUT_NS_DEFAULT;
+}
+
+int aeron_driver_context_set_driver_termination_validator(
+    aeron_driver_context_t *context, aeron_driver_termination_validator_func_t value, void *state)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->termination_validator_func = value;
+    context->termination_validator_state = state;
+    return 0;
+}
+
+aeron_driver_termination_validator_func_t aeron_driver_context_get_driver_termination_validator(
+    aeron_driver_context_t *context)
+{
+    return NULL != context ? context->termination_validator_func : aeron_driver_termination_validator_default_deny;
+}
+
+void *aeron_driver_context_get_driver_termination_validator_state(
+    aeron_driver_context_t *context)
+{
+    return NULL != context ? context->termination_validator_state : NULL;
+}
+
+int aeron_driver_context_set_driver_termination_hook(
+    aeron_driver_context_t *context, aeron_driver_termination_hook_func_t value, void *state)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->termination_hook_func = value;
+    context->termination_hook_state = state;
+    return 0;
+}
+
+aeron_driver_termination_hook_func_t aeron_driver_context_get_driver_termination_hook(
+    aeron_driver_context_t *context)
+{
+    return NULL != context ? context->termination_hook_func : NULL;
+}
+
+void *aeron_driver_context_get_driver_termination_hook_state(
+    aeron_driver_context_t *context)
+{
+    return NULL != context ? context->termination_hook_state : NULL;
+}
+
+int aeron_driver_context_set_print_configuration(aeron_driver_context_t *context, bool value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->print_configuration_on_start = value;
+    return 0;
+}
+
+bool aeron_driver_context_get_print_configuration(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->print_configuration_on_start : AERON_PRINT_CONFIGURATION_DEFAULT;
+}
+
+int aeron_driver_context_set_reliable_stream(aeron_driver_context_t *context, bool value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->reliable_stream = value;
+    return 0;
+}
+
+bool aeron_driver_context_get_reliable_stream(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->reliable_stream : AERON_RELIABLE_STREAM_DEFAULT;
+}
+
+int aeron_driver_context_set_tether_subscriptions(aeron_driver_context_t *context, bool value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->tether_subscriptions = value;
+    return 0;
+}
+bool aeron_driver_context_get_tether_subscriptions(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->tether_subscriptions : AERON_TETHER_SUBSCRIPTIONS_DEFAULT;
+}
+
+int aeron_driver_context_set_untethered_window_limit_timeout_ns(aeron_driver_context_t *context, uint64_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->untethered_window_limit_timeout_ns = value;
+    return 0;
+}
+
+uint64_t aeron_driver_context_get_untethered_window_limit_timeout_ns(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->untethered_window_limit_timeout_ns :
+        AERON_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_DEFAULT;
+}
+
+int aeron_driver_context_set_untethered_resting_timeout_ns(aeron_driver_context_t *context, uint64_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->untethered_resting_timeout_ns = value;
+    return 0;
+}
+
+uint64_t aeron_driver_context_get_untethered_resting_timeout_ns(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->untethered_resting_timeout_ns : AERON_UNTETHERED_RESTING_TIMEOUT_NS_DEFAULT;
+}
+
+int aeron_driver_context_set_driver_timeout_ms(aeron_driver_context_t *context, uint64_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->driver_timeout_ms = value;
+    return 0;
+}
+
+uint64_t aeron_driver_context_get_driver_timeout_ms(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->driver_timeout_ms : AERON_DRIVER_TIMEOUT_MS_DEFAULT;
 }

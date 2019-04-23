@@ -110,7 +110,12 @@ int main(int argc, char **argv)
         goto cleanup;
     }
 
-    context->termination_hook_func = termination_hook;
+
+    if (aeron_driver_context_set_driver_termination_hook(context, termination_hook, NULL) < 0)
+    {
+        fprintf(stderr, "ERROR: context set termination hook (%d) %s\n", aeron_errcode(), aeron_errmsg());
+        goto cleanup;
+    }
 
     if (aeron_driver_init(&driver, context) < 0)
     {

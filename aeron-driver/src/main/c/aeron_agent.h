@@ -23,10 +23,10 @@
 #include "concurrent/aeron_thread.h"
 #include "aeron_driver_common.h"
 #include "concurrent/aeron_atomic.h"
+#include "aeronmd.h"
 
 typedef int (*aeron_agent_do_work_func_t)(void *);
 typedef void (*aeron_agent_on_close_func_t)(void *);
-typedef void (*aeron_agent_on_start_func_t)(void *, const char *role_name);
 
 #define AERON_AGENT_STATE_UNUSED 0
 #define AERON_AGENT_STATE_INITED 1

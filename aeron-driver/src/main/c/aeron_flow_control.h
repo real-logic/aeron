@@ -19,8 +19,7 @@
 
 #include "aeron_socket.h"
 #include "aeron_driver_common.h"
-
-typedef struct aeron_flow_control_strategy_stct aeron_flow_control_strategy_t;
+#include "aeronmd.h"
 
 #define AERON_MAX_FLOW_CONTROL_STRATEGY_RECEIVER_TIMEOUT_NS (2 * 1000 * 1000 * 1000L)
 
@@ -57,15 +56,6 @@ typedef struct aeron_flow_control_strategy_stct
     void *state;
 }
 aeron_flow_control_strategy_t;
-
-typedef int (*aeron_flow_control_strategy_supplier_func_t)(
-    aeron_flow_control_strategy_t **strategy,
-    int32_t channel_length,
-    const char *channel,
-    int32_t stream_id,
-    int64_t registration_id,
-    int32_t initial_term_id,
-    size_t term_buffer_capacity);
 
 aeron_flow_control_strategy_supplier_func_t aeron_flow_control_strategy_supplier_load(const char *strategy_name);
 

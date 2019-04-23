@@ -46,6 +46,9 @@ aeron_counter_metadata_descriptor_t;
 #define AERON_COUNTERS_MANAGER_VALUE_LENGTH (sizeof(aeron_counter_value_descriptor_t))
 #define AERON_COUNTERS_MANAGER_METADATA_LENGTH (sizeof(aeron_counter_metadata_descriptor_t))
 
+#define AERON_COUNTERS_METADATA_BUFFER_LENGTH(v) \
+((v) * (AERON_COUNTERS_MANAGER_METADATA_LENGTH / AERON_COUNTERS_MANAGER_VALUE_LENGTH))
+
 #define AERON_COUNTER_RECORD_UNUSED (0)
 #define AERON_COUNTER_RECORD_ALLOCATED (1)
 #define AERON_COUNTER_RECORD_RECLAIMED (-1)

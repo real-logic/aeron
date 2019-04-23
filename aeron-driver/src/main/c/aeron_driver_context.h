@@ -90,7 +90,6 @@ typedef struct aeron_driver_context_stct
     size_t to_driver_buffer_length;              /* aeron.conductor.buffer.length = 1MB + trailer*/
     size_t to_clients_buffer_length;             /* aeron.clients.buffer.length = 1MB + trailer */
     size_t counters_values_buffer_length;        /* aeron.counters.buffer.length = 1MB */
-    size_t counters_metadata_buffer_length;      /* counters value length times the ratio of metadata to values record */
     size_t error_buffer_length;                  /* aeron.error.buffer.length = 1MB */
     size_t term_buffer_length;                   /* aeron.term.buffer.length = 16MB */
     size_t ipc_term_buffer_length;               /* aeron.ipc.term.buffer.length = 64MB */
@@ -177,6 +176,8 @@ void aeron_driver_fill_cnc_metadata(aeron_driver_context_t *context);
 
 int aeron_driver_context_validate_mtu_length(uint64_t mtu_length);
 
+size_t aeron_cnc_length(aeron_driver_context_t *context);
+
 inline int32_t aeron_cnc_version_volatile(aeron_cnc_metadata_t *metadata)
 {
     int32_t cnc_version;
@@ -227,17 +228,6 @@ inline uint8_t *aeron_cnc_error_log_buffer(aeron_cnc_metadata_t *metadata)
 inline size_t aeron_cnc_computed_length(size_t total_length_of_buffers, size_t alignment)
 {
     return AERON_ALIGN(AERON_CNC_VERSION_AND_META_DATA_LENGTH + total_length_of_buffers, alignment);
-}
-
-inline size_t aeron_cnc_length(aeron_driver_context_t *context)
-{
-    return aeron_cnc_computed_length(
-        context->to_driver_buffer_length +
-        context->to_clients_buffer_length +
-        context->counters_metadata_buffer_length +
-        context->counters_values_buffer_length +
-        context->error_buffer_length,
-        context->file_page_size);
 }
 
 inline size_t aeron_ipc_publication_term_window_length(aeron_driver_context_t *context, size_t term_length)

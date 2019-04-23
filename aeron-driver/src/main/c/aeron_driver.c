@@ -321,7 +321,8 @@ void aeron_driver_fill_cnc_metadata(aeron_driver_context_t *context)
     aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *)context->cnc_map.addr;
     metadata->to_driver_buffer_length = (int32_t)context->to_driver_buffer_length;
     metadata->to_clients_buffer_length = (int32_t)context->to_clients_buffer_length;
-    metadata->counter_metadata_buffer_length = (int32_t)context->counters_metadata_buffer_length;
+    metadata->counter_metadata_buffer_length =
+        (int32_t)(AERON_COUNTERS_METADATA_BUFFER_LENGTH(context->counters_values_buffer_length));
     metadata->counter_values_buffer_length = (int32_t)context->counters_values_buffer_length;
     metadata->error_log_buffer_length = (int32_t)context->error_buffer_length;
     metadata->client_liveness_timeout = (int64_t)context->client_liveness_timeout_ns;

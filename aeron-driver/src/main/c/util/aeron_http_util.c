@@ -32,7 +32,7 @@ int aeron_http_parse_url(const char *url, aeron_http_parsed_url_t *parsed_url)
 {
     const char *pb = url;
     char c;
-    int i = 0, at_index = -1, first_slash_index = -1, end_index = -1, length;
+    int i = 0, at_index = -1, first_slash_index = -1, end_index, length;
 
     if (strncmp(url, "http://", strlen("http://")) != 0)
     {
@@ -143,6 +143,7 @@ int aeron_http_response_ensure_capacity(aeron_http_response_t *response, size_t 
         }
 
         response->capacity = new_capacity;
+
         return 0;
     }
 
@@ -274,7 +275,7 @@ int aeron_http_retrieve(aeron_http_response_t **response, const char *url, int64
     {
         int errcode = errno;
 
-        aeron_set_err(errcode, "http sent %d/%d bytes: %s", sent_length, length, strerror(errcode));
+        aeron_set_err(errcode, "http sent %" PRId64 "/%d bytes: %s", (uint64_t)sent_length, length, strerror(errcode));
         goto error;
     }
 
@@ -361,6 +362,7 @@ int aeron_http_retrieve(aeron_http_response_t **response, const char *url, int64
         }
 
         aeron_http_response_delete(_response);
+
         return -1;
 }
 
@@ -389,6 +391,7 @@ int aeron_http_header_get(aeron_http_response_t *response, const char *header_na
     }
 
     line[0] = '\0';
+
     return 0;
 }
 

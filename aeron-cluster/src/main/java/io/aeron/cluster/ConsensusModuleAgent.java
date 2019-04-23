@@ -1685,6 +1685,11 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
             workCount += count;
 
+            if (ConsensusModule.State.ACTIVE == state)
+            {
+                workCount += timerService.poll(nowMs - leaderHeartbeatTimeoutMs);
+            }
+
             if (NULL_POSITION != terminationPosition)
             {
                 if (logAdapter.position() >= terminationPosition && ConsensusModule.State.SNAPSHOT != state)

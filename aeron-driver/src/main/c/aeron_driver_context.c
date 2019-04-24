@@ -294,6 +294,8 @@ static void aeron_driver_conductor_to_client_interceptor_null(
 #define AERON_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_DEFAULT (5 * 1000 * 1000 * 1000LL)
 #define AERON_UNTETHERED_RESTING_TIMEOUT_NS_DEFAULT (10 * 1000 * 1000 * 1000LL)
 #define AERON_DRIVER_TIMEOUT_MS_DEFAULT (10 * 1000)
+#define AERON_RETRANSMIT_UNICAST_DELAY_NS_DEFAULT (0)
+#define AERON_RETRANSMIT_UNICAST_LINGER_NS_DEFAULT (60 * 1000 * 1000LL)
 
 int aeron_driver_context_init(aeron_driver_context_t **context)
 {
@@ -405,6 +407,8 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->counter_free_to_reuse_ns = AERON_COUNTERS_FREE_TO_REUSE_TIMEOUT_NS_DEFAULT;
     _context->untethered_window_limit_timeout_ns = AERON_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_DEFAULT;
     _context->untethered_resting_timeout_ns = AERON_UNTETHERED_RESTING_TIMEOUT_NS_DEFAULT;
+    _context->retransmit_unicast_delay_ns = AERON_RETRANSMIT_UNICAST_DELAY_NS_DEFAULT;
+    _context->retransmit_unicast_linger_ns = AERON_RETRANSMIT_UNICAST_LINGER_NS_DEFAULT;
 
     char *value = NULL;
 
@@ -670,6 +674,20 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         AERON_UNTETHERED_RESTING_TIMEOUT_ENV_VAR,
         getenv(AERON_UNTETHERED_RESTING_TIMEOUT_ENV_VAR),
         _context->untethered_resting_timeout_ns,
+        1000,
+        INT64_MAX);
+
+    _context->retransmit_unicast_delay_ns = aeron_config_parse_duration_ns(
+        AERON_RETRANSMIT_UNICAST_DELAY_ENV_VAR,
+        getenv(AERON_RETRANSMIT_UNICAST_DELAY_ENV_VAR),
+        _context->retransmit_unicast_delay_ns,
+        0,
+        INT64_MAX);
+
+    _context->retransmit_unicast_linger_ns = aeron_config_parse_duration_ns(
+        AERON_RETRANSMIT_UNICAST_LINGER_ENV_VAR,
+        getenv(AERON_RETRANSMIT_UNICAST_LINGER_ENV_VAR),
+        _context->retransmit_unicast_linger_ns,
         1000,
         INT64_MAX);
 
@@ -1781,4 +1799,30 @@ int aeron_driver_context_set_driver_timeout_ms(aeron_driver_context_t *context, 
 uint64_t aeron_driver_context_get_driver_timeout_ms(aeron_driver_context_t *context)
 {
     return NULL != context ? context->driver_timeout_ms : AERON_DRIVER_TIMEOUT_MS_DEFAULT;
+}
+
+int aeron_driver_context_set_retransmit_unicast_delay_ns(aeron_driver_context_t *context, uint64_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->retransmit_unicast_delay_ns = value;
+    return 0;
+}
+
+uint64_t aeron_driver_context_get_retransmit_unicast_delay_ns(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->retransmit_unicast_delay_ns : AERON_RETRANSMIT_UNICAST_DELAY_NS_DEFAULT;
+}
+
+int aeron_driver_context_set_retransmit_unicast_linger_ns(aeron_driver_context_t *context, uint64_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->retransmit_unicast_linger_ns = value;
+    return 0;
+}
+
+uint64_t aeron_driver_context_get_retransmit_unicast_linger_ns(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->retransmit_unicast_linger_ns : AERON_RETRANSMIT_UNICAST_LINGER_NS_DEFAULT;
 }

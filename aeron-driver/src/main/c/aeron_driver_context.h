@@ -86,6 +86,8 @@ typedef struct aeron_driver_context_stct
     uint64_t counter_free_to_reuse_ns;           /* aeron.counters.free.to.reuse.timeout = 1s */
     uint64_t untethered_window_limit_timeout_ns; /* aeron.untethered.window.limit.timeout = 5s */
     uint64_t untethered_resting_timeout_ns;      /* aeron.untethered.resting.timeout = 10s */
+    uint64_t retransmit_unicast_delay_ns;        /* aeron.retransmit.unicast.delay = 0 */
+    uint64_t retransmit_unicast_linger_ns;       /* aeron.retransmit.unicast.linger = 60ms */
     size_t to_driver_buffer_length;              /* aeron.conductor.buffer.length = 1MB + trailer*/
     size_t to_clients_buffer_length;             /* aeron.clients.buffer.length = 1MB + trailer */
     size_t counters_values_buffer_length;        /* aeron.counters.buffer.length = 1MB */

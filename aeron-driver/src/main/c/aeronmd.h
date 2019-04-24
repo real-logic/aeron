@@ -520,6 +520,37 @@ uint64_t aeron_driver_context_get_untethered_resting_timeout_ns(aeron_driver_con
 int aeron_driver_context_set_driver_timeout_ms(aeron_driver_context_t *context, uint64_t value);
 uint64_t aeron_driver_context_get_driver_timeout_ms(aeron_driver_context_t *context);
 
+/**
+ * Expected size of multicast receiver groups property name.
+ */
+#define AERON_NAK_MULTICAST_GROUP_SIZE_ENV_VAR "AERON_NAK_MULTICAST_GROUP_SIZE"
+
+/**
+ * Max backoff time for multicast NAK delay randomisation in nanoseconds.
+ */
+#define AERON_NAK_MULTICAST_MAX_BACKOFF_ENV_VAR "AERON_NAK_MULTICAST_MAX_BACKOFF"
+
+/**
+ * How long to delay before resending a NAK.
+ */
+#define AERON_NAK_UNICAST_DELAY_ENV_VAR "AERON_NAK_UNICAST_DELAY"
+
+/**
+ * How long to delay before sending a retransmit following a NAK.
+ */
+#define AERON_RETRANSMIT_UNICAST_DELAY_ENV_VAR "AERON_RETRANSMIT_UNICAST_DELAY"
+
+int aeron_driver_context_set_retransmit_unicast_delay_ns(aeron_driver_context_t *context, uint64_t value);
+uint64_t aeron_driver_context_get_retransmit_unicast_delay_ns(aeron_driver_context_t *context);
+
+/**
+ * How long to linger after delay on a NAK.
+ */
+#define AERON_RETRANSMIT_UNICAST_LINGER_ENV_VAR "AERON_RETRANSMIT_UNICAST_LINGER"
+
+int aeron_driver_context_set_retransmit_unicast_linger_ns(aeron_driver_context_t *context, uint64_t value);
+uint64_t aeron_driver_context_get_retransmit_unicast_linger_ns(aeron_driver_context_t *context);
+
 #define AERON_IPC_CHANNEL "aeron:ipc"
 #define AERON_IPC_CHANNEL_LEN strlen(AERON_IPC_CHANNEL)
 #define AERON_SPY_PREFIX "aeron-spy:"

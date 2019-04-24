@@ -23,7 +23,8 @@
 int aeron_retransmit_handler_init(
     aeron_retransmit_handler_t *handler,
     int64_t *invalid_packets_counter,
-    int64_t linger_timeout_ns)
+    uint64_t delay_timeout_ns,
+    uint64_t linger_timeout_ns)
 {
     if (aeron_int64_to_ptr_hash_map_init(
         &handler->active_retransmits_map, 8, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR) < 0)
@@ -35,6 +36,7 @@ int aeron_retransmit_handler_init(
     }
 
     handler->invalid_packets_counter = invalid_packets_counter;
+    handler->delay_timeout_ns = delay_timeout_ns;
     handler->linger_timeout_ns = linger_timeout_ns;
 
     for (size_t i = 0; i < AERON_RETRANSMIT_HANDLER_MAX_RETRANSMITS; i++)
@@ -109,9 +111,17 @@ int aeron_retransmit_handler_on_nak(
             action->term_offset = term_offset;
             action->length = length < term_length_left ? length : term_length_left;
 
-            result = resend(resend_clientd, term_id, term_offset, action->length);
-            action->state = AERON_RETRANSMIT_ACTION_STATE_LINGERING;
-            action->expire_ns = now_ns + handler->linger_timeout_ns;
+            if (0 == handler->delay_timeout_ns)
+            {
+                result = resend(resend_clientd, term_id, term_offset, action->length);
+                action->state = AERON_RETRANSMIT_ACTION_STATE_LINGERING;
+                action->expire_ns = now_ns + handler->linger_timeout_ns;
+            }
+            else
+            {
+                action->state = AERON_RETRANSMIT_ACTION_STATE_DELAYED;
+                action->expire_ns = now_ns + handler->delay_timeout_ns;
+            }
 
             if (aeron_int64_to_ptr_hash_map_put(&handler->active_retransmits_map, key, action) < 0)
             {
@@ -128,7 +138,9 @@ int aeron_retransmit_handler_on_nak(
 
 int aeron_retransmit_handler_process_timeouts(
     aeron_retransmit_handler_t *handler,
-    int64_t now_ns)
+    int64_t now_ns,
+    aeron_retransmit_handler_resend_func_t resend,
+    void *resend_clientd)
 {
     int result = 0;
     size_t num_active_actions = handler->active_retransmits_map.size;
@@ -147,6 +159,18 @@ int aeron_retransmit_handler_process_timeouts(
 
                     action->state = AERON_RETRANSMIT_ACTION_STATE_INACTIVE;
                     aeron_int64_to_ptr_hash_map_remove(&handler->active_retransmits_map, key);
+                    result++;
+                }
+
+                num_active_actions--;
+            }
+            else if (AERON_RETRANSMIT_ACTION_STATE_DELAYED == action->state)
+            {
+                if (now_ns > action->expire_ns)
+                {
+                    result = resend(resend_clientd, action->term_id, action->term_offset, action->length);
+                    action->state = AERON_RETRANSMIT_ACTION_STATE_LINGERING;
+                    action->expire_ns = now_ns + handler->linger_timeout_ns;
                     result++;
                 }
 

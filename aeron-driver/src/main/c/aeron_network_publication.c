@@ -101,7 +101,8 @@ int aeron_network_publication_create(
     if (aeron_retransmit_handler_init(
         &_pub->retransmit_handler,
         aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_INVALID_PACKETS),
-        AERON_RETRANSMIT_HANDLER_DEFAULT_LINGER_TIMEOUT_NS) < 0)
+        context->retransmit_unicast_delay_ns,
+        context->retransmit_unicast_linger_ns) < 0)
     {
         aeron_free(_pub->log_file_name);
         aeron_free(_pub);
@@ -497,7 +498,8 @@ int aeron_network_publication_send(aeron_network_publication_t *publication, int
         AERON_PUT_ORDERED(publication->has_receivers, false);
     }
 
-    aeron_retransmit_handler_process_timeouts(&publication->retransmit_handler, now_ns);
+    aeron_retransmit_handler_process_timeouts(
+        &publication->retransmit_handler, now_ns, aeron_network_publication_resend, publication);
 
     return bytes_sent;
 }

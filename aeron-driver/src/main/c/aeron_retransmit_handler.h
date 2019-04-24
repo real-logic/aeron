@@ -25,6 +25,7 @@
 
 typedef enum aeron_retransmit_action_state_enum
 {
+    AERON_RETRANSMIT_ACTION_STATE_DELAYED,
     AERON_RETRANSMIT_ACTION_STATE_LINGERING,
     AERON_RETRANSMIT_ACTION_STATE_INACTIVE,
 }
@@ -41,7 +42,6 @@ typedef struct aeron_retransmit_action_stct
 aeron_retransmit_action_t;
 
 #define AERON_RETRANSMIT_HANDLER_MAX_RETRANSMITS (16)
-#define AERON_RETRANSMIT_HANDLER_DEFAULT_LINGER_TIMEOUT_NS (60 * 1000 * 1000L)
 
 typedef int (*aeron_retransmit_handler_resend_func_t)(
     void *clientd, int32_t term_id, int32_t term_offset, size_t length);
@@ -50,7 +50,8 @@ typedef struct aeron_retransmit_handler_stct
 {
     aeron_retransmit_action_t retransmit_action_pool[AERON_RETRANSMIT_HANDLER_MAX_RETRANSMITS];
     aeron_int64_to_ptr_hash_map_t active_retransmits_map;
-    int64_t linger_timeout_ns;
+    uint64_t delay_timeout_ns;
+    uint64_t linger_timeout_ns;
 
     int64_t *invalid_packets_counter;
 }
@@ -59,7 +60,8 @@ aeron_retransmit_handler_t;
 int aeron_retransmit_handler_init(
     aeron_retransmit_handler_t *handler,
     int64_t *invalid_packets_counter,
-    int64_t linger_timeout_ns);
+    uint64_t delay_timeout_ns,
+    uint64_t linger_timeout_ns);
 
 int aeron_retransmit_handler_close(aeron_retransmit_handler_t *handler);
 
@@ -75,6 +77,8 @@ int aeron_retransmit_handler_on_nak(
 
 int aeron_retransmit_handler_process_timeouts(
     aeron_retransmit_handler_t *handler,
-    int64_t now_ns);
+    int64_t now_ns,
+    aeron_retransmit_handler_resend_func_t resend,
+    void *resend_clientd);
 
 #endif //AERON_RETRANSMIT_HANDLER_H

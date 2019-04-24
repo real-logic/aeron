@@ -771,7 +771,8 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         uint64_t high;
         uint64_t low;
     }
-        *id_as_uint64 = (struct uuid_as_uint64 *)&id;
+
+    *id_as_uint64 = (struct uuid_as_uint64 *)&id;
     _context->receiver_id = id_as_uint64->high ^ id_as_uint64->low;
 #else
     /* pure random id */
@@ -955,7 +956,7 @@ extern size_t aeron_ipc_publication_term_window_length(aeron_driver_context_t *c
 
 extern size_t aeron_network_publication_term_window_length(aeron_driver_context_t *context, size_t term_length);
 
-#define AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(r,a) \
+#define AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(r, a) \
 do \
 { \
     if (NULL == (a)) \

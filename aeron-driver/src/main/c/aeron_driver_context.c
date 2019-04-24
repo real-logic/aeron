@@ -296,6 +296,9 @@ static void aeron_driver_conductor_to_client_interceptor_null(
 #define AERON_DRIVER_TIMEOUT_MS_DEFAULT (10 * 1000)
 #define AERON_RETRANSMIT_UNICAST_DELAY_NS_DEFAULT (0)
 #define AERON_RETRANSMIT_UNICAST_LINGER_NS_DEFAULT (60 * 1000 * 1000LL)
+#define AERON_NAK_MULTICAST_GROUP_SIZE_DEFAULT (10)
+#define AERON_NAK_MULTICAST_MAX_BACKOFF_NS_DEFAULT (60 * 1000 * 1000LL)
+#define AERON_NAK_UNICAST_DELAY_NS_DEFAULT (60 * 1000 * 1000LL)
 
 int aeron_driver_context_init(aeron_driver_context_t **context)
 {
@@ -409,6 +412,9 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->untethered_resting_timeout_ns = AERON_UNTETHERED_RESTING_TIMEOUT_NS_DEFAULT;
     _context->retransmit_unicast_delay_ns = AERON_RETRANSMIT_UNICAST_DELAY_NS_DEFAULT;
     _context->retransmit_unicast_linger_ns = AERON_RETRANSMIT_UNICAST_LINGER_NS_DEFAULT;
+    _context->nak_multicast_group_size = AERON_NAK_MULTICAST_GROUP_SIZE_DEFAULT;
+    _context->nak_multicast_max_backoff_ns = AERON_NAK_MULTICAST_MAX_BACKOFF_NS_DEFAULT;
+    _context->nak_unicast_delay_ns = AERON_NAK_UNICAST_DELAY_NS_DEFAULT;
 
     char *value = NULL;
 
@@ -688,6 +694,27 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         AERON_RETRANSMIT_UNICAST_LINGER_ENV_VAR,
         getenv(AERON_RETRANSMIT_UNICAST_LINGER_ENV_VAR),
         _context->retransmit_unicast_linger_ns,
+        1000,
+        INT64_MAX);
+
+    _context->nak_multicast_group_size = (size_t)aeron_config_parse_uint64(
+        AERON_NAK_MULTICAST_GROUP_SIZE_ENV_VAR,
+        getenv(AERON_NAK_MULTICAST_GROUP_SIZE_ENV_VAR),
+        _context->nak_multicast_group_size,
+        1,
+        INT32_MAX);
+
+    _context->nak_multicast_max_backoff_ns = aeron_config_parse_duration_ns(
+        AERON_NAK_MULTICAST_MAX_BACKOFF_ENV_VAR,
+        getenv(AERON_NAK_MULTICAST_MAX_BACKOFF_ENV_VAR),
+        _context->nak_multicast_max_backoff_ns,
+        1000,
+        INT64_MAX);
+
+    _context->nak_unicast_delay_ns = aeron_config_parse_duration_ns(
+        AERON_NAK_UNICAST_DELAY_ENV_VAR,
+        getenv(AERON_NAK_UNICAST_DELAY_ENV_VAR),
+        _context->nak_unicast_delay_ns,
         1000,
         INT64_MAX);
 
@@ -1825,4 +1852,43 @@ int aeron_driver_context_set_retransmit_unicast_linger_ns(aeron_driver_context_t
 uint64_t aeron_driver_context_get_retransmit_unicast_linger_ns(aeron_driver_context_t *context)
 {
     return NULL != context ? context->retransmit_unicast_linger_ns : AERON_RETRANSMIT_UNICAST_LINGER_NS_DEFAULT;
+}
+
+int aeron_driver_context_set_nak_multicast_group_size(aeron_driver_context_t *context, size_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->nak_multicast_group_size = value;
+    return 0;
+}
+
+size_t aeron_driver_context_get_nak_multicast_group_size(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->nak_multicast_group_size : AERON_NAK_MULTICAST_GROUP_SIZE_DEFAULT;
+}
+
+int aeron_driver_context_set_nak_multicast_max_backoff_ns(aeron_driver_context_t *context, uint64_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->nak_multicast_max_backoff_ns = value;
+    return 0;
+}
+
+uint64_t aeron_driver_context_get_nak_multicast_max_backoff_ns(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->nak_multicast_max_backoff_ns : AERON_NAK_MULTICAST_MAX_BACKOFF_NS_DEFAULT;
+}
+
+int aeron_driver_context_set_nak_unicast_delay_ns(aeron_driver_context_t *context, uint64_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->nak_unicast_delay_ns = value;
+    return 0;
+}
+
+uint64_t aeron_driver_context_get_nak_unicast_delay_ns(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->nak_unicast_delay_ns : AERON_NAK_UNICAST_DELAY_NS_DEFAULT;
 }

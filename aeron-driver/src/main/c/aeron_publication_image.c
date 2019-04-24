@@ -88,9 +88,8 @@ int aeron_publication_image_create(
 
     if (aeron_loss_detector_init(
         &_image->loss_detector,
-        !is_multicast,
         is_multicast ?
-            aeron_loss_detector_nak_multicast_delay_generator : aeron_loss_detector_nak_unicast_delay_generator,
+            &context->multicast_delay_feedback_generator : &context->unicast_delay_feedback_generator,
         aeron_publication_image_on_gap_detected, _image) < 0)
     {
         aeron_free(_image);

@@ -27,8 +27,6 @@
 typedef void (*aeron_idle_strategy_func_t)(void *state, int work_count);
 typedef int (*aeron_idle_strategy_init_func_t)(void **state, const char *env_var, const char *init_args);
 
-typedef int64_t (*aeron_feedback_delay_generator_func_t)();
-
 typedef struct aeron_driver_managed_resource_stct
 {
     int64_t registration_id;
@@ -65,6 +63,31 @@ typedef struct aeron_command_base_stct
     void *item;
 }
 aeron_command_base_t;
+
+typedef struct aeron_feedback_delay_generator_state_stct aeron_feedback_delay_generator_state_t;
+
+typedef int64_t (*aeron_feedback_delay_generator_func_t)(aeron_feedback_delay_generator_state_t *state);
+
+struct aeron_feedback_delay_generator_state_stct
+{
+    struct static_delay_stct
+    {
+        int64_t delay_ns;
+    }
+    static_delay;
+
+    struct optimal_delay_stct
+    {
+        double rand_max;
+        double base_x;
+        double constant_t;
+        double factor_t;
+    }
+    optimal_delay;
+
+    bool should_immediate_feedback;
+    aeron_feedback_delay_generator_func_t delay_generator;
+};
 
 int aeron_driver_subscribable_add_position(
     aeron_subscribable_t *subscribable, int64_t counter_id, int64_t *value_addr);

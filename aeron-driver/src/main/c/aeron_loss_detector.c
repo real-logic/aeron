@@ -26,18 +26,16 @@
 
 int aeron_loss_detector_init(
     aeron_loss_detector_t *detector,
-    bool should_immediate_feedback,
-    aeron_feedback_delay_generator_func_t delay_generator,
+    aeron_feedback_delay_generator_state_t *feedback_delay_state,
     aeron_term_gap_scanner_on_gap_detected_func_t on_gap_detected,
     void *on_gap_detected_clientd)
 {
-    detector->delay_generator = delay_generator;
     detector->on_gap_detected = on_gap_detected;
     detector->on_gap_detected_clientd = on_gap_detected_clientd;
     detector->expiry = AERON_LOSS_DETECTOR_TIMER_INACTIVE;
     detector->active_gap.term_offset = -1;
     detector->scanned_gap.term_offset = -1;
-    detector->should_feedback_immediately = should_immediate_feedback;
+    detector->feedback_delay_state = feedback_delay_state;
 
     return 0;
 }
@@ -89,30 +87,40 @@ int32_t aeron_loss_detector_scan(
     return rebuild_offset;
 }
 
-int64_t aeron_loss_detector_nak_multicast_delay_generator()
+int aeron_feedback_delay_state_init(
+    aeron_feedback_delay_generator_state_t *state,
+    aeron_feedback_delay_generator_func_t delay_generator,
+    int64_t delay_ns,
+    size_t multicast_group_size,
+    bool should_immediate_feedback)
 {
-    static bool initialized = false;
-    static double lambda;
-    static double rand_max;
-    static double base_x;
-    static double constant_t;
-    static double factor_t;
+    static bool is_seeded = false;
+    double lambda = log((double)multicast_group_size) + 1;
+    double max_backoff_T = (double)delay_ns;
 
-    if (!initialized)
+    state->static_delay.delay_ns = delay_ns;
+
+    state->optimal_delay.rand_max = lambda / max_backoff_T;
+    state->optimal_delay.base_x = lambda / (max_backoff_T * (exp(lambda) - 1));
+    state->optimal_delay.constant_t = max_backoff_T / lambda;
+    state->optimal_delay.factor_t = (exp(lambda) - 1) * (max_backoff_T / lambda);
+
+    if (!is_seeded)
     {
-        lambda = log(AERON_LOSS_DETECTOR_NAK_MULTICAST_GROUP_SIZE) + 1;
-        rand_max = lambda / AERON_LOSS_DETECTOR_NAK_MULTICAST_MAX_BACKOFF_NS;
-        base_x = lambda / (AERON_LOSS_DETECTOR_NAK_MULTICAST_MAX_BACKOFF_NS * (exp(lambda) - 1));
-        constant_t = AERON_LOSS_DETECTOR_NAK_MULTICAST_MAX_BACKOFF_NS / lambda;
-        factor_t = (exp(lambda) - 1) * constant_t;
         aeron_srand48(aeron_nano_clock());
-
-        initialized = true;
+        is_seeded = true;
     }
 
-    const double x = (aeron_drand48() * rand_max) + base_x;
+    state->should_immediate_feedback = should_immediate_feedback;
+    state->delay_generator = delay_generator;
+    return 0;
+}
 
-    return (int64_t)(constant_t * log(x * factor_t));
+int64_t aeron_loss_detector_nak_multicast_delay_generator(aeron_feedback_delay_generator_state_t *state)
+{
+    const double x = (aeron_drand48() * state->optimal_delay.rand_max) + state->optimal_delay.base_x;
+
+    return (int64_t)(state->optimal_delay.constant_t * log(x * state->optimal_delay.factor_t));
 }
 
 extern int64_t aeron_loss_detector_nak_unicast_delay_generator();

@@ -570,9 +570,9 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
     fprintf(fpout, "\n    untethered_resting_timeout_ns=%" PRIu64, context->untethered_resting_timeout_ns);
     fprintf(fpout, "\n    retransmit_unicast_delay_ns=%" PRIu64, context->retransmit_unicast_delay_ns);
     fprintf(fpout, "\n    retransmit_unicast_linger_ns=%" PRIu64, context->retransmit_unicast_linger_ns);
-    /* nakUnicastDelayNs */
-    /* nakMulticastMaxBackoffNs */
-    /* nakMulticastGroupSize */
+    fprintf(fpout, "\n    nak_unicast_delay_ns=%" PRIu64, context->nak_unicast_delay_ns);
+    fprintf(fpout, "\n    nak_multicast_max_backoff_ns=%" PRIu64, context->nak_multicast_max_backoff_ns);
+    fprintf(fpout, "\n    nak_multicast_group_size=%" PRIu64, (uint64_t)context->nak_multicast_group_size);
     fprintf(fpout, "\n    status_message_timeout_ns=%" PRIu64, context->status_message_timeout_ns);
     fprintf(fpout, "\n    counter_free_to_reuse_ns=%" PRIu64, context->counter_free_to_reuse_ns);
     fprintf(fpout, "\n    term_buffer_length=%" PRIu64, (uint64_t)context->term_buffer_length);
@@ -789,6 +789,26 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
 
     aeron_mpsc_rb_consumer_heartbeat_time(&_driver->conductor.to_driver_commands, aeron_epoch_clock());
     aeron_cnc_version_signal_cnc_ready((aeron_cnc_metadata_t *)context->cnc_map.addr, AERON_CNC_VERSION);
+
+    if (aeron_feedback_delay_state_init(
+        &_driver->context->unicast_delay_feedback_generator,
+        aeron_loss_detector_nak_multicast_delay_generator,
+        _driver->context->nak_unicast_delay_ns,
+        1,
+        true) < 0)
+    {
+        goto error;
+    }
+
+    if (aeron_feedback_delay_state_init(
+        &_driver->context->multicast_delay_feedback_generator,
+        aeron_loss_detector_nak_unicast_delay_generator,
+        _driver->context->nak_multicast_max_backoff_ns,
+        _driver->context->nak_multicast_group_size,
+        false) < 0)
+    {
+        goto error;
+    }
 
     if (_driver->context->print_configuration_on_start)
     {

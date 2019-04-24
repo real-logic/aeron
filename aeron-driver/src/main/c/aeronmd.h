@@ -525,15 +525,24 @@ uint64_t aeron_driver_context_get_driver_timeout_ms(aeron_driver_context_t *cont
  */
 #define AERON_NAK_MULTICAST_GROUP_SIZE_ENV_VAR "AERON_NAK_MULTICAST_GROUP_SIZE"
 
+int aeron_driver_context_set_nak_multicast_group_size(aeron_driver_context_t *context, size_t value);
+size_t aeron_driver_context_get_nak_multicast_group_size(aeron_driver_context_t *context);
+
 /**
  * Max backoff time for multicast NAK delay randomisation in nanoseconds.
  */
 #define AERON_NAK_MULTICAST_MAX_BACKOFF_ENV_VAR "AERON_NAK_MULTICAST_MAX_BACKOFF"
 
+int aeron_driver_context_set_nak_multicast_max_backoff_ns(aeron_driver_context_t *context, uint64_t value);
+uint64_t aeron_driver_context_get_nak_multicast_max_backoff_ns(aeron_driver_context_t *context);
+
 /**
  * How long to delay before resending a NAK.
  */
 #define AERON_NAK_UNICAST_DELAY_ENV_VAR "AERON_NAK_UNICAST_DELAY"
+
+int aeron_driver_context_set_nak_unicast_delay_ns(aeron_driver_context_t *context, uint64_t value);
+uint64_t aeron_driver_context_get_nak_unicast_delay_ns(aeron_driver_context_t *context);
 
 /**
  * How long to delay before sending a retransmit following a NAK.

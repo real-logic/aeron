@@ -88,8 +88,8 @@ typedef struct aeron_driver_context_stct
     uint64_t untethered_resting_timeout_ns;      /* aeron.untethered.resting.timeout = 10s */
     uint64_t retransmit_unicast_delay_ns;        /* aeron.retransmit.unicast.delay = 0 */
     uint64_t retransmit_unicast_linger_ns;       /* aeron.retransmit.unicast.linger = 60ms */
-    uint64_t nak_unicast_delay_ns;               /* */
-    uint64_t nak_multicast_max_backoff_ns;       /* */
+    uint64_t nak_unicast_delay_ns;               /* aeron.nak.unicast.delay = 60ms */
+    uint64_t nak_multicast_max_backoff_ns;       /* aeron.nak.multicast.max.backoff = 60ms */
     size_t to_driver_buffer_length;              /* aeron.conductor.buffer.length = 1MB + trailer*/
     size_t to_clients_buffer_length;             /* aeron.clients.buffer.length = 1MB + trailer */
     size_t counters_values_buffer_length;        /* aeron.counters.buffer.length = 1MB */
@@ -106,7 +106,7 @@ typedef struct aeron_driver_context_stct
     size_t initial_window_length;                /* aeron.rcv.initial.window.length = 128KB */
     size_t loss_report_length;                   /* aeron.loss.report.buffer.length = 1MB */
     size_t file_page_size;                       /* aeron.file.page.size = 4KB */
-    size_t nak_multicast_group_size;             /* */
+    size_t nak_multicast_group_size;             /* aeron.nak.multicast.group.size = 10 */
     uint8_t multicast_ttl;                       /* aeron.socket.multicast.ttl = 0 */
 
     aeron_mapped_file_t cnc_map;

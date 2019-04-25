@@ -12,12 +12,6 @@ install: skip
 
 matrix:
   include:
-    - name: "Oracle Java 8"
-      language: java
-      jdk: oraclejdk8
-      os: linux
-      script: ./gradlew
-
     - name: "OpenJDK 8"
       language: java
       jdk: openjdk8

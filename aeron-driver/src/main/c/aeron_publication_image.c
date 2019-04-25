@@ -245,7 +245,6 @@ void aeron_publication_image_clean_buffer_to(aeron_publication_image_t *image, i
 void aeron_publication_image_on_gap_detected(void *clientd, int32_t term_id, int32_t term_offset, size_t length)
 {
     aeron_publication_image_t *image = (aeron_publication_image_t *)clientd;
-
     const int64_t change_number = image->begin_loss_change + 1;
 
     AERON_PUT_ORDERED(image->begin_loss_change, change_number);
@@ -264,8 +263,7 @@ void aeron_publication_image_on_gap_detected(void *clientd, int32_t term_id, int
     else if (NULL != image->loss_reporter)
     {
         char source[AERON_MAX_PATH];
-
-        aeron_format_source_identity(source, sizeof(source), &image->source_address);
+        int source_length = aeron_format_source_identity(source, sizeof(source), &image->source_address);
 
         if (NULL != image->endpoint)
         {
@@ -278,7 +276,7 @@ void aeron_publication_image_on_gap_detected(void *clientd, int32_t term_id, int
                 image->endpoint->conductor_fields.udp_channel->original_uri,
                 image->endpoint->conductor_fields.udp_channel->uri_length,
                 source,
-                strlen(source));
+                source_length);
         }
 
         if (-1 == image->loss_reporter_offset)
@@ -293,14 +291,19 @@ void aeron_publication_image_track_rebuild(
 {
     int64_t hwm_position = aeron_counter_get_volatile(image->rcv_hwm_position.value_addr);
     int64_t min_sub_pos = hwm_position;
-    int64_t max_sub_pos = INT64_MIN;
+    int64_t max_sub_pos = 0;
 
     for (size_t i = 0, length = image->conductor_fields.subscribable.length; i < length; i++)
     {
-        int64_t position = aeron_counter_get_volatile(image->conductor_fields.subscribable.array[i].value_addr);
+        aeron_tetherable_position_t *tetherable_position = &image->conductor_fields.subscribable.array[i];
 
-        min_sub_pos = position < min_sub_pos ? position : min_sub_pos;
-        max_sub_pos = position > max_sub_pos ? position : max_sub_pos;
+        if (AERON_SUBSCRIPTION_TETHER_RESTING != tetherable_position->state)
+        {
+            int64_t position = aeron_counter_get_volatile(tetherable_position->value_addr);
+
+            min_sub_pos = position < min_sub_pos ? position : min_sub_pos;
+            max_sub_pos = position > max_sub_pos ? position : max_sub_pos;
+        }
     }
 
     const int64_t rebuild_position = *image->rcv_pos_position.value_addr > max_sub_pos ?

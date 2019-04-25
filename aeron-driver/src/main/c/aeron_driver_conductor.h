@@ -79,7 +79,7 @@ aeron_client_t;
 typedef struct aeron_subscribable_list_entry_stct
 {
     aeron_subscribable_t *subscribable;
-    int64_t counter_id;
+    int32_t counter_id;
 }
 aeron_subscribable_list_entry_t;
 
@@ -346,6 +346,18 @@ void aeron_driver_conductor_client_transmit(
     const void *message,
     size_t length);
 
+void aeron_driver_conductor_on_available_image(
+    aeron_driver_conductor_t *conductor,
+    int64_t correlation_id,
+    int32_t stream_id,
+    int32_t session_id,
+    const char *log_file_name,
+    size_t log_file_name_length,
+    int32_t subscriber_position_id,
+    int64_t subscriber_registration_id,
+    const char *source_identity,
+    size_t source_identity_length);
+
 void aeron_driver_conductor_on_unavailable_image(
     aeron_driver_conductor_t *conductor,
     int64_t correlation_id,
@@ -354,9 +366,7 @@ void aeron_driver_conductor_on_unavailable_image(
     const char *channel,
     size_t channel_length);
 
-void aeron_driver_conductor_on_client_timeout(
-    aeron_driver_conductor_t *conductor,
-    int64_t correlation_id);
+void aeron_driver_conductor_on_client_timeout(aeron_driver_conductor_t *conductor, int64_t correlation_id);
 
 void aeron_driver_conductor_cleanup_spies(
     aeron_driver_conductor_t *conductor, aeron_network_publication_t *publication);
@@ -378,6 +388,7 @@ int aeron_driver_conductor_link_subscribable(
     int32_t session_id,
     int32_t stream_id,
     int64_t join_position,
+    int64_t now_ns,
     int32_t uri_length,
     const char *original_uri,
     const char *source_identity,

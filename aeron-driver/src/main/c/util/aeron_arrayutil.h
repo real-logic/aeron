@@ -33,7 +33,7 @@
 #define AERON_ARRAY_ENSURE_CAPACITY(r, a, t) \
 if (a.length >= a.capacity) \
 { \
-    size_t new_capacity = 0 == a.capacity ? 2 : (a.capacity + (a.capacity >> 1)); \
+    size_t new_capacity = 0 == a.capacity ? 2 : (a.capacity + (a.capacity / 2)); \
     r = aeron_array_ensure_capacity((uint8_t **)&a.array, sizeof(t), a.capacity, new_capacity); \
     if (r >= 0) \
     { \

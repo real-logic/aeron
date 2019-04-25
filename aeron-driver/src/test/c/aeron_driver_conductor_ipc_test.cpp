@@ -607,7 +607,8 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToNotTimeoutIpcPublicationOnKeepalive
     EXPECT_EQ(aeron_driver_conductor_num_ipc_publications(&m_conductor.m_conductor), 1u);
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
 
-    int64_t timeout = m_context.m_context->publication_linger_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2);
+    int64_t timeout = m_context.m_context->publication_linger_timeout_ns +
+        (m_context.m_context->client_liveness_timeout_ns * 2);
 
     doWorkUntilTimeNs(
         timeout,

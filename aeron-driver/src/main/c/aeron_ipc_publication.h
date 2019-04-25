@@ -184,4 +184,7 @@ inline size_t aeron_ipc_publication_num_subscribers(aeron_ipc_publication_t *pub
     return publication->conductor_fields.subscribable.length;
 }
 
+void aeron_ipc_publication_check_untethered_subscriptions(
+    aeron_driver_conductor_t *conductor, aeron_ipc_publication_t *publication, int64_t now_ns);
+
 #endif //AERON_IPC_PUBLICATION_H

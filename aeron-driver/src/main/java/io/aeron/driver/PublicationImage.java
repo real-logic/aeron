@@ -904,8 +904,8 @@ public class PublicationImage
             }
         }
 
-        final int window = nextSmReceiverWindowLength;
-        final long untetheredWindowLimit = (maxConsumerPosition - window) + (window >> 3);
+        final int windowLength = nextSmReceiverWindowLength;
+        final long untetheredWindowLimit = (maxConsumerPosition - windowLength) + (windowLength >> 3);
 
         for (int lastIndex = untetheredSubscriptionsSize - 1, i = lastIndex; i >= 0; i--)
         {

@@ -140,7 +140,7 @@ aeron_publication_image_entry_t;
 typedef struct aeron_linger_resource_entry_stct
 {
     uint8_t *buffer;
-    int64_t timeout;
+    int64_t timeout_ns;
     bool has_reached_end_of_life;
 }
 aeron_linger_resource_entry_t;

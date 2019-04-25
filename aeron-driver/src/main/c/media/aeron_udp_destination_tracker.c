@@ -33,15 +33,15 @@ struct mmsghdr
 #endif
 
 int aeron_udp_destination_tracker_init(
-    aeron_udp_destination_tracker_t *tracker, aeron_clock_func_t clock, int64_t timeout)
+    aeron_udp_destination_tracker_t *tracker, aeron_clock_func_t clock, int64_t timeout_ns)
 {
     tracker->nano_clock = clock;
-    tracker->destination_timeout_ns = timeout;
+    tracker->destination_timeout_ns = timeout_ns;
     tracker->destinations.array = NULL;
     tracker->destinations.length = 0;
     tracker->destinations.capacity = 0;
     tracker->is_manual_control_mode =
-        timeout == AERON_UDP_DESTINATION_TRACKER_MANUAL_DESTINATION_TIMEOUT_NS ? true : false;
+        timeout_ns == AERON_UDP_DESTINATION_TRACKER_MANUAL_DESTINATION_TIMEOUT_NS ? true : false;
 
     return 0;
 }

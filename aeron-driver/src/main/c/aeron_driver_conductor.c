@@ -582,7 +582,7 @@ void aeron_publication_image_entry_delete(
 void aeron_linger_resource_entry_on_time_event(
     aeron_driver_conductor_t *conductor, aeron_linger_resource_entry_t *entry, int64_t now_ns, int64_t now_ms)
 {
-    if (now_ns > entry->timeout)
+    if (now_ns > entry->timeout_ns)
     {
         entry->has_reached_end_of_life = true;
     }
@@ -2745,7 +2745,7 @@ void aeron_driver_conductor_on_linger_buffer(void *clientd, void *item)
 
         entry->buffer = command->item;
         entry->has_reached_end_of_life = false;
-        entry->timeout = conductor->nano_clock() + AERON_DRIVER_CONDUCTOR_LINGER_RESOURCE_TIMEOUT_NS;
+        entry->timeout_ns = conductor->nano_clock() + AERON_DRIVER_CONDUCTOR_LINGER_RESOURCE_TIMEOUT_NS;
     }
 
     if (conductor->context->threading_mode != AERON_THREADING_MODE_SHARED)

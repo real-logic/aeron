@@ -886,7 +886,7 @@ int aeron_driver_context_validate_mtu_length(uint64_t mtu_length)
 }
 
 bool aeron_is_driver_active_with_cnc(
-    aeron_mapped_file_t *cnc_mmap, int64_t timeout, int64_t now, aeron_log_func_t log_func)
+    aeron_mapped_file_t *cnc_mmap, int64_t timeout_ms, int64_t now_ms, aeron_log_func_t log_func)
 {
     char buffer[AERON_MAX_PATH];
     aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *)cnc_mmap->addr;
@@ -894,7 +894,7 @@ bool aeron_is_driver_active_with_cnc(
 
     while (0 == (cnc_version = aeron_cnc_version_volatile(metadata)))
     {
-        if (aeron_epoch_clock() > (now + timeout))
+        if (aeron_epoch_clock() > (now_ms + timeout_ms))
         {
             snprintf(buffer, sizeof(buffer) - 1, "ERROR: aeron cnc file version was 0 for timeout");
             return false;
@@ -924,12 +924,12 @@ bool aeron_is_driver_active_with_cnc(
         else
         {
             int64_t timestamp = aeron_mpsc_rb_consumer_heartbeat_time_value(&rb);
-            int64_t diff = now - timestamp;
+            int64_t diff = now_ms - timestamp;
 
             snprintf(buffer, sizeof(buffer) - 1, "INFO: Aeron driver heartbeat is %" PRId64 " ms old", diff);
             log_func(buffer);
 
-            if (diff <= timeout)
+            if (diff <= timeout_ms)
             {
                 return true;
             }
@@ -939,7 +939,7 @@ bool aeron_is_driver_active_with_cnc(
     return false;
 }
 
-bool aeron_is_driver_active(const char *dirname, int64_t timeout, int64_t now, aeron_log_func_t log_func)
+bool aeron_is_driver_active(const char *dirname, int64_t timeout_ms, aeron_log_func_t log_func)
 {
     char buffer[AERON_MAX_PATH];
     bool result = false;
@@ -962,7 +962,7 @@ bool aeron_is_driver_active(const char *dirname, int64_t timeout, int64_t now, a
         snprintf(buffer, sizeof(buffer) - 1, "INFO: Aeron CnC file %s/%s exists", dirname, AERON_CNC_FILE);
         log_func(buffer);
 
-        result = aeron_is_driver_active_with_cnc(&cnc_map, timeout, aeron_epoch_clock(), log_func);
+        result = aeron_is_driver_active_with_cnc(&cnc_map, timeout_ms, aeron_epoch_clock(), log_func);
 
         aeron_unmap(&cnc_map);
     }
@@ -1351,7 +1351,8 @@ int aeron_driver_context_set_multicast_flowcontrol_supplier(
 aeron_flow_control_strategy_supplier_func_t aeron_driver_context_get_multicast_flowcontrol_supplier(
     aeron_driver_context_t *context)
 {
-    return NULL != context ? context->multicast_flow_control_supplier_func : 
+    return NULL != context ?
+        context->multicast_flow_control_supplier_func :
         aeron_flow_control_strategy_supplier_load(AERON_MULTICAST_FLOWCONTROL_SUPPLIER_DEFAULT);
 }
 
@@ -1368,7 +1369,8 @@ int aeron_driver_context_set_unicast_flowcontrol_supplier(
 aeron_flow_control_strategy_supplier_func_t aeron_driver_context_get_unicast_flowcontrol_supplier(
     aeron_driver_context_t *context)
 {
-    return NULL != context ? context->unicast_flow_control_supplier_func :
+    return NULL != context ?
+        context->unicast_flow_control_supplier_func :
         aeron_flow_control_strategy_supplier_load(AERON_UNICAST_FLOWCONTROL_SUPPLIER_DEFAULT);
 }
 
@@ -1451,8 +1453,8 @@ int aeron_driver_context_set_publication_connection_timeout_ns(aeron_driver_cont
 
 uint64_t aeron_driver_context_get_publication_connection_timeout_ns(aeron_driver_context_t *context)
 {
-    return NULL != context ? context->publication_connection_timeout_ns :
-        AERON_PUBLICATION_CONNECTION_TIMEOUT_NS_DEFAULT;
+    return NULL != context ?
+        context->publication_connection_timeout_ns : AERON_PUBLICATION_CONNECTION_TIMEOUT_NS_DEFAULT;
 }
 
 int aeron_driver_context_set_timer_interval_ns(aeron_driver_context_t *context, uint64_t value)
@@ -1722,8 +1724,7 @@ aeron_driver_termination_validator_func_t aeron_driver_context_get_driver_termin
     return NULL != context ? context->termination_validator_func : aeron_driver_termination_validator_default_deny;
 }
 
-void *aeron_driver_context_get_driver_termination_validator_state(
-    aeron_driver_context_t *context)
+void *aeron_driver_context_get_driver_termination_validator_state(aeron_driver_context_t *context)
 {
     return NULL != context ? context->termination_validator_state : NULL;
 }
@@ -1738,14 +1739,12 @@ int aeron_driver_context_set_driver_termination_hook(
     return 0;
 }
 
-aeron_driver_termination_hook_func_t aeron_driver_context_get_driver_termination_hook(
-    aeron_driver_context_t *context)
+aeron_driver_termination_hook_func_t aeron_driver_context_get_driver_termination_hook(aeron_driver_context_t *context)
 {
     return NULL != context ? context->termination_hook_func : NULL;
 }
 
-void *aeron_driver_context_get_driver_termination_hook_state(
-    aeron_driver_context_t *context)
+void *aeron_driver_context_get_driver_termination_hook_state(aeron_driver_context_t *context)
 {
     return NULL != context ? context->termination_hook_state : NULL;
 }
@@ -1783,6 +1782,7 @@ int aeron_driver_context_set_tether_subscriptions(aeron_driver_context_t *contex
     context->tether_subscriptions = value;
     return 0;
 }
+
 bool aeron_driver_context_get_tether_subscriptions(aeron_driver_context_t *context)
 {
     return NULL != context ? context->tether_subscriptions : AERON_TETHER_SUBSCRIPTIONS_DEFAULT;
@@ -1798,8 +1798,8 @@ int aeron_driver_context_set_untethered_window_limit_timeout_ns(aeron_driver_con
 
 uint64_t aeron_driver_context_get_untethered_window_limit_timeout_ns(aeron_driver_context_t *context)
 {
-    return NULL != context ? context->untethered_window_limit_timeout_ns :
-        AERON_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_DEFAULT;
+    return NULL != context ?
+        context->untethered_window_limit_timeout_ns : AERON_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_DEFAULT;
 }
 
 int aeron_driver_context_set_untethered_resting_timeout_ns(aeron_driver_context_t *context, uint64_t value)

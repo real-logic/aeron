@@ -49,7 +49,7 @@ typedef struct aeron_udp_destination_tracker_stct
 aeron_udp_destination_tracker_t;
 
 int aeron_udp_destination_tracker_init(
-    aeron_udp_destination_tracker_t *tracker, aeron_clock_func_t clock, int64_t timeout);
+    aeron_udp_destination_tracker_t *tracker, aeron_clock_func_t clock, int64_t timeout_ns);
 int aeron_udp_destination_tracker_close(aeron_udp_destination_tracker_t *tracker);
 
 int aeron_udp_destination_tracker_sendmmsg(

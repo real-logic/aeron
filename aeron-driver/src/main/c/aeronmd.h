@@ -691,12 +691,11 @@ typedef void (*aeron_log_func_t)(const char *);
  * Determine if an aeron driver is using a given aeron directory.
  *
  * @param dirname  for aeron directory
- * @param timeout  to use to determine activity for aeron directory
- * @param now      current time in nanoseconds. @see aeron_nano_clock.
+ * @param timeout_ms  to use to determine activity for aeron directory
  * @param log_func to call during activity check to log diagnostic information.
  * @return true for active driver or false for no active driver.
  */
-bool aeron_is_driver_active(const char *dirname, int64_t timeout, int64_t now, aeron_log_func_t log_func);
+bool aeron_is_driver_active(const char *dirname, int64_t timeout_ms, aeron_log_func_t log_func);
 
 /**
  * Load properties from a string containing name=value pairs and set appropriate environment variables for the

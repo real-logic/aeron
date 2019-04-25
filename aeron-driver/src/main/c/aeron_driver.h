@@ -41,6 +41,6 @@ typedef struct aeron_driver_stct
 aeron_driver_t;
 
 bool aeron_is_driver_active_with_cnc(
-    aeron_mapped_file_t *cnc_map, int64_t timeout, int64_t now, aeron_log_func_t log_func);
+    aeron_mapped_file_t *cnc_map, int64_t timeout_ms, int64_t now_ms, aeron_log_func_t log_func);
 
 #endif //AERON_DRIVER_H

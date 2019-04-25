@@ -43,7 +43,7 @@ import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 public abstract class Publication implements AutoCloseable
 {
     /**
-     * The publication is not yet connected to a subscriber.
+     * The publication is not connected to a subscriber, this can be an intermittent state as subscribers come and go.
      */
     public static final long NOT_CONNECTED = -1;
 

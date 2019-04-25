@@ -29,6 +29,7 @@ typedef struct aeron_udp_channel_stct
     struct sockaddr_storage local_data;
     struct sockaddr_storage remote_control;
     struct sockaddr_storage local_control;
+    int64_t tag_id;
     unsigned int interface_index;
     size_t uri_length;
     size_t canonical_length;

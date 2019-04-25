@@ -54,6 +54,8 @@ aeron_uri_params_t;
 #define AERON_URI_SPARSE_TERM_KEY "sparse"
 #define AERON_URI_EOS_KEY "eos"
 #define AERON_URI_TETHER_KEY "tether"
+#define AERON_URI_TAGS_KEY "tags"
+#define AERON_URI_SESSION_ID_KEY "session-id"
 
 typedef struct aeron_uri_publication_params_stct
 {
@@ -83,12 +85,17 @@ typedef struct aeron_udp_channel_params_stct
     const char *interface_key;
     const char *ttl_key;
     const char *control_key;
+    const char *control_mode_key;
+    const char *channel_tag_key;
+    const char *entity_tag_key;
     aeron_uri_params_t additional_params;
 }
 aeron_udp_channel_params_t;
 
 typedef struct aeron_ipc_channel_params_stct
 {
+    const char *channel_tag_key;
+    const char *entity_tag_key;
     aeron_uri_params_t additional_params;
 }
 aeron_ipc_channel_params_t;
@@ -140,5 +147,7 @@ int aeron_uri_subscription_params(
     aeron_uri_t *uri,
     aeron_uri_subscription_params_t *params,
     aeron_driver_context_t *context);
+
+uint64_t aeron_uri_parse_tag(const char *tag_str);
 
 #endif //AERON_URI_H

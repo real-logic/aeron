@@ -24,6 +24,8 @@
 #define AERON_MAX_PATH (384)
 #define AERON_CHANNEL_STATUS_INDICATOR_NOT_ALLOCATED (-1)
 
+#define AERON_URI_INVALID_TAG (-1)
+
 typedef void (*aeron_idle_strategy_func_t)(void *state, int work_count);
 typedef int (*aeron_idle_strategy_init_func_t)(void **state, const char *env_var, const char *init_args);
 

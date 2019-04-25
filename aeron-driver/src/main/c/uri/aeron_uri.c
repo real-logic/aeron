@@ -16,6 +16,7 @@
 
 #include <stdlib.h>
 #include <inttypes.h>
+#include <string.h>
 #include "uri/aeron_uri.h"
 #include "util/aeron_arrayutil.h"
 #include "util/aeron_parse_util.h"
@@ -143,6 +144,22 @@ static int aeron_udp_uri_params_func(void *clientd, const char *key, const char 
     {
         params->control_key = value;
     }
+    else if (strcmp(key, AERON_UDP_CHANNEL_CONTROL_MODE_KEY) == 0)
+    {
+        params->control_mode_key = value;
+    }
+    else if (strcmp(key, AERON_URI_TAGS_KEY) == 0)
+    {
+        char *ptr = strchr(value, ',');
+
+        if (NULL != ptr)
+        {
+            *ptr++ = '\0';
+            params->entity_tag_key = '\0' == ptr ? NULL : ptr;
+        }
+
+        params->channel_tag_key = '\0' == value ? NULL : value;
+    }
     else
     {
         size_t index = params->additional_params.length;
@@ -168,6 +185,8 @@ int aeron_udp_uri_parse(char *uri, aeron_udp_channel_params_t *params)
     params->interface_key = NULL;
     params->ttl_key = NULL;
     params->control_key = NULL;
+    params->channel_tag_key = NULL;
+    params->entity_tag_key = NULL;
 
     return aeron_uri_parse_params(uri, aeron_udp_uri_params_func, params);
 }
@@ -176,16 +195,31 @@ static int aeron_ipc_uri_params_func(void *clientd, const char *key, const char 
 {
     aeron_ipc_channel_params_t *params = (aeron_ipc_channel_params_t *)clientd;
 
-    size_t index = params->additional_params.length;
-    if (aeron_uri_params_ensure_capacity(&params->additional_params) < 0)
+    if (strcmp(key, AERON_URI_TAGS_KEY) == 0)
     {
-        return -1;
+        char *ptr = strchr(value, ',');
+
+        if (NULL != ptr)
+        {
+            *ptr++ = '\0';
+            params->entity_tag_key = '\0' == ptr ? NULL : ptr;
+        }
+
+        params->channel_tag_key = '\0' == value ? NULL : value;
     }
+    else
+    {
+        size_t index = params->additional_params.length;
+        if (aeron_uri_params_ensure_capacity(&params->additional_params) < 0)
+        {
+            return -1;
+        }
 
-    aeron_uri_param_t *param = &params->additional_params.array[index];
+        aeron_uri_param_t *param = &params->additional_params.array[index];
 
-    param->key = key;
-    param->value = value;
+        param->key = key;
+        param->value = value;
+    }
 
     return 0;
 }
@@ -194,6 +228,8 @@ int aeron_ipc_uri_parse(char *uri, aeron_ipc_channel_params_t *params)
 {
     params->additional_params.length = 0;
     params->additional_params.array = NULL;
+    params->channel_tag_key = NULL;
+    params->entity_tag_key = NULL;
 
     return aeron_uri_parse_params(uri, aeron_ipc_uri_params_func, params);
 }
@@ -544,4 +580,18 @@ int aeron_uri_subscription_params(
     }
 
     return 0;
+}
+
+uint64_t aeron_uri_parse_tag(const char *tag_str)
+{
+    errno = 0;
+    char *end_ptr = NULL;
+    unsigned long value = strtoul(tag_str, &end_ptr, 10);
+
+    if ((0 == value && 0 != errno) || end_ptr == tag_str)
+    {
+        return AERON_URI_INVALID_TAG;
+    }
+
+    return (uint64_t)value;
 }

@@ -195,7 +195,7 @@ int64_t aeron_spsc_rb_next_correlation_id(volatile aeron_spsc_rb_t *ring_buffer)
     return result;
 }
 
-void aeron_spsc_rb_consumer_heartbeat_time(volatile aeron_spsc_rb_t *ring_buffer, int64_t time)
+void aeron_spsc_rb_consumer_heartbeat_time(volatile aeron_spsc_rb_t *ring_buffer, int64_t time_ms)
 {
-    AERON_PUT_ORDERED(ring_buffer->descriptor->consumer_heartbeat, time);
+    AERON_PUT_ORDERED(ring_buffer->descriptor->consumer_heartbeat, time_ms);
 }

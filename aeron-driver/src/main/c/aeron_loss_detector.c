@@ -32,7 +32,7 @@ int aeron_loss_detector_init(
 {
     detector->on_gap_detected = on_gap_detected;
     detector->on_gap_detected_clientd = on_gap_detected_clientd;
-    detector->expiry = AERON_LOSS_DETECTOR_TIMER_INACTIVE;
+    detector->expiry_ns = AERON_LOSS_DETECTOR_TIMER_INACTIVE;
     detector->active_gap.term_offset = -1;
     detector->scanned_gap.term_offset = -1;
     detector->feedback_delay_state = feedback_delay_state;

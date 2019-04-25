@@ -44,7 +44,7 @@ size_t aeron_mpsc_rb_read(
 
 int64_t aeron_mpsc_rb_next_correlation_id(volatile aeron_mpsc_rb_t *ring_buffer);
 
-void aeron_mpsc_rb_consumer_heartbeat_time(volatile aeron_mpsc_rb_t *ring_buffer, int64_t time);
+void aeron_mpsc_rb_consumer_heartbeat_time(volatile aeron_mpsc_rb_t *ring_buffer, int64_t now_ms);
 int64_t aeron_mpsc_rb_consumer_heartbeat_time_value(volatile aeron_mpsc_rb_t *ring_buffer);
 
 bool aeron_mpsc_rb_unblock(volatile aeron_mpsc_rb_t *ring_buffer);

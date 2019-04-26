@@ -116,7 +116,7 @@ public class UntetheredSubscriptionTest
                     assertTrue(tetheredSub.isConnected());
                     assertFalse(untetheredSub.isConnected());
 
-                    if (publication.offer(srcBuffer) < 0)
+                    while (publication.offer(srcBuffer) < 0)
                     {
                         SystemTest.checkInterruptedStatus();
                         Thread.yield();

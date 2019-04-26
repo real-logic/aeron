@@ -155,10 +155,10 @@ static int aeron_udp_uri_params_func(void *clientd, const char *key, const char 
         if (NULL != ptr)
         {
             *ptr++ = '\0';
-            params->entity_tag_key = '\0' == ptr ? NULL : ptr;
+            params->entity_tag_key = '\0' == *ptr ? NULL : ptr;
         }
 
-        params->channel_tag_key = '\0' == value ? NULL : value;
+        params->channel_tag_key = '\0' == *value ? NULL : value;
     }
     else
     {
@@ -202,10 +202,10 @@ static int aeron_ipc_uri_params_func(void *clientd, const char *key, const char 
         if (NULL != ptr)
         {
             *ptr++ = '\0';
-            params->entity_tag_key = '\0' == ptr ? NULL : ptr;
+            params->entity_tag_key = '\0' == *ptr ? NULL : ptr;
         }
 
-        params->channel_tag_key = '\0' == value ? NULL : value;
+        params->channel_tag_key = '\0' == *value ? NULL : value;
     }
     else
     {

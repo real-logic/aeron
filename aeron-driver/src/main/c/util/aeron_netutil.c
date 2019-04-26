@@ -618,5 +618,5 @@ int aeron_format_source_identity(char *buffer, size_t length, struct sockaddr_st
         return 0;
     }
 
-    return total > AERON_MAX_PATH - 1 ? AERON_MAX_PATH - 1 : total;
+    return (size_t)total > length - 1 ? length - 1 : total;
 }

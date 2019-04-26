@@ -33,6 +33,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.*;
 
 @RunWith(Theories.class)
@@ -122,6 +123,7 @@ public class UntetheredSubscriptionTest
                         Thread.yield();
                     }
 
+                    assertThat(fragmentCountOne.value, greaterThan(fragmentCountTwo.value));
                     return;
                 }
             }

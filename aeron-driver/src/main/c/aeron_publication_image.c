@@ -588,6 +588,7 @@ void aeron_publication_image_check_untethered_subscriptions(
                         char source_identity[AERON_MAX_PATH];
                         int source_identity_length = aeron_format_source_identity(
                             source_identity, sizeof(source_identity), &image->source_address);
+
                         aeron_counter_set_ordered(tetherable_position->value_addr, *image->rcv_pos_position.value_addr);
                         aeron_driver_conductor_on_available_image(
                             conductor,

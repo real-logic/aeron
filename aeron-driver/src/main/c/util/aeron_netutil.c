@@ -612,7 +612,11 @@ int aeron_format_source_identity(char *buffer, size_t length, struct sockaddr_st
         port = ntohs(in4->sin_port);
     }
 
-    int cx = snprintf(buffer, length, "%s:%d", addr_str, port);
+    int total = snprintf(buffer, length, "%s:%d", addr_str, port);
+    if (total < 0)
+    {
+        return 0;
+    }
 
-    return cx > AERON_MAX_PATH ? AERON_MAX_PATH : cx;
+    return total > AERON_MAX_PATH - 1 ? AERON_MAX_PATH - 1 : total;
 }

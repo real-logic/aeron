@@ -391,6 +391,7 @@ int aeron_driver_conductor_link_subscribable(
     int64_t now_ns,
     int32_t uri_length,
     const char *original_uri,
+    int32_t source_identity_length,
     const char *source_identity,
     const char *log_file_name,
     size_t log_file_name_length);

@@ -1675,6 +1675,7 @@ int aeron_driver_conductor_link_subscribable(
     int64_t now_ns,
     int32_t uri_length,
     const char *original_uri,
+    int32_t source_identity_length,
     const char *source_identity,
     const char *log_file_name,
     size_t log_file_name_length)
@@ -1720,7 +1721,7 @@ int aeron_driver_conductor_link_subscribable(
                     counter_id,
                     link->registration_id,
                     source_identity,
-                    strlen(source_identity));
+                    source_identity_length);
 
                 result = 0;
             }
@@ -1819,6 +1820,7 @@ int aeron_driver_conductor_on_add_ipc_publication(
                 now_ns,
                 subscription_link->channel_length,
                 subscription_link->channel,
+                AERON_IPC_CHANNEL_LEN,
                 AERON_IPC_CHANNEL,
                 publication->log_file_name,
                 publication->log_file_name_length) < 0)
@@ -1924,6 +1926,7 @@ int aeron_driver_conductor_on_add_network_publication(
                 now_ns,
                 subscription_link->channel_length,
                 subscription_link->channel,
+                AERON_IPC_CHANNEL_LEN,
                 AERON_IPC_CHANNEL,
                 publication->log_file_name,
                 publication->log_file_name_length) < 0)
@@ -2040,6 +2043,7 @@ int aeron_driver_conductor_on_add_ipc_subscription(
                 now_ns,
                 link->channel_length,
                 link->channel,
+                AERON_IPC_CHANNEL_LEN,
                 AERON_IPC_CHANNEL,
                 publication->log_file_name,
                 publication->log_file_name_length) < 0)
@@ -2123,6 +2127,7 @@ int aeron_driver_conductor_on_add_spy_subscription(
                 now_ns,
                 link->channel_length,
                 link->channel,
+                AERON_IPC_CHANNEL_LEN,
                 AERON_IPC_CHANNEL,
                 publication->log_file_name,
                 publication->log_file_name_length) < 0)
@@ -2213,7 +2218,8 @@ int aeron_driver_conductor_on_add_network_subscription(
                 aeron_publication_image_is_accepting_subscriptions(image))
             {
                 char source_identity[AERON_MAX_PATH];
-                aeron_format_source_identity(source_identity, sizeof(source_identity), &image->source_address);
+                int source_identity_length = aeron_format_source_identity(
+                    source_identity, sizeof(source_identity), &image->source_address);
 
                 if (aeron_driver_conductor_link_subscribable(
                     conductor,
@@ -2226,6 +2232,7 @@ int aeron_driver_conductor_on_add_network_subscription(
                     now_ns,
                     link->channel_length,
                     link->channel,
+                    source_identity_length,
                     source_identity,
                     image->log_file_name,
                     image->log_file_name_length) < 0)
@@ -2706,7 +2713,8 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
             continue;
         }
 
-        aeron_format_source_identity(source_identity, sizeof(source_identity), &command->src_address);
+        int source_identity_length = aeron_format_source_identity(
+            source_identity, sizeof(source_identity), &command->src_address);
 
         if (aeron_driver_conductor_link_subscribable(
             conductor,
@@ -2719,6 +2727,7 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
             now_ns,
             link->channel_length,
             link->channel,
+            source_identity_length,
             source_identity,
             image->log_file_name,
             image->log_file_name_length) < 0)

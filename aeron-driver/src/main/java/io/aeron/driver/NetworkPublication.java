@@ -394,15 +394,14 @@ public class NetworkPublication
         }
     }
 
-    public void addSubscriber(final SubscriptionLink subscriptionLink, final ReadablePosition spyPosition)
+    public void addSubscriber(final SubscriptionLink subscriptionLink, final ReadablePosition position)
     {
-        spyPositions = ArrayUtil.add(spyPositions, spyPosition);
+        spyPositions = ArrayUtil.add(spyPositions, position);
         hasSpies = true;
 
         if (!subscriptionLink.isTether())
         {
-            untetheredSubscriptions.add(new UntetheredSubscription(
-                subscriptionLink, spyPosition, nanoClock.nanoTime()));
+            untetheredSubscriptions.add(new UntetheredSubscription(subscriptionLink, position, nanoClock.nanoTime()));
         }
 
         if (spiesSimulateConnection)
@@ -412,11 +411,11 @@ public class NetworkPublication
         }
     }
 
-    public void removeSubscriber(final SubscriptionLink subscriptionLink, final ReadablePosition spyPosition)
+    public void removeSubscriber(final SubscriptionLink subscriptionLink, final ReadablePosition position)
     {
-        spyPositions = ArrayUtil.remove(spyPositions, spyPosition);
+        spyPositions = ArrayUtil.remove(spyPositions, position);
         hasSpies = spyPositions.length > 0;
-        spyPosition.close();
+        position.close();
 
         if (!subscriptionLink.isTether())
         {
@@ -742,7 +741,8 @@ public class NetworkPublication
             return;
         }
 
-        final long untetheredWindowLimit = (senderPosition.getVolatile() - termWindowLength) + (termWindowLength >> 3);
+        final long senderPosition = this.senderPosition.getVolatile();
+        final long untetheredWindowLimit = (senderPosition - termWindowLength) + (termWindowLength >> 3);
 
         for (int lastIndex = untetheredSubscriptionsSize - 1, i = lastIndex; i >= 0; i--)
         {
@@ -780,7 +780,7 @@ public class NetworkPublication
                             sessionId,
                             untethered.subscriptionLink,
                             untethered.position.id(),
-                            senderPosition.getVolatile(),
+                            senderPosition,
                             rawLog.fileName(),
                             CommonContext.IPC_CHANNEL);
                         LogBufferDescriptor.isConnected(metaDataBuffer, true);

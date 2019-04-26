@@ -37,7 +37,6 @@ import org.agrona.concurrent.status.*;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.ErrorCode.*;
@@ -248,7 +247,7 @@ public class DriverConductor implements Agent
                 initialTermOffset,
                 rawLog,
                 udpChannel.isMulticast() ? ctx.multicastFeedbackDelayGenerator() : ctx.unicastFeedbackDelayGenerator(),
-                positionArray(subscriberPositions),
+                subscriberPositions,
                 ReceiverHwm.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, channel),
                 ReceiverPos.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, channel),
                 nanoClock,
@@ -257,8 +256,7 @@ public class DriverConductor implements Agent
                 ctx.systemCounters(),
                 sourceAddress,
                 congestionControl,
-                ctx.lossReport(),
-                subscriberPositions.get(0).subscription().isReliable());
+                ctx.lossReport());
 
             publicationImages.add(image);
             receiverProxy.newPublicationImage(channelEndpoint, image);
@@ -1312,19 +1310,6 @@ public class DriverConductor implements Agent
         }
 
         return subscriberPositions;
-    }
-
-    private static ReadablePosition[] positionArray(final List<SubscriberPosition> subscriberPositions)
-    {
-        final int size = subscriberPositions.size();
-        final ReadablePosition[] positions = new ReadablePosition[subscriberPositions.size()];
-
-        for (int i = 0; i < size; i++)
-        {
-            positions[i] = subscriberPositions.get(i).position();
-        }
-
-        return positions;
     }
 
     private Position linkIpcSubscription(final IpcPublication publication, final SubscriptionLink subscription)

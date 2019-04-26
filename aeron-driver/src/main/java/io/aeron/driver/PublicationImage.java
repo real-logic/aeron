@@ -159,7 +159,7 @@ public class PublicationImage
         final int initialTermOffset,
         final RawLog rawLog,
         final FeedbackDelayGenerator lossFeedbackDelayGenerator,
-        final ReadablePosition[] subscriberPositions,
+        final ArrayList<SubscriberPosition> subscriberPositions,
         final Position hwmPosition,
         final Position rebuildPosition,
         final NanoClock nanoClock,
@@ -168,8 +168,7 @@ public class PublicationImage
         final SystemCounters systemCounters,
         final InetSocketAddress sourceAddress,
         final CongestionControl congestionControl,
-        final LossReport lossReport,
-        final boolean isReliable)
+        final LossReport lossReport)
     {
         this.correlationId = correlationId;
         this.imageLivenessTimeoutNs = imageLivenessTimeoutNs;
@@ -179,14 +178,23 @@ public class PublicationImage
         this.sessionId = sessionId;
         this.streamId = streamId;
         this.rawLog = rawLog;
-        this.subscriberPositions = subscriberPositions;
         this.hwmPosition = hwmPosition;
         this.rebuildPosition = rebuildPosition;
         this.sourceAddress = sourceAddress;
         this.initialTermId = initialTermId;
         this.congestionControl = congestionControl;
         this.lossReport = lossReport;
-        this.isReliable = isReliable;
+
+        this.nanoClock = nanoClock;
+        this.cachedNanoClock = cachedNanoClock;
+        this.cachedEpochClock = cachedEpochClock;
+
+        final long nowNs = cachedNanoClock.nanoTime();
+        this.timeOfLastStateChangeNs = nowNs;
+        this.lastPacketTimestampNs = nowNs;
+
+        this.subscriberPositions = positionArray(subscriberPositions, nowNs);
+        this.isReliable = subscriberPositions.get(0).subscription().isReliable();
 
         heartbeatsReceived = systemCounters.get(HEARTBEATS_RECEIVED);
         statusMessagesSent = systemCounters.get(STATUS_MESSAGES_SENT);
@@ -194,13 +202,6 @@ public class PublicationImage
         flowControlUnderRuns = systemCounters.get(FLOW_CONTROL_UNDER_RUNS);
         flowControlOverRuns = systemCounters.get(FLOW_CONTROL_OVER_RUNS);
         lossGapFills = systemCounters.get(LOSS_GAP_FILLS);
-
-        this.nanoClock = nanoClock;
-        this.cachedNanoClock = cachedNanoClock;
-        this.cachedEpochClock = cachedEpochClock;
-        final long nowNs = cachedNanoClock.nanoTime();
-        timeOfLastStateChangeNs = nowNs;
-        lastPacketTimestampNs = nowNs;
 
         imageConnections = ArrayUtil.ensureCapacity(imageConnections, transportIndex + 1);
         imageConnections[transportIndex] = new ImageConnection(nowNs, controlAddress);
@@ -952,5 +953,25 @@ public class PublicationImage
                     break;
             }
         }
+    }
+
+    private ReadablePosition[] positionArray(final ArrayList<SubscriberPosition> subscriberPositions, final long nowNs)
+    {
+        final int size = subscriberPositions.size();
+        final ReadablePosition[] positions = new ReadablePosition[subscriberPositions.size()];
+
+        for (int i = 0; i < size; i++)
+        {
+            final SubscriberPosition subscriberPosition = subscriberPositions.get(i);
+            positions[i] = subscriberPosition.position();
+
+            if (!subscriberPosition.subscription().isTether())
+            {
+                untetheredSubscriptions.add(new UntetheredSubscription(
+                    subscriberPosition.subscription(), subscriberPosition.position(), nowNs));
+            }
+        }
+
+        return positions;
     }
 }

@@ -818,7 +818,7 @@ void aeron_network_publication_check_untethered_subscriptions(
 {
     const int64_t sender_position = aeron_counter_get_volatile(publication->snd_pos_position.value_addr);
     int64_t term_window_length = publication->term_window_length;
-    int64_t untethered_window_limit = (sender_position - term_window_length) + (term_window_length / 8);
+    int64_t untethered_window_limit = (sender_position - term_window_length) + (term_window_length / 16);
 
     for (size_t i = 0, length = publication->conductor_fields.subscribable.length; i < length; i++)
     {

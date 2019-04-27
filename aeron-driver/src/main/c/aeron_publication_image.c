@@ -88,8 +88,7 @@ int aeron_publication_image_create(
 
     if (aeron_loss_detector_init(
         &_image->loss_detector,
-        is_multicast ?
-            &context->multicast_delay_feedback_generator : &context->unicast_delay_feedback_generator,
+        is_multicast ? &context->multicast_delay_feedback_generator : &context->unicast_delay_feedback_generator,
         aeron_publication_image_on_gap_detected, _image) < 0)
     {
         aeron_free(_image);
@@ -537,7 +536,7 @@ void aeron_publication_image_check_untethered_subscriptions(
     }
 
     int64_t window_length = image->next_sm_receiver_window_length;
-    int64_t untethered_window_limit = (max_sub_pos - window_length) + (window_length / 8);
+    int64_t untethered_window_limit = (max_sub_pos - window_length) + (window_length / 16);
 
     for (size_t i = 0, length = image->conductor_fields.subscribable.length; i < length; i++)
     {
@@ -618,6 +617,7 @@ void aeron_publication_image_on_time_event(
         case AERON_PUBLICATION_IMAGE_STATUS_ACTIVE:
         {
             aeron_publication_image_check_untethered_subscriptions(conductor, image, now_ns);
+
             int64_t last_packet_timestamp_ns;
             AERON_GET_VOLATILE(last_packet_timestamp_ns, image->last_packet_timestamp_ns);
             bool is_end_of_stream;

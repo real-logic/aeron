@@ -277,7 +277,7 @@ void aeron_ipc_publication_check_untethered_subscriptions(
 {
     int64_t consumer_position = publication->conductor_fields.consumer_position;
     int64_t term_window_length = publication->term_window_length;
-    int64_t untethered_window_limit = (consumer_position - term_window_length) + (term_window_length / 8);
+    int64_t untethered_window_limit = (consumer_position - term_window_length) + (term_window_length / 16);
 
     for (size_t i = 0, length = publication->conductor_fields.subscribable.length; i < length; i++)
     {

@@ -80,7 +80,7 @@ public class UntetheredSubscriptionTest
 
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
         final String untetheredChannel = channel + "|tether=false";
-        final String publicationChannel = channel.startsWith("aeron-spy:") ? channel.substring(10) : channel;
+        final String publicationChannel = channel.startsWith("aeron-spy") ? channel.substring(10) : channel;
         boolean pollingUntethered = true;
 
         try (Subscription tetheredSub = aeron.addSubscription(channel, STREAM_ID);
@@ -136,7 +136,6 @@ public class UntetheredSubscriptionTest
         final FragmentHandler fragmentHandler = (buffer, offset, length, header) -> {};
 
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
-        srcBuffer.setMemory(0, MESSAGE_LENGTH, (byte)'A');
         final String untetheredChannel = channel + "|tether=false";
         final String publicationChannel = channel.startsWith("aeron-spy") ? channel.substring(10) : channel;
         boolean pollingUntethered = true;

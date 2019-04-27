@@ -60,6 +60,7 @@ public class UntetheredSubscriptionTest
         .threadingMode(ThreadingMode.SHARED));
 
     private final Aeron aeron = Aeron.connect(new Aeron.Context()
+        .useConductorAgentInvoker(true)
         .errorHandler(Throwable::printStackTrace));
 
     @After
@@ -91,6 +92,7 @@ public class UntetheredSubscriptionTest
             {
                 SystemTest.checkInterruptedStatus();
                 Thread.yield();
+                aeron.conductorAgentInvoker().invoke();
             }
 
             while (true)
@@ -99,6 +101,7 @@ public class UntetheredSubscriptionTest
                 {
                     SystemTest.checkInterruptedStatus();
                     Thread.yield();
+                    aeron.conductorAgentInvoker().invoke();
                 }
 
                 if (pollingUntethered && untetheredSub.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT) > 0)
@@ -117,6 +120,7 @@ public class UntetheredSubscriptionTest
                     {
                         SystemTest.checkInterruptedStatus();
                         Thread.yield();
+                        aeron.conductorAgentInvoker().invoke();
                     }
 
                     return;
@@ -149,6 +153,7 @@ public class UntetheredSubscriptionTest
             {
                 SystemTest.checkInterruptedStatus();
                 Thread.yield();
+                aeron.conductorAgentInvoker().invoke();
             }
 
             while (true)
@@ -157,6 +162,7 @@ public class UntetheredSubscriptionTest
                 {
                     SystemTest.checkInterruptedStatus();
                     Thread.yield();
+                    aeron.conductorAgentInvoker().invoke();
                 }
 
                 if (pollingUntethered && untetheredSub.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT) > 0)
@@ -172,6 +178,7 @@ public class UntetheredSubscriptionTest
                     {
                         SystemTest.checkInterruptedStatus();
                         Thread.yield();
+                        aeron.conductorAgentInvoker().invoke();
                     }
 
                     return;

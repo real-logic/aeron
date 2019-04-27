@@ -20,7 +20,6 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
-import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
 import org.junit.Test;
@@ -32,8 +31,8 @@ import org.junit.runner.RunWith;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.*;
 
 @RunWith(Theories.class)
@@ -50,13 +49,14 @@ public class UntetheredSubscriptionTest
 
     private static final int STREAM_ID = 1;
     private static final int FRAGMENT_COUNT_LIMIT = 10;
-    private static final int MESSAGE_LENGTH = 512 - DataHeaderFlyweight.HEADER_LENGTH;
+    private static final int MESSAGE_LENGTH = 256 - DataHeaderFlyweight.HEADER_LENGTH;
 
     private final MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Throwable::printStackTrace)
         .spiesSimulateConnection(true)
-        .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(50))
-        .untetheredWindowLimitTimeoutNs(TimeUnit.MILLISECONDS.toNanos(250))
+        .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(20))
+        .untetheredWindowLimitTimeoutNs(TimeUnit.MILLISECONDS.toNanos(100))
+        .untetheredRestingTimeoutNs(TimeUnit.MILLISECONDS.toNanos(100))
         .threadingMode(ThreadingMode.SHARED));
 
     private final Aeron aeron = Aeron.connect(new Aeron.Context()
@@ -74,10 +74,7 @@ public class UntetheredSubscriptionTest
     @Test(timeout = 10_000)
     public void shouldBecomeUnavailableWhenNotKeepingUp(final String channel)
     {
-        final MutableInteger fragmentCountOne = new MutableInteger();
-        final FragmentHandler fragmentHandlerOne = (buffer, offset, length, header) -> fragmentCountOne.value++;
-        final MutableInteger fragmentCountTwo = new MutableInteger();
-        final FragmentHandler fragmentHandlerTwo = (buffer, offset, length, header) -> fragmentCountTwo.value++;
+        final FragmentHandler fragmentHandler = (buffer, offset, length, header) -> {};
         final AtomicBoolean unavailableCalled = new AtomicBoolean();
         final UnavailableImageHandler handler = (image) -> unavailableCalled.set(true);
 
@@ -105,12 +102,12 @@ public class UntetheredSubscriptionTest
                     Thread.yield();
                 }
 
-                if (pollingUntethered && untetheredSub.poll(fragmentHandlerTwo, FRAGMENT_COUNT_LIMIT) > 0)
+                if (pollingUntethered && untetheredSub.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT) > 0)
                 {
                     pollingUntethered = false;
                 }
 
-                tetheredSub.poll(fragmentHandlerOne, FRAGMENT_COUNT_LIMIT);
+                tetheredSub.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT);
 
                 if (unavailableCalled.get())
                 {
@@ -123,7 +120,62 @@ public class UntetheredSubscriptionTest
                         Thread.yield();
                     }
 
-                    assertThat(fragmentCountOne.value, greaterThan(fragmentCountTwo.value));
+                    return;
+                }
+            }
+        }
+    }
+
+    @Theory
+    @Test(timeout = 10_000)
+    public void shouldRejoinAfterResting(final String channel)
+    {
+        final AtomicInteger unavailableCount = new AtomicInteger();
+        final AtomicInteger availableCount = new AtomicInteger();
+        final UnavailableImageHandler unavailableHandler = (image) -> unavailableCount.incrementAndGet();
+        final AvailableImageHandler availableHandler = (image) -> availableCount.incrementAndGet();
+        final FragmentHandler fragmentHandler = (buffer, offset, length, header) -> {};
+
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
+        srcBuffer.setMemory(0, MESSAGE_LENGTH, (byte)'A');
+        final String untetheredChannel = channel + "|tether=false";
+        final String publicationChannel = channel.startsWith("aeron-spy:") ? channel.substring(10) : channel;
+        boolean pollingUntethered = true;
+
+        try (Subscription tetheredSub = aeron.addSubscription(channel, STREAM_ID);
+            Subscription untetheredSub = aeron.addSubscription(
+                untetheredChannel, STREAM_ID, availableHandler, unavailableHandler);
+            Publication publication = aeron.addPublication(publicationChannel, STREAM_ID))
+        {
+            while (!tetheredSub.isConnected() || !untetheredSub.isConnected())
+            {
+                SystemTest.checkInterruptedStatus();
+                Thread.yield();
+            }
+
+            while (true)
+            {
+                if (publication.offer(srcBuffer) < 0)
+                {
+                    SystemTest.checkInterruptedStatus();
+                    Thread.yield();
+                }
+
+                if (pollingUntethered && untetheredSub.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT) > 0)
+                {
+                    pollingUntethered = false;
+                }
+
+                tetheredSub.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT);
+
+                if (unavailableCount.get() == 1)
+                {
+                    while (availableCount.get() < 2)
+                    {
+                        SystemTest.checkInterruptedStatus();
+                        Thread.yield();
+                    }
+
                     return;
                 }
             }

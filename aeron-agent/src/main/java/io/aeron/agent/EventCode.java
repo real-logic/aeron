@@ -18,7 +18,7 @@ package io.aeron.agent;
 /**
  * Identifies an event that can be enabled for logging.
  */
-interface EventCode
+public interface EventCode
 {
     /**
      * Returns the unique event identifier withing an {@link EventCodeType}.

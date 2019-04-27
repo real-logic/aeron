@@ -492,7 +492,7 @@ public class PublicationImage
             lossFound(scanOutcome));
 
         final int windowLength = CongestionControl.receiverWindowLength(ccOutcome);
-        final long threshold = CongestionControl.positionThreshold(windowLength);
+        final int threshold = CongestionControl.threshold(windowLength);
 
         if (CongestionControl.shouldForceStatusMessage(ccOutcome) ||
             ((timeOfLastStatusMessageScheduleNs + statusMessageTimeoutNs) - nowNs < 0) ||

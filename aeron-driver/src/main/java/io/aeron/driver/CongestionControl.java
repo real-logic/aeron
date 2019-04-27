@@ -60,9 +60,15 @@ public interface CongestionControl extends AutoCloseable
         return ((int)(outcome >>> 32) & FORCE_STATUS_MESSAGE_BIT) == FORCE_STATUS_MESSAGE_BIT;
     }
 
-    static long positionThreshold(final long position)
+    /**
+     * Threshold increment in a window after which a status message should be scheduled.
+     *
+     * @param windowLength to calculate the threshold from.
+     * @return the threshold in the window after which a status message should be scheduled.
+     */
+    static int threshold(final int windowLength)
     {
-        return position / 4;
+        return windowLength / 4;
     }
 
     /**
@@ -95,8 +101,8 @@ public interface CongestionControl extends AutoCloseable
      * <p>
      * The return value must be packed using {@link CongestionControl#packOutcome(int, boolean)}.
      *
-     * @param nowNs                   in nanoseconds
-     * @param newConsumptionPosition  of the Subscribers
+     * @param nowNs                   current time
+     * @param newConsumptionPosition  of the subscribers
      * @param lastSmPosition          of the image
      * @param hwmPosition             of the image
      * @param startingRebuildPosition of the rebuild

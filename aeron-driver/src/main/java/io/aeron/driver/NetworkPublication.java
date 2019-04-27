@@ -612,7 +612,7 @@ public class NetworkPublication
     }
 
     private int heartbeatMessageCheck(
-        final long nowNs, final int activeTermId, final int termOffset, final boolean signalEndOfStream)
+        final long nowNs, final int activeTermId, final int termOffset, final boolean signalEos)
     {
         int bytesSent = 0;
 
@@ -624,7 +624,7 @@ public class NetworkPublication
                 .streamId(streamId)
                 .termId(activeTermId)
                 .termOffset(termOffset)
-                .flags((byte)(signalEndOfStream ? BEGIN_END_AND_EOS_FLAGS : BEGIN_AND_END_FLAGS));
+                .flags((byte)(signalEos ? BEGIN_END_AND_EOS_FLAGS : BEGIN_AND_END_FLAGS));
 
             bytesSent = channelEndpoint.send(heartbeatBuffer);
             if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
@@ -742,7 +742,7 @@ public class NetworkPublication
         }
 
         final long senderPosition = this.senderPosition.getVolatile();
-        final long untetheredWindowLimit = (senderPosition - termWindowLength) + (termWindowLength >> 3);
+        final long untetheredWindowLimit = (senderPosition - termWindowLength) + (termWindowLength >> 4);
 
         for (int lastIndex = untetheredSubscriptionsSize - 1, i = lastIndex; i >= 0; i--)
         {

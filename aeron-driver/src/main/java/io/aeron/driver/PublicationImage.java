@@ -906,7 +906,7 @@ public class PublicationImage
         }
 
         final int windowLength = nextSmReceiverWindowLength;
-        final long untetheredWindowLimit = (maxConsumerPosition - windowLength) + (windowLength >> 3);
+        final long untetheredWindowLimit = (maxConsumerPosition - windowLength) + (windowLength >> 4);
 
         for (int lastIndex = untetheredSubscriptionsSize - 1, i = lastIndex; i >= 0; i--)
         {

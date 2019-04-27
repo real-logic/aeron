@@ -228,8 +228,7 @@ aeron_client_t *aeron_driver_conductor_get_or_add_client(aeron_driver_conductor_
 
             client_heartbeat.counter_id = aeron_counter_client_heartbeat_status_allocate(
                 &conductor->counters_manager, client_id);
-            client_heartbeat.value_addr = aeron_counter_addr(
-                &conductor->counters_manager, (int32_t)client_heartbeat.counter_id);
+            client_heartbeat.value_addr = aeron_counter_addr(&conductor->counters_manager, client_heartbeat.counter_id);
 
             if (client_heartbeat.counter_id >= 0)
             {
@@ -757,11 +756,11 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
                 pub_pos_position.counter_id = aeron_counter_publisher_position_allocate(
                     &conductor->counters_manager, registration_id, session_id, stream_id, channel_length, channel);
                 pub_pos_position.value_addr = aeron_counter_addr(
-                    &conductor->counters_manager, (int32_t)pub_pos_position.counter_id);
+                    &conductor->counters_manager, pub_pos_position.counter_id);
                 pub_lmt_position.counter_id = aeron_counter_publisher_limit_allocate(
                     &conductor->counters_manager, registration_id, session_id, stream_id, channel_length, channel);
                 pub_lmt_position.value_addr = aeron_counter_addr(
-                    &conductor->counters_manager, (int32_t)pub_lmt_position.counter_id);
+                    &conductor->counters_manager, pub_lmt_position.counter_id);
 
                 if (pub_pos_position.counter_id < 0 || pub_lmt_position.counter_id < 0)
                 {
@@ -892,15 +891,15 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                 }
 
                 pub_pos_position.value_addr = aeron_counter_addr(
-                    &conductor->counters_manager, (int32_t)pub_pos_position.counter_id);
+                    &conductor->counters_manager, pub_pos_position.counter_id);
                 pub_lmt_position.value_addr = aeron_counter_addr(
-                    &conductor->counters_manager, (int32_t)pub_lmt_position.counter_id);
+                    &conductor->counters_manager, pub_lmt_position.counter_id);
                 snd_pos_position.value_addr = aeron_counter_addr(
-                    &conductor->counters_manager, (int32_t)snd_pos_position.counter_id);
+                    &conductor->counters_manager, snd_pos_position.counter_id);
                 snd_lmt_position.value_addr = aeron_counter_addr(
-                    &conductor->counters_manager, (int32_t)snd_lmt_position.counter_id);
+                    &conductor->counters_manager, snd_lmt_position.counter_id);
                 snd_bpe_counter.value_addr = aeron_counter_addr(
-                    &conductor->counters_manager, (int32_t)snd_bpe_counter.counter_id);
+                    &conductor->counters_manager, snd_bpe_counter.counter_id);
 
                 if (params->is_replay)
                 {
@@ -1005,8 +1004,7 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
         status_indicator.counter_id = aeron_counter_send_channel_status_allocate(
             &conductor->counters_manager, (int32_t)channel->uri_length, channel->original_uri);
 
-        status_indicator.value_addr = aeron_counter_addr(
-            &conductor->counters_manager, (int32_t)status_indicator.counter_id);
+        status_indicator.value_addr = aeron_counter_addr(&conductor->counters_manager, status_indicator.counter_id);
 
         if (status_indicator.counter_id < 0 ||
             aeron_send_channel_endpoint_create(&endpoint, channel, &status_indicator, conductor->context) < 0)
@@ -1054,8 +1052,7 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
         status_indicator.counter_id = aeron_counter_receive_channel_status_allocate(
             &conductor->counters_manager, (int32_t)channel->uri_length, channel->original_uri);
 
-        status_indicator.value_addr = aeron_counter_addr(
-            &conductor->counters_manager, (int32_t)status_indicator.counter_id);
+        status_indicator.value_addr = aeron_counter_addr(&conductor->counters_manager, status_indicator.counter_id);
 
         if (status_indicator.counter_id < 0 ||
             aeron_receive_channel_endpoint_create(
@@ -1794,7 +1791,7 @@ int aeron_driver_conductor_on_add_ipc_publication(
         publication->conductor_fields.managed_resource.registration_id,
         publication->stream_id,
         publication->session_id,
-        (int32_t)publication->pub_lmt_position.counter_id,
+        publication->pub_lmt_position.counter_id,
         AERON_CHANNEL_STATUS_INDICATOR_NOT_ALLOCATED,
         is_exclusive,
         publication->log_file_name,
@@ -1896,8 +1893,8 @@ int aeron_driver_conductor_on_add_network_publication(
         publication->conductor_fields.managed_resource.registration_id,
         publication->stream_id,
         publication->session_id,
-        (int32_t)publication->pub_lmt_position.counter_id,
-        (int32_t)endpoint->channel_status.counter_id,
+        publication->pub_lmt_position.counter_id,
+        endpoint->channel_status.counter_id,
         is_exclusive,
         publication->log_file_name,
         publication->log_file_name_length);
@@ -2206,7 +2203,7 @@ int aeron_driver_conductor_on_add_network_subscription(
         link->subscribable_list.array = NULL;
 
         aeron_driver_conductor_on_subscription_ready(
-            conductor, command->correlated.correlation_id, (int32_t)endpoint->channel_status.counter_id);
+            conductor, command->correlated.correlation_id, endpoint->channel_status.counter_id);
 
         int64_t now_ns = conductor->context->nano_clock();
 
@@ -2673,8 +2670,8 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
         return;
     }
 
-    rcv_hwm_position.value_addr = aeron_counter_addr(&conductor->counters_manager, (int32_t)rcv_hwm_position.counter_id);
-    rcv_pos_position.value_addr = aeron_counter_addr(&conductor->counters_manager, (int32_t)rcv_pos_position.counter_id);
+    rcv_hwm_position.value_addr = aeron_counter_addr(&conductor->counters_manager, rcv_hwm_position.counter_id);
+    rcv_pos_position.value_addr = aeron_counter_addr(&conductor->counters_manager, rcv_pos_position.counter_id);
 
     bool is_reliable = conductor->network_subscriptions.array[0].is_reliable;
     aeron_publication_image_t *image = NULL;

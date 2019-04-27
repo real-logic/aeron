@@ -239,15 +239,15 @@ void aeron_network_publication_close(
     {
         aeron_subscribable_t *subscribable = &publication->conductor_fields.subscribable;
 
-        aeron_counters_manager_free(counters_manager, (int32_t)publication->pub_pos_position.counter_id);
-        aeron_counters_manager_free(counters_manager, (int32_t)publication->pub_lmt_position.counter_id);
-        aeron_counters_manager_free(counters_manager, (int32_t)publication->snd_pos_position.counter_id);
-        aeron_counters_manager_free(counters_manager, (int32_t)publication->snd_lmt_position.counter_id);
-        aeron_counters_manager_free(counters_manager, (int32_t)publication->snd_bpe_counter.counter_id);
+        aeron_counters_manager_free(counters_manager, publication->pub_pos_position.counter_id);
+        aeron_counters_manager_free(counters_manager, publication->pub_lmt_position.counter_id);
+        aeron_counters_manager_free(counters_manager, publication->snd_pos_position.counter_id);
+        aeron_counters_manager_free(counters_manager, publication->snd_lmt_position.counter_id);
+        aeron_counters_manager_free(counters_manager, publication->snd_bpe_counter.counter_id);
 
         for (size_t i = 0, length = subscribable->length; i < length; i++)
         {
-            aeron_counters_manager_free(counters_manager, (int32_t)subscribable->array[i].counter_id);
+            aeron_counters_manager_free(counters_manager, subscribable->array[i].counter_id);
         }
 
         aeron_free(subscribable->array);

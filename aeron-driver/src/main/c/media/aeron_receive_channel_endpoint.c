@@ -113,16 +113,18 @@ int aeron_receive_channel_endpoint_delete(
 {
     if (NULL != counters_manager && -1 != endpoint->channel_status.counter_id)
     {
-        aeron_counters_manager_free(counters_manager, (int32_t)endpoint->channel_status.counter_id);
+        aeron_counters_manager_free(counters_manager, endpoint->channel_status.counter_id);
     }
 
-    aeron_int64_to_ptr_hash_map_for_each(&endpoint->stream_id_to_refcnt_map, aeron_receive_channel_endpoint_free_stream_id_refcnt, endpoint);
+    aeron_int64_to_ptr_hash_map_for_each(
+        &endpoint->stream_id_to_refcnt_map, aeron_receive_channel_endpoint_free_stream_id_refcnt, endpoint);
 
     aeron_int64_to_ptr_hash_map_delete(&endpoint->stream_id_to_refcnt_map);
     aeron_data_packet_dispatcher_close(&endpoint->dispatcher);
     aeron_udp_channel_delete(endpoint->conductor_fields.udp_channel);
     aeron_udp_channel_transport_close(&endpoint->transport);
     aeron_free(endpoint);
+
     return 0;
 }
 

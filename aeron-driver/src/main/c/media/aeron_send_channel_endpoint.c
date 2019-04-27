@@ -119,11 +119,12 @@ int aeron_send_channel_endpoint_create(
     return 0;
 }
 
-int aeron_send_channel_endpoint_delete(aeron_counters_manager_t *counters_manager, aeron_send_channel_endpoint_t *endpoint)
+int aeron_send_channel_endpoint_delete(
+    aeron_counters_manager_t *counters_manager, aeron_send_channel_endpoint_t *endpoint)
 {
     if (NULL != counters_manager && -1 != endpoint->channel_status.counter_id)
     {
-        aeron_counters_manager_free(counters_manager, (int32_t)endpoint->channel_status.counter_id);
+        aeron_counters_manager_free(counters_manager, endpoint->channel_status.counter_id);
     }
 
     aeron_int64_to_ptr_hash_map_delete(&endpoint->publication_dispatch_map);
@@ -137,6 +138,7 @@ int aeron_send_channel_endpoint_delete(aeron_counters_manager_t *counters_manage
     }
 
     aeron_free(endpoint);
+
     return 0;
 }
 
@@ -355,8 +357,11 @@ void aeron_send_channel_endpoint_on_rttm(
 }
 
 extern void aeron_send_channel_endpoint_sender_release(aeron_send_channel_endpoint_t *endpoint);
+
 extern bool aeron_send_channel_endpoint_has_sender_released(aeron_send_channel_endpoint_t *endpoint);
+
 extern int aeron_send_channel_endpoint_add_destination(
     aeron_send_channel_endpoint_t *endpoint, struct sockaddr_storage *addr);
+
 extern int aeron_send_channel_endpoint_remove_destination(
     aeron_send_channel_endpoint_t *endpoint, struct sockaddr_storage *addr);

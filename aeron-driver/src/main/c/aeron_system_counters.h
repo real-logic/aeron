@@ -61,8 +61,8 @@ aeron_system_counter_t;
 
 typedef struct aeron_system_counters_stct
 {
-    aeron_counters_manager_t *manager;
     int32_t *counter_ids;
+    aeron_counters_manager_t *manager;
 }
 aeron_system_counters_t;
 

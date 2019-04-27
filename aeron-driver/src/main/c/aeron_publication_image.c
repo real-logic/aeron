@@ -205,12 +205,12 @@ int aeron_publication_image_close(aeron_counters_manager_t *counters_manager, ae
     {
         aeron_subscribable_t *subscribable = &image->conductor_fields.subscribable;
 
-        aeron_counters_manager_free(counters_manager, (int32_t)image->rcv_hwm_position.counter_id);
-        aeron_counters_manager_free(counters_manager, (int32_t)image->rcv_pos_position.counter_id);
+        aeron_counters_manager_free(counters_manager, image->rcv_hwm_position.counter_id);
+        aeron_counters_manager_free(counters_manager, image->rcv_pos_position.counter_id);
 
         for (size_t i = 0, length = subscribable->length; i < length; i++)
         {
-            aeron_counters_manager_free(counters_manager, (int32_t)subscribable->array[i].counter_id);
+            aeron_counters_manager_free(counters_manager, subscribable->array[i].counter_id);
         }
 
         aeron_free(subscribable->array);

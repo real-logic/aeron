@@ -592,7 +592,7 @@ bool aeron_is_wildcard_addr(struct sockaddr_storage *addr)
     return result;
 }
 
-int aeron_format_source_identity(char *buffer, size_t length, struct sockaddr_storage *addr)
+size_t aeron_format_source_identity(char *buffer, size_t length, struct sockaddr_storage *addr)
 {
     char addr_str[AERON_MAX_PATH] = "";
     unsigned short port = 0;
@@ -612,11 +612,13 @@ int aeron_format_source_identity(char *buffer, size_t length, struct sockaddr_st
         port = ntohs(in4->sin_port);
     }
 
-    int total = snprintf(buffer, length, "%s:%d", addr_str, port);
-    if (total < 0)
+    int result = snprintf(buffer, length, "%s:%d", addr_str, port);
+    if (result <= 0)
     {
         return 0;
     }
 
-    return (size_t)total > length - 1 ? length - 1 : total;
+    size_t projected_length = (size_t)result;
+
+    return projected_length > length - 1 ? length - 1 : projected_length;
 }

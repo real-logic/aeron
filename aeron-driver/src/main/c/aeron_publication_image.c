@@ -262,7 +262,7 @@ void aeron_publication_image_on_gap_detected(void *clientd, int32_t term_id, int
     else if (NULL != image->loss_reporter)
     {
         char source[AERON_MAX_PATH];
-        int source_length = aeron_format_source_identity(source, sizeof(source), &image->source_address);
+        size_t source_length = aeron_format_source_identity(source, sizeof(source), &image->source_address);
 
         if (NULL != image->endpoint)
         {
@@ -585,7 +585,7 @@ void aeron_publication_image_check_untethered_subscriptions(
                     if ((tetherable_position->time_of_last_update_ns + resting_timeout_ns) - now_ns <= 0)
                     {
                         char source_identity[AERON_MAX_PATH];
-                        int source_identity_length = aeron_format_source_identity(
+                        size_t source_identity_length = aeron_format_source_identity(
                             source_identity, sizeof(source_identity), &image->source_address);
 
                         aeron_counter_set_ordered(tetherable_position->value_addr, *image->rcv_pos_position.value_addr);

@@ -1675,10 +1675,10 @@ int aeron_driver_conductor_link_subscribable(
     int64_t now_ns,
     int32_t uri_length,
     const char *original_uri,
-    int32_t source_identity_length,
+    size_t source_identity_length,
     const char *source_identity,
-    const char *log_file_name,
-    size_t log_file_name_length)
+    size_t log_file_name_length,
+    const char *log_file_name)
 {
     int ensure_capacity_result = 0, result = -1;
 
@@ -1822,8 +1822,8 @@ int aeron_driver_conductor_on_add_ipc_publication(
                 subscription_link->channel,
                 AERON_IPC_CHANNEL_LEN,
                 AERON_IPC_CHANNEL,
-                publication->log_file_name,
-                publication->log_file_name_length) < 0)
+                publication->log_file_name_length,
+                publication->log_file_name) < 0)
             {
                 goto error_cleanup;
             }
@@ -1928,8 +1928,8 @@ int aeron_driver_conductor_on_add_network_publication(
                 subscription_link->channel,
                 AERON_IPC_CHANNEL_LEN,
                 AERON_IPC_CHANNEL,
-                publication->log_file_name,
-                publication->log_file_name_length) < 0)
+                publication->log_file_name_length,
+                publication->log_file_name) < 0)
             {
                 return -1;
             }
@@ -2045,8 +2045,8 @@ int aeron_driver_conductor_on_add_ipc_subscription(
                 link->channel,
                 AERON_IPC_CHANNEL_LEN,
                 AERON_IPC_CHANNEL,
-                publication->log_file_name,
-                publication->log_file_name_length) < 0)
+                publication->log_file_name_length,
+                publication->log_file_name) < 0)
             {
                 goto error_cleanup;
             }
@@ -2129,8 +2129,8 @@ int aeron_driver_conductor_on_add_spy_subscription(
                 link->channel,
                 AERON_IPC_CHANNEL_LEN,
                 AERON_IPC_CHANNEL,
-                publication->log_file_name,
-                publication->log_file_name_length) < 0)
+                publication->log_file_name_length,
+                publication->log_file_name) < 0)
             {
                 return -1;
             }
@@ -2218,7 +2218,7 @@ int aeron_driver_conductor_on_add_network_subscription(
                 aeron_publication_image_is_accepting_subscriptions(image))
             {
                 char source_identity[AERON_MAX_PATH];
-                int source_identity_length = aeron_format_source_identity(
+                size_t source_identity_length = aeron_format_source_identity(
                     source_identity, sizeof(source_identity), &image->source_address);
 
                 if (aeron_driver_conductor_link_subscribable(
@@ -2234,8 +2234,8 @@ int aeron_driver_conductor_on_add_network_subscription(
                     link->channel,
                     source_identity_length,
                     source_identity,
-                    image->log_file_name,
-                    image->log_file_name_length) < 0)
+                    image->log_file_name_length,
+                    image->log_file_name) < 0)
                 {
                     return -1;
                 }
@@ -2716,7 +2716,7 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
             continue;
         }
 
-        int source_identity_length = aeron_format_source_identity(
+        size_t source_identity_length = aeron_format_source_identity(
             source_identity, sizeof(source_identity), &command->src_address);
 
         if (aeron_driver_conductor_link_subscribable(
@@ -2732,8 +2732,8 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
             link->channel,
             source_identity_length,
             source_identity,
-            image->log_file_name,
-            image->log_file_name_length) < 0)
+            image->log_file_name_length,
+            image->log_file_name) < 0)
         {
             return;
         }

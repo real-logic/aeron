@@ -36,12 +36,12 @@ aeron_driver_receiver_image_entry_t;
 
 typedef struct aeron_driver_receiver_pending_setup_entry_stct
 {
-    aeron_receive_channel_endpoint_t *endpoint;
-    int64_t time_of_status_message_ns;
+    bool is_periodic;
     int32_t session_id;
     int32_t stream_id;
+    aeron_receive_channel_endpoint_t *endpoint;
+    int64_t time_of_status_message_ns;
     struct sockaddr_storage control_addr;
-    bool is_periodic;
 }
 aeron_driver_receiver_pending_setup_entry_t;
 

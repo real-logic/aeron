@@ -29,8 +29,8 @@ aeron_uri_param_t;
 
 typedef struct aeron_uri_params_stct
 {
-    aeron_uri_param_t *array;
     size_t length;
+    aeron_uri_param_t *array;
 }
 aeron_uri_params_t;
 
@@ -59,15 +59,15 @@ aeron_uri_params_t;
 
 typedef struct aeron_uri_publication_params_stct
 {
+    bool is_replay;
+    bool is_sparse;
+    bool signal_eos;
+    size_t term_length;
+    size_t mtu_length;
     uint64_t linger_timeout_ns;
     int64_t initial_term_id;
     int64_t term_id;
     uint64_t term_offset;
-    size_t term_length;
-    size_t mtu_length;
-    bool is_replay;
-    bool is_sparse;
-    bool signal_eos;
 }
 aeron_uri_publication_params_t;
 

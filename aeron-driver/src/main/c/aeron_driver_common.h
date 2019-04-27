@@ -41,9 +41,8 @@ aeron_driver_managed_resource_t;
 
 typedef struct aeron_position_stct
 {
-    int64_t *value_addr;
     int32_t counter_id;
-    char pad[sizeof(int32_t)];
+    int64_t *value_addr;
 }
 aeron_position_t;
 
@@ -59,21 +58,20 @@ aeron_subscription_tether_state_t;
 
 typedef struct aeron_tetherable_position_stct
 {
-    int64_t subscription_registration_id;
-    int64_t time_of_last_update_ns;
-    int64_t *value_addr;
-    int32_t counter_id;
     bool is_tether;
     aeron_subscription_tether_state_t state;
-    char pad[2];
+    int32_t counter_id;
+    int64_t *value_addr;
+    int64_t subscription_registration_id;
+    int64_t time_of_last_update_ns;
 }
 aeron_tetherable_position_t;
 
 typedef struct aeron_subscribable_stct
 {
-    aeron_tetherable_position_t *array;
     size_t length;
     size_t capacity;
+    aeron_tetherable_position_t *array;
     void (*add_position_hook_func)(void *clientd, int64_t *value_addr);
     void (*remove_position_hook_func)(void *clientd, int64_t *value_addr);
     void *clientd;

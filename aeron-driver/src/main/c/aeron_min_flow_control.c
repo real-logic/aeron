@@ -45,14 +45,14 @@ typedef struct aeron_min_flow_control_strategy_state_stct
 {
     struct receiver_stct
     {
-        aeron_min_flow_control_strategy_receiver_t *array;
         size_t length;
         size_t capacity;
+        aeron_min_flow_control_strategy_receiver_t *array;
     }
     receivers;
 
-    int64_t receiver_timeout_ns;
     bool should_linger;
+    int64_t receiver_timeout_ns;
 }
 aeron_min_flow_control_strategy_state_t;
 

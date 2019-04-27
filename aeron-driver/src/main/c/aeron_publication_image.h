@@ -36,13 +36,13 @@ typedef struct aeron_publication_image_stct
 {
     struct aeron_publication_image_conductor_fields_stct
     {
+        bool is_reliable;
+        aeron_publication_image_status_t status;
         aeron_driver_managed_resource_t managed_resource;
         aeron_subscribable_t subscribable;
         int64_t clean_position;
         int64_t time_of_last_status_change_ns;
         int64_t liveness_timeout_ns;
-        bool is_reliable;
-        aeron_publication_image_status_t status;
     }
     conductor_fields;
 

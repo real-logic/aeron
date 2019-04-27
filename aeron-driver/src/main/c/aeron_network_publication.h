@@ -47,14 +47,14 @@ typedef struct aeron_network_publication_stct
 {
     struct aeron_network_publication_conductor_fields_stct
     {
+        bool has_reached_end_of_life;
+        aeron_network_publication_status_t status;
+        int32_t refcnt;
         aeron_driver_managed_resource_t managed_resource;
         aeron_subscribable_t subscribable;
         int64_t clean_position;
         int64_t time_of_last_activity_ns;
         int64_t last_snd_pos;
-        int32_t refcnt;
-        bool has_reached_end_of_life;
-        aeron_network_publication_status_t status;
     }
     conductor_fields;
 

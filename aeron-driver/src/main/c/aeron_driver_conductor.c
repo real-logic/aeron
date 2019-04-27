@@ -2635,8 +2635,11 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
     }
 
     const int64_t registration_id = aeron_mpsc_rb_next_correlation_id(&conductor->to_driver_commands);
-    const int64_t join_position = aeron_logbuffer_compute_position(command->active_term_id, command->term_offset,
-        (size_t)aeron_number_of_trailing_zeroes(command->term_length), command->initial_term_id);
+    const int64_t join_position = aeron_logbuffer_compute_position(
+        command->active_term_id,
+        command->term_offset,
+        (size_t)aeron_number_of_trailing_zeroes(command->term_length),
+        command->initial_term_id);
 
     const char *uri = endpoint->conductor_fields.udp_channel->original_uri;
     int32_t uri_length = (int32_t)endpoint->conductor_fields.udp_channel->uri_length;

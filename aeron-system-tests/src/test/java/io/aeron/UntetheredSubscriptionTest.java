@@ -49,7 +49,7 @@ public class UntetheredSubscriptionTest
 
     private static final int STREAM_ID = 1;
     private static final int FRAGMENT_COUNT_LIMIT = 10;
-    private static final int MESSAGE_LENGTH = 256 - DataHeaderFlyweight.HEADER_LENGTH;
+    private static final int MESSAGE_LENGTH = 512 - DataHeaderFlyweight.HEADER_LENGTH;
 
     private final MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Throwable::printStackTrace)
@@ -79,7 +79,6 @@ public class UntetheredSubscriptionTest
         final UnavailableImageHandler handler = (image) -> unavailableCalled.set(true);
 
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
-        srcBuffer.setMemory(0, MESSAGE_LENGTH, (byte)'A');
         final String untetheredChannel = channel + "|tether=false";
         final String publicationChannel = channel.startsWith("aeron-spy:") ? channel.substring(10) : channel;
         boolean pollingUntethered = true;
@@ -130,16 +129,16 @@ public class UntetheredSubscriptionTest
     @Test(timeout = 10_000)
     public void shouldRejoinAfterResting(final String channel)
     {
-        final AtomicInteger unavailableCount = new AtomicInteger();
-        final AtomicInteger availableCount = new AtomicInteger();
-        final UnavailableImageHandler unavailableHandler = (image) -> unavailableCount.incrementAndGet();
-        final AvailableImageHandler availableHandler = (image) -> availableCount.incrementAndGet();
+        final AtomicInteger unavailableImageCount = new AtomicInteger();
+        final AtomicInteger availableImageCount = new AtomicInteger();
+        final UnavailableImageHandler unavailableHandler = (image) -> unavailableImageCount.incrementAndGet();
+        final AvailableImageHandler availableHandler = (image) -> availableImageCount.incrementAndGet();
         final FragmentHandler fragmentHandler = (buffer, offset, length, header) -> {};
 
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
         srcBuffer.setMemory(0, MESSAGE_LENGTH, (byte)'A');
         final String untetheredChannel = channel + "|tether=false";
-        final String publicationChannel = channel.startsWith("aeron-spy:") ? channel.substring(10) : channel;
+        final String publicationChannel = channel.startsWith("aeron-spy") ? channel.substring(10) : channel;
         boolean pollingUntethered = true;
 
         try (Subscription tetheredSub = aeron.addSubscription(channel, STREAM_ID);
@@ -168,9 +167,9 @@ public class UntetheredSubscriptionTest
 
                 tetheredSub.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT);
 
-                if (unavailableCount.get() == 1)
+                if (unavailableImageCount.get() == 1)
                 {
-                    while (availableCount.get() < 2)
+                    while (availableImageCount.get() < 2)
                     {
                         SystemTest.checkInterruptedStatus();
                         Thread.yield();

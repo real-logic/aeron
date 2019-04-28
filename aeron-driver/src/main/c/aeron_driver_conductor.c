@@ -1321,7 +1321,7 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
             {
                 result = aeron_driver_conductor_on_add_ipc_subscription(conductor, command);
             }
-            else if (strncmp(channel, AERON_SPY_PREFIX, AERON_IPC_CHANNEL_LEN) == 0)
+            else if (strncmp(channel, AERON_SPY_PREFIX, AERON_SPY_PREFIX_LEN) == 0)
             {
                 result = aeron_driver_conductor_on_add_spy_subscription(conductor, command);
             }

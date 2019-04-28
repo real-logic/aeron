@@ -563,6 +563,7 @@ uint64_t aeron_driver_context_get_retransmit_unicast_linger_ns(aeron_driver_cont
 #define AERON_IPC_CHANNEL "aeron:ipc"
 #define AERON_IPC_CHANNEL_LEN strlen(AERON_IPC_CHANNEL)
 #define AERON_SPY_PREFIX "aeron-spy:"
+#define AERON_SPY_PREFIX_LEN strlen(AERON_SPY_PREFIX)
 
 /**
  * Return full version and build string.

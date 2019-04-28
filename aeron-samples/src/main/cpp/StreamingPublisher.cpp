@@ -79,6 +79,7 @@ Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
     s.lingerTimeoutMs = cp.getOption(optLinger).getParamAsInt(0, 0, 60 * 60 * 1000, s.lingerTimeoutMs);
     s.randomMessageLength = cp.getOption(optRandLen).isPresent();
     s.progress = cp.getOption(optProgress).isPresent();
+
     return s;
 }
 
@@ -171,6 +172,8 @@ int main(int argc, char **argv)
 
         std::unique_ptr<std::uint8_t[]> buffer(new std::uint8_t[settings.messageLength]);
         concurrent::AtomicBuffer srcBuffer(buffer.get(), static_cast<size_t>(settings.messageLength));
+        srcBuffer.setMemory(0, settings.messageLength, 0);
+
         BusySpinIdleStrategy offerIdleStrategy;
         on_new_length_t lengthGenerator = composeLengthGenerator(settings.randomMessageLength, settings.messageLength);
         RateReporter rateReporter(std::chrono::seconds(1), printRate);
@@ -184,7 +187,6 @@ int main(int argc, char **argv)
         do
         {
             printingActive = true;
-
             long backPressureCount = 0;
 
             if (nullptr == rateReporterThread)

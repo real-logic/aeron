@@ -523,29 +523,23 @@ int aeron_uri_publication_params(
 
     const char *value_str;
 
-    if ((value_str = aeron_uri_find_param_value(uri_params, AERON_URI_SPARSE_TERM_KEY)) != NULL)
+    if ((value_str = aeron_uri_find_param_value(uri_params, AERON_URI_SPARSE_TERM_KEY)) != NULL &&
+        strncmp("true", value_str, strlen("true")) == 0)
     {
-        if (strncmp("true", value_str, strlen("true")) == 0)
-        {
-            params->is_sparse = true;
-        }
+        params->is_sparse = true;
     }
 
-    if ((value_str = aeron_uri_find_param_value(uri_params, AERON_URI_EOS_KEY)) != NULL)
+    if ((value_str = aeron_uri_find_param_value(uri_params, AERON_URI_EOS_KEY)) != NULL &&
+        strncmp("false", value_str, strlen("false")) == 0)
     {
-        if (strncmp("false", value_str, strlen("false")) == 0)
-        {
-            params->signal_eos = false;
-        }
+        params->signal_eos = false;
     }
 
     return 0;
 }
 
 int aeron_uri_subscription_params(
-    aeron_uri_t *uri,
-    aeron_uri_subscription_params_t *params,
-    aeron_driver_context_t *context)
+    aeron_uri_t *uri, aeron_uri_subscription_params_t *params, aeron_driver_context_t *context)
 {
     params->is_reliable = context->reliable_stream;
     params->is_sparse = context->term_buffer_sparse_file;
@@ -555,28 +549,22 @@ int aeron_uri_subscription_params(
     aeron_uri_params_t *uri_params = AERON_URI_IPC == uri->type ?
         &uri->params.ipc.additional_params : &uri->params.udp.additional_params;
 
-    if ((value_str = aeron_uri_find_param_value(uri_params, AERON_UDP_CHANNEL_RELIABLE_KEY)) != NULL)
+    if ((value_str = aeron_uri_find_param_value(uri_params, AERON_UDP_CHANNEL_RELIABLE_KEY)) != NULL &&
+        strncmp("false", value_str, strlen("false")) == 0)
     {
-        if (strncmp("false", value_str, strlen("false")) == 0)
-        {
-            params->is_reliable = false;
-        }
+        params->is_reliable = false;
     }
 
-    if ((value_str = aeron_uri_find_param_value(uri_params, AERON_URI_SPARSE_TERM_KEY)) != NULL)
+    if ((value_str = aeron_uri_find_param_value(uri_params, AERON_URI_SPARSE_TERM_KEY)) != NULL &&
+        strncmp("true", value_str, strlen("true")) == 0)
     {
-        if (strncmp("true", value_str, strlen("true")) == 0)
-        {
-            params->is_sparse = true;
-        }
+        params->is_sparse = true;
     }
 
-    if ((value_str = aeron_uri_find_param_value(uri_params, AERON_URI_TETHER_KEY)) != NULL)
+    if ((value_str = aeron_uri_find_param_value(uri_params, AERON_URI_TETHER_KEY)) != NULL &&
+        strncmp("false", value_str, strlen("false")) == 0)
     {
-        if (strncmp("false", value_str, strlen("false")) == 0)
-        {
-            params->is_tether = false;
-        }
+        params->is_tether = false;
     }
 
     return 0;

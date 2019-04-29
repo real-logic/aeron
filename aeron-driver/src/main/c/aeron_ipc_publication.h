@@ -92,7 +92,8 @@ int aeron_ipc_publication_update_pub_lmt(aeron_ipc_publication_t *publication);
 
 void aeron_ipc_publication_clean_buffer(aeron_ipc_publication_t *publication, int64_t min_sub_pos);
 
-void aeron_ipc_publication_on_time_event(aeron_ipc_publication_t *publication, int64_t now_ns, int64_t now_ms);
+void aeron_ipc_publication_on_time_event(
+    aeron_driver_conductor_t *conductor, aeron_ipc_publication_t *publication, int64_t now_ns, int64_t now_ms);
 
 void aeron_ipc_publication_incref(void *clientd);
 

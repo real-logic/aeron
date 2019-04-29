@@ -252,18 +252,59 @@ void aeron_ipc_publication_clean_buffer(aeron_ipc_publication_t *publication, in
     }
 }
 
-void aeron_ipc_publication_on_time_event(aeron_ipc_publication_t *publication, int64_t now_ns, int64_t now_ms)
+void aeron_ipc_publication_on_time_event(
+    aeron_driver_conductor_t *conductor, aeron_ipc_publication_t *publication, int64_t now_ns, int64_t now_ms)
 {
     const int64_t producer_position = aeron_ipc_publication_producer_position(publication);
-
     aeron_counter_set_ordered(publication->pub_pos_position.value_addr, producer_position);
 
     switch (publication->conductor_fields.status)
     {
         case AERON_IPC_PUBLICATION_STATUS_ACTIVE:
+            aeron_ipc_publication_check_untethered_subscriptions(conductor, publication, now_ns);
             if (!publication->is_exclusive)
             {
                 aeron_ipc_publication_check_for_blocked_publisher(publication, producer_position, now_ns);
+            }
+            break;
+
+        case AERON_IPC_PUBLICATION_STATUS_INACTIVE:
+            if (aeron_ipc_publication_is_drained(publication))
+            {
+                publication->conductor_fields.status = AERON_IPC_PUBLICATION_STATUS_LINGER;
+                publication->conductor_fields.managed_resource.time_of_last_status_change = now_ns;
+
+                for (size_t i = 0, size = conductor->ipc_subscriptions.length; i < size; i++)
+                {
+                    aeron_subscription_link_t *link = &conductor->ipc_subscriptions.array[i];
+
+                    if (aeron_driver_conductor_is_subscribable_linked(link, &publication->conductor_fields.subscribable))
+                    {
+                        aeron_driver_conductor_on_unavailable_image(
+                            conductor,
+                            publication->conductor_fields.managed_resource.registration_id,
+                            link->registration_id,
+                            publication->stream_id,
+                            AERON_IPC_CHANNEL,
+                            AERON_IPC_CHANNEL_LEN);
+                    }
+                }
+            }
+            else if (aeron_logbuffer_unblocker_unblock(
+                publication->mapped_raw_log.term_buffers,
+                publication->log_meta_data,
+                publication->conductor_fields.consumer_position))
+            {
+                aeron_counter_ordered_increment(publication->unblocked_publications_counter, 1);
+            }
+            break;
+
+        case AERON_IPC_PUBLICATION_STATUS_LINGER:
+            if (now_ns >
+                (publication->conductor_fields.managed_resource.time_of_last_status_change +
+                 publication->image_liveness_timeout_ns))
+            {
+                publication->conductor_fields.has_reached_end_of_life = true;
             }
             break;
 

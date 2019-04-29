@@ -110,14 +110,6 @@ struct aeron_feedback_delay_generator_state_stct
     aeron_feedback_delay_generator_func_t delay_generator;
 };
 
-int aeron_driver_subscribable_add_position(
-    aeron_subscribable_t *subscribable,
-    int64_t subscription_registration_id,
-    int32_t counter_id,
-    int64_t *value_addr,
-    int64_t now_ns,
-    bool is_tether);
-
 void aeron_driver_subscribable_remove_position(aeron_subscribable_t *subscribable, int32_t counter_id);
 
 inline void aeron_driver_subscribable_null_hook(void *clientd, int64_t *value_addr)

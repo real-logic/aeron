@@ -354,7 +354,7 @@ void aeron_client_delete(aeron_driver_conductor_t *conductor, aeron_client_t *cl
         }
     }
 
-    aeron_counters_manager_free(&conductor->counters_manager, (int32_t)client->heartbeat_status.counter_id);
+    aeron_counters_manager_free(&conductor->counters_manager, client->heartbeat_status.counter_id);
 
     aeron_free(client->publication_links.array);
     client->publication_links.array = NULL;
@@ -420,58 +420,7 @@ void aeron_driver_conductor_on_available_image(
 void aeron_ipc_publication_entry_on_time_event(
     aeron_driver_conductor_t *conductor, aeron_ipc_publication_entry_t *entry, int64_t now_ns, int64_t now_ms)
 {
-    aeron_ipc_publication_t *publication = entry->publication;
-    aeron_ipc_publication_on_time_event(publication, now_ns, now_ms);
-
-    switch (publication->conductor_fields.status)
-    {
-        case AERON_IPC_PUBLICATION_STATUS_ACTIVE:
-            aeron_ipc_publication_check_untethered_subscriptions(conductor, publication, now_ns);
-            break;
-
-        case AERON_IPC_PUBLICATION_STATUS_INACTIVE:
-            if (aeron_ipc_publication_is_drained(publication))
-            {
-                publication->conductor_fields.status = AERON_IPC_PUBLICATION_STATUS_LINGER;
-                publication->conductor_fields.managed_resource.time_of_last_status_change = now_ns;
-
-                for (size_t i = 0, size = conductor->ipc_subscriptions.length; i < size; i++)
-                {
-                    aeron_subscription_link_t *link = &conductor->ipc_subscriptions.array[i];
-
-                    if (aeron_driver_conductor_is_subscribable_linked(link, &publication->conductor_fields.subscribable))
-                    {
-                        aeron_driver_conductor_on_unavailable_image(
-                            conductor,
-                            publication->conductor_fields.managed_resource.registration_id,
-                            link->registration_id,
-                            publication->stream_id,
-                            AERON_IPC_CHANNEL,
-                            AERON_IPC_CHANNEL_LEN);
-                    }
-                }
-            }
-            else if (aeron_logbuffer_unblocker_unblock(
-                publication->mapped_raw_log.term_buffers,
-                publication->log_meta_data,
-                publication->conductor_fields.consumer_position))
-            {
-                aeron_counter_ordered_increment(publication->unblocked_publications_counter, 1);
-            }
-            break;
-
-        case AERON_IPC_PUBLICATION_STATUS_LINGER:
-            if (now_ns >
-                (publication->conductor_fields.managed_resource.time_of_last_status_change +
-                publication->image_liveness_timeout_ns))
-            {
-                publication->conductor_fields.has_reached_end_of_life = true;
-            }
-            break;
-
-        default:
-            break;
-    }
+    aeron_ipc_publication_on_time_event(conductor, entry->publication, now_ns, now_ms);
 }
 
 bool aeron_ipc_publication_entry_has_reached_end_of_life(
@@ -1617,11 +1566,10 @@ void aeron_driver_conductor_on_close(void *clientd)
 
 int aeron_driver_subscribable_add_position(
     aeron_subscribable_t *subscribable,
-    int64_t subscription_registration_id,
+    aeron_subscription_link_t *link,
     int32_t counter_id,
     int64_t *value_addr,
-    int64_t now_ns,
-    bool is_tether)
+    int64_t now_ns)
 {
     int ensure_capacity_result = 0, result = -1;
 
@@ -1630,12 +1578,12 @@ int aeron_driver_subscribable_add_position(
     if (ensure_capacity_result >= 0)
     {
         aeron_tetherable_position_t *entry = &subscribable->array[subscribable->length];
+        entry->is_tether = link->is_tether;
+        entry->state = AERON_SUBSCRIPTION_TETHER_ACTIVE;
         entry->counter_id = counter_id;
         entry->value_addr = value_addr;
-        entry->subscription_registration_id = subscription_registration_id;
+        entry->subscription_registration_id = link->registration_id;
         entry->time_of_last_update_ns = now_ns;
-        entry->state = AERON_SUBSCRIPTION_TETHER_ACTIVE;
-        entry->is_tether = is_tether;
         subscribable->add_position_hook_func(subscribable->clientd, value_addr);
         subscribable->length++;
         result = 0;
@@ -1670,8 +1618,6 @@ int aeron_driver_conductor_link_subscribable(
     int32_t stream_id,
     int64_t join_position,
     int64_t now_ns,
-    int32_t uri_length,
-    const char *original_uri,
     size_t source_identity_length,
     const char *source_identity,
     size_t log_file_name_length,
@@ -1689,16 +1635,15 @@ int aeron_driver_conductor_link_subscribable(
             link->registration_id,
             session_id,
             stream_id,
-            uri_length,
-            original_uri,
+            link->channel_length,
+            link->channel,
             joining_position);
 
         if (counter_id >= 0)
         {
             int64_t *position_addr = aeron_counter_addr(&conductor->counters_manager, counter_id);
 
-            if (aeron_driver_subscribable_add_position(
-                subscribable, link->registration_id, counter_id, position_addr, link->is_tether, now_ns) >= 0)
+            if (aeron_driver_subscribable_add_position(subscribable, link, counter_id, position_addr, now_ns) >= 0)
             {
                 aeron_subscribable_list_entry_t *entry =
                     &link->subscribable_list.array[link->subscribable_list.length++];
@@ -1750,7 +1695,7 @@ void aeron_driver_conductor_unlink_all_subscribable(
         aeron_subscribable_list_entry_t *entry = &link->subscribable_list.array[i];
 
         aeron_driver_subscribable_remove_position(entry->subscribable, entry->counter_id);
-        aeron_counters_manager_free(&conductor->counters_manager, (int32_t)entry->counter_id);
+        aeron_counters_manager_free(&conductor->counters_manager, entry->counter_id);
     }
 
     aeron_free(link->subscribable_list.array);
@@ -1815,8 +1760,6 @@ int aeron_driver_conductor_on_add_ipc_publication(
                 publication->stream_id,
                 aeron_ipc_publication_joining_position(publication),
                 now_ns,
-                subscription_link->channel_length,
-                subscription_link->channel,
                 AERON_IPC_CHANNEL_LEN,
                 AERON_IPC_CHANNEL,
                 publication->log_file_name_length,
@@ -1921,8 +1864,6 @@ int aeron_driver_conductor_on_add_network_publication(
                 publication->stream_id,
                 aeron_network_publication_consumer_position(publication),
                 now_ns,
-                subscription_link->channel_length,
-                subscription_link->channel,
                 AERON_IPC_CHANNEL_LEN,
                 AERON_IPC_CHANNEL,
                 publication->log_file_name_length,
@@ -2038,8 +1979,6 @@ int aeron_driver_conductor_on_add_ipc_subscription(
                 publication->stream_id,
                 aeron_ipc_publication_joining_position(publication),
                 now_ns,
-                link->channel_length,
-                link->channel,
                 AERON_IPC_CHANNEL_LEN,
                 AERON_IPC_CHANNEL,
                 publication->log_file_name_length,
@@ -2122,8 +2061,6 @@ int aeron_driver_conductor_on_add_spy_subscription(
                 publication->stream_id,
                 aeron_network_publication_consumer_position(publication),
                 now_ns,
-                link->channel_length,
-                link->channel,
                 AERON_IPC_CHANNEL_LEN,
                 AERON_IPC_CHANNEL,
                 publication->log_file_name_length,
@@ -2227,8 +2164,6 @@ int aeron_driver_conductor_on_add_network_subscription(
                     image->stream_id,
                     aeron_counter_get(image->rcv_pos_position.value_addr),
                     now_ns,
-                    link->channel_length,
-                    link->channel,
                     source_identity_length,
                     source_identity,
                     image->log_file_name_length,
@@ -2725,8 +2660,6 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
             command->stream_id,
             join_position,
             now_ns,
-            link->channel_length,
-            link->channel,
             source_identity_length,
             source_identity,
             image->log_file_name_length,

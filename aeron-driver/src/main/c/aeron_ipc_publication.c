@@ -340,7 +340,7 @@ void aeron_ipc_publication_check_untethered_subscriptions(
                     {
                         tetherable_position->time_of_last_update_ns = now_ns;
                     }
-                    else if ((tetherable_position->time_of_last_update_ns + window_limit_timeout_ns) - now_ns <= 0)
+                    else if (now_ns > (tetherable_position->time_of_last_update_ns + window_limit_timeout_ns))
                     {
                         aeron_driver_conductor_on_unavailable_image(
                             conductor,
@@ -356,7 +356,7 @@ void aeron_ipc_publication_check_untethered_subscriptions(
                     break;
 
                 case AERON_SUBSCRIPTION_TETHER_LINGER:
-                    if ((tetherable_position->time_of_last_update_ns + window_limit_timeout_ns) - now_ns <= 0)
+                    if (now_ns > (tetherable_position->time_of_last_update_ns + window_limit_timeout_ns))
                     {
                         tetherable_position->state = AERON_SUBSCRIPTION_TETHER_RESTING;
                         tetherable_position->time_of_last_update_ns = now_ns;
@@ -364,7 +364,7 @@ void aeron_ipc_publication_check_untethered_subscriptions(
                     break;
 
                 case AERON_SUBSCRIPTION_TETHER_RESTING:
-                    if ((tetherable_position->time_of_last_update_ns + resting_timeout_ns) - now_ns <= 0)
+                    if (now_ns > (tetherable_position->time_of_last_update_ns + resting_timeout_ns))
                     {
                         aeron_counter_set_ordered(tetherable_position->value_addr, consumer_position);
                         aeron_driver_conductor_on_available_image(

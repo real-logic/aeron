@@ -61,10 +61,11 @@ matrix:
       addons:
         apt:
           packages:
-            - clang-7.0
+            - clang-7
             - libstdc++-7-dev
           sources:
             - ubuntu-toolchain-r-test
+            - llvm-toolchain-xenial-7
       script: cppbuild/cppbuild --build-archive-api
 
     - name: "clang 6.0 debug build"

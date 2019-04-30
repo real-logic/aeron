@@ -65,7 +65,6 @@ matrix:
             - libstdc++-7-dev
           sources:
             - ubuntu-toolchain-r-test
-            - llvm-toolchain-xenial-7.0
       script: cppbuild/cppbuild --build-archive-api
 
     - name: "clang 6.0 debug build"

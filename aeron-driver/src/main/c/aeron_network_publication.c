@@ -830,8 +830,8 @@ void aeron_network_publication_check_untethered_subscriptions(
         }
         else
         {
-            uint64_t window_limit_timeout_ns = conductor->context->untethered_window_limit_timeout_ns;
-            uint64_t resting_timeout_ns = conductor->context->untethered_resting_timeout_ns;
+            int64_t window_limit_timeout_ns = conductor->context->untethered_window_limit_timeout_ns;
+            int64_t resting_timeout_ns = conductor->context->untethered_resting_timeout_ns;
 
             switch (tetherable_position->state)
             {

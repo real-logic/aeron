@@ -23,12 +23,6 @@ matrix:
       dist: xenial
       script: ./gradlew
 
-    - name: "OpenJDK 11"
-      language: java
-      jdk: openjdk11
-      os: windows
-      script: gradlew
-
     - env: COMPILER=clang++-5.0
       language: c++
       compiler: clang

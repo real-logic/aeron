@@ -16,17 +16,21 @@ matrix:
       language: java
       jdk: openjdk8
       os: linux
+      dist: xenial
       script: ./gradlew
 
     - name: "OpenJDK 11"
       language: java
       jdk: openjdk11
       os: linux
+      dist: xenial
       script: ./gradlew
 
     - env: COMPILER=clang++-4.0
       language: c++
       compiler: clang
+      os: linux
+      dist: xenial
       addons:
         apt:
           packages:
@@ -41,6 +45,7 @@ matrix:
       language: c++
       compiler: clang
       os: linux
+      dist: xenial
       addons:
         apt:
           packages:
@@ -55,6 +60,7 @@ matrix:
       language: c++
       compiler: clang
       os: linux
+      dist: xenial
       addons:
         apt:
           packages:
@@ -70,6 +76,7 @@ matrix:
       language: c++
       compiler: clang
       os: linux
+      dist: xenial
       addons:
         apt:
           packages:
@@ -84,6 +91,7 @@ matrix:
       language: c++
       compiler: gcc
       os: linux
+      dist: xenial
       addons:
         apt:
           packages:
@@ -96,6 +104,7 @@ matrix:
       language: c++
       compiler: gcc
       os: linux
+      dist: xenial
       addons:
         apt:
           packages:
@@ -108,6 +117,7 @@ matrix:
       language: c++
       compiler: gcc
       os: linux
+      dist: xenial
       addons:
         apt:
           packages:

@@ -365,3 +365,6 @@ extern int aeron_send_channel_endpoint_add_destination(
 
 extern int aeron_send_channel_endpoint_remove_destination(
     aeron_send_channel_endpoint_t *endpoint, struct sockaddr_storage *addr);
+
+extern bool aeron_send_channel_endpoint_tags_match(
+    aeron_send_channel_endpoint_t *endpoint, aeron_udp_channel_t *channel);

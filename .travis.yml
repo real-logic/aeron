@@ -53,7 +53,7 @@ matrix:
             - llvm-toolchain-xenial-6.0
       script: cppbuild/cppbuild --build-archive-api
 
-    - env: COMPILER=clang++-7.0
+    - env: COMPILER=clang++-7
       language: c++
       compiler: clang
       os: linux
@@ -68,8 +68,8 @@ matrix:
             - llvm-toolchain-xenial-7
       script: cppbuild/cppbuild --build-archive-api
 
-    - name: "clang 6.0 debug build"
-      env: COMPILER=clang++-6.0
+    - name: "Clang 7 debug build"
+      env: COMPILER=clang++-7
       language: c++
       compiler: clang
       os: linux
@@ -77,11 +77,11 @@ matrix:
       addons:
         apt:
           packages:
-            - clang-6.0
+            - clang-7
             - libstdc++-7-dev
           sources:
             - ubuntu-toolchain-r-test
-            - llvm-toolchain-xenial-6.0
+            - llvm-toolchain-xenial-7
       script: cppbuild/cppbuild --debug-build --build-archive-api
 
     - env: COMPILER=g++-6

@@ -7,9 +7,6 @@ before_script:
     sudo sh -c 'echo 0 > /proc/sys/net/ipv6/conf/all/disable_ipv6';
     fi
 
-# don't run gradle during C++ builds
-install: skip
-
 matrix:
   include:
     - name: "OpenJDK 8"
@@ -26,20 +23,11 @@ matrix:
       dist: xenial
       script: ./gradlew
 
-    - env: COMPILER=clang++-4.0
-      language: c++
-      compiler: clang
-      os: linux
-      dist: xenial
-      addons:
-        apt:
-          packages:
-            - clang-4.0
-            - libstdc++-6-dev
-          sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-xenial-4.0
-      script: cppbuild/cppbuild --build-archive-api
+    - name: "OpenJDK 11"
+      language: java
+      jdk: openjdk11
+      os: windows
+      script: gradlew
 
     - env: COMPILER=clang++-5.0
       language: c++
@@ -69,6 +57,21 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
             - llvm-toolchain-xenial-6.0
+      script: cppbuild/cppbuild --build-archive-api
+
+    - env: COMPILER=clang++-7.0
+      language: c++
+      compiler: clang
+      os: linux
+      dist: xenial
+      addons:
+        apt:
+          packages:
+            - clang-7.0
+            - libstdc++-7-dev
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-xenial-7.0
       script: cppbuild/cppbuild --build-archive-api
 
     - name: "clang 6.0 debug build"

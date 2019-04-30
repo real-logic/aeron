@@ -590,6 +590,10 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
     /* publicationReservedSessionIdHigh */
     fprintf(fpout, "\n    loss_report_length=%" PRIu64, (uint64_t)context->loss_report_length);
     fprintf(fpout, "\n    send_to_sm_poll_ratio=%" PRIu64, (uint64_t)context->send_to_sm_poll_ratio);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+
     fprintf(fpout, "\n    epoch_clock=%p%s",
         (void *)context->epoch_clock,
         aeron_dlinfo((const void *)context->epoch_clock, buffer, sizeof(buffer)));
@@ -654,6 +658,9 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
         (void *)context->termination_hook_func,
         aeron_dlinfo((const void *)context->termination_hook_func, buffer, sizeof(buffer)));
     fprintf(fpout, "\n    termination_hook_state=%p", context->termination_hook_state);
+
+#pragma GCC diagnostic pop
+
     fprintf(fpout, "\n}\n");
 }
 

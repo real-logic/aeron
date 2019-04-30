@@ -234,11 +234,14 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
             exit(EXIT_FAILURE);
         }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
         if ((_original_func = (aeron_driver_context_init_t)aeron_dlsym(aeron_lib, "aeron_driver_context_init")) == NULL)
         {
             fprintf(stderr, "%s\n", aeron_dlerror());
             exit(EXIT_FAILURE);
         }
+#pragma GCC diagnostic pop
 
         printf("hooked aeron_driver_context_init\n");
     }
@@ -304,11 +307,14 @@ ssize_t sendmsg(int socket, const struct msghdr *message, int flags)
 
     if (NULL == _original_func)
     {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
         if ((_original_func = (aeron_driver_agent_sendmsg_func_t)aeron_dlsym(RTLD_NEXT, "sendmsg")) == NULL)
         {
             fprintf(stderr, "%s\n", aeron_dlerror());
             exit(EXIT_FAILURE);
         }
+#pragma GCC diagnostic pop
 
         printf("hooked sendmsg\n");
     }
@@ -331,11 +337,14 @@ ssize_t recvmsg(int socket, struct msghdr *message, int flags)
 
     if (NULL == _original_func)
     {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
         if ((_original_func = (aeron_driver_agent_recvmsg_func_t)aeron_dlsym(RTLD_NEXT, "recvmsg")) == NULL)
         {
             fprintf(stderr, "%s\n", aeron_dlerror());
             exit(EXIT_FAILURE);
         }
+#pragma GCC diagnostic pop
 
         printf("hooked recvmsg\n");
     }
@@ -371,11 +380,14 @@ int sendmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, int flags)
 
     if (NULL == _original_func)
     {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
         if ((_original_func = (aeron_driver_agent_sendmmsg_func_t)aeron_dlsym(RTLD_NEXT, "sendmmsg")) == NULL)
         {
             fprintf(stderr, "%s\n", aeron_dlerror());
             exit(EXIT_FAILURE);
         }
+#pragma GCC diagnostic pop
 
         printf("hooked sendmmsg\n");
     }
@@ -420,11 +432,14 @@ int recvmmsg(int sockfd, struct mmsghdr *msgvec, unsigned int vlen, int flags, r
 
     if (NULL == _original_func)
     {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
         if ((_original_func = (aeron_driver_agent_recvmmsg_func_t)aeron_dlsym(RTLD_NEXT, "recvmmsg")) == NULL)
         {
             fprintf(stderr, "%s\n", aeron_dlerror());
             exit(EXIT_FAILURE);
         }
+#pragma GCC diagnostic pop
 
         printf("hooked recvmmsg\n");
     }

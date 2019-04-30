@@ -34,7 +34,7 @@ matrix:
             - libstdc++-6-dev
           sources:
             - ubuntu-toolchain-r-test
-            - llvm-toolchain-trusty-4.0
+            - llvm-toolchain-xenial-4.0
       script: cppbuild/cppbuild --build-archive-api
 
     - env: COMPILER=clang++-5.0
@@ -48,7 +48,7 @@ matrix:
             - libstdc++-7-dev
           sources:
             - ubuntu-toolchain-r-test
-            - llvm-toolchain-trusty-5.0
+            - llvm-toolchain-xenial-5.0
       script: cppbuild/cppbuild --build-archive-api
 
     - env: COMPILER=clang++-6.0
@@ -62,7 +62,7 @@ matrix:
             - libstdc++-7-dev
           sources:
             - ubuntu-toolchain-r-test
-            - llvm-toolchain-trusty-6.0
+            - llvm-toolchain-xenial-6.0
       script: cppbuild/cppbuild --build-archive-api
 
     - name: "clang 6.0 debug build"
@@ -77,7 +77,7 @@ matrix:
             - libstdc++-7-dev
           sources:
             - ubuntu-toolchain-r-test
-            - llvm-toolchain-trusty-6.0
+            - llvm-toolchain-xenial-6.0
       script: cppbuild/cppbuild --debug-build --build-archive-api
 
     - env: COMPILER=g++-6

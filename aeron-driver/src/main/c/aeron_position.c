@@ -54,14 +54,14 @@ int32_t aeron_stream_counter_allocate(
     int64_t registration_id,
     int32_t session_id,
     int32_t stream_id,
-    int32_t channel_length,
+    size_t channel_length,
     const char *channel,
     const char *suffix)
 {
     char label[sizeof(((aeron_counter_metadata_descriptor_t *)0)->label)];
     int label_length = snprintf(
         label, sizeof(label), "%s: %" PRId64 " %" PRId32 " %" PRId32 " %.*s %s",
-        name, registration_id, session_id, stream_id, channel_length, channel, suffix);
+        name, registration_id, session_id, stream_id, (int)channel_length, channel, suffix);
 
     aeron_stream_position_counter_key_layout_t layout =
         {
@@ -82,7 +82,7 @@ int32_t aeron_counter_publisher_limit_allocate(
     int64_t registration_id,
     int32_t session_id,
     int32_t stream_id,
-    int32_t channel_length,
+    size_t channel_length,
     const char *channel)
 {
     return aeron_stream_counter_allocate(
@@ -102,7 +102,7 @@ int32_t aeron_counter_subscription_position_allocate(
     int64_t registration_id,
     int32_t session_id,
     int32_t stream_id,
-    int32_t channel_length,
+    size_t channel_length,
     const char *channel,
     int64_t joining_position)
 {
@@ -127,7 +127,7 @@ int32_t aeron_counter_sender_position_allocate(
     int64_t registration_id,
     int32_t session_id,
     int32_t stream_id,
-    int32_t channel_length,
+    size_t channel_length,
     const char *channel)
 {
     return aeron_stream_counter_allocate(
@@ -147,7 +147,7 @@ int32_t aeron_counter_sender_limit_allocate(
     int64_t registration_id,
     int32_t session_id,
     int32_t stream_id,
-    int32_t channel_length,
+    size_t channel_length,
     const char *channel)
 {
     return aeron_stream_counter_allocate(
@@ -167,7 +167,7 @@ int32_t aeron_counter_receiver_hwm_allocate(
     int64_t registration_id,
     int32_t session_id,
     int32_t stream_id,
-    int32_t channel_length,
+    size_t channel_length,
     const char *channel)
 {
     return aeron_stream_counter_allocate(
@@ -187,7 +187,7 @@ int32_t aeron_counter_receiver_position_allocate(
     int64_t registration_id,
     int32_t session_id,
     int32_t stream_id,
-    int32_t channel_length,
+    size_t channel_length,
     const char *channel)
 {
     return aeron_stream_counter_allocate(
@@ -206,11 +206,11 @@ int32_t aeron_channel_endpoint_status_allocate(
     aeron_counters_manager_t *counters_manager,
     const char *name,
     int32_t type_id,
-    int32_t channel_length,
+    size_t channel_length,
     const char *channel)
 {
     char label[sizeof(((aeron_counter_metadata_descriptor_t *)0)->label)];
-    int label_length = snprintf(label, sizeof(label), "%s: %.*s", name, channel_length, channel);
+    int label_length = snprintf(label, sizeof(label), "%s: %.*s", name, (int)channel_length, channel);
     aeron_channel_endpoint_status_key_layout_t layout =
         {
             .channel_length = channel_length
@@ -224,7 +224,7 @@ int32_t aeron_channel_endpoint_status_allocate(
 
 int32_t aeron_counter_send_channel_status_allocate(
     aeron_counters_manager_t *counters_manager,
-    int32_t channel_length,
+    size_t channel_length,
     const char *channel)
 {
     return aeron_channel_endpoint_status_allocate(
@@ -237,7 +237,7 @@ int32_t aeron_counter_send_channel_status_allocate(
 
 int32_t aeron_counter_receive_channel_status_allocate(
     aeron_counters_manager_t *counters_manager,
-    int32_t channel_length,
+    size_t channel_length,
     const char *channel)
 {
     return aeron_channel_endpoint_status_allocate(
@@ -281,7 +281,7 @@ int32_t aeron_counter_publisher_position_allocate(
     int64_t registration_id,
     int32_t session_id,
     int32_t stream_id,
-    int32_t channel_length,
+    size_t channel_length,
     const char *channel)
 {
     return aeron_stream_counter_allocate(
@@ -301,7 +301,7 @@ int32_t aeron_counter_sender_bpe_allocate(
     int64_t registration_id,
     int32_t session_id,
     int32_t stream_id,
-    int32_t channel_length,
+    size_t channel_length,
     const char *channel)
 {
     return aeron_stream_counter_allocate(

@@ -493,7 +493,7 @@ void aeron_driver_conductor_cleanup_spies(aeron_driver_conductor_t *conductor, a
                 link->registration_id,
                 link->stream_id,
                 link->channel,
-                (size_t)link->channel_length);
+                link->channel_length);
         }
 
         aeron_driver_conductor_unlink_subscribable(link, &publication->conductor_fields.subscribable);
@@ -614,7 +614,7 @@ void aeron_driver_conductor_image_transition_to_linger(
                     link->registration_id,
                     image->stream_id,
                     link->channel,
-                    (size_t)link->channel_length);
+                    link->channel_length);
             }
         }
 
@@ -662,7 +662,7 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
     aeron_uri_publication_params_t *params,
     int64_t registration_id,
     int32_t stream_id,
-    int32_t channel_length,
+    size_t channel_length,
     const char *channel,
     bool is_exclusive)
 {
@@ -771,7 +771,7 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
     aeron_driver_conductor_t *conductor,
     aeron_client_t *client,
     aeron_send_channel_endpoint_t *endpoint,
-    int32_t uri_length,
+    size_t uri_length,
     const char *uri,
     aeron_uri_publication_params_t *params,
     int64_t registration_id,
@@ -969,7 +969,7 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
         }
 
         status_indicator.counter_id = aeron_counter_send_channel_status_allocate(
-            &conductor->counters_manager, (int32_t)channel->uri_length, channel->original_uri);
+            &conductor->counters_manager, channel->uri_length, channel->original_uri);
 
         status_indicator.value_addr = aeron_counter_addr(&conductor->counters_manager, status_indicator.counter_id);
 
@@ -1017,7 +1017,7 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
         }
 
         status_indicator.counter_id = aeron_counter_receive_channel_status_allocate(
-            &conductor->counters_manager, (int32_t)channel->uri_length, channel->original_uri);
+            &conductor->counters_manager, channel->uri_length, channel->original_uri);
 
         status_indicator.value_addr = aeron_counter_addr(&conductor->counters_manager, status_indicator.counter_id);
 
@@ -1729,11 +1729,11 @@ int aeron_driver_conductor_on_add_ipc_publication(
     aeron_client_t *client = NULL;
     aeron_ipc_publication_t *publication = NULL;
     const char *uri = (const char *)command + sizeof(aeron_publication_command_t);
-    int32_t uri_length = command->channel_length;
+    size_t uri_length = command->channel_length;
     aeron_uri_t aeron_uri_params;
     aeron_uri_publication_params_t params;
 
-    if (aeron_uri_parse((size_t)uri_length, uri, &aeron_uri_params) < 0 ||
+    if (aeron_uri_parse(uri_length, uri, &aeron_uri_params) < 0 ||
         aeron_uri_publication_params(&aeron_uri_params, &params, conductor->context, is_exclusive) < 0)
     {
         goto error_cleanup;
@@ -1805,7 +1805,7 @@ int aeron_driver_conductor_on_add_network_publication(
     aeron_send_channel_endpoint_t *endpoint = NULL;
     aeron_network_publication_t *publication = NULL;
     const char *uri = (const char *)command + sizeof(aeron_publication_command_t);
-    size_t uri_length = (size_t)command->channel_length;
+    size_t uri_length = command->channel_length;
     aeron_uri_publication_params_t params;
 
     if (aeron_udp_channel_parse(uri_length, uri, &udp_channel) < 0 ||
@@ -1834,7 +1834,7 @@ int aeron_driver_conductor_on_add_network_publication(
         conductor,
         client,
         endpoint,
-        (int32_t)uri_length,
+        uri_length,
         uri,
         &params,
         correlation_id,
@@ -1941,7 +1941,7 @@ int aeron_driver_conductor_on_add_ipc_subscription(
     const char *uri = (const char *)command + sizeof(aeron_subscription_command_t);
     aeron_uri_t aeron_uri_params;
     aeron_uri_subscription_params_t params;
-    size_t uri_length = (size_t)command->channel_length;
+    size_t uri_length = command->channel_length;
 
     if (aeron_uri_parse(uri_length, uri, &aeron_uri_params) < 0 ||
         aeron_uri_subscription_params(&aeron_uri_params, &params, conductor->context) < 0)
@@ -2097,7 +2097,7 @@ int aeron_driver_conductor_on_add_network_subscription(
 {
     aeron_udp_channel_t *udp_channel = NULL;
     aeron_receive_channel_endpoint_t *endpoint = NULL;
-    size_t uri_length = (size_t)command->channel_length;
+    size_t uri_length = command->channel_length;
     const char *uri = (const char *)command + sizeof(aeron_subscription_command_t);
     aeron_uri_subscription_params_t params;
     
@@ -2314,7 +2314,7 @@ int aeron_driver_conductor_on_add_destination(aeron_driver_conductor_t *conducto
 
     if (NULL != endpoint)
     {
-        size_t uri_length = (size_t)command->channel_length;
+        size_t uri_length = command->channel_length;
         const char *command_uri = (const char *)command + sizeof(aeron_destination_command_t);
         aeron_uri_t uri_params;
         if (aeron_uri_parse(uri_length, command_uri, &uri_params) < 0)
@@ -2388,7 +2388,7 @@ int aeron_driver_conductor_on_remove_destination(
     {
         aeron_uri_t uri_params;
         const char *command_uri = (const char *)command + sizeof(aeron_destination_command_t);
-        size_t uri_length = (size_t)command->channel_length;
+        size_t uri_length = command->channel_length;
         if (aeron_uri_parse(uri_length, command_uri, &uri_params) < 0)
         {
             goto error_cleanup;
@@ -2592,7 +2592,7 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
         command->initial_term_id);
 
     const char *uri = endpoint->conductor_fields.udp_channel->original_uri;
-    int32_t uri_length = (int32_t)endpoint->conductor_fields.udp_channel->uri_length;
+    size_t uri_length = endpoint->conductor_fields.udp_channel->uri_length;
 
     aeron_congestion_control_strategy_t *congestion_control = NULL;
     if (conductor->context->congestion_control_supplier_func(
@@ -2772,7 +2772,7 @@ extern aeron_publication_image_t *aeron_driver_conductor_find_publication_image(
     aeron_driver_conductor_t *conductor, aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
 
 extern void aeron_driver_init_subscription_channel(
-    int32_t uri_length, const char *uri, aeron_subscription_link_t *link);
+    size_t uri_length, const char *uri, aeron_subscription_link_t *link);
 
 extern void aeron_driver_conductor_on_available_image(
     aeron_driver_conductor_t *conductor,

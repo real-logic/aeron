@@ -702,10 +702,10 @@ inline aeron_publication_image_t * aeron_driver_conductor_find_publication_image
 }
 
 inline void aeron_driver_init_subscription_channel(
-    int32_t uri_length, const char *uri, aeron_subscription_link_t *link)
+    size_t uri_length, const char *uri, aeron_subscription_link_t *link)
 {
     size_t copy_length = sizeof(link->channel) - 1;
-    copy_length = (size_t)uri_length < copy_length ? (size_t)uri_length : copy_length;
+    copy_length = uri_length < copy_length ? uri_length : copy_length;
 
     strncpy(link->channel, uri, copy_length);
     link->channel[copy_length] = '\0';

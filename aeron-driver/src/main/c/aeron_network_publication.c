@@ -217,7 +217,7 @@ int aeron_network_publication_create(
     _pub->has_spies = false;
     _pub->is_connected = false;
     _pub->is_end_of_stream = false;
-    _pub->track_sender_limits = true;
+    _pub->track_sender_limits = false;
     _pub->has_sender_released = false;
 
     _pub->short_sends_counter = aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_SHORT_SENDS);

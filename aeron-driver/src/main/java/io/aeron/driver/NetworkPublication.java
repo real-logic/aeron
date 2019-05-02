@@ -246,6 +246,7 @@ public class NetworkPublication
         publisherLimit.close();
         senderPosition.close();
         senderLimit.close();
+        senderBpe.close();
         for (final ReadablePosition position : spyPositions)
         {
             position.close();

@@ -1034,8 +1034,6 @@ public class DriverConductor implements Agent
             tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
         final UnsafeBufferPosition senderLimit = SenderLimit.allocate(
             tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
-        final AtomicCounter senderBpe = SenderBpe.allocate(
-            tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
 
         if (params.isReplay)
         {
@@ -1068,7 +1066,7 @@ public class DriverConductor implements Agent
             publisherLimit,
             senderPosition,
             senderLimit,
-            senderBpe,
+            SenderBpe.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, channel),
             sessionId,
             streamId,
             initialTermId,

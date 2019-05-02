@@ -369,7 +369,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
             return;
         }
 
-        final long untetheredWindowLimit = (consumerPosition - termWindowLength) + (termWindowLength >> 4);
+        final long untetheredWindowLimit = (consumerPosition - termWindowLength) + (termWindowLength >> 3);
 
         for (int lastIndex = untetheredSubscriptionsSize - 1, i = lastIndex; i >= 0; i--)
         {

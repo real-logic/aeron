@@ -74,7 +74,7 @@ class NetworkPublicationSenderFields extends NetworkPublicationPadding2
     protected long timeOfLastSendOrHeartbeatNs;
     protected long timeOfLastSetupNs;
     protected long statusMessageDeadlineNs;
-    protected boolean trackSenderLimits = true;
+    protected boolean trackSenderLimits = false;
     protected boolean shouldSendSetupFrame = true;
 }
 

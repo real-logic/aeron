@@ -76,17 +76,15 @@ int aeron_driver_receiver_init(
     receiver->error_log = error_log;
 
     receiver->receiver_proxy.command_queue = &context->receiver_command_queue;
-    receiver->receiver_proxy.fail_counter =
-        aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_RECEIVER_PROXY_FAILS);
+    receiver->receiver_proxy.fail_counter = aeron_system_counter_addr(
+        system_counters, AERON_SYSTEM_COUNTER_RECEIVER_PROXY_FAILS);
     receiver->receiver_proxy.threading_mode = context->threading_mode;
     receiver->receiver_proxy.receiver = receiver;
 
-    receiver->errors_counter =
-        aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_ERRORS);
-    receiver->invalid_frames_counter =
-        aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_INVALID_PACKETS);
-    receiver->total_bytes_received_counter =
-        aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_BYTES_RECEIVED);
+    receiver->errors_counter = aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_ERRORS);
+    receiver->invalid_frames_counter = aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_INVALID_PACKETS);
+    receiver->total_bytes_received_counter =  aeron_system_counter_addr(
+        system_counters, AERON_SYSTEM_COUNTER_BYTES_RECEIVED);
 
     return 0;
 }
@@ -105,9 +103,8 @@ int aeron_driver_receiver_do_work(void *clientd)
     int64_t bytes_received = 0;
     int work_count = 0;
 
-    work_count +=
-        aeron_spsc_concurrent_array_queue_drain(
-            receiver->receiver_proxy.command_queue, aeron_driver_receiver_on_command, receiver, 10);
+    work_count += aeron_spsc_concurrent_array_queue_drain(
+        receiver->receiver_proxy.command_queue, aeron_driver_receiver_on_command, receiver, 10);
 
     for (size_t i = 0; i < AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS; i++)
     {
@@ -189,8 +186,8 @@ int aeron_driver_receiver_do_work(void *clientd)
                 aeron_array_fast_unordered_remove(
                     (uint8_t *) receiver->pending_setups.array,
                     sizeof(aeron_driver_receiver_pending_setup_entry_t),
-                    (size_t) i,
-                    (size_t) last_index);
+                    (size_t)i,
+                    (size_t)last_index);
                 last_index--;
                 receiver->pending_setups.length--;
             }
@@ -287,8 +284,8 @@ void aeron_driver_receiver_on_remove_endpoint(void *clientd, void *command)
             aeron_array_fast_unordered_remove(
                 (uint8_t *) receiver->pending_setups.array,
                 sizeof(aeron_driver_receiver_pending_setup_entry_t),
-                (size_t) i,
-                (size_t) last_index);
+                (size_t)i,
+                (size_t)last_index);
             last_index--;
             receiver->pending_setups.length--;
         }

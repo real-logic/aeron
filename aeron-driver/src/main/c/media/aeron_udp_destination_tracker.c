@@ -57,7 +57,9 @@ int aeron_udp_destination_tracker_close(aeron_udp_destination_tracker_t *tracker
 }
 
 int aeron_udp_destination_tracker_sendmmsg(
-    aeron_udp_destination_tracker_t *tracker, aeron_udp_channel_transport_t *transport, struct mmsghdr *mmsghdr, size_t vlen)
+    aeron_udp_destination_tracker_t *tracker,
+    aeron_udp_channel_transport_t *transport,
+    struct mmsghdr *mmsghdr, size_t vlen)
 {
     int64_t now_ns = tracker->nano_clock();
     int min_msgs_sent = (int)vlen;
@@ -225,9 +227,9 @@ int aeron_udp_destination_tracker_remove_destination(
             aeron_array_fast_unordered_remove(
                 (uint8_t *) tracker->destinations.array,
                 sizeof(aeron_udp_destination_entry_t),
-                (size_t) i,
-                (size_t) last_index);
-            last_index--;
+                (size_t)i,
+                (size_t)last_index);
+
             tracker->destinations.length--;
             break;
         }

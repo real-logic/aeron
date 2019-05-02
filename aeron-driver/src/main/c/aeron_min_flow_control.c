@@ -77,8 +77,8 @@ int64_t aeron_min_flow_control_strategy_on_idle(
             aeron_array_fast_unordered_remove(
                 (uint8_t *) strategy_state->receivers.array,
                 sizeof(aeron_min_flow_control_strategy_receiver_t),
-                (size_t) i,
-                (size_t) last_index);
+                (size_t)i,
+                (size_t)last_index);
             last_index--;
             strategy_state->receivers.length--;
         }

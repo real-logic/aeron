@@ -62,12 +62,12 @@ typedef struct aeron_uri_publication_params_stct
     bool is_replay;
     bool is_sparse;
     bool signal_eos;
-    size_t term_length;
     size_t mtu_length;
+    size_t term_length;
+    size_t term_offset;
+    int32_t initial_term_id;
+    int32_t term_id;
     uint64_t linger_timeout_ns;
-    int64_t initial_term_id;
-    int64_t term_id;
-    uint64_t term_offset;
 }
 aeron_uri_publication_params_t;
 

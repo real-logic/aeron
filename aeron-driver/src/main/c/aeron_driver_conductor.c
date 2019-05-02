@@ -697,8 +697,7 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
             if (ensure_capacity_result >= 0)
             {
                 int32_t session_id = conductor->next_session_id++;
-                int32_t initial_term_id = params->is_replay ?
-                    (int32_t)params->initial_term_id : aeron_randomised_int32();
+                int32_t initial_term_id = params->is_replay ? params->initial_term_id : aeron_randomised_int32();
                 aeron_position_t pub_pos_position;
                 aeron_position_t pub_lmt_position;
 
@@ -719,9 +718,9 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
                 if (params->is_replay)
                 {
                     int64_t position = aeron_logbuffer_compute_position(
-                        (int32_t)params->term_id,
-                        (int32_t)params->term_offset,
-                        (size_t)aeron_number_of_trailing_zeroes((int32_t)params->term_length),
+                        params->term_id,
+                        params->term_offset,
+                        (size_t)aeron_number_of_trailing_zeroes(params->term_length),
                         initial_term_id);
 
                     aeron_counter_set_ordered(pub_pos_position.value_addr, position);
@@ -812,8 +811,7 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
             if (ensure_capacity_result >= 0)
             {
                 int32_t session_id = conductor->next_session_id++;
-                int32_t initial_term_id = params->is_replay ?
-                    (int32_t)params->initial_term_id : aeron_randomised_int32();
+                int32_t initial_term_id = params->is_replay ? params->initial_term_id : aeron_randomised_int32();
 
                 aeron_position_t pub_pos_position;
                 aeron_position_t pub_lmt_position;
@@ -853,9 +851,9 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                 if (params->is_replay)
                 {
                     int64_t position = aeron_logbuffer_compute_position(
-                        (int32_t)params->term_id,
-                        (int32_t)params->term_offset,
-                        (size_t)aeron_number_of_trailing_zeroes((int32_t)params->term_length),
+                        params->term_id,
+                        params->term_offset,
+                        (size_t)aeron_number_of_trailing_zeroes(params->term_length),
                         initial_term_id);
 
                     aeron_counter_set_ordered(pub_pos_position.value_addr, position);

@@ -23,7 +23,7 @@ plugins {
     id 'java'
     id 'com.gradle.build-scan' version '2.2.1'
     id 'com.github.johnrengelman.shadow' version '5.0.0' apply false
-    id "io.freefair.javadoc-links" version "3.2.0" apply false
+    id "io.freefair.javadoc-links" version "3.2.1" apply false
 }
 
 buildScan {

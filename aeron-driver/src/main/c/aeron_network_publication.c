@@ -200,7 +200,8 @@ int aeron_network_publication_create(
     _pub->term_length_mask = (int32_t)params->term_length - 1;
     _pub->position_bits_to_shift = (size_t)aeron_number_of_trailing_zeroes((int32_t)params->term_length);
     _pub->mtu_length = params->mtu_length;
-    _pub->term_window_length = (int64_t)aeron_network_publication_term_window_length(context, params->term_length);
+    _pub->term_window_length = (int64_t)aeron_producer_window_length(
+        context->publication_window_length, params->term_length);
     _pub->linger_timeout_ns = (int64_t)params->linger_timeout_ns;
     _pub->unblock_timeout_ns = (int64_t)context->publication_unblock_timeout_ns;
     _pub->connection_timeout_ns = (int64_t)context->publication_connection_timeout_ns;
@@ -818,7 +819,7 @@ void aeron_network_publication_check_untethered_subscriptions(
 {
     const int64_t sender_position = aeron_counter_get_volatile(publication->snd_pos_position.value_addr);
     int64_t term_window_length = publication->term_window_length;
-    int64_t untethered_window_limit = (sender_position - term_window_length) + (term_window_length / 16);
+    int64_t untethered_window_limit = (sender_position - term_window_length) + (term_window_length / 8);
 
     for (size_t i = 0, length = publication->conductor_fields.subscribable.length; i < length; i++)
     {

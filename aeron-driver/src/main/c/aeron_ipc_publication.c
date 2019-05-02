@@ -154,7 +154,8 @@ int aeron_ipc_publication_create(
     _pub->pub_pos_position.value_addr = pub_pos_position->value_addr;
     _pub->initial_term_id = initial_term_id;
     _pub->position_bits_to_shift = (size_t)aeron_number_of_trailing_zeroes((int32_t)params->term_length);
-    _pub->term_window_length = (int64_t)aeron_ipc_publication_term_window_length(context, params->term_length);
+    _pub->term_window_length = (int64_t)aeron_producer_window_length(
+        context->ipc_publication_window_length, params->term_length);
     _pub->trip_gain = _pub->term_window_length / 8;
     _pub->image_liveness_timeout_ns = (int64_t)context->image_liveness_timeout_ns;
     _pub->unblock_timeout_ns = (int64_t)context->publication_unblock_timeout_ns;
@@ -257,7 +258,7 @@ void aeron_ipc_publication_check_untethered_subscriptions(
 {
     int64_t consumer_position = publication->conductor_fields.consumer_position;
     int64_t term_window_length = publication->term_window_length;
-    int64_t untethered_window_limit = (consumer_position - term_window_length) + (term_window_length / 16);
+    int64_t untethered_window_limit = (consumer_position - term_window_length) + (term_window_length / 8);
 
     for (size_t i = 0, length = publication->conductor_fields.subscribable.length; i < length; i++)
     {

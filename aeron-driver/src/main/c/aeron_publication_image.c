@@ -536,7 +536,7 @@ void aeron_publication_image_check_untethered_subscriptions(
     }
 
     int64_t window_length = image->next_sm_receiver_window_length;
-    int64_t untethered_window_limit = (max_sub_pos - window_length) + (window_length / 16);
+    int64_t untethered_window_limit = (max_sub_pos - window_length) + (window_length / 8);
 
     for (size_t i = 0, length = image->conductor_fields.subscribable.length; i < length; i++)
     {

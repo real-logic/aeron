@@ -241,30 +241,16 @@ inline size_t aeron_cnc_computed_length(size_t total_length_of_buffers, size_t a
     return AERON_ALIGN(AERON_CNC_VERSION_AND_META_DATA_LENGTH + total_length_of_buffers, alignment);
 }
 
-inline size_t aeron_ipc_publication_term_window_length(aeron_driver_context_t *context, size_t term_length)
+inline size_t aeron_producer_window_length(size_t producer_window_length, size_t term_length)
 {
-    size_t publication_term_window_length = term_length;
+    size_t window_length = term_length / 2;
 
-    if (0 != context->ipc_publication_window_length)
+    if (0 != producer_window_length && producer_window_length < window_length)
     {
-        publication_term_window_length = publication_term_window_length < context->ipc_publication_window_length ?
-            publication_term_window_length : context->ipc_publication_window_length;
+        window_length = producer_window_length;
     }
 
-    return publication_term_window_length;
-}
-
-inline size_t aeron_network_publication_term_window_length(aeron_driver_context_t *context, size_t term_length)
-{
-    size_t publication_term_window_length = term_length / 2;
-
-    if (0 != context->publication_window_length)
-    {
-        publication_term_window_length = publication_term_window_length < context->publication_window_length ?
-            publication_term_window_length : context->publication_window_length;
-    }
-
-    return publication_term_window_length;
+    return window_length;
 }
 
 #endif //AERON_DRIVER_CONTEXT_H

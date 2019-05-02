@@ -997,9 +997,8 @@ extern uint8_t *aeron_cnc_error_log_buffer(aeron_cnc_metadata_t *metadata);
 
 extern size_t aeron_cnc_computed_length(size_t total_length_of_buffers, size_t alignment);
 
-extern size_t aeron_ipc_publication_term_window_length(aeron_driver_context_t *context, size_t term_length);
+extern size_t aeron_producer_window_length(size_t producer_window_length, size_t term_length);
 
-extern size_t aeron_network_publication_term_window_length(aeron_driver_context_t *context, size_t term_length);
 
 #define AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(r, a) \
 do \

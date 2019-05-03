@@ -43,8 +43,7 @@ typedef int32_t (*aeron_congestion_control_strategy_on_track_rebuild_func_t)(
 
 typedef int32_t (*aeron_congestion_control_strategy_initial_window_length_func_t)(void *state);
 
-typedef int (*aeron_congestion_control_strategy_fini_func_t)(
-    aeron_congestion_control_strategy_t *strategy);
+typedef int (*aeron_congestion_control_strategy_fini_func_t)(aeron_congestion_control_strategy_t *strategy);
 
 typedef struct aeron_congestion_control_strategy_stct
 {

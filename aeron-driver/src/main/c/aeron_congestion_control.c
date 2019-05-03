@@ -37,7 +37,9 @@ aeron_congestion_control_strategy_supplier_func_t aeron_congestion_control_strat
 #pragma GCC diagnostic ignored "-Wpedantic"
     if ((func = (aeron_congestion_control_strategy_supplier_func_t)aeron_dlsym(RTLD_DEFAULT, strategy_name)) == NULL)
     {
-        aeron_set_err(EINVAL, "could not find congestion control strategy %s: dlsym - %s", strategy_name, aeron_dlerror());
+        aeron_set_err(
+            EINVAL, "could not find congestion control strategy %s: dlsym - %s", strategy_name, aeron_dlerror());
+
         return NULL;
     }
 #pragma GCC diagnostic pop
@@ -73,6 +75,7 @@ int32_t aeron_static_window_congestion_control_strategy_on_track_rebuild(
     bool loss_occurred)
 {
     *should_force_sm = false;
+
     return ((aeron_static_window_congestion_control_strategy_state_t *)state)->window_length;
 }
 
@@ -85,12 +88,13 @@ int aeron_static_window_congestion_control_strategy_fini(aeron_congestion_contro
 {
     aeron_free(strategy->state);
     aeron_free(strategy);
+
     return 0;
 }
 
 int aeron_static_window_congestion_control_strategy_supplier(
     aeron_congestion_control_strategy_t **strategy,
-    int32_t channel_length,
+    size_t channel_length,
     const char *channel,
     int32_t stream_id,
     int32_t session_id,
@@ -121,5 +125,6 @@ int aeron_static_window_congestion_control_strategy_supplier(
     state->window_length = max_window_for_term < initial_window_length ? max_window_for_term : initial_window_length;
 
     *strategy = _strategy;
+
     return 0;
 }

@@ -47,7 +47,7 @@ const char *aeron_dlinfo(const void *addr, char *buffer, size_t max_buffer_lengt
 #ifdef AERON_DRIVER
 int aeron_max_multicast_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
-    int32_t channel_length,
+    size_t channel_length,
     const char *channel,
     int32_t stream_id,
     int64_t registration_id,
@@ -56,7 +56,7 @@ int aeron_max_multicast_flow_control_strategy_supplier(
 
 int aeron_unicast_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
-    int32_t channel_length,
+    size_t channel_length,
     const char *channel,
     int32_t stream_id,
     int64_t registration_id,
@@ -65,7 +65,7 @@ int aeron_unicast_flow_control_strategy_supplier(
 
 int aeron_static_window_congestion_control_strategy_supplier(
     aeron_congestion_control_strategy_t **strategy,
-    int32_t channel_length,
+    size_t channel_length,
     const char *channel,
     int32_t stream_id,
     int32_t session_id,

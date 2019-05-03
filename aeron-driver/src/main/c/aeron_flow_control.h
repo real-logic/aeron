@@ -40,12 +40,9 @@ typedef int64_t (*aeron_flow_control_strategy_on_sm_func_t)(
     size_t position_bits_to_shift,
     int64_t now_ns);
 
-typedef bool (*aeron_flow_control_strategy_should_linger_func_t)(
-    void *state,
-    int64_t now_ns);
+typedef bool (*aeron_flow_control_strategy_should_linger_func_t)(void *state, int64_t now_ns);
 
-typedef int (*aeron_flow_control_strategy_fini_func_t)(
-    aeron_flow_control_strategy_t *strategy);
+typedef int (*aeron_flow_control_strategy_fini_func_t)(aeron_flow_control_strategy_t *strategy);
 
 typedef struct aeron_flow_control_strategy_stct
 {

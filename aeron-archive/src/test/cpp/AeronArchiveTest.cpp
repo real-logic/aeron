@@ -103,7 +103,6 @@ public:
             }
         }
 
-        m_stream << "Java " << JAVA_MAJOR_VERSION << "." << JAVA_MINOR_VERSION << std::endl;
         m_stream << "ArchivingMediaDriver PID " << std::to_string(m_pid) << std::endl;
     }
 
@@ -230,6 +229,7 @@ protected:
 
 TEST_F(AeronArchiveTest, shouldSpinUpArchiveAndShutdown)
 {
+    m_stream << "Java " << JAVA_MAJOR_VERSION << "." << JAVA_MINOR_VERSION << std::endl;
     m_stream << m_java << std::endl;
     m_stream << m_aeronAllJar << std::endl;
     m_stream << m_archiveDir << std::endl;

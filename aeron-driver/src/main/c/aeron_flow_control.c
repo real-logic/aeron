@@ -122,7 +122,7 @@ int aeron_max_multicast_flow_control_strategy_supplier(
     int32_t stream_id,
     int64_t registration_id,
     int32_t initial_term_id,
-    size_t term_buffer_capacity)
+    size_t term_length)
 {
     aeron_flow_control_strategy_t *_strategy;
 
@@ -154,8 +154,8 @@ int aeron_unicast_flow_control_strategy_supplier(
     int32_t stream_id,
     int64_t registration_id,
     int32_t initial_term_id,
-    size_t term_buffer_capacity)
+    size_t term_length)
 {
     return aeron_max_multicast_flow_control_strategy_supplier(
-        strategy, channel_length, channel, stream_id, registration_id, initial_term_id, term_buffer_capacity);
+        strategy, channel_length, channel, stream_id, registration_id, initial_term_id, term_length);
 }

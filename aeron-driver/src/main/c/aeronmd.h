@@ -249,7 +249,7 @@ typedef int (*aeron_flow_control_strategy_supplier_func_t)(
     int32_t stream_id,
     int64_t registration_id,
     int32_t initial_term_id,
-    size_t term_buffer_capacity);
+    size_t term_length);
 
 /**
  * Supplier for flow control structure to be employed for multicast channels.

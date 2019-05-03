@@ -73,11 +73,11 @@ public:
         {
             if (::execl(m_java.c_str(),
                 "java",
-#if JAVA_MINOR_VERSION >= 9
+#if JAVA_MAJOR_VERSION >= 9
                 "--add-opens",
                 "java.base/java.lang.reflect=ALL-UNNAMED",
                 "--add-opens",
-                "java.base/java.net=ALL-UNNAMED"
+                "java.base/java.net=ALL-UNNAMED",
                 "--add-opens",
                 "java.base/sun.nio.ch=ALL-UNNAMED",
 #endif

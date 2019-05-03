@@ -73,6 +73,14 @@ public:
         {
             if (::execl(m_java.c_str(),
                 "java",
+#if JAVA_MINOR_VERSION >= 9
+                "--add-opens",
+                "java.base/java.lang.reflect=ALL-UNNAMED",
+                "--add-opens",
+                "java.base/java.net=ALL-UNNAMED"
+                "--add-opens",
+                "java.base/sun.nio.ch=ALL-UNNAMED",
+#endif
                 "-Daeron.dir.delete.on.start=true",
                 "-Daeron.archive.dir.delete.on.start=true",
                 "-Daeron.archive.max.catalog.entries=1024",
@@ -95,6 +103,7 @@ public:
             }
         }
 
+        m_stream << "Java " << JAVA_MAJOR_VERSION << "." << JAVA_MINOR_VERSION << std::endl;
         m_stream << "ArchivingMediaDriver PID " << std::to_string(m_pid) << std::endl;
     }
 
@@ -216,7 +225,7 @@ protected:
     pid_t m_pid = 0;
 
     std::ostringstream m_stream;
-    bool m_debug = false;
+    bool m_debug = true;
 };
 
 TEST_F(AeronArchiveTest, shouldSpinUpArchiveAndShutdown)

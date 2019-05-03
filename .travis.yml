@@ -14,14 +14,14 @@ matrix:
       jdk: openjdk8
       os: linux
       dist: xenial
-      script: ./gradlew
+      script: ./gradlew --scan
 
     - name: "OpenJDK 11"
       language: java
       jdk: openjdk11
       os: linux
       dist: xenial
-      script: ./gradlew
+      script: ./gradlew --scan
 
     - env: COMPILER=clang++-5.0
       language: c++

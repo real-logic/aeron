@@ -103,6 +103,11 @@ def projectPom = {
     }
 }
 
+buildScan {
+    termsOfServiceUrl = 'https://gradle.com/terms-of-service'
+    apply from: 'gradle/build-scans.gradle'
+}
+
 configurations {
     shadow
 }

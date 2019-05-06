@@ -43,7 +43,8 @@ import static org.junit.Assert.assertTrue;
 
 public class TestCluster implements AutoCloseable
 {
-    private static final long MAX_CATALOG_ENTRIES = 1024;
+    private static final int SEGMENT_FILE_LENGTH = 16 * 1024 * 1024;
+    private static final long MAX_CATALOG_ENTRIES = 128;
     private static final String LOG_CHANNEL =
         "aeron:udp?term-length=256k|control-mode=manual|control=localhost:20550";
     private static final String ARCHIVE_CONTROL_REQUEST_CHANNEL =
@@ -241,6 +242,7 @@ public class TestCluster implements AutoCloseable
 
         context.archiveContext
             .maxCatalogEntries(MAX_CATALOG_ENTRIES)
+            .segmentFileLength(SEGMENT_FILE_LENGTH)
             .aeronDirectoryName(aeronDirName)
             .archiveDir(new File(baseDirName, "archive"))
             .controlChannel(context.aeronArchiveContext.controlRequestChannel())

@@ -26,11 +26,6 @@ plugins {
     id "io.freefair.javadoc-links" version "3.2.1" apply false
 }
 
-buildScan {
-    termsOfServiceUrl = 'https://gradle.com/terms-of-service'
-    apply from: 'gradle/build-scans.gradle'
-}
-
 defaultTasks 'clean', 'build', 'shadowJar', 'install'
 
 def aeronGroup = 'io.aeron'
@@ -173,6 +168,17 @@ subprojects {
             showStandardStreams = true
             exceptionFormat = 'full'
         }
+
+        systemProperties(
+            'aeron.shared.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
+            'aeron.conductor.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
+            'aeron.sender.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
+            'aeron.receiver.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
+            'aeron.use.windows.high.res.timer': 'true',
+            'aeron.dir.warn.if.exists': 'false',
+            'aeron.dir.delete.on.start': 'true',
+            'aeron.term.buffer.sparse.file': 'true',
+            'aeron.perform.storage.checks': 'false')
     }
 
     javadoc {
@@ -256,14 +262,6 @@ project(':aeron-driver') {
     dependencies {
         compile project(':aeron-client')
         testCompile "org.mockito:mockito-inline:${mockitoVersion}"
-    }
-
-    test {
-        systemProperties('aeron.event.log': System.properties['aeron.event.log'])
-    }
-
-    run {
-        systemProperties(System.properties)
     }
 
     uploadArchives {
@@ -470,19 +468,6 @@ project(':aeron-archive') {
         args = ['src/main/resources/aeron-archive-codecs.xml']
     }
 
-    test {
-        systemProperties(
-            'aeron.shared.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
-            'aeron.conductor.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
-            'aeron.sender.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
-            'aeron.receiver.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
-            'aeron.use.windows.high.res.timer': 'true',
-            'aeron.dir.warn.if.exists': 'false',
-            'aeron.dir.delete.on.start': 'true',
-            'aeron.term.buffer.sparse.file': 'true',
-            'aeron.perform.storage.checks': 'false')
-    }
-
     jar {
         from("${buildDir}/classes/java/generated") {
             include '**/*.class'
@@ -570,19 +555,6 @@ project(':aeron-cluster') {
             'sbe.validation.stop.on.error': 'true')
         args = ['src/main/resources/aeron-cluster-codecs.xml',
                 'src/main/resources/aeron-cluster-mark-codecs.xml']
-    }
-
-    test {
-        systemProperties(
-            'aeron.shared.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
-            'aeron.conductor.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
-            'aeron.sender.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
-            'aeron.receiver.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
-            'aeron.use.windows.high.res.timer': 'true',
-            'aeron.dir.warn.if.exists': 'false',
-            'aeron.dir.delete.on.start': 'true',
-            'aeron.term.buffer.sparse.file': 'true',
-            'aeron.perform.storage.checks': 'false')
     }
 
     jar {
@@ -699,19 +671,6 @@ project(':aeron-system-tests') {
         compile project(':aeron-archive')
         testCompile project(path: ':aeron-client', configuration: 'tests')
         testCompile project(path: ':aeron-archive', configuration: 'tests')
-    }
-
-    test {
-        systemProperties(
-            'aeron.shared.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
-            'aeron.conductor.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
-            'aeron.sender.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
-            'aeron.receiver.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
-            'aeron.use.windows.high.res.timer': 'true',
-            'aeron.dir.delete.on.start': 'true',
-            'aeron.dir.warn.if.exists': 'false',
-            'aeron.term.buffer.sparse.file': 'true',
-            'aeron.perform.storage.checks': 'false')
     }
 
     uploadArchives {

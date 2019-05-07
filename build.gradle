@@ -22,11 +22,19 @@ buildscript {
 plugins {
     id 'java'
     id 'com.gradle.build-scan' version '2.3'
-    id 'com.github.johnrengelman.shadow' version '5.0.0' apply false
     id "io.freefair.javadoc-links" version "3.2.1" apply false
+    id 'com.github.johnrengelman.shadow' version '5.0.0' apply false
 }
 
 defaultTasks 'clean', 'build', 'shadowJar', 'install'
+
+def env = System.getenv()
+if (env.CI || env.TRAVIS) {
+    buildScan {
+        termsOfServiceUrl = 'https://gradle.com/terms-of-service'
+        apply from: 'gradle/build-scans.gradle'
+    }
+}
 
 def aeronGroup = 'io.aeron'
 def aeronVersion = file('version.txt').text.trim()
@@ -100,14 +108,6 @@ def projectPom = {
             email = 'nitsanw@yahoo.com'
             url = 'https://github.com/nitsanw'
         }
-    }
-}
-
-def env = System.getenv()
-if (env.CI || env.TRAVIS) {
-    buildScan {
-        termsOfServiceUrl = 'https://gradle.com/terms-of-service'
-        apply from: 'gradle/build-scans.gradle'
     }
 }
 

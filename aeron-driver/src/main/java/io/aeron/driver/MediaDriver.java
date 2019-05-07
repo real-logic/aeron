@@ -1543,7 +1543,7 @@ public final class MediaDriver implements AutoCloseable
          * @return this for a fluent API.
          * @see Configuration#SOCKET_SNDBUF_LENGTH_PROP_NAME
          */
-        Context socketSndbufLength(final int socketSndbufLength)
+        public Context socketSndbufLength(final int socketSndbufLength)
         {
             this.socketSndbufLength = socketSndbufLength;
             return this;
@@ -1567,7 +1567,7 @@ public final class MediaDriver implements AutoCloseable
          * @return this for a fluent API.
          * @see Configuration#SOCKET_RCVBUF_LENGTH_PROP_NAME
          */
-        Context socketRcvbufLength(final int socketRcvbufLength)
+        public Context socketRcvbufLength(final int socketRcvbufLength)
         {
             this.socketRcvbufLength = socketRcvbufLength;
             return this;

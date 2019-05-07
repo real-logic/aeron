@@ -103,9 +103,12 @@ def projectPom = {
     }
 }
 
-buildScan {
-    termsOfServiceUrl = 'https://gradle.com/terms-of-service'
-    apply from: 'gradle/build-scans.gradle'
+def env = System.getenv()
+if (env.CI || env.TRAVIS) {
+    buildScan {
+        termsOfServiceUrl = 'https://gradle.com/terms-of-service'
+        apply from: 'gradle/build-scans.gradle'
+    }
 }
 
 configurations {

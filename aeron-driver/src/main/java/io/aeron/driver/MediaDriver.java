@@ -753,17 +753,6 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Should the driver perform storage checks when allocating files.
-         *
-         * @return true if the driver should perform storage checks when allocating files.
-         * @see Configuration#PERFORM_STORAGE_CHECKS_PROP_NAME
-         */
-        public boolean performStorageChecks()
-        {
-            return performStorageChecks;
-        }
-
-        /**
          * Length of the {@link RingBuffer} for sending commands to the driver conductor from clients.
          *
          * @return length of the {@link RingBuffer} for sending commands to the driver conductor from clients.
@@ -857,6 +846,17 @@ public final class MediaDriver implements AutoCloseable
         {
             errorBufferLength = length;
             return this;
+        }
+
+        /**
+         * Should the driver perform storage checks when allocating files.
+         *
+         * @return true if the driver should perform storage checks when allocating files.
+         * @see Configuration#PERFORM_STORAGE_CHECKS_PROP_NAME
+         */
+        public boolean performStorageChecks()
+        {
+            return performStorageChecks;
         }
 
         /**
@@ -2556,6 +2556,16 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
+         * Get the {@link TerminationValidator} to be used to validate termination requests.
+         *
+         * @return {@link TerminationValidator} to validate termination requests.
+         */
+        public TerminationValidator terminationValidator()
+        {
+            return terminationValidator;
+        }
+
+        /**
          * Get the ratio for sending data to polling status messages in the Sender.
          *
          * @return ratio for sending data to polling status messages in the Sender.
@@ -2575,16 +2585,6 @@ public final class MediaDriver implements AutoCloseable
         {
             this.sendToStatusMessagePollRatio = ratio;
             return this;
-        }
-
-        /**
-         * Get the {@link TerminationValidator} to be used to validate termination requests.
-         *
-         * @return {@link TerminationValidator} to validate termination requests.
-         */
-        public TerminationValidator terminationValidator()
-        {
-            return terminationValidator;
         }
 
         OneToOneConcurrentArrayQueue<Runnable> receiverCommandQueue()

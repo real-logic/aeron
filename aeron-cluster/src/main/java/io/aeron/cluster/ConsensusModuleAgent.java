@@ -1696,7 +1696,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             if (0 == count && logAdapter.isImageClosed())
             {
                 ctx.countedErrorHandler().onError(new ClusterException(
-                    "lost leader connection: logPosition=" + logPosition() + " commitPosition=" + commitPosition.get() +
+                    "no leader connection: logPosition=" + logPosition() + " commitPosition=" + commitPosition.get() +
                     " leadershipTermId=" + leadershipTermId + " leaderId=" + leaderMember.id()));
                 enterElection(nowMs);
                 return 1;

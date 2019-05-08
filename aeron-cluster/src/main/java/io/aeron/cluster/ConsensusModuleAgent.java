@@ -1652,12 +1652,21 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                     }
                 }
             }
-            else if (ConsensusModule.State.ACTIVE == state &&
-                nowMs >= (timeOfLastLogUpdateMs + leaderHeartbeatTimeoutMs))
+            else if (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state)
             {
-                ctx.countedErrorHandler().onError(new ClusterException("heartbeat timeout from leader"));
-                enterElection(nowMs);
-                workCount += 1;
+                if (NULL_POSITION != terminationPosition && logAdapter.position() >= terminationPosition)
+                {
+                    serviceProxy.terminationPosition(terminationPosition);
+                    expectedAckPosition = terminationPosition;
+                    state(ConsensusModule.State.TERMINATING);
+                }
+
+                if (nowMs >= (timeOfLastLogUpdateMs + leaderHeartbeatTimeoutMs))
+                {
+                    ctx.countedErrorHandler().onError(new ClusterException("heartbeat timeout from leader"));
+                    enterElection(nowMs);
+                    workCount += 1;
+                }
             }
         }
 
@@ -1698,16 +1707,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             if (ConsensusModule.State.ACTIVE == state)
             {
                 workCount += timerService.poll(nowMs - leaderHeartbeatTimeoutMs);
-            }
-
-            if (NULL_POSITION != terminationPosition)
-            {
-                if (logAdapter.position() >= terminationPosition && ConsensusModule.State.SNAPSHOT != state)
-                {
-                    serviceProxy.terminationPosition(terminationPosition);
-                    expectedAckPosition = terminationPosition;
-                    state(ConsensusModule.State.TERMINATING);
-                }
             }
         }
 

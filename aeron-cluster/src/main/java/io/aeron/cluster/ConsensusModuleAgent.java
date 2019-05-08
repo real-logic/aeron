@@ -1623,31 +1623,41 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         workCount += processRedirectSessions(redirectSessions, nowMs);
         workCount += processRejectedSessions(rejectedSessions, nowMs);
 
-        if (Cluster.Role.LEADER == role && null == election)
+        if (null == election)
         {
-            workCount += checkControlToggle(nowMs);
-
-            if (ConsensusModule.State.ACTIVE == state)
+            if (Cluster.Role.LEADER == role)
             {
-                workCount += processPendingSessions(pendingSessions, nowMs);
-                workCount += checkSessions(sessionByIdMap, nowMs);
-                workCount += processPassiveMembers(passiveMembers);
+                workCount += checkControlToggle(nowMs);
 
-                if (!ClusterMember.hasActiveQuorum(clusterMembers, nowMs, leaderHeartbeatTimeoutMs))
+                if (ConsensusModule.State.ACTIVE == state)
                 {
-                    ctx.countedErrorHandler().onError(new ClusterException("lost connection to quorum of followers"));
-                    enterElection(nowMs);
-                    workCount += 1;
+                    workCount += processPendingSessions(pendingSessions, nowMs);
+                    workCount += checkSessions(sessionByIdMap, nowMs);
+                    workCount += processPassiveMembers(passiveMembers);
+
+                    if (!ClusterMember.hasActiveQuorum(clusterMembers, nowMs, leaderHeartbeatTimeoutMs))
+                    {
+                        ctx.countedErrorHandler().onError(new ClusterException("no active follower quorum"));
+                        enterElection(nowMs);
+                        workCount += 1;
+                    }
+                }
+                else if (ConsensusModule.State.TERMINATING == state)
+                {
+                    if (clusterTermination.canTerminate(clusterMembers, terminationPosition, cachedTimeMs))
+                    {
+                        recordingLog.commitLogPosition(leadershipTermId, terminationPosition);
+                        state(ConsensusModule.State.CLOSED);
+                        ctx.terminationHook().run();
+                    }
                 }
             }
-            else if (ConsensusModule.State.TERMINATING == state)
+            else if (ConsensusModule.State.ACTIVE == state &&
+                nowMs >= (timeOfLastLogUpdateMs + leaderHeartbeatTimeoutMs))
             {
-                if (clusterTermination.canTerminate(clusterMembers, terminationPosition, cachedTimeMs))
-                {
-                    recordingLog.commitLogPosition(leadershipTermId, terminationPosition);
-                    state(ConsensusModule.State.CLOSED);
-                    ctx.terminationHook().run();
-                }
+                ctx.countedErrorHandler().onError(new ClusterException("heartbeat timeout from leader"));
+                enterElection(nowMs);
+                workCount += 1;
             }
         }
 
@@ -2232,13 +2242,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             }
 
             commitPosition.proposeMaxOrdered(Math.min(logAdapter.position(), appendedPosition));
-
-            if (nowMs >= (timeOfLastLogUpdateMs + leaderHeartbeatTimeoutMs))
-            {
-                ctx.countedErrorHandler().onError(new ClusterException("heartbeat timeout from leader"));
-                enterElection(nowMs);
-                workCount += 1;
-            }
         }
 
         return workCount;

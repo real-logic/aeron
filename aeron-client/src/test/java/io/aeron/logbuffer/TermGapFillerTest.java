@@ -26,7 +26,7 @@ import static io.aeron.logbuffer.FrameDescriptor.PADDING_FRAME_TYPE;
 import static io.aeron.logbuffer.FrameDescriptor.UNFRAGMENTED;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
-import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 
 public class TermGapFillerTest

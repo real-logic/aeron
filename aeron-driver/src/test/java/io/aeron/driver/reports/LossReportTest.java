@@ -24,7 +24,7 @@ import java.nio.ByteBuffer;
 
 import static io.aeron.driver.reports.LossReport.*;
 import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 

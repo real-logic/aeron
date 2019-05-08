@@ -142,9 +142,9 @@ subprojects {
 
         compile "org.agrona:agrona:${agronaVersion}"
 
-        testCompile 'junit:junit:4.12'
+        testCompile 'org.hamcrest:hamcrest-library:2.1'
         testCompile "org.mockito:mockito-core:${mockitoVersion}"
-        testCompile 'org.hamcrest:hamcrest-library:1.3'
+        testCompile 'junit:junit:4.12'
     }
 
     checkstyle {

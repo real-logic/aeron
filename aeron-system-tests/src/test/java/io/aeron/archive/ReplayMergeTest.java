@@ -36,7 +36,7 @@ import java.io.File;
 
 import static io.aeron.archive.codecs.SourceLocation.REMOTE;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
-import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 
 public class ReplayMergeTest

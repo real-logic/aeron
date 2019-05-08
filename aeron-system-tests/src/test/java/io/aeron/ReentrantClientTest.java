@@ -23,7 +23,7 @@ import org.agrona.collections.MutableReference;
 import org.junit.After;
 import org.junit.Test;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
 

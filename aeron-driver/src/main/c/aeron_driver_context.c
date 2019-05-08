@@ -255,7 +255,7 @@ static void aeron_driver_conductor_to_client_interceptor_null(
 
 #define AERON_DIR_WARN_IF_EXISTS_DEFAULT true
 #define AERON_THREADING_MODE_DEFAULT AERON_THREADING_MODE_DEDICATED
-#define AERON_DIR_DELKETE_ON_START_DEFAULT true
+#define AERON_DIR_DELETE_ON_START_DEFAULT true
 #define AERON_TO_CONDUCTOR_BUFFER_LENGTH_DEFAULT (1024 * 1024 + AERON_RB_TRAILER_LENGTH)
 #define AERON_TO_CLIENTS_BUFFER_LENGTH_DEFAULT (1024 * 1024 + AERON_BROADCAST_BUFFER_TRAILER_LENGTH)
 #define AERON_COUNTERS_VALUES_BUFFER_LENGTH_DEFAULT (1024 * 1024)
@@ -374,7 +374,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
 
     _context->threading_mode = aeron_config_parse_threading_mode(
         getenv(AERON_THREADING_MODE_ENV_VAR), AERON_THREADING_MODE_DEFAULT);
-    _context->dirs_delete_on_start = AERON_DIR_DELKETE_ON_START_DEFAULT;
+    _context->dirs_delete_on_start = AERON_DIR_DELETE_ON_START_DEFAULT;
     _context->warn_if_dirs_exist = AERON_DIR_WARN_IF_EXISTS_DEFAULT;
     _context->term_buffer_sparse_file = AERON_TERM_BUFFER_SPARSE_FILE_DEFAULT;
     _context->perform_storage_checks = AERON_PERFORM_STORAGE_CHECKS_DEFAULT;
@@ -1061,7 +1061,7 @@ int aeron_driver_context_set_dir_delete_on_start(aeron_driver_context_t * contex
 
 bool aeron_driver_context_get_dir_delete_on_start(aeron_driver_context_t *context)
 {
-    return NULL != context ? context->dirs_delete_on_start : AERON_DIR_DELKETE_ON_START_DEFAULT;
+    return NULL != context ? context->dirs_delete_on_start : AERON_DIR_DELETE_ON_START_DEFAULT;
 }
 
 int aeron_driver_context_set_to_conductor_buffer_length(aeron_driver_context_t *context, size_t length)

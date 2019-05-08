@@ -304,6 +304,52 @@ public final class AeronCluster implements AutoCloseable
     }
 
     /**
+     * Try to claim a range in the publication log into which a message can be written with zero copy semantics.
+     * Once the message has been written then {@link BufferClaim#commit()} should be called thus making it available.
+     * <p>
+     * On successful claim, the Cluster ingress header will be written to the start of the claimed buffer section.
+     * Clients <b>MUST</b> write into the claimed buffer region at offset {@link AeronCluster#INGRESS_HEADER_LENGTH}.
+     * <pre>{@code
+     *     final DirectBuffer srcBuffer = acquireIngressMessage();
+     *     final BufferClaim bufferClaim = new BufferClaim();
+     *
+     *     if (aeronCluster.tryClaim(srcBuffer.capacity(), bufferClaim) > 0L)
+     *     {
+     *         try
+     *         {
+     *              final MutableDirectBuffer buffer = bufferClaim.buffer();
+     *              final int offset = bufferClaim.offset();
+     *              // ensure that ingress data is written at the correct offset
+     *              buffer.putBytes(offset + AeronCluster.INGRESS_HEADER_LENGTH, srcBuffer, 0, srcBuffer.capacity());
+     *         }
+     *         finally
+     *         {
+     *             bufferClaim.commit();
+     *         }
+     *     }
+     * }</pre>
+     *
+     * @param length      of the range to claim, in bytes..
+     * @param bufferClaim to be populated if the claim succeeds.
+     * @return The new stream position,
+     * otherwise a negative error value as specified in {@link io.aeron.Publication#tryClaim(int, BufferClaim)}.
+     * @throws IllegalArgumentException if the length is greater than {@link io.aeron.Publication#maxPayloadLength()} within an MTU.
+     * @see Publication#tryClaim(int, BufferClaim)
+     * @see BufferClaim#commit()
+     * @see BufferClaim#abort()
+     */
+    public long tryClaim(final int length, final BufferClaim bufferClaim)
+    {
+        final long offset = publication.tryClaim(length + INGRESS_HEADER_LENGTH, bufferClaim);
+        if (offset > 0)
+        {
+            bufferClaim.putBytes(headerBuffer, 0, INGRESS_HEADER_LENGTH);
+            return INGRESS_HEADER_LENGTH;
+        }
+        return offset;
+    }
+
+    /**
      * Non-blocking publish of a partial buffer containing a message plus session header to a cluster.
      * <p>
      * This version of the method will set the timestamp value in the header to zero.

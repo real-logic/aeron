@@ -20,6 +20,7 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
+import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.Header;
 import io.aeron.status.ReadableCounter;
 import org.agrona.CloseHelper;
@@ -39,8 +40,6 @@ import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
 class ClusteredServiceAgent implements Agent, Cluster
 {
-    public static final int SESSION_HEADER_LENGTH =
-        MessageHeaderDecoder.ENCODED_LENGTH + SessionHeaderDecoder.BLOCK_LENGTH;
 
     private final int serviceId;
     private final AeronArchive.Context archiveCtx;
@@ -54,7 +53,7 @@ class ClusteredServiceAgent implements Agent, Cluster
     private final IdleStrategy idleStrategy;
     private final EpochClock epochClock;
     private final ClusterMarkFile markFile;
-    private final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[SESSION_HEADER_LENGTH]);
+    private final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[ClientSession.EGRESS_HEADER_LENGTH]);
     private final DirectBufferVector headerVector = new DirectBufferVector(headerBuffer, 0, headerBuffer.capacity());
     private final EgressMessageHeaderEncoder egressMessageHeaderEncoder = new EgressMessageHeaderEncoder();
 
@@ -304,6 +303,18 @@ class ClusteredServiceAgent implements Agent, Cluster
         }
 
         return publication.offer(vectors, null);
+    }
+
+    public long tryClaim(final Publication publication, final int length, final BufferClaim bufferClaim)
+    {
+        final long offset = publication.tryClaim(length + ClientSession.EGRESS_HEADER_LENGTH, bufferClaim);
+        if (offset > 0)
+        {
+            bufferClaim.putBytes(headerBuffer, 0, ClientSession.EGRESS_HEADER_LENGTH);
+            return ClientSession.EGRESS_HEADER_LENGTH;
+        }
+
+        return offset;
     }
 
     public void onJoinLog(

@@ -44,9 +44,15 @@ import static org.agrona.SystemUtil.getDurationInNanos;
 @SuppressWarnings("unused")
 public final class AeronCluster implements AutoCloseable
 {
+    /**
+     * Length of a message header for an ingress message from a client into a cluster.
+     */
     public static final int INGRESS_HEADER_LENGTH =
         MessageHeaderEncoder.ENCODED_LENGTH + IngressMessageHeaderEncoder.BLOCK_LENGTH;
 
+    /**
+     * Length of a message header for an egress message from a cluster service to a client.
+     */
     public static final int EGRESS_HEADER_LENGTH =
         MessageHeaderEncoder.ENCODED_LENGTH + EgressMessageHeaderEncoder.BLOCK_LENGTH;
 
@@ -329,11 +335,11 @@ public final class AeronCluster implements AutoCloseable
      *     }
      * }</pre>
      *
-     * @param length      of the range to claim, in bytes..
+     * @param length      of the range to claim, in bytes.
      * @param bufferClaim to be populated if the claim succeeds.
-     * @return The new stream position,
-     * otherwise a negative error value as specified in {@link io.aeron.Publication#tryClaim(int, BufferClaim)}.
-     * @throws IllegalArgumentException if the length is greater than {@link io.aeron.Publication#maxPayloadLength()} within an MTU.
+     * @return The new stream position, otherwise a negative error value as specified in
+     *         {@link io.aeron.Publication#tryClaim(int, BufferClaim)}.
+     * @throws IllegalArgumentException if the length is greater than {@link io.aeron.Publication#maxPayloadLength()}.
      * @see Publication#tryClaim(int, BufferClaim)
      * @see BufferClaim#commit()
      * @see BufferClaim#abort()
@@ -346,6 +352,7 @@ public final class AeronCluster implements AutoCloseable
             bufferClaim.putBytes(headerBuffer, 0, INGRESS_HEADER_LENGTH);
             return INGRESS_HEADER_LENGTH;
         }
+
         return offset;
     }
 

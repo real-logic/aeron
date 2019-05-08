@@ -18,7 +18,10 @@ package io.aeron.cluster.service;
 import io.aeron.Aeron;
 import io.aeron.DirectBufferVector;
 import io.aeron.Publication;
+import io.aeron.cluster.codecs.EgressMessageHeaderDecoder;
+import io.aeron.cluster.codecs.MessageHeaderDecoder;
 import io.aeron.exceptions.RegistrationException;
+import io.aeron.logbuffer.BufferClaim;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 
@@ -31,6 +34,12 @@ public class ClientSession
      * Return value to indicate egress to a session is mocked out by the cluster when in follower mode.
      */
     public static final long MOCKED_OFFER = 1;
+
+    /**
+     * Header length of an egress message from a cluster service back to a client.
+     */
+    public static final int EGRESS_HEADER_LENGTH =
+        MessageHeaderDecoder.ENCODED_LENGTH + EgressMessageHeaderDecoder.BLOCK_LENGTH;
 
     private final long id;
     private final int responseStreamId;
@@ -144,6 +153,46 @@ public class ClientSession
     public long offer(final DirectBufferVector[] vectors)
     {
         return cluster.offer(id, responsePublication, vectors);
+    }
+
+    /**
+     * Try to claim a range in the publication log into which a message can be written with zero copy semantics.
+     * Once the message has been written then {@link BufferClaim#commit()} should be called thus making it available.
+     * <p>
+     * On successful claim, the Cluster egress header will be written to the start of the claimed buffer section.
+     * Clients <b>MUST</b> write into the claimed buffer region at offset {@link ClientSession#EGRESS_HEADER_LENGTH}.
+     * <pre>{@code
+     *     final DirectBuffer srcBuffer = acquireEgressMessage();
+     *     final BufferClaim bufferClaim = new BufferClaim();
+     *
+     *     if (aeronCluster.tryClaim(srcBuffer.capacity(), bufferClaim) > 0L)
+     *     {
+     *         try
+     *         {
+     *              final MutableDirectBuffer buffer = bufferClaim.buffer();
+     *              final int offset = bufferClaim.offset();
+     *              // ensure that egress data is written at the correct offset
+     *              buffer.putBytes(offset + ClientSession.SESSION_HEADER_LENGTH, srcBuffer, 0, srcBuffer.capacity());
+     *         }
+     *         finally
+     *         {
+     *             bufferClaim.commit();
+     *         }
+     *     }
+     * }</pre>
+     *
+     * @param length      of the range to claim, in bytes.
+     * @param bufferClaim to be populated if the claim succeeds.
+     * @return The new stream position, otherwise a negative error value as specified in
+     *         {@link io.aeron.Publication#tryClaim(int, BufferClaim)}.
+     * @throws IllegalArgumentException if the length is greater than {@link io.aeron.Publication#maxPayloadLength()}.
+     * @see Publication#tryClaim(int, BufferClaim)
+     * @see BufferClaim#commit()
+     * @see BufferClaim#abort()
+     */
+    public long tryClaim(final int length, final BufferClaim bufferClaim)
+    {
+        return cluster.tryClaim(responsePublication, length, bufferClaim);
     }
 
     void connect(final Aeron aeron)

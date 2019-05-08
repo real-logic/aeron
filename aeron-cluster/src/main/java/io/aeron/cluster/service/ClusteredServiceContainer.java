@@ -483,7 +483,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         {
             if (serviceId < 0)
             {
-                throw new ConfigurationException("service id must be not be negative: " + serviceId);
+                throw new ConfigurationException("service id cannot be negative: " + serviceId);
             }
 
             if (null == threadFactory)

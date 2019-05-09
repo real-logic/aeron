@@ -23,6 +23,7 @@ import io.aeron.cluster.codecs.*;
 import io.aeron.driver.Configuration;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.Header;
+import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.status.ReadableCounter;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
@@ -55,7 +56,8 @@ class ClusteredServiceAgent implements Agent, Cluster
     private final IdleStrategy idleStrategy;
     private final EpochClock epochClock;
     private final ClusterMarkFile markFile;
-    private final UnsafeBuffer egressBuffer = new UnsafeBuffer(new byte[Configuration.MAX_UDP_PAYLOAD_LENGTH]);
+    private final UnsafeBuffer egressBuffer = new UnsafeBuffer(
+        new byte[Configuration.MAX_UDP_PAYLOAD_LENGTH - DataHeaderFlyweight.HEADER_LENGTH]);
     private final DirectBufferVector headerVector = new DirectBufferVector(egressBuffer, 0, EGRESS_HEADER_LENGTH);
     private final EgressMessageHeaderEncoder egressMessageHeaderEncoder = new EgressMessageHeaderEncoder();
 

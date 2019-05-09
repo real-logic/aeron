@@ -156,7 +156,7 @@ class ClusteredServiceAgent implements Agent, Cluster
             {
                 if (logAdapter.isDone())
                 {
-                    checkLogPosition();
+                    checkPosition(logAdapter.position(), activeLogEvent);
                     logAdapter.close();
                     logAdapter = null;
                 }
@@ -909,9 +909,8 @@ class ClusteredServiceAgent implements Agent, Cluster
         ctx.terminationHook().run();
     }
 
-    private void checkLogPosition()
+    private static void checkPosition(final long existingPosition, final ActiveLogEvent activeLogEvent)
     {
-        final long existingPosition = logAdapter.position();
         if (null != activeLogEvent && existingPosition != activeLogEvent.logPosition)
         {
             throw new ClusterException(

@@ -20,6 +20,7 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
+import io.aeron.driver.Configuration;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.Header;
 import io.aeron.status.ReadableCounter;
@@ -35,6 +36,7 @@ import java.util.Collection;
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
+import static io.aeron.cluster.service.ClientSession.EGRESS_HEADER_LENGTH;
 import static java.util.Collections.unmodifiableCollection;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
@@ -53,8 +55,8 @@ class ClusteredServiceAgent implements Agent, Cluster
     private final IdleStrategy idleStrategy;
     private final EpochClock epochClock;
     private final ClusterMarkFile markFile;
-    private final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[ClientSession.EGRESS_HEADER_LENGTH]);
-    private final DirectBufferVector headerVector = new DirectBufferVector(headerBuffer, 0, headerBuffer.capacity());
+    private final UnsafeBuffer egressBuffer = new UnsafeBuffer(new byte[Configuration.MAX_UDP_PAYLOAD_LENGTH]);
+    private final DirectBufferVector headerVector = new DirectBufferVector(egressBuffer, 0, EGRESS_HEADER_LENGTH);
     private final EgressMessageHeaderEncoder egressMessageHeaderEncoder = new EgressMessageHeaderEncoder();
 
     private long ackId = 0;
@@ -89,7 +91,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         consensusModuleProxy = new ConsensusModuleProxy(aeron.addPublication(channel, ctx.consensusModuleStreamId()));
         serviceAdapter = new ServiceAdapter(aeron.addSubscription(channel, ctx.serviceStreamId()), this);
 
-        egressMessageHeaderEncoder.wrapAndApplyHeader(headerBuffer, 0, new MessageHeaderEncoder());
+        egressMessageHeaderEncoder.wrapAndApplyHeader(egressBuffer, 0, new MessageHeaderEncoder());
     }
 
     public void onStart()
@@ -278,7 +280,7 @@ class ClusteredServiceAgent implements Agent, Cluster
             .clusterSessionId(clusterSessionId)
             .timestamp(clusterTimeMs);
 
-        return publication.offer(headerBuffer, 0, headerBuffer.capacity(), buffer, offset, length, null);
+        return publication.offer(egressBuffer, 0, EGRESS_HEADER_LENGTH, buffer, offset, length, null);
     }
 
     public long offer(final long clusterSessionId, final Publication publication, final DirectBufferVector[] vectors)
@@ -311,14 +313,25 @@ class ClusteredServiceAgent implements Agent, Cluster
         final int length,
         final BufferClaim bufferClaim)
     {
-        final long offset = publication.tryClaim(length + ClientSession.EGRESS_HEADER_LENGTH, bufferClaim);
+        if (role != Cluster.Role.LEADER)
+        {
+            bufferClaim.wrap(egressBuffer, 0, length);
+            return ClientSession.MOCKED_OFFER;
+        }
+
+        if (null == publication)
+        {
+            return Publication.NOT_CONNECTED;
+        }
+
+        final long offset = publication.tryClaim(length + EGRESS_HEADER_LENGTH, bufferClaim);
         if (offset > 0)
         {
             egressMessageHeaderEncoder
                 .clusterSessionId(clusterSessionId)
                 .timestamp(clusterTimeMs);
 
-            bufferClaim.putBytes(headerBuffer, 0, ClientSession.EGRESS_HEADER_LENGTH);
+            bufferClaim.putBytes(egressBuffer, 0, EGRESS_HEADER_LENGTH);
         }
 
         return offset;

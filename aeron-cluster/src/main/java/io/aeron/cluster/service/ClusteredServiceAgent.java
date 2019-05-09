@@ -305,13 +305,20 @@ class ClusteredServiceAgent implements Agent, Cluster
         return publication.offer(vectors, null);
     }
 
-    public long tryClaim(final Publication publication, final int length, final BufferClaim bufferClaim)
+    public long tryClaim(
+        final long clusterSessionId,
+        final Publication publication,
+        final int length,
+        final BufferClaim bufferClaim)
     {
         final long offset = publication.tryClaim(length + ClientSession.EGRESS_HEADER_LENGTH, bufferClaim);
         if (offset > 0)
         {
+            egressMessageHeaderEncoder
+                .clusterSessionId(clusterSessionId)
+                .timestamp(clusterTimeMs);
+
             bufferClaim.putBytes(headerBuffer, 0, ClientSession.EGRESS_HEADER_LENGTH);
-            return ClientSession.EGRESS_HEADER_LENGTH;
         }
 
         return offset;

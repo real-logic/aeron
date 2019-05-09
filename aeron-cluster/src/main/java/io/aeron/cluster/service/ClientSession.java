@@ -192,7 +192,7 @@ public class ClientSession
      */
     public long tryClaim(final int length, final BufferClaim bufferClaim)
     {
-        return cluster.tryClaim(responsePublication, length, bufferClaim);
+        return cluster.tryClaim(id, responsePublication, length, bufferClaim);
     }
 
     void connect(final Aeron aeron)

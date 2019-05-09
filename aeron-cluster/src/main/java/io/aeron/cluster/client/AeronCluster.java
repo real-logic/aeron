@@ -350,7 +350,6 @@ public final class AeronCluster implements AutoCloseable
         if (offset > 0)
         {
             bufferClaim.putBytes(headerBuffer, 0, INGRESS_HEADER_LENGTH);
-            return INGRESS_HEADER_LENGTH;
         }
 
         return offset;

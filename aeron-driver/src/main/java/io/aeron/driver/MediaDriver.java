@@ -401,7 +401,7 @@ public final class MediaDriver implements AutoCloseable
     }
 
     /**
-     * Configuration for the {@link MediaDriver} that can be used to override {@link Configuration}.
+     * Context for the {@link MediaDriver} that can be used to provide overrides for {@link Configuration}.
      * <p>
      * <b>Note:</b> Do not reuse instances of this {@link Context} across different {@link MediaDriver}s.
      * <p>

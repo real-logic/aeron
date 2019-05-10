@@ -449,10 +449,10 @@ public class Aeron implements AutoCloseable
     }
 
     /**
-     * This class provides configuration for the {@link Aeron} class via the {@link Aeron#connect(Aeron.Context)}
-     * method and its overloads. It gives applications some control over the interactions with the Aeron Media Driver.
-     * It can also set up error handling as well as application callbacks for image information from the
-     * Media Driver.
+     * Provides a means to override configuration for an {@link Aeron} client via the
+     * {@link Aeron#connect(Aeron.Context)} method and its overloads. It gives applications some control over
+     * the interactions with the Aeron Media Driver. It can also set up error handling as well as application
+     * callbacks for image information from the Media Driver.
      * <p>
      * A number of the properties are for testing and should not be set by end users.
      * <p>

@@ -30,9 +30,11 @@ import org.agrona.concurrent.status.UnsafeBufferPosition;
 import java.util.ArrayList;
 import java.util.concurrent.locks.Lock;
 
+import static io.aeron.Aeron.Configuration.IDLE_SLEEP_MS;
 import static io.aeron.Aeron.Configuration.IDLE_SLEEP_NS;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 /**
  * Client conductor receives responses and notifications from Media Driver and acts on them in addition to forwarding
@@ -42,6 +44,7 @@ class ClientConductor implements Agent, DriverEventsListener
 {
     private static final long NO_CORRELATION_ID = Aeron.NULL_VALUE;
 
+    private final long closeLingerDurationMs;
     private final long keepAliveIntervalNs;
     private final long driverTimeoutMs;
     private final long driverTimeoutNs;
@@ -84,6 +87,7 @@ class ClientConductor implements Agent, DriverEventsListener
         keepAliveIntervalNs = ctx.keepAliveIntervalNs();
         driverTimeoutMs = ctx.driverTimeoutMs();
         driverTimeoutNs = MILLISECONDS.toNanos(driverTimeoutMs);
+        closeLingerDurationMs = NANOSECONDS.toMillis(ctx.closeLingerDurationNs());
         interServiceTimeoutNs = ctx.interServiceTimeoutNs();
         defaultAvailableImageHandler = ctx.availableImageHandler();
         defaultUnavailableImageHandler = ctx.unavailableImageHandler();
@@ -108,7 +112,20 @@ class ClientConductor implements Agent, DriverEventsListener
             {
                 isClosed = true;
                 forceCloseResources();
-                Thread.yield();
+
+                try
+                {
+                    if (isTerminating)
+                    {
+                        Thread.sleep(IDLE_SLEEP_MS);
+                    }
+
+                    Thread.sleep(closeLingerDurationMs);
+                }
+                catch (final InterruptedException ignore)
+                {
+                    Thread.currentThread().interrupt();
+                }
 
                 for (int i = 0, size = lingeringResources.size(); i < size; i++)
                 {
@@ -832,7 +849,6 @@ class ClientConductor implements Agent, DriverEventsListener
             isTerminating = true;
 
             forceCloseResources();
-            Thread.yield();
 
             throw new ConductorServiceTimeoutException("service interval exceeded (ns): " + interServiceTimeoutNs);
         }
@@ -847,7 +863,6 @@ class ClientConductor implements Agent, DriverEventsListener
                 isTerminating = true;
 
                 forceCloseResources();
-                Thread.yield();
 
                 throw new DriverTimeoutException("MediaDriver keepalive older than (ms): " + driverTimeoutMs);
             }

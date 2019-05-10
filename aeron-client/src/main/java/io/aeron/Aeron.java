@@ -389,12 +389,23 @@ public class Aeron implements AutoCloseable
         /**
          * Default duration a resource should linger before deletion.
          */
-        public static final long RESOURCE_LINGER_DURATION_DEFAULT = TimeUnit.SECONDS.toNanos(3);
+        public static final long RESOURCE_LINGER_DURATION_DEFAULT_NS = TimeUnit.SECONDS.toNanos(3);
+
+        /**
+         * Duration to linger on close so that publishers subscribers have time to notice closed resources.
+         * This value can be set to a few seconds if the application is likely to experience CPU starvation or
+         * long GC pauses.
+         */
+        public static final String CLOSE_LINGER_DURATION_PROP_NAME = "aeron.client.close.linger.duration";
+
+        /**
+         * Default duration to linger on close so that publishers subscribers have time to notice closed resources.
+         */
+        public static final long CLOSE_LINGER_DURATION_DEFAULT_NS = 0;
 
         /**
          * The Default handler for Aeron runtime exceptions.
-         * When a {@link DriverTimeoutException} is encountered, this handler will
-         * exit the program.
+         * When a {@link DriverTimeoutException} is encountered, this handler will exit the program.
          * <p>
          * The error handler can be overridden by supplying an {@link Context} with a custom handler.
          *
@@ -421,7 +432,19 @@ public class Aeron implements AutoCloseable
          */
         public static long resourceLingerDurationNs()
         {
-            return getDurationInNanos(RESOURCE_LINGER_DURATION_PROP_NAME, RESOURCE_LINGER_DURATION_DEFAULT);
+            return getDurationInNanos(RESOURCE_LINGER_DURATION_PROP_NAME, RESOURCE_LINGER_DURATION_DEFAULT_NS);
+        }
+
+        /**
+         * Duration to wait while lingering a entity such as an {@link Image} before deleting underlying resources
+         * such as memory mapped files.
+         *
+         * @return duration in nanoseconds to wait before deleting a expired resource.
+         * @see #RESOURCE_LINGER_DURATION_PROP_NAME
+         */
+        public static long closeLingerDurationNs()
+        {
+            return getDurationInNanos(CLOSE_LINGER_DURATION_PROP_NAME, CLOSE_LINGER_DURATION_DEFAULT_NS);
         }
     }
 
@@ -461,6 +484,7 @@ public class Aeron implements AutoCloseable
         private long keepAliveIntervalNs = Configuration.KEEPALIVE_INTERVAL_NS;
         private long interServiceTimeoutNs = 0;
         private long resourceLingerDurationNs = Configuration.resourceLingerDurationNs();
+        private long closeLingerDurationNs = Configuration.closeLingerDurationNs();
 
         private ThreadFactory threadFactory = Thread::new;
 
@@ -1003,6 +1027,30 @@ public class Aeron implements AutoCloseable
         public long resourceLingerDurationNs()
         {
             return resourceLingerDurationNs;
+        }
+
+        /**
+         * Duration to linger on closing to allow publishers and subscribers time to notice closed resources.
+         *
+         * @param closeLingerDurationNs to wait before deleting resources when closing.
+         * @return this for a fluent API.
+         * @see Configuration#CLOSE_LINGER_DURATION_PROP_NAME
+         */
+        public Context closeLingerDurationNs(final long closeLingerDurationNs)
+        {
+            this.closeLingerDurationNs = closeLingerDurationNs;
+            return this;
+        }
+
+        /**
+         * Duration to linger on closing to allow publishers and subscribers time to notice closed resources.
+         *
+         * @return duration in nanoseconds to wait before deleting resources when closing.
+         * @see Configuration#CLOSE_LINGER_DURATION_PROP_NAME
+         */
+        public long closeLingerDurationNs()
+        {
+            return closeLingerDurationNs;
         }
 
         /**

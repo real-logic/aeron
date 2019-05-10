@@ -30,7 +30,7 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
 {
     private static final int INGRESS_HEADER =
         MessageHeaderDecoder.ENCODED_LENGTH + IngressMessageHeaderDecoder.BLOCK_LENGTH;
-    private static final int FRAGMENT_POLL_LIMIT = 10;
+    private static final int FRAGMENT_POLL_LIMIT = 100;
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SessionConnectRequestDecoder connectRequestDecoder = new SessionConnectRequestDecoder();

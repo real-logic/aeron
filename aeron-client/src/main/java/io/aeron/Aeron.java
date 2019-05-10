@@ -1031,6 +1031,10 @@ public class Aeron implements AutoCloseable
 
         /**
          * Duration to linger on closing to allow publishers and subscribers time to notice closed resources.
+         * <p>
+         * This value can be increased from the default to a few seconds to better cope with long GC pauses
+         * or resource starved environments. Issues could manifest as seg faults using files after they have
+         * been unmapped from publishers or subscribers not noticing the close in a timely fashion.
          *
          * @param closeLingerDurationNs to wait before deleting resources when closing.
          * @return this for a fluent API.
@@ -1044,6 +1048,10 @@ public class Aeron implements AutoCloseable
 
         /**
          * Duration to linger on closing to allow publishers and subscribers time to notice closed resources.
+         * <p>
+         * This value can be increased from the default to a few seconds to better cope with long GC pauses
+         * or resource starved environments. Issues could manifest as seg faults using files after they have
+         * been unmapped from publishers or subscribers not noticing the close in a timely fashion.
          *
          * @return duration in nanoseconds to wait before deleting resources when closing.
          * @see Configuration#CLOSE_LINGER_DURATION_PROP_NAME

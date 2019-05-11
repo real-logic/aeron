@@ -441,9 +441,8 @@ int aeron_uri_publication_params(
 
             errno = 0;
             end_ptr = NULL;
-            int64_t initial_term_id = 0;
-            if (((initial_term_id = strtoll(initial_term_id_str, &end_ptr, 0)) == 0 && 0 != errno) ||
-                end_ptr == initial_term_id_str)
+            int64_t initial_term_id = strtoll(initial_term_id_str, &end_ptr, 0);
+            if ((initial_term_id  == 0 && 0 != errno) || end_ptr == initial_term_id_str)
             {
                 aeron_set_err(EINVAL, "could not parse %s in URI", AERON_URI_INITIAL_TERM_ID_KEY);
                 return -1;
@@ -451,9 +450,8 @@ int aeron_uri_publication_params(
 
             errno = 0;
             end_ptr = NULL;
-            int64_t term_id = 0;
-            if (((term_id = strtoll(term_id_str, &end_ptr, 0)) == 0 && 0 != errno) ||
-                end_ptr == term_id_str)
+            int64_t term_id = strtoll(term_id_str, &end_ptr, 0);
+            if ((term_id == 0 && 0 != errno) || end_ptr == term_id_str)
             {
                 aeron_set_err(EINVAL, "could not parse %s in URI", AERON_URI_TERM_ID_KEY);
                 return -1;
@@ -461,9 +459,8 @@ int aeron_uri_publication_params(
 
             errno = 0;
             end_ptr = NULL;
-            uint64_t term_offset = 0;
-            if (((term_offset = strtoull(term_offset_str, &end_ptr, 0)) == 0 && 0 != errno) ||
-                end_ptr == term_offset_str)
+            uint64_t term_offset = strtoull(term_offset_str, &end_ptr, 0);
+            if ((term_offset == 0 && 0 != errno) || end_ptr == term_offset_str)
             {
                 aeron_set_err(EINVAL, "could not parse %s in URI", AERON_URI_TERM_OFFSET_KEY);
                 return -1;
@@ -472,8 +469,7 @@ int aeron_uri_publication_params(
             if (initial_term_id < INT32_MIN || initial_term_id > INT32_MAX)
             {
                 aeron_set_err(
-                    EINVAL,
-                    "Params %s=%" PRId64 " out of range", AERON_URI_INITIAL_TERM_ID_KEY, initial_term_id);
+                    EINVAL, "Params %s=%" PRId64 " out of range", AERON_URI_INITIAL_TERM_ID_KEY, initial_term_id);
                 return -1;
             }
 

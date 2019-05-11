@@ -19,6 +19,7 @@
 
 #include "aeron_socket.h"
 #include "uri/aeron_uri.h"
+#include "util/aeron_netutil.h"
 
 typedef struct aeron_udp_channel_stct
 {
@@ -42,5 +43,11 @@ aeron_udp_channel_t;
 int aeron_udp_channel_parse(size_t uri_length, const char *uri, aeron_udp_channel_t **channel);
 
 void aeron_udp_channel_delete(aeron_udp_channel_t *channel);
+
+inline bool aeron_udp_channel_is_wildcard(aeron_udp_channel_t *channel)
+{
+    return aeron_is_wildcard_addr(&channel->remote_data) && aeron_is_wildcard_port(&channel->remote_data) &&
+        aeron_is_wildcard_addr(&channel->local_data) && aeron_is_wildcard_port(&channel->local_data);
+}
 
 #endif //AERON_UDP_CHANNEL_H

@@ -114,23 +114,4 @@ inline int aeron_send_channel_endpoint_remove_destination(
     return aeron_udp_destination_tracker_remove_destination(endpoint->destination_tracker, addr);
 }
 
-inline bool aeron_send_channel_endpoint_tags_match(
-    aeron_send_channel_endpoint_t *endpoint, aeron_udp_channel_t *channel)
-{
-    const int64_t tag_id = endpoint->conductor_fields.udp_channel->tag_id;
-
-    if (AERON_URI_INVALID_TAG == tag_id || AERON_URI_INVALID_TAG == channel->tag_id || tag_id != channel->tag_id)
-    {
-        return false;
-    }
-
-    if (aeron_is_wildcard_addr(&channel->remote_data) && aeron_is_wildcard_port(&channel->remote_data) &&
-        aeron_is_wildcard_addr(&channel->local_data) && aeron_is_wildcard_port(&channel->local_data))
-    {
-        return true;
-    }
-
-    return false;
-}
-
 #endif //AERON_SEND_CHANNEL_ENDPOINT_H

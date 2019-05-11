@@ -439,6 +439,12 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
 
 void aeron_driver_conductor_on_linger_buffer(void *clientd, void *item);
 
+aeron_send_channel_endpoint_t *aeron_driver_conductor_find_send_channel_endpoint_by_tag(
+    aeron_driver_conductor_t *conductor, int64_t channel_tag_id);
+
+aeron_receive_channel_endpoint_t *aeron_driver_conductor_find_receive_channel_endpoint_by_tag(
+    aeron_driver_conductor_t *conductor, int64_t channel_tag_id);
+
 inline bool aeron_driver_conductor_is_subscribable_linked(
     aeron_subscription_link_t *link, aeron_subscribable_t *subscribable)
 {

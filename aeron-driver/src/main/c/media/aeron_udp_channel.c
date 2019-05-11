@@ -370,3 +370,5 @@ void aeron_udp_channel_delete(aeron_udp_channel_t *channel)
         aeron_free(channel);
     }
 }
+
+extern bool aeron_udp_channel_is_wildcard(aeron_udp_channel_t *channel);

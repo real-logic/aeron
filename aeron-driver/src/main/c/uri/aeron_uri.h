@@ -136,18 +136,19 @@ uint8_t aeron_uri_multicast_ttl(aeron_uri_t *uri);
 const char *aeron_uri_find_param_value(aeron_uri_params_t *uri_params, const char *key);
 
 typedef struct aeron_driver_context_stct aeron_driver_context_t;
+typedef struct aeron_driver_conductor_stct aeron_driver_conductor_t;
 
 int aeron_uri_publication_params(
     aeron_uri_t *uri,
     aeron_uri_publication_params_t *params,
-    aeron_driver_context_t *context,
+    aeron_driver_conductor_t *context,
     bool is_exclusive);
 
 int aeron_uri_subscription_params(
     aeron_uri_t *uri,
     aeron_uri_subscription_params_t *params,
-    aeron_driver_context_t *context);
+    aeron_driver_conductor_t *conductor);
 
-uint64_t aeron_uri_parse_tag(const char *tag_str);
+int64_t aeron_uri_parse_tag(const char *tag_str);
 
 #endif //AERON_URI_H

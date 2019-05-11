@@ -21,6 +21,7 @@
 #include "util/aeron_arrayutil.h"
 #include "util/aeron_parse_util.h"
 #include "aeron_driver_context.h"
+#include "aeron_driver_conductor.h"
 #include "aeron_uri.h"
 #include "aeron_alloc.h"
 
@@ -385,9 +386,11 @@ int aeron_uri_linger_timeout_param(aeron_uri_params_t *uri_params, aeron_uri_pub
 int aeron_uri_publication_params(
     aeron_uri_t *uri,
     aeron_uri_publication_params_t *params,
-    aeron_driver_context_t *context,
+    aeron_driver_conductor_t *conductor,
     bool is_exclusive)
 {
+    aeron_driver_context_t *context = conductor->context;
+
     params->linger_timeout_ns = context->publication_linger_timeout_ns;
     params->term_length = AERON_URI_IPC == uri->type ? context->ipc_term_buffer_length : context->term_buffer_length;
     params->mtu_length = AERON_URI_IPC == uri->type ? context->ipc_mtu_length : context->mtu_length;
@@ -539,8 +542,10 @@ int aeron_uri_publication_params(
 }
 
 int aeron_uri_subscription_params(
-    aeron_uri_t *uri, aeron_uri_subscription_params_t *params, aeron_driver_context_t *context)
+    aeron_uri_t *uri, aeron_uri_subscription_params_t *params, aeron_driver_conductor_t *conductor)
 {
+    aeron_driver_context_t *context = conductor->context;
+
     params->is_reliable = context->reliable_stream;
     params->is_sparse = context->term_buffer_sparse_file;
     params->is_tether = context->tether_subscriptions;
@@ -570,7 +575,7 @@ int aeron_uri_subscription_params(
     return 0;
 }
 
-uint64_t aeron_uri_parse_tag(const char *tag_str)
+int64_t aeron_uri_parse_tag(const char *tag_str)
 {
     errno = 0;
     char *end_ptr = NULL;
@@ -581,5 +586,5 @@ uint64_t aeron_uri_parse_tag(const char *tag_str)
         return AERON_URI_INVALID_TAG;
     }
 
-    return (uint64_t)value;
+    return (int64_t)value;
 }

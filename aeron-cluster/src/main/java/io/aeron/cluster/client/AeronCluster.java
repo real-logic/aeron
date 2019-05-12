@@ -30,7 +30,9 @@ import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.*;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
+import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static org.agrona.SystemUtil.getDurationInNanos;
 
 /**
@@ -886,6 +888,13 @@ public final class AeronCluster implements AutoCloseable
      */
     public static class Context implements Cloneable
     {
+        /**
+         * Using an integer because there is no support for boolean. 1 is concluded, 0 is not concluded.
+         */
+        private static final AtomicIntegerFieldUpdater<Context> IS_CONCLUDED_UPDATER = newUpdater(
+            Context.class, "isConcluded");
+        private volatile int isConcluded;
+
         private long messageTimeoutNs = Configuration.messageTimeoutNs();
         private String clusterMemberEndpoints = Configuration.clusterMemberEndpoints();
         private String ingressChannel = Configuration.ingressChannel();
@@ -922,6 +931,11 @@ public final class AeronCluster implements AutoCloseable
 
         public void conclude()
         {
+            if (0 != IS_CONCLUDED_UPDATER.getAndSet(this, 1))
+            {
+                throw new ConfigurationException("Context already concluded");
+            }
+
             if (null == aeron)
             {
                 aeron = Aeron.connect(

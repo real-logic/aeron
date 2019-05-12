@@ -16,6 +16,7 @@
 package io.aeron;
 
 import io.aeron.exceptions.AeronException;
+import io.aeron.exceptions.ConfigurationException;
 import io.aeron.exceptions.DriverTimeoutException;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
@@ -33,13 +34,14 @@ import java.nio.MappedByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
 
 import static io.aeron.Aeron.sleep;
 import static io.aeron.CncFileDescriptor.*;
 import static java.lang.Long.getLong;
 import static java.lang.System.getProperty;
+import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 /**
  * This class provides the Media Driver and client with common configuration for the Aeron directory.
@@ -215,7 +217,12 @@ public class CommonContext implements Cloneable
      */
     public static final String TETHER_PARAM_NAME = "tether";
 
-    private final AtomicBoolean inUse = new AtomicBoolean(false);
+    /**
+     * Using an integer because there is no support for boolean. 1 is concluded, 0 is not concluded.
+     */
+    private static final AtomicIntegerFieldUpdater<CommonContext> IS_CONCLUDED_UPDATER = newUpdater(
+        CommonContext.class, "isConcluded");
+    private volatile int isConcluded;
 
     private long driverTimeoutMs = DRIVER_TIMEOUT_MS;
     private String aeronDirectoryName = getAeronDirectoryName();
@@ -291,6 +298,11 @@ public class CommonContext implements Cloneable
      */
     public CommonContext conclude()
     {
+        if (0 != IS_CONCLUDED_UPDATER.getAndSet(this, 1))
+        {
+            throw new ConfigurationException("Context already concluded");
+        }
+
         concludeAeronDirectory();
 
         cncFile = new File(aeronDirectory, CncFileDescriptor.CNC_FILE);
@@ -311,21 +323,6 @@ public class CommonContext implements Cloneable
         }
 
         return this;
-    }
-
-    /**
-     * Checks to see if another instance of the Aeron Client or Media Driver already is already using this
-     * context.
-     *
-     * @throws IllegalStateException if the context is already in use.
-     */
-    public void verifyNotAlreadyInUse()
-    {
-        if (!inUse.compareAndSet(false, true))
-        {
-            throw new IllegalStateException(
-                "Context instances may not be reused, create a new one for each Aeron/MediaDriver instance");
-        }
     }
 
     /**

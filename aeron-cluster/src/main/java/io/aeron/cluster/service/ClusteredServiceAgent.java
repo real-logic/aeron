@@ -696,7 +696,7 @@ class ClusteredServiceAgent implements Agent, Cluster
 
     private void loadSnapshot(final long recordingId)
     {
-        try (AeronArchive archive = AeronArchive.connect(archiveCtx))
+        try (AeronArchive archive = AeronArchive.connect(archiveCtx.clone()))
         {
             final String channel = ctx.replayChannel();
             final int streamId = ctx.replayStreamId();
@@ -741,7 +741,7 @@ class ClusteredServiceAgent implements Agent, Cluster
     {
         final long recordingId;
 
-        try (AeronArchive archive = AeronArchive.connect(archiveCtx);
+        try (AeronArchive archive = AeronArchive.connect(archiveCtx.clone());
             Publication publication = aeron.addExclusivePublication(ctx.snapshotChannel(), ctx.snapshotStreamId()))
         {
             final String channel = ChannelUri.addSessionId(ctx.snapshotChannel(), publication.sessionId());

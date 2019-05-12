@@ -222,7 +222,6 @@ public final class MediaDriver implements AutoCloseable
      */
     public static MediaDriver launch(final Context ctx)
     {
-        ctx.verifyNotAlreadyInUse();
         return new MediaDriver(ctx).start();
     }
 

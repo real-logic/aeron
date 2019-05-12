@@ -123,8 +123,6 @@ public class Aeron implements AutoCloseable
      */
     public static Aeron connect(final Context ctx)
     {
-        ctx.verifyNotAlreadyInUse();
-
         try
         {
             final Aeron aeron = new Aeron(ctx);

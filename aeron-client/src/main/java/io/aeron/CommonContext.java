@@ -15,9 +15,7 @@
  */
 package io.aeron;
 
-import io.aeron.exceptions.AeronException;
-import io.aeron.exceptions.ConfigurationException;
-import io.aeron.exceptions.DriverTimeoutException;
+import io.aeron.exceptions.*;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
@@ -300,7 +298,7 @@ public class CommonContext implements Cloneable
     {
         if (0 != IS_CONCLUDED_UPDATER.getAndSet(this, 1))
         {
-            throw new ConfigurationException("Context already concluded");
+            throw new ConcurrentConcludeException();
         }
 
         concludeAeronDirectory();

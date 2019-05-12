@@ -16,6 +16,7 @@
 package io.aeron;
 
 import io.aeron.exceptions.AeronException;
+import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.exceptions.ConfigurationException;
 import io.aeron.exceptions.DriverTimeoutException;
 import io.aeron.logbuffer.FragmentHandler;
@@ -137,6 +138,10 @@ public class Aeron implements AutoCloseable
             }
 
             return aeron;
+        }
+        catch (final ConcurrentConcludeException ex)
+        {
+            throw ex;
         }
         catch (final Exception ex)
         {

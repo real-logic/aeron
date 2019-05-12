@@ -19,7 +19,7 @@ import io.aeron.*;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.ControlResponseDecoder;
 import io.aeron.archive.codecs.SourceLocation;
-import io.aeron.exceptions.ConfigurationException;
+import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.exceptions.TimeoutException;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
@@ -186,6 +186,10 @@ public class AeronArchive implements AutoCloseable
             }
 
             return aeronArchive;
+        }
+        catch (final ConcurrentConcludeException ex)
+        {
+            throw ex;
         }
         catch (final Exception ex)
         {
@@ -1583,7 +1587,7 @@ public class AeronArchive implements AutoCloseable
         {
             if (0 != IS_CONCLUDED_UPDATER.getAndSet(this, 1))
             {
-                throw new ConfigurationException("Context already concluded");
+                throw new ConcurrentConcludeException();
             }
 
             if (null == aeron)

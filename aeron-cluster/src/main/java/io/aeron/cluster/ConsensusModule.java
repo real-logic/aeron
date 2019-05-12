@@ -23,7 +23,7 @@ import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.service.*;
-import io.aeron.exceptions.ConfigurationException;
+import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.security.Authenticator;
 import io.aeron.security.AuthenticatorSupplier;
 import org.agrona.*;
@@ -987,7 +987,7 @@ public class ConsensusModule implements AutoCloseable
         {
             if (0 != IS_CONCLUDED_UPDATER.getAndSet(this, 1))
             {
-                throw new ConfigurationException("Context already concluded");
+                throw new ConcurrentConcludeException();
             }
 
             if (null == clusterDir)

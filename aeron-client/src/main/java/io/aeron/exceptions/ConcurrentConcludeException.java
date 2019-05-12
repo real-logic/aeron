@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 Real Logic Ltd.
+ *  Copyright 2014-2019 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,19 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron;
+package io.aeron.exceptions;
 
-import io.aeron.exceptions.ConcurrentConcludeException;
-import org.junit.Test;
-
-public class CommonContextTest
+/**
+ * Conclude has been called concurrently on a Context.
+ */
+public class ConcurrentConcludeException extends AeronException
 {
-    @Test(expected = ConcurrentConcludeException.class)
-    public void shouldNotAllowConcludeMoreThanOnce()
-    {
-        final CommonContext ctx = new CommonContext();
-
-        ctx.conclude();
-        ctx.conclude();
-    }
 }

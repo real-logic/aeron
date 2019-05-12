@@ -17,6 +17,7 @@ package io.aeron.cluster.client;
 
 import io.aeron.*;
 import io.aeron.cluster.codecs.*;
+import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.exceptions.ConfigurationException;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.BufferClaim;
@@ -128,6 +129,10 @@ public final class AeronCluster implements AutoCloseable
             }
 
             return aeronCluster;
+        }
+        catch (final ConcurrentConcludeException ex)
+        {
+            throw ex;
         }
         catch (final Exception ex)
         {
@@ -933,7 +938,7 @@ public final class AeronCluster implements AutoCloseable
         {
             if (0 != IS_CONCLUDED_UPDATER.getAndSet(this, 1))
             {
-                throw new ConfigurationException("Context already concluded");
+                throw new ConcurrentConcludeException();
             }
 
             if (null == aeron)

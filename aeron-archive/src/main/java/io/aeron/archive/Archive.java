@@ -20,7 +20,7 @@ import io.aeron.CommonContext;
 import io.aeron.Image;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
-import io.aeron.exceptions.ConfigurationException;
+import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
@@ -426,7 +426,7 @@ public class Archive implements AutoCloseable
         {
             if (0 != IS_CONCLUDED_UPDATER.getAndSet(this, 1))
             {
-                throw new ConfigurationException("Context already concluded");
+                throw new ConcurrentConcludeException();
             }
 
             Objects.requireNonNull(errorHandler, "Error handler must be supplied");

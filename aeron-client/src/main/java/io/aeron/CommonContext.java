@@ -33,6 +33,7 @@ import java.nio.MappedByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import static io.aeron.Aeron.sleep;
@@ -214,6 +215,8 @@ public class CommonContext implements Cloneable
      */
     public static final String TETHER_PARAM_NAME = "tether";
 
+    private final AtomicBoolean inUse = new AtomicBoolean(false);
+
     private long driverTimeoutMs = DRIVER_TIMEOUT_MS;
     private String aeronDirectoryName = getAeronDirectoryName();
     private File aeronDirectory;
@@ -308,6 +311,21 @@ public class CommonContext implements Cloneable
         }
 
         return this;
+    }
+
+    /**
+     * Checks to see if another instance of the Aeron Client or Media Driver already is already using this
+     * context.
+     *
+     * @throws IllegalStateException if the context is already in use.
+     */
+    public void verifyNotAlreadyInUse()
+    {
+        if (!inUse.compareAndSet(false, true))
+        {
+            throw new IllegalStateException(
+                "Context instances may not be reused, create a new one for each Aeron/MediaDriver instance");
+        }
     }
 
     /**

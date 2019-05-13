@@ -301,7 +301,7 @@ if(BUILD_AERON_ARCHIVE_API)
            "${CMAKE_CURRENT_SOURCE_DIR}}/aeron-archive/src/main/java/*.java")
 
        add_custom_command(OUTPUT ${AERON_ALL_JAR}
-           COMMAND ./gradlew -x test -x check -x javadoc
+           COMMAND ./gradlew --no-parallel -x test -x check -x javadoc
            DEPENDS ${AERON_ALL_SOURCES}
            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
            COMMENT "Generating aeron-all jar")

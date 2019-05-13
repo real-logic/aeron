@@ -5,6 +5,16 @@ BUILD_DIR="`pwd`/cppbuild/Release"
 EXTRA_CMAKE_ARGS=""
 COVERAGE_BUILD=0
 
+ncpus=1
+case "`uname`" in
+  Darwin* )
+    ncpus=`sysctl -n hw.ncpu`
+    ;;
+  Linux*)
+    ncpus=$(lscpu -p | egrep -v '^#' | wc -l)
+    ;;
+esac
+
 for option in "$@"
 do
   case ${option} in
@@ -30,6 +40,10 @@ do
       echo "Enabling building of aeron driver is now the default"
       shift
       ;;
+    --no-parallel)
+      ncpus=1
+      shift
+      ;;
     --sanitise-build)
       EXTRA_CMAKE_ARGS="$EXTRA_CMAKE_ARGS -DSANITISE_BUILD=ON"
       echo "Enabling sanitise build"
@@ -47,7 +61,7 @@ do
       shift
       ;;
     -h|--help)
-      echo "$0 [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--debug-build] [--build-aeron-driver] [--sanitise-build] [--coverage-build]"
+      echo "$0 [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--debug-build] [--build-aeron-driver] [--sanitise-build] [--coverage-build] [--no-parallel]"
       exit
       ;;
     *)
@@ -57,16 +71,6 @@ do
       ;;
   esac
 done
-
-ncpus=1
-case "`uname`" in
-  Darwin* )
-    ncpus=`sysctl -n hw.ncpu`
-    ;;
-  Linux*)
-    ncpus=$(lscpu -p | egrep -v '^#' | wc -l)
-    ;;
-esac
 
 echo "Will make with \"-j $ncpus\"."
 

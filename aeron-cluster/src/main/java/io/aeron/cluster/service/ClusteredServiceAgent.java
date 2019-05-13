@@ -37,7 +37,7 @@ import java.util.Collection;
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
-import static io.aeron.cluster.service.ClientSession.EGRESS_HEADER_LENGTH;
+import static io.aeron.cluster.service.ClientSession.SESSION_HEADER_LENGTH;
 import static java.util.Collections.unmodifiableCollection;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
@@ -58,8 +58,8 @@ class ClusteredServiceAgent implements Agent, Cluster
     private final ClusterMarkFile markFile;
     private final UnsafeBuffer egressBuffer = new UnsafeBuffer(
         new byte[Configuration.MAX_UDP_PAYLOAD_LENGTH - DataHeaderFlyweight.HEADER_LENGTH]);
-    private final DirectBufferVector headerVector = new DirectBufferVector(egressBuffer, 0, EGRESS_HEADER_LENGTH);
-    private final EgressMessageHeaderEncoder egressMessageHeaderEncoder = new EgressMessageHeaderEncoder();
+    private final DirectBufferVector headerVector = new DirectBufferVector(egressBuffer, 0, SESSION_HEADER_LENGTH);
+    private final SessionMessageHeaderEncoder sessionMessageHeaderEncoder = new SessionMessageHeaderEncoder();
 
     private long ackId = 0;
     private long clusterTimeMs;
@@ -93,7 +93,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         consensusModuleProxy = new ConsensusModuleProxy(aeron.addPublication(channel, ctx.consensusModuleStreamId()));
         serviceAdapter = new ServiceAdapter(aeron.addSubscription(channel, ctx.serviceStreamId()), this);
 
-        egressMessageHeaderEncoder.wrapAndApplyHeader(egressBuffer, 0, new MessageHeaderEncoder());
+        sessionMessageHeaderEncoder.wrapAndApplyHeader(egressBuffer, 0, new MessageHeaderEncoder());
     }
 
     public void onStart()
@@ -278,11 +278,11 @@ class ClusteredServiceAgent implements Agent, Cluster
             return Publication.NOT_CONNECTED;
         }
 
-        egressMessageHeaderEncoder
+        sessionMessageHeaderEncoder
             .clusterSessionId(clusterSessionId)
             .timestamp(clusterTimeMs);
 
-        return publication.offer(egressBuffer, 0, EGRESS_HEADER_LENGTH, buffer, offset, length, null);
+        return publication.offer(egressBuffer, 0, SESSION_HEADER_LENGTH, buffer, offset, length, null);
     }
 
     public long offer(final long clusterSessionId, final Publication publication, final DirectBufferVector[] vectors)
@@ -297,7 +297,7 @@ class ClusteredServiceAgent implements Agent, Cluster
             return Publication.NOT_CONNECTED;
         }
 
-        egressMessageHeaderEncoder
+        sessionMessageHeaderEncoder
             .clusterSessionId(clusterSessionId)
             .timestamp(clusterTimeMs);
 
@@ -326,14 +326,14 @@ class ClusteredServiceAgent implements Agent, Cluster
             return Publication.NOT_CONNECTED;
         }
 
-        final long offset = publication.tryClaim(length + EGRESS_HEADER_LENGTH, bufferClaim);
+        final long offset = publication.tryClaim(length + SESSION_HEADER_LENGTH, bufferClaim);
         if (offset > 0)
         {
-            egressMessageHeaderEncoder
+            sessionMessageHeaderEncoder
                 .clusterSessionId(clusterSessionId)
                 .timestamp(clusterTimeMs);
 
-            bufferClaim.putBytes(egressBuffer, 0, EGRESS_HEADER_LENGTH);
+            bufferClaim.putBytes(egressBuffer, 0, SESSION_HEADER_LENGTH);
         }
 
         return offset;
@@ -466,7 +466,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         final int leaderMemberId,
         final int logSessionId)
     {
-        egressMessageHeaderEncoder.leadershipTermId(leadershipTermId);
+        sessionMessageHeaderEncoder.leadershipTermId(leadershipTermId);
         clusterLogPosition = logPosition;
         clusterTimeMs = timestampMs;
     }
@@ -612,7 +612,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         final Image image = awaitImage(activeLogEvent.sessionId, logSubscription);
         heartbeatCounter.setOrdered(epochClock.time());
 
-        egressMessageHeaderEncoder.leadershipTermId(activeLogEvent.leadershipTermId);
+        sessionMessageHeaderEncoder.leadershipTermId(activeLogEvent.leadershipTermId);
         memberId = activeLogEvent.memberId;
         ctx.clusterMarkFile().memberId(memberId);
         logChannel = activeLogEvent.channel;

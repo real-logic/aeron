@@ -17,8 +17,8 @@ package io.aeron.cluster.client;
 
 import io.aeron.Aeron;
 import io.aeron.Publication;
-import io.aeron.cluster.codecs.IngressMessageHeaderEncoder;
 import io.aeron.cluster.codecs.MessageHeaderEncoder;
+import io.aeron.cluster.codecs.SessionMessageHeaderEncoder;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -36,9 +36,9 @@ public class IngressSessionDecorator
      * Length of the session header that will be prepended to the message.
      */
     public static final int HEADER_LENGTH =
-        MessageHeaderEncoder.ENCODED_LENGTH + IngressMessageHeaderEncoder.BLOCK_LENGTH;
+        MessageHeaderEncoder.ENCODED_LENGTH + SessionMessageHeaderEncoder.BLOCK_LENGTH;
 
-    private final IngressMessageHeaderEncoder ingressMessageHeaderEncoder = new IngressMessageHeaderEncoder();
+    private final SessionMessageHeaderEncoder sessionMessageHeaderEncoder = new SessionMessageHeaderEncoder();
     private final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[HEADER_LENGTH]);
 
     /**
@@ -57,7 +57,7 @@ public class IngressSessionDecorator
      */
     public IngressSessionDecorator(final long clusterSessionId, final long leadershipTermId)
     {
-        ingressMessageHeaderEncoder
+        sessionMessageHeaderEncoder
             .wrapAndApplyHeader(headerBuffer, 0, new MessageHeaderEncoder())
             .leadershipTermId(leadershipTermId)
             .clusterSessionId(clusterSessionId)
@@ -72,7 +72,7 @@ public class IngressSessionDecorator
      */
     public IngressSessionDecorator clusterSessionId(final long clusterSessionId)
     {
-        ingressMessageHeaderEncoder.clusterSessionId(clusterSessionId);
+        sessionMessageHeaderEncoder.clusterSessionId(clusterSessionId);
         return this;
     }
 
@@ -84,7 +84,7 @@ public class IngressSessionDecorator
      */
     public IngressSessionDecorator leadershipTermId(final long leadershipTermId)
     {
-        ingressMessageHeaderEncoder.leadershipTermId(leadershipTermId);
+        sessionMessageHeaderEncoder.leadershipTermId(leadershipTermId);
         return this;
     }
 

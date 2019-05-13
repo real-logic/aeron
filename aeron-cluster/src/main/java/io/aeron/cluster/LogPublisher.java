@@ -33,10 +33,10 @@ class LogPublisher
 {
     private static final int SEND_ATTEMPTS = 3;
     public static final int SESSION_HEADER_LENGTH =
-        MessageHeaderEncoder.ENCODED_LENGTH + SessionHeaderEncoder.BLOCK_LENGTH;
+        MessageHeaderEncoder.ENCODED_LENGTH + SessionMessageHeaderEncoder.BLOCK_LENGTH;
 
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
-    private final SessionHeaderEncoder sessionHeaderEncoder = new SessionHeaderEncoder();
+    private final SessionMessageHeaderEncoder sessionHeaderEncoder = new SessionMessageHeaderEncoder();
     private final SessionOpenEventEncoder sessionOpenEventEncoder = new SessionOpenEventEncoder();
     private final SessionCloseEventEncoder sessionCloseEventEncoder = new SessionCloseEventEncoder();
     private final TimerEventEncoder timerEventEncoder = new TimerEventEncoder();

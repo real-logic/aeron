@@ -31,14 +31,14 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
     private static final int FRAGMENT_LIMIT = 100;
     private static final int INITIAL_BUFFER_LENGTH = 4096;
     private static final int SESSION_HEADER_LENGTH =
-        MessageHeaderEncoder.ENCODED_LENGTH + SessionHeaderEncoder.BLOCK_LENGTH;
+        MessageHeaderEncoder.ENCODED_LENGTH + SessionMessageHeaderEncoder.BLOCK_LENGTH;
 
     private final ImageControlledFragmentAssembler fragmentAssembler = new ImageControlledFragmentAssembler(
         this, INITIAL_BUFFER_LENGTH, true);
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SessionOpenEventDecoder openEventDecoder = new SessionOpenEventDecoder();
     private final SessionCloseEventDecoder closeEventDecoder = new SessionCloseEventDecoder();
-    private final SessionHeaderDecoder sessionHeaderDecoder = new SessionHeaderDecoder();
+    private final SessionMessageHeaderDecoder sessionHeaderDecoder = new SessionMessageHeaderDecoder();
     private final TimerEventDecoder timerEventDecoder = new TimerEventDecoder();
     private final ClusterActionRequestDecoder actionRequestDecoder = new ClusterActionRequestDecoder();
     private final NewLeadershipTermEventDecoder newLeadershipTermEventDecoder = new NewLeadershipTermEventDecoder();
@@ -87,7 +87,7 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
         }
 
         final int templateId = messageHeaderDecoder.templateId();
-        if (templateId == SessionHeaderDecoder.TEMPLATE_ID)
+        if (templateId == SessionMessageHeaderDecoder.TEMPLATE_ID)
         {
             sessionHeaderDecoder.wrap(
                 buffer,

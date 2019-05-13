@@ -30,7 +30,7 @@ public class EgressPoller implements ControlledFragmentHandler
     private final SessionEventDecoder sessionEventDecoder = new SessionEventDecoder();
     private final ChallengeDecoder challengeDecoder = new ChallengeDecoder();
     private final NewLeaderEventDecoder newLeaderEventDecoder = new NewLeaderEventDecoder();
-    private final EgressMessageHeaderDecoder egressMessageHeaderDecoder = new EgressMessageHeaderDecoder();
+    private final SessionMessageHeaderDecoder sessionMessageHeaderDecoder = new SessionMessageHeaderDecoder();
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this);
     private final Subscription subscription;
     private long clusterSessionId = Aeron.NULL_VALUE;
@@ -193,6 +193,18 @@ public class EgressPoller implements ControlledFragmentHandler
         templateId = messageHeaderDecoder.templateId();
         switch (templateId)
         {
+            case SessionMessageHeaderDecoder.TEMPLATE_ID:
+                sessionMessageHeaderDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                leadershipTermId = sessionMessageHeaderDecoder.leadershipTermId();
+                clusterSessionId = sessionMessageHeaderDecoder.clusterSessionId();
+                pollComplete = true;
+                return Action.BREAK;
+
             case SessionEventDecoder.TEMPLATE_ID:
                 sessionEventDecoder.wrap(
                     buffer,
@@ -220,18 +232,6 @@ public class EgressPoller implements ControlledFragmentHandler
                 leadershipTermId = newLeaderEventDecoder.leadershipTermId();
                 leaderMemberId = newLeaderEventDecoder.leaderMemberId();
                 detail = newLeaderEventDecoder.memberEndpoints();
-                pollComplete = true;
-                return Action.BREAK;
-
-            case EgressMessageHeaderDecoder.TEMPLATE_ID:
-                egressMessageHeaderDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
-
-                leadershipTermId = egressMessageHeaderDecoder.leadershipTermId();
-                clusterSessionId = egressMessageHeaderDecoder.clusterSessionId();
                 pollComplete = true;
                 return Action.BREAK;
 

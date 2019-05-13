@@ -64,9 +64,9 @@
         ========================
 
         Session Protocol:
-            -> session-connect, *[ingress-message | session-keep-alive], session-close
+            -> session-connect, *[session-message | session-keep-alive], session-close
                       \
-            <-          +session-event, *[session-event | egress-message | new-leader-event]
+            <-          +session-event, *[session-event | session-message | new-leader-event]
 
         1. Session Connect
           - An attempt is made to establish a connection with the cluster via multicast or multi-destination-cast.
@@ -76,9 +76,9 @@
             detail that will have the leader first.
           - If a change of leader occurs mid session then a new-leader-event will be sent from the new leader.
 
-        2. Ingress/Egress Messages - Messages which make up application protocol.
-          - Messages are sent to a clustered service with a IngressMessageHeader followed by an application payload.
-          - The service may emit responses and events with a EgressMessageHeader followed by an application payload.
+        2. Ingress/Egress Messages - Session Messages which make up application protocol.
+          - Messages are sent to a clustered service with a SessionMessageHeader followed by an application payload.
+          - The service may emit responses and events with a SessionMessageHeader followed by an application payload.
           - The application protocol is the user defined messages for interacting with the service being clustered.
           - Keep alive messages should be sent when insufficient ingress messages are sent to keep the session open.
 
@@ -113,24 +113,16 @@
 
     -->
 
-    <sbe:message name="IngressMessageHeader"
+    <sbe:message name="SessionMessageHeader"
                  id="1"
-                 description="Header for ingress messages from a client to the cluster services">
-        <field name="leadershipTermId"     id="1" type="int64"/>
-        <field name="clusterSessionId"     id="2" type="int64"/>
-        <field name="timestamp"            id="3" type="time_t"/>
-    </sbe:message>
-
-    <sbe:message name="EgressMessageHeader"
-                 id="2"
-                 description="Header for egress messages from a service to the cluster client">
+                 description="Header for application session messages between clients and cluster services">
         <field name="leadershipTermId"     id="1" type="int64"/>
         <field name="clusterSessionId"     id="2" type="int64"/>
         <field name="timestamp"            id="3" type="time_t"/>
     </sbe:message>
 
     <sbe:message name="SessionEvent"
-                 id="3"
+                 id="2"
                  description="Response to a connect request or async event, details will be empty if code is OK">
         <field name="clusterSessionId"     id="1" type="int64"
                description="Session id for a multiplexed session over a shared connection, i.e. same Image"/>
@@ -147,7 +139,7 @@
     </sbe:message>
 
     <sbe:message name="SessionConnectRequest"
-                 id="4"
+                 id="3"
                  description="Connect to the cluster and if successful then open a session">
         <field name="correlationId"        id="1" type="int64"/>
         <field name="responseStreamId"     id="2" type="int32"/>
@@ -157,21 +149,21 @@
     </sbe:message>
 
     <sbe:message name="SessionCloseRequest"
-                 id="5"
+                 id="4"
                  description="Close an open cluster session">
         <field name="leadershipTermId"     id="1" type="int64"/>
         <field name="clusterSessionId"     id="2" type="int64"/>
     </sbe:message>
 
     <sbe:message name="SessionKeepAlive"
-                 id="6"
+                 id="5"
                  description="Keep a cluster session open by indicating the client is alive">
         <field name="leadershipTermId"     id="2" type="int64"/>
         <field name="clusterSessionId"     id="1" type="int64"/>
     </sbe:message>
 
     <sbe:message name="NewLeaderEvent"
-                 id="7"
+                 id="6"
                  description="Event to indicate a new leader has been elected for the cluster">
         <field name="leadershipTermId"     id="1" type="int64"/>
         <field name="clusterSessionId"     id="2" type="int64"/>
@@ -180,7 +172,7 @@
     </sbe:message>
 
     <sbe:message name="Challenge"
-                 id="8"
+                 id="7"
                  description="Challenge the client to provide credentials">
         <field name="correlationId"        id="1" type="int64"/>
         <field name="clusterSessionId"     id="2" type="int64"/>
@@ -188,7 +180,7 @@
     </sbe:message>
 
     <sbe:message name="ChallengeResponse"
-                 id="9"
+                 id="8"
                  description="Respond to a cluster challenge with credentials">
         <field name="correlationId"        id="1" type="int64"/>
         <field name="clusterSessionId"     id="2" type="int64"/>
@@ -197,16 +189,8 @@
 
     <!-- Codecs for messages that get encoded into the log by the Consensus Module -->
 
-    <sbe:message name="SessionHeader"
-                 id="20"
-                 description="Header for ingress messages from clients appended to the log">
-        <field name="leadershipTermId"     id="1" type="int64"/>
-        <field name="clusterSessionId"     id="2" type="int64"/>
-        <field name="timestamp"            id="3" type="time_t"/>
-    </sbe:message>
-
     <sbe:message name="TimerEvent"
-                 id="21"
+                 id="20"
                  description="Timer triggered event as the result of a deadline passing on a registered timer">
         <field name="leadershipTermId"     id="1" type="int64"/>
         <field name="correlationId"        id="2" type="int64"/>
@@ -214,7 +198,7 @@
     </sbe:message>
 
     <sbe:message name="SessionOpenEvent"
-                 id="22"
+                 id="21"
                  description="Event for the state machine to notify a session has been opened">
         <field name="leadershipTermId"     id="1" type="int64"/>
         <field name="correlationId"        id="2" type="int64"/>
@@ -226,7 +210,7 @@
     </sbe:message>
 
     <sbe:message name="SessionCloseEvent"
-                 id="23"
+                 id="22"
                  description="Event for the state machine to notify a session has been closed">
         <field name="leadershipTermId"     id="1" type="int64"/>
         <field name="clusterSessionId"     id="2" type="int64"/>
@@ -235,7 +219,7 @@
     </sbe:message>
 
     <sbe:message name="ClusterActionRequest"
-                 id="24"
+                 id="23"
                  description="Request an action be taken by the service">
         <field name="leadershipTermId"     id="1" type="int64"/>
         <field name="logPosition"          id="2" type="int64"/>
@@ -244,7 +228,7 @@
     </sbe:message>
 
     <sbe:message name="NewLeadershipTermEvent"
-                 id="25"
+                 id="24"
                  description="Event for the start of a new leadership term">
         <field name="leadershipTermId"     id="1" type="int64"/>
         <field name="logPosition"          id="2" type="int64"/>
@@ -254,7 +238,7 @@
     </sbe:message>
 
     <sbe:message name="MembershipChangeEvent"
-                 id="26"
+                 id="25"
                  description="Event for the change of the cluster membership that affects the cluster size">
         <field name="leadershipTermId"     id="1" type="int64"/>
         <field name="logPosition"          id="2" type="int64"/>

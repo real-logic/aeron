@@ -28,14 +28,14 @@ public class EgressAdapter implements FragmentHandler
      * Length of the session header before the message.
      */
     public static final int SESSION_HEADER_LENGTH =
-        MessageHeaderDecoder.ENCODED_LENGTH + SessionHeaderDecoder.BLOCK_LENGTH;
+        MessageHeaderDecoder.ENCODED_LENGTH + SessionMessageHeaderDecoder.BLOCK_LENGTH;
 
     private final long clusterSessionId;
     private final int fragmentLimit;
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SessionEventDecoder sessionEventDecoder = new SessionEventDecoder();
     private final NewLeaderEventDecoder newLeaderEventDecoder = new NewLeaderEventDecoder();
-    private final EgressMessageHeaderDecoder egressMessageHeaderDecoder = new EgressMessageHeaderDecoder();
+    private final SessionMessageHeaderDecoder sessionMessageHeaderDecoder = new SessionMessageHeaderDecoder();
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this);
     private final EgressListener listener;
     private final Subscription subscription;
@@ -68,20 +68,20 @@ public class EgressAdapter implements FragmentHandler
         }
 
         final int templateId = messageHeaderDecoder.templateId();
-        if (EgressMessageHeaderDecoder.TEMPLATE_ID == templateId)
+        if (SessionMessageHeaderDecoder.TEMPLATE_ID == templateId)
         {
-            egressMessageHeaderDecoder.wrap(
+            sessionMessageHeaderDecoder.wrap(
                 buffer,
                 offset + MessageHeaderDecoder.ENCODED_LENGTH,
                 messageHeaderDecoder.blockLength(),
                 messageHeaderDecoder.version());
 
-            final long sessionId = egressMessageHeaderDecoder.clusterSessionId();
+            final long sessionId = sessionMessageHeaderDecoder.clusterSessionId();
             if (sessionId == clusterSessionId)
             {
                 listener.onMessage(
                     sessionId,
-                    egressMessageHeaderDecoder.timestamp(),
+                    sessionMessageHeaderDecoder.timestamp(),
                     buffer,
                     offset + SESSION_HEADER_LENGTH,
                     length - SESSION_HEADER_LENGTH,

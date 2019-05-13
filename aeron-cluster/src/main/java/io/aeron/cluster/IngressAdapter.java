@@ -28,14 +28,14 @@ import org.agrona.concurrent.status.AtomicCounter;
 
 class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
 {
-    private static final int INGRESS_HEADER =
-        MessageHeaderDecoder.ENCODED_LENGTH + IngressMessageHeaderDecoder.BLOCK_LENGTH;
+    private static final int SESSION_MESSAGE_HEADER =
+        MessageHeaderDecoder.ENCODED_LENGTH + SessionMessageHeaderDecoder.BLOCK_LENGTH;
     private static final int FRAGMENT_POLL_LIMIT = 100;
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SessionConnectRequestDecoder connectRequestDecoder = new SessionConnectRequestDecoder();
     private final SessionCloseRequestDecoder closeRequestDecoder = new SessionCloseRequestDecoder();
-    private final IngressMessageHeaderDecoder ingressMessageHeaderDecoder = new IngressMessageHeaderDecoder();
+    private final SessionMessageHeaderDecoder sessionMessageHeaderDecoder = new SessionMessageHeaderDecoder();
     private final SessionKeepAliveDecoder sessionKeepAliveDecoder = new SessionKeepAliveDecoder();
     private final ChallengeResponseDecoder challengeResponseDecoder = new ChallengeResponseDecoder();
 
@@ -69,20 +69,20 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
         }
 
         final int templateId = messageHeaderDecoder.templateId();
-        if (templateId == IngressMessageHeaderDecoder.TEMPLATE_ID)
+        if (templateId == SessionMessageHeaderDecoder.TEMPLATE_ID)
         {
-            ingressMessageHeaderDecoder.wrap(
+            sessionMessageHeaderDecoder.wrap(
                 buffer,
                 offset + MessageHeaderDecoder.ENCODED_LENGTH,
                 messageHeaderDecoder.blockLength(),
                 messageHeaderDecoder.version());
 
             return consensusModuleAgent.onIngressMessage(
-                ingressMessageHeaderDecoder.leadershipTermId(),
-                ingressMessageHeaderDecoder.clusterSessionId(),
+                sessionMessageHeaderDecoder.leadershipTermId(),
+                sessionMessageHeaderDecoder.clusterSessionId(),
                 buffer,
-                offset + INGRESS_HEADER,
-                length - INGRESS_HEADER);
+                offset + SESSION_MESSAGE_HEADER,
+                length - SESSION_MESSAGE_HEADER);
         }
 
         switch (templateId)

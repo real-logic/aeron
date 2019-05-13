@@ -151,7 +151,7 @@ public class ClusterNodeTest
             publicationResult = aeronCluster.tryClaim(msg.length(), bufferClaim);
             if (publicationResult > 0)
             {
-                bufferClaim.buffer().putBytes(bufferClaim.offset() + AeronCluster.INGRESS_HEADER_LENGTH,
+                bufferClaim.buffer().putBytes(bufferClaim.offset() + AeronCluster.SESSION_HEADER_LENGTH,
                     msgBuffer, 0, msg.length());
                 bufferClaim.commit();
             }

@@ -29,7 +29,7 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
      * Length of the session header that will precede application protocol message.
      */
     public static final int SESSION_HEADER_LENGTH =
-        MessageHeaderDecoder.ENCODED_LENGTH + SessionHeaderDecoder.BLOCK_LENGTH;
+        MessageHeaderDecoder.ENCODED_LENGTH + SessionMessageHeaderDecoder.BLOCK_LENGTH;
 
     private static final int FRAGMENT_LIMIT = 100;
 
@@ -39,7 +39,7 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SessionOpenEventDecoder sessionOpenEventDecoder = new SessionOpenEventDecoder();
     private final SessionCloseEventDecoder sessionCloseEventDecoder = new SessionCloseEventDecoder();
-    private final SessionHeaderDecoder sessionHeaderDecoder = new SessionHeaderDecoder();
+    private final SessionMessageHeaderDecoder sessionHeaderDecoder = new SessionMessageHeaderDecoder();
     private final TimerEventDecoder timerEventDecoder = new TimerEventDecoder();
     private final ClusterActionRequestDecoder clusterActionRequestDecoder = new ClusterActionRequestDecoder();
     private final NewLeadershipTermEventDecoder newLeadershipTermEventDecoder = new NewLeadershipTermEventDecoder();
@@ -96,7 +96,7 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
         }
 
         final int templateId = messageHeaderDecoder.templateId();
-        if (templateId == SessionHeaderDecoder.TEMPLATE_ID)
+        if (templateId == SessionMessageHeaderDecoder.TEMPLATE_ID)
         {
             sessionHeaderDecoder.wrap(
                 buffer,

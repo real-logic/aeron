@@ -48,16 +48,11 @@ import static org.agrona.SystemUtil.getDurationInNanos;
 public final class AeronCluster implements AutoCloseable
 {
     /**
-     * Length of a message header for an ingress message from a client into a cluster.
+     * Length of a session message header for an ingress or egress with a cluster.
      */
-    public static final int INGRESS_HEADER_LENGTH =
-        MessageHeaderEncoder.ENCODED_LENGTH + IngressMessageHeaderEncoder.BLOCK_LENGTH;
+    public static final int SESSION_HEADER_LENGTH =
+        MessageHeaderEncoder.ENCODED_LENGTH + SessionMessageHeaderEncoder.BLOCK_LENGTH;
 
-    /**
-     * Length of a message header for an egress message from a cluster service to a client.
-     */
-    public static final int EGRESS_HEADER_LENGTH =
-        MessageHeaderEncoder.ENCODED_LENGTH + EgressMessageHeaderEncoder.BLOCK_LENGTH;
 
     static final int SEND_ATTEMPTS = 3;
     static final int FRAGMENT_LIMIT = 10;
@@ -70,14 +65,14 @@ public final class AeronCluster implements AutoCloseable
     private Publication publication;
     private final IdleStrategy idleStrategy;
     private final BufferClaim bufferClaim = new BufferClaim();
-    private final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[INGRESS_HEADER_LENGTH]);
-    private final DirectBufferVector headerVector = new DirectBufferVector(headerBuffer, 0, INGRESS_HEADER_LENGTH);
+    private final UnsafeBuffer headerBuffer = new UnsafeBuffer(new byte[SESSION_HEADER_LENGTH]);
+    private final DirectBufferVector headerVector = new DirectBufferVector(headerBuffer, 0, SESSION_HEADER_LENGTH);
     private final UnsafeBuffer keepaliveMsgBuffer;
     private final MessageHeaderEncoder messageHeaderEncoder;
-    private final IngressMessageHeaderEncoder ingressMessageHeaderEncoder = new IngressMessageHeaderEncoder();
+    private final SessionMessageHeaderEncoder sessionMessageHeaderEncoder = new SessionMessageHeaderEncoder();
     private final SessionKeepAliveEncoder sessionKeepAliveEncoder = new SessionKeepAliveEncoder();
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-    private final EgressMessageHeaderDecoder egressMessageHeaderDecoder = new EgressMessageHeaderDecoder();
+    private final SessionMessageHeaderDecoder sessionMessageHeaderDecoder = new SessionMessageHeaderDecoder();
     private final NewLeaderEventDecoder newLeaderEventDecoder = new NewLeaderEventDecoder();
     private final SessionEventDecoder sessionEventDecoder = new SessionEventDecoder();
     private final FragmentAssembler fragmentAssembler;
@@ -217,7 +212,7 @@ public final class AeronCluster implements AutoCloseable
         this.controlledFragmentAssembler = new ControlledFragmentAssembler(
             this::onControlledFragment, 0, ctx.isDirectAssemblers());
 
-        ingressMessageHeaderEncoder
+        sessionMessageHeaderEncoder
             .wrapAndApplyHeader(headerBuffer, 0, messageHeaderEncoder)
             .clusterSessionId(clusterSessionId)
             .leadershipTermId(leadershipTermId);
@@ -295,7 +290,7 @@ public final class AeronCluster implements AutoCloseable
      * <p>
      * This can be wrapped with a {@link IngressSessionDecorator} for pre-pending the cluster session header to
      * messages.
-     * {@link io.aeron.cluster.codecs.SessionHeaderEncoder} or equivalent should be used to raw access.
+     * {@link io.aeron.cluster.codecs.SessionMessageHeaderEncoder} or should be used for raw access.
      *
      * @return the raw {@link Publication} for connecting to the cluster.
      */
@@ -308,6 +303,7 @@ public final class AeronCluster implements AutoCloseable
      * Get the raw {@link Subscription} for receiving from the cluster.
      * <p>
      * The can be wrapped with a {@link EgressAdapter} for dispatching events from the cluster.
+     * {@link io.aeron.cluster.codecs.SessionMessageHeaderDecoder} or should be used for raw access.
      *
      * @return the raw {@link Subscription} for receiving from the cluster.
      */
@@ -321,7 +317,7 @@ public final class AeronCluster implements AutoCloseable
      * Once the message has been written then {@link BufferClaim#commit()} should be called thus making it available.
      * <p>
      * On successful claim, the Cluster ingress header will be written to the start of the claimed buffer section.
-     * Clients <b>MUST</b> write into the claimed buffer region at offset {@link AeronCluster#INGRESS_HEADER_LENGTH}.
+     * Clients <b>MUST</b> write into the claimed buffer region at offset {@link AeronCluster#SESSION_HEADER_LENGTH}.
      * <pre>{@code
      *     final DirectBuffer srcBuffer = acquireIngressMessage();
      *     final BufferClaim bufferClaim = new BufferClaim();
@@ -353,10 +349,10 @@ public final class AeronCluster implements AutoCloseable
      */
     public long tryClaim(final int length, final BufferClaim bufferClaim)
     {
-        final long offset = publication.tryClaim(length + INGRESS_HEADER_LENGTH, bufferClaim);
+        final long offset = publication.tryClaim(length + SESSION_HEADER_LENGTH, bufferClaim);
         if (offset > 0)
         {
-            bufferClaim.putBytes(headerBuffer, 0, INGRESS_HEADER_LENGTH);
+            bufferClaim.putBytes(headerBuffer, 0, SESSION_HEADER_LENGTH);
         }
 
         return offset;
@@ -374,7 +370,7 @@ public final class AeronCluster implements AutoCloseable
      */
     public long offer(final DirectBuffer buffer, final int offset, final int length)
     {
-        return publication.offer(headerBuffer, 0, INGRESS_HEADER_LENGTH, buffer, offset, length, null);
+        return publication.offer(headerBuffer, 0, SESSION_HEADER_LENGTH, buffer, offset, length, null);
     }
 
     /**
@@ -487,7 +483,7 @@ public final class AeronCluster implements AutoCloseable
 
         this.leadershipTermId = leadershipTermId;
         this.leaderMemberId = leaderMemberId;
-        ingressMessageHeaderEncoder.leadershipTermId(leadershipTermId);
+        sessionMessageHeaderEncoder.leadershipTermId(leadershipTermId);
         sessionKeepAliveEncoder.leadershipTermId(leadershipTermId);
 
         if (ctx.clusterMemberEndpoints() != null)
@@ -556,23 +552,23 @@ public final class AeronCluster implements AutoCloseable
         messageHeaderDecoder.wrap(buffer, offset);
 
         final int templateId = messageHeaderDecoder.templateId();
-        if (EgressMessageHeaderDecoder.TEMPLATE_ID == templateId)
+        if (SessionMessageHeaderDecoder.TEMPLATE_ID == templateId)
         {
-            egressMessageHeaderDecoder.wrap(
+            sessionMessageHeaderDecoder.wrap(
                 buffer,
                 offset + MessageHeaderDecoder.ENCODED_LENGTH,
                 messageHeaderDecoder.blockLength(),
                 messageHeaderDecoder.version());
 
-            final long sessionId = egressMessageHeaderDecoder.clusterSessionId();
+            final long sessionId = sessionMessageHeaderDecoder.clusterSessionId();
             if (sessionId == clusterSessionId)
             {
                 egressListener.onMessage(
                     sessionId,
-                    egressMessageHeaderDecoder.timestamp(),
+                    sessionMessageHeaderDecoder.timestamp(),
                     buffer,
-                    offset + EGRESS_HEADER_LENGTH,
-                    length - EGRESS_HEADER_LENGTH,
+                    offset + SESSION_HEADER_LENGTH,
+                    length - SESSION_HEADER_LENGTH,
                     header);
             }
         }
@@ -622,23 +618,23 @@ public final class AeronCluster implements AutoCloseable
         messageHeaderDecoder.wrap(buffer, offset);
 
         final int templateId = messageHeaderDecoder.templateId();
-        if (EgressMessageHeaderDecoder.TEMPLATE_ID == templateId)
+        if (SessionMessageHeaderDecoder.TEMPLATE_ID == templateId)
         {
-            egressMessageHeaderDecoder.wrap(
+            sessionMessageHeaderDecoder.wrap(
                 buffer,
                 offset + MessageHeaderDecoder.ENCODED_LENGTH,
                 messageHeaderDecoder.blockLength(),
                 messageHeaderDecoder.version());
 
-            final long sessionId = egressMessageHeaderDecoder.clusterSessionId();
+            final long sessionId = sessionMessageHeaderDecoder.clusterSessionId();
             if (sessionId == clusterSessionId)
             {
                 return controlledEgressListener.onMessage(
                     sessionId,
-                    egressMessageHeaderDecoder.timestamp(),
+                    sessionMessageHeaderDecoder.timestamp(),
                     buffer,
-                    offset + EGRESS_HEADER_LENGTH,
-                    length - EGRESS_HEADER_LENGTH,
+                    offset + SESSION_HEADER_LENGTH,
+                    length - SESSION_HEADER_LENGTH,
                     header);
             }
         }

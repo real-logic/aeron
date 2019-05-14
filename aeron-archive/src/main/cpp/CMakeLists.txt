@@ -18,30 +18,30 @@ find_package(Java REQUIRED)
 
 set(CODEC_SCHEMA ${ARCHIVE_CODEC_SCHEMA_DIR}/aeron-archive-codecs.xml)
 set(GENERATED_CODECS
-    ${ARCHIVE_CODEC_TARGET_DIR}/aeorn_archive_client/ControlResponse.h
-    ${ARCHIVE_CODEC_TARGET_DIR}/aeorn_archive_client/ConnectRequest.h
-    ${ARCHIVE_CODEC_TARGET_DIR}/aeorn_archive_client/CloseSessionRequest.h
-    ${ARCHIVE_CODEC_TARGET_DIR}/aeorn_archive_client/StartRecordingRequest.h
-    ${ARCHIVE_CODEC_TARGET_DIR}/aeorn_archive_client/StopRecordingRequest.h
-    ${ARCHIVE_CODEC_TARGET_DIR}/aeorn_archive_client/ReplayRequest.h
-    ${ARCHIVE_CODEC_TARGET_DIR}/aeorn_archive_client/StopReplayRequest.h
-    ${ARCHIVE_CODEC_TARGET_DIR}/aeorn_archive_client/ListRecordingsRequest.h
-    ${ARCHIVE_CODEC_TARGET_DIR}/aeorn_archive_client/ListRecordingsForUriRequest.h
-    ${ARCHIVE_CODEC_TARGET_DIR}/aeorn_archive_client/ListRecordingRequest.h
-    ${ARCHIVE_CODEC_TARGET_DIR}/aeorn_archive_client/ExtendRecordingRequest.h
-    ${ARCHIVE_CODEC_TARGET_DIR}/aeorn_archive_client/RecordingPositionRequest.h
-    ${ARCHIVE_CODEC_TARGET_DIR}/aeorn_archive_client/TruncateRecordingRequest.h
-    ${ARCHIVE_CODEC_TARGET_DIR}/aeorn_archive_client/StopRecordingSubscriptionRequest.h
-    ${ARCHIVE_CODEC_TARGET_DIR}/aeorn_archive_client/StopPositionRequest.h
-    ${ARCHIVE_CODEC_TARGET_DIR}/aeorn_archive_client/FindLastMatchingRecordingRequest.h
-    ${ARCHIVE_CODEC_TARGET_DIR}/aeorn_archive_client/ListRecordingSubscriptionsRequest.h
-    ${ARCHIVE_CODEC_TARGET_DIR}/aeorn_archive_client/CatalogHeader.h
-    ${ARCHIVE_CODEC_TARGET_DIR}/aeorn_archive_client/RecordingDescriptorHeader.h
-    ${ARCHIVE_CODEC_TARGET_DIR}/aeorn_archive_client/RecordingDescriptor.h
-    ${ARCHIVE_CODEC_TARGET_DIR}/aeorn_archive_client/RecordingSubscriptionDescriptor.h
-    ${ARCHIVE_CODEC_TARGET_DIR}/aeorn_archive_client/RecordingStarted.h
-    ${ARCHIVE_CODEC_TARGET_DIR}/aeorn_archive_client/RecordingProgress.h
-    ${ARCHIVE_CODEC_TARGET_DIR}/aeorn_archive_client/RecordingStopped.h)
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/ControlResponse.h
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/ConnectRequest.h
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/CloseSessionRequest.h
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/StartRecordingRequest.h
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/StopRecordingRequest.h
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/ReplayRequest.h
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/StopReplayRequest.h
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/ListRecordingsRequest.h
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/ListRecordingsForUriRequest.h
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/ListRecordingRequest.h
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/ExtendRecordingRequest.h
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/RecordingPositionRequest.h
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/TruncateRecordingRequest.h
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/StopRecordingSubscriptionRequest.h
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/StopPositionRequest.h
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/FindLastMatchingRecordingRequest.h
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/ListRecordingSubscriptionsRequest.h
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/CatalogHeader.h
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/RecordingDescriptorHeader.h
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/RecordingDescriptor.h
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/RecordingSubscriptionDescriptor.h
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/RecordingStarted.h
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/RecordingProgress.h
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/RecordingStopped.h)
 
 add_custom_command(OUTPUT ${GENERATED_CODECS}
     COMMAND ./gradlew -Dcodec.target.dir=${ARCHIVE_CODEC_TARGET_DIR} :aeron-archive:generateCppCodecs

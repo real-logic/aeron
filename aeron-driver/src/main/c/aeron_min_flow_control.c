@@ -209,7 +209,7 @@ static void initialize_aeron_min_flow_control_strategy_timeout()
 
 int aeron_min_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
-    int32_t channel_length,
+    size_t channel_length,
     const char *channel,
     int32_t stream_id,
     int64_t registration_id,

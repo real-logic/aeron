@@ -159,3 +159,28 @@ int aeron_unicast_flow_control_strategy_supplier(
     return aeron_max_multicast_flow_control_strategy_supplier(
         strategy, channel_length, channel, stream_id, registration_id, initial_term_id, term_length);
 }
+
+aeron_flow_control_strategy_supplier_func_table_entry_t aeron_flow_control_strategy_supplier_table[] =
+{
+    { AERON_UNICAST_MAX_FLOW_CONTROL_STRATEGY_NAME, aeron_unicast_flow_control_strategy_supplier },
+    { AERON_MULTICAST_MAX_FLOW_CONTROL_STRATEGY_NAME, aeron_max_multicast_flow_control_strategy_supplier },
+    { AERON_MULTICAST_MIN_FLOW_CONTROL_STRATEGY_NAME, aeron_min_flow_control_strategy_supplier }
+};
+
+aeron_flow_control_strategy_supplier_func_t aeron_flow_control_strategy_supplier_by_name(const char *name)
+{
+    size_t entries = sizeof(aeron_flow_control_strategy_supplier_table) /
+        sizeof(aeron_flow_control_strategy_supplier_func_table_entry_t);
+
+    for (size_t i = 0; i < entries; i++)
+    {
+        aeron_flow_control_strategy_supplier_func_table_entry_t *entry = &aeron_flow_control_strategy_supplier_table[i];
+
+        if (strncmp(entry->name, name, strlen(entry->name)) == 0)
+        {
+            return entry->supplier_func;
+        }
+    }
+
+    return NULL;
+}

@@ -56,4 +56,38 @@ aeron_flow_control_strategy_t;
 
 aeron_flow_control_strategy_supplier_func_t aeron_flow_control_strategy_supplier_load(const char *strategy_name);
 
+int aeron_max_multicast_flow_control_strategy_supplier(
+    aeron_flow_control_strategy_t **strategy,
+    size_t channel_length,
+    const char *channel,
+    int32_t stream_id,
+    int64_t registration_id,
+    int32_t initial_term_id,
+    size_t term_length);
+
+int aeron_unicast_flow_control_strategy_supplier(
+    aeron_flow_control_strategy_t **strategy,
+    size_t channel_length,
+    const char *channel,
+    int32_t stream_id,
+    int64_t registration_id,
+    int32_t initial_term_id,
+    size_t term_length);
+
+int aeron_min_flow_control_strategy_supplier(
+    aeron_flow_control_strategy_t **strategy,
+    size_t channel_length,
+    const char *channel,
+    int32_t stream_id,
+    int64_t registration_id,
+    int32_t initial_term_id,
+    size_t term_buffer_capacity);
+
+typedef struct aeron_flow_control_strategy_supplier_func_table_entry_stct
+{
+    const char *name;
+    aeron_flow_control_strategy_supplier_func_t supplier_func;
+}
+aeron_flow_control_strategy_supplier_func_table_entry_t;
+
 #endif //AERON_FLOW_CONTROL_H

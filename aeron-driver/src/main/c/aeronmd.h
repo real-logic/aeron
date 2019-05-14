@@ -251,6 +251,19 @@ typedef int (*aeron_flow_control_strategy_supplier_func_t)(
     int32_t initial_term_id,
     size_t term_length);
 
+#define AERON_MULTICAST_MIN_FLOW_CONTROL_STRATEGY_NAME "multicast_min"
+#define AERON_MULTICAST_MAX_FLOW_CONTROL_STRATEGY_NAME "multicast_max"
+#define AERON_UNICAST_MAX_FLOW_CONTROL_STRATEGY_NAME "unicast_max"
+
+/**
+ * Return a flow control strategy supplier function pointer associated with the given name. This only will find
+ * strategies built into the driver and will not try to dynamically load nor find any in the current executable.
+ *
+ * @param name of the strategy
+ * @return function pointer to supplier associated with the name
+ */
+aeron_flow_control_strategy_supplier_func_t aeron_flow_control_strategy_supplier_by_name(const char *name);
+
 /**
  * Supplier for flow control structure to be employed for multicast channels.
  */

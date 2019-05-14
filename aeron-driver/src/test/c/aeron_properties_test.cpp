@@ -26,17 +26,17 @@ extern "C"
 #include "aeronmd.h"
 }
 
-class PropertiesTest : public testing::Test
+class DriverConfigurationTest : public testing::Test
 {
 public:
-    PropertiesTest()
+    DriverConfigurationTest()
     {
         aeron_properties_parse_init(&m_state);
     }
 
     static int propertyHandler(void *clientd, const char *name, const char *value)
     {
-        auto test = reinterpret_cast<PropertiesTest*>(clientd);
+        auto test = reinterpret_cast<DriverConfigurationTest*>(clientd);
 
         test->m_name = std::string(name);
         test->m_value = std::string(value);
@@ -59,19 +59,19 @@ protected:
     std::string m_value;
 };
 
-TEST_F(PropertiesTest, shouldNotParseMalformedPropertyLine)
+TEST_F(DriverConfigurationTest, shouldNotParseMalformedPropertyLine)
 {
     EXPECT_EQ(parseLine(" airon"), -1);
     EXPECT_EQ(parseLine("="), -1);
     EXPECT_EQ(parseLine("=val"), -1);
 }
 
-TEST_F(PropertiesTest, shouldNotParseTooLongALine)
+TEST_F(DriverConfigurationTest, shouldNotParseTooLongALine)
 {
     EXPECT_EQ(aeron_properties_parse_line(&m_state, "line", sizeof(m_state.property_str), propertyHandler, this), -1);
 }
 
-TEST_F(PropertiesTest, shouldIgnoreComments)
+TEST_F(DriverConfigurationTest, shouldIgnoreComments)
 {
     EXPECT_EQ(parseLine(" #"), 0);
     EXPECT_EQ(parseLine("# comment"), 0);
@@ -79,13 +79,13 @@ TEST_F(PropertiesTest, shouldIgnoreComments)
     EXPECT_EQ(parseLine("        ! bang"), 0);
 }
 
-TEST_F(PropertiesTest, shouldIgnoreBlankLines)
+TEST_F(DriverConfigurationTest, shouldIgnoreBlankLines)
 {
     EXPECT_EQ(parseLine(""), 0);
     EXPECT_EQ(parseLine(" "), 0);
 }
 
-TEST_F(PropertiesTest, shouldParseSimpleLine)
+TEST_F(DriverConfigurationTest, shouldParseSimpleLine)
 {
     EXPECT_EQ(parseLine("propertyName=propertyValue"), 1);
     EXPECT_EQ(m_name, "propertyName");
@@ -96,7 +96,7 @@ TEST_F(PropertiesTest, shouldParseSimpleLine)
     EXPECT_EQ(m_value, "propertyValue");
 }
 
-TEST_F(PropertiesTest, shouldParseSimpleLineWithNameWhiteSpace)
+TEST_F(DriverConfigurationTest, shouldParseSimpleLineWithNameWhiteSpace)
 {
     EXPECT_EQ(parseLine("   propertyName=propertyValue"), 1);
     EXPECT_EQ(m_name, "propertyName");
@@ -111,7 +111,7 @@ TEST_F(PropertiesTest, shouldParseSimpleLineWithNameWhiteSpace)
     EXPECT_EQ(m_value, "propertyValue");
 }
 
-TEST_F(PropertiesTest, shouldParseSimpleLineWithLeadingValueWhiteSpace)
+TEST_F(DriverConfigurationTest, shouldParseSimpleLineWithLeadingValueWhiteSpace)
 {
     EXPECT_EQ(parseLine("propertyName=  propertyValue"), 1);
     EXPECT_EQ(m_name, "propertyName");
@@ -122,7 +122,7 @@ TEST_F(PropertiesTest, shouldParseSimpleLineWithLeadingValueWhiteSpace)
     EXPECT_EQ(m_value, "propertyValue");
 }
 
-TEST_F(PropertiesTest, shouldParseSimpleLineWithNoValue)
+TEST_F(DriverConfigurationTest, shouldParseSimpleLineWithNoValue)
 {
     EXPECT_EQ(parseLine("propertyName="), 1);
     EXPECT_EQ(m_name, "propertyName");
@@ -137,7 +137,7 @@ TEST_F(PropertiesTest, shouldParseSimpleLineWithNoValue)
     EXPECT_EQ(m_value, "");
 }
 
-TEST_F(PropertiesTest, shouldParseSimpleContinuation)
+TEST_F(DriverConfigurationTest, shouldParseSimpleContinuation)
 {
     EXPECT_EQ(parseLine("propertyName=\\"), 0);
     EXPECT_EQ(parseLine("propertyValue"), 1);
@@ -145,7 +145,7 @@ TEST_F(PropertiesTest, shouldParseSimpleContinuation)
     EXPECT_EQ(m_value, "propertyValue");
 }
 
-TEST_F(PropertiesTest, shouldParseSimpleContinuationWithWhitespace)
+TEST_F(DriverConfigurationTest, shouldParseSimpleContinuationWithWhitespace)
 {
     EXPECT_EQ(parseLine("propertyName= property\\"), 0);
     EXPECT_EQ(parseLine("   Value"), 1);
@@ -153,7 +153,7 @@ TEST_F(PropertiesTest, shouldParseSimpleContinuationWithWhitespace)
     EXPECT_EQ(m_value, "propertyValue");
 }
 
-TEST_F(PropertiesTest, shouldParseContinuationWithComment)
+TEST_F(DriverConfigurationTest, shouldParseContinuationWithComment)
 {
     EXPECT_EQ(parseLine("propertyName= property\\"), 0);
     EXPECT_EQ(parseLine("#"), 0);
@@ -162,7 +162,7 @@ TEST_F(PropertiesTest, shouldParseContinuationWithComment)
     EXPECT_EQ(m_value, "propertyValue");
 }
 
-TEST_F(PropertiesTest, shouldParseContinuationWithBlankLine)
+TEST_F(DriverConfigurationTest, shouldParseContinuationWithBlankLine)
 {
     EXPECT_EQ(parseLine("propertyName= property\\"), 0);
     EXPECT_EQ(parseLine("\\"), 0);
@@ -171,7 +171,7 @@ TEST_F(PropertiesTest, shouldParseContinuationWithBlankLine)
     EXPECT_EQ(m_value, "propertyValue");
 }
 
-TEST_F(PropertiesTest, DISABLED_shouldHttpRetrieve)
+TEST_F(DriverConfigurationTest, DISABLED_shouldHttpRetrieve)
 {
     aeron_http_response_t *response = NULL;
     int result = aeron_http_retrieve(&response, "http://localhost:8000/aeron-throughput.properties", -1L);
@@ -191,7 +191,7 @@ TEST_F(PropertiesTest, DISABLED_shouldHttpRetrieve)
     }
 }
 
-TEST_F(PropertiesTest, DISABLED_shouldHttpRetrieveProperties)
+TEST_F(DriverConfigurationTest, DISABLED_shouldHttpRetrieveProperties)
 {
     int result = aeron_properties_http_load("http://localhost:8000/aeron-throughput.properties");
 

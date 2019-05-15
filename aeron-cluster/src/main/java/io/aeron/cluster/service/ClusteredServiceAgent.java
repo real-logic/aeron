@@ -468,10 +468,7 @@ class ClusteredServiceAgent implements Agent, Cluster
             .clusterSessionId(clusterSessionId)
             .timestamp(clusterTimeMs);
 
-        if (vectors[0] != headerVector)
-        {
-            vectors[0] = headerVector;
-        }
+        vectors[0] = headerVector;
 
         return publication.offer(vectors, null);
     }

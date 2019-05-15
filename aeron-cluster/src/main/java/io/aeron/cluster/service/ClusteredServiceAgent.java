@@ -261,84 +261,6 @@ class ClusteredServiceAgent implements Agent, Cluster
         idleStrategy.idle(workCount);
     }
 
-    public long offer(
-        final long clusterSessionId,
-        final Publication publication,
-        final DirectBuffer buffer,
-        final int offset,
-        final int length)
-    {
-        if (role != Cluster.Role.LEADER)
-        {
-            return ClientSession.MOCKED_OFFER;
-        }
-
-        if (null == publication)
-        {
-            return Publication.NOT_CONNECTED;
-        }
-
-        sessionMessageHeaderEncoder
-            .clusterSessionId(clusterSessionId)
-            .timestamp(clusterTimeMs);
-
-        return publication.offer(egressBuffer, 0, SESSION_HEADER_LENGTH, buffer, offset, length, null);
-    }
-
-    public long offer(final long clusterSessionId, final Publication publication, final DirectBufferVector[] vectors)
-    {
-        if (role != Cluster.Role.LEADER)
-        {
-            return ClientSession.MOCKED_OFFER;
-        }
-
-        if (null == publication)
-        {
-            return Publication.NOT_CONNECTED;
-        }
-
-        sessionMessageHeaderEncoder
-            .clusterSessionId(clusterSessionId)
-            .timestamp(clusterTimeMs);
-
-        if (vectors[0] != headerVector)
-        {
-            vectors[0] = headerVector;
-        }
-
-        return publication.offer(vectors, null);
-    }
-
-    public long tryClaim(
-        final long clusterSessionId,
-        final Publication publication,
-        final int length,
-        final BufferClaim bufferClaim)
-    {
-        if (role != Cluster.Role.LEADER)
-        {
-            bufferClaim.wrap(egressBuffer, 0, length);
-            return ClientSession.MOCKED_OFFER;
-        }
-
-        if (null == publication)
-        {
-            return Publication.NOT_CONNECTED;
-        }
-
-        final long offset = publication.tryClaim(length + SESSION_HEADER_LENGTH, bufferClaim);
-        if (offset > 0)
-        {
-            sessionMessageHeaderEncoder
-                .clusterSessionId(clusterSessionId)
-                .timestamp(clusterTimeMs);
-
-            bufferClaim.putBytes(egressBuffer, 0, SESSION_HEADER_LENGTH);
-        }
-
-        return offset;
-    }
-
     public void onJoinLog(
         final long leadershipTermId,
         final long logPosition,
@@ -504,6 +426,84 @@ class ClusteredServiceAgent implements Agent, Cluster
     void handleError(final Throwable ex)
     {
         ctx.countedErrorHandler().onError(ex);
+    }
+
+    long offer(
+        final long clusterSessionId,
+        final Publication publication,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length)
+    {
+        if (role != Cluster.Role.LEADER)
+        {
+            return ClientSession.MOCKED_OFFER;
+        }
+
+        if (null == publication)
+        {
+            return Publication.NOT_CONNECTED;
+        }
+
+        sessionMessageHeaderEncoder
+            .clusterSessionId(clusterSessionId)
+            .timestamp(clusterTimeMs);
+
+        return publication.offer(egressBuffer, 0, SESSION_HEADER_LENGTH, buffer, offset, length, null);
+    }
+
+    long offer(final long clusterSessionId, final Publication publication, final DirectBufferVector[] vectors)
+    {
+        if (role != Cluster.Role.LEADER)
+        {
+            return ClientSession.MOCKED_OFFER;
+        }
+
+        if (null == publication)
+        {
+            return Publication.NOT_CONNECTED;
+        }
+
+        sessionMessageHeaderEncoder
+            .clusterSessionId(clusterSessionId)
+            .timestamp(clusterTimeMs);
+
+        if (vectors[0] != headerVector)
+        {
+            vectors[0] = headerVector;
+        }
+
+        return publication.offer(vectors, null);
+    }
+
+    long tryClaim(
+        final long clusterSessionId,
+        final Publication publication,
+        final int length,
+        final BufferClaim bufferClaim)
+    {
+        if (role != Cluster.Role.LEADER)
+        {
+            bufferClaim.wrap(egressBuffer, 0, length);
+            return ClientSession.MOCKED_OFFER;
+        }
+
+        if (null == publication)
+        {
+            return Publication.NOT_CONNECTED;
+        }
+
+        final long offset = publication.tryClaim(length + SESSION_HEADER_LENGTH, bufferClaim);
+        if (offset > 0)
+        {
+            sessionMessageHeaderEncoder
+                .clusterSessionId(clusterSessionId)
+                .timestamp(clusterTimeMs);
+
+            bufferClaim.putBytes(egressBuffer, 0, SESSION_HEADER_LENGTH);
+        }
+
+        return offset;
     }
 
     private void role(final Role newRole)

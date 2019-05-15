@@ -46,7 +46,7 @@ public class ClientSession
     private final String responseChannel;
     private final byte[] encodedPrincipal;
 
-    private final ClusteredServiceAgent cluster;
+    private final ClusteredServiceAgent clusteredServiceAgent;
     private Publication responsePublication;
     private boolean isClosing;
 
@@ -55,13 +55,13 @@ public class ClientSession
         final int responseStreamId,
         final String responseChannel,
         final byte[] encodedPrincipal,
-        final ClusteredServiceAgent cluster)
+        final ClusteredServiceAgent clusteredServiceAgent)
     {
         this.id = sessionId;
         this.responseStreamId = responseStreamId;
         this.responseChannel = responseChannel;
         this.encodedPrincipal = encodedPrincipal;
-        this.cluster = cluster;
+        this.clusteredServiceAgent = clusteredServiceAgent;
     }
 
     /**
@@ -111,9 +111,9 @@ public class ClientSession
      */
     public void close()
     {
-        if (null != cluster.getClientSession(id))
+        if (null != clusteredServiceAgent.getClientSession(id))
         {
-            cluster.closeSession(id);
+            clusteredServiceAgent.closeSession(id);
         }
     }
 
@@ -138,7 +138,7 @@ public class ClientSession
      */
     public long offer(final DirectBuffer buffer, final int offset, final int length)
     {
-        return cluster.offer(id, responsePublication, buffer, offset, length);
+        return clusteredServiceAgent.offer(id, responsePublication, buffer, offset, length);
     }
 
     /**
@@ -152,7 +152,7 @@ public class ClientSession
      */
     public long offer(final DirectBufferVector[] vectors)
     {
-        return cluster.offer(id, responsePublication, vectors);
+        return clusteredServiceAgent.offer(id, responsePublication, vectors);
     }
 
     /**
@@ -192,7 +192,7 @@ public class ClientSession
      */
     public long tryClaim(final int length, final BufferClaim bufferClaim)
     {
-        return cluster.tryClaim(id, responsePublication, length, bufferClaim);
+        return clusteredServiceAgent.tryClaim(id, responsePublication, length, bufferClaim);
     }
 
     void connect(final Aeron aeron)
@@ -205,7 +205,7 @@ public class ClientSession
             }
             catch (final RegistrationException ex)
             {
-                cluster.handleError(ex);
+                clusteredServiceAgent.handleError(ex);
             }
         }
     }

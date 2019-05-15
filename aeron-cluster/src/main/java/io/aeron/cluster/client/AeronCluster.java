@@ -383,10 +383,7 @@ public final class AeronCluster implements AutoCloseable
      */
     public long offer(final DirectBufferVector[] vectors)
     {
-        if (headerVector != vectors[0])
-        {
-            vectors[0] = headerVector;
-        }
+        vectors[0] = headerVector;
 
         return publication.offer(vectors, null);
     }

@@ -318,10 +318,20 @@ public class CatalogTest
                 (he, hd, e, decoder) ->
                 {
                     assertThat(decoder.stopTimestamp(), is(NULL_TIMESTAMP));
+                },
+                newRecordingId);
+        }
+
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock))
+        {
+            catalog.forEntry(
+                (he, hd, e, decoder) ->
+                {
                     e.stopPosition(NULL_POSITION);
                 },
                 newRecordingId);
         }
+
 
         currentTimeMs = 42L;
 
@@ -385,7 +395,7 @@ public class CatalogTest
     @Test
     public void shouldContainChannelFragment()
     {
-        try (Catalog catalog = new Catalog(archiveDir, clock))
+        try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock))
         {
             final String originalChannel = "aeron:udp?endpoint=localhost:7777|tags=777|alias=TestString";
             final String strippedChannel = "strippedChannelUri";

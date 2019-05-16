@@ -55,7 +55,7 @@ public class CatalogTool
 
         if (args.length == 2 && args[1].equals("describe"))
         {
-            try (Catalog catalog = openCatalog();
+            try (Catalog catalog = openCatalogReadOnly();
                 ArchiveMarkFile markFile = openMarkFile(System.out::println))
             {
                 printMarkInformation(markFile);
@@ -72,7 +72,7 @@ public class CatalogTool
         }
         else if (args.length == 3 && args[1].equals("describe"))
         {
-            try (Catalog catalog = openCatalog())
+            try (Catalog catalog = openCatalogReadOnly())
             {
                 catalog.forEntry((he, hd, e, d) -> System.out.println(d), Long.valueOf(args[2]));
             }
@@ -93,14 +93,14 @@ public class CatalogTool
         }
         else if (args.length == 2 && args[1].equals("count-entries"))
         {
-            try (Catalog catalog = openCatalog())
+            try (Catalog catalog = openCatalogReadOnly())
             {
                 System.out.println(catalog.countEntries());
             }
         }
         else if (args.length == 2 && args[1].equals("max-entries"))
         {
-            try (Catalog catalog = openCatalog())
+            try (Catalog catalog = openCatalogReadOnly())
             {
                 System.out.println(catalog.maxEntries());
             }
@@ -122,9 +122,15 @@ public class CatalogTool
             archiveDir, ArchiveMarkFile.FILENAME, System::currentTimeMillis, TimeUnit.SECONDS.toMillis(5), logger);
     }
 
-    private static Catalog openCatalog()
+    private static Catalog openCatalogReadOnly()
     {
         return new Catalog(archiveDir, System::currentTimeMillis);
+    }
+
+
+    private static Catalog openCatalog()
+    {
+        return new Catalog(archiveDir, System::currentTimeMillis, true);
     }
 
     private static void printMarkInformation(final ArchiveMarkFile markFile)

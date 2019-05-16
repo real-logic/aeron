@@ -29,6 +29,7 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.StandardOpenOption;
 
 import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_POSTFIX;
 import static io.aeron.archive.Archive.segmentFileName;
@@ -210,6 +211,11 @@ class Catalog implements AutoCloseable
 
     Catalog(final File archiveDir, final EpochClock epochClock)
     {
+        this(archiveDir, epochClock, false);
+    }
+
+    Catalog(final File archiveDir, final EpochClock epochClock, final boolean writable)
+    {
         this.archiveDir = archiveDir;
         this.forceWrites = false;
         this.forceMetadata = false;
@@ -222,10 +228,17 @@ class Catalog implements AutoCloseable
             final MappedByteBuffer catalogMappedByteBuffer;
             final long catalogLength;
 
-            try (FileChannel channel = FileChannel.open(catalogFile.toPath(), READ, WRITE, SPARSE))
+            final StandardOpenOption[] openOptions = writable ?
+                                               new StandardOpenOption[]{READ, WRITE, SPARSE} :
+                                               new StandardOpenOption[]{READ, SPARSE};
+            try (FileChannel channel = FileChannel.open(catalogFile.toPath(), openOptions))
             {
                 catalogLength = channel.size();
-                catalogMappedByteBuffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, catalogLength);
+                catalogMappedByteBuffer = channel.map(writable ?
+                                                      FileChannel.MapMode.READ_WRITE :
+                                                      FileChannel.MapMode.READ_ONLY,
+                                                      0,
+                                                      catalogLength);
             }
             catch (final Exception ex)
             {

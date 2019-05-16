@@ -23,6 +23,8 @@ import org.agrona.collections.ArrayUtil;
 
 class ControlRequestAdapter implements FragmentHandler
 {
+    private static final boolean IS_STRICT = !Boolean.getBoolean("aeron.archive.lenient.control.schema");
+
     private final ControlRequestListener listener;
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     private final ConnectRequestDecoder connectRequestDecoder = new ConnectRequestDecoder();
@@ -59,7 +61,7 @@ class ControlRequestAdapter implements FragmentHandler
         headerDecoder.wrap(buffer, offset);
 
         final int schemaId = headerDecoder.schemaId();
-        if (schemaId != MessageHeaderDecoder.SCHEMA_ID)
+        if (IS_STRICT && schemaId != MessageHeaderDecoder.SCHEMA_ID)
         {
             throw new ArchiveException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
         }

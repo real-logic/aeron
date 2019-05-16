@@ -16,12 +16,14 @@
 package io.aeron.cluster.service;
 
 import io.aeron.Aeron;
+import io.aeron.DirectBufferVector;
 import io.aeron.Publication;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
 
 public final class ConsensusModuleProxy implements AutoCloseable
 {
@@ -95,6 +97,49 @@ public final class ConsensusModuleProxy implements AutoCloseable
 
                 bufferClaim.commit();
 
+                return true;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
+
+    public boolean offer(
+        final DirectBuffer headerBuffer,
+        final int headerOffset,
+        final int headerLength,
+        final DirectBuffer messageBuffer,
+        final int messageOffset,
+        final int messageLength)
+    {
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.offer(
+                headerBuffer, headerOffset, headerLength, messageBuffer, messageOffset, messageLength);
+            if (result > 0)
+            {
+                return true;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
+
+    public boolean offer(final DirectBufferVector[] vectors)
+    {
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.offer(vectors, null);
+            if (result > 0)
+            {
                 return true;
             }
 

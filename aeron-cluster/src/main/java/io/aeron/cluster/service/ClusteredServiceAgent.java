@@ -56,9 +56,9 @@ class ClusteredServiceAgent implements Agent, Cluster
     private final IdleStrategy idleStrategy;
     private final EpochClock epochClock;
     private final ClusterMarkFile markFile;
-    private final UnsafeBuffer egressBuffer = new UnsafeBuffer(
+    private final UnsafeBuffer headerBuffer = new UnsafeBuffer(
         new byte[Configuration.MAX_UDP_PAYLOAD_LENGTH - DataHeaderFlyweight.HEADER_LENGTH]);
-    private final DirectBufferVector headerVector = new DirectBufferVector(egressBuffer, 0, SESSION_HEADER_LENGTH);
+    private final DirectBufferVector headerVector = new DirectBufferVector(headerBuffer, 0, SESSION_HEADER_LENGTH);
     private final SessionMessageHeaderEncoder sessionMessageHeaderEncoder = new SessionMessageHeaderEncoder();
 
     private long ackId = 0;
@@ -93,7 +93,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         consensusModuleProxy = new ConsensusModuleProxy(aeron.addPublication(channel, ctx.consensusModuleStreamId()));
         serviceAdapter = new ServiceAdapter(aeron.addSubscription(channel, ctx.serviceStreamId()), this);
 
-        sessionMessageHeaderEncoder.wrapAndApplyHeader(egressBuffer, 0, new MessageHeaderEncoder());
+        sessionMessageHeaderEncoder.wrapAndApplyHeader(headerBuffer, 0, new MessageHeaderEncoder());
     }
 
     public void onStart()
@@ -245,6 +245,21 @@ class ClusteredServiceAgent implements Agent, Cluster
     public boolean cancelTimer(final long correlationId)
     {
         return consensusModuleProxy.cancelTimer(correlationId);
+    }
+
+    public boolean offer(final DirectBuffer buffer, final int offset, final int length)
+    {
+        sessionMessageHeaderEncoder.clusterSessionId(-serviceId);
+
+        return consensusModuleProxy.offer(headerBuffer, 0, SESSION_HEADER_LENGTH, buffer, offset, length);
+    }
+
+    public boolean offer(final DirectBufferVector[] vectors)
+    {
+        sessionMessageHeaderEncoder.clusterSessionId(-serviceId);
+        vectors[0] = headerVector;
+
+        return consensusModuleProxy.offer(vectors);
     }
 
     public void idle()
@@ -449,7 +464,7 @@ class ClusteredServiceAgent implements Agent, Cluster
             .clusterSessionId(clusterSessionId)
             .timestamp(clusterTimeMs);
 
-        return publication.offer(egressBuffer, 0, SESSION_HEADER_LENGTH, buffer, offset, length, null);
+        return publication.offer(headerBuffer, 0, SESSION_HEADER_LENGTH, buffer, offset, length, null);
     }
 
     long offer(final long clusterSessionId, final Publication publication, final DirectBufferVector[] vectors)
@@ -481,7 +496,7 @@ class ClusteredServiceAgent implements Agent, Cluster
     {
         if (role != Cluster.Role.LEADER)
         {
-            bufferClaim.wrap(egressBuffer, 0, length);
+            bufferClaim.wrap(headerBuffer, 0, length);
             return ClientSession.MOCKED_OFFER;
         }
 
@@ -497,7 +512,7 @@ class ClusteredServiceAgent implements Agent, Cluster
                 .clusterSessionId(clusterSessionId)
                 .timestamp(clusterTimeMs);
 
-            bufferClaim.putBytes(egressBuffer, 0, SESSION_HEADER_LENGTH);
+            bufferClaim.putBytes(headerBuffer, 0, SESSION_HEADER_LENGTH);
         }
 
         return offset;

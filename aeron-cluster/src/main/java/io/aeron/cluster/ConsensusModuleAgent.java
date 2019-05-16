@@ -852,6 +852,23 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
     }
 
+    void onServiceMessage(
+        final long leadershipTermId,
+        final long clusterSessionId,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length)
+    {
+        // TODO: Deal with guarantee semantics
+        if (leadershipTermId == this.leadershipTermId &&
+            Cluster.Role.LEADER == role &&
+            ConsensusModule.State.ACTIVE == state)
+        {
+            // TODO: Deal with back pressure
+            logPublisher.appendMessage(leadershipTermId, clusterSessionId, clusterTimeMs, buffer, offset, length);
+        }
+    }
+
     void onScheduleTimer(final long correlationId, final long deadlineMs)
     {
         if (expiredTimerCountByCorrelationIdMap.get(correlationId) == 0)

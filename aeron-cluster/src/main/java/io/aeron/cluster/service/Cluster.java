@@ -16,6 +16,7 @@
 package io.aeron.cluster.service;
 
 import io.aeron.Aeron;
+import io.aeron.DirectBufferVector;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.logbuffer.Header;
@@ -200,6 +201,32 @@ public interface Cluster
      * @see #scheduleTimer(long, long)
      */
     boolean cancelTimer(long correlationId);
+
+    /**
+     * Offer a message as ingress to the cluster for sequencing. This will happen efficiently over IPC to the
+     * consensus module and have the cluster session of as the negative value of the
+     * {@link io.aeron.cluster.service.ClusteredServiceContainer.Configuration#SERVICE_ID_PROP_NAME}.
+     *
+     * @param buffer containing the message to be offered.
+     * @param offset in the buffer at which the encoded message begins.
+     * @param length in the buffer of the encoded message.
+     * @return true if successful otherwise false.
+     * @see io.aeron.Publication#offer(DirectBuffer, int, int)
+     */
+    boolean offer(DirectBuffer buffer, int offset, int length);
+
+    /**
+     * Offer a message as ingress to the cluster for sequencing. This will happen efficiently over IPC to the
+     * consensus module and have the cluster session of as the negative value of the
+     * {@link io.aeron.cluster.service.ClusteredServiceContainer.Configuration#SERVICE_ID_PROP_NAME}.
+     * <p>
+     * The first vector must be left free to be filled in for the session message header.
+     *
+     * @param vectors containing the message parts with the first left to be filled.
+     * @return true if successful otherwise false.
+     * @see io.aeron.Publication#offer(DirectBufferVector[])
+     */
+    boolean offer(DirectBufferVector[] vectors);
 
     /**
      * Should be called by the service when it experiences back-pressure on egress, closing sessions, or making

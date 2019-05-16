@@ -15,26 +15,30 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.FragmentAssembler;
 import io.aeron.Subscription;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
-import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 
-final class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
+final class ConsensusModuleAdapter implements AutoCloseable
 {
+    private static final int SESSION_MESSAGE_HEADER =
+        MessageHeaderDecoder.ENCODED_LENGTH + SessionMessageHeaderDecoder.BLOCK_LENGTH;
     private static final int FRAGMENT_LIMIT = 10;
     private final Subscription subscription;
     private final ConsensusModuleAgent consensusModuleAgent;
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
+    private final SessionMessageHeaderDecoder sessionMessageHeaderDecoder = new SessionMessageHeaderDecoder();
     private final ScheduleTimerDecoder scheduleTimerDecoder = new ScheduleTimerDecoder();
     private final CancelTimerDecoder cancelTimerDecoder = new CancelTimerDecoder();
     private final ServiceAckDecoder serviceAckDecoder = new ServiceAckDecoder();
     private final CloseSessionDecoder closeSessionDecoder = new CloseSessionDecoder();
     private final ClusterMembersQueryDecoder clusterMembersQueryDecoder = new ClusterMembersQueryDecoder();
     private final RemoveMemberDecoder removeMemberDecoder = new RemoveMemberDecoder();
+    private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this::onFragment);
 
     ConsensusModuleAdapter(final Subscription subscription, final ConsensusModuleAgent consensusModuleAgent)
     {
@@ -49,10 +53,11 @@ final class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
 
     int poll()
     {
-        return subscription.poll(this, FRAGMENT_LIMIT);
+        return subscription.poll(fragmentAssembler, FRAGMENT_LIMIT);
     }
 
-    public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
+    @SuppressWarnings("unused")
+    private void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
 
@@ -65,6 +70,21 @@ final class ConsensusModuleAdapter implements FragmentHandler, AutoCloseable
         final int templateId = messageHeaderDecoder.templateId();
         switch (templateId)
         {
+            case SessionMessageHeaderDecoder.TEMPLATE_ID:
+                sessionMessageHeaderDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                consensusModuleAgent.onServiceMessage(
+                    sessionMessageHeaderDecoder.leadershipTermId(),
+                    sessionMessageHeaderDecoder.clusterSessionId(),
+                    buffer,
+                    offset + SESSION_MESSAGE_HEADER,
+                    length - SESSION_MESSAGE_HEADER);
+                break;
+
             case CloseSessionDecoder.TEMPLATE_ID:
                 closeSessionDecoder.wrap(
                     buffer,

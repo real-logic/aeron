@@ -375,7 +375,7 @@ public final class AeronCluster implements AutoCloseable
 
     /**
      * Non-blocking publish by gathering buffer vectors into a message. The first vector will be replaced by the cluster
-     * ingress header so must be left unused.
+     * session message header so must be left unused.
      *
      * @param vectors which make up the message.
      * @return the same as {@link Publication#offer(DirectBufferVector[])}.

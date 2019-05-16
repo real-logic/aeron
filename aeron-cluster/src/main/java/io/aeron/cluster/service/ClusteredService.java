@@ -59,7 +59,7 @@ public interface ClusteredService
     /**
      * A message has been received to be processed by a clustered service.
      *
-     * @param session     for the client which sent the message.
+     * @param session     for the client which sent the message. This can be null if the client was a service.
      * @param timestampMs for when the message was received.
      * @param buffer      containing the message.
      * @param offset      in the buffer at which the message is encoded.

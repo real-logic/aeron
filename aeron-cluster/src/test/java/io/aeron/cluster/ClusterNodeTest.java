@@ -208,9 +208,43 @@ public class ClusterNodeTest
         }
     }
 
+    @Test(timeout = 10_000)
+    public void shouldSendResponseAfterServiceMessage()
+    {
+        final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
+        final String msg = "Hello World!";
+        msgBuffer.putStringWithoutLengthAscii(0, msg);
+
+        final MutableInteger messageCount = new MutableInteger();
+
+        final EgressListener listener = (clusterSessionId, timestamp, buffer, offset, length, header) ->
+        {
+            assertThat(buffer.getStringWithoutLengthAscii(offset, length), is(msg));
+            messageCount.value += 1;
+        };
+
+        container = launchServiceMessageIngressService();
+        aeronCluster = connectToCluster(listener);
+
+        while (aeronCluster.offer(msgBuffer, 0, msg.length()) < 0)
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.yield();
+        }
+
+        while (messageCount.get() == 0)
+        {
+            if (aeronCluster.pollEgress() <= 0)
+            {
+                TestUtil.checkInterruptedStatus();
+                Thread.yield();
+            }
+        }
+    }
+
     private ClusteredServiceContainer launchEchoService()
     {
-        final ClusteredService echoService = new StubClusteredService()
+        final ClusteredService clusteredService = new StubClusteredService()
         {
             public void onSessionMessage(
                 final ClientSession session,
@@ -222,21 +256,20 @@ public class ClusterNodeTest
             {
                 while (session.offer(buffer, offset, length) < 0)
                 {
-                    TestUtil.checkInterruptedStatus();
-                    Thread.yield();
+                    cluster.idle();
                 }
             }
         };
 
         return ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
-                .clusteredService(echoService)
+                .clusteredService(clusteredService)
                 .errorHandler(Throwable::printStackTrace));
     }
 
     private ClusteredServiceContainer launchTimedService()
     {
-        final ClusteredService timedService = new StubClusteredService()
+        final ClusteredService clusteredService = new StubClusteredService()
         {
             private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
             private long clusterSessionId;
@@ -275,7 +308,46 @@ public class ClusterNodeTest
 
         return ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
-                .clusteredService(timedService)
+                .clusteredService(clusteredService)
+                .terminationHook(TestUtil.TERMINATION_HOOK)
+                .errorHandler(TestUtil.errorHandler(0)));
+    }
+
+    private ClusteredServiceContainer launchServiceMessageIngressService()
+    {
+        final ClusteredService clusteredService = new StubClusteredService()
+        {
+            public void onSessionMessage(
+                final ClientSession session,
+                final long timestampMs,
+                final DirectBuffer buffer,
+                final int offset,
+                final int length,
+                @SuppressWarnings("unused") final Header header)
+            {
+                if (null != session)
+                {
+                    while (!cluster.offer(buffer, offset, length))
+                    {
+                        cluster.idle();
+                    }
+                }
+                else
+                {
+                    for (final ClientSession clientSession : cluster.clientSessions())
+                    {
+                        while (clientSession.offer(buffer, offset, length) < 0)
+                        {
+                            cluster.idle();
+                        }
+                    }
+                }
+            }
+        };
+
+        return ClusteredServiceContainer.launch(
+            new ClusteredServiceContainer.Context()
+                .clusteredService(clusteredService)
                 .terminationHook(TestUtil.TERMINATION_HOOK)
                 .errorHandler(TestUtil.errorHandler(0)));
     }

@@ -1,3 +1,18 @@
+/*
+ * Copyright 2014-2019 Real Logic Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.aeron.archive;
 
 import java.io.File;
@@ -12,21 +27,17 @@ import io.aeron.archive.codecs.RecordingDescriptorHeaderEncoder;
 
 public class CatalogView
 {
-
     /**
-     * List all recording descriptors.
-     * <p>
+     * List all recording descriptors in a {@link Catalog}.
      *
      * @param archiveDir the directory containing the {@link Catalog}.
-     * @param consumer    to which the descriptor are dispatched.
+     * @param consumer   to which the descriptor are dispatched.
      */
     public static void listRecordings(final File archiveDir, final RecordingDescriptorConsumer consumer)
     {
-        final RecordingDescriptorConsumerAdaptor adaptor = new RecordingDescriptorConsumerAdaptor(consumer);
-
         try (Catalog catalog = new Catalog(archiveDir, System::currentTimeMillis))
         {
-            catalog.forEach(adaptor);
+            catalog.forEach(new RecordingDescriptorConsumerAdaptor(consumer));
         }
     }
 
@@ -35,14 +46,13 @@ public class CatalogView
      * <p>
      * If the recording id is not found then nothing is returned.
      *
-     * @param archiveDir the directory containing the {@link Catalog}.
+     * @param archiveDir  the directory containing the {@link Catalog}.
      * @param recordingId to view
      * @param consumer    to which the descriptor are dispatched.
      * @return the true of a descriptor is found and consumed.
      */
-    public static boolean listRecording(final File archiveDir,
-        final long recordingId,
-        final RecordingDescriptorConsumer consumer)
+    public static boolean listRecording(
+        final File archiveDir, final long recordingId, final RecordingDescriptorConsumer consumer)
     {
         final RecordingDescriptorConsumerAdaptor adaptor = new RecordingDescriptorConsumerAdaptor(consumer);
 
@@ -52,11 +62,8 @@ public class CatalogView
         }
     }
 
-    private static class RecordingDescriptorConsumerAdaptor implements Catalog.CatalogEntryProcessor
+    static class RecordingDescriptorConsumerAdaptor implements Catalog.CatalogEntryProcessor
     {
-        private static final long NULL_SESSION_ID = Aeron.NULL_VALUE;
-        private static final long NULL_CORRELATION_ID = Aeron.NULL_VALUE;
-
         private final RecordingDescriptorConsumer consumer;
 
         RecordingDescriptorConsumerAdaptor(final RecordingDescriptorConsumer consumer)
@@ -64,14 +71,15 @@ public class CatalogView
             this.consumer = consumer;
         }
 
-        @Override
-        public void accept(final RecordingDescriptorHeaderEncoder headerEncoder,
+        public void accept(
+            final RecordingDescriptorHeaderEncoder headerEncoder,
             final RecordingDescriptorHeaderDecoder headerDecoder,
             final RecordingDescriptorEncoder descriptorEncoder,
             final RecordingDescriptorDecoder descriptorDecoder)
         {
-            consumer.onRecordingDescriptor(NULL_SESSION_ID,
-                NULL_CORRELATION_ID,
+            consumer.onRecordingDescriptor(
+                Aeron.NULL_VALUE,
+                Aeron.NULL_VALUE,
                 descriptorDecoder.recordingId(),
                 descriptorDecoder.startTimestamp(),
                 descriptorDecoder.stopTimestamp(),
@@ -88,5 +96,4 @@ public class CatalogView
                 descriptorDecoder.sourceIdentity());
         }
     }
-
 }

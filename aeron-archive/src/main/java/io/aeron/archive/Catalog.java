@@ -228,17 +228,13 @@ class Catalog implements AutoCloseable
             final MappedByteBuffer catalogMappedByteBuffer;
             final long catalogLength;
 
-            final StandardOpenOption[] openOptions = writable ?
-                                               new StandardOpenOption[]{READ, WRITE, SPARSE} :
-                                               new StandardOpenOption[]{READ, SPARSE};
+            final StandardOpenOption[] openOptions =
+                writable ? new StandardOpenOption[]{ READ, WRITE, SPARSE } : new StandardOpenOption[]{ READ };
             try (FileChannel channel = FileChannel.open(catalogFile.toPath(), openOptions))
             {
                 catalogLength = channel.size();
-                catalogMappedByteBuffer = channel.map(writable ?
-                                                      FileChannel.MapMode.READ_WRITE :
-                                                      FileChannel.MapMode.READ_ONLY,
-                                                      0,
-                                                      catalogLength);
+                catalogMappedByteBuffer = channel.map(
+                    writable ? FileChannel.MapMode.READ_WRITE : FileChannel.MapMode.READ_ONLY, 0, catalogLength);
             }
             catch (final Exception ex)
             {

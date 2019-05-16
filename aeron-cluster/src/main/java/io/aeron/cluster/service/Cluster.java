@@ -145,7 +145,7 @@ public interface Cluster
      *
      * @param clusterSessionId to be closed.
      * @return true if the event to close a session was sent or false if back pressure was applied.
-     * @throws IllegalArgumentException if the clusterSessionId is not recognised.
+     * @throws ClusterException if the clusterSessionId is not recognised.
      */
     boolean closeSession(long clusterSessionId);
 

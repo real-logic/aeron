@@ -268,7 +268,10 @@ class TestNode implements AutoCloseable
             final String message = buffer.getStringWithoutLengthAscii(offset, length);
             if (message.equals(TestMessages.REGISTER_TIMER))
             {
-                cluster.scheduleTimer(1, cluster.timeMs() + 1_000);
+                while (!cluster.scheduleTimer(1, cluster.timeMs() + 1_000))
+                {
+                    cluster.idle();
+                }
             }
 
             while (session.offer(buffer, offset, length) < 0)

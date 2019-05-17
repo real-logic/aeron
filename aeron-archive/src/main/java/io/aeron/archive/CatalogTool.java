@@ -16,6 +16,7 @@
 package io.aeron.archive;
 
 import io.aeron.Aeron;
+import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorEncoder;
 import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
@@ -54,7 +55,6 @@ public class CatalogTool
     private static final ByteBuffer TEMP_BUFFER =
         BufferUtil.allocateDirectAligned(4096, FrameDescriptor.FRAME_ALIGNMENT);
     private static final DataHeaderFlyweight HEADER_FLYWEIGHT = new DataHeaderFlyweight(TEMP_BUFFER);
-    private static final Scanner SCANNER = new Scanner(System.in);
 
     private static File archiveDir;
 
@@ -84,7 +84,7 @@ public class CatalogTool
                 catalog.forEach((he, hd, e, d) -> System.out.println(d));
             }
         }
-        else if (args.length >= 2 && args[1].equals("verbose"))
+        else if (args.length >= 2 && args[1].equals("dump"))
         {
             try (Catalog catalog = openCatalog();
                 ArchiveMarkFile markFile = openMarkFile(System.out::println))
@@ -93,11 +93,10 @@ public class CatalogTool
                 System.out.println("Catalog Max Entries: " + catalog.maxEntries());
 
                 System.out.println();
-                System.out.print("Verbose mode is on. ");
-                final long batchLimit = parseBatchLimit(args);
-                System.out.println("We will print " + batchLimit + " fragments at a time.");
+                final long dataFragmentLimit = args.length >= 3 ? Long.parseLong(args[2]) : Long.MAX_VALUE;
+                System.out.println("Dumping " + dataFragmentLimit + " fragments per recording");
                 catalog.forEach((he, headerDecoder, e, descriptorDecoder) ->
-                    printVerbose(catalog, batchLimit, headerDecoder, descriptorDecoder));
+                    printVerbose(catalog, dataFragmentLimit, headerDecoder, descriptorDecoder));
             }
         }
         else if (args.length == 2 && args[1].equals("pid"))
@@ -153,37 +152,25 @@ public class CatalogTool
         }
     }
 
-    private static long parseBatchLimit(final String[] args)
-    {
-        final long printBatchLimit;
-        if (args.length >= 3)
-        {
-            printBatchLimit = Long.parseLong(args[2]);
-        }
-        else
-        {
-            printBatchLimit = Long.MAX_VALUE;
-        }
-        return printBatchLimit;
-    }
-
     private static void printVerbose(
         final Catalog catalog,
-        final long batchLimit,
+        final long dataFragmentLimit,
         final RecordingDescriptorHeaderDecoder header,
         final RecordingDescriptorDecoder descriptor)
     {
+        final long stopPosition = descriptor.stopPosition();
+        final long streamLength = stopPosition - descriptor.startPosition();
 
-        final long recordingDataLength = descriptor.stopPosition() - descriptor.startPosition();
         System.out.printf(
-            "\n\nRecording %d \n  channel: %s\n  streamId: %d\n  data length: %d\n",
+            "%n%nRecording %d %n  channel: %s%n  streamId: %d%n  stream length: %d%n",
             descriptor.recordingId(),
             descriptor.strippedChannel(),
             descriptor.streamId(),
-            recordingDataLength);
+            AeronArchive.NULL_POSITION == stopPosition ? AeronArchive.NULL_POSITION : streamLength);
         System.out.println(header);
         System.out.println(descriptor);
-        if (0 == recordingDataLength)
+
+        if (0 == streamLength)
         {
             System.out.println("Recording is empty");
             return;
@@ -194,47 +181,49 @@ public class CatalogTool
             catalog.recordingSummary(descriptor.recordingId(), new RecordingSummary()),
             archiveDir,
             descriptor.startPosition(),
-            recordingDataLength,
+            AeronArchive.NULL_POSITION,
             null);
 
         boolean isContinue = true;
-        long batchCount = batchLimit;
+        long fragmentCount = dataFragmentLimit;
         do
         {
             System.out.println();
-            System.out.print("Found a frame on the position [" + reader.replayPosition() + "] ");
-            reader.poll((buffer, offset, length, frameType, flags, reservedValue) ->
-            {
-                System.out.println("data on offset [" + offset + "] with length = " + length);
-                if (HDR_TYPE_PAD == frameType)
+            System.out.print("Frame at position [" + reader.replayPosition() + "] ");
+            reader.poll(
+                (buffer, offset, length, frameType, flags, reservedValue) ->
                 {
-                    System.out.println("PADDING FRAME");
-                }
-                else if (HDR_TYPE_DATA == frameType)
-                {
-                    if ((flags & UNFRAGMENTED) != UNFRAGMENTED)
+                    System.out.println("data at offset [" + offset + "] with length = " + length);
+                    if (HDR_TYPE_PAD == frameType)
                     {
-                        String suffix = (flags & BEGIN_FRAG_FLAG) == BEGIN_FRAG_FLAG ? "BEGIN_FRAGMENT" : "";
-                        suffix += (flags & END_FRAG_FLAG) == END_FRAG_FLAG ? "END_FRAGMENT" : "";
-                        System.out.println("Fragmented frame. " + suffix);
+                        System.out.println("PADDING FRAME");
                     }
-                    System.out.println(PrintBufferUtil.prettyHexDump(buffer, offset, length));
-                }
-                else
-                {
-                    System.out.println("Unexpected frame type " + frameType);
-                }
-            }, 1);
+                    else if (HDR_TYPE_DATA == frameType)
+                    {
+                        if ((flags & UNFRAGMENTED) != UNFRAGMENTED)
+                        {
+                            String suffix = (flags & BEGIN_FRAG_FLAG) == BEGIN_FRAG_FLAG ? "BEGIN_FRAGMENT" : "";
+                            suffix += (flags & END_FRAG_FLAG) == END_FRAG_FLAG ? "END_FRAGMENT" : "";
+                            System.out.println("Fragmented frame. " + suffix);
+                        }
+                        System.out.println(PrintBufferUtil.prettyHexDump(buffer, offset, length));
+                    }
+                    else
+                    {
+                        System.out.println("Unexpected frame type " + frameType);
+                    }
+                },
+                1);
 
             System.out.printf(
-                "%d bytes (from %d) left in this recording %d\n",
-                recordingDataLength - reader.replayPosition(),
-                recordingDataLength,
+                "%d bytes (from %d) remaining in this recording %d%n",
+                streamLength - reader.replayPosition(),
+                streamLength,
                 descriptor.recordingId());
 
-            if (--batchCount == 0)
+            if (--fragmentCount == 0)
             {
-                batchCount = batchLimit;
+                fragmentCount = dataFragmentLimit;
                 isContinue = readContinueAnswer();
             }
         }
@@ -243,9 +232,10 @@ public class CatalogTool
 
     private static boolean readContinueAnswer()
     {
-        System.out.print("To continue? (Y/N): ");
-        final String answer = SCANNER.nextLine();
-        return (answer.isEmpty() || answer.equalsIgnoreCase("y") || answer.equalsIgnoreCase("yes"));
+        System.out.printf("%nContinue? (y/n): ");
+        final String answer = new Scanner(System.in).nextLine();
+
+        return answer.isEmpty() || answer.equalsIgnoreCase("y") || answer.equalsIgnoreCase("yes");
     }
 
     private static ArchiveMarkFile openMarkFile(final Consumer<String> logger)
@@ -258,7 +248,6 @@ public class CatalogTool
     {
         return new Catalog(archiveDir, System::currentTimeMillis);
     }
-
 
     private static Catalog openCatalog()
     {
@@ -436,8 +425,8 @@ public class CatalogTool
     {
         System.out.println("Usage: <archive-dir> <command>");
         System.out.println("  describe <optional recordingId>: prints out descriptor(s) in the catalog.");
-        System.out.println("  verbose <optional number of fragments>: prints out descriptor(s) in the catalog and");
-        System.out.println("     all data stored in the catalog.");
+        System.out.println("  dump <optional data fragment limit per recording>: prints descriptor(s)");
+        System.out.println("     in the catalog and associated recorded data.");
         System.out.println("  pid: prints just PID of archive.");
         System.out.println("  verify <optional recordingId>: verifies descriptor(s) in the catalog, checking");
         System.out.println("     recording files availability and contents. Faulty entries are marked as unusable.");

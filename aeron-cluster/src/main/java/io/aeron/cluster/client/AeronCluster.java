@@ -317,19 +317,18 @@ public final class AeronCluster implements AutoCloseable
      * Once the message has been written then {@link BufferClaim#commit()} should be called thus making it available.
      * <p>
      * On successful claim, the Cluster ingress header will be written to the start of the claimed buffer section.
-     * Clients <b>MUST</b> write into the claimed buffer region at offset {@link AeronCluster#SESSION_HEADER_LENGTH}.
+     * Clients <b>MUST</b> write into the claimed buffer region at offset + {@link AeronCluster#SESSION_HEADER_LENGTH}.
      * <pre>{@code
-     *     final DirectBuffer srcBuffer = acquireIngressMessage();
-     *     final BufferClaim bufferClaim = new BufferClaim();
+     *     final DirectBuffer srcBuffer = acquireMessage();
      *
-     *     if (aeronCluster.tryClaim(srcBuffer.capacity(), bufferClaim) > 0L)
+     *     if (aeronCluster.tryClaim(length, bufferClaim) > 0L)
      *     {
      *         try
      *         {
      *              final MutableDirectBuffer buffer = bufferClaim.buffer();
      *              final int offset = bufferClaim.offset();
-     *              // ensure that ingress data is written at the correct offset
-     *              buffer.putBytes(offset + AeronCluster.INGRESS_HEADER_LENGTH, srcBuffer, 0, srcBuffer.capacity());
+     *              // ensure that data is written at the correct offset
+     *              buffer.putBytes(offset + AeronCluster.SESSION_HEADER_LENGTH, srcBuffer, 0, length);
      *         }
      *         finally
      *         {

@@ -19,6 +19,7 @@ import io.aeron.Aeron;
 import io.aeron.DirectBufferVector;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.CloseReason;
+import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 
@@ -227,6 +228,41 @@ public interface Cluster
      * @see io.aeron.Publication#offer(DirectBufferVector[])
      */
     boolean offer(DirectBufferVector[] vectors);
+
+    /**
+     * Try to claim a range in the publication log into which a message can be written with zero copy semantics.
+     * Once the message has been written then {@link BufferClaim#commit()} should be called thus making it available.
+     * <p>
+     * On successful claim, the Cluster session header will be written to the start of the claimed buffer section.
+     * Clients <b>MUST</b> write into the claimed buffer region at offset + {@link ClientSession#SESSION_HEADER_LENGTH}.
+     * <pre>{@code
+     *     final DirectBuffer srcBuffer = acquireMessage();
+     *
+     *     if (cluster.tryClaim(length, bufferClaim))
+     *     {
+     *         try
+     *         {
+     *              final MutableDirectBuffer buffer = bufferClaim.buffer();
+     *              final int offset = bufferClaim.offset();
+     *              // ensure that data is written at the correct offset
+     *              buffer.putBytes(offset + ClientSession.SESSION_HEADER_LENGTH, srcBuffer, 0, length);
+     *         }
+     *         finally
+     *         {
+     *             bufferClaim.commit();
+     *         }
+     *     }
+     * }</pre>
+     *
+     * @param length      of the range to claim, in bytes.
+     * @param bufferClaim to be populated if the claim succeeds.
+     * @return true of the claim is successful.
+     * @throws IllegalArgumentException if the length is greater than {@link io.aeron.Publication#maxPayloadLength()}.
+     * @see io.aeron.Publication#tryClaim(int, BufferClaim)
+     * @see BufferClaim#commit()
+     * @see BufferClaim#abort()
+     */
+    boolean tryClaim(int length, BufferClaim bufferClaim);
 
     /**
      * Should be called by the service when it experiences back-pressure on egress, closing sessions, or making

@@ -262,6 +262,13 @@ class ClusteredServiceAgent implements Agent, Cluster
         return consensusModuleProxy.offer(vectors);
     }
 
+    public boolean tryClaim(final int length, final BufferClaim bufferClaim)
+    {
+        sessionMessageHeaderEncoder.clusterSessionId(-serviceId);
+
+        return consensusModuleProxy.tryClaim(length + SESSION_HEADER_LENGTH, bufferClaim, headerBuffer);
+    }
+
     public void idle()
     {
         checkInterruptedStatus();

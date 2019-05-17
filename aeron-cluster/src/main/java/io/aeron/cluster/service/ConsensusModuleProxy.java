@@ -150,6 +150,25 @@ public final class ConsensusModuleProxy implements AutoCloseable
         return false;
     }
 
+    public boolean tryClaim(final int length, final BufferClaim bufferClaim, final DirectBuffer sessionHeader)
+    {
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                bufferClaim.putBytes(sessionHeader, 0, ClientSession.SESSION_HEADER_LENGTH);
+                return true;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
+
     public void ack(final long logPosition, final long ackId, final int serviceId)
     {
         ack(logPosition, ackId, Aeron.NULL_VALUE, serviceId);

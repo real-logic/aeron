@@ -96,7 +96,7 @@ public class CatalogTool
                 final long dataFragmentLimit = args.length >= 3 ? Long.parseLong(args[2]) : Long.MAX_VALUE;
                 System.out.println("Dumping " + dataFragmentLimit + " fragments per recording");
                 catalog.forEach((he, headerDecoder, e, descriptorDecoder) ->
-                    printVerbose(catalog, dataFragmentLimit, headerDecoder, descriptorDecoder));
+                    dump(catalog, dataFragmentLimit, headerDecoder, descriptorDecoder));
             }
         }
         else if (args.length == 2 && args[1].equals("pid"))
@@ -152,7 +152,7 @@ public class CatalogTool
         }
     }
 
-    private static void printVerbose(
+    private static void dump(
         final Catalog catalog,
         final long dataFragmentLimit,
         final RecordingDescriptorHeaderDecoder header,
@@ -215,15 +215,17 @@ public class CatalogTool
                 },
                 1);
 
-            System.out.printf(
-                "%d bytes (from %d) remaining in this recording %d%n",
-                streamLength - reader.replayPosition(),
-                streamLength,
-                descriptor.recordingId());
-
             if (--fragmentCount == 0)
             {
                 fragmentCount = dataFragmentLimit;
+                if (NULL_POSITION != stopPosition)
+                {
+                    System.out.printf(
+                        "%d bytes (from %d) remaining in recording %d%n",
+                        streamLength - reader.replayPosition(),
+                        streamLength,
+                        descriptor.recordingId());
+                }
                 isContinue = readContinueAnswer();
             }
         }

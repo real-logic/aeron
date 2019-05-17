@@ -135,6 +135,11 @@ class RecordingReader implements AutoCloseable
         return recordingId;
     }
 
+    long replayPosition()
+    {
+        return replayPosition;
+    }
+
     boolean isDone()
     {
         return isDone;

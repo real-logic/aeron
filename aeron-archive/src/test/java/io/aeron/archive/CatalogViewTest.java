@@ -19,10 +19,11 @@ import java.io.File;
 
 import org.agrona.IoUtil;
 import org.agrona.concurrent.EpochClock;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -71,7 +72,9 @@ public class CatalogViewTest
     @Test
     public void shouldListAllRecordingsInCatalog()
     {
-        CatalogView.listRecordings(archiveDir, mockRecordingDescriptorConsumer);
+        final int count = CatalogView.listRecordings(archiveDir, mockRecordingDescriptorConsumer);
+        assertThat(count, is(3));
+
         verify(mockRecordingDescriptorConsumer).onRecordingDescriptor(
             Aeron.NULL_VALUE, Aeron.NULL_VALUE, recordingOneId, 4L, Aeron.NULL_VALUE, 10L,
             Aeron.NULL_VALUE, 0, SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 7, 1,
@@ -93,7 +96,8 @@ public class CatalogViewTest
     @Test
     public void shouldListRecordingByRecordingId()
     {
-        CatalogView.listRecording(archiveDir, recordingTwoId, mockRecordingDescriptorConsumer);
+        final boolean found = CatalogView.listRecording(archiveDir, recordingTwoId, mockRecordingDescriptorConsumer);
+        assertTrue(found);
 
         verify(mockRecordingDescriptorConsumer).onRecordingDescriptor(
             Aeron.NULL_VALUE, Aeron.NULL_VALUE, recordingTwoId, 5L, Aeron.NULL_VALUE, 11L,

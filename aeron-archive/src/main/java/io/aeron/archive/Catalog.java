@@ -379,8 +379,9 @@ class Catalog implements AutoCloseable
                     RecordingDescriptorHeaderDecoder.validEncodingOffset()) == VALID;
     }
 
-    public void forEach(final CatalogEntryProcessor consumer)
+    public int forEach(final CatalogEntryProcessor consumer)
     {
+        int count = 0;
         long recordingId = 0L;
         while (wrapDescriptor(recordingId, catalogBuffer))
         {
@@ -399,10 +400,13 @@ class Catalog implements AutoCloseable
 
             consumer.accept(descriptorHeaderEncoder, descriptorHeaderDecoder, descriptorEncoder, descriptorDecoder);
             ++recordingId;
+            ++count;
         }
+
+        return count;
     }
 
-    public boolean forEntry(final CatalogEntryProcessor consumer, final long recordingId)
+    public boolean forEntry(final long recordingId, final CatalogEntryProcessor consumer)
     {
         if (wrapDescriptor(recordingId, catalogBuffer))
         {

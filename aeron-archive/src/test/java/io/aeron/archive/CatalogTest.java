@@ -174,16 +174,16 @@ public class CatalogTest
 
         try (Catalog catalog = new Catalog(archiveDir, clock))
         {
-            catalog.forEntry((headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
-                assertThat(descriptorDecoder.stopTimestamp(), is(NULL_TIMESTAMP)), newRecordingId);
+            catalog.forEntry(newRecordingId, (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                assertThat(descriptorDecoder.stopTimestamp(), is(NULL_TIMESTAMP)));
         }
 
         currentTimeMs = 42L;
 
         try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock))
         {
-            catalog.forEntry((headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
-                assertThat(descriptorDecoder.stopTimestamp(), is(42L)), newRecordingId);
+            catalog.forEntry(newRecordingId, (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                assertThat(descriptorDecoder.stopTimestamp(), is(42L)));
         }
     }
 
@@ -214,12 +214,12 @@ public class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir, clock))
         {
             catalog.forEntry(
-                (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                newRecordingId, (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 {
                     assertThat(descriptorDecoder.stopTimestamp(), is(NULL_TIMESTAMP));
                     assertThat(descriptorDecoder.stopPosition(), is(NULL_POSITION));
-                },
-                newRecordingId);
+                }
+            );
         }
 
         currentTimeMs = 42L;
@@ -227,12 +227,12 @@ public class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock))
         {
             catalog.forEntry(
-                (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                newRecordingId, (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 {
                     assertThat(descriptorDecoder.stopTimestamp(), is(42L));
                     assertThat(descriptorDecoder.stopPosition(), is(SEGMENT_LENGTH * 3 + 1024L + 128L));
-                },
-                newRecordingId);
+                }
+            );
         }
     }
 
@@ -246,12 +246,12 @@ public class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir, clock))
         {
             catalog.forEntry(
-                (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                newRecordingId, (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 {
                     assertThat(descriptorDecoder.stopTimestamp(), is(NULL_TIMESTAMP));
                     assertThat(descriptorDecoder.stopPosition(), is(NULL_POSITION));
-                },
-                newRecordingId);
+                }
+            );
         }
 
         currentTimeMs = 42L;
@@ -259,12 +259,12 @@ public class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock))
         {
             assertTrue(catalog.forEntry(
-                (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                newRecordingId, (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 {
                     assertThat(descriptorDecoder.stopTimestamp(), is(42L));
                     assertThat(descriptorDecoder.stopPosition(), is((long)PAGE_SIZE - HEADER_LENGTH));
-                },
-                newRecordingId));
+                }
+            ));
         }
     }
 
@@ -315,21 +315,21 @@ public class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir, clock))
         {
             catalog.forEntry(
-                (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                newRecordingId, (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 {
                     assertThat(descriptorDecoder.stopTimestamp(), is(NULL_TIMESTAMP));
-                },
-                newRecordingId);
+                }
+            );
         }
 
         try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock))
         {
             catalog.forEntry(
-                (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                newRecordingId, (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 {
                     descriptorEncoder.stopPosition(NULL_POSITION);
-                },
-                newRecordingId);
+                }
+            );
         }
 
         currentTimeMs = 42L;
@@ -337,12 +337,12 @@ public class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock))
         {
             catalog.forEntry(
-                (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                newRecordingId, (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 {
                     assertThat(descriptorDecoder.stopTimestamp(), is(42L));
                     assertThat(descriptorDecoder.stopPosition(), is(expectedLastFrame));
-                },
-                newRecordingId);
+                }
+            );
         }
     }
 

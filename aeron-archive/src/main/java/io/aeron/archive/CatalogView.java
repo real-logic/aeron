@@ -25,6 +25,9 @@ import io.aeron.archive.codecs.RecordingDescriptorEncoder;
 import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorHeaderEncoder;
 
+/**
+ * Read only view of a {@link Catalog} which can be used for listing entries.
+ */
 public class CatalogView
 {
     /**
@@ -32,12 +35,13 @@ public class CatalogView
      *
      * @param archiveDir the directory containing the {@link Catalog}.
      * @param consumer   to which the descriptor are dispatched.
+     * @return the count of entries listed.
      */
-    public static void listRecordings(final File archiveDir, final RecordingDescriptorConsumer consumer)
+    public static int listRecordings(final File archiveDir, final RecordingDescriptorConsumer consumer)
     {
         try (Catalog catalog = new Catalog(archiveDir, System::currentTimeMillis))
         {
-            catalog.forEach(new RecordingDescriptorConsumerAdaptor(consumer));
+            return catalog.forEach(new RecordingDescriptorConsumerAdapter(consumer));
         }
     }
 
@@ -49,24 +53,22 @@ public class CatalogView
      * @param archiveDir  the directory containing the {@link Catalog}.
      * @param recordingId to view
      * @param consumer    to which the descriptor are dispatched.
-     * @return the true of a descriptor is found and consumed.
+     * @return the true of a descriptor is found.
      */
     public static boolean listRecording(
         final File archiveDir, final long recordingId, final RecordingDescriptorConsumer consumer)
     {
-        final RecordingDescriptorConsumerAdaptor adaptor = new RecordingDescriptorConsumerAdaptor(consumer);
-
         try (Catalog catalog = new Catalog(archiveDir, System::currentTimeMillis))
         {
-            return catalog.forEntry(adaptor, recordingId);
+            return catalog.forEntry(recordingId, new RecordingDescriptorConsumerAdapter(consumer));
         }
     }
 
-    static class RecordingDescriptorConsumerAdaptor implements Catalog.CatalogEntryProcessor
+    static class RecordingDescriptorConsumerAdapter implements Catalog.CatalogEntryProcessor
     {
         private final RecordingDescriptorConsumer consumer;
 
-        RecordingDescriptorConsumerAdaptor(final RecordingDescriptorConsumer consumer)
+        RecordingDescriptorConsumerAdapter(final RecordingDescriptorConsumer consumer)
         {
             this.consumer = consumer;
         }

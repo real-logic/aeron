@@ -327,7 +327,7 @@ public class ClusterNodeTest
             {
                 if (null != session)
                 {
-                    while (!cluster.offer(buffer, offset, length))
+                    while (cluster.offer(buffer, offset, length) < 0)
                     {
                         cluster.idle();
                     }

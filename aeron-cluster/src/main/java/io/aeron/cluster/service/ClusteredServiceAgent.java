@@ -247,14 +247,14 @@ class ClusteredServiceAgent implements Agent, Cluster
         return consensusModuleProxy.cancelTimer(correlationId);
     }
 
-    public boolean offer(final DirectBuffer buffer, final int offset, final int length)
+    public long offer(final DirectBuffer buffer, final int offset, final int length)
     {
         sessionMessageHeaderEncoder.clusterSessionId(-serviceId);
 
         return consensusModuleProxy.offer(headerBuffer, 0, SESSION_HEADER_LENGTH, buffer, offset, length);
     }
 
-    public boolean offer(final DirectBufferVector[] vectors)
+    public long offer(final DirectBufferVector[] vectors)
     {
         sessionMessageHeaderEncoder.clusterSessionId(-serviceId);
         vectors[0] = headerVector;
@@ -262,7 +262,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         return consensusModuleProxy.offer(vectors);
     }
 
-    public boolean tryClaim(final int length, final BufferClaim bufferClaim)
+    public long tryClaim(final int length, final BufferClaim bufferClaim)
     {
         sessionMessageHeaderEncoder.clusterSessionId(-serviceId);
 
@@ -550,7 +550,10 @@ class ClusteredServiceAgent implements Agent, Cluster
         }
 
         heartbeatCounter.setOrdered(epochClock.time());
-        consensusModuleProxy.ack(clusterLogPosition, ackId++, serviceId);
+        while (!consensusModuleProxy.ack(clusterLogPosition, ackId++, serviceId))
+        {
+            idle();
+        }
     }
 
     private void checkForReplay(final CountersReader counters, final int recoveryCounterId)
@@ -561,7 +564,10 @@ class ClusteredServiceAgent implements Agent, Cluster
 
             try (Subscription subscription = aeron.addSubscription(activeLogEvent.channel, activeLogEvent.streamId))
             {
-                consensusModuleProxy.ack(activeLogEvent.logPosition, ackId++, serviceId);
+                while (!consensusModuleProxy.ack(activeLogEvent.logPosition, ackId++, serviceId))
+                {
+                    idle();
+                }
 
                 final Image image = awaitImage(activeLogEvent.sessionId, subscription);
                 final BoundedLogAdapter adapter = new BoundedLogAdapter(image, commitPosition, this);
@@ -593,7 +599,10 @@ class ClusteredServiceAgent implements Agent, Cluster
             {
                 if (adapter.position() >= maxLogPosition)
                 {
-                    consensusModuleProxy.ack(image.position(), ackId++, serviceId);
+                    while (!consensusModuleProxy.ack(image.position(), ackId++, serviceId))
+                    {
+                        idle();
+                    }
                     break;
                 }
 
@@ -626,7 +635,11 @@ class ClusteredServiceAgent implements Agent, Cluster
     private void joinActiveLog()
     {
         final Subscription logSubscription = aeron.addSubscription(activeLogEvent.channel, activeLogEvent.streamId);
-        consensusModuleProxy.ack(activeLogEvent.logPosition, ackId++, serviceId);
+
+        while (!consensusModuleProxy.ack(activeLogEvent.logPosition, ackId++, serviceId))
+        {
+            idle();
+        }
 
         final Image image = awaitImage(activeLogEvent.sessionId, logSubscription);
         heartbeatCounter.setOrdered(epochClock.time());
@@ -825,7 +838,10 @@ class ClusteredServiceAgent implements Agent, Cluster
     {
         if (ClusterAction.SNAPSHOT == action)
         {
-            consensusModuleProxy.ack(position, ackId++, onTakeSnapshot(position, leadershipTermId), serviceId);
+            while (!consensusModuleProxy.ack(position, ackId++, onTakeSnapshot(position, leadershipTermId), serviceId))
+            {
+                idle();
+            }
         }
     }
 
@@ -926,7 +942,11 @@ class ClusteredServiceAgent implements Agent, Cluster
             ctx.countedErrorHandler().onError(ex);
         }
 
-        consensusModuleProxy.ack(logPosition, ackId++, serviceId);
+        while (!consensusModuleProxy.ack(logPosition, ackId++, serviceId))
+        {
+            idle();
+        }
+
         ctx.terminationHook().run();
     }
 

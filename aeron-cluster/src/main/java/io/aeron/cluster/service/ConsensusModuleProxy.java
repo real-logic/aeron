@@ -18,7 +18,6 @@ package io.aeron.cluster.service;
 import io.aeron.Aeron;
 import io.aeron.DirectBufferVector;
 import io.aeron.Publication;
-import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
@@ -107,7 +106,7 @@ public final class ConsensusModuleProxy implements AutoCloseable
         return false;
     }
 
-    public boolean offer(
+    public long offer(
         final DirectBuffer headerBuffer,
         final int headerOffset,
         final int headerLength,
@@ -115,66 +114,31 @@ public final class ConsensusModuleProxy implements AutoCloseable
         final int messageOffset,
         final int messageLength)
     {
-        int attempts = SEND_ATTEMPTS;
-        do
-        {
-            final long result = publication.offer(
-                headerBuffer, headerOffset, headerLength, messageBuffer, messageOffset, messageLength);
-            if (result > 0)
-            {
-                return true;
-            }
-
-            checkResult(result);
-        }
-        while (--attempts > 0);
-
-        return false;
+        return publication.offer(headerBuffer, headerOffset, headerLength, messageBuffer, messageOffset, messageLength);
     }
 
-    public boolean offer(final DirectBufferVector[] vectors)
+    public long offer(final DirectBufferVector[] vectors)
     {
-        int attempts = SEND_ATTEMPTS;
-        do
-        {
-            final long result = publication.offer(vectors, null);
-            if (result > 0)
-            {
-                return true;
-            }
-
-            checkResult(result);
-        }
-        while (--attempts > 0);
-
-        return false;
+        return publication.offer(vectors, null);
     }
 
-    public boolean tryClaim(final int length, final BufferClaim bufferClaim, final DirectBuffer sessionHeader)
+    public long tryClaim(final int length, final BufferClaim bufferClaim, final DirectBuffer sessionHeader)
     {
-        int attempts = SEND_ATTEMPTS;
-        do
+        final long result = publication.tryClaim(length, bufferClaim);
+        if (result > 0)
         {
-            final long result = publication.tryClaim(length, bufferClaim);
-            if (result > 0)
-            {
-                bufferClaim.putBytes(sessionHeader, 0, ClientSession.SESSION_HEADER_LENGTH);
-                return true;
-            }
-
-            checkResult(result);
+            bufferClaim.putBytes(sessionHeader, 0, ClientSession.SESSION_HEADER_LENGTH);
         }
-        while (--attempts > 0);
 
-        return false;
+        return result;
     }
 
-    public void ack(final long logPosition, final long ackId, final int serviceId)
+    public boolean ack(final long logPosition, final long ackId, final int serviceId)
     {
-        ack(logPosition, ackId, Aeron.NULL_VALUE, serviceId);
+        return ack(logPosition, ackId, Aeron.NULL_VALUE, serviceId);
     }
 
-    public void ack(final long logPosition, final long ackId, final long relevantId, final int serviceId)
+    public boolean ack(final long logPosition, final long ackId, final long relevantId, final int serviceId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ServiceAckEncoder.BLOCK_LENGTH;
 
@@ -193,14 +157,14 @@ public final class ConsensusModuleProxy implements AutoCloseable
 
                 bufferClaim.commit();
 
-                return;
+                return true;
             }
 
             checkResult(result);
         }
         while (--attempts > 0);
 
-        throw new ClusterException("failed to send ACK");
+        return false;
     }
 
     public boolean closeSession(final long clusterSessionId)

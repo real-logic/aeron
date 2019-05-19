@@ -211,10 +211,10 @@ public interface Cluster
      * @param buffer containing the message to be offered.
      * @param offset in the buffer at which the encoded message begins.
      * @param length in the buffer of the encoded message.
-     * @return true if successful otherwise false.
+     * @return positive value if successful.
      * @see io.aeron.Publication#offer(DirectBuffer, int, int)
      */
-    boolean offer(DirectBuffer buffer, int offset, int length);
+    long offer(DirectBuffer buffer, int offset, int length);
 
     /**
      * Offer a message as ingress to the cluster for sequencing. This will happen efficiently over IPC to the
@@ -224,10 +224,10 @@ public interface Cluster
      * The first vector must be left free to be filled in for the session message header.
      *
      * @param vectors containing the message parts with the first left to be filled.
-     * @return true if successful otherwise false.
+     * @return positive value if successful.
      * @see io.aeron.Publication#offer(DirectBufferVector[])
      */
-    boolean offer(DirectBufferVector[] vectors);
+    long offer(DirectBufferVector[] vectors);
 
     /**
      * Try to claim a range in the publication log into which a message can be written with zero copy semantics.
@@ -256,13 +256,13 @@ public interface Cluster
      *
      * @param length      of the range to claim, in bytes.
      * @param bufferClaim to be populated if the claim succeeds.
-     * @return true of the claim is successful.
+     * @return positive value if successful.
      * @throws IllegalArgumentException if the length is greater than {@link io.aeron.Publication#maxPayloadLength()}.
      * @see io.aeron.Publication#tryClaim(int, BufferClaim)
      * @see BufferClaim#commit()
      * @see BufferClaim#abort()
      */
-    boolean tryClaim(int length, BufferClaim bufferClaim);
+    long tryClaim(int length, BufferClaim bufferClaim);
 
     /**
      * Should be called by the service when it experiences back-pressure on egress, closing sessions, or making

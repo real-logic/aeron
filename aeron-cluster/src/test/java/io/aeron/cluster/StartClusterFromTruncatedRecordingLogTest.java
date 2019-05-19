@@ -338,6 +338,7 @@ public class StartClusterFromTruncatedRecordingLogTest
         clusteredMediaDrivers[index] = ClusteredMediaDriver.launch(
             new MediaDriver.Context()
                 .aeronDirectoryName(aeronDirName)
+                .warnIfDirectoryExists(false)
                 .threadingMode(ThreadingMode.SHARED)
                 .termBufferSparseFile(true)
                 .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
@@ -400,6 +401,7 @@ public class StartClusterFromTruncatedRecordingLogTest
             new MediaDriver.Context()
                 .threadingMode(ThreadingMode.SHARED)
                 .aeronDirectoryName(aeronDirName)
+                .warnIfDirectoryExists(false)
                 .dirDeleteOnStart(true));
 
         client = AeronCluster.connect(

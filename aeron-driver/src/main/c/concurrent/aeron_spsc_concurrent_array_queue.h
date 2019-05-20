@@ -83,6 +83,23 @@ inline aeron_queue_offer_result_t aeron_spsc_concurrent_array_queue_offer(
     return AERON_OFFER_SUCCESS;
 }
 
+inline volatile void *aeron_spsc_concurrent_array_queue_poll(volatile aeron_spsc_concurrent_array_queue_t *queue)
+{
+    const uint64_t current_head = queue->consumer.head;
+    const uint64_t index = current_head & queue->mask;
+
+    volatile void *item;
+    AERON_GET_VOLATILE(item, queue->buffer[index]);
+
+    if (NULL != item)
+    {
+        AERON_PUT_ORDERED(queue->buffer[index], NULL);
+        AERON_PUT_ORDERED(queue->consumer.head, current_head + 1);
+    }
+
+    return item;
+}
+
 inline uint64_t aeron_spsc_concurrent_array_queue_drain(
     volatile aeron_spsc_concurrent_array_queue_t *queue,
     aeron_queue_drain_func_t func,

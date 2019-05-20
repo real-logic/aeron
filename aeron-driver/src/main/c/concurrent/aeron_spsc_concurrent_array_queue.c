@@ -50,6 +50,8 @@ extern aeron_queue_offer_result_t aeron_spsc_concurrent_array_queue_offer(
     volatile aeron_spsc_concurrent_array_queue_t *queue,
     void *element);
 
+extern volatile void *aeron_spsc_concurrent_array_queue_poll(volatile aeron_spsc_concurrent_array_queue_t *queue);
+
 extern uint64_t aeron_spsc_concurrent_array_queue_drain(
     volatile aeron_spsc_concurrent_array_queue_t *queue,
     aeron_queue_drain_func_t func,

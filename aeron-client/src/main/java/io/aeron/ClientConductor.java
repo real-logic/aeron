@@ -58,6 +58,7 @@ class ClientConductor implements Agent, DriverEventsListener
     private RegistrationException driverException;
 
     private final Aeron.Context ctx;
+    private final Aeron aeron;
     private final Lock clientLock;
     private final EpochClock epochClock;
     private final NanoClock nanoClock;
@@ -75,9 +76,10 @@ class ClientConductor implements Agent, DriverEventsListener
     private final UnsafeBuffer counterValuesBuffer;
     private final CountersReader countersReader;
 
-    ClientConductor(final Aeron.Context ctx)
+    ClientConductor(final Aeron.Context ctx, final Aeron aeron)
     {
         this.ctx = ctx;
+        this.aeron = aeron;
 
         clientLock = ctx.clientLock();
         epochClock = ctx.epochClock();
@@ -117,6 +119,7 @@ class ClientConductor implements Agent, DriverEventsListener
                 {
                     if (isTerminating)
                     {
+                        aeron.internalClose();
                         Thread.sleep(IDLE_SLEEP_MS);
                     }
 
@@ -847,7 +850,6 @@ class ClientConductor implements Agent, DriverEventsListener
         if ((timeOfLastServiceNs + interServiceTimeoutNs) - nowNs < 0)
         {
             isTerminating = true;
-
             forceCloseResources();
 
             throw new ConductorServiceTimeoutException("service interval exceeded (ns): " + interServiceTimeoutNs);
@@ -861,7 +863,6 @@ class ClientConductor implements Agent, DriverEventsListener
             if (epochClock.time() > (driverProxy.timeOfLastDriverKeepaliveMs() + driverTimeoutMs))
             {
                 isTerminating = true;
-
                 forceCloseResources();
 
                 throw new DriverTimeoutException("MediaDriver keepalive older than (ms): " + driverTimeoutMs);

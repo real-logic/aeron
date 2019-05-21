@@ -70,7 +70,7 @@ public class Aeron implements AutoCloseable
      */
     private static final AtomicIntegerFieldUpdater<Aeron> IS_CLOSED_UPDATER = newUpdater(Aeron.class, "isClosed");
 
-    @SuppressWarnings("unused") private volatile int isClosed;
+    private volatile int isClosed;
     private final long clientId;
     private final ClientConductor conductor;
     private final RingBuffer commandBuffer;
@@ -85,7 +85,7 @@ public class Aeron implements AutoCloseable
         this.ctx = ctx;
         clientId = ctx.clientId();
         commandBuffer = ctx.toDriverBuffer();
-        conductor = new ClientConductor(ctx);
+        conductor = new ClientConductor(ctx, this);
 
         if (ctx.useConductorAgentInvoker())
         {
@@ -363,6 +363,14 @@ public class Aeron implements AutoCloseable
     public Counter addCounter(final int typeId, final String label)
     {
         return conductor.addCounter(typeId, label);
+    }
+
+    /**
+     * Called by the {@link ClientConductor} if the client should be terminated due to timeout.
+     */
+    void internalClose()
+    {
+        isClosed = 1;
     }
 
     /**

@@ -86,7 +86,6 @@ public class ClientConductorTest
     private final UnsafeBuffer clientTimeoutBuffer = new UnsafeBuffer(allocateDirect(SEND_BUFFER_CAPACITY));
 
     private final CopyBroadcastReceiver mockToClientReceiver = mock(CopyBroadcastReceiver.class);
-
     private final UnsafeBuffer counterValuesBuffer = new UnsafeBuffer(allocateDirect(COUNTER_BUFFER_LENGTH));
 
     private long timeMs = 0;
@@ -103,6 +102,7 @@ public class ClientConductorTest
     private final UnavailableImageHandler mockUnavailableImageHandler = mock(UnavailableImageHandler.class);
     private final LogBuffersFactory logBuffersFactory = mock(LogBuffersFactory.class);
     private final Lock mockClientLock = mock(Lock.class);
+    private final Aeron mockAeron = mock(Aeron.class);
     private boolean suppressPrintError = false;
 
     @Before
@@ -132,7 +132,7 @@ public class ClientConductorTest
         when(driverProxy.addSubscription(anyString(), anyInt())).thenReturn(CORRELATION_ID);
         when(driverProxy.removeSubscription(CORRELATION_ID)).thenReturn(CLOSE_CORRELATION_ID);
 
-        conductor = new ClientConductor(ctx);
+        conductor = new ClientConductor(ctx, mockAeron);
 
         publicationReady.wrap(publicationReadyBuffer, 0);
         subscriptionReady.wrap(subscriptionReadyBuffer, 0);

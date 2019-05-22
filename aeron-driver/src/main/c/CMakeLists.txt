@@ -266,6 +266,12 @@ add_library(aeron_driver SHARED ${SOURCE} ${HEADERS})
 target_include_directories(aeron_driver
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
 )
+
+add_library(aeron_driver_static STATIC ${SOURCE} ${HEADERS})
+target_include_directories(aeron_driver_static
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 add_executable(aeronmd aeronmd.c)
 target_include_directories(aeronmd
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}

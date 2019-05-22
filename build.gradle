@@ -142,7 +142,7 @@ subprojects {
 
         compile "org.agrona:agrona:${agronaVersion}"
 
-        testCompile 'org.hamcrest:hamcrest-library:2.1'
+        testCompile 'org.hamcrest:hamcrest:2.1'
         testCompile "org.mockito:mockito-core:${mockitoVersion}"
         testCompile 'junit:junit:4.12'
     }

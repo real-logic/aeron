@@ -271,7 +271,6 @@ std::shared_ptr<Subscription> ClientConductor::findSubscription(std::int64_t reg
     SubscriptionStateDefn &state = *it;
     std::shared_ptr<Subscription> sub = state.m_subscription.lock();
 
-    // now remove the cached value
     if (state.m_subscriptionCache)
     {
         state.m_subscriptionCache.reset();

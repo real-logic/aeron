@@ -84,12 +84,12 @@ public class Election implements AutoCloseable
             this.code = code;
         }
 
-        int code()
+        public int code()
         {
             return code;
         }
 
-        static State get(final int code)
+        public static State get(final int code)
         {
             if (code < 0 || code > (STATES.length - 1))
             {

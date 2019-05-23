@@ -131,7 +131,7 @@ public class Election implements AutoCloseable
     private String liveLogDestination;
     private LogReplay logReplay = null;
 
-    Election(
+    public Election(
         final boolean isStartup,
         final long leadershipTermId,
         final long logPosition,

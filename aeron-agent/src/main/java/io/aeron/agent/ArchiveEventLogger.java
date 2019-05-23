@@ -18,9 +18,14 @@ package io.aeron.agent;
 import io.aeron.archive.codecs.*;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
+import org.agrona.concurrent.ringbuffer.RingBuffer;
 
 import static io.aeron.agent.ArchiveEventCode.*;
 
+/**
+ * Event logger interface used by interceptors for recording events into a {@link RingBuffer} for an
+ * {@link io.aeron.archive.Archive} for via a Java Agent.
+ */
 public final class ArchiveEventLogger
 {
     static final long ENABLED_EVENT_CODES = EventConfiguration.getEnabledArchiveEventCodes();

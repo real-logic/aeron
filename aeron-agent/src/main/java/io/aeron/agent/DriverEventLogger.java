@@ -24,7 +24,8 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 /**
- * Event logger interface used by interceptors for recording into a {@link RingBuffer}.
+ * Event logger interface used by interceptors for recording into a {@link RingBuffer} for a
+ * {@link io.aeron.driver.MediaDriver} via a Java Agent.
  */
 public class DriverEventLogger
 {

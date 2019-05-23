@@ -478,6 +478,7 @@ public abstract class Publication implements AutoCloseable
     /**
      * Try to claim a range in the publication log into which a message can be written with zero copy semantics.
      * Once the message has been written then {@link BufferClaim#commit()} should be called thus making it available.
+     * A claim length cannot be greater than {@link #maxPayloadLength()}.
      * <p>
      * <b>Note:</b> This method can only be used for message lengths less than MTU length minus header.
      * If the claim is held for more than the aeron.publication.unblock.timeout system property then the driver will

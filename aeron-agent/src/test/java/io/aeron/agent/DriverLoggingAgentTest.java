@@ -38,7 +38,7 @@ import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
 import static junit.framework.TestCase.assertSame;
 import static junit.framework.TestCase.assertTrue;
 
-public class LoggingAgentTest
+public class DriverLoggingAgentTest
 {
     private static final String NETWORK_CHANNEL = "aeron:udp?endpoint=localhost:54325";
     private static final int STREAM_ID = 777;
@@ -123,11 +123,11 @@ class StubEventLogReaderAgent implements Agent, MessageHandler
 
     public void onMessage(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
     {
-        LoggingAgentTest.MSG_ID_SET.add(msgTypeId);
+        DriverLoggingAgentTest.MSG_ID_SET.add(msgTypeId);
 
         if (DriverEventCode.CMD_IN_CLIENT_CLOSE.id() == msgTypeId)
         {
-            LoggingAgentTest.LATCH.countDown();
+            DriverLoggingAgentTest.LATCH.countDown();
         }
     }
 }

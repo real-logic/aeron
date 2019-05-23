@@ -58,7 +58,7 @@ final class ClusterEventInterceptor
         }
     }
 
-    static class StateChange
+    static class ConsensusModuleStateChange
     {
         @Advice.OnMethodEnter
         static void state(final ConsensusModule.State state)
@@ -67,7 +67,7 @@ final class ClusterEventInterceptor
         }
     }
 
-    static class RoleChange
+    static class ConsensusModuleRoleChange
     {
         @Advice.OnMethodEnter
         static void role(final Cluster.Role role)

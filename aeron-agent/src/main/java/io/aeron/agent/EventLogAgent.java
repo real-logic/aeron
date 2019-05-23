@@ -237,8 +237,8 @@ public class EventLogAgent
             .type(nameEndsWith("ConsensusModuleAgent"))
             .transform(((builder, typeDescription, classLoader, module) -> builder
                 .visit(to(ClusterEventInterceptor.NewLeadershipTerm.class).on(named("onNewLeadershipTerm")))
-                .visit(to(ClusterEventInterceptor.StateChange.class).on(named("state")))
-                .visit(to(ClusterEventInterceptor.RoleChange.class).on(named("role")
+                .visit(to(ClusterEventInterceptor.ConsensusModuleStateChange.class).on(named("state")))
+                .visit(to(ClusterEventInterceptor.ConsensusModuleRoleChange.class).on(named("role")
                     .and(takesArgument(0, nameEndsWith("Role")))))));
     }
 

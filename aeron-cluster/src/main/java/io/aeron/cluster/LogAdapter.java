@@ -23,14 +23,10 @@ import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 
+import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
+
 final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
 {
-    /**
-     * Length of the session header that will precede application protocol message.
-     */
-    public static final int SESSION_HEADER_LENGTH =
-        MessageHeaderDecoder.ENCODED_LENGTH + SessionMessageHeaderDecoder.BLOCK_LENGTH;
-
     private static final int FRAGMENT_LIMIT = 100;
 
     private final ImageControlledFragmentAssembler fragmentAssembler = new ImageControlledFragmentAssembler(this);

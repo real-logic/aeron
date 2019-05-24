@@ -79,7 +79,6 @@ final class ConsensusModuleAdapter implements AutoCloseable
 
                 consensusModuleAgent.onServiceMessage(
                     sessionMessageHeaderDecoder.leadershipTermId(),
-                    sessionMessageHeaderDecoder.clusterSessionId(),
                     buffer,
                     offset + SESSION_MESSAGE_HEADER,
                     length - SESSION_MESSAGE_HEADER);

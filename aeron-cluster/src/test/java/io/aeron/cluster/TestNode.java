@@ -274,9 +274,35 @@ class TestNode implements AutoCloseable
                 }
             }
 
-            while (session.offer(buffer, offset, length) < 0)
+            if (message.equals(TestMessages.ECHO_IPC_INGRESS))
             {
-                cluster.idle();
+                if (null != session)
+                {
+                    while (cluster.offer(buffer, offset, length) < 0)
+                    {
+                        cluster.idle();
+                    }
+                }
+                else
+                {
+                    for (final ClientSession clientSession : cluster.clientSessions())
+                    {
+                        while (clientSession.offer(buffer, offset, length) < 0)
+                        {
+                            cluster.idle();
+                        }
+                    }
+                }
+            }
+            else
+            {
+                if (null != session)
+                {
+                    while (session.offer(buffer, offset, length) < 0)
+                    {
+                        cluster.idle();
+                    }
+                }
             }
 
             //noinspection NonAtomicOperationOnVolatileField

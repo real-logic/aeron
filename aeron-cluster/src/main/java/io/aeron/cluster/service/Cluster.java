@@ -17,6 +17,7 @@ package io.aeron.cluster.service;
 
 import io.aeron.Aeron;
 import io.aeron.DirectBufferVector;
+import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.logbuffer.BufferClaim;
@@ -234,7 +235,7 @@ public interface Cluster
      * Once the message has been written then {@link BufferClaim#commit()} should be called thus making it available.
      * <p>
      * On successful claim, the Cluster session header will be written to the start of the claimed buffer section.
-     * Clients <b>MUST</b> write into the claimed buffer region at offset + {@link ClientSession#SESSION_HEADER_LENGTH}.
+     * Clients <b>MUST</b> write into the claimed buffer region at offset + {@link AeronCluster#SESSION_HEADER_LENGTH}.
      * <pre>{@code
      *     final DirectBuffer srcBuffer = acquireMessage();
      *

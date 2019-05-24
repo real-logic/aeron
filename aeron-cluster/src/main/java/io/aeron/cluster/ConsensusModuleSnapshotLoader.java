@@ -24,6 +24,7 @@ import org.agrona.DirectBuffer;
 
 import static io.aeron.cluster.ConsensusModule.Configuration.SNAPSHOT_TYPE_ID;
 
+@SuppressWarnings("MethodLength")
 class ConsensusModuleSnapshotLoader implements ControlledFragmentHandler
 {
     private static final int FRAGMENT_LIMIT = 10;
@@ -68,6 +69,10 @@ class ConsensusModuleSnapshotLoader implements ControlledFragmentHandler
         final int templateId = messageHeaderDecoder.templateId();
         switch (templateId)
         {
+            case SessionMessageHeaderDecoder.TEMPLATE_ID:
+                consensusModuleAgent.onLoadPendingMessage(buffer, offset, length);
+                break;
+
             case SnapshotMarkerDecoder.TEMPLATE_ID:
                 snapshotMarkerDecoder.wrap(
                     buffer,
@@ -135,7 +140,11 @@ class ConsensusModuleSnapshotLoader implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                consensusModuleAgent.onReloadState(consensusModuleDecoder.nextSessionId());
+                consensusModuleAgent.onReloadState(
+                    consensusModuleDecoder.nextSessionId(),
+                    consensusModuleDecoder.nextServiceSessionId(),
+                    consensusModuleDecoder.logServiceSessionId(),
+                    consensusModuleDecoder.pendingMessageCapacity());
                 break;
 
             case ClusterMembersDecoder.TEMPLATE_ID:

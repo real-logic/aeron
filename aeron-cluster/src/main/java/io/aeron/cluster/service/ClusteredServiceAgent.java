@@ -37,7 +37,7 @@ import java.util.Collection;
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
-import static io.aeron.cluster.service.ClientSession.SESSION_HEADER_LENGTH;
+import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
 import static java.util.Collections.unmodifiableCollection;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
@@ -249,14 +249,14 @@ class ClusteredServiceAgent implements Agent, Cluster
 
     public long offer(final DirectBuffer buffer, final int offset, final int length)
     {
-        sessionMessageHeaderEncoder.clusterSessionId(-serviceId);
+        sessionMessageHeaderEncoder.clusterSessionId(0);
 
         return consensusModuleProxy.offer(headerBuffer, 0, SESSION_HEADER_LENGTH, buffer, offset, length);
     }
 
     public long offer(final DirectBufferVector[] vectors)
     {
-        sessionMessageHeaderEncoder.clusterSessionId(-serviceId);
+        sessionMessageHeaderEncoder.clusterSessionId(0);
         vectors[0] = headerVector;
 
         return consensusModuleProxy.offer(vectors);
@@ -264,7 +264,7 @@ class ClusteredServiceAgent implements Agent, Cluster
 
     public long tryClaim(final int length, final BufferClaim bufferClaim)
     {
-        sessionMessageHeaderEncoder.clusterSessionId(-serviceId);
+        sessionMessageHeaderEncoder.clusterSessionId(0);
 
         return consensusModuleProxy.tryClaim(length + SESSION_HEADER_LENGTH, bufferClaim, headerBuffer);
     }

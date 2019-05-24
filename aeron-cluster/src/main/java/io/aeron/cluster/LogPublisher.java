@@ -27,13 +27,12 @@ import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import static io.aeron.CommonContext.UDP_MEDIA;
+import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 
 class LogPublisher
 {
     private static final int SEND_ATTEMPTS = 3;
-    public static final int SESSION_HEADER_LENGTH =
-        MessageHeaderEncoder.ENCODED_LENGTH + SessionMessageHeaderEncoder.BLOCK_LENGTH;
 
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     private final SessionMessageHeaderEncoder sessionHeaderEncoder = new SessionMessageHeaderEncoder();

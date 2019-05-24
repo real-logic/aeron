@@ -18,8 +18,7 @@ package io.aeron.cluster.service;
 import io.aeron.Aeron;
 import io.aeron.DirectBufferVector;
 import io.aeron.Publication;
-import io.aeron.cluster.codecs.MessageHeaderDecoder;
-import io.aeron.cluster.codecs.SessionMessageHeaderDecoder;
+import io.aeron.cluster.client.AeronCluster;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.CloseHelper;
@@ -34,12 +33,6 @@ public class ClientSession
      * Return value to indicate egress to a session is mocked out by the cluster when in follower mode.
      */
     public static final long MOCKED_OFFER = 1;
-
-    /**
-     * Header length of an egress message from a cluster service back to a client.
-     */
-    public static final int SESSION_HEADER_LENGTH =
-        MessageHeaderDecoder.ENCODED_LENGTH + SessionMessageHeaderDecoder.BLOCK_LENGTH;
 
     private final long id;
     private final int responseStreamId;
@@ -160,7 +153,7 @@ public class ClientSession
      * Once the message has been written then {@link BufferClaim#commit()} should be called thus making it available.
      * <p>
      * On successful claim, the Cluster egress header will be written to the start of the claimed buffer section.
-     * Clients <b>MUST</b> write into the claimed buffer region at offset + {@link ClientSession#SESSION_HEADER_LENGTH}.
+     * Clients <b>MUST</b> write into the claimed buffer region at offset + {@link AeronCluster#SESSION_HEADER_LENGTH}.
      * <pre>{@code
      *     final DirectBuffer srcBuffer = acquireMessage();
      *

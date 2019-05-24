@@ -42,7 +42,6 @@ public class AppointedLeaderClusterTest
     public void shouldEchoMessagesViaService() throws Exception
     {
         final int appointedLeaderIndex = 1;
-        final int messageCount = 10;
 
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(appointedLeaderIndex))
         {
@@ -52,6 +51,7 @@ public class AppointedLeaderClusterTest
             assertThat(leader.role(), is(Cluster.Role.LEADER));
 
             cluster.connectClient();
+            final int messageCount = 10;
             cluster.sendMessages(messageCount);
             cluster.awaitResponses(messageCount);
             cluster.awaitMessageCountForService(leader, messageCount);

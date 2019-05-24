@@ -52,9 +52,12 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
+import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
 
 class ConsensusModuleAgent implements Agent, MemberStatusListener
 {
+    private static final int MESSAGE_LIMIT = 10;
+
     private final long sessionTimeoutMs;
     private final long leaderHeartbeatIntervalMs;
     private final long leaderHeartbeatTimeoutMs;
@@ -64,6 +67,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private final int logSubscriptionTag;
     private final int logSubscriptionChannelTag;
     private long nextSessionId = 1;
+    private long nextServiceSessionId = Long.MIN_VALUE;
+    private long logServiceSessionId = Long.MIN_VALUE;
     private long leadershipTermId = NULL_VALUE;
     private long expectedAckPosition = 0;
     private long serviceAckId = 0;
@@ -111,6 +116,11 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private final ArrayList<ClusterSession> redirectSessions = new ArrayList<>();
     private final Int2ObjectHashMap<ClusterMember> clusterMemberByIdMap = new Int2ObjectHashMap<>();
     private final Long2LongCounterMap expiredTimerCountByCorrelationIdMap = new Long2LongCounterMap(0);
+    private final ExpandableRingBuffer pendingServiceMessages = new ExpandableRingBuffer();
+    private final ExpandableRingBuffer.MessageConsumer serviceSessionMessageAppender =
+        this::serviceSessionMessageAppender;
+    private final ExpandableRingBuffer.MessageConsumer serviceSessionMessageSweeper =
+        this::serviceSessionMessageSweeper;
     private final Authenticator authenticator;
     private final ClusterSessionProxy sessionProxy;
     private final Aeron aeron;
@@ -495,9 +505,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
             if (null != follower)
             {
-                follower
-                    .logPosition(logPosition)
-                    .timeOfLastAppendPositionMs(cachedTimeMs);
+                follower.logPosition(logPosition).timeOfLastAppendPositionMs(cachedTimeMs);
                 checkCatchupStop(follower);
             }
         }
@@ -852,20 +860,32 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
     }
 
-    void onServiceMessage(
-        final long leadershipTermId,
-        final long clusterSessionId,
-        final DirectBuffer buffer,
-        final int offset,
-        final int length)
+    void onServiceMessage(final long leadershipTermId, final DirectBuffer buffer, final int offset, final int length)
     {
-        // TODO: Deal with guarantee semantics
-        if (leadershipTermId == this.leadershipTermId &&
-            Cluster.Role.LEADER == role &&
-            ConsensusModule.State.ACTIVE == state)
+        if (leadershipTermId != this.leadershipTermId)
         {
-            // TODO: Deal with back pressure
-            logPublisher.appendMessage(leadershipTermId, clusterSessionId, clusterTimeMs, buffer, offset, length);
+            return;
+        }
+
+        if (Cluster.Role.LEADER != role)
+        {
+            enqueueServiceSessionMessage((MutableDirectBuffer)buffer, offset, length, ++nextServiceSessionId);
+        }
+        else
+        {
+            if (ConsensusModule.State.ACTIVE != state || !pendingServiceMessages.isEmpty())
+            {
+                enqueueServiceSessionMessage((MutableDirectBuffer)buffer, offset, length, ++nextServiceSessionId);
+            }
+            else
+            {
+                final long clusterSessionId = ++nextServiceSessionId;
+                if (!logPublisher.appendMessage(
+                    leadershipTermId, clusterSessionId, clusterTimeMs, buffer, offset, length))
+                {
+                    enqueueServiceSessionMessage((MutableDirectBuffer)buffer, offset, length, clusterSessionId);
+                }
+            }
         }
     }
 
@@ -962,7 +982,16 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         final Header header)
     {
         clusterTimeMs(timestamp);
-        sessionByIdMap.get(clusterSessionId).timeOfLastActivityMs(timestamp);
+
+        final ClusterSession clusterSession = sessionByIdMap.get(clusterSessionId);
+        if (null == clusterSession)
+        {
+            sweepPendingServiceSessionMessages(clusterSessionId, MESSAGE_LIMIT);
+        }
+        else
+        {
+            clusterSession.timeOfLastActivityMs(timestamp);
+        }
     }
 
     void onReplayTimerEvent(final long correlationId, final long timestamp)
@@ -1018,6 +1047,11 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         {
             nextSessionId = clusterSessionId + 1;
         }
+    }
+
+    void onLoadPendingMessage(final DirectBuffer buffer, final int offset, final int length)
+    {
+        pendingServiceMessages.append(buffer, offset, length);
     }
 
     void onReplaySessionClose(final long clusterSessionId, final long timestamp, final CloseReason closeReason)
@@ -1126,9 +1160,16 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
     }
 
-    void onReloadState(final long nextSessionId)
+    void onReloadState(
+        final long nextSessionId,
+        final long nextServiceSessionId,
+        final long logServiceSessionId,
+        final int pendingMessageCapacity)
     {
         this.nextSessionId = nextSessionId;
+        this.nextServiceSessionId = nextServiceSessionId;
+        this.logServiceSessionId = logServiceSessionId;
+        pendingServiceMessages.reset(pendingMessageCapacity);
     }
 
     void onReloadClusterMembers(final int memberId, final int highMemberId, final String members)
@@ -1443,6 +1484,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         final long logPosition = election.logPosition();
         this.followerCommitPosition = logPosition;
         commitPosition.setOrdered(logPosition);
+        pendingServiceMessages.consume(serviceSessionMessageSweeper, Integer.MAX_VALUE);
 
         if (Cluster.Role.LEADER == role)
         {
@@ -1702,6 +1744,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         if (Cluster.Role.LEADER == role && ConsensusModule.State.ACTIVE == state)
         {
             workCount += ingressAdapter.poll();
+            workCount += pendingServiceMessages.consume(serviceSessionMessageAppender, MESSAGE_LIMIT);
             workCount += timerService.poll(nowMs);
         }
         else if (Cluster.Role.FOLLOWER == role &&
@@ -2378,6 +2421,10 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         snapshotTaker.markBegin(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0);
 
+        snapshotTaker.snapshotConsensusModuleState(
+            nextSessionId, nextServiceSessionId, logServiceSessionId, pendingServiceMessages.capacity());
+        snapshotTaker.snapshotClusterMembers(memberId, highMemberId, clusterMembers);
+
         for (final ClusterSession session : sessionByIdMap.values())
         {
             if (session.state() == OPEN || session.state() == CLOSED)
@@ -2386,11 +2433,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             }
         }
 
-        aeronClientInvoker.invoke();
-
         timerService.snapshot(snapshotTaker);
-        snapshotTaker.consensusModuleState(nextSessionId);
-        snapshotTaker.clusterMembers(memberId, highMemberId, clusterMembers);
+        snapshotTaker.snapshot(pendingServiceMessages);
 
         snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0);
     }
@@ -2489,5 +2533,54 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
 
         clusterTimeMs = nowMs;
+    }
+
+    private void enqueueServiceSessionMessage(
+        final MutableDirectBuffer buffer, final int offset, final int length, final long clusterSessionId)
+    {
+        final int headerOffset = offset - SESSION_HEADER_LENGTH;
+        final int clusterSessionIdOffset = headerOffset +
+            MessageHeaderDecoder.ENCODED_LENGTH +
+            SessionMessageHeaderDecoder.clusterSessionIdEncodingOffset();
+
+        buffer.putLong(clusterSessionIdOffset, clusterSessionId, SessionMessageHeaderDecoder.BYTE_ORDER);
+        pendingServiceMessages.append(buffer, headerOffset, length + SESSION_HEADER_LENGTH);
+    }
+
+    private boolean serviceSessionMessageAppender(final MutableDirectBuffer buffer, final int offset, final int length)
+    {
+        final int clusterSessionIdOffset =
+            offset + MessageHeaderDecoder.ENCODED_LENGTH + SessionMessageHeaderDecoder.clusterSessionIdEncodingOffset();
+        final long clusterSessionId = buffer.getLong(clusterSessionIdOffset, SessionMessageHeaderDecoder.BYTE_ORDER);
+
+        final boolean appended = logPublisher.appendMessage(
+            leadershipTermId,
+            clusterSessionId,
+            clusterTimeMs,
+            buffer,
+            offset + SESSION_HEADER_LENGTH,
+            length - SESSION_HEADER_LENGTH);
+
+        if (appended)
+        {
+            logServiceSessionId = clusterSessionId;
+        }
+
+        return appended;
+    }
+
+    private void sweepPendingServiceSessionMessages(final long clusterSessionId, final int messageLimit)
+    {
+        logServiceSessionId = clusterSessionId;
+        pendingServiceMessages.consume(serviceSessionMessageSweeper, messageLimit);
+    }
+
+    @SuppressWarnings("unused")
+    private boolean serviceSessionMessageSweeper(final MutableDirectBuffer buffer, final int offset, final int length)
+    {
+        final int clusterSessionIdOffset =
+            offset + MessageHeaderDecoder.ENCODED_LENGTH + SessionMessageHeaderDecoder.clusterSessionIdEncodingOffset();
+
+        return buffer.getLong(clusterSessionIdOffset, SessionMessageHeaderDecoder.BYTE_ORDER) <= logServiceSessionId;
     }
 }

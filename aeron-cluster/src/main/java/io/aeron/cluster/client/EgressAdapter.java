@@ -22,14 +22,13 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 
+import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
+
+/**
+ * Adapter for dispatching egress messages from a cluster to a {@link EgressListener}.
+ */
 public class EgressAdapter implements FragmentHandler
 {
-    /**
-     * Length of the session header before the message.
-     */
-    public static final int SESSION_HEADER_LENGTH =
-        MessageHeaderDecoder.ENCODED_LENGTH + SessionMessageHeaderDecoder.BLOCK_LENGTH;
-
     private final long clusterSessionId;
     private final int fragmentLimit;
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();

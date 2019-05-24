@@ -102,7 +102,6 @@ public class ClusterNodeTest
         final EgressListener listener = (clusterSessionId, timestamp, buffer, offset, length, header) ->
         {
             assertThat(buffer.getStringWithoutLengthAscii(offset, length), is(msg));
-
             messageCount.value += 1;
         };
 
@@ -137,7 +136,6 @@ public class ClusterNodeTest
         final EgressListener listener = (clusterSessionId, timestamp, buffer, offset, length, header) ->
         {
             assertThat(buffer.getStringWithoutLengthAscii(offset, length), is(msg));
-
             messageCount.value += 1;
         };
 
@@ -151,8 +149,8 @@ public class ClusterNodeTest
             publicationResult = aeronCluster.tryClaim(msg.length(), bufferClaim);
             if (publicationResult > 0)
             {
-                bufferClaim.buffer().putBytes(bufferClaim.offset() + AeronCluster.SESSION_HEADER_LENGTH,
-                    msgBuffer, 0, msg.length());
+                final int offset = bufferClaim.offset() + AeronCluster.SESSION_HEADER_LENGTH;
+                bufferClaim.buffer().putBytes(offset, msgBuffer, 0, msg.length());
                 bufferClaim.commit();
             }
         }

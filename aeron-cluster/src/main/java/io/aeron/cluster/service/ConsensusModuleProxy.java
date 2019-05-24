@@ -18,6 +18,7 @@ package io.aeron.cluster.service;
 import io.aeron.Aeron;
 import io.aeron.DirectBufferVector;
 import io.aeron.Publication;
+import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.codecs.*;
 import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
@@ -127,7 +128,7 @@ public final class ConsensusModuleProxy implements AutoCloseable
         final long result = publication.tryClaim(length, bufferClaim);
         if (result > 0)
         {
-            bufferClaim.putBytes(sessionHeader, 0, ClientSession.SESSION_HEADER_LENGTH);
+            bufferClaim.putBytes(sessionHeader, 0, AeronCluster.SESSION_HEADER_LENGTH);
         }
 
         return result;

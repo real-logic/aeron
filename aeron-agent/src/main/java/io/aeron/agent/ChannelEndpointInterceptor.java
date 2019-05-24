@@ -31,7 +31,7 @@ import static io.aeron.agent.DriverEventLogger.LOGGER;
  */
 class ChannelEndpointInterceptor
 {
-    public static class SenderProxyInterceptor
+    public static class SenderProxy
     {
         public static class RegisterSendChannelEndpoint
         {
@@ -52,7 +52,7 @@ class ChannelEndpointInterceptor
         }
     }
 
-    public static class ReceiverProxyInterceptor
+    public static class ReceiverProxy
     {
         public static class RegisterReceiveChannelEndpoint
         {
@@ -73,7 +73,7 @@ class ChannelEndpointInterceptor
         }
     }
 
-    public static class UdpChannelTransportInterceptor
+    public static class UdpChannelTransport
     {
         public static class SendHook
         {

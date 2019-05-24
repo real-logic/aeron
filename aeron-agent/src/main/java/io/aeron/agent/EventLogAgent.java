@@ -201,21 +201,21 @@ public class EventLogAgent
                 .visit(to(CmdInterceptor.class).on(named("transmit"))))
             .type(nameEndsWith("SenderProxy"))
             .transform((builder, typeDescription, classLoader, javaModule) -> builder
-                .visit(to(ChannelEndpointInterceptor.SenderProxyInterceptor.RegisterSendChannelEndpoint.class)
+                .visit(to(ChannelEndpointInterceptor.SenderProxy.RegisterSendChannelEndpoint.class)
                     .on(named("registerSendChannelEndpoint")))
-                .visit(to(ChannelEndpointInterceptor.SenderProxyInterceptor.CloseSendChannelEndpoint.class)
+                .visit(to(ChannelEndpointInterceptor.SenderProxy.CloseSendChannelEndpoint.class)
                     .on(named("closeSendChannelEndpoint"))))
             .type(nameEndsWith("ReceiverProxy"))
             .transform((builder, typeDescription, classLoader, javaModule) -> builder
-                .visit(to(ChannelEndpointInterceptor.ReceiverProxyInterceptor.RegisterReceiveChannelEndpoint.class)
+                .visit(to(ChannelEndpointInterceptor.ReceiverProxy.RegisterReceiveChannelEndpoint.class)
                     .on(named("registerReceiveChannelEndpoint")))
-                .visit(to(ChannelEndpointInterceptor.ReceiverProxyInterceptor.CloseReceiveChannelEndpoint.class)
+                .visit(to(ChannelEndpointInterceptor.ReceiverProxy.CloseReceiveChannelEndpoint.class)
                     .on(named("closeReceiveChannelEndpoint"))))
             .type(nameEndsWith("UdpChannelTransport"))
             .transform((builder, typeDescription, classLoader, javaModule) -> builder
-                .visit(to(ChannelEndpointInterceptor.UdpChannelTransportInterceptor.SendHook.class)
+                .visit(to(ChannelEndpointInterceptor.UdpChannelTransport.SendHook.class)
                     .on(named("sendHook")))
-                .visit(to(ChannelEndpointInterceptor.UdpChannelTransportInterceptor.ReceiveHook.class)
+                .visit(to(ChannelEndpointInterceptor.UdpChannelTransport.ReceiveHook.class)
                     .on(named("receiveHook"))));
     }
 
@@ -232,13 +232,13 @@ public class EventLogAgent
         return agentBuilder
             .type(nameEndsWith("Election"))
             .transform(((builder, typeDescription, classLoader, module) -> builder
-                .visit(to(ClusterEventInterceptor.ElectionStateChange.class).on(named("state")
+                .visit(to(ClusterInterceptor.ElectionStateChange.class).on(named("state")
                     .and(takesArgument(0, nameEndsWith("State")))))))
             .type(nameEndsWith("ConsensusModuleAgent"))
             .transform(((builder, typeDescription, classLoader, module) -> builder
-                .visit(to(ClusterEventInterceptor.NewLeadershipTerm.class).on(named("onNewLeadershipTerm")))
-                .visit(to(ClusterEventInterceptor.ConsensusModuleStateChange.class).on(named("state")))
-                .visit(to(ClusterEventInterceptor.ConsensusModuleRoleChange.class).on(named("role")
+                .visit(to(ClusterInterceptor.NewLeadershipTerm.class).on(named("onNewLeadershipTerm")))
+                .visit(to(ClusterInterceptor.ConsensusModuleStateChange.class).on(named("state")))
+                .visit(to(ClusterInterceptor.ConsensusModuleRoleChange.class).on(named("role")
                     .and(takesArgument(0, nameEndsWith("Role")))))));
     }
 

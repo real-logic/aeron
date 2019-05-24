@@ -25,7 +25,6 @@ import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.ClusteredMediaDriver;
 import io.aeron.cluster.ConsensusModule;
-import io.aeron.cluster.ConsensusModule.Configuration;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.Cluster;
@@ -61,16 +60,12 @@ public class ClusterLoggingAgentTest
     @Before
     public void before()
     {
-        final String clusterMemberId = Integer.toHexString(Configuration.clusterMemberId());
-        final String nodeId = "node-" + clusterMemberId;
-        nodeDirName = Paths.get(IoUtil.tmpDirName(), "aeron", "cluster", nodeId).toString();
-
+        nodeDirName = Paths.get(IoUtil.tmpDirName(), "cluster-test").toString();
         final String aeronDirectoryName = Paths.get(nodeDirName, "media").toString();
 
-        final MediaDriver.Context mediaDriverContext = new Context()
+        final MediaDriver.Context mediaDriverCtx = new Context()
             .aeronDirectoryName(aeronDirectoryName)
-            .threadingMode(ThreadingMode.SHARED)
-            .warnIfDirectoryExists(true);
+            .threadingMode(ThreadingMode.SHARED);
 
         final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context()
             .aeronDirectoryName(aeronDirectoryName)
@@ -80,7 +75,7 @@ public class ClusterLoggingAgentTest
             .controlResponseStreamId(101)
             .recordingEventsChannel("aeron:udp?control-mode=dynamic|control=localhost:8030");
 
-        final Archive.Context archiveContext = new Archive.Context()
+        final Archive.Context archiveCtx = new Archive.Context()
             .aeronDirectoryName(aeronDirectoryName)
             .archiveDir(new File(nodeDirName, "archive"))
             .controlChannel(aeronArchiveContext.controlRequestChannel())
@@ -98,7 +93,7 @@ public class ClusterLoggingAgentTest
             .clusterMembers("0,localhost:20110,localhost:20220,localhost:20330,localhost:20440,localhost:8010")
             .logChannel("aeron:udp?term-length=256k|control-mode=manual|control=localhost:20550");
 
-        clusteredMediaDriver = ClusteredMediaDriver.launch(mediaDriverContext, archiveContext, consensusModuleCtx);
+        clusteredMediaDriver = ClusteredMediaDriver.launch(mediaDriverCtx, archiveCtx, consensusModuleCtx);
 
         final ClusteredService clusteredService = new ClusteredService()
         {
@@ -166,7 +161,7 @@ public class ClusterLoggingAgentTest
         CloseHelper.quietClose(clusteredMediaDriver);
         if (nodeDirName != null)
         {
-            new File(nodeDirName).deleteOnExit();
+            IoUtil.delete(new File(nodeDirName), false);
         }
     }
 

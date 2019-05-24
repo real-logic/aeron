@@ -103,12 +103,12 @@ public class EventLogAgent
 
     public static void premain(final String agentArgs, final Instrumentation instrumentation)
     {
-        agent(AgentBuilder.RedefinitionStrategy.RETRANSFORMATION, instrumentation);
+        agent(AgentBuilder.RedefinitionStrategy.DISABLED, instrumentation);
     }
 
     public static void agentmain(final String agentArgs, final Instrumentation instrumentation)
     {
-        agent(AgentBuilder.RedefinitionStrategy.DISABLED, instrumentation);
+        agent(AgentBuilder.RedefinitionStrategy.RETRANSFORMATION, instrumentation);
     }
 
     public static void removeTransformer()

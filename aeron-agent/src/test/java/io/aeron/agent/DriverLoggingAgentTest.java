@@ -51,7 +51,6 @@ public class DriverLoggingAgentTest
     {
         System.setProperty(EventConfiguration.ENABLED_EVENT_CODES_PROP_NAME, "all");
         System.setProperty(EventLogAgent.READER_CLASSNAME_PROP_NAME, StubEventLogReaderAgent.class.getName());
-        EventLogAgent.agentmain("", ByteBuddyAgent.install());
     }
 
     @AfterClass
@@ -69,6 +68,8 @@ public class DriverLoggingAgentTest
 
         try (MediaDriver ignore = MediaDriver.launchEmbedded(driverCtx))
         {
+            EventLogAgent.agentmain("", ByteBuddyAgent.install());
+
             final Aeron.Context clientCtx = new Aeron.Context()
                 .aeronDirectoryName(driverCtx.aeronDirectoryName());
 

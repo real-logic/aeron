@@ -321,109 +321,6 @@ project(':aeron-driver') {
     }
 }
 
-project(':aeron-agent') {
-    apply plugin: 'com.github.johnrengelman.shadow'
-
-    dependencies {
-        compile project(':aeron-cluster')
-        compile "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
-    }
-
-    jar {
-        manifest.attributes(
-            'Implementation-Title': 'Aeron',
-            'Implementation-Version': "${aeronVersion}",
-            'Implementation-Vendor': 'Real Logic Limited',
-            "Premain-Class": "io.aeron.agent.EventLogAgent",
-            "Agent-Class": "io.aeron.agent.EventLogAgent",
-            "Can-Redefine-Classes": "true",
-            "Can-Retransform-Classes": "true",
-            'Automatic-Module-Name': 'io.aeron.agent'
-        )
-    }
-
-    shadowJar {
-        dependencies {
-            exclude(project(':aeron-client'))
-            exclude(project(':aeron-driver'))
-            exclude(dependency('org.agrona:agrona'))
-        }
-
-        manifest.attributes(
-            'Implementation-Title': 'Aeron',
-            'Implementation-Version': "${aeronVersion}",
-            'Implementation-Vendor': 'Real Logic Limited',
-            "Premain-Class": "io.aeron.agent.EventLogAgent",
-            "Agent-Class": "io.aeron.agent.EventLogAgent",
-            "Can-Redefine-Classes": "true",
-            "Can-Retransform-Classes": "true",
-            'Automatic-Module-Name': 'io.aeron.agent.all'
-        )
-    }
-
-    uploadArchives {
-        repositories {
-            mavenDeployer {
-                beforeDeployment {
-                    MavenDeployment deployment -> signing.signPom(deployment)
-                }
-
-                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
-                    authentication(userName: ossrhUsername, password: ossrhPassword)
-                }
-
-                snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
-                    authentication(userName: ossrhUsername, password: ossrhPassword)
-                }
-
-                pom.project(projectPom)
-            }
-        }
-    }
-
-    uploadShadow {
-        repositories {
-            mavenDeployer {
-                beforeDeployment {
-                    MavenDeployment deployment -> signing.signPom(deployment)
-                }
-
-                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
-                    authentication(userName: ossrhUsername, password: ossrhPassword)
-                }
-
-                snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
-                    authentication(userName: ossrhUsername, password: ossrhPassword)
-                }
-
-                pom.project(projectPom)
-            }
-        }
-
-        mustRunAfter 'uploadArchives'
-    }
-
-    task sourcesJar(type: Jar) {
-        archiveClassifier = 'sources'
-        from sourceSets.main.allSource
-    }
-
-    task javadocJar(type: Jar, dependsOn: javadoc) {
-        archiveClassifier = 'javadoc'
-        from javadoc.destinationDir
-    }
-
-    artifacts {
-        archives sourcesJar
-        archives javadocJar
-    }
-
-    signing {
-        required { isReleasedVersion && gradle.taskGraph.hasTask("uploadArchives") }
-        sign configurations.shadow
-    }
-}
-
 project(':aeron-archive') {
     configurations{
         codecGeneration
@@ -612,6 +509,113 @@ project(':aeron-cluster') {
     artifacts {
         archives sourcesJar
         archives javadocJar
+    }
+}
+
+project(':aeron-agent') {
+    apply plugin: 'com.github.johnrengelman.shadow'
+
+    dependencies {
+        compile project(':aeron-cluster')
+        compile "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
+    }
+
+    test {
+        forkEvery = 1
+    }
+
+    jar {
+        manifest.attributes(
+            'Implementation-Title': 'Aeron',
+            'Implementation-Version': "${aeronVersion}",
+            'Implementation-Vendor': 'Real Logic Limited',
+            "Premain-Class": "io.aeron.agent.EventLogAgent",
+            "Agent-Class": "io.aeron.agent.EventLogAgent",
+            "Can-Redefine-Classes": "true",
+            "Can-Retransform-Classes": "true",
+            'Automatic-Module-Name': 'io.aeron.agent'
+        )
+    }
+
+    shadowJar {
+        dependencies {
+            exclude(project(':aeron-client'))
+            exclude(project(':aeron-driver'))
+            exclude(dependency('org.agrona:agrona'))
+        }
+
+        manifest.attributes(
+            'Implementation-Title': 'Aeron',
+            'Implementation-Version': "${aeronVersion}",
+            'Implementation-Vendor': 'Real Logic Limited',
+            "Premain-Class": "io.aeron.agent.EventLogAgent",
+            "Agent-Class": "io.aeron.agent.EventLogAgent",
+            "Can-Redefine-Classes": "true",
+            "Can-Retransform-Classes": "true",
+            'Automatic-Module-Name': 'io.aeron.agent.all'
+        )
+    }
+
+    uploadArchives {
+        repositories {
+            mavenDeployer {
+                beforeDeployment {
+                    MavenDeployment deployment -> signing.signPom(deployment)
+                }
+
+                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                    authentication(userName: ossrhUsername, password: ossrhPassword)
+                }
+
+                snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                    authentication(userName: ossrhUsername, password: ossrhPassword)
+                }
+
+                pom.project(projectPom)
+            }
+        }
+    }
+
+    uploadShadow {
+        repositories {
+            mavenDeployer {
+                beforeDeployment {
+                    MavenDeployment deployment -> signing.signPom(deployment)
+                }
+
+                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                    authentication(userName: ossrhUsername, password: ossrhPassword)
+                }
+
+                snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                    authentication(userName: ossrhUsername, password: ossrhPassword)
+                }
+
+                pom.project(projectPom)
+            }
+        }
+
+        mustRunAfter 'uploadArchives'
+    }
+
+    task sourcesJar(type: Jar) {
+        archiveClassifier = 'sources'
+        from sourceSets.main.allSource
+    }
+
+    task javadocJar(type: Jar, dependsOn: javadoc) {
+        archiveClassifier = 'javadoc'
+        from javadoc.destinationDir
+    }
+
+    artifacts {
+        archives sourcesJar
+        archives javadocJar
+    }
+
+    signing {
+        required { isReleasedVersion && gradle.taskGraph.hasTask("uploadArchives") }
+        sign configurations.shadow
     }
 }
 

@@ -103,7 +103,7 @@ public final class ClusterEventLogger
         }
     }
 
-    private static int toEventCodeId(final ClusterEventCode code)
+    public static int toEventCodeId(final ClusterEventCode code)
     {
         return ClusterEventCode.EVENT_CODE_TYPE << 16 | (code.id() & 0xFFFF);
     }

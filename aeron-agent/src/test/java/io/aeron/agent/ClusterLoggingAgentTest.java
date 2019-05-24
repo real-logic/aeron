@@ -50,7 +50,6 @@ import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.MessageHandler;
 import org.junit.*;
 
-@Ignore
 public class ClusterLoggingAgentTest
 {
     private static final CountDownLatch LATCH = new CountDownLatch(1);
@@ -59,46 +58,13 @@ public class ClusterLoggingAgentTest
     private ClusteredServiceContainer clusteredServiceContainer;
     private String nodeDirName;
 
-    @BeforeClass
-    public static void installAgent()
-    {
-        System.setProperty(EventConfiguration.ENABLED_CLUSTER_EVENT_CODES_PROP_NAME, "all");
-        System.setProperty(
-            EventLogAgent.READER_CLASSNAME_PROP_NAME, StubEventLogReaderAgent.class.getName());
-        EventLogAgent.agentmain("", ByteBuddyAgent.install());
-    }
-
-    @AfterClass
-    public static void removeAgent()
-    {
-        EventLogAgent.removeTransformer();
-        System.clearProperty(EventConfiguration.ENABLED_CLUSTER_EVENT_CODES_PROP_NAME);
-        System.clearProperty(EventLogAgent.READER_CLASSNAME_PROP_NAME);
-    }
-
     @Before
     public void before()
     {
         final String clusterMemberId = Integer.toHexString(Configuration.clusterMemberId());
         final String nodeId = "node-" + clusterMemberId;
         nodeDirName = Paths.get(IoUtil.tmpDirName(), "aeron", "cluster", nodeId).toString();
-        System.out.println("Cluster node directory: " + nodeDirName);
-    }
 
-    @After
-    public void after()
-    {
-        CloseHelper.quietClose(clusteredServiceContainer);
-        CloseHelper.quietClose(clusteredMediaDriver);
-        if (nodeDirName != null)
-        {
-            new File(nodeDirName).deleteOnExit();
-        }
-    }
-
-    @Test(timeout = 10_000L)
-    public void shouldLogMessages() throws Exception
-    {
         final String aeronDirectoryName = Paths.get(nodeDirName, "media").toString();
 
         final MediaDriver.Context mediaDriverContext = new Context()
@@ -169,13 +135,16 @@ public class ClusterLoggingAgentTest
 
             public void onRoleChange(final Role newRole)
             {
-                LATCH.countDown();
             }
 
             public void onTerminate(final Cluster cluster)
             {
             }
         };
+
+        System.setProperty(EventConfiguration.ENABLED_CLUSTER_EVENT_CODES_PROP_NAME, "all");
+        System.setProperty(EventLogAgent.READER_CLASSNAME_PROP_NAME, StubEventLogReaderAgent.class.getName());
+        EventLogAgent.agentmain("", ByteBuddyAgent.install());
 
         final ClusteredServiceContainer.Context clusteredServiceCtx = new ClusteredServiceContainer.Context()
             .aeronDirectoryName(aeronDirectoryName)
@@ -184,7 +153,26 @@ public class ClusterLoggingAgentTest
             .clusteredService(clusteredService);
 
         clusteredServiceContainer = ClusteredServiceContainer.launch(clusteredServiceCtx);
+    }
 
+    @After
+    public void after()
+    {
+        EventLogAgent.removeTransformer();
+        System.clearProperty(EventConfiguration.ENABLED_CLUSTER_EVENT_CODES_PROP_NAME);
+        System.clearProperty(EventLogAgent.READER_CLASSNAME_PROP_NAME);
+
+        CloseHelper.quietClose(clusteredServiceContainer);
+        CloseHelper.quietClose(clusteredMediaDriver);
+        if (nodeDirName != null)
+        {
+            new File(nodeDirName).deleteOnExit();
+        }
+    }
+
+    @Test(timeout = 10_000L)
+    public void shouldLogMessages() throws Exception
+    {
         LATCH.await();
     }
 
@@ -202,7 +190,14 @@ public class ClusterLoggingAgentTest
 
         public void onMessage(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
         {
-            System.err.println("msgTypeId = " + msgTypeId + ": " + buffer.getStringAscii(index, length));
+            if (ClusterEventLogger.toEventCodeId(ClusterEventCode.STATE_CHANGE) == msgTypeId)
+            {
+                final String stateString = buffer.getStringAscii(index, length);
+                if (stateString.contains("ACTIVE"))
+                {
+                    LATCH.countDown();
+                }
+            }
         }
     }
 }

@@ -115,6 +115,11 @@ public final class ArchiveEventLogger
         }
     }
 
+    public static int toEventCodeId(final ArchiveEventCode code)
+    {
+        return ArchiveEventCode.EVENT_CODE_TYPE << 16 | (code.id() & 0xFFFF);
+    }
+
     private void dispatchIfEnabled(
         final DirectBuffer buffer,
         final int offset,
@@ -125,10 +130,5 @@ public final class ArchiveEventLogger
         {
             ringBuffer.write(toEventCodeId(eventCode), buffer, offset, length);
         }
-    }
-
-    private static int toEventCodeId(final ArchiveEventCode code)
-    {
-        return ArchiveEventCode.EVENT_CODE_TYPE << 16 | (code.id() & 0xFFFF);
     }
 }

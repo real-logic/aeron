@@ -986,7 +986,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         final ClusterSession clusterSession = sessionByIdMap.get(clusterSessionId);
         if (null == clusterSession)
         {
-            sweepPendingServiceSessionMessages(clusterSessionId, MESSAGE_LIMIT);
+            sweepPendingServiceSessionMessages(clusterSessionId);
         }
         else
         {
@@ -2569,10 +2569,10 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         return appended;
     }
 
-    private void sweepPendingServiceSessionMessages(final long clusterSessionId, final int messageLimit)
+    private void sweepPendingServiceSessionMessages(final long clusterSessionId)
     {
         logServiceSessionId = clusterSessionId;
-        pendingServiceMessages.consume(serviceSessionMessageSweeper, messageLimit);
+        pendingServiceMessages.consume(serviceSessionMessageSweeper, MESSAGE_LIMIT);
     }
 
     @SuppressWarnings("unused")

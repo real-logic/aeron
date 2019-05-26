@@ -880,8 +880,12 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             else
             {
                 final long clusterSessionId = ++nextServiceSessionId;
-                if (!logPublisher.appendMessage(
+                if (logPublisher.appendMessage(
                     leadershipTermId, clusterSessionId, clusterTimeMs, buffer, offset, length))
+                {
+                    logServiceSessionId = clusterSessionId;
+                }
+                else
                 {
                     enqueueServiceSessionMessage((MutableDirectBuffer)buffer, offset, length, clusterSessionId);
                 }

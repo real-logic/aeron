@@ -41,7 +41,7 @@ def aeronVersion = file('version.txt').text.trim()
 def aeronJavaVersion = JavaVersion.VERSION_1_8
 
 def agronaVersion = '1.0.1'
-def sbeVersion = '1.12.6'
+def sbeVersion = '1.12.7'
 def byteBuddyVersion = '1.9.10'
 def hdrHistogramVersion = '2.1.11'
 def mockitoVersion = '2.27.0'

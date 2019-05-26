@@ -18,6 +18,8 @@ package io.aeron.agent;
 import org.agrona.BitUtil;
 import org.agrona.MutableDirectBuffer;
 
+import static org.agrona.BitUtil.SIZE_OF_LONG;
+
 final class ClusterEventDissector
 {
     static void electionStateChange(
@@ -26,9 +28,9 @@ final class ClusterEventDissector
         final int offset,
         final StringBuilder builder)
     {
-        final String stateName = buffer.getStringAscii(offset);
-        final long timestampMs = buffer.getLong(offset + BitUtil.SIZE_OF_INT + stateName.length());
-        builder.append("CLUSTER: Election State -> ").append(stateName).append(' ').append(timestampMs);
+        final long timestampMs = buffer.getLong(offset);
+        final String stateChange = buffer.getStringAscii(offset + SIZE_OF_LONG);
+        builder.append("CLUSTER: Election State -> ").append(stateChange).append(' ').append(timestampMs);
     }
 
     static void newLeadershipTerm(
@@ -39,13 +41,13 @@ final class ClusterEventDissector
     {
         int relativeOffset = offset;
         final long logLeadershipTermId = buffer.getLong(relativeOffset);
-        relativeOffset += BitUtil.SIZE_OF_LONG;
+        relativeOffset += SIZE_OF_LONG;
         final long logPosition = buffer.getLong(relativeOffset);
-        relativeOffset += BitUtil.SIZE_OF_LONG;
+        relativeOffset += SIZE_OF_LONG;
         final long leadershipTermId = buffer.getLong(relativeOffset);
-        relativeOffset += BitUtil.SIZE_OF_LONG;
+        relativeOffset += SIZE_OF_LONG;
         final long maxLogPosition = buffer.getLong(relativeOffset);
-        relativeOffset += BitUtil.SIZE_OF_LONG;
+        relativeOffset += SIZE_OF_LONG;
         final int leaderMemberId = buffer.getInt(relativeOffset);
         relativeOffset += BitUtil.SIZE_OF_INT;
         final int logSessionId = buffer.getInt(relativeOffset);

@@ -29,18 +29,18 @@ final class ClusterEventEncoder
         final Election.State newState,
         final long nowMs)
     {
-        final int stringLength = oldState.name().length() + " -> ".length() + newState.name().length();
+        encodedBuffer.putLong(0, nowMs);
+        int offset = BitUtil.SIZE_OF_LONG;
 
-        encodedBuffer.putInt(0, stringLength);
-        int offset = BitUtil.SIZE_OF_INT;
+        final int stringLength = oldState.name().length() + " -> ".length() + newState.name().length();
+        encodedBuffer.putInt(offset, stringLength);
+        offset += BitUtil.SIZE_OF_INT;
 
         offset += encodedBuffer.putStringWithoutLengthAscii(offset, oldState.name());
         offset += encodedBuffer.putStringWithoutLengthAscii(offset, " -> ");
         offset += encodedBuffer.putStringWithoutLengthAscii(offset, newState.name());
 
-        encodedBuffer.putLong(offset, nowMs);
-
-        return offset + BitUtil.SIZE_OF_LONG;
+        return offset;
     }
 
     static int newLeadershipTerm(

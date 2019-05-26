@@ -17,6 +17,7 @@ package io.aeron.agent;
 
 import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.mockito.Mockito.mock;
 
 import io.aeron.archive.Archive;
@@ -153,7 +154,7 @@ public class ClusterLoggingAgentTest
 
             if (ClusterEventLogger.toEventCodeId(ClusterEventCode.ELECTION_STATE_CHANGE) == msgTypeId)
             {
-                final String stateChange = buffer.getStringAscii(index);
+                final String stateChange = buffer.getStringAscii(index + SIZE_OF_LONG);
                 if (stateChange.endsWith("CLOSE"))
                 {
                     LATCH.countDown();

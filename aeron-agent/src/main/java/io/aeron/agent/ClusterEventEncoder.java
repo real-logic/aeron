@@ -25,17 +25,16 @@ final class ClusterEventEncoder
 {
     static int encodeElectionStateChange(
         final MutableDirectBuffer encodedBuffer,
-        final Election election,
+        final Election.State oldState,
         final Election.State newState,
         final long nowMs)
     {
-        final String currentStateName = election.state().name();
-        final int stringLength = currentStateName.length() + " -> ".length() + newState.name().length();
+        final int stringLength = oldState.name().length() + " -> ".length() + newState.name().length();
 
         encodedBuffer.putInt(0, stringLength);
         int offset = BitUtil.SIZE_OF_INT;
 
-        offset += encodedBuffer.putStringWithoutLengthAscii(offset, currentStateName);
+        offset += encodedBuffer.putStringWithoutLengthAscii(offset, oldState.name());
         offset += encodedBuffer.putStringWithoutLengthAscii(offset, " -> ");
         offset += encodedBuffer.putStringWithoutLengthAscii(offset, newState.name());
 

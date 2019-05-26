@@ -30,9 +30,9 @@ final class ClusterInterceptor
     static class ElectionStateChange
     {
         @Advice.OnMethodEnter
-        static void state(final Election.State newState, final long nowMs, @Advice.This final Election election)
+        static void stateTransition(final Election.State oldState, final Election.State newState, final long nowMs)
         {
-            LOGGER.logElectionStateChange(newState, nowMs, election);
+            LOGGER.logElectionStateChange(oldState, newState, nowMs);
         }
     }
 

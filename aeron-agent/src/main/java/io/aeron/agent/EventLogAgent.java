@@ -239,7 +239,7 @@ public class EventLogAgent
             .type(nameEndsWith("Election"))
             .transform(((builder, typeDescription, classLoader, module) -> builder
                 .visit(to(ClusterInterceptor.ElectionStateChange.class)
-                    .on(named("state").and(takesArgument(0, nameEndsWith("State")))))))
+                    .on(named("stateTransition").and(takesArgument(0, nameEndsWith("State")))))))
             .type(nameEndsWith("ConsensusModuleAgent"))
             .transform(((builder, typeDescription, classLoader, module) -> builder
                 .visit(to(ClusterInterceptor.NewLeadershipTerm.class)

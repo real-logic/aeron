@@ -39,7 +39,6 @@ import static net.bytebuddy.matcher.ElementMatchers.*;
  * which is consumed and appended asynchronous to a log as defined by the class {@link #READER_CLASSNAME_PROP_NAME}
  * which defaults to {@link EventLogReaderAgent}.
  */
-@SuppressWarnings("unused")
 public class EventLogAgent
 {
     /**

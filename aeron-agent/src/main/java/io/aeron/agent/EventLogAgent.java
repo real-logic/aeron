@@ -156,8 +156,8 @@ public class EventLogAgent
         readerAgentRunner = new AgentRunner(
             new SleepingMillisIdleStrategy(SLEEP_PERIOD_MS), Throwable::printStackTrace, null, getReaderAgent());
 
-        AgentBuilder agentBuilder = new AgentBuilder.Default(
-            new ByteBuddy().with(TypeValidation.DISABLED))
+        AgentBuilder agentBuilder = new AgentBuilder.Default(new ByteBuddy()
+            .with(TypeValidation.DISABLED))
             .disableClassFormatChanges()
             .with(LISTENER)
             .with(redefinitionStrategy);
@@ -190,15 +190,20 @@ public class EventLogAgent
         return agentBuilder
             .type(nameEndsWith("DriverConductor"))
             .transform((builder, typeDescription, classLoader, javaModule) -> builder
-                .visit(to(CleanupInterceptor.CleanupImage.class).on(named("cleanupImage")))
-                .visit(to(CleanupInterceptor.CleanupPublication.class).on(named("cleanupPublication")))
-                .visit(to(CleanupInterceptor.CleanupSubscriptionLink.class).on(named("cleanupSubscriptionLink"))))
+                .visit(to(CleanupInterceptor.CleanupImage.class)
+                    .on(named("cleanupImage")))
+                .visit(to(CleanupInterceptor.CleanupPublication.class)
+                    .on(named("cleanupPublication")))
+                .visit(to(CleanupInterceptor.CleanupSubscriptionLink.class)
+                    .on(named("cleanupSubscriptionLink"))))
             .type(nameEndsWith("ClientCommandAdapter"))
             .transform((builder, typeDescription, classLoader, javaModule) -> builder
-                .visit(to(CmdInterceptor.class).on(named("onMessage"))))
+                .visit(to(CmdInterceptor.class)
+                    .on(named("onMessage"))))
             .type(nameEndsWith("ClientProxy"))
             .transform((builder, typeDescription, classLoader, javaModule) -> builder
-                .visit(to(CmdInterceptor.class).on(named("transmit"))))
+                .visit(to(CmdInterceptor.class)
+                    .on(named("transmit"))))
             .type(nameEndsWith("SenderProxy"))
             .transform((builder, typeDescription, classLoader, javaModule) -> builder
                 .visit(to(ChannelEndpointInterceptor.SenderProxy.RegisterSendChannelEndpoint.class)
@@ -224,7 +229,8 @@ public class EventLogAgent
         return agentBuilder
             .type(nameEndsWith("ControlRequestAdapter"))
             .transform(((builder, typeDescription, classLoader, module) -> builder
-                .visit(to(ControlRequestInterceptor.ControlRequest.class).on(named("onFragment")))));
+                .visit(to(ControlRequestInterceptor.ControlRequest.class)
+                    .on(named("onFragment")))));
     }
 
     private static AgentBuilder addClusterInstrumentation(final AgentBuilder agentBuilder)
@@ -232,14 +238,17 @@ public class EventLogAgent
         return agentBuilder
             .type(nameEndsWith("Election"))
             .transform(((builder, typeDescription, classLoader, module) -> builder
-                .visit(to(ClusterInterceptor.ElectionStateChange.class).on(named("state")
+                .visit(to(ClusterInterceptor.ElectionStateChange.class)
+                    .on(named("state")
                     .and(takesArgument(0, nameEndsWith("State")))))))
             .type(nameEndsWith("ConsensusModuleAgent"))
             .transform(((builder, typeDescription, classLoader, module) -> builder
-                .visit(to(ClusterInterceptor.NewLeadershipTerm.class).on(named("onNewLeadershipTerm")))
-                .visit(to(ClusterInterceptor.ConsensusModuleStateChange.class).on(named("state")))
-                .visit(to(ClusterInterceptor.ConsensusModuleRoleChange.class).on(named("role")
-                    .and(takesArgument(0, nameEndsWith("Role")))))));
+                .visit(to(ClusterInterceptor.NewLeadershipTerm.class)
+                    .on(named("onNewLeadershipTerm")))
+                .visit(to(ClusterInterceptor.ConsensusModuleStateChange.class)
+                    .on(named("state")))
+                .visit(to(ClusterInterceptor.ConsensusModuleRoleChange.class)
+                    .on(named("role").and(takesArgument(0, nameEndsWith("Role")))))));
     }
 
     private static Agent getReaderAgent()

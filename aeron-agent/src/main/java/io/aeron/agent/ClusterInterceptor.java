@@ -39,7 +39,7 @@ final class ClusterInterceptor
     static class NewLeadershipTerm
     {
         @Advice.OnMethodEnter
-        static void newLeadershipTerm(
+        static void onNewLeadershipTerm(
             final long logLeadershipTermId,
             final long logPosition,
             final long leadershipTermId,

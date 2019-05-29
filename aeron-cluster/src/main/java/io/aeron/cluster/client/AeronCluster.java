@@ -403,7 +403,7 @@ public final class AeronCluster implements AutoCloseable
         while (true)
         {
             final long result = publication.offer(keepaliveMsgBuffer, 0, keepaliveMsgBuffer.capacity(), null);
-            if (result > 0)
+            if (result > 0 || result == Publication.BACK_PRESSURED)
             {
                 return true;
             }

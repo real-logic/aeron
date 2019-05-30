@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
+import io.aeron.cluster.TestNode.TestService;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -141,6 +142,17 @@ public class TestCluster implements AutoCloseable
         return testCluster;
     }
 
+    static TestCluster startThreeNodeStaticCluster(final int appointedLeaderId, final TestServiceFactory svcFactory)
+    {
+        final TestCluster testCluster = new TestCluster(3, 0, appointedLeaderId);
+        for (int i = 0; i < 3; i++)
+        {
+            testCluster.startStaticNode(i, true, svcFactory);
+        }
+
+        return testCluster;
+    }
+
     static TestCluster startSingleNodeStaticCluster()
     {
         final TestCluster testCluster = new TestCluster(1, 0, 0);
@@ -160,11 +172,11 @@ public class TestCluster implements AutoCloseable
         return testCluster;
     }
 
-    TestNode startStaticNode(final int index, final boolean cleanStart)
+    TestNode startStaticNode(final int index, final boolean cleanStart, final TestServiceFactory svcFactory)
     {
         final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + index;
         final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + index + "-driver";
-        final TestNode.Context context = new TestNode.Context(new TestNode.TestService(index));
+        final TestNode.Context context = new TestNode.Context(svcFactory.getService(index));
 
         context.aeronArchiveContext
             .controlRequestChannel(memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, index))
@@ -216,6 +228,11 @@ public class TestCluster implements AutoCloseable
         nodes[index] = new TestNode(context);
 
         return nodes[index];
+    }
+
+    TestNode startStaticNode(final int index, final boolean cleanStart)
+    {
+        return startStaticNode(index, cleanStart, TestService::new);
     }
 
     TestNode startDynamicNode(final int index, final boolean cleanStart)
@@ -312,6 +329,18 @@ public class TestCluster implements AutoCloseable
     ExpandableArrayBuffer msgBuffer()
     {
         return msgBuffer;
+    }
+
+    void reconnectClient()
+    {
+        final String aeronDirName = CommonContext.getAeronDirectoryName();
+        client.close();
+        client = AeronCluster.connect(
+            new AeronCluster.Context()
+                .egressListener(egressMessageListener)
+                .aeronDirectoryName(aeronDirName)
+                .ingressChannel("aeron:udp")
+                .clusterMemberEndpoints(staticClusterMemberEndpoints));
     }
 
     void connectClient()
@@ -474,6 +503,17 @@ public class TestCluster implements AutoCloseable
         }
     }
 
+    void awaitNeutralControlToggle(final TestNode leaderNode)
+    {
+        final AtomicCounter controlToggle = ClusterControl.findControlToggle(leaderNode.countersReader());
+        assertNotNull(controlToggle);
+        while (controlToggle.get() != ClusterControl.ToggleState.NEUTRAL.code())
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.yield();
+        }
+    }
+
     void awaitNodeTermination(final TestNode node)
     {
         while (!node.hasMemberTerminated() || !node.hasServiceTerminated())
@@ -580,5 +620,11 @@ public class TestCluster implements AutoCloseable
         builder.setLength(builder.length() - 1);
 
         return builder.toString();
+    }
+
+    @FunctionalInterface
+    interface TestServiceFactory
+    {
+        TestService getService(int memberId);
     }
 }

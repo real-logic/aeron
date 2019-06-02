@@ -2440,7 +2440,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         snapshotTaker.markBegin(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0);
 
         snapshotTaker.snapshotConsensusModuleState(
-            nextSessionId, nextServiceSessionId, logServiceSessionId, pendingServiceMessages.capacity());
+            nextSessionId, nextServiceSessionId, logServiceSessionId, pendingServiceMessages.size());
         snapshotTaker.snapshotClusterMembers(memberId, highMemberId, clusterMembers);
 
         for (final ClusterSession session : sessionByIdMap.values())

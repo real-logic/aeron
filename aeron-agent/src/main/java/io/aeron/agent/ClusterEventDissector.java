@@ -18,9 +18,10 @@ package io.aeron.agent;
 import org.agrona.BitUtil;
 import org.agrona.MutableDirectBuffer;
 
+import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
-final class ClusterEventDissector
+class ClusterEventDissector
 {
     static void electionStateChange(
         @SuppressWarnings("unused") final ClusterEventCode event,
@@ -28,9 +29,15 @@ final class ClusterEventDissector
         final int offset,
         final StringBuilder builder)
     {
-        final long timestampMs = buffer.getLong(offset);
-        final String stateChange = buffer.getStringAscii(offset + SIZE_OF_LONG);
-        builder.append("CLUSTER: Election State -> ").append(stateChange).append(' ').append(timestampMs);
+        int eventOffset = 0;
+
+        final int memberId = buffer.getInt(offset + eventOffset);
+        eventOffset += SIZE_OF_INT;
+
+        final String stateChange = buffer.getStringAscii(offset + eventOffset);
+        builder
+            .append("CLUSTER: Election State ").append(stateChange)
+            .append(", memberId=").append(memberId);
     }
 
     static void newLeadershipTerm(
@@ -66,7 +73,15 @@ final class ClusterEventDissector
         final int offset,
         final StringBuilder builder)
     {
-        builder.append("CLUSTER: ConsensusModule State -> ").append(buffer.getStringAscii(offset));
+        int eventOffset = 0;
+
+        final int memberId = buffer.getInt(offset + eventOffset);
+        eventOffset += SIZE_OF_INT;
+
+        final String stateChange = buffer.getStringAscii(offset + eventOffset);
+        builder
+            .append("CLUSTER: ConsensusModule State ").append(stateChange)
+            .append(", memberId=").append(memberId);
     }
 
     static void roleChange(
@@ -75,6 +90,6 @@ final class ClusterEventDissector
         final int offset,
         final StringBuilder builder)
     {
-        builder.append("CLUSTER: Role -> ").append(buffer.getStringAscii(offset));
+        builder.append("CLUSTER: ConsensusModule Role ").append(buffer.getStringAscii(offset));
     }
 }

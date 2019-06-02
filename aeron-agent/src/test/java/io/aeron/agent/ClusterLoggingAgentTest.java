@@ -17,7 +17,7 @@ package io.aeron.agent;
 
 import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.mockito.Mockito.mock;
 
 import io.aeron.archive.Archive;
@@ -45,7 +45,7 @@ import org.junit.*;
 
 public class ClusterLoggingAgentTest
 {
-    private static final CountDownLatch LATCH = new CountDownLatch(2);
+    private static final CountDownLatch LATCH = new CountDownLatch(3);
 
     private String testDirName;
     private ClusteredMediaDriver clusteredMediaDriver;
@@ -145,8 +145,17 @@ public class ClusterLoggingAgentTest
         {
             if (ClusterEventLogger.toEventCodeId(ClusterEventCode.ROLE_CHANGE) == msgTypeId)
             {
-                final String roleString = buffer.getStringAscii(index);
-                if (roleString.equalsIgnoreCase("LEADER"))
+                final String roleChange = buffer.getStringAscii(index + SIZE_OF_INT);
+                if (roleChange.contains("LEADER"))
+                {
+                    LATCH.countDown();
+                }
+            }
+
+            if (ClusterEventLogger.toEventCodeId(ClusterEventCode.STATE_CHANGE) == msgTypeId)
+            {
+                final String stateChange = buffer.getStringAscii(index + SIZE_OF_INT);
+                if (stateChange.contains("ACTIVE"))
                 {
                     LATCH.countDown();
                 }
@@ -154,8 +163,8 @@ public class ClusterLoggingAgentTest
 
             if (ClusterEventLogger.toEventCodeId(ClusterEventCode.ELECTION_STATE_CHANGE) == msgTypeId)
             {
-                final String stateChange = buffer.getStringAscii(index + SIZE_OF_LONG);
-                if (stateChange.endsWith("CLOSE"))
+                final String stateChange = buffer.getStringAscii(index + SIZE_OF_INT);
+                if (stateChange.contains("CLOSE"))
                 {
                     LATCH.countDown();
                 }

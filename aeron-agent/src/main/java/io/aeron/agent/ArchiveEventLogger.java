@@ -109,9 +109,6 @@ public final class ArchiveEventLogger
             case ListRecordingSubscriptionsRequestDecoder.TEMPLATE_ID:
                 dispatchIfEnabled(buffer, offset, length, CMD_IN_LIST_RECORDING_SUBSCRIPTIONS);
                 break;
-
-            default:
-                throw new IllegalArgumentException("Unknown template id: " + templateId);
         }
     }
 

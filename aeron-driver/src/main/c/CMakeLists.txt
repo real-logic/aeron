@@ -326,12 +326,14 @@ target_link_libraries(
     ${AERON_LIB_WINSOCK_LIBS})
 	
 target_compile_definitions(aeron_driver PRIVATE -DAERON_DRIVER)
+target_compile_definitions(aeron_driver_static PRIVATE -DAERON_DRIVER)
 
 if (AERON_INSTALL_TARGETS)
     install(
-        TARGETS aeron_driver aeron_driver_agent
+        TARGETS aeron_driver aeron_driver_agent aeron_driver_static
         RUNTIME DESTINATION lib
-        LIBRARY DESTINATION lib)
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib)
     install(TARGETS aeronmd DESTINATION bin)
     install(DIRECTORY . DESTINATION  include/aeronmd FILES_MATCHING PATTERN "*.h")
 endif()

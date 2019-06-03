@@ -110,32 +110,6 @@ if(AERON_BUILD_SAMPLES)
     )
 endif()
 
-##########################################################
-# Google benchmark
-
-if(AERON_TESTS)
-    ExternalProject_Add(
-        google_benchmark
-        URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/benchmark-1.4.1.zip
-        URL_MD5 619674faa0d878e239eaf6766259718b
-        CMAKE_ARGS -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER};-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER};
-            -DBENCHMARK_ENABLE_TESTING=OFF;-DBENCHMARK_ENABLE_GTEST_TESTS=OFF;-DBENCHMARK_ENABLE_ASSEMBLY_TESTS=OFF
-        PREFIX "${AERON_THIRDPARTY_BINARY_DIR}/google_benchmark"
-        BUILD_BYPRODUCTS "${AERON_THIRDPARTY_BINARY_DIR}/google_benchmark/src/google_benchmark-build/src/${CMAKE_STATIC_LIBRARY_PREFIX}benchmark${CMAKE_STATIC_LIBRARY_SUFFIX}"
-        INSTALL_COMMAND ""
-    )
-
-    ExternalProject_Get_Property(google_benchmark source_dir)
-    set(GOOGLE_BENCHMARK_SOURCE_DIR ${source_dir})
-    ExternalProject_Get_Property(google_benchmark binary_dir)
-    set(GOOGLE_BENCHMARK_BINARY_DIR ${binary_dir})
-
-    set(
-        GOOGLE_BENCHMARK_LIBS
-        ${GOOGLE_BENCHMARK_BINARY_DIR}/src/${CMAKE_STATIC_LIBRARY_PREFIX}benchmark${CMAKE_STATIC_LIBRARY_SUFFIX}
-    )
-endif()
-
 unset(AERON_THIRDPARTY_BINARY_DIR)
 
 ##########################################################
@@ -262,11 +236,6 @@ endif()
 if(AERON_BUILD_SAMPLES)
    # hdr_histogram
    include_directories(${HDRHISTOGRAM_SOURCE_DIR}/src)
-endif()
-
-if(AERON_TESTS)
-    # google benchmark
-    include_directories(${GOOGLE_BENCHMARK_SOURCE_DIR}/include)
 endif()
 
 ##########################################################

@@ -727,11 +727,11 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->nano_clock = aeron_nano_clock;
     _context->epoch_clock = aeron_epoch_clock;
 
-    _context->conductor_idle_styrategy_name = strndup("backoff", AERON_MAX_PATH);
-    _context->shared_idle_styrategy_name = strndup("backoff", AERON_MAX_PATH);
-    _context->shared_network_idle_styrategy_name = strndup("backoff", AERON_MAX_PATH);
-    _context->sender_idle_styrategy_name = strndup("backoff", AERON_MAX_PATH);
-    _context->receiver_idle_styrategy_name = strndup("backoff", AERON_MAX_PATH);
+    _context->conductor_idle_strategy_name = strndup("backoff", AERON_MAX_PATH);
+    _context->shared_idle_strategy_name = strndup("backoff", AERON_MAX_PATH);
+    _context->shared_network_idle_strategy_name = strndup("backoff", AERON_MAX_PATH);
+    _context->sender_idle_strategy_name = strndup("backoff", AERON_MAX_PATH);
+    _context->receiver_idle_strategy_name = strndup("backoff", AERON_MAX_PATH);
 
     _context->conductor_idle_strategy_init_args =
         AERON_CONFIG_STRNDUP_GETENV_OR_NULL(AERON_CONDUCTOR_IDLE_STRATEGY_INIT_ARGS_ENV_VAR);
@@ -850,11 +850,11 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
     aeron_free(context->sender_idle_strategy_state);
     aeron_free(context->shared_idle_strategy_state);
     aeron_free(context->shared_network_idle_strategy_state);
-    aeron_free((void *)context->conductor_idle_styrategy_name);
-    aeron_free((void *)context->shared_network_idle_styrategy_name);
-    aeron_free((void *)context->shared_idle_styrategy_name);
-    aeron_free((void *)context->sender_idle_styrategy_name);
-    aeron_free((void *)context->receiver_idle_styrategy_name);
+    aeron_free((void *)context->conductor_idle_strategy_name);
+    aeron_free((void *)context->shared_network_idle_strategy_name);
+    aeron_free((void *)context->shared_idle_strategy_name);
+    aeron_free((void *)context->sender_idle_strategy_name);
+    aeron_free((void *)context->receiver_idle_strategy_name);
     aeron_free((void *)context->conductor_idle_strategy_init_args);
     aeron_free((void *)context->sender_idle_strategy_init_args);
     aeron_free((void *)context->receiver_idle_strategy_init_args);
@@ -1475,7 +1475,7 @@ int aeron_driver_context_set_sender_idle_strategy(aeron_driver_context_t *contex
     AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, value);
 
     aeron_free(context->sender_idle_strategy_state);
-    aeron_free((void *)context->sender_idle_styrategy_name);
+    aeron_free((void *)context->sender_idle_strategy_name);
 
     if ((context->sender_idle_strategy_func = aeron_idle_strategy_load(
         value,
@@ -1486,13 +1486,13 @@ int aeron_driver_context_set_sender_idle_strategy(aeron_driver_context_t *contex
         return -1;
     }
 
-    context->sender_idle_styrategy_name = strndup(value, AERON_MAX_PATH);
+    context->sender_idle_strategy_name = strndup(value, AERON_MAX_PATH);
     return 0;
 }
 
 const char *aeron_driver_context_get_sender_idle_strategy(aeron_driver_context_t *context)
 {
-    return NULL != context ? context->sender_idle_styrategy_name : AERON_IDLE_STRATEGY_BACKOFF_DEFAULT;
+    return NULL != context ? context->sender_idle_strategy_name : AERON_IDLE_STRATEGY_BACKOFF_DEFAULT;
 }
 
 int aeron_driver_context_set_conductor_idle_strategy(aeron_driver_context_t *context, const char *value)
@@ -1501,7 +1501,7 @@ int aeron_driver_context_set_conductor_idle_strategy(aeron_driver_context_t *con
     AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, value);
 
     aeron_free(context->conductor_idle_strategy_state);
-    aeron_free((void *)context->conductor_idle_styrategy_name);
+    aeron_free((void *)context->conductor_idle_strategy_name);
 
     if ((context->conductor_idle_strategy_func = aeron_idle_strategy_load(
         value,
@@ -1512,13 +1512,13 @@ int aeron_driver_context_set_conductor_idle_strategy(aeron_driver_context_t *con
         return -1;
     }
 
-    context->conductor_idle_styrategy_name = strndup(value, AERON_MAX_PATH);
+    context->conductor_idle_strategy_name = strndup(value, AERON_MAX_PATH);
     return 0;
 }
 
 const char *aeron_driver_context_get_conductor_idle_strategy(aeron_driver_context_t *context)
 {
-    return NULL != context ? context->conductor_idle_styrategy_name : AERON_IDLE_STRATEGY_BACKOFF_DEFAULT;
+    return NULL != context ? context->conductor_idle_strategy_name : AERON_IDLE_STRATEGY_BACKOFF_DEFAULT;
 }
 
 int aeron_driver_context_set_receiver_idle_strategy(aeron_driver_context_t *context, const char *value)
@@ -1527,7 +1527,7 @@ int aeron_driver_context_set_receiver_idle_strategy(aeron_driver_context_t *cont
     AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, value);
 
     aeron_free(context->receiver_idle_strategy_state);
-    aeron_free((void *)context->receiver_idle_styrategy_name);
+    aeron_free((void *)context->receiver_idle_strategy_name);
 
     if ((context->receiver_idle_strategy_func = aeron_idle_strategy_load(
         value,
@@ -1538,13 +1538,13 @@ int aeron_driver_context_set_receiver_idle_strategy(aeron_driver_context_t *cont
         return -1;
     }
 
-    context->receiver_idle_styrategy_name = strndup(value, AERON_MAX_PATH);
+    context->receiver_idle_strategy_name = strndup(value, AERON_MAX_PATH);
     return 0;
 }
 
 const char *aeron_driver_context_get_receiver_idle_strategy(aeron_driver_context_t *context)
 {
-    return NULL != context ? context->receiver_idle_styrategy_name : AERON_IDLE_STRATEGY_BACKOFF_DEFAULT;
+    return NULL != context ? context->receiver_idle_strategy_name : AERON_IDLE_STRATEGY_BACKOFF_DEFAULT;
 }
 
 int aeron_driver_context_set_sharednetwork_idle_strategy(aeron_driver_context_t *context, const char *value)
@@ -1553,7 +1553,7 @@ int aeron_driver_context_set_sharednetwork_idle_strategy(aeron_driver_context_t 
     AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, value);
 
     aeron_free(context->shared_network_idle_strategy_state);
-    aeron_free((void *)context->shared_network_idle_styrategy_name);
+    aeron_free((void *)context->shared_network_idle_strategy_name);
 
     if ((context->shared_network_idle_strategy_func = aeron_idle_strategy_load(
         value,
@@ -1564,13 +1564,13 @@ int aeron_driver_context_set_sharednetwork_idle_strategy(aeron_driver_context_t 
         return -1;
     }
 
-    context->shared_network_idle_styrategy_name = strndup(value, AERON_MAX_PATH);
+    context->shared_network_idle_strategy_name = strndup(value, AERON_MAX_PATH);
     return 0;
 }
 
 const char *aeron_driver_context_get_sharednetwork_idle_strategy(aeron_driver_context_t *context)
 {
-    return NULL != context ? context->shared_network_idle_styrategy_name : AERON_IDLE_STRATEGY_BACKOFF_DEFAULT;
+    return NULL != context ? context->shared_network_idle_strategy_name : AERON_IDLE_STRATEGY_BACKOFF_DEFAULT;
 }
 
 int aeron_driver_context_set_shared_idle_strategy(aeron_driver_context_t *context, const char *value)
@@ -1579,7 +1579,7 @@ int aeron_driver_context_set_shared_idle_strategy(aeron_driver_context_t *contex
     AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, value);
 
     aeron_free(context->shared_idle_strategy_state);
-    aeron_free((void *)context->shared_idle_styrategy_name);
+    aeron_free((void *)context->shared_idle_strategy_name);
 
     if ((context->shared_idle_strategy_func = aeron_idle_strategy_load(
         value,
@@ -1590,13 +1590,13 @@ int aeron_driver_context_set_shared_idle_strategy(aeron_driver_context_t *contex
         return -1;
     }
 
-    context->shared_idle_styrategy_name = strndup(value, AERON_MAX_PATH);
+    context->shared_idle_strategy_name = strndup(value, AERON_MAX_PATH);
     return 0;
 }
 
 const char *aeron_driver_context_get_shared_idle_strategy(aeron_driver_context_t *context)
 {
-    return NULL != context ? context->shared_idle_styrategy_name : AERON_IDLE_STRATEGY_BACKOFF_DEFAULT;
+    return NULL != context ? context->shared_idle_strategy_name : AERON_IDLE_STRATEGY_BACKOFF_DEFAULT;
 }
 
 int aeron_driver_context_set_sender_idle_strategy_init_args(aeron_driver_context_t *context, const char *value)

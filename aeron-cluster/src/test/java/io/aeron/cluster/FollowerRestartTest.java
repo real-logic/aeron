@@ -111,7 +111,7 @@ public class FollowerRestartTest
             // I'd expect NODE 2 recovers from the most recent snapshot + journal (which should be zero length because
             // of the clean shutdown)
             // but this is not the case: journal since the beginning of times, and processes up to 7 messages.
-            assertTrue(((MyService)cluster.node(2).service()).messageSinceStart() == 7);
+            assertTrue(((MyService)cluster.node(2).service()).messageSinceStart() == 0);
 
             // and also creates its own snapshot
             cluster.awaitSnapshotCounter(cluster.node(2), 1);

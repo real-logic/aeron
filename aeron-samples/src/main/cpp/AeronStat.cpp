@@ -86,10 +86,13 @@ int main (int argc, char** argv)
 
         const std::int32_t cncVersion = CncFileDescriptor::cncVersionVolatile(cncFile);
 
-        if (cncVersion != CncFileDescriptor::CNC_VERSION)
+        if (semanticVersionMajor(cncVersion) != semanticVersionMajor(CncFileDescriptor::CNC_VERSION))
         {
-            std::cerr << "CNC version not supported: file version=" << cncVersion << std::endl;
-            return -1;
+            std::cerr << "CNC version not supported: "
+                      << " file=" << semanticVersionToString(cncVersion)
+                      << " app=" << semanticVersionToString(CncFileDescriptor::CNC_VERSION) << std::endl;
+
+            return EXIT_FAILURE;
         }
 
         const std::int64_t clientLivenessTimeoutNs = CncFileDescriptor::clientLivenessTimeout(cncFile);

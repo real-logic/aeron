@@ -19,6 +19,7 @@
 #include "CncFileDescriptor.h"
 
 using namespace aeron;
+using namespace aeron::util;
 
 void Context::requestDriverTermination(
     const std::string& directory, const std::uint8_t *tokenBuffer, std::size_t tokenLength)
@@ -31,11 +32,11 @@ void Context::requestDriverTermination(
 
         const std::int32_t cncVersion = CncFileDescriptor::cncVersionVolatile(cncFile);
 
-        if (cncVersion != CncFileDescriptor::CNC_VERSION)
+        if (semanticVersionMajor(cncVersion) != semanticVersionMajor(CncFileDescriptor::CNC_VERSION))
         {
-            throw AeronException(
-                "Aeron CnC version does not match: required=" + std::to_string(CncFileDescriptor::CNC_VERSION) +
-                " version=" + std::to_string(cncVersion),
+            throw AeronException("Aeron CnC version does not match:"
+                " app=" + semanticVersionToString(CncFileDescriptor::CNC_VERSION) +
+                " file=" + semanticVersionToString(cncVersion),
                 SOURCEINFO);
         }
 

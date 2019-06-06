@@ -21,12 +21,37 @@
 
 #define CONCAT_SYMBOLS(x, y) x##y
 
+#include <string>
+
 namespace aeron { namespace util {
 
 inline static constexpr std::int32_t semanticVersionCompose(
     std::uint8_t major, std::uint8_t minor, std::uint8_t patch) noexcept
 {
     return (major << 16) | (minor << 8) | patch;
+}
+
+inline static constexpr std::uint8_t semanticVersionMajor(std::int32_t version) noexcept
+{
+    return static_cast<std::uint8_t>((version >> 16) & 0xFF);
+}
+
+inline static constexpr std::uint8_t semanticVersionMinor(std::int32_t version) noexcept
+{
+    return static_cast<std::uint8_t>((version >> 8) & 0xFF);
+}
+
+inline static constexpr std::uint8_t semanticVersionPatch(std::int32_t version) noexcept
+{
+    return static_cast<std::uint8_t>(version & 0xFF);
+}
+
+inline static std::string semanticVersionToString(std::int32_t version) noexcept
+{
+    return
+        std::to_string(semanticVersionMajor(version)) + "." +
+        std::to_string(semanticVersionMinor(version)) + "." +
+        std::to_string(semanticVersionPatch(version));
 }
 
 }}

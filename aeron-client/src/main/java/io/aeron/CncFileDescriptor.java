@@ -338,7 +338,7 @@ public class CncFileDescriptor
     {
         if (SemanticVersion.major(CNC_VERSION) != SemanticVersion.major(cncVersion))
         {
-            throw new AeronException("CnC version not supported:" +
+            throw new AeronException("CnC version not compatible:" +
                 " app=" + SemanticVersion.toString(CNC_VERSION) +
                 " file=" + SemanticVersion.toString(cncVersion));
         }

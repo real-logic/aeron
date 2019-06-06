@@ -18,7 +18,6 @@ package io.aeron.cluster;
 import io.aeron.CncFileDescriptor;
 import io.aeron.CommonContext;
 import io.aeron.cluster.client.ClusterException;
-import io.aeron.exceptions.AeronException;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.AtomicBuffer;
@@ -184,11 +183,7 @@ public class ClusterControl
         final DirectBuffer cncMetaData = createMetaDataBuffer(cncByteBuffer);
         final int cncVersion = cncMetaData.getInt(cncVersionOffset(0));
 
-        if (CncFileDescriptor.CNC_VERSION != cncVersion)
-        {
-            throw new AeronException(
-                "Aeron CnC version does not match: version=" + cncVersion + " required=" + CNC_VERSION);
-        }
+        CncFileDescriptor.checkVersion(cncVersion);
 
         return new CountersReader(
             createCountersMetaDataBuffer(cncByteBuffer, cncMetaData),

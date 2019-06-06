@@ -18,6 +18,7 @@ package io.aeron.samples;
 import io.aeron.CncFileDescriptor;
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.DirectBuffer;
+import org.agrona.SemanticVersion;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.SigInt;
 import org.agrona.concurrent.status.CountersReader;
@@ -187,7 +188,8 @@ public class AeronStat
         final AtomicBoolean running = new AtomicBoolean(true);
         SigInt.register(() -> running.set(false));
 
-        final String header = " - Aeron Stat (CnC v" + CNC_VERSION + "), pid " + SystemUtil.getPid();
+        final String header =
+            " - Aeron Stat (v" + SemanticVersion.toString(CNC_VERSION) + "), pid " + SystemUtil.getPid();
         final SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
 
         while (running.get())

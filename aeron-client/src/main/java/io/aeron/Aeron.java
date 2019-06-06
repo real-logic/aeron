@@ -547,7 +547,7 @@ public class Aeron implements AutoCloseable
                 connectToDriver();
             }
 
-            interServiceTimeoutNs = CncFileDescriptor.clientLivenessTimeout(cncMetaDataBuffer);
+            interServiceTimeoutNs = CncFileDescriptor.clientLivenessTimeoutNs(cncMetaDataBuffer);
             if (interServiceTimeoutNs <= keepAliveIntervalNs)
             {
                 throw new ConfigurationException("interServiceTimeoutNs=" + interServiceTimeoutNs +
@@ -1148,10 +1148,7 @@ public class Aeron implements AutoCloseable
                     sleep(1);
                 }
 
-                if (CncFileDescriptor.CNC_VERSION != cncVersion)
-                {
-                    throw new AeronException("CnC file version not supported: version=" + cncVersion);
-                }
+                CncFileDescriptor.checkVersion(cncVersion);
 
                 final ManyToOneRingBuffer ringBuffer = new ManyToOneRingBuffer(
                     CncFileDescriptor.createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer));

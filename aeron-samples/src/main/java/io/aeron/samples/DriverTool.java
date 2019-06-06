@@ -60,11 +60,7 @@ public class DriverTool
         final DirectBuffer cncMetaData = createMetaDataBuffer(cncByteBuffer);
         final int cncVersion = cncMetaData.getInt(cncVersionOffset(0));
 
-        if (CncFileDescriptor.CNC_VERSION != cncVersion)
-        {
-            throw new IllegalStateException(
-                "Aeron CnC version does not match: version=" + cncVersion + " required=" + CNC_VERSION);
-        }
+        checkVersion(cncVersion);
 
         final ManyToOneRingBuffer toDriver = new ManyToOneRingBuffer(createToDriverBuffer(cncByteBuffer, cncMetaData));
 
@@ -85,7 +81,7 @@ public class DriverTool
         {
             System.out.println("Command `n Control file: " + cncFile);
             System.out.format("Version: %d, PID: %d%n", cncVersion, pid(cncMetaData));
-            printDateActivityAndStartTimestamps(startTimestamp(cncMetaData), toDriver.consumerHeartbeatTime());
+            printDateActivityAndStartTimestamps(startTimestampMs(cncMetaData), toDriver.consumerHeartbeatTime());
         }
     }
 

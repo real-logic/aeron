@@ -48,6 +48,7 @@
 #include "protocol/aeron_udp_protocol.h"
 #include "util/aeron_parse_util.h"
 #include "util/aeron_fileutil.h"
+#include "aeron_driver.h"
 #include "aeron_driver_context.h"
 #include "aeron_alloc.h"
 #include "concurrent/aeron_mpsc_rb.h"
@@ -903,12 +904,18 @@ bool aeron_is_driver_active_with_cnc(
         aeron_micro_sleep(1000);
     }
 
-    if (AERON_CNC_VERSION != cnc_version)
+    if (aeron_semantic_version_major(AERON_CNC_VERSION) != aeron_semantic_version_major(cnc_version))
     {
         snprintf(
             buffer, sizeof(buffer) - 1,
-            "ERROR: aeron cnc version does not match: file version=%d software version=%d",
-            cnc_version, AERON_CNC_VERSION);
+            "ERROR: aeron cnc version not compatible: app version=%d.%d.%d file=%d.%d.%d",
+            (int)aeron_semantic_version_major(AERON_CNC_VERSION),
+            (int)aeron_semantic_version_minor(AERON_CNC_VERSION),
+            (int)aeron_semantic_version_patch(AERON_CNC_VERSION),
+            (int)aeron_semantic_version_major(cnc_version),
+            (int)aeron_semantic_version_minor(cnc_version),
+            (int)aeron_semantic_version_patch(cnc_version));
+
         log_func(buffer);
     }
     else
@@ -923,8 +930,8 @@ bool aeron_is_driver_active_with_cnc(
         }
         else
         {
-            int64_t timestamp = aeron_mpsc_rb_consumer_heartbeat_time_value(&rb);
-            int64_t diff = now_ms - timestamp;
+            int64_t timestamp_ms = aeron_mpsc_rb_consumer_heartbeat_time_value(&rb);
+            int64_t diff = now_ms - timestamp_ms;
 
             snprintf(buffer, sizeof(buffer) - 1, "INFO: Aeron driver heartbeat is %" PRId64 " ms old", diff);
             log_func(buffer);

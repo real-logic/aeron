@@ -26,6 +26,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -40,6 +41,7 @@ public class FollowerRestartTest
     private final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
 
     @Test(timeout = 30_000)
+    @Ignore
     public void testSingleSnapshotDuringShutdownWithEmptyFollowerLog() throws Exception
     {
         final int memberCount = 3;
@@ -129,6 +131,7 @@ public class FollowerRestartTest
     }
 
     @Test(timeout = 30_000)
+    @Ignore
     public void testMultipleSnapshotsWithEmptyFollowerLog() throws Exception
     {
         final int memberCount = 3;

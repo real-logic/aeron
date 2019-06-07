@@ -747,7 +747,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             .media(channelUri.media())
             .endpoint(channelUri.get(CommonContext.ENDPOINT_PARAM_NAME))
             .networkInterface(channelUri.get(CommonContext.INTERFACE_PARAM_NAME))
-            .controlEndpoint(channelUri.get(CommonContext.MDC_CONTROL_PARAM_NAME))
+            .controlEndpoint(channelUri.get(CommonContext.CONTROL_PARAM_NAME))
             .tags(channelUri.get(CommonContext.TAGS_PARAM_NAME))
             .alias(channelUri.get(CommonContext.ALIAS_PARAM_NAME));
 
@@ -789,10 +789,10 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             sb.append(CommonContext.INTERFACE_PARAM_NAME).append('=').append(interfaceStr).append('|');
         }
 
-        final String controlStr = channelUri.get(CommonContext.MDC_CONTROL_PARAM_NAME);
+        final String controlStr = channelUri.get(CommonContext.CONTROL_PARAM_NAME);
         if (null != controlStr)
         {
-            sb.append(CommonContext.MDC_CONTROL_PARAM_NAME).append('=').append(controlStr).append('|');
+            sb.append(CommonContext.CONTROL_PARAM_NAME).append('=').append(controlStr).append('|');
         }
 
         final String sessionIdStr = channelUri.get(CommonContext.SESSION_ID_PARAM_NAME);

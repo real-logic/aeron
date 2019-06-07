@@ -896,7 +896,7 @@ public class Election implements AutoCloseable
     private static ChannelUri followerLogChannel(final String logChannel, final int sessionId, final String tags)
     {
         final ChannelUri channelUri = ChannelUri.parse(logChannel);
-        channelUri.remove(CommonContext.MDC_CONTROL_PARAM_NAME);
+        channelUri.remove(CommonContext.CONTROL_PARAM_NAME);
         channelUri.put(CommonContext.MDC_CONTROL_MODE_PARAM_NAME, CommonContext.MDC_CONTROL_MODE_MANUAL);
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(sessionId));
         channelUri.put(CommonContext.TAGS_PARAM_NAME, tags);
@@ -907,7 +907,7 @@ public class Election implements AutoCloseable
     private static ChannelUri followerLogDestination(final String logChannel, final String logEndpoint)
     {
         final ChannelUri channelUri = ChannelUri.parse(logChannel);
-        channelUri.remove(CommonContext.MDC_CONTROL_PARAM_NAME);
+        channelUri.remove(CommonContext.CONTROL_PARAM_NAME);
         channelUri.put(CommonContext.ENDPOINT_PARAM_NAME, logEndpoint);
 
         return channelUri;

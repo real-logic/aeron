@@ -148,9 +148,9 @@ public class CommonContext implements Cloneable
     public static final String TTL_PARAM_NAME = "ttl";
 
     /**
-     * The param for the control channel IP address and port for multi-destination-cast semantics.
+     * The param for the control channel IP address and port
      */
-    public static final String MDC_CONTROL_PARAM_NAME = "control";
+    public static final String CONTROL_PARAM_NAME = "control";
 
     /**
      * Key for the mode of control that such be used for multi-destination-cast semantics.

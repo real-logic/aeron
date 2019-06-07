@@ -248,7 +248,7 @@ public class ChannelUriStringBuilder
      *
      * @param controlEndpoint for joining a MDC control socket.
      * @return this for a fluent API.
-     * @see CommonContext#MDC_CONTROL_PARAM_NAME
+     * @see CommonContext#CONTROL_PARAM_NAME
      */
     public ChannelUriStringBuilder controlEndpoint(final String controlEndpoint)
     {
@@ -260,7 +260,7 @@ public class ChannelUriStringBuilder
      * Get the control address:port pair for dynamically joining a multi-destination-cast publication.
      *
      * @return the control address:port pair for dynamically joining a multi-destination-cast publication.
-     * @see CommonContext#MDC_CONTROL_PARAM_NAME
+     * @see CommonContext#CONTROL_PARAM_NAME
      */
     public String controlEndpoint()
     {
@@ -778,7 +778,7 @@ public class ChannelUriStringBuilder
 
         if (null != controlEndpoint)
         {
-            sb.append(MDC_CONTROL_PARAM_NAME).append('=').append(controlEndpoint).append('|');
+            sb.append(CONTROL_PARAM_NAME).append('=').append(controlEndpoint).append('|');
         }
 
         if (null != controlMode)

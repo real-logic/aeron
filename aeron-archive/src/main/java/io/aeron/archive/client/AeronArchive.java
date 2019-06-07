@@ -1656,7 +1656,7 @@ public class AeronArchive implements AutoCloseable
          *
          * @param recordingEventsChannel channel URI on which the recording events publication will publish.
          * @return this for a fluent API.
-         * @see io.aeron.CommonContext#MDC_CONTROL_PARAM_NAME
+         * @see io.aeron.CommonContext#CONTROL_PARAM_NAME
          */
         public Context recordingEventsChannel(final String recordingEventsChannel)
         {

@@ -168,6 +168,27 @@ TEST_F(UdpChannelTest, shouldParseValidMulticastAddress)
     EXPECT_EQ(port(&m_channel->remote_control), 40124);
 }
 
+TEST_F(UdpChannelTest, shouldParseValidMulticastAddressWithExplicitControl)
+{
+    ASSERT_EQ(parse_udp_channel("aeron:udp?interface=localhost|endpoint=224.10.9.9:40124|control=224.10.10.9:40124"), 0) << aeron_errmsg();
+
+    EXPECT_EQ(m_channel->local_data.ss_family, AF_INET);
+    EXPECT_STREQ(inet_ntop(&m_channel->local_data), "127.0.0.1");
+    EXPECT_EQ(port(&m_channel->local_data), 0);
+
+    EXPECT_EQ(m_channel->local_control.ss_family, AF_INET);
+    EXPECT_STREQ(inet_ntop(&m_channel->local_control), "127.0.0.1");
+    EXPECT_EQ(port(&m_channel->local_control), 0);
+
+    EXPECT_EQ(m_channel->remote_data.ss_family, AF_INET);
+    EXPECT_STREQ(inet_ntop(&m_channel->remote_data), "224.10.9.9");
+    EXPECT_EQ(port(&m_channel->remote_data), 40124);
+
+    EXPECT_EQ(m_channel->remote_control.ss_family, AF_INET);
+    EXPECT_STREQ(inet_ntop(&m_channel->remote_control), "224.10.10.9");
+    EXPECT_EQ(port(&m_channel->remote_control), 40124);
+}
+
 TEST_F(UdpChannelTest, shouldParseImpliedLocalPortFormat)
 {
     ASSERT_EQ(parse_udp_channel("aeron:udp?interface=localhost|endpoint=localhost:40124"), 0) << aeron_errmsg();

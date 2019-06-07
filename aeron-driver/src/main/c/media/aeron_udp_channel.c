@@ -289,7 +289,12 @@ int aeron_udp_channel_parse(size_t uri_length, const char *uri, aeron_udp_channe
     if (aeron_is_addr_multicast(&endpoint_addr))
     {
         memcpy(&_channel->remote_data, &endpoint_addr, AERON_ADDR_LEN(&endpoint_addr));
-        if (aeron_multicast_control_address(&endpoint_addr, &_channel->remote_control) < 0)
+
+        if (NULL != _channel->uri.params.udp.control_key)
+        {
+            memcpy(&_channel->remote_control, &explicit_control_addr, AERON_ADDR_LEN(&explicit_control_addr));
+        }
+        else if (aeron_multicast_control_address(&endpoint_addr, &_channel->remote_control) < 0)
         {
             goto error_cleanup;
         }

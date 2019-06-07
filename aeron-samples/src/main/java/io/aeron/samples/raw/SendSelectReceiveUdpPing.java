@@ -74,7 +74,7 @@ public class SendSelectReceiveUdpPing
                     receiveChannel.receive(buffer);
 
                     final long receivedSequenceNumber = buffer.getLong(0);
-                    final long timestamp = buffer.getLong(SIZE_OF_LONG);
+                    final long timestampNs = buffer.getLong(SIZE_OF_LONG);
 
                     if (receivedSequenceNumber != sequenceNumber)
                     {
@@ -82,8 +82,8 @@ public class SendSelectReceiveUdpPing
                             "Data Loss:" + sequenceNumber + " to " + receivedSequenceNumber);
                     }
 
-                    final long duration = System.nanoTime() - timestamp;
-                    histogram.recordValue(duration);
+                    final long durationNs = System.nanoTime() - timestampNs;
+                    histogram.recordValue(durationNs);
                 }
                 catch (final IOException ex)
                 {

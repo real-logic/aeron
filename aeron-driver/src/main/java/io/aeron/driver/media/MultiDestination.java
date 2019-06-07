@@ -159,9 +159,9 @@ class DynamicMultiDestination extends MultiDestination
         final int port;
         final InetSocketAddress address;
 
-        Destination(final long now, final long receiverId, final InetSocketAddress address)
+        Destination(final long nowNs, final long receiverId, final InetSocketAddress address)
         {
-            this.timeOfLastActivityNs = now;
+            this.timeOfLastActivityNs = nowNs;
             this.receiverId = receiverId;
             this.address = address;
             this.port = address.getPort();

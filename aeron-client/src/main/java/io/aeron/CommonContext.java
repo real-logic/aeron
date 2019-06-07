@@ -565,13 +565,13 @@ public class CommonContext implements Cloneable
         final ManyToOneRingBuffer toDriverBuffer = new ManyToOneRingBuffer(
             CncFileDescriptor.createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer));
 
-        final long timestamp = toDriverBuffer.consumerHeartbeatTime();
-        final long now = System.currentTimeMillis();
-        final long timestampAge = now - timestamp;
+        final long timestampMs = toDriverBuffer.consumerHeartbeatTime();
+        final long nowMs = System.currentTimeMillis();
+        final long timestampAgeMs = nowMs - timestampMs;
 
-        logger.accept("INFO: Aeron toDriver consumer heartbeat is (ms): " + timestampAge);
+        logger.accept("INFO: Aeron toDriver consumer heartbeat is (ms): " + timestampAgeMs);
 
-        return timestampAge <= driverTimeoutMs;
+        return timestampAgeMs <= driverTimeoutMs;
     }
 
     /**

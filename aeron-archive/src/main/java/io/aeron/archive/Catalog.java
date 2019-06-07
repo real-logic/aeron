@@ -504,12 +504,12 @@ class Catalog implements AutoCloseable
         return false;
     }
 
-    public void recordingStopped(final long recordingId, final long position, final long timestamp)
+    public void recordingStopped(final long recordingId, final long position, final long timestampMs)
     {
         final int offset = recordingDescriptorOffset(recordingId) + RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
         final long stopPosition = nativeOrder() == BYTE_ORDER ? position : Long.reverseBytes(position);
 
-        fieldAccessBuffer.putLong(offset + stopTimestampEncodingOffset(), timestamp, BYTE_ORDER);
+        fieldAccessBuffer.putLong(offset + stopTimestampEncodingOffset(), timestampMs, BYTE_ORDER);
         fieldAccessBuffer.putLongVolatile(offset + stopPositionEncodingOffset(), stopPosition);
 
         forceWrites(catalogChannel, forceWrites, forceMetadata);

@@ -118,6 +118,19 @@ public class UdpChannelTest
             is(NetworkInterface.getByInetAddress(InetAddress.getByName("localhost"))));
     }
 
+    @Test
+    public void shouldParseValidMulticastAddressWithExplicitControl() throws Exception
+    {
+        final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?interface=localhost|endpoint=224.10.9.9:40124|control=224.10.10.9:40124");
+
+        assertThat(udpChannel.localControl(), is(new InetSocketAddress("localhost", 0)));
+        assertThat(udpChannel.remoteControl(), isMulticastAddress("224.10.10.9", 40124));
+        assertThat(udpChannel.localData(), is(new InetSocketAddress("localhost", 0)));
+        assertThat(udpChannel.remoteData(), isMulticastAddress("224.10.9.9", 40124));
+        assertThat(udpChannel.localInterface(),
+                is(NetworkInterface.getByInetAddress(InetAddress.getByName("localhost"))));
+    }
+
     @Theory
     public void shouldParseValidMulticastAddressWithAeronUri(
         @Values({"endpoint"}) final String endpointKey,

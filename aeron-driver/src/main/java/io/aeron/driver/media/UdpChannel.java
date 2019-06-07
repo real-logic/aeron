@@ -135,7 +135,7 @@ public final class UdpChannel
 
             if (endpointAddress.getAddress().isMulticastAddress())
             {
-                final InetSocketAddress controlAddress = getMulticastControlAddress(endpointAddress);
+                final InetSocketAddress controlAddress = (null == explicitControlAddress) ? getMulticastControlAddress(endpointAddress) : explicitControlAddress;
                 final InterfaceSearchAddress searchAddress = getInterfaceSearchAddress(channelUri);
                 final NetworkInterface localInterface = findInterface(searchAddress);
                 final InetSocketAddress resolvedAddress = resolveToAddressOfInterface(localInterface, searchAddress);

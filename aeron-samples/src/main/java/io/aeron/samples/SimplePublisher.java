@@ -61,7 +61,7 @@ public class SimplePublisher
             final long deadlineNs = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
             while (!publication.isConnected())
             {
-                if (System.nanoTime() >= deadlineNs)
+                if ((deadlineNs - System.nanoTime()) < 0)
                 {
                     System.out.println("Failed to connect to subscriber");
                     return;

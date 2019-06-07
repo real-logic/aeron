@@ -100,7 +100,7 @@ public class MemoryOrderingTest
                     {
                         nowNs = System.nanoTime();
                     }
-                    while (nowNs < timeoutNs);
+                    while ((timeoutNs - nowNs) < 0);
                 }
             }
 
@@ -151,7 +151,7 @@ public class MemoryOrderingTest
                     {
                         nowNs = System.nanoTime();
                     }
-                    while (nowNs < timeoutNs);
+                    while ((timeoutNs - nowNs) > 0);
                 }
             }
 

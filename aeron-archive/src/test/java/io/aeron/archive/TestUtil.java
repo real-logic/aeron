@@ -165,7 +165,7 @@ public class TestUtil
                 throw new IllegalStateException("unexpected interrupt in test");
             }
 
-            if (System.nanoTime() > deadlineNs)
+            if ((deadlineNs - System.nanoTime()) <= 0)
             {
                 throw new TimeoutException();
             }

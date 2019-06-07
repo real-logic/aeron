@@ -269,7 +269,7 @@ public:
 
         if (m_controlEndpoint)
         {
-            sb << MDC_CONTROL_PARAM_NAME << '=' << *m_controlEndpoint << '|';
+            sb << CONTROL_PARAM_NAME << '=' << *m_controlEndpoint << '|';
         }
 
         if (m_controlMode)

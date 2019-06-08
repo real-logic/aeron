@@ -22,7 +22,7 @@ buildscript {
 plugins {
     id 'java'
     id 'com.gradle.build-scan' version '2.3'
-    id "io.freefair.javadoc-links" version "3.6.4" apply false
+    id "io.freefair.javadoc-links" version "3.6.6" apply false
     id 'com.github.johnrengelman.shadow' version '5.0.0' apply false
 }
 

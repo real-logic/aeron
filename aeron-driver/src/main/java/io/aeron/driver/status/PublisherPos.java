@@ -34,7 +34,7 @@ public class PublisherPos
     /**
      * Human readable name for the counter.
      */
-    public static final String NAME = "pub-pos (sample)";
+    public static final String NAME = "pub-pos (sampled)";
 
     public static UnsafeBufferPosition allocate(
         final MutableDirectBuffer tempBuffer,

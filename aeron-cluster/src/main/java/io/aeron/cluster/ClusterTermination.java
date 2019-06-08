@@ -34,12 +34,12 @@ class ClusterTermination
 
     boolean canTerminate(final ClusterMember[] members, final long terminationPosition, final long nowMs)
     {
-        if (!hasServiceTerminated)
+        if (hasServiceTerminated)
         {
-            return false;
+            return haveFollowersTerminated(members, terminationPosition) || nowMs >= deadlineMs;
         }
 
-        return haveFollowersTerminated(members, terminationPosition) || nowMs >= deadlineMs;
+        return false;
     }
 
     void hasServiceTerminated(final boolean hasServiceTerminated)

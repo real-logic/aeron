@@ -343,8 +343,7 @@ class DynamicJoin implements AutoCloseable
         {
             final long replayId = ctx.aeron().nextCorrelationId();
             final RecordingLog.Snapshot snapshot = leaderSnapshots.get(snapshotCursor);
-            final String transferChannel = new ChannelUriStringBuilder()
-                .media(CommonContext.UDP_MEDIA).endpoint(transferEndpoint).build();
+            final String transferChannel = "aeron:udp?endpoint=" + transferEndpoint;
 
             if (leaderArchive.archiveProxy().replay(
                 snapshot.recordingId,
@@ -362,8 +361,8 @@ class DynamicJoin implements AutoCloseable
         else if (pollForResponse(leaderArchive, correlationId))
         {
             snapshotReplaySessionId = (int)leaderArchive.controlResponsePoller().relevantId();
-            final String replaySubscriptionChannel = new ChannelUriStringBuilder()
-                .media(CommonContext.UDP_MEDIA).endpoint(transferEndpoint).sessionId(snapshotReplaySessionId).build();
+            final String replaySubscriptionChannel =
+                "aeron:udp?endpoint=" + transferEndpoint + "|session-id=" + snapshotReplaySessionId;
 
             snapshotRetrieveSubscription = ctx.aeron().addSubscription(replaySubscriptionChannel, ctx.replayStreamId());
             snapshotRetrieveSubscriptionId = localArchive.startRecording(
@@ -428,8 +427,8 @@ class DynamicJoin implements AutoCloseable
             {
                 if (poller.code() == ControlResponseCode.ERROR)
                 {
-                    throw new ClusterException("archive response for correlationId=" + correlationId +
-                        ", error: " + poller.errorMessage());
+                    throw new ClusterException(
+                        "archive response for correlationId=" + correlationId + ", error: " + poller.errorMessage());
                 }
 
                 return true;
@@ -451,7 +450,7 @@ class DynamicJoin implements AutoCloseable
         private final CountersReader countersReader;
         private final Image image;
         private long recordingId = RecordingPos.NULL_RECORDING_ID;
-        private long recPos = NULL_POSITION;
+        private long recordingPosition = NULL_POSITION;
         private int counterId;
 
         SnapshotReader(final Image image, final CountersReader countersReader)
@@ -463,7 +462,7 @@ class DynamicJoin implements AutoCloseable
 
         boolean isDone()
         {
-            return isDone && (endPosition <= recPos);
+            return isDone && (endPosition <= recordingPosition);
         }
 
         long recordingId()
@@ -471,7 +470,7 @@ class DynamicJoin implements AutoCloseable
             return recordingId;
         }
 
-        void pollRecPos()
+        void pollRecordingPosition()
         {
             if (CountersReader.NULL_COUNTER_ID == counterId)
             {
@@ -483,13 +482,13 @@ class DynamicJoin implements AutoCloseable
             }
             else
             {
-                recPos = countersReader.getCounterValue(counterId);
+                recordingPosition = countersReader.getCounterValue(counterId);
             }
         }
 
         int poll()
         {
-            pollRecPos();
+            pollRecordingPosition();
 
             return image.controlledPoll(this, FRAGMENT_LIMIT);
         }

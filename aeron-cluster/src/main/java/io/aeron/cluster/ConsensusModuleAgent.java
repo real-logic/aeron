@@ -603,8 +603,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
             if (null != requester)
             {
-                final RecordingLog.RecoveryPlan currentRecoveryPlan =
-                    recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
+                final RecordingLog.RecoveryPlan currentRecoveryPlan = recordingLog.createRecoveryPlan(
+                    archive, ctx.serviceCount());
 
                 memberStatusPublisher.snapshotRecording(
                     requester.publication(),

@@ -55,9 +55,9 @@ class NetworkPublicationConductorFields extends NetworkPublicationPadding1
 {
     protected static final ReadablePosition[] EMPTY_POSITIONS = new ReadablePosition[0];
 
-    protected long cleanPosition = 0;
-    protected long timeOfLastActivityNs = 0;
-    protected long lastSenderPosition = 0;
+    protected long cleanPosition;
+    protected long timeOfLastActivityNs;
+    protected long lastSenderPosition;
     protected int refCount = 0;
     protected ReadablePosition[] spyPositions = EMPTY_POSITIONS;
     protected final ArrayList<UntetheredSubscription> untetheredSubscriptions = new ArrayList<>();
@@ -517,7 +517,7 @@ public class NetworkPublication
             final long proposedPublisherLimit = minConsumerPosition + termWindowLength;
             if (publisherLimit.proposeMaxOrdered(proposedPublisherLimit))
             {
-                cleanBuffer(proposedPublisherLimit);
+                cleanBufferTo(minConsumerPosition - termBufferLength);
                 workCount = 1;
             }
         }
@@ -640,19 +640,15 @@ public class NetworkPublication
         return bytesSent;
     }
 
-    private void cleanBuffer(final long publisherLimit)
+    private void cleanBufferTo(final long position)
     {
         final long cleanPosition = this.cleanPosition;
-        final long dirtyRange = publisherLimit - cleanPosition;
-        final int bufferCapacity = termBufferLength;
-        final int reservedRange = bufferCapacity * 2;
-
-        if (dirtyRange > reservedRange)
+        if (position > cleanPosition)
         {
             final UnsafeBuffer dirtyTerm = termBuffers[indexByPosition(cleanPosition, positionBitsToShift)];
+            final int bytesForCleaning = (int)(position - cleanPosition);
             final int termOffset = (int)cleanPosition & termLengthMask;
-            final int bytesForCleaning = (int)(dirtyRange - reservedRange);
-            final int length = Math.min(bytesForCleaning, bufferCapacity - termOffset);
+            final int length = Math.min(bytesForCleaning, termBufferLength - termOffset);
 
             dirtyTerm.setMemory(termOffset, length, (byte)0);
             this.cleanPosition = cleanPosition + length;

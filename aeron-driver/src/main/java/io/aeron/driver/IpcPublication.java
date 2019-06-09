@@ -324,7 +324,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
                 publisherLimit.setOrdered(proposedLimit);
                 tripLimit = proposedLimit + tripGain;
 
-                cleanBuffer(minSubscriberPosition);
+                cleanBufferTo(minSubscriberPosition);
                 workCount = 1;
             }
         }
@@ -466,17 +466,17 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         return producerPosition > consumerPosition;
     }
 
-    private void cleanBuffer(final long minConsumerPosition)
+    private void cleanBufferTo(final long position)
     {
         final long cleanPosition = this.cleanPosition;
-        final UnsafeBuffer dirtyTerm = termBuffers[indexByPosition(cleanPosition, positionBitsToShift)];
-        final int bytesForCleaning = (int)(minConsumerPosition - cleanPosition);
-        final int bufferCapacity = termBufferLength;
-        final int termOffset = (int)cleanPosition & (bufferCapacity - 1);
-        final int length = Math.min(bytesForCleaning, bufferCapacity - termOffset);
-
-        if (length > 0)
+        if (position > cleanPosition)
         {
+            final UnsafeBuffer dirtyTerm = termBuffers[indexByPosition(cleanPosition, positionBitsToShift)];
+            final int bytesForCleaning = (int)(position - cleanPosition);
+            final int bufferCapacity = termBufferLength;
+            final int termOffset = (int)cleanPosition & (bufferCapacity - 1);
+            final int length = Math.min(bytesForCleaning, bufferCapacity - termOffset);
+
             dirtyTerm.setMemory(termOffset, length, (byte)0);
             this.cleanPosition = cleanPosition + length;
         }

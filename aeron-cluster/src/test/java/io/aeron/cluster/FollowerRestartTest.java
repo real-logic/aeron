@@ -100,7 +100,7 @@ public class FollowerRestartTest
     }
 
     @Test(timeout = 30_000)
-//    @Ignore
+    @Ignore
     public void testMultipleSnapshotsWithEmptyFollowerLog() throws Exception
     {
         final int memberCount = 3;

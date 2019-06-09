@@ -39,7 +39,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static io.aeron.Aeron.NULL_VALUE;
-import io.aeron.cluster.TestNode.TestService;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -143,12 +142,13 @@ public class TestCluster implements AutoCloseable
         return testCluster;
     }
 
-    static TestCluster startThreeNodeStaticCluster(final int appointedLeaderId, final TestServiceFactory svcFactory)
+    static TestCluster startThreeNodeStaticCluster(final int appointedLeaderId,
+        final Supplier<? extends TestNode.TestService> serviceSupplier)
     {
         final TestCluster testCluster = new TestCluster(3, 0, appointedLeaderId);
         for (int i = 0; i < 3; i++)
         {
-            testCluster.startStaticNode(i, true, svcFactory);
+            testCluster.startStaticNode(i, true, serviceSupplier);
         }
 
         return testCluster;
@@ -173,7 +173,7 @@ public class TestCluster implements AutoCloseable
         return testCluster;
     }
 
-    TestNode startStaticNode(final int index, final boolean cleanStart, final TestServiceFactory svcFactory)
+    TestNode startStaticNode(final int index, final boolean cleanStart)
     {
         return startStaticNode(index, cleanStart, TestNode.TestService::new);
     }
@@ -235,11 +235,6 @@ public class TestCluster implements AutoCloseable
         nodes[index] = new TestNode(context);
 
         return nodes[index];
-    }
-
-    TestNode startStaticNode(final int index, final boolean cleanStart)
-    {
-        return startStaticNode(index, cleanStart, TestService::new);
     }
 
     TestNode startDynamicNode(final int index, final boolean cleanStart)
@@ -516,17 +511,6 @@ public class TestCluster implements AutoCloseable
         }
     }
 
-    void awaitNeutralControlToggle(final TestNode leaderNode)
-    {
-        final AtomicCounter controlToggle = ClusterControl.findControlToggle(leaderNode.countersReader());
-        assertNotNull(controlToggle);
-        while (controlToggle.get() != ClusterControl.ToggleState.NEUTRAL.code())
-        {
-            TestUtil.checkInterruptedStatus();
-            Thread.yield();
-        }
-    }
-
     void awaitNodeTermination(final TestNode node)
     {
         while (!node.hasMemberTerminated() || !node.hasServiceTerminated())
@@ -558,6 +542,17 @@ public class TestCluster implements AutoCloseable
     void awaitSnapshotLoadedForService(final TestNode node)
     {
         while (!node.service().wasSnapshotLoaded())
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.yield();
+        }
+    }
+
+    void awaitNeutralControlToggle(final TestNode leaderNode)
+    {
+        final AtomicCounter controlToggle = ClusterControl.findControlToggle(leaderNode.countersReader());
+        assertNotNull(controlToggle);
+        while (controlToggle.get() != ClusterControl.ToggleState.NEUTRAL.code())
         {
             TestUtil.checkInterruptedStatus();
             Thread.yield();
@@ -633,11 +628,5 @@ public class TestCluster implements AutoCloseable
         builder.setLength(builder.length() - 1);
 
         return builder.toString();
-    }
-
-    @FunctionalInterface
-    interface TestServiceFactory
-    {
-        TestService getService(int memberId);
     }
 }

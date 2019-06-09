@@ -36,6 +36,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static org.junit.Assert.assertNotNull;
@@ -162,9 +163,15 @@ public class TestCluster implements AutoCloseable
 
     TestNode startStaticNode(final int index, final boolean cleanStart)
     {
+        return startStaticNode(index, cleanStart, TestNode.TestService::new);
+    }
+
+    TestNode startStaticNode(
+        final int index, final boolean cleanStart, final Supplier<? extends TestNode.TestService> serviceSupplier)
+    {
         final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + index;
         final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + index + "-driver";
-        final TestNode.Context context = new TestNode.Context(new TestNode.TestService(index));
+        final TestNode.Context context = new TestNode.Context(serviceSupplier.get().index(index));
 
         context.aeronArchiveContext
             .controlRequestChannel(memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, index))
@@ -220,9 +227,15 @@ public class TestCluster implements AutoCloseable
 
     TestNode startDynamicNode(final int index, final boolean cleanStart)
     {
+        return startDynamicNode(index, cleanStart, TestNode.TestService::new);
+    }
+
+    TestNode startDynamicNode(
+        final int index, final boolean cleanStart, final Supplier<? extends TestNode.TestService> serviceSupplier)
+    {
         final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + index;
         final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + index + "-driver";
-        final TestNode.Context context = new TestNode.Context(new TestNode.TestService(index));
+        final TestNode.Context context = new TestNode.Context(serviceSupplier.get().index(index));
 
         context.aeronArchiveContext
             .controlRequestChannel(memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, index))
@@ -505,6 +518,17 @@ public class TestCluster implements AutoCloseable
     void awaitSnapshotLoadedForService(final TestNode node)
     {
         while (!node.service().wasSnapshotLoaded())
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.yield();
+        }
+    }
+
+    void awaitNeutralControlToggle(final TestNode leaderNode)
+    {
+        final AtomicCounter controlToggle = ClusterControl.findControlToggle(leaderNode.countersReader());
+        assertNotNull(controlToggle);
+        while (controlToggle.get() != ClusterControl.ToggleState.NEUTRAL.code())
         {
             TestUtil.checkInterruptedStatus();
             Thread.yield();

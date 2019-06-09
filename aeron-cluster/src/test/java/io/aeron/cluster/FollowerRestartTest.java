@@ -5,26 +5,20 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.Image;
-import io.aeron.Publication;
 import io.aeron.cluster.TestNode.TestService;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.service.ClientSession;
-import io.aeron.cluster.service.Cluster;
-import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
-import java.text.MessageFormat;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import static org.agrona.BitUtil.SIZE_OF_INT;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.EpochClock;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -42,10 +36,11 @@ public class FollowerRestartTest
 
     @Test(timeout = 30_000)
     @Ignore
-    public void testSingleSnapshotDuringShutdownWithEmptyFollowerLog() throws Exception
+    public void testRecoveryFromMostRecentSnapshot() throws Exception
     {
         final int memberCount = 3;
-        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(APPOINTED_LEADER, MyService::new))
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(APPOINTED_LEADER,
+            MessageCountingService::new))
         {
             final TestNode leader = cluster.awaitLeader();
             final List<TestNode> followers = cluster.followers();
@@ -54,25 +49,13 @@ public class FollowerRestartTest
 
             cluster.connectClient();
 
-            sendMessageAdd(cluster.client(), 2);
-            sendMessageAdd(cluster.client(), 5);
-            sendMessageAdd(cluster.client(), 9);
-            sendMessageAdd(cluster.client(), 17);
-            cluster.awaitResponses(4);
-            sendMessageRemove(cluster.client(), 5);
-            sendMessageRemove(cluster.client(), 9);
-            cluster.awaitResponses(6);
-            sendMessageAdd(cluster.client(), 1);
-            cluster.awaitResponses(7);
+            cluster.sendMessages(10);
+            cluster.awaitResponses(10);
+            awaitMessageCountSinceStart(cluster.client(), cluster.node(2), 3);
 
             leader.terminationExpected(true);
             followerA.terminationExpected(true);
             followerB.terminationExpected(true);
-
-            final int expectedSum = 2 + 17 + 1;
-            awaitStateForService(cluster.client(), cluster.node(0), 7, expectedSum);
-            awaitStateForService(cluster.client(), cluster.node(1), 7, expectedSum);
-            awaitStateForService(cluster.client(), cluster.node(2), 7, expectedSum);
 
             cluster.awaitNeutralControlToggle(leader);
             cluster.shutdownCluster(leader);
@@ -87,12 +70,11 @@ public class FollowerRestartTest
             cluster.stopNode(cluster.node(0));
             cluster.stopNode(cluster.node(1));
             cluster.stopNode(cluster.node(2));
-
             Thread.sleep(1_000);
 
-            cluster.startStaticNode(2, true, MyService::new);
-            cluster.startStaticNode(0, false, MyService::new);
-            cluster.startStaticNode(1, false, MyService::new);
+            cluster.startStaticNode(0, false, MessageCountingService::new);
+            cluster.startStaticNode(1, false, MessageCountingService::new);
+            cluster.startStaticNode(2, true, MessageCountingService::new);
 
             final TestNode newLeader = cluster.awaitLeader();
 
@@ -102,40 +84,27 @@ public class FollowerRestartTest
             assertTrue(cluster.node(1).service().wasSnapshotLoaded());
             assertFalse(cluster.node(2).service().wasSnapshotLoaded());
 
-            awaitStateForService(cluster.client(), cluster.node(0), 7, expectedSum);
-            awaitStateForService(cluster.client(), cluster.node(1), 7, expectedSum);
-            awaitStateForService(cluster.client(), cluster.node(2), 7, expectedSum);
+            // all three nodes have a correct state
+            assertTrue(((MessageCountingService)cluster.node(0).service()).messageCount() == 10);
+            assertTrue(((MessageCountingService)cluster.node(1).service()).messageCount() == 10);
+            assertTrue(((MessageCountingService)cluster.node(2).service()).messageCount() == 10);
 
-            // the two nodes with their own state recovered from a snapshot.
-            assertTrue(((MyService)cluster.node(0).service()).messageSinceStart() == 0);
-            assertTrue(((MyService)cluster.node(1).service()).messageSinceStart() == 0);
-
-            // I'd expect NODE 2 recovers from the most recent snapshot + journal (which should be zero length because
-            // of the clean shutdown)
-            // but this is not the case: journal since the beginning of times, and processes up to 7 messages.
-            assertTrue(((MyService)cluster.node(2).service()).messageSinceStart() == 0);
-
-            // and also creates its own snapshot
-            cluster.awaitSnapshotCounter(cluster.node(2), 1);
-            assertTrue(cluster.node(2).service().wasSnapshotTaken());
-
-            cluster.reconnectClient();
-            sendMessageAdd(cluster.client(), 3);
-            cluster.awaitResponses(8);
-            final int newExpectedSum = expectedSum + 3;
-            awaitStateForService(cluster.client(), cluster.node(0), 8, newExpectedSum);
-            assertTrue(((MyService)cluster.node(0).service()).messageSinceStart() == 1);
-            awaitStateForService(cluster.client(), cluster.node(1), 8, newExpectedSum);
-            awaitStateForService(cluster.client(), cluster.node(2), 8, newExpectedSum);
+            // I'd expect NODE 2 recovers from the most recent snapshot + journal
+            // (which should be zero length because of the clean shutdown)
+            // but this is not the case: Node 2 processes the complete journal (from the very beginning)
+            // all 10 messages.
+            assertTrue(((MessageCountingService)cluster.node(0).service()).messageSinceStart() == 0);
+            assertTrue(((MessageCountingService)cluster.node(1).service()).messageSinceStart() == 0);
+            assertThat(((MessageCountingService)cluster.node(2).service()).messageSinceStart(), is(equalTo(0)));
         }
     }
 
     @Test(timeout = 30_000)
-    @Ignore
+//    @Ignore
     public void testMultipleSnapshotsWithEmptyFollowerLog() throws Exception
     {
         final int memberCount = 3;
-        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(APPOINTED_LEADER, MyService::new))
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(APPOINTED_LEADER))
         {
             final TestNode leader = cluster.awaitLeader();
             final List<TestNode> followers = cluster.followers();
@@ -144,11 +113,9 @@ public class FollowerRestartTest
 
             cluster.connectClient();
 
-            sendMessageAdd(cluster.client(), 2);
-            sendMessageAdd(cluster.client(), 5);
-            sendMessageAdd(cluster.client(), 9);
-            sendMessageAdd(cluster.client(), 17);
-            cluster.awaitResponses(4);
+            cluster.sendMessages(2);
+            cluster.awaitResponses(2);
+            cluster.awaitMessageCountForService(cluster.node(2), 2);
 
             cluster.takeSnapshot(leader);
             for (int memberId = 0; memberId < memberCount; memberId++)
@@ -159,17 +126,9 @@ public class FollowerRestartTest
                 node.service().resetSnapshotTaken();
             }
             // first snapshot is done
-            sendMessageRemove(cluster.client(), 5);
-            sendMessageRemove(cluster.client(), 9);
-            cluster.awaitResponses(6);
-            sendMessageAdd(cluster.client(), 1);
-            cluster.awaitResponses(7);
-
-
-            final int expectedSum = 2 + 17 + 1;
-            awaitStateForService(cluster.client(), cluster.node(0), 7, expectedSum);
-            awaitStateForService(cluster.client(), cluster.node(1), 7, expectedSum);
-            awaitStateForService(cluster.client(), cluster.node(2), 7, expectedSum);
+            cluster.sendMessages(1);
+            cluster.awaitResponses(3);
+            cluster.awaitMessageCountForService(cluster.node(2), 3);
 
             leader.terminationExpected(true);
             followerA.terminationExpected(true);
@@ -188,14 +147,14 @@ public class FollowerRestartTest
             cluster.stopNode(cluster.node(0));
             cluster.stopNode(cluster.node(1));
             cluster.stopNode(cluster.node(2));
-            // shutdown including the 2nd snapshot is completed
             Thread.sleep(1_000);
 
-            cluster.startStaticNode(2, true, MyService::new);
-            cluster.startStaticNode(0, false, MyService::new);
-            cluster.startStaticNode(1, false, MyService::new);
+            cluster.startStaticNode(0, false, MessageCountingService::new);
+            cluster.startStaticNode(1, false, MessageCountingService::new);
+            cluster.startStaticNode(2, true, MessageCountingService::new);
 
-            // NOTE the exception in logs at this point
+            // NOTE the EXCEPTION in the logs at this point, but we can't catch it
+            // *** Error in node 2 followed by system thread dump ***
             final TestNode newLeader = cluster.awaitLeader();
 
             assertNotEquals(newLeader.index(), is(2));
@@ -204,75 +163,35 @@ public class FollowerRestartTest
             assertTrue(cluster.node(1).service().wasSnapshotLoaded());
             assertFalse(cluster.node(2).service().wasSnapshotLoaded());
 
-            awaitStateForService(cluster.client(), newLeader, 7, expectedSum);
-            awaitStateForService(cluster.client(), cluster.followers().get(0), 7, expectedSum);
-            awaitStateForService(cluster.client(), cluster.followers().get(1), 7, expectedSum);
+            // all three nodes have the correct state
+            assertTrue(((MessageCountingService)cluster.node(0).service()).messageCount() == 3);
+            assertTrue(((MessageCountingService)cluster.node(1).service()).messageCount() == 3);
+            assertTrue(((MessageCountingService)cluster.node(2).service()).messageCount() == 3);
 
-            // the two nodes with their own state should recover from the most recent snapshot.
-            assertTrue(((MyService)cluster.node(0).service()).messageSinceStart() == 0);
-            assertTrue(((MyService)cluster.node(1).service()).messageSinceStart() == 0);
-
-            // assuming same behavior as in the other test case, NODE 2 receiving all 7 message.
-            assertTrue(((MyService)cluster.node(2).service()).messageSinceStart() == 7);
-
-            // logging shows NODE 2 creating 2 snapshots while doing the replay
-            // but the counter is not reflecting this, but this is not the point
-//            cluster.awaitSnapshotCounter(cluster.node(2), 2);
-
-            // IMPORTANT: NODE 2 is inoperational at this time.
+            // now lets see if all nodes work properly
             cluster.reconnectClient();
-            sendMessageAdd(cluster.client(), 3);
-            cluster.awaitResponses(8);
-            final int newExpectedSum = expectedSum + 3;
-            awaitStateForService(cluster.client(), newLeader, 8, newExpectedSum);
-            assertTrue(((MyService)cluster.node(0).service()).messageSinceStart() == 1);
-            awaitStateForService(cluster.client(), cluster.followers().get(0), 8, newExpectedSum);
-            awaitStateForService(cluster.client(), cluster.followers().get(1), 8, newExpectedSum);
+            final int msgCountAfterStart = 4;
+            final int totalMsgCount = 2 + 1 + 4;
+            cluster.sendMessages(msgCountAfterStart);
+            cluster.awaitResponses(totalMsgCount);
+            cluster.awaitMessageCountForService(newLeader, totalMsgCount);
+            assertTrue(((MessageCountingService)newLeader.service()).messageCount() == totalMsgCount);
+
+            cluster.awaitMessageCountForService(cluster.node(1), totalMsgCount);
+            assertTrue(((MessageCountingService)cluster.node(1).service()).messageCount() == totalMsgCount);
+
+            // IMPORTANT: After coming back online and reconstructing state, NODE 2 is not part of the cluster
+            cluster.awaitMessageCountForService(cluster.node(2), totalMsgCount);
+            assertTrue(((MessageCountingService)cluster.node(2).service()).messageCount() == totalMsgCount);
         }
     }
 
-    /**
-     * Sends an ADD-type of message with the desired value
-     * @param client the clusterClient
-     * @param value value to add
-     */
-    void sendMessageAdd(final AeronCluster client, final int value)
-    {
-        final String msg = ADD_MSG + value;
-        final int len = msgBuffer.putStringWithoutLengthAscii(0, msg);
-        sendMessage(client, len);
-    }
-
-    /**
-     * Sends a REMOVE-type of message with the desired value
-     * @param client the clusterClient
-     * @param value value to subtract
-     */
-    void sendMessageRemove(final AeronCluster client, final int value)
-    {
-        final String msg = REMOVE_MSG + value;
-        final int len = msgBuffer.putStringWithoutLengthAscii(0, msg);
-        sendMessage(client, len);
-    }
-
-    void sendMessage(final AeronCluster client, final int messageLength)
-    {
-        while (client.offer(msgBuffer, 0, messageLength) < 0)
-        {
-            TestUtil.checkInterruptedStatus();
-            client.pollEgress();
-            Thread.yield();
-        }
-
-        client.pollEgress();
-    }
-
-    void awaitStateForService(final AeronCluster client, final TestNode node, final int msgCount, final int sum)
+    void awaitMessageCountSinceStart(final AeronCluster client, final TestNode node, final int countSinceStart)
     {
         final EpochClock epochClock = client.context().aeron().context().epochClock();
         long deadlineMs = epochClock.time() + TimeUnit.SECONDS.toMillis(1);
-        final MyService svc = ((MyService)node.service());
-        while (svc.messageCount() < msgCount && svc.sum != sum)
+        final MessageCountingService svc = ((MessageCountingService)node.service());
+        while (svc.messageSinceStart() < countSinceStart)
         {
             TestUtil.checkInterruptedStatus();
             Thread.yield();
@@ -286,190 +205,17 @@ public class FollowerRestartTest
         }
     }
 
-    static class MyService extends TestService
+    static class MessageCountingService extends TestService
     {
-        private static final int SNAPSHOT_HEADER_TOTAL_COUNT = 0x01;
-        private static final int SNAPSHOT_HEADER_SUM = 0x02;
-        private static final int SNAPSHOT_HEADER_MESSAGES = 0x03;
-        private static final int SNAPSHOT_HEADER_MESSAGES_LEN = 0x04;
-
-        volatile int totalMsgCount = 0;
         transient int messagesReceivedSinceStart = 0;
-        volatile int sum = 0;
-        Set<Integer> messages = new HashSet<>();
 
-        private volatile boolean wasSnapshotTaken = false;
-        private volatile boolean wasSnapshotLoaded = false;
-
-        MyService(final int index)
-        {
-            super(index);
-        }
-
-        @Override
-        boolean wasSnapshotTaken()
-        {
-            return wasSnapshotTaken;
-        }
-
-        @Override
-        boolean wasSnapshotLoaded()
-        {
-            return wasSnapshotLoaded;
-        }
-
-        @Override
-        void resetSnapshotTaken()
-        {
-            wasSnapshotTaken = false;
-        }
 
         @Override
         public void onSessionMessage(final ClientSession session, final long timestampMs, final DirectBuffer buffer,
             final int offset, final int length, final Header header)
         {
-            final String message = buffer.getStringWithoutLengthAscii(offset, length);
-
-            if (message.startsWith(ADD_MSG))
-            {
-                final int num = Integer.valueOf(message.substring(ADD_MSG.length()));
-                sum += num;
-                messages.add(num);
-            }
-            else if (message.startsWith(REMOVE_MSG))
-            {
-                final int num = Integer.valueOf(message.substring(REMOVE_MSG.length()));
-                sum -= num;
-                messages.remove(num);
-            }
-
-            if (null != session)
-            {
-                while (session.offer(buffer, offset, length) < 0)
-                {
-                    cluster.idle();
-                }
-            }
-            totalMsgCount++;
+            super.onSessionMessage(session, timestampMs, buffer, offset, length, header);
             messagesReceivedSinceStart++;
-//            System.out.println(MessageFormat.format("Node: {0} msg RECEIVED {4}: msgCount={1}, sum={2}, listLen={3}.",
-//                    new Object[] {index(), totalMsgCount, sum, messages.size(), message}));
-        }
-
-        @Override
-        public void onTakeSnapshot(final Publication snapshotPublication)
-        {
-            final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
-
-            int length = 0;
-            buffer.putInt(length, SNAPSHOT_HEADER_TOTAL_COUNT);
-            length += SIZE_OF_INT;
-            buffer.putInt(length, totalMsgCount);
-            length += SIZE_OF_INT;
-            long res = snapshotPublication.offer(buffer, 0, length);
-            assertTrue(res > 0);
-            cluster.idle();
-            buffer.setMemory(0, length, (byte)0);
-
-            length = 0;
-            buffer.putInt(length, SNAPSHOT_HEADER_SUM);
-            length += SIZE_OF_INT;
-            buffer.putInt(length, sum);
-            length += SIZE_OF_INT;
-            res = snapshotPublication.offer(buffer, 0, length);
-            assertTrue(res > 0);
-            cluster.idle();
-            buffer.setMemory(0, length, (byte)0);
-
-
-            length = 0;
-            buffer.putInt(length, SNAPSHOT_HEADER_MESSAGES);
-            length += SIZE_OF_INT;
-            buffer.putInt(length, SNAPSHOT_HEADER_MESSAGES_LEN);
-            length += SIZE_OF_INT;
-            buffer.putInt(length, messages.size());
-            length += SIZE_OF_INT;
-            for (final Integer message : messages)
-            {
-                buffer.putInt(length, message);
-                length += SIZE_OF_INT;
-            }
-            res = snapshotPublication.offer(buffer, 0, length);
-            assertTrue(res > 0);
-            cluster.idle();
-            System.out.println(MessageFormat.format("Node: {0} Snapshot WRITE: msgCount={1}, sum={2}, listLen={3}.",
-                new Object[] {index(), totalMsgCount, sum, messages.size()}));
-            wasSnapshotTaken = true;
-        }
-
-        @Override
-        public void onStart(final Cluster cluster, final Image snapshotImage)
-        {
-            super.onStart(cluster, null);
-            if (snapshotImage != null)
-            {
-                loadSnapshot(snapshotImage);
-            }
-        }
-
-        public void loadSnapshot(final Image snapshotImage)
-        {
-            final FragmentHandler handler = (buffer, offset, length, header) ->
-            {
-                final int msgTypeId = buffer.getInt(offset);
-                switch (msgTypeId)
-                {
-                    case SNAPSHOT_HEADER_TOTAL_COUNT:
-                        totalMsgCount = buffer.getInt(offset + SIZE_OF_INT);
-                        break;
-                    case SNAPSHOT_HEADER_SUM:
-                        sum = buffer.getInt(offset + SIZE_OF_INT);
-                        break;
-                    case SNAPSHOT_HEADER_MESSAGES:
-                        int readOffset = offset + SIZE_OF_INT;
-                        final int arrayLen = buffer.getInt(readOffset);
-                        for (int i = 0; i < arrayLen; i++)
-                        {
-                            readOffset += SIZE_OF_INT;
-                            messages.add(buffer.getInt(readOffset));
-                        }
-                        break;
-                    default:
-                        throw new IllegalStateException("Unknown msgType in snapshot");
-                }
-            };
-
-            while (true)
-            {
-                final int fragments = snapshotImage.poll(handler, 1);
-
-                if (snapshotImage.isClosed() || snapshotImage.isEndOfStream())
-                {
-                    break;
-                }
-
-                cluster.idle(fragments);
-            }
-
-            System.out.println(MessageFormat.format("Node: {0} Snapshot READ: msgCount={1}, sum={2}, listLen={3}.",
-                new Object[] {index(), totalMsgCount, sum, messages.size()}));
-            wasSnapshotLoaded = true;
-        }
-
-        public int getSum()
-        {
-            return sum;
-        }
-
-        public Set<Integer> getMessages()
-        {
-            return messages;
-        }
-
-        @Override
-        int messageCount()
-        {
-            return totalMsgCount;
         }
 
         int messageSinceStart()

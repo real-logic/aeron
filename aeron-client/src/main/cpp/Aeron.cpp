@@ -114,10 +114,12 @@ inline MemoryMappedFile::ptr_t Aeron::mapCncFile(Context &context)
             std::this_thread::sleep_for(IDLE_SLEEP_MS_1);
         }
 
-        if (CncFileDescriptor::CNC_VERSION != cncVersion)
+        if (semanticVersionMajor(cncVersion) != semanticVersionMajor(CncFileDescriptor::CNC_VERSION))
         {
-            throw util::IllegalStateException(
-                "CnC file version not supported: " + std::to_string(cncVersion), SOURCEINFO);
+            throw AeronException("Aeron CnC version does not match:"
+               " app=" + semanticVersionToString(CncFileDescriptor::CNC_VERSION) +
+               " file=" + semanticVersionToString(cncVersion),
+               SOURCEINFO);
         }
 
         AtomicBuffer toDriverBuffer(CncFileDescriptor::createToDriverBuffer(cncBuffer));

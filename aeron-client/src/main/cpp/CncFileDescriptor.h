@@ -18,8 +18,9 @@
 #define AERON_CNC_FILE_DESCRIPTOR_H
 
 #include <util/Index.h>
-#include <concurrent/AtomicBuffer.h>
 #include <util/MemoryMappedFile.h>
+#include <util/MacroUtil.h>
+#include <concurrent/AtomicBuffer.h>
 
 namespace aeron {
 
@@ -77,7 +78,7 @@ using namespace aeron::concurrent;
 namespace CncFileDescriptor {
 
 static const std::string CNC_FILE = "cnc.dat";
-static const std::int32_t CNC_VERSION = 15;
+static const std::int32_t CNC_VERSION = semanticVersionCompose(0, 0, 15);
 
 #pragma pack(push)
 #pragma pack(4)

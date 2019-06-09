@@ -85,11 +85,11 @@ public class SendReceiveUdpPing
     {
         for (int sequenceNumber = 0; sequenceNumber < Common.NUM_MESSAGES; sequenceNumber++)
         {
-            final long timestamp = System.nanoTime();
+            final long timestampNs = System.nanoTime();
 
             buffer.clear();
             buffer.putLong(sequenceNumber);
-            buffer.putLong(timestamp);
+            buffer.putLong(timestampNs);
             buffer.flip();
 
             sendChannel.send(buffer, sendAddress);
@@ -119,8 +119,8 @@ public class SendReceiveUdpPing
                 throw new IllegalStateException("Data Loss:" + sequenceNumber + " to " + receivedSequenceNumber);
             }
 
-            final long duration = System.nanoTime() - buffer.getLong(BitUtil.SIZE_OF_LONG);
-            histogram.recordValue(duration);
+            final long durationNs = System.nanoTime() - buffer.getLong(BitUtil.SIZE_OF_LONG);
+            histogram.recordValue(durationNs);
         }
 
         histogram.outputPercentileDistribution(System.out, 1000.0);

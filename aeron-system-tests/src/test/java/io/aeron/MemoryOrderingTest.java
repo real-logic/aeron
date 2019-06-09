@@ -94,13 +94,13 @@ public class MemoryOrderingTest
 
                 if (i % BURST_LENGTH == 0)
                 {
-                    final long timeout = System.nanoTime() + INTER_BURST_DURATION_NS;
-                    long now;
+                    final long timeoutNs = System.nanoTime() + INTER_BURST_DURATION_NS;
+                    long nowNs;
                     do
                     {
-                        now = System.nanoTime();
+                        nowNs = System.nanoTime();
                     }
-                    while (now < timeout);
+                    while ((timeoutNs - nowNs) < 0);
                 }
             }
 
@@ -145,13 +145,13 @@ public class MemoryOrderingTest
 
                 if (i % BURST_LENGTH == 0)
                 {
-                    final long timeout = System.nanoTime() + INTER_BURST_DURATION_NS;
-                    long now;
+                    final long timeoutNs = System.nanoTime() + INTER_BURST_DURATION_NS;
+                    long nowNs;
                     do
                     {
-                        now = System.nanoTime();
+                        nowNs = System.nanoTime();
                     }
-                    while (now < timeout);
+                    while ((timeoutNs - nowNs) > 0);
                 }
             }
 

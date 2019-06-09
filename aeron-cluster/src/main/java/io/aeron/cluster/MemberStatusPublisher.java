@@ -461,9 +461,7 @@ class MemberStatusPublisher
         return false;
     }
 
-    boolean terminationPosition(
-        final Publication publication,
-        final long logPosition)
+    boolean terminationPosition(final Publication publication, final long logPosition)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + TerminationPositionEncoder.BLOCK_LENGTH;
 
@@ -489,10 +487,7 @@ class MemberStatusPublisher
         return false;
     }
 
-    boolean terminationAck(
-        final Publication publication,
-        final long logPosition,
-        final int memberId)
+    boolean terminationAck(final Publication publication, final long logPosition, final int memberId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + TerminationAckEncoder.BLOCK_LENGTH;
 

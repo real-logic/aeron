@@ -30,9 +30,9 @@ final class ClusterInterceptor
     static class ElectionStateChange
     {
         @Advice.OnMethodEnter
-        static void stateTransition(final Election.State oldState, final Election.State newState, final long nowMs)
+        static void stateChange(final Election.State oldState, final Election.State newState, final int memberId)
         {
-            LOGGER.logElectionStateChange(oldState, newState, nowMs);
+            LOGGER.logElectionStateChange(oldState, newState, memberId);
         }
     }
 
@@ -60,18 +60,19 @@ final class ClusterInterceptor
     static class ConsensusModuleStateChange
     {
         @Advice.OnMethodEnter
-        static void state(final ConsensusModule.State state)
+        static void stateChange(
+            final ConsensusModule.State oldState, final ConsensusModule.State newState, final int memberId)
         {
-            LOGGER.logStateChange(state);
+            LOGGER.logStateChange(oldState, newState, memberId);
         }
     }
 
     static class ConsensusModuleRoleChange
     {
         @Advice.OnMethodEnter
-        static void role(final Cluster.Role role)
+        static void roleChange(final Cluster.Role oldRole, final Cluster.Role newRole, final int memberId)
         {
-            LOGGER.logRoleChange(role);
+            LOGGER.logRoleChange(oldRole, newRole, memberId);
         }
     }
 }

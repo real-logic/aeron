@@ -316,7 +316,7 @@ public class ArchiveRecordingLoadTest
         while (publication.offer(buffer, 0, length) < 0)
         {
             LockSupport.parkNanos(1000);
-            if (System.nanoTime() > deadlineNs)
+            if ((deadlineNs - System.nanoTime()) < 0)
             {
                 fail("Offer has timed out");
             }

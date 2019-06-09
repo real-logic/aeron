@@ -26,7 +26,6 @@ import java.nio.MappedByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import static io.aeron.CncFileDescriptor.CNC_VERSION;
 
 /**
  * Application to print out errors recorded in the command-and-control (cnc) file is maintained by media driver in
@@ -46,11 +45,7 @@ public class ErrorStat
         final DirectBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
         final int cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
 
-        if (CNC_VERSION != cncVersion)
-        {
-            throw new IllegalStateException(
-                "Aeron CnC version does not match: version=" + cncVersion + " required=" + CNC_VERSION);
-        }
+        CncFileDescriptor.checkVersion(cncVersion);
 
         final AtomicBuffer buffer = CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer);
         final int distinctErrorCount = ErrorLogReader.read(buffer, ErrorStat::accept);

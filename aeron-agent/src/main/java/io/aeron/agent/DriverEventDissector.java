@@ -280,12 +280,12 @@ public class DriverEventDissector
         final int bufferLength = buffer.getInt(offset + relativeOffset, LITTLE_ENDIAN);
         relativeOffset += SIZE_OF_INT;
 
-        final long timestamp = buffer.getLong(offset + relativeOffset, LITTLE_ENDIAN);
+        final long timestampNs = buffer.getLong(offset + relativeOffset, LITTLE_ENDIAN);
         relativeOffset += SIZE_OF_LONG;
 
         builder
             .append('[')
-            .append(((double)timestamp) / 1_000_000_000.0)
+            .append(((double)timestampNs) / 1_000_000_000.0)
             .append("] ")
             .append(code.name())
             .append(" [")

@@ -21,7 +21,6 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.codecs.BooleanType;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.ConsensusModuleProxy;
-import io.aeron.exceptions.AeronException;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
 import org.agrona.collections.ArrayUtil;
@@ -422,12 +421,7 @@ public class ClusterTool
         final DirectBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
         final int cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
 
-        if (CncFileDescriptor.CNC_VERSION != cncVersion)
-        {
-            throw new AeronException(
-                "Aeron CnC version does not match: version=" + cncVersion +
-                " required=" + CncFileDescriptor.CNC_VERSION);
-        }
+        CncFileDescriptor.checkVersion(cncVersion);
 
         final AtomicBuffer buffer = CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer);
         ClusterMarkFile.saveErrorLog(out, buffer);

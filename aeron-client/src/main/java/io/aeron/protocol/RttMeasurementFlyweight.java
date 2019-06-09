@@ -103,9 +103,9 @@ public class RttMeasurementFlyweight extends HeaderFlyweight
         return getLong(ECHO_TIMESTAMP_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
-    public RttMeasurementFlyweight echoTimestampNs(final long timestamp)
+    public RttMeasurementFlyweight echoTimestampNs(final long timestampNs)
     {
-        putLong(ECHO_TIMESTAMP_FIELD_OFFSET, timestamp, LITTLE_ENDIAN);
+        putLong(ECHO_TIMESTAMP_FIELD_OFFSET, timestampNs, LITTLE_ENDIAN);
 
         return this;
     }

@@ -560,22 +560,18 @@ public class CommonContext implements Cloneable
             sleep(1);
         }
 
-        if (CNC_VERSION != cncVersion)
-        {
-            throw new AeronException(
-                "Aeron CnC version does not match: required=" + CNC_VERSION + " version=" + cncVersion);
-        }
+        CncFileDescriptor.checkVersion(cncVersion);
 
         final ManyToOneRingBuffer toDriverBuffer = new ManyToOneRingBuffer(
             CncFileDescriptor.createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer));
 
-        final long timestamp = toDriverBuffer.consumerHeartbeatTime();
-        final long now = System.currentTimeMillis();
-        final long timestampAge = now - timestamp;
+        final long timestampMs = toDriverBuffer.consumerHeartbeatTime();
+        final long nowMs = System.currentTimeMillis();
+        final long timestampAgeMs = nowMs - timestampMs;
 
-        logger.accept("INFO: Aeron toDriver consumer heartbeat is (ms): " + timestampAge);
+        logger.accept("INFO: Aeron toDriver consumer heartbeat is (ms): " + timestampAgeMs);
 
-        return timestampAge <= driverTimeoutMs;
+        return timestampAgeMs <= driverTimeoutMs;
     }
 
     /**
@@ -603,11 +599,7 @@ public class CommonContext implements Cloneable
                 final UnsafeBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
                 final int cncVersion = cncMetaDataBuffer.getIntVolatile(cncVersionOffset(0));
 
-                if (CncFileDescriptor.CNC_VERSION != cncVersion)
-                {
-                    throw new AeronException(
-                        "Aeron CnC version does not match: required=" + CNC_VERSION + " version=" + cncVersion);
-                }
+                CncFileDescriptor.checkVersion(cncVersion);
 
                 final ManyToOneRingBuffer toDriverBuffer = new ManyToOneRingBuffer(
                     CncFileDescriptor.createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer));
@@ -662,11 +654,7 @@ public class CommonContext implements Cloneable
         final UnsafeBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
         final int cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
 
-        if (CNC_VERSION != cncVersion)
-        {
-            throw new AeronException(
-                "Aeron CnC version does not match: required=" + CNC_VERSION + " version=" + cncVersion);
-        }
+        CncFileDescriptor.checkVersion(cncVersion);
 
         int distinctErrorCount = 0;
         final AtomicBuffer buffer = CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer);

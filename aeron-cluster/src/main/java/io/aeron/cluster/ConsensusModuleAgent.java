@@ -88,7 +88,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private ReadableCounter appendedPosition;
     private final Counter commitPosition;
     private ConsensusModule.State state = ConsensusModule.State.INIT;
-    private Cluster.Role role;
+    private Cluster.Role role = Cluster.Role.FOLLOWER;
     private ClusterMember[] clusterMembers;
     private ClusterMember[] passiveMembers = ClusterMember.EMPTY_CLUSTER_MEMBER_ARRAY;
     private ClusterMember leaderMember;
@@ -603,8 +603,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
             if (null != requester)
             {
-                final RecordingLog.RecoveryPlan currentRecoveryPlan =
-                    recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
+                final RecordingLog.RecoveryPlan currentRecoveryPlan = recordingLog.createRecoveryPlan(
+                    archive, ctx.serviceCount());
 
                 memberStatusPublisher.snapshotRecording(
                     requester.publication(),
@@ -720,16 +720,30 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             ClusterMember.encodeAsString(passiveMembers));
     }
 
-    void state(final ConsensusModule.State state)
+    void state(final ConsensusModule.State newState)
     {
-        this.state = state;
-        moduleState.set(state.code());
+        stateChange(state, newState, memberId);
+        state = newState;
+        moduleState.set(newState.code());
     }
 
-    void role(final Cluster.Role role)
+    @SuppressWarnings("unused")
+    void stateChange(final ConsensusModule.State oldState, final ConsensusModule.State newState, final int memberId)
     {
-        this.role = role;
-        clusterRoleCounter.setOrdered(role.code());
+        //System.out.println("CM State memberId=" + memberId + " " + oldState + " -> " + newState);
+    }
+
+    void role(final Cluster.Role newRole)
+    {
+        roleChange(role, newRole, memberId);
+        role = newRole;
+        clusterRoleCounter.setOrdered(newRole.code());
+    }
+
+    @SuppressWarnings("unused")
+    void roleChange(final Cluster.Role oldRole, final Cluster.Role newRole, final int memberId)
+    {
+        //System.out.println("CM Role memberId=" + memberId + " " + oldRole + " -> " + newRole);
     }
 
     Cluster.Role role()
@@ -2426,7 +2440,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         snapshotTaker.markBegin(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0);
 
         snapshotTaker.snapshotConsensusModuleState(
-            nextSessionId, nextServiceSessionId, logServiceSessionId, pendingServiceMessages.capacity());
+            nextSessionId, nextServiceSessionId, logServiceSessionId, pendingServiceMessages.size());
         snapshotTaker.snapshotClusterMembers(memberId, highMemberId, clusterMembers);
 
         for (final ClusterSession session : sessionByIdMap.values())

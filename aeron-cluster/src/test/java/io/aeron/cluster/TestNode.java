@@ -196,15 +196,16 @@ class TestNode implements AutoCloseable
 
     static class TestService extends StubClusteredService
     {
+        private int index;
         private volatile int messageCount;
         private volatile boolean wasSnapshotTaken = false;
         private volatile boolean wasSnapshotLoaded = false;
         private volatile Cluster.Role roleChangedTo = null;
-        private final int index;
 
-        TestService(final int index)
+        TestService index(final int index)
         {
             this.index = index;
+            return this;
         }
 
         int index()

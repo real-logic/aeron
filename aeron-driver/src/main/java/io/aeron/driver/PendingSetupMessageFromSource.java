@@ -86,9 +86,9 @@ class PendingSetupMessageFromSource
         return timeOfStatusMessageNs;
     }
 
-    public void timeOfStatusMessageNs(final long now)
+    public void timeOfStatusMessageNs(final long nowNs)
     {
-        timeOfStatusMessageNs = now;
+        timeOfStatusMessageNs = nowNs;
     }
 
     public void removeFromDataPacketDispatcher()

@@ -915,7 +915,7 @@ public class Election implements AutoCloseable
 
     private void state(final State newState, final long nowMs)
     {
-        stateTransition(this.state, newState, nowMs);
+        stateChange(this.state, newState, thisMember.id());
 
         if (State.CANVASS == newState)
         {
@@ -952,9 +952,9 @@ public class Election implements AutoCloseable
         timeOfLastStateChangeMs = nowMs;
     }
 
-    void stateTransition(final State oldState, final State newState, final long nowMs)
+    void stateChange(final State oldState, final State newState, final int memberId)
     {
-        //System.out.println("memberId=" + thisMember.id() + " nowMs=" + nowMs + " " + oldState + " -> " + newState);
+        //System.out.println("memberId=" + memberId + " " + oldState + " -> " + newState);
     }
 
     private void cleanupReplay()

@@ -238,15 +238,15 @@ public class EventLogAgent
             .type(nameEndsWith("Election"))
             .transform(((builder, typeDescription, classLoader, module) -> builder
                 .visit(to(ClusterInterceptor.ElectionStateChange.class)
-                    .on(named("stateTransition").and(takesArgument(0, nameEndsWith("State")))))))
+                    .on(named("stateChange")))))
             .type(nameEndsWith("ConsensusModuleAgent"))
             .transform(((builder, typeDescription, classLoader, module) -> builder
                 .visit(to(ClusterInterceptor.NewLeadershipTerm.class)
                     .on(named("onNewLeadershipTerm")))
                 .visit(to(ClusterInterceptor.ConsensusModuleStateChange.class)
-                    .on(named("state")))
+                    .on(named("stateChange")))
                 .visit(to(ClusterInterceptor.ConsensusModuleRoleChange.class)
-                    .on(named("role").and(takesArgument(0, nameEndsWith("Role")))))));
+                    .on(named("roleChange")))));
     }
 
     private static Agent getReaderAgent()

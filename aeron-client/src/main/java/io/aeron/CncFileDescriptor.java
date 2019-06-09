@@ -15,7 +15,9 @@
  */
 package io.aeron;
 
+import io.aeron.exceptions.AeronException;
 import org.agrona.DirectBuffer;
+import org.agrona.SemanticVersion;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
@@ -73,7 +75,11 @@ import static org.agrona.BitUtil.*;
 public class CncFileDescriptor
 {
     public static final String CNC_FILE = "cnc.dat";
-    public static final int CNC_VERSION = 15;
+
+    /**
+     * Version of the CnC file using semantic versioning ({@link SemanticVersion}) stored in an integer.
+     */
+    public static final int CNC_VERSION = SemanticVersion.compose(0, 0, 15);
 
     public static final int CNC_VERSION_FIELD_OFFSET;
     public static final int TO_DRIVER_BUFFER_LENGTH_FIELD_OFFSET;
@@ -158,15 +164,28 @@ public class CncFileDescriptor
         return baseOffset + PID_FIELD_OFFSET;
     }
 
+    /**
+     * Fill the CnC file with metadata to define its sections.
+     *
+     * @param cncMetaDataBuffer           that wraps the metadata section of the CnC file.
+     * @param toDriverBufferLength        for sending commands to the driver.
+     * @param toClientsBufferLength       for broadcasting events to the clients.
+     * @param counterMetaDataBufferLength buffer length for counters metadata.
+     * @param counterValuesBufferLength   buffer length for counter values.
+     * @param clientLivenessTimeoutNs     timeout value in nanoseconds for client liveness and inter-service interval.
+     * @param errorLogBufferLength        for recording the distinct error log.
+     * @param startTimestampMs            epoch at which the driver started.
+     * @param pid                         for the process hosting the driver.
+     */
     public static void fillMetaData(
         final UnsafeBuffer cncMetaDataBuffer,
         final int toDriverBufferLength,
         final int toClientsBufferLength,
         final int counterMetaDataBufferLength,
         final int counterValuesBufferLength,
-        final long clientLivenessTimeout,
+        final long clientLivenessTimeoutNs,
         final int errorLogBufferLength,
-        final long startTimestamp,
+        final long startTimestampMs,
         final long pid)
     {
         cncMetaDataBuffer.putInt(toDriverBufferLengthOffset(0), toDriverBufferLength);
@@ -174,26 +193,50 @@ public class CncFileDescriptor
         cncMetaDataBuffer.putInt(countersMetaDataBufferLengthOffset(0), counterMetaDataBufferLength);
         cncMetaDataBuffer.putInt(countersValuesBufferLengthOffset(0), counterValuesBufferLength);
         cncMetaDataBuffer.putInt(errorLogBufferLengthOffset(0), errorLogBufferLength);
-        cncMetaDataBuffer.putLong(clientLivenessTimeoutOffset(0), clientLivenessTimeout);
-        cncMetaDataBuffer.putLong(startTimestampOffset(0), startTimestamp);
+        cncMetaDataBuffer.putLong(clientLivenessTimeoutOffset(0), clientLivenessTimeoutNs);
+        cncMetaDataBuffer.putLong(startTimestampOffset(0), startTimestampMs);
         cncMetaDataBuffer.putLong(pidOffset(0), pid);
     }
 
+    /**
+     * Signal the the CnC file is ready for use by client by writing the version into the CnC file.
+     *
+     * @param cncMetaDataBuffer for the CnC file.
+     */
     public static void signalCncReady(final UnsafeBuffer cncMetaDataBuffer)
     {
         cncMetaDataBuffer.putIntVolatile(cncVersionOffset(0), CNC_VERSION);
     }
 
+    /**
+     * Create the buffer which wraps the area in the CnC file for the metadata about the CnC file itself.
+     * @param buffer for the CnC file
+     * @return the buffer which wraps the area in the CnC file for the metadata about the CnC file itself.
+     */
     public static UnsafeBuffer createMetaDataBuffer(final ByteBuffer buffer)
     {
         return new UnsafeBuffer(buffer, 0, META_DATA_LENGTH);
     }
 
+    /**
+     * Create the buffer which wraps the area in the CnC file for the command buffer from clients to the driver.
+     *
+     * @param buffer         for the CnC file.
+     * @param metaDataBuffer within the CnC file.
+     * @return a buffer which wraps the section in the CnC file for the command buffer from clients to the driver.
+     */
     public static UnsafeBuffer createToDriverBuffer(final ByteBuffer buffer, final DirectBuffer metaDataBuffer)
     {
         return new UnsafeBuffer(buffer, END_OF_METADATA_OFFSET, metaDataBuffer.getInt(toDriverBufferLengthOffset(0)));
     }
 
+    /**
+     * Create the buffer which wraps the section in the CnC file for the broadcast buffer from the driver to clients.
+     *
+     * @param buffer         for the CnC file.
+     * @param metaDataBuffer within the CnC file.
+     * @return a buffer which wraps the section in the CnC file for the broadcast buffer from the driver to clients.
+     */
     public static UnsafeBuffer createToClientsBuffer(final ByteBuffer buffer, final DirectBuffer metaDataBuffer)
     {
         final int offset = END_OF_METADATA_OFFSET + metaDataBuffer.getInt(toDriverBufferLengthOffset(0));
@@ -201,6 +244,13 @@ public class CncFileDescriptor
         return new UnsafeBuffer(buffer, offset, metaDataBuffer.getInt(toClientsBufferLengthOffset(0)));
     }
 
+    /**
+     * Create the buffer which wraps the section in the CnC file for the counters metadata.
+     *
+     * @param buffer         for the CnC file.
+     * @param metaDataBuffer within the CnC file.
+     * @return a buffer which wraps the section in the CnC file for the counters metadata.
+     */
     public static UnsafeBuffer createCountersMetaDataBuffer(final ByteBuffer buffer, final DirectBuffer metaDataBuffer)
     {
         final int offset = END_OF_METADATA_OFFSET +
@@ -210,6 +260,13 @@ public class CncFileDescriptor
         return new UnsafeBuffer(buffer, offset, metaDataBuffer.getInt(countersMetaDataBufferLengthOffset(0)));
     }
 
+    /**
+     * Create the buffer which wraps the section in the CnC file for the counter values.
+     *
+     * @param buffer         for the CnC file.
+     * @param metaDataBuffer within the CnC file.
+     * @return a buffer which wraps the section in the CnC file for the counter values.
+     */
     public static UnsafeBuffer createCountersValuesBuffer(final ByteBuffer buffer, final DirectBuffer metaDataBuffer)
     {
         final int offset = END_OF_METADATA_OFFSET +
@@ -220,6 +277,13 @@ public class CncFileDescriptor
         return new UnsafeBuffer(buffer, offset, metaDataBuffer.getInt(countersValuesBufferLengthOffset(0)));
     }
 
+    /**
+     * Create the buffer which wraps the section in the CnC file for the error log.
+     *
+     * @param buffer         for the CnC file.
+     * @param metaDataBuffer within the CnC file.
+     * @return a buffer which wraps the section in the CnC file for the error log.
+     */
     public static UnsafeBuffer createErrorLogBuffer(final ByteBuffer buffer, final DirectBuffer metaDataBuffer)
     {
         final int offset = END_OF_METADATA_OFFSET +
@@ -231,18 +295,52 @@ public class CncFileDescriptor
         return new UnsafeBuffer(buffer, offset, metaDataBuffer.getInt(errorLogBufferLengthOffset(0)));
     }
 
-    public static long clientLivenessTimeout(final DirectBuffer metaDataBuffer)
+    /**
+     * Get the timeout in nanoseconds for tracking client liveness and inter-service timeout.
+     *
+     * @param metaDataBuffer for the CnC file.
+     * @return the timeout in milliseconds for tracking client liveness.
+     */
+    public static long clientLivenessTimeoutNs(final DirectBuffer metaDataBuffer)
     {
         return metaDataBuffer.getLong(clientLivenessTimeoutOffset(0));
     }
 
-    public static long startTimestamp(final DirectBuffer metaDataBuffer)
+    /**
+     * Get the start timestamp in milliseconds for the media driver.
+     *
+     * @param metaDataBuffer for the CnC file.
+     * @return the start timestamp in milliseconds for the media driver.
+     */
+    public static long startTimestampMs(final DirectBuffer metaDataBuffer)
     {
         return metaDataBuffer.getLong(startTimestampOffset(0));
     }
 
+    /**
+     * Get the process PID hosting the driver.
+     *
+     * @param metaDataBuffer for the CnC file.
+     * @return the process PID hosting the driver.
+     */
     public static long pid(final DirectBuffer metaDataBuffer)
     {
         return metaDataBuffer.getLong(pidOffset(0));
+    }
+
+    /**
+     * Check the version of the CnC file is compatible with application.
+     *
+     * @param cncVersion of the CnC file.
+     * @throws AeronException if the major versions are not compatible.
+     */
+    public static void checkVersion(final int cncVersion)
+    {
+        if (SemanticVersion.major(CNC_VERSION) != SemanticVersion.major(cncVersion))
+        {
+            throw new AeronException("CnC version not compatible:" +
+                " app=" + SemanticVersion.toString(CNC_VERSION) +
+                " file=" + SemanticVersion.toString(cncVersion));
+        }
     }
 }

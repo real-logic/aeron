@@ -43,7 +43,6 @@ import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
 class ClusteredServiceAgent implements Agent, Cluster
 {
-
     private final int serviceId;
     private final AeronArchive.Context archiveCtx;
     private final ClusteredServiceContainer.Context ctx;

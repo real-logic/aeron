@@ -30,7 +30,6 @@
 
 #define AERON_CNC_FILE "cnc.dat"
 #define AERON_LOSS_REPORT_FILE "loss-report.dat"
-#define AERON_CNC_VERSION (15)
 
 #pragma pack(push)
 #pragma pack(4)
@@ -131,27 +130,27 @@ typedef struct aeron_driver_context_stct
     aeron_idle_strategy_func_t conductor_idle_strategy_func;
     void *conductor_idle_strategy_state;
     char *conductor_idle_strategy_init_args;
-    const char *conductor_idle_styrategy_name;
+    const char *conductor_idle_strategy_name;
 
     aeron_idle_strategy_func_t shared_idle_strategy_func;
     void *shared_idle_strategy_state;
     char *shared_idle_strategy_init_args;
-    const char *shared_idle_styrategy_name;
+    const char *shared_idle_strategy_name;
 
     aeron_idle_strategy_func_t shared_network_idle_strategy_func;
     void *shared_network_idle_strategy_state;
     char *shared_network_idle_strategy_init_args;
-    const char *shared_network_idle_styrategy_name;
+    const char *shared_network_idle_strategy_name;
 
     aeron_idle_strategy_func_t sender_idle_strategy_func;
     void *sender_idle_strategy_state;
     char *sender_idle_strategy_init_args;
-    const char *sender_idle_styrategy_name;
+    const char *sender_idle_strategy_name;
 
     aeron_idle_strategy_func_t receiver_idle_strategy_func;
     void *receiver_idle_strategy_state;
     char *receiver_idle_strategy_init_args;
-    const char *receiver_idle_styrategy_name;
+    const char *receiver_idle_strategy_name;
 
     aeron_usable_fs_space_func_t usable_fs_space_func;
     aeron_map_raw_log_func_t map_raw_log_func;

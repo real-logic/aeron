@@ -84,6 +84,26 @@ int aeron_version_patch()
     return aeron_patch_version;
 }
 
+int32_t aeron_semantic_version_compose(uint8_t major, uint8_t minor, uint8_t patch)
+{
+    return (major << 16) | (minor << 8) | patch;
+}
+
+uint8_t aeron_semantic_version_major(int32_t version)
+{
+    return (uint8_t)((version >> 16) & 0xFF);
+}
+
+uint8_t aeron_semantic_version_minor(int32_t version)
+{
+    return (uint8_t)((version >> 8) & 0xFF);
+}
+
+uint8_t aeron_semantic_version_patch(int32_t version)
+{
+    return (uint8_t)(version & 0xFF);
+}
+
 void aeron_log_func_stderr(const char *str)
 {
     fprintf(stderr, "%s\n", str);
@@ -203,7 +223,7 @@ int aeron_report_existing_errors(aeron_mapped_file_t *cnc_map, const char *aeron
 
     aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *)cnc_map->addr;
 
-    if (AERON_CNC_VERSION == metadata->cnc_version &&
+    if (aeron_semantic_version_major(AERON_CNC_VERSION) == aeron_semantic_version_major(metadata->cnc_version) &&
         aeron_error_log_exists(aeron_cnc_error_log_buffer(cnc_map->addr), (size_t)metadata->error_log_buffer_length))
     {
         char datestamp[AERON_MAX_PATH];
@@ -1019,5 +1039,14 @@ int aeron_driver_close(aeron_driver_t *driver)
     }
 
     aeron_free(driver);
+
     return 0;
 }
+
+extern int32_t aeron_semantic_version_compose(uint8_t major, uint8_t minor, uint8_t patch);
+
+extern uint8_t aeron_semantic_version_major(int32_t version);
+
+extern uint8_t aeron_semantic_version_minor(int32_t version);
+
+extern uint8_t aeron_semantic_version_patch(int32_t version);

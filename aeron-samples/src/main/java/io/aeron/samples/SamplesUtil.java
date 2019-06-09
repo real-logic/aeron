@@ -229,10 +229,7 @@ public class SamplesUtil
         final DirectBuffer cncMetaData = createMetaDataBuffer(cncByteBuffer);
         final int cncVersion = cncMetaData.getInt(cncVersionOffset(0));
 
-        if (CNC_VERSION != cncVersion)
-        {
-            throw new IllegalStateException("CnC version not supported: file version=" + cncVersion);
-        }
+        checkVersion(cncVersion);
 
         return new CountersReader(
             createCountersMetaDataBuffer(cncByteBuffer, cncMetaData),

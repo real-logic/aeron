@@ -208,8 +208,11 @@ final class ArchiveEventDissector
 
     private static void appendListRecordingSubscriptions(final StringBuilder builder)
     {
-        builder.append("ARCHIVE: LIST_RECORDING_SUBSCRIPTIONS ")
-            .append(LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER.channel()).append(' ')
+        builder.append("ARCHIVE: LIST_RECORDING_SUBSCRIPTIONS ");
+        LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER.getChannel(builder);
+
+        builder
+            .append(' ')
             .append(LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER.streamId()).append(' ')
             .append(LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER.applyStreamId()).append(' ')
             .append(LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER.pseudoIndex()).append(' ')
@@ -262,8 +265,11 @@ final class ArchiveEventDissector
 
     private static void appendExtendRecording(final StringBuilder builder)
     {
-        builder.append("ARCHIVE: EXTEND_RECORDING ")
-            .append(EXTEND_RECORDING_REQUEST_DECODER.channel()).append(' ')
+        builder.append("ARCHIVE: EXTEND_RECORDING ");
+        EXTEND_RECORDING_REQUEST_DECODER.getChannel(builder);
+
+        builder
+            .append(' ')
             .append(EXTEND_RECORDING_REQUEST_DECODER.streamId()).append(' ')
             .append(EXTEND_RECORDING_REQUEST_DECODER.recordingId()).append(' ')
             .append(EXTEND_RECORDING_REQUEST_DECODER.sourceLocation()).append(' ')
@@ -281,8 +287,11 @@ final class ArchiveEventDissector
 
     private static void appendListRecordingsForUri(final StringBuilder builder)
     {
-        builder.append("ARCHIVE: LIST_RECORDINGS_FOR_URI ")
-            .append(LIST_RECORDINGS_FOR_URI_REQUEST_DECODER.channel()).append(' ')
+        builder.append("ARCHIVE: LIST_RECORDINGS_FOR_URI ");
+        LIST_RECORDINGS_FOR_URI_REQUEST_DECODER.getChannel(builder);
+
+        builder
+            .append(' ')
             .append(LIST_RECORDINGS_FOR_URI_REQUEST_DECODER.fromRecordingId()).append(' ')
             .append(LIST_RECORDINGS_FOR_URI_REQUEST_DECODER.controlSessionId()).append(" [")
             .append(LIST_RECORDINGS_FOR_URI_REQUEST_DECODER.correlationId()).append(']');
@@ -298,14 +307,19 @@ final class ArchiveEventDissector
 
     private static void appendStopReplay(final StringBuilder builder)
     {
-        builder.append("ARCHIVE: STOP_REPLAY ").append(STOP_REPLAY_REQUEST_DECODER.replaySessionId()).append(' ')
+        builder.append("ARCHIVE: STOP_REPLAY ")
+            .append(STOP_REPLAY_REQUEST_DECODER.replaySessionId()).append(' ')
             .append(STOP_REPLAY_REQUEST_DECODER.controlSessionId()).append(" [")
             .append(STOP_REPLAY_REQUEST_DECODER.correlationId()).append(']');
     }
 
     private static void appendReplay(final StringBuilder builder)
     {
-        builder.append("ARCHIVE: REPLAY ").append(REPLAY_REQUEST_DECODER.replayChannel()).append(' ')
+        builder.append("ARCHIVE: REPLAY ");
+        REPLAY_REQUEST_DECODER.getReplayChannel(builder);
+
+        builder
+            .append(' ')
             .append(REPLAY_REQUEST_DECODER.replayStreamId()).append(' ')
             .append(REPLAY_REQUEST_DECODER.recordingId()).append(' ')
             .append(REPLAY_REQUEST_DECODER.controlSessionId()).append(" [")
@@ -314,7 +328,11 @@ final class ArchiveEventDissector
 
     private static void appendStopRecording(final StringBuilder builder)
     {
-        builder.append("ARCHIVE: STOP_RECORDING ").append(STOP_RECORDING_REQUEST_DECODER.channel()).append(' ')
+        builder.append("ARCHIVE: STOP_RECORDING ");
+        STOP_RECORDING_REQUEST_DECODER.getChannel(builder);
+
+        builder
+            .append(' ')
             .append(STOP_RECORDING_REQUEST_DECODER.streamId()).append(' ')
             .append(STOP_RECORDING_REQUEST_DECODER.controlSessionId()).append(" [")
             .append(STOP_RECORDING_REQUEST_DECODER.correlationId()).append(']');
@@ -322,7 +340,11 @@ final class ArchiveEventDissector
 
     private static void appendStartRecording(final StringBuilder builder)
     {
-        builder.append("ARCHIVE: START_RECORDING ").append(START_RECORDING_REQUEST_DECODER.channel()).append(' ')
+        builder.append("ARCHIVE: START_RECORDING ");
+        START_RECORDING_REQUEST_DECODER.getChannel(builder);
+
+        builder
+            .append(' ')
             .append(START_RECORDING_REQUEST_DECODER.streamId()).append(' ')
             .append(START_RECORDING_REQUEST_DECODER.controlSessionId()).append(" [")
             .append(START_RECORDING_REQUEST_DECODER.correlationId()).append(']');
@@ -330,12 +352,17 @@ final class ArchiveEventDissector
 
     private static void appendCloseSession(final StringBuilder builder)
     {
-        builder.append("ARCHIVE: CLOSE_SESSION ").append(CLOSE_SESSION_REQUEST_DECODER.controlSessionId());
+        builder.append("ARCHIVE: CLOSE_SESSION ")
+            .append(CLOSE_SESSION_REQUEST_DECODER.controlSessionId());
     }
 
     private static void appendConnect(final StringBuilder builder)
     {
-        builder.append("ARCHIVE: CONNECT ").append(CONNECT_REQUEST_DECODER.responseChannel()).append(' ')
+        builder.append("ARCHIVE: CONNECT ");
+        CONNECT_REQUEST_DECODER.getResponseChannel(builder);
+
+        builder
+            .append(' ')
             .append(CONNECT_REQUEST_DECODER.responseStreamId()).append(" [")
             .append(CONNECT_REQUEST_DECODER.correlationId()).append("][")
             .append(CONNECT_REQUEST_DECODER.version()).append(']');

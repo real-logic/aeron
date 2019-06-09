@@ -27,10 +27,12 @@ final class ClusterEventEncoder
         final MutableDirectBuffer encodedBuffer,
         final Election.State oldState,
         final Election.State newState,
-        final long nowMs)
+        final int memberId)
     {
-        encodedBuffer.putLong(0, nowMs);
-        int offset = BitUtil.SIZE_OF_LONG;
+        int offset = 0;
+
+        encodedBuffer.putInt(offset, memberId);
+        offset += BitUtil.SIZE_OF_INT;
 
         final int stringLength = oldState.name().length() + " -> ".length() + newState.name().length();
         encodedBuffer.putInt(offset, stringLength);
@@ -68,13 +70,47 @@ final class ClusterEventEncoder
         return offset + BitUtil.SIZE_OF_INT;
     }
 
-    static int stateChange(final MutableDirectBuffer encodedBuffer, final ConsensusModule.State state)
+    static int stateChange(
+        final MutableDirectBuffer encodedBuffer,
+        final ConsensusModule.State oldState,
+        final ConsensusModule.State newState,
+        final int memberId)
     {
-        return encodedBuffer.putStringAscii(0, state.name());
+        int offset = 0;
+
+        encodedBuffer.putInt(offset, memberId);
+        offset += BitUtil.SIZE_OF_INT;
+
+        final int stringLength = oldState.name().length() + " -> ".length() + newState.name().length();
+        encodedBuffer.putInt(offset, stringLength);
+        offset += BitUtil.SIZE_OF_INT;
+
+        offset += encodedBuffer.putStringWithoutLengthAscii(offset, oldState.name());
+        offset += encodedBuffer.putStringWithoutLengthAscii(offset, " -> ");
+        offset += encodedBuffer.putStringWithoutLengthAscii(offset, newState.name());
+
+        return offset;
     }
 
-    static int roleChange(final MutableDirectBuffer encodedBuffer, final Cluster.Role role)
+    static int roleChange(
+        final MutableDirectBuffer encodedBuffer,
+        final Cluster.Role oldRole,
+        final Cluster.Role newRole,
+        final int memberId)
     {
-        return encodedBuffer.putStringAscii(0, role.name());
+        int offset = 0;
+
+        encodedBuffer.putInt(offset, memberId);
+        offset += BitUtil.SIZE_OF_INT;
+
+        final int stringLength = oldRole.name().length() + " -> ".length() + newRole.name().length();
+        encodedBuffer.putInt(offset, stringLength);
+        offset += BitUtil.SIZE_OF_INT;
+
+        offset += encodedBuffer.putStringWithoutLengthAscii(offset, oldRole.name());
+        offset += encodedBuffer.putStringWithoutLengthAscii(offset, " -> ");
+        offset += encodedBuffer.putStringWithoutLengthAscii(offset, newRole.name());
+
+        return offset;
     }
 }

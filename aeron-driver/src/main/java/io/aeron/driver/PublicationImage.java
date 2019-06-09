@@ -329,6 +329,11 @@ public class PublicationImage
                 }
             }
         }
+
+        if (subscriberPositions.length == 0)
+        {
+            isTrackingRebuild = false;
+        }
     }
 
     /**
@@ -817,16 +822,16 @@ public class PublicationImage
         return isFlowControlOverRun;
     }
 
-    private void cleanBufferTo(final long newCleanPosition)
+    private void cleanBufferTo(final long position)
     {
         final long cleanPosition = this.cleanPosition;
-        final int bytesForCleaning = (int)(newCleanPosition - cleanPosition);
-        final UnsafeBuffer dirtyTerm = termBuffers[indexByPosition(cleanPosition, positionBitsToShift)];
-        final int termOffset = (int)cleanPosition & termLengthMask;
-        final int length = Math.min(bytesForCleaning, dirtyTerm.capacity() - termOffset);
-
-        if (length > 0)
+        if (position > cleanPosition)
         {
+            final int bytesForCleaning = (int)(position - cleanPosition);
+            final UnsafeBuffer dirtyTerm = termBuffers[indexByPosition(cleanPosition, positionBitsToShift)];
+            final int termOffset = (int)cleanPosition & termLengthMask;
+            final int length = Math.min(bytesForCleaning, dirtyTerm.capacity() - termOffset);
+
             dirtyTerm.setMemory(termOffset, length, (byte)0);
             this.cleanPosition = cleanPosition + length;
         }

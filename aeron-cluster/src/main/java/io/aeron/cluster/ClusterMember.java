@@ -28,7 +28,8 @@ import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 
 /**
- * Represents a member of the cluster that participates in consensus.
+ * Represents a member of the cluster that participates in consensus for storing state from the perspective
+ * of any single member. It is is not a global view of the cluster, perspectives only exist from a vantage point.
  */
 public final class ClusterMember
 {

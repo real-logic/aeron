@@ -84,24 +84,24 @@ public class EmbeddedExclusiveIpcThroughput
 
         public void run()
         {
-            long lastTimeStamp = System.currentTimeMillis();
+            long lastTimeStampMs = System.currentTimeMillis();
             long lastTotalBytes = subscriber.totalBytes();
 
             while (running.get())
             {
                 LockSupport.parkNanos(1_000_000_000);
 
-                final long newTimeStamp = System.currentTimeMillis();
+                final long newTimeStampMs = System.currentTimeMillis();
                 final long newTotalBytes = subscriber.totalBytes();
 
-                final long duration = newTimeStamp - lastTimeStamp;
+                final long durationMs = newTimeStampMs - lastTimeStampMs;
                 final long bytesTransferred = newTotalBytes - lastTotalBytes;
 
                 System.out.format(
                     "Duration %dms - %,d messages - %,d payload bytes%n",
-                    duration, bytesTransferred / MESSAGE_LENGTH, bytesTransferred);
+                    durationMs, bytesTransferred / MESSAGE_LENGTH, bytesTransferred);
 
-                lastTimeStamp = newTimeStamp;
+                lastTimeStampMs = newTimeStampMs;
                 lastTotalBytes = newTotalBytes;
             }
         }

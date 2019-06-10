@@ -224,10 +224,10 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     public void onStart()
     {
         archive = AeronArchive.connect(ctx.archiveContext().clone());
-        recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
 
         if (null == (dynamicJoin = requiresDynamicJoin()))
         {
+            recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
             try (Counter ignore = addRecoveryStateCounter(recoveryPlan))
             {
                 if (!recoveryPlan.snapshots.isEmpty())
@@ -603,13 +603,10 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
             if (null != requester)
             {
-                final RecordingLog.RecoveryPlan currentRecoveryPlan = recordingLog.createRecoveryPlan(
-                    archive, ctx.serviceCount());
-
                 memberStatusPublisher.snapshotRecording(
                     requester.publication(),
                     correlationId,
-                    currentRecoveryPlan,
+                    recoveryPlan,
                     ClusterMember.encodeAsString(clusterMembers));
             }
         }
@@ -2199,9 +2196,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     private DynamicJoin requiresDynamicJoin()
     {
-        if (recoveryPlan.snapshots.isEmpty() &&
-            0 == clusterMembers.length &&
-            null != ctx.clusterMembersStatusEndpoints())
+        if (0 == clusterMembers.length && null != ctx.clusterMembersStatusEndpoints())
         {
             return new DynamicJoin(
                 ctx.clusterMembersStatusEndpoints(),
@@ -2393,6 +2388,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                     recordingId, leadershipTermId, termBaseLogPosition, logPosition, timestampMs, SERVICE_ID);
 
                 recordingLog.force();
+                recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
             }
             finally
             {

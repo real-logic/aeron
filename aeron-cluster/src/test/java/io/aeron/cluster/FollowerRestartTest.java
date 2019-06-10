@@ -171,14 +171,14 @@ public class FollowerRestartTest
             cluster.sendMessages(msgCountAfterStart);
             cluster.awaitResponses(totalMsgCount);
             cluster.awaitMessageCountForService(newLeader, totalMsgCount);
-            assertEquals(newLeader.service().messageCount(), totalMsgCount);
+            assertEquals(totalMsgCount, newLeader.service().messageCount());
 
             cluster.awaitMessageCountForService(cluster.node(1), totalMsgCount);
-            assertEquals((cluster.node(1).service()).messageCount(), totalMsgCount);
+            assertEquals(totalMsgCount, cluster.node(1).service().messageCount());
 
             // IMPORTANT: After coming back online and reconstructing state, NODE 2 is not part of the cluster
             cluster.awaitMessageCountForService(cluster.node(2), totalMsgCount);
-            assertEquals(cluster.node(2).service().messageCount(), totalMsgCount);
+            assertEquals(totalMsgCount, cluster.node(2).service().messageCount());
         }
     }
 

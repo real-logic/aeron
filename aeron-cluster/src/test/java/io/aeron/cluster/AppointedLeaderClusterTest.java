@@ -24,14 +24,16 @@ import static org.junit.Assert.assertTrue;
 
 public class AppointedLeaderClusterTest
 {
+    private static final int LEADER_ID = 1;
+
     @Test(timeout = 10_000L)
     public void shouldConnectAndSendKeepAlive() throws Exception
     {
-        final int appointedLeaderIndex = 1;
-
-        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(appointedLeaderIndex))
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(LEADER_ID))
         {
-            cluster.awaitLeader();
+            final TestNode leader = cluster.awaitLeader();
+            assertThat(leader.index(), is(LEADER_ID));
+            assertThat(leader.role(), is(Cluster.Role.LEADER));
 
             cluster.connectClient();
             assertTrue(cluster.client().sendKeepAlive());
@@ -41,16 +43,14 @@ public class AppointedLeaderClusterTest
     @Test(timeout = 10_000L)
     public void shouldEchoMessagesViaService() throws Exception
     {
-        final int appointedLeaderIndex = 1;
-
-        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(appointedLeaderIndex))
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(LEADER_ID))
         {
             final TestNode leader = cluster.awaitLeader();
-
-            assertThat(leader.index(), is(appointedLeaderIndex));
+            assertThat(leader.index(), is(LEADER_ID));
             assertThat(leader.role(), is(Cluster.Role.LEADER));
 
             cluster.connectClient();
+
             final int messageCount = 10;
             cluster.sendMessages(messageCount);
             cluster.awaitResponses(messageCount);

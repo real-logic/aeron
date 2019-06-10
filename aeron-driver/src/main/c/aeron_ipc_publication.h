@@ -42,7 +42,7 @@ typedef struct aeron_ipc_publication_stct
         int32_t refcnt;
         aeron_driver_managed_resource_t managed_resource;
         aeron_subscribable_t subscribable;
-        int64_t cleaning_position;
+        int64_t clean_position;
         int64_t trip_limit;
         int64_t consumer_position;
         int64_t last_consumer_position;
@@ -90,7 +90,7 @@ void aeron_ipc_publication_close(aeron_counters_manager_t *counters_manager, aer
 
 int aeron_ipc_publication_update_pub_lmt(aeron_ipc_publication_t *publication);
 
-void aeron_ipc_publication_clean_buffer(aeron_ipc_publication_t *publication, int64_t min_sub_pos);
+void aeron_ipc_publication_clean_buffer(aeron_ipc_publication_t *publication, int64_t position);
 
 void aeron_ipc_publication_on_time_event(
     aeron_driver_conductor_t *conductor, aeron_ipc_publication_t *publication, int64_t now_ns, int64_t now_ms);

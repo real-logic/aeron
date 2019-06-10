@@ -225,19 +225,20 @@ int aeron_publication_image_close(aeron_counters_manager_t *counters_manager, ae
     return 0;
 }
 
-void aeron_publication_image_clean_buffer_to(aeron_publication_image_t *image, int64_t new_clean_position)
+void aeron_publication_image_clean_buffer_to(aeron_publication_image_t *image, int64_t position)
 {
-    const int64_t clean_position = image->conductor_fields.clean_position;
-    const int32_t bytes_for_cleaning = (int32_t)(new_clean_position - clean_position);
-    const size_t dirty_term_index = aeron_logbuffer_index_by_position(clean_position, image->position_bits_to_shift);
-    const int32_t term_offset = (int32_t)(clean_position & image->term_length_mask);
-    const int32_t bytes_left_in_term = (int32_t)image->term_length_mask + 1 - term_offset;
-    const int32_t length = bytes_for_cleaning < bytes_left_in_term ? bytes_for_cleaning : bytes_left_in_term;
-
-    if (length > 0)
+    int64_t clean_position = image->conductor_fields.clean_position;
+    if (position > clean_position)
     {
-        memset(image->mapped_raw_log.term_buffers[dirty_term_index].addr + term_offset, 0, (size_t)length);
-        image->conductor_fields.clean_position = clean_position + (int64_t)length;
+        size_t dirty_index = aeron_logbuffer_index_by_position(clean_position, image->position_bits_to_shift);
+        size_t bytes_to_clean = position - clean_position;
+        size_t term_length = image->term_length_mask + 1;
+        size_t term_offset = (size_t)clean_position & (term_length - 1);
+        size_t bytes_left_in_term = term_length - term_offset;
+        size_t length = bytes_to_clean < bytes_left_in_term ? bytes_to_clean : bytes_left_in_term;
+
+        memset(image->mapped_raw_log.term_buffers[dirty_index].addr + term_offset, 0, length);
+        image->conductor_fields.clean_position = clean_position + length;
     }
 }
 

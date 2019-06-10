@@ -153,7 +153,7 @@ void aeron_network_publication_on_status_message(
 void aeron_network_publication_on_rttm(
     aeron_network_publication_t *publication, const uint8_t *buffer, size_t length, struct sockaddr_storage *addr);
 
-void aeron_network_publication_clean_buffer(aeron_network_publication_t *publication, int64_t pub_lmt);
+void aeron_network_publication_clean_buffer(aeron_network_publication_t *publication, int64_t position);
 
 int aeron_network_publication_update_pub_lmt(aeron_network_publication_t *publication);
 

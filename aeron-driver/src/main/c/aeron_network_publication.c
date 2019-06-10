@@ -663,22 +663,19 @@ void aeron_network_publication_on_rttm(
     }
 }
 
-void aeron_network_publication_clean_buffer(aeron_network_publication_t *publication, int64_t pub_lmt)
+void aeron_network_publication_clean_buffer(aeron_network_publication_t *publication, int64_t position)
 {
-    const int64_t clean_position = publication->conductor_fields.clean_position;
-    const int64_t dirty_range = pub_lmt - clean_position;
-    const int32_t buffer_capacity = publication->term_length_mask + 1;
-    const int32_t reserved_range = buffer_capacity * 2;
-
-    if (dirty_range > reserved_range)
+    int64_t clean_position = publication->conductor_fields.clean_position;
+    if (position > clean_position)
     {
         size_t dirty_index = aeron_logbuffer_index_by_position(clean_position, publication->position_bits_to_shift);
-        int32_t term_offset = (int32_t)(clean_position & publication->term_length_mask);
-        int32_t bytes_left_in_term = buffer_capacity - term_offset;
-        int32_t bytes_for_cleaning = (int32_t)(dirty_range - reserved_range);
-        int32_t length = bytes_for_cleaning < bytes_left_in_term ? bytes_for_cleaning : bytes_left_in_term;
+        size_t bytes_to_clean = position - clean_position;
+        size_t term_length = publication->term_length_mask + 1;
+        size_t term_offset = (size_t)clean_position & (term_length - 1);
+        size_t bytes_left_in_term = term_length - term_offset;
+        size_t length = bytes_to_clean < bytes_left_in_term ? bytes_to_clean : bytes_left_in_term;
 
-        memset(publication->mapped_raw_log.term_buffers[dirty_index].addr + term_offset, 0, (size_t)length);
+        memset(publication->mapped_raw_log.term_buffers[dirty_index].addr + term_offset, 0, length);
         publication->conductor_fields.clean_position = clean_position + length;
     }
 }
@@ -715,7 +712,8 @@ int aeron_network_publication_update_pub_lmt(aeron_network_publication_t *public
         const int64_t proposed_pub_lmt = min_consumer_position + publication->term_window_length;
         if (aeron_counter_propose_max_ordered(publication->pub_lmt_position.value_addr, proposed_pub_lmt))
         {
-            aeron_network_publication_clean_buffer(publication, proposed_pub_lmt);
+            size_t term_length = publication->term_length_mask + 1;
+            aeron_network_publication_clean_buffer(publication, min_consumer_position - term_length);
             work_count = 1;
         }
     }

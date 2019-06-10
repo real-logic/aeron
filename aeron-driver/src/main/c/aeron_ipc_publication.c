@@ -139,7 +139,7 @@ int aeron_ipc_publication_create(
     _pub->conductor_fields.managed_resource.incref = aeron_ipc_publication_incref;
     _pub->conductor_fields.managed_resource.decref = aeron_ipc_publication_decref;
     _pub->conductor_fields.has_reached_end_of_life = false;
-    _pub->conductor_fields.cleaning_position = 0;
+    _pub->conductor_fields.clean_position = 0;
     _pub->conductor_fields.trip_limit = 0;
     _pub->conductor_fields.consumer_position = 0;
     _pub->conductor_fields.last_consumer_position = 0;
@@ -196,6 +196,11 @@ void aeron_ipc_publication_close(aeron_counters_manager_t *counters_manager, aer
 
 int aeron_ipc_publication_update_pub_lmt(aeron_ipc_publication_t *publication)
 {
+    if (0 == publication->conductor_fields.subscribable.length)
+    {
+        return 0;
+    }
+
     int work_count = 0;
     int64_t min_sub_pos = INT64_MAX;
     int64_t max_sub_pos = publication->conductor_fields.consumer_position;
@@ -236,20 +241,20 @@ int aeron_ipc_publication_update_pub_lmt(aeron_ipc_publication_t *publication)
     return work_count;
 }
 
-void aeron_ipc_publication_clean_buffer(aeron_ipc_publication_t *publication, int64_t min_sub_pos)
+void aeron_ipc_publication_clean_buffer(aeron_ipc_publication_t *publication, int64_t position)
 {
-    int64_t cleaning_position = publication->conductor_fields.cleaning_position;
-    size_t dirty_index = aeron_logbuffer_index_by_position(cleaning_position, publication->position_bits_to_shift);
-    int32_t bytes_to_clean = (int32_t)(min_sub_pos - cleaning_position);
-    int32_t term_length = (int32_t)publication->mapped_raw_log.term_length;
-    int32_t term_offset = (int32_t)(cleaning_position & (term_length - 1));
-    int32_t bytes_left_in_term = term_length - term_offset;
-    int32_t length = bytes_to_clean < bytes_left_in_term ? bytes_to_clean : bytes_left_in_term;
-
-    if (length > 0)
+    int64_t clean_position = publication->conductor_fields.clean_position;
+    if (position > clean_position)
     {
-        memset(publication->mapped_raw_log.term_buffers[dirty_index].addr + term_offset, 0, (size_t)length);
-        publication->conductor_fields.cleaning_position = cleaning_position + length;
+        size_t dirty_index = aeron_logbuffer_index_by_position(clean_position, publication->position_bits_to_shift);
+        size_t bytes_to_clean = position - clean_position;
+        size_t term_length = publication->mapped_raw_log.term_length;
+        size_t term_offset = (size_t)clean_position & (term_length - 1);
+        size_t bytes_left_in_term = term_length - term_offset;
+        size_t length = bytes_to_clean < bytes_left_in_term ? bytes_to_clean : bytes_left_in_term;
+
+        memset(publication->mapped_raw_log.term_buffers[dirty_index].addr + term_offset, 0, length);
+        publication->conductor_fields.clean_position = clean_position + length;
     }
 }
 

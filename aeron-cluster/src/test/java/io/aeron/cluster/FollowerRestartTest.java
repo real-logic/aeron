@@ -9,38 +9,29 @@ import io.aeron.cluster.TestNode.TestService;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.logbuffer.Header;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.EpochClock;
+
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.agrona.DirectBuffer;
-import org.agrona.ExpandableArrayBuffer;
-import org.agrona.concurrent.EpochClock;
+
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
+
 import org.junit.Ignore;
 import org.junit.Test;
 
-/**
- *
- * @author ratcashdev
- */
 public class FollowerRestartTest
 {
-    static final String ADD_MSG = "Add message";
-    static final String REMOVE_MSG = "Remove message";
     private static final int APPOINTED_LEADER = 0;
-    private final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
 
     @Test(timeout = 30_000)
     @Ignore
     public void testRecoveryFromMostRecentSnapshot() throws Exception
     {
-        final int memberCount = 3;
-        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(APPOINTED_LEADER,
-            MessageCountingService::new))
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(
+            APPOINTED_LEADER, MessageCountingService::new))
         {
             final TestNode leader = cluster.awaitLeader();
             final List<TestNode> followers = cluster.followers();
@@ -84,17 +75,16 @@ public class FollowerRestartTest
             assertTrue(cluster.node(1).service().wasSnapshotLoaded());
             assertFalse(cluster.node(2).service().wasSnapshotLoaded());
 
-            // all three nodes have a correct state
-            assertTrue(((MessageCountingService)cluster.node(0).service()).messageCount() == 10);
-            assertTrue(((MessageCountingService)cluster.node(1).service()).messageCount() == 10);
-            assertTrue(((MessageCountingService)cluster.node(2).service()).messageCount() == 10);
+            assertEquals(10, cluster.node(0).service().messageCount());
+            assertEquals(10, cluster.node(1).service().messageCount());
+            assertEquals(10, cluster.node(2).service().messageCount());
 
             // I'd expect NODE 2 recovers from the most recent snapshot + journal
             // (which should be zero length because of the clean shutdown)
             // but this is not the case: Node 2 processes the complete journal (from the very beginning)
             // all 10 messages.
-            assertTrue(((MessageCountingService)cluster.node(0).service()).messageSinceStart() == 0);
-            assertTrue(((MessageCountingService)cluster.node(1).service()).messageSinceStart() == 0);
+            assertEquals(0, ((MessageCountingService)cluster.node(0).service()).messageSinceStart());
+            assertEquals(0, ((MessageCountingService)cluster.node(1).service()).messageSinceStart());
             assertThat(((MessageCountingService)cluster.node(2).service()).messageSinceStart(), is(equalTo(0)));
         }
     }
@@ -125,7 +115,7 @@ public class FollowerRestartTest
                 assertTrue(node.service().wasSnapshotTaken());
                 node.service().resetSnapshotTaken();
             }
-            // first snapshot is done
+
             cluster.sendMessages(1);
             cluster.awaitResponses(3);
             cluster.awaitMessageCountForService(cluster.node(2), 3);
@@ -164,9 +154,9 @@ public class FollowerRestartTest
             assertFalse(cluster.node(2).service().wasSnapshotLoaded());
 
             // all three nodes have the correct state
-            assertTrue(((MessageCountingService)cluster.node(0).service()).messageCount() == 3);
-            assertTrue(((MessageCountingService)cluster.node(1).service()).messageCount() == 3);
-            assertTrue(((MessageCountingService)cluster.node(2).service()).messageCount() == 3);
+            assertEquals(3, cluster.node(0).service().messageCount());
+            assertEquals(3, cluster.node(1).service().messageCount());
+            assertEquals(3, cluster.node(2).service().messageCount());
 
             // now lets see if all nodes work properly
             cluster.reconnectClient();
@@ -175,14 +165,14 @@ public class FollowerRestartTest
             cluster.sendMessages(msgCountAfterStart);
             cluster.awaitResponses(totalMsgCount);
             cluster.awaitMessageCountForService(newLeader, totalMsgCount);
-            assertTrue(((MessageCountingService)newLeader.service()).messageCount() == totalMsgCount);
+            assertEquals(newLeader.service().messageCount(), totalMsgCount);
 
             cluster.awaitMessageCountForService(cluster.node(1), totalMsgCount);
-            assertTrue(((MessageCountingService)cluster.node(1).service()).messageCount() == totalMsgCount);
+            assertEquals((cluster.node(1).service()).messageCount(), totalMsgCount);
 
             // IMPORTANT: After coming back online and reconstructing state, NODE 2 is not part of the cluster
             cluster.awaitMessageCountForService(cluster.node(2), totalMsgCount);
-            assertTrue(((MessageCountingService)cluster.node(2).service()).messageCount() == totalMsgCount);
+            assertEquals(cluster.node(2).service().messageCount(), totalMsgCount);
         }
     }
 
@@ -190,7 +180,8 @@ public class FollowerRestartTest
     {
         final EpochClock epochClock = client.context().aeron().context().epochClock();
         long deadlineMs = epochClock.time() + TimeUnit.SECONDS.toMillis(1);
-        final MessageCountingService svc = ((MessageCountingService)node.service());
+        final MessageCountingService svc = (MessageCountingService)node.service();
+
         while (svc.messageSinceStart() < countSinceStart)
         {
             TestUtil.checkInterruptedStatus();
@@ -209,10 +200,13 @@ public class FollowerRestartTest
     {
         transient int messagesReceivedSinceStart = 0;
 
-
-        @Override
-        public void onSessionMessage(final ClientSession session, final long timestampMs, final DirectBuffer buffer,
-            final int offset, final int length, final Header header)
+        public void onSessionMessage(
+            final ClientSession session,
+            final long timestampMs,
+            final DirectBuffer buffer,
+            final int offset,
+            final int length,
+            final Header header)
         {
             super.onSessionMessage(session, timestampMs, buffer, offset, length, header);
             messagesReceivedSinceStart++;

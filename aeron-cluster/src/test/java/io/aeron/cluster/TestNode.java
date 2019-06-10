@@ -223,6 +223,11 @@ class TestNode implements AutoCloseable
             return wasSnapshotTaken;
         }
 
+        void resetSnapshotTaken()
+        {
+            wasSnapshotTaken = false;
+        }
+
         boolean wasSnapshotLoaded()
         {
             return wasSnapshotLoaded;

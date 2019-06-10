@@ -142,6 +142,18 @@ public class TestCluster implements AutoCloseable
         return testCluster;
     }
 
+    static TestCluster startThreeNodeStaticCluster(final int appointedLeaderId,
+        final Supplier<? extends TestNode.TestService> serviceSupplier)
+    {
+        final TestCluster testCluster = new TestCluster(3, 0, appointedLeaderId);
+        for (int i = 0; i < 3; i++)
+        {
+            testCluster.startStaticNode(i, true, serviceSupplier);
+        }
+
+        return testCluster;
+    }
+
     static TestCluster startSingleNodeStaticCluster()
     {
         final TestCluster testCluster = new TestCluster(1, 0, 0);
@@ -325,6 +337,18 @@ public class TestCluster implements AutoCloseable
     ExpandableArrayBuffer msgBuffer()
     {
         return msgBuffer;
+    }
+
+    void reconnectClient()
+    {
+        final String aeronDirName = CommonContext.getAeronDirectoryName();
+        client.close();
+        client = AeronCluster.connect(
+            new AeronCluster.Context()
+                .egressListener(egressMessageListener)
+                .aeronDirectoryName(aeronDirName)
+                .ingressChannel("aeron:udp")
+                .clusterMemberEndpoints(staticClusterMemberEndpoints));
     }
 
     void connectClient()

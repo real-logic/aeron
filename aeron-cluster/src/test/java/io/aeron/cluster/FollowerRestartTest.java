@@ -92,7 +92,7 @@ public class FollowerRestartTest
             // all 10 messages.
             assertEquals(0, ((MessageCountingService)cluster.node(0).service()).messageSinceStart());
             assertEquals(0, ((MessageCountingService)cluster.node(1).service()).messageSinceStart());
-            assertThat(((MessageCountingService)cluster.node(2).service()).messageSinceStart(), is(0));
+            assertEquals(0, ((MessageCountingService)cluster.node(2).service()).messageSinceStart());
         }
     }
 
@@ -153,7 +153,7 @@ public class FollowerRestartTest
             // *** Error in node 2 followed by system thread dump ***
             final TestNode newLeader = cluster.awaitLeader();
 
-            assertNotEquals(newLeader.index(), is(2));
+            assertNotEquals(2, newLeader.index());
 
             assertTrue(cluster.node(0).service().wasSnapshotLoaded());
             assertTrue(cluster.node(1).service().wasSnapshotLoaded());

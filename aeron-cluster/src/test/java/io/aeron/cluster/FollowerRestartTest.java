@@ -25,7 +25,7 @@ import org.agrona.concurrent.EpochClock;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static org.hamcrest.Matchers.equalTo;
+import static io.aeron.Aeron.NULL_VALUE;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
 
@@ -35,12 +35,10 @@ import org.junit.Test;
 @Ignore
 public class FollowerRestartTest
 {
-    private static final int LEADER_ID = 0;
-
     @Test(timeout = 30_000)
     public void testRecoveryFromMostRecentSnapshot() throws Exception
     {
-        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(LEADER_ID, MessageCountingService::new))
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE, MessageCountingService::new))
         {
             final TestNode leader = cluster.awaitLeader();
             final List<TestNode> followers = cluster.followers();
@@ -94,7 +92,7 @@ public class FollowerRestartTest
             // all 10 messages.
             assertEquals(0, ((MessageCountingService)cluster.node(0).service()).messageSinceStart());
             assertEquals(0, ((MessageCountingService)cluster.node(1).service()).messageSinceStart());
-            assertThat(((MessageCountingService)cluster.node(2).service()).messageSinceStart(), is(equalTo(0)));
+            assertThat(((MessageCountingService)cluster.node(2).service()).messageSinceStart(), is(0));
         }
     }
 
@@ -102,7 +100,7 @@ public class FollowerRestartTest
     public void testMultipleSnapshotsWithEmptyFollowerLog() throws Exception
     {
         final int memberCount = 3;
-        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(LEADER_ID))
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
             final TestNode leader = cluster.awaitLeader();
             final List<TestNode> followers = cluster.followers();
@@ -206,7 +204,7 @@ public class FollowerRestartTest
 
     static class MessageCountingService extends TestService
     {
-        transient int messagesReceivedSinceStart = 0;
+        volatile int messagesReceivedSinceStart = 0;
 
         public void onSessionMessage(
             final ClientSession session,

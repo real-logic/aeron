@@ -142,8 +142,8 @@ public class TestCluster implements AutoCloseable
         return testCluster;
     }
 
-    static TestCluster startThreeNodeStaticCluster(final int appointedLeaderId,
-        final Supplier<? extends TestNode.TestService> serviceSupplier)
+    static TestCluster startThreeNodeStaticCluster(
+        final int appointedLeaderId, final Supplier<? extends TestNode.TestService> serviceSupplier)
     {
         final TestCluster testCluster = new TestCluster(3, 0, appointedLeaderId);
         for (int i = 0; i < 3; i++)

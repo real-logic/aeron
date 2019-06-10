@@ -78,9 +78,7 @@ public class StreamStat
                         counters.getCounterValue(counterId),
                         typeId);
 
-                    streams
-                        .computeIfAbsent(key, (ignore) -> new ArrayList<>())
-                        .add(position);
+                    streams.computeIfAbsent(key, (ignore) -> new ArrayList<>()).add(position);
                 }
             });
 

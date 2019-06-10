@@ -20,6 +20,7 @@ import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.DirectBuffer;
 import org.agrona.SemanticVersion;
 import org.agrona.SystemUtil;
+import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.SigInt;
 import org.agrona.concurrent.status.CountersReader;
 
@@ -30,7 +31,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
-import static io.aeron.CncFileDescriptor.*;
 import static io.aeron.driver.status.PerImageIndicator.PER_IMAGE_TYPE_ID;
 import static io.aeron.driver.status.PublisherLimit.PUBLISHER_LIMIT_TYPE_ID;
 import static io.aeron.driver.status.PublisherPos.PUBLISHER_POS_TYPE_ID;
@@ -183,13 +183,19 @@ public class AeronStat
             }
         }
 
+        final MutableInteger cncFileVersion = new MutableInteger();
         final AeronStat aeronStat = new AeronStat(
-            SamplesUtil.mapCounters(), typeFilter, identityFilter, sessionFilter, streamFilter, channelFilter);
+            SamplesUtil.mapCounters(cncFileVersion),
+            typeFilter,
+            identityFilter,
+            sessionFilter,
+            streamFilter,
+            channelFilter);
         final AtomicBoolean running = new AtomicBoolean(true);
         SigInt.register(() -> running.set(false));
 
         final String header =
-            " - Aeron Stat (v" + SemanticVersion.toString(CNC_VERSION) + "), pid " + SystemUtil.getPid();
+            " - Aeron Stat (CnC v" + SemanticVersion.toString(cncFileVersion.get()) + "), pid " + SystemUtil.getPid();
         final SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
 
         while (running.get())

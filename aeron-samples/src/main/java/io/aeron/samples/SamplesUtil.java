@@ -22,6 +22,7 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
+import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.status.CountersReader;
@@ -229,6 +230,29 @@ public class SamplesUtil
         final DirectBuffer cncMetaData = createMetaDataBuffer(cncByteBuffer);
         final int cncVersion = cncMetaData.getInt(cncVersionOffset(0));
 
+        checkVersion(cncVersion);
+
+        return new CountersReader(
+            createCountersMetaDataBuffer(cncByteBuffer, cncMetaData),
+            createCountersValuesBuffer(cncByteBuffer, cncMetaData));
+    }
+
+    /**
+     * Map an existing CnC file.
+     *
+     * @param cncFileVersion to set as value of file.
+     * @return the {@link CountersReader} over the CnC file.
+     */
+    public static CountersReader mapCounters(final MutableInteger cncFileVersion)
+    {
+        final File cncFile = CommonContext.newDefaultCncFile();
+        System.out.println("Command `n Control file " + cncFile);
+
+        final MappedByteBuffer cncByteBuffer = mapExistingFileReadOnly(cncFile);
+        final DirectBuffer cncMetaData = createMetaDataBuffer(cncByteBuffer);
+        final int cncVersion = cncMetaData.getInt(cncVersionOffset(0));
+
+        cncFileVersion.set(cncVersion);
         checkVersion(cncVersion);
 
         return new CountersReader(

@@ -116,7 +116,7 @@ void aeron_log_func_none(const char *str)
 int64_t aeron_nano_clock()
 {
     struct timespec ts;
-#if defined(__CYGWIN__)
+#if defined(__CYGWIN__) || defined(__linux__)
     if (clock_gettime(CLOCK_MONOTONIC, &ts) < 0)
     {
         return -1;

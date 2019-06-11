@@ -1437,17 +1437,23 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     void replayLogPoll(final LogAdapter logAdapter, final long stopPosition)
     {
-        final int workCount = logAdapter.poll(stopPosition);
-        final long logPosition = logAdapter.position();
-        if (0 == workCount)
+        if (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state)
         {
-            if (logAdapter.isImageClosed() && logPosition != stopPosition)
+            final int workCount = logAdapter.poll(stopPosition);
+            final long logPosition = logAdapter.position();
+            if (0 == workCount)
             {
-                throw new ClusterException("unexpected close of image when replaying log: position=");
+                if (logAdapter.isImageClosed() && logPosition != stopPosition)
+                {
+                    throw new ClusterException("unexpected close of image when replaying log: position=");
+                }
+            }
+            else
+            {
+                commitPosition.setOrdered(logPosition);
             }
         }
 
-        commitPosition.setOrdered(logPosition);
         consensusModuleAdapter.poll();
     }
 
@@ -1576,29 +1582,34 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     void catchupLogPoll(final Subscription subscription, final int logSessionId, final long stopPosition)
     {
-        if (findImageAndLogAdapter(subscription, logSessionId))
+        if (!findImageAndLogAdapter(subscription, logSessionId))
         {
-            final Image image = logAdapter.image();
+            return;
+        }
+
+        final Image image = logAdapter.image();
+
+        if (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state)
+        {
             if (logAdapter.poll(stopPosition) == 0 && image.isClosed())
             {
                 throw new ClusterException("unexpected image close replaying log at position " + image.position());
             }
-
-            final long archivePosition = this.appendedPosition.get();
-            final long appendedPosition = Math.min(image.position(), archivePosition);
-            if (appendedPosition != lastAppendedPosition)
-            {
-                commitPosition.setOrdered(appendedPosition);
-                final Publication publication = election.leader().publication();
-                if (memberStatusPublisher.appendedPosition(publication, leadershipTermId, appendedPosition, memberId))
-                {
-                    lastAppendedPosition = appendedPosition;
-                    timeOfLastAppendPositionMs = cachedTimeMs;
-                }
-            }
-
-            consensusModuleAdapter.poll();
         }
+
+        final long appendedPosition = Math.min(image.position(), this.appendedPosition.get());
+        if (appendedPosition != lastAppendedPosition)
+        {
+            commitPosition.setOrdered(appendedPosition);
+            final Publication publication = election.leader().publication();
+            if (memberStatusPublisher.appendedPosition(publication, leadershipTermId, appendedPosition, memberId))
+            {
+                lastAppendedPosition = appendedPosition;
+                timeOfLastAppendPositionMs = cachedTimeMs;
+            }
+        }
+
+        consensusModuleAdapter.poll();
     }
 
     boolean hasAppendReachedPosition(final Subscription subscription, final int logSessionId, final long position)

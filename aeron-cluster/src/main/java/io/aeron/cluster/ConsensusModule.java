@@ -48,8 +48,8 @@ import static org.agrona.SystemUtil.*;
 import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 
 /**
- * Component which resides on each node and is responsible for coordinating consensus within a cluster and the
- * lifecycle of clustered services.
+ * Component which resides on each node and is responsible for coordinating consensus within a cluster in concert
+ * with the lifecycle of clustered services.
  */
 @SuppressWarnings("unused")
 public class ConsensusModule implements AutoCloseable

@@ -837,7 +837,8 @@ class ClusteredServiceAgent implements Agent, Cluster
     {
         if (ClusterAction.SNAPSHOT == action)
         {
-            while (!consensusModuleProxy.ack(position, ackId++, onTakeSnapshot(position, leadershipTermId), serviceId))
+            final long recordingId = onTakeSnapshot(position, leadershipTermId);
+            while (!consensusModuleProxy.ack(position, ackId++, recordingId, serviceId))
             {
                 idle();
             }

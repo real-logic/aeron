@@ -325,7 +325,7 @@ public class ArchiveProxy
             .correlationId(correlationId)
             .replaySessionId(replaySessionId);
 
-        return offer(replayRequestEncoder.encodedLength());
+        return offer(stopReplayRequestEncoder.encodedLength());
     }
 
     /**

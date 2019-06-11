@@ -563,7 +563,8 @@ class ClusteredServiceAgent implements Agent, Cluster
 
             try (Subscription subscription = aeron.addSubscription(activeLogEvent.channel, activeLogEvent.streamId))
             {
-                while (!consensusModuleProxy.ack(activeLogEvent.logPosition, ackId++, serviceId))
+                final long id = ackId++;
+                while (!consensusModuleProxy.ack(activeLogEvent.logPosition, id, serviceId))
                 {
                     idle();
                 }
@@ -598,7 +599,8 @@ class ClusteredServiceAgent implements Agent, Cluster
             {
                 if (adapter.position() >= maxLogPosition)
                 {
-                    while (!consensusModuleProxy.ack(image.position(), ackId++, serviceId))
+                    final long id = ackId++;
+                    while (!consensusModuleProxy.ack(image.position(), id, serviceId))
                     {
                         idle();
                     }
@@ -635,7 +637,8 @@ class ClusteredServiceAgent implements Agent, Cluster
     {
         final Subscription logSubscription = aeron.addSubscription(activeLogEvent.channel, activeLogEvent.streamId);
 
-        while (!consensusModuleProxy.ack(activeLogEvent.logPosition, ackId++, serviceId))
+        final long id = ackId++;
+        while (!consensusModuleProxy.ack(activeLogEvent.logPosition, id, serviceId))
         {
             idle();
         }
@@ -838,7 +841,8 @@ class ClusteredServiceAgent implements Agent, Cluster
         if (ClusterAction.SNAPSHOT == action)
         {
             final long recordingId = onTakeSnapshot(position, leadershipTermId);
-            while (!consensusModuleProxy.ack(position, ackId++, recordingId, serviceId))
+            final long id = ackId++;
+            while (!consensusModuleProxy.ack(position, id, recordingId, serviceId))
             {
                 idle();
             }
@@ -942,7 +946,8 @@ class ClusteredServiceAgent implements Agent, Cluster
             ctx.countedErrorHandler().onError(ex);
         }
 
-        while (!consensusModuleProxy.ack(logPosition, ackId++, serviceId))
+        final long id = ackId++;
+        while (!consensusModuleProxy.ack(logPosition, id, serviceId))
         {
             idle();
         }

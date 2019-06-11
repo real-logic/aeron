@@ -25,7 +25,7 @@ import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertThat;
 
 @Ignore
-public class DynamicClusterTest
+public class DynamicMembershipTest
 {
     @Test(timeout = 10_000)
     public void shouldQueryClusterMembers() throws Exception

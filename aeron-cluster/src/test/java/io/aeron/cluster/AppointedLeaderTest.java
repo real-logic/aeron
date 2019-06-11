@@ -22,7 +22,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class AppointedLeaderClusterTest
+public class AppointedLeaderTest
 {
     private static final int LEADER_ID = 1;
 

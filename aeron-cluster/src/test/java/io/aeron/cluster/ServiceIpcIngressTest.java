@@ -19,7 +19,7 @@ import org.junit.Test;
 
 import static io.aeron.Aeron.NULL_VALUE;
 
-public class ClusterServiceIpcIngressTest
+public class ServiceIpcIngressTest
 {
     @Test(timeout = 10_000L)
     public void shouldEchoIpcMessages() throws Exception

@@ -60,7 +60,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
 
 @Ignore
-public class StartClusterFromTruncatedRecordingLogTest
+public class StartFromTruncatedRecordingLogTest
 {
     private static final long MAX_CATALOG_ENTRIES = 1024;
     private static final int MEMBER_COUNT = 3;

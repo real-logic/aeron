@@ -145,7 +145,11 @@ int64_t aeron_epoch_clock()
         return -1;
     }
 #else
+#if defined(CLOCK_REALTIME_COARSE)
+    if (clock_gettime(CLOCK_REALTIME_COARSE, &ts) < 0)
+#else
     if (clock_gettime(CLOCK_REALTIME, &ts) < 0)
+#endif
     {
         return -1;
     }

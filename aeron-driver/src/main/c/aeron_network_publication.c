@@ -228,6 +228,9 @@ int aeron_network_publication_create(
     _pub->unblocked_publications_counter = aeron_system_counter_addr(
         system_counters, AERON_SYSTEM_COUNTER_UNBLOCKED_PUBLICATIONS);
 
+    _pub->conductor_fields.last_snd_pos = aeron_counter_get(_pub->snd_pos_position.value_addr);
+    _pub->conductor_fields.clean_position = _pub->conductor_fields.last_snd_pos;
+
     *publication = _pub;
 
     return 0;
@@ -670,8 +673,8 @@ void aeron_network_publication_clean_buffer(aeron_network_publication_t *publica
     {
         size_t dirty_index = aeron_logbuffer_index_by_position(clean_position, publication->position_bits_to_shift);
         size_t bytes_to_clean = position - clean_position;
-        size_t term_length = publication->term_length_mask + 1;
-        size_t term_offset = (size_t)clean_position & (term_length - 1);
+        size_t term_length = publication->mapped_raw_log.term_length;
+        size_t term_offset = (size_t)(clean_position & publication->term_length_mask);
         size_t bytes_left_in_term = term_length - term_offset;
         size_t length = bytes_to_clean < bytes_left_in_term ? bytes_to_clean : bytes_left_in_term;
 

@@ -139,10 +139,7 @@ int aeron_ipc_publication_create(
     _pub->conductor_fields.managed_resource.incref = aeron_ipc_publication_incref;
     _pub->conductor_fields.managed_resource.decref = aeron_ipc_publication_decref;
     _pub->conductor_fields.has_reached_end_of_life = false;
-    _pub->conductor_fields.clean_position = 0;
     _pub->conductor_fields.trip_limit = 0;
-    _pub->conductor_fields.consumer_position = 0;
-    _pub->conductor_fields.last_consumer_position = 0;
     _pub->conductor_fields.time_of_last_consumer_position_change = now_ns;
     _pub->conductor_fields.status = AERON_IPC_PUBLICATION_STATUS_ACTIVE;
     _pub->conductor_fields.refcnt = 1;
@@ -163,6 +160,7 @@ int aeron_ipc_publication_create(
 
     _pub->conductor_fields.consumer_position = aeron_ipc_publication_producer_position(_pub);
     _pub->conductor_fields.last_consumer_position = _pub->conductor_fields.consumer_position;
+    _pub->conductor_fields.clean_position = _pub->conductor_fields.consumer_position;
 
     _pub->unblocked_publications_counter = aeron_system_counter_addr(
         system_counters, AERON_SYSTEM_COUNTER_UNBLOCKED_PUBLICATIONS);
@@ -249,7 +247,7 @@ void aeron_ipc_publication_clean_buffer(aeron_ipc_publication_t *publication, in
         size_t dirty_index = aeron_logbuffer_index_by_position(clean_position, publication->position_bits_to_shift);
         size_t bytes_to_clean = position - clean_position;
         size_t term_length = publication->mapped_raw_log.term_length;
-        size_t term_offset = (size_t)clean_position & (term_length - 1);
+        size_t term_offset = (size_t)(clean_position & (term_length - 1));
         size_t bytes_left_in_term = term_length - term_offset;
         size_t length = bytes_to_clean < bytes_left_in_term ? bytes_to_clean : bytes_left_in_term;
 

@@ -146,8 +146,9 @@ int aeron_publication_image_create(
     _image->rcv_hwm_position.value_addr = rcv_hwm_position->value_addr;
     _image->rcv_pos_position.counter_id = rcv_pos_position->counter_id;
     _image->rcv_pos_position.value_addr = rcv_pos_position->value_addr;
+    _image->term_length = term_buffer_length;
     _image->initial_term_id = initial_term_id;
-    _image->term_length_mask = (int32_t)term_buffer_length - 1;
+    _image->term_length_mask = term_buffer_length - 1;
     _image->position_bits_to_shift = (size_t)aeron_number_of_trailing_zeroes((int32_t)term_buffer_length);
     _image->mtu_length = sender_mtu_length;
     _image->last_sm_change_number = -1;
@@ -232,8 +233,8 @@ void aeron_publication_image_clean_buffer_to(aeron_publication_image_t *image, i
     {
         size_t dirty_index = aeron_logbuffer_index_by_position(clean_position, image->position_bits_to_shift);
         size_t bytes_to_clean = position - clean_position;
-        size_t term_length = image->term_length_mask + 1;
-        size_t term_offset = (size_t)clean_position & (term_length - 1);
+        size_t term_length = image->term_length;
+        size_t term_offset = (size_t)(clean_position & image->term_length_mask);
         size_t bytes_left_in_term = term_length - term_offset;
         size_t length = bytes_to_clean < bytes_left_in_term ? bytes_to_clean : bytes_left_in_term;
 
@@ -346,7 +347,7 @@ void aeron_publication_image_track_rebuild(
         (min_sub_pos > (image->next_sm_position + threshold)))
     {
         aeron_publication_image_schedule_status_message(image, now_ns, min_sub_pos, window_length);
-        aeron_publication_image_clean_buffer_to(image, min_sub_pos - (image->term_length_mask + 1));
+        aeron_publication_image_clean_buffer_to(image, min_sub_pos - image->term_length);
     }
 }
 
@@ -455,7 +456,7 @@ int aeron_publication_image_send_pending_loss(aeron_publication_image_t *image)
         {
             const int32_t term_id = image->loss_term_id;
             const int32_t term_offset = image->loss_term_offset;
-            const int32_t length = (int32_t)image->loss_length;
+            const int32_t length = image->loss_length;
 
             aeron_acquire();
 

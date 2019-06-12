@@ -341,8 +341,15 @@ public class TestCluster implements AutoCloseable
 
     void reconnectClient()
     {
-        final String aeronDirName = CommonContext.getAeronDirectoryName();
+        if (null == client)
+        {
+            throw new IllegalStateException("Aeron client not previously connected");
+        }
+
         client.close();
+
+        final String aeronDirName = CommonContext.getAeronDirectoryName();
+
         client = AeronCluster.connect(
             new AeronCluster.Context()
                 .egressListener(egressMessageListener)

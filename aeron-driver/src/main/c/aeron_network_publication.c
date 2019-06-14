@@ -511,15 +511,16 @@ int aeron_network_publication_send(aeron_network_publication_t *publication, int
 int aeron_network_publication_resend(void *clientd, int32_t term_id, int32_t term_offset, size_t length)
 {
     aeron_network_publication_t *publication = (aeron_network_publication_t *)clientd;
-    const int64_t sender_position = aeron_counter_get(publication->snd_pos_position.value_addr);
-    const int64_t resend_position = aeron_logbuffer_compute_position(
+    int64_t sender_position = aeron_counter_get(publication->snd_pos_position.value_addr);
+    int64_t resend_position = aeron_logbuffer_compute_position(
         term_id, term_offset, publication->position_bits_to_shift, publication->initial_term_id);
-    const size_t term_length = (size_t)(publication->term_length_mask + 1L);
+    size_t term_length = (size_t)(publication->term_length_mask + 1L);
+    int64_t bottom_resend_window = sender_position - (term_length / 2);
     int result = 0;
 
-    if (resend_position < sender_position && resend_position >= (sender_position - (int32_t)term_length))
+    if (bottom_resend_window <= resend_position && resend_position < sender_position)
     {
-        const size_t index = aeron_logbuffer_index_by_position(resend_position, publication->position_bits_to_shift);
+        size_t index = aeron_logbuffer_index_by_position(resend_position, publication->position_bits_to_shift);
 
         size_t remaining_bytes = length;
         int32_t bytes_sent = 0;
@@ -530,7 +531,7 @@ int aeron_network_publication_resend(void *clientd, int32_t term_id, int32_t ter
             offset += bytes_sent;
 
             uint8_t *ptr = publication->mapped_raw_log.term_buffers[index].addr + offset;
-            const size_t term_length_left = term_length - (size_t)offset;
+            size_t term_length_left = term_length - (size_t)offset;
             size_t padding = 0;
             size_t max_length = remaining_bytes < publication->mtu_length ? remaining_bytes : publication->mtu_length;
 

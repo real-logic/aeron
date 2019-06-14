@@ -30,6 +30,7 @@ public class AeronClient implements DriverManagedResource
     private final AtomicCounter heartbeatStatus;
     private long timeOfLastKeepaliveMs;
     private boolean reachedEndOfLife = false;
+    private boolean markedAsClosed;
 
     public AeronClient(
         final long clientId,
@@ -76,13 +77,23 @@ public class AeronClient implements DriverManagedResource
         if (timeMs > (timeOfLastKeepaliveMs + clientLivenessTimeoutMs))
         {
             reachedEndOfLife = true;
-            clientTimeouts.incrementOrdered();
-            conductor.clientTimeout(clientId);
+
+            if (!markedAsClosed)
+            {
+                clientTimeouts.incrementOrdered();
+                conductor.clientTimeout(clientId);
+            }
         }
     }
 
     public boolean hasReachedEndOfLife()
     {
         return reachedEndOfLife;
+    }
+
+    void markAsClosed()
+    {
+        markedAsClosed = true;
+        timeOfLastKeepaliveMs = 0;
     }
 }

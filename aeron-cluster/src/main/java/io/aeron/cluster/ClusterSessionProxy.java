@@ -79,7 +79,8 @@ class ClusterSessionProxy implements SessionProxy
             clusterSession.authenticate(encodedPrincipal);
             return true;
         }
-        else if (egressPublisher.sendEvent(clusterSession, leadershipTermId, leaderMemberId, EventCode.OK, EMPTY_DETAIL))
+        else if (egressPublisher.sendEvent(
+            clusterSession, leadershipTermId, leaderMemberId, EventCode.OK, EMPTY_DETAIL))
         {
             clusterSession.authenticate(encodedPrincipal);
             return true;

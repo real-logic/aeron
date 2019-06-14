@@ -349,8 +349,9 @@ public class NetworkPublication
     {
         final long senderPosition = this.senderPosition.get();
         final long resendPosition = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
+        final long resendWindow = senderPosition - (termBufferLength >> 1);
 
-        if (resendPosition < senderPosition && resendPosition >= (senderPosition - termBufferLength))
+        if (resendPosition < senderPosition && resendPosition >= resendWindow)
         {
             final int activeIndex = indexByPosition(resendPosition, positionBitsToShift);
             final UnsafeBuffer termBuffer = termBuffers[activeIndex];

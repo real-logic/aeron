@@ -1391,6 +1391,7 @@ public final class AeronCluster implements AutoCloseable
      */
     public static class AsyncConnect implements AutoCloseable
     {
+        private final Subscription egressSubscription;
         private final long deadlineNs;
         private long correlationId;
         private long clusterSessionId;
@@ -1411,6 +1412,7 @@ public final class AeronCluster implements AutoCloseable
             this.ctx = ctx;
 
             endpointByMemberIdMap = parseMemberEndpoints(ctx.clusterMemberEndpoints());
+            this.egressSubscription = egressSubscription;
             egressPoller = new EgressPoller(egressSubscription, FRAGMENT_LIMIT);
             nanoClock = ctx.aeron().context().nanoClock();
             this.deadlineNs = deadlineNs;
@@ -1424,6 +1426,7 @@ public final class AeronCluster implements AutoCloseable
             if (5 != step)
             {
                 CloseHelper.close(ingressPublication);
+                CloseHelper.close(egressSubscription);
                 endpointByMemberIdMap.values().forEach(MemberEndpoint::disconnect);
                 ctx.close();
             }
@@ -1653,7 +1656,7 @@ public final class AeronCluster implements AutoCloseable
                 ctx,
                 messageHeaderEncoder,
                 ingressPublication,
-                egressPoller.subscription(),
+                egressSubscription,
                 endpointByMemberIdMap,
                 clusterSessionId,
                 leadershipTermId,

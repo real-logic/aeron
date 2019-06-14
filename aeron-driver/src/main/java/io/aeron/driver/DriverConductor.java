@@ -860,7 +860,7 @@ public class DriverConductor implements Agent
         final AeronClient client = findClient(clients, clientId);
         if (null != client)
         {
-            client.timeOfLastKeepaliveMs(0);
+            client.markAsClosed();
         }
     }
 

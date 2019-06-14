@@ -208,6 +208,16 @@ public class ImageBuffersReadyFlyweight
     }
 
     /**
+     * Append the log file name to an {@link Appendable}.
+     *
+     * @param appendable to append log file name to.
+     */
+    public void appendLogFileName(final Appendable appendable)
+    {
+        buffer.getStringAscii(offset + LOG_FILE_NAME_OFFSET, appendable);
+    }
+
+    /**
      * Set the log filename in ASCII
      *
      * @param logFileName for the image

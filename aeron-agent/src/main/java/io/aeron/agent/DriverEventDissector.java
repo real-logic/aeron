@@ -22,7 +22,6 @@ import org.agrona.MutableDirectBuffer;
 
 import java.net.InetAddress;
 
-import static io.aeron.protocol.HeaderFlyweight.flagsToChars;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
@@ -327,8 +326,11 @@ public class DriverEventDissector
     {
         builder
             .append(msg.headerType() == HeaderFlyweight.HDR_TYPE_PAD ? "PAD" : "DATA")
-            .append(' ')
-            .append(flagsToChars(msg.flags()))
+            .append(' ');
+
+        HeaderFlyweight.appendFlagsAsChars(msg.flags(), builder);
+
+        builder
             .append(" len ")
             .append(msg.frameLength())
             .append(' ')
@@ -343,9 +345,11 @@ public class DriverEventDissector
 
     private static void dissect(final StatusMessageFlyweight msg, final StringBuilder builder)
     {
+        builder.append("SM ");
+
+        HeaderFlyweight.appendFlagsAsChars(msg.flags(), builder);
+
         builder
-            .append("SM ")
-            .append(flagsToChars(msg.flags()))
             .append(" len ")
             .append(msg.frameLength())
             .append(' ')
@@ -364,9 +368,11 @@ public class DriverEventDissector
 
     private static void dissect(final NakFlyweight msg, final StringBuilder builder)
     {
+        builder.append("NAK ");
+
+        HeaderFlyweight.appendFlagsAsChars(msg.flags(), builder);
+
         builder
-            .append("NAK ")
-            .append(flagsToChars(msg.flags()))
             .append(" len ")
             .append(msg.frameLength())
             .append(' ')
@@ -383,9 +389,11 @@ public class DriverEventDissector
 
     private static void dissect(final SetupFlyweight msg, final StringBuilder builder)
     {
+        builder.append("SETUP ");
+
+        HeaderFlyweight.appendFlagsAsChars(msg.flags(), builder);
+
         builder
-            .append("SETUP ")
-            .append(flagsToChars(msg.flags()))
             .append(" len ")
             .append(msg.frameLength())
             .append(' ')
@@ -408,9 +416,11 @@ public class DriverEventDissector
 
     private static void dissect(final RttMeasurementFlyweight msg, final StringBuilder builder)
     {
+        builder.append("RTT ");
+
+        HeaderFlyweight.appendFlagsAsChars(msg.flags(), builder);
+
         builder
-            .append("RTT ")
-            .append(flagsToChars(msg.flags()))
             .append(" len ")
             .append(msg.frameLength())
             .append(' ')
@@ -427,8 +437,9 @@ public class DriverEventDissector
 
     private static void dissect(final PublicationMessageFlyweight msg, final StringBuilder builder)
     {
+        msg.appendChannel(builder);
+
         builder
-            .append(msg.channel())
             .append(' ')
             .append(msg.streamId())
             .append(" [")
@@ -440,8 +451,9 @@ public class DriverEventDissector
 
     private static void dissect(final SubscriptionMessageFlyweight msg, final StringBuilder builder)
     {
+        msg.appendChannel(builder);
+
         builder
-            .append(msg.channel())
             .append(' ')
             .append(msg.streamId())
             .append(" [")
@@ -467,8 +479,9 @@ public class DriverEventDissector
             .append(msg.correlationId())
             .append(' ')
             .append(msg.registrationId())
-            .append("] ")
-            .append(msg.logFileName());
+            .append("] ");
+
+        msg.appendLogFileName(builder);
     }
 
     private static void dissect(final ImageBuffersReadyFlyweight msg, final StringBuilder builder)
@@ -485,8 +498,9 @@ public class DriverEventDissector
             .append(msg.sourceIdentity())
             .append("\" [")
             .append(msg.correlationId())
-            .append("] ")
-            .append(msg.logFileName());
+            .append("] ");
+
+        msg.appendLogFileName(builder);
     }
 
     private static void dissect(final CorrelatedMessageFlyweight msg, final StringBuilder builder)
@@ -501,8 +515,9 @@ public class DriverEventDissector
 
     private static void dissect(final ImageMessageFlyweight msg, final StringBuilder builder)
     {
+        msg.appendChannel(builder);
+
         builder
-            .append(msg.channel())
             .append(' ')
             .append(msg.streamId())
             .append(" [")
@@ -525,8 +540,9 @@ public class DriverEventDissector
 
     private static void dissect(final DestinationMessageFlyweight msg, final StringBuilder builder)
     {
+        msg.appendChannel(builder);
+
         builder
-            .append(msg.channel())
             .append(' ')
             .append(msg.registrationCorrelationId())
             .append(" [")

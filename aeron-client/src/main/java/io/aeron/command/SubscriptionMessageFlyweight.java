@@ -104,6 +104,16 @@ public class SubscriptionMessageFlyweight extends CorrelatedMessageFlyweight
     }
 
     /**
+     * Append the channel value to an {@link Appendable}.
+     *
+     * @param appendable to append channel to.
+     */
+    public void appendChannel(final Appendable appendable)
+    {
+        buffer.getStringAscii(offset + CHANNEL_OFFSET, appendable);
+    }
+
+    /**
      * Set channel field in ASCII
      *
      * @param channel field value

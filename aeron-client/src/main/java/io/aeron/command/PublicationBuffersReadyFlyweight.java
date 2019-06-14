@@ -226,6 +226,16 @@ public class PublicationBuffersReadyFlyweight
     }
 
     /**
+     * Append the log file name to an {@link Appendable}.
+     *
+     * @param appendable to append log file name to.
+     */
+    public void appendLogFileName(final Appendable appendable)
+    {
+        buffer.getStringAscii(offset + LOGFILE_FIELD_OFFSET, appendable);
+    }
+
+    /**
      * Set the log file name in ASCII.
      *
      * @param logFileName for the publication buffers.

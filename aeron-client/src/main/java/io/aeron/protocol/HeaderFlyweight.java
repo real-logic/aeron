@@ -15,8 +15,10 @@
  */
 package io.aeron.protocol;
 
+import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
@@ -216,5 +218,30 @@ public class HeaderFlyweight extends UnsafeBuffer
         }
 
         return chars;
+    }
+
+    /**
+     * Append header flags to an {@link Appendable} to be human readable.
+     *
+     * @param flags      to be converted.
+     * @param appendable to append flags to.
+     */
+    public static void appendFlagsAsChars(final short flags, final Appendable appendable)
+    {
+        final int length = 8;
+        short mask = (short)(1 << (length - 1));
+
+        try
+        {
+            for (int i = 0; i < length; i++)
+            {
+                appendable.append((flags & mask) == mask ? '1' : '0');
+                mask >>= 1;
+            }
+        }
+        catch (final IOException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
     }
 }

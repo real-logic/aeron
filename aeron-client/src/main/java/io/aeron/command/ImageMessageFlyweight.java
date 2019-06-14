@@ -150,6 +150,19 @@ public class ImageMessageFlyweight
     }
 
     /**
+     * Append the channel value to an {@link Appendable}.
+     *
+     * @param appendable to append channel to.
+     */
+    public void appendChannel(final Appendable appendable)
+    {
+        final int length = buffer.getInt(offset + CHANNEL_OFFSET);
+        lengthOfChannel = SIZE_OF_INT + length;
+
+        buffer.getStringAscii(offset + CHANNEL_OFFSET, appendable);
+    }
+
+    /**
      * Set the channel field as ASCII
      *
      * @param channel field value

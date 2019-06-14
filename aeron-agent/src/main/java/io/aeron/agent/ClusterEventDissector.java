@@ -59,12 +59,13 @@ class ClusterEventDissector
         relativeOffset += BitUtil.SIZE_OF_INT;
         final int logSessionId = buffer.getInt(relativeOffset);
 
-        builder.append("CLUSTER: New Leadership Term; logLeadershipTermId: ").append(logLeadershipTermId)
-            .append(", logPosition: ").append(logPosition)
-            .append(", leadershipTermId: ").append(leadershipTermId)
-            .append(", maxLogPosition: ").append(maxLogPosition)
-            .append(", leaderMemberId: ").append(leaderMemberId)
-            .append(", logSessionId: ").append(logSessionId);
+        builder.append("CLUSTER: New Leadership Term")
+            .append(", logLeadershipTermId=").append(logLeadershipTermId)
+            .append(", logPosition=").append(logPosition)
+            .append(", leadershipTermId=").append(leadershipTermId)
+            .append(", maxLogPosition=").append(maxLogPosition)
+            .append(", leaderMemberId=").append(leaderMemberId)
+            .append(", logSessionId=").append(logSessionId);
     }
 
     static void stateChange(
@@ -78,10 +79,9 @@ class ClusterEventDissector
         final int memberId = buffer.getInt(offset + eventOffset);
         eventOffset += SIZE_OF_INT;
 
-        final String stateChange = buffer.getStringAscii(offset + eventOffset);
-        builder
-            .append("CLUSTER: ConsensusModule State ").append(stateChange)
-            .append(", memberId=").append(memberId);
+        builder.append("CLUSTER: ConsensusModule State ");
+        buffer.getStringAscii(offset + eventOffset, builder);
+        builder.append(", memberId=").append(memberId);
     }
 
     static void roleChange(
@@ -90,6 +90,13 @@ class ClusterEventDissector
         final int offset,
         final StringBuilder builder)
     {
-        builder.append("CLUSTER: ConsensusModule Role ").append(buffer.getStringAscii(offset));
+        int eventOffset = 0;
+
+        final int memberId = buffer.getInt(offset + eventOffset);
+        eventOffset += SIZE_OF_INT;
+
+        builder.append("CLUSTER: ConsensusModule Role ");
+        buffer.getStringAscii(offset + eventOffset, builder);
+        builder.append(", memberId=").append(memberId);
     }
 }

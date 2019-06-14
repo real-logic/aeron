@@ -237,6 +237,7 @@ aeron_client_t *aeron_driver_conductor_get_or_add_client(aeron_driver_conductor_
 
                 client->client_id = client_id;
                 client->reached_end_of_life = false;
+                client->closed_by_command = false;
                 client->time_of_last_keepalive_ms = conductor->context->epoch_clock();
 
                 client->heartbeat_status.counter_id = client_heartbeat.counter_id;
@@ -269,8 +270,12 @@ void aeron_client_on_time_event(
     if (now_ms > (client->time_of_last_keepalive_ms + client->client_liveness_timeout_ms))
     {
         client->reached_end_of_life = true;
-        aeron_counter_ordered_increment(conductor->client_timeouts_counter, 1);
-        aeron_driver_conductor_on_client_timeout(conductor, client->client_id);
+
+        if (!client->closed_by_command)
+        {
+            aeron_counter_ordered_increment(conductor->client_timeouts_counter, 1);
+            aeron_driver_conductor_on_client_timeout(conductor, client->client_id);
+        }
     }
 }
 
@@ -2574,6 +2579,7 @@ int aeron_driver_conductor_on_client_close(aeron_driver_conductor_t *conductor, 
     {
         aeron_client_t *client = &conductor->clients.array[index];
 
+        client->closed_by_command = true;
         client->time_of_last_keepalive_ms = 0;
         aeron_counter_set_ordered(client->heartbeat_status.value_addr, client->time_of_last_keepalive_ms);
     }

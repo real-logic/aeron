@@ -52,6 +52,7 @@ aeron_counter_link_t;
 typedef struct aeron_client_stct
 {
     bool reached_end_of_life;
+    bool closed_by_command;
     int64_t client_id;
     int64_t client_liveness_timeout_ms;
     int64_t time_of_last_keepalive_ms;

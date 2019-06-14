@@ -852,7 +852,11 @@ class ClientConductor implements Agent, DriverEventsListener
             isTerminating = true;
             forceCloseResources();
 
-            throw new ConductorServiceTimeoutException("service interval exceeded (ns): " + interServiceTimeoutNs);
+            final long serviceIntervalNs = nowNs - timeOfLastServiceNs;
+
+            throw new ConductorServiceTimeoutException(
+                "service interval exceeded (ns): timeout=" + interServiceTimeoutNs + ", actual=" + serviceIntervalNs
+            );
         }
     }
 
@@ -860,12 +864,19 @@ class ClientConductor implements Agent, DriverEventsListener
     {
         if ((timeOfLastKeepAliveNs + keepAliveIntervalNs) - nowNs < 0)
         {
-            if (epochClock.time() > (driverProxy.timeOfLastDriverKeepaliveMs() + driverTimeoutMs))
+            final long lastKeepAliveMs = driverProxy.timeOfLastDriverKeepaliveMs();
+
+            if (epochClock.time() > (lastKeepAliveMs + driverTimeoutMs))
             {
                 isTerminating = true;
                 forceCloseResources();
 
-                throw new DriverTimeoutException("MediaDriver keepalive older than (ms): " + driverTimeoutMs);
+                final long keepAliveAgeMs = epochClock.time() - lastKeepAliveMs;
+
+                throw new DriverTimeoutException(
+                    "MediaDriver keepalive age exceeded (ms): timeout= " +
+                        driverTimeoutMs + ", actual=" + keepAliveAgeMs
+                );
             }
 
             driverProxy.sendClientKeepalive();

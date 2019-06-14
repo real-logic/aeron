@@ -852,7 +852,11 @@ class ClientConductor implements Agent, DriverEventsListener
             isTerminating = true;
             forceCloseResources();
 
-            throw new ConductorServiceTimeoutException("service interval exceeded (ns): " + interServiceTimeoutNs);
+            final long serviceIntervalNs = nowNs - timeOfLastServiceNs;
+
+            throw new ConductorServiceTimeoutException(
+                "service interval exceeded (ns): timeout=" + interServiceTimeoutNs + ", actual=" + serviceIntervalNs
+            );
         }
     }
 

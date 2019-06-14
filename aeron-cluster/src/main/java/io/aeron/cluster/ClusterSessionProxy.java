@@ -74,7 +74,12 @@ class ClusterSessionProxy implements SessionProxy
     {
         ClusterSession.checkEncodedPrincipalLength(encodedPrincipal);
 
-        if (egressPublisher.sendEvent(clusterSession, leadershipTermId, leaderMemberId, EventCode.OK, EMPTY_DETAIL))
+        if (clusterSession.isBackupQuery())
+        {
+            clusterSession.authenticate(encodedPrincipal);
+            return true;
+        }
+        else if (egressPublisher.sendEvent(clusterSession, leadershipTermId, leaderMemberId, EventCode.OK, EMPTY_DETAIL))
         {
             clusterSession.authenticate(encodedPrincipal);
             return true;

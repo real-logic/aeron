@@ -667,6 +667,50 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
     }
 
+    public void onBackupQuery(
+        final long correlationId,
+        final int responseStreamId,
+        final int version,
+        final String responseChannel,
+        final byte[] encodedCredentials)
+    {
+        if (Cluster.Role.LEADER != role)
+        {
+            memberStatusPublisher.backupQuery(
+                leaderMember.publication(),
+                correlationId,
+                responseStreamId,
+                version,
+                responseChannel,
+                encodedCredentials);
+        }
+        else
+        {
+            final ClusterSession session = new ClusterSession(NULL_VALUE, responseStreamId, responseChannel);
+            session.lastActivity(cachedTimeMs, correlationId);
+            session.isBackupQuery(true);
+            session.connect(aeron);
+
+            if (AeronCluster.Configuration.MAJOR_VERSION != SemanticVersion.major(version))
+            {
+                final String detail = SESSION_INVALID_VERSION_MSG + " " + SemanticVersion.toString(version) +
+                    ", cluster is " + SemanticVersion.toString(AeronCluster.Configuration.SEMANTIC_VERSION);
+                session.reject(EventCode.ERROR, detail);
+                rejectedSessions.add(session);
+            }
+            else if (pendingSessions.size() + sessionByIdMap.size() >= ctx.maxConcurrentSessions())
+            {
+                session.reject(EventCode.ERROR, SESSION_LIMIT_MSG);
+                rejectedSessions.add(session);
+            }
+            else
+            {
+                authenticator.onConnectRequest(session.id(), encodedCredentials, clusterTimeMs);
+                pendingSessions.add(session);
+            }
+        }
+    }
+
     public void onRemoveMember(final long correlationId, final int memberId, final boolean isPassive)
     {
         final ClusterMember member = clusterMemberByIdMap.get(memberId);
@@ -1925,10 +1969,27 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
             if (session.state() == AUTHENTICATED)
             {
-                ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
-                session.timeOfLastActivityMs(nowMs);
-                sessionByIdMap.put(session.id(), session);
-                appendSessionOpen(session, nowMs);
+                if (session.isBackupQuery())
+                {
+                    if (memberStatusPublisher.backupResponse(
+                        session.responsePublication(),
+                        session.correlationId(),
+                        logRecordingId(),
+                        commitPosition.id(),
+                        recoveryPlan,
+                        ClusterMember.encodeAsString(clusterMembers)))
+                    {
+                        ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
+                        session.close();
+                    }
+                }
+                else
+                {
+                    ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
+                    session.timeOfLastActivityMs(nowMs);
+                    sessionByIdMap.put(session.id(), session);
+                    appendSessionOpen(session, nowMs);
+                }
 
                 workCount += 1;
             }

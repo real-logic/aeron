@@ -60,4 +60,6 @@ interface MemberStatusListener
     void onTerminationPosition(long logPosition);
 
     void onTerminationAck(long logPosition, int memberId);
+
+    void onBackupQuery(long correlationId, int responseStreamId, int version, String responseChannel, byte[] credentials);
 }

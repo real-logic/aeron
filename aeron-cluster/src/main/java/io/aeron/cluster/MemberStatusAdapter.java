@@ -45,6 +45,7 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
     private final JoinClusterDecoder joinClusterDecoder = new JoinClusterDecoder();
     private final TerminationPositionDecoder terminationPositionDecoder = new TerminationPositionDecoder();
     private final TerminationAckDecoder terminationAckDecoder = new TerminationAckDecoder();
+    private final BackupQueryDecoder backupQueryDecoder = new BackupQueryDecoder();
 
     private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this);
     private final Subscription subscription;
@@ -273,6 +274,24 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
 
                 memberStatusListener.onTerminationAck(
                     terminationAckDecoder.logPosition(), terminationAckDecoder.memberId());
+                break;
+
+            case BackupQueryDecoder.TEMPLATE_ID:
+                backupQueryDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    messageHeaderDecoder.blockLength(),
+                    messageHeaderDecoder.version());
+
+                final byte[] credentials = new byte[backupQueryDecoder.encodedCredentialsLength()];
+                backupQueryDecoder.getEncodedCredentials(credentials, 0, credentials.length);
+
+                memberStatusListener.onBackupQuery(
+                    backupQueryDecoder.correlationId(),
+                    backupQueryDecoder.responseStreamId(),
+                    backupQueryDecoder.version(),
+                    backupQueryDecoder.responseChannel(),
+                    credentials);
                 break;
         }
     }

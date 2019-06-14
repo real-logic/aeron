@@ -44,6 +44,7 @@ class ClusterSession
     private long correlationId;
     private long openedLogPosition = Aeron.NULL_VALUE;
     private long timeOfLastActivityMs;
+    private boolean isBackupQuery = false;
     private final int responseStreamId;
     private final String responseChannel;
     private Publication responsePublication;
@@ -248,6 +249,21 @@ class ClusterSession
     boolean hasNewLeaderEventPending()
     {
         return hasNewLeaderEventPending;
+    }
+
+    boolean isBackupQuery()
+    {
+        return isBackupQuery;
+    }
+
+    void isBackupQuery(final boolean isBackupQuery)
+    {
+        this.isBackupQuery = isBackupQuery;
+    }
+
+    Publication responsePublication()
+    {
+        return responsePublication;
     }
 
     static void checkEncodedPrincipalLength(final byte[] encodedPrincipal)

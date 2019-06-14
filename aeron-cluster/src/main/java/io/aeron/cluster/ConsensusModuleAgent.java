@@ -711,6 +711,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
     }
 
+    @SuppressWarnings("unused")
     public void onRemoveMember(final long correlationId, final int memberId, final boolean isPassive)
     {
         final ClusterMember member = clusterMemberByIdMap.get(memberId);
@@ -1425,9 +1426,9 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         final RecordingLog.RecoveryPlan plan = recoveryPlan;
         LogReplay logReplay = null;
 
-        if (!plan.logs.isEmpty())
+        if (null != plan.log)
         {
-            final RecordingLog.Log log = plan.logs.get(0);
+            final RecordingLog.Log log = plan.log;
             final long startPosition = log.startPosition;
             final long stopPosition = Math.min(log.stopPosition, electionCommitPosition);
             leadershipTermId = log.leadershipTermId;
@@ -1503,9 +1504,9 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     long logRecordingId()
     {
-        if (!recoveryPlan.logs.isEmpty())
+        if (null != recoveryPlan.log)
         {
-            return recoveryPlan.logs.get(0).recordingId;
+            return recoveryPlan.log.recordingId;
         }
 
         return RecordingPos.getRecordingId(aeron.countersReader(), appendedPosition.counterId());
@@ -2530,12 +2531,11 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         channelUri.put(TAGS_PARAM_NAME, logPublicationChannelTag + "," + logPublicationTag);
 
-        if (!plan.logs.isEmpty())
+        if (null != plan.log)
         {
-            final RecordingLog.Log log = plan.logs.get(0);
-            logInitialTermId = log.initialTermId;
-            logTermBufferLength = log.termBufferLength;
-            logMtuLength = log.mtuLength;
+            logInitialTermId = plan.log.initialTermId;
+            logTermBufferLength = plan.log.termBufferLength;
+            logMtuLength = plan.log.mtuLength;
         }
 
         if (NULL_VALUE != logInitialTermId)

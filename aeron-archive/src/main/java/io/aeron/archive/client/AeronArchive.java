@@ -673,7 +673,7 @@ public class AeronArchive implements AutoCloseable
      * @param position          from which the replay should begin or {@link #NULL_POSITION} if from the start.
      * @param length            of the stream to be replayed. Use {@link Long#MAX_VALUE} to follow a live recording or
      *                          {@link #NULL_LENGTH} to replay the whole stream of unknown length.
-     * @param boundCounterId    to use to bound replay.
+     * @param limitCounterId    to use to bound replay.
      * @param replayChannel     to which the replay should be sent.
      * @param replayStreamId    to which the replay should be sent.
      * @return the id of the replay session which will be the same as the {@link Image#sessionId()} of the received
@@ -683,7 +683,7 @@ public class AeronArchive implements AutoCloseable
         final long recordingId,
         final long position,
         final long length,
-        final int boundCounterId,
+        final int limitCounterId,
         final String replayChannel,
         final int replayStreamId)
     {
@@ -698,7 +698,7 @@ public class AeronArchive implements AutoCloseable
                 recordingId,
                 position,
                 length,
-                boundCounterId,
+                limitCounterId,
                 replayChannel,
                 replayStreamId,
                 correlationId,

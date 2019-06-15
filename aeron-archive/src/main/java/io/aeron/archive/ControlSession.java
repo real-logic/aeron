@@ -262,7 +262,7 @@ class ControlSession implements Session
         final long recordingId,
         final long position,
         final long length,
-        final int boundCounterId,
+        final int limitCounterId,
         final int replayStreamId,
         final String replayChannel)
     {
@@ -275,7 +275,7 @@ class ControlSession implements Session
                 recordingId,
                 position,
                 length,
-                boundCounterId,
+                limitCounterId,
                 replayStreamId,
                 replayChannel);
         }

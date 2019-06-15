@@ -317,7 +317,7 @@ public class ArchiveProxy
      * @param recordingId      to be replayed.
      * @param position         from which the replay should be started.
      * @param length           of the stream to be replayed. Use {@link Long#MAX_VALUE} to follow a live stream.
-     * @param boundCounterId   to use as the replay bound.
+     * @param limitCounterId   to use as the replay bound.
      * @param replayChannel    to which the replay should be sent.
      * @param replayStreamId   to which the replay should be sent.
      * @param correlationId    for this request.
@@ -328,7 +328,7 @@ public class ArchiveProxy
         final long recordingId,
         final long position,
         final long length,
-        final int boundCounterId,
+        final int limitCounterId,
         final String replayChannel,
         final int replayStreamId,
         final long correlationId,
@@ -341,7 +341,7 @@ public class ArchiveProxy
             .recordingId(recordingId)
             .position(position)
             .length(length)
-            .boundCounterId(boundCounterId)
+            .limitCounterId(limitCounterId)
             .replayStreamId(replayStreamId)
             .replayChannel(replayChannel);
 

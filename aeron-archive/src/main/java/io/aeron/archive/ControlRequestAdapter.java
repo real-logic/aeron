@@ -165,7 +165,7 @@ class ControlRequestAdapter implements FragmentHandler
                     boundedReplayRequestDecoder.recordingId(),
                     boundedReplayRequestDecoder.position(),
                     boundedReplayRequestDecoder.length(),
-                    boundedReplayRequestDecoder.boundCounterId(),
+                    boundedReplayRequestDecoder.limitCounterId(),
                     boundedReplayRequestDecoder.replayStreamId(),
                     boundedReplayRequestDecoder.replayChannel());
                 break;

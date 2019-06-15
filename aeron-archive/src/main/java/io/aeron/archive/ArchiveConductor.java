@@ -524,7 +524,7 @@ abstract class ArchiveConductor
         final long recordingId,
         final long position,
         final long length,
-        final int boundCounterId,
+        final int limitCounterId,
         final int replayStreamId,
         final String replayChannel)
     {
@@ -563,7 +563,7 @@ abstract class ArchiveConductor
             return;
         }
 
-        final Counter boundCounter = getOrAddCounter(boundCounterId);
+        final Counter limitCounter = getOrAddCounter(limitCounterId);
 
         final ExclusivePublication replayPublication = newReplayPublication(
             correlationId, controlSession, replayChannel, replayStreamId, replayPosition, recordingSummary);
@@ -584,7 +584,7 @@ abstract class ArchiveConductor
             cachedEpochClock,
             replayPublication,
             recordingSummary,
-            boundCounter);
+            limitCounter);
 
         replaySessionByIdMap.put(replaySessionId, replaySession);
         replayer.addSession(replaySession);

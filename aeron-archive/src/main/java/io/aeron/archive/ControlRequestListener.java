@@ -44,6 +44,16 @@ interface ControlRequestListener
         int replayStreamId,
         String replayChannel);
 
+    void onBoundedStartReplay(
+        long controlSessionId,
+        long correlationId,
+        long recordingId,
+        long position,
+        long length,
+        int boundCounterId,
+        int replayStreamId,
+        String replayChannel);
+
     void onListRecordings(long controlSessionId, long correlationId, long fromRecordingId, int recordCount);
 
     void onListRecordingsForUri(

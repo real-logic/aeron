@@ -26,12 +26,14 @@ import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.agrona.SemanticVersion;
+import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.collections.Object2ObjectHashMap;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.CachedEpochClock;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
 import java.io.IOException;
@@ -57,7 +59,9 @@ import static java.nio.file.StandardOpenOption.WRITE;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 
-abstract class ArchiveConductor extends SessionWorker<Session> implements AvailableImageHandler
+abstract class ArchiveConductor
+    extends SessionWorker<Session>
+    implements AvailableImageHandler, UnavailableCounterHandler
 {
     private static final EnumSet<StandardOpenOption> FILE_OPTIONS = EnumSet.of(READ, WRITE);
     private static final FileAttribute<?>[] NO_ATTRIBUTES = new FileAttribute[0];
@@ -66,6 +70,7 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     private final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder();
     private final Long2ObjectHashMap<ReplaySession> replaySessionByIdMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<RecordingSession> recordingSessionByIdMap = new Long2ObjectHashMap<>();
+    private final Int2ObjectHashMap<Counter> counterByIdMap = new Int2ObjectHashMap<>();
     private final Object2ObjectHashMap<String, Subscription> recordingSubscriptionMap = new Object2ObjectHashMap<>();
     private final RecordingSummary recordingSummary = new RecordingSummary();
     private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
@@ -117,6 +122,8 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         maxConcurrentReplays = ctx.maxConcurrentReplays();
         connectTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.connectTimeoutNs());
 
+        ctx.unavailableCounterHandlerReference(this);
+
         final ChannelUri controlChannelUri = ChannelUri.parse(ctx.controlChannel());
         controlChannelUri.put(CommonContext.SPARSE_PARAM_NAME, Boolean.toString(ctx.controlTermBufferSparse()));
         controlSubscription = aeron.addSubscription(controlChannelUri.toString(), ctx.controlStreamId(), this, null);
@@ -141,6 +148,25 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
     public void onAvailableImage(final Image image)
     {
         addSession(new ControlSessionDemuxer(image, this));
+    }
+
+    public void onUnavailableCounter(
+        final CountersReader countersReader, final long registrationId, final int counterId)
+    {
+        final Counter counter = counterByIdMap.remove(counterId);
+
+        if (null != counter)
+        {
+            for (final ReplaySession session : replaySessionByIdMap.values())
+            {
+                if (session.limitPosition() == counter)
+                {
+                    session.abort();
+                }
+            }
+
+            counter.close();
+        }
     }
 
     protected abstract SessionWorker<RecordingSession> newRecorder();
@@ -487,6 +513,78 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
             replayPublication,
             recordingSummary,
             null == recordingSession ? null : recordingSession.recordingPosition());
+
+        replaySessionByIdMap.put(replaySessionId, replaySession);
+        replayer.addSession(replaySession);
+    }
+
+    void boundedStartReplay(
+        final long correlationId,
+        final ControlSession controlSession,
+        final long recordingId,
+        final long position,
+        final long length,
+        final int boundCounterId,
+        final int replayStreamId,
+        final String replayChannel)
+    {
+        if (replaySessionByIdMap.size() >= maxConcurrentReplays)
+        {
+            final String msg = "max concurrent replays reached " + maxConcurrentReplays;
+            controlSession.sendErrorResponse(correlationId, MAX_REPLAYS, msg, controlResponseProxy);
+
+            return;
+        }
+
+        if (!catalog.hasRecording(recordingId))
+        {
+            final String msg = "unknown recording id " + recordingId;
+            controlSession.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
+
+            return;
+        }
+
+        catalog.recordingSummary(recordingId, recordingSummary);
+        long replayPosition = recordingSummary.startPosition;
+
+        if (position != NULL_POSITION)
+        {
+            if (!validateReplayPosition(correlationId, controlSession, recordingId, position, recordingSummary))
+            {
+                return;
+            }
+
+            replayPosition = position;
+        }
+
+        final File segmentFile = segmentFile(controlSession, archiveDir, replayPosition, recordingId, correlationId);
+        if (null == segmentFile)
+        {
+            return;
+        }
+
+        final Counter boundCounter = getOrAddCounter(boundCounterId);
+
+        final ExclusivePublication replayPublication = newReplayPublication(
+            correlationId, controlSession, replayChannel, replayStreamId, replayPosition, recordingSummary);
+
+        final long replaySessionId = ((long)replayId++ << 32) | (replayPublication.sessionId() & 0xFFFF_FFFFL);
+        final ReplaySession replaySession = new ReplaySession(
+            replayPosition,
+            length,
+            replaySessionId,
+            connectTimeoutMs,
+            correlationId,
+            controlSession,
+            controlResponseProxy,
+            replayBuffer,
+            catalog,
+            archiveDir,
+            segmentFile,
+            cachedEpochClock,
+            replayPublication,
+            recordingSummary,
+            boundCounter);
 
         replaySessionByIdMap.put(replaySessionId, replaySession);
         replayer.addSession(replaySession);
@@ -1094,5 +1192,18 @@ abstract class ArchiveConductor extends SessionWorker<Session> implements Availa
         }
 
         return segmentFile;
+    }
+
+    private Counter getOrAddCounter(final int counterId)
+    {
+        Counter counter = counterByIdMap.get(counterId);
+
+        if (null == counter)
+        {
+            counter = new Counter(aeron.countersReader(), Aeron.NULL_VALUE, counterId);
+            counterByIdMap.put(counterId, counter);
+        }
+
+        return counter;
     }
 }

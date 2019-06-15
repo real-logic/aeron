@@ -18,6 +18,7 @@ package io.aeron.archive;
 import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.Image;
+import io.aeron.UnavailableCounterHandler;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.exceptions.ConcurrentConcludeException;
@@ -26,6 +27,7 @@ import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
+import org.agrona.collections.MutableReference;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.StatusIndicator;
@@ -44,9 +46,7 @@ import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
 import static java.lang.System.getProperty;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
-import static org.agrona.SystemUtil.getDurationInNanos;
-import static org.agrona.SystemUtil.getSizeAsInt;
-import static org.agrona.SystemUtil.loadPropertiesFiles;
+import static org.agrona.SystemUtil.*;
 
 /**
  * The Aeron Archive which allows for the recording and replay of local and remote {@link io.aeron.Publication}s .
@@ -398,6 +398,9 @@ public class Archive implements AutoCloseable
         private AtomicCounter errorCounter;
         private CountedErrorHandler countedErrorHandler;
 
+        private MutableReference<UnavailableCounterHandler> unavailableCounterHandlerRef = new MutableReference<>(
+            ((countersReader, registrationId, counterId) -> {}));
+
         private AgentInvoker mediaDriverAgentInvoker;
         private int maxConcurrentRecordings = Configuration.maxConcurrentRecordings();
         private int maxConcurrentReplays = Configuration.maxConcurrentReplays();
@@ -447,6 +450,9 @@ public class Archive implements AutoCloseable
                         .epochClock(epochClock)
                         .driverAgentInvoker(mediaDriverAgentInvoker)
                         .useConductorAgentInvoker(true)
+                        .unavailableCounterHandler((countersReader, registrationId, counterId) ->
+                            unavailableCounterHandlerRef.get().onUnavailableCounter(
+                                countersReader, registrationId, counterId))
                         .clientLock(new NoOpLock()));
 
                 if (null == errorCounter)
@@ -1344,6 +1350,12 @@ public class Archive implements AutoCloseable
             CloseHelper.close(markFile);
             CloseHelper.close(archiveDirChannel);
             archiveDirChannel = null;
+        }
+
+        Context unavailableCounterHandlerReference(final UnavailableCounterHandler unavailableCounterHandler)
+        {
+            unavailableCounterHandlerRef.set(unavailableCounterHandler);
+            return this;
         }
     }
 

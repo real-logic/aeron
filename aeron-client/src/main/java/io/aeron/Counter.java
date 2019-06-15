@@ -49,7 +49,7 @@ public class Counter extends AtomicCounter
      * @param counterId      for the counter to be viewed.
      * @throws AeronException if the id has for the counter has not been allocated.
      */
-    Counter(
+    public Counter(
         final CountersReader countersReader,
         final long registrationId,
         final int counterId)

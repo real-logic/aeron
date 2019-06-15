@@ -49,6 +49,8 @@ class ControlRequestAdapter implements FragmentHandler
         new FindLastMatchingRecordingRequestDecoder();
     private final ListRecordingSubscriptionsRequestDecoder listRecordingSubscriptionsRequestDecoder =
         new ListRecordingSubscriptionsRequestDecoder();
+    private final BoundedReplayRequestDecoder boundedReplayRequestDecoder =
+        new BoundedReplayRequestDecoder();
 
     ControlRequestAdapter(final ControlRequestListener listener)
     {
@@ -146,6 +148,26 @@ class ControlRequestAdapter implements FragmentHandler
                     replayRequestDecoder.length(),
                     replayRequestDecoder.replayStreamId(),
                     replayRequestDecoder.replayChannel());
+                break;
+            }
+
+            case BoundedReplayRequestDecoder.TEMPLATE_ID:
+            {
+                boundedReplayRequestDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                listener.onBoundedStartReplay(
+                    boundedReplayRequestDecoder.controlSessionId(),
+                    boundedReplayRequestDecoder.correlationId(),
+                    boundedReplayRequestDecoder.recordingId(),
+                    boundedReplayRequestDecoder.position(),
+                    boundedReplayRequestDecoder.length(),
+                    boundedReplayRequestDecoder.boundCounterId(),
+                    boundedReplayRequestDecoder.replayStreamId(),
+                    boundedReplayRequestDecoder.replayChannel());
                 break;
             }
 

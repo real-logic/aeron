@@ -257,6 +257,30 @@ class ControlSession implements Session
         }
     }
 
+    void onBoundedStartReplay(
+        final long correlationId,
+        final long recordingId,
+        final long position,
+        final long length,
+        final int boundCounterId,
+        final int replayStreamId,
+        final String replayChannel)
+    {
+        updateState();
+        if (State.ACTIVE == state)
+        {
+            conductor.boundedStartReplay(
+                correlationId,
+                this,
+                recordingId,
+                position,
+                length,
+                boundCounterId,
+                replayStreamId,
+                replayChannel);
+        }
+    }
+
     void onStopReplay(final long correlationId, final long replaySessionId)
     {
         updateState();

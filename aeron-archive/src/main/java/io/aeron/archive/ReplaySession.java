@@ -93,7 +93,7 @@ class ReplaySession implements Session, AutoCloseable
     private final EpochClock epochClock;
     private final File archiveDir;
     private final Catalog catalog;
-    private final Counter recordingPosition;
+    private final Counter limitPosition;
     private final UnsafeBuffer replayBuffer;
     private FileChannel fileChannel;
     private File segmentFile;
@@ -116,7 +116,7 @@ class ReplaySession implements Session, AutoCloseable
         final EpochClock epochClock,
         final ExclusivePublication publication,
         final RecordingSummary recordingSummary,
-        final Counter recordingPosition)
+        final Counter replayLimitPosition)
     {
         this.controlSession = controlSession;
         this.sessionId = replaySessionId;
@@ -129,14 +129,14 @@ class ReplaySession implements Session, AutoCloseable
         this.archiveDir = archiveDir;
         this.segmentFile = initialSegmentFile;
         this.publication = publication;
-        this.recordingPosition = recordingPosition;
+        this.limitPosition = replayLimitPosition;
         this.replayBuffer = replayBuffer;
         this.catalog = catalog;
         this.startPosition = recordingSummary.startPosition;
-        this.stopPosition = null == recordingPosition ? recordingSummary.stopPosition : recordingPosition.get();
+        this.stopPosition = null == limitPosition ? recordingSummary.stopPosition : limitPosition.get();
 
         final long fromPosition = position == NULL_POSITION ? startPosition : position;
-        final long maxLength = null == recordingPosition ? stopPosition - fromPosition : Long.MAX_VALUE - fromPosition;
+        final long maxLength = null == limitPosition ? stopPosition - fromPosition : Long.MAX_VALUE - fromPosition;
         final long replayLength = length == AeronArchive.NULL_LENGTH ? maxLength : Math.min(length, maxLength);
         if (replayLength < 0)
         {
@@ -146,9 +146,9 @@ class ReplaySession implements Session, AutoCloseable
             throw new ArchiveException(msg);
         }
 
-        if (null != recordingPosition)
+        if (null != limitPosition)
         {
-            final long currentPosition = recordingPosition.get();
+            final long currentPosition = limitPosition.get();
             if (currentPosition < fromPosition)
             {
                 close();
@@ -234,6 +234,11 @@ class ReplaySession implements Session, AutoCloseable
         return state;
     }
 
+    Counter limitPosition()
+    {
+        return limitPosition;
+    }
+
     void sendPendingError(final ControlResponseProxy controlResponseProxy)
     {
         if (null != errorMessage && !controlSession.isDone())
@@ -285,7 +290,7 @@ class ReplaySession implements Session, AutoCloseable
     {
         int fragments = 0;
 
-        if (recordingPosition != null && replayPosition >= stopPosition && noNewData(replayPosition, stopPosition))
+        if (limitPosition != null && replayPosition >= stopPosition && noNewData(replayPosition, stopPosition))
         {
             return fragments;
         }
@@ -307,6 +312,12 @@ class ReplaySession implements Session, AutoCloseable
             final int dataLength = frameLength - DataHeaderFlyweight.HEADER_LENGTH;
 
             long result = 0;
+
+            if (0 >= frameLength)
+            {
+                throw new IllegalStateException("unexpected end of recording reached");
+            }
+
             if (frameType == HeaderFlyweight.HDR_TYPE_DATA)
             {
                 if (frameOffset + alignedLength > bytesRead)
@@ -389,13 +400,20 @@ class ReplaySession implements Session, AutoCloseable
 
     private boolean noNewData(final long replayPosition, final long oldStopPosition)
     {
-        final long currentRecodingPosition = recordingPosition.get();
-        final boolean hasRecordingStopped = recordingPosition.isClosed();
-        final long newStopPosition = hasRecordingStopped ? catalog.stopPosition(recordingId) : currentRecodingPosition;
+        final long currentLimitPosition = limitPosition.get();
+        final boolean isCounterClosed = limitPosition.isClosed();
+        final long newStopPosition = isCounterClosed ? catalog.stopPosition(recordingId) : currentLimitPosition;
 
-        if (hasRecordingStopped && newStopPosition < replayLimit)
+        if (isCounterClosed)
         {
-            replayLimit = newStopPosition;
+            if (newStopPosition < replayLimit)
+            {
+                replayLimit = newStopPosition;
+            }
+            else if (NULL_POSITION == newStopPosition)
+            {
+                replayLimit = oldStopPosition;
+            }
         }
 
         if (replayPosition >= replayLimit)

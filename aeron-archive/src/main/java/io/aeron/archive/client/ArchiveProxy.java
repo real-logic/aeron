@@ -64,6 +64,8 @@ public class ArchiveProxy
         new FindLastMatchingRecordingRequestEncoder();
     private final ListRecordingSubscriptionsRequestEncoder listRecordingSubscriptionsRequestEncoder =
         new ListRecordingSubscriptionsRequestEncoder();
+    private final BoundedReplayRequestEncoder boundedReplayRequestEncoder =
+        new BoundedReplayRequestEncoder();
 
     /**
      * Create a proxy with a {@link Publication} for sending control message requests.
@@ -307,6 +309,43 @@ public class ArchiveProxy
             .replayChannel(replayChannel);
 
         return offer(replayRequestEncoder.encodedLength());
+    }
+
+    /**
+     * Replay a recording from a given position bounded by a position counter.
+     *
+     * @param recordingId      to be replayed.
+     * @param position         from which the replay should be started.
+     * @param length           of the stream to be replayed. Use {@link Long#MAX_VALUE} to follow a live stream.
+     * @param boundCounterId   to use as the replay bound.
+     * @param replayChannel    to which the replay should be sent.
+     * @param replayStreamId   to which the replay should be sent.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean boundedReplay(
+        final long recordingId,
+        final long position,
+        final long length,
+        final int boundCounterId,
+        final String replayChannel,
+        final int replayStreamId,
+        final long correlationId,
+        final long controlSessionId)
+    {
+        boundedReplayRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .recordingId(recordingId)
+            .position(position)
+            .length(length)
+            .boundCounterId(boundCounterId)
+            .replayStreamId(replayStreamId)
+            .replayChannel(replayChannel);
+
+        return offer(boundedReplayRequestEncoder.encodedLength());
     }
 
     /**

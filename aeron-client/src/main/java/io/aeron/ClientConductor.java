@@ -69,8 +69,8 @@ class ClientConductor implements Agent, DriverEventsListener
     private final ArrayList<ManagedResource> lingeringResources = new ArrayList<>();
     private final AvailableImageHandler defaultAvailableImageHandler;
     private final UnavailableImageHandler defaultUnavailableImageHandler;
-    private final AvailableCounterHandler availableCounterHandler;
-    private final UnavailableCounterHandler unavailableCounterHandler;
+    private final ArrayList<AvailableCounterHandler> availableCounterHandlers = new ArrayList<>();
+    private final ArrayList<UnavailableCounterHandler> unavailableCounterHandlers = new ArrayList<>();
     private final DriverProxy driverProxy;
     private final AgentInvoker driverAgentInvoker;
     private final UnsafeBuffer counterValuesBuffer;
@@ -93,12 +93,20 @@ class ClientConductor implements Agent, DriverEventsListener
         interServiceTimeoutNs = ctx.interServiceTimeoutNs();
         defaultAvailableImageHandler = ctx.availableImageHandler();
         defaultUnavailableImageHandler = ctx.unavailableImageHandler();
-        availableCounterHandler = ctx.availableCounterHandler();
-        unavailableCounterHandler = ctx.unavailableCounterHandler();
         driverEventsAdapter = new DriverEventsAdapter(ctx.toClientBuffer(), ctx.clientId(), this);
         driverAgentInvoker = ctx.driverAgentInvoker();
         counterValuesBuffer = ctx.countersValuesBuffer();
         countersReader = new CountersReader(ctx.countersMetaDataBuffer(), ctx.countersValuesBuffer(), US_ASCII);
+
+        if (null != ctx.availableCounterHandler())
+        {
+            availableCounterHandlers.add(ctx.availableCounterHandler());
+        }
+
+        if (null != ctx.unavailableCounterHandler())
+        {
+            unavailableCounterHandlers.add(ctx.unavailableCounterHandler());
+        }
 
         final long nowNs = nanoClock.nanoTime();
         timeOfLastKeepAliveNs = nowNs;
@@ -352,12 +360,13 @@ class ClientConductor implements Agent, DriverEventsListener
 
     public void onAvailableCounter(final long registrationId, final int counterId)
     {
-        if (null != availableCounterHandler)
+        for (int i = 0, size = availableCounterHandlers.size(); i < size; i++)
         {
+            final AvailableCounterHandler handler = availableCounterHandlers.get(i);
             isInCallback = true;
             try
             {
-                availableCounterHandler.onAvailableCounter(countersReader, registrationId, counterId);
+                handler.onAvailableCounter(countersReader, registrationId, counterId);
             }
             catch (final Exception ex)
             {
@@ -372,12 +381,13 @@ class ClientConductor implements Agent, DriverEventsListener
 
     public void onUnavailableCounter(final long registrationId, final int counterId)
     {
-        if (null != unavailableCounterHandler)
+        for (int i = 0, size = unavailableCounterHandlers.size(); i < size; i++)
         {
+            final UnavailableCounterHandler handler = unavailableCounterHandlers.get(i);
             isInCallback = true;
             try
             {
-                unavailableCounterHandler.onUnavailableCounter(countersReader, registrationId, counterId);
+                handler.onUnavailableCounter(countersReader, registrationId, counterId);
             }
             catch (final Exception ex)
             {
@@ -653,6 +663,58 @@ class ClientConductor implements Agent, DriverEventsListener
             awaitResponse(registrationId);
 
             return (Counter)resourceByRegIdMap.get(registrationId);
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
+    void addAvailableCounterHandler(final AvailableCounterHandler handler)
+    {
+        clientLock.lock();
+        try
+        {
+            availableCounterHandlers.add(handler);
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
+    boolean removeAvailableCounterHandler(final AvailableCounterHandler handler)
+    {
+        clientLock.lock();
+        try
+        {
+            return availableCounterHandlers.remove(handler);
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
+    void addUnavailableCounterHandler(final UnavailableCounterHandler handler)
+    {
+        clientLock.lock();
+        try
+        {
+            unavailableCounterHandlers.add(handler);
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
+    boolean removeUnavailableCounterHandler(final UnavailableCounterHandler handler)
+    {
+        clientLock.lock();
+        try
+        {
+            return unavailableCounterHandlers.remove(handler);
         }
         finally
         {

@@ -366,6 +366,48 @@ public class Aeron implements AutoCloseable
     }
 
     /**
+     * Add a handler to the list be called when {@link Counter}s become available.
+     *
+     * @param handler to be called when {@link Counter}s become available.
+     */
+    public void addAvailableCounterHandler(final AvailableCounterHandler handler)
+    {
+        conductor.addAvailableCounterHandler(handler);
+    }
+
+    /**
+     * Remove a previously added handler to the list be called when {@link Counter}s become available.
+     *
+     * @param handler to be removed.
+     * @return true if found and removed otherwise false.
+     */
+    public boolean removeAvailableCounterHandler(final AvailableCounterHandler handler)
+    {
+        return conductor.removeAvailableCounterHandler(handler);
+    }
+
+    /**
+     * Add a handler to the list be called when {@link Counter}s become unavailable.
+     *
+     * @param handler to be called when {@link Counter}s become unavailable.
+     */
+    public void addUnavailableCounterHandler(final UnavailableCounterHandler handler)
+    {
+        conductor.addUnavailableCounterHandler(handler);
+    }
+
+    /**
+     * Remove a previously added handler to the list be called when {@link Counter}s become unavailable.
+     *
+     * @param handler to be removed.
+     * @return true if found and removed otherwise false.
+     */
+    public boolean removeUnavailableCounterHandler(final UnavailableCounterHandler handler)
+    {
+        return conductor.removeUnavailableCounterHandler(handler);
+    }
+
+    /**
      * Called by the {@link ClientConductor} if the client should be terminated due to timeout.
      */
     void internalClose()
@@ -908,7 +950,8 @@ public class Aeron implements AutoCloseable
         }
 
         /**
-         * Setup a callback for when a counter is available.
+         * Setup a callback for when a counter is available. This will be added to the list first before
+         * additional handler are added with {@link Aeron#addAvailableCounterHandler(AvailableCounterHandler)}.
          *
          * @param handler to be called for handling available counter notifications.
          * @return this for a fluent API.
@@ -930,7 +973,8 @@ public class Aeron implements AutoCloseable
         }
 
         /**
-         * Setup a callback for when a counter is unavailable.
+         * Setup a callback for when a counter is unavailable. This will be added to the list first before
+         * additional handler are added with {@link Aeron#addUnavailableCounterHandler(UnavailableCounterHandler)}.
          *
          * @param handler to be called for handling unavailable counter notifications.
          * @return this for a fluent API.

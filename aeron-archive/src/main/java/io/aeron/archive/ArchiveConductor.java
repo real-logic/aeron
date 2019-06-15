@@ -122,7 +122,7 @@ abstract class ArchiveConductor
         maxConcurrentReplays = ctx.maxConcurrentReplays();
         connectTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.connectTimeoutNs());
 
-        ctx.unavailableCounterHandlerReference(this);
+        aeron.addUnavailableCounterHandler(this);
 
         final ChannelUri controlChannelUri = ChannelUri.parse(ctx.controlChannel());
         controlChannelUri.put(CommonContext.SPARSE_PARAM_NAME, Boolean.toString(ctx.controlTermBufferSparse()));

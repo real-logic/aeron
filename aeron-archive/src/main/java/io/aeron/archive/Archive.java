@@ -18,7 +18,6 @@ package io.aeron.archive;
 import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.Image;
-import io.aeron.UnavailableCounterHandler;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.exceptions.ConcurrentConcludeException;
@@ -27,7 +26,6 @@ import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
-import org.agrona.collections.MutableReference;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.StatusIndicator;
@@ -398,9 +396,6 @@ public class Archive implements AutoCloseable
         private AtomicCounter errorCounter;
         private CountedErrorHandler countedErrorHandler;
 
-        private MutableReference<UnavailableCounterHandler> unavailableCounterHandlerRef = new MutableReference<>(
-            ((countersReader, registrationId, counterId) -> {}));
-
         private AgentInvoker mediaDriverAgentInvoker;
         private int maxConcurrentRecordings = Configuration.maxConcurrentRecordings();
         private int maxConcurrentReplays = Configuration.maxConcurrentReplays();
@@ -450,9 +445,6 @@ public class Archive implements AutoCloseable
                         .epochClock(epochClock)
                         .driverAgentInvoker(mediaDriverAgentInvoker)
                         .useConductorAgentInvoker(true)
-                        .unavailableCounterHandler((countersReader, registrationId, counterId) ->
-                            unavailableCounterHandlerRef.get().onUnavailableCounter(
-                                countersReader, registrationId, counterId))
                         .clientLock(new NoOpLock()));
 
                 if (null == errorCounter)
@@ -1350,12 +1342,6 @@ public class Archive implements AutoCloseable
             CloseHelper.close(markFile);
             CloseHelper.close(archiveDirChannel);
             archiveDirChannel = null;
-        }
-
-        Context unavailableCounterHandlerReference(final UnavailableCounterHandler unavailableCounterHandler)
-        {
-            unavailableCounterHandlerRef.set(unavailableCounterHandler);
-            return this;
         }
     }
 

@@ -1315,7 +1315,7 @@ public class AeronArchive implements AutoCloseable
     public static class Configuration
     {
         public static final int MAJOR_VERSION = 0;
-        public static final int MINOR_VERSION = 1;
+        public static final int MINOR_VERSION = 2;
         public static final int PATCH_VERSION = 1;
         public static final int SEMANTIC_VERSION = SemanticVersion.compose(MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION);
 

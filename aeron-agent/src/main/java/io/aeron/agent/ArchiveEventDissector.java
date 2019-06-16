@@ -46,6 +46,7 @@ final class ArchiveEventDissector
         new FindLastMatchingRecordingRequestDecoder();
     private static final ListRecordingSubscriptionsRequestDecoder LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER =
         new ListRecordingSubscriptionsRequestDecoder();
+    private static final BoundedReplayRequestDecoder BOUNDED_REPLAY_REQUEST_DECODER = new BoundedReplayRequestDecoder();
 
     @SuppressWarnings("MethodLength")
     static void controlRequest(
@@ -138,6 +139,7 @@ final class ArchiveEventDissector
                     HEADER_DECODER.version());
                 appendListRecording(builder);
                 break;
+
             case CMD_IN_EXTEND_RECORDING:
                 EXTEND_RECORDING_REQUEST_DECODER.wrap(
                     buffer,
@@ -201,170 +203,198 @@ final class ArchiveEventDissector
                 appendListRecordingSubscriptions(builder);
                 break;
 
+            case CMD_IN_START_BOUNDED_REPLAY:
+                BOUNDED_REPLAY_REQUEST_DECODER.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    HEADER_DECODER.blockLength(),
+                    HEADER_DECODER.version());
+                appendStartBoundedReplay(builder);
+                break;
+
             default:
                 builder.append("ARCHIVE: COMMAND UNKNOWN: ").append(event);
         }
     }
 
-    private static void appendListRecordingSubscriptions(final StringBuilder builder)
+    private static void appendConnect(final StringBuilder builder)
     {
-        builder.append("ARCHIVE: LIST_RECORDING_SUBSCRIPTIONS ");
-        LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER.getChannel(builder);
+        builder.append("ARCHIVE: CONNECT")
+            .append(", correlationId=").append(CONNECT_REQUEST_DECODER.correlationId())
+            .append(", responseStreamId=").append(CONNECT_REQUEST_DECODER.responseStreamId())
+            .append(", version=").append(CONNECT_REQUEST_DECODER.version())
+            .append(", responseChannel=");
 
-        builder
-            .append(' ')
-            .append(LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER.streamId()).append(' ')
-            .append(LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER.applyStreamId()).append(' ')
-            .append(LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER.pseudoIndex()).append(' ')
-            .append(LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER.controlSessionId()).append(" [")
-            .append(LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER.correlationId()).append(']');
-    }
-
-    private static void appendFindLastMatchingRecord(final StringBuilder builder)
-    {
-        builder.append("ARCHIVE: FIND_LAST_MATCHING_RECORDING ")
-            .append(FIND_LAST_MATCHING_RECORDING_REQUEST_DECODER.streamId()).append(' ')
-            .append(FIND_LAST_MATCHING_RECORDING_REQUEST_DECODER.sessionId()).append(' ')
-            .append(FIND_LAST_MATCHING_RECORDING_REQUEST_DECODER.minRecordingId()).append(' ')
-            .append(FIND_LAST_MATCHING_RECORDING_REQUEST_DECODER.controlSessionId()).append(" [")
-            .append(FIND_LAST_MATCHING_RECORDING_REQUEST_DECODER.correlationId()).append(']');
-    }
-
-    private static void appendStopPosition(final StringBuilder builder)
-    {
-        builder.append("ARCHIVE: STOP_POSITION ")
-            .append(STOP_POSITION_REQUEST_DECODER.recordingId()).append(' ')
-            .append(STOP_POSITION_REQUEST_DECODER.controlSessionId()).append(" [")
-            .append(STOP_POSITION_REQUEST_DECODER.correlationId()).append(']');
-    }
-
-    private static void appendStopRecordingSubscription(final StringBuilder builder)
-    {
-        builder.append("ARCHIVE: STOP_RECORDING_SUBSCRIPTION ")
-            .append(STOP_RECORDING_SUBSCRIPTION_REQUEST_DECODER.subscriptionId()).append(' ')
-            .append(STOP_RECORDING_SUBSCRIPTION_REQUEST_DECODER.controlSessionId()).append(" [")
-            .append(STOP_RECORDING_SUBSCRIPTION_REQUEST_DECODER.correlationId()).append(']');
-    }
-
-    private static void appendTruncateRecording(final StringBuilder builder)
-    {
-        builder.append("ARCHIVE: TRUNCATE_RECORDING ")
-            .append(TRUNCATE_RECORDING_REQUEST_DECODER.recordingId()).append(' ')
-            .append(TRUNCATE_RECORDING_REQUEST_DECODER.position()).append(' ')
-            .append(TRUNCATE_RECORDING_REQUEST_DECODER.controlSessionId()).append(" [")
-            .append(TRUNCATE_RECORDING_REQUEST_DECODER.correlationId()).append(']');
-    }
-
-    private static void appendRecordingPosition(final StringBuilder builder)
-    {
-        builder.append("ARCHIVE: RECORDING_POSITION ")
-            .append(RECORDING_POSITION_REQUEST_DECODER.recordingId()).append(' ')
-            .append(RECORDING_POSITION_REQUEST_DECODER.controlSessionId()).append(" [")
-            .append(RECORDING_POSITION_REQUEST_DECODER.correlationId()).append(']');
-    }
-
-    private static void appendExtendRecording(final StringBuilder builder)
-    {
-        builder.append("ARCHIVE: EXTEND_RECORDING ");
-        EXTEND_RECORDING_REQUEST_DECODER.getChannel(builder);
-
-        builder
-            .append(' ')
-            .append(EXTEND_RECORDING_REQUEST_DECODER.streamId()).append(' ')
-            .append(EXTEND_RECORDING_REQUEST_DECODER.recordingId()).append(' ')
-            .append(EXTEND_RECORDING_REQUEST_DECODER.sourceLocation()).append(' ')
-            .append(EXTEND_RECORDING_REQUEST_DECODER.controlSessionId()).append(" [")
-            .append(EXTEND_RECORDING_REQUEST_DECODER.correlationId()).append(']');
-    }
-
-    private static void appendListRecording(final StringBuilder builder)
-    {
-        builder.append("ARCHIVE: LIST_RECORDING ")
-            .append(LIST_RECORDING_REQUEST_DECODER.recordingId()).append(' ')
-            .append(LIST_RECORDING_REQUEST_DECODER.controlSessionId()).append(" [")
-            .append(LIST_RECORDING_REQUEST_DECODER.correlationId()).append(']');
-    }
-
-    private static void appendListRecordingsForUri(final StringBuilder builder)
-    {
-        builder.append("ARCHIVE: LIST_RECORDINGS_FOR_URI ");
-        LIST_RECORDINGS_FOR_URI_REQUEST_DECODER.getChannel(builder);
-
-        builder
-            .append(' ')
-            .append(LIST_RECORDINGS_FOR_URI_REQUEST_DECODER.fromRecordingId()).append(' ')
-            .append(LIST_RECORDINGS_FOR_URI_REQUEST_DECODER.controlSessionId()).append(" [")
-            .append(LIST_RECORDINGS_FOR_URI_REQUEST_DECODER.correlationId()).append(']');
-    }
-
-    private static void appendListRecordings(final StringBuilder builder)
-    {
-        builder.append("ARCHIVE: LIST_RECORDINGS ")
-            .append(LIST_RECORDINGS_REQUEST_DECODER.fromRecordingId()).append(' ')
-            .append(LIST_RECORDINGS_REQUEST_DECODER.controlSessionId()).append(" [")
-            .append(LIST_RECORDINGS_REQUEST_DECODER.correlationId()).append(']');
-    }
-
-    private static void appendStopReplay(final StringBuilder builder)
-    {
-        builder.append("ARCHIVE: STOP_REPLAY ")
-            .append(STOP_REPLAY_REQUEST_DECODER.replaySessionId()).append(' ')
-            .append(STOP_REPLAY_REQUEST_DECODER.controlSessionId()).append(" [")
-            .append(STOP_REPLAY_REQUEST_DECODER.correlationId()).append(']');
-    }
-
-    private static void appendReplay(final StringBuilder builder)
-    {
-        builder.append("ARCHIVE: REPLAY ");
-        REPLAY_REQUEST_DECODER.getReplayChannel(builder);
-
-        builder
-            .append(' ')
-            .append(REPLAY_REQUEST_DECODER.replayStreamId()).append(' ')
-            .append(REPLAY_REQUEST_DECODER.recordingId()).append(' ')
-            .append(REPLAY_REQUEST_DECODER.controlSessionId()).append(" [")
-            .append(REPLAY_REQUEST_DECODER.correlationId()).append(']');
-    }
-
-    private static void appendStopRecording(final StringBuilder builder)
-    {
-        builder.append("ARCHIVE: STOP_RECORDING ");
-        STOP_RECORDING_REQUEST_DECODER.getChannel(builder);
-
-        builder
-            .append(' ')
-            .append(STOP_RECORDING_REQUEST_DECODER.streamId()).append(' ')
-            .append(STOP_RECORDING_REQUEST_DECODER.controlSessionId()).append(" [")
-            .append(STOP_RECORDING_REQUEST_DECODER.correlationId()).append(']');
-    }
-
-    private static void appendStartRecording(final StringBuilder builder)
-    {
-        builder.append("ARCHIVE: START_RECORDING ");
-        START_RECORDING_REQUEST_DECODER.getChannel(builder);
-
-        builder
-            .append(' ')
-            .append(START_RECORDING_REQUEST_DECODER.streamId()).append(' ')
-            .append(START_RECORDING_REQUEST_DECODER.controlSessionId()).append(" [")
-            .append(START_RECORDING_REQUEST_DECODER.correlationId()).append(']');
+        CONNECT_REQUEST_DECODER.getResponseChannel(builder);
     }
 
     private static void appendCloseSession(final StringBuilder builder)
     {
-        builder.append("ARCHIVE: CLOSE_SESSION ")
-            .append(CLOSE_SESSION_REQUEST_DECODER.controlSessionId());
+        builder.append("ARCHIVE: CLOSE_SESSION")
+            .append(", controlSessionId=").append(CLOSE_SESSION_REQUEST_DECODER.controlSessionId());
     }
 
-    private static void appendConnect(final StringBuilder builder)
+    private static void appendStartRecording(final StringBuilder builder)
     {
-        builder.append("ARCHIVE: CONNECT ");
-        CONNECT_REQUEST_DECODER.getResponseChannel(builder);
+        builder.append("ARCHIVE: START_RECORDING")
+            .append(", controlSessionId=").append(START_RECORDING_REQUEST_DECODER.controlSessionId())
+            .append(", correlationId=").append(START_RECORDING_REQUEST_DECODER.correlationId())
+            .append(", streamId=").append(START_RECORDING_REQUEST_DECODER.streamId())
+            .append(", sourceLocation=").append(START_RECORDING_REQUEST_DECODER.sourceLocation())
+            .append(", channel=");
 
-        builder
-            .append(' ')
-            .append(CONNECT_REQUEST_DECODER.responseStreamId()).append(" [")
-            .append(CONNECT_REQUEST_DECODER.correlationId()).append("][")
-            .append(CONNECT_REQUEST_DECODER.version()).append(']');
+        START_RECORDING_REQUEST_DECODER.getChannel(builder);
+    }
+
+    private static void appendStopRecording(final StringBuilder builder)
+    {
+        builder.append("ARCHIVE: STOP_RECORDING")
+            .append(", controlSessionId=").append(STOP_RECORDING_REQUEST_DECODER.controlSessionId())
+            .append(", correlationId=").append(STOP_RECORDING_REQUEST_DECODER.correlationId())
+            .append(", streamId=").append(STOP_RECORDING_REQUEST_DECODER.streamId())
+            .append(", channel=");
+
+        STOP_RECORDING_REQUEST_DECODER.getChannel(builder);
+    }
+
+    private static void appendReplay(final StringBuilder builder)
+    {
+        builder.append("ARCHIVE: REPLAY")
+            .append(", controlSessionId=").append(REPLAY_REQUEST_DECODER.controlSessionId())
+            .append(", correlationId=").append(REPLAY_REQUEST_DECODER.correlationId())
+            .append(", recordingId=").append(REPLAY_REQUEST_DECODER.recordingId())
+            .append(", position=").append(REPLAY_REQUEST_DECODER.position())
+            .append(", length=").append(REPLAY_REQUEST_DECODER.length())
+            .append(", replayStreamId=").append(REPLAY_REQUEST_DECODER.replayStreamId())
+            .append(", replayChannel=");
+
+        REPLAY_REQUEST_DECODER.getReplayChannel(builder);
+    }
+
+    private static void appendStopReplay(final StringBuilder builder)
+    {
+        builder.append("ARCHIVE: STOP_REPLAY")
+            .append(", controlSessionId=").append(STOP_REPLAY_REQUEST_DECODER.controlSessionId())
+            .append(", correlationId=").append(STOP_REPLAY_REQUEST_DECODER.correlationId())
+            .append(", recordingId=").append(STOP_REPLAY_REQUEST_DECODER.replaySessionId());
+    }
+
+    private static void appendListRecordings(final StringBuilder builder)
+    {
+        builder.append("ARCHIVE: LIST_RECORDINGS")
+            .append(", controlSessionId=").append(LIST_RECORDINGS_REQUEST_DECODER.controlSessionId())
+            .append(", correlationId=").append(LIST_RECORDINGS_REQUEST_DECODER.correlationId())
+            .append(", fromRecordingId=").append(LIST_RECORDINGS_REQUEST_DECODER.fromRecordingId())
+            .append(", recordCount=").append(LIST_RECORDINGS_REQUEST_DECODER.recordCount());
+    }
+
+    private static void appendListRecording(final StringBuilder builder)
+    {
+        builder.append("ARCHIVE: LIST_RECORDING")
+            .append(", controlSessionId=").append(LIST_RECORDING_REQUEST_DECODER.controlSessionId())
+            .append(", correlationId=").append(LIST_RECORDING_REQUEST_DECODER.correlationId())
+            .append(", recordingId=").append(LIST_RECORDING_REQUEST_DECODER.recordingId());
+    }
+
+    private static void appendListRecordingsForUri(final StringBuilder builder)
+    {
+        builder.append("ARCHIVE: LIST_RECORDINGS_FOR_URI ")
+            .append(", controlSessionId=").append(LIST_RECORDINGS_FOR_URI_REQUEST_DECODER.controlSessionId())
+            .append(", correlationId=").append(LIST_RECORDINGS_FOR_URI_REQUEST_DECODER.correlationId())
+            .append(", fromRecordingId=").append(LIST_RECORDINGS_FOR_URI_REQUEST_DECODER.fromRecordingId())
+            .append(", recordCount=").append(LIST_RECORDINGS_FOR_URI_REQUEST_DECODER.recordCount())
+            .append(", streamId=").append(LIST_RECORDINGS_FOR_URI_REQUEST_DECODER.streamId())
+            .append(", channel=");
+
+        LIST_RECORDINGS_FOR_URI_REQUEST_DECODER.getChannel(builder);
+    }
+
+    private static void appendExtendRecording(final StringBuilder builder)
+    {
+        builder.append("ARCHIVE: EXTEND_RECORDING")
+            .append(", controlSessionId=").append(EXTEND_RECORDING_REQUEST_DECODER.controlSessionId())
+            .append(", correlationId=").append(EXTEND_RECORDING_REQUEST_DECODER.correlationId())
+            .append(", recordingId=").append(EXTEND_RECORDING_REQUEST_DECODER.recordingId())
+            .append(", streamId=").append(EXTEND_RECORDING_REQUEST_DECODER.streamId())
+            .append(", sourceLocation=").append(EXTEND_RECORDING_REQUEST_DECODER.sourceLocation())
+            .append(", channel=");
+
+        EXTEND_RECORDING_REQUEST_DECODER.getChannel(builder);
+    }
+
+    private static void appendRecordingPosition(final StringBuilder builder)
+    {
+        builder.append("ARCHIVE: RECORDING_POSITION")
+            .append(", controlSessionId=").append(RECORDING_POSITION_REQUEST_DECODER.controlSessionId())
+            .append(", correlationId=").append(RECORDING_POSITION_REQUEST_DECODER.correlationId())
+            .append(", recordingId=").append(RECORDING_POSITION_REQUEST_DECODER.recordingId());
+    }
+
+    private static void appendTruncateRecording(final StringBuilder builder)
+    {
+        builder.append("ARCHIVE: TRUNCATE_RECORDING")
+            .append(", controlSessionId=").append(TRUNCATE_RECORDING_REQUEST_DECODER.controlSessionId())
+            .append(", correlationId=").append(TRUNCATE_RECORDING_REQUEST_DECODER.correlationId())
+            .append(", recordingId=").append(TRUNCATE_RECORDING_REQUEST_DECODER.recordingId())
+            .append(", position=").append(TRUNCATE_RECORDING_REQUEST_DECODER.position());
+    }
+
+    private static void appendStopRecordingSubscription(final StringBuilder builder)
+    {
+        builder.append("ARCHIVE: STOP_RECORDING_SUBSCRIPTION")
+            .append(", controlSessionId=").append(STOP_RECORDING_SUBSCRIPTION_REQUEST_DECODER.controlSessionId())
+            .append(", correlationId=").append(STOP_RECORDING_SUBSCRIPTION_REQUEST_DECODER.correlationId())
+            .append(", subscriptionId=").append(STOP_RECORDING_SUBSCRIPTION_REQUEST_DECODER.subscriptionId());
+    }
+
+    private static void appendStopPosition(final StringBuilder builder)
+    {
+        builder.append("ARCHIVE: STOP_POSITION")
+            .append(", controlSessionId=").append(STOP_POSITION_REQUEST_DECODER.controlSessionId())
+            .append(", correlationId=").append(STOP_POSITION_REQUEST_DECODER.correlationId())
+            .append(", recordingId=").append(STOP_POSITION_REQUEST_DECODER.recordingId());
+    }
+
+    private static void appendFindLastMatchingRecord(final StringBuilder builder)
+    {
+        builder.append("ARCHIVE: FIND_LAST_MATCHING_RECORDING")
+            .append(", controlSessionId=").append(FIND_LAST_MATCHING_RECORDING_REQUEST_DECODER.controlSessionId())
+            .append(", correlationId=").append(FIND_LAST_MATCHING_RECORDING_REQUEST_DECODER.correlationId())
+            .append(", minRecordingId=").append(FIND_LAST_MATCHING_RECORDING_REQUEST_DECODER.minRecordingId())
+            .append(", sessionId=").append(FIND_LAST_MATCHING_RECORDING_REQUEST_DECODER.sessionId())
+            .append(", streamId=").append(FIND_LAST_MATCHING_RECORDING_REQUEST_DECODER.streamId())
+            .append(", channel=");
+
+        FIND_LAST_MATCHING_RECORDING_REQUEST_DECODER.getChannel(builder);
+    }
+
+    private static void appendListRecordingSubscriptions(final StringBuilder builder)
+    {
+        builder.append("ARCHIVE: LIST_RECORDING_SUBSCRIPTIONS ")
+            .append(", controlSessionId=").append(LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER.controlSessionId())
+            .append(", correlationId=").append(LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER.correlationId())
+            .append(", pseudoIndex=").append(LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER.pseudoIndex())
+            .append(", applyStreamId=").append(LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER.applyStreamId())
+            .append(", subscriptionCount=").append(LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER.subscriptionCount())
+            .append(", streamId=").append(LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER.streamId())
+            .append(", channel=");
+
+        LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER.getChannel(builder);
+    }
+
+
+    private static void appendStartBoundedReplay(final StringBuilder builder)
+    {
+        builder.append("ARCHIVE: START_BOUNDED_REPLAY")
+            .append(", controlSessionId=").append(BOUNDED_REPLAY_REQUEST_DECODER.controlSessionId())
+            .append(", correlationId=").append(BOUNDED_REPLAY_REQUEST_DECODER.correlationId())
+            .append(", recordingId=").append(BOUNDED_REPLAY_REQUEST_DECODER.recordingId())
+            .append(", position=").append(BOUNDED_REPLAY_REQUEST_DECODER.position())
+            .append(", length=").append(BOUNDED_REPLAY_REQUEST_DECODER.length())
+            .append(", limitCounterId=").append(BOUNDED_REPLAY_REQUEST_DECODER.limitCounterId())
+            .append(", replayStreamId=").append(BOUNDED_REPLAY_REQUEST_DECODER.replayStreamId())
+            .append(", replayChannel=");
+
+        BOUNDED_REPLAY_REQUEST_DECODER.getReplayChannel(builder);
     }
 }

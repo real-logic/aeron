@@ -109,6 +109,10 @@ public final class ArchiveEventLogger
             case ListRecordingSubscriptionsRequestDecoder.TEMPLATE_ID:
                 dispatchIfEnabled(buffer, offset, length, CMD_IN_LIST_RECORDING_SUBSCRIPTIONS);
                 break;
+
+            case BoundedReplayRequestDecoder.TEMPLATE_ID:
+                dispatchIfEnabled(buffer, offset, length, CMD_IN_START_BOUNDED_REPLAY);
+                break;
         }
     }
 

@@ -192,6 +192,7 @@ abstract class ArchiveConductor
             CloseHelper.close(localControlSubscription);
             CloseHelper.close(controlSubscription);
             CloseHelper.close(recordingEventsProxy);
+            aeron.removeUnavailableCounterHandler(this);
         }
 
         ctx.close();

@@ -868,9 +868,9 @@ public class Archive implements AutoCloseable
         }
 
         /**
-         * Provides an {@link IdleStrategy} supplier for the thread responsible for publication/subscription backoff.
+         * Provides an {@link IdleStrategy} supplier for idling the conductor.
          *
-         * @param idleStrategySupplier supplier of thread idle strategy for publication/subscription backoff.
+         * @param idleStrategySupplier supplier for idling the conductor.
          * @return this for a fluent API.
          */
         public Context idleStrategySupplier(final Supplier<IdleStrategy> idleStrategySupplier)

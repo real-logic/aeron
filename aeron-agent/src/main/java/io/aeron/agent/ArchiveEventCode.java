@@ -38,7 +38,8 @@ public enum ArchiveEventCode implements EventCode
     CMD_IN_STOP_POSITION(14, ArchiveEventDissector::controlRequest),
     CMD_IN_FIND_LAST_MATCHING_RECORD(15, ArchiveEventDissector::controlRequest),
     CMD_IN_LIST_RECORDING_SUBSCRIPTIONS(16, ArchiveEventDissector::controlRequest),
-    CMD_IN_START_BOUNDED_REPLAY(17, ArchiveEventDissector::controlRequest);
+    CMD_IN_START_BOUNDED_REPLAY(17, ArchiveEventDissector::controlRequest),
+    CMD_IN_STOP_ALL_REPLAYS(18, ArchiveEventDissector::controlRequest);
 
     static final int EVENT_CODE_TYPE = EventCodeType.ARCHIVE.getTypeCode();
     private static final int MAX_ID = 63;

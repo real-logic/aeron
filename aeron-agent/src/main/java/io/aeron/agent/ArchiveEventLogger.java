@@ -113,6 +113,10 @@ public final class ArchiveEventLogger
             case BoundedReplayRequestDecoder.TEMPLATE_ID:
                 dispatchIfEnabled(buffer, offset, length, CMD_IN_START_BOUNDED_REPLAY);
                 break;
+
+            case StopAllReplaysRequestDecoder.TEMPLATE_ID:
+                dispatchIfEnabled(buffer, offset, length, CMD_IN_STOP_ALL_REPLAYS);
+                break;
         }
     }
 

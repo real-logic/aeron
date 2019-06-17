@@ -47,6 +47,8 @@ final class ArchiveEventDissector
     private static final ListRecordingSubscriptionsRequestDecoder LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER =
         new ListRecordingSubscriptionsRequestDecoder();
     private static final BoundedReplayRequestDecoder BOUNDED_REPLAY_REQUEST_DECODER = new BoundedReplayRequestDecoder();
+    private static final StopAllReplaysRequestDecoder STOP_ALL_REPLAYS_REQUEST_DECODER =
+        new StopAllReplaysRequestDecoder();
 
     @SuppressWarnings("MethodLength")
     static void controlRequest(
@@ -210,6 +212,15 @@ final class ArchiveEventDissector
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendStartBoundedReplay(builder);
+                break;
+
+            case CMD_IN_STOP_ALL_REPLAYS:
+                STOP_ALL_REPLAYS_REQUEST_DECODER.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    HEADER_DECODER.blockLength(),
+                    HEADER_DECODER.version());
+                appendStopAllReplays(builder);
                 break;
 
             default:
@@ -396,5 +407,13 @@ final class ArchiveEventDissector
             .append(", replayChannel=");
 
         BOUNDED_REPLAY_REQUEST_DECODER.getReplayChannel(builder);
+    }
+
+    private static void appendStopAllReplays(final StringBuilder builder)
+    {
+        builder.append("ARCHIVE: STOP_ALL_REPLAYS")
+            .append(", controlSessionId=").append(STOP_ALL_REPLAYS_REQUEST_DECODER.controlSessionId())
+            .append(", correlationId=").append(STOP_ALL_REPLAYS_REQUEST_DECODER.correlationId())
+            .append(", recordingId=").append(STOP_ALL_REPLAYS_REQUEST_DECODER.recordingId());
     }
 }

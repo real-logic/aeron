@@ -152,7 +152,7 @@
 
     <sbe:message name="StopReplayRequest"
                  id="7"
-                 description="Replay recording range request">
+                 description="Stop Replay request">
         <field name="controlSessionId"     id="1" type="int64"/>
         <field name="correlationId"        id="2" type="int64"/>
         <field name="replaySessionId"      id="3" type="int64"/>
@@ -264,6 +264,14 @@
         <field name="limitCounterId"       id="6" type="int32"/>
         <field name="replayStreamId"       id="7" type="int32"/>
         <data  name="replayChannel"        id="8" type="varAsciiEncoding"/>
+    </sbe:message>
+
+    <sbe:message name="StopAllReplaysRequest"
+                 id="19"
+                 description="Replay recording range request">
+        <field name="controlSessionId"     id="1" type="int64"/>
+        <field name="correlationId"        id="2" type="int64"/>
+        <field name="recordingId"          id="3" type="int64"/>
     </sbe:message>
 
     <!-- Archive Catalog Metadata -->

@@ -290,6 +290,15 @@ class ControlSession implements Session
         }
     }
 
+    void onStopAllReplays(final long correlationId, final long recordingId)
+    {
+        updateState();
+        if (State.ACTIVE == state)
+        {
+            conductor.stopAllReplays(correlationId, this, recordingId);
+        }
+    }
+
     void onExtendRecording(
         final long correlationId,
         final long recordingId,

@@ -51,6 +51,8 @@ class ControlRequestAdapter implements FragmentHandler
         new ListRecordingSubscriptionsRequestDecoder();
     private final BoundedReplayRequestDecoder boundedReplayRequestDecoder =
         new BoundedReplayRequestDecoder();
+    private final StopAllReplaysRequestDecoder stopAllReplaysRequestDecoder =
+        new StopAllReplaysRequestDecoder();
 
     ControlRequestAdapter(final ControlRequestListener listener)
     {
@@ -148,26 +150,6 @@ class ControlRequestAdapter implements FragmentHandler
                     replayRequestDecoder.length(),
                     replayRequestDecoder.replayStreamId(),
                     replayRequestDecoder.replayChannel());
-                break;
-            }
-
-            case BoundedReplayRequestDecoder.TEMPLATE_ID:
-            {
-                boundedReplayRequestDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    headerDecoder.blockLength(),
-                    headerDecoder.version());
-
-                listener.onBoundedStartReplay(
-                    boundedReplayRequestDecoder.controlSessionId(),
-                    boundedReplayRequestDecoder.correlationId(),
-                    boundedReplayRequestDecoder.recordingId(),
-                    boundedReplayRequestDecoder.position(),
-                    boundedReplayRequestDecoder.length(),
-                    boundedReplayRequestDecoder.limitCounterId(),
-                    boundedReplayRequestDecoder.replayStreamId(),
-                    boundedReplayRequestDecoder.replayChannel());
                 break;
             }
 
@@ -356,6 +338,42 @@ class ControlRequestAdapter implements FragmentHandler
                     listRecordingSubscriptionsRequestDecoder.applyStreamId() == BooleanType.TRUE,
                     listRecordingSubscriptionsRequestDecoder.streamId(),
                     listRecordingSubscriptionsRequestDecoder.channel());
+                break;
+            }
+
+            case BoundedReplayRequestDecoder.TEMPLATE_ID:
+            {
+                boundedReplayRequestDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                listener.onBoundedStartReplay(
+                    boundedReplayRequestDecoder.controlSessionId(),
+                    boundedReplayRequestDecoder.correlationId(),
+                    boundedReplayRequestDecoder.recordingId(),
+                    boundedReplayRequestDecoder.position(),
+                    boundedReplayRequestDecoder.length(),
+                    boundedReplayRequestDecoder.limitCounterId(),
+                    boundedReplayRequestDecoder.replayStreamId(),
+                    boundedReplayRequestDecoder.replayChannel());
+                break;
+            }
+
+            case StopAllReplaysRequestDecoder.TEMPLATE_ID:
+            {
+                stopAllReplaysRequestDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                listener.onStopAllReplays(
+                    stopAllReplaysRequestDecoder.controlSessionId(),
+                    stopAllReplaysRequestDecoder.correlationId(),
+                    stopAllReplaysRequestDecoder.recordingId());
+                break;
             }
         }
     }

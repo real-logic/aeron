@@ -68,6 +68,8 @@ interface ControlRequestListener
 
     void onStopReplay(long controlSessionId, long correlationId, long replaySessionId);
 
+    void onStopAllReplays(long controlSessionId, long correlationId, long recordingId);
+
     void onExtendRecording(
         long controlSessionId,
         long correlationId,

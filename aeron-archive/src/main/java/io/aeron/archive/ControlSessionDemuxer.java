@@ -161,6 +161,12 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
         controlSession.onStopReplay(correlationId, replaySessionId);
     }
 
+    public void onStopAllReplays(final long controlSessionId, final long correlationId, final long recordingId)
+    {
+        final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
+        controlSession.onStopAllReplays(correlationId, recordingId);
+    }
+
     public void onListRecordingsForUri(
         final long controlSessionId,
         final long correlationId,

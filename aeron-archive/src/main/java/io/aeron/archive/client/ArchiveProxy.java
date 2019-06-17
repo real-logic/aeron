@@ -66,6 +66,8 @@ public class ArchiveProxy
         new ListRecordingSubscriptionsRequestEncoder();
     private final BoundedReplayRequestEncoder boundedReplayRequestEncoder =
         new BoundedReplayRequestEncoder();
+    private final StopAllReplaysRequestEncoder stopAllReplaysRequestEncoder =
+        new StopAllReplaysRequestEncoder();
 
     /**
      * Create a proxy with a {@link Publication} for sending control message requests.
@@ -365,6 +367,25 @@ public class ArchiveProxy
             .replaySessionId(replaySessionId);
 
         return offer(stopReplayRequestEncoder.encodedLength());
+    }
+
+    /**
+     * Stop any existing replay sessions for recording Id or all replay sessions regardless of recording Id.
+     *
+     * @param recordingId      that should be stopped.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean stopAllReplays(final long recordingId, final long correlationId, final long controlSessionId)
+    {
+        stopAllReplaysRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .recordingId(recordingId);
+
+        return offer(stopAllReplaysRequestEncoder.encodedLength());
     }
 
     /**

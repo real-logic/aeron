@@ -743,6 +743,33 @@ public class AeronArchive implements AutoCloseable
     }
 
     /**
+     * Stop all replay sessions for a given recording Id or all replays in general.
+     *
+     * @param recordingId to stop replay for or {@link Aeron#NULL_VALUE} for all replays.
+     */
+    public void stopAllReplays(final long recordingId)
+    {
+        lock.lock();
+        try
+        {
+            ensureOpen();
+
+            final long correlationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.stopAllReplays(recordingId, correlationId, controlSessionId))
+            {
+                throw new ArchiveException("failed to send stop all replays request");
+            }
+
+            pollForResponse(correlationId);
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
+    /**
      * Replay a length in bytes of a recording from a position and for convenience create a {@link Subscription}
      * to receive the replay. If the position is {@link #NULL_POSITION} then the stream will be replayed from the start.
      *

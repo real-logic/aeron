@@ -606,6 +606,19 @@ abstract class ArchiveConductor
         }
     }
 
+    void stopAllReplays(final long correlationId, final ControlSession controlSession, final long recordingId)
+    {
+        for (final ReplaySession replaySession : replaySessionByIdMap.values())
+        {
+            if (Aeron.NULL_VALUE == recordingId || replaySession.recordingId() == recordingId)
+            {
+                replaySession.abort();
+            }
+        }
+
+        controlSession.sendOkResponse(correlationId, controlResponseProxy);
+    }
+
     void extendRecording(
         final long correlationId,
         final ControlSession controlSession,

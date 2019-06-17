@@ -304,7 +304,6 @@ public class NetworkPublication
 
         if (0 == bytesSent)
         {
-            final boolean isEndOfStream = this.isEndOfStream;
             bytesSent = heartbeatMessageCheck(nowNs, activeTermId, termOffset, signalEos && isEndOfStream);
 
             if (spiesSimulateConnection && (statusMessageDeadlineNs - nowNs < 0) && hasSpies)

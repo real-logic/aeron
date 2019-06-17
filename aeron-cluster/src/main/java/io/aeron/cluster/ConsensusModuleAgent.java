@@ -824,6 +824,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             idle();
         }
 
+        archive.stopAllReplays(recordingId);
+
         if (stopPosition > logPosition)
         {
             archive.truncateRecording(recordingId, logPosition);
@@ -1977,6 +1979,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                         session.correlationId(),
                         logRecordingId(),
                         commitPosition.id(),
+                        leaderMember.id(),
                         recoveryPlan,
                         ClusterMember.encodeAsString(clusterMembers)))
                     {

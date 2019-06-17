@@ -561,13 +561,15 @@ class MemberStatusPublisher
         final long correlationId,
         final long logRecordingId,
         final int commitPositionCounterId,
+        final int leaderMemberId,
         final RecordingLog.RecoveryPlan recoveryPlan,
         final String memberEndpoints)
     {
         backupResponseEncoder.wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .correlationId(correlationId)
             .logRecordingId(logRecordingId)
-            .commitPositionCounterId(commitPositionCounterId);
+            .commitPositionCounterId(commitPositionCounterId)
+            .leaderMemberId(leaderMemberId);
 
         final BackupResponseEncoder.SnapshotsEncoder snapshotsEncoder =
             backupResponseEncoder.snapshotsCount(recoveryPlan.snapshots.size());

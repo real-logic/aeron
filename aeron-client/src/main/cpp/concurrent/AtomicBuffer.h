@@ -54,7 +54,7 @@ public:
         m_length(static_cast<util::index_t>(length))
     {
 #if !defined(DISABLE_BOUNDS_CHECKS)
-        if (AERON_COND_EXPECT(length > std::numeric_limits<util::index_t>::max(), true))
+        if (AERON_COND_EXPECT(length > static_cast<size_t>(std::numeric_limits<util::index_t>::max()), true))
         {
             throw aeron::util::OutOfBoundsException(
                 aeron::util::strPrintf("length out of bounds[%p]: length=%lld", this, static_cast<long long>(length)),
@@ -75,7 +75,7 @@ public:
         m_length(static_cast<util::index_t>(length))
     {
 #if !defined(DISABLE_BOUNDS_CHECKS)
-        if (AERON_COND_EXPECT(length > std::numeric_limits<util::index_t>::max(), true))
+        if (AERON_COND_EXPECT(length > static_cast<size_t>(std::numeric_limits<util::index_t>::max()), true))
         {
             throw aeron::util::OutOfBoundsException(
                 aeron::util::strPrintf("length out of bounds[%p]. length=%lld", this, static_cast<long long>(length)),
@@ -114,7 +114,7 @@ public:
     inline void wrap(std::uint8_t* buffer, size_t length)
     {
 #if !defined(DISABLE_BOUNDS_CHECKS)
-        if (AERON_COND_EXPECT(length > std::numeric_limits<util::index_t>::max(), true))
+        if (AERON_COND_EXPECT(length > static_cast<size_t>(std::numeric_limits<util::index_t>::max()), true))
         {
             throw aeron::util::OutOfBoundsException(
                 aeron::util::strPrintf("length out of bounds[%p]: length=%lld", this, static_cast<long long>(length)),
@@ -166,7 +166,7 @@ public:
     inline void capacity(size_t length)
     {
 #if !defined(DISABLE_BOUNDS_CHECKS)
-        if (AERON_COND_EXPECT(length > std::numeric_limits<util::index_t>::max(), true))
+        if (AERON_COND_EXPECT(length > static_cast<size_t>(std::numeric_limits<util::index_t>::max()), true))
         {
             throw aeron::util::OutOfBoundsException(
                 aeron::util::strPrintf("length out of bounds[%p]: length=%lld", this, static_cast<long long>(length)),

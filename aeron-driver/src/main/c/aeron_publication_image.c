@@ -238,7 +238,12 @@ void aeron_publication_image_clean_buffer_to(aeron_publication_image_t *image, i
         size_t bytes_left_in_term = term_length - term_offset;
         size_t length = bytes_to_clean < bytes_left_in_term ? bytes_to_clean : bytes_left_in_term;
 
-        memset(image->mapped_raw_log.term_buffers[dirty_index].addr + term_offset, 0, length);
+        memset(
+            image->mapped_raw_log.term_buffers[dirty_index].addr + term_offset + sizeof(int64_t),
+            0,
+            length - sizeof(int64_t));
+        AERON_PUT_ORDERED(image->mapped_raw_log.term_buffers[dirty_index].addr, (int64_t)0);
+
         image->conductor_fields.clean_position = clean_position + length;
     }
 }

@@ -251,7 +251,12 @@ void aeron_ipc_publication_clean_buffer(aeron_ipc_publication_t *publication, in
         size_t bytes_left_in_term = term_length - term_offset;
         size_t length = bytes_to_clean < bytes_left_in_term ? bytes_to_clean : bytes_left_in_term;
 
-        memset(publication->mapped_raw_log.term_buffers[dirty_index].addr + term_offset, 0, length);
+        memset(
+            publication->mapped_raw_log.term_buffers[dirty_index].addr + term_offset + sizeof(int64_t),
+            0,
+            length - sizeof(int64_t));
+        AERON_PUT_ORDERED(publication->mapped_raw_log.term_buffers[dirty_index].addr, (int64_t)0);
+
         publication->conductor_fields.clean_position = clean_position + length;
     }
 }

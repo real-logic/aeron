@@ -516,9 +516,11 @@ public class NetworkPublication
             }
 
             final long proposedPublisherLimit = minConsumerPosition + termWindowLength;
-            if (publisherLimit.proposeMaxOrdered(proposedPublisherLimit))
+            final long publisherLimit = this.publisherLimit.get();
+            if (proposedPublisherLimit > publisherLimit)
             {
                 cleanBufferTo(minConsumerPosition - termBufferLength);
+                this.publisherLimit.setOrdered(proposedPublisherLimit);
                 workCount = 1;
             }
         }

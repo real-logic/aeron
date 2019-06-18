@@ -504,8 +504,8 @@ public class PublicationImage
             ((timeOfLastStatusMessageScheduleNs + statusMessageTimeoutNs) - nowNs < 0) ||
             (minSubscriberPosition > (nextSmPosition + threshold)))
         {
-            scheduleStatusMessage(nowNs, minSubscriberPosition, windowLength);
             cleanBufferTo(minSubscriberPosition - (termLengthMask + 1));
+            scheduleStatusMessage(nowNs, minSubscriberPosition, windowLength);
         }
     }
 

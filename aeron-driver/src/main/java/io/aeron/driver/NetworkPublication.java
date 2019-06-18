@@ -860,7 +860,6 @@ public class NetworkPublication
             channelEndpoint.decRef();
             timeOfLastActivityNs = nanoClock.nanoTime();
 
-            LogBufferDescriptor.isConnected(metaDataBuffer, spyPositions.length > 0);
             final long producerPosition = producerPosition();
             publisherLimit.setOrdered(producerPosition);
             endOfStreamPosition(metaDataBuffer, producerPosition);

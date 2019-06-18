@@ -290,11 +290,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         {
             state = State.INACTIVE;
             final long producerPosition = producerPosition();
-            if (publisherLimit.get() > producerPosition)
-            {
-                publisherLimit.setOrdered(producerPosition);
-            }
-
+            publisherLimit.setOrdered(producerPosition);
             LogBufferDescriptor.endOfStreamPosition(metaDataBuffer, producerPosition);
         }
     }
@@ -322,10 +318,10 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
             final long proposedLimit = minSubscriberPosition + termWindowLength;
             if (proposedLimit > tripLimit)
             {
+                cleanBufferTo(minSubscriberPosition);
                 publisherLimit.setOrdered(proposedLimit);
                 tripLimit = proposedLimit + tripGain;
 
-                cleanBufferTo(minSubscriberPosition);
                 workCount = 1;
             }
         }

@@ -48,8 +48,9 @@ import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.MemberStatusAdapter.FRAGMENT_POLL_LIMIT;
+import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
-public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableImageHandler
+public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCounterHandler
 {
     enum State
     {
@@ -72,38 +73,45 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableIm
     private final String[] clusterMemberStatusEndpoints;
     private final MemberStatusPublisher memberStatusPublisher = new MemberStatusPublisher();
     private final ArrayList<RecordingLog.Snapshot> leaderSnapshots = new ArrayList<>(4);
-    private final long intervalMs;
+    private final long backupResponseTimeoutMs;
+    private final long backupQueryIntervalMs;
 
     private ClusterBackupAgent.State state = State.CHECK_BACKUP;
+
     private AeronArchive backupArchive;
     private AeronArchive.AsyncConnect clusterArchiveAsyncConnect;
     private AeronArchive clusterArchive;
+
     private Subscription snapshotRetrieveSubscription;
     private Image snapshotRetrieveImage;
     private SnapshotReader snapshotReader;
+
+    private Subscription memberStatusSubscription;
+    private ExclusivePublication memberStatusPublication;
     private ClusterMember[] clusterMembers;
     private ClusterMember leaderMember;
 
-    private Subscription memberStatusSubscription;
-    private Subscription liveLogReplaySubscription;
-    private ExclusivePublication memberStatusPublication;
-
-    private long timeOfLastActivityMs = 0;
+    private long timeOfLastBackupQueryMs = 0;
     private long correlationId = NULL_VALUE;
-    private long logRecordingId = NULL_VALUE;
+    private long leaderLogRecordingId = NULL_VALUE;
+    private long snapshotRetrieveSubscriptionId = NULL_VALUE;
+    private long liveLogReplaySubscriptionId = NULL_VALUE;
+    private long liveLogRecordingId = NULL_VALUE;
+    private long liveLogReplayId = NULL_VALUE;
+    private int leaderCommitPositionCounterId = NULL_VALUE;
     private int clusterMembersStatusEndpointsCursor = -1;
     private int snapshotCursor = 0;
     private int snapshotReplaySessionId = NULL_VALUE;
     private int liveLogReplaySessionId = NULL_VALUE;
-    private long snapshotRetrieveSubscriptionId = NULL_VALUE;
-    private long liveLogReplaySubscriptionId = NULL_VALUE;
+    private int liveLogRecCounterId = NULL_COUNTER_ID;
 
     ClusterBackupAgent(final ClusterBackup.Context ctx)
     {
         this.ctx = ctx;
         this.aeron = ctx.aeron();
         this.epochClock = ctx.epochClock();
-        this.intervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.clusterBackupIntervalNs());
+        this.backupResponseTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.clusterBackupResponseTimeoutNs());
+        this.backupQueryIntervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.clusterBackupIntervalNs());
         this.idleStrategy = ctx.idleStrategy();
         this.markFile = ctx.clusterMarkFile();
 
@@ -126,9 +134,9 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableIm
     {
         if (!ctx.ownsAeronClient())
         {
+            CloseHelper.close(snapshotRetrieveSubscription);
             CloseHelper.close(memberStatusSubscription);
             CloseHelper.close(memberStatusPublication);
-            CloseHelper.close(liveLogReplaySubscription);
         }
 
         CloseHelper.close(backupArchive);
@@ -145,7 +153,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableIm
         switch (state)
         {
             case CHECK_BACKUP:
-                workCount += checkLocalArchive(nowMs);
+                workCount += checkBackup(nowMs);
                 break;
 
             case BACKUP_QUERY:
@@ -185,8 +193,22 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableIm
         CloseHelper.close(memberStatusPublication);
         memberStatusPublication = null;
 
-        CloseHelper.close(liveLogReplaySubscription);
-        liveLogReplaySubscription = null;
+        CloseHelper.close(snapshotRetrieveSubscription);
+        snapshotRetrieveSubscription = null;
+
+        CloseHelper.close(backupArchive);
+        backupArchive = null;
+
+        CloseHelper.close(clusterArchive);
+        clusterArchive = null;
+
+        CloseHelper.close(clusterArchiveAsyncConnect);
+        clusterArchiveAsyncConnect = null;
+
+        correlationId = NULL_VALUE;
+        liveLogRecordingId = NULL_VALUE;
+        liveLogReplayId = NULL_VALUE;
+
     }
 
     public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
@@ -213,15 +235,18 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableIm
                 backupResponseDecoder.commitPositionCounterId(),
                 backupResponseDecoder.leaderMemberId(),
                 backupResponseDecoder.snapshots(),
-                backupResponseDecoder.memberEndpoints());
+                backupResponseDecoder.clusterMembers());
         }
     }
 
-    public void onUnavailableImage(final Image image)
+    public void onUnavailableCounter(
+        final CountersReader countersReader, final long registrationId, final int counterId)
     {
-        // TODO: clean up and restart after a delay
-        reset();
-        state(State.CHECK_BACKUP);
+        if (counterId == liveLogRecCounterId)
+        {
+            reset();
+            state(State.CHECK_BACKUP);
+        }
     }
 
     private void onBackupResponse(
@@ -238,6 +263,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableIm
             {
                 for (final BackupResponseDecoder.SnapshotsDecoder snapshot : snapshotsDecoder)
                 {
+                    // TODO: only add snapshots that are not already retrieved.
                     leaderSnapshots.add(new RecordingLog.Snapshot(
                         snapshot.recordingId(),
                         snapshot.leadershipTermId(),
@@ -248,9 +274,11 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableIm
                 }
             }
 
-            timeOfLastActivityMs = 0;
+            timeOfLastBackupQueryMs = 0;
             snapshotCursor = 0;
             this.correlationId = NULL_VALUE;
+            leaderLogRecordingId = logRecordingId;
+            leaderCommitPositionCounterId = commitPositionCounterId;
 
             clusterMembers = ClusterMember.parse(memberEndpoints);
             leaderMember = ClusterMember.findMember(clusterMembers, leaderMemberId);
@@ -277,7 +305,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableIm
         }
     }
 
-    private int checkLocalArchive(final long nowMs)
+    private int checkBackup(final long nowMs)
     {
         // TODO: grab current recording log and
 
@@ -287,7 +315,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableIm
 
     private int backupQuery(final long nowMs)
     {
-        if (nowMs > (timeOfLastActivityMs + intervalMs))
+        if (null == memberStatusPublication || nowMs > (timeOfLastBackupQueryMs + backupResponseTimeoutMs))
         {
             clusterMembersStatusEndpointsCursor = Math.min(
                 clusterMembersStatusEndpointsCursor + 1, clusterMemberStatusEndpoints.length - 1);
@@ -295,10 +323,13 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableIm
             CloseHelper.close(memberStatusPublication);
             final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
             memberStatusUri.put(ENDPOINT_PARAM_NAME, clusterMemberStatusEndpoints[clusterMembersStatusEndpointsCursor]);
-            memberStatusPublication = ctx.aeron().addExclusivePublication(
+            memberStatusPublication = aeron.addExclusivePublication(
                 memberStatusUri.toString(), ctx.memberStatusStreamId());
-
-            correlationId = ctx.aeron().nextCorrelationId();
+            correlationId = NULL_VALUE;
+        }
+        else if (NULL_VALUE == correlationId && memberStatusPublication.isConnected())
+        {
+            correlationId = aeron.nextCorrelationId();
 
             if (memberStatusPublisher.backupQuery(
                 memberStatusPublication,
@@ -308,8 +339,12 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableIm
                 ctx.memberStatusChannel(),
                 ArrayUtil.EMPTY_BYTE_ARRAY))
             {
-                timeOfLastActivityMs = nowMs;
+                timeOfLastBackupQueryMs = nowMs;
                 return 1;
+            }
+            else
+            {
+                correlationId = NULL_VALUE;
             }
         }
 
@@ -332,7 +367,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableIm
             {
                 if (snapshotReader.isDone())
                 {
-                    // TODO: save snapshot info
+                    // TODO: save snapshot info into recording log
 //                    consensusModuleAgent.retrievedSnapshot(
 //                        snapshotReader.recordingId(), leaderSnapshots.get(snapshotCursor));
 
@@ -346,6 +381,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableIm
 
                     if (++snapshotCursor >= leaderSnapshots.size())
                     {
+                        leaderSnapshots.clear();
                         state(State.LIVE_LOG_REPLAY);
                         workCount++;
                     }
@@ -407,41 +443,59 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableIm
     {
         int workCount = 0;
 
-        if (null == clusterArchive)
+        if (NULL_VALUE == liveLogRecordingId)
         {
-            clusterArchive = clusterArchiveAsyncConnect.poll();
-            return null == clusterArchive ? 0 : 1;
-        }
-
-        if (NULL_VALUE == correlationId)
-        {
-            final long replayId = ctx.aeron().nextCorrelationId();
-            final long startPosition =
-                leaderSnapshots.isEmpty() ? 0 : leaderSnapshots.get(leaderSnapshots.size() - 1).logPosition;
-            final String transferChannel = "aeron:udp?endpoint=" + ctx.transferEndpoint();
-
-            if (clusterArchive.archiveProxy().replay(
-                logRecordingId,
-                startPosition,
-                NULL_LENGTH,
-                transferChannel,
-                ctx.replayStreamId(),
-                replayId,
-                clusterArchive.controlSessionId()))
+            if (null == clusterArchive)
             {
-                this.correlationId = replayId;
-                workCount++;
+                clusterArchive = clusterArchiveAsyncConnect.poll();
+                return null == clusterArchive ? 0 : 1;
+            }
+
+            if (NULL_VALUE == correlationId)
+            {
+                final long replayId = ctx.aeron().nextCorrelationId();
+                final long startPosition =
+                    leaderSnapshots.isEmpty() ? 0 : leaderSnapshots.get(leaderSnapshots.size() - 1).logPosition;
+                final String transferChannel = "aeron:udp?endpoint=" + ctx.transferEndpoint();
+
+                if (clusterArchive.archiveProxy().boundedReplay(
+                    leaderLogRecordingId,
+                    startPosition,
+                    NULL_LENGTH,
+                    leaderCommitPositionCounterId,
+                    transferChannel,
+                    ctx.replayStreamId(),
+                    replayId,
+                    clusterArchive.controlSessionId()))
+                {
+                    this.correlationId = replayId;
+                    workCount++;
+                }
+            }
+            else if (NULL_VALUE != liveLogReplaySubscriptionId && NULL_COUNTER_ID == liveLogRecCounterId)
+            {
+                final CountersReader countersReader = aeron.countersReader();
+
+                liveLogRecCounterId = RecordingPos.findCounterIdBySession(
+                    countersReader, liveLogReplaySessionId);
+
+                liveLogRecordingId = RecordingPos.getRecordingId(countersReader, liveLogRecCounterId);
+
+                state(State.BACKING_UP);
+            }
+            else if (pollForResponse(clusterArchive, correlationId))
+            {
+                liveLogReplayId = clusterArchive.controlResponsePoller().relevantId();
+                liveLogReplaySessionId = (int)liveLogReplayId;
+                final String replaySubscriptionChannel =
+                    "aeron:udp?endpoint=" + ctx.transferEndpoint() + "|session-id=" + liveLogReplaySessionId;
+
+                liveLogReplaySubscriptionId = backupArchive.startRecording(
+                    replaySubscriptionChannel, ctx.replayStreamId(), SourceLocation.REMOTE);
             }
         }
-        else if (pollForResponse(clusterArchive, correlationId))
+        else
         {
-            liveLogReplaySessionId = (int)clusterArchive.controlResponsePoller().relevantId();
-            final String replaySubscriptionChannel =
-                "aeron:udp?endpoint=" + ctx.transferEndpoint() + "|session-id=" + liveLogReplaySessionId;
-
-            liveLogReplaySubscription = ctx.aeron().addSubscription(replaySubscriptionChannel, ctx.replayStreamId());
-            liveLogReplaySubscriptionId = backupArchive.startRecording(
-                replaySubscriptionChannel, ctx.replayStreamId(), SourceLocation.REMOTE);
             state(State.BACKING_UP);
         }
 
@@ -452,7 +506,11 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableIm
     {
         final int workCount = 0;
 
-        // TODO: poll liveLogReplaySubscription until EOS or Snapshot taken.
+        if (nowMs > (timeOfLastBackupQueryMs + backupQueryIntervalMs))
+        {
+            timeOfLastBackupQueryMs = nowMs;
+            state(State.BACKUP_QUERY);
+        }
 
         return workCount;
     }
@@ -517,7 +575,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableIm
 
         void pollRecordingPosition()
         {
-            if (CountersReader.NULL_COUNTER_ID == counterId)
+            if (NULL_COUNTER_ID == counterId)
             {
                 counterId = RecordingPos.findCounterIdBySession(countersReader, image.sessionId());
             }

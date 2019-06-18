@@ -504,7 +504,7 @@
             <field name="timestamp"            id="10" type="time_t"/>
             <field name="serviceId"            id="11" type="int32"/>
         </group>
-        <data  name="memberEndpoints"          id="11" type="varAsciiEncoding"/>
+        <data  name="clusterMembers"           id="12" type="varAsciiEncoding"/>
     </sbe:message>
 
     <!-- Serialisation of major entities in addition to others above that can be in a snapshot -->

@@ -125,7 +125,17 @@ public final class ClusterBackup implements AutoCloseable
         /**
          * Default interval at which a cluster backup will send backup queries.
          */
-        public static final long CLUSTER_BACKUP_INTERVAL_DEFAULT_NS = TimeUnit.SECONDS.toNanos(1);
+        public static final long CLUSTER_BACKUP_INTERVAL_DEFAULT_NS = TimeUnit.HOURS.toNanos(1);
+
+        /**
+         * Timeout within which a cluster backup will expect a response from a backup query.
+         */
+        public static final String CLUSTER_BACKUP_RESPONSE_TIMEOUT_PROP_NAME = "aeron.cluster.backup.response.timeout";
+
+        /**
+         * Default timeout within which a cluster backup will expect a response from a backup query.
+         */
+        public static final long CLUSTER_BACKUP_RESPONSE_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(1);
 
         static
         {
@@ -156,6 +166,18 @@ public final class ClusterBackup implements AutoCloseable
         {
             return getDurationInNanos(CLUSTER_BACKUP_INTERVAL_PROP_NAME, CLUSTER_BACKUP_INTERVAL_DEFAULT_NS);
         }
+
+        /**
+         * Timeout within which a cluster backup will expect a response from a backup query.
+         *
+         * @return timeout within which a cluster backup wil;l expect a response from a backup query.
+         * @see #CLUSTER_BACKUP_RESPONSE_TIMEOUT_PROP_NAME
+         */
+        public static long clusterBackupResponseTimeoutNs()
+        {
+            return getDurationInNanos(
+                CLUSTER_BACKUP_RESPONSE_TIMEOUT_PROP_NAME, CLUSTER_BACKUP_RESPONSE_TIMEOUT_DEFAULT_NS);
+        }
     }
 
     public static class Context
@@ -175,6 +197,7 @@ public final class ClusterBackup implements AutoCloseable
         private String transferEndpoint = Configuration.TRANSFER_ENDPOINT_DEFAULT;
 
         private long clusterBackupIntervalNs = Configuration.clusterBackupIntervalNs();
+        private long clusterBackupResponseTimeoutNs = Configuration.clusterBackupResponseTimeoutNs();
         private int errorBufferLength = ConsensusModule.Configuration.errorBufferLength();
 
         private boolean deleteDirOnStart = false;
@@ -762,7 +785,7 @@ public final class ClusterBackup implements AutoCloseable
          * @see Configuration#CLUSTER_BACKUP_INTERVAL_PROP_NAME
          * @see Configuration#CLUSTER_BACKUP_INTERVAL_DEFAULT_NS
          */
-        public Context clusterBackupntervalNs(final long clusterBackupIntervalNs)
+        public Context clusterBackupIntervalNs(final long clusterBackupIntervalNs)
         {
             this.clusterBackupIntervalNs = clusterBackupIntervalNs;
             return this;
@@ -778,6 +801,32 @@ public final class ClusterBackup implements AutoCloseable
         public long clusterBackupIntervalNs()
         {
             return clusterBackupIntervalNs;
+        }
+
+        /**
+         * Timeout within which a cluster backup will expect a response from a backup query.
+         *
+         * @param clusterBackupResponseTimeoutNs wiwthin which a cluster backup will expect a response.
+         * @return this for a fluent API.
+         * @see Configuration#CLUSTER_BACKUP_RESPONSE_TIMEOUT_PROP_NAME
+         * @see Configuration#CLUSTER_BACKUP_RESPONSE_TIMEOUT_DEFAULT_NS
+         */
+        public Context clusterBackupResponseTimeoutNs(final long clusterBackupResponseTimeoutNs)
+        {
+            this.clusterBackupResponseTimeoutNs = clusterBackupResponseTimeoutNs;
+            return this;
+        }
+
+        /**
+         * Timeout within which a cluster backup will expect a response from a backup query.
+         *
+         * @return timeout within which a cluster backup will expect a response from a backup query.
+         * @see Configuration#CLUSTER_BACKUP_RESPONSE_TIMEOUT_PROP_NAME
+         * @see Configuration#CLUSTER_BACKUP_RESPONSE_TIMEOUT_DEFAULT_NS
+         */
+        public long clusterBackupResponseTimeoutNs()
+        {
+            return clusterBackupResponseTimeoutNs;
         }
 
         /**

@@ -563,7 +563,7 @@ class MemberStatusPublisher
         final int commitPositionCounterId,
         final int leaderMemberId,
         final RecordingLog.RecoveryPlan recoveryPlan,
-        final String memberEndpoints)
+        final String clusterMembers)
     {
         backupResponseEncoder.wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .correlationId(correlationId)
@@ -586,7 +586,7 @@ class MemberStatusPublisher
                 .serviceId(snapshot.serviceId);
         }
 
-        backupResponseEncoder.memberEndpoints(memberEndpoints);
+        backupResponseEncoder.clusterMembers(clusterMembers);
 
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + backupResponseEncoder.encodedLength();
 

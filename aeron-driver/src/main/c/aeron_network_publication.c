@@ -725,11 +725,13 @@ int aeron_network_publication_update_pub_lmt(aeron_network_publication_t *public
             }
         }
 
-        const int64_t proposed_pub_lmt = min_consumer_position + publication->term_window_length;
-        if (aeron_counter_propose_max_ordered(publication->pub_lmt_position.value_addr, proposed_pub_lmt))
+        int64_t proposed_pub_lmt = min_consumer_position + publication->term_window_length;
+        int64_t publication_limit = aeron_counter_get(publication->pub_lmt_position.value_addr);
+        if (proposed_pub_lmt > publication_limit)
         {
             size_t term_length = publication->term_length_mask + 1;
             aeron_network_publication_clean_buffer(publication, min_consumer_position - term_length);
+            aeron_counter_set_ordered(publication->pub_lmt_position.value_addr, proposed_pub_lmt);
             work_count = 1;
         }
     }

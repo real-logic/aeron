@@ -26,7 +26,7 @@ import org.agrona.DirectBuffer;
 
 class MemberStatusAdapter implements FragmentHandler, AutoCloseable
 {
-    private static final int FRAGMENT_POLL_LIMIT = 10;
+    public static final int FRAGMENT_POLL_LIMIT = 10;
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final CanvassPositionDecoder canvassPositionDecoder = new CanvassPositionDecoder();

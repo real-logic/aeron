@@ -16,6 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.Aeron;
+import io.aeron.ChannelUri;
 import io.aeron.CommonContext;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
@@ -27,6 +28,7 @@ import io.aeron.exceptions.ConcurrentConcludeException;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
+import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.errors.DistinctErrorLog;
 import org.agrona.concurrent.errors.LoggingErrorHandler;
@@ -34,12 +36,15 @@ import org.agrona.concurrent.status.AtomicCounter;
 
 import java.io.File;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Supplier;
 
+import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.cluster.ConsensusModule.Configuration.SERVICE_ID;
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
+import static org.agrona.SystemUtil.getDurationInNanos;
 
 public final class ClusterBackup implements AutoCloseable
 {
@@ -109,6 +114,48 @@ public final class ClusterBackup implements AutoCloseable
 
     public static class Configuration
     {
+        public static final String MEMBER_STATUS_CHANNEL_DEFAULT;
+        public static final String TRANSFER_ENDPOINT_DEFAULT;
+
+        /**
+         * Interval at which a cluster backup will send backup queries.
+         */
+        public static final String CLUSTER_BACKUP_INTERVAL_PROP_NAME = "aeron.cluster.backup.interval";
+
+        /**
+         * Default interval at which a cluster backup will send backup queries.
+         */
+        public static final long CLUSTER_BACKUP_INTERVAL_DEFAULT_NS = TimeUnit.SECONDS.toNanos(1);
+
+        static
+        {
+            final ClusterMember[] clusterMembers = ClusterMember.parse(ConsensusModule.Configuration.clusterMembers());
+            final Int2ObjectHashMap<ClusterMember> clusterMemberByIdMap = new Int2ObjectHashMap<>();
+
+            ClusterMember.addClusterMemberIds(clusterMembers, clusterMemberByIdMap);
+
+            final ClusterMember member = ClusterMember.determineMember(
+                clusterMembers,
+                ConsensusModule.Configuration.clusterMemberId(),
+                ConsensusModule.Configuration.memberEndpoints());
+
+            final ChannelUri memberStatusUri = ChannelUri.parse(ConsensusModule.Configuration.memberStatusChannel());
+            memberStatusUri.put(ENDPOINT_PARAM_NAME, member.memberFacingEndpoint());
+
+            MEMBER_STATUS_CHANNEL_DEFAULT = memberStatusUri.toString();
+            TRANSFER_ENDPOINT_DEFAULT = member.transferEndpoint();
+        }
+
+        /**
+         * Interval at which a cluster backup will send backup queries.
+         *
+         * @return Interval at which a cluster backup will send backup queries.
+         * @see #CLUSTER_BACKUP_INTERVAL_PROP_NAME
+         */
+        public static long clusterBackupIntervalNs()
+        {
+            return getDurationInNanos(CLUSTER_BACKUP_INTERVAL_PROP_NAME, CLUSTER_BACKUP_INTERVAL_DEFAULT_NS);
+        }
     }
 
     public static class Context
@@ -121,6 +168,13 @@ public final class ClusterBackup implements AutoCloseable
         private String aeronDirectoryName = CommonContext.getAeronDirectoryName();
         private Aeron aeron;
 
+        private String memberStatusChannel = Configuration.MEMBER_STATUS_CHANNEL_DEFAULT;
+        private int memberStatusStreamId = ConsensusModule.Configuration.memberStatusStreamId();
+        private String replayChannel = ClusteredServiceContainer.Configuration.replayChannel();
+        private int replayStreamId = ClusteredServiceContainer.Configuration.replayStreamId();
+        private String transferEndpoint = Configuration.TRANSFER_ENDPOINT_DEFAULT;
+
+        private long clusterBackupIntervalNs = Configuration.clusterBackupIntervalNs();
         private int errorBufferLength = ConsensusModule.Configuration.errorBufferLength();
 
         private boolean deleteDirOnStart = false;
@@ -354,6 +408,101 @@ public final class ClusterBackup implements AutoCloseable
         }
 
         /**
+         * Should the consensus module attempt to immediately delete {@link #clusterDir()} on startup.
+         *
+         * @param deleteDirOnStart Attempt deletion.
+         * @return this for a fluent API.
+         */
+        public Context deleteDirOnStart(final boolean deleteDirOnStart)
+        {
+            this.deleteDirOnStart = deleteDirOnStart;
+            return this;
+        }
+
+        /**
+         * Will the consensus module attempt to immediately delete {@link #clusterDir()} on startup.
+         *
+         * @return true when directory will be deleted, otherwise false.
+         */
+        public boolean deleteDirOnStart()
+        {
+            return deleteDirOnStart;
+        }
+
+        /**
+         * Set the directory name to use for the cluster directory.
+         *
+         * @param clusterDirectoryName to use.
+         * @return this for a fluent API.
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#CLUSTER_DIR_PROP_NAME
+         */
+        public Context clusterDirectoryName(final String clusterDirectoryName)
+        {
+            this.clusterDirectoryName = clusterDirectoryName;
+            return this;
+        }
+
+        /**
+         * The directory name to use for the cluster directory.
+         *
+         * @return directory name for the cluster directory.
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#CLUSTER_DIR_PROP_NAME
+         */
+        public String clusterDirectoryName()
+        {
+            return clusterDirectoryName;
+        }
+
+        /**
+         * Set the directory to use for the cluster directory.
+         *
+         * @param clusterDir to use.
+         * @return this for a fluent API.
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#CLUSTER_DIR_PROP_NAME
+         */
+        public Context clusterDir(final File clusterDir)
+        {
+            this.clusterDir = clusterDir;
+            return this;
+        }
+
+        /**
+         * The directory used for for the cluster directory.
+         *
+         * @return directory for for the cluster directory.
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#CLUSTER_DIR_PROP_NAME
+         */
+        public File clusterDir()
+        {
+            return clusterDir;
+        }
+
+        /**
+         * Set the {@link io.aeron.archive.client.AeronArchive.Context} that should be used for communicating with the
+         * local Archive.
+         *
+         * @param archiveContext that should be used for communicating with the local Archive.
+         * @return this for a fluent API.
+         */
+        public Context archiveContext(final AeronArchive.Context archiveContext)
+        {
+            this.archiveContext = archiveContext;
+            return this;
+        }
+
+        /**
+         * Get the {@link io.aeron.archive.client.AeronArchive.Context} that should be used for communicating with
+         * the local Archive.
+         *
+         * @return the {@link io.aeron.archive.client.AeronArchive.Context} that should be used for communicating
+         * with the local Archive.
+         */
+        public AeronArchive.Context archiveContext()
+        {
+            return archiveContext;
+        }
+
+        /**
          * Get the thread factory used for creating threads.
          *
          * @return thread factory used for creating threads.
@@ -395,6 +544,28 @@ public final class ClusterBackup implements AutoCloseable
         public IdleStrategy idleStrategy()
         {
             return idleStrategySupplier.get();
+        }
+
+        /**
+         * Set the {@link EpochClock} to be used for tracking wall clock time.
+         *
+         * @param clock {@link EpochClock} to be used for tracking wall clock time.
+         * @return this for a fluent API.
+         */
+        public Context epochClock(final EpochClock clock)
+        {
+            this.epochClock = clock;
+            return this;
+        }
+
+        /**
+         * Get the {@link EpochClock} to used for tracking wall clock time.
+         *
+         * @return the {@link EpochClock} to used for tracking wall clock time.
+         */
+        public EpochClock epochClock()
+        {
+            return epochClock;
         }
 
         /**
@@ -442,6 +613,174 @@ public final class ClusterBackup implements AutoCloseable
         }
 
         /**
+         * Non-default for context.
+         *
+         * @param countedErrorHandler to override the default.
+         * @return this for a fluent API.
+         */
+        public Context countedErrorHandler(final CountedErrorHandler countedErrorHandler)
+        {
+            this.countedErrorHandler = countedErrorHandler;
+            return this;
+        }
+
+        /**
+         * The {@link #errorHandler()} that will increment {@link #errorCounter()} by default.
+         *
+         * @return {@link #errorHandler()} that will increment {@link #errorCounter()} by default.
+         */
+        public CountedErrorHandler countedErrorHandler()
+        {
+            return countedErrorHandler;
+        }
+
+        /**
+         * Set the channel parameter for the member status communication channel.
+         *
+         * @param channel parameter for the member status communication channel.
+         * @return this for a fluent API.
+         * @see ConsensusModule.Configuration#MEMBER_STATUS_CHANNEL_PROP_NAME
+         */
+        public Context memberStatusChannel(final String channel)
+        {
+            memberStatusChannel = channel;
+            return this;
+        }
+
+        /**
+         * Get the channel parameter for the member status communication channel.
+         *
+         * @return the channel parameter for the member status communication channel.
+         * @see ConsensusModule.Configuration#MEMBER_STATUS_CHANNEL_PROP_NAME
+         */
+        public String memberStatusChannel()
+        {
+            return memberStatusChannel;
+        }
+
+        /**
+         * Set the stream id for the member status channel.
+         *
+         * @param streamId for the ingress channel.
+         * @return this for a fluent API
+         * @see ConsensusModule.Configuration#MEMBER_STATUS_STREAM_ID_PROP_NAME
+         */
+        public Context memberStatusStreamId(final int streamId)
+        {
+            memberStatusStreamId = streamId;
+            return this;
+        }
+
+        /**
+         * Get the stream id for the member status channel.
+         *
+         * @return the stream id for the member status channel.
+         * @see ConsensusModule.Configuration#MEMBER_STATUS_STREAM_ID_PROP_NAME
+         */
+        public int memberStatusStreamId()
+        {
+            return memberStatusStreamId;
+        }
+
+        /**
+         * Set the channel parameter for the cluster log and snapshot replay channel.
+         *
+         * @param channel parameter for the cluster log replay channel.
+         * @return this for a fluent API.
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#REPLAY_CHANNEL_PROP_NAME
+         */
+        public Context replayChannel(final String channel)
+        {
+            replayChannel = channel;
+            return this;
+        }
+
+        /**
+         * Get the channel parameter for the cluster log and snapshot replay channel.
+         *
+         * @return the channel parameter for the cluster replay channel.
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#REPLAY_CHANNEL_PROP_NAME
+         */
+        public String replayChannel()
+        {
+            return replayChannel;
+        }
+
+        /**
+         * Set the stream id for the cluster log and snapshot replay channel.
+         *
+         * @param streamId for the cluster log replay channel.
+         * @return this for a fluent API
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#REPLAY_STREAM_ID_PROP_NAME
+         */
+        public Context replayStreamId(final int streamId)
+        {
+            replayStreamId = streamId;
+            return this;
+        }
+
+        /**
+         * Get the stream id for the cluster log and snapshot replay channel.
+         *
+         * @return the stream id for the cluster log replay channel.
+         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#REPLAY_STREAM_ID_PROP_NAME
+         */
+        public int replayStreamId()
+        {
+            return replayStreamId;
+        }
+
+        /**
+         * Set the transfer endpoint to use for snapshot and log retrieval.
+         *
+         * @param transferEndpoint to use for the snpashot and log retrieval.
+         * @return transfer endpoint to use for the snapshot and log retrieval.
+         * @see Configuration#TRANSFER_ENDPOINT_DEFAULT
+         */
+        public Context transferEndpoint(final String transferEndpoint)
+        {
+            this.transferEndpoint = transferEndpoint;
+            return this;
+        }
+
+        /**
+         * Get the transfer endpoint to use for snapshot and log retrieval.
+         *
+         * @return transfer endpoint to use for the snapshot and log retrieval.
+         * @see Configuration#TRANSFER_ENDPOINT_DEFAULT
+         */
+        public String transferEndpoint()
+        {
+            return transferEndpoint;
+        }
+
+        /**
+         * Interval at which a cluster backup will send backup queries.
+         *
+         * @param clusterBackupIntervalNs between add cluster members and snapshot recording queries.
+         * @return this for a fluent API.
+         * @see Configuration#CLUSTER_BACKUP_INTERVAL_PROP_NAME
+         * @see Configuration#CLUSTER_BACKUP_INTERVAL_DEFAULT_NS
+         */
+        public Context clusterBackupntervalNs(final long clusterBackupIntervalNs)
+        {
+            this.clusterBackupIntervalNs = clusterBackupIntervalNs;
+            return this;
+        }
+
+        /**
+         * Interval at which a cluster backup will send backup queries.
+         *
+         * @return the interval at which a cluster backup will send backup queries.
+         * @see Configuration#CLUSTER_BACKUP_INTERVAL_PROP_NAME
+         * @see Configuration#CLUSTER_BACKUP_INTERVAL_DEFAULT_NS
+         */
+        public long clusterBackupIntervalNs()
+        {
+            return clusterBackupIntervalNs;
+        }
+
+        /**
          * String representing the cluster members member status endpoints.
          * <p>
          * {@code "endpoint,endpoint,endpoint"}
@@ -464,6 +803,118 @@ public final class ClusterBackup implements AutoCloseable
         public String clusterMembersStatusEndpoints()
         {
             return clusterMembersStatusEndpoints;
+        }
+
+        /**
+         * Set the {@link ShutdownSignalBarrier} that can be used to shutdown a consensus module.
+         *
+         * @param barrier that can be used to shutdown a consensus module.
+         * @return this for a fluent API.
+         */
+        public Context shutdownSignalBarrier(final ShutdownSignalBarrier barrier)
+        {
+            shutdownSignalBarrier = barrier;
+            return this;
+        }
+
+        /**
+         * Get the {@link ShutdownSignalBarrier} that can be used to shutdown.
+         *
+         * @return the {@link ShutdownSignalBarrier} that can be used to shutdown.
+         */
+        public ShutdownSignalBarrier shutdownSignalBarrier()
+        {
+            return shutdownSignalBarrier;
+        }
+
+        /**
+         * Set the {@link Runnable} that is called when the {@link ClusterBackup} processes a termination action.
+         *
+         * @param terminationHook that can be used to terminate.
+         * @return this for a fluent API.
+         */
+        public Context terminationHook(final Runnable terminationHook)
+        {
+            this.terminationHook = terminationHook;
+            return this;
+        }
+
+        /**
+         * Get the {@link Runnable} that is called when the {@link ClusterBackup} processes a termination action.
+         * <p>
+         * The default action is to call signal on the {@link #shutdownSignalBarrier()}.
+         *
+         * @return the {@link Runnable} that can be used to terminate.
+         */
+        public Runnable terminationHook()
+        {
+            return terminationHook;
+        }
+
+        /**
+         * Set the {@link ClusterMarkFile} in use.
+         *
+         * @param markFile to use.
+         * @return this for a fluent API.
+         */
+        public Context clusterMarkFile(final ClusterMarkFile markFile)
+        {
+            this.markFile = markFile;
+            return this;
+        }
+
+        /**
+         * The {@link ClusterMarkFile} in use.
+         *
+         * @return {@link ClusterMarkFile} in use.
+         */
+        public ClusterMarkFile clusterMarkFile()
+        {
+            return markFile;
+        }
+
+        /**
+         * Set the error buffer length in bytes to use.
+         *
+         * @param errorBufferLength in bytes to use.
+         * @return this for a fluent API.
+         */
+        public Context errorBufferLength(final int errorBufferLength)
+        {
+            this.errorBufferLength = errorBufferLength;
+            return this;
+        }
+
+        /**
+         * The error buffer length in bytes.
+         *
+         * @return error buffer length in bytes.
+         */
+        public int errorBufferLength()
+        {
+            return errorBufferLength;
+        }
+
+        /**
+         * Set the {@link DistinctErrorLog} in use.
+         *
+         * @param errorLog to use.
+         * @return this for a fluent API.
+         */
+        public Context errorLog(final DistinctErrorLog errorLog)
+        {
+            this.errorLog = errorLog;
+            return this;
+        }
+
+        /**
+         * The {@link DistinctErrorLog} in use.
+         *
+         * @return {@link DistinctErrorLog} in use.
+         */
+        public DistinctErrorLog errorLog()
+        {
+            return errorLog;
         }
 
         /**

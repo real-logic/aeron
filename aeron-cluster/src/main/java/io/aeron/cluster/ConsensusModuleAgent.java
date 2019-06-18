@@ -674,7 +674,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         final String responseChannel,
         final byte[] encodedCredentials)
     {
-        if (Cluster.Role.LEADER != role)
+        if (Cluster.Role.LEADER != role && null == election)
         {
             memberStatusPublisher.backupQuery(
                 leaderMember.publication(),
@@ -684,7 +684,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 responseChannel,
                 encodedCredentials);
         }
-        else
+        else if (state == ConsensusModule.State.ACTIVE || state == ConsensusModule.State.SUSPENDED)
         {
             final ClusterSession session = new ClusterSession(NULL_VALUE, responseStreamId, responseChannel);
             session.lastActivity(cachedTimeMs, correlationId);

@@ -72,11 +72,13 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
     private final IdleStrategy idleStrategy;
     private final String[] clusterMemberStatusEndpoints;
     private final MemberStatusPublisher memberStatusPublisher = new MemberStatusPublisher();
-    private final ArrayList<RecordingLog.Snapshot> leaderSnapshots = new ArrayList<>(4);
+    private final ArrayList<RecordingLog.Snapshot> snapshotsToRetrieve = new ArrayList<>(4);
     private final long backupResponseTimeoutMs;
     private final long backupQueryIntervalMs;
 
     private ClusterBackupAgent.State state = State.CHECK_BACKUP;
+
+    private RecordingLog recordingLog;
 
     private AeronArchive backupArchive;
     private AeronArchive.AsyncConnect clusterArchiveAsyncConnect;
@@ -127,7 +129,6 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
     public void onStart()
     {
         backupArchive = AeronArchive.connect(ctx.archiveContext().clone());
-
     }
 
     public void onClose()
@@ -173,6 +174,8 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
                 break;
         }
 
+        markFile.updateActivityTimestamp(nowMs);
+
         return workCount;
     }
 
@@ -185,7 +188,14 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
     {
         clusterMembers = null;
         leaderMember = null;
-        leaderSnapshots.clear();
+        snapshotsToRetrieve.clear();
+
+        if (null != recordingLog)
+        {
+            recordingLog.force();
+            recordingLog.close();
+            recordingLog = null;
+        }
 
         CloseHelper.close(memberStatusSubscription);
         memberStatusSubscription = null;
@@ -263,8 +273,17 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
             {
                 for (final BackupResponseDecoder.SnapshotsDecoder snapshot : snapshotsDecoder)
                 {
-                    // TODO: only add snapshots that are not already retrieved.
-                    leaderSnapshots.add(new RecordingLog.Snapshot(
+                    final RecordingLog.Entry entry = recordingLog.getLatestSnapshot(snapshot.serviceId());
+
+                    if (null != entry)
+                    {
+                        if (snapshot.logPosition() == entry.logPosition)
+                        {
+                            continue;
+                        }
+                    }
+
+                    snapshotsToRetrieve.add(new RecordingLog.Snapshot(
                         snapshot.recordingId(),
                         snapshot.leadershipTermId(),
                         snapshot.termBaseLogPosition(),
@@ -283,7 +302,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
             clusterMembers = ClusterMember.parse(memberEndpoints);
             leaderMember = ClusterMember.findMember(clusterMembers, leaderMemberId);
 
-            if (leaderSnapshots.isEmpty())
+            if (snapshotsToRetrieve.isEmpty())
             {
                 state(State.LIVE_LOG_REPLAY);
             }
@@ -307,7 +326,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
 
     private int checkBackup(final long nowMs)
     {
-        // TODO: grab current recording log and
+        recordingLog = new RecordingLog(ctx.clusterDir());
 
         state(State.BACKUP_QUERY);
         return 0;
@@ -367,10 +386,6 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
             {
                 if (snapshotReader.isDone())
                 {
-                    // TODO: save snapshot info into recording log
-//                    consensusModuleAgent.retrievedSnapshot(
-//                        snapshotReader.recordingId(), leaderSnapshots.get(snapshotCursor));
-
                     CloseHelper.close(snapshotRetrieveSubscription);
                     backupArchive.stopRecording(snapshotRetrieveSubscriptionId);
                     snapshotRetrieveSubscription = null;
@@ -379,9 +394,8 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
                     correlationId = NULL_VALUE;
                     snapshotReplaySessionId = NULL_VALUE;
 
-                    if (++snapshotCursor >= leaderSnapshots.size())
+                    if (++snapshotCursor >= snapshotsToRetrieve.size())
                     {
-                        leaderSnapshots.clear();
                         state(State.LIVE_LOG_REPLAY);
                         workCount++;
                     }
@@ -408,7 +422,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
         else if (NULL_VALUE == correlationId)
         {
             final long replayId = ctx.aeron().nextCorrelationId();
-            final RecordingLog.Snapshot snapshot = leaderSnapshots.get(snapshotCursor);
+            final RecordingLog.Snapshot snapshot = snapshotsToRetrieve.get(snapshotCursor);
             final String transferChannel = "aeron:udp?endpoint=" + ctx.transferEndpoint();
 
             if (clusterArchive.archiveProxy().replay(
@@ -454,8 +468,8 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
             if (NULL_VALUE == correlationId)
             {
                 final long replayId = ctx.aeron().nextCorrelationId();
-                final long startPosition =
-                    leaderSnapshots.isEmpty() ? 0 : leaderSnapshots.get(leaderSnapshots.size() - 1).logPosition;
+                final long startPosition = snapshotsToRetrieve.isEmpty() ?
+                    0 : snapshotsToRetrieve.get(snapshotsToRetrieve.size() - 1).logPosition;
                 final String transferChannel = "aeron:udp?endpoint=" + ctx.transferEndpoint();
 
                 if (clusterArchive.archiveProxy().boundedReplay(
@@ -510,6 +524,31 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
         {
             timeOfLastBackupQueryMs = nowMs;
             state(State.BACKUP_QUERY);
+        }
+        else if (!snapshotsToRetrieve.isEmpty())
+        {
+            final RecordingLog.Snapshot lastSnapshot = snapshotsToRetrieve.get(snapshotsToRetrieve.size() - 1);
+
+            recordingLog.appendTerm(
+                liveLogRecordingId,
+                lastSnapshot.leadershipTermId,
+                lastSnapshot.termBaseLogPosition,
+                lastSnapshot.timestamp);
+
+            for (int i = snapshotsToRetrieve.size() - 1; i >= 0; i--)
+            {
+                final RecordingLog.Snapshot snapshot = snapshotsToRetrieve.get(i);
+
+                recordingLog.appendSnapshot(
+                    snapshot.recordingId,
+                    snapshot.leadershipTermId,
+                    snapshot.termBaseLogPosition,
+                    snapshot.logPosition,
+                    snapshot.timestamp,
+                    snapshot.serviceId);
+            }
+
+            snapshotsToRetrieve.clear();
         }
 
         return workCount;

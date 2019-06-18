@@ -31,6 +31,7 @@ import java.util.ArrayList;
 
 import static io.aeron.driver.status.SystemCounterDescriptor.UNBLOCKED_PUBLICATIONS;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * Encapsulation of a stream used directly between publishers and subscribers for IPC over shared memory.
@@ -477,7 +478,8 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
             final int termOffset = (int)cleanPosition & (bufferCapacity - 1);
             final int length = Math.min(bytesForCleaning, bufferCapacity - termOffset);
 
-            dirtyTerm.setMemory(termOffset, length, (byte)0);
+            dirtyTerm.setMemory(termOffset + SIZE_OF_LONG, length - SIZE_OF_LONG, (byte)0);
+            dirtyTerm.putLongOrdered(termOffset, 0);
             this.cleanPosition = cleanPosition + length;
         }
     }

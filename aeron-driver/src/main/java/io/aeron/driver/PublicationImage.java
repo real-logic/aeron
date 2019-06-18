@@ -45,6 +45,7 @@ import static io.aeron.driver.PublicationImage.State.INIT;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.logbuffer.TermGapFiller.tryFillGap;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.UnsafeAccess.UNSAFE;
 
 class PublicationImagePadding1
@@ -832,7 +833,8 @@ public class PublicationImage
             final int termOffset = (int)cleanPosition & termLengthMask;
             final int length = Math.min(bytesForCleaning, dirtyTerm.capacity() - termOffset);
 
-            dirtyTerm.setMemory(termOffset, length, (byte)0);
+            dirtyTerm.setMemory(termOffset, length - SIZE_OF_LONG, (byte)0);
+            dirtyTerm.putLongOrdered(termOffset + (length - SIZE_OF_LONG), 0);
             this.cleanPosition = cleanPosition + length;
         }
     }

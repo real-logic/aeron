@@ -44,6 +44,7 @@ import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.logbuffer.TermScanner.*;
 import static io.aeron.protocol.DataHeaderFlyweight.BEGIN_AND_END_FLAGS;
 import static io.aeron.protocol.DataHeaderFlyweight.BEGIN_END_AND_EOS_FLAGS;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 class NetworkPublicationPadding1
 {
@@ -650,7 +651,8 @@ public class NetworkPublication
             final int termOffset = (int)cleanPosition & termLengthMask;
             final int length = Math.min(bytesForCleaning, termBufferLength - termOffset);
 
-            dirtyTerm.setMemory(termOffset, length, (byte)0);
+            dirtyTerm.setMemory(termOffset + SIZE_OF_LONG, length - SIZE_OF_LONG, (byte)0);
+            dirtyTerm.putLongOrdered(termOffset, 0);
             this.cleanPosition = cleanPosition + length;
         }
     }

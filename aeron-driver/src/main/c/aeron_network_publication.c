@@ -688,7 +688,7 @@ void aeron_network_publication_clean_buffer(aeron_network_publication_t *publica
             publication->mapped_raw_log.term_buffers[dirty_index].addr + term_offset + sizeof(int64_t),
             0,
             length - sizeof(int64_t));
-        AERON_PUT_ORDERED(publication->mapped_raw_log.term_buffers[dirty_index].addr, (int64_t)0);
+        AERON_PUT_ORDERED(*(publication->mapped_raw_log.term_buffers[dirty_index].addr), (int64_t)0);
 
         publication->conductor_fields.clean_position = clean_position + length;
     }

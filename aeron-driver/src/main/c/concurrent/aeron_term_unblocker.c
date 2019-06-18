@@ -67,7 +67,7 @@ aeron_term_unblocker_status_t aeron_term_unblocker_unblock(
     int32_t term_id)
 {
     aeron_term_unblocker_status_t status = AERON_TERM_UNBLOCKER_STATUS_NO_ACTION;
-    register aeron_data_header_t *data_header = (aeron_data_header_t *)(buffer + blocked_offset);
+    aeron_data_header_t *data_header = (aeron_data_header_t *)(buffer + blocked_offset);
     int32_t frame_length;
 
     AERON_GET_VOLATILE(frame_length, data_header->frame_header.frame_length);

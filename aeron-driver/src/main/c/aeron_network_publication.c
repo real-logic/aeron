@@ -592,6 +592,18 @@ void aeron_network_publication_on_nak(
         publication);
 }
 
+inline static void update_connected_status(aeron_network_publication_t *publication, bool expected_status)
+{
+    bool is_connected;
+    AERON_GET_VOLATILE(is_connected, publication->is_connected);
+
+    if (is_connected != expected_status)
+    {
+        AERON_PUT_ORDERED(publication->log_meta_data->is_connected, true);
+        AERON_PUT_ORDERED(publication->is_connected, true);
+    }
+}
+
 void aeron_network_publication_on_status_message(
     aeron_network_publication_t *publication, const uint8_t *buffer, size_t length, struct sockaddr_storage *addr)
 {
@@ -604,14 +616,7 @@ void aeron_network_publication_on_status_message(
         AERON_PUT_ORDERED(publication->has_receivers, true);
     }
 
-    bool is_connected;
-    AERON_GET_VOLATILE(is_connected, publication->is_connected);
-
-    if (!is_connected)
-    {
-        AERON_PUT_ORDERED(publication->log_meta_data->is_connected, true);
-        AERON_PUT_ORDERED(publication->is_connected, true);
-    }
+    update_connected_status(publication, true);
 
     aeron_counter_set_ordered(
         publication->snd_lmt_position.value_addr,
@@ -771,11 +776,7 @@ void aeron_network_publication_decref(void *clientd)
         publication->conductor_fields.status = AERON_NETWORK_PUBLICATION_STATUS_DRAINING;
         publication->conductor_fields.time_of_last_activity_ns = publication->nano_clock();
 
-        if (aeron_counter_get(publication->pub_lmt_position.value_addr) > producer_position)
-        {
-            aeron_counter_set_ordered(publication->pub_lmt_position.value_addr, producer_position);
-        }
-
+        aeron_counter_set_ordered(publication->pub_lmt_position.value_addr, producer_position);
         AERON_PUT_ORDERED(publication->log_meta_data->end_of_stream_position, producer_position);
 
         if (aeron_counter_get_volatile(publication->snd_pos_position.value_addr) >= producer_position)
@@ -897,20 +898,13 @@ void aeron_network_publication_on_time_event(
     bool has_receivers;
     AERON_GET_VOLATILE(has_receivers, publication->has_receivers);
 
-    const bool current_connected_status =
+    bool current_connected_status =
         has_receivers ||
         (publication->spies_simulate_connection && publication->conductor_fields.subscribable.length > 0);
 
-    bool is_connected;
-    AERON_GET_VOLATILE(is_connected, publication->is_connected);
+    update_connected_status(publication, current_connected_status);
 
-    if (current_connected_status != is_connected)
-    {
-        AERON_PUT_ORDERED(publication->log_meta_data->is_connected, current_connected_status);
-        AERON_PUT_ORDERED(publication->is_connected, current_connected_status);
-    }
-
-    const int64_t producer_position = aeron_network_publication_producer_position(publication);
+    int64_t producer_position = aeron_network_publication_producer_position(publication);
 
     aeron_counter_set_ordered(publication->pub_pos_position.value_addr, producer_position);
 
@@ -932,7 +926,7 @@ void aeron_network_publication_on_time_event(
 
         case AERON_NETWORK_PUBLICATION_STATUS_DRAINING:
         {
-            const int64_t sender_position = aeron_counter_get_volatile(publication->snd_pos_position.value_addr);
+            int64_t sender_position = aeron_counter_get_volatile(publication->snd_pos_position.value_addr);
 
             if (producer_position > sender_position)
             {

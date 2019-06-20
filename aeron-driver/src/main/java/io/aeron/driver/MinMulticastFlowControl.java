@@ -49,7 +49,6 @@ public class MinMulticastFlowControl implements FlowControl
         RECEIVER_TIMEOUT_PROP_NAME, RECEIVER_TIMEOUT_DEFAULT);
 
     private final ArrayList<Receiver> receiverList = new ArrayList<>();
-    private volatile boolean shouldLinger = true;
 
     /**
      * {@inheritDoc}
@@ -129,23 +128,7 @@ public class MinMulticastFlowControl implements FlowControl
             }
         }
 
-        if (isEos && shouldLinger)
-        {
-            if (0 == receiverList.size() || minPosition >= senderPosition)
-            {
-                shouldLinger = false;
-            }
-        }
-
         return receiverList.size() > 0 ? minLimitPosition : senderLimit;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public boolean shouldLinger(final long timeNs)
-    {
-        return shouldLinger;
     }
 
     static class Receiver

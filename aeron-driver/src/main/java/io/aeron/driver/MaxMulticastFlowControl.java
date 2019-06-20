@@ -18,7 +18,6 @@ package io.aeron.driver;
 import io.aeron.protocol.StatusMessageFlyweight;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.TimeUnit;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
 
@@ -30,14 +29,7 @@ import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
  */
 public class MaxMulticastFlowControl implements FlowControl
 {
-    /**
-     * Timeout, in nanoseconds, until a receiver is no longer tracked and considered for linger purposes.
-     */
-    private static final long RECEIVER_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(2);
-
     private long lastPosition = 0;
-    private long timeOfLastStatusMessage = 0;
-    private volatile boolean shouldLinger = true;
 
     /**
      * {@inheritDoc}
@@ -64,7 +56,6 @@ public class MaxMulticastFlowControl implements FlowControl
             initialTermId);
 
         lastPosition = Math.max(lastPosition, position);
-        timeOfLastStatusMessage = timeNs;
 
         return Math.max(senderLimit, position + flyweight.receiverWindowLength());
     }
@@ -74,22 +65,6 @@ public class MaxMulticastFlowControl implements FlowControl
      */
     public long onIdle(final long timeNs, final long senderLimit, final long senderPosition, final boolean isEos)
     {
-        if (isEos && shouldLinger)
-        {
-            if (lastPosition >= senderPosition || ((timeOfLastStatusMessage + RECEIVER_TIMEOUT_NS) - timeNs < 0))
-            {
-                shouldLinger = false;
-            }
-        }
-
         return senderLimit;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public boolean shouldLinger(final long timeNs)
-    {
-        return shouldLinger;
     }
 }

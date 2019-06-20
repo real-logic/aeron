@@ -20,19 +20,19 @@ import io.aeron.protocol.StatusMessageFlyweight;
 import java.net.InetSocketAddress;
 
 /**
- * Strategy for applying flow control to the {@link Sender}.
+ * Strategy for applying flow control to the {@link Sender} on each stream.
  */
 public interface FlowControl
 {
     /**
      * Update the sender flow control strategy based on a status message from the receiver.
      *
-     * @param flyweight           the Status Message contents
+     * @param flyweight           over the status message received.
      * @param receiverAddress     of the receiver.
      * @param senderLimit         the current sender position limit.
      * @param initialTermId       for the term buffers.
      * @param positionBitsToShift in use for the length of each term buffer.
-     * @param timeNs              current time (in nanoseconds). {@link System#nanoTime()}
+     * @param timeNs              current time (in nanoseconds).
      * @return the new position limit to be employed by the sender.
      */
     long onStatusMessage(
@@ -44,29 +44,21 @@ public interface FlowControl
         long timeNs);
 
     /**
-     * Initialize the flow control strategy
+     * Initialize the flow control strategy for a stream.
      *
-     * @param initialTermId    for the term buffers
-     * @param termBufferLength to use as the length of each term buffer
+     * @param initialTermId    at which the stream started.
+     * @param termBufferLength to use as the length of each term buffer.
      */
     void initialize(int initialTermId, int termBufferLength);
 
     /**
-     * Perform any maintenance needed by the flow control strategy and return current position
+     * Perform any maintenance needed by the flow control strategy and return current sender limit position.
      *
      * @param timeNs         current time in nanoseconds.
      * @param senderLimit    for the current sender position.
-     * @param senderPosition for the current
+     * @param senderPosition which has been sent.
      * @param isEos          is this end-of-stream for the sender.
      * @return the position limit to be employed by the sender.
      */
     long onIdle(long timeNs, long senderLimit, long senderPosition, boolean isEos);
-
-    /**
-     * Called from the {@link DriverConductor} to check should the {@link NetworkPublication} linger or not.
-     *
-     * @param timeNs current time in nanoseconds.
-     * @return true to continue to linger or false to not linger
-     */
-    boolean shouldLinger(long timeNs);
 }

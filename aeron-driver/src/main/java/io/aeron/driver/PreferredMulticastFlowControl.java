@@ -65,7 +65,6 @@ public class PreferredMulticastFlowControl implements FlowControl
 
     private final ArrayList<Receiver> receiverList = new ArrayList<>();
     private final byte[] smAsf = new byte[64];
-    private volatile boolean shouldLinger = true;
 
     /**
      * {@inheritDoc}
@@ -147,23 +146,7 @@ public class PreferredMulticastFlowControl implements FlowControl
             }
         }
 
-        if (isEos && shouldLinger)
-        {
-            if (0 == receiverList.size() || minPosition >= senderPosition)
-            {
-                shouldLinger = false;
-            }
-        }
-
         return receiverList.size() > 0 ? minLimitPosition : senderLimit;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public boolean shouldLinger(final long timeNs)
-    {
-        return shouldLinger;
     }
 
     public boolean isFromPreferred(final StatusMessageFlyweight statusMessageFlyweight)

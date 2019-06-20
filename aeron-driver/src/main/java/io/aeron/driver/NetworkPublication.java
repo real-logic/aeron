@@ -307,11 +307,14 @@ public class NetworkPublication
         {
             bytesSent = heartbeatMessageCheck(nowNs, activeTermId, termOffset, signalEos && isEndOfStream);
 
-            if (spiesSimulateConnection && (statusMessageDeadlineNs - nowNs < 0) && hasSpies)
+            if (spiesSimulateConnection && hasSpies && !hasReceivers)
             {
                 final long newSenderPosition = maxSpyPosition(senderPosition);
-                this.senderPosition.setOrdered(newSenderPosition);
-                senderLimit.setOrdered(flowControl.onIdle(nowNs, newSenderPosition, newSenderPosition, isEndOfStream));
+                if (this.senderPosition.proposeMaxOrdered(newSenderPosition))
+                {
+                    senderLimit.setOrdered(
+                        flowControl.onIdle(nowNs, newSenderPosition, newSenderPosition, isEndOfStream));
+                }
             }
             else
             {
@@ -527,6 +530,7 @@ public class NetworkPublication
         else if (publisherLimit.get() > senderPosition)
         {
             publisherLimit.setOrdered(senderPosition);
+            workCount = 1;
         }
 
         return workCount;

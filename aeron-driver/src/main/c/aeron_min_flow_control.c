@@ -51,7 +51,6 @@ typedef struct aeron_min_flow_control_strategy_state_stct
     }
     receivers;
 
-    bool should_linger;
     int64_t receiver_timeout_ns;
 }
 aeron_min_flow_control_strategy_state_t;
@@ -87,14 +86,6 @@ int64_t aeron_min_flow_control_strategy_on_idle(
             min_position = receiver->last_position < min_position ? receiver->last_position : min_position;
             min_limit_position = receiver->last_position_plus_window < min_limit_position ?
                 receiver->last_position_plus_window : min_limit_position;
-        }
-    }
-
-    if (is_end_of_stream && strategy_state->should_linger)
-    {
-        if (0 == strategy_state->receivers.length || min_position >= snd_pos)
-        {
-            AERON_PUT_ORDERED(strategy_state->should_linger, false);
         }
     }
 
@@ -168,16 +159,6 @@ int64_t aeron_min_flow_control_strategy_on_sm(
     return snd_lmt > min_position ? snd_lmt : min_position;
 }
 
-bool aeron_min_flow_control_strategy_should_linger(void *state, int64_t now_ns)
-{
-    aeron_min_flow_control_strategy_state_t *strategy_state = (aeron_min_flow_control_strategy_state_t *)state;
-
-    bool should_linger;
-    AERON_GET_VOLATILE(should_linger, strategy_state->should_linger);
-
-    return should_linger;
-}
-
 int aeron_min_flow_control_strategy_fini(aeron_flow_control_strategy_t *strategy)
 {
     aeron_min_flow_control_strategy_state_t *strategy_state =
@@ -226,7 +207,6 @@ int aeron_min_flow_control_strategy_supplier(
 
     _strategy->on_idle = aeron_min_flow_control_strategy_on_idle;
     _strategy->on_status_message = aeron_min_flow_control_strategy_on_sm;
-    _strategy->should_linger = aeron_min_flow_control_strategy_should_linger;
     _strategy->fini = aeron_min_flow_control_strategy_fini;
 
     (void)aeron_thread_once(&timeout_is_initialized, initialize_aeron_min_flow_control_strategy_timeout);
@@ -238,7 +218,6 @@ int aeron_min_flow_control_strategy_supplier(
     state->receivers.length = 0;
 
     state->receiver_timeout_ns = aeron_min_flow_control_strategy_timeout_ns;
-    state->should_linger = true;
 
     *strategy = _strategy;
 

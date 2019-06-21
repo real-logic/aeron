@@ -434,11 +434,6 @@ public class ConsensusModule implements AutoCloseable
         public static final int SNAPSHOT_COUNTER_TYPE_ID = 205;
 
         /**
-         * Type id for the clustered services heartbeat counter.
-         */
-        public static final int SERVICE_HEARTBEAT_TYPE_ID = ServiceHeartbeat.SERVICE_HEARTBEAT_TYPE_ID;
-
-        /**
          * Type id for election state counter.
          */
         public static final int ELECTION_STATE_TYPE_ID = Election.ELECTION_STATE_TYPE_ID;
@@ -492,16 +487,6 @@ public class ConsensusModule implements AutoCloseable
          * Interval at which a leader will send heartbeats if the log is not progressing.
          */
         public static final long LEADER_HEARTBEAT_INTERVAL_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(200);
-
-        /**
-         * Timeout after which a clustered service is considered inactive or not present.
-         */
-        public static final String SERVICE_HEARTBEAT_TIMEOUT_PROP_NAME = "aeron.cluster.service.heartbeat.timeout";
-
-        /**
-         * Timeout after which a clustered service is considered inactive or not present.
-         */
-        public static final long SERVICE_HEARTBEAT_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
 
         /**
          * Timeout after which an election vote will be attempted after startup while waiting to canvass the status
@@ -752,17 +737,6 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Timeout after which a service will be considered inactive or not present.
-         *
-         * @return timeout in nanoseconds after which a service will be considered inactive or not present.
-         * @see #SERVICE_HEARTBEAT_TIMEOUT_PROP_NAME
-         */
-        public static long serviceHeartbeatTimeoutNs()
-        {
-            return getDurationInNanos(SERVICE_HEARTBEAT_TIMEOUT_PROP_NAME, SERVICE_HEARTBEAT_TIMEOUT_DEFAULT_NS);
-        }
-
-        /**
          * Timeout waiting to canvass the status of cluster members before voting if a majority have been heard from.
          *
          * @return timeout in nanoseconds to wait for the status of other cluster members before voting.
@@ -927,13 +901,11 @@ public class ConsensusModule implements AutoCloseable
         private int memberStatusStreamId = Configuration.memberStatusStreamId();
 
         private int serviceCount = Configuration.serviceCount();
-        private Counter[] serviceHeartbeatCounters;
         private int errorBufferLength = Configuration.errorBufferLength();
         private int maxConcurrentSessions = Configuration.maxConcurrentSessions();
         private long sessionTimeoutNs = Configuration.sessionTimeoutNs();
         private long leaderHeartbeatTimeoutNs = Configuration.leaderHeartbeatTimeoutNs();
         private long leaderHeartbeatIntervalNs = Configuration.leaderHeartbeatIntervalNs();
-        private long serviceHeartbeatTimeoutNs = Configuration.serviceHeartbeatTimeoutNs();
         private long startupCanvassTimeoutNs = Configuration.startupCanvassTimeoutNs();
         private long electionTimeoutNs = Configuration.electionTimeoutNs();
         private long electionStatusIntervalNs = Configuration.electionStatusIntervalNs();
@@ -1105,15 +1077,6 @@ public class ConsensusModule implements AutoCloseable
             if (null == timedOutClientCounter)
             {
                 timedOutClientCounter = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, "Timed out cluster client count");
-            }
-
-            if (null == serviceHeartbeatCounters)
-            {
-                serviceHeartbeatCounters = new Counter[serviceCount];
-                for (int i = 0; i < serviceCount; i++)
-                {
-                    serviceHeartbeatCounters[i] = ServiceHeartbeat.allocate(aeron, tempBuffer, i);
-                }
             }
 
             if (null == clusterNodeRole)
@@ -1791,28 +1754,6 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Set the array of counters which represent the heartbeats of the clustered services.
-         *
-         * @param serviceHeartbeatCounters which represent the heartbeats of the clustered services.
-         * @return this for a fluent API.
-         */
-        public Context serviceHeartbeatCounters(final Counter... serviceHeartbeatCounters)
-        {
-            this.serviceHeartbeatCounters = serviceHeartbeatCounters;
-            return this;
-        }
-
-        /**
-         * Get the array of counters which represent the heartbeats of the clustered services.
-         *
-         * @return the array of counters which represent the heartbeats of the clustered services.
-         */
-        public Counter[] serviceHeartbeatCounters()
-        {
-            return serviceHeartbeatCounters;
-        }
-
-        /**
          * Set the limit for the maximum number of concurrent cluster sessions.
          *
          * @param maxSessions after which new sessions will be rejected.
@@ -1906,30 +1847,6 @@ public class ConsensusModule implements AutoCloseable
         public long leaderHeartbeatIntervalNs()
         {
             return leaderHeartbeatIntervalNs;
-        }
-
-        /**
-         * Timeout after which a service will be considered inactive or not present.
-         *
-         * @param heartbeatTimeoutNs after which a service will be considered inactive or not present.
-         * @return this for a fluent API.
-         * @see Configuration#SERVICE_HEARTBEAT_TIMEOUT_PROP_NAME
-         */
-        public Context serviceHeartbeatTimeoutNs(final long heartbeatTimeoutNs)
-        {
-            this.serviceHeartbeatTimeoutNs = heartbeatTimeoutNs;
-            return this;
-        }
-
-        /**
-         * Timeout after which a service will be considered inactive or not present.
-         *
-         * @return the timeout after which a service will be consider inactive or not present.
-         * @see Configuration#SERVICE_HEARTBEAT_TIMEOUT_PROP_NAME
-         */
-        public long serviceHeartbeatTimeoutNs()
-        {
-            return serviceHeartbeatTimeoutNs;
         }
 
         /**

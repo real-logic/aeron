@@ -61,7 +61,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private final long sessionTimeoutMs;
     private final long leaderHeartbeatIntervalMs;
     private final long leaderHeartbeatTimeoutMs;
-    private final long serviceHeartbeatTimeoutMs;
     private final int logPublicationTag;
     private final int logPublicationChannelTag;
     private final int logSubscriptionTag;
@@ -127,7 +126,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private AeronArchive archive;
     private final ConsensusModule.Context ctx;
     private final MutableDirectBuffer tempBuffer;
-    private final Counter[] serviceHeartbeats;
     private final IdleStrategy idleStrategy;
     private final RecordingLog recordingLog;
     private final ArrayList<RecordingLog.Snapshot> dynamicJoinSnapshots = new ArrayList<>();
@@ -148,7 +146,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         this.sessionTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.sessionTimeoutNs());
         this.leaderHeartbeatIntervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.leaderHeartbeatIntervalNs());
         this.leaderHeartbeatTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.leaderHeartbeatTimeoutNs());
-        this.serviceHeartbeatTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.serviceHeartbeatTimeoutNs());
         this.egressPublisher = ctx.egressPublisher();
         this.moduleState = ctx.moduleStateCounter();
         this.commitPosition = ctx.commitPositionCounter();
@@ -163,7 +160,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         this.markFile = ctx.clusterMarkFile();
         this.recordingLog = ctx.recordingLog();
         this.tempBuffer = ctx.tempBuffer();
-        this.serviceHeartbeats = ctx.serviceHeartbeatCounters();
         this.serviceAcks = ServiceAck.newArray(ctx.serviceCount());
         this.highMemberId = ClusterMember.highMemberId(clusterMembers);
         this.logPublicationChannelTag = (int)aeron.nextCorrelationId();
@@ -1750,7 +1746,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         int workCount = 0;
 
         markFile.updateActivityTimestamp(nowMs);
-        checkServiceHeartbeats(nowMs);
+
         workCount += aeronClientInvoker.invoke();
         workCount += processRedirectSessions(redirectSessions, nowMs);
         workCount += processRejectedSessions(rejectedSessions, nowMs);
@@ -1848,25 +1844,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         workCount += consensusModuleAdapter.poll();
 
         return workCount;
-    }
-
-    private void checkServiceHeartbeats(final long nowMs)
-    {
-        final long heartbeatThreshold = nowMs - serviceHeartbeatTimeoutMs;
-
-        if (null == dynamicJoin)
-        {
-            for (final Counter serviceHeartbeat : serviceHeartbeats)
-            {
-                final long heartbeat = serviceHeartbeat.get();
-
-                if (heartbeat < heartbeatThreshold)
-                {
-                    ctx.countedErrorHandler().onError(new TimeoutException("no heartbeat from service: " + heartbeat));
-                    ctx.terminationHook().run();
-                }
-            }
-        }
     }
 
     private int checkControlToggle(final long nowMs)

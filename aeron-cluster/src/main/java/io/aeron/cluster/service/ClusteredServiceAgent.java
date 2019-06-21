@@ -29,7 +29,6 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.*;
-import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.util.Collection;
@@ -69,7 +68,6 @@ class ClusteredServiceAgent implements Agent, Cluster
     private int memberId = NULL_VALUE;
     private boolean isServiceActive;
     private BoundedLogAdapter logAdapter;
-    private AtomicCounter heartbeatCounter;
     private ReadableCounter roleCounter;
     private ReadableCounter commitPosition;
     private ActiveLogEvent activeLogEvent;
@@ -99,11 +97,9 @@ class ClusteredServiceAgent implements Agent, Cluster
     {
         final CountersReader counters = aeron.countersReader();
         roleCounter = awaitClusterRoleCounter(counters);
-        heartbeatCounter = awaitHeartbeatCounter(counters);
         commitPosition = awaitCommitPositionCounter(counters);
 
         final int recoveryCounterId = awaitRecoveryCounter(counters);
-        heartbeatCounter.setOrdered(epochClock.time());
 
         isServiceActive = true;
         checkForSnapshot(counters, recoveryCounterId);
@@ -548,7 +544,6 @@ class ClusteredServiceAgent implements Agent, Cluster
             service.onStart(this, null);
         }
 
-        heartbeatCounter.setOrdered(epochClock.time());
         while (!consensusModuleProxy.ack(clusterLogPosition, ackId++, serviceId))
         {
             idle();
@@ -576,7 +571,6 @@ class ClusteredServiceAgent implements Agent, Cluster
             }
 
             activeLogEvent = null;
-            heartbeatCounter.setOrdered(epochClock.time());
         }
     }
 
@@ -626,7 +620,6 @@ class ClusteredServiceAgent implements Agent, Cluster
             checkInterruptedStatus();
             idleStrategy.idle();
 
-            heartbeatCounter.setOrdered(epochClock.time());
             counterId = RecoveryState.findCounterId(counters);
         }
 
@@ -644,7 +637,6 @@ class ClusteredServiceAgent implements Agent, Cluster
         }
 
         final Image image = awaitImage(activeLogEvent.sessionId, logSubscription);
-        heartbeatCounter.setOrdered(epochClock.time());
 
         sessionMessageHeaderEncoder.leadershipTermId(activeLogEvent.leadershipTermId);
         memberId = activeLogEvent.memberId;
@@ -707,25 +699,10 @@ class ClusteredServiceAgent implements Agent, Cluster
         {
             checkInterruptedStatus();
             idleStrategy.idle();
-            heartbeatCounter.setOrdered(epochClock.time());
             counterId = CommitPos.findCounterId(counters);
         }
 
         return new ReadableCounter(counters, counterId);
-    }
-
-    private AtomicCounter awaitHeartbeatCounter(final CountersReader counters)
-    {
-        idleStrategy.reset();
-        int counterId = ServiceHeartbeat.findCounterId(counters, ctx.serviceId());
-        while (NULL_COUNTER_ID == counterId)
-        {
-            checkInterruptedStatus();
-            idleStrategy.idle();
-            counterId = ServiceHeartbeat.findCounterId(counters, ctx.serviceId());
-        }
-
-        return new AtomicCounter(counters.valuesBuffer(), counterId);
     }
 
     private void loadSnapshot(final long recordingId)
@@ -881,7 +858,6 @@ class ClusteredServiceAgent implements Agent, Cluster
             if (consensusModuleProxy.isConnected())
             {
                 markFile.updateActivityTimestamp(nowMs);
-                heartbeatCounter.setOrdered(nowMs);
             }
             else
             {

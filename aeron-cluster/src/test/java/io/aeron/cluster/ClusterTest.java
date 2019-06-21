@@ -276,10 +276,12 @@ public class ClusterTest
 
             final TestNode follower = cluster.startStaticNode(originalLeader.index(), false);
 
-            Thread.sleep(5_000);
+            while (follower.electionState() != null)
+            {
+                Thread.sleep(1000);
+            }
 
             assertThat(follower.role(), is(Cluster.Role.FOLLOWER));
-            assertThat(follower.electionState(), is((Election.State)null));
 
             cluster.connectClient();
 

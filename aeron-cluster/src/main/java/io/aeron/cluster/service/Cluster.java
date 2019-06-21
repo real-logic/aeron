@@ -168,7 +168,7 @@ public interface Cluster
 
     /**
      * Schedule a timer for a given deadline and provide a correlation id to identify the timer when it expires or
-     * for cancellation.
+     * for cancellation. This action asynchronous and will race with the timer expiring.
      * <p>
      * If the correlationId is for an existing scheduled timer then it will be reschedule to the new deadline. However
      * it is best do generate correlationIds in a monotonic fashion and be aware of potential clashes with other
@@ -189,7 +189,7 @@ public interface Cluster
     boolean scheduleTimer(long correlationId, long deadlineMs);
 
     /**
-     * Cancel a previous scheduled timer.
+     * Cancel a previous scheduled timer. This action asynchronous and will race with the timer expiring.
      * <p>
      * Timers should only be scheduled or cancelled in the context of processing a
      * {@link ClusteredService#onSessionMessage(ClientSession, long, DirectBuffer, int, int, Header)},
@@ -266,14 +266,14 @@ public interface Cluster
     long tryClaim(int length, BufferClaim bufferClaim);
 
     /**
-     * Should be called by the service when it experiences back-pressure on egress, closing sessions, or making
-     * timer requests.
+     * Should be called by the service when it experiences back-pressure on egress, closing sessions, making
+     * timer requests, or any long running actions.
      */
     void idle();
 
     /**
      * Should be called by the service when it experiences back-pressure on egress, closing sessions, or making
-     * timer requests.
+     * timer requests, or any long running actions.
      *
      * @param workCount a value of 0 will reset the idle strategy is a progressive back-off has been applied.
      */

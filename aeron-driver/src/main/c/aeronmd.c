@@ -95,7 +95,6 @@ int main(int argc, char **argv)
                 exit(status);
         }
     }
-#endif
 
     for (int i = optind; i < argc; i++)
     {
@@ -105,6 +104,7 @@ int main(int argc, char **argv)
             exit(status);
         }
     }
+#endif
 
     signal(SIGINT, sigint_handler);
 
@@ -113,7 +113,6 @@ int main(int argc, char **argv)
         fprintf(stderr, "ERROR: context init (%d) %s\n", aeron_errcode(), aeron_errmsg());
         goto cleanup;
     }
-
 
     if (aeron_driver_context_set_driver_termination_hook(context, termination_hook, NULL) < 0)
     {

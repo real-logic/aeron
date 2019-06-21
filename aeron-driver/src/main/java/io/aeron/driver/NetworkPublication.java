@@ -310,11 +310,8 @@ public class NetworkPublication
             if (spiesSimulateConnection && hasSpies && !hasReceivers)
             {
                 final long newSenderPosition = maxSpyPosition(senderPosition);
-                if (this.senderPosition.proposeMaxOrdered(newSenderPosition))
-                {
-                    senderLimit.setOrdered(
-                        flowControl.onIdle(nowNs, newSenderPosition, newSenderPosition, isEndOfStream));
-                }
+                this.senderPosition.setOrdered(newSenderPosition);
+                senderLimit.setOrdered(flowControl.onIdle(nowNs, newSenderPosition, newSenderPosition, isEndOfStream));
             }
             else
             {

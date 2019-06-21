@@ -112,7 +112,7 @@ int main (int argc, char** argv)
             struct tm localTm;
 
 #ifdef _MSC_VER
-            _localtime_s(&localTm, &rawTime);
+            localtime_s(&localTm, &rawtime);
 #else
             ::localtime_r(&rawtime, &localTm);
 #endif

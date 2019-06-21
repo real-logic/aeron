@@ -171,11 +171,19 @@ int aeron_properties_setenv(const char *name, const char *value)
 
     if ('\0' == *value)
     {
+#if !defined(WIN32)
         unsetenv(env_name);
+#else
+        _putenv_s(env_name, "");
+#endif
     }
     else
     {
+#if !defined(WIN32)
         setenv(env_name, value, true);
+#else
+        _putenv_s(env_name, value);
+#endif
     }
 
     return 0;

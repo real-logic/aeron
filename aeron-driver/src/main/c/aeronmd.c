@@ -24,7 +24,11 @@
 #include <time.h>
 #include <stdbool.h>
 #include <stdio.h>
+
+#ifndef _MSC_VER
 #include <unistd.h>
+#endif
+
 #include "aeronmd.h"
 #include "concurrent/aeron_atomic.h"
 #include "aeron_driver_context.h"

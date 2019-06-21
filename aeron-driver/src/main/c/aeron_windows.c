@@ -24,6 +24,7 @@
 #include <intrin.h>
 
 #include "concurrent/aeron_thread.h"
+#include "aeron_alloc.h"
 
 #define __builtin_bswap32 _byteswap_ulong
 #define __builtin_bswap64 _byteswap_uint64
@@ -281,6 +282,24 @@ int aeron_clock_gettime_realtime(struct timespec *tv)
 
     return 0;
 }
+
+char *aeron_strndup(const char *value, size_t length)
+{
+    size_t str_length = strlen(value);
+    char *dup = NULL;
+
+    str_length = (str_length > length) ? length : str_length;
+    if (aeron_alloc((void **)&dup, str_length + 1) < 0)
+    {
+        errno = ENOMEM;
+        return NULL;
+    }
+
+    strncpy(dup, value, str_length);
+    dup[str_length] = '\0';
+    return dup;
+}
+
 #else
 
 typedef int aeron_make_into_non_empty_translation_unit_t;

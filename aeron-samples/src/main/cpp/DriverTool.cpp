@@ -78,7 +78,7 @@ std::string formatDate(const char *format, std::int64_t millisecondsSinceEpoch)
     struct tm localTm;
 
 #ifdef _MSC_VER
-    _localtime_s(&localTm, &tm);
+    localtime_s(&localTm, &tm);
 #else
     ::localtime_r(&tm, &localTm);
 #endif

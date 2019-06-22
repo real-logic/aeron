@@ -479,7 +479,7 @@ int aeron_network_publication_send(aeron_network_publication_t *publication, int
         bool has_spies;
         AERON_GET_VOLATILE(has_spies, publication->has_spies);
 
-        if (publication->spies_simulate_connection && now_ns > publication->status_message_deadline_ns && has_spies)
+        if (publication->spies_simulate_connection && has_spies && !publication->has_receivers)
         {
             const int64_t new_snd_pos = aeron_network_publication_max_spy_position(publication, snd_pos);
             aeron_counter_set_ordered(publication->snd_pos_position.value_addr, new_snd_pos);
@@ -738,6 +738,7 @@ int aeron_network_publication_update_pub_lmt(aeron_network_publication_t *public
     else if (*publication->pub_lmt_position.value_addr > snd_pos)
     {
         aeron_counter_set_ordered(publication->pub_lmt_position.value_addr, snd_pos);
+        work_count = 1;
     }
 
     return work_count;

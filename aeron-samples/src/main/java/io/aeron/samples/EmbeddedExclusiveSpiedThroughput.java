@@ -119,7 +119,7 @@ public class EmbeddedExclusiveSpiedThroughput
         if (printingActive)
         {
             System.out.format(
-                "%.02g msgs/sec, %.02g bytes/sec, totals %d messages %d MB payloads%n",
+                "%.04g msgs/sec, %.04g bytes/sec, totals %d messages %d MB payloads%n",
                 messagesPerSec, bytesPerSec, totalFragments, totalBytes / (1024 * 1024));
         }
     }

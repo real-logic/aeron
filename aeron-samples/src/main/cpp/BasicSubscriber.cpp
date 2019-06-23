@@ -78,10 +78,10 @@ fragment_handler_t printStringMessage()
 int main(int argc, char** argv)
 {
     CommandOptionParser cp;
-    cp.addOption(CommandOption(optHelp,     0, 0, "                Displays help information."));
-    cp.addOption(CommandOption(optPrefix,   1, 1, "dir             Prefix directory for aeron driver."));
-    cp.addOption(CommandOption(optChannel,  1, 1, "channel         Channel."));
-    cp.addOption(CommandOption(optStreamId, 1, 1, "streamId        Stream ID."));
+    cp.addOption(CommandOption(optHelp,     0, 0, "            Displays help information."));
+    cp.addOption(CommandOption(optPrefix,   1, 1, "dir         Prefix directory for aeron driver."));
+    cp.addOption(CommandOption(optChannel,  1, 1, "channel     Channel."));
+    cp.addOption(CommandOption(optStreamId, 1, 1, "streamId    Stream ID."));
 
     signal (SIGINT, sigIntHandler);
 

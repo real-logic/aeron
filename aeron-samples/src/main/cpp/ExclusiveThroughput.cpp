@@ -90,7 +90,7 @@ void printRate(double messagesPerSec, double bytesPerSec, long totalFragments, l
     if (printingActive)
     {
         std::printf(
-            "%.02g msgs/sec, %.02g bytes/sec, totals %ld messages %ld MB payloads\n",
+            "%.04g msgs/sec, %.04g bytes/sec, totals %ld messages %ld MB payloads\n",
             messagesPerSec, bytesPerSec, totalFragments, totalBytes / (1024 * 1024));
     }
 }

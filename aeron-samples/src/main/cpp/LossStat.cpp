@@ -89,8 +89,8 @@ std::string formatDate(std::int64_t millisecondsSinceEpoch)
 int main (int argc, char** argv)
 {
     CommandOptionParser cp;
-    cp.addOption(CommandOption(optHelp,   0, 0, "                Displays help information."));
-    cp.addOption(CommandOption(optPath,   1, 1, "basePath        Base Path to shared memory. Default: " + Context::defaultAeronPath()));
+    cp.addOption(CommandOption(optHelp,   0, 0, "              Displays help information."));
+    cp.addOption(CommandOption(optPath,   1, 1, "basePath      Base Path to shared memory. Default: " + Context::defaultAeronPath()));
 
     try
     {

@@ -28,7 +28,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * A subscriber application with two subscriptions which can receive fragmented messages
+ * A subscriber application with two subscriptions which can receive fragmented messages.
+ * <p>
  * Creates two subscriptions on a given channel subscribed to two different stream IDs.
  * The default STREAM_ID and CHANNEL are configured in {@link SampleConfiguration}. The default
  * channel and stream IDs can be changed by setting Java system properties at the command line, e.g.:
@@ -88,7 +89,7 @@ public class MultipleSubscribersWithFragmentAssembly
     /**
      * Print the information for an available image to stdout.
      *
-     * @param image that has been created
+     * @param image that has been created.
      */
     public static void eventAvailableImage(final Image image)
     {
@@ -99,9 +100,9 @@ public class MultipleSubscribersWithFragmentAssembly
     }
 
     /**
-     * This handler is called when image is unavailable
+     * This handler is called when image is unavailable.
      *
-     * @param image that has gone inactive
+     * @param image that has gone inactive.
      */
     public static void eventUnavailableImage(final Image image)
     {
@@ -112,10 +113,10 @@ public class MultipleSubscribersWithFragmentAssembly
     }
 
     /**
-     * Return a reusable, parameterized {@link FragmentHandler} that prints to stdout for the first stream(STREAM)
+     * Return a reusable, parameterized {@link FragmentHandler} that prints to stdout for the first stream(STREAM).
      *
-     * @param streamId to show when printing
-     * @return subscription data handler function that prints the message contents
+     * @param streamId to show when printing.
+     * @return subscription data handler function that prints the message contents.
      */
     public static FragmentHandler reassembledStringMessage1(final int streamId)
     {
@@ -139,10 +140,10 @@ public class MultipleSubscribersWithFragmentAssembly
     }
 
     /**
-     * Return a reusable, parameterised {@link FragmentHandler} that prints to stdout for the second stream (STREAM + 1)
+     * A reusable, parameterised {@link FragmentHandler} that prints to stdout for the second stream (STREAM + 1).
      *
-     * @param streamId to show when printing
-     * @return subscription data handler function that prints the message contents
+     * @param streamId to show when printing.
+     * @return subscription data handler function that prints the message contents.
      */
     public static FragmentHandler reassembledStringMessage2(final int streamId)
     {

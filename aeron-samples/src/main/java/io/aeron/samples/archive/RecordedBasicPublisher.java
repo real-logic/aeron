@@ -47,7 +47,7 @@ public class RecordedBasicPublisher
 
     public static void main(final String[] args) throws Exception
     {
-        System.out.println("Publishing to " + CHANNEL + " on stream Id " + STREAM_ID);
+        System.out.println("Publishing to " + CHANNEL + " on stream id " + STREAM_ID);
 
         final AtomicBoolean running = new AtomicBoolean(true);
         SigInt.register(() -> running.set(false));

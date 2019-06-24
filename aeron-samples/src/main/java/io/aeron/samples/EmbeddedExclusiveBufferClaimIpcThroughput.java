@@ -31,6 +31,9 @@ import java.util.concurrent.locks.LockSupport;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 import static org.agrona.UnsafeAccess.UNSAFE;
 
+/**
+ * Throughput test using {@link ExclusivePublication#tryClaim(int, BufferClaim)} over IPC transport.
+ */
 public class EmbeddedExclusiveBufferClaimIpcThroughput
 {
     public static final int BURST_LENGTH = 1_000_000;

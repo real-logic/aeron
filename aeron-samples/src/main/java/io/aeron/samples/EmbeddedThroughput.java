@@ -72,7 +72,7 @@ public class EmbeddedThroughput
             do
             {
                 System.out.format(
-                    "%nStreaming %,d messages of payload length %d bytes to %s on stream Id %d%n",
+                    "%nStreaming %,d messages of payload length %d bytes to %s on stream id %d%n",
                     NUMBER_OF_MESSAGES, MESSAGE_LENGTH, CHANNEL, STREAM_ID);
 
                 printingActive = true;

@@ -23,6 +23,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.BitUtil;
 import org.agrona.BufferUtil;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.console.ContinueBarrier;
@@ -35,6 +36,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static io.aeron.samples.SamplesUtil.rateReporterHandler;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 
+/**
+ * Throughput test using {@link ExclusivePublication#offer(DirectBuffer, int, int)} over UDP transport by spying via
+ * IPC.
+ */
 public class EmbeddedExclusiveSpiedThroughput
 {
     private static final long NUMBER_OF_MESSAGES = SampleConfiguration.NUMBER_OF_MESSAGES;
@@ -76,7 +81,7 @@ public class EmbeddedExclusiveSpiedThroughput
             do
             {
                 System.out.format(
-                    "%nStreaming %,d messages of payload length %d bytes to %s on stream Id %d%n",
+                    "%nStreaming %,d messages of payload length %d bytes to %s on stream id %d%n",
                     NUMBER_OF_MESSAGES, MESSAGE_LENGTH, CHANNEL, STREAM_ID);
 
                 printingActive = true;

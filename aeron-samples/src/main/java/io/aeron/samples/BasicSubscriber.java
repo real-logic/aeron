@@ -25,7 +25,8 @@ import org.agrona.concurrent.SigInt;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * This is a Basic Aeron subscriber application
+ * This is a Basic Aeron subscriber application.
+ * <p>
  * The application subscribes to a default channel and stream ID.  These defaults can
  * be overwritten by changing their value in {@link SampleConfiguration} or by
  * setting their corresponding Java system properties at the command line, e.g.:
@@ -44,7 +45,7 @@ public class BasicSubscriber
 
     public static void main(final String[] args)
     {
-        System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID);
+        System.out.println("Subscribing to " + CHANNEL + " on stream id " + STREAM_ID);
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
         final Aeron.Context ctx = new Aeron.Context()

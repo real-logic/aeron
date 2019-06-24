@@ -150,7 +150,7 @@ public class FileReceiver
             Aeron aeron = Aeron.connect();
             Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
-            System.out.println("Receiving from " + CHANNEL + " on stream Id " + STREAM_ID);
+            System.out.println("Receiving from " + CHANNEL + " on stream id " + STREAM_ID);
             final FileReceiver fileReceiver = new FileReceiver(storageDir, subscription);
 
             while (running.get())

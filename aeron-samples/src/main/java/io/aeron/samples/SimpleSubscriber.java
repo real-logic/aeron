@@ -45,7 +45,7 @@ public class SimpleSubscriber
         // for internal use and should not be used by applications.
         final int streamId = 10;
 
-        System.out.println("Subscribing to " + channel + " on stream Id " + streamId);
+        System.out.println("Subscribing to " + channel + " on stream id " + streamId);
 
         final AtomicBoolean running = new AtomicBoolean(true);
         // Register a SIGINT handler for graceful shutdown.

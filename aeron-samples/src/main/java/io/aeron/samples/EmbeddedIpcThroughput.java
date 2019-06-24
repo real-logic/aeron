@@ -29,6 +29,9 @@ import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 import static org.agrona.UnsafeAccess.UNSAFE;
 
+/**
+ * Throughput test using {@link ConcurrentPublication#offer(DirectBuffer, int, int)} over IPC transport.
+ */
 public class EmbeddedIpcThroughput
 {
     public static final int BURST_LENGTH = 1_000_000;

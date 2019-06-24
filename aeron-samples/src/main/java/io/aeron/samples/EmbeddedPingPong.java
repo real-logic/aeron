@@ -41,6 +41,9 @@ import org.agrona.console.ContinueBarrier;
 
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 
+/**
+ * Latency test using a ping-pong approach to measure RTT and store all results in a {@link Histogram}.
+ */
 public class EmbeddedPingPong
 {
     private static final int PING_STREAM_ID = SampleConfiguration.PING_STREAM_ID;
@@ -92,8 +95,8 @@ public class EmbeddedPingPong
             .availableImageHandler(EmbeddedPingPong::availablePongImageHandler)
             .aeronDirectoryName(embeddedDirName);
 
-        System.out.println("Publishing Ping at " + PING_CHANNEL + " on stream Id " + PING_STREAM_ID);
-        System.out.println("Subscribing Pong at " + PONG_CHANNEL + " on stream Id " + PONG_STREAM_ID);
+        System.out.println("Publishing Ping at " + PING_CHANNEL + " on stream id " + PING_STREAM_ID);
+        System.out.println("Subscribing Pong at " + PONG_CHANNEL + " on stream id " + PONG_STREAM_ID);
         System.out.println("Message payload length of " + MESSAGE_LENGTH + " bytes");
         System.out.println("Using exclusive publications: " + EXCLUSIVE_PUBLICATIONS);
 
@@ -137,8 +140,8 @@ public class EmbeddedPingPong
     {
         return new Thread(() ->
         {
-            System.out.println("Subscribing Ping at " + PING_CHANNEL + " on stream Id " + PING_STREAM_ID);
-            System.out.println("Publishing Pong at " + PONG_CHANNEL + " on stream Id " + PONG_STREAM_ID);
+            System.out.println("Subscribing Ping at " + PING_CHANNEL + " on stream id " + PING_STREAM_ID);
+            System.out.println("Publishing Pong at " + PONG_CHANNEL + " on stream id " + PONG_STREAM_ID);
 
             final Aeron.Context ctx = new Aeron.Context().aeronDirectoryName(embeddedDirName);
 

@@ -85,7 +85,7 @@ public class StreamingPublisher
                 printingActive = true;
 
                 System.out.format(
-                    "%nStreaming %,d messages of%s size %d bytes to %s on stream Id %d%n",
+                    "%nStreaming %,d messages of%s size %d bytes to %s on stream id %d%n",
                     NUMBER_OF_MESSAGES,
                     (RANDOM_MESSAGE_LENGTH) ? " random" : "",
                     MESSAGE_LENGTH,

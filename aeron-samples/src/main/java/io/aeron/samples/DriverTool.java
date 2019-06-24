@@ -30,8 +30,8 @@ import java.util.Date;
 import static io.aeron.CncFileDescriptor.*;
 
 /**
- * Tool for printing out Aeron Media Driver Information. A command-and-control (CnC) file is maintained by media driver
- * in shared memory. This application reads the CnC file and prints its status. Layout of the Cnc file is
+ * Tool for printing out Aeron Media Driver Information. A command-and-control (CnC) file is maintained by a
+ * media driver in shared memory. This application reads the CnC file and prints its status. Layout of the Cnc file is
  * described in {@link CncFileDescriptor}.
  */
 public class DriverTool

@@ -17,7 +17,7 @@ package io.aeron.samples;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
-import org.agrona.concurrent.BusySpinIdleStrategy;
+import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.ShutdownSignalBarrier;
 
 import static org.agrona.SystemUtil.loadPropertiesFiles;
@@ -33,10 +33,11 @@ public class LowLatencyMediaDriver
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .termBufferSparseFile(false)
+            .useWindowsHighResTimer(true)
             .threadingMode(ThreadingMode.DEDICATED)
-            .conductorIdleStrategy(new BusySpinIdleStrategy())
-            .receiverIdleStrategy(new BusySpinIdleStrategy())
-            .senderIdleStrategy(new BusySpinIdleStrategy());
+            .conductorIdleStrategy(new NoOpIdleStrategy())
+            .receiverIdleStrategy(new NoOpIdleStrategy())
+            .senderIdleStrategy(new NoOpIdleStrategy());
 
         try (MediaDriver ignored = MediaDriver.launch(ctx))
         {

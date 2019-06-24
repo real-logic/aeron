@@ -41,7 +41,7 @@ public class MultiplePublishersWithFragmentation
     public static void main(final String[] args)
     {
         System.out.println(
-            "Publishing to " + CHANNEL + " on stream Id " + STREAM_ID_1 + " and stream Id " + STREAM_ID_2);
+            "Publishing to " + CHANNEL + " on stream id " + STREAM_ID_1 + " and stream id " + STREAM_ID_2);
 
         try (Aeron aeron = Aeron.connect();
             Publication publication1 = aeron.addPublication(CHANNEL, STREAM_ID_1);
@@ -70,12 +70,12 @@ public class MultiplePublishersWithFragmentation
                         {
                             if (result1 == Publication.BACK_PRESSURED)
                             {
-                                System.out.println(" Offer failed due to back pressure for stream Id " + STREAM_ID_1);
+                                System.out.println(" Offer failed due to back pressure for stream id " + STREAM_ID_1);
                             }
                             else if (result1 == Publication.NOT_CONNECTED)
                             {
                                 System.out.println(" Offer failed because publisher is not yet " +
-                                    "connected to subscriber for stream Id " + STREAM_ID_1);
+                                    "connected to subscriber for stream id " + STREAM_ID_1);
                             }
                             else
                             {
@@ -88,7 +88,7 @@ public class MultiplePublishersWithFragmentation
                         {
                             j++;
                             offerStatus1 = true;
-                            System.out.println("Successfully sent data on stream " +
+                            System.out.println("Successfully sent data on stream id " +
                                 STREAM_ID_1 + " and data length " + BUFFER_1.capacity() + " at offset " + result1);
                         }
                     }
@@ -101,7 +101,7 @@ public class MultiplePublishersWithFragmentation
                             if (result2 == Publication.BACK_PRESSURED)
                             {
                                 System.out.println(" Offer failed because publisher is not yet " +
-                                    "connected to subscriber for stream Id " + STREAM_ID_2);
+                                    "connected to subscriber for stream id " + STREAM_ID_2);
                             }
                             else if (result2 == Publication.NOT_CONNECTED)
                             {
@@ -118,15 +118,15 @@ public class MultiplePublishersWithFragmentation
                         {
                             k++;
                             offerStatus2 = true;
-                            System.out.println("Successfully sent data on stream " + STREAM_ID_2 +
+                            System.out.println("Successfully sent data on stream id " + STREAM_ID_2 +
                                 " and data length " + BUFFER_2.capacity() + " at offset " + result2);
                         }
                     }
                 }
             }
 
-            System.out.println("Done sending total messages for stream Id " +
-                STREAM_ID_1 + " = " + (j - 1) + " and stream Id " + STREAM_ID_2 + " = " + (k - 1));
+            System.out.println("Done sending total messages for stream id " +
+                STREAM_ID_1 + " = " + (j - 1) + " and stream id " + STREAM_ID_2 + " = " + (k - 1));
         }
     }
 }

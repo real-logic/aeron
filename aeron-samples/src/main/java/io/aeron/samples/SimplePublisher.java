@@ -41,7 +41,7 @@ public class SimplePublisher
         // for internal use and should not be used by applications.
         final int streamId = 10;
 
-        System.out.println("Publishing to " + channel + " on stream Id " + streamId);
+        System.out.println("Publishing to " + channel + " on stream id " + streamId);
 
         // Create a context, needed for client connection to media driver
         // A separate media driver process needs to be running prior to starting this application

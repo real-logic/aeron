@@ -256,7 +256,6 @@ public class StreamStat
             final StreamPosition that = (StreamPosition)o;
 
             return this.id == that.id && this.value == that.value && this.typeId == that.typeId;
-
         }
 
         public int hashCode()
@@ -277,5 +276,4 @@ public class StreamStat
                 '}';
         }
     }
-
 }

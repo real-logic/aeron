@@ -43,7 +43,7 @@ public class RateSubscriber
 
     public static void main(final String[] args) throws Exception
     {
-        System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID);
+        System.out.println("Subscribing to " + CHANNEL + " on stream id " + STREAM_ID);
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
         final ExecutorService executor = Executors.newFixedThreadPool(1);

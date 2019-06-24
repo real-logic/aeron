@@ -42,7 +42,7 @@ public class ReplayedBasicSubscriber
 
     public static void main(final String[] args)
     {
-        System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID);
+        System.out.println("Subscribing to " + CHANNEL + " on stream id " + STREAM_ID);
 
         final FragmentHandler fragmentHandler = SamplesUtil.printStringMessage(STREAM_ID);
         final AtomicBoolean running = new AtomicBoolean(true);

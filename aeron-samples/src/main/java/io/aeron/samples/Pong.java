@@ -65,8 +65,8 @@ public class Pong
 
         final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
 
-        System.out.println("Subscribing Ping at " + PING_CHANNEL + " on stream Id " + PING_STREAM_ID);
-        System.out.println("Publishing Pong at " + PONG_CHANNEL + " on stream Id " + PONG_STREAM_ID);
+        System.out.println("Subscribing Ping at " + PING_CHANNEL + " on stream id " + PING_STREAM_ID);
+        System.out.println("Publishing Pong at " + PONG_CHANNEL + " on stream id " + PONG_STREAM_ID);
         System.out.println("Using exclusive publications " + EXCLUSIVE_PUBLICATIONS);
 
         final AtomicBoolean running = new AtomicBoolean(true);

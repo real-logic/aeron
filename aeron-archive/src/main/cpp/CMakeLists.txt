@@ -18,6 +18,7 @@ find_package(Java REQUIRED)
 
 set(CODEC_SCHEMA ${ARCHIVE_CODEC_SCHEMA_DIR}/aeron-archive-codecs.xml)
 set(GENERATED_CODECS
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/BoundedReplayRequest.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/ControlResponse.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/ConnectRequest.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/CloseSessionRequest.h
@@ -25,6 +26,7 @@ set(GENERATED_CODECS
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/StopRecordingRequest.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/ReplayRequest.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/StopReplayRequest.h
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/StopAllReplaysRequest.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/ListRecordingsRequest.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/ListRecordingsForUriRequest.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/ListRecordingRequest.h

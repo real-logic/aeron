@@ -149,6 +149,7 @@ public:
     inline static std::shared_ptr<AeronArchive> connect()
     {
         Context_t ctx;
+
         return AeronArchive::connect(ctx);
     }
 
@@ -370,9 +371,7 @@ public:
      */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline std::int64_t startRecording(
-        const std::string& channel,
-        std::int32_t streamId,
-        SourceLocation sourceLocation)
+        const std::string& channel, std::int32_t streamId, SourceLocation sourceLocation)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
 
@@ -405,10 +404,7 @@ public:
      */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline std::int64_t extendRecording(
-        std::int64_t recordingId,
-        const std::string& channel,
-        std::int32_t streamId,
-        SourceLocation sourceLocation)
+        std::int64_t recordingId, const std::string& channel, std::int32_t streamId, SourceLocation sourceLocation)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
 
@@ -437,9 +433,7 @@ public:
      * @tparam IdleStrategy  to use for polling operations.
      */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
-    inline void stopRecording(
-        const std::string& channel,
-        std::int32_t streamId)
+    inline void stopRecording(const std::string& channel, std::int32_t streamId)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
 
@@ -527,7 +521,7 @@ public:
      * @param replayStreamId to which the replay should be sent.
      * @tparam IdleStrategy  to use for polling operations.
      * @return the id of the replay session which will be the same as the Image#sessionId of the received
-     * replay for correlation with the matching channel and stream id in the lower 32 bits.
+     *         replay for correlation with the matching channel and stream id in the lower 32 bits.
      */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline std::int64_t startReplay(
@@ -553,6 +547,56 @@ public:
     }
 
     /**
+ * Start a bound replay for a length in bytes of a recording from a position. If the position is #NULL_POSITION
+ * then the stream will be replayed from the start. The replay is bounded by the limit counter's position value.
+ * <p>
+ * The lower 32-bits of the returned value contains the Image#sessionId of the received replay. All
+ * 64-bits are required to uniquely identify the replay when calling #stopReplay. The lower 32-bits
+ * can be obtained by casting the std::int64_t value to an std::int32_t.
+ *
+ * @param recordingId    to be replayed.
+ * @param position       from which the replay should begin or #NULL_POSITION if from the start.
+ * @param length         of the stream to be replayed. Use std::numeric_limits<std::int64_t>::max to follow a live
+ *                       recording or #NULL_LENGTH to replay the whole stream of unknown length.
+ * @param limitCounterId for the counter which bounds the replay by the position it contains.
+ * @param replayChannel  to which the replay should be sent.
+ * @param replayStreamId to which the replay should be sent.
+ * @tparam IdleStrategy  to use for polling operations.
+ * @return the id of the replay session which will be the same as the Image#sessionId of the received
+ *         replay for correlation with the matching channel and stream id in the lower 32 bits.
+ */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    inline std::int64_t startBoundedReplay(
+        std::int64_t recordingId,
+        std::int64_t position,
+        std::int64_t length,
+        std::int32_t limitCounterId,
+        const std::string& replayChannel,
+        std::int32_t replayStreamId)
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_lock);
+
+        ensureOpen();
+
+        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+
+        if (!m_archiveProxy->boundedReplay<IdleStrategy>(
+            recordingId,
+            position,
+            length,
+            limitCounterId,
+            replayChannel,
+            replayStreamId,
+            correlationId,
+            m_controlSessionId))
+        {
+            throw ArchiveException("failed to send bounded replay request", SOURCEINFO);
+        }
+
+        return pollForResponse<IdleStrategy>(correlationId);
+    }
+
+    /**
      * Stop a replay session.
      *
      * @param replaySessionId to stop replay for.
@@ -570,6 +614,29 @@ public:
         if (!m_archiveProxy->stopReplay<IdleStrategy>(replaySessionId, correlationId, m_controlSessionId))
         {
             throw ArchiveException("failed to send stop replay request", SOURCEINFO);
+        }
+
+        pollForResponse<IdleStrategy>(correlationId);
+    }
+
+    /**
+     * Stop all replays matching a recording id. If recording id is #NULL_VALUE then match all replays.
+     *
+     * @param recordingId to stop replays for.
+     * @tparam IdleStrategy  to use for polling operations.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    inline void stopAllReplays(std::int64_t recordingId)
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_lock);
+
+        ensureOpen();
+
+        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+
+        if (!m_archiveProxy->stopAllReplays<IdleStrategy>(recordingId, correlationId, m_controlSessionId))
+        {
+            throw ArchiveException("failed to send stop all replays request", SOURCEINFO);
         }
 
         pollForResponse<IdleStrategy>(correlationId);

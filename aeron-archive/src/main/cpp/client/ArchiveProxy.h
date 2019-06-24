@@ -66,7 +66,8 @@ public:
     bool tryConnect(const std::string& responseChannel, std::int32_t responseStreamId, std::int64_t correlationId)
     {
         const util::index_t length = connectRequest(m_buffer, responseChannel, responseStreamId, correlationId);
-        return (m_publication->offer(m_buffer, 0, length) > 0);
+
+        return m_publication->offer(m_buffer, 0, length) > 0;
     }
 
     /**
@@ -80,6 +81,7 @@ public:
     bool closeSession(std::int64_t controlSessionId)
     {
         const util::index_t length = closeSession(m_buffer, controlSessionId);
+
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
 
@@ -104,6 +106,7 @@ public:
     {
         const util::index_t length = startRecording(
             m_buffer, channel, streamId, localSource, correlationId, controlSessionId);
+
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
 
@@ -134,6 +137,7 @@ public:
     {
         const util::index_t length = extendRecording(
             m_buffer, channel, streamId, localSource, recordingId, correlationId, controlSessionId);
+
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
 
@@ -149,12 +153,10 @@ public:
      */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     bool stopRecording(
-        const std::string& channel,
-        std::int32_t streamId,
-        std::int64_t correlationId,
-        std::int64_t controlSessionId)
+        const std::string& channel, std::int32_t streamId, std::int64_t correlationId, std::int64_t controlSessionId)
     {
         const util::index_t length = stopRecording(m_buffer, channel, streamId, correlationId, controlSessionId);
+
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
 
@@ -168,12 +170,10 @@ public:
      * @return true if successfully offered otherwise false.
      */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
-    bool stopRecording(
-        std::int64_t subscriptionId,
-        std::int64_t correlationId,
-        std::int64_t controlSessionId)
+    bool stopRecording(std::int64_t subscriptionId, std::int64_t correlationId, std::int64_t controlSessionId)
     {
         const util::index_t length = stopRecording(m_buffer, subscriptionId, correlationId, controlSessionId);
+
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
 
@@ -202,6 +202,46 @@ public:
     {
         const util::index_t msgLength = replay(
             m_buffer, recordingId, position, length, replayChannel, replayStreamId, correlationId, controlSessionId);
+
+        return offer<IdleStrategy>(m_buffer, 0, msgLength);
+    }
+
+    /**
+     * Replay a recording from a given position and bounded by a counter containing position to limit replay.
+     *
+     * @param recordingId      to be replayed.
+     * @param position         from which the replay should be started.
+     * @param length           of the stream to be replayed. Use std::numeric_limits<std::int64_t>::max to follow a live stream.
+     * @param limitCounterId   used to bound the replay.
+     * @param replayChannel    to which the replay should be sent.
+     * @param replayStreamId   to which the replay should be sent.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool boundedReplay(
+        std::int64_t recordingId,
+        std::int64_t position,
+        std::int64_t length,
+        std::int32_t limitCounterId,
+        const std::string& replayChannel,
+        std::int32_t replayStreamId,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId)
+    {
+        const util::index_t msgLength = boundedReplay(
+            m_buffer,
+            recordingId,
+            position,
+            length,
+            limitCounterId,
+            replayChannel,
+            replayStreamId,
+            correlationId,
+            controlSessionId);
+
         return offer<IdleStrategy>(m_buffer, 0, msgLength);
     }
 
@@ -215,12 +255,27 @@ public:
      * @return true if successfully offered otherwise false.
      */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
-    bool stopReplay(
-        std::int64_t replaySessionId,
-        std::int64_t correlationId,
-        std::int64_t controlSessionId)
+    bool stopReplay(std::int64_t replaySessionId, std::int64_t correlationId, std::int64_t controlSessionId)
     {
         const util::index_t length = stopReplay(m_buffer, replaySessionId, correlationId, controlSessionId);
+
+        return offer<IdleStrategy>(m_buffer, 0, length);
+    }
+
+    /**
+     * Stop existing replays matching a recording id. If recording id is #NULL_VALUE then match all replays.
+     *
+     * @param recordingId      that should match replays to be stopped.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool stopAllReplays(std::int64_t recordingId, std::int64_t correlationId, std::int64_t controlSessionId)
+    {
+        const util::index_t length = stopAllReplays(m_buffer, recordingId, correlationId, controlSessionId);
+
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
 
@@ -243,6 +298,7 @@ public:
     {
         const util::index_t length = listRecordings(
             m_buffer, fromRecordingId, recordCount, correlationId, controlSessionId);
+
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
 
@@ -269,6 +325,7 @@ public:
     {
         const util::index_t length = listRecordingsForUri(
             m_buffer, fromRecordingId, recordCount, channelFragment, streamId, correlationId, controlSessionId);
+
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
 
@@ -282,12 +339,10 @@ public:
      * @return true if successfully offered otherwise false.
      */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
-    bool listRecording(
-        std::int64_t recordingId,
-        std::int64_t correlationId,
-        std::int64_t controlSessionId)
+    bool listRecording(std::int64_t recordingId, std::int64_t correlationId, std::int64_t controlSessionId)
     {
         const util::index_t length = listRecording(m_buffer, recordingId, correlationId, controlSessionId);
+
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
 
@@ -301,12 +356,10 @@ public:
      * @return true if successfully offered otherwise false.
      */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
-    bool getRecordingPosition(
-        std::int64_t recordingId,
-        std::int64_t correlationId,
-        std::int64_t controlSessionId)
+    bool getRecordingPosition(std::int64_t recordingId, std::int64_t correlationId, std::int64_t controlSessionId)
     {
         const util::index_t length = getRecordingPosition(m_buffer, recordingId, correlationId, controlSessionId);
+
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
 
@@ -320,12 +373,10 @@ public:
      * @return true if successfully offered otherwise false.
      */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
-    bool getStopPosition(
-        std::int64_t recordingId,
-        std::int64_t correlationId,
-        std::int64_t controlSessionId)
+    bool getStopPosition(std::int64_t recordingId, std::int64_t correlationId, std::int64_t controlSessionId)
     {
         const util::index_t length = getStopPosition(m_buffer, recordingId, correlationId, controlSessionId);
+
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
 
@@ -352,6 +403,7 @@ public:
     {
         const util::index_t length = findLastMatchingRecording(
             m_buffer, minRecordingId, channelFragment, streamId, sessionId, correlationId, controlSessionId);
+
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
 
@@ -375,6 +427,7 @@ public:
     {
         const util::index_t length = truncateRecording(
             m_buffer, recordingId, position, correlationId, controlSessionId);
+
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
 
@@ -506,9 +559,26 @@ private:
         std::int64_t correlationId,
         std::int64_t controlSessionId);
 
+    static util::index_t boundedReplay(
+        AtomicBuffer& buffer,
+        std::int64_t recordingId,
+        std::int64_t position,
+        std::int64_t length,
+        std::int32_t limitCounterId,
+        const std::string& replayChannel,
+        std::int32_t replayStreamId,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId);
+
     static util::index_t stopReplay(
         AtomicBuffer& buffer,
         std::int64_t replaySessionId,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId);
+
+    static util::index_t stopAllReplays(
+        AtomicBuffer& buffer,
+        std::int64_t recordingId,
         std::int64_t correlationId,
         std::int64_t controlSessionId);
 

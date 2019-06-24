@@ -18,6 +18,7 @@
 #include "ArchiveConfiguration.h"
 #include "ArchiveProxy.h"
 #include "concurrent/YieldingIdleStrategy.h"
+#include "aeron_archive_client/BoundedReplayRequest.h"
 #include "aeron_archive_client/ConnectRequest.h"
 #include "aeron_archive_client/CloseSessionRequest.h"
 #include "aeron_archive_client/StartRecordingRequest.h"
@@ -26,6 +27,7 @@
 #include "aeron_archive_client/StopRecordingSubscriptionRequest.h"
 #include "aeron_archive_client/ReplayRequest.h"
 #include "aeron_archive_client/StopReplayRequest.h"
+#include "aeron_archive_client/StopAllReplaysRequest.h"
 #include "aeron_archive_client/ListRecordingsRequest.h"
 #include "aeron_archive_client/ListRecordingsForUriRequest.h"
 #include "aeron_archive_client/ListRecordingRequest.h"
@@ -178,6 +180,33 @@ util::index_t ArchiveProxy::replay(
     return messageAndHeaderLength(request);
 }
 
+util::index_t ArchiveProxy::boundedReplay(
+    AtomicBuffer& buffer,
+    std::int64_t recordingId,
+    std::int64_t position,
+    std::int64_t length,
+    std::int32_t limitCounterId,
+    const std::string& replayChannel,
+    std::int32_t replayStreamId,
+    std::int64_t correlationId,
+    std::int64_t controlSessionId)
+{
+    BoundedReplayRequest request;
+
+    wrapAndApplyHeader(request, buffer)
+        .controlSessionId(controlSessionId)
+        .correlationId(correlationId)
+        .recordingId(recordingId)
+        .position(position)
+        .length(length)
+        .limitCounterId(limitCounterId)
+        .replayStreamId(replayStreamId)
+        .putReplayChannel(replayChannel);
+
+    return messageAndHeaderLength(request);
+}
+
+
 util::index_t ArchiveProxy::stopReplay(
     AtomicBuffer& buffer,
     std::int64_t replaySessionId,
@@ -190,6 +219,22 @@ util::index_t ArchiveProxy::stopReplay(
         .controlSessionId(controlSessionId)
         .correlationId(correlationId)
         .replaySessionId(replaySessionId);
+
+    return messageAndHeaderLength(request);
+}
+
+util::index_t ArchiveProxy::stopAllReplays(
+    AtomicBuffer& buffer,
+    std::int64_t recordingId,
+    std::int64_t correlationId,
+    std::int64_t controlSessionId)
+{
+    StopAllReplaysRequest request;
+
+    wrapAndApplyHeader(request, buffer)
+        .controlSessionId(controlSessionId)
+        .correlationId(correlationId)
+        .recordingId(recordingId);
 
     return messageAndHeaderLength(request);
 }

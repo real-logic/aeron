@@ -258,12 +258,19 @@ class DynamicJoin implements AutoCloseable
             memberStatusUri.put(ENDPOINT_PARAM_NAME, clusterMemberStatusEndpoints[clusterMembersStatusEndpointsCursor]);
             memberStatusPublication = ctx.aeron().addExclusivePublication(
                 memberStatusUri.toString(), ctx.memberStatusStreamId());
+            correlationId = NULL_VALUE;
+            timeOfLastActivityMs = nowMs;
 
-            correlationId = ctx.aeron().nextCorrelationId();
+            return 1;
+        }
+        else if (NULL_VALUE == correlationId && memberStatusPublication.isConnected())
+        {
+            final long correlationId = ctx.aeron().nextCorrelationId();
 
             if (memberStatusPublisher.addPassiveMember(memberStatusPublication, correlationId, memberEndpoints))
             {
                 timeOfLastActivityMs = nowMs;
+                this.correlationId = correlationId;
                 return 1;
             }
         }

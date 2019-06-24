@@ -218,7 +218,6 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
         correlationId = NULL_VALUE;
         liveLogRecordingId = NULL_VALUE;
         liveLogReplayId = NULL_VALUE;
-
     }
 
     public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
@@ -348,7 +347,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
         }
         else if (NULL_VALUE == correlationId && memberStatusPublication.isConnected())
         {
-            correlationId = aeron.nextCorrelationId();
+            final long correlationId = aeron.nextCorrelationId();
 
             if (memberStatusPublisher.backupQuery(
                 memberStatusPublication,
@@ -359,11 +358,8 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
                 ArrayUtil.EMPTY_BYTE_ARRAY))
             {
                 timeOfLastBackupQueryMs = nowMs;
+                this.correlationId = correlationId;
                 return 1;
-            }
-            else
-            {
-                correlationId = NULL_VALUE;
             }
         }
 

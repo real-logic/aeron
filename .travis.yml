@@ -7,27 +7,26 @@ before_script:
     sudo sh -c 'echo 0 > /proc/sys/net/ipv6/conf/all/disable_ipv6';
     fi
 
+dist: xenial
+
 matrix:
   include:
     - name: "OpenJDK 8"
       language: java
       jdk: openjdk8
       os: linux
-      dist: xenial
       script: ./gradlew --scan
 
     - name: "OpenJDK 11"
       language: java
       jdk: openjdk11
       os: linux
-      dist: xenial
       script: ./gradlew --scan
 
     - env: COMPILER=clang++-5.0
       language: c++
       compiler: clang
       os: linux
-      dist: xenial
       addons:
         apt:
           packages:
@@ -42,7 +41,6 @@ matrix:
       language: c++
       compiler: clang
       os: linux
-      dist: xenial
       addons:
         apt:
           packages:
@@ -57,7 +55,6 @@ matrix:
       language: c++
       compiler: clang
       os: linux
-      dist: xenial
       addons:
         apt:
           packages:
@@ -73,7 +70,6 @@ matrix:
       language: c++
       compiler: clang
       os: linux
-      dist: xenial
       addons:
         apt:
           packages:
@@ -88,7 +84,6 @@ matrix:
       language: c++
       compiler: gcc
       os: linux
-      dist: xenial
       addons:
         apt:
           packages:
@@ -101,7 +96,6 @@ matrix:
       language: c++
       compiler: gcc
       os: linux
-      dist: xenial
       addons:
         apt:
           packages:
@@ -114,7 +108,6 @@ matrix:
       language: c++
       compiler: gcc
       os: linux
-      dist: xenial
       addons:
         apt:
           packages:

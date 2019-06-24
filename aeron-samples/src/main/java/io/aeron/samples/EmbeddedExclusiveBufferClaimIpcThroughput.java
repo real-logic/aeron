@@ -55,8 +55,8 @@ public class EmbeddedExclusiveBufferClaimIpcThroughput
 
         try (MediaDriver ignore = MediaDriver.launch(ctx);
             Aeron aeron = Aeron.connect();
-            Publication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID);
-            Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
+            Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID);
+            Publication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID))
         {
             final Subscriber subscriber = new Subscriber(running, subscription);
             final Thread subscriberThread = new Thread(subscriber);

@@ -61,8 +61,8 @@ public class EmbeddedExclusiveThroughput
 
         try (MediaDriver ignore = MediaDriver.launch();
             Aeron aeron = Aeron.connect();
-            ExclusivePublication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID);
-            Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
+            Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID);
+            ExclusivePublication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID))
         {
             executor.execute(reporter);
             executor.execute(() -> SamplesUtil.subscriberLoop(
@@ -84,7 +84,7 @@ public class EmbeddedExclusiveThroughput
                     OFFER_BUFFER.putLong(0, i);
 
                     OFFER_IDLE_STRATEGY.reset();
-                    while (publication.offer(OFFER_BUFFER, 0, OFFER_BUFFER.capacity()) < 0)
+                    while (publication.offer(OFFER_BUFFER, 0, MESSAGE_LENGTH) < 0)
                     {
                         OFFER_IDLE_STRATEGY.idle();
                         backPressureCount++;

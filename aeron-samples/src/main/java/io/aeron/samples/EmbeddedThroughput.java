@@ -24,16 +24,21 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.aeron.Aeron;
+import io.aeron.ConcurrentPublication;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.BitUtil;
 import org.agrona.BufferUtil;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.console.ContinueBarrier;
 
+/**
+ * Throughput test using {@link ConcurrentPublication#offer(DirectBuffer, int, int)} over UDP transport.
+ */
 public class EmbeddedThroughput
 {
     private static final long NUMBER_OF_MESSAGES = SampleConfiguration.NUMBER_OF_MESSAGES;
@@ -60,8 +65,8 @@ public class EmbeddedThroughput
 
         try (MediaDriver ignore = MediaDriver.launch();
             Aeron aeron = Aeron.connect();
-            Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
-            Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
+            Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID);
+            Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
         {
             executor.execute(reporter);
             executor.execute(() -> SamplesUtil.subscriberLoop(
@@ -83,7 +88,7 @@ public class EmbeddedThroughput
                     OFFER_BUFFER.putLong(0, i);
 
                     OFFER_IDLE_STRATEGY.reset();
-                    while (publication.offer(OFFER_BUFFER, 0, OFFER_BUFFER.capacity()) < 0)
+                    while (publication.offer(OFFER_BUFFER, 0, MESSAGE_LENGTH) < 0)
                     {
                         OFFER_IDLE_STRATEGY.idle();
                         backPressureCount++;

@@ -15,15 +15,12 @@
  */
 package io.aeron.samples;
 
-import io.aeron.Aeron;
-import io.aeron.CommonContext;
-import io.aeron.ExclusivePublication;
-import io.aeron.Subscription;
+import io.aeron.*;
 import io.aeron.driver.MediaDriver;
+import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.BitUtil;
 import org.agrona.BufferUtil;
-import org.agrona.DirectBuffer;
 import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.console.ContinueBarrier;
@@ -37,10 +34,10 @@ import static io.aeron.samples.SamplesUtil.rateReporterHandler;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 
 /**
- * Throughput test using {@link ExclusivePublication#offer(DirectBuffer, int, int)} over UDP transport by spying via
- * IPC.
+ * Throughput test with dual {@link ExclusivePublication}s using {@link ExclusivePublication#tryClaim(int, BufferClaim)}
+ * for testing two sources into a single {@link Subscription} over UDP transport.
  */
-public class EmbeddedExclusiveSpiedThroughput
+public class EmbeddedDualExclusiveThroughput
 {
     private static final long NUMBER_OF_MESSAGES = SampleConfiguration.NUMBER_OF_MESSAGES;
     private static final long LINGER_TIMEOUT_MS = SampleConfiguration.LINGER_TIMEOUT_MS;
@@ -55,23 +52,40 @@ public class EmbeddedExclusiveSpiedThroughput
 
     private static volatile boolean printingActive = true;
 
+    @SuppressWarnings("MethodLength")
     public static void main(final String[] args) throws Exception
     {
         loadPropertiesFiles(args);
 
         final RateReporter reporter = new RateReporter(
-            TimeUnit.SECONDS.toNanos(1), EmbeddedExclusiveSpiedThroughput::printRate);
+            TimeUnit.SECONDS.toNanos(1), EmbeddedDualExclusiveThroughput::printRate);
         final FragmentHandler rateReporterHandler = rateReporterHandler(reporter);
         final ExecutorService executor = Executors.newFixedThreadPool(2);
         final AtomicBoolean running = new AtomicBoolean(true);
+        final AvailableImageHandler handler =
+            (image) -> System.out.println("source connection=" + image.sourceIdentity());
 
-        final MediaDriver.Context ctx = new MediaDriver.Context().spiesSimulateConnection(true);
+        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
+            .media(CommonContext.UDP_MEDIA)
+            .controlMode(CommonContext.MDC_CONTROL_MODE_MANUAL);
 
-        try (MediaDriver ignore = MediaDriver.launch(ctx);
+        final String sourceUriOne = builder.controlEndpoint("localhost:20550").tags("1").build();
+        final String sourceUriTwo = builder.controlEndpoint("localhost:20551").tags("2").build();
+
+        try (MediaDriver ignore = MediaDriver.launch();
             Aeron aeron = Aeron.connect();
-            Subscription subscription = aeron.addSubscription(CommonContext.SPY_PREFIX + CHANNEL, STREAM_ID);
-            ExclusivePublication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID))
+            Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, handler, null);
+            ExclusivePublication publicationOne = aeron.addExclusivePublication(sourceUriOne, STREAM_ID);
+            ExclusivePublication publicationTwo = aeron.addExclusivePublication(sourceUriTwo, STREAM_ID))
         {
+            publicationOne.addDestination(CHANNEL);
+            publicationTwo.addDestination(CHANNEL);
+
+            while (subscription.imageCount() < 2)
+            {
+                Thread.yield();
+            }
+
             executor.execute(reporter);
             executor.execute(() -> SamplesUtil.subscriberLoop(
                 rateReporterHandler, FRAGMENT_COUNT_LIMIT, running).accept(subscription));
@@ -82,25 +96,54 @@ public class EmbeddedExclusiveSpiedThroughput
             {
                 System.out.format(
                     "%nStreaming %,d messages of payload length %d bytes to %s on stream id %d%n",
-                    NUMBER_OF_MESSAGES, MESSAGE_LENGTH, CHANNEL, STREAM_ID);
+                    NUMBER_OF_MESSAGES * 2, MESSAGE_LENGTH, CHANNEL, STREAM_ID);
 
                 printingActive = true;
 
-                long backPressureCount = 0;
-                for (long i = 0; i < NUMBER_OF_MESSAGES; i++)
-                {
-                    OFFER_BUFFER.putLong(0, i);
+                long backPressureCountOne = 0;
+                long backPressureCountTwo = 0;
 
+                for (long a = 0, b = 0; a < NUMBER_OF_MESSAGES || b < NUMBER_OF_MESSAGES;)
+                {
                     OFFER_IDLE_STRATEGY.reset();
-                    while (publication.offer(OFFER_BUFFER, 0, MESSAGE_LENGTH) < 0)
+                    boolean failedOne = false;
+                    boolean failedTwo = false;
+
+                    if (a < NUMBER_OF_MESSAGES)
+                    {
+                        if (publicationOne.offer(OFFER_BUFFER, 0, MESSAGE_LENGTH) > 0)
+                        {
+                            a++;
+                        }
+                        else
+                        {
+                            backPressureCountOne++;
+                            failedOne = true;
+                        }
+                    }
+
+                    if (b < NUMBER_OF_MESSAGES)
+                    {
+                        if (publicationTwo.offer(OFFER_BUFFER, 0, MESSAGE_LENGTH) > 0)
+                        {
+                            b++;
+                        }
+                        else
+                        {
+                            backPressureCountTwo++;
+                            failedTwo = true;
+                        }
+                    }
+
+                    if (failedOne || failedTwo)
                     {
                         OFFER_IDLE_STRATEGY.idle();
-                        backPressureCount++;
                     }
                 }
 
-                System.out.println(
-                    "Done streaming. backPressureRatio=" + ((double)backPressureCount / NUMBER_OF_MESSAGES));
+                System.out.println("Done streaming." +
+                    " backPressureRatioOne=" + ((double)backPressureCountOne / NUMBER_OF_MESSAGES) +
+                    " backPressureRatioTwo=" + ((double)backPressureCountTwo / NUMBER_OF_MESSAGES));
 
                 if (LINGER_TIMEOUT_MS > 0)
                 {

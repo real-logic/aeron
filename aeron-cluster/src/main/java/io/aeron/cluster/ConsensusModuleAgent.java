@@ -921,30 +921,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             return;
         }
 
-        if (Cluster.Role.LEADER != role)
-        {
-            enqueueServiceSessionMessage((MutableDirectBuffer)buffer, offset, length, ++nextServiceSessionId);
-        }
-        else
-        {
-            if (ConsensusModule.State.ACTIVE != state || !pendingServiceMessages.isEmpty())
-            {
-                enqueueServiceSessionMessage((MutableDirectBuffer)buffer, offset, length, ++nextServiceSessionId);
-            }
-            else
-            {
-                final long clusterSessionId = ++nextServiceSessionId;
-                if (logPublisher.appendMessage(
-                    leadershipTermId, clusterSessionId, clusterTimeMs, buffer, offset, length))
-                {
-                    logServiceSessionId = clusterSessionId;
-                }
-                else
-                {
-                    enqueueServiceSessionMessage((MutableDirectBuffer)buffer, offset, length, clusterSessionId);
-                }
-            }
-        }
+        enqueueServiceSessionMessage((MutableDirectBuffer)buffer, offset, length, ++nextServiceSessionId);
     }
 
     void onScheduleTimer(final long correlationId, final long deadlineMs)
@@ -1812,9 +1789,9 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         if (Cluster.Role.LEADER == role && ConsensusModule.State.ACTIVE == state)
         {
+            workCount += timerService.poll(nowMs);
             workCount += ingressAdapter.poll();
             workCount += pendingServiceMessages.consume(serviceSessionMessageAppender, MESSAGE_LIMIT);
-            workCount += timerService.poll(nowMs);
         }
         else if (Cluster.Role.FOLLOWER == role &&
             (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state))

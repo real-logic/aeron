@@ -222,6 +222,7 @@ int main(int argc, char **argv)
 
             for (long i = 0; i < settings.numberOfMessages && isRunning(); i++)
             {
+                offerIdleStrategy.reset();
                 while (publicationPtr->tryClaim(settings.messageLength, bufferClaim) < 0L)
                 {
                     backPressureCount++;

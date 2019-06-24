@@ -199,6 +199,7 @@ int main(int argc, char **argv)
                 const int length = lengthGenerator();
                 srcBuffer.putInt64(0, i);
 
+                offerIdleStrategy.reset();
                 while (publication->offer(srcBuffer, 0, length) < 0L)
                 {
                     backPressureCount++;

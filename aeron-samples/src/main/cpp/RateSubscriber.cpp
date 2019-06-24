@@ -65,6 +65,7 @@ Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
     s.channel = cp.getOption(optChannel).getParam(0, s.channel);
     s.streamId = cp.getOption(optStreamId).getParamAsInt(0, 1, INT32_MAX, s.streamId);
     s.fragmentCountLimit = cp.getOption(optFrags).getParamAsInt(0, 1, INT32_MAX, s.fragmentCountLimit);
+
     return s;
 }
 

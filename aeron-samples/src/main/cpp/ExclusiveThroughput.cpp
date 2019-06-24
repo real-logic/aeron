@@ -80,6 +80,7 @@ Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
     s.lingerTimeoutMs = cp.getOption(optLinger).getParamAsInt(0, 0, 60 * 60 * 1000, s.lingerTimeoutMs);
     s.fragmentCountLimit = cp.getOption(optFrags).getParamAsInt(0, 1, INT32_MAX, s.fragmentCountLimit);
     s.progress = cp.getOption(optProgress).isPresent();
+
     return s;
 }
 
@@ -203,7 +204,7 @@ int main(int argc, char **argv)
 
         std::thread pollThread([&]()
         {
-            while (0 == subscriptionPtr->imageCount())
+            while (!subscriptionPtr->isConnected())
             {
                 std::this_thread::yield();
             }

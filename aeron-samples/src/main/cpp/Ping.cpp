@@ -116,6 +116,7 @@ void sendPingAndReceivePong(
         }
         while ((position = publication.offer(srcBuffer, 0, settings.messageLength)) < 0L);
 
+        idleStrategy.reset();
         do
         {
             while (image.poll(fragmentHandler, settings.fragmentCountLimit) <= 0)

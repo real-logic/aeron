@@ -101,7 +101,7 @@ void sendPingAndReceivePong(
     concurrent::AtomicBuffer srcBuffer(buffer.get(), static_cast<size_t>(settings.messageLength));
     BusySpinIdleStrategy idleStrategy;
 
-    while (0 == subscription.imageCount())
+    while (!subscription.isConnected())
     {
         std::this_thread::yield();
     }
@@ -263,7 +263,7 @@ int main(int argc, char **argv)
         std::thread pongThread(
             [&]()
             {
-                while (0 == pingSubscriptionRef.imageCount())
+                while (!pingSubscriptionRef.isConnected())
                 {
                     std::this_thread::yield();
                 }

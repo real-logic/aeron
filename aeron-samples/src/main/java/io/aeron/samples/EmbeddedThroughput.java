@@ -32,7 +32,7 @@ import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.BitUtil;
 import org.agrona.BufferUtil;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.BusySpinIdleStrategy;
+import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.console.ContinueBarrier;
 
@@ -50,7 +50,6 @@ public class EmbeddedThroughput
 
     private static final UnsafeBuffer OFFER_BUFFER = new UnsafeBuffer(
         BufferUtil.allocateDirectAligned(MESSAGE_LENGTH, BitUtil.CACHE_LINE_LENGTH));
-    private static final BusySpinIdleStrategy OFFER_IDLE_STRATEGY = new BusySpinIdleStrategy();
 
     private static volatile boolean printingActive = true;
 
@@ -73,6 +72,7 @@ public class EmbeddedThroughput
                 rateReporterHandler, FRAGMENT_COUNT_LIMIT, running).accept(subscription));
 
             final ContinueBarrier barrier = new ContinueBarrier("Execute again?");
+            final IdleStrategy idleStrategy = SampleConfiguration.newIdleStrategy();
 
             do
             {
@@ -87,11 +87,11 @@ public class EmbeddedThroughput
                 {
                     OFFER_BUFFER.putLong(0, i);
 
-                    OFFER_IDLE_STRATEGY.reset();
+                    idleStrategy.reset();
                     while (publication.offer(OFFER_BUFFER, 0, MESSAGE_LENGTH) < 0)
                     {
-                        OFFER_IDLE_STRATEGY.idle();
                         backPressureCount++;
+                        idleStrategy.idle();
                     }
                 }
 

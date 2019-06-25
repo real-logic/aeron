@@ -48,8 +48,7 @@ public class EmbeddedExclusiveIpcThroughput
         SigInt.register(() -> running.set(false));
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
-            .threadingMode(ThreadingMode.SHARED)
-            .sharedIdleStrategy(new NoOpIdleStrategy());
+            .threadingMode(ThreadingMode.SHARED);
 
         try (MediaDriver ignore = MediaDriver.launch(ctx);
             Aeron aeron = Aeron.connect();
@@ -123,6 +122,7 @@ public class EmbeddedExclusiveIpcThroughput
 
         public void run()
         {
+            final IdleStrategy idleStrategy = SampleConfiguration.newIdleStrategy();
             final ExclusivePublication publication = this.publication;
             final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(
                 publication.maxMessageLength(), CACHE_LINE_LENGTH);
@@ -135,6 +135,7 @@ public class EmbeddedExclusiveIpcThroughput
             {
                 for (int i = 0; i < BURST_LENGTH; i++)
                 {
+                    idleStrategy.reset();
                     while (publication.offer(buffer, 0, MESSAGE_LENGTH) <= 0)
                     {
                         ++backPressureCount;
@@ -142,6 +143,8 @@ public class EmbeddedExclusiveIpcThroughput
                         {
                             break outputResults;
                         }
+
+                        idleStrategy.idle();
                     }
 
                     ++totalMessageCount;
@@ -193,6 +196,7 @@ public class EmbeddedExclusiveIpcThroughput
             }
 
             final Image image = subscription.imageAtIndex(0);
+            final IdleStrategy idleStrategy = SampleConfiguration.newIdleStrategy();
 
             long failedPolls = 0;
             long successfulPolls = 0;
@@ -208,6 +212,8 @@ public class EmbeddedExclusiveIpcThroughput
                 {
                     ++successfulPolls;
                 }
+
+                idleStrategy.idle(fragmentsRead);
             }
 
             final double failureRatio = failedPolls / (double)(successfulPolls + failedPolls);

@@ -33,10 +33,7 @@ import io.aeron.logbuffer.Header;
 import org.agrona.BitUtil;
 import org.agrona.BufferUtil;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.BackoffIdleStrategy;
-import org.agrona.concurrent.BusySpinIdleStrategy;
-import org.agrona.concurrent.NoOpIdleStrategy;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.*;
 import org.agrona.console.ContinueBarrier;
 
 import static org.agrona.SystemUtil.loadPropertiesFiles;
@@ -62,8 +59,8 @@ public class EmbeddedPingPong
         BufferUtil.allocateDirectAligned(MESSAGE_LENGTH, BitUtil.CACHE_LINE_LENGTH));
     private static final Histogram HISTOGRAM = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
     private static final CountDownLatch PONG_IMAGE_LATCH = new CountDownLatch(1);
-    private static final BusySpinIdleStrategy PING_HANDLER_IDLE_STRATEGY = new BusySpinIdleStrategy();
-    private static final BusySpinIdleStrategy PONG_HANDLER_IDLE_STRATEGY = new BusySpinIdleStrategy();
+    private static final IdleStrategy PING_HANDLER_IDLE_STRATEGY = SampleConfiguration.newIdleStrategy();
+    private static final IdleStrategy PONG_HANDLER_IDLE_STRATEGY = SampleConfiguration.newIdleStrategy();
     private static final AtomicBoolean RUNNING = new AtomicBoolean(true);
 
     public static void main(final String[] args) throws Exception
@@ -72,7 +69,7 @@ public class EmbeddedPingPong
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .threadingMode(ThreadingMode.DEDICATED)
-            .conductorIdleStrategy(new BackoffIdleStrategy(1, 1, 1, 1))
+            .conductorIdleStrategy(new BackoffIdleStrategy(1, 1, 1000, 1000))
             .receiverIdleStrategy(new NoOpIdleStrategy())
             .senderIdleStrategy(new NoOpIdleStrategy());
 

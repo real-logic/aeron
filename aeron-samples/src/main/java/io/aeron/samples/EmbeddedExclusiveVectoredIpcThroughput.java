@@ -53,8 +53,7 @@ public class EmbeddedExclusiveVectoredIpcThroughput
         SigInt.register(() -> running.set(false));
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
-            .threadingMode(ThreadingMode.SHARED)
-            .sharedIdleStrategy(new NoOpIdleStrategy());
+            .threadingMode(ThreadingMode.SHARED);
 
         try (MediaDriver ignore = MediaDriver.launch(ctx);
             Aeron aeron = Aeron.connect();
@@ -128,6 +127,7 @@ public class EmbeddedExclusiveVectoredIpcThroughput
 
         public void run()
         {
+            final IdleStrategy idleStrategy = SampleConfiguration.newIdleStrategy();
             final ExclusivePublication publication = this.publication;
             final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(MESSAGE_LENGTH, CACHE_LINE_LENGTH);
             final UnsafeBuffer bufferOne = new UnsafeBuffer(byteBuffer, 0, VEC_ONE_LENGTH);
@@ -146,6 +146,7 @@ public class EmbeddedExclusiveVectoredIpcThroughput
             {
                 for (int i = 0; i < BURST_LENGTH; i++)
                 {
+                    idleStrategy.reset();
                     while (publication.offer(vectors) <= 0)
                     {
                         ++backPressureCount;
@@ -153,6 +154,8 @@ public class EmbeddedExclusiveVectoredIpcThroughput
                         {
                             break outputResults;
                         }
+
+                        idleStrategy.idle();
                     }
 
                     ++totalMessageCount;
@@ -204,6 +207,7 @@ public class EmbeddedExclusiveVectoredIpcThroughput
             }
 
             final Image image = subscription.imageAtIndex(0);
+            final IdleStrategy idleStrategy = SampleConfiguration.newIdleStrategy();
 
             long failedPolls = 0;
             long successfulPolls = 0;
@@ -219,6 +223,8 @@ public class EmbeddedExclusiveVectoredIpcThroughput
                 {
                     ++successfulPolls;
                 }
+
+                idleStrategy.idle(fragmentsRead);
             }
 
             final double failureRatio = failedPolls / (double)(successfulPolls + failedPolls);

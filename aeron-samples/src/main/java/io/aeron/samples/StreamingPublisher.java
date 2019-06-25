@@ -29,7 +29,7 @@ import io.aeron.driver.MediaDriver;
 import org.agrona.BitUtil;
 import org.agrona.BufferUtil;
 import org.agrona.CloseHelper;
-import org.agrona.concurrent.BusySpinIdleStrategy;
+import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.console.ContinueBarrier;
 
@@ -47,7 +47,6 @@ public class StreamingPublisher
     private static final String CHANNEL = SampleConfiguration.CHANNEL;
     private static final UnsafeBuffer OFFER_BUFFER = new UnsafeBuffer(
         BufferUtil.allocateDirectAligned(MESSAGE_LENGTH, BitUtil.CACHE_LINE_LENGTH));
-    private static final BusySpinIdleStrategy OFFER_IDLE_STRATEGY = new BusySpinIdleStrategy();
     private static final IntSupplier LENGTH_GENERATOR = composeLengthGenerator(RANDOM_MESSAGE_LENGTH, MESSAGE_LENGTH);
 
     private static volatile boolean printingActive = true;
@@ -79,6 +78,7 @@ public class StreamingPublisher
             Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
         {
             final ContinueBarrier barrier = new ContinueBarrier("Execute again?");
+            final IdleStrategy idleStrategy = SampleConfiguration.newIdleStrategy();
 
             do
             {
@@ -99,14 +99,14 @@ public class StreamingPublisher
                     final int length = LENGTH_GENERATOR.getAsInt();
 
                     OFFER_BUFFER.putLong(0, i);
-                    OFFER_IDLE_STRATEGY.reset();
+                    idleStrategy.reset();
                     while (publication.offer(OFFER_BUFFER, 0, length) < 0L)
                     {
                         // The offer failed, which is usually due to the publication
                         // being temporarily blocked.  Retry the offer after a short
                         // spin/yield/sleep, depending on the chosen IdleStrategy.
                         backPressureCount++;
-                        OFFER_IDLE_STRATEGY.idle();
+                        idleStrategy.idle();
                     }
 
                     reporter.onMessage(1, length);

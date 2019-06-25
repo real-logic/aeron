@@ -22,7 +22,7 @@ import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.NoOpIdleStrategy;
+import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SigInt;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -50,8 +50,7 @@ public class EmbeddedExclusiveBufferClaimIpcThroughput
         SigInt.register(() -> running.set(false));
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
-            .threadingMode(ThreadingMode.SHARED)
-            .sharedIdleStrategy(new NoOpIdleStrategy());
+            .threadingMode(ThreadingMode.SHARED);
 
         try (MediaDriver ignore = MediaDriver.launch(ctx);
             Aeron aeron = Aeron.connect();
@@ -125,6 +124,7 @@ public class EmbeddedExclusiveBufferClaimIpcThroughput
 
         public void run()
         {
+            final IdleStrategy idleStrategy = SampleConfiguration.newIdleStrategy();
             final Publication publication = this.publication;
             final BufferClaim bufferClaim = new BufferClaim();
             long backPressureCount = 0;
@@ -135,6 +135,7 @@ public class EmbeddedExclusiveBufferClaimIpcThroughput
             {
                 for (int i = 0; i < BURST_LENGTH; i++)
                 {
+                    idleStrategy.reset();
                     while (publication.tryClaim(MESSAGE_LENGTH, bufferClaim) <= 0)
                     {
                         ++backPressureCount;
@@ -142,6 +143,7 @@ public class EmbeddedExclusiveBufferClaimIpcThroughput
                         {
                             break outputResults;
                         }
+                        idleStrategy.idle();
                     }
 
                     final int offset = bufferClaim.offset();
@@ -199,6 +201,7 @@ public class EmbeddedExclusiveBufferClaimIpcThroughput
             }
 
             final Image image = subscription.images().get(0);
+            final IdleStrategy idleStrategy = SampleConfiguration.newIdleStrategy();
 
             long failedPolls = 0;
             long successfulPolls = 0;
@@ -214,6 +217,8 @@ public class EmbeddedExclusiveBufferClaimIpcThroughput
                 {
                     ++successfulPolls;
                 }
+
+                idleStrategy.idle(fragmentsRead);
             }
 
             final double failureRatio = failedPolls / (double)(successfulPolls + failedPolls);

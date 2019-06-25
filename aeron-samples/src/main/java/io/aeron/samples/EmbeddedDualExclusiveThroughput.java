@@ -21,7 +21,7 @@ import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.BitUtil;
 import org.agrona.BufferUtil;
-import org.agrona.concurrent.BusySpinIdleStrategy;
+import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.console.ContinueBarrier;
 
@@ -48,7 +48,6 @@ public class EmbeddedDualExclusiveThroughput
 
     private static final UnsafeBuffer OFFER_BUFFER = new UnsafeBuffer(
         BufferUtil.allocateDirectAligned(MESSAGE_LENGTH, BitUtil.CACHE_LINE_LENGTH));
-    private static final BusySpinIdleStrategy OFFER_IDLE_STRATEGY = new BusySpinIdleStrategy();
 
     private static volatile boolean printingActive = true;
 
@@ -91,6 +90,7 @@ public class EmbeddedDualExclusiveThroughput
                 rateReporterHandler, FRAGMENT_COUNT_LIMIT, running).accept(subscription));
 
             final ContinueBarrier barrier = new ContinueBarrier("Execute again?");
+            final IdleStrategy idleStrategy = SampleConfiguration.newIdleStrategy();
 
             do
             {
@@ -105,7 +105,7 @@ public class EmbeddedDualExclusiveThroughput
 
                 for (long a = 0, b = 0; a < NUMBER_OF_MESSAGES || b < NUMBER_OF_MESSAGES;)
                 {
-                    OFFER_IDLE_STRATEGY.reset();
+                    idleStrategy.reset();
                     boolean failedOne = false;
                     boolean failedTwo = false;
 
@@ -137,7 +137,7 @@ public class EmbeddedDualExclusiveThroughput
 
                     if (failedOne || failedTwo)
                     {
-                        OFFER_IDLE_STRATEGY.idle();
+                        idleStrategy.idle();
                     }
                 }
 

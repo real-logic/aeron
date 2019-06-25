@@ -15,6 +15,8 @@
  */
 package io.aeron.samples;
 
+import org.agrona.concurrent.IdleStrategy;
+
 /**
  * Configuration used for samples with defaults which can be overridden by system properties.
  */
@@ -37,12 +39,14 @@ public class SampleConfiguration
     public static final String LINGER_TIMEOUT_MS_PROP = "aeron.sample.lingerTimeout";
     public static final String EMBEDDED_MEDIA_DRIVER_PROP = "aeron.sample.embeddedMediaDriver";
     public static final String EXCLUSIVE_PUBLICATIONS_PROP = "aeron.sample.exclusive.publications";
+    public static final String IDLE_STRATEGY_PROP = "aeron.sample.idleStrategy";
 
     public static final String INFO_FLAG_PROP = "aeron.sample.info";
 
     public static final String CHANNEL;
     public static final String PING_CHANNEL;
     public static final String PONG_CHANNEL;
+    public static final String IDLE_STRATEGY_NAME;
 
     public static final boolean EMBEDDED_MEDIA_DRIVER;
     public static final boolean RANDOM_MESSAGE_LENGTH;
@@ -64,6 +68,7 @@ public class SampleConfiguration
         STREAM_ID = Integer.getInteger(STREAM_ID_PROP, 10);
         PING_CHANNEL = System.getProperty(PING_CHANNEL_PROP, "aeron:udp?endpoint=localhost:40123");
         PONG_CHANNEL = System.getProperty(PONG_CHANNEL_PROP, "aeron:udp?endpoint=localhost:40124");
+        IDLE_STRATEGY_NAME = System.getProperty(IDLE_STRATEGY_PROP, "org.agrona.concurrent.BusySpinIdleStrategy");
         LINGER_TIMEOUT_MS = Long.getLong(LINGER_TIMEOUT_MS_PROP, 0);
         PING_STREAM_ID = Integer.getInteger(PING_STREAM_ID_PROP, 10);
         PONG_STREAM_ID = Integer.getInteger(PONG_STREAM_ID_PROP, 10);
@@ -76,5 +81,10 @@ public class SampleConfiguration
         EMBEDDED_MEDIA_DRIVER = Boolean.getBoolean(EMBEDDED_MEDIA_DRIVER_PROP);
         INFO_FLAG = Boolean.getBoolean(INFO_FLAG_PROP);
         EXCLUSIVE_PUBLICATIONS = Boolean.getBoolean(EXCLUSIVE_PUBLICATIONS_PROP);
+    }
+
+    public static IdleStrategy newIdleStrategy()
+    {
+        return SamplesUtil.newIdleStrategy(IDLE_STRATEGY_NAME);
     }
 }

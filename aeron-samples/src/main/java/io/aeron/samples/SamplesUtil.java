@@ -23,7 +23,7 @@ import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
 import org.agrona.collections.MutableInteger;
-import org.agrona.concurrent.BusySpinIdleStrategy;
+import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.status.CountersReader;
 
@@ -36,6 +36,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import static io.aeron.CncFileDescriptor.*;
+import static io.aeron.archive.Archive.Configuration.DEFAULT_IDLE_STRATEGY;
+import static io.aeron.driver.Configuration.*;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 
 /**
@@ -44,29 +46,29 @@ import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 public class SamplesUtil
 {
     /**
-     * Return a reusable, parametrised event loop that calls a default idler when no messages are received
+     * Return a reusable, parametrised event loop that calls a default idler when no messages are received.
      *
      * @param fragmentHandler to be called back for each message.
-     * @param limit           passed to {@link Subscription#poll(FragmentHandler, int)}
-     * @param running         indication for loop
-     * @return loop function
+     * @param limit           passed to {@link Subscription#poll(FragmentHandler, int)}.
+     * @param running         indication for loop.
+     * @return loop function.
      */
     public static Consumer<Subscription> subscriberLoop(
         final FragmentHandler fragmentHandler, final int limit, final AtomicBoolean running)
     {
-        final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
+        final IdleStrategy idleStrategy = SampleConfiguration.newIdleStrategy();
 
         return subscriberLoop(fragmentHandler, limit, running, idleStrategy);
     }
 
     /**
-     * Return a reusable, parametrised event loop that calls and idler when no messages are received
+     * Return a reusable, parametrised event loop that calls and idler when no messages are received.
      *
      * @param fragmentHandler to be called back for each message.
-     * @param limit           passed to {@link Subscription#poll(FragmentHandler, int)}
-     * @param running         indication for loop
-     * @param idleStrategy    to use for loop
-     * @return loop function
+     * @param limit           passed to {@link Subscription#poll(FragmentHandler, int)}.
+     * @param running         indication for loop.
+     * @param idleStrategy    to use for loop.
+     * @return loop function.
      */
     public static Consumer<Subscription> subscriberLoop(
         final FragmentHandler fragmentHandler,
@@ -93,10 +95,10 @@ public class SamplesUtil
     }
 
     /**
-     * Return a reusable, parametrised {@link FragmentHandler} that prints to stdout
+     * Return a reusable, parametrised {@link FragmentHandler} that prints to stdout.
      *
-     * @param streamId to show when printing
-     * @return subscription data handler function that prints the message contents
+     * @param streamId to show when printing.
+     * @return subscription data handler function that prints the message contents.
      */
     public static FragmentHandler printStringMessage(final int streamId)
     {
@@ -115,8 +117,8 @@ public class SamplesUtil
      * Return a reusable, parametrised {@link FragmentHandler} that calls into a
      * {@link RateReporter}.
      *
-     * @param reporter for the rate
-     * @return {@link FragmentHandler} that records the rate information
+     * @param reporter for the rate.
+     * @return {@link FragmentHandler} that records the rate information.
      */
     public static FragmentHandler rateReporterHandler(final RateReporter reporter)
     {
@@ -126,11 +128,11 @@ public class SamplesUtil
     /**
      * Generic error handler that just prints message to stdout.
      *
-     * @param channel   for the error
-     * @param streamId  for the error
-     * @param sessionId for the error, if source
-     * @param message   indicating what the error was
-     * @param cause     of the error
+     * @param channel   for the error.
+     * @param streamId  for the error.
+     * @param sessionId for the error, if source.
+     * @param message   indicating what the error was.
+     * @param cause     of the error.
      */
     @SuppressWarnings("unused")
     public static void printError(
@@ -144,12 +146,12 @@ public class SamplesUtil
     }
 
     /**
-     * Print the rates to stdout
+     * Print the rates to stdout.
      *
-     * @param messagesPerSec being reported
-     * @param bytesPerSec    being reported
-     * @param totalMessages  being reported
-     * @param totalBytes     being reported
+     * @param messagesPerSec being reported.
+     * @param bytesPerSec    being reported.
+     * @param totalMessages  being reported.
+     * @param totalBytes     being reported.
      */
     public static void printRate(
         final double messagesPerSec,
@@ -165,7 +167,7 @@ public class SamplesUtil
     /**
      * Print the information for an available image to stdout.
      *
-     * @param image that has been created
+     * @param image that has been created.
      */
     public static void printAvailableImage(final Image image)
     {
@@ -178,7 +180,7 @@ public class SamplesUtil
     /**
      * Print the information for an unavailable image to stdout.
      *
-     * @param image that has gone inactive
+     * @param image that has gone inactive.
      */
     public static void printUnavailableImage(final Image image)
     {
@@ -258,5 +260,37 @@ public class SamplesUtil
         return new CountersReader(
             createCountersMetaDataBuffer(cncByteBuffer, cncMetaData),
             createCountersValuesBuffer(cncByteBuffer, cncMetaData));
+    }
+
+    /**
+     * Create an {@link IdleStrategy} that can be used to.
+     *
+     * @param strategyName of the class to be created.
+     * @return the newly created IdleStrategy.
+     */
+    public static IdleStrategy newIdleStrategy(final String strategyName)
+    {
+        IdleStrategy idleStrategy = null;
+
+        switch (strategyName)
+        {
+            case DEFAULT_IDLE_STRATEGY:
+                idleStrategy = new BackoffIdleStrategy(
+                    IDLE_MAX_SPINS, IDLE_MAX_YIELDS, IDLE_MIN_PARK_NS, IDLE_MAX_PARK_NS);
+                break;
+
+            default:
+                try
+                {
+                    idleStrategy = (IdleStrategy)Class.forName(strategyName).getConstructor().newInstance();
+                }
+                catch (final Exception ex)
+                {
+                    LangUtil.rethrowUnchecked(ex);
+                }
+                break;
+        }
+
+        return idleStrategy;
     }
 }

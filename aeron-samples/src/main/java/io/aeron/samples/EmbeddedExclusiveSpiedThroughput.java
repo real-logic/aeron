@@ -24,7 +24,7 @@ import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.BitUtil;
 import org.agrona.BufferUtil;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.BusySpinIdleStrategy;
+import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.console.ContinueBarrier;
 
@@ -51,7 +51,6 @@ public class EmbeddedExclusiveSpiedThroughput
 
     private static final UnsafeBuffer OFFER_BUFFER = new UnsafeBuffer(
         BufferUtil.allocateDirectAligned(MESSAGE_LENGTH, BitUtil.CACHE_LINE_LENGTH));
-    private static final BusySpinIdleStrategy OFFER_IDLE_STRATEGY = new BusySpinIdleStrategy();
 
     private static volatile boolean printingActive = true;
 
@@ -65,7 +64,8 @@ public class EmbeddedExclusiveSpiedThroughput
         final ExecutorService executor = Executors.newFixedThreadPool(2);
         final AtomicBoolean running = new AtomicBoolean(true);
 
-        final MediaDriver.Context ctx = new MediaDriver.Context().spiesSimulateConnection(true);
+        final MediaDriver.Context ctx = new MediaDriver.Context()
+            .spiesSimulateConnection(true);
 
         try (MediaDriver ignore = MediaDriver.launch(ctx);
             Aeron aeron = Aeron.connect();
@@ -77,6 +77,7 @@ public class EmbeddedExclusiveSpiedThroughput
                 rateReporterHandler, FRAGMENT_COUNT_LIMIT, running).accept(subscription));
 
             final ContinueBarrier barrier = new ContinueBarrier("Execute again?");
+            final IdleStrategy idleStrategy = SampleConfiguration.newIdleStrategy();
 
             do
             {
@@ -91,11 +92,11 @@ public class EmbeddedExclusiveSpiedThroughput
                 {
                     OFFER_BUFFER.putLong(0, i);
 
-                    OFFER_IDLE_STRATEGY.reset();
+                    idleStrategy.reset();
                     while (publication.offer(OFFER_BUFFER, 0, MESSAGE_LENGTH) < 0)
                     {
-                        OFFER_IDLE_STRATEGY.idle();
                         backPressureCount++;
+                        idleStrategy.idle();
                     }
                 }
 

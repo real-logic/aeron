@@ -279,6 +279,46 @@ public:
     }
 
     /**
+     * Add a handler to the list to be called when a counter becomes available.
+     *
+     * @param handler to be added to the available counters list.
+     */
+    inline void addAvailableCounterHandler(const on_available_counter_t& handler)
+    {
+        m_conductor.addAvailableCounterHandler(handler);
+    }
+
+    /**
+     * Remove a handler from the list to be called when a counter becomes available.
+     *
+     * @param handler to be removed from the available counters list.
+     */
+    inline void removeAvailableCounterHandler(const on_available_counter_t& handler)
+    {
+        m_conductor.removeAvailableCounterHandler(handler);
+    }
+
+    /**
+     * Add a handler to the list to be called when a counter becomes unavailable.
+     *
+     * @param handler to be added to the unavailable counters list.
+     */
+    inline void addUnavailableCounterHandler(const on_unavailable_counter_t& handler)
+    {
+        m_conductor.addUnavailableCounterHandler(handler);
+    }
+
+    /**
+     * Remove a handler from the list to be called when a counter becomes unavailable.
+     *
+     * @param handler to be removed from the unavailable counters list.
+     */
+    inline void removeUnavailableCounterHandler(const on_unavailable_counter_t& handler)
+    {
+        m_conductor.removeUnavailableCounterHandler(handler);
+    }
+
+    /**
      * Return the AgentInvoker for the client conductor.
      *
      * @return AgentInvoker for the conductor.
@@ -313,7 +353,7 @@ public:
      *
      * @return the client identity that has been allocated for communicating with the media driver.
      */
-    inline std::int64_t clientId()
+    inline std::int64_t clientId() const
     {
         return m_driverProxy.clientId();
     }

@@ -444,6 +444,63 @@ void ClientConductor::removeRcvDestination(std::int64_t subscriptionRegistration
     m_driverProxy.removeRcvDestination(subscriptionRegistrationId, endpointChannel);
 }
 
+void ClientConductor::addAvailableCounterHandler(const on_available_counter_t& handler)
+{
+    ensureOpen();
+
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+
+    m_onAvailableCounterHandlers.emplace_back(handler);
+}
+
+template<typename T, typename... U>
+static size_t getAddress(const std::function<T(U...)>& f)
+{
+    typedef T(fnType)(U...);
+    auto fnPointer = f.template target<fnType*>();
+
+    return (size_t)*fnPointer;
+}
+
+void ClientConductor::removeAvailableCounterHandler(const on_available_counter_t& handler)
+{;
+    ensureOpen();
+
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+    auto &v = m_onAvailableCounterHandlers;
+    auto predicate =
+        [handler](const on_available_counter_t &item)
+        {
+            return getAddress(item) == getAddress(handler);
+        };
+
+    v.erase(std::remove_if(v.begin(), v.end(), predicate), v.end());
+}
+
+void ClientConductor::addUnavailableCounterHandler(const on_unavailable_counter_t& handler)
+{
+    ensureOpen();
+
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+
+    m_onUnavailableCounterHandlers.emplace_back(handler);
+}
+
+void ClientConductor::removeUnavailableCounterHandler(const on_unavailable_counter_t& handler)
+{
+    ensureOpen();
+
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+    auto &v = m_onUnavailableCounterHandlers;
+    auto predicate =
+        [handler](const on_unavailable_counter_t &item)
+        {
+            return getAddress(item) == getAddress(handler);
+        };
+
+    v.erase(std::remove_if(v.begin(), v.end(), predicate), v.end());
+}
+
 void ClientConductor::onNewPublication(
     std::int64_t registrationId,
     std::int64_t originalRegistrationId,
@@ -527,6 +584,7 @@ void ClientConductor::onSubscriptionReady(std::int64_t registrationId, std::int3
             *this, state.m_registrationId, state.m_channel, state.m_streamId, channelStatusId);
         state.m_subscription = std::weak_ptr<Subscription>(state.m_subscriptionCache);
         m_onNewSubscriptionHandler(state.m_channel, state.m_streamId, registrationId);
+
         return;
     }
 }
@@ -551,14 +609,20 @@ void ClientConductor::onAvailableCounter(std::int64_t registrationId, std::int32
         state.m_counter = std::weak_ptr<Counter>(state.m_counterCache);
     }
 
-    m_onAvailableCounterHandler(m_countersReader, registrationId, counterId);
+    for (auto const& handler: m_onAvailableCounterHandlers)
+    {
+        handler(m_countersReader, registrationId, counterId);
+    }
 }
 
 void ClientConductor::onUnavailableCounter(std::int64_t registrationId, std::int32_t counterId)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
-    m_onUnavailableCounterHandler(m_countersReader, registrationId, counterId);
+    for (auto const& handler: m_onUnavailableCounterHandlers)
+    {
+        handler(m_countersReader, registrationId, counterId);
+    }
 }
 
 void ClientConductor::onOperationSuccess(std::int64_t correlationId)

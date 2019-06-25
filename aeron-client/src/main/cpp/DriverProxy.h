@@ -50,7 +50,7 @@ public:
         return m_toDriverCommandBuffer.consumerHeartbeatTime();
     }
 
-    inline std::int64_t clientId()
+    inline std::int64_t clientId() const
     {
         return m_clientId;
     }

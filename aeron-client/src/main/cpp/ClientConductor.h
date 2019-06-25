@@ -70,8 +70,6 @@ public:
         m_onNewExclusivePublicationHandler(newExclusivePublicationHandler),
         m_onNewSubscriptionHandler(newSubscriptionHandler),
         m_errorHandler(errorHandler),
-        m_onAvailableCounterHandler(availableCounterHandler),
-        m_onUnavailableCounterHandler(unavailableCounterHandler),
         m_epochClock(std::move(epochClock)),
         m_timeOfLastKeepalive(m_epochClock()),
         m_timeOfLastCheckManagedResources(m_epochClock()),
@@ -82,6 +80,8 @@ public:
         m_driverActive(true),
         m_isClosed(false)
     {
+        m_onAvailableCounterHandlers.emplace_back(availableCounterHandler);
+        m_onUnavailableCounterHandlers.emplace_back(unavailableCounterHandler);
     }
 
     virtual ~ClientConductor();
@@ -146,16 +146,12 @@ public:
         std::int32_t channelStatusIndicatorId,
         const std::string &logFileName);
 
-    void onSubscriptionReady(
-        std::int64_t registrationId,
-        std::int32_t channelStatusId);
+    void onSubscriptionReady(std::int64_t registrationId, std::int32_t channelStatusId);
 
     void onOperationSuccess(std::int64_t correlationId);
 
     void onErrorResponse(
-        std::int64_t offendingCommandCorrelationId,
-        std::int32_t errorCode,
-        const std::string& errorMessage);
+        std::int64_t offendingCommandCorrelationId, std::int32_t errorCode, const std::string& errorMessage);
 
     void onAvailableImage(
         std::int64_t correlationId,
@@ -165,17 +161,11 @@ public:
         const std::string &logFilename,
         const std::string &sourceIdentity);
 
-    void onUnavailableImage(
-        std::int64_t correlationId,
-        std::int64_t subscriptionRegistrationId);
+    void onUnavailableImage(std::int64_t correlationId, std::int64_t subscriptionRegistrationId);
 
-    void onAvailableCounter(
-        std::int64_t registrationId,
-        std::int32_t counterId);
+    void onAvailableCounter(std::int64_t registrationId, std::int32_t counterId);
 
-    void onUnavailableCounter(
-        std::int64_t registrationId,
-        std::int32_t counterId);
+    void onUnavailableCounter(std::int64_t registrationId, std::int32_t counterId);
 
     void onClientTimeout(std::int64_t clientId);
 
@@ -186,6 +176,12 @@ public:
 
     void addRcvDestination(std::int64_t subscriptionRegistrationId, const std::string& endpointChannel);
     void removeRcvDestination(std::int64_t subscriptionRegistrationId, const std::string& endpointChannel);
+
+    void addAvailableCounterHandler(const on_available_counter_t& handler);
+    void removeAvailableCounterHandler(const on_available_counter_t& handler);
+
+    void addUnavailableCounterHandler(const on_unavailable_counter_t& handler);
+    void removeUnavailableCounterHandler(const on_unavailable_counter_t& handler);
 
     inline CountersReader& countersReader()
     {
@@ -337,7 +333,8 @@ private:
         struct ImageList *m_imageList;
 
         ImageListLingerDefn(long long now, struct ImageList *imageList) :
-            m_timeOfLastStatusChange(now), m_imageList(imageList)
+            m_timeOfLastStatusChange(now),
+            m_imageList(imageList)
         {
         }
     };
@@ -374,8 +371,9 @@ private:
     on_new_publication_t m_onNewExclusivePublicationHandler;
     on_new_subscription_t m_onNewSubscriptionHandler;
     exception_handler_t m_errorHandler;
-    on_available_counter_t m_onAvailableCounterHandler;
-    on_unavailable_counter_t m_onUnavailableCounterHandler;
+
+    std::vector<on_available_counter_t> m_onAvailableCounterHandlers;
+    std::vector<on_unavailable_counter_t> m_onUnavailableCounterHandlers;
 
     epoch_clock_t m_epochClock;
     long long m_timeOfLastKeepalive;

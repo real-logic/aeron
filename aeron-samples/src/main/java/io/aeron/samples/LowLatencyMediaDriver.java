@@ -17,13 +17,15 @@ package io.aeron.samples;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.ShutdownSignalBarrier;
 
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 
 /**
- * Sample setup for a {@link MediaDriver} that is configured for low latency communications.
+ * Sample setup for a {@link MediaDriver} that is configured for low latency communications. This configuration
+ * requires sufficient CPU resource to delivery low latency performance, i.e. 3 active polling threads.
  */
 public class LowLatencyMediaDriver
 {
@@ -35,7 +37,7 @@ public class LowLatencyMediaDriver
             .termBufferSparseFile(false)
             .useWindowsHighResTimer(true)
             .threadingMode(ThreadingMode.DEDICATED)
-            .conductorIdleStrategy(new NoOpIdleStrategy())
+            .conductorIdleStrategy(new BusySpinIdleStrategy())
             .receiverIdleStrategy(new NoOpIdleStrategy())
             .senderIdleStrategy(new NoOpIdleStrategy());
 

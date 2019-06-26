@@ -138,7 +138,7 @@ subprojects {
     jar.enabled = true
 
     dependencies {
-        checkstyle 'com.puppycrawl.tools:checkstyle:8.21'
+        checkstyle 'com.puppycrawl.tools:checkstyle:8.22'
 
         compile "org.agrona:agrona:${agronaVersion}"
 
@@ -148,7 +148,7 @@ subprojects {
     }
 
     checkstyle {
-        toolVersion = '8.21'
+        toolVersion = '8.22'
     }
 
     compileJava {

@@ -532,7 +532,7 @@ public class Election implements AutoCloseable
         if (ClusterMember.isUnanimousCandidate(clusterMembers, thisMember) ||
             (ClusterMember.isQuorumCandidate(clusterMembers, thisMember) && nowMs >= canvassDeadlineMs))
         {
-            nominationDeadlineMs = nowMs + random.nextInt((int)electionTimeoutMs / 2);
+            nominationDeadlineMs = nowMs + random.nextInt((int)electionTimeoutMs >> 1);
             state(State.NOMINATE, nowMs);
             workCount += 1;
         }

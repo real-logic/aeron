@@ -68,7 +68,7 @@ public interface CongestionControl extends AutoCloseable
      */
     static int threshold(final int windowLength)
     {
-        return windowLength / 4;
+        return windowLength >> 2;
     }
 
     /**

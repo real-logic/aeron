@@ -90,7 +90,7 @@ public class CubicCongestionControl implements CongestionControl
     {
         mtu = senderMtuLength;
         minWindow = senderMtuLength;
-        final int maxWindow = Math.min(termLength / 2, context.initialWindowLength());
+        final int maxWindow = Math.min(termLength >> 1, context.initialWindowLength());
 
         maxCwnd = maxWindow / mtu;
         cwnd = 1;

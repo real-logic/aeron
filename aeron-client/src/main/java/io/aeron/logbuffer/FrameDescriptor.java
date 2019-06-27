@@ -114,7 +114,7 @@ public class FrameDescriptor
      */
     public static int computeMaxMessageLength(final int termLength)
     {
-        return Math.min(termLength / 8, MAX_MESSAGE_LENGTH);
+        return Math.min(termLength >> 3, MAX_MESSAGE_LENGTH);
     }
 
     /**

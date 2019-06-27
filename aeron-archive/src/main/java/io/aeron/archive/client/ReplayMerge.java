@@ -36,7 +36,7 @@ import static io.aeron.CommonContext.MDC_CONTROL_MODE_PARAM_NAME;
  */
 public class ReplayMerge implements AutoCloseable
 {
-    private static final int LIVE_ADD_THRESHOLD = LogBufferDescriptor.TERM_MIN_LENGTH / 4;
+    private static final int LIVE_ADD_THRESHOLD = LogBufferDescriptor.TERM_MIN_LENGTH >> 2;
     private static final int REPLAY_REMOVE_THRESHOLD = 0;
 
     public enum State

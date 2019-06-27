@@ -848,6 +848,6 @@ public class LogBufferDescriptor
                 return 30;
         }
 
-        throw new IllegalArgumentException("Invalid term buffer length: " + termBufferLength);
+        throw new IllegalArgumentException("invalid term buffer length: " + termBufferLength);
     }
 }

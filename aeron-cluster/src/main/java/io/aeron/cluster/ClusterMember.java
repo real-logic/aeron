@@ -690,7 +690,7 @@ public final class ClusterMember
      */
     public static int quorumThreshold(final int memberCount)
     {
-        return (memberCount / 2) + 1;
+        return (memberCount >> 1) + 1;
     }
 
     /**

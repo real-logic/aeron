@@ -19,12 +19,13 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import static io.aeron.Aeron.NULL_VALUE;
+import static org.junit.Assert.assertEquals;
 
 @Ignore
 public class BackupTest
 {
     @Test(timeout = 10_000)
-    public void shouldBackupEmptyClusterNoSnapshots() throws Exception
+    public void shouldBackupClusterNoSnapshotsAndEmptyLog() throws Exception
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
@@ -32,6 +33,13 @@ public class BackupTest
             final TestBackupNode backupNode = cluster.startClusterBackupNode(true);
 
             cluster.awaitBackupState(ClusterBackup.State.BACKING_UP);
+
+            cluster.stopAllNodes();
+
+            final TestNode node = cluster.startStaticNodeFromBackup();
+            cluster.awaitLeader();
+
+            assertEquals(0, node.service().messageCount());
         }
     }
 }

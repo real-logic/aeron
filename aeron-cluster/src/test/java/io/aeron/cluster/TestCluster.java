@@ -90,6 +90,7 @@ public class TestCluster implements AutoCloseable
     private final int staticMemberCount;
     private final int dynamicMemberCount;
     private final int appointedLeaderId;
+    private final int backupNodeIndex;
 
     private MediaDriver clientMediaDriver;
     private AeronCluster client;
@@ -97,13 +98,14 @@ public class TestCluster implements AutoCloseable
 
     TestCluster(final int staticMemberCount, final int dynamicMemberCount, final int appointedLeaderId)
     {
-        if (staticMemberCount >= 10)
+        if ((staticMemberCount + dynamicMemberCount + 1) >= 10)
         {
             throw new IllegalArgumentException(
                 "too many members memberCount=" + staticMemberCount + ": only support 9");
         }
 
-        this.nodes = new TestNode[staticMemberCount + dynamicMemberCount];
+        this.nodes = new TestNode[staticMemberCount + dynamicMemberCount + 1];
+        this.backupNodeIndex = staticMemberCount + dynamicMemberCount;
         this.staticClusterMembers = clusterMembersString(staticMemberCount);
         this.staticClusterMemberEndpoints = clientMemberEndpoints(staticMemberCount);
         this.clusterMembersEndpoints = clusterMembersEndpoints(staticMemberCount + dynamicMemberCount);
@@ -367,12 +369,81 @@ public class TestCluster implements AutoCloseable
         return backupNode;
     }
 
+    TestNode startStaticNodeFromBackup()
+    {
+        return startStaticNodeFromBackup(TestNode.TestService::new);
+    }
+
+    TestNode startStaticNodeFromBackup(final Supplier<? extends TestNode.TestService> serviceSupplier)
+    {
+        final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + backupNodeIndex;
+        final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + backupNodeIndex + "-driver";
+        final TestNode.Context context = new TestNode.Context(serviceSupplier.get().index(backupNodeIndex));
+
+        if (null == backupNode || !backupNode.isClosed())
+        {
+            throw new IllegalStateException("backup node must be closed before starting from backup");
+        }
+
+        context.aeronArchiveContext
+            .controlRequestChannel(memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, backupNodeIndex))
+            .controlRequestStreamId(100)
+            .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, backupNodeIndex))
+            .controlResponseStreamId(110 + backupNodeIndex)
+            .recordingEventsChannel(memberSpecificPort(ARCHIVE_RECORDING_EVENTS_CHANNEL, backupNodeIndex))
+            .aeronDirectoryName(baseDirName);
+
+        context.mediaDriverContext
+            .aeronDirectoryName(aeronDirName)
+            .threadingMode(ThreadingMode.SHARED)
+            .termBufferSparseFile(true)
+            .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
+            .errorHandler(TestUtil.errorHandler(backupNodeIndex))
+            .dirDeleteOnStart(true);
+
+        context.archiveContext
+            .maxCatalogEntries(MAX_CATALOG_ENTRIES)
+            .aeronDirectoryName(aeronDirName)
+            .archiveDir(new File(baseDirName, "archive"))
+            .controlChannel(context.aeronArchiveContext.controlRequestChannel())
+            .controlStreamId(context.aeronArchiveContext.controlRequestStreamId())
+            .localControlChannel("aeron:ipc?term-length=64k")
+            .localControlStreamId(context.aeronArchiveContext.controlRequestStreamId())
+            .recordingEventsChannel(context.aeronArchiveContext.recordingEventsChannel())
+            .threadingMode(ArchiveThreadingMode.SHARED)
+            .deleteArchiveOnStart(false);
+
+        context.consensusModuleContext
+            .errorHandler(TestUtil.errorHandler(backupNodeIndex))
+            .clusterMemberId(backupNodeIndex)
+            .clusterMembers(singleNodeClusterMemberString(backupNodeIndex))
+            .appointedLeaderId(backupNodeIndex)
+            .aeronDirectoryName(aeronDirName)
+            .clusterDir(new File(baseDirName, "cluster-backup"))
+            .ingressChannel("aeron:udp?term-length=64k")
+            .logChannel(memberSpecificPort(LOG_CHANNEL, backupNodeIndex))
+            .archiveContext(context.aeronArchiveContext.clone())
+            .deleteDirOnStart(false);
+
+        context.serviceContainerContext
+            .aeronDirectoryName(aeronDirName)
+            .archiveContext(context.aeronArchiveContext.clone())
+            .clusterDir(new File(baseDirName, "service"))
+            .clusteredService(context.service)
+            .errorHandler(TestUtil.errorHandler(backupNodeIndex));
+
+        backupNode = null;
+        nodes[backupNodeIndex] = new TestNode(context);
+
+        return nodes[backupNodeIndex];
+    }
+
     void stopNode(final TestNode testNode)
     {
         testNode.close();
     }
 
-    void stopNode(final TestBackupNode backupNode)
+    void stopBackupNode()
     {
         backupNode.close();
     }
@@ -381,13 +452,21 @@ public class TestCluster implements AutoCloseable
     {
         for (int i = 0, length = nodes.length; i < length; i++)
         {
-            nodes[i].close();
+            if (null != nodes[i])
+            {
+                nodes[i].close();
+            }
+        }
+
+        if (null != backupNode)
+        {
+            backupNode.close();
         }
     }
 
     void restartAllNodes(final boolean cleanStart)
     {
-        for (int i = 0, length = nodes.length; i < length; i++)
+        for (int i = 0; i < staticMemberCount; i++)
         {
             startStaticNode(i, cleanStart);
         }
@@ -497,7 +576,7 @@ public class TestCluster implements AutoCloseable
 
     TestNode findLeader(final int skipIndex)
     {
-        for (int i = 0; i < staticMemberCount; i++)
+        for (int i = 0; i < nodes.length; i++)
         {
             final TestNode node = nodes[i];
             if (i == skipIndex || null == node || node.isClosed())
@@ -542,7 +621,7 @@ public class TestCluster implements AutoCloseable
 
         for (int i = 0, length = nodes.length; i < length; i++)
         {
-            if (!nodes[i].isClosed() && nodes[i].isFollower())
+            if (null != nodes[i] && !nodes[i].isClosed() && nodes[i].isFollower())
             {
                 followers.add(nodes[i]);
             }
@@ -674,6 +753,16 @@ public class TestCluster implements AutoCloseable
         builder.setLength(builder.length() - 1);
 
         return builder.toString();
+    }
+
+    private static String singleNodeClusterMemberString(final int i)
+    {
+        return i + "," +
+            "localhost:2011" + i + ',' +
+            "localhost:2022" + i + ',' +
+            "localhost:2033" + i + ',' +
+            "localhost:2044" + i + ',' +
+            "localhost:801" + i;
     }
 
     private static String clientMemberEndpoints(final int memberCount)

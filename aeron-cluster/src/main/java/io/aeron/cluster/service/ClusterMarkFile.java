@@ -114,8 +114,11 @@ public class ClusterMarkFile implements AutoCloseable
 
         if (existingType != ClusterComponentType.NULL && existingType != type)
         {
-            throw new IllegalStateException(
-                "existing Mark file type " + existingType + " not same as required type " + type);
+            if (existingType != ClusterComponentType.BACKUP || ClusterComponentType.CONSENSUS_MODULE != type)
+            {
+                throw new IllegalStateException(
+                    "existing Mark file type " + existingType + " not same as required type " + type);
+            }
         }
 
         headerEncoder.componentType(type);

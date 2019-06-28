@@ -60,6 +60,11 @@ public class TestBackupNode
         }
     }
 
+    boolean isClosed()
+    {
+        return isClosed;
+    }
+
     ClusterBackup.State state()
     {
         return ClusterBackup.State.get((int)clusterBackupMediaDriver.clusterBackup().context().stateCounter().get());

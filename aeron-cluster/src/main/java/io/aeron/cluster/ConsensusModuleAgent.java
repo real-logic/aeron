@@ -421,16 +421,17 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
             if (null != follower)
             {
-                final long position = logLeadershipTermId == this.leadershipTermId ?
-                    this.logPosition() :
-                    recordingLog.getTermEntry(this.leadershipTermId).termBaseLogPosition;
+                // TODO: fix term base position when logLeadershipTermId == leadershipTermId
+                // TODO: this reflects in Election.onNewLeadershipTerm
+                final long termBaseLogPosition = logLeadershipTermId == leadershipTermId ?
+                    logPublisher.position() : recordingLog.getTermEntry(leadershipTermId).termBaseLogPosition;
 
                 memberStatusPublisher.newLeadershipTerm(
                     follower.publication(),
-                    this.leadershipTermId,
-                    position,
-                    this.leadershipTermId,
-                    this.logPosition(),
+                    leadershipTermId,
+                    termBaseLogPosition,
+                    leadershipTermId,
+                    logPublisher.position(),
                     thisMember.id(),
                     logPublisher.sessionId());
             }
@@ -444,7 +445,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         {
             election.onRequestVote(logLeadershipTermId, logPosition, candidateTermId, candidateId);
         }
-        else if (candidateTermId > this.leadershipTermId)
+        else if (candidateTermId > leadershipTermId)
         {
             ctx.countedErrorHandler().onError(new ClusterException("unexpected vote request"));
             enterElection(cachedTimeMs);
@@ -1116,13 +1117,13 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
     }
 
-    @SuppressWarnings("unused")
     void onReplayNewLeadershipTermEvent(
         final long leadershipTermId,
         final long logPosition,
         final long timestamp,
-        final int leaderMemberId,
-        final int logSessionId)
+        final long termBaseLogPosition,
+        @SuppressWarnings("unused")final int leaderMemberId,
+        @SuppressWarnings("unused")final int logSessionId)
     {
         clusterTimeMs(timestamp);
         this.leadershipTermId = leadershipTermId;
@@ -1130,7 +1131,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         if (null != election && null != appendedPosition)
         {
             final long recordingId = RecordingPos.getRecordingId(aeron.countersReader(), appendedPosition.counterId());
-            election.onReplayNewLeadershipTermEvent(recordingId, leadershipTermId, logPosition, cachedTimeMs);
+            election.onReplayNewLeadershipTermEvent(
+                recordingId, leadershipTermId, logPosition, cachedTimeMs, termBaseLogPosition);
         }
     }
 
@@ -1519,12 +1521,14 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     boolean electionComplete(final long nowMs)
     {
-        final long logPosition = election.logPosition();
+        final long termBaseLogPosition = election.logPosition();
 
         if (Cluster.Role.LEADER == role)
         {
+            final long logPosition = logPublisher.computeNewLeadershipPosition();
+
             if (!logPublisher.appendNewLeadershipTermEvent(
-                leadershipTermId, logPosition, nowMs, memberId, logPublisher.sessionId()))
+                leadershipTermId, logPosition, nowMs, termBaseLogPosition, memberId, logPublisher.sessionId()))
             {
                 return false;
             }
@@ -1538,8 +1542,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
 
         election = null;
-        this.followerCommitPosition = logPosition;
-        commitPosition.setOrdered(logPosition);
+        this.followerCommitPosition = termBaseLogPosition;
+        commitPosition.setOrdered(termBaseLogPosition);
         pendingServiceMessages.consume(serviceSessionMessageSweeper, Integer.MAX_VALUE);
 
         if (!ctx.ingressChannel().contains(ENDPOINT_PARAM_NAME))

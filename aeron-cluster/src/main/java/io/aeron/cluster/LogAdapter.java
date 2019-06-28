@@ -165,6 +165,7 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
                     newLeadershipTermEventDecoder.leadershipTermId(),
                     newLeadershipTermEventDecoder.logPosition(),
                     newLeadershipTermEventDecoder.timestamp(),
+                    newLeadershipTermEventDecoder.termBaseLogPosition(),
                     newLeadershipTermEventDecoder.leaderMemberId(),
                     newLeadershipTermEventDecoder.logSessionId());
                 break;

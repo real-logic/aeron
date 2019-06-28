@@ -356,12 +356,11 @@ public class Election implements AutoCloseable
         }
     }
 
-    @SuppressWarnings("unused")
     void onNewLeadershipTerm(
         final long logLeadershipTermId,
-        final long logPosition,
+        final long logPosition, // TODO: this is really the max and needs to be addressed
         final long leadershipTermId,
-        final long maxLogPosition,
+        @SuppressWarnings("unused") final long maxLogPosition,
         final int leaderMemberId,
         final int logSessionId)
     {
@@ -382,7 +381,6 @@ public class Election implements AutoCloseable
             if (this.logPosition < logPosition && NULL_POSITION == catchupLogPosition)
             {
                 catchupLogPosition = logPosition;
-
                 state(State.FOLLOWER_REPLAY, ctx.epochClock().time());
             }
             else if (this.logPosition > logPosition && this.logLeadershipTermId == logLeadershipTermId)
@@ -462,7 +460,11 @@ public class Election implements AutoCloseable
     }
 
     void onReplayNewLeadershipTermEvent(
-        final long logRecordingId, final long leadershipTermId, final long logPosition, final long nowMs)
+        final long logRecordingId,
+        final long leadershipTermId,
+        final long logPosition,
+        final long nowMs,
+        final long termBaseLogPosition)
     {
         if (State.FOLLOWER_CATCHUP == state)
         {
@@ -471,7 +473,7 @@ public class Election implements AutoCloseable
 
             if (ctx.recordingLog().isUnknown(leadershipTermId))
             {
-                ctx.recordingLog().appendTerm(logRecordingId, leadershipTermId, logPosition, nowMs);
+                ctx.recordingLog().appendTerm(logRecordingId, leadershipTermId, termBaseLogPosition, nowMs);
                 ctx.recordingLog().force();
             }
         }

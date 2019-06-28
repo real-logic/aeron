@@ -397,13 +397,13 @@ class ClusteredServiceAgent implements Agent, Cluster
         executeAction(action, logPosition, leadershipTermId);
     }
 
-    @SuppressWarnings("unused")
     void onNewLeadershipTermEvent(
         final long leadershipTermId,
         final long logPosition,
         final long timestampMs,
-        final int leaderMemberId,
-        final int logSessionId)
+        @SuppressWarnings("unused") final long termBaseLogPosition,
+        @SuppressWarnings("unused") final int leaderMemberId,
+        @SuppressWarnings("unused") final int logSessionId)
     {
         sessionMessageHeaderEncoder.leadershipTermId(leadershipTermId);
         clusterLogPosition = logPosition;

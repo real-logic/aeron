@@ -262,10 +262,20 @@ class LogPublisher
         return false;
     }
 
+    long computeNewLeadershipPosition()
+    {
+        final int length = DataHeaderFlyweight.HEADER_LENGTH +
+            MessageHeaderEncoder.ENCODED_LENGTH +
+            NewLeadershipTermEventEncoder.BLOCK_LENGTH;
+
+        return position() + BitUtil.align(length, FRAME_ALIGNMENT);
+    }
+
     boolean appendNewLeadershipTermEvent(
         final long leadershipTermId,
         final long logPosition,
         final long nowMs,
+        final long termBaseLogPosition,
         final int leaderMemberId,
         final int logSessionId)
     {
@@ -282,6 +292,7 @@ class LogPublisher
                     .leadershipTermId(leadershipTermId)
                     .logPosition(logPosition)
                     .timestamp(nowMs)
+                    .termBaseLogPosition(termBaseLogPosition)
                     .leaderMemberId(leaderMemberId)
                     .logSessionId(logSessionId);
 

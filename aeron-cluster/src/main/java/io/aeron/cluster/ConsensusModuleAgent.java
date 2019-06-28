@@ -27,9 +27,7 @@ import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.RecoveryState;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.ControlledFragmentHandler;
-import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
-import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.security.Authenticator;
 import io.aeron.status.ReadableCounter;
 import org.agrona.*;
@@ -729,7 +727,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             {
                 final ClusterMember[] newClusterMembers = ClusterMember.removeMember(clusterMembers, memberId);
                 final String newClusterMembersString = ClusterMember.encodeAsString(newClusterMembers);
-                final long position = logPublisher.calculatePositionForMembershipChangeEvent(newClusterMembersString);
+                final long position = logPublisher.computeMembershipChangeEventPosition(newClusterMembersString);
 
                 if (logPublisher.appendMembershipChangeEvent(
                     leadershipTermId,
@@ -1891,10 +1889,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     private boolean appendAction(final ClusterAction action, final long nowMs)
     {
-        final int length = DataHeaderFlyweight.HEADER_LENGTH +
-            MessageHeaderEncoder.ENCODED_LENGTH + ClusterActionRequestEncoder.BLOCK_LENGTH;
-
-        final long position = logPublisher.position() + BitUtil.align(length, FrameDescriptor.FRAME_ALIGNMENT);
+        final long position = logPublisher.computeClusterActionPosition();
 
         return logPublisher.appendClusterAction(leadershipTermId, position, nowMs, action);
     }

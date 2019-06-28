@@ -15,7 +15,6 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.ChannelUriStringBuilder;
 import io.aeron.Publication;
 import io.aeron.cluster.codecs.*;
 import io.aeron.exceptions.AeronException;
@@ -26,7 +25,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import static io.aeron.CommonContext.UDP_MEDIA;
 import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 
@@ -91,9 +89,7 @@ class LogPublisher
     {
         if (null != publication)
         {
-            final ChannelUriStringBuilder builder = new ChannelUriStringBuilder().media(UDP_MEDIA);
-
-            publication.addDestination(builder.endpoint(followerLogEndpoint).build());
+            publication.addDestination("aeron:udp?endpoint=" + followerLogEndpoint);
         }
     }
 
@@ -101,9 +97,7 @@ class LogPublisher
     {
         if (null != publication)
         {
-            final ChannelUriStringBuilder builder = new ChannelUriStringBuilder().media(UDP_MEDIA);
-
-            publication.removeDestination(builder.endpoint(followerLogEndpoint).build());
+            publication.removeDestination("aeron:udp?endpoint=" + followerLogEndpoint);
         }
     }
 
@@ -229,6 +223,15 @@ class LogPublisher
         return false;
     }
 
+    long computeClusterActionPosition()
+    {
+        final int length = DataHeaderFlyweight.HEADER_LENGTH +
+            MessageHeaderEncoder.ENCODED_LENGTH +
+            ClusterActionRequestEncoder.BLOCK_LENGTH;
+
+        return position() + BitUtil.align(length, FRAME_ALIGNMENT);
+    }
+
     boolean appendClusterAction(
         final long leadershipTermId, final long logPosition, final long nowMs, final ClusterAction action)
     {
@@ -294,7 +297,7 @@ class LogPublisher
         return false;
     }
 
-    long calculatePositionForMembershipChangeEvent(final String clusterMembers)
+    long computeMembershipChangeEventPosition(final String clusterMembers)
     {
         final int length =
             DataHeaderFlyweight.HEADER_LENGTH +

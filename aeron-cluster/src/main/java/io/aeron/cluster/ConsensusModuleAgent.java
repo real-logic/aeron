@@ -1519,29 +1519,28 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     boolean electionComplete(final long nowMs)
     {
-        boolean result = false;
         final long logPosition = election.logPosition();
-        this.followerCommitPosition = logPosition;
-        commitPosition.setOrdered(logPosition);
-        pendingServiceMessages.consume(serviceSessionMessageSweeper, Integer.MAX_VALUE);
 
         if (Cluster.Role.LEADER == role)
         {
-            if (logPublisher.appendNewLeadershipTermEvent(
+            if (!logPublisher.appendNewLeadershipTermEvent(
                 leadershipTermId, logPosition, nowMs, memberId, logPublisher.sessionId()))
             {
-                timeOfLastLogUpdateMs = cachedTimeMs - leaderHeartbeatIntervalMs;
-                election = null;
-                result = true;
+                return false;
             }
+
+            timeOfLastLogUpdateMs = cachedTimeMs - leaderHeartbeatIntervalMs;
         }
         else
         {
             timeOfLastLogUpdateMs = cachedTimeMs;
             timeOfLastAppendPositionMs = cachedTimeMs;
-            election = null;
-            result = true;
         }
+
+        election = null;
+        this.followerCommitPosition = logPosition;
+        commitPosition.setOrdered(logPosition);
+        pendingServiceMessages.consume(serviceSessionMessageSweeper, Integer.MAX_VALUE);
 
         if (!ctx.ingressChannel().contains(ENDPOINT_PARAM_NAME))
         {
@@ -1557,8 +1556,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 ctx.ingressChannel(), ctx.ingressStreamId(), null, this::onUnavailableIngressImage));
         }
 
-
-        return result;
+        return true;
     }
 
     boolean dynamicJoinComplete()

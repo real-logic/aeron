@@ -283,6 +283,7 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
+                final String responseChannel = backupQueryDecoder.responseChannel();
                 final byte[] credentials = new byte[backupQueryDecoder.encodedCredentialsLength()];
                 backupQueryDecoder.getEncodedCredentials(credentials, 0, credentials.length);
 
@@ -290,7 +291,7 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     backupQueryDecoder.correlationId(),
                     backupQueryDecoder.responseStreamId(),
                     backupQueryDecoder.version(),
-                    backupQueryDecoder.responseChannel(),
+                    responseChannel,
                     credentials);
                 break;
         }

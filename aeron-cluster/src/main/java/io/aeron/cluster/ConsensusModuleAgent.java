@@ -1921,17 +1921,20 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             {
                 if (session.isBackupQuery())
                 {
-                    if (memberStatusPublisher.backupResponse(
-                        session.responsePublication(),
-                        session.correlationId(),
-                        logRecordingId(),
-                        commitPosition.id(),
-                        leaderMember.id(),
-                        recoveryPlan,
-                        ClusterMember.encodeAsString(clusterMembers)))
+                    if (session.responsePublication().isConnected())
                     {
-                        ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
-                        session.close();
+                        if (memberStatusPublisher.backupResponse(
+                            session.responsePublication(),
+                            session.correlationId(),
+                            logRecordingId(),
+                            commitPosition.id(),
+                            leaderMember.id(),
+                            recoveryPlan,
+                            ClusterMember.encodeAsString(clusterMembers)))
+                        {
+                            ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
+                            session.close();
+                        }
                     }
                 }
                 else

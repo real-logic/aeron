@@ -18,6 +18,7 @@ package io.aeron.cluster;
 import io.aeron.Aeron;
 import io.aeron.ChannelUri;
 import io.aeron.CommonContext;
+import io.aeron.Counter;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
@@ -48,6 +49,60 @@ import static org.agrona.SystemUtil.getDurationInNanos;
 
 public final class ClusterBackup implements AutoCloseable
 {
+    /**
+     * The type id of the {@link Counter} used for the backup state.
+     */
+    static final int BACKUP_STATE_TYPE_ID = 208;
+
+    enum State
+    {
+        CHECK_BACKUP(0),
+        BACKUP_QUERY(1),
+        SNAPSHOT_RETRIEVE(2),
+        LIVE_LOG_REPLAY(3),
+        BACKING_UP(4);
+
+        static final State[] STATES;
+
+        static
+        {
+            final State[] states = values();
+            STATES = new State[states.length];
+            for (final State state : states)
+            {
+                final int code = state.code();
+                if (null != STATES[code])
+                {
+                    throw new ClusterException("code already in use: " + code);
+                }
+
+                STATES[code] = state;
+            }
+        }
+
+        private final int code;
+
+        State(final int code)
+        {
+            this.code = code;
+        }
+
+        public int code()
+        {
+            return code;
+        }
+
+        public static State get(final int code)
+        {
+            if (code < 0 || code > (STATES.length - 1))
+            {
+                throw new ClusterException("invalid state counter code: " + code);
+            }
+
+            return STATES[code];
+        }
+    }
+
     private final ClusterBackup.Context ctx;
     private final AgentRunner clusterBackupAgentRunner;
 
@@ -135,7 +190,7 @@ public final class ClusterBackup implements AutoCloseable
         /**
          * Default timeout within which a cluster backup will expect a response from a backup query.
          */
-        public static final long CLUSTER_BACKUP_RESPONSE_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(1);
+        public static final long CLUSTER_BACKUP_RESPONSE_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(2);
 
         static
         {
@@ -192,7 +247,6 @@ public final class ClusterBackup implements AutoCloseable
 
         private String memberStatusChannel = Configuration.MEMBER_STATUS_CHANNEL_DEFAULT;
         private int memberStatusStreamId = ConsensusModule.Configuration.memberStatusStreamId();
-        private String replayChannel = ClusteredServiceContainer.Configuration.replayChannel();
         private int replayStreamId = ClusteredServiceContainer.Configuration.replayStreamId();
         private String transferEndpoint = Configuration.TRANSFER_ENDPOINT_DEFAULT;
 
@@ -213,6 +267,7 @@ public final class ClusterBackup implements AutoCloseable
         private ErrorHandler errorHandler;
         private AtomicCounter errorCounter;
         private CountedErrorHandler countedErrorHandler;
+        private Counter stateCounter;
 
         private AeronArchive.Context archiveContext;
         private ShutdownSignalBarrier shutdownSignalBarrier;
@@ -318,6 +373,11 @@ public final class ClusterBackup implements AutoCloseable
                 {
                     aeron.context().errorHandler(countedErrorHandler);
                 }
+            }
+
+            if (null == stateCounter)
+            {
+                stateCounter = aeron.addCounter(BACKUP_STATE_TYPE_ID, "Backup State");
             }
 
             if (null == threadFactory)
@@ -706,30 +766,6 @@ public final class ClusterBackup implements AutoCloseable
         }
 
         /**
-         * Set the channel parameter for the cluster log and snapshot replay channel.
-         *
-         * @param channel parameter for the cluster log replay channel.
-         * @return this for a fluent API.
-         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#REPLAY_CHANNEL_PROP_NAME
-         */
-        public Context replayChannel(final String channel)
-        {
-            replayChannel = channel;
-            return this;
-        }
-
-        /**
-         * Get the channel parameter for the cluster log and snapshot replay channel.
-         *
-         * @return the channel parameter for the cluster replay channel.
-         * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#REPLAY_CHANNEL_PROP_NAME
-         */
-        public String replayChannel()
-        {
-            return replayChannel;
-        }
-
-        /**
          * Set the stream id for the cluster log and snapshot replay channel.
          *
          * @param streamId for the cluster log replay channel.
@@ -964,6 +1000,30 @@ public final class ClusterBackup implements AutoCloseable
         public DistinctErrorLog errorLog()
         {
             return errorLog;
+        }
+
+        /**
+         * Get the counter for the current state of the cluster backup.
+         *
+         * @return the counter for the current state of the cluster backup.
+         * @see ClusterBackup.State
+         */
+        public Counter stateCounter()
+        {
+            return stateCounter;
+        }
+
+        /**
+         * Set the counter for the current state of the cluster backup.
+         *
+         * @param stateCounter the counter for the current state of the cluster backup.
+         * @return this for a fluent API.
+         * @see ClusterBackup.State
+         */
+        public Context stateCounter(final Counter stateCounter)
+        {
+            this.stateCounter = stateCounter;
+            return this;
         }
 
         /**

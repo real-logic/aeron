@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.ChannelUri;
 import io.aeron.CommonContext;
 import io.aeron.Counter;
 import io.aeron.archive.ArchiveThreadingMode;
@@ -92,6 +93,7 @@ public class TestCluster implements AutoCloseable
 
     private MediaDriver clientMediaDriver;
     private AeronCluster client;
+    private TestBackupNode backupNode;
 
     TestCluster(final int staticMemberCount, final int dynamicMemberCount, final int appointedLeaderId)
     {
@@ -128,6 +130,12 @@ public class TestCluster implements AutoCloseable
                 nodes[i].close();
                 nodes[i].cleanUp();
             }
+        }
+
+        if (null != backupNode)
+        {
+            backupNode.close();
+            backupNode.cleanUp();
         }
     }
 
@@ -303,9 +311,70 @@ public class TestCluster implements AutoCloseable
         return nodes[index];
     }
 
+    TestBackupNode startClusterBackupNode(final boolean cleanStart)
+    {
+        final int index = staticMemberCount + dynamicMemberCount;
+        final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + index;
+        final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + index + "-driver";
+        final TestBackupNode.Context context = new TestBackupNode.Context();
+
+        context.aeronArchiveContext
+            .controlRequestChannel(memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, index))
+            .controlRequestStreamId(100)
+            .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, index))
+            .controlResponseStreamId(110 + index)
+            .recordingEventsChannel(memberSpecificPort(ARCHIVE_RECORDING_EVENTS_CHANNEL, index))
+            .aeronDirectoryName(baseDirName);
+
+        context.mediaDriverContext
+            .aeronDirectoryName(aeronDirName)
+            .threadingMode(ThreadingMode.SHARED)
+            .termBufferSparseFile(true)
+            .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
+            .errorHandler(TestUtil.errorHandler(index))
+            .dirDeleteOnStart(true);
+
+        context.archiveContext
+            .maxCatalogEntries(MAX_CATALOG_ENTRIES)
+            .segmentFileLength(SEGMENT_FILE_LENGTH)
+            .aeronDirectoryName(aeronDirName)
+            .archiveDir(new File(baseDirName, "archive"))
+            .controlChannel(context.aeronArchiveContext.controlRequestChannel())
+            .controlStreamId(context.aeronArchiveContext.controlRequestStreamId())
+            .localControlChannel("aeron:ipc?term-length=64k")
+            .localControlStreamId(context.aeronArchiveContext.controlRequestStreamId())
+            .recordingEventsChannel(context.aeronArchiveContext.recordingEventsChannel())
+            .threadingMode(ArchiveThreadingMode.SHARED)
+            .deleteArchiveOnStart(cleanStart);
+
+        final ChannelUri memberStatusChannelUri = ChannelUri.parse(context.clusterBackupContext.memberStatusChannel());
+        memberStatusChannelUri.put(
+            CommonContext.ENDPOINT_PARAM_NAME,
+            clusterBackupStatusEndpoint(staticMemberCount + dynamicMemberCount));
+
+        context.clusterBackupContext
+            .errorHandler(TestUtil.errorHandler(index))
+            .clusterMembersStatusEndpoints(clusterMembersStatusEndpoints)
+            .memberStatusChannel(memberStatusChannelUri.toString())
+            .transferEndpoint(clusterBackupTransferEndpoint(staticMemberCount + dynamicMemberCount))
+            .aeronDirectoryName(aeronDirName)
+            .clusterDir(new File(baseDirName, "cluster-backup"))
+            .archiveContext(context.aeronArchiveContext.clone())
+            .deleteDirOnStart(cleanStart);
+
+        backupNode = new TestBackupNode(context);
+
+        return backupNode;
+    }
+
     void stopNode(final TestNode testNode)
     {
         testNode.close();
+    }
+
+    void stopNode(final TestBackupNode backupNode)
+    {
+        backupNode.close();
     }
 
     void stopAllNodes()
@@ -482,6 +551,22 @@ public class TestCluster implements AutoCloseable
         return followers;
     }
 
+    void awaitBackupState(final ClusterBackup.State targetState) throws InterruptedException
+    {
+        if (null != backupNode)
+        {
+            while (backupNode.state() != targetState)
+            {
+                TestUtil.checkInterruptedStatus();
+                Thread.sleep(100);
+            }
+
+            return;
+        }
+
+        throw new IllegalStateException("no backup node present");
+    }
+
     TestNode node(final int index)
     {
         return nodes[index];
@@ -635,5 +720,15 @@ public class TestCluster implements AutoCloseable
         builder.setLength(builder.length() - 1);
 
         return builder.toString();
+    }
+
+    private static String clusterBackupStatusEndpoint(final int maxMemberCount)
+    {
+        return "localhost:2022" + maxMemberCount;
+    }
+
+    private static String clusterBackupTransferEndpoint(final int maxMemberCount)
+    {
+        return "localhost:2044" + maxMemberCount;
     }
 }

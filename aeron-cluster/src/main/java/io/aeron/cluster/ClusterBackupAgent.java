@@ -47,20 +47,12 @@ import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static io.aeron.cluster.ClusterBackup.State.*;
 import static io.aeron.cluster.MemberStatusAdapter.FRAGMENT_POLL_LIMIT;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
 public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCounterHandler
 {
-    enum State
-    {
-        CHECK_BACKUP,
-        BACKUP_QUERY,
-        SNAPSHOT_RETRIEVE,
-        LIVE_LOG_REPLAY,
-        BACKING_UP
-    }
-
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final BackupResponseDecoder backupResponseDecoder = new BackupResponseDecoder();
 
@@ -73,10 +65,11 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
     private final String[] clusterMemberStatusEndpoints;
     private final MemberStatusPublisher memberStatusPublisher = new MemberStatusPublisher();
     private final ArrayList<RecordingLog.Snapshot> snapshotsToRetrieve = new ArrayList<>(4);
+    private final Counter stateCounter;
     private final long backupResponseTimeoutMs;
     private final long backupQueryIntervalMs;
 
-    private ClusterBackupAgent.State state = State.CHECK_BACKUP;
+    private ClusterBackup.State state = CHECK_BACKUP;
 
     private RecordingLog recordingLog;
 
@@ -124,11 +117,14 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
 
         memberStatusSubscription = aeron.addSubscription(
             ctx.memberStatusChannel(), ctx.memberStatusStreamId());
+
+        stateCounter = ctx.stateCounter();
     }
 
     public void onStart()
     {
         backupArchive = AeronArchive.connect(ctx.archiveContext().clone());
+        stateCounter.setOrdered(CHECK_BACKUP.code());
     }
 
     public void onClose()
@@ -138,6 +134,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
             CloseHelper.close(snapshotRetrieveSubscription);
             CloseHelper.close(memberStatusSubscription);
             CloseHelper.close(memberStatusPublication);
+            CloseHelper.close(stateCounter);
         }
 
         CloseHelper.close(backupArchive);
@@ -149,6 +146,8 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
     {
         int workCount = 0;
         final long nowMs = epochClock.time();
+
+        workCount += aeronClientInvoker.invoke();
         workCount += memberStatusSubscription.poll(this, FRAGMENT_POLL_LIMIT);
 
         switch (state)
@@ -254,7 +253,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
         if (counterId == liveLogRecCounterId)
         {
             reset();
-            state(State.CHECK_BACKUP);
+            state(CHECK_BACKUP);
         }
     }
 
@@ -266,7 +265,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
         final BackupResponseDecoder.SnapshotsDecoder snapshotsDecoder,
         final String memberEndpoints)
     {
-        if (State.BACKUP_QUERY == state && correlationId == this.correlationId)
+        if (BACKUP_QUERY == state && correlationId == this.correlationId)
         {
             if (snapshotsDecoder.count() > 0)
             {
@@ -301,24 +300,25 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
             clusterMembers = ClusterMember.parse(memberEndpoints);
             leaderMember = ClusterMember.findMember(clusterMembers, leaderMemberId);
 
+            final ChannelUri leaderArchiveUri = ChannelUri.parse(ctx.archiveContext().controlRequestChannel());
+            leaderArchiveUri.put(ENDPOINT_PARAM_NAME, leaderMember.archiveEndpoint());
+
+            final AeronArchive.Context leaderArchiveCtx = new AeronArchive.Context()
+                .aeron(ctx.aeron())
+                .controlRequestChannel(leaderArchiveUri.toString())
+                .controlRequestStreamId(ctx.archiveContext().controlRequestStreamId())
+                .controlResponseChannel(ctx.archiveContext().controlResponseChannel())
+                .controlResponseStreamId(ctx.archiveContext().controlResponseStreamId());
+
+            clusterArchiveAsyncConnect = AeronArchive.asyncConnect(leaderArchiveCtx);
+
             if (snapshotsToRetrieve.isEmpty())
             {
-                state(State.LIVE_LOG_REPLAY);
+                state(LIVE_LOG_REPLAY);
             }
             else
             {
-                final ChannelUri leaderArchiveUri = ChannelUri.parse(ctx.archiveContext().controlRequestChannel());
-                leaderArchiveUri.put(ENDPOINT_PARAM_NAME, leaderMember.archiveEndpoint());
-
-                final AeronArchive.Context leaderArchiveCtx = new AeronArchive.Context()
-                    .aeron(ctx.aeron())
-                    .controlRequestChannel(leaderArchiveUri.toString())
-                    .controlRequestStreamId(ctx.archiveContext().controlRequestStreamId())
-                    .controlResponseChannel(ctx.archiveContext().controlResponseChannel())
-                    .controlResponseStreamId(ctx.archiveContext().controlResponseStreamId());
-
-                clusterArchiveAsyncConnect = AeronArchive.asyncConnect(leaderArchiveCtx);
-                state(State.SNAPSHOT_RETRIEVE);
+                state(SNAPSHOT_RETRIEVE);
             }
         }
     }
@@ -327,7 +327,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
     {
         recordingLog = new RecordingLog(ctx.clusterDir());
 
-        state(State.BACKUP_QUERY);
+        state(BACKUP_QUERY);
         return 0;
     }
 
@@ -344,6 +344,8 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
             memberStatusPublication = aeron.addExclusivePublication(
                 memberStatusUri.toString(), ctx.memberStatusStreamId());
             correlationId = NULL_VALUE;
+            timeOfLastBackupQueryMs = nowMs;
+            return 1;
         }
         else if (NULL_VALUE == correlationId && memberStatusPublication.isConnected())
         {
@@ -392,7 +394,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
 
                     if (++snapshotCursor >= snapshotsToRetrieve.size())
                     {
-                        state(State.LIVE_LOG_REPLAY);
+                        state(LIVE_LOG_REPLAY);
                         workCount++;
                     }
                 }
@@ -486,12 +488,15 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
             {
                 final CountersReader countersReader = aeron.countersReader();
 
-                liveLogRecCounterId = RecordingPos.findCounterIdBySession(
-                    countersReader, liveLogReplaySessionId);
-
-                liveLogRecordingId = RecordingPos.getRecordingId(countersReader, liveLogRecCounterId);
-
-                state(State.BACKING_UP);
+                if ((liveLogRecCounterId = RecordingPos.findCounterIdBySession(
+                    countersReader, liveLogReplaySessionId)) != NULL_COUNTER_ID)
+                {
+                    liveLogRecordingId = RecordingPos.getRecordingId(countersReader, liveLogRecCounterId);
+                    timeOfLastBackupQueryMs = nowMs;
+                    System.out.println("liveLogRecCounterId=" + liveLogRecCounterId);
+                    System.out.println("liveLogRecordingId=" + liveLogRecordingId);
+                    state(BACKING_UP);
+                }
             }
             else if (pollForResponse(clusterArchive, correlationId))
             {
@@ -506,7 +511,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
         }
         else
         {
-            state(State.BACKING_UP);
+            state(BACKING_UP);
         }
 
         return workCount;
@@ -519,7 +524,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
         if (nowMs > (timeOfLastBackupQueryMs + backupQueryIntervalMs))
         {
             timeOfLastBackupQueryMs = nowMs;
-            state(State.BACKUP_QUERY);
+            state(BACKUP_QUERY);
         }
         else if (!snapshotsToRetrieve.isEmpty())
         {
@@ -550,9 +555,16 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
         return workCount;
     }
 
-    private void state(final State newState)
+    private void state(final ClusterBackup.State newState)
     {
+        stateChange(this.state, newState);
+        stateCounter.setOrdered(newState.code());
         this.state = newState;
+    }
+
+    private void stateChange(final ClusterBackup.State oldState, final ClusterBackup.State newState)
+    {
+        System.out.println(oldState + " -> " + newState);
     }
 
     private static boolean pollForResponse(final AeronArchive archive, final long correlationId)

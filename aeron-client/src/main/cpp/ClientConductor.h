@@ -208,6 +208,14 @@ public:
         return std::atomic_load_explicit(&m_isClosed, std::memory_order_acquire);
     }
 
+    inline void ensureOpen()
+    {
+        if (isClosed())
+        {
+            throw AeronException("Aeron client conductor is closed", SOURCEINFO);
+        }
+    }
+
     inline void forceClose()
     {
         std::atomic_store_explicit(&m_isClosed, true, std::memory_order_release);
@@ -443,14 +451,6 @@ private:
         {
             DriverTimeoutException exception("driver is inactive", SOURCEINFO);
             m_errorHandler(exception);
-        }
-    }
-
-    inline void ensureOpen()
-    {
-        if (isClosed())
-        {
-            throw AeronException("Aeron client conductor is closed", SOURCEINFO);
         }
     }
 };

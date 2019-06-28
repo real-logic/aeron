@@ -235,6 +235,7 @@ public:
      */
     inline std::int64_t nextCorrelationId()
     {
+        m_conductor.ensureOpen();
         return m_toDriverRingBuffer.nextCorrelationId();
     }
 

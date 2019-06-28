@@ -38,14 +38,15 @@ ClientConductor::~ClientConductor()
         });
 
     m_driverProxy.clientClose();
+    std::atomic_store_explicit(&m_isClosed, true, std::memory_order_release);
 }
 
 std::int64_t ClientConductor::addPublication(const std::string &channel, std::int32_t streamId)
 {
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     verifyDriverIsActive();
     ensureOpen();
 
-    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     std::int64_t id;
 
     auto it = std::find_if(m_publications.begin(), m_publications.end(),
@@ -72,6 +73,7 @@ std::int64_t ClientConductor::addPublication(const std::string &channel, std::in
 std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t registrationId)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+    ensureOpen();
 
     auto it = std::find_if(m_publications.begin(), m_publications.end(),
         [registrationId](const PublicationStateDefn &entry)
@@ -128,9 +130,8 @@ std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t regis
 
 void ClientConductor::releasePublication(std::int64_t registrationId)
 {
-    verifyDriverIsActiveViaErrorHandler();
-
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+    verifyDriverIsActiveViaErrorHandler();
 
     auto it = std::find_if(m_publications.begin(), m_publications.end(),
         [registrationId](const PublicationStateDefn &entry)
@@ -147,10 +148,10 @@ void ClientConductor::releasePublication(std::int64_t registrationId)
 
 std::int64_t ClientConductor::addExclusivePublication(const std::string &channel, std::int32_t streamId)
 {
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     verifyDriverIsActive();
     ensureOpen();
 
-    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     std::int64_t registrationId = m_driverProxy.addExclusivePublication(channel, streamId);
 
     m_exclusivePublications.emplace_back(channel, registrationId, streamId, m_epochClock());
@@ -161,6 +162,7 @@ std::int64_t ClientConductor::addExclusivePublication(const std::string &channel
 std::shared_ptr<ExclusivePublication> ClientConductor::findExclusivePublication(std::int64_t registrationId)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+    ensureOpen();
 
     auto it = std::find_if(m_exclusivePublications.begin(), m_exclusivePublications.end(),
         [registrationId](const ExclusivePublicationStateDefn &entry)
@@ -217,9 +219,8 @@ std::shared_ptr<ExclusivePublication> ClientConductor::findExclusivePublication(
 
 void ClientConductor::releaseExclusivePublication(std::int64_t registrationId)
 {
-    verifyDriverIsActiveViaErrorHandler();
-
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+    verifyDriverIsActiveViaErrorHandler();
 
     auto it = std::find_if(m_exclusivePublications.begin(), m_exclusivePublications.end(),
         [registrationId](const ExclusivePublicationStateDefn &entry)
@@ -240,10 +241,9 @@ std::int64_t ClientConductor::addSubscription(
     const on_available_image_t &onAvailableImageHandler,
     const on_unavailable_image_t &onUnavailableImageHandler)
 {
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     verifyDriverIsActive();
     ensureOpen();
-
-    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
     std::int64_t registrationId = m_driverProxy.addSubscription(channel, streamId);
 
@@ -256,6 +256,7 @@ std::int64_t ClientConductor::addSubscription(
 std::shared_ptr<Subscription> ClientConductor::findSubscription(std::int64_t registrationId)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+    ensureOpen();
 
     auto it = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
         [registrationId](const SubscriptionStateDefn &entry)
@@ -294,9 +295,8 @@ std::shared_ptr<Subscription> ClientConductor::findSubscription(std::int64_t reg
 
 void ClientConductor::releaseSubscription(std::int64_t registrationId, struct ImageList *imageList)
 {
-    verifyDriverIsActiveViaErrorHandler();
-
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+    verifyDriverIsActiveViaErrorHandler();
 
     auto it = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
         [registrationId](const SubscriptionStateDefn &entry)
@@ -327,6 +327,7 @@ void ClientConductor::releaseSubscription(std::int64_t registrationId, struct Im
 std::int64_t ClientConductor::addCounter(
     std::int32_t typeId, const std::uint8_t *keyBuffer, std::size_t keyLength, const std::string &label)
 {
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     verifyDriverIsActive();
     ensureOpen();
 
@@ -340,8 +341,6 @@ std::int64_t ClientConductor::addCounter(
         throw IllegalArgumentException("label length out of bounds: " + std::to_string(label.length()), SOURCEINFO);
     }
 
-    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
-
     std::int64_t registrationId = m_driverProxy.addCounter(typeId, keyBuffer, keyLength, label);
 
     m_counters.emplace_back(registrationId, m_epochClock());
@@ -352,6 +351,7 @@ std::int64_t ClientConductor::addCounter(
 std::shared_ptr<Counter> ClientConductor::findCounter(std::int64_t registrationId)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+    ensureOpen();
 
     auto it = std::find_if(
         m_counters.begin(),
@@ -392,9 +392,8 @@ std::shared_ptr<Counter> ClientConductor::findCounter(std::int64_t registrationI
 
 void ClientConductor::releaseCounter(std::int64_t registrationId)
 {
-    verifyDriverIsActiveViaErrorHandler();
-
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+    verifyDriverIsActiveViaErrorHandler();
 
     auto it = std::find_if(
         m_counters.begin(),
@@ -414,6 +413,7 @@ void ClientConductor::releaseCounter(std::int64_t registrationId)
 
 void ClientConductor::addDestination(std::int64_t publicationRegistrationId, const std::string &endpointChannel)
 {
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     verifyDriverIsActive();
     ensureOpen();
 
@@ -422,6 +422,7 @@ void ClientConductor::addDestination(std::int64_t publicationRegistrationId, con
 
 void ClientConductor::removeDestination(std::int64_t publicationRegistrationId, const std::string &endpointChannel)
 {
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     verifyDriverIsActive();
     ensureOpen();
 
@@ -430,6 +431,7 @@ void ClientConductor::removeDestination(std::int64_t publicationRegistrationId, 
 
 void ClientConductor::addRcvDestination(std::int64_t subscriptionRegistrationId, const std::string &endpointChannel)
 {
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     verifyDriverIsActive();
     ensureOpen();
 
@@ -438,6 +440,7 @@ void ClientConductor::addRcvDestination(std::int64_t subscriptionRegistrationId,
 
 void ClientConductor::removeRcvDestination(std::int64_t subscriptionRegistrationId, const std::string &endpointChannel)
 {
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     verifyDriverIsActive();
     ensureOpen();
 
@@ -446,9 +449,8 @@ void ClientConductor::removeRcvDestination(std::int64_t subscriptionRegistration
 
 void ClientConductor::addAvailableCounterHandler(const on_available_counter_t& handler)
 {
-    ensureOpen();
-
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+    ensureOpen();
 
     m_onAvailableCounterHandlers.emplace_back(handler);
 }
@@ -464,9 +466,9 @@ static size_t getAddress(const std::function<T(U...)>& f)
 
 void ClientConductor::removeAvailableCounterHandler(const on_available_counter_t& handler)
 {;
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     ensureOpen();
 
-    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     auto &v = m_onAvailableCounterHandlers;
     auto predicate =
         [handler](const on_available_counter_t &item)
@@ -479,18 +481,17 @@ void ClientConductor::removeAvailableCounterHandler(const on_available_counter_t
 
 void ClientConductor::addUnavailableCounterHandler(const on_unavailable_counter_t& handler)
 {
-    ensureOpen();
-
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+    ensureOpen();
 
     m_onUnavailableCounterHandlers.emplace_back(handler);
 }
 
 void ClientConductor::removeUnavailableCounterHandler(const on_unavailable_counter_t& handler)
 {
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     ensureOpen();
 
-    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     auto &v = m_onUnavailableCounterHandlers;
     auto predicate =
         [handler](const on_unavailable_counter_t &item)
@@ -737,8 +738,8 @@ void ClientConductor::onAvailableImage(
 
 void ClientConductor::onUnavailableImage(std::int64_t correlationId, std::int64_t subscriptionRegistrationId)
 {
-    const long long now = m_epochClock();
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+    const long long now = m_epochClock();
 
     std::for_each(m_subscriptions.begin(), m_subscriptions.end(),
         [&](const SubscriptionStateDefn &entry)
@@ -770,6 +771,7 @@ void ClientConductor::onClientTimeout(std::int64_t clientId)
 {
     if (m_driverProxy.clientId() == clientId && !isClosed())
     {
+        std::lock_guard<std::recursive_mutex> lock(m_adminLock);
         const long long now = m_epochClock();
 
         closeAllResources(now);
@@ -781,8 +783,6 @@ void ClientConductor::onClientTimeout(std::int64_t clientId)
 
 void ClientConductor::closeAllResources(long long now)
 {
-    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
-
     forceClose();
 
     std::for_each(m_publications.begin(), m_publications.end(),
@@ -828,8 +828,6 @@ void ClientConductor::closeAllResources(long long now)
 void ClientConductor::onCheckManagedResources(long long now)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
-
-    // erase-remove idiom
 
     auto logIt = std::remove_if(m_lingeringLogBuffers.begin(), m_lingeringLogBuffers.end(),
         [now, this](const LogBuffersLingerDefn &entry)

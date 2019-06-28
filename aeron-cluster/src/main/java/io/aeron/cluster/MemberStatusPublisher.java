@@ -560,6 +560,10 @@ class MemberStatusPublisher
         final Publication publication,
         final long correlationId,
         final long logRecordingId,
+        final long logLeadershipTermId,
+        final long logTermBaseLogPosition,
+        final long lastLeadershipTermId,
+        final long lastTermBaseLogPosition,
         final int commitPositionCounterId,
         final int leaderMemberId,
         final RecordingLog.RecoveryPlan recoveryPlan,
@@ -568,6 +572,8 @@ class MemberStatusPublisher
         backupResponseEncoder.wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .correlationId(correlationId)
             .logRecordingId(logRecordingId)
+            .logLeadershipTermId(logLeadershipTermId)
+            .logTermBaseLogPosition(logTermBaseLogPosition)
             .commitPositionCounterId(commitPositionCounterId)
             .leaderMemberId(leaderMemberId);
 

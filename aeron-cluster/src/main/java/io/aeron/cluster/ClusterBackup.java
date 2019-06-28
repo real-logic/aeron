@@ -60,7 +60,8 @@ public final class ClusterBackup implements AutoCloseable
         BACKUP_QUERY(1),
         SNAPSHOT_RETRIEVE(2),
         LIVE_LOG_REPLAY(3),
-        BACKING_UP(4);
+        UPDATE_RECORDING_LOG(4),
+        BACKING_UP(5);
 
         static final State[] STATES;
 

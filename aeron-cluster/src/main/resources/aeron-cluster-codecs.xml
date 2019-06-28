@@ -495,17 +495,21 @@
                  description="Response to backup query that includes all relevant information for backup operation">
         <field name="correlationId"            id="1"  type="int64"/>
         <field name="logRecordingId"           id="2"  type="int64"/>
-        <field name="commitPositionCounterId"  id="3"  type="int32"/>
-        <field name="leaderMemberId"           id="4"  type="int32"/>
-        <group name="snapshots"                id="5"  dimensionType="groupSizeEncoding">
-            <field name="recordingId"          id="6"  type="int64"/>
-            <field name="leadershipTermId"     id="7"  type="int64"/>
-            <field name="termBaseLogPosition"  id="8"  type="int64"/>
-            <field name="logPosition"          id="9"  type="int64"/>
-            <field name="timestamp"            id="10" type="time_t"/>
-            <field name="serviceId"            id="11" type="int32"/>
+        <field name="logLeadershipTermId"      id="3"  type="int64"/>
+        <field name="logTermBaseLogPosition"   id="4"  type="int64"/>
+        <field name="lastLeadershipTermId"     id="5"  type="int64"/>
+        <field name="lastTermBaseLogPosition"  id="6"  type="int64"/>
+        <field name="commitPositionCounterId"  id="7"  type="int32"/>
+        <field name="leaderMemberId"           id="8"  type="int32"/>
+        <group name="snapshots"                id="9"  dimensionType="groupSizeEncoding">
+            <field name="recordingId"          id="10" type="int64"/>
+            <field name="leadershipTermId"     id="11" type="int64"/>
+            <field name="termBaseLogPosition"  id="12" type="int64"/>
+            <field name="logPosition"          id="13" type="int64"/>
+            <field name="timestamp"            id="14" type="time_t"/>
+            <field name="serviceId"            id="15" type="int32"/>
         </group>
-        <data  name="clusterMembers"           id="12" type="varAsciiEncoding"/>
+        <data  name="clusterMembers"           id="16" type="varAsciiEncoding"/>
     </sbe:message>
 
     <!-- Serialisation of major entities in addition to others above that can be in a snapshot -->

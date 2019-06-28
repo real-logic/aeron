@@ -1541,6 +1541,11 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             timeOfLastAppendPositionMs = cachedTimeMs;
         }
 
+        if (null == recoveryPlan.log)
+        {
+            recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
+        }
+
         election = null;
         this.followerCommitPosition = termBaseLogPosition;
         commitPosition.setOrdered(termBaseLogPosition);
@@ -1927,10 +1932,16 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 {
                     if (session.responsePublication().isConnected())
                     {
+                        final RecordingLog.Entry lastEntry = recordingLog.findLastTerm();
+
                         if (memberStatusPublisher.backupResponse(
                             session.responsePublication(),
                             session.correlationId(),
-                            logRecordingId(),
+                            recoveryPlan.log.recordingId,
+                            recoveryPlan.log.leadershipTermId,
+                            recoveryPlan.log.termBaseLogPosition,
+                            lastEntry.leadershipTermId,
+                            lastEntry.termBaseLogPosition,
                             commitPosition.id(),
                             leaderMember.id(),
                             recoveryPlan,

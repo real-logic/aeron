@@ -243,11 +243,12 @@ int aeron_create_file(const char* path)
 
 #define AERON_BLOCK_SIZE (4 * 1024)
 
-inline static void aeron_touch_pages(uint8_t *base, size_t length, size_t page_size)
+static void aeron_touch_pages(volatile uint8_t *base, size_t length, size_t page_size)
 {
     for (size_t i = 0; i < length; i += page_size)
     {
-        *(base + i) = 0;
+        volatile uint8_t *first_page_byte = base + i;
+        *first_page_byte = 0;
     }
 }
 

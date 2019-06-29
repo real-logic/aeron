@@ -16,8 +16,7 @@
 package io.aeron.driver.buffer;
 
 import io.aeron.exceptions.AeronException;
-import org.agrona.ErrorHandler;
-import org.agrona.IoUtil;
+import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
@@ -213,5 +212,7 @@ class MappedRawLog implements RawLog
         {
             buffer.put(i, (byte)0);
         }
+
+        UnsafeAccess.UNSAFE.fullFence();
     }
 }

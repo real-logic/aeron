@@ -23,7 +23,7 @@ plugins {
     id 'java'
     id 'com.gradle.build-scan' version '2.3'
     id "io.freefair.javadoc-links" version "3.7.5" apply false
-    id 'com.github.johnrengelman.shadow' version '5.0.0' apply false
+    id 'com.github.johnrengelman.shadow' version '5.1.0' apply false
 }
 
 defaultTasks 'clean', 'build', 'shadowJar', 'install'

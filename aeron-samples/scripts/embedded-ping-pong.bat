@@ -22,6 +22,7 @@
     -XX:BiasedLockingStartupDelay=0 ^
     -Djava.net.preferIPv4Stack=true ^
     -Dagrona.disable.bounds.checks=true ^
+    -Daeron.pre.touch.mapped.memory=true ^
     -Daeron.term.buffer.sparse.file=false ^
     -Daeron.sample.messageLength=32 ^
     -Daeron.sample.messages=1000000 ^

@@ -23,6 +23,7 @@ ${JAVA_HOME}/bin/java \
     -Djava.net.preferIPv4Stack=true \
     -Dagrona.disable.bounds.checks=true \
     -Daeron.term.buffer.sparse.file=false \
+    -Daeron.pre.touch.mapped.memory=true \
     -Daeron.sample.messageLength=32 \
     -Daeron.sample.messages=1000000 \
     -Daeron.sample.exclusive.publications=true \

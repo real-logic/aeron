@@ -803,6 +803,12 @@ class ClientConductor implements Agent, DriverEventsListener
         if (null == logBuffers)
         {
             logBuffers = logBuffersFactory.map(logFileName);
+
+            if (ctx.preTouchMappedMemory())
+            {
+                logBuffers.preTouch();
+            }
+
             logBuffersByIdMap.put(registrationId, logBuffers);
         }
 

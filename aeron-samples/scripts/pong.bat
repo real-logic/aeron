@@ -20,5 +20,6 @@
     -XX:+UnlockDiagnosticVMOptions ^
     -XX:GuaranteedSafepointInterval=300000 ^
     -Dagrona.disable.bounds.checks=true ^
+    -Daeron.pre.touch.mapped.memory=true ^
     -Daeron.sample.exclusive.publications=true ^
     %JVM_OPTS% io.aeron.samples.Pong

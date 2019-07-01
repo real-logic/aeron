@@ -459,6 +459,19 @@ public class Aeron implements AutoCloseable
         public static final long CLOSE_LINGER_DURATION_DEFAULT_NS = 0;
 
         /**
+         * Should memory-mapped files be pre-touched so that they are already faulted into a process.
+         * <p>
+         * Pre-touching files can result in it taking it it taking longer for resources to become available in
+         * return for avoiding later pauses due to page faults.
+         */
+        public static final String PRE_TOUCH_MAPPED_MEMORY_PROP_NAME = "aeron.pre.touch.mapped.memory";
+
+        /**
+         * Default for if a memory-mapped filed should be pre-touched to fault it into a process.
+         */
+        public static final boolean PRE_TOUCH_MAPPED_MEMORY_DEFAULT = false;
+
+        /**
          * The Default handler for Aeron runtime exceptions.
          * When a {@link DriverTimeoutException} is encountered, this handler will exit the program.
          * <p>
@@ -501,6 +514,23 @@ public class Aeron implements AutoCloseable
         {
             return getDurationInNanos(CLOSE_LINGER_DURATION_PROP_NAME, CLOSE_LINGER_DURATION_DEFAULT_NS);
         }
+
+        /**
+         * Should memory-mapped files be pre-touched so that they are already faulted into a process.
+         *
+         * @return true if memory mappings should be pre-touched, otherwise false.
+         * @see #PRE_TOUCH_MAPPED_MEMORY_PROP_NAME
+         */
+        public static boolean preTouchMappedMemory()
+        {
+            final String value = System.getProperty(PRE_TOUCH_MAPPED_MEMORY_PROP_NAME);
+            if (null != value)
+            {
+                return Boolean.parseBoolean(value);
+            }
+
+            return PRE_TOUCH_MAPPED_MEMORY_DEFAULT;
+        }
     }
 
     /**
@@ -520,6 +550,7 @@ public class Aeron implements AutoCloseable
     {
         private long clientId;
         private boolean useConductorAgentInvoker = false;
+        private boolean preTouchMappedMemory = Configuration.preTouchMappedMemory();
         private AgentInvoker driverAgentInvoker;
         private Lock clientLock;
         private EpochClock epochClock;
@@ -670,6 +701,30 @@ public class Aeron implements AutoCloseable
         public boolean useConductorAgentInvoker()
         {
             return useConductorAgentInvoker;
+        }
+
+        /**
+         * Should mapped-memory be pre-touched to avoid soft page faults.
+         *
+         * @param preTouchMappedMemory true if mapped-memory should be pre-touched otherwise false.
+         * @return this for a fluent API.
+         * @see Configuration#PRE_TOUCH_MAPPED_MEMORY_PROP_NAME
+         */
+        public Context preTouchMappedMemory(final boolean preTouchMappedMemory)
+        {
+            this.preTouchMappedMemory = preTouchMappedMemory;
+            return this;
+        }
+
+        /**
+         * Should mapped-memory be pre-touched to avoid soft page faults.
+         *
+         * @return true if mapped-memory should be pre-touched otherwise false.
+         * @see Configuration#PRE_TOUCH_MAPPED_MEMORY_PROP_NAME
+         */
+        public boolean preTouchMappedMemory()
+        {
+            return preTouchMappedMemory;
         }
 
         /**

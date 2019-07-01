@@ -20,6 +20,7 @@
     -XX:+UnlockDiagnosticVMOptions ^
     -XX:GuaranteedSafepointInterval=300000 ^
     -Dagrona.disable.bounds.checks=true ^
+    -Daeron.pre.touch.mapped.memory=true ^
     -Daeron.sample.messages=1000000 ^
     -Daeron.sample.messageLength=32 ^
     -Daeron.sample.exclusive.publications=true ^

@@ -22,6 +22,7 @@ import org.agrona.ManagedResource;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
@@ -47,6 +48,7 @@ public class LogBuffers implements AutoCloseable, ManagedResource
     private static final EnumSet<StandardOpenOption> FILE_OPTIONS = EnumSet.of(READ, WRITE, SPARSE);
     private static final FileAttribute<?>[] NO_ATTRIBUTES = new FileAttribute[0];
 
+    protected long preTouchOptimisationAvoidance;
     private long timeOfLastStateChangeNs;
     private int refCount;
     private final int termLength;
@@ -136,7 +138,7 @@ public class LogBuffers implements AutoCloseable, ManagedResource
         }
         catch (final IOException ex)
         {
-            throw new RuntimeException(ex);
+            throw new UncheckedIOException(ex);
         }
         catch (final IllegalStateException ex)
         {
@@ -180,6 +182,27 @@ public class LogBuffers implements AutoCloseable, ManagedResource
     public FileChannel fileChannel()
     {
         return fileChannel;
+    }
+
+    /**
+     * Pre touch memory pages so they are faulted in to be available before access.
+     */
+    public void preTouch()
+    {
+        final int pageSize = LogBufferDescriptor.pageSize(logMetaDataBuffer);
+        long sum = 0;
+
+        for (final MappedByteBuffer buffer : mappedByteBuffers)
+        {
+            buffer.limit(buffer.capacity());
+
+            for (int i = 0, length = buffer.capacity(); i < length; i += pageSize)
+            {
+                sum += buffer.get(i);
+            }
+        }
+
+        preTouchOptimisationAvoidance = sum;
     }
 
     public void close()

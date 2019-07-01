@@ -64,6 +64,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
     private final String[] clusterMemberStatusEndpoints;
     private final MemberStatusPublisher memberStatusPublisher = new MemberStatusPublisher();
     private final ArrayList<RecordingLog.Snapshot> snapshotsToRetrieve = new ArrayList<>(4);
+    private final ArrayList<RecordingLog.Snapshot> snapshotsRetrieved = new ArrayList<>(4);
     private final Counter stateCounter;
     private final Counter liveLogPositionCounter;
     private final long backupResponseTimeoutMs;
@@ -194,6 +195,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
         clusterMembers = null;
         leaderMember = null;
         snapshotsToRetrieve.clear();
+        snapshotsRetrieved.clear();
         leaderLogEntry = null;
         leaderLastTermEntry = null;
 
@@ -258,8 +260,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
                 backupResponseDecoder.lastTermBaseLogPosition(),
                 backupResponseDecoder.commitPositionCounterId(),
                 backupResponseDecoder.leaderMemberId(),
-                backupResponseDecoder.snapshots(),
-                backupResponseDecoder.clusterMembers());
+                backupResponseDecoder);
         }
     }
 
@@ -282,11 +283,12 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
         final long lastTermBaseLogPosition,
         final int commitPositionCounterId,
         final int leaderMemberId,
-        final BackupResponseDecoder.SnapshotsDecoder snapshotsDecoder,
-        final String memberEndpoints)
+        final BackupResponseDecoder backupResponseDecoder)
     {
         if (BACKUP_QUERY == state && correlationId == this.correlationId)
         {
+            final BackupResponseDecoder.SnapshotsDecoder snapshotsDecoder = backupResponseDecoder.snapshots();
+
             if (snapshotsDecoder.count() > 0)
             {
                 for (final BackupResponseDecoder.SnapshotsDecoder snapshot : snapshotsDecoder)
@@ -350,7 +352,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
             this.correlationId = NULL_VALUE;
             leaderCommitPositionCounterId = commitPositionCounterId;
 
-            clusterMembers = ClusterMember.parse(memberEndpoints);
+            clusterMembers = ClusterMember.parse(backupResponseDecoder.clusterMembers());
             leaderMember = ClusterMember.findMember(clusterMembers, leaderMemberId);
 
             final ChannelUri leaderArchiveUri = ChannelUri.parse(ctx.archiveContext().controlRequestChannel());
@@ -437,6 +439,16 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
             {
                 if (snapshotReader.isDone())
                 {
+                    final RecordingLog.Snapshot snapshot = snapshotsToRetrieve.get(snapshotCursor);
+
+                    snapshotsRetrieved.add(new RecordingLog.Snapshot(
+                        snapshotReader.recordingId,
+                        snapshot.leadershipTermId,
+                        snapshot.termBaseLogPosition,
+                        snapshot.logPosition,
+                        snapshot.timestamp,
+                        snapshot.serviceId));
+
                     CloseHelper.close(snapshotRetrieveSubscription);
                     backupArchive.stopRecording(snapshotRetrieveSubscriptionId);
                     snapshotRetrieveSubscription = null;
@@ -588,7 +600,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
         if (null != leaderLogEntry && recordingLog.isUnknown(leaderLogEntry.leadershipTermId))
         {
             recordingLog.appendTerm(
-                leaderLogEntry.recordingId,
+                liveLogRecordingId,
                 leaderLogEntry.leadershipTermId,
                 leaderLogEntry.termBaseLogPosition,
                 NULL_VALUE);
@@ -598,11 +610,11 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
             leaderLogEntry = null;
         }
 
-        if (!snapshotsToRetrieve.isEmpty())
+        if (!snapshotsRetrieved.isEmpty())
         {
-            for (int i = snapshotsToRetrieve.size() - 1; i >= 0; i--)
+            for (int i = snapshotsRetrieved.size() - 1; i >= 0; i--)
             {
-                final RecordingLog.Snapshot snapshot = snapshotsToRetrieve.get(i);
+                final RecordingLog.Snapshot snapshot = snapshotsRetrieved.get(i);
 
                 recordingLog.appendSnapshot(
                     snapshot.recordingId,
@@ -615,13 +627,14 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
 
             recordingLog.force();
 
+            snapshotsRetrieved.clear();
             snapshotsToRetrieve.clear();
         }
 
         if (null != leaderLastTermEntry && recordingLog.isUnknown(leaderLastTermEntry.leadershipTermId))
         {
             recordingLog.appendTerm(
-                leaderLastTermEntry.recordingId,
+                liveLogRecordingId,
                 leaderLastTermEntry.leadershipTermId,
                 leaderLastTermEntry.termBaseLogPosition,
                 NULL_VALUE);

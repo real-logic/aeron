@@ -238,6 +238,11 @@ class TestNode implements AutoCloseable
             return roleChangedTo;
         }
 
+        Cluster cluster()
+        {
+            return cluster;
+        }
+
         public void onStart(final Cluster cluster, final Image snapshotImage)
         {
             super.onStart(cluster, snapshotImage);

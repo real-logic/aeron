@@ -362,6 +362,18 @@ public:
         return *this;
     }
 
+    /**
+     * Set whether memory mapped files should be pre-touched so they are pre-loaded to avoid later page faults.
+     *
+     * @param preTouchMappedMemory true to pre-touch memory otherwise false.
+     * @return reference to this Context instance
+     */
+    inline this_t& preTouchMappedMemory(bool preTouchMappedMemory)
+    {
+        m_preTouchMappedMemory = preTouchMappedMemory;
+        return *this;
+    }
+
     static void requestDriverTermination(
         const std::string& directory, const std::uint8_t *tokenBuffer, std::size_t tokenLength);
 
@@ -435,6 +447,7 @@ private:
     long m_resourceLingerTimeout = DEFAULT_RESOURCE_LINGER_MS;
     bool m_useConductorAgentInvoker = false;
     bool m_isOnNewExclusivePublicationHandlerSet = false;
+    bool m_preTouchMappedMemory = false;
 };
 
 }

@@ -21,7 +21,7 @@ namespace aeron {
 using namespace aeron::util;
 using namespace aeron::concurrent::logbuffer;
 
-LogBuffers::LogBuffers(const char *filename)
+LogBuffers::LogBuffers(const char *filename, bool preTouch)
 {
     const std::int64_t logLength = MemoryMappedFile::getFileSize(filename);
 
@@ -44,6 +44,17 @@ LogBuffers::LogBuffers(const char *filename)
     for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
     {
         m_buffers[i].wrap(basePtr + (i * termLength), static_cast<size_t>(termLength));
+    }
+
+    if (preTouch)
+    {
+        volatile std::uint8_t *ptr = basePtr;
+
+        for (std::int64_t i = 0; i < logLength; i += pageSize)
+        {
+            volatile std::uint8_t *b = ptr + i;
+            (void)*b;
+        }
     }
 }
 

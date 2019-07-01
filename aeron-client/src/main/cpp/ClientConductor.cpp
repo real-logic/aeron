@@ -78,7 +78,7 @@ std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t regis
     auto it = std::find_if(m_publications.begin(), m_publications.end(),
         [registrationId](const PublicationStateDefn &entry)
         {
-            return (registrationId == entry.m_registrationId);
+            return registrationId == entry.m_registrationId;
         });
 
     if (it == m_publications.end())
@@ -527,7 +527,7 @@ void ClientConductor::onNewPublication(
         state.m_sessionId = sessionId;
         state.m_publicationLimitCounterId = publicationLimitCounterId;
         state.m_channelStatusId = channelStatusIndicatorId;
-        state.m_buffers = std::make_shared<LogBuffers>(logFileName.c_str());
+        state.m_buffers = std::make_shared<LogBuffers>(logFileName.c_str(), m_preTouchMappedMemory);
         state.m_originalRegistrationId = originalRegistrationId;
 
         m_onNewPublicationHandler(state.m_channel, streamId, sessionId, registrationId);
@@ -559,7 +559,7 @@ void ClientConductor::onNewExclusivePublication(
         state.m_sessionId = sessionId;
         state.m_publicationLimitCounterId = publicationLimitCounterId;
         state.m_channelStatusId = channelStatusIndicatorId;
-        state.m_buffers = std::make_shared<LogBuffers>(logFileName.c_str());
+        state.m_buffers = std::make_shared<LogBuffers>(logFileName.c_str(), m_preTouchMappedMemory);
         state.m_originalRegistrationId = originalRegistrationId;
 
         m_onNewExclusivePublicationHandler(state.m_channel, streamId, sessionId, registrationId);
@@ -711,7 +711,8 @@ void ClientConductor::onAvailableImage(
 
                 if (nullptr != subscription)
                 {
-                    std::shared_ptr<LogBuffers> logBuffers = std::make_shared<LogBuffers>(logFilename.c_str());
+                    std::shared_ptr<LogBuffers> logBuffers = std::make_shared<LogBuffers>(
+                        logFilename.c_str(), m_preTouchMappedMemory);
                     UnsafeBufferPosition subscriberPosition(m_counterValuesBuffer, subscriberPositionId);
 
                     Image image(

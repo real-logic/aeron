@@ -32,7 +32,7 @@ using namespace aeron::concurrent::logbuffer;
 class LogBuffers
 {
 public:
-    explicit LogBuffers(const char *filename);
+    explicit LogBuffers(const char *filename, bool preTouch = false);
     LogBuffers(std::uint8_t *address, std::int64_t logLength, std::int32_t termLength);
 
     ~LogBuffers();

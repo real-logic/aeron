@@ -61,7 +61,8 @@ public:
         const on_unavailable_counter_t& unavailableCounterHandler,
         long driverTimeoutMs,
         long resourceLingerTimeoutMs,
-        long long interServiceTimeoutNs) :
+        long long interServiceTimeoutNs,
+        bool preTouchMappedMemory) :
         m_driverProxy(driverProxy),
         m_driverListenerAdapter(broadcastReceiver, *this),
         m_countersReader(counterMetadataBuffer, counterValuesBuffer),
@@ -78,7 +79,8 @@ public:
         m_resourceLingerTimeoutMs(resourceLingerTimeoutMs),
         m_interServiceTimeoutMs(static_cast<long>(interServiceTimeoutNs / 1000000)),
         m_driverActive(true),
-        m_isClosed(false)
+        m_isClosed(false),
+        m_preTouchMappedMemory(preTouchMappedMemory)
     {
         m_onAvailableCounterHandlers.emplace_back(availableCounterHandler);
         m_onUnavailableCounterHandlers.emplace_back(unavailableCounterHandler);
@@ -393,6 +395,7 @@ private:
 
     std::atomic<bool> m_driverActive;
     std::atomic<bool> m_isClosed;
+    bool m_preTouchMappedMemory;
 
     inline int onHeartbeatCheckTimeouts()
     {

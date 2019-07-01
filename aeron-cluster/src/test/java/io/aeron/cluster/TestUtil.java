@@ -18,7 +18,9 @@ package io.aeron.cluster;
 import org.agrona.ErrorHandler;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.AgentTerminationException;
+import org.agrona.concurrent.status.CountersReader;
 
+import java.io.PrintStream;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.fail;
@@ -66,5 +68,15 @@ class TestUtil
             System.err.println();
             System.err.println(SystemUtil.threadDump());
         };
+    }
+
+    public static void printStats(final CountersReader countersReader, final PrintStream out)
+    {
+        countersReader.forEach(
+            (counterId, typeId, keyBuffer, label) ->
+            {
+                final long value = countersReader.getCounterValue(counterId);
+                out.format("%3d: %,20d - %s%n", counterId, value, label);
+            });
     }
 }

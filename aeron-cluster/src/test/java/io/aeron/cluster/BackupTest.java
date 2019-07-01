@@ -20,6 +20,7 @@ import org.junit.Test;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 @Ignore
 public class BackupTest
@@ -33,6 +34,7 @@ public class BackupTest
             final TestBackupNode backupNode = cluster.startClusterBackupNode(true);
 
             cluster.awaitBackupState(ClusterBackup.State.BACKING_UP);
+            cluster.awaitBackupLiveLogPosition(cluster.findLeader().service().cluster().logPosition());
 
             cluster.stopAllNodes();
 
@@ -40,6 +42,7 @@ public class BackupTest
             cluster.awaitLeader();
 
             assertEquals(0, node.service().messageCount());
+            assertFalse(node.service().wasSnapshotLoaded());
         }
     }
 }

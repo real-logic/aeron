@@ -65,6 +65,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
     private final MemberStatusPublisher memberStatusPublisher = new MemberStatusPublisher();
     private final ArrayList<RecordingLog.Snapshot> snapshotsToRetrieve = new ArrayList<>(4);
     private final Counter stateCounter;
+    private final Counter liveLogPositionCounter;
     private final long backupResponseTimeoutMs;
     private final long backupQueryIntervalMs;
 
@@ -120,6 +121,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
             ctx.memberStatusChannel(), ctx.memberStatusStreamId());
 
         stateCounter = ctx.stateCounter();
+        liveLogPositionCounter = ctx.liveLogPositionCounter();
     }
 
     public void onStart()
@@ -135,7 +137,6 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
             CloseHelper.close(snapshotRetrieveSubscription);
             CloseHelper.close(memberStatusSubscription);
             CloseHelper.close(memberStatusPublication);
-            CloseHelper.close(stateCounter);
         }
 
         CloseHelper.close(backupArchive);
@@ -225,6 +226,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
         clusterArchiveAsyncConnect = null;
 
         correlationId = NULL_VALUE;
+        liveLogRecCounterId = NULL_COUNTER_ID;
         liveLogRecordingId = NULL_VALUE;
         liveLogReplayId = NULL_VALUE;
     }
@@ -547,6 +549,8 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
                 if ((liveLogRecCounterId = RecordingPos.findCounterIdBySession(
                     countersReader, liveLogReplaySessionId)) != NULL_COUNTER_ID)
                 {
+                    liveLogPositionCounter.setOrdered(countersReader.getCounterValue(liveLogRecCounterId));
+
                     liveLogRecordingId = RecordingPos.getRecordingId(countersReader, liveLogRecCounterId);
                     timeOfLastBackupQueryMs = nowMs;
                     state(UPDATE_RECORDING_LOG);
@@ -640,6 +644,16 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
             timeOfLastBackupQueryMs = nowMs;
             state(BACKUP_QUERY);
             workCount += 1;
+        }
+
+        if (NULL_COUNTER_ID != liveLogRecCounterId)
+        {
+            final long liveLogPosition = aeron.countersReader().getCounterValue(liveLogRecCounterId);
+
+            if (liveLogPositionCounter.proposeMaxOrdered(liveLogPosition))
+            {
+                workCount += 1;
+            }
         }
 
         return workCount;

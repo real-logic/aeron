@@ -54,6 +54,11 @@ public final class ClusterBackup implements AutoCloseable
      */
     static final int BACKUP_STATE_TYPE_ID = 208;
 
+    /**
+     * The type id of the {@link Counter} used for the live log position counter.
+     */
+    static final int LIVE_LOG_POSITION_TYPE_ID = 209;
+
     enum State
     {
         CHECK_BACKUP(0),
@@ -269,6 +274,7 @@ public final class ClusterBackup implements AutoCloseable
         private AtomicCounter errorCounter;
         private CountedErrorHandler countedErrorHandler;
         private Counter stateCounter;
+        private Counter liveLogPositionCounter;
 
         private AeronArchive.Context archiveContext;
         private ShutdownSignalBarrier shutdownSignalBarrier;
@@ -379,6 +385,11 @@ public final class ClusterBackup implements AutoCloseable
             if (null == stateCounter)
             {
                 stateCounter = aeron.addCounter(BACKUP_STATE_TYPE_ID, "Backup State");
+            }
+
+            if (null == liveLogPositionCounter)
+            {
+                liveLogPositionCounter = aeron.addCounter(LIVE_LOG_POSITION_TYPE_ID, "Live Log Position");
             }
 
             if (null == threadFactory)
@@ -1028,6 +1039,28 @@ public final class ClusterBackup implements AutoCloseable
         }
 
         /**
+         * Get the counter for the current position of the live log.
+         *
+         * @return the counter for the current position of the live log.
+         */
+        public Counter liveLogPositionCounter()
+        {
+            return liveLogPositionCounter;
+        }
+
+        /**
+         * Set the counter for the current position of the live log.
+         *
+         * @param liveLogPositionCounter the counter for the current position of the live log.
+         * @return this for a fluent API.
+         */
+        public Context liveLogPositionCounter(final Counter liveLogPositionCounter)
+        {
+            this.liveLogPositionCounter = liveLogPositionCounter;
+            return this;
+        }
+
+        /**
          * Delete the cluster directory.
          */
         public void deleteDirectory()
@@ -1048,6 +1081,11 @@ public final class ClusterBackup implements AutoCloseable
             if (ownsAeronClient)
             {
                 CloseHelper.close(aeron);
+            }
+            else
+            {
+                CloseHelper.close(stateCounter);
+                CloseHelper.close(liveLogPositionCounter);
             }
 
             CloseHelper.close(markFile);

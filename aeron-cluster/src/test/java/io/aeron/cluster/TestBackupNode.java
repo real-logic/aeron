@@ -19,6 +19,7 @@ import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.driver.MediaDriver;
 import org.agrona.CloseHelper;
+import org.agrona.concurrent.status.CountersReader;
 
 public class TestBackupNode
 {
@@ -68,6 +69,16 @@ public class TestBackupNode
     ClusterBackup.State state()
     {
         return ClusterBackup.State.get((int)clusterBackupMediaDriver.clusterBackup().context().stateCounter().get());
+    }
+
+    long liveLogPosition()
+    {
+        return clusterBackupMediaDriver.clusterBackup().context().liveLogPositionCounter().get();
+    }
+
+    CountersReader countersReader()
+    {
+        return clusterBackupMediaDriver.clusterBackup().context().aeron().countersReader();
     }
 
     static class Context

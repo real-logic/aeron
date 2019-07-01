@@ -646,6 +646,22 @@ public class TestCluster implements AutoCloseable
         throw new IllegalStateException("no backup node present");
     }
 
+    void awaitBackupLiveLogPosition(final long position) throws InterruptedException
+    {
+        if (null != backupNode)
+        {
+            while (backupNode.liveLogPosition() != position)
+            {
+                TestUtil.checkInterruptedStatus();
+                Thread.sleep(100);
+            }
+
+            return;
+        }
+
+        throw new IllegalStateException("no backup node present");
+    }
+
     TestNode node(final int index)
     {
         return nodes[index];

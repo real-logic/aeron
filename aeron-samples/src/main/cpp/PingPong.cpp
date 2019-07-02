@@ -220,6 +220,8 @@ int main(int argc, char **argv)
             std::cout << " at position=" << image.position() << " from " << image.sourceIdentity() << std::endl;
         });
 
+        context.preTouchMappedMemory(true);
+
         std::shared_ptr<Aeron> aeron = Aeron::connect(context);
 
         pongSubscriptionId = aeron->addSubscription(settings.pongChannel, settings.pongStreamId);

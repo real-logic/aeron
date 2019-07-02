@@ -191,6 +191,8 @@ int main(int argc, char **argv)
                 std::cout << " at position=" << image.position() << " from " << image.sourceIdentity() << std::endl;
             });
 
+        context.preTouchMappedMemory(true);
+
         Aeron aeron(context);
 
         subscriptionId = aeron.addSubscription(settings.pongChannel, settings.pongStreamId);

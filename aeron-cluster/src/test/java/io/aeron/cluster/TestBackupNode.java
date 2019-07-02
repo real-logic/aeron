@@ -19,6 +19,7 @@ import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.driver.MediaDriver;
 import org.agrona.CloseHelper;
+import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.status.CountersReader;
 
 public class TestBackupNode
@@ -79,6 +80,24 @@ public class TestBackupNode
     CountersReader countersReader()
     {
         return clusterBackupMediaDriver.clusterBackup().context().aeron().countersReader();
+    }
+
+    EpochClock epochClock()
+    {
+        return clusterBackupMediaDriver.clusterBackup().context().epochClock();
+    }
+
+    long nextBackupQueryDeadlineMs()
+    {
+        return ClusterTool.nextBackupQueryDeadlineMs(clusterBackupMediaDriver.clusterBackup().context().clusterDir());
+    }
+
+    boolean nextBackupQueryDeadlineMs(final long delayMs)
+    {
+        final long nowMs = clusterBackupMediaDriver.mediaDriver().context().epochClock().time();
+
+        return ClusterTool.nextBackupQueryDeadlineMs(
+            clusterBackupMediaDriver.clusterBackup().context().clusterDir(), nowMs + delayMs);
     }
 
     static class Context

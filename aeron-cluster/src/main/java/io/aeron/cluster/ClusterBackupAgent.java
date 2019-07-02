@@ -67,6 +67,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
     private final ArrayList<RecordingLog.Snapshot> snapshotsRetrieved = new ArrayList<>(4);
     private final Counter stateCounter;
     private final Counter liveLogPositionCounter;
+    private final Counter nextQueryDeadlineMsCounter;
     private final long backupResponseTimeoutMs;
     private final long backupQueryIntervalMs;
 
@@ -123,12 +124,14 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
 
         stateCounter = ctx.stateCounter();
         liveLogPositionCounter = ctx.liveLogPositionCounter();
+        nextQueryDeadlineMsCounter = ctx.nextQueryDeadlineMsCounter();
     }
 
     public void onStart()
     {
         backupArchive = AeronArchive.connect(ctx.archiveContext().clone());
         stateCounter.setOrdered(CHECK_BACKUP.code());
+        nextQueryDeadlineMsCounter.setOrdered(epochClock.time() - 1);
     }
 
     public void onClose()
@@ -644,6 +647,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
             leaderLastTermEntry = null;
         }
 
+        nextQueryDeadlineMsCounter.setOrdered(nowMs + backupQueryIntervalMs);
         state(BACKING_UP);
         return 1;
     }
@@ -652,7 +656,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
     {
         int workCount = 0;
 
-        if (nowMs > (timeOfLastBackupQueryMs + backupQueryIntervalMs))
+        if (nowMs > nextQueryDeadlineMsCounter.get())
         {
             timeOfLastBackupQueryMs = nowMs;
             state(BACKUP_QUERY);

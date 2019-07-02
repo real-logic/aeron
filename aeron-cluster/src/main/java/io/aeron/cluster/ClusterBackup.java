@@ -59,6 +59,11 @@ public final class ClusterBackup implements AutoCloseable
      */
     static final int LIVE_LOG_POSITION_TYPE_ID = 209;
 
+    /**
+     * The type id of the {@link Counter} used for the next query deadline counter.
+     */
+    static final int QUERY_DEADLINE_TYPE_ID = 210;
+
     enum State
     {
         CHECK_BACKUP(0),
@@ -275,6 +280,7 @@ public final class ClusterBackup implements AutoCloseable
         private CountedErrorHandler countedErrorHandler;
         private Counter stateCounter;
         private Counter liveLogPositionCounter;
+        private Counter nextQueryDeadlineMsCounter;
 
         private AeronArchive.Context archiveContext;
         private ShutdownSignalBarrier shutdownSignalBarrier;
@@ -390,6 +396,11 @@ public final class ClusterBackup implements AutoCloseable
             if (null == liveLogPositionCounter)
             {
                 liveLogPositionCounter = aeron.addCounter(LIVE_LOG_POSITION_TYPE_ID, "Live Log Position");
+            }
+
+            if (null == nextQueryDeadlineMsCounter)
+            {
+                nextQueryDeadlineMsCounter = aeron.addCounter(QUERY_DEADLINE_TYPE_ID, "Next Query Deadline (ms)");
             }
 
             if (null == threadFactory)
@@ -1057,6 +1068,28 @@ public final class ClusterBackup implements AutoCloseable
         public Context liveLogPositionCounter(final Counter liveLogPositionCounter)
         {
             this.liveLogPositionCounter = liveLogPositionCounter;
+            return this;
+        }
+
+        /**
+         * Get the counter for the next query deadline ms.
+         *
+         * @return the counter for the next query deadline ms.
+         */
+        public Counter nextQueryDeadlineMsCounter()
+        {
+            return nextQueryDeadlineMsCounter;
+        }
+
+        /**
+         * Set the counter for the next query deadline ms.
+         *
+         * @param nextQueryDeadlineMsCounter the counter for the next query deadline ms.
+         * @return this for a fluent API.
+         */
+        public Context nextQueryDeadlineMsCounter(final Counter nextQueryDeadlineMsCounter)
+        {
+            this.nextQueryDeadlineMsCounter = nextQueryDeadlineMsCounter;
             return this;
         }
 

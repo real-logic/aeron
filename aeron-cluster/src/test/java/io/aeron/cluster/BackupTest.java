@@ -19,6 +19,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import static io.aeron.Aeron.NULL_VALUE;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.*;
 
 @Ignore
@@ -218,6 +219,22 @@ public class BackupTest
 
             assertEquals(totalMessageCount, node.service().messageCount());
             assertTrue(node.service().wasSnapshotLoaded());
+        }
+    }
+
+    @Test(timeout = 10_000)
+    public void shouldBeAbleToGetTimeOfNextBackupQuery() throws Exception
+    {
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        {
+            cluster.awaitLeader();
+            final TestBackupNode backupNode = cluster.startClusterBackupNode(true);
+
+            cluster.awaitBackupState(ClusterBackup.State.BACKING_UP);
+
+            final long nowMs = backupNode.epochClock().time();
+
+            assertThat(backupNode.nextBackupQueryDeadlineMs(), greaterThan(nowMs));
         }
     }
 }

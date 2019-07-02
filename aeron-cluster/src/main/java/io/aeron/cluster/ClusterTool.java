@@ -19,13 +19,20 @@ import io.aeron.Aeron;
 import io.aeron.CncFileDescriptor;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.codecs.BooleanType;
+import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.ConsensusModuleProxy;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
+import org.agrona.SystemUtil;
 import org.agrona.collections.ArrayUtil;
+import org.agrona.collections.MutableBoolean;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.AtomicBuffer;
+import org.agrona.concurrent.EpochClock;
+import org.agrona.concurrent.SystemEpochClock;
+import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
 import java.io.PrintStream;
@@ -48,6 +55,7 @@ import static io.aeron.Aeron.NULL_VALUE;
  *      list-members: print leader memberId, active members list, and passive members list
  *     remove-member: [memberId] requests node (if leader) to remove member specified in memberId
  *    remove-passive: [memberId] requests node (if leader) to remove passive member specified in memberId
+ *      backup-query: [delay] schedules (or displays) time of next backup query for cluster backup
  * </pre>
  */
 public class ClusterTool
@@ -117,6 +125,20 @@ public class ClusterTool
                     System.exit(-1);
                 }
                 removeMember(System.out, clusterDir, Integer.parseInt(args[2]), true);
+                break;
+
+            case "backup-query":
+                if (args.length < 3)
+                {
+                    printNextBackupQuery(System.out, clusterDir);
+                }
+                else
+                {
+                    nextBackupQuery(
+                        System.out,
+                        clusterDir,
+                        TimeUnit.NANOSECONDS.toMillis(SystemUtil.parseDuration("delayNs", args[2])));
+                }
                 break;
         }
     }
@@ -229,6 +251,56 @@ public class ClusterTool
                 if (!removeMember(markFile, memberId, isPassive))
                 {
                     out.println("could not send remove member request");
+                }
+            }
+        }
+        else
+        {
+            out.println(ClusterMarkFile.FILENAME + " does not exist.");
+        }
+    }
+
+    public static void printNextBackupQuery(final PrintStream out, final File clusterDir)
+    {
+        if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
+        {
+            try (ClusterMarkFile markFile = openMarkFile(clusterDir, System.out::println))
+            {
+                if (markFile.decoder().componentType() != ClusterComponentType.BACKUP)
+                {
+                    out.println("not a cluster backup node");
+                }
+                else
+                {
+                    out.format("%2$tF %1$tH:%1$tM:%1$tS next: %2$tF %2$tH:%2$tM:%2$tS%n",
+                        new Date(),
+                        new Date(nextBackupQueryDeadlineMs(markFile)));
+                }
+            }
+        }
+        else
+        {
+            out.println(ClusterMarkFile.FILENAME + " does not exist.");
+        }
+    }
+
+    public static void nextBackupQuery(final PrintStream out, final File clusterDir, final long delayMs)
+    {
+        if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
+        {
+            try (ClusterMarkFile markFile = openMarkFile(clusterDir, System.out::println))
+            {
+                if (markFile.decoder().componentType() != ClusterComponentType.BACKUP)
+                {
+                    out.println("not a cluster backup node");
+                }
+                else
+                {
+                    final EpochClock epochClock = new SystemEpochClock();
+                    nextBackupQueryDeadlineMs(markFile, epochClock.time() + delayMs);
+                    out.format("%2$tF %1$tH:%1$tM:%1$tS setting next: %2$tF %2$tH:%2$tM:%2$tS%n",
+                        new Date(),
+                        new Date(nextBackupQueryDeadlineMs(markFile)));
                 }
             }
         }
@@ -370,6 +442,76 @@ public class ClusterTool
         return false;
     }
 
+    public static long nextBackupQueryDeadlineMs(final File clusterDir)
+    {
+        if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
+        {
+            try (ClusterMarkFile markFile = openMarkFile(clusterDir, null))
+            {
+                return nextBackupQueryDeadlineMs(markFile);
+            }
+        }
+
+        return NULL_VALUE;
+    }
+
+    public static long nextBackupQueryDeadlineMs(final ClusterMarkFile markFile)
+    {
+        final String aeronDirectoryName = markFile.decoder().aeronDirectory();
+        final MutableLong nextQueryMs = new MutableLong(NULL_VALUE);
+
+        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDirectoryName)))
+        {
+            aeron.countersReader().forEach((counterId, typeId, keyBuffer, label) ->
+            {
+                if (ClusterBackup.QUERY_DEADLINE_TYPE_ID == typeId)
+                {
+                    nextQueryMs.value = aeron.countersReader().getCounterValue(counterId);
+                }
+            });
+        }
+
+        return nextQueryMs.value;
+    }
+
+    public static boolean nextBackupQueryDeadlineMs(final File clusterDir, final long timeMs)
+    {
+        if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
+        {
+            try (ClusterMarkFile markFile = openMarkFile(clusterDir, null))
+            {
+                return nextBackupQueryDeadlineMs(markFile, timeMs);
+            }
+        }
+
+        return false;
+    }
+
+    public static boolean nextBackupQueryDeadlineMs(final ClusterMarkFile markFile, final long timeMs)
+    {
+        final String aeronDirectoryName = markFile.decoder().aeronDirectory();
+        final MutableBoolean result = new MutableBoolean(false);
+
+        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDirectoryName)))
+        {
+            final CountersReader countersReader = aeron.countersReader();
+
+            countersReader.forEach((counterId, typeId, keyBuffer, label) ->
+            {
+                if (ClusterBackup.QUERY_DEADLINE_TYPE_ID == typeId)
+                {
+                    final AtomicCounter atomicCounter = new AtomicCounter(
+                        countersReader.valuesBuffer(), counterId, null);
+
+                    atomicCounter.setOrdered(timeMs);
+                    result.value = true;
+                }
+            });
+        }
+
+        return result.value;
+    }
+
     private static ClusterMarkFile openMarkFile(final File clusterDir, final Consumer<String> logger)
     {
         return new ClusterMarkFile(clusterDir, ClusterMarkFile.FILENAME, System::currentTimeMillis, TIMEOUT_MS, logger);
@@ -435,5 +577,6 @@ public class ClusterTool
         out.println("  recovery-plan: [service count] prints recovery plan of cluster component.");
         out.println("  recording-log: prints recording log of cluster component.");
         out.println("  errors: prints Aeron and cluster component error logs.");
+        out.println("  backup-query: [delayNs] display time of next backup query or set time of next backup query.");
     }
 }

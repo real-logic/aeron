@@ -68,6 +68,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
     private final Counter stateCounter;
     private final Counter liveLogPositionCounter;
     private final Counter nextQueryDeadlineMsCounter;
+    private final ClusterBackupEventsListener eventsListener;
     private final long backupResponseTimeoutMs;
     private final long backupQueryIntervalMs;
 
@@ -113,6 +114,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
         this.backupQueryIntervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.clusterBackupIntervalNs());
         this.idleStrategy = ctx.idleStrategy();
         this.markFile = ctx.clusterMarkFile();
+        this.eventsListener = ctx.eventsListener();
 
         this.clusterMemberStatusEndpoints = ctx.clusterMembersStatusEndpoints().split(",");
 
@@ -272,6 +274,11 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
     {
         if (counterId == liveLogRecCounterId)
         {
+            if (null != eventsListener)
+            {
+                eventsListener.onPossibleClusterFailure();
+            }
+
             reset();
             state(CHECK_BACKUP);
         }
@@ -357,6 +364,11 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
 
             clusterMembers = ClusterMember.parse(backupResponseDecoder.clusterMembers());
             leaderMember = ClusterMember.findMember(clusterMembers, leaderMemberId);
+
+            if (null != eventsListener)
+            {
+                eventsListener.onBackupResponse(clusterMembers, leaderMember, snapshotsToRetrieve);
+            }
 
             final ChannelUri leaderArchiveUri = ChannelUri.parse(ctx.archiveContext().controlRequestChannel());
             leaderArchiveUri.put(ENDPOINT_PARAM_NAME, leaderMember.archiveEndpoint());
@@ -600,6 +612,8 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
 
     private int updateRecordingLog(final long nowMs)
     {
+        boolean wasRecordingLogUpdated = false;
+
         if (null != leaderLogEntry && recordingLog.isUnknown(leaderLogEntry.leadershipTermId))
         {
             recordingLog.appendTerm(
@@ -609,6 +623,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
                 NULL_VALUE);
 
             recordingLog.force();
+            wasRecordingLogUpdated = true;
 
             leaderLogEntry = null;
         }
@@ -629,9 +644,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
             }
 
             recordingLog.force();
-
-            snapshotsRetrieved.clear();
-            snapshotsToRetrieve.clear();
+            wasRecordingLogUpdated = true;
         }
 
         if (null != leaderLastTermEntry && recordingLog.isUnknown(leaderLastTermEntry.leadershipTermId))
@@ -643,9 +656,18 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
                 NULL_VALUE);
 
             recordingLog.force();
+            wasRecordingLogUpdated = true;
 
             leaderLastTermEntry = null;
         }
+
+        if (wasRecordingLogUpdated && null != eventsListener)
+        {
+            eventsListener.onUpdatedRecordingLog(recordingLog, snapshotsRetrieved);
+        }
+
+        snapshotsRetrieved.clear();
+        snapshotsToRetrieve.clear();
 
         nextQueryDeadlineMsCounter.setOrdered(nowMs + backupQueryIntervalMs);
         state(BACKING_UP);
@@ -669,6 +691,11 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
 
             if (liveLogPositionCounter.proposeMaxOrdered(liveLogPosition))
             {
+                if (null != eventsListener)
+                {
+                    eventsListener.onLiveLogProgress(liveLogRecordingId, liveLogRecCounterId, liveLogPosition);
+                }
+
                 workCount += 1;
             }
         }
@@ -679,6 +706,12 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
     private void state(final ClusterBackup.State newState)
     {
         stateChange(this.state, newState);
+
+        if (BACKUP_QUERY == newState && null != eventsListener)
+        {
+            eventsListener.onBackupQuery();
+        }
+
         stateCounter.setOrdered(newState.code());
         this.state = newState;
     }

@@ -285,6 +285,7 @@ public final class ClusterBackup implements AutoCloseable
         private AeronArchive.Context archiveContext;
         private ShutdownSignalBarrier shutdownSignalBarrier;
         private Runnable terminationHook;
+        private ClusterBackupEventsListener eventsListener;
 
         /**
          * Perform a shallow copy of the object.
@@ -1090,6 +1091,30 @@ public final class ClusterBackup implements AutoCloseable
         public Context nextQueryDeadlineMsCounter(final Counter nextQueryDeadlineMsCounter)
         {
             this.nextQueryDeadlineMsCounter = nextQueryDeadlineMsCounter;
+            return this;
+        }
+
+        /**
+         * Get the {@link ClusterBackupEventsListener} in use for the backup agent.
+         *
+         * @return {@link ClusterBackupEventsListener} in use for the backup agent.
+         * @see ClusterBackupEventsListener
+         */
+        public ClusterBackupEventsListener eventsListener()
+        {
+            return eventsListener;
+        }
+
+        /**
+         * Set the {@link ClusterBackupEventsListener} to use for the backup agent.
+         *
+         * @param eventsListener to use for the backup agent.
+         * @return this for a fluent API.
+         * @see ClusterBackupEventsListener
+         */
+        public Context eventsListener(final ClusterBackupEventsListener eventsListener)
+        {
+            this.eventsListener = eventsListener;
             return this;
         }
 

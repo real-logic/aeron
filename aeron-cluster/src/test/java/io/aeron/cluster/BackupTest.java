@@ -31,7 +31,7 @@ public class BackupTest
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
             cluster.awaitLeader();
-            final TestBackupNode backupNode = cluster.startClusterBackupNode(true);
+            cluster.startClusterBackupNode(true);
 
             cluster.awaitBackupState(ClusterBackup.State.BACKING_UP);
             cluster.awaitBackupLiveLogPosition(cluster.findLeader().service().cluster().logPosition());
@@ -60,7 +60,7 @@ public class BackupTest
 
             final long logPosition = leader.service().cluster().logPosition();
 
-            final TestBackupNode backupNode = cluster.startClusterBackupNode(true);
+            cluster.startClusterBackupNode(true);
 
             cluster.awaitBackupState(ClusterBackup.State.BACKING_UP);
             cluster.awaitBackupLiveLogPosition(logPosition);
@@ -81,7 +81,7 @@ public class BackupTest
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
             final TestNode leader = cluster.awaitLeader();
-            final TestBackupNode backupNode = cluster.startClusterBackupNode(true);
+            cluster.startClusterBackupNode(true);
 
             cluster.awaitBackupState(ClusterBackup.State.BACKING_UP);
 
@@ -123,7 +123,7 @@ public class BackupTest
 
             final long logPosition = leader.service().cluster().logPosition();
 
-            final TestBackupNode backupNode = cluster.startClusterBackupNode(true);
+            cluster.startClusterBackupNode(true);
 
             cluster.awaitBackupState(ClusterBackup.State.BACKING_UP);
             cluster.awaitBackupLiveLogPosition(logPosition);
@@ -164,7 +164,7 @@ public class BackupTest
 
             final long logPosition = leader.service().cluster().logPosition();
 
-            final TestBackupNode backupNode = cluster.startClusterBackupNode(true);
+            cluster.startClusterBackupNode(true);
 
             cluster.awaitBackupState(ClusterBackup.State.BACKING_UP);
             cluster.awaitBackupLiveLogPosition(logPosition);
@@ -200,7 +200,7 @@ public class BackupTest
             cluster.awaitSnapshotCounter(cluster.node(1), 1);
             cluster.awaitSnapshotCounter(cluster.node(2), 1);
 
-            final TestBackupNode backupNode = cluster.startClusterBackupNode(true);
+            cluster.startClusterBackupNode(true);
 
             cluster.sendMessages(postSnapshotMessageCount);
             cluster.awaitResponses(totalMessageCount);
@@ -235,6 +235,39 @@ public class BackupTest
             final long nowMs = backupNode.epochClock().time();
 
             assertThat(backupNode.nextBackupQueryDeadlineMs(), greaterThan(nowMs));
+        }
+    }
+
+    @Test(timeout = 20_000)
+    public void shouldBackupClusterNoSnapshotsAndNonEmptyLogAfterFailure() throws Exception
+    {
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        {
+            final TestNode leader = cluster.awaitLeader();
+
+            cluster.connectClient();
+            cluster.sendMessages(10);
+            cluster.awaitResponses(10);
+            cluster.awaitMessageCountForService(leader, 10);
+
+            cluster.stopNode(leader);
+
+            final TestNode nextLeader = cluster.awaitLeader();
+
+            final long logPosition = nextLeader.service().cluster().logPosition();
+
+            cluster.startClusterBackupNode(true);
+
+            cluster.awaitBackupState(ClusterBackup.State.BACKING_UP);
+            cluster.awaitBackupLiveLogPosition(logPosition);
+
+            cluster.stopAllNodes();
+
+            final TestNode node = cluster.startStaticNodeFromBackup();
+            cluster.awaitLeader();
+
+            assertEquals(10, node.service().messageCount());
+            assertFalse(node.service().wasSnapshotLoaded());
         }
     }
 }

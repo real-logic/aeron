@@ -121,6 +121,8 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
         aeronClientInvoker = aeron.conductorAgentInvoker();
         aeronClientInvoker.invoke();
 
+        aeron.addUnavailableCounterHandler(this);
+
         memberStatusSubscription = aeron.addSubscription(
             ctx.memberStatusChannel(), ctx.memberStatusStreamId());
 
@@ -180,6 +182,10 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
                 workCount += updateRecordingLog(nowMs);
                 break;
 
+            case RESET_BACKUP:
+                workCount += resetBackup(nowMs);
+                break;
+
             case BACKING_UP:
                 workCount += backingUp(nowMs);
                 break;
@@ -214,17 +220,11 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
         // TODO: stop live log replay if active, stop live log recording if active
         // TODO: stop any ongoing snapshot retrieval
 
-        CloseHelper.close(memberStatusSubscription);
-        memberStatusSubscription = null;
-
         CloseHelper.close(memberStatusPublication);
         memberStatusPublication = null;
 
         CloseHelper.close(snapshotRetrieveSubscription);
         snapshotRetrieveSubscription = null;
-
-        CloseHelper.close(backupArchive);
-        backupArchive = null;
 
         CloseHelper.close(clusterArchive);
         clusterArchive = null;
@@ -236,6 +236,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
         liveLogRecCounterId = NULL_COUNTER_ID;
         liveLogRecordingId = NULL_VALUE;
         liveLogReplayId = NULL_VALUE;
+        liveLogReplaySubscriptionId = NULL_VALUE;
     }
 
     public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
@@ -279,8 +280,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
                 eventsListener.onPossibleClusterFailure();
             }
 
-            reset();
-            state(CHECK_BACKUP);
+            state(RESET_BACKUP);
         }
     }
 
@@ -399,6 +399,13 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
 
         state(BACKUP_QUERY);
         return 0;
+    }
+
+    private int resetBackup(final long nowMs)
+    {
+        reset();
+        state(CHECK_BACKUP);
+        return 1;
     }
 
     private int backupQuery(final long nowMs)
@@ -580,6 +587,12 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
 
                     liveLogRecordingId = RecordingPos.getRecordingId(countersReader, liveLogRecCounterId);
                     timeOfLastBackupQueryMs = nowMs;
+
+                    clusterArchiveAsyncConnect.close();
+                    clusterArchiveAsyncConnect = null;
+                    clusterArchive.close();
+                    clusterArchive = null;
+
                     state(UPDATE_RECORDING_LOG);
                 }
             }
@@ -718,7 +731,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
 
     private void stateChange(final ClusterBackup.State oldState, final ClusterBackup.State newState)
     {
-//        System.out.println(oldState + " -> " + newState);
+        //System.out.println(oldState + " -> " + newState);
     }
 
     private static boolean pollForResponse(final AeronArchive archive, final long correlationId)

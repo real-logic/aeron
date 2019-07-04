@@ -94,7 +94,7 @@ std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t regis
         switch (state.m_status)
         {
             case RegistrationStatus::AWAITING_MEDIA_DRIVER:
-                if (m_epochClock() > (state.m_timeOfRegistration + m_driverTimeoutMs))
+                if (m_epochClock() > (state.m_timeOfRegistrationMs + m_driverTimeoutMs))
                 {
                     throw DriverTimeoutException(
                         "no response from driver in " + std::to_string(m_driverTimeoutMs) + " ms", SOURCEINFO);
@@ -183,7 +183,7 @@ std::shared_ptr<ExclusivePublication> ClientConductor::findExclusivePublication(
         switch (state.m_status)
         {
             case RegistrationStatus::AWAITING_MEDIA_DRIVER:
-                if (m_epochClock() > (state.m_timeOfRegistration + m_driverTimeoutMs))
+                if (m_epochClock() > (state.m_timeOfRegistrationMs + m_driverTimeoutMs))
                 {
                     throw DriverTimeoutException(
                         "no response from driver in " + std::to_string(m_driverTimeoutMs) + " ms", SOURCEINFO);
@@ -279,7 +279,7 @@ std::shared_ptr<Subscription> ClientConductor::findSubscription(std::int64_t reg
 
     if (!sub && RegistrationStatus::AWAITING_MEDIA_DRIVER == state.m_status)
     {
-        if (m_epochClock() > (state.m_timeOfRegistration + m_driverTimeoutMs))
+        if (m_epochClock() > (state.m_timeOfRegistrationMs + m_driverTimeoutMs))
         {
             throw DriverTimeoutException(
                 "no response from driver in " + std::to_string(m_driverTimeoutMs) + " ms", SOURCEINFO);
@@ -376,7 +376,7 @@ std::shared_ptr<Counter> ClientConductor::findCounter(std::int64_t registrationI
 
     if (!counter && RegistrationStatus::AWAITING_MEDIA_DRIVER == state.m_status)
     {
-        if (m_epochClock() > (state.m_timeOfRegistration + m_driverTimeoutMs))
+        if (m_epochClock() > (state.m_timeOfRegistrationMs + m_driverTimeoutMs))
         {
             throw DriverTimeoutException(
                 "no response from driver in " + std::to_string(m_driverTimeoutMs) + " ms", SOURCEINFO);
@@ -740,7 +740,7 @@ void ClientConductor::onAvailableImage(
 void ClientConductor::onUnavailableImage(std::int64_t correlationId, std::int64_t subscriptionRegistrationId)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
-    const long long now = m_epochClock();
+    const long long nowMs = m_epochClock();
 
     std::for_each(m_subscriptions.begin(), m_subscriptions.end(),
         [&](const SubscriptionStateDefn &entry)
@@ -759,8 +759,8 @@ void ClientConductor::onUnavailableImage(std::int64_t correlationId, std::int64_
                     {
                         Image *oldArray = oldImageList->m_images;
 
-                        lingerResource(now, oldArray[index].logBuffers());
-                        lingerResource(now, oldImageList);
+                        lingerResource(nowMs, oldArray[index].logBuffers());
+                        lingerResource(nowMs, oldImageList);
                         entry.m_onUnavailableImageHandler(oldArray[index]);
                     }
                 }
@@ -773,16 +773,16 @@ void ClientConductor::onClientTimeout(std::int64_t clientId)
     if (m_driverProxy.clientId() == clientId && !isClosed())
     {
         std::lock_guard<std::recursive_mutex> lock(m_adminLock);
-        const long long now = m_epochClock();
+        const long long nowMs = m_epochClock();
 
-        closeAllResources(now);
+        closeAllResources(nowMs);
 
         ClientTimeoutException exception("client timeout from driver", SOURCEINFO);
         m_errorHandler(exception);
     }
 }
 
-void ClientConductor::closeAllResources(long long now)
+void ClientConductor::closeAllResources(long long nowMs)
 {
     forceClose();
 
@@ -819,29 +819,29 @@ void ClientConductor::closeAllResources(long long now)
 
             if (nullptr != sub)
             {
-                lingerAllResources(now, sub->removeAndCloseAllImages());
+                lingerAllResources(nowMs, sub->removeAndCloseAllImages());
             }
         });
 
     m_subscriptions.clear();
 }
 
-void ClientConductor::onCheckManagedResources(long long now)
+void ClientConductor::onCheckManagedResources(long long nowMs)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
     auto logIt = std::remove_if(m_lingeringLogBuffers.begin(), m_lingeringLogBuffers.end(),
-        [now, this](const LogBuffersLingerDefn &entry)
+        [nowMs, this](const LogBuffersLingerDefn &entry)
         {
-            return now > (entry.m_timeOfLastStatusChange + m_resourceLingerTimeoutMs);
+            return nowMs > (entry.m_timeOfLastStatusChangeMs + m_resourceLingerTimeoutMs);
         });
 
     m_lingeringLogBuffers.erase(logIt, m_lingeringLogBuffers.end());
 
     auto arrayIt = std::remove_if(m_lingeringImageLists.begin(), m_lingeringImageLists.end(),
-        [now, this](ImageListLingerDefn &entry)
+        [nowMs, this](ImageListLingerDefn &entry)
         {
-            if (now > (entry.m_timeOfLastStatusChange + m_resourceLingerTimeoutMs))
+            if (nowMs > (entry.m_timeOfLastStatusChangeMs + m_resourceLingerTimeoutMs))
             {
                 delete[] entry.m_imageList->m_images;
                 delete entry.m_imageList;
@@ -855,26 +855,26 @@ void ClientConductor::onCheckManagedResources(long long now)
     m_lingeringImageLists.erase(arrayIt, m_lingeringImageLists.end());
 }
 
-void ClientConductor::lingerResource(long long now, struct ImageList *imageList)
+void ClientConductor::lingerResource(long long nowMs, struct ImageList *imageList)
 {
-    m_lingeringImageLists.emplace_back(now, imageList);
+    m_lingeringImageLists.emplace_back(nowMs, imageList);
 }
 
-void ClientConductor::lingerResource(long long now, std::shared_ptr<LogBuffers> logBuffers)
+void ClientConductor::lingerResource(long long nowMs, std::shared_ptr<LogBuffers> logBuffers)
 {
-    m_lingeringLogBuffers.emplace_back(now, logBuffers);
+    m_lingeringLogBuffers.emplace_back(nowMs, logBuffers);
 }
 
-void ClientConductor::lingerAllResources(long long now, struct ImageList *imageList)
+void ClientConductor::lingerAllResources(long long nowMs, struct ImageList *imageList)
 {
     if (nullptr != imageList)
     {
         for (std::size_t i = 0; i < imageList->m_length; i++)
         {
-            lingerResource(now, imageList->m_images[i].logBuffers());
+            lingerResource(nowMs, imageList->m_images[i].logBuffers());
         }
 
-        lingerResource(now, imageList);
+        lingerResource(nowMs, imageList);
     }
 }
 

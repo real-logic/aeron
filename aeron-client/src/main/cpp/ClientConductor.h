@@ -72,9 +72,9 @@ public:
         m_onNewSubscriptionHandler(newSubscriptionHandler),
         m_errorHandler(errorHandler),
         m_epochClock(std::move(epochClock)),
-        m_timeOfLastKeepalive(m_epochClock()),
-        m_timeOfLastCheckManagedResources(m_epochClock()),
-        m_timeOfLastDoWork(m_epochClock()),
+        m_timeOfLastKeepaliveMs(m_epochClock()),
+        m_timeOfLastCheckManagedResourcesMs(m_epochClock()),
+        m_timeOfLastDoWorkMs(m_epochClock()),
         m_driverTimeoutMs(driverTimeoutMs),
         m_resourceLingerTimeoutMs(resourceLingerTimeoutMs),
         m_interServiceTimeoutMs(static_cast<long>(interServiceTimeoutNs / 1000000)),
@@ -171,7 +171,7 @@ public:
 
     void onClientTimeout(std::int64_t clientId);
 
-    void closeAllResources(long long now);
+    void closeAllResources(long long nowMs);
 
     void addDestination(std::int64_t publicationRegistrationId, const std::string& endpointChannel);
     void removeDestination(std::int64_t publicationRegistrationId, const std::string& endpointChannel);
@@ -224,11 +224,11 @@ public:
     }
 
 protected:
-    void onCheckManagedResources(long long now);
+    void onCheckManagedResources(long long nowMs);
 
-    void lingerResource(long long now, struct ImageList *imageList);
-    void lingerResource(long long now, std::shared_ptr<LogBuffers> logBuffers);
-    void lingerAllResources(long long now, struct ImageList *imageList);
+    void lingerResource(long long nowMs, struct ImageList *imageList);
+    void lingerResource(long long nowMs, std::shared_ptr<LogBuffers> logBuffers);
+    void lingerAllResources(long long nowMs, struct ImageList *imageList);
 
 private:
     enum class RegistrationStatus
@@ -245,7 +245,7 @@ private:
         std::int32_t m_sessionId = -1;
         std::int32_t m_publicationLimitCounterId = -1;
         std::int32_t m_channelStatusId = -1;
-        long long m_timeOfRegistration;
+        long long m_timeOfRegistrationMs;
         RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
         std::int32_t m_errorCode;
         std::string m_errorMessage;
@@ -253,11 +253,11 @@ private:
         std::weak_ptr<Publication> m_publication;
 
         PublicationStateDefn(
-            const std::string& channel, std::int64_t registrationId, std::int32_t streamId, long long now) :
+            const std::string& channel, std::int64_t registrationId, std::int32_t streamId, long long nowMs) :
             m_channel(channel),
             m_registrationId(registrationId),
             m_streamId(streamId),
-            m_timeOfRegistration(now)
+            m_timeOfRegistrationMs(nowMs)
         {
         }
     };
@@ -271,7 +271,7 @@ private:
         std::int32_t m_sessionId = -1;
         std::int32_t m_publicationLimitCounterId = -1;
         std::int32_t m_channelStatusId = -1;
-        long long m_timeOfRegistration;
+        long long m_timeOfRegistrationMs;
         RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
         std::int32_t m_errorCode;
         std::string m_errorMessage;
@@ -279,11 +279,11 @@ private:
         std::weak_ptr<ExclusivePublication> m_publication;
 
         ExclusivePublicationStateDefn(
-            const std::string& channel, std::int64_t registrationId, std::int32_t streamId, long long now) :
+            const std::string& channel, std::int64_t registrationId, std::int32_t streamId, long long nowMs) :
             m_channel(channel),
             m_registrationId(registrationId),
             m_streamId(streamId),
-            m_timeOfRegistration(now)
+            m_timeOfRegistrationMs(nowMs)
         {
         }
     };
@@ -293,7 +293,7 @@ private:
         std::string m_channel;
         std::int64_t m_registrationId;
         std::int32_t m_streamId;
-        long long m_timeOfRegistration;
+        long long m_timeOfRegistrationMs;
         RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
         std::int32_t m_errorCode;
         std::string m_errorMessage;
@@ -306,13 +306,13 @@ private:
             const std::string& channel,
             std::int64_t registrationId,
             std::int32_t streamId,
-            long long now,
+            long long nowMs,
             const on_available_image_t &onAvailableImageHandler,
             const on_unavailable_image_t &onUnavailableImageHandler) :
             m_channel(channel),
             m_registrationId(registrationId),
             m_streamId(streamId),
-            m_timeOfRegistration(now),
+            m_timeOfRegistrationMs(nowMs),
             m_onAvailableImageHandler(onAvailableImageHandler),
             m_onUnavailableImageHandler(onUnavailableImageHandler)
         {
@@ -323,27 +323,27 @@ private:
     {
         std::int64_t m_registrationId;
         std::int32_t m_counterId = -1;
-        long long m_timeOfRegistration;
+        long long m_timeOfRegistrationMs;
         RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
         std::int32_t m_errorCode;
         std::string m_errorMessage;
         std::shared_ptr<Counter> m_counterCache;
         std::weak_ptr<Counter> m_counter;
 
-        CounterStateDefn(std::int64_t registrationId, long long now) :
+        CounterStateDefn(std::int64_t registrationId, long long nowMs) :
             m_registrationId(registrationId),
-            m_timeOfRegistration(now)
+            m_timeOfRegistrationMs(nowMs)
         {
         }
     };
 
     struct ImageListLingerDefn
     {
-        long long m_timeOfLastStatusChange;
+        long long m_timeOfLastStatusChangeMs;
         struct ImageList *m_imageList;
 
-        ImageListLingerDefn(long long now, struct ImageList *imageList) :
-            m_timeOfLastStatusChange(now),
+        ImageListLingerDefn(long long nowMs, struct ImageList *imageList) :
+            m_timeOfLastStatusChangeMs(nowMs),
             m_imageList(imageList)
         {
         }
@@ -351,11 +351,11 @@ private:
 
     struct LogBuffersLingerDefn
     {
-        long long m_timeOfLastStatusChange;
+        long long m_timeOfLastStatusChangeMs;
         std::shared_ptr<LogBuffers> m_logBuffers;
 
-        LogBuffersLingerDefn(long long now, std::shared_ptr<LogBuffers> buffers) :
-            m_timeOfLastStatusChange(now),
+        LogBuffersLingerDefn(long long nowMs, std::shared_ptr<LogBuffers> buffers) :
+            m_timeOfLastStatusChangeMs(nowMs),
             m_logBuffers(std::move(buffers))
         {
         }
@@ -386,9 +386,9 @@ private:
     std::vector<on_unavailable_counter_t> m_onUnavailableCounterHandlers;
 
     epoch_clock_t m_epochClock;
-    long long m_timeOfLastKeepalive;
-    long long m_timeOfLastCheckManagedResources;
-    long long m_timeOfLastDoWork;
+    long long m_timeOfLastKeepaliveMs;
+    long long m_timeOfLastCheckManagedResourcesMs;
+    long long m_timeOfLastDoWorkMs;
     long m_driverTimeoutMs;
     long m_resourceLingerTimeoutMs;
     long m_interServiceTimeoutMs;
@@ -399,25 +399,25 @@ private:
 
     inline int onHeartbeatCheckTimeouts()
     {
-        const long long now = m_epochClock();
+        const long long nowMs = m_epochClock();
         int result = 0;
 
-        if (now > (m_timeOfLastDoWork + m_interServiceTimeoutMs))
+        if (nowMs > (m_timeOfLastDoWorkMs + m_interServiceTimeoutMs))
         {
-            closeAllResources(now);
+            closeAllResources(nowMs);
 
             ConductorServiceTimeoutException exception(
                 "timeout between service calls over " + std::to_string(m_interServiceTimeoutMs) + " ms", SOURCEINFO);
             m_errorHandler(exception);
         }
 
-        m_timeOfLastDoWork = now;
+        m_timeOfLastDoWorkMs = nowMs;
 
-        if (now > (m_timeOfLastKeepalive + KEEPALIVE_TIMEOUT_MS))
+        if (nowMs > (m_timeOfLastKeepaliveMs + KEEPALIVE_TIMEOUT_MS))
         {
             m_driverProxy.sendClientKeepalive();
 
-            if (now > (m_driverProxy.timeOfLastDriverKeepalive() + m_driverTimeoutMs))
+            if (nowMs > (m_driverProxy.timeOfLastDriverKeepalive() + m_driverTimeoutMs))
             {
                 m_driverActive = false;
 
@@ -426,14 +426,14 @@ private:
                 m_errorHandler(exception);
             }
 
-            m_timeOfLastKeepalive = now;
+            m_timeOfLastKeepaliveMs = nowMs;
             result = 1;
         }
 
-        if (now > (m_timeOfLastCheckManagedResources + RESOURCE_TIMEOUT_MS))
+        if (nowMs > (m_timeOfLastCheckManagedResourcesMs + RESOURCE_TIMEOUT_MS))
         {
-            onCheckManagedResources(now);
-            m_timeOfLastCheckManagedResources = now;
+            onCheckManagedResources(nowMs);
+            m_timeOfLastCheckManagedResourcesMs = nowMs;
             result = 1;
         }
 

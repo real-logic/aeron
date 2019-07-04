@@ -63,6 +63,11 @@ public class AeronStat
     private static final String DELAY = "delay";
 
     /**
+     * Whether to watch for updates or run once.
+     */
+    private static final String WATCH = "watch";
+
+    /**
      * Types of the counters.
      * <ul>
      * <li>0: System Counters</li>
@@ -128,6 +133,7 @@ public class AeronStat
     public static void main(final String[] args) throws Exception
     {
         long delayMs = 1000L;
+        boolean watch = true;
         Pattern typeFilter = null;
         Pattern identityFilter = null;
         Pattern sessionFilter = null;
@@ -152,6 +158,10 @@ public class AeronStat
 
                 switch (argName)
                 {
+                    case WATCH:
+                        watch = Boolean.parseBoolean(argValue);
+                        break;
+
                     case DELAY:
                         delayMs = Long.parseLong(argValue) * 1000L;
                         break;
@@ -191,16 +201,20 @@ public class AeronStat
             sessionFilter,
             streamFilter,
             channelFilter);
-        final AtomicBoolean running = new AtomicBoolean(true);
+
+        final AtomicBoolean running = new AtomicBoolean(watch);
         SigInt.register(() -> running.set(false));
 
         final String header =
             " - Aeron Stat (CnC v" + SemanticVersion.toString(cncFileVersion.get()) + "), pid " + SystemUtil.getPid();
         final SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
 
-        while (running.get())
+        do
         {
-            clearScreen();
+            if (watch)
+            {
+                clearScreen();
+            }
 
             System.out.print(dateFormat.format(new Date()));
             System.out.println(header);
@@ -209,8 +223,13 @@ public class AeronStat
             aeronStat.print(System.out);
             System.out.println("--");
 
-            Thread.sleep(delayMs);
+            if (watch)
+            {
+                Thread.sleep(delayMs);
+            }
+
         }
+        while (running.get());
     }
 
     public void print(final PrintStream out)
@@ -235,6 +254,7 @@ public class AeronStat
                 System.out.format(
                     "Usage: [-Daeron.dir=<directory containing CnC file>] AeronStat%n" +
                     "\t[delay=<seconds between updates>]%n" +
+                    "\t[watch=<true|false>]%n" +
                     "filter by optional regex patterns:%n" +
                     "\t[type=<pattern>]%n" +
                     "\t[identity=<pattern>]%n" +

@@ -1,3 +1,18 @@
+/*
+ * Copyright 2014-2019 Real Logic Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.aeron.samples;
 
 import io.aeron.CncFileDescriptor;
@@ -6,7 +21,8 @@ import io.aeron.exceptions.AeronException;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
 import org.agrona.SemanticVersion;
-import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
@@ -16,15 +32,16 @@ import static io.aeron.CncFileDescriptor.*;
 import static io.aeron.samples.SamplesUtil.mapExistingFileReadOnly;
 
 /**
- * A utility class for interpreting the cnc file.
+ * Reader for Aeron CnC file represented by {@link CncFileDescriptor} which can be used for observability.
  */
 public final class CncFileReader implements AutoCloseable
 {
-    private final MappedByteBuffer cncByteBuffer;
+    private boolean isClosed = false;
     private final int cncVersion;
-    private final CountersReader countersReader;
-    private final ManyToOneRingBuffer toDriverBuffer;
     private final String cncSemanticVersion;
+    private final MappedByteBuffer cncByteBuffer;
+    private final CountersReader countersReader;
+    private final UnsafeBuffer toDriverBuffer;
 
     private CncFileReader(final MappedByteBuffer cncByteBuffer)
     {
@@ -46,8 +63,7 @@ public final class CncFileReader implements AutoCloseable
         this.cncVersion = cncVersion;
         this.cncSemanticVersion = SemanticVersion.toString(cncVersion);
 
-        this.toDriverBuffer = new ManyToOneRingBuffer(
-            CncFileDescriptor.createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer));
+        this.toDriverBuffer = CncFileDescriptor.createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer);
 
         this.countersReader = new CountersReader(
             createCountersMetaDataBuffer(cncByteBuffer, cncMetaDataBuffer),
@@ -64,6 +80,7 @@ public final class CncFileReader implements AutoCloseable
     {
         final File cncFile = CommonContext.newDefaultCncFile();
         final MappedByteBuffer cncByteBuffer = mapExistingFileReadOnly(cncFile);
+
         return new CncFileReader(cncByteBuffer);
     }
 
@@ -98,13 +115,16 @@ public final class CncFileReader implements AutoCloseable
     }
 
     /**
-     * Get the timestamp (ms) of the last driver heartbeat.
+     * Get the epoch timestamp (ms) of the last driver heartbeat.
      *
-     * @return the timestamp (ms) of the last driver heartbeat.
+     * @return the epoch timestamp (ms) of the last driver heartbeat.
      */
-    public long driverHeartbeat()
+    public long driverHeartbeatMs()
     {
-        return toDriverBuffer.consumerHeartbeatTime();
+        final int timestampOffset = (toDriverBuffer.capacity() - RingBufferDescriptor.TRAILER_LENGTH) +
+            RingBufferDescriptor.CONSUMER_HEARTBEAT_OFFSET;
+
+        return toDriverBuffer.getLongVolatile(timestampOffset);
     }
 
     /**
@@ -112,14 +132,17 @@ public final class CncFileReader implements AutoCloseable
      *
      * @return the number of milliseconds since the last driver heartbeat.
      */
-    public long driverHeartbeatAge()
+    public long driverHeartbeatAgeMs()
     {
-        return System.currentTimeMillis() - driverHeartbeat();
+        return System.currentTimeMillis() - driverHeartbeatMs();
     }
 
-    @Override
     public void close()
     {
-        IoUtil.unmap(cncByteBuffer);
+        if (!isClosed)
+        {
+            isClosed = true;
+            IoUtil.unmap(cncByteBuffer);
+        }
     }
 }

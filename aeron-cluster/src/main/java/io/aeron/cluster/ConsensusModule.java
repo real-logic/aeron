@@ -139,20 +139,20 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Get the {@link State} corresponding to a particular value.
+         * Get the {@link State} corresponding to a particular code.
          *
-         * @param value of the State.
-         * @return the {@link State} corresponding to the provided value.
-         * @throws ClusterException if the value does not correspond to a valid State.
+         * @param code representing a {@link State}.
+         * @return the {@link State} corresponding to the provided code.
+         * @throws ClusterException if the code does not correspond to a valid State.
          */
-        public static State get(final int value)
+        public static State get(final int code)
         {
-            if (value < 0 || value > (STATES.length - 1))
+            if (code < 0 || code > (STATES.length - 1))
             {
-                throw new ClusterException("invalid state counter code: " + value);
+                throw new ClusterException("invalid state counter code: " + code);
             }
 
-            return STATES[value];
+            return STATES[code];
         }
     }
 

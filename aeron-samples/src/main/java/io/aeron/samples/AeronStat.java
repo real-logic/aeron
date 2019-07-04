@@ -160,11 +160,7 @@ public class AeronStat
         final CncFileReader cncFileReader = CncFileReader.map();
 
         final CounterFilter counterFilter = new CounterFilter(
-            typeFilter,
-            identityFilter,
-            sessionFilter,
-            streamFilter,
-            channelFilter);
+            typeFilter, identityFilter, sessionFilter, streamFilter, channelFilter);
 
         if (watch)
         {
@@ -176,7 +172,7 @@ public class AeronStat
         }
     }
 
-    private static void workLoop(final long delayMs, final Runnable printOutput) throws Exception
+    private static void workLoop(final long delayMs, final Runnable outputPrinter) throws Exception
     {
         final AtomicBoolean running = new AtomicBoolean(true);
         SigInt.register(() -> running.set(false));
@@ -184,9 +180,7 @@ public class AeronStat
         do
         {
             clearScreen();
-
-            printOutput.run();
-
+            outputPrinter.run();
             Thread.sleep(delayMs);
         }
         while (running.get());
@@ -200,7 +194,7 @@ public class AeronStat
         System.out.println(
             " - Aeron Stat (CnC v" + cncFileReader.semanticVersion() + ")" +
             ", pid " + SystemUtil.getPid() +
-            ", heartbeat " + cncFileReader.driverHeartbeatAge() + "ms");
+            ", heartbeat age " + cncFileReader.driverHeartbeatAgeMs() + "ms");
         System.out.println("======================================================================");
 
         final CountersReader counters = cncFileReader.countersReader();
@@ -296,9 +290,9 @@ public class AeronStat
             {
                 return
                     match(identityFilter, () -> Long.toString(keyBuffer.getLong(REGISTRATION_ID_OFFSET))) &&
-                        match(sessionFilter, () -> Integer.toString(keyBuffer.getInt(SESSION_ID_OFFSET))) &&
-                        match(streamFilter, () -> Integer.toString(keyBuffer.getInt(STREAM_ID_OFFSET))) &&
-                        match(channelFilter, () -> keyBuffer.getStringAscii(CHANNEL_OFFSET));
+                    match(sessionFilter, () -> Integer.toString(keyBuffer.getInt(SESSION_ID_OFFSET))) &&
+                    match(streamFilter, () -> Integer.toString(keyBuffer.getInt(STREAM_ID_OFFSET))) &&
+                    match(channelFilter, () -> keyBuffer.getStringAscii(CHANNEL_OFFSET));
             }
             else if (typeId >= SEND_CHANNEL_STATUS_TYPE_ID && typeId <= RECEIVE_CHANNEL_STATUS_TYPE_ID)
             {

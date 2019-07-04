@@ -615,7 +615,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
     }
 
-    @SuppressWarnings("unused")
     public void onJoinCluster(final long leadershipTermId, final int memberId)
     {
         final ClusterMember member = clusterMemberByIdMap.get(memberId);

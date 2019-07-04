@@ -675,6 +675,8 @@ class ClientConductor implements Agent, DriverEventsListener
         clientLock.lock();
         try
         {
+            ensureActive();
+            ensureNotReentrant();
             availableCounterHandlers.add(handler);
         }
         finally
@@ -688,6 +690,8 @@ class ClientConductor implements Agent, DriverEventsListener
         clientLock.lock();
         try
         {
+            ensureActive();
+            ensureNotReentrant();
             return availableCounterHandlers.remove(handler);
         }
         finally
@@ -701,6 +705,8 @@ class ClientConductor implements Agent, DriverEventsListener
         clientLock.lock();
         try
         {
+            ensureActive();
+            ensureNotReentrant();
             unavailableCounterHandlers.add(handler);
         }
         finally
@@ -714,6 +720,8 @@ class ClientConductor implements Agent, DriverEventsListener
         clientLock.lock();
         try
         {
+            ensureActive();
+            ensureNotReentrant();
             return unavailableCounterHandlers.remove(handler);
         }
         finally

@@ -46,6 +46,7 @@ class ClusteredServiceAgent implements Agent, Cluster
     private final AeronArchive.Context archiveCtx;
     private final ClusteredServiceContainer.Context ctx;
     private final Aeron aeron;
+    private final AgentInvoker aeronAgentInvoker;
     private final Long2ObjectHashMap<ClientSession> sessionByIdMap = new Long2ObjectHashMap<>();
     private final Collection<ClientSession> readOnlyClientSessions = unmodifiableCollection(sessionByIdMap.values());
     private final ClusteredService service;
@@ -80,6 +81,7 @@ class ClusteredServiceAgent implements Agent, Cluster
 
         archiveCtx = ctx.archiveContext();
         aeron = ctx.aeron();
+        aeronAgentInvoker = ctx.aeron().conductorAgentInvoker();
         service = ctx.clusteredService();
         idleStrategy = ctx.idleStrategy();
         serviceId = ctx.serviceId();
@@ -764,6 +766,8 @@ class ClusteredServiceAgent implements Agent, Cluster
 
                 recordingId = RecordingPos.getRecordingId(counters, counterId);
                 snapshotState(publication, logPosition, leadershipTermId);
+
+                checkForClockTick();
                 service.onTakeSnapshot(publication);
 
                 awaitRecordingComplete(recordingId, publication.position(), counters, counterId, archive);
@@ -854,6 +858,11 @@ class ClusteredServiceAgent implements Agent, Cluster
         if (cachedTimeMs != nowMs)
         {
             cachedTimeMs = nowMs;
+
+            if (null != aeronAgentInvoker)
+            {
+                aeronAgentInvoker.invoke();
+            }
 
             if (consensusModuleProxy.isConnected())
             {

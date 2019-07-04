@@ -33,15 +33,15 @@ public class SnapshotTaker
     protected final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
     protected final Publication publication;
     protected final IdleStrategy idleStrategy;
-    protected final AgentInvoker aeronClientInvoker;
+    protected final AgentInvoker aeronAgentInvoker;
     private final SnapshotMarkerEncoder snapshotMarkerEncoder = new SnapshotMarkerEncoder();
 
     public SnapshotTaker(
-        final Publication publication, final IdleStrategy idleStrategy, final AgentInvoker aeronClientInvoker)
+        final Publication publication, final IdleStrategy idleStrategy, final AgentInvoker aeronAgentInvoker)
     {
         this.publication = publication;
         this.idleStrategy = idleStrategy;
-        this.aeronClientInvoker = aeronClientInvoker;
+        this.aeronAgentInvoker = aeronAgentInvoker;
     }
 
     public void markBegin(
@@ -107,15 +107,15 @@ public class SnapshotTaker
     {
         checkResult(result);
         checkInterruptedStatus();
-        invokeAeronClient();
+        invokeAgentClient();
         idleStrategy.idle();
     }
 
-    protected void invokeAeronClient()
+    protected void invokeAgentClient()
     {
-        if (null != aeronClientInvoker)
+        if (null != aeronAgentInvoker)
         {
-            aeronClientInvoker.invoke();
+            aeronAgentInvoker.invoke();
         }
     }
 }

@@ -116,6 +116,7 @@ public final class ClusterBackup implements AutoCloseable
     }
 
     private final ClusterBackup.Context ctx;
+    private final AgentInvoker clusterBackupAgentInvoker;
     private final AgentRunner clusterBackupAgentRunner;
 
     private ClusterBackup(final ClusterBackup.Context ctx)
@@ -133,13 +134,31 @@ public final class ClusterBackup implements AutoCloseable
         }
 
         final ClusterBackupAgent clusterBackupAgent = new ClusterBackupAgent(ctx);
-        clusterBackupAgentRunner = new AgentRunner(
-            ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), clusterBackupAgent);
+
+        if (ctx.useAgentInvoker())
+        {
+            clusterBackupAgentRunner = null;
+            clusterBackupAgentInvoker = new AgentInvoker(ctx.errorHandler(), ctx.errorCounter(), clusterBackupAgent);
+        }
+        else
+        {
+            clusterBackupAgentRunner = new AgentRunner(
+                ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), clusterBackupAgent);
+            clusterBackupAgentInvoker = null;
+        }
     }
 
     private ClusterBackup start()
     {
-        AgentRunner.startOnThread(clusterBackupAgentRunner, ctx.threadFactory());
+        if (null != clusterBackupAgentRunner)
+        {
+            AgentRunner.startOnThread(clusterBackupAgentRunner, ctx.threadFactory());
+        }
+        else
+        {
+            clusterBackupAgentInvoker.start();
+        }
+
         return this;
     }
 
@@ -174,9 +193,20 @@ public final class ClusterBackup implements AutoCloseable
         return ctx;
     }
 
+    /**
+     * Get the {@link AgentInvoker} for the cluster backup.
+     *
+     * @return the {@link AgentInvoker} for the cluster backup.
+     */
+    public AgentInvoker conductorAgentInvoker()
+    {
+        return clusterBackupAgentInvoker;
+    }
+
     public void close()
     {
         CloseHelper.close(clusterBackupAgentRunner);
+        CloseHelper.close(clusterBackupAgentInvoker);
     }
 
     public static class Configuration
@@ -267,6 +297,7 @@ public final class ClusterBackup implements AutoCloseable
         private int errorBufferLength = ConsensusModule.Configuration.errorBufferLength();
 
         private boolean deleteDirOnStart = false;
+        private boolean useAgentInvoker = false;
         private String clusterDirectoryName = ClusteredServiceContainer.Configuration.clusterDirName();
         private File clusterDir;
         private ClusterMarkFile markFile;
@@ -1117,6 +1148,30 @@ public final class ClusterBackup implements AutoCloseable
         {
             this.eventsListener = eventsListener;
             return this;
+        }
+
+        /**
+         * Should an {@link AgentInvoker} be used for running the {@link ClusterBackup} rather than run it on
+         * a thread with a {@link AgentRunner}.
+         *
+         * @param useAgentInvoker use {@link AgentInvoker} be used for running the {@link ClusterBackup}?
+         * @return this for a fluent API.
+         */
+        public Context useAgentInvoker(final boolean useAgentInvoker)
+        {
+            this.useAgentInvoker = useAgentInvoker;
+            return this;
+        }
+
+        /**
+         * Should an {@link AgentInvoker} be used for running the {@link ClusterBackup} rather than run it on
+         * a thread with a {@link AgentRunner}.
+         *
+         * @return true if the {@link ClusterBackup} will be run with an {@link AgentInvoker} otherwise false.
+         */
+        public boolean useAgentInvoker()
+        {
+            return useAgentInvoker;
         }
 
         /**

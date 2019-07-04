@@ -20,7 +20,6 @@ import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.DirectBuffer;
 import org.agrona.SemanticVersion;
 import org.agrona.SystemUtil;
-import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.SigInt;
 import org.agrona.concurrent.status.CountersReader;
 
@@ -193,9 +192,10 @@ public class AeronStat
             }
         }
 
-        final MutableInteger cncFileVersion = new MutableInteger();
+        final CncFileReader cncFileReader = CncFileReader.map();
+
         final AeronStat aeronStat = new AeronStat(
-            SamplesUtil.mapCounters(cncFileVersion),
+            cncFileReader.countersReader(),
             typeFilter,
             identityFilter,
             sessionFilter,
@@ -205,8 +205,6 @@ public class AeronStat
         final AtomicBoolean running = new AtomicBoolean(watch);
         SigInt.register(() -> running.set(false));
 
-        final String header =
-            " - Aeron Stat (CnC v" + SemanticVersion.toString(cncFileVersion.get()) + "), pid " + SystemUtil.getPid();
         final SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
 
         do
@@ -217,7 +215,10 @@ public class AeronStat
             }
 
             System.out.print(dateFormat.format(new Date()));
-            System.out.println(header);
+            System.out.println(
+                " - Aeron Stat (CnC v" + cncFileReader.semanticVersion() + ")" +
+                    ", pid " + SystemUtil.getPid() +
+                    ", heartbeat " + cncFileReader.driverHeartbeatAge() + "ms");
             System.out.println("======================================================================");
 
             aeronStat.print(System.out);

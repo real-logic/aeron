@@ -135,13 +135,24 @@ public class ConsensusModule implements AutoCloseable
         public static State get(final AtomicCounter counter)
         {
             final long code = counter.get();
+            return get((int)code);
+        }
 
-            if (code < 0 || code > (STATES.length - 1))
+        /**
+         * Get the {@link State} corresponding to a particular value.
+         *
+         * @param value of the State.
+         * @return the {@link State} corresponding to the provided value.
+         * @throws ClusterException if the value does not correspond to a valid State.
+         */
+        public static State get(final int value)
+        {
+            if (value < 0 || value > (STATES.length - 1))
             {
-                throw new ClusterException("invalid state counter code: " + code);
+                throw new ClusterException("invalid state counter code: " + value);
             }
 
-            return STATES[(int)code];
+            return STATES[value];
         }
     }
 

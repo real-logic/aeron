@@ -65,6 +65,9 @@ typedef std::function<void(Image& image)> on_unavailable_image_t;
 /**
  * Function called by Aeron to deliver notification that the media driver has added a Publication successfully.
  *
+ * Implementations should do the minimum work for passing off state to another thread for later processing
+ * and should not make a reentrant call back into the Aeron instance.
+ *
  * @param channel of the Publication
  * @param streamId within the channel of the Publication
  * @param sessionId of the Publication
@@ -78,6 +81,9 @@ typedef std::function<void(
 
 /**
  * Function called by Aeron to deliver notification that the media driver has added a Subscription successfully.
+ *
+ * Implementations should do the minimum work for passing off state to another thread for later processing
+ * and should not make a reentrant call back into the Aeron instance.
  *
  * @param channel of the Subscription
  * @param streamId within the channel of the Subscription

@@ -43,6 +43,29 @@ typedef std::function<long long()> nano_clock_t;
 static const long KEEPALIVE_TIMEOUT_MS = 500;
 static const long RESOURCE_TIMEOUT_MS = 1000;
 
+
+class CallbackGuard
+{
+public:
+    explicit CallbackGuard(bool& isInCallback) : m_isInCallback(isInCallback)
+    {
+        m_isInCallback = true;
+    }
+
+
+    ~CallbackGuard()
+    {
+        m_isInCallback = false;
+    }
+
+    CallbackGuard(const CallbackGuard&) = delete;
+
+    CallbackGuard& operator = (const CallbackGuard&) = delete;
+
+private:
+    bool&  m_isInCallback;
+};
+
 class ClientConductor
 {
 public:
@@ -396,6 +419,7 @@ private:
     std::atomic<bool> m_driverActive;
     std::atomic<bool> m_isClosed;
     bool m_preTouchMappedMemory;
+    bool m_isInCallback = false;
 
     inline int onHeartbeatCheckTimeouts()
     {
@@ -453,6 +477,15 @@ private:
         if (!m_driverActive)
         {
             DriverTimeoutException exception("driver is inactive", SOURCEINFO);
+            m_errorHandler(exception);
+        }
+    }
+
+    inline void ensureNotReentrant()
+    {
+        if (m_isInCallback)
+        {
+            ReentrantException exception("client cannot be invoked within callback", SOURCEINFO);
             m_errorHandler(exception);
         }
     }

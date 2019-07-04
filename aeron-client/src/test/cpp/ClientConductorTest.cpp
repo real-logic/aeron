@@ -197,7 +197,13 @@ TEST_F(ClientConductorTest, shouldIgnorePublicationReadyForUnknownCorrelationId)
     std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID);
 
     m_conductor.onNewPublication(
-        id + 1, id + 1, STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, CHANNEL_STATUS_INDICATOR_ID, m_logFileName);
+        id + 1,
+        id + 1,
+        STREAM_ID,
+        SESSION_ID,
+        PUBLICATION_LIMIT_COUNTER_ID,
+        CHANNEL_STATUS_INDICATOR_ID,
+        m_logFileName);
 
     std::shared_ptr<Publication> pub = m_conductor.findPublication(id);
 
@@ -211,9 +217,10 @@ TEST_F(ClientConductorTest, shouldTimeoutAddPublicationWithoutPublicationReady)
     m_currentTime += DRIVER_TIMEOUT_MS + 1;
 
     ASSERT_THROW(
-    {
-        std::shared_ptr<Publication> pub = m_conductor.findPublication(id);
-    }, util::DriverTimeoutException);
+        {
+            std::shared_ptr<Publication> pub = m_conductor.findPublication(id);
+        },
+        util::DriverTimeoutException);
 }
 
 TEST_F(ClientConductorTest, shouldExceptionOnFindWhenReceivingErrorResponseOnAddPublication)
@@ -223,9 +230,10 @@ TEST_F(ClientConductorTest, shouldExceptionOnFindWhenReceivingErrorResponseOnAdd
     m_conductor.onErrorResponse(id, ERROR_CODE_INVALID_CHANNEL, "invalid channel");
 
     ASSERT_THROW(
-    {
-        std::shared_ptr<Publication> pub = m_conductor.findPublication(id);
-    }, util::RegistrationException);
+        {
+            std::shared_ptr<Publication> pub = m_conductor.findPublication(id);
+        },
+        util::RegistrationException);
 }
 
 TEST_F(ClientConductorTest, shouldReturnNullForUnknownExclusivePublication)
@@ -283,15 +291,14 @@ TEST_F(ClientConductorTest, shouldReleaseExclusivePublicationAfterGoingOutOfScop
 {
     std::int64_t id = m_conductor.addExclusivePublication(CHANNEL, STREAM_ID);
     static std::int32_t REMOVE_PUBLICATION = ControlProtocolEvents::REMOVE_PUBLICATION;
-
-    // drain ring buffer
+    
     m_manyToOneRingBuffer.read(
         [&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
         {
         });
 
-    m_conductor.onNewExclusivePublication(id, id,
-        STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, CHANNEL_STATUS_INDICATOR_ID, m_logFileName);
+    m_conductor.onNewExclusivePublication(
+        id, id, STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, CHANNEL_STATUS_INDICATOR_ID, m_logFileName);
 
     {
         std::shared_ptr<ExclusivePublication> pub = m_conductor.findExclusivePublication(id);
@@ -342,7 +349,13 @@ TEST_F(ClientConductorTest, shouldIgnoreExclusivePublicationReadyForUnknownCorre
     std::int64_t id = m_conductor.addExclusivePublication(CHANNEL, STREAM_ID);
 
     m_conductor.onNewExclusivePublication(
-        id + 1, id + 1, STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, CHANNEL_STATUS_INDICATOR_ID, m_logFileName);
+        id + 1,
+        id + 1,
+        STREAM_ID,
+        SESSION_ID,
+        PUBLICATION_LIMIT_COUNTER_ID,
+        CHANNEL_STATUS_INDICATOR_ID,
+        m_logFileName);
 
     std::shared_ptr<ExclusivePublication> pub = m_conductor.findExclusivePublication(id);
 
@@ -358,7 +371,8 @@ TEST_F(ClientConductorTest, shouldTimeoutAddExclusivePublicationWithoutPublicati
     ASSERT_THROW(
         {
             std::shared_ptr<ExclusivePublication> pub = m_conductor.findExclusivePublication(id);
-        }, util::DriverTimeoutException);
+        },
+        util::DriverTimeoutException);
 }
 
 TEST_F(ClientConductorTest, shouldExceptionOnFindWhenReceivingErrorResponseOnAddExclusivePublication)
@@ -370,7 +384,8 @@ TEST_F(ClientConductorTest, shouldExceptionOnFindWhenReceivingErrorResponseOnAdd
     ASSERT_THROW(
         {
             std::shared_ptr<ExclusivePublication> pub = m_conductor.findExclusivePublication(id);
-        }, util::RegistrationException);
+        },
+        util::RegistrationException);
 }
 
 TEST_F(ClientConductorTest, shouldReturnNullForUnknownSubscription)
@@ -382,7 +397,8 @@ TEST_F(ClientConductorTest, shouldReturnNullForUnknownSubscription)
 
 TEST_F(ClientConductorTest, shouldReturnNullForSubscriptionWithoutOperationSuccess)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
+    std::int64_t id = m_conductor.addSubscription(
+        CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
 
     std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
 
@@ -391,7 +407,8 @@ TEST_F(ClientConductorTest, shouldReturnNullForSubscriptionWithoutOperationSucce
 
 TEST_F(ClientConductorTest, shouldSendAddSubscriptionToDriver)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
+    std::int64_t id = m_conductor.addSubscription(
+        CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
     static std::int32_t ADD_SUBSCRIPTION = ControlProtocolEvents::ADD_SUBSCRIPTION;
 
     int count = m_manyToOneRingBuffer.read(
@@ -410,7 +427,8 @@ TEST_F(ClientConductorTest, shouldSendAddSubscriptionToDriver)
 
 TEST_F(ClientConductorTest, shouldReturnSubscriptionAfterOperationSuccess)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
+    std::int64_t id = m_conductor.addSubscription(
+        CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
 
     m_conductor.onSubscriptionReady(id, CHANNEL_STATUS_INDICATOR_ID);
 
@@ -424,10 +442,10 @@ TEST_F(ClientConductorTest, shouldReturnSubscriptionAfterOperationSuccess)
 
 TEST_F(ClientConductorTest, shouldReleaseSubscriptionAfterGoingOutOfScope)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
+    std::int64_t id = m_conductor.addSubscription(
+        CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
     static std::int32_t REMOVE_SUBSCRIPTION = ControlProtocolEvents::REMOVE_SUBSCRIPTION;
 
-    // drain ring buffer
     m_manyToOneRingBuffer.read(
         [&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
         {
@@ -458,15 +476,18 @@ TEST_F(ClientConductorTest, shouldReleaseSubscriptionAfterGoingOutOfScope)
 
 TEST_F(ClientConductorTest, shouldReturnDifferentIdsForDuplicateAddSubscription)
 {
-    std::int64_t id1 = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
-    std::int64_t id2 = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
+    std::int64_t id1 = m_conductor.addSubscription(
+        CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
+    std::int64_t id2 = m_conductor.addSubscription(
+        CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
 
     EXPECT_NE(id1, id2);
 }
 
 TEST_F(ClientConductorTest, shouldReturnSameFindSubscriptionAfterOperationSuccess)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
+    std::int64_t id = m_conductor.addSubscription(
+        CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
 
     m_conductor.onSubscriptionReady(id, CHANNEL_STATUS_INDICATOR_ID);
 
@@ -480,8 +501,10 @@ TEST_F(ClientConductorTest, shouldReturnSameFindSubscriptionAfterOperationSucces
 
 TEST_F(ClientConductorTest, shouldReturnDifferentSubscriptionAfterOperationSuccess)
 {
-    std::int64_t id1 = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
-    std::int64_t id2 = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
+    std::int64_t id1 = m_conductor.addSubscription(
+        CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
+    std::int64_t id2 = m_conductor.addSubscription(
+        CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
 
     m_conductor.onSubscriptionReady(id1, CHANNEL_STATUS_INDICATOR_ID);
     m_conductor.onSubscriptionReady(id2, CHANNEL_STATUS_INDICATOR_ID);
@@ -496,7 +519,8 @@ TEST_F(ClientConductorTest, shouldReturnDifferentSubscriptionAfterOperationSucce
 
 TEST_F(ClientConductorTest, shouldIgnoreOperationSuccessForUnknownCorrelationId)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
+    std::int64_t id = m_conductor.addSubscription(
+        CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
 
     m_conductor.onSubscriptionReady(id + 1, CHANNEL_STATUS_INDICATOR_ID);
 
@@ -507,26 +531,30 @@ TEST_F(ClientConductorTest, shouldIgnoreOperationSuccessForUnknownCorrelationId)
 
 TEST_F(ClientConductorTest, shouldTimeoutAddSubscriptionWithoutOperationSuccess)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
+    std::int64_t id = m_conductor.addSubscription(
+        CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
 
     m_currentTime += DRIVER_TIMEOUT_MS + 1;
 
     ASSERT_THROW(
-    {
-        std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
-    }, util::DriverTimeoutException);
+        {
+            std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
+        },
+        util::DriverTimeoutException);
 }
 
 TEST_F(ClientConductorTest, shouldExceptionOnFindWhenReceivingErrorResponseOnAddSubscription)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
+    std::int64_t id = m_conductor.addSubscription(
+        CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
 
     m_conductor.onErrorResponse(id, ERROR_CODE_INVALID_CHANNEL, "invalid channel");
 
     ASSERT_THROW(
-    {
-        std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
-    }, util::RegistrationException);
+        {
+            std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
+        },
+        util::RegistrationException);
 }
 
 TEST_F(ClientConductorTest, shouldCallErrorHandlerWhenInterServiceTimeoutExceeded)
@@ -569,9 +597,10 @@ TEST_F(ClientConductorTest, shouldExceptionWhenAddPublicationAfterDriverInactive
     EXPECT_TRUE(called);
 
     ASSERT_THROW(
-    {
-        m_conductor.addPublication(CHANNEL, STREAM_ID);
-    }, util::DriverTimeoutException);
+        {
+            m_conductor.addPublication(CHANNEL, STREAM_ID);
+        },
+        util::DriverTimeoutException);
 }
 
 TEST_F(ClientConductorTest, shouldExceptionWhenReleasePublicationAfterDriverInactive)
@@ -583,9 +612,9 @@ TEST_F(ClientConductorTest, shouldExceptionWhenReleasePublicationAfterDriverInac
     EXPECT_TRUE(called);
 
     ASSERT_NO_THROW(
-    {
-        m_conductor.releasePublication(100);
-    });
+        {
+            m_conductor.releasePublication(100);
+        });
 }
 
 TEST_F(ClientConductorTest, shouldExceptionWhenAddSubscriptionAfterDriverInactive)
@@ -597,9 +626,10 @@ TEST_F(ClientConductorTest, shouldExceptionWhenAddSubscriptionAfterDriverInactiv
     EXPECT_TRUE(called);
 
     ASSERT_THROW(
-    {
-        m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
-    }, util::DriverTimeoutException);
+        {
+            m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
+        },
+        util::DriverTimeoutException);
 }
 
 TEST_F(ClientConductorTest, shouldExceptionWhenReleaseSubscriptionAfterDriverInactive)
@@ -611,9 +641,9 @@ TEST_F(ClientConductorTest, shouldExceptionWhenReleaseSubscriptionAfterDriverIna
     EXPECT_TRUE(called);
 
     ASSERT_NO_THROW(
-    {
-        m_conductor.releaseSubscription(100, nullptr);
-    });
+        {
+            m_conductor.releaseSubscription(100, nullptr);
+        });
 }
 
 TEST_F(ClientConductorTest, shouldCallOnNewPubAfterLogBuffersCreated)
@@ -629,7 +659,8 @@ TEST_F(ClientConductorTest, shouldCallOnNewPubAfterLogBuffersCreated)
 
 TEST_F(ClientConductorTest, shouldCallOnNewSubAfterOperationSuccess)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
+    std::int64_t id = m_conductor.addSubscription(
+        CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
 
     EXPECT_CALL(m_handlers, onNewSub(testing::StrEq(CHANNEL), STREAM_ID, id))
         .Times(1);
@@ -641,7 +672,8 @@ TEST_F(ClientConductorTest, shouldCallOnNewSubAfterOperationSuccess)
 
 TEST_F(ClientConductorTest, shouldCallNewConnectionAfterOnNewConnection)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
+    std::int64_t id = m_conductor.addSubscription(
+        CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
     std::int64_t correlationId = id + 1;
     testing::Sequence sequence;
 
@@ -663,7 +695,8 @@ TEST_F(ClientConductorTest, shouldCallNewConnectionAfterOnNewConnection)
 
 TEST_F(ClientConductorTest, shouldNotCallNewConnectionIfNoOperationSuccess)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
+    std::int64_t id = m_conductor.addSubscription(
+        CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
     std::int64_t correlationId = id + 1;
 
     EXPECT_CALL(m_handlers, onNewSub(CHANNEL, STREAM_ID, id))
@@ -680,7 +713,8 @@ TEST_F(ClientConductorTest, shouldNotCallNewConnectionIfNoOperationSuccess)
 
 TEST_F(ClientConductorTest, shouldNotCallNewConnectionIfUninterestingRegistrationId)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
+    std::int64_t id = m_conductor.addSubscription(
+        CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
     std::int64_t correlationId = id + 1;
 
     EXPECT_CALL(m_handlers, onNewSub(CHANNEL, STREAM_ID, id))
@@ -699,7 +733,8 @@ TEST_F(ClientConductorTest, shouldNotCallNewConnectionIfUninterestingRegistratio
 
 TEST_F(ClientConductorTest, shouldCallInactiveConnecitonAfterInactiveConnection)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
+    std::int64_t id = m_conductor.addSubscription(
+        CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
     std::int64_t correlationId = id + 1;
     testing::Sequence sequence;
 
@@ -722,7 +757,8 @@ TEST_F(ClientConductorTest, shouldCallInactiveConnecitonAfterInactiveConnection)
 
 TEST_F(ClientConductorTest, shouldNotCallInactiveConnectionIfNoOperationSuccess)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
+    std::int64_t id = m_conductor.addSubscription(
+        CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
     std::int64_t correlationId = id + 1;
 
     EXPECT_CALL(m_handlers, onNewSub(CHANNEL, STREAM_ID, id))
@@ -739,7 +775,8 @@ TEST_F(ClientConductorTest, shouldNotCallInactiveConnectionIfNoOperationSuccess)
 
 TEST_F(ClientConductorTest, shouldNotCallInactiveConnectionIfUninterestingConnectionCorrelationId)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
+    std::int64_t id = m_conductor.addSubscription(
+        CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
     std::int64_t correlationId = id + 1;
     testing::Sequence sequence;
 
@@ -763,7 +800,8 @@ TEST_F(ClientConductorTest, shouldNotCallInactiveConnectionIfUninterestingConnec
 
 TEST_F(ClientConductorTest, shouldCallUnavailableImageIfSubscriptionReleased)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
+    std::int64_t id = m_conductor.addSubscription(
+        CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
     std::int64_t correlationId = id + 1;
     testing::Sequence sequence;
 
@@ -814,7 +852,8 @@ TEST_F(ClientConductorTest, shouldCloseExclusivePublicationOnInterServiceTimeout
 
 TEST_F(ClientConductorTest, shouldCloseSubscriptionOnInterServiceTimeout)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
+    std::int64_t id = m_conductor.addSubscription(
+        CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
 
     m_conductor.onSubscriptionReady(id, CHANNEL_STATUS_INDICATOR_ID);
 
@@ -831,7 +870,8 @@ TEST_F(ClientConductorTest, shouldCloseAllPublicationsAndSubscriptionsOnInterSer
 {
     std::int64_t pubId = m_conductor.addPublication(CHANNEL, STREAM_ID);
     std::int64_t exPubId = m_conductor.addExclusivePublication(CHANNEL, STREAM_ID);
-    std::int64_t subId = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
+    std::int64_t subId = m_conductor.addSubscription(
+        CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
 
     m_conductor.onNewPublication(
         pubId, pubId, STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, CHANNEL_STATUS_INDICATOR_ID, m_logFileName);
@@ -859,7 +899,8 @@ TEST_F(ClientConductorTest, shouldCloseAllPublicationsAndSubscriptionsOnInterSer
 
 TEST_F(ClientConductorTest, shouldRemoveImageOnInterServiceTimeout)
 {
-    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
+    std::int64_t id = m_conductor.addSubscription(
+        CHANNEL, STREAM_ID, m_onAvailableImageHandler, m_onUnavailableImageHandler);
     std::int64_t correlationId = id + 1;
 
     m_conductor.onSubscriptionReady(id, CHANNEL_STATUS_INDICATOR_ID);
@@ -888,7 +929,7 @@ TEST_F(ClientConductorTest, shouldReturnNullForUnknownCounter)
 
 TEST_F(ClientConductorTest, shouldReturnNullForCounterWithoutOnAvailableCounter)
 {
-    std::int64_t id = m_conductor.addCounter(COUNTER_TYPE_ID, NULL, 0, COUNTER_LABEL);
+    std::int64_t id = m_conductor.addCounter(COUNTER_TYPE_ID, nullptr, 0, COUNTER_LABEL);
 
     std::shared_ptr<Counter> counter = m_conductor.findCounter(id);
 
@@ -897,7 +938,7 @@ TEST_F(ClientConductorTest, shouldReturnNullForCounterWithoutOnAvailableCounter)
 
 TEST_F(ClientConductorTest, shouldSendAddCounterToDriver)
 {
-    std::int64_t id = m_conductor.addCounter(COUNTER_TYPE_ID, NULL, 0, COUNTER_LABEL);
+    std::int64_t id = m_conductor.addCounter(COUNTER_TYPE_ID, nullptr, 0, COUNTER_LABEL);
     static std::int32_t ADD_COUNTER = ControlProtocolEvents::ADD_COUNTER;
 
     int count = m_manyToOneRingBuffer.read(
@@ -917,7 +958,7 @@ TEST_F(ClientConductorTest, shouldSendAddCounterToDriver)
 
 TEST_F(ClientConductorTest, shouldReturnCounterAfterOnAvailableCounter)
 {
-    std::int64_t id = m_conductor.addCounter(COUNTER_TYPE_ID, NULL, 0, COUNTER_LABEL);
+    std::int64_t id = m_conductor.addCounter(COUNTER_TYPE_ID, nullptr, 0, COUNTER_LABEL);
 
     EXPECT_CALL(m_handlers, onAvailableCounter(testing::_, id, COUNTER_ID))
         .Times(1);
@@ -933,7 +974,7 @@ TEST_F(ClientConductorTest, shouldReturnCounterAfterOnAvailableCounter)
 
 TEST_F(ClientConductorTest, shouldReleaseCounterAfterGoingOutOfScope)
 {
-    std::int64_t id = m_conductor.addCounter(COUNTER_TYPE_ID, NULL, 0, COUNTER_LABEL);
+    std::int64_t id = m_conductor.addCounter(COUNTER_TYPE_ID, nullptr, 0, COUNTER_LABEL);
     static std::int32_t REMOVE_COUNTER = ControlProtocolEvents::REMOVE_COUNTER;
 
     m_manyToOneRingBuffer.read(
@@ -966,15 +1007,15 @@ TEST_F(ClientConductorTest, shouldReleaseCounterAfterGoingOutOfScope)
 
 TEST_F(ClientConductorTest, shouldReturnDifferentIdsForDuplicateAddCounter)
 {
-    std::int64_t id1 = m_conductor.addCounter(COUNTER_TYPE_ID, NULL, 0, COUNTER_LABEL);
-    std::int64_t id2 = m_conductor.addCounter(COUNTER_TYPE_ID, NULL, 0, COUNTER_LABEL);
+    std::int64_t id1 = m_conductor.addCounter(COUNTER_TYPE_ID, nullptr, 0, COUNTER_LABEL);
+    std::int64_t id2 = m_conductor.addCounter(COUNTER_TYPE_ID, nullptr, 0, COUNTER_LABEL);
 
     EXPECT_NE(id1, id2);
 }
 
 TEST_F(ClientConductorTest, shouldReturnSameFindCounterAfterOnAvailableCounter)
 {
-    std::int64_t id = m_conductor.addCounter(COUNTER_TYPE_ID, NULL, 0, COUNTER_LABEL);
+    std::int64_t id = m_conductor.addCounter(COUNTER_TYPE_ID, nullptr, 0, COUNTER_LABEL);
 
     m_conductor.onAvailableCounter(id, COUNTER_ID);
 
@@ -988,8 +1029,8 @@ TEST_F(ClientConductorTest, shouldReturnSameFindCounterAfterOnAvailableCounter)
 
 TEST_F(ClientConductorTest, shouldReturnDifferentCounterAfterOnAvailableCounter)
 {
-    std::int64_t id1 = m_conductor.addCounter(COUNTER_TYPE_ID, NULL, 0, COUNTER_LABEL);
-    std::int64_t id2 = m_conductor.addCounter(COUNTER_TYPE_ID, NULL, 0, COUNTER_LABEL);
+    std::int64_t id1 = m_conductor.addCounter(COUNTER_TYPE_ID, nullptr, 0, COUNTER_LABEL);
+    std::int64_t id2 = m_conductor.addCounter(COUNTER_TYPE_ID, nullptr, 0, COUNTER_LABEL);
 
     EXPECT_CALL(m_handlers, onAvailableCounter(testing::_, id1, COUNTER_ID))
         .Times(1);
@@ -1009,7 +1050,7 @@ TEST_F(ClientConductorTest, shouldReturnDifferentCounterAfterOnAvailableCounter)
 
 TEST_F(ClientConductorTest, shouldNotFindCounterOnAvailableCounterForUnknownCorrelationId)
 {
-    std::int64_t id = m_conductor.addCounter(COUNTER_TYPE_ID, NULL, 0, COUNTER_LABEL);
+    std::int64_t id = m_conductor.addCounter(COUNTER_TYPE_ID, nullptr, 0, COUNTER_LABEL);
 
     EXPECT_CALL(m_handlers, onAvailableCounter(testing::_, id + 1, COUNTER_ID))
         .Times(1);
@@ -1023,26 +1064,28 @@ TEST_F(ClientConductorTest, shouldNotFindCounterOnAvailableCounterForUnknownCorr
 
 TEST_F(ClientConductorTest, shouldTimeoutAddCounterWithoutOnAvailableCounter)
 {
-    std::int64_t id = m_conductor.addCounter(COUNTER_TYPE_ID, NULL, 0, COUNTER_LABEL);
+    std::int64_t id = m_conductor.addCounter(COUNTER_TYPE_ID, nullptr, 0, COUNTER_LABEL);
 
     m_currentTime += DRIVER_TIMEOUT_MS + 1;
 
     ASSERT_THROW(
         {
             std::shared_ptr<Counter> counter = m_conductor.findCounter(id);
-        }, util::DriverTimeoutException);
+        },
+        util::DriverTimeoutException);
 }
 
 TEST_F(ClientConductorTest, shouldExceptionOnFindWhenReceivingErrorResponseOnAddCounter)
 {
-    std::int64_t id = m_conductor.addCounter(COUNTER_TYPE_ID, NULL, 0, COUNTER_LABEL);
+    std::int64_t id = m_conductor.addCounter(COUNTER_TYPE_ID, nullptr, 0, COUNTER_LABEL);
 
     m_conductor.onErrorResponse(id, ERROR_CODE_GENERIC_ERROR, "can't add counter");
 
     ASSERT_THROW(
         {
             std::shared_ptr<Counter> counter = m_conductor.findCounter(id);
-        }, util::RegistrationException);
+        },
+        util::RegistrationException);
 }
 
 TEST_F(ClientConductorTest, shouldCallOnUnavailableCounter)
@@ -1053,4 +1096,22 @@ TEST_F(ClientConductorTest, shouldCallOnUnavailableCounter)
         .Times(1);
 
     m_conductor.onUnavailableCounter(id, COUNTER_ID);
+}
+
+TEST_F(ClientConductorTest, shouldThrowExceptionOnReentrantCallback)
+{
+    m_conductor.addAvailableCounterHandler(
+        [&](CountersReader& countersReader, std::int64_t registrationId, std::int32_t counterId)
+        {
+            m_conductor.addCounter(COUNTER_TYPE_ID, nullptr, 0, COUNTER_LABEL);
+        });
+
+    std::int64_t id = 101;
+    std::int32_t counterId = 7;
+    bool called = false;
+    m_errorHandler = [&](const std::exception& exception) { called = true; };
+
+    m_conductor.onAvailableCounter(id, counterId);
+
+    EXPECT_TRUE(called);
 }

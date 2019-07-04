@@ -18,6 +18,15 @@
 
 namespace aeron {
 
+template<typename T, typename... U>
+static size_t getAddress(const std::function<T(U...)>& f)
+{
+    typedef T(fnType)(U...);
+    auto fnPointer = f.template target<fnType*>();
+
+    return (size_t)*fnPointer;
+}
+
 ClientConductor::~ClientConductor()
 {
     std::vector<std::shared_ptr<Subscription>> subscriptions;
@@ -45,6 +54,7 @@ std::int64_t ClientConductor::addPublication(const std::string &channel, std::in
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     verifyDriverIsActive();
+    ensureNotReentrant();
     ensureOpen();
 
     std::int64_t id;
@@ -73,6 +83,7 @@ std::int64_t ClientConductor::addPublication(const std::string &channel, std::in
 std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t registrationId)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+    ensureNotReentrant();
     ensureOpen();
 
     auto it = std::find_if(m_publications.begin(), m_publications.end(),
@@ -150,6 +161,7 @@ std::int64_t ClientConductor::addExclusivePublication(const std::string &channel
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     verifyDriverIsActive();
+    ensureNotReentrant();
     ensureOpen();
 
     std::int64_t registrationId = m_driverProxy.addExclusivePublication(channel, streamId);
@@ -162,6 +174,7 @@ std::int64_t ClientConductor::addExclusivePublication(const std::string &channel
 std::shared_ptr<ExclusivePublication> ClientConductor::findExclusivePublication(std::int64_t registrationId)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+    ensureNotReentrant();
     ensureOpen();
 
     auto it = std::find_if(m_exclusivePublications.begin(), m_exclusivePublications.end(),
@@ -243,6 +256,7 @@ std::int64_t ClientConductor::addSubscription(
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     verifyDriverIsActive();
+    ensureNotReentrant();
     ensureOpen();
 
     std::int64_t registrationId = m_driverProxy.addSubscription(channel, streamId);
@@ -256,6 +270,7 @@ std::int64_t ClientConductor::addSubscription(
 std::shared_ptr<Subscription> ClientConductor::findSubscription(std::int64_t registrationId)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+    ensureNotReentrant();
     ensureOpen();
 
     auto it = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
@@ -329,6 +344,7 @@ std::int64_t ClientConductor::addCounter(
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     verifyDriverIsActive();
+    ensureNotReentrant();
     ensureOpen();
 
     if (keyLength > CountersManager::MAX_KEY_LENGTH)
@@ -351,6 +367,7 @@ std::int64_t ClientConductor::addCounter(
 std::shared_ptr<Counter> ClientConductor::findCounter(std::int64_t registrationId)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+    ensureNotReentrant();
     ensureOpen();
 
     auto it = std::find_if(
@@ -415,6 +432,7 @@ void ClientConductor::addDestination(std::int64_t publicationRegistrationId, con
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     verifyDriverIsActive();
+    ensureNotReentrant();
     ensureOpen();
 
     m_driverProxy.addDestination(publicationRegistrationId, endpointChannel);
@@ -424,6 +442,7 @@ void ClientConductor::removeDestination(std::int64_t publicationRegistrationId, 
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     verifyDriverIsActive();
+    ensureNotReentrant();
     ensureOpen();
 
     m_driverProxy.removeDestination(publicationRegistrationId, endpointChannel);
@@ -433,6 +452,7 @@ void ClientConductor::addRcvDestination(std::int64_t subscriptionRegistrationId,
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     verifyDriverIsActive();
+    ensureNotReentrant();
     ensureOpen();
 
     m_driverProxy.addRcvDestination(subscriptionRegistrationId, endpointChannel);
@@ -442,6 +462,7 @@ void ClientConductor::removeRcvDestination(std::int64_t subscriptionRegistration
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     verifyDriverIsActive();
+    ensureNotReentrant();
     ensureOpen();
 
     m_driverProxy.removeRcvDestination(subscriptionRegistrationId, endpointChannel);
@@ -450,23 +471,16 @@ void ClientConductor::removeRcvDestination(std::int64_t subscriptionRegistration
 void ClientConductor::addAvailableCounterHandler(const on_available_counter_t& handler)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+    ensureNotReentrant();
     ensureOpen();
 
     m_onAvailableCounterHandlers.emplace_back(handler);
 }
 
-template<typename T, typename... U>
-static size_t getAddress(const std::function<T(U...)>& f)
-{
-    typedef T(fnType)(U...);
-    auto fnPointer = f.template target<fnType*>();
-
-    return (size_t)*fnPointer;
-}
-
 void ClientConductor::removeAvailableCounterHandler(const on_available_counter_t& handler)
 {;
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+    ensureNotReentrant();
     ensureOpen();
 
     auto &v = m_onAvailableCounterHandlers;
@@ -482,6 +496,7 @@ void ClientConductor::removeAvailableCounterHandler(const on_available_counter_t
 void ClientConductor::addUnavailableCounterHandler(const on_unavailable_counter_t& handler)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+    ensureNotReentrant();
     ensureOpen();
 
     m_onUnavailableCounterHandlers.emplace_back(handler);
@@ -490,6 +505,7 @@ void ClientConductor::addUnavailableCounterHandler(const on_unavailable_counter_
 void ClientConductor::removeUnavailableCounterHandler(const on_unavailable_counter_t& handler)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+    ensureNotReentrant();
     ensureOpen();
 
     auto &v = m_onUnavailableCounterHandlers;
@@ -530,6 +546,7 @@ void ClientConductor::onNewPublication(
         state.m_buffers = std::make_shared<LogBuffers>(logFileName.c_str(), m_preTouchMappedMemory);
         state.m_originalRegistrationId = originalRegistrationId;
 
+        CallbackGuard callbackGuard(m_isInCallback);
         m_onNewPublicationHandler(state.m_channel, streamId, sessionId, registrationId);
     }
 }
@@ -562,6 +579,7 @@ void ClientConductor::onNewExclusivePublication(
         state.m_buffers = std::make_shared<LogBuffers>(logFileName.c_str(), m_preTouchMappedMemory);
         state.m_originalRegistrationId = originalRegistrationId;
 
+        CallbackGuard callbackGuard(m_isInCallback);
         m_onNewExclusivePublicationHandler(state.m_channel, streamId, sessionId, registrationId);
     }
 }
@@ -584,9 +602,9 @@ void ClientConductor::onSubscriptionReady(std::int64_t registrationId, std::int3
         state.m_subscriptionCache = std::make_shared<Subscription>(
             *this, state.m_registrationId, state.m_channel, state.m_streamId, channelStatusId);
         state.m_subscription = std::weak_ptr<Subscription>(state.m_subscriptionCache);
-        m_onNewSubscriptionHandler(state.m_channel, state.m_streamId, registrationId);
 
-        return;
+        CallbackGuard callbackGuard(m_isInCallback);
+        m_onNewSubscriptionHandler(state.m_channel, state.m_streamId, registrationId);
     }
 }
 
@@ -612,6 +630,7 @@ void ClientConductor::onAvailableCounter(std::int64_t registrationId, std::int32
 
     for (auto const& handler: m_onAvailableCounterHandlers)
     {
+        CallbackGuard callbackGuard(m_isInCallback);
         handler(m_countersReader, registrationId, counterId);
     }
 }
@@ -622,6 +641,7 @@ void ClientConductor::onUnavailableCounter(std::int64_t registrationId, std::int
 
     for (auto const& handler: m_onUnavailableCounterHandlers)
     {
+        CallbackGuard callbackGuard(m_isInCallback);
         handler(m_countersReader, registrationId, counterId);
     }
 }
@@ -724,6 +744,7 @@ void ClientConductor::onAvailableImage(
                         logBuffers,
                         m_errorHandler);
 
+                    CallbackGuard callbackGuard(m_isInCallback);
                     entry.m_onAvailableImageHandler(image);
 
                     struct ImageList *oldImageList = subscription->addImage(image);
@@ -761,6 +782,8 @@ void ClientConductor::onUnavailableImage(std::int64_t correlationId, std::int64_
 
                         lingerResource(nowMs, oldArray[index].logBuffers());
                         lingerResource(nowMs, oldImageList);
+
+                        CallbackGuard callbackGuard(m_isInCallback);
                         entry.m_onUnavailableImageHandler(oldArray[index]);
                     }
                 }

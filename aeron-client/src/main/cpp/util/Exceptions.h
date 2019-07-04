@@ -103,6 +103,7 @@ DECLARE_SOURCED_EXCEPTION(ConductorServiceTimeoutException);
 DECLARE_SOURCED_EXCEPTION(ClientTimeoutException);
 DECLARE_SOURCED_EXCEPTION(AeronException);
 DECLARE_SOURCED_EXCEPTION(UnknownSubscriptionException);
+DECLARE_SOURCED_EXCEPTION(ReentrantException);
 
 class RegistrationException : public SourcedException
 {

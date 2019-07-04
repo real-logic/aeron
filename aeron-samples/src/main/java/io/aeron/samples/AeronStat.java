@@ -18,12 +18,10 @@ package io.aeron.samples;
 import io.aeron.CncFileDescriptor;
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.DirectBuffer;
-import org.agrona.SemanticVersion;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.SigInt;
 import org.agrona.concurrent.status.CountersReader;
 
-import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -96,39 +94,6 @@ public class AeronStat
      */
     private static final String COUNTER_CHANNEL = "channel";
 
-    private final CountersReader counters;
-    private final Pattern typeFilter;
-    private final Pattern identityFilter;
-    private final Pattern sessionFilter;
-    private final Pattern streamFilter;
-    private final Pattern channelFilter;
-
-    public AeronStat(
-        final CountersReader counters,
-        final Pattern typeFilter,
-        final Pattern identityFilter,
-        final Pattern sessionFilter,
-        final Pattern streamFilter,
-        final Pattern channelFilter)
-    {
-        this.counters = counters;
-        this.typeFilter = typeFilter;
-        this.identityFilter = identityFilter;
-        this.sessionFilter = sessionFilter;
-        this.streamFilter = streamFilter;
-        this.channelFilter = channelFilter;
-    }
-
-    public AeronStat(final CountersReader counters)
-    {
-        this.counters = counters;
-        this.typeFilter = null;
-        this.identityFilter = null;
-        this.sessionFilter = null;
-        this.streamFilter = null;
-        this.channelFilter = null;
-    }
-
     public static void main(final String[] args) throws Exception
     {
         long delayMs = 1000L;
@@ -194,56 +159,64 @@ public class AeronStat
 
         final CncFileReader cncFileReader = CncFileReader.map();
 
-        final AeronStat aeronStat = new AeronStat(
-            cncFileReader.countersReader(),
+        final CounterFilter counterFilter = new CounterFilter(
             typeFilter,
             identityFilter,
             sessionFilter,
             streamFilter,
             channelFilter);
 
-        final AtomicBoolean running = new AtomicBoolean(watch);
-        SigInt.register(() -> running.set(false));
+        if (watch)
+        {
+            workLoop(delayMs, () -> printOutput(cncFileReader, counterFilter));
+        }
+        else
+        {
+            printOutput(cncFileReader, counterFilter);
+        }
+    }
 
-        final SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
+    private static void workLoop(final long delayMs, final Runnable printOutput) throws Exception
+    {
+        final AtomicBoolean running = new AtomicBoolean(true);
+        SigInt.register(() -> running.set(false));
 
         do
         {
-            if (watch)
-            {
-                clearScreen();
-            }
+            clearScreen();
 
-            System.out.print(dateFormat.format(new Date()));
-            System.out.println(
-                " - Aeron Stat (CnC v" + cncFileReader.semanticVersion() + ")" +
-                    ", pid " + SystemUtil.getPid() +
-                    ", heartbeat " + cncFileReader.driverHeartbeatAge() + "ms");
-            System.out.println("======================================================================");
+            printOutput.run();
 
-            aeronStat.print(System.out);
-            System.out.println("--");
-
-            if (watch)
-            {
-                Thread.sleep(delayMs);
-            }
-
+            Thread.sleep(delayMs);
         }
         while (running.get());
     }
 
-    public void print(final PrintStream out)
+    private static void printOutput(final CncFileReader cncFileReader, final CounterFilter counterFilter)
     {
+        final SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
+
+        System.out.print(dateFormat.format(new Date()));
+        System.out.println(
+            " - Aeron Stat (CnC v" + cncFileReader.semanticVersion() + ")" +
+            ", pid " + SystemUtil.getPid() +
+            ", heartbeat " + cncFileReader.driverHeartbeatAge() + "ms");
+        System.out.println("======================================================================");
+
+        final CountersReader counters = cncFileReader.countersReader();
+
         counters.forEach(
             (counterId, typeId, keyBuffer, label) ->
             {
-                if (filter(typeId, keyBuffer))
+                if (counterFilter.filter(typeId, keyBuffer))
                 {
                     final long value = counters.getCounterValue(counterId);
-                    out.format("%3d: %,20d - %s%n", counterId, value, label);
+                    System.out.format("%3d: %,20d - %s%n", counterId, value, label);
                 }
-            });
+            }
+        );
+
+        System.out.println("--");
     }
 
     private static void checkForHelp(final String[] args)
@@ -268,39 +241,6 @@ public class AeronStat
         }
     }
 
-    private boolean filter(final int typeId, final DirectBuffer keyBuffer)
-    {
-        if (!match(typeFilter, () -> Integer.toString(typeId)))
-        {
-            return false;
-        }
-
-        if (SYSTEM_COUNTER_TYPE_ID == typeId && !match(identityFilter, () -> Integer.toString(keyBuffer.getInt(0))))
-        {
-            return false;
-        }
-        else if ((typeId >= PUBLISHER_LIMIT_TYPE_ID && typeId <= RECEIVER_POS_TYPE_ID) ||
-            typeId == SENDER_LIMIT_TYPE_ID || typeId == PER_IMAGE_TYPE_ID || typeId == PUBLISHER_POS_TYPE_ID)
-        {
-            return
-                match(identityFilter, () -> Long.toString(keyBuffer.getLong(REGISTRATION_ID_OFFSET))) &&
-                match(sessionFilter, () -> Integer.toString(keyBuffer.getInt(SESSION_ID_OFFSET))) &&
-                match(streamFilter, () -> Integer.toString(keyBuffer.getInt(STREAM_ID_OFFSET))) &&
-                match(channelFilter, () -> keyBuffer.getStringAscii(CHANNEL_OFFSET));
-        }
-        else if (typeId >= SEND_CHANNEL_STATUS_TYPE_ID && typeId <= RECEIVE_CHANNEL_STATUS_TYPE_ID)
-        {
-            return match(channelFilter, () -> keyBuffer.getStringAscii(ChannelEndpointStatus.CHANNEL_OFFSET));
-        }
-
-        return true;
-    }
-
-    private static boolean match(final Pattern pattern, final Supplier<String> supplier)
-    {
-        return null == pattern || pattern.matcher(supplier.get()).find();
-    }
-
     private static void clearScreen() throws Exception
     {
         if (SystemUtil.osName().contains("win"))
@@ -310,6 +250,62 @@ public class AeronStat
         else
         {
             System.out.print(ANSI_CLS + ANSI_HOME);
+        }
+    }
+
+    static class CounterFilter
+    {
+        private final Pattern typeFilter;
+        private final Pattern identityFilter;
+        private final Pattern sessionFilter;
+        private final Pattern streamFilter;
+        private final Pattern channelFilter;
+
+        CounterFilter(
+            final Pattern typeFilter,
+            final Pattern identityFilter,
+            final Pattern sessionFilter,
+            final Pattern streamFilter,
+            final Pattern channelFilter)
+        {
+            this.typeFilter = typeFilter;
+            this.identityFilter = identityFilter;
+            this.sessionFilter = sessionFilter;
+            this.streamFilter = streamFilter;
+            this.channelFilter = channelFilter;
+        }
+
+        private static boolean match(final Pattern pattern, final Supplier<String> supplier)
+        {
+            return null == pattern || pattern.matcher(supplier.get()).find();
+        }
+
+        boolean filter(final int typeId, final DirectBuffer keyBuffer)
+        {
+            if (!match(typeFilter, () -> Integer.toString(typeId)))
+            {
+                return false;
+            }
+
+            if (SYSTEM_COUNTER_TYPE_ID == typeId && !match(identityFilter, () -> Integer.toString(keyBuffer.getInt(0))))
+            {
+                return false;
+            }
+            else if ((typeId >= PUBLISHER_LIMIT_TYPE_ID && typeId <= RECEIVER_POS_TYPE_ID) ||
+                typeId == SENDER_LIMIT_TYPE_ID || typeId == PER_IMAGE_TYPE_ID || typeId == PUBLISHER_POS_TYPE_ID)
+            {
+                return
+                    match(identityFilter, () -> Long.toString(keyBuffer.getLong(REGISTRATION_ID_OFFSET))) &&
+                        match(sessionFilter, () -> Integer.toString(keyBuffer.getInt(SESSION_ID_OFFSET))) &&
+                        match(streamFilter, () -> Integer.toString(keyBuffer.getInt(STREAM_ID_OFFSET))) &&
+                        match(channelFilter, () -> keyBuffer.getStringAscii(CHANNEL_OFFSET));
+            }
+            else if (typeId >= SEND_CHANNEL_STATUS_TYPE_ID && typeId <= RECEIVE_CHANNEL_STATUS_TYPE_ID)
+            {
+                return match(channelFilter, () -> keyBuffer.getStringAscii(ChannelEndpointStatus.CHANNEL_OFFSET));
+            }
+
+            return true;
         }
     }
 }

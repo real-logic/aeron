@@ -17,6 +17,9 @@ package io.aeron.cluster;
 
 import java.util.List;
 
+/**
+ * Listener which can be registered via {@link ClusterBackup.Context} for tracking backup progress.
+ */
 public interface ClusterBackupEventsListener
 {
     /**

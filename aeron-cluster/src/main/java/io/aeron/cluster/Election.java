@@ -434,7 +434,8 @@ public class Election implements AutoCloseable
                 .logPosition(logPosition)
                 .leadershipTermId(leadershipTermId)
                 .timeOfLastAppendPositionMs(ctx.epochClock().time());
-            consensusModuleAgent.checkCatchupStop(follower);
+
+            consensusModuleAgent.trackCatchupCompletion(follower);
         }
     }
 

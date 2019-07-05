@@ -501,7 +501,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             if (null != follower)
             {
                 follower.logPosition(logPosition).timeOfLastAppendPositionMs(cachedTimeMs);
-                checkCatchupStop(follower);
+                trackCatchupCompletion(follower);
             }
         }
     }
@@ -1502,17 +1502,17 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         recordingLog.commitLogPosition(leadershipTermId, logPosition);
     }
 
-    public void checkCatchupStop(final ClusterMember member)
+    public void trackCatchupCompletion(final ClusterMember follower)
     {
-        if (null != member && Aeron.NULL_VALUE != member.catchupReplaySessionId())
+        if (null != follower && Aeron.NULL_VALUE != follower.catchupReplaySessionId())
         {
-            if (member.logPosition() >= logPublisher.position())
+            if (follower.logPosition() >= logPublisher.position())
             {
-                archive.stopReplay(member.catchupReplaySessionId());
+                archive.stopReplay(follower.catchupReplaySessionId());
                 if (memberStatusPublisher.stopCatchup(
-                    member.publication(), leadershipTermId, logPublisher.position(), member.id()))
+                    follower.publication(), leadershipTermId, logPublisher.position(), follower.id()))
                 {
-                    member.catchupReplaySessionId(Aeron.NULL_VALUE);
+                    follower.catchupReplaySessionId(Aeron.NULL_VALUE);
                 }
             }
         }

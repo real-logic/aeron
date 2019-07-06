@@ -73,12 +73,13 @@ public class EmbeddedPingPong
             .receiverIdleStrategy(new NoOpIdleStrategy())
             .senderIdleStrategy(new NoOpIdleStrategy());
 
-        try (MediaDriver ignored = MediaDriver.launch(ctx))
+        try (MediaDriver ignored = MediaDriver.launch(ctx);
+            Aeron aeron = Aeron.connect())
         {
-            final Thread pongThread = startPong(ignored.aeronDirectoryName());
+            final Thread pongThread = startPong(aeron);
             pongThread.start();
 
-            runPing(ignored.aeronDirectoryName());
+            runPing(aeron);
             RUNNING.set(false);
             pongThread.join();
 
@@ -86,12 +87,8 @@ public class EmbeddedPingPong
         }
     }
 
-    private static void runPing(final String embeddedDirName) throws InterruptedException
+    private static void runPing(final Aeron aeron) throws InterruptedException
     {
-        final Aeron.Context ctx = new Aeron.Context()
-            .availableImageHandler(EmbeddedPingPong::availablePongImageHandler)
-            .aeronDirectoryName(embeddedDirName);
-
         System.out.println("Publishing Ping at " + PING_CHANNEL + " on stream id " + PING_STREAM_ID);
         System.out.println("Subscribing Pong at " + PONG_CHANNEL + " on stream id " + PONG_STREAM_ID);
         System.out.println("Message payload length of " + MESSAGE_LENGTH + " bytes");
@@ -99,8 +96,8 @@ public class EmbeddedPingPong
 
         final FragmentAssembler dataHandler = new FragmentAssembler(EmbeddedPingPong::pongHandler);
 
-        try (Aeron aeron = Aeron.connect(ctx);
-            Subscription pongSubscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID);
+        try (Subscription pongSubscription = aeron.addSubscription(
+            PONG_CHANNEL, PONG_STREAM_ID, EmbeddedPingPong::availablePongImageHandler, null);
             Publication pingPublication = EXCLUSIVE_PUBLICATIONS ?
                 aeron.addExclusivePublication(PING_CHANNEL, PING_STREAM_ID) :
                 aeron.addPublication(PING_CHANNEL, PING_STREAM_ID))
@@ -133,17 +130,14 @@ public class EmbeddedPingPong
         }
     }
 
-    private static Thread startPong(final String embeddedDirName)
+    private static Thread startPong(final Aeron aeron)
     {
         return new Thread(() ->
         {
             System.out.println("Subscribing Ping at " + PING_CHANNEL + " on stream id " + PING_STREAM_ID);
             System.out.println("Publishing Pong at " + PONG_CHANNEL + " on stream id " + PONG_STREAM_ID);
 
-            final Aeron.Context ctx = new Aeron.Context().aeronDirectoryName(embeddedDirName);
-
-            try (Aeron aeron = Aeron.connect(ctx);
-                Subscription pingSubscription = aeron.addSubscription(PING_CHANNEL, PING_STREAM_ID);
+            try (Subscription pingSubscription = aeron.addSubscription(PING_CHANNEL, PING_STREAM_ID);
                 Publication pongPublication = EXCLUSIVE_PUBLICATIONS ?
                     aeron.addExclusivePublication(PONG_CHANNEL, PONG_STREAM_ID) :
                     aeron.addPublication(PONG_CHANNEL, PONG_STREAM_ID))

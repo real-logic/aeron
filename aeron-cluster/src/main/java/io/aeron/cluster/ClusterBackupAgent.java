@@ -217,26 +217,24 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
             recordingLog = null;
         }
 
-        // TODO: stop live log replay if active, stop live log recording if active
-        // TODO: stop any ongoing snapshot retrieval
+        final ExclusivePublication memberStatusPublication = this.memberStatusPublication;
+        final Subscription snapshotRetrieveSubscription = this.snapshotRetrieveSubscription;
+        final AeronArchive clusterArchive = this.clusterArchive;
+        final AeronArchive.AsyncConnect clusterArchiveAsyncConnect = this.clusterArchiveAsyncConnect;
 
-        CloseHelper.close(memberStatusPublication);
-        memberStatusPublication = null;
-
-        CloseHelper.close(snapshotRetrieveSubscription);
-        snapshotRetrieveSubscription = null;
-
-        CloseHelper.close(clusterArchive);
-        clusterArchive = null;
-
-        CloseHelper.close(clusterArchiveAsyncConnect);
-        clusterArchiveAsyncConnect = null;
+        this.memberStatusPublication = null;
+        this.snapshotRetrieveSubscription = null;
+        this.clusterArchive = null;
+        this.clusterArchiveAsyncConnect = null;
 
         correlationId = NULL_VALUE;
         liveLogRecCounterId = NULL_COUNTER_ID;
         liveLogRecordingId = NULL_VALUE;
         liveLogReplayId = NULL_VALUE;
         liveLogReplaySubscriptionId = NULL_VALUE;
+
+        CloseHelper.closeAll(
+            memberStatusPublication, snapshotRetrieveSubscription, clusterArchive, clusterArchiveAsyncConnect);
     }
 
     public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)

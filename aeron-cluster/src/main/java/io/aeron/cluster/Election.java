@@ -467,14 +467,17 @@ public class Election implements AutoCloseable
     {
         if (State.FOLLOWER_CATCHUP == state)
         {
+            for (long termId = this.logLeadershipTermId; termId <= leadershipTermId; termId++)
+            {
+                if (ctx.recordingLog().isUnknown(termId))
+                {
+                    ctx.recordingLog().appendTerm(logRecordingId, termId, termBaseLogPosition, nowMs);
+                    ctx.recordingLog().force();
+                }
+            }
+
             this.logLeadershipTermId = leadershipTermId;
             this.logPosition = logPosition;
-
-            if (ctx.recordingLog().isUnknown(leadershipTermId))
-            {
-                ctx.recordingLog().appendTerm(logRecordingId, leadershipTermId, termBaseLogPosition, nowMs);
-                ctx.recordingLog().force();
-            }
         }
     }
 

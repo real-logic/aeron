@@ -393,8 +393,10 @@ public class ClusterTest
 
             final TestNode secondLeader = cluster.awaitLeader();
 
-            cluster.startStaticNode(firstLeader.index(), false);
+            final long commitPos = secondLeader.commitPosition();
+            final TestNode newFollower = cluster.startStaticNode(firstLeader.index(), false);
 
+            cluster.awaitCommitPosition(newFollower, commitPos);
             cluster.stopNode(secondLeader);
 
             cluster.awaitLeader();

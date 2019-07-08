@@ -22,6 +22,7 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusteredServiceContainer;
+import io.aeron.cluster.service.CommitPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.FragmentHandler;
@@ -30,6 +31,7 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableInteger;
+import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
@@ -131,6 +133,22 @@ class TestNode implements AutoCloseable
         return NULL_VALUE != electionStateValue.value ? Election.State.get(electionStateValue.value) : null;
     }
 
+    long commitPosition()
+    {
+        final MutableLong commitPosition = new MutableLong(NULL_VALUE);
+
+        countersReader().forEach(
+            (counterId, typeId, keyBuffer, label) ->
+            {
+                if (typeId == CommitPos.COMMIT_POSITION_TYPE_ID)
+                {
+                    commitPosition.value = countersReader().getCounterValue(counterId);
+                }
+            });
+
+        return commitPosition.value;
+    }
+
     boolean isLeader()
     {
         return role() == Cluster.Role.LEADER;
@@ -200,6 +218,7 @@ class TestNode implements AutoCloseable
         private volatile int messageCount;
         private volatile boolean wasSnapshotTaken = false;
         private volatile boolean wasSnapshotLoaded = false;
+        private volatile boolean wasOnStartCalled = false;
         private volatile Cluster.Role roleChangedTo = null;
 
         TestService index(final int index)
@@ -231,6 +250,11 @@ class TestNode implements AutoCloseable
         boolean wasSnapshotLoaded()
         {
             return wasSnapshotLoaded;
+        }
+
+        boolean wasOnStartCalled()
+        {
+            return wasOnStartCalled;
         }
 
         Cluster.Role roleChangedTo()
@@ -266,6 +290,8 @@ class TestNode implements AutoCloseable
 
                 wasSnapshotLoaded = true;
             }
+
+            wasOnStartCalled = true;
         }
 
         public void onSessionMessage(

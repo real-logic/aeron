@@ -355,7 +355,7 @@ public class Election implements AutoCloseable
 
     void onNewLeadershipTerm(
         final long logLeadershipTermId,
-        @SuppressWarnings("unused") final long logLeadershipTermPosition, // TODO use this in the below
+        @SuppressWarnings("unused") final long logLeadershipTermPosition, // TODO don't think we need this
         final long leadershipTermId,
         final long logPosition,
         final int leaderMemberId,
@@ -368,55 +368,56 @@ public class Election implements AutoCloseable
             return;
         }
 
-        if ((State.FOLLOWER_BALLOT == state || State.CANDIDATE_BALLOT == state || State.CANVASS == state) &&
+        leaderMember = leader;
+
+        if (this.logPosition > logPosition && logLeadershipTermId == this.logLeadershipTermId)
+        {
+            this.leadershipTermId = leadershipTermId;
+            this.logSessionId = logSessionId;
+
+            consensusModuleAgent.truncateLogEntry(logLeadershipTermId, logPosition);
+            consensusModuleAgent.prepareForNewLeadership(logPosition);
+            this.logPosition = logPosition;
+            state(State.FOLLOWER_REPLAY, ctx.epochClock().time());
+        }
+        else if ((State.FOLLOWER_BALLOT == state || State.CANDIDATE_BALLOT == state || State.CANVASS == state) &&
             leadershipTermId == this.candidateTermId)
         {
             this.leadershipTermId = leadershipTermId;
-            leaderMember = leader;
             this.logSessionId = logSessionId;
 
-            if (this.logPosition < logPosition && NULL_POSITION == catchupLogPosition)
-            {
-                catchupLogPosition = logPosition;
-                state(State.FOLLOWER_REPLAY, ctx.epochClock().time());
-            }
-            else if (this.logPosition > logPosition && this.logLeadershipTermId == logLeadershipTermId)
-            {
-                consensusModuleAgent.truncateLogEntry(logLeadershipTermId, logPosition);
-                consensusModuleAgent.prepareForNewLeadership(logPosition);
-                this.logPosition = logPosition;
-                state(State.FOLLOWER_REPLAY, ctx.epochClock().time());
-            }
-            else
-            {
-                catchupLogPosition = logPosition;
-                state(State.FOLLOWER_REPLAY, ctx.epochClock().time());
-            }
+            catchupLogPosition = logPosition;
+            state(State.FOLLOWER_REPLAY, ctx.epochClock().time());
         }
         else if (0 != compareLog(this.logLeadershipTermId, this.logPosition, logLeadershipTermId, logPosition))
         {
-            if (this.logPosition > logPosition && this.logLeadershipTermId == logLeadershipTermId)
+            if (NULL_POSITION == catchupLogPosition)
             {
-                consensusModuleAgent.truncateLogEntry(logLeadershipTermId, logPosition);
-                consensusModuleAgent.prepareForNewLeadership(logPosition);
-                this.logPosition = logPosition;
-                state(State.FOLLOWER_REPLAY, ctx.epochClock().time());
-            }
-            else if (this.logPosition < logPosition && NULL_POSITION == catchupLogPosition)
-            {
-                this.leadershipTermId = leadershipTermId;
-                this.candidateTermId = NULL_VALUE;
-                leaderMember = leader;
-                this.logSessionId = logSessionId;
-                catchupLogPosition = logPosition;
+                if (this.logPosition < logPosition)
+                {
+                    this.leadershipTermId = leadershipTermId;
+                    this.candidateTermId = NULL_VALUE;
+                    this.logSessionId = logSessionId;
+                    catchupLogPosition = logPosition;
 
-                state(State.FOLLOWER_REPLAY, ctx.epochClock().time());
-            }
-            else if (logPosition == this.logPosition && NULL_POSITION == catchupLogPosition)
-            {
-                // may have left at this exact point from previous log
-                this.leadershipTermId = this.leadershipTermId + 1;
-                this.candidateTermId = this.candidateTermId + 1;
+                    state(State.FOLLOWER_REPLAY, ctx.epochClock().time());
+                }
+                else if (logPosition == this.logPosition)
+                {
+                    for (long id = this.logLeadershipTermId; id < leadershipTermId; id++)
+                    {
+                        if (ctx.recordingLog().isUnknown(id))
+                        {
+                            ctx.recordingLog().appendTerm(
+                                consensusModuleAgent.logRecordingId(), id, logPosition, ctx.epochClock().time());
+                            ctx.recordingLog().force();
+                        }
+                    }
+
+                    this.leadershipTermId = leadershipTermId;
+                    this.logLeadershipTermId = leadershipTermId;
+                    this.candidateTermId = leadershipTermId;
+                }
             }
         }
     }

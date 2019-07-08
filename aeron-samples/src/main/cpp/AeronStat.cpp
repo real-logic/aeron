@@ -21,12 +21,13 @@
 #include <iostream>
 #include <atomic>
 #include <thread>
-#include <signal.h>
-#include <Context.h>
 #include <cstdio>
+#include <signal.h>
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
+
+#include "Context.h"
 
 using namespace aeron;
 using namespace aeron::util;

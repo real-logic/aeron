@@ -16,14 +16,9 @@
 
 #include <cstdint>
 #include <cstdio>
-#include <signal.h>
-#include <util/CommandOptionParser.h>
 #include <thread>
-#include <Aeron.h>
 #include <array>
-#include <concurrent/BusySpinIdleStrategy.h>
-#include "FragmentAssembler.h"
-#include "Configuration.h"
+#include <signal.h>
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
@@ -32,6 +27,12 @@ extern "C"
 {
 #include <hdr_histogram.h>
 }
+
+#include "Configuration.h"
+#include "concurrent/BusySpinIdleStrategy.h"
+#include "util/CommandOptionParser.h"
+#include "FragmentAssembler.h"
+#include "Aeron.h"
 
 using namespace std::chrono;
 using namespace aeron::util;
@@ -88,6 +89,7 @@ Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
     s.messageLength = cp.getOption(optLength).getParamAsInt(0, sizeof(std::int64_t), INT32_MAX, s.messageLength);
     s.fragmentCountLimit = cp.getOption(optFrags).getParamAsInt(0, 1, INT32_MAX, s.fragmentCountLimit);
     s.numberOfWarmupMessages = cp.getOption(optWarmupMessages).getParamAsLong(0, 0, LONG_MAX, s.numberOfWarmupMessages);
+
     return s;
 }
 

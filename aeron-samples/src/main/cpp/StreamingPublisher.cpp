@@ -17,16 +17,17 @@
 #include <cstdint>
 #include <cstdio>
 #include <signal.h>
-#include <util/CommandOptionParser.h>
 #include <thread>
-#include <Aeron.h>
 #include <array>
-#include <concurrent/BusySpinIdleStrategy.h>
-#include "Configuration.h"
-#include "RateReporter.h"
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
+
+#include "util/CommandOptionParser.h"
+#include "concurrent/BusySpinIdleStrategy.h"
+#include "Configuration.h"
+#include "RateReporter.h"
+#include "Aeron.h"
 
 using namespace aeron::util;
 using namespace aeron;
@@ -159,11 +160,9 @@ int main(int argc, char **argv)
 
         Aeron aeron(context);
 
-        // add the publication to start the process
         std::int64_t id = aeron.addPublication(settings.channel, settings.streamId);
-
         std::shared_ptr<Publication> publication = aeron.findPublication(id);
-        // wait for the publication to be valid
+
         while (!publication)
         {
             std::this_thread::yield();

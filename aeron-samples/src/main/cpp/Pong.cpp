@@ -17,13 +17,14 @@
 #include <cstdint>
 #include <cstdio>
 #include <signal.h>
-#include <util/CommandOptionParser.h>
 #include <thread>
-#include <Aeron.h>
 #include <array>
-#include <concurrent/BusySpinIdleStrategy.h>
+
+#include "util/CommandOptionParser.h"
+#include "concurrent/BusySpinIdleStrategy.h"
 #include "FragmentAssembler.h"
 #include "Configuration.h"
+#include "Aeron.h"
 
 using namespace aeron::util;
 using namespace aeron;

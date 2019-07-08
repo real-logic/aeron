@@ -26,9 +26,9 @@
 #include <inttypes.h>
 #include <iomanip>
 
-#include <util/MemoryMappedFile.h>
-#include <util/CommandOptionParser.h>
-#include <Aeron.h>
+#include "util/MemoryMappedFile.h"
+#include "util/CommandOptionParser.h"
+#include "Aeron.h"
 
 using namespace aeron;
 using namespace aeron::util;

@@ -16,12 +16,12 @@
 
 #include <cstdint>
 #include <cstdio>
-#include <signal.h>
-#include <util/CommandOptionParser.h>
 #include <thread>
-#include "Configuration.h"
-#include <Aeron.h>
 #include <array>
+#include <signal.h>
+#include "util/CommandOptionParser.h"
+#include "Configuration.h"
+#include "Aeron.h"
 
 using namespace aeron::util;
 using namespace aeron;

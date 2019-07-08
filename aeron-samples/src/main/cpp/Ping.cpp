@@ -17,13 +17,8 @@
 #include <cstdint>
 #include <cstdio>
 #include <signal.h>
-#include <util/CommandOptionParser.h>
 #include <thread>
-#include <Aeron.h>
 #include <array>
-#include <concurrent/BusySpinIdleStrategy.h>
-#include "FragmentAssembler.h"
-#include "Configuration.h"
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
@@ -32,6 +27,12 @@ extern "C"
 {
 #include <hdr_histogram.h>
 }
+
+#include "util/CommandOptionParser.h"
+#include "concurrent/BusySpinIdleStrategy.h"
+#include "FragmentAssembler.h"
+#include "Configuration.h"
+#include "Aeron.h"
 
 using namespace std::chrono;
 using namespace aeron::util;

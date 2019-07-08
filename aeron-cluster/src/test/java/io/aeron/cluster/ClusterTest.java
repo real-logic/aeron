@@ -397,6 +397,8 @@ public class ClusterTest
             final TestNode newFollower = cluster.startStaticNode(firstLeader.index(), false);
 
             cluster.awaitCommitPosition(newFollower, commitPos);
+            cluster.awaitNotInElection(newFollower);
+
             cluster.stopNode(secondLeader);
 
             cluster.awaitLeader();

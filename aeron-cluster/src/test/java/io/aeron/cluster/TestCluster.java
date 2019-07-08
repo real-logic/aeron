@@ -574,6 +574,15 @@ public class TestCluster implements AutoCloseable
         }
     }
 
+    void awaitNotInElection(final TestNode node)
+    {
+        while (null != node.electionState())
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.yield();
+        }
+    }
+
     void awaitCommitPosition(final TestNode node, final long logPosition)
     {
         while (node.commitPosition() != logPosition)

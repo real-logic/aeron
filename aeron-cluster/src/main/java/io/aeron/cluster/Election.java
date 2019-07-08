@@ -274,37 +274,34 @@ public class Election implements AutoCloseable
     void onCanvassPosition(final long logLeadershipTermId, final long logPosition, final int followerMemberId)
     {
         final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
-
-        if (null == follower)
+        if (null != follower)
         {
-            return;
-        }
+            follower
+                .leadershipTermId(logLeadershipTermId)
+                .logPosition(logPosition);
 
-        follower
-            .leadershipTermId(logLeadershipTermId)
-            .logPosition(logPosition);
-
-        if (State.LEADER_READY == state && logLeadershipTermId < leadershipTermId)
-        {
-            if (this.logLeadershipTermId == logLeadershipTermId)
+            if (State.LEADER_READY == state && logLeadershipTermId < leadershipTermId)
             {
-                publishNewLeadershipTerm(follower.publication(), leadershipTermId);
+                if (this.logLeadershipTermId == logLeadershipTermId)
+                {
+                    publishNewLeadershipTerm(follower.publication(), leadershipTermId);
+                }
+                else
+                {
+                    memberStatusPublisher.newLeadershipTerm(
+                        follower.publication(),
+                        logLeadershipTermId,
+                        consensusModuleAgent.logLeadershipTermPosition(logLeadershipTermId),
+                        leadershipTermId,
+                        this.logPosition,
+                        thisMember.id(),
+                        logSessionId);
+                }
             }
-            else
+            else if (State.CANVASS != state && logLeadershipTermId > leadershipTermId)
             {
-                memberStatusPublisher.newLeadershipTerm(
-                    follower.publication(),
-                    logLeadershipTermId,
-                    consensusModuleAgent.logStopPosition(logLeadershipTermId),
-                    this.logLeadershipTermId + 1,
-                    this.logPosition,
-                    thisMember.id(),
-                    logSessionId);
+                state(State.CANVASS, ctx.epochClock().time());
             }
-        }
-        else if (State.CANVASS != state && logLeadershipTermId > leadershipTermId)
-        {
-            state(State.CANVASS, ctx.epochClock().time());
         }
     }
 
@@ -358,9 +355,9 @@ public class Election implements AutoCloseable
 
     void onNewLeadershipTerm(
         final long logLeadershipTermId,
-        final long logPosition, // TODO: this is really the max and needs to be addressed
+        @SuppressWarnings("unused") final long logLeadershipTermPosition, // TODO use this in the below
         final long leadershipTermId,
-        @SuppressWarnings("unused") final long maxLogPosition,
+        final long logPosition,
         final int leaderMemberId,
         final int logSessionId)
     {

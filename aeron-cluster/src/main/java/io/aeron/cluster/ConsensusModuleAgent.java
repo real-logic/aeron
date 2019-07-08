@@ -421,15 +421,10 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
             if (null != follower)
             {
-                // TODO: fix term base position when logLeadershipTermId == leadershipTermId
-                // TODO: this reflects in Election.onNewLeadershipTerm
-                final long termBaseLogPosition = logLeadershipTermId == leadershipTermId ?
-                    logPublisher.position() : recordingLog.getTermEntry(leadershipTermId).termBaseLogPosition;
-
                 memberStatusPublisher.newLeadershipTerm(
                     follower.publication(),
-                    leadershipTermId,
-                    termBaseLogPosition,
+                    logLeadershipTermId,
+                    logLeadershipTermPosition(logLeadershipTermId),
                     leadershipTermId,
                     logPublisher.position(),
                     thisMember.id(),
@@ -470,16 +465,16 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     public void onNewLeadershipTerm(
         final long logLeadershipTermId,
-        final long logPosition,
+        final long logLeadershipTermPosition,
         final long leadershipTermId,
-        final long maxLogPosition,
-        final int leaderMemberId,
+        final long logPosition,
+        final int leaderId,
         final int logSessionId)
     {
         if (null != election)
         {
             election.onNewLeadershipTerm(
-                logLeadershipTermId, logPosition, leadershipTermId, maxLogPosition, leaderMemberId, logSessionId);
+                logLeadershipTermId, logLeadershipTermPosition, leadershipTermId, logPosition, leaderId, logSessionId);
         }
         else if (leadershipTermId > this.leadershipTermId)
         {
@@ -1486,7 +1481,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         return RecordingPos.getRecordingId(aeron.countersReader(), appendedPosition.counterId());
     }
 
-    long logStopPosition(final long leadershipTermId)
+    long logLeadershipTermPosition(final long leadershipTermId)
     {
         if (NULL_VALUE == leadershipTermId)
         {

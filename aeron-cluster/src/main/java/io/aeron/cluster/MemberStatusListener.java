@@ -33,9 +33,9 @@ interface MemberStatusListener
 
     void onNewLeadershipTerm(
         long logLeadershipTermId,
-        long logPosition,
+        long logLeadershipTermPosition,
         long leadershipTermId,
-        long maxLogPosition,
+        long logPosition,
         int leaderMemberId,
         int logSessionId);
 

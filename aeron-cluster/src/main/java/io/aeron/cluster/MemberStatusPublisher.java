@@ -149,9 +149,9 @@ class MemberStatusPublisher
     void newLeadershipTerm(
         final Publication publication,
         final long logLeadershipTermId,
-        final long logPosition,
+        final long logLeadershipTermPosition,
         final long leadershipTermId,
-        final long maxLogPosition,
+        final long logPosition,
         final int leaderMemberId,
         final int logSessionId)
     {
@@ -166,9 +166,9 @@ class MemberStatusPublisher
                 newLeadershipTermEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .logLeadershipTermId(logLeadershipTermId)
-                    .logPosition(logPosition)
+                    .logLeadershipTermPosition(logLeadershipTermPosition)
                     .leadershipTermId(leadershipTermId)
-                    .maxLogPosition(maxLogPosition)
+                    .logPosition(logPosition)
                     .leaderMemberId(leaderMemberId)
                     .logSessionId(logSessionId);
 

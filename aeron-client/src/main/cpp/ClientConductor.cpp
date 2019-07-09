@@ -188,7 +188,7 @@ std::shared_ptr<ExclusivePublication> ClientConductor::findExclusivePublication(
         return std::shared_ptr<ExclusivePublication>();
     }
 
-    ExclusivePublicationStateDefn &state = (*it);
+    ExclusivePublicationStateDefn &state = it->second;
     std::shared_ptr<ExclusivePublication> pub(state.m_publication.lock());
 
     if (!pub)
@@ -261,8 +261,10 @@ std::int64_t ClientConductor::addSubscription(
 
     std::int64_t registrationId = m_driverProxy.addSubscription(channel, streamId);
 
-    m_subscriptions.emplace_back(
-        channel, registrationId, streamId, m_epochClock(), onAvailableImageHandler, onUnavailableImageHandler);
+    m_subscriptionByRegistrationId.insert(std::pair<std::int64_t, SubscriptionStateDefn>(
+        registrationId,
+        SubscriptionStateDefn(
+            channel, registrationId, streamId, m_epochClock(), onAvailableImageHandler, onUnavailableImageHandler)));
 
     return registrationId;
 }
@@ -284,7 +286,7 @@ std::shared_ptr<Subscription> ClientConductor::findSubscription(std::int64_t reg
         return std::shared_ptr<Subscription>();
     }
 
-    SubscriptionStateDefn &state = *it;
+    SubscriptionStateDefn &state = it->second;
     std::shared_ptr<Subscription> sub = state.m_subscription.lock();
 
     if (state.m_subscriptionCache)
@@ -321,11 +323,11 @@ void ClientConductor::releaseSubscription(std::int64_t registrationId, struct Im
 
     if (it != m_subscriptions.end())
     {
-        m_driverProxy.removeSubscription((*it).m_registrationId);
+        m_driverProxy.removeSubscription(registrationId);
 
         for (std::size_t i = 0; i < imageList->m_length; i++)
         {
-            (*it).m_onUnavailableImageHandler(imageList->m_images[i]);
+            it->second.m_onUnavailableImageHandler(imageList->m_images[i]);
         }
 
         m_subscriptions.erase(it);
@@ -383,7 +385,7 @@ std::shared_ptr<Counter> ClientConductor::findCounter(std::int64_t registrationI
         return std::shared_ptr<Counter>();
     }
 
-    CounterStateDefn &state = *it;
+    CounterStateDefn &state = it->second;
     std::shared_ptr<Counter> counter = state.m_counter.lock();
 
     if (state.m_counterCache)
@@ -422,7 +424,7 @@ void ClientConductor::releaseCounter(std::int64_t registrationId)
 
     if (it != m_counters.end())
     {
-        m_driverProxy.removeCounter((*it).m_registrationId);
+        m_driverProxy.removeCounter(registrationId);
 
         m_counters.erase(it);
     }
@@ -570,7 +572,7 @@ void ClientConductor::onNewExclusivePublication(
 
     if (it != m_exclusivePublications.end())
     {
-        ExclusivePublicationStateDefn &state = (*it);
+        ExclusivePublicationStateDefn &state = it->second;
 
         state.m_status = RegistrationStatus::REGISTERED_MEDIA_DRIVER;
         state.m_sessionId = sessionId;
@@ -596,7 +598,7 @@ void ClientConductor::onSubscriptionReady(std::int64_t registrationId, std::int3
 
     if (subIt != m_subscriptions.end() && (*subIt).m_status == RegistrationStatus::AWAITING_MEDIA_DRIVER)
     {
-        SubscriptionStateDefn &state = (*subIt);
+        SubscriptionStateDefn &state = it->second;
 
         state.m_status = RegistrationStatus::REGISTERED_MEDIA_DRIVER;
         state.m_subscriptionCache = std::make_shared<Subscription>(
@@ -620,7 +622,7 @@ void ClientConductor::onAvailableCounter(std::int64_t registrationId, std::int32
 
     if (counterIt != m_counters.end() && (*counterIt).m_status == RegistrationStatus::AWAITING_MEDIA_DRIVER)
     {
-        CounterStateDefn &state = (*counterIt);
+        CounterStateDefn &state = it->second;
 
         state.m_status = RegistrationStatus::REGISTERED_MEDIA_DRIVER;
         state.m_counterId = counterId;
@@ -663,9 +665,9 @@ void ClientConductor::onErrorResponse(
 
     if (subIt != m_subscriptions.end())
     {
-        (*subIt).m_status = RegistrationStatus::ERRORED_MEDIA_DRIVER;
-        (*subIt).m_errorCode = errorCode;
-        (*subIt).m_errorMessage = errorMessage;
+        subIt->second.m_status = RegistrationStatus::ERRORED_MEDIA_DRIVER;
+        subIt->second.m_errorCode = errorCode;
+        subIt->second.m_errorMessage = errorMessage;
         return;
     }
 
@@ -691,9 +693,9 @@ void ClientConductor::onErrorResponse(
 
     if (exPubIt != m_exclusivePublications.end())
     {
-        (*exPubIt).m_status = RegistrationStatus::ERRORED_MEDIA_DRIVER;
-        (*exPubIt).m_errorCode = errorCode;
-        (*exPubIt).m_errorMessage = errorMessage;
+        exPubIt->second.m_status = RegistrationStatus::ERRORED_MEDIA_DRIVER;
+        exPubIt->second.m_errorCode = errorCode;
+        exPubIt->second.m_errorMessage = errorMessage;
         return;
     }
 
@@ -705,9 +707,9 @@ void ClientConductor::onErrorResponse(
 
     if (counterIt != m_counters.end())
     {
-        (*counterIt).m_status = RegistrationStatus::ERRORED_MEDIA_DRIVER;
-        (*counterIt).m_errorCode = errorCode;
-        (*counterIt).m_errorMessage = errorMessage;
+        counterIt->second.m_status = RegistrationStatus::ERRORED_MEDIA_DRIVER;
+        counterIt->second.m_errorCode = errorCode;
+        counterIt->second.m_errorMessage = errorMessage;
         return;
     }
 }
@@ -833,7 +835,7 @@ void ClientConductor::closeAllResources(long long nowMs)
             }
         });
 
-    m_exclusivePublications.clear();
+    m_exclusivePublicationByRegistrationId.clear();
 
     std::for_each(m_subscriptions.begin(), m_subscriptions.end(),
         [&](SubscriptionStateDefn &entry)

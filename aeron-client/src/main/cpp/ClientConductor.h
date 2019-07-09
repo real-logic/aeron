@@ -263,14 +263,14 @@ private:
     {
         std::string m_channel;
         std::int64_t m_registrationId;
-        std::int64_t m_originalRegistrationId;
+        std::int64_t m_originalRegistrationId = -1;
         std::int32_t m_streamId;
         std::int32_t m_sessionId = -1;
         std::int32_t m_publicationLimitCounterId = -1;
         std::int32_t m_channelStatusId = -1;
         long long m_timeOfRegistrationMs;
         RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
-        std::int32_t m_errorCode;
+        std::int32_t m_errorCode = -1;
         std::string m_errorMessage;
         std::shared_ptr<LogBuffers> m_buffers;
         std::weak_ptr<Publication> m_publication;
@@ -289,14 +289,14 @@ private:
     {
         std::string m_channel;
         std::int64_t m_registrationId;
-        std::int64_t m_originalRegistrationId;
+        std::int64_t m_originalRegistrationId = -1;
         std::int32_t m_streamId;
         std::int32_t m_sessionId = -1;
         std::int32_t m_publicationLimitCounterId = -1;
         std::int32_t m_channelStatusId = -1;
         long long m_timeOfRegistrationMs;
         RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
-        std::int32_t m_errorCode;
+        std::int32_t m_errorCode = -1;
         std::string m_errorMessage;
         std::shared_ptr<LogBuffers> m_buffers;
         std::weak_ptr<ExclusivePublication> m_publication;
@@ -318,7 +318,7 @@ private:
         std::int32_t m_streamId;
         long long m_timeOfRegistrationMs;
         RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
-        std::int32_t m_errorCode;
+        std::int32_t m_errorCode = -1;
         std::string m_errorMessage;
         std::shared_ptr<Subscription> m_subscriptionCache;
         std::weak_ptr<Subscription> m_subscription;
@@ -348,7 +348,7 @@ private:
         std::int32_t m_counterId = -1;
         long long m_timeOfRegistrationMs;
         RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
-        std::int32_t m_errorCode;
+        std::int32_t m_errorCode = -1;
         std::string m_errorMessage;
         std::shared_ptr<Counter> m_counterCache;
         std::weak_ptr<Counter> m_counter;

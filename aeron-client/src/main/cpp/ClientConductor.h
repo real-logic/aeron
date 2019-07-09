@@ -17,6 +17,7 @@
 #ifndef AERON_CLIENT_CONDUCTOR_H
 #define AERON_CLIENT_CONDUCTOR_H
 
+#include <map>
 #include <vector>
 #include <mutex>
 #include <concurrent/logbuffer/TermReader.h>
@@ -387,9 +388,9 @@ private:
     std::recursive_mutex m_adminLock;
 
     std::vector<PublicationStateDefn> m_publications;
-    std::vector<ExclusivePublicationStateDefn> m_exclusivePublications;
-    std::vector<SubscriptionStateDefn> m_subscriptions;
-    std::vector<CounterStateDefn> m_counters;
+    std::map<std::int64_t, ExclusivePublicationStateDefn> m_exclusivePublicationByRegistrationId;
+    std::map<std::int64_t, SubscriptionStateDefn> m_subscriptionByRegistrationId;
+    std::map<std::int64_t, CounterStateDefn> m_counterByRegistrationId;
 
     std::vector<LogBuffersLingerDefn> m_lingeringLogBuffers;
     std::vector<ImageListLingerDefn> m_lingeringImageLists;

@@ -291,7 +291,6 @@ public class Election implements AutoCloseable
                     memberStatusPublisher.newLeadershipTerm(
                         follower.publication(),
                         logLeadershipTermId,
-                        consensusModuleAgent.logLeadershipTermPosition(logLeadershipTermId),
                         leadershipTermId,
                         this.logPosition,
                         thisMember.id(),
@@ -355,7 +354,6 @@ public class Election implements AutoCloseable
 
     void onNewLeadershipTerm(
         final long logLeadershipTermId,
-        @SuppressWarnings("unused") final long logLeadershipTermPosition, // TODO don't think we need this
         final long leadershipTermId,
         final long logPosition,
         final int leaderMemberId,
@@ -404,14 +402,21 @@ public class Election implements AutoCloseable
                 }
                 else if (logPosition == this.logPosition)
                 {
+                    boolean hasUpdates = false;
+
                     for (long id = this.logLeadershipTermId; id < leadershipTermId; id++)
                     {
                         if (ctx.recordingLog().isUnknown(id))
                         {
                             ctx.recordingLog().appendTerm(
                                 consensusModuleAgent.logRecordingId(), id, logPosition, ctx.epochClock().time());
-                            ctx.recordingLog().force();
+                            hasUpdates = true;
                         }
+                    }
+
+                    if (hasUpdates)
+                    {
+                        ctx.recordingLog().force();
                     }
 
                     this.leadershipTermId = leadershipTermId;
@@ -467,13 +472,20 @@ public class Election implements AutoCloseable
     {
         if (State.FOLLOWER_CATCHUP == state)
         {
+            boolean hasUpdates = false;
+
             for (long termId = this.logLeadershipTermId; termId <= leadershipTermId; termId++)
             {
                 if (ctx.recordingLog().isUnknown(termId))
                 {
                     ctx.recordingLog().appendTerm(logRecordingId, termId, termBaseLogPosition, nowMs);
-                    ctx.recordingLog().force();
+                    hasUpdates = true;
                 }
+            }
+
+            if (hasUpdates)
+            {
+                ctx.recordingLog().force();
             }
 
             this.logLeadershipTermId = leadershipTermId;
@@ -875,7 +887,6 @@ public class Election implements AutoCloseable
         memberStatusPublisher.newLeadershipTerm(
             publication,
             logLeadershipTermId,
-            logPosition,
             leadershipTermId,
             logPosition,
             thisMember.id(),

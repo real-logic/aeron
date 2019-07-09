@@ -138,7 +138,6 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
 
                 memberStatusListener.onNewLeadershipTerm(
                     newLeadershipTermDecoder.logLeadershipTermId(),
-                    newLeadershipTermDecoder.logLeadershipTermPosition(),
                     newLeadershipTermDecoder.leadershipTermId(),
                     newLeadershipTermDecoder.logPosition(),
                     newLeadershipTermDecoder.leaderMemberId(),

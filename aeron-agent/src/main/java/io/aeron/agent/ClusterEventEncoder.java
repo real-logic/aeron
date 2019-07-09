@@ -48,20 +48,17 @@ final class ClusterEventEncoder
     static int newLeadershipTerm(
         final MutableDirectBuffer encodedBuffer,
         final long logLeadershipTermId,
-        final long logPosition,
         final long leadershipTermId,
-        final long maxLogPosition,
+        final long logPosition,
         final int leaderMemberId,
         final int logSessionId)
     {
         int offset = 0;
         encodedBuffer.putLong(0, logLeadershipTermId);
         offset += BitUtil.SIZE_OF_LONG;
-        encodedBuffer.putLong(offset, logPosition);
-        offset += BitUtil.SIZE_OF_LONG;
         encodedBuffer.putLong(offset, leadershipTermId);
         offset += BitUtil.SIZE_OF_LONG;
-        encodedBuffer.putLong(offset, maxLogPosition);
+        encodedBuffer.putLong(offset, logPosition);
         offset += BitUtil.SIZE_OF_LONG;
         encodedBuffer.putInt(offset, leaderMemberId);
         offset += BitUtil.SIZE_OF_INT;

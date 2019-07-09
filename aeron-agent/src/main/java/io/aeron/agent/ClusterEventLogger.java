@@ -59,9 +59,8 @@ public final class ClusterEventLogger
 
     public void logNewLeadershipTerm(
         final long logLeadershipTermId,
-        final long logPosition,
         final long leadershipTermId,
-        final long maxLogPosition,
+        final long logPosition,
         final int leaderMemberId,
         final int logSessionId)
     {
@@ -71,9 +70,8 @@ public final class ClusterEventLogger
             final int encodedLength = ClusterEventEncoder.newLeadershipTerm(
                 encodedBuffer,
                 logLeadershipTermId,
-                logPosition,
                 leadershipTermId,
-                maxLogPosition,
+                logPosition,
                 leaderMemberId,
                 logSessionId);
 

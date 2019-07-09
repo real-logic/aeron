@@ -32,12 +32,7 @@ interface MemberStatusListener
         boolean vote);
 
     void onNewLeadershipTerm(
-        long logLeadershipTermId,
-        long logLeadershipTermPosition,
-        long leadershipTermId,
-        long logPosition,
-        int leaderMemberId,
-        int logSessionId);
+        long logLeadershipTermId, long leadershipTermId, long logPosition, int leaderMemberId, int logSessionId);
 
     void onAppendedPosition(long leadershipTermId, long logPosition, int followerMemberId);
 

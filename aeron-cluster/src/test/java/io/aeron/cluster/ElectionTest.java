@@ -168,7 +168,6 @@ public class ElectionTest
         verify(memberStatusPublisher).newLeadershipTerm(
             clusterMembers[1].publication(),
             leadershipTermId,
-            logPosition,
             candidateTermId,
             logPosition,
             candidateMember.id(),
@@ -176,7 +175,6 @@ public class ElectionTest
         verify(memberStatusPublisher).newLeadershipTerm(
             clusterMembers[2].publication(),
             leadershipTermId,
-            logPosition,
             candidateTermId,
             logPosition,
             candidateMember.id(),
@@ -231,8 +229,7 @@ public class ElectionTest
         assertThat(election.state(), is(Election.State.FOLLOWER_BALLOT));
 
         final int logSessionId = -7;
-        election.onNewLeadershipTerm(
-            leadershipTermId, logPosition, candidateTermId, logPosition, candidateId, logSessionId);
+        election.onNewLeadershipTerm(leadershipTermId, candidateTermId, logPosition, candidateId, logSessionId);
         assertThat(election.state(), is(Election.State.FOLLOWER_REPLAY));
 
         when(consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(anyString()))
@@ -261,7 +258,7 @@ public class ElectionTest
     }
 
     @Test
-    public void shouldCanvassMembersForSuccessfulLeadershipBid()
+    public void shouldCanvassMembersInSuccessfulLeadershipBid()
     {
         final long logPosition = 0;
         final long leadershipTermId = Aeron.NULL_VALUE;
@@ -293,7 +290,7 @@ public class ElectionTest
     }
 
     @Test
-    public void shouldCanvassMembersForUnSuccessfulLeadershipBid()
+    public void shouldCanvassMembersInUnSuccessfulLeadershipBid()
     {
         final long leadershipTermId = Aeron.NULL_VALUE;
         final long logPosition = 0;

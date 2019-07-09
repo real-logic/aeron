@@ -423,8 +423,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             {
                 memberStatusPublisher.newLeadershipTerm(
                     follower.publication(),
-                    logLeadershipTermId,
-                    logLeadershipTermPosition(logLeadershipTermId),
+                    leadershipTermId,
                     leadershipTermId,
                     logPublisher.position(),
                     thisMember.id(),
@@ -465,7 +464,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     public void onNewLeadershipTerm(
         final long logLeadershipTermId,
-        final long logLeadershipTermPosition,
         final long leadershipTermId,
         final long logPosition,
         final int leaderId,
@@ -473,8 +471,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         if (null != election)
         {
-            election.onNewLeadershipTerm(
-                logLeadershipTermId, logLeadershipTermPosition, leadershipTermId, logPosition, leaderId, logSessionId);
+            election.onNewLeadershipTerm(logLeadershipTermId, leadershipTermId, logPosition, leaderId, logSessionId);
         }
         else if (leadershipTermId > this.leadershipTermId)
         {
@@ -1479,16 +1476,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
 
         return RecordingPos.getRecordingId(aeron.countersReader(), appendedPosition.counterId());
-    }
-
-    long logLeadershipTermPosition(final long leadershipTermId)
-    {
-        if (NULL_VALUE == leadershipTermId)
-        {
-            return 0;
-        }
-
-        return recordingLog.getTermEntry(leadershipTermId).logPosition;
     }
 
     void truncateLogEntry(final long leadershipTermId, final long logPosition)

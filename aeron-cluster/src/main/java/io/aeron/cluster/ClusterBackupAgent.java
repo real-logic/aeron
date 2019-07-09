@@ -37,7 +37,6 @@ import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.EpochClock;
-import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.util.ArrayList;
@@ -60,7 +59,6 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
     private final AgentInvoker aeronClientInvoker;
     private final EpochClock epochClock;
     private final Aeron aeron;
-    private final IdleStrategy idleStrategy;
     private final String[] clusterMemberStatusEndpoints;
     private final MemberStatusPublisher memberStatusPublisher = new MemberStatusPublisher();
     private final ArrayList<RecordingLog.Snapshot> snapshotsToRetrieve = new ArrayList<>(4);
@@ -112,7 +110,6 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
         this.epochClock = ctx.epochClock();
         this.backupResponseTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.clusterBackupResponseTimeoutNs());
         this.backupQueryIntervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.clusterBackupIntervalNs());
-        this.idleStrategy = ctx.idleStrategy();
         this.markFile = ctx.clusterMarkFile();
         this.eventsListener = ctx.eventsListener();
 

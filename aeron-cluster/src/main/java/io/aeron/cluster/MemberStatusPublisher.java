@@ -149,7 +149,6 @@ class MemberStatusPublisher
     void newLeadershipTerm(
         final Publication publication,
         final long logLeadershipTermId,
-        final long logLeadershipTermPosition,
         final long leadershipTermId,
         final long logPosition,
         final int leaderMemberId,
@@ -166,7 +165,6 @@ class MemberStatusPublisher
                 newLeadershipTermEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .logLeadershipTermId(logLeadershipTermId)
-                    .logLeadershipTermPosition(logLeadershipTermPosition)
                     .leadershipTermId(leadershipTermId)
                     .logPosition(logPosition)
                     .leaderMemberId(leaderMemberId)
@@ -574,6 +572,8 @@ class MemberStatusPublisher
             .logRecordingId(logRecordingId)
             .logLeadershipTermId(logLeadershipTermId)
             .logTermBaseLogPosition(logTermBaseLogPosition)
+            .lastLeadershipTermId(lastLeadershipTermId)
+            .lastTermBaseLogPosition(lastTermBaseLogPosition)
             .commitPositionCounterId(commitPositionCounterId)
             .leaderMemberId(leaderMemberId);
 

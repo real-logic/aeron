@@ -760,14 +760,13 @@ void ClientConductor::closeAllResources(long long nowMs)
 
     for (auto& kv : m_exclusivePublicationByRegistrationId)
     {
-            std::shared_ptr<ExclusivePublication> pub = kv.second.m_publication.lock();
+        std::shared_ptr<ExclusivePublication> pub = kv.second.m_publication.lock();
 
-            if (nullptr != pub)
-            {
-                pub->close();
-            }
+        if (nullptr != pub)
+        {
+            pub->close();
+        }
     }
-
     m_exclusivePublicationByRegistrationId.clear();
 
     for (auto& kv : m_subscriptionByRegistrationId)
@@ -779,7 +778,6 @@ void ClientConductor::closeAllResources(long long nowMs)
             lingerAllResources(nowMs, sub->removeAndCloseAllImages());
         }
     }
-
     m_subscriptionByRegistrationId.clear();
 }
 

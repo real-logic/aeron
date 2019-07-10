@@ -805,7 +805,8 @@ class ClusteredServiceAgent implements Agent, Cluster
 
     private void snapshotState(final Publication publication, final long logPosition, final long leadershipTermId)
     {
-        final ServiceSnapshotTaker snapshotTaker = new ServiceSnapshotTaker(publication, idleStrategy, null);
+        final ServiceSnapshotTaker snapshotTaker = new ServiceSnapshotTaker(
+            publication, idleStrategy, aeronAgentInvoker);
 
         snapshotTaker.markBegin(ClusteredServiceContainer.SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0);
 

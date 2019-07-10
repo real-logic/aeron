@@ -53,7 +53,6 @@ public:
         m_isInCallback = true;
     }
 
-
     ~CallbackGuard()
     {
         m_isInCallback = false;
@@ -64,7 +63,7 @@ public:
     CallbackGuard& operator = (const CallbackGuard&) = delete;
 
 private:
-    bool&  m_isInCallback;
+    bool& m_isInCallback;
 };
 
 class ClientConductor

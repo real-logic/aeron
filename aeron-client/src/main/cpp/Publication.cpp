@@ -50,8 +50,8 @@ Publication::Publication(
     for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
     {
         /*
-         * perhaps allow copy-construction and be able to move appenders and AtomicBuffers directly into Publication for
-         * locality.
+         * perhaps allow copy-construction and be able to move appenders and AtomicBuffers directly into Publication
+         * for locality.
          */
         m_appenders[i] = std::unique_ptr<TermAppender>(new TermAppender(
             m_logBuffers->atomicBuffer(i),
@@ -94,4 +94,5 @@ std::int64_t Publication::channelStatus()
 
     return m_conductor.channelStatus(m_channelStatusId);
 }
+
 }

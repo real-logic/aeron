@@ -51,8 +51,8 @@ ExclusivePublication::ExclusivePublication(
     for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
     {
         /*
-         * perhaps allow copy-construction and be able to move appenders and AtomicBuffers directly into Publication for
-         * locality.
+         * perhaps allow copy-construction and be able to move appenders and AtomicBuffers directly into Publication
+         * for locality.
          */
         m_appenders[i] = std::unique_ptr<ExclusiveTermAppender>(new ExclusiveTermAppender(
             m_logBuffers->atomicBuffer(i),
@@ -63,7 +63,8 @@ ExclusivePublication::ExclusivePublication(
     const std::int64_t rawTail = m_appenders[m_activePartitionIndex]->rawTail();
     m_termId = LogBufferDescriptor::termId(rawTail);
     m_termOffset = LogBufferDescriptor::termOffset(rawTail, m_logBuffers->atomicBuffer(0).capacity());
-    m_termBeginPosition = LogBufferDescriptor::computeTermBeginPosition(m_termId, m_positionBitsToShift, m_initialTermId);
+    m_termBeginPosition = LogBufferDescriptor::computeTermBeginPosition(
+        m_termId, m_positionBitsToShift, m_initialTermId);
 }
 
 ExclusivePublication::~ExclusivePublication()

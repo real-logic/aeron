@@ -68,10 +68,17 @@ class TimerService implements DeadlineTimerWheel.TimerHandler
 
     public boolean onTimerExpiry(final TimeUnit timeUnit, final long now, final long timerId)
     {
-        final long correlationId = correlationIdByTimerIdMap.remove(timerId);
-        timerIdByCorrelationIdMap.remove(correlationId);
+        final long correlationId = correlationIdByTimerIdMap.get(timerId);
 
-        return consensusModuleAgent.onTimerEvent(correlationId, now);
+        if (consensusModuleAgent.onTimerEvent(correlationId, now))
+        {
+            correlationIdByTimerIdMap.remove(timerId);
+            timerIdByCorrelationIdMap.remove(correlationId);
+
+            return true;
+        }
+
+        return false;
     }
 
     void scheduleTimer(final long correlationId, final long deadlineMs)

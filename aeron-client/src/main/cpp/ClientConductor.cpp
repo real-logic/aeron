@@ -56,27 +56,13 @@ std::int64_t ClientConductor::addPublication(const std::string &channel, std::in
     ensureNotReentrant();
     ensureOpen();
 
-    std::int64_t id;
+    std::int64_t registrationId = m_driverProxy.addPublication(channel, streamId);
 
-    auto it = std::find_if(m_publications.begin(), m_publications.end(),
-        [channel, streamId](const PublicationStateDefn &entry)
-        {
-            return streamId == entry.m_streamId && channel == entry.m_channel;
-        });
+    m_publicationByRegistrationId.insert(std::pair<std::int64_t, PublicationStateDefn>(
+        registrationId,
+        PublicationStateDefn(channel, registrationId, streamId, m_epochClock())));
 
-    if (it == m_publications.end())
-    {
-        std::int64_t registrationId = m_driverProxy.addPublication(channel, streamId);
-
-        m_publications.emplace_back(channel, registrationId, streamId, m_epochClock());
-        id = registrationId;
-    }
-    else
-    {
-        id = (*it).m_registrationId;
-    }
-
-    return id;
+    return registrationId;
 }
 
 std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t registrationId)
@@ -85,18 +71,13 @@ std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t regis
     ensureNotReentrant();
     ensureOpen();
 
-    auto it = std::find_if(m_publications.begin(), m_publications.end(),
-        [registrationId](const PublicationStateDefn &entry)
-        {
-            return registrationId == entry.m_registrationId;
-        });
-
-    if (it == m_publications.end())
+    auto it = m_publicationByRegistrationId.find(registrationId);
+    if (it == m_publicationByRegistrationId.end())
     {
         return std::shared_ptr<Publication>();
     }
 
-    PublicationStateDefn &state = (*it);
+    PublicationStateDefn &state = it->second;
     std::shared_ptr<Publication> pub(state.m_publication.lock());
 
     if (!pub)
@@ -143,16 +124,11 @@ void ClientConductor::releasePublication(std::int64_t registrationId)
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     verifyDriverIsActiveViaErrorHandler();
 
-    auto it = std::find_if(m_publications.begin(), m_publications.end(),
-        [registrationId](const PublicationStateDefn &entry)
-        {
-            return registrationId == entry.m_registrationId;
-        });
-
-    if (it != m_publications.end())
+    auto it = m_publicationByRegistrationId.find(registrationId);
+    if (it != m_publicationByRegistrationId.end())
     {
         m_driverProxy.removePublication(registrationId);
-        m_publications.erase(it);
+        m_publicationByRegistrationId.erase(it);
     }
 }
 
@@ -499,15 +475,10 @@ void ClientConductor::onNewPublication(
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
-    auto it = std::find_if(m_publications.begin(), m_publications.end(),
-        [registrationId](const PublicationStateDefn &entry)
-        {
-            return registrationId == entry.m_registrationId;
-        });
-
-    if (it != m_publications.end())
+    auto it = m_publicationByRegistrationId.find(registrationId);
+    if (it != m_publicationByRegistrationId.end())
     {
-        PublicationStateDefn &state = (*it);
+        PublicationStateDefn &state = it->second;
 
         state.m_status = RegistrationStatus::REGISTERED_MEDIA_DRIVER;
         state.m_sessionId = sessionId;
@@ -619,17 +590,12 @@ void ClientConductor::onErrorResponse(
         return;
     }
 
-    auto pubIt = std::find_if(m_publications.begin(), m_publications.end(),
-        [offendingCommandCorrelationId](const PublicationStateDefn &entry)
-        {
-            return offendingCommandCorrelationId == entry.m_registrationId;
-        });
-
-    if (pubIt != m_publications.end())
+    auto pubIt = m_publicationByRegistrationId.find(offendingCommandCorrelationId);
+    if (pubIt != m_publicationByRegistrationId.end())
     {
-        (*pubIt).m_status = RegistrationStatus::ERRORED_MEDIA_DRIVER;
-        (*pubIt).m_errorCode = errorCode;
-        (*pubIt).m_errorMessage = errorMessage;
+        pubIt->second.m_status = RegistrationStatus::ERRORED_MEDIA_DRIVER;
+        pubIt->second.m_errorCode = errorCode;
+        pubIt->second.m_errorMessage = errorMessage;
         return;
     }
 
@@ -745,18 +711,16 @@ void ClientConductor::closeAllResources(long long nowMs)
 {
     forceClose();
 
-    std::for_each(m_publications.begin(), m_publications.end(),
-        [&](PublicationStateDefn &entry)
+    for (auto& kv : m_publicationByRegistrationId)
+    {
+        std::shared_ptr<Publication> pub = kv.second.m_publication.lock();
+
+        if (nullptr != pub)
         {
-            std::shared_ptr<Publication> pub = entry.m_publication.lock();
-
-            if (nullptr != pub)
-            {
-                pub->close();
-            }
-        });
-
-    m_publications.clear();
+            pub->close();
+        }
+    }
+    m_publicationByRegistrationId.clear();
 
     for (auto& kv : m_exclusivePublicationByRegistrationId)
     {

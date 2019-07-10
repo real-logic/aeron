@@ -169,14 +169,6 @@ TEST_F(ClientConductorTest, shouldReleasePublicationAfterGoingOutOfScope)
     ASSERT_TRUE(pubPost == nullptr);
 }
 
-TEST_F(ClientConductorTest, shouldReturnSameIdForDuplicateAddPublication)
-{
-    std::int64_t id1 = m_conductor.addPublication(CHANNEL, STREAM_ID);
-    std::int64_t id2 = m_conductor.addPublication(CHANNEL, STREAM_ID);
-
-    EXPECT_EQ(id1, id2);
-}
-
 TEST_F(ClientConductorTest, shouldReturnSamePublicationAfterLogBuffersCreated)
 {
     std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID);

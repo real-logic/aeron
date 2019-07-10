@@ -386,7 +386,7 @@ private:
 
     std::recursive_mutex m_adminLock;
 
-    std::vector<PublicationStateDefn> m_publications;
+    std::map<std::int64_t, PublicationStateDefn> m_publicationByRegistrationId;
     std::map<std::int64_t, ExclusivePublicationStateDefn> m_exclusivePublicationByRegistrationId;
     std::map<std::int64_t, SubscriptionStateDefn> m_subscriptionByRegistrationId;
     std::map<std::int64_t, CounterStateDefn> m_counterByRegistrationId;

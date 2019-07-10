@@ -160,7 +160,7 @@ public:
     {
     }
 
-    Image& operator=(const Image& image)
+    Image& operator = (const Image& image)
     {
         m_termBuffers = image.m_termBuffers;
         m_header = image.m_header;
@@ -200,7 +200,7 @@ public:
     {
     }
 
-    Image& operator=(Image&& image) noexcept
+    Image& operator = (Image&& image) noexcept
     {
         m_termBuffers = image.m_termBuffers;
         m_header = image.m_header;
@@ -385,13 +385,14 @@ public:
         if (!isClosed())
         {
             const std::int64_t position = m_subscriberPosition.get();
-            const std::int32_t termOffset = (std::int32_t) position & m_termLengthMask;
+            const std::int32_t termOffset = static_cast<std::int32_t>(position & m_termLengthMask);
             const int index = LogBufferDescriptor::indexByPosition(position, m_positionBitsToShift);
             assert(index >= 0 && index < LogBufferDescriptor::PARTITION_COUNT);
             AtomicBuffer &termBuffer = m_termBuffers[index];
             TermReader::ReadOutcome readOutcome{};
 
-            TermReader::read(readOutcome, termBuffer, termOffset, fragmentHandler, fragmentLimit, m_header, m_exceptionHandler);
+            TermReader::read(
+                readOutcome, termBuffer, termOffset, fragmentHandler, fragmentLimit, m_header, m_exceptionHandler);
 
             const std::int64_t newPosition = position + (readOutcome.offset - termOffset);
             if (newPosition > position)
@@ -426,7 +427,7 @@ public:
         {
             int fragmentsRead = 0;
             std::int64_t initialPosition = m_subscriberPosition.get();
-            std::int32_t initialOffset = (std::int32_t) initialPosition & m_termLengthMask;
+            std::int32_t initialOffset = static_cast<std::int32_t>(initialPosition & m_termLengthMask);
             const int index = LogBufferDescriptor::indexByPosition(initialPosition, m_positionBitsToShift);
             assert(index >= 0 && index < LogBufferDescriptor::PARTITION_COUNT);
             AtomicBuffer &termBuffer = m_termBuffers[index];
@@ -501,8 +502,8 @@ public:
 
     /**
      * Poll for new messages in a stream. If new messages are found beyond the last consumed position then they
-     * will be delivered to the controlled_poll_fragment_handler_t up to a limited number of fragments as specified or
-     * the maximum position specified.
+     * will be delivered to the controlled_poll_fragment_handler_t up to a limited number of fragments as specified
+     * or the maximum position specified.
      *
      * To assemble messages that span multiple fragments then use ControlledFragmentAssembler.
      *
@@ -521,7 +522,7 @@ public:
         {
             int fragmentsRead = 0;
             std::int64_t initialPosition = m_subscriberPosition.get();
-            std::int32_t initialOffset = (std::int32_t) initialPosition & m_termLengthMask;
+            std::int32_t initialOffset = static_cast<std::int32_t>(initialPosition & m_termLengthMask);
             const int index = LogBufferDescriptor::indexByPosition(initialPosition, m_positionBitsToShift);
             assert(index >= 0 && index < LogBufferDescriptor::PARTITION_COUNT);
             AtomicBuffer &termBuffer = m_termBuffers[index];
@@ -711,7 +712,7 @@ public:
         if (!isClosed())
         {
             const std::int64_t position = m_subscriberPosition.get();
-            const std::int32_t termOffset = (std::int32_t) position & m_termLengthMask;
+            const std::int32_t termOffset = static_cast<std::int32_t>(position & m_termLengthMask);
             const int index = LogBufferDescriptor::indexByPosition(position, m_positionBitsToShift);
             assert(index >= 0 && index < LogBufferDescriptor::PARTITION_COUNT);
             AtomicBuffer &termBuffer = m_termBuffers[index];
@@ -778,14 +779,14 @@ private:
 
     void validatePosition(std::int64_t newPosition)
     {
-        const std::int64_t currentPosition = m_subscriberPosition.get();
-        const std::int64_t limitPosition = (currentPosition - (currentPosition & m_termLengthMask)) + m_termLengthMask + 1;
+        const std::int64_t position = m_subscriberPosition.get();
+        const std::int64_t limitPosition = (position - (position & m_termLengthMask)) + m_termLengthMask + 1;
 
-        if (newPosition < currentPosition || newPosition > limitPosition)
+        if (newPosition < position || newPosition > limitPosition)
         {
             throw util::IllegalArgumentException(
                 std::to_string(newPosition) + " newPosition out of range " +
-                std::to_string(currentPosition) + " - " + std::to_string(limitPosition),
+                std::to_string(position) + " - " + std::to_string(limitPosition),
                 SOURCEINFO);
         }
 
@@ -812,4 +813,4 @@ struct ImageList
 
 }
 
-#endif //AERON_IMAGE_H
+#endif

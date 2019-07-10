@@ -160,7 +160,7 @@ public:
         std::int32_t sessionId,
         std::int32_t publicationLimitCounterId,
         std::int32_t channelStatusIndicatorId,
-        const std::string &logFileName);
+        const std::string &logFilename);
 
     void onNewExclusivePublication(
         std::int64_t registrationId,
@@ -169,7 +169,7 @@ public:
         std::int32_t sessionId,
         std::int32_t publicationLimitCounterId,
         std::int32_t channelStatusIndicatorId,
-        const std::string &logFileName);
+        const std::string &logFilename);
 
     void onSubscriptionReady(std::int64_t registrationId, std::int32_t channelStatusId);
 
@@ -250,7 +250,7 @@ protected:
     void onCheckManagedResources(long long nowMs);
 
     void lingerResource(long long nowMs, struct ImageList *imageList);
-    void lingerResource(long long nowMs, std::shared_ptr<LogBuffers> logBuffers);
+
     void lingerAllResources(long long nowMs, struct ImageList *imageList);
 
 private:
@@ -362,7 +362,7 @@ private:
 
     struct ImageListLingerDefn
     {
-        long long m_timeOfLastStatusChangeMs;
+        long long m_timeOfLastStatusChangeMs = LLONG_MAX;
         struct ImageList *m_imageList;
 
         ImageListLingerDefn(long long nowMs, struct ImageList *imageList) :
@@ -372,13 +372,12 @@ private:
         }
     };
 
-    struct LogBuffersLingerDefn
+    struct LogBuffersDefn
     {
         long long m_timeOfLastStatusChangeMs;
         std::shared_ptr<LogBuffers> m_logBuffers;
 
-        LogBuffersLingerDefn(long long nowMs, std::shared_ptr<LogBuffers> buffers) :
-            m_timeOfLastStatusChangeMs(nowMs),
+        LogBuffersDefn(std::shared_ptr<LogBuffers> buffers) :
             m_logBuffers(std::move(buffers))
         {
         }
@@ -391,7 +390,7 @@ private:
     std::map<std::int64_t, SubscriptionStateDefn> m_subscriptionByRegistrationId;
     std::map<std::int64_t, CounterStateDefn> m_counterByRegistrationId;
 
-    std::vector<LogBuffersLingerDefn> m_lingeringLogBuffers;
+    std::map<std::int64_t, LogBuffersDefn> m_logBuffersByRegistrationId;
     std::vector<ImageListLingerDefn> m_lingeringImageLists;
 
     DriverProxy& m_driverProxy;
@@ -487,6 +486,23 @@ private:
         {
             ReentrantException exception("client cannot be invoked within callback", SOURCEINFO);
             m_errorHandler(exception);
+        }
+    }
+
+    inline std::shared_ptr<LogBuffers> getLogBuffers(std::int64_t registrationId, const std::string& logFilename)
+    {
+        auto it = m_logBuffersByRegistrationId.find(registrationId);
+        if (it == m_logBuffersByRegistrationId.end())
+        {
+            auto logBuffers = std::make_shared<LogBuffers>(logFilename.c_str(), m_preTouchMappedMemory);
+            m_logBuffersByRegistrationId.insert(std::pair<std::int64_t, LogBuffersDefn>(registrationId, logBuffers));
+
+            return logBuffers;
+        }
+        else
+        {
+            it->second.m_timeOfLastStatusChangeMs = LLONG_MAX;
+            return it->second.m_logBuffers;
         }
     }
 };

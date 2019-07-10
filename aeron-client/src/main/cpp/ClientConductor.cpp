@@ -484,7 +484,7 @@ void ClientConductor::onNewPublication(
         state.m_sessionId = sessionId;
         state.m_publicationLimitCounterId = publicationLimitCounterId;
         state.m_channelStatusId = channelStatusIndicatorId;
-        state.m_buffers = std::make_shared<LogBuffers>(logFileName.c_str(), m_preTouchMappedMemory);
+        state.m_buffers = getLogBuffers(originalRegistrationId, logFileName);
         state.m_originalRegistrationId = originalRegistrationId;
 
         CallbackGuard callbackGuard(m_isInCallback);
@@ -512,7 +512,7 @@ void ClientConductor::onNewExclusivePublication(
         state.m_sessionId = sessionId;
         state.m_publicationLimitCounterId = publicationLimitCounterId;
         state.m_channelStatusId = channelStatusIndicatorId;
-        state.m_buffers = std::make_shared<LogBuffers>(logFileName.c_str(), m_preTouchMappedMemory);
+        state.m_buffers = getLogBuffers(originalRegistrationId, logFileName);
         state.m_originalRegistrationId = originalRegistrationId;
 
         CallbackGuard callbackGuard(m_isInCallback);
@@ -636,8 +636,6 @@ void ClientConductor::onAvailableImage(
 
         if (nullptr != subscription)
         {
-            std::shared_ptr<LogBuffers> logBuffers = std::make_shared<LogBuffers>(
-                logFilename.c_str(), m_preTouchMappedMemory);
             UnsafeBufferPosition subscriberPosition(m_counterValuesBuffer, subscriberPositionId);
 
             Image image(
@@ -646,7 +644,7 @@ void ClientConductor::onAvailableImage(
                 subscriptionRegistrationId,
                 sourceIdentity,
                 subscriberPosition,
-                logBuffers,
+                getLogBuffers(correlationId, logFilename),
                 m_errorHandler);
 
             CallbackGuard callbackGuard(m_isInCallback);
@@ -683,7 +681,6 @@ void ClientConductor::onUnavailableImage(std::int64_t correlationId, std::int64_
             {
                 Image *oldArray = oldImageList->m_images;
 
-                lingerResource(nowMs, oldArray[index].logBuffers());
                 lingerResource(nowMs, oldImageList);
 
                 CallbackGuard callbackGuard(m_isInCallback);
@@ -749,13 +746,25 @@ void ClientConductor::onCheckManagedResources(long long nowMs)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
-    auto logIt = std::remove_if(m_lingeringLogBuffers.begin(), m_lingeringLogBuffers.end(),
-        [nowMs, this](const LogBuffersLingerDefn &entry)
-        {
-            return nowMs > (entry.m_timeOfLastStatusChangeMs + m_resourceLingerTimeoutMs);
-        });
+    for (auto it = m_logBuffersByRegistrationId.begin(); it != m_logBuffersByRegistrationId.end(); )
+    {
+        LogBuffersDefn &entry = it->second;
 
-    m_lingeringLogBuffers.erase(logIt, m_lingeringLogBuffers.end());
+        if (entry.m_logBuffers.use_count() == 1)
+        {
+            if (LLONG_MAX == entry.m_timeOfLastStatusChangeMs)
+            {
+                entry.m_timeOfLastStatusChangeMs = nowMs;
+            }
+            else if (nowMs > (entry.m_timeOfLastStatusChangeMs + m_resourceLingerTimeoutMs))
+            {
+                m_logBuffersByRegistrationId.erase(it++);
+                continue;
+            }
+        }
+
+        ++it;
+    }
 
     auto arrayIt = std::remove_if(m_lingeringImageLists.begin(), m_lingeringImageLists.end(),
         [nowMs, this](ImageListLingerDefn &entry)
@@ -765,6 +774,7 @@ void ClientConductor::onCheckManagedResources(long long nowMs)
                 delete[] entry.m_imageList->m_images;
                 delete entry.m_imageList;
                 entry.m_imageList = nullptr;
+
                 return true;
             }
 
@@ -779,20 +789,10 @@ void ClientConductor::lingerResource(long long nowMs, struct ImageList *imageLis
     m_lingeringImageLists.emplace_back(nowMs, imageList);
 }
 
-void ClientConductor::lingerResource(long long nowMs, std::shared_ptr<LogBuffers> logBuffers)
-{
-    m_lingeringLogBuffers.emplace_back(nowMs, logBuffers);
-}
-
 void ClientConductor::lingerAllResources(long long nowMs, struct ImageList *imageList)
 {
     if (nullptr != imageList)
     {
-        for (std::size_t i = 0; i < imageList->m_length; i++)
-        {
-            lingerResource(nowMs, imageList->m_images[i].logBuffers());
-        }
-
         lingerResource(nowMs, imageList);
     }
 }

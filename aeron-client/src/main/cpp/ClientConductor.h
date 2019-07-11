@@ -365,7 +365,7 @@ private:
         long long m_timeOfLastStatusChangeMs = LLONG_MAX;
         Image::list_t *m_imageList;
 
-        ImageListLingerDefn(long long nowMs,Image::list_t *imageList) :
+        ImageListLingerDefn(long long nowMs, Image::list_t *imageList) :
             m_timeOfLastStatusChangeMs(nowMs),
             m_imageList(imageList)
         {

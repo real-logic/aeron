@@ -1673,7 +1673,10 @@ public class AeronArchive implements AutoCloseable
 
             if (null == aeron)
             {
-                aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDirectoryName));
+                aeron = Aeron.connect(
+                    new Aeron.Context()
+                        .aeronDirectoryName(aeronDirectoryName)
+                        .errorHandler(errorHandler));
                 ownsAeronClient = true;
             }
 

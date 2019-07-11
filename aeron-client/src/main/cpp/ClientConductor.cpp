@@ -756,7 +756,7 @@ void ClientConductor::onCheckManagedResources(long long nowMs)
             {
                 entry.m_timeOfLastStatusChangeMs = nowMs;
             }
-            else if (nowMs > (entry.m_timeOfLastStatusChangeMs + m_resourceLingerTimeoutMs))
+            else if ((nowMs - m_resourceLingerTimeoutMs) > entry.m_timeOfLastStatusChangeMs)
             {
                 m_logBuffersByRegistrationId.erase(it++);
                 continue;

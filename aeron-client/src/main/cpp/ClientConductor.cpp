@@ -290,7 +290,7 @@ void ClientConductor::releaseSubscription(std::int64_t registrationId, Image::li
 
         lingerAllResources(m_epochClock(), imageList);
     }
-    else if (nullptr != imageList)
+    else
     {
         delete imageList;
     }
@@ -754,7 +754,7 @@ void ClientConductor::onCheckManagedResources(long long nowMs)
             }
             else if ((nowMs - m_resourceLingerTimeoutMs) > entry.m_timeOfLastStatusChangeMs)
             {
-                m_logBuffersByRegistrationId.erase(it++);
+                it = m_logBuffersByRegistrationId.erase(it);
                 continue;
             }
         }

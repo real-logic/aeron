@@ -143,7 +143,7 @@ public:
         const on_available_image_t &onAvailableImageHandler,
         const on_unavailable_image_t &onUnavailableImageHandler);
     std::shared_ptr<Subscription> findSubscription(std::int64_t registrationId);
-    void releaseSubscription(std::int64_t registrationId, struct ImageList *imageList);
+    void releaseSubscription(std::int64_t registrationId, Image::list_t *imageList);
 
     std::int64_t addCounter(
         std::int32_t typeId,
@@ -249,9 +249,9 @@ public:
 protected:
     void onCheckManagedResources(long long nowMs);
 
-    void lingerResource(long long nowMs, struct ImageList *imageList);
+    void lingerResource(long long nowMs, Image::list_t *imageList);
 
-    void lingerAllResources(long long nowMs, struct ImageList *imageList);
+    void lingerAllResources(long long nowMs, Image::list_t *imageList);
 
 private:
     enum class RegistrationStatus
@@ -363,9 +363,9 @@ private:
     struct ImageListLingerDefn
     {
         long long m_timeOfLastStatusChangeMs = LLONG_MAX;
-        struct ImageList *m_imageList;
+        Image::list_t *m_imageList;
 
-        ImageListLingerDefn(long long nowMs, struct ImageList *imageList) :
+        ImageListLingerDefn(long long nowMs,Image::list_t *imageList) :
             m_timeOfLastStatusChangeMs(nowMs),
             m_imageList(imageList)
         {
@@ -378,6 +378,7 @@ private:
         std::shared_ptr<LogBuffers> m_logBuffers;
 
         LogBuffersDefn(std::shared_ptr<LogBuffers> buffers) :
+            m_timeOfLastStatusChangeMs(0),
             m_logBuffers(std::move(buffers))
         {
         }

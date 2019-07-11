@@ -26,6 +26,7 @@
 #include <concurrent/status/UnsafeBufferPosition.h>
 #include <algorithm>
 #include <array>
+#include <vector>
 #include <atomic>
 #include <cassert>
 #include "LogBuffers.h"
@@ -88,6 +89,7 @@ class Image
 {
 public:
     typedef Image this_t;
+    typedef std::vector<std::shared_ptr<Image>> list_t;
 
     Image() :
         m_header(0, 0, this),
@@ -796,18 +798,6 @@ private:
                 std::to_string(newPosition) + " newPosition not aligned to FRAME_ALIGNMENT",
                 SOURCEINFO);
         }
-    }
-};
-
-struct ImageList
-{
-    Image *m_images;
-    std::size_t m_length;
-
-    ImageList(Image *images, std::size_t length) :
-        m_images(images),
-        m_length(length)
-    {
     }
 };
 

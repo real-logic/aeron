@@ -40,7 +40,6 @@ ClientConductor::~ClientConductor()
     std::for_each(m_lingeringImageLists.begin(), m_lingeringImageLists.end(),
         [](ImageListLingerDefn &entry)
         {
-            delete[] entry.m_imageList->m_images;
             delete entry.m_imageList;
             entry.m_imageList = nullptr;
         });
@@ -272,7 +271,7 @@ std::shared_ptr<Subscription> ClientConductor::findSubscription(std::int64_t reg
     return sub;
 }
 
-void ClientConductor::releaseSubscription(std::int64_t registrationId, struct ImageList *imageList)
+void ClientConductor::releaseSubscription(std::int64_t registrationId, Image::list_t *imageList)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     verifyDriverIsActiveViaErrorHandler();
@@ -282,9 +281,9 @@ void ClientConductor::releaseSubscription(std::int64_t registrationId, struct Im
     {
         m_driverProxy.removeSubscription(registrationId);
 
-        for (std::size_t i = 0; i < imageList->m_length; i++)
+        for (auto& image : *imageList)
         {
-            it->second.m_onUnavailableImageHandler(imageList->m_images[i]);
+            it->second.m_onUnavailableImageHandler(*image);
         }
 
         m_subscriptionByRegistrationId.erase(it);
@@ -293,7 +292,6 @@ void ClientConductor::releaseSubscription(std::int64_t registrationId, struct Im
     }
     else if (nullptr != imageList)
     {
-        delete[] imageList->m_images;
         delete imageList;
     }
 }
@@ -424,7 +422,7 @@ void ClientConductor::addAvailableCounterHandler(const on_available_counter_t& h
 }
 
 void ClientConductor::removeAvailableCounterHandler(const on_available_counter_t& handler)
-{;
+{
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     ensureNotReentrant();
     ensureOpen();
@@ -638,7 +636,7 @@ void ClientConductor::onAvailableImage(
         {
             UnsafeBufferPosition subscriberPosition(m_counterValuesBuffer, subscriberPositionId);
 
-            Image image(
+            std::shared_ptr<Image> image = std::make_shared<Image>(
                 sessionId,
                 correlationId,
                 subscriptionRegistrationId,
@@ -648,9 +646,9 @@ void ClientConductor::onAvailableImage(
                 m_errorHandler);
 
             CallbackGuard callbackGuard(m_isInCallback);
-            entry.m_onAvailableImageHandler(image);
+            entry.m_onAvailableImageHandler(*image);
 
-            struct ImageList *oldImageList = subscription->addImage(image);
+            Image::list_t *oldImageList = subscription->addImage(image);
 
             if (nullptr != oldImageList)
             {
@@ -673,18 +671,16 @@ void ClientConductor::onUnavailableImage(std::int64_t correlationId, std::int64_
 
         if (nullptr != subscription)
         {
-            std::pair<struct ImageList *, int> result = subscription->removeImage(correlationId);
-            struct ImageList *oldImageList = result.first;
+            std::pair<Image::list_t *, int> result = subscription->removeImage(correlationId);
+            Image::list_t *oldImageList = result.first;
             const int index = result.second;
 
             if (nullptr != oldImageList)
             {
-                Image *oldArray = oldImageList->m_images;
-
                 lingerResource(nowMs, oldImageList);
 
                 CallbackGuard callbackGuard(m_isInCallback);
-                entry.m_onUnavailableImageHandler(oldArray[index]);
+                entry.m_onUnavailableImageHandler(*oldImageList->at(index));
             }
         }
     }
@@ -771,7 +767,6 @@ void ClientConductor::onCheckManagedResources(long long nowMs)
         {
             if (nowMs > (entry.m_timeOfLastStatusChangeMs + m_resourceLingerTimeoutMs))
             {
-                delete[] entry.m_imageList->m_images;
                 delete entry.m_imageList;
                 entry.m_imageList = nullptr;
 
@@ -784,12 +779,12 @@ void ClientConductor::onCheckManagedResources(long long nowMs)
     m_lingeringImageLists.erase(arrayIt, m_lingeringImageLists.end());
 }
 
-void ClientConductor::lingerResource(long long nowMs, struct ImageList *imageList)
+void ClientConductor::lingerResource(long long nowMs, Image::list_t *imageList)
 {
     m_lingeringImageLists.emplace_back(nowMs, imageList);
 }
 
-void ClientConductor::lingerAllResources(long long nowMs, struct ImageList *imageList)
+void ClientConductor::lingerAllResources(long long nowMs, Image::list_t *imageList)
 {
     if (nullptr != imageList)
     {

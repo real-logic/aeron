@@ -282,14 +282,7 @@ public:
      */
     inline std::shared_ptr<Image> imageByIndex(size_t index) const
     {
-        const Image::list_t &imageList = *std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
-
-        if (index >= imageList.size())
-        {
-            throw std::out_of_range("image index out of range");
-        }
-
-        return imageList[index];
+        return std::atomic_load_explicit(&m_imageList, std::memory_order_acquire)->at(index);
     }
 
     /**
@@ -303,14 +296,7 @@ public:
      */
     inline Image& imageAtIndex(size_t index) const
     {
-        const Image::list_t &imageList = *std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
-
-        if (index >= imageList.size())
-        {
-            throw std::out_of_range("image index out of range");
-        }
-
-        return *imageList[index];
+        return *std::atomic_load_explicit(&m_imageList, std::memory_order_acquire)->at(index);
     }
 
     /**

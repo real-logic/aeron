@@ -378,7 +378,7 @@ private:
         std::shared_ptr<LogBuffers> m_logBuffers;
 
         LogBuffersDefn(std::shared_ptr<LogBuffers> buffers) :
-            m_timeOfLastStatusChangeMs(0),
+            m_timeOfLastStatusChangeMs(LLONG_MAX),
             m_logBuffers(std::move(buffers))
         {
         }

@@ -54,8 +54,10 @@ final class SharedModeArchiveConductor extends ArchiveConductor
     {
         return super.preWork() +
             replayerAgentInvoker.invoke() +
+            invokeAeronInvoker() +
             invokeDriverConductor() +
             recorderAgentInvoker.invoke() +
+            invokeAeronInvoker() +
             invokeDriverConductor();
     }
 

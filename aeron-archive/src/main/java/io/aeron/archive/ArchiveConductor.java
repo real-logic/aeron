@@ -207,13 +207,18 @@ abstract class ArchiveConductor
         {
             cachedEpochClock.update(nowMs);
             markFile.updateActivityTimestamp(nowMs);
-            workCount += aeronAgentInvoker.invoke();
+            workCount += invokeAeronInvoker();
         }
 
         workCount += invokeDriverConductor();
         workCount += runTasks(taskQueue);
 
         return workCount;
+    }
+
+    protected final int invokeAeronInvoker()
+    {
+        return aeronAgentInvoker.invoke();
     }
 
     protected final int invokeDriverConductor()

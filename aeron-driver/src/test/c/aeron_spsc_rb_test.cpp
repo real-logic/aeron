@@ -102,11 +102,11 @@ TEST_F(SpscRbTest, shouldWriteVectorToEmptyBuffer)
 
     const int vec_len = 3;
     struct iovec vec[vec_len];
-    vec[0].iov_base = m_buffer.data();
+    vec[0].iov_base = m_srcBuffer.data();
     vec[0].iov_len = 8;
-    vec[1].iov_base = m_buffer.data() + (vec[0].iov_len);
+    vec[1].iov_base = m_srcBuffer.data() + (vec[0].iov_len);
     vec[1].iov_len = 7;
-    vec[2].iov_base = m_buffer.data() + (vec[0].iov_len + vec[1].iov_len);
+    vec[2].iov_base = m_srcBuffer.data() + (vec[0].iov_len + vec[1].iov_len);
     vec[2].iov_len = 11;
     size_t length = vec[0].iov_len + vec[1].iov_len + vec[2].iov_len;
 
@@ -146,11 +146,11 @@ TEST_F(SpscRbTest, shouldRejectWriteVectorWhenInsufficientSpace)
 
     const int vec_len = 3;
     struct iovec vec[vec_len];
-    vec[0].iov_base = m_buffer.data();
+    vec[0].iov_base = m_srcBuffer.data();
     vec[0].iov_len = 1;
-    vec[1].iov_base = m_buffer.data() + (vec[0].iov_len);
+    vec[1].iov_base = m_srcBuffer.data() + (vec[0].iov_len);
     vec[1].iov_len = 1;
-    vec[2].iov_base = m_buffer.data() + (vec[0].iov_len + vec[1].iov_len);
+    vec[2].iov_base = m_srcBuffer.data() + (vec[0].iov_len + vec[1].iov_len);
     vec[2].iov_len = 98;
     size_t length = vec[0].iov_len + vec[1].iov_len + vec[2].iov_len;
 

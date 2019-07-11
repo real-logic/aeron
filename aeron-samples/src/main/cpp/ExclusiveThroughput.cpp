@@ -210,7 +210,8 @@ int main(int argc, char **argv)
                 std::this_thread::yield();
             }
 
-            Image& image = subscriptionPtr->imageAtIndex(0);
+            std::shared_ptr<Image> imageSharedPtr = subscriptionPtr->imageByIndex(0);
+            Image& image = *imageSharedPtr;
 
             while (isRunning())
             {

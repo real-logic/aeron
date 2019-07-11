@@ -102,7 +102,8 @@ void sendPingAndReceivePong(
     std::unique_ptr<std::uint8_t[]> buffer(new std::uint8_t[settings.messageLength]);
     concurrent::AtomicBuffer srcBuffer(buffer.get(), static_cast<size_t>(settings.messageLength));
     BusySpinIdleStrategy idleStrategy;
-    Image& image = subscription.imageAtIndex(0);
+    std::shared_ptr<Image> imageSharedPtr = subscription.imageByIndex(0);
+    Image& image = *imageSharedPtr;
 
     for (int i = 0; i < settings.numberOfMessages; i++)
     {

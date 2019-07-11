@@ -108,7 +108,8 @@ void sendPingAndReceivePong(
         std::this_thread::yield();
     }
 
-    Image& image = subscription.imageAtIndex(0);
+    std::shared_ptr<Image> imageSharedPtr = subscription.imageByIndex(0);
+    Image& image = *imageSharedPtr;
 
     for (int i = 0; i < settings.numberOfMessages; i++)
     {
@@ -272,7 +273,8 @@ int main(int argc, char **argv)
                     std::this_thread::yield();
                 }
 
-                Image& image = pingSubscriptionRef.imageAtIndex(0);
+                std::shared_ptr<Image> imageSharedPtr = pingSubscriptionRef.imageByIndex(0);
+                Image& image = *imageSharedPtr;
 
                 while (running)
                 {

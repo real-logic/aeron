@@ -122,7 +122,7 @@ bool MemoryMappedFile::fill(FileHandle fd, size_t size, uint8_t value)
 MemoryMappedFile::ptr_t MemoryMappedFile::createNew(const char *filename, off_t offset, size_t size)
 {
     FileHandle fd;
-    fd.handle = open(filename, O_RDWR|O_CREAT, 0666);
+    fd.handle = open(filename, O_RDWR | O_CREAT, 0666);
 
     if (fd.handle < 0)
     {
@@ -288,7 +288,7 @@ uint8_t* MemoryMappedFile::doMapping(size_t length, FileHandle fd, size_t offset
     void* memory = ::mmap(
         NULL,
         length,
-        (readOnly ? PROT_READ : (PROT_READ|PROT_WRITE)),
+        (readOnly ? PROT_READ : (PROT_READ | PROT_WRITE)),
         MAP_SHARED,
         fd.handle,
         static_cast<off_t>(offset));

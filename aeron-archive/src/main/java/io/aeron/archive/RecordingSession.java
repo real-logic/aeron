@@ -23,6 +23,8 @@ import org.agrona.LangUtil;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+
 /**
  * Consumes an {@link Image} and records data to file using a {@link RecordingWriter}.
  */
@@ -89,6 +91,16 @@ class RecordingSession implements Session
         return position;
     }
 
+    public long recordedPosition()
+    {
+        if (position.isClosed())
+        {
+            return NULL_POSITION;
+        }
+
+        return position.get();
+    }
+
     public int doWork()
     {
         int workDone = 0;
@@ -122,7 +134,7 @@ class RecordingSession implements Session
         }
         catch (final IOException ex)
         {
-            close();
+            recordingWriter.close();
             state = State.STOPPED;
             LangUtil.rethrowUnchecked(ex);
         }

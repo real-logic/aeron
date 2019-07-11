@@ -20,14 +20,20 @@ import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+
+import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
+
 /**
- * Counter stored in the counters file managed by the media driver which can be read with AeronStat.
+ * Counter stored in a file managed by the media driver which can be observed with AeronStat.
  */
 public class Counter extends AtomicCounter
 {
+    private static final AtomicIntegerFieldUpdater<Counter> IS_CLOSED_UPDATER = newUpdater(Counter.class, "isClosed");
+
     private final long registrationId;
     private final ClientConductor clientConductor;
-    private volatile boolean isClosed = false;
+    private volatile int isClosed;
 
     Counter(
         final long registrationId,
@@ -49,16 +55,13 @@ public class Counter extends AtomicCounter
      * @param counterId      for the counter to be viewed.
      * @throws AeronException if the id has for the counter has not been allocated.
      */
-    public Counter(
-        final CountersReader countersReader,
-        final long registrationId,
-        final int counterId)
+    public Counter(final CountersReader countersReader, final long registrationId, final int counterId)
     {
         super(countersReader.valuesBuffer(), counterId);
 
         if (countersReader.getCounterState(counterId) != CountersReader.RECORD_ALLOCATED)
         {
-            throw new AeronException("Counter id has not been allocated: " + counterId);
+            throw new AeronException("Counter id is not allocated: " + counterId);
         }
 
         this.registrationId = registrationId;
@@ -78,19 +81,16 @@ public class Counter extends AtomicCounter
     /**
      * Close the counter, releasing the resource managed by the media driver if this was the creator of the Counter.
      * <p>
-     * This method is idempotent.
+     * This method is idempotent and thread safe.
      */
     public void close()
     {
-        if (!isClosed)
+        if (IS_CLOSED_UPDATER.compareAndSet(this, 0, 1))
         {
+            super.close();
             if (null != clientConductor)
             {
                 clientConductor.releaseCounter(this);
-            }
-            else
-            {
-                isClosed = true;
             }
         }
     }
@@ -102,12 +102,12 @@ public class Counter extends AtomicCounter
      */
     public boolean isClosed()
     {
-        return isClosed;
+        return 1 == isClosed;
     }
 
     void internalClose()
     {
         super.close();
-        isClosed = true;
+        isClosed = 1;
     }
 }

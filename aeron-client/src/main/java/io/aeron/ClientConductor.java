@@ -735,17 +735,13 @@ class ClientConductor implements Agent, DriverEventsListener
         clientLock.lock();
         try
         {
-            if (!counter.isClosed())
-            {
-                ensureActive();
-                ensureNotReentrant();
+            ensureActive();
+            ensureNotReentrant();
 
-                counter.internalClose();
-                final long registrationId = counter.registrationId();
-                if (null != resourceByRegIdMap.remove(registrationId))
-                {
-                    awaitResponse(driverProxy.removeCounter(registrationId));
-                }
+            final long registrationId = counter.registrationId();
+            if (null != resourceByRegIdMap.remove(registrationId))
+            {
+                awaitResponse(driverProxy.removeCounter(registrationId));
             }
         }
         finally

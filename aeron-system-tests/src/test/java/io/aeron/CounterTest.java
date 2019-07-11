@@ -168,9 +168,7 @@ public class CounterTest
     }
 
     private void unavailableCounterHandler(
-        @SuppressWarnings("unused") final CountersReader countersReader,
-        final long registrationId,
-        final int counterId)
+        @SuppressWarnings("unused") final CountersReader countersReader, final long registrationId, final int counterId)
     {
         assertThat(registrationId, is(readableCounter.registrationId()));
         assertThat(counterId, is(readableCounter.counterId()));

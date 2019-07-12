@@ -17,7 +17,7 @@
 #ifndef AERON_CLIENT_CONDUCTOR_H
 #define AERON_CLIENT_CONDUCTOR_H
 
-#include <map>
+#include <unordered_map>
 #include <vector>
 #include <mutex>
 #include <concurrent/logbuffer/TermReader.h>
@@ -386,12 +386,12 @@ private:
 
     std::recursive_mutex m_adminLock;
 
-    std::map<std::int64_t, PublicationStateDefn> m_publicationByRegistrationId;
-    std::map<std::int64_t, ExclusivePublicationStateDefn> m_exclusivePublicationByRegistrationId;
-    std::map<std::int64_t, SubscriptionStateDefn> m_subscriptionByRegistrationId;
-    std::map<std::int64_t, CounterStateDefn> m_counterByRegistrationId;
+    std::unordered_map<std::int64_t, PublicationStateDefn> m_publicationByRegistrationId;
+    std::unordered_map<std::int64_t, ExclusivePublicationStateDefn> m_exclusivePublicationByRegistrationId;
+    std::unordered_map<std::int64_t, SubscriptionStateDefn> m_subscriptionByRegistrationId;
+    std::unordered_map<std::int64_t, CounterStateDefn> m_counterByRegistrationId;
 
-    std::map<std::int64_t, LogBuffersDefn> m_logBuffersByRegistrationId;
+    std::unordered_map<std::int64_t, LogBuffersDefn> m_logBuffersByRegistrationId;
     std::vector<ImageListLingerDefn> m_lingeringImageLists;
 
     DriverProxy& m_driverProxy;

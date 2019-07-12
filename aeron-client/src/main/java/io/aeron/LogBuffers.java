@@ -48,7 +48,6 @@ public class LogBuffers implements AutoCloseable, ManagedResource
     private static final EnumSet<StandardOpenOption> FILE_OPTIONS = EnumSet.of(READ, WRITE, SPARSE);
     private static final FileAttribute<?>[] NO_ATTRIBUTES = new FileAttribute[0];
 
-    protected long preTouchOptimisationAvoidance;
     private long timeOfLastStateChangeNs;
     private int refCount;
     private final int termLength;
@@ -189,28 +188,29 @@ public class LogBuffers implements AutoCloseable, ManagedResource
      */
     public void preTouch()
     {
+        final int value = 0;
         final int pageSize = LogBufferDescriptor.pageSize(logMetaDataBuffer);
-        long sum = 0;
+        final UnsafeBuffer atomicBuffer = new UnsafeBuffer();
 
         for (final MappedByteBuffer buffer : mappedByteBuffers)
         {
-            buffer.limit(buffer.capacity());
+            atomicBuffer.wrap(buffer);
 
-            for (int i = 0, length = buffer.capacity(); i < length; i += pageSize)
+            for (int i = 0, length = atomicBuffer.capacity(); i < length; i += pageSize)
             {
-                sum += buffer.get(i);
+                atomicBuffer.compareAndSetInt(i, value, value);
             }
         }
-
-        preTouchOptimisationAvoidance = sum;
     }
 
     public void close()
     {
         CloseHelper.close(fileChannel);
-        for (final MappedByteBuffer buffer : mappedByteBuffers)
+
+        for (int i = 0, length = mappedByteBuffers.length; i < length; i++)
         {
-            IoUtil.unmap(buffer);
+            IoUtil.unmap(mappedByteBuffers[i]);
+            mappedByteBuffers[i] = null;
         }
     }
 

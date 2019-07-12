@@ -293,6 +293,7 @@ public:
      *
      * @param index in the array
      * @return image at given index or exception if out of range.
+     * @deprecated
      */
     inline Image& imageAtIndex(size_t index) const
     {

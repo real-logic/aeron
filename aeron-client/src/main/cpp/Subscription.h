@@ -293,7 +293,7 @@ public:
      *
      * @param index in the array
      * @return image at given index or exception if out of range.
-     * @deprecated
+     * @deprecated use Subscription::imageByIndex instead.
      */
     inline Image& imageAtIndex(size_t index) const
     {
@@ -308,6 +308,7 @@ public:
      * instead so that the Images are retained easier.
      *
      * @return a std::vector of active {@link Image}s that match this subscription.
+     * @deprecated use Subscription::copyOfImageList instead.
      */
     inline std::shared_ptr<std::vector<Image>> images() const
     {

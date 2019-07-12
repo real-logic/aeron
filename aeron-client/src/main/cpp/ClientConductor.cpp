@@ -765,7 +765,7 @@ void ClientConductor::onCheckManagedResources(long long nowMs)
     auto arrayIt = std::remove_if(m_lingeringImageLists.begin(), m_lingeringImageLists.end(),
         [nowMs, this](ImageListLingerDefn &entry)
         {
-            if (nowMs > (entry.m_timeOfLastStatusChangeMs + m_resourceLingerTimeoutMs))
+            if ((nowMs - m_resourceLingerTimeoutMs) > entry.m_timeOfLastStatusChangeMs)
             {
                 delete entry.m_imageList;
                 entry.m_imageList = nullptr;

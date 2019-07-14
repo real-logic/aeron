@@ -70,17 +70,15 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
 
         if (state == State.ACTIVE)
         {
-            if (image.isClosed())
+            workCount += image.poll(adapter, FRAGMENT_LIMIT);
+
+            if (0 == workCount && image.isClosed())
             {
                 state = State.INACTIVE;
-                for (final Session session : controlSessionByIdMap.values())
+                for (final ControlSession session : controlSessionByIdMap.values())
                 {
                     session.abort();
                 }
-            }
-            else
-            {
-                workCount += image.poll(adapter, FRAGMENT_LIMIT);
             }
         }
 

@@ -146,6 +146,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
 
         CloseHelper.close(backupArchive);
         CloseHelper.close(clusterArchive);
+        CloseHelper.close(recordingLog);
         ctx.close();
     }
 

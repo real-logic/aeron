@@ -268,14 +268,12 @@ class ClusteredServiceAgent implements Agent, Cluster
 
     public void idle()
     {
-        checkInterruptedStatus();
         checkForClockTick();
         idleStrategy.idle();
     }
 
     public void idle(final int workCount)
     {
-        checkInterruptedStatus();
         checkForClockTick();
         idleStrategy.idle(workCount);
     }
@@ -546,6 +544,7 @@ class ClusteredServiceAgent implements Agent, Cluster
             service.onStart(this, null);
         }
 
+        idleStrategy.reset();
         while (!consensusModuleProxy.ack(clusterLogPosition, ackId++, serviceId))
         {
             idle();
@@ -561,6 +560,7 @@ class ClusteredServiceAgent implements Agent, Cluster
             try (Subscription subscription = aeron.addSubscription(activeLogEvent.channel, activeLogEvent.streamId))
             {
                 final long id = ackId++;
+                idleStrategy.reset();
                 while (!consensusModuleProxy.ack(activeLogEvent.logPosition, id, serviceId))
                 {
                     idle();
@@ -600,6 +600,7 @@ class ClusteredServiceAgent implements Agent, Cluster
                     {
                         idle();
                     }
+
                     break;
                 }
 
@@ -619,9 +620,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         int counterId = RecoveryState.findCounterId(counters);
         while (NULL_COUNTER_ID == counterId)
         {
-            checkInterruptedStatus();
-            idleStrategy.idle();
-
+            idle();
             counterId = RecoveryState.findCounterId(counters);
         }
 
@@ -633,6 +632,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         final Subscription logSubscription = aeron.addSubscription(activeLogEvent.channel, activeLogEvent.streamId);
 
         final long id = ackId++;
+        idleStrategy.reset();
         while (!consensusModuleProxy.ack(activeLogEvent.logPosition, id, serviceId))
         {
             idle();
@@ -685,8 +685,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         int counterId = ClusterNodeRole.findCounterId(counters);
         while (NULL_COUNTER_ID == counterId)
         {
-            checkInterruptedStatus();
-            idleStrategy.idle();
+            idle();
             counterId = ClusterNodeRole.findCounterId(counters);
         }
 
@@ -699,8 +698,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         int counterId = CommitPos.findCounterId(counters);
         while (NULL_COUNTER_ID == counterId)
         {
-            checkInterruptedStatus();
-            idleStrategy.idle();
+            idle();
             counterId = CommitPos.findCounterId(counters);
         }
 
@@ -738,15 +736,13 @@ class ClusteredServiceAgent implements Agent, Cluster
 
             if (fragments == 0)
             {
-                checkInterruptedStatus();
-
                 if (image.isClosed())
                 {
                     throw new ClusterException("snapshot ended unexpectedly");
                 }
-
-                idleStrategy.idle(fragments);
             }
+
+            idle(fragments);
         }
     }
 
@@ -824,6 +820,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         {
             final long recordingId = onTakeSnapshot(position, leadershipTermId);
             final long id = ackId++;
+            idleStrategy.reset();
             while (!consensusModuleProxy.ack(position, id, recordingId, serviceId))
             {
                 idle();
@@ -844,14 +841,6 @@ class ClusteredServiceAgent implements Agent, Cluster
         return counterId;
     }
 
-    private static void checkInterruptedStatus()
-    {
-        if (Thread.currentThread().isInterrupted())
-        {
-            throw new AgentTerminationException("unexpected interrupt during operation");
-        }
-    }
-
     private boolean checkForClockTick()
     {
         final long nowMs = epochClock.time();
@@ -865,15 +854,12 @@ class ClusteredServiceAgent implements Agent, Cluster
                 aeronAgentInvoker.invoke();
             }
 
-            if (consensusModuleProxy.isConnected())
+            if (Thread.currentThread().isInterrupted())
             {
-                markFile.updateActivityTimestamp(nowMs);
+                throw new AgentTerminationException("unexpected interrupt during operation");
             }
-            else
-            {
-                ctx.countedErrorHandler().onError(new ClusterException("Consensus Module not connected"));
-                ctx.terminationHook().run();
-            }
+
+            markFile.updateActivityTimestamp(nowMs);
 
             return true;
         }

@@ -849,14 +849,14 @@ class ClusteredServiceAgent implements Agent, Cluster
         {
             cachedTimeMs = nowMs;
 
-            if (null != aeronAgentInvoker)
-            {
-                aeronAgentInvoker.invoke();
-            }
-
             if (Thread.currentThread().isInterrupted())
             {
                 throw new AgentTerminationException("unexpected interrupt during operation");
+            }
+
+            if (null != aeronAgentInvoker)
+            {
+                aeronAgentInvoker.invoke();
             }
 
             markFile.updateActivityTimestamp(nowMs);

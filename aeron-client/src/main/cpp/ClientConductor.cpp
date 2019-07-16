@@ -40,8 +40,8 @@ ClientConductor::~ClientConductor()
     std::for_each(m_lingeringImageLists.begin(), m_lingeringImageLists.end(),
         [](ImageListLingerDefn &entry)
         {
-            delete entry.m_imageList;
-            entry.m_imageList = nullptr;
+            delete [] entry.m_imageArray;
+            entry.m_imageArray = nullptr;
         });
 
     m_driverProxy.clientClose();
@@ -271,7 +271,7 @@ std::shared_ptr<Subscription> ClientConductor::findSubscription(std::int64_t reg
     return sub;
 }
 
-void ClientConductor::releaseSubscription(std::int64_t registrationId, Image::list_t *imageList)
+void ClientConductor::releaseSubscription(std::int64_t registrationId, Image::array_t imageArray, std::size_t length)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     verifyDriverIsActiveViaErrorHandler();
@@ -281,18 +281,18 @@ void ClientConductor::releaseSubscription(std::int64_t registrationId, Image::li
     {
         m_driverProxy.removeSubscription(registrationId);
 
-        for (auto& image : *imageList)
+        for (std::size_t i = 0; i < length; i++)
         {
-            it->second.m_onUnavailableImageHandler(*image);
+            it->second.m_onUnavailableImageHandler(*imageArray[i]);
         }
 
         m_subscriptionByRegistrationId.erase(it);
 
-        lingerAllResources(m_epochClock(), imageList);
+        lingerAllResources(m_epochClock(), imageArray);
     }
     else
     {
-        delete imageList;
+        delete [] imageArray;
     }
 }
 
@@ -648,11 +648,11 @@ void ClientConductor::onAvailableImage(
             CallbackGuard callbackGuard(m_isInCallback);
             entry.m_onAvailableImageHandler(*image);
 
-            Image::list_t *oldImageList = subscription->addImage(image);
+            Image::array_t oldImageArray = subscription->addImage(image);
 
-            if (nullptr != oldImageList)
+            if (nullptr != oldImageArray)
             {
-                lingerResource(m_epochClock(), oldImageList);
+                lingerResource(m_epochClock(), oldImageArray);
             }
         }
     }
@@ -671,16 +671,16 @@ void ClientConductor::onUnavailableImage(std::int64_t correlationId, std::int64_
 
         if (nullptr != subscription)
         {
-            std::pair<Image::list_t *, int> result = subscription->removeImage(correlationId);
-            Image::list_t *oldImageList = result.first;
+            std::pair<Image::array_t, int> result = subscription->removeImage(correlationId);
+            Image::array_t oldImageArray = result.first;
             const int index = result.second;
 
-            if (nullptr != oldImageList)
+            if (nullptr != oldImageArray)
             {
-                lingerResource(nowMs, oldImageList);
+                lingerResource(nowMs, oldImageArray);
 
                 CallbackGuard callbackGuard(m_isInCallback);
-                entry.m_onUnavailableImageHandler(*oldImageList->at(index));
+                entry.m_onUnavailableImageHandler(*oldImageArray[index]);
             }
         }
     }
@@ -767,8 +767,8 @@ void ClientConductor::onCheckManagedResources(long long nowMs)
         {
             if ((nowMs - m_resourceLingerTimeoutMs) > entry.m_timeOfLastStatusChangeMs)
             {
-                delete entry.m_imageList;
-                entry.m_imageList = nullptr;
+                delete [] entry.m_imageArray;
+                entry.m_imageArray = nullptr;
 
                 return true;
             }
@@ -779,16 +779,16 @@ void ClientConductor::onCheckManagedResources(long long nowMs)
     m_lingeringImageLists.erase(arrayIt, m_lingeringImageLists.end());
 }
 
-void ClientConductor::lingerResource(long long nowMs, Image::list_t *imageList)
+void ClientConductor::lingerResource(long long nowMs, Image::array_t imageArray)
 {
-    m_lingeringImageLists.emplace_back(nowMs, imageList);
+    m_lingeringImageLists.emplace_back(nowMs, imageArray);
 }
 
-void ClientConductor::lingerAllResources(long long nowMs, Image::list_t *imageList)
+void ClientConductor::lingerAllResources(long long nowMs, Image::array_t imageArray)
 {
-    if (nullptr != imageList)
+    if (nullptr != imageArray)
     {
-        lingerResource(nowMs, imageList);
+        lingerResource(nowMs, imageArray);
     }
 }
 

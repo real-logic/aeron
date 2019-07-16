@@ -108,6 +108,7 @@ SET(HEADERS
     concurrent/status/StatusIndicatorReader.h
     concurrent/reports/LossReportDescriptor.h
     concurrent/reports/LossReportReader.h
+    concurrent/AtomicArrayUpdater.h
     protocol/HeaderFlyweight.h
     protocol/NakFlyweight.h
     protocol/StatusMessageFlyweight.h

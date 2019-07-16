@@ -90,6 +90,7 @@ class Image
 public:
     typedef Image this_t;
     typedef std::vector<std::shared_ptr<Image>> list_t;
+    typedef std::shared_ptr<Image>* array_t;
 
     /**
      * Construct a new image over a log to represent a stream of messages from a {@link Publication}.

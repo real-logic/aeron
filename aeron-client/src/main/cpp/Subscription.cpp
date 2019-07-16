@@ -30,15 +30,16 @@ Subscription::Subscription(
     m_channelStatusId(channelStatusId),
     m_registrationId(registrationId),
     m_streamId(streamId),
-    m_imageList(new Image::list_t()),
+    m_imageArray(),
     m_isClosed(false)
 {
 }
 
 Subscription::~Subscription()
 {
-    m_conductor.releaseSubscription(
-        m_registrationId, std::atomic_load_explicit(&m_imageList, std::memory_order_acquire));
+    auto imageArrayPair = m_imageArray.load();
+
+    m_conductor.releaseSubscription(m_registrationId, imageArrayPair.first, imageArrayPair.second);
 }
 
 void Subscription::addDestination(const std::string& endpointChannel)

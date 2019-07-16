@@ -22,8 +22,9 @@
 #include <atomic>
 #include <memory>
 #include <iterator>
-#include <concurrent/logbuffer/TermReader.h>
+#include "concurrent/logbuffer/TermReader.h"
 #include "concurrent/status/StatusIndicatorReader.h"
+#include "concurrent/AtomicArrayUpdater.h"
 #include "Image.h"
 
 namespace aeron {
@@ -129,8 +130,9 @@ public:
     template <typename F>
     inline int poll(F&& fragmentHandler, int fragmentLimit)
     {
-        const Image::list_t& imageList = *std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
-        const std::size_t length = imageList.size();
+        auto imageArrayPair = m_imageArray.load();
+        auto imageArray = imageArrayPair.first;
+        const std::size_t length = imageArrayPair.second;
         int fragmentsRead = 0;
 
         std::size_t startingIndex = m_roundRobinIndex++;
@@ -141,12 +143,12 @@ public:
 
         for (std::size_t i = startingIndex; i < length && fragmentsRead < fragmentLimit; i++)
         {
-            fragmentsRead += imageList[i]->poll(fragmentHandler, fragmentLimit - fragmentsRead);
+            fragmentsRead += imageArray[i]->poll(fragmentHandler, fragmentLimit - fragmentsRead);
         }
 
         for (std::size_t i = 0; i < startingIndex && fragmentsRead < fragmentLimit; i++)
         {
-            fragmentsRead += imageList[i]->poll(fragmentHandler, fragmentLimit - fragmentsRead);
+            fragmentsRead += imageArray[i]->poll(fragmentHandler, fragmentLimit - fragmentsRead);
         }
 
         return fragmentsRead;
@@ -170,8 +172,9 @@ public:
     template <typename F>
     inline int controlledPoll(F&& fragmentHandler, int fragmentLimit)
     {
-        const Image::list_t& imageList = *std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
-        const std::size_t length = imageList.size();
+        auto imageArrayPair = m_imageArray.load();
+        auto imageArray = imageArrayPair.first;
+        const std::size_t length = imageArrayPair.second;
         int fragmentsRead = 0;
 
         std::size_t startingIndex = m_roundRobinIndex++;
@@ -182,12 +185,12 @@ public:
 
         for (std::size_t i = startingIndex; i < length && fragmentsRead < fragmentLimit; i++)
         {
-            fragmentsRead += imageList[i]->controlledPoll(fragmentHandler, fragmentLimit - fragmentsRead);
+            fragmentsRead += imageArray[i]->controlledPoll(fragmentHandler, fragmentLimit - fragmentsRead);
         }
 
         for (std::size_t i = 0; i < startingIndex && fragmentsRead < fragmentLimit; i++)
         {
-            fragmentsRead += imageList[i]->controlledPoll(fragmentHandler, fragmentLimit - fragmentsRead);
+            fragmentsRead += imageArray[i]->controlledPoll(fragmentHandler, fragmentLimit - fragmentsRead);
         }
 
         return fragmentsRead;
@@ -203,12 +206,14 @@ public:
     template <typename F>
     inline long blockPoll(F&& blockHandler, int blockLengthLimit)
     {
-        const Image::list_t &imageList = *std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
+        auto imageArrayPair = m_imageArray.load();
+        auto imageArray = imageArrayPair.first;
+        const std::size_t length = imageArrayPair.second;
         long bytesConsumed = 0;
 
-        for (const auto& image : imageList)
+        for (std::size_t i = 0; i < length; i++)
         {
-            bytesConsumed += image->blockPoll(blockHandler, blockLengthLimit);
+            bytesConsumed += imageArray[i]->blockPoll(blockHandler, blockLengthLimit);
         }
 
         return bytesConsumed;
@@ -221,11 +226,13 @@ public:
      */
     inline bool isConnected() const
     {
-        const Image::list_t& imageList = *std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
+        auto imageArrayPair = m_imageArray.load();
+        auto imageArray = imageArrayPair.first;
+        const std::size_t length = imageArrayPair.second;
 
-        for (const auto& image : imageList)
+        for (std::size_t i = 0; i < length; i++)
         {
-            if (!image->isClosed())
+            if (!imageArray[i]->isClosed())
             {
                 return true;
             }
@@ -241,7 +248,7 @@ public:
      */
     inline int imageCount() const
     {
-        return static_cast<int>(std::atomic_load_explicit(&m_imageList, std::memory_order_acquire)->size());
+        return static_cast<int>(m_imageArray.load().second);
     }
 
     /**
@@ -255,20 +262,21 @@ public:
      */
     inline std::shared_ptr<Image> imageBySessionId(std::int32_t sessionId) const
     {
-        const Image::list_t &imageList = *std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
-        const std::size_t length = imageList.size();
+        auto imageArrayPair = m_imageArray.load();
+        auto imageArray = imageArrayPair.first;
+        const std::size_t length = imageArrayPair.second;
         int index = -1;
 
         for (std::size_t i = 0; i < length; i++)
         {
-            if (imageList[i]->sessionId() == sessionId)
+            if (imageArray[i]->sessionId() == sessionId)
             {
                 index = static_cast<int>(i);
                 break;
             }
         }
 
-        return index != -1 ? imageList[index] : std::shared_ptr<Image>();
+        return index != -1 ? imageArray[index] : std::shared_ptr<Image>();
     }
 
     /**
@@ -282,7 +290,7 @@ public:
      */
     inline std::shared_ptr<Image> imageByIndex(size_t index) const
     {
-        return std::atomic_load_explicit(&m_imageList, std::memory_order_acquire)->at(index);
+        return m_imageArray.load().first[index];
     }
 
     /**
@@ -297,7 +305,7 @@ public:
      */
     inline Image& imageAtIndex(size_t index) const
     {
-        return *std::atomic_load_explicit(&m_imageList, std::memory_order_acquire)->at(index);
+        return *m_imageArray.load().first[index];
     }
 
     /**
@@ -330,13 +338,19 @@ public:
      *
      * @return a std::vector of active std::shared_ptr of {@link Image}s that match this subscription
      */
-    inline std::shared_ptr<Image::list_t> copyOfImageList() const
+    inline std::shared_ptr<std::vector<std::shared_ptr<Image>>> copyOfImageList() const
     {
-        const Image::list_t &imageList = *std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
-        std::shared_ptr<Image::list_t> result(new Image::list_t);
+        auto imageArrayPair = m_imageArray.load();
+        auto imageArray = imageArrayPair.first;
+        const std::size_t length = imageArrayPair.second;
+        std::shared_ptr<std::vector<std::shared_ptr<Image>>> result(new std::vector<std::shared_ptr<Image>>);
 
-        result->reserve(imageList.size());
-        std::copy(imageList.begin(), imageList.end(), std::back_inserter(*result));
+        result->reserve(length);
+
+        for (std::size_t i = 0; i < length; i++)
+        {
+            result->push_back(imageArray[i]);
+        }
 
         return result;
     }
@@ -349,14 +363,16 @@ public:
     template <typename F>
     inline int forEachImage(F&& func) const
     {
-        const Image::list_t &imageList = *std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
+        auto imageArrayPair = m_imageArray.load();
+        auto imageArray = imageArrayPair.first;
+        const std::size_t length = imageArrayPair.second;
 
-        for (auto& image : imageList)
+        for (std::size_t i = 0; i < length; i++)
         {
-            func(*image);
+            func(*imageArray[i]);
         }
 
-        return static_cast<int>(imageList.size());
+        return static_cast<int>(length);
     }
 
     /**
@@ -372,12 +388,14 @@ public:
     /// @cond HIDDEN_SYMBOLS
     bool hasImage(std::int64_t correlationId) const
     {
-        const Image::list_t &imageList = *std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
+        auto imageArrayPair = m_imageArray.load();
+        auto imageArray = imageArrayPair.first;
+        const std::size_t length = imageArrayPair.second;
         bool isConnected = false;
 
-        for (const auto& image : imageList)
+        for (std::size_t i = 0; i < length; i++)
         {
-            if (image->correlationId() == correlationId)
+            if (imageArray[i]->correlationId() == correlationId)
             {
                 isConnected = true;
                 break;
@@ -387,67 +405,44 @@ public:
         return isConnected;
     }
 
-    Image::list_t *addImage(std::shared_ptr<Image> image)
+    Image::array_t addImage(std::shared_ptr<Image> image)
     {
-        auto oldImageList = std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
-        auto newImageList = new Image::list_t;
-
-        newImageList->reserve(oldImageList->size() + 1);
-
-        std::copy(oldImageList->begin(), oldImageList->end(), std::back_inserter(*newImageList));
-        newImageList->push_back(image);
-
-        std::atomic_store_explicit(&m_imageList, newImageList, std::memory_order_release);
-
-        return oldImageList;
+        return m_imageArray.addElement(std::move(image)).first;
     }
 
-    std::pair<Image::list_t *, int> removeImage(std::int64_t correlationId)
+    std::pair<Image::array_t, int> removeImage(std::int64_t correlationId)
     {
-        auto& oldImageList = *std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
-        std::size_t length = oldImageList.size();
-        int index = -1;
+        auto result = m_imageArray.removeElement([&](std::shared_ptr<Image> image)
+        {
+            if (image->correlationId() == correlationId)
+            {
+                image->close();
+                return true;
+            }
+
+            return false;
+        });
+
+        return result;
+    }
+
+    Image::array_t removeAndCloseAllImages()
+    {
+        auto imageArrayPair = m_imageArray.load();
+        auto imageArray = imageArrayPair.first;
+        const std::size_t length = imageArrayPair.second;
 
         for (std::size_t i = 0; i < length; i++)
         {
-            if (oldImageList[i]->correlationId() == correlationId)
-            {
-                oldImageList[i]->close();
-                index = static_cast<int>(i);
-                break;
-            }
+            imageArray[i]->close();
         }
 
-        if (-1 != index)
-        {
-            auto& newImageList = *new Image::list_t;
+        auto newImageArray = new std::shared_ptr<Image>[0];
 
-            newImageList.reserve(oldImageList.size() - 1);
-            auto it = oldImageList.begin() + index;
-
-            std::copy(oldImageList.begin(), it, std::back_inserter(newImageList));
-            std::copy(it + 1, oldImageList.end(), std::back_inserter(newImageList));
-            std::atomic_store_explicit(&m_imageList, &newImageList, std::memory_order_release);
-        }
-
-        return {-1 != index ? &oldImageList : nullptr, index};
-    }
-
-    Image::list_t *removeAndCloseAllImages()
-    {
-        auto& oldImageList = *std::atomic_load_explicit(&m_imageList, std::memory_order_acquire);
-
-        for (auto& image : oldImageList)
-        {
-            image->close();
-        }
-
-        auto newImageList = new Image::list_t();
-
-        std::atomic_store_explicit(&m_imageList, newImageList, std::memory_order_release);
+        m_imageArray.store(newImageArray, 0);
         std::atomic_store_explicit(&m_isClosed, true, std::memory_order_release);
 
-        return &oldImageList;
+        return imageArray;
     }
     /// @endcond
 
@@ -466,7 +461,7 @@ private:
     std::int64_t m_registrationId;
     std::int32_t m_streamId;
 
-    std::atomic<Image::list_t*> m_imageList;
+    AtomicArrayUpdater<std::shared_ptr<Image>> m_imageArray;
     std::atomic<bool> m_isClosed;
 };
 

@@ -634,7 +634,7 @@ TEST_F(ClientConductorTest, shouldExceptionWhenReleaseSubscriptionAfterDriverIna
 
     ASSERT_NO_THROW(
         {
-            m_conductor.releaseSubscription(100, nullptr);
+            m_conductor.releaseSubscription(100, nullptr, 0);
         });
 }
 

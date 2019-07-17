@@ -99,7 +99,11 @@ public:
         buffer.fill(initialValue);
     }
 
-    COND_MOCK_VIRTUAL ~AtomicBuffer() = default;
+#if COND_MOCK
+    AtomicBuffer(const AtomicBuffer&) = default;
+    AtomicBuffer& operator=(const AtomicBuffer&) = default;
+    virtual ~AtomicBuffer() = default;
+#endif
 
     /**
      * Wrap a buffer of memory for a given length.

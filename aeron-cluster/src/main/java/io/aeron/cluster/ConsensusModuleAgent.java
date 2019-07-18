@@ -64,8 +64,9 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private final int logSubscriptionTag;
     private final int logSubscriptionChannelTag;
     private long nextSessionId = 1;
-    private long nextServiceSessionId = Long.MIN_VALUE;
+    private long nextServiceSessionId = Long.MIN_VALUE + 1;
     private long logServiceSessionId = Long.MIN_VALUE;
+    private long pendingServiceMessageHeadPosition = 0;
     private long leadershipTermId = NULL_VALUE;
     private long expectedAckPosition = 0;
     private long serviceAckId = 0;
@@ -76,6 +77,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private long timeOfLastAppendPositionMs = 0;
     private long cachedTimeMs;
     private long clusterTimeMs = NULL_VALUE;
+    private int uncommittedServiceMessages = 0;
     private int logInitialTermId = NULL_VALUE;
     private int logTermBufferLength = NULL_VALUE;
     private int logMtuLength = NULL_VALUE;
@@ -116,8 +118,10 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private final ExpandableRingBuffer pendingServiceMessages = new ExpandableRingBuffer();
     private final ExpandableRingBuffer.MessageConsumer serviceSessionMessageAppender =
         this::serviceSessionMessageAppender;
-    private final ExpandableRingBuffer.MessageConsumer serviceSessionMessageSweeper =
-        this::serviceSessionMessageSweeper;
+    private final ExpandableRingBuffer.MessageConsumer leaderServiceSessionMessageSweeper =
+        this::leaderServiceSessionMessageSweeper;
+    private final ExpandableRingBuffer.MessageConsumer followerServiceSessionMessageSweeper =
+        this::followerServiceSessionMessageSweeper;
     private final Authenticator authenticator;
     private final ClusterSessionProxy sessionProxy;
     private final Aeron aeron;
@@ -364,7 +368,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
 
         if (session.state() == OPEN &&
-            logPublisher.appendMessage(leadershipTermId, clusterSessionId, clusterTimeMs, buffer, offset, length))
+            logPublisher.appendMessage(leadershipTermId, clusterSessionId, clusterTimeMs, buffer, offset, length) > 0)
         {
             session.timeOfLastActivityMs(clusterTimeMs);
             return ControlledFragmentHandler.Action.CONTINUE;
@@ -834,6 +838,16 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         followerCommitPosition = logPosition;
 
         commitPosition.setOrdered(logPosition);
+        pendingServiceMessageHeadPosition = pendingServiceMessages.head();
+        pendingServiceMessages.consume(followerServiceSessionMessageSweeper, Integer.MAX_VALUE);
+
+        if (uncommittedServiceMessages > 0)
+        {
+            pendingServiceMessages.consume(leaderServiceSessionMessageSweeper, Integer.MAX_VALUE);
+            pendingServiceMessages.forEach(this::serviceSessionMessageReset, Integer.MAX_VALUE);
+            uncommittedServiceMessages = 0;
+        }
+
         clearSessionsAfter(logPosition);
     }
 
@@ -911,7 +925,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             return;
         }
 
-        enqueueServiceSessionMessage((MutableDirectBuffer)buffer, offset, length, ++nextServiceSessionId);
+        enqueueServiceSessionMessage((MutableDirectBuffer)buffer, offset, length, nextServiceSessionId++);
     }
 
     void onScheduleTimer(final long correlationId, final long deadlineMs)
@@ -1011,7 +1025,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         final ClusterSession clusterSession = sessionByIdMap.get(clusterSessionId);
         if (null == clusterSession)
         {
-            sweepPendingServiceSessionMessages(clusterSessionId);
+            followerSweepPendingServiceSessionMessages(clusterSessionId);
         }
         else
         {
@@ -1530,7 +1544,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         election = null;
         this.followerCommitPosition = termBaseLogPosition;
         commitPosition.setOrdered(termBaseLogPosition);
-        pendingServiceMessages.consume(serviceSessionMessageSweeper, Integer.MAX_VALUE);
+        pendingServiceMessages.consume(followerServiceSessionMessageSweeper, Integer.MAX_VALUE);
 
         if (!ctx.ingressChannel().contains(ENDPOINT_PARAM_NAME))
         {
@@ -1776,8 +1790,9 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         if (Cluster.Role.LEADER == role && ConsensusModule.State.ACTIVE == state)
         {
             workCount += timerService.poll(nowMs);
+            workCount += pendingServiceMessages.forEach(
+                pendingServiceMessageHeadPosition, serviceSessionMessageAppender, MESSAGE_LIMIT);
             workCount += ingressAdapter.poll();
-            workCount += pendingServiceMessages.consume(serviceSessionMessageAppender, MESSAGE_LIMIT);
         }
         else if (Cluster.Role.FOLLOWER == role &&
             (ConsensusModule.State.ACTIVE == state || ConsensusModule.State.SUSPENDED == state))
@@ -2319,6 +2334,11 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                     handleMemberRemovals(commitPosition);
                 }
 
+                if (uncommittedServiceMessages > 0)
+                {
+                    pendingServiceMessages.consume(leaderServiceSessionMessageSweeper, Integer.MAX_VALUE);
+                }
+
                 workCount += 1;
             }
         }
@@ -2573,22 +2593,24 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private void enqueueServiceSessionMessage(
         final MutableDirectBuffer buffer, final int offset, final int length, final long clusterSessionId)
     {
-        final int headerOffset = offset - SESSION_HEADER_LENGTH;
-        final int clusterSessionIdOffset = headerOffset +
-            MessageHeaderDecoder.ENCODED_LENGTH +
-            SessionMessageHeaderDecoder.clusterSessionIdEncodingOffset();
+        final int headerOffset = offset - SessionMessageHeaderDecoder.BLOCK_LENGTH;
+        final int clusterSessionIdOffset = headerOffset + SessionMessageHeaderDecoder.clusterSessionIdEncodingOffset();
+        final int timestampOffset = headerOffset + SessionMessageHeaderDecoder.timestampEncodingOffset();
 
         buffer.putLong(clusterSessionIdOffset, clusterSessionId, SessionMessageHeaderDecoder.BYTE_ORDER);
-        pendingServiceMessages.append(buffer, headerOffset, length + SESSION_HEADER_LENGTH);
+        buffer.putLong(timestampOffset, Long.MAX_VALUE, SessionMessageHeaderDecoder.BYTE_ORDER);
+        pendingServiceMessages.append(buffer, offset - SESSION_HEADER_LENGTH, length + SESSION_HEADER_LENGTH);
     }
 
-    private boolean serviceSessionMessageAppender(final MutableDirectBuffer buffer, final int offset, final int length)
+    private boolean serviceSessionMessageAppender(
+        final MutableDirectBuffer buffer, final int offset, final int length, final long headPosition)
     {
-        final int clusterSessionIdOffset =
-            offset + MessageHeaderDecoder.ENCODED_LENGTH + SessionMessageHeaderDecoder.clusterSessionIdEncodingOffset();
+        final int headerOffset = offset + MessageHeaderDecoder.ENCODED_LENGTH;
+        final int clusterSessionIdOffset = headerOffset + SessionMessageHeaderDecoder.clusterSessionIdEncodingOffset();
+        final int timestampOffset = headerOffset + SessionMessageHeaderDecoder.timestampEncodingOffset();
         final long clusterSessionId = buffer.getLong(clusterSessionIdOffset, SessionMessageHeaderDecoder.BYTE_ORDER);
 
-        final boolean appended = logPublisher.appendMessage(
+        final long appendPosition = logPublisher.appendMessage(
             leadershipTermId,
             clusterSessionId,
             clusterTimeMs,
@@ -2596,22 +2618,64 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             offset + SESSION_HEADER_LENGTH,
             length - SESSION_HEADER_LENGTH);
 
-        if (appended)
+        if (appendPosition > 0)
         {
+            ++uncommittedServiceMessages;
             logServiceSessionId = clusterSessionId;
+            pendingServiceMessageHeadPosition = headPosition;
+            buffer.putLong(timestampOffset, appendPosition, SessionMessageHeaderEncoder.BYTE_ORDER);
+
+            return true;
         }
 
-        return appended;
-    }
-
-    private void sweepPendingServiceSessionMessages(final long clusterSessionId)
-    {
-        logServiceSessionId = clusterSessionId;
-        pendingServiceMessages.consume(serviceSessionMessageSweeper, MESSAGE_LIMIT);
+        return false;
     }
 
     @SuppressWarnings("unused")
-    private boolean serviceSessionMessageSweeper(final MutableDirectBuffer buffer, final int offset, final int length)
+    private boolean serviceSessionMessageReset(
+        final MutableDirectBuffer buffer, final int offset, final int length, final long headPosition)
+    {
+        final int headerOffset = offset + MessageHeaderDecoder.ENCODED_LENGTH;
+        final int timestampOffset = headerOffset + SessionMessageHeaderDecoder.timestampEncodingOffset();
+        final long appendPosition = buffer.getLong(timestampOffset, SessionMessageHeaderDecoder.BYTE_ORDER);
+
+        if (appendPosition < Long.MAX_VALUE)
+        {
+            buffer.putLong(timestampOffset, Long.MAX_VALUE, SessionMessageHeaderEncoder.BYTE_ORDER);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    @SuppressWarnings("unused")
+    private boolean leaderServiceSessionMessageSweeper(
+        final MutableDirectBuffer buffer, final int offset, final int length, final long headPosition)
+    {
+        final int headerOffset = offset + MessageHeaderDecoder.ENCODED_LENGTH;
+        final int timestampOffset = headerOffset + SessionMessageHeaderDecoder.timestampEncodingOffset();
+        final long appendPosition = buffer.getLong(timestampOffset, SessionMessageHeaderDecoder.BYTE_ORDER);
+
+        if (appendPosition >= commitPosition.getWeak())
+        {
+            --uncommittedServiceMessages;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    private void followerSweepPendingServiceSessionMessages(final long clusterSessionId)
+    {
+        logServiceSessionId = clusterSessionId;
+        pendingServiceMessages.consume(followerServiceSessionMessageSweeper, Integer.MAX_VALUE);
+    }
+
+    @SuppressWarnings("unused")
+    private boolean followerServiceSessionMessageSweeper(
+        final MutableDirectBuffer buffer, final int offset, final int length, final long headPosition)
     {
         final int clusterSessionIdOffset =
             offset + MessageHeaderDecoder.ENCODED_LENGTH + SessionMessageHeaderDecoder.clusterSessionIdEncodingOffset();

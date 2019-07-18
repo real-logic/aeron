@@ -37,7 +37,8 @@ class ConsensusModuleSnapshotTaker extends SnapshotTaker implements ExpandableRi
         super(publication, idleStrategy, aeronClientInvoker);
     }
 
-    public boolean onMessage(final MutableDirectBuffer buffer, final int offset, final int length)
+    public boolean onMessage(
+        final MutableDirectBuffer buffer, final int offset, final int length, final long headPosition)
     {
         idleStrategy.reset();
         while (true)
@@ -162,6 +163,6 @@ class ConsensusModuleSnapshotTaker extends SnapshotTaker implements ExpandableRi
 
     void snapshot(final ExpandableRingBuffer pendingServiceMessages)
     {
-        pendingServiceMessages.forEach(this);
+        pendingServiceMessages.forEach(this, Integer.MAX_VALUE);
     }
 }

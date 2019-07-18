@@ -38,13 +38,23 @@ public class ExpandableRingBufferTest
     @Test(expected = IllegalArgumentException.class)
     public void shouldExceptionForNegativeInitialCapacity()
     {
-        new ExpandableRingBuffer(-1);
+        new ExpandableRingBuffer(-1, true);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldExceptionForOverMaxInitialCapacity()
     {
-        new ExpandableRingBuffer(ExpandableRingBuffer.MAX_CAPACITY + 1);
+        new ExpandableRingBuffer(ExpandableRingBuffer.MAX_CAPACITY + 1, true);
+    }
+
+    @Test
+    public void shouldDefaultDirectMessage()
+    {
+        final ExpandableRingBuffer ringBuffer = new ExpandableRingBuffer();
+        assertTrue(ringBuffer.isDirect());
+        assertTrue(ringBuffer.isEmpty());
+        assertEquals(0L, ringBuffer.head());
+        assertEquals(0L, ringBuffer.tail());
     }
 
     @Test
@@ -112,7 +122,7 @@ public class ExpandableRingBufferTest
     {
         final ExpandableRingBuffer ringBuffer = new ExpandableRingBuffer();
         final ExpandableRingBuffer.MessageConsumer mockConsumer = mock(ExpandableRingBuffer.MessageConsumer.class);
-        when(mockConsumer.onMessage(any(), anyInt(), anyInt())).thenReturn(Boolean.TRUE);
+        when(mockConsumer.onMessage(any(), anyInt(), anyInt(), anyLong())).thenReturn(Boolean.TRUE);
 
         ringBuffer.append(TEST_MSG, 0, MSG_LENGTH_ONE);
 
@@ -120,7 +130,7 @@ public class ExpandableRingBufferTest
         assertThat(readCount, is(1));
         assertTrue(ringBuffer.isEmpty());
 
-        verify(mockConsumer).onMessage(any(MutableDirectBuffer.class), anyInt(), eq(MSG_LENGTH_ONE));
+        verify(mockConsumer).onMessage(any(MutableDirectBuffer.class), anyInt(), eq(MSG_LENGTH_ONE), anyLong());
     }
 
     @Test
@@ -128,7 +138,7 @@ public class ExpandableRingBufferTest
     {
         final ExpandableRingBuffer ringBuffer = new ExpandableRingBuffer();
         final ExpandableRingBuffer.MessageConsumer mockConsumer = mock(ExpandableRingBuffer.MessageConsumer.class);
-        when(mockConsumer.onMessage(any(), anyInt(), anyInt())).thenReturn(Boolean.TRUE);
+        when(mockConsumer.onMessage(any(), anyInt(), anyInt(), anyLong())).thenReturn(Boolean.TRUE);
 
         ringBuffer.append(TEST_MSG, 0, MSG_LENGTH_ONE);
         ringBuffer.append(TEST_MSG, 0, MSG_LENGTH_TWO);
@@ -138,8 +148,8 @@ public class ExpandableRingBufferTest
         assertTrue(ringBuffer.isEmpty());
 
         final InOrder inOrder = Mockito.inOrder(mockConsumer);
-        inOrder.verify(mockConsumer).onMessage(any(MutableDirectBuffer.class), anyInt(), eq(MSG_LENGTH_ONE));
-        inOrder.verify(mockConsumer).onMessage(any(MutableDirectBuffer.class), anyInt(), eq(MSG_LENGTH_TWO));
+        inOrder.verify(mockConsumer).onMessage(any(MutableDirectBuffer.class), anyInt(), eq(MSG_LENGTH_ONE), anyLong());
+        inOrder.verify(mockConsumer).onMessage(any(MutableDirectBuffer.class), anyInt(), eq(MSG_LENGTH_TWO), anyLong());
     }
 
     @Test
@@ -147,19 +157,19 @@ public class ExpandableRingBufferTest
     {
         final ExpandableRingBuffer ringBuffer = new ExpandableRingBuffer();
         final ExpandableRingBuffer.MessageConsumer mockConsumer = mock(ExpandableRingBuffer.MessageConsumer.class);
-        when(mockConsumer.onMessage(any(), anyInt(), anyInt())).thenReturn(Boolean.TRUE);
+        when(mockConsumer.onMessage(any(), anyInt(), anyInt(), anyLong())).thenReturn(Boolean.TRUE);
 
         ringBuffer.append(TEST_MSG, 0, MSG_LENGTH_ONE);
         ringBuffer.append(TEST_MSG, 0, MSG_LENGTH_TWO);
 
         final int existingSize = ringBuffer.size();
-        ringBuffer.forEach(mockConsumer);
+        ringBuffer.forEach(mockConsumer, Integer.MAX_VALUE);
         assertFalse(ringBuffer.isEmpty());
         assertThat(ringBuffer.size(), is(existingSize));
 
         final InOrder inOrder = Mockito.inOrder(mockConsumer);
-        inOrder.verify(mockConsumer).onMessage(any(MutableDirectBuffer.class), anyInt(), eq(MSG_LENGTH_ONE));
-        inOrder.verify(mockConsumer).onMessage(any(MutableDirectBuffer.class), anyInt(), eq(MSG_LENGTH_TWO));
+        inOrder.verify(mockConsumer).onMessage(any(MutableDirectBuffer.class), anyInt(), eq(MSG_LENGTH_ONE), anyLong());
+        inOrder.verify(mockConsumer).onMessage(any(MutableDirectBuffer.class), anyInt(), eq(MSG_LENGTH_TWO), anyLong());
     }
 
     @Test
@@ -167,7 +177,7 @@ public class ExpandableRingBufferTest
     {
         final ExpandableRingBuffer ringBuffer = new ExpandableRingBuffer();
         final ExpandableRingBuffer.MessageConsumer mockConsumer = mock(ExpandableRingBuffer.MessageConsumer.class);
-        when(mockConsumer.onMessage(any(), anyInt(), anyInt())).thenReturn(Boolean.TRUE);
+        when(mockConsumer.onMessage(any(), anyInt(), anyInt(), anyLong())).thenReturn(Boolean.TRUE);
 
         ringBuffer.append(TEST_MSG, 0, MSG_LENGTH_ONE);
         ringBuffer.append(TEST_MSG, 0, MSG_LENGTH_TWO);
@@ -186,9 +196,9 @@ public class ExpandableRingBufferTest
         assertThat(readCount, is(2));
 
         final InOrder inOrder = Mockito.inOrder(mockConsumer);
-        inOrder.verify(mockConsumer).onMessage(any(MutableDirectBuffer.class), anyInt(), eq(MSG_LENGTH_ONE));
-        inOrder.verify(mockConsumer).onMessage(any(MutableDirectBuffer.class), anyInt(), eq(MSG_LENGTH_TWO));
-        inOrder.verify(mockConsumer).onMessage(any(MutableDirectBuffer.class), anyInt(), eq(MSG_LENGTH_ONE));
+        inOrder.verify(mockConsumer).onMessage(any(MutableDirectBuffer.class), anyInt(), eq(MSG_LENGTH_ONE), anyLong());
+        inOrder.verify(mockConsumer).onMessage(any(MutableDirectBuffer.class), anyInt(), eq(MSG_LENGTH_TWO), anyLong());
+        inOrder.verify(mockConsumer).onMessage(any(MutableDirectBuffer.class), anyInt(), eq(MSG_LENGTH_ONE), anyLong());
         inOrder.verifyNoMoreInteractions();
     }
 }

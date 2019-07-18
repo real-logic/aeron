@@ -101,7 +101,7 @@ class LogPublisher
         }
     }
 
-    boolean appendMessage(
+    long appendMessage(
         final long leadershipTermId,
         final long clusterSessionId,
         final long timestampMs,
@@ -115,21 +115,21 @@ class LogPublisher
             .timestamp(timestampMs);
 
         int attempts = SEND_ATTEMPTS;
+        long result;
         do
         {
-            final long result = publication.offer(
-                sessionHeaderBuffer, 0, SESSION_HEADER_LENGTH, buffer, offset, length, null);
+            result = publication.offer(sessionHeaderBuffer, 0, SESSION_HEADER_LENGTH, buffer, offset, length, null);
 
             if (result > 0)
             {
-                return true;
+                break;
             }
 
             checkResult(result);
         }
         while (--attempts > 0);
 
-        return false;
+        return result;
     }
 
     long appendSessionOpen(final ClusterSession session, final long leadershipTermId, final long nowMs)

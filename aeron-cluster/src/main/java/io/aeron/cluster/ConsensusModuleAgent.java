@@ -2657,10 +2657,9 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         final int timestampOffset = headerOffset + SessionMessageHeaderDecoder.timestampEncodingOffset();
         final long appendPosition = buffer.getLong(timestampOffset, SessionMessageHeaderDecoder.BYTE_ORDER);
 
-        if (appendPosition >= commitPosition.getWeak())
+        if (commitPosition.getWeak() >= appendPosition)
         {
             --uncommittedServiceMessages;
-
             return true;
         }
 

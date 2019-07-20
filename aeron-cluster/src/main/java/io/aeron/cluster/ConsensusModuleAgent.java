@@ -66,7 +66,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private long nextSessionId = 1;
     private long nextServiceSessionId = Long.MIN_VALUE + 1;
     private long logServiceSessionId = Long.MIN_VALUE;
-    private long pendingServiceMessageHeadPosition = 0;
     private long leadershipTermId = NULL_VALUE;
     private long expectedAckPosition = 0;
     private long serviceAckId = 0;
@@ -77,6 +76,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private long timeOfLastAppendPositionMs = 0;
     private long cachedTimeMs;
     private long clusterTimeMs = NULL_VALUE;
+    private int pendingServiceMessageHeadOffset = 0;
     private int uncommittedServiceMessages = 0;
     private int logInitialTermId = NULL_VALUE;
     private int logTermBufferLength = NULL_VALUE;
@@ -838,7 +838,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         followerCommitPosition = logPosition;
 
         commitPosition.setOrdered(logPosition);
-        pendingServiceMessageHeadPosition = pendingServiceMessages.head();
+        pendingServiceMessageHeadOffset = 0;
         pendingServiceMessages.consume(followerServiceSessionMessageSweeper, Integer.MAX_VALUE);
 
         if (uncommittedServiceMessages > 0)
@@ -1789,9 +1789,9 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         if (Cluster.Role.LEADER == role && ConsensusModule.State.ACTIVE == state)
         {
-            workCount += timerService.poll(nowMs);
             workCount += pendingServiceMessages.forEach(
-                pendingServiceMessageHeadPosition, serviceSessionMessageAppender, MESSAGE_LIMIT);
+                pendingServiceMessageHeadOffset, serviceSessionMessageAppender, MESSAGE_LIMIT);
+            workCount += timerService.poll(nowMs);
             workCount += ingressAdapter.poll();
         }
         else if (Cluster.Role.FOLLOWER == role &&
@@ -2336,7 +2336,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
                 if (uncommittedServiceMessages > 0)
                 {
-                    pendingServiceMessages.consume(leaderServiceSessionMessageSweeper, Integer.MAX_VALUE);
+                    pendingServiceMessageHeadOffset -=
+                        pendingServiceMessages.consume(leaderServiceSessionMessageSweeper, Integer.MAX_VALUE);
                 }
 
                 workCount += 1;
@@ -2603,7 +2604,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     }
 
     private boolean serviceSessionMessageAppender(
-        final MutableDirectBuffer buffer, final int offset, final int length, final long headPosition)
+        final MutableDirectBuffer buffer, final int offset, final int length, final int headOffset)
     {
         final int headerOffset = offset + MessageHeaderDecoder.ENCODED_LENGTH;
         final int clusterSessionIdOffset = headerOffset + SessionMessageHeaderDecoder.clusterSessionIdEncodingOffset();
@@ -2622,7 +2623,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         {
             ++uncommittedServiceMessages;
             logServiceSessionId = clusterSessionId;
-            pendingServiceMessageHeadPosition = headPosition;
+            pendingServiceMessageHeadOffset = headOffset;
             buffer.putLong(timestampOffset, appendPosition, SessionMessageHeaderEncoder.BYTE_ORDER);
 
             return true;
@@ -2633,7 +2634,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     @SuppressWarnings("unused")
     private boolean serviceSessionMessageReset(
-        final MutableDirectBuffer buffer, final int offset, final int length, final long headPosition)
+        final MutableDirectBuffer buffer, final int offset, final int length, final int headOffset)
     {
         final int headerOffset = offset + MessageHeaderDecoder.ENCODED_LENGTH;
         final int timestampOffset = headerOffset + SessionMessageHeaderDecoder.timestampEncodingOffset();
@@ -2651,7 +2652,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     @SuppressWarnings("unused")
     private boolean leaderServiceSessionMessageSweeper(
-        final MutableDirectBuffer buffer, final int offset, final int length, final long headPosition)
+        final MutableDirectBuffer buffer, final int offset, final int length, final int headOffset)
     {
         final int headerOffset = offset + MessageHeaderDecoder.ENCODED_LENGTH;
         final int timestampOffset = headerOffset + SessionMessageHeaderDecoder.timestampEncodingOffset();
@@ -2674,7 +2675,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     @SuppressWarnings("unused")
     private boolean followerServiceSessionMessageSweeper(
-        final MutableDirectBuffer buffer, final int offset, final int length, final long headPosition)
+        final MutableDirectBuffer buffer, final int offset, final int length, final int headOffset)
     {
         final int clusterSessionIdOffset =
             offset + MessageHeaderDecoder.ENCODED_LENGTH + SessionMessageHeaderDecoder.clusterSessionIdEncodingOffset();

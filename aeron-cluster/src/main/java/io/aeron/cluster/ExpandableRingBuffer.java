@@ -40,6 +40,16 @@ class ExpandableRingBuffer
     public static final int MAX_CAPACITY = 1 << 30;
 
     /**
+     * Alignment in bytes for the beginning of message header.
+     */
+    public static final int HEADER_ALIGNMENT = SIZE_OF_LONG;
+
+    /**
+     * Length of encapsulating header.
+     */
+    public static final int HEADER_LENGTH = SIZE_OF_INT + SIZE_OF_INT;
+
+    /**
      * Consumers of messages implement this interface and pass it to {@link #consume(MessageConsumer, int)}.
      */
     @FunctionalInterface
@@ -49,17 +59,15 @@ class ExpandableRingBuffer
          * Called for the processing of each message from a buffer in turn. Returning false aborts consumption
          * so that current message remains and any after it.
          *
-         * @param buffer       containing the encoded message.
-         * @param offset       at which the encoded message begins.
-         * @param length       in bytes of the encoded message.
-         * @param headPosition reached after consuming the message.
+         * @param buffer     containing the encoded message.
+         * @param offset     at which the encoded message begins.
+         * @param length     in bytes of the encoded message.
+         * @param headOffset how much of an offset from {@link #head()} has passed for the end of this message.
          * @return true is the message was consumed otherwise false. Returning false aborts further consumption.
          */
-        boolean onMessage(MutableDirectBuffer buffer, int offset, int length, long headPosition);
+        boolean onMessage(MutableDirectBuffer buffer, int offset, int length, int headOffset);
     }
 
-    private static final int HEADER_LENGTH = SIZE_OF_INT + SIZE_OF_INT;
-    private static final int HEADER_ALIGNMENT = SIZE_OF_LONG;
     private static final int MESSAGE_LENGTH_OFFSET = 0;
     private static final int MESSAGE_TYPE_OFFSET = SIZE_OF_INT;
     private static final int MESSAGE_TYPE_PADDING = 0;
@@ -207,7 +215,7 @@ class ExpandableRingBuffer
      *
      * @param messageConsumer to which the encoded messages are passed.
      * @param limit           for the number of entries to iterate over.
-     * @return count of messages iterated over.
+     * @return count of bytes iterated.
      * @see MessageConsumer
      */
     public int forEach(final MessageConsumer messageConsumer, final int limit)
@@ -225,7 +233,8 @@ class ExpandableRingBuffer
 
             if (MESSAGE_TYPE_PADDING != typeId)
             {
-                if (!messageConsumer.onMessage(buffer, offset + HEADER_LENGTH, length - HEADER_LENGTH, position))
+                final int headOffset = (int)(position - head);
+                if (!messageConsumer.onMessage(buffer, offset + HEADER_LENGTH, length - HEADER_LENGTH, headOffset))
                 {
                     break;
                 }
@@ -234,31 +243,31 @@ class ExpandableRingBuffer
             }
         }
 
-        return count;
+        return (int)(position - head);
     }
 
     /**
      * Iterate messages and pass them to the {@link MessageConsumer} which can stop by returning false.
      *
-     * @param initialPosition from which the for-each iterates forward which must be >= {@link #head} and
-     *                        <= {@link #tail()}, plus it must be the start a message.
+     * @param headOffset      offset from {@link #head} <= {@link #tail()}, plus it must be the start a message.
      * @param messageConsumer to which the encoded messages are passed.
      * @param limit           for the number of entries to iterate over.
-     * @return count of messages iterated over.
+     * @return count of bytes iterated.
      * @see MessageConsumer
      */
-    public int forEach(final long initialPosition, final MessageConsumer messageConsumer, final int limit)
+    public int forEach(final int headOffset, final MessageConsumer messageConsumer, final int limit)
     {
-        if (initialPosition < head || initialPosition > tail)
+        if (headOffset < 0 || headOffset > size())
         {
-            throw new IllegalArgumentException("head=" + head + " tail=" + tail + ": " + initialPosition);
+            throw new IllegalArgumentException("size=" + size() + " : headOffset=" + headOffset);
         }
 
-        if (!BitUtil.isAligned(initialPosition, HEADER_ALIGNMENT))
+        if (!BitUtil.isAligned(headOffset, HEADER_ALIGNMENT))
         {
-            throw new IllegalArgumentException(initialPosition + " not aligned to " + HEADER_ALIGNMENT);
+            throw new IllegalArgumentException(headOffset + " not aligned to " + HEADER_ALIGNMENT);
         }
 
+        final long initialPosition = head + headOffset;
         long position = initialPosition;
         int count = 0;
 
@@ -272,7 +281,8 @@ class ExpandableRingBuffer
 
             if (MESSAGE_TYPE_PADDING != typeId)
             {
-                if (!messageConsumer.onMessage(buffer, offset + HEADER_LENGTH, length - HEADER_LENGTH, position))
+                final int result = (int)(position - head);
+                if (!messageConsumer.onMessage(buffer, offset + HEADER_LENGTH, length - HEADER_LENGTH, result))
                 {
                     break;
                 }
@@ -281,7 +291,7 @@ class ExpandableRingBuffer
             }
         }
 
-        return count;
+        return (int)(position - initialPosition);
     }
 
     /**
@@ -289,11 +299,12 @@ class ExpandableRingBuffer
      *
      * @param messageConsumer to which the encoded messages are passed.
      * @param messageLimit    on the number of messages to consume per read operation.
-     * @return the number of messages consumed.
+     * @return the number of bytes consumed
      * @see MessageConsumer
      */
     public int consume(final MessageConsumer messageConsumer, final int messageLimit)
     {
+        final int bytes;
         int count = 0;
         long position = head;
 
@@ -310,7 +321,8 @@ class ExpandableRingBuffer
 
                 if (MESSAGE_TYPE_PADDING != typeId)
                 {
-                    if (!messageConsumer.onMessage(buffer, offset + HEADER_LENGTH, length - HEADER_LENGTH, position))
+                    final int headOffset = (int)(position - head);
+                    if (!messageConsumer.onMessage(buffer, offset + HEADER_LENGTH, length - HEADER_LENGTH, headOffset))
                     {
                         position -= alignedLength;
                         break;
@@ -322,10 +334,11 @@ class ExpandableRingBuffer
         }
         finally
         {
+            bytes = (int)(position - head);
             head = position;
         }
 
-        return count;
+        return bytes;
     }
 
     /**
@@ -380,31 +393,27 @@ class ExpandableRingBuffer
             throw new IllegalStateException("max capacity reached: " + MAX_CAPACITY);
         }
 
-        int tempOffset = 0;
         final UnsafeBuffer tempBuffer = new UnsafeBuffer(
             isDirect ? ByteBuffer.allocateDirect(newCapacity) : ByteBuffer.allocate(newCapacity));
 
-        while (head < tail)
+        final int headOffset = (int)head & mask;
+        final int remaining = (int)(tail - head);
+        final int firstCopyLength = Math.min(remaining, capacity - headOffset);
+        tempBuffer.putBytes(0, buffer, headOffset, firstCopyLength);
+        int tailOffset = firstCopyLength;
+
+        if (firstCopyLength < remaining)
         {
-            final int offset = (int)head & mask;
-            final int length = buffer.getInt(offset + MESSAGE_LENGTH_OFFSET);
-            final int type = buffer.getInt(offset + MESSAGE_TYPE_OFFSET);
-            final int alignedLength = BitUtil.align(length, HEADER_ALIGNMENT);
-
-            if (MESSAGE_TYPE_DATA == type)
-            {
-                tempBuffer.putBytes(tempOffset, buffer, offset, alignedLength);
-                tempOffset += alignedLength;
-            }
-
-            head += alignedLength;
+            final int length = remaining - firstCopyLength;
+            tempBuffer.putBytes(firstCopyLength, buffer, 0, length);
+            tailOffset += length;
         }
 
         buffer.wrap(tempBuffer);
         capacity = newCapacity;
         mask = newCapacity - 1;
         head = 0;
-        tail = tempOffset;
+        tail = tailOffset;
     }
 
     private void writeMessage(final DirectBuffer srcBuffer, final int srcOffset, final int srcLength)

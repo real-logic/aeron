@@ -37,8 +37,7 @@ class ConsensusModuleSnapshotTaker extends SnapshotTaker implements ExpandableRi
         super(publication, idleStrategy, aeronClientInvoker);
     }
 
-    public boolean onMessage(
-        final MutableDirectBuffer buffer, final int offset, final int length, final long headPosition)
+    public boolean onMessage(final MutableDirectBuffer buffer, final int offset, final int length, final int headOffset)
     {
         idleStrategy.reset();
         while (true)

@@ -20,12 +20,12 @@ import org.agrona.collections.Long2LongHashMap;
 
 import java.util.concurrent.TimeUnit;
 
-import static io.aeron.cluster.ConsensusModule.Configuration.TIMER_POLL_LIMIT;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 class TimerService implements DeadlineTimerWheel.TimerHandler
 {
-    private static final int MAX_ITERATIONS_PER_POLL = 10_000_000;
+    private static final int ITERATION_LIMIT = 10_000_000;
+    private static final int POLL_LIMIT = 20;
 
     private final ConsensusModuleAgent consensusModuleAgent;
     private final DeadlineTimerWheel timerWheel = new DeadlineTimerWheel(MILLISECONDS, 0, 1, 128);
@@ -37,16 +37,16 @@ class TimerService implements DeadlineTimerWheel.TimerHandler
         this.consensusModuleAgent = consensusModuleAgent;
     }
 
-    int poll(final long nowMs)
+    int poll(final long now)
     {
         int expired = 0;
         int iterations = 0;
 
         do
         {
-            expired += timerWheel.poll(nowMs, this, TIMER_POLL_LIMIT);
+            expired += timerWheel.poll(now, this, POLL_LIMIT);
         }
-        while (expired < TIMER_POLL_LIMIT && currentTickTimeMs() < nowMs && ++iterations < MAX_ITERATIONS_PER_POLL);
+        while (expired < POLL_LIMIT && timerWheel.currentTickTime() < now && ++iterations < ITERATION_LIMIT);
 
         return expired;
     }
@@ -56,7 +56,7 @@ class TimerService implements DeadlineTimerWheel.TimerHandler
         return timerWheel.timerCount();
     }
 
-    long currentTickTimeMs()
+    long currentTickTime()
     {
         return timerWheel.currentTickTime();
     }
@@ -81,11 +81,11 @@ class TimerService implements DeadlineTimerWheel.TimerHandler
         return false;
     }
 
-    void scheduleTimer(final long correlationId, final long deadlineMs)
+    void scheduleTimer(final long correlationId, final long deadline)
     {
         cancelTimer(correlationId);
 
-        final long timerId = timerWheel.scheduleTimer(deadlineMs);
+        final long timerId = timerWheel.scheduleTimer(deadline);
         timerIdByCorrelationIdMap.put(correlationId, timerId);
         correlationIdByTimerIdMap.put(timerId, correlationId);
     }

@@ -246,8 +246,6 @@ public class ConsensusModule implements AutoCloseable
      */
     public static class Configuration
     {
-        static final int TIMER_POLL_LIMIT = 10;
-
         /**
          * Type of snapshot for this component.
          */

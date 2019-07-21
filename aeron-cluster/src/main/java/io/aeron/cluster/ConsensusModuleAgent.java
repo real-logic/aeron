@@ -54,7 +54,7 @@ import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
 
 class ConsensusModuleAgent implements Agent, MemberStatusListener
 {
-    private static final int MESSAGE_LIMIT = 100;
+    private static final int SERVICE_MESSAGE_LIMIT = 20;
 
     private final long sessionTimeoutMs;
     private final long leaderHeartbeatIntervalMs;
@@ -1454,7 +1454,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         awaitServiceAcks(stopPosition);
 
         while (0 != timerService.poll(clusterTimeMs) ||
-            (timerService.currentTickTimeMs() < clusterTimeMs && timerService.timerCount() > 0))
+            (timerService.currentTickTime() < clusterTimeMs && timerService.timerCount() > 0))
         {
             idle();
         }
@@ -1790,7 +1790,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         if (Cluster.Role.LEADER == role && ConsensusModule.State.ACTIVE == state)
         {
             workCount += pendingServiceMessages.forEach(
-                pendingServiceMessageHeadOffset, serviceSessionMessageAppender, MESSAGE_LIMIT);
+                pendingServiceMessageHeadOffset, serviceSessionMessageAppender, SERVICE_MESSAGE_LIMIT);
             workCount += timerService.poll(nowMs);
             workCount += ingressAdapter.poll();
         }
@@ -1813,7 +1813,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
             if (ConsensusModule.State.ACTIVE == state)
             {
-                workCount += timerService.poll(nowMs - leaderHeartbeatTimeoutMs);
+                workCount += timerService.poll(clusterTimeMs - leaderHeartbeatTimeoutMs);
             }
         }
 
@@ -2643,7 +2643,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         if (appendPosition < Long.MAX_VALUE)
         {
             buffer.putLong(timestampOffset, Long.MAX_VALUE, SessionMessageHeaderEncoder.BYTE_ORDER);
-
             return true;
         }
 

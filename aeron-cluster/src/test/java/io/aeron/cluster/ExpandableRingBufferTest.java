@@ -35,7 +35,8 @@ public class ExpandableRingBufferTest
 {
     private static final int MSG_LENGTH_ONE = 250;
     private static final int MSG_LENGTH_TWO = 504;
-    private static final UnsafeBuffer TEST_MSG = new UnsafeBuffer(new byte[MSG_LENGTH_TWO]);
+    private static final int MSG_LENGTH_THREE = 700;
+    private static final UnsafeBuffer TEST_MSG = new UnsafeBuffer(new byte[MSG_LENGTH_THREE]);
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldExceptionForNegativeInitialCapacity()
@@ -208,6 +209,42 @@ public class ExpandableRingBufferTest
         inOrder.verify(mockConsumer).onMessage(any(MutableDirectBuffer.class), anyInt(), eq(MSG_LENGTH_ONE), anyInt());
         inOrder.verify(mockConsumer).onMessage(any(MutableDirectBuffer.class), anyInt(), eq(MSG_LENGTH_TWO), anyInt());
         inOrder.verify(mockConsumer).onMessage(any(MutableDirectBuffer.class), anyInt(), eq(MSG_LENGTH_ONE), anyInt());
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    public void shouldIterateFromOffsetHeadWithExpansionDueToAppend()
+    {
+        final int alignedLengthOne = BitUtil.align(MSG_LENGTH_ONE + HEADER_LENGTH, HEADER_ALIGNMENT);
+        final int alignedLengthTwo = BitUtil.align(MSG_LENGTH_TWO + HEADER_LENGTH, HEADER_ALIGNMENT);
+        final int alignedLengthThree = BitUtil.align(MSG_LENGTH_THREE + HEADER_LENGTH, HEADER_ALIGNMENT);
+
+        final ExpandableRingBuffer ringBuffer = new ExpandableRingBuffer();
+        final ExpandableRingBuffer.MessageConsumer mockConsumer = mock(ExpandableRingBuffer.MessageConsumer.class);
+        when(mockConsumer.onMessage(any(), anyInt(), anyInt(), anyInt())).thenReturn(Boolean.TRUE);
+
+        ringBuffer.append(TEST_MSG, 0, MSG_LENGTH_ONE);
+        ringBuffer.append(TEST_MSG, 0, MSG_LENGTH_TWO);
+
+        final int bytes = ringBuffer.consume(mockConsumer, 1);
+        assertThat(bytes, is(alignedLengthOne));
+
+        final int bytesTwo = ringBuffer.forEach(0, mockConsumer, 1);
+        assertEquals(alignedLengthTwo, bytesTwo);
+
+        ringBuffer.append(TEST_MSG, 0, MSG_LENGTH_THREE);
+
+        final int bytesThree = ringBuffer.forEach(bytesTwo, mockConsumer, Integer.MAX_VALUE);
+        assertThat(bytesThree, is(alignedLengthThree));
+
+        final int expectedOffsetThree = bytesTwo + alignedLengthThree;
+        final InOrder inOrder = Mockito.inOrder(mockConsumer);
+        inOrder.verify(mockConsumer)
+            .onMessage(any(MutableDirectBuffer.class), anyInt(), eq(MSG_LENGTH_ONE), eq(alignedLengthOne));
+        inOrder.verify(mockConsumer)
+            .onMessage(any(MutableDirectBuffer.class), anyInt(), eq(MSG_LENGTH_TWO), eq(alignedLengthTwo));
+        inOrder.verify(mockConsumer)
+            .onMessage(any(MutableDirectBuffer.class), anyInt(), eq(MSG_LENGTH_THREE), eq(expectedOffsetThree));
         inOrder.verifyNoMoreInteractions();
     }
 }

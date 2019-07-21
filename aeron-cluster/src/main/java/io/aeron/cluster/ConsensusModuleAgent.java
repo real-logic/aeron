@@ -54,7 +54,7 @@ import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
 
 class ConsensusModuleAgent implements Agent, MemberStatusListener
 {
-    private static final int MESSAGE_LIMIT = 10;
+    private static final int MESSAGE_LIMIT = 100;
 
     private final long sessionTimeoutMs;
     private final long leaderHeartbeatIntervalMs;

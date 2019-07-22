@@ -116,7 +116,7 @@ class ExpandableRingBuffer
         }
 
         mask = capacity - 1;
-        buffer.wrap(isDirect ? ByteBuffer.allocateDirect(initialCapacity) : ByteBuffer.allocate(initialCapacity));
+        buffer.wrap(isDirect ? ByteBuffer.allocateDirect(capacity) : ByteBuffer.allocate(capacity));
     }
 
     /**

@@ -2600,7 +2600,10 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         buffer.putLong(clusterSessionIdOffset, clusterSessionId, SessionMessageHeaderDecoder.BYTE_ORDER);
         buffer.putLong(timestampOffset, Long.MAX_VALUE, SessionMessageHeaderDecoder.BYTE_ORDER);
-        pendingServiceMessages.append(buffer, offset - SESSION_HEADER_LENGTH, length + SESSION_HEADER_LENGTH);
+        if (!pendingServiceMessages.append(buffer, offset - SESSION_HEADER_LENGTH, length + SESSION_HEADER_LENGTH))
+        {
+            throw new ClusterException("pending service message buffer capacity: " + pendingServiceMessages.size());
+        }
     }
 
     private boolean serviceSessionMessageAppender(

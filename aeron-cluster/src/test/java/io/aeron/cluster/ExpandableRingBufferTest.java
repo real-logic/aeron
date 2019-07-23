@@ -41,13 +41,13 @@ public class ExpandableRingBufferTest
     @Test(expected = IllegalArgumentException.class)
     public void shouldExceptionForNegativeInitialCapacity()
     {
-        new ExpandableRingBuffer(-1, true);
+        new ExpandableRingBuffer(-1, 0, true);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldExceptionForOverMaxInitialCapacity()
     {
-        new ExpandableRingBuffer(ExpandableRingBuffer.MAX_CAPACITY + 1, true);
+        new ExpandableRingBuffer(ExpandableRingBuffer.MAX_CAPACITY + 1, ExpandableRingBuffer.MAX_CAPACITY, true);
     }
 
     @Test
@@ -56,6 +56,7 @@ public class ExpandableRingBufferTest
         final ExpandableRingBuffer ringBuffer = new ExpandableRingBuffer();
         assertTrue(ringBuffer.isDirect());
         assertTrue(ringBuffer.isEmpty());
+        assertEquals(ExpandableRingBuffer.MAX_CAPACITY, ringBuffer.maxCapacity());
         assertEquals(0L, ringBuffer.head());
         assertEquals(0L, ringBuffer.tail());
     }
@@ -150,6 +151,7 @@ public class ExpandableRingBufferTest
         final int expectedBytes =
             BitUtil.align(MSG_LENGTH_ONE + HEADER_LENGTH, HEADER_ALIGNMENT) +
             BitUtil.align(MSG_LENGTH_TWO + HEADER_LENGTH, HEADER_ALIGNMENT);
+
         assertEquals(expectedBytes, bytes);
         assertTrue(ringBuffer.isEmpty());
 
@@ -203,6 +205,7 @@ public class ExpandableRingBufferTest
         final int expectedBytes =
             BitUtil.align(MSG_LENGTH_ONE + HEADER_LENGTH, HEADER_ALIGNMENT) +
             BitUtil.align(MSG_LENGTH_TWO + HEADER_LENGTH, HEADER_ALIGNMENT);
+
         assertThat(bytes, greaterThan(expectedBytes));
 
         final InOrder inOrder = Mockito.inOrder(mockConsumer);

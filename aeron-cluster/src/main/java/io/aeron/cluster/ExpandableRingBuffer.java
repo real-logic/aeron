@@ -28,7 +28,8 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * Ring buffer for storing messages which can expand to accommodate the messages written into it. Message are written
- * and read in a FIFO order with capacity up to {@link #MAX_CAPACITY}.
+ * and read in a FIFO order with capacity up to {@link #maxCapacity()}. Messages can be iterated via for-each methods
+ * without consuming and having the option to iterate from an offset from the current {@link #head()} position.
  * <p>
  * <b>Note:</b> This class is not thread safe.
  */
@@ -69,10 +70,11 @@ class ExpandableRingBuffer
     }
 
     private static final int MESSAGE_LENGTH_OFFSET = 0;
-    private static final int MESSAGE_TYPE_OFFSET = SIZE_OF_INT;
+    private static final int MESSAGE_TYPE_OFFSET = MESSAGE_LENGTH_OFFSET + SIZE_OF_INT;
     private static final int MESSAGE_TYPE_PADDING = 0;
     private static final int MESSAGE_TYPE_DATA = 1;
 
+    private final int maxCapacity;
     private int capacity;
     private int mask;
     private long head;
@@ -85,18 +87,25 @@ class ExpandableRingBuffer
      */
     ExpandableRingBuffer()
     {
-        this(0, true);
+        this(0, MAX_CAPACITY, true);
     }
 
     /**
      * Create a new ring buffer with an initial capacity.
      *
      * @param initialCapacity required in the buffer.
+     * @param maxCapacity     the the buffer can expand to.
      * @param isDirect        is the {@link ByteBuffer} allocated direct or heap based.
      */
-    ExpandableRingBuffer(final int initialCapacity, final boolean isDirect)
+    ExpandableRingBuffer(final int initialCapacity, final int maxCapacity, final boolean isDirect)
     {
         this.isDirect = isDirect;
+        this.maxCapacity = maxCapacity;
+
+        if (maxCapacity < 0 || maxCapacity > MAX_CAPACITY || !BitUtil.isPowerOfTwo(maxCapacity))
+        {
+            throw new IllegalArgumentException("illegal max capacity: " + maxCapacity);
+        }
 
         if (0 == initialCapacity)
         {
@@ -106,7 +115,7 @@ class ExpandableRingBuffer
 
         if (initialCapacity < 0)
         {
-            throw new IllegalArgumentException("initial capacity <= 0 : " + initialCapacity);
+            throw new IllegalArgumentException("initial capacity < 0 : " + initialCapacity);
         }
 
         capacity = BitUtil.findNextPositivePowerOfTwo(initialCapacity);
@@ -127,6 +136,16 @@ class ExpandableRingBuffer
     public boolean isDirect()
     {
         return isDirect;
+    }
+
+    /**
+     * The maximum capacity to which the buffer can expand.
+     *
+     * @return maximum capacity to which the buffer can expand.
+     */
+    public int maxCapacity()
+    {
+        return maxCapacity;
     }
 
     /**
@@ -197,6 +216,12 @@ class ExpandableRingBuffer
         if (newCapacity < 0)
         {
             throw new IllegalArgumentException("invalid required capacity: " + requiredCapacity);
+        }
+
+        if (newCapacity > maxCapacity)
+        {
+            throw new IllegalArgumentException(
+                "requiredCapacity=" + requiredCapacity + " > maxCapacity=" + maxCapacity);
         }
 
         if (newCapacity != capacity)
@@ -347,50 +372,52 @@ class ExpandableRingBuffer
      * @param srcBuffer containing the encoded message.
      * @param srcOffset within the buffer at which the message begins.
      * @param srcLength of the encoded message in the buffer.
-     * @throws IllegalStateException if the maximum capacity is reached.
+     * @return true if successful otherwise false if {@link #maxCapacity()} is reached.
      */
-    public void append(final DirectBuffer srcBuffer, final int srcOffset, final int srcLength)
+    public boolean append(final DirectBuffer srcBuffer, final int srcOffset, final int srcLength)
     {
         final int headOffset = (int)head & mask;
         final int tailOffset = (int)tail & mask;
         final int alignedLength = BitUtil.align(HEADER_LENGTH + srcLength, HEADER_ALIGNMENT);
 
-        if (tailOffset >= headOffset)
+        final int totalRemaining = capacity - (int)(tail - head);
+        if (alignedLength > totalRemaining)
+        {
+            resize(alignedLength);
+        }
+        else if (tailOffset >= headOffset)
         {
             final int toEndRemaining = capacity - tailOffset;
-            if (alignedLength > toEndRemaining)
+            if (alignedLength > toEndRemaining && alignedLength <= (totalRemaining - toEndRemaining))
             {
-                if (headOffset >= alignedLength)
-                {
-                    buffer.putInt(tailOffset + MESSAGE_LENGTH_OFFSET, toEndRemaining);
-                    buffer.putInt(tailOffset + MESSAGE_TYPE_OFFSET, MESSAGE_TYPE_PADDING);
-                    tail += toEndRemaining;
-                }
-                else
-                {
-                    resize(alignedLength);
-                }
+                buffer.putInt(tailOffset + MESSAGE_LENGTH_OFFSET, toEndRemaining);
+                buffer.putInt(tailOffset + MESSAGE_TYPE_OFFSET, MESSAGE_TYPE_PADDING);
+                tail += toEndRemaining;
             }
-        }
-        else
-        {
-            final int totalRemaining = capacity - (int)(tail - head);
-            if (alignedLength > totalRemaining)
+            else
             {
                 resize(alignedLength);
             }
         }
 
+        final int newTotalRemaining = capacity - (int)(tail - head);
+        if (alignedLength > newTotalRemaining)
+        {
+            return false;
+        }
+
         writeMessage(srcBuffer, srcOffset, srcLength);
         tail += alignedLength;
+        return true;
     }
 
     private void resize(final int newMessageLength)
     {
         final int newCapacity = BitUtil.findNextPositivePowerOfTwo(capacity + newMessageLength);
-        if (newCapacity < 0 || newCapacity < capacity)
+        if (newCapacity < capacity || newCapacity > maxCapacity)
         {
-            throw new IllegalStateException("max capacity reached: " + MAX_CAPACITY);
+            System.out.println("ExpandableRingBuffer.resize newCapacity=" + newCapacity + " capacity=" + capacity);
+            return;
         }
 
         final UnsafeBuffer tempBuffer = new UnsafeBuffer(

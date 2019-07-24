@@ -83,7 +83,8 @@ class ExpandableRingBuffer
     private final boolean isDirect;
 
     /**
-     * Create a new ring buffer which is initial compact and empty and using a direct {@link ByteBuffer}.
+     * Create a new ring buffer which is initial compact and empty, has potential for {@link #MAX_CAPACITY},
+     * and using a direct {@link ByteBuffer}.
      */
     ExpandableRingBuffer()
     {
@@ -129,7 +130,7 @@ class ExpandableRingBuffer
     }
 
     /**
-     * Is the {@link ByteBuffer} used for storage direct, i.e. off heap, or not.
+     * Is the {@link ByteBuffer} used for storage direct, that is off Java heap, or not.
      *
      * @return return true if direct {@link ByteBuffer} or false for heap based {@link ByteBuffer}.
      */
@@ -182,7 +183,7 @@ class ExpandableRingBuffer
      * Head position in the buffer from which bytes are consumed forward to {@link #tail()}.
      *
      * @return head position in the buffer from which bytes are consumed forward to {@link #tail()}.
-     * @see #consume(MessageConsumer, int).
+     * @see #consume(MessageConsumer, int)
      */
     public long head()
     {
@@ -274,7 +275,7 @@ class ExpandableRingBuffer
     /**
      * Iterate messages and pass them to the {@link MessageConsumer} which can stop by returning false.
      *
-     * @param headOffset      offset from {@link #head} <= {@link #tail()}, plus it must be the start a message.
+     * @param headOffset      offset from {@link #head} &lt;= {@link #tail()}, plus it must be the start a message.
      * @param messageConsumer to which the encoded messages are passed.
      * @param limit           for the number of entries to iterate over.
      * @return count of bytes iterated.

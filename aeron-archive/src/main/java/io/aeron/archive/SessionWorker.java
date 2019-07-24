@@ -91,6 +91,10 @@ class SessionWorker<T extends Session> implements Agent
         postSessionsClose();
     }
 
+    protected void abort()
+    {
+    }
+
     protected void closeSession(final T session)
     {
         try

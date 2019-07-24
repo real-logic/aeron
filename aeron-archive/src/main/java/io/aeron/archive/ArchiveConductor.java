@@ -218,6 +218,12 @@ abstract class ArchiveConductor
         final int workCount = aeronAgentInvoker.invoke();
         if (aeron.isClosed())
         {
+            if (ctx.threadingMode() == ArchiveThreadingMode.DEDICATED)
+            {
+                replayer.abort();
+                recorder.abort();
+            }
+
             throw new AgentTerminationException("unexpected Aeron close");
         }
 

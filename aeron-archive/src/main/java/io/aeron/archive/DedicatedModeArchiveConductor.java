@@ -18,6 +18,7 @@ package io.aeron.archive;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.AgentRunner;
+import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -119,6 +120,7 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         private final OneToOneConcurrentArrayQueue<RecordingSession> sessionsQueue;
         private final ManyToOneConcurrentArrayQueue<Session> closeQueue;
         private final AtomicCounter errorCounter;
+        private volatile boolean isAbort;
 
         DedicatedModeRecorder(
             final ErrorHandler errorHandler,
@@ -133,6 +135,12 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
             this.sessionsQueue = new OneToOneConcurrentArrayQueue<>(maxConcurrentSessions);
         }
 
+        protected void abort()
+        {
+            isAbort = true;
+            super.abort();
+        }
+
         public void accept(final RecordingSession session)
         {
             super.addSession(session);
@@ -140,6 +148,11 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
 
         protected int preWork()
         {
+            if (isAbort)
+            {
+                throw new AgentTerminationException();
+            }
+
             return sessionsQueue.drain(this);
         }
 
@@ -177,6 +190,7 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         private final OneToOneConcurrentArrayQueue<ReplaySession> sessionsQueue;
         private final ManyToOneConcurrentArrayQueue<Session> closeQueue;
         private final AtomicCounter errorCounter;
+        private volatile boolean isAbort;
 
         DedicatedModeReplayer(
             final ErrorHandler errorHandler,
@@ -191,6 +205,12 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
             this.sessionsQueue = new OneToOneConcurrentArrayQueue<>(maxConcurrentSessions);
         }
 
+        protected void abort()
+        {
+            isAbort = true;
+            super.abort();
+        }
+
         public void accept(final ReplaySession session)
         {
             super.addSession(session);
@@ -203,6 +223,11 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
 
         protected int preWork()
         {
+            if (isAbort)
+            {
+                throw new AgentTerminationException();
+            }
+
             return sessionsQueue.drain(this);
         }
 

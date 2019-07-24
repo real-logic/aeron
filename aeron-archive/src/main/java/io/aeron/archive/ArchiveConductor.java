@@ -29,10 +29,7 @@ import org.agrona.SemanticVersion;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.collections.Object2ObjectHashMap;
-import org.agrona.concurrent.AgentInvoker;
-import org.agrona.concurrent.CachedEpochClock;
-import org.agrona.concurrent.EpochClock;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
@@ -218,7 +215,13 @@ abstract class ArchiveConductor
 
     protected final int invokeAeronInvoker()
     {
-        return aeronAgentInvoker.invoke();
+        final int workCount = aeronAgentInvoker.invoke();
+        if (aeron.isClosed())
+        {
+            throw new AgentTerminationException("unexpected Aeron close");
+        }
+
+        return workCount;
     }
 
     protected final int invokeDriverConductor()

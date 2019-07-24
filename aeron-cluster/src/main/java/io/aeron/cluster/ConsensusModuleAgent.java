@@ -32,10 +32,7 @@ import io.aeron.security.Authenticator;
 import io.aeron.status.ReadableCounter;
 import org.agrona.*;
 import org.agrona.collections.*;
-import org.agrona.concurrent.Agent;
-import org.agrona.concurrent.AgentInvoker;
-import org.agrona.concurrent.EpochClock;
-import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.util.ArrayList;
@@ -1720,13 +1717,15 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     private int slowTickWork(final long nowMs)
     {
-        int workCount = 0;
+        int workCount = aeronClientInvoker.invoke();
+        if (aeron.isClosed())
+        {
+            throw new AgentTerminationException("unexpected Aeron close");
+        }
 
-        markFile.updateActivityTimestamp(nowMs);
-
-        workCount += aeronClientInvoker.invoke();
         workCount += processRedirectSessions(redirectSessions, nowMs);
         workCount += processRejectedSessions(rejectedSessions, nowMs);
+        markFile.updateActivityTimestamp(nowMs);
 
         if (null == election)
         {
@@ -2388,6 +2387,11 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         checkInterruptedStatus();
         aeronClientInvoker.invoke();
+        if (aeron.isClosed())
+        {
+            throw new AgentTerminationException();
+        }
+
         idleStrategy.idle();
     }
 
@@ -2395,6 +2399,11 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         checkInterruptedStatus();
         aeronClientInvoker.invoke();
+        if (aeron.isClosed())
+        {
+            throw new AgentTerminationException();
+        }
+
         idleStrategy.idle(workCount);
     }
 

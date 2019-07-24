@@ -18,6 +18,7 @@ package io.aeron.archive;
 import io.aeron.Subscription;
 import io.aeron.archive.client.ControlResponseAdapter;
 import io.aeron.archive.codecs.ControlResponseCode;
+import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.TimeoutException;
 import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
@@ -167,7 +168,7 @@ public class TestUtil
 
             if ((deadlineNs - System.nanoTime()) <= 0)
             {
-                throw new TimeoutException();
+                throw new TimeoutException(AeronException.Type.ERROR);
             }
 
             Thread.yield();

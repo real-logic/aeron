@@ -20,32 +20,33 @@ package io.aeron.exceptions;
  */
 public class TimeoutException extends AeronException
 {
-    public TimeoutException()
+    public TimeoutException(final Type type)
     {
-        super();
+        super(type);
     }
 
-    public TimeoutException(final String message)
+    public TimeoutException(final String message, final Type type)
     {
-        super(message);
+        super(message, type);
     }
 
-    public TimeoutException(final String message, final Throwable cause)
+    public TimeoutException(final String message, final Throwable cause, final Type type)
     {
-        super(message, cause);
+        super(message, cause, type);
     }
 
-    public TimeoutException(final Throwable cause)
+    public TimeoutException(final Throwable cause, final Type type)
     {
-        super(cause);
+        super(cause, type);
     }
 
     protected TimeoutException(
         final String message,
         final Throwable cause,
         final boolean enableSuppression,
-        final boolean writableStackTrace)
+        final boolean writableStackTrace,
+        final Type type)
     {
-        super(message, cause, enableSuppression, writableStackTrace);
+        super(message, cause, enableSuppression, writableStackTrace, type);
     }
 }

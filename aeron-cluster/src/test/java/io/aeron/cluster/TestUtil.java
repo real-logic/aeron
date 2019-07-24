@@ -15,6 +15,8 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.cluster.client.ClusterException;
+import io.aeron.exceptions.AeronException;
 import org.agrona.ErrorHandler;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.AgentTerminationException;
@@ -62,6 +64,14 @@ class TestUtil
     {
         return (ex) ->
         {
+            if (ex instanceof ClusterException)
+            {
+                if (((ClusterException)ex).type() == AeronException.Type.WARNING)
+                {
+                    return;
+                }
+            }
+
             System.err.println("\n*** Error in node " + nodeId + " followed by system thread dump ***\n\n");
             ex.printStackTrace();
 

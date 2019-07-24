@@ -25,6 +25,7 @@ import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.RecoveryState;
+import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
@@ -1741,7 +1742,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
                     if (!ClusterMember.hasActiveQuorum(clusterMembers, nowMs, leaderHeartbeatTimeoutMs))
                     {
-                        ctx.countedErrorHandler().onError(new ClusterException("no active follower quorum"));
+                        ctx.countedErrorHandler().onError(
+                            new ClusterException("no active follower quorum", AeronException.Type.WARNING));
                         enterElection(nowMs);
                         workCount += 1;
                     }
@@ -1767,7 +1769,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
                 if (nowMs >= (timeOfLastLogUpdateMs + leaderHeartbeatTimeoutMs))
                 {
-                    ctx.countedErrorHandler().onError(new ClusterException("heartbeat timeout from leader"));
+                    ctx.countedErrorHandler().onError(
+                        new ClusterException("heartbeat timeout from leader", AeronException.Type.WARNING));
                     enterElection(nowMs);
                     workCount += 1;
                 }
@@ -2411,7 +2414,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         if (Thread.currentThread().isInterrupted())
         {
-            throw new TimeoutException("unexpected interrupt");
+            throw new TimeoutException("unexpected interrupt", AeronException.Type.ERROR);
         }
     }
 

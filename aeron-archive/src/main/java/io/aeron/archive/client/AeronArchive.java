@@ -19,6 +19,7 @@ import io.aeron.*;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.ControlResponseDecoder;
 import io.aeron.archive.codecs.SourceLocation;
+import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.exceptions.TimeoutException;
 import org.agrona.CloseHelper;
@@ -1160,7 +1161,7 @@ public class AeronArchive implements AutoCloseable
 
         if (deadlineNs - nanoClock.nanoTime() < 0)
         {
-            throw new TimeoutException(errorMessage + " - correlationId=" + correlationId);
+            throw new TimeoutException(errorMessage + " - correlationId=" + correlationId, AeronException.Type.ERROR);
         }
     }
 
@@ -2232,7 +2233,9 @@ public class AeronArchive implements AutoCloseable
 
             if (deadlineNs - nanoClock.nanoTime() < 0)
             {
-                throw new TimeoutException("connect timeout for correlation id: " + correlationId + " step " + step);
+                throw new TimeoutException(
+                    "connect timeout for correlation id: " + correlationId + " step " + step,
+                    AeronException.Type.ERROR);
             }
         }
     }

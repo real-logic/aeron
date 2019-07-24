@@ -20,28 +20,97 @@ package io.aeron.exceptions;
  */
 public class AeronException extends RuntimeException
 {
+    /**
+     * Type of exception.
+     */
+    public enum Type
+    {
+        /**
+         * Exception indicates a fatal condition. Recommendation is to terminate process immediately to avoid
+         * state corruption.
+         */
+        FATAL,
+
+        /**
+         * Exception is an error. Corrective action is recommended.
+         */
+        ERROR,
+
+        /**
+         * Exception is a warning. Action has been (or will be) taken to handle the condition.
+         * Additional corrective action by the application may be needed..
+         */
+        WARNING
+    }
+
+    private final Type type;
+
     public AeronException()
     {
+        this.type = Type.ERROR;
+    }
+
+    public AeronException(final Type type)
+    {
+        this.type = type;
     }
 
     public AeronException(final String message)
     {
         super(message);
+        this.type = Type.ERROR;
+    }
+
+    public AeronException(final String message, final Type type)
+    {
+        super(message);
+        this.type = type;
     }
 
     public AeronException(final String message, final Throwable cause)
     {
         super(message, cause);
+        this.type = Type.ERROR;
+    }
+
+    public AeronException(final String message, final Throwable cause, final Type type)
+    {
+        super(message, cause);
+        this.type = type;
     }
 
     public AeronException(final Throwable cause)
     {
         super(cause);
+        this.type = Type.ERROR;
+    }
+
+    public AeronException(final Throwable cause, final Type type)
+    {
+        super(cause);
+        this.type = type;
     }
 
     public AeronException(
         final String message, final Throwable cause, final boolean enableSuppression, final boolean writableStackTrace)
     {
         super(message, cause, enableSuppression, writableStackTrace);
+        this.type = Type.ERROR;
+    }
+
+    public AeronException(
+        final String message,
+        final Throwable cause,
+        final boolean enableSuppression,
+        final boolean writableStackTrace,
+        final Type type)
+    {
+        super(message, cause, enableSuppression, writableStackTrace);
+        this.type = type;
+    }
+
+    public Type type()
+    {
+        return type;
     }
 }

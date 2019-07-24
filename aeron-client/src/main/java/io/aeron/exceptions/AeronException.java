@@ -32,13 +32,13 @@ public class AeronException extends RuntimeException
         FATAL,
 
         /**
-         * Exception is an error. Corrective action is recommended.
+         * Exception is an error. Corrective action is recommended if understood, otherwise treat as fatal.
          */
         ERROR,
 
         /**
-         * Exception is a warning. Action has been (or will be) taken to handle the condition.
-         * Additional corrective action by the application may be needed..
+         * Exception is a warning. Action has been, or will be, taken to handle the condition.
+         * Additional corrective action by the application may be needed.
          */
         WARNING
     }

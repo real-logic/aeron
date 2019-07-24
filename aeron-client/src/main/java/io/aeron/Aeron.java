@@ -1056,6 +1056,10 @@ public class Aeron implements AutoCloseable
          * It is called after all resources are closed but before they are freed or deleted.
          * It is not called on normal close.
          *
+         * It is not safe to call any API functions from any threads after this hook is called. In addition any
+         * in flight calls may still cause faults. It is thus recommended to treat this as a hard error and
+         * terminate the process in this hook as soon as possible.
+         *
          * @param terminationHook that is called when the client terminates unexpectedly due to timeout.
          * @return this for a fluent API.
          */

@@ -71,6 +71,7 @@ class ClientConductor implements Agent, DriverEventsListener
     private final UnavailableImageHandler defaultUnavailableImageHandler;
     private final ArrayList<AvailableCounterHandler> availableCounterHandlers = new ArrayList<>();
     private final ArrayList<UnavailableCounterHandler> unavailableCounterHandlers = new ArrayList<>();
+    private final ArrayList<Runnable> closeHandlers = new ArrayList<>();
     private final DriverProxy driverProxy;
     private final AgentInvoker driverAgentInvoker;
     private final UnsafeBuffer counterValuesBuffer;
@@ -108,6 +109,11 @@ class ClientConductor implements Agent, DriverEventsListener
             unavailableCounterHandlers.add(ctx.unavailableCounterHandler());
         }
 
+        if (null != ctx.closeHandler())
+        {
+            closeHandlers.add(ctx.closeHandler());
+        }
+
         final long nowNs = nanoClock.nanoTime();
         timeOfLastKeepAliveNs = nowNs;
         timeOfLastServiceNs = nowNs;
@@ -123,24 +129,23 @@ class ClientConductor implements Agent, DriverEventsListener
                 isClosed = true;
                 forceCloseResources();
 
+                for (int i = closeHandlers.size() - 1; i >= 0; i--)
+                {
+                    try
+                    {
+                        closeHandlers.get(i).run();
+                    }
+                    catch (final Exception ex)
+                    {
+                        handleError(ex);
+                    }
+                }
+
                 try
                 {
                     if (isTerminating)
                     {
                         aeron.internalClose();
-
-                        if (ctx.terminationHook() != null)
-                        {
-                            try
-                            {
-                                ctx.terminationHook().run();
-                            }
-                            catch (final Exception ex)
-                            {
-                                handleError(ex);
-                            }
-                        }
-
                         Thread.sleep(IDLE_SLEEP_MS);
                     }
 
@@ -736,6 +741,36 @@ class ClientConductor implements Agent, DriverEventsListener
             ensureActive();
             ensureNotReentrant();
             return unavailableCounterHandlers.remove(handler);
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
+    void addCloseHandler(final Runnable handler)
+    {
+        clientLock.lock();
+        try
+        {
+            ensureActive();
+            ensureNotReentrant();
+            closeHandlers.add(handler);
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
+    boolean removeCloserHandler(final Runnable handler)
+    {
+        clientLock.lock();
+        try
+        {
+            ensureActive();
+            ensureNotReentrant();
+            return closeHandlers.remove(handler);
         }
         finally
         {

@@ -36,7 +36,6 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
     DedicatedModeArchiveConductor(final Archive.Context ctx)
     {
         super(ctx);
-
         closeQueue = new ManyToOneConcurrentArrayQueue<>(ctx.maxConcurrentRecordings() + ctx.maxConcurrentReplays());
     }
 

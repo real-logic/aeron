@@ -408,6 +408,27 @@ public class Aeron implements AutoCloseable
     }
 
     /**
+     * Add a handler to the list be called when the Aeron client is closed.
+     *
+     * @param handler to be called when the Aeron client is closed.
+     */
+    public void addCloseHandler(final Runnable handler)
+    {
+        conductor.addCloseHandler(handler);
+    }
+
+    /**
+     * Remove a previously added handler to the list be called when the Aeron client is closed.
+     *
+     * @param handler to be removed.
+     * @return true if found and removed otherwise false.
+     */
+    public boolean removeCloseHandler(final Runnable handler)
+    {
+        return conductor.removeCloserHandler(handler);
+    }
+
+    /**
      * Called by the {@link ClientConductor} if the client should be terminated due to timeout.
      */
     void internalClose()
@@ -567,7 +588,7 @@ public class Aeron implements AutoCloseable
         private UnavailableImageHandler unavailableImageHandler;
         private AvailableCounterHandler availableCounterHandler;
         private UnavailableCounterHandler unavailableCounterHandler;
-        private Runnable terminationHook;
+        private Runnable closeHandler;
         private long keepAliveIntervalNs = Configuration.KEEPALIVE_INTERVAL_NS;
         private long interServiceTimeoutNs = 0;
         private long resourceLingerDurationNs = Configuration.resourceLingerDurationNs();
@@ -1052,33 +1073,29 @@ public class Aeron implements AutoCloseable
         }
 
         /**
-         * Set the {@link Runnable} that is called when the client terminates unexpectedly due to timeout.
-         * It is called after all resources are closed but before they are freed or deleted.
-         * It is not called on normal close.
+         * Set a {@link Runnable} that is called when the client is closed by timeout or normal means.
          *
          * It is not safe to call any API functions from any threads after this hook is called. In addition any
          * in flight calls may still cause faults. It is thus recommended to treat this as a hard error and
          * terminate the process in this hook as soon as possible.
          *
-         * @param terminationHook that is called when the client terminates unexpectedly due to timeout.
+         * @param handler that is called when the client is closed.
          * @return this for a fluent API.
          */
-        public Context terminationHook(final Runnable terminationHook)
+        public Context closeHandler(final Runnable handler)
         {
-            this.terminationHook = terminationHook;
+            this.closeHandler = handler;
             return this;
         }
 
         /**
-         * Get the {@link Runnable} that is called when the client terminates unexpectedly due to timeout.
-         * It is called after all resources are closed but before they are freed or deleted.
-         * It is not called on normal close.
+         * Get the {@link Runnable} that is called when the client is closed by timeout or normal means.
          *
-         * @return the {@link Runnable} that is called when the client terminates unexpectedly due to timeout.
+         * @return the {@link Runnable} that is called when the client is closed.
          */
-        public Runnable terminationHook()
+        public Runnable closeHandler()
         {
-            return terminationHook;
+            return closeHandler;
         }
 
         /**

@@ -42,6 +42,7 @@ import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
 class ClusteredServiceAgent implements Agent, Cluster
 {
+    private volatile boolean isAbort;
     private final int serviceId;
     private final AeronArchive.Context archiveCtx;
     private final ClusteredServiceContainer.Context ctx;
@@ -59,6 +60,7 @@ class ClusteredServiceAgent implements Agent, Cluster
         new byte[Configuration.MAX_UDP_PAYLOAD_LENGTH - DataHeaderFlyweight.HEADER_LENGTH]);
     private final DirectBufferVector headerVector = new DirectBufferVector(headerBuffer, 0, SESSION_HEADER_LENGTH);
     private final SessionMessageHeaderEncoder sessionMessageHeaderEncoder = new SessionMessageHeaderEncoder();
+    private final Runnable abortHandler = this::abort;
 
     private long ackId = 0;
     private long clusterTimeMs;
@@ -93,6 +95,8 @@ class ClusteredServiceAgent implements Agent, Cluster
         serviceAdapter = new ServiceAdapter(aeron.addSubscription(channel, ctx.serviceStreamId()), this);
 
         sessionMessageHeaderEncoder.wrapAndApplyHeader(headerBuffer, 0, new MessageHeaderEncoder());
+
+        aeron.addCloseHandler(abortHandler);
     }
 
     public void onStart()
@@ -133,6 +137,7 @@ class ClusteredServiceAgent implements Agent, Cluster
             CloseHelper.close(logAdapter);
             CloseHelper.close(serviceAdapter);
             CloseHelper.close(consensusModuleProxy);
+            aeron.removeCloseHandler(abortHandler);
         }
 
         ctx.close();
@@ -843,8 +848,12 @@ class ClusteredServiceAgent implements Agent, Cluster
 
     private boolean checkForClockTick()
     {
-        final long nowMs = epochClock.time();
+        if (isAbort)
+        {
+            throw new AgentTerminationException("unexpected Aeron close");
+        }
 
+        final long nowMs = epochClock.time();
         if (cachedTimeMs != nowMs)
         {
             cachedTimeMs = nowMs;
@@ -929,6 +938,11 @@ class ClusteredServiceAgent implements Agent, Cluster
         }
 
         ctx.terminationHook().run();
+    }
+
+    private void abort()
+    {
+        isAbort = true;
     }
 
     private static void checkPosition(final long existingPosition, final ActiveLogEvent activeLogEvent)

@@ -100,6 +100,7 @@ public class ClientConductorTest
     private final DriverProxy driverProxy = mock(DriverProxy.class);
     private final AvailableImageHandler mockAvailableImageHandler = mock(AvailableImageHandler.class);
     private final UnavailableImageHandler mockUnavailableImageHandler = mock(UnavailableImageHandler.class);
+    private final Runnable mockTerminationHook = mock(Runnable.class);
     private final LogBuffersFactory logBuffersFactory = mock(LogBuffersFactory.class);
     private final Lock mockClientLock = mock(Lock.class);
     private final Aeron mockAeron = mock(Aeron.class);
@@ -118,6 +119,7 @@ public class ClientConductorTest
             .errorHandler(mockClientErrorHandler)
             .availableImageHandler(mockAvailableImageHandler)
             .unavailableImageHandler(mockUnavailableImageHandler)
+            .terminationHook(mockTerminationHook)
             .keepAliveIntervalNs(KEEP_ALIVE_INTERVAL)
             .driverTimeoutMs(AWAIT_TIMEOUT)
             .interServiceTimeoutNs(TimeUnit.MILLISECONDS.toNanos(INTER_SERVICE_TIMEOUT_MS));
@@ -552,6 +554,9 @@ public class ClientConductorTest
 
         assertTrue(threwException);
         assertTrue(conductor.isTerminating());
+
+        conductor.onClose();
+        verify(mockTerminationHook).run();
     }
 
     @Test

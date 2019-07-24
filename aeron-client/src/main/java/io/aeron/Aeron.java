@@ -567,6 +567,7 @@ public class Aeron implements AutoCloseable
         private UnavailableImageHandler unavailableImageHandler;
         private AvailableCounterHandler availableCounterHandler;
         private UnavailableCounterHandler unavailableCounterHandler;
+        private Runnable terminationHook;
         private long keepAliveIntervalNs = Configuration.KEEPALIVE_INTERVAL_NS;
         private long interServiceTimeoutNs = 0;
         private long resourceLingerDurationNs = Configuration.resourceLingerDurationNs();
@@ -1048,6 +1049,32 @@ public class Aeron implements AutoCloseable
         public UnavailableCounterHandler unavailableCounterHandler()
         {
             return unavailableCounterHandler;
+        }
+
+        /**
+         * Set the {@link Runnable} that is called when the client terminates unexpectedly due to timeout.
+         * It is called after all resources are closed but before they are freed or deleted.
+         * It is not called on normal close.
+         *
+         * @param terminationHook that is called when the client terminates unexpectedly due to timeout.
+         * @return this for a fluent API.
+         */
+        public Context terminationHook(final Runnable terminationHook)
+        {
+            this.terminationHook = terminationHook;
+            return this;
+        }
+
+        /**
+         * Get the {@link Runnable} that is called when the client terminates unexpectedly due to timeout.
+         * It is called after all resources are closed but before they are freed or deleted.
+         * It is not called on normal close.
+         *
+         * @return the {@link Runnable} that is called when the client terminates unexpectedly due to timeout.
+         */
+        public Runnable terminationHook()
+        {
+            return terminationHook;
         }
 
         /**

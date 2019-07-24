@@ -128,6 +128,19 @@ class ClientConductor implements Agent, DriverEventsListener
                     if (isTerminating)
                     {
                         aeron.internalClose();
+
+                        if (ctx.terminationHook() != null)
+                        {
+                            try
+                            {
+                                ctx.terminationHook().run();
+                            }
+                            catch (final Exception ex)
+                            {
+                                handleError(ex);
+                            }
+                        }
+
                         Thread.sleep(IDLE_SLEEP_MS);
                     }
 

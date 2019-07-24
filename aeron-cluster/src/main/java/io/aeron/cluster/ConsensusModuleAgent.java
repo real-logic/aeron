@@ -2188,6 +2188,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
                 idle(fragments);
             }
+
+            pendingServiceMessages.forEach(this::serviceSessionMessageReset, Integer.MAX_VALUE);
         }
     }
 

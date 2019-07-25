@@ -2516,7 +2516,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private Publication createLogPublication(
         final ChannelUri channelUri, final RecordingLog.RecoveryPlan plan, final long position)
     {
-        logPublicationTag++;
+        logPublicationTag = (int)aeron.nextCorrelationId();
         channelUri.put(TAGS_PARAM_NAME, logPublicationChannelTag + "," + logPublicationTag);
 
         if (null != plan.log)

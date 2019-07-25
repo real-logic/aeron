@@ -79,7 +79,7 @@ public class CncFileDescriptor
     /**
      * Version of the CnC file using semantic versioning ({@link SemanticVersion}) stored in an integer.
      */
-    public static final int CNC_VERSION = SemanticVersion.compose(0, 0, 15);
+    public static final int CNC_VERSION = SemanticVersion.compose(0, 0, 16);
 
     public static final int CNC_VERSION_FIELD_OFFSET;
     public static final int TO_DRIVER_BUFFER_LENGTH_FIELD_OFFSET;

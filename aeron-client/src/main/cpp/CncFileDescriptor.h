@@ -78,7 +78,7 @@ using namespace aeron::concurrent;
 namespace CncFileDescriptor {
 
 static const std::string CNC_FILE = "cnc.dat";
-static const std::int32_t CNC_VERSION = semanticVersionCompose(0, 0, 15);
+static const std::int32_t CNC_VERSION = semanticVersionCompose(0, 0, 16);
 
 #pragma pack(push)
 #pragma pack(4)

@@ -788,6 +788,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     void prepareForNewLeadership(final long logPosition)
     {
+        ClusterControl.ToggleState.deactivate(controlToggle);
+
         long recordingId = RecordingPos.NULL_RECORDING_ID;
         if (null != appendedPosition)
         {
@@ -1527,6 +1529,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             }
 
             timeOfLastLogUpdateMs = cachedTimeMs - leaderHeartbeatIntervalMs;
+            ClusterControl.ToggleState.activate(controlToggle);
         }
         else
         {
@@ -1540,7 +1543,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
 
         election = null;
-        this.followerCommitPosition = termBaseLogPosition;
+        followerCommitPosition = termBaseLogPosition;
         commitPosition.setOrdered(termBaseLogPosition);
         pendingServiceMessages.consume(followerServiceSessionMessageSweeper, Integer.MAX_VALUE);
 

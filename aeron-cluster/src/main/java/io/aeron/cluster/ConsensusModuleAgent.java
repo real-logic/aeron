@@ -57,7 +57,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private final long sessionTimeoutMs;
     private final long leaderHeartbeatIntervalMs;
     private final long leaderHeartbeatTimeoutMs;
-    private final int logPublicationTag;
     private final int logPublicationChannelTag;
     private final int logSubscriptionTag;
     private final int logSubscriptionChannelTag;
@@ -82,6 +81,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private int memberId;
     private int highMemberId;
     private int pendingMemberRemovals = 0;
+    private int logPublicationTag;
     private ReadableCounter appendedPosition;
     private final Counter commitPosition;
     private ConsensusModule.State state = ConsensusModule.State.INIT;
@@ -2516,6 +2516,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private Publication createLogPublication(
         final ChannelUri channelUri, final RecordingLog.RecoveryPlan plan, final long position)
     {
+        logPublicationTag++;
         channelUri.put(TAGS_PARAM_NAME, logPublicationChannelTag + "," + logPublicationTag);
 
         if (null != plan.log)

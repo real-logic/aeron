@@ -290,6 +290,12 @@ class ReplaySession implements Session, AutoCloseable
     {
         int fragments = 0;
 
+        if (!publication.isConnected())
+        {
+            state = State.INACTIVE;
+            return fragments;
+        }
+
         if (limitPosition != null && replayPosition >= stopPosition && noNewData(replayPosition, stopPosition))
         {
             return fragments;
@@ -383,10 +389,6 @@ class ReplaySession implements Session, AutoCloseable
             while (byteBuffer.remaining() > 0);
 
             return byteBuffer.limit();
-        }
-        else if (!publication.isConnected())
-        {
-            state = State.INACTIVE;
         }
 
         return 0;

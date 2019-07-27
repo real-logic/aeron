@@ -24,6 +24,7 @@ plugins {
     id 'com.gradle.build-scan' version '2.3'
     id "io.freefair.javadoc-links" version "3.8.1" apply false
     id 'com.github.johnrengelman.shadow' version '5.1.0' apply false
+    id 'biz.aQute.bnd.builder' version '4.2.0' apply false
 }
 
 defaultTasks 'clean', 'build', 'shadowJar', 'install'
@@ -235,13 +236,23 @@ project(':aeron-client') {
         }
     }
 
+    apply plugin: 'biz.aQute.bnd.builder'
+
     jar {
-        manifest.attributes(
-            'Implementation-Title': 'Aeron',
-            'Implementation-Version': "${aeronVersion}",
-            'Implementation-Vendor': 'Real Logic Limited',
-            'Automatic-Module-Name': 'io.aeron.client'
-        )
+        bnd """
+            Automatic-Module-Name:  io.aeron.client
+            Bundle-Name:            io.aeron.client
+            Bundle-SymbolicName:    io.aeron.client
+            Implementation-Title:   Aeron
+            Implementation-Vendor:  Real Logic Limited
+            Implementation-Version: ${aeronVersion}
+
+            -exportcontents: io.aeron, io.aeron.*
+
+            # Suppress headers that reduce reproducibility.
+            -reproducible: true
+            -noextraheaders: true
+        """
     }
 
     task sourcesJar(type: Jar) {
@@ -290,13 +301,23 @@ project(':aeron-driver') {
         }
     }
 
+    apply plugin: 'biz.aQute.bnd.builder'
+
     jar {
-        manifest.attributes(
-            'Implementation-Title': 'Aeron',
-            'Implementation-Version': "${aeronVersion}",
-            'Implementation-Vendor': 'Real Logic Limited',
-            'Automatic-Module-Name': 'io.aeron.driver'
-        )
+        bnd """
+            Automatic-Module-Name:  io.aeron.driver
+            Bundle-Name:            io.aeron.driver
+            Bundle-SymbolicName:    io.aeron.driver
+            Implementation-Title:   Aeron
+            Implementation-Vendor:  Real Logic Limited
+            Implementation-Version: ${aeronVersion}
+
+            -exportcontents: io.aeron.driver, io.aeron.driver.*
+
+            # Suppress headers that reduce reproducibility.
+            -reproducible: true
+            -noextraheaders: true
+        """
     }
 
     task sourcesJar(type: Jar) {
@@ -371,17 +392,27 @@ project(':aeron-archive') {
         args = ['src/main/resources/aeron-archive-codecs.xml']
     }
 
+    apply plugin: 'biz.aQute.bnd.builder'
+
     jar {
         from("${buildDir}/classes/java/generated") {
             include '**/*.class'
         }
 
-        manifest.attributes(
-            'Implementation-Title': 'Aeron',
-            'Implementation-Version': "${aeronVersion}",
-            'Implementation-Vendor': 'Real Logic Limited',
-            'Automatic-Module-Name': 'io.aeron.archive'
-        )
+        bnd """
+            Automatic-Module-Name:  io.aeron.archive
+            Bundle-Name:            io.aeron.archive
+            Bundle-SymbolicName:    io.aeron.archive
+            Implementation-Title:   Aeron
+            Implementation-Vendor:  Real Logic Limited
+            Implementation-Version: ${aeronVersion}
+
+            -exportcontents: io.aeron.archive, io.aeron.archive.*
+
+            # Suppress headers that reduce reproducibility.
+            -reproducible: true
+            -noextraheaders: true
+        """
     }
 
     uploadArchives {
@@ -460,17 +491,27 @@ project(':aeron-cluster') {
                 'src/main/resources/aeron-cluster-mark-codecs.xml']
     }
 
+    apply plugin: 'biz.aQute.bnd.builder'
+
     jar {
         from("${buildDir}/classes/java/generated") {
             include '**/*.class'
         }
 
-        manifest.attributes(
-            'Implementation-Title': 'Aeron',
-            'Implementation-Version': "${aeronVersion}",
-            'Implementation-Vendor': 'Real Logic Limited',
-            'Automatic-Module-Name': 'io.aeron.cluster'
-        )
+        bnd """
+            Automatic-Module-Name:  io.aeron.cluster
+            Bundle-Name:            io.aeron.cluster
+            Bundle-SymbolicName:    io.aeron.cluster
+            Implementation-Title:   Aeron
+            Implementation-Vendor:  Real Logic Limited
+            Implementation-Version: ${aeronVersion}
+
+            -exportcontents: io.aeron.cluster, io.aeron.cluster.*
+
+            # Suppress headers that reduce reproducibility.
+            -reproducible: true
+            -noextraheaders: true
+        """
     }
 
     uploadArchives {

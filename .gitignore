@@ -57,10 +57,5 @@ cppbuild/Debug
 cppbuild/Release
 cppbuild/Win32
 
-
-
-# Benchmark timings
-timings.log
-
 # JVM crash reports
 hs_err_pid*

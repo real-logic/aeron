@@ -17,14 +17,18 @@ package io.aeron.driver;
 
 import io.aeron.driver.media.UdpChannel;
 
+/**
+ * Supplier of {@link FlowControl} strategies to be employed by senders for publications.
+ */
+@FunctionalInterface
 public interface FlowControlSupplier
 {
     /**
      * Return a new {@link FlowControl} instance.
      *
-     * @param udpChannel     for the instance.
-     * @param streamId       for the instance.
-     * @param registrationId for the instance.
+     * @param udpChannel     for the publication.
+     * @param streamId       for the publication.
+     * @param registrationId for the the publication.
      * @return flow control instance ready for immediate usage.
      */
     FlowControl newInstance(UdpChannel udpChannel, int streamId, long registrationId);

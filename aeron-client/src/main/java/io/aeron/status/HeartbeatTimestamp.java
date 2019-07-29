@@ -26,7 +26,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 /**
  * Allocate a counter for tracking the last heartbeat of an entity.
  */
-public class HeartbeatStatus
+public class HeartbeatTimestamp
 {
     /**
      * Offset in the key meta data for the registration id of the counter.

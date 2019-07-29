@@ -24,6 +24,9 @@ import java.net.StandardSocketOptions;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.Selector;
 
+/**
+ * Common configuration and functions used across raw samples.
+ */
 public class Common
 {
     public static final int NUM_MESSAGES = 10_000;

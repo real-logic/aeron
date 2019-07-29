@@ -143,6 +143,16 @@ public class ClusterTool
         }
     }
 
+    /**
+     * Snapshot of the current membership of a cluster.
+     */
+    public static class ClusterMembership
+    {
+        int leaderMemberId = NULL_VALUE;
+        String activeMembers = null;
+        String passiveMembers = null;
+    }
+
     public static void describe(final PrintStream out, final File clusterDir)
     {
         if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
@@ -219,15 +229,15 @@ public class ClusterTool
         {
             try (ClusterMarkFile markFile = openMarkFile(clusterDir, System.out::println))
             {
-                final ClusterMembersInfo clusterMembersInfo = new ClusterMembersInfo();
+                final ClusterMembership clusterMembership = new ClusterMembership();
                 final long timeoutMs = Math.max(TimeUnit.SECONDS.toMillis(1), TIMEOUT_MS);
 
-                if (queryClusterMembers(markFile, clusterMembersInfo, timeoutMs))
+                if (queryClusterMembers(markFile, clusterMembership, timeoutMs))
                 {
                     out.format("leaderMemberId=%d, activeMembers=%s, passiveMembers=%s%n",
-                        clusterMembersInfo.leaderMemberId,
-                        clusterMembersInfo.activeMembers,
-                        clusterMembersInfo.passiveMembers);
+                        clusterMembership.leaderMemberId,
+                        clusterMembership.activeMembers,
+                        clusterMembership.passiveMembers);
                 }
                 else
                 {
@@ -337,21 +347,14 @@ public class ClusterTool
         return markFile.exists();
     }
 
-    public static class ClusterMembersInfo
-    {
-        int leaderMemberId = NULL_VALUE;
-        String activeMembers = null;
-        String passiveMembers = null;
-    }
-
     public static boolean listMembers(
-        final ClusterMembersInfo clusterMembersInfo, final File clusterDir, final long timeoutMs)
+        final ClusterMembership clusterMembership, final File clusterDir, final long timeoutMs)
     {
         if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
         {
             try (ClusterMarkFile markFile = openMarkFile(clusterDir, null))
             {
-                return queryClusterMembers(markFile, clusterMembersInfo, timeoutMs);
+                return queryClusterMembers(markFile, clusterMembership, timeoutMs);
             }
         }
 
@@ -359,7 +362,7 @@ public class ClusterTool
     }
 
     public static boolean queryClusterMembers(
-        final ClusterMarkFile markFile, final ClusterMembersInfo clusterMembersInfo, final long timeoutMs)
+        final ClusterMarkFile markFile, final ClusterMembership clusterMembership, final long timeoutMs)
     {
         final String aeronDirectoryName = markFile.decoder().aeronDirectory();
         markFile.decoder().archiveChannel();
@@ -373,9 +376,9 @@ public class ClusterTool
             {
                 if (correlationId == id.longValue())
                 {
-                    clusterMembersInfo.leaderMemberId = leaderMemberId;
-                    clusterMembersInfo.activeMembers = activeMembers;
-                    clusterMembersInfo.passiveMembers = passiveMembers;
+                    clusterMembership.leaderMemberId = leaderMemberId;
+                    clusterMembership.activeMembers = activeMembers;
+                    clusterMembership.passiveMembers = passiveMembers;
                     id.set(NULL_VALUE);
                 }
             };

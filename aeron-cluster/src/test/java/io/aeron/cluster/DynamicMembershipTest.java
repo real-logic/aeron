@@ -34,11 +34,11 @@ public class DynamicMembershipTest
         {
             final TestNode leader = cluster.awaitLeader();
 
-            final ClusterTool.ClusterMembersInfo clusterMembersInfo = leader.clusterMembersInfo();
+            final ClusterTool.ClusterMembership clusterMembership = leader.clusterMembership();
 
-            assertThat(clusterMembersInfo.leaderMemberId, is(leader.index()));
-            assertThat(clusterMembersInfo.passiveMembers, is(""));
-            assertThat(clusterMembersInfo.activeMembers, is(cluster.staticClusterMembers()));
+            assertThat(clusterMembership.leaderMemberId, is(leader.index()));
+            assertThat(clusterMembership.passiveMembers, is(""));
+            assertThat(clusterMembership.activeMembers, is(cluster.staticClusterMembers()));
         }
     }
 
@@ -54,11 +54,11 @@ public class DynamicMembershipTest
 
             assertThat(dynamicMember.role(), is(Cluster.Role.FOLLOWER));
 
-            final ClusterTool.ClusterMembersInfo clusterMembersInfo = leader.clusterMembersInfo();
+            final ClusterTool.ClusterMembership clusterMembership = leader.clusterMembership();
 
-            assertThat(clusterMembersInfo.leaderMemberId, is(leader.index()));
-            assertThat(clusterMembersInfo.passiveMembers, is(""));
-            assertThat(numberOfMembers(clusterMembersInfo), is(4));
+            assertThat(clusterMembership.leaderMemberId, is(leader.index()));
+            assertThat(clusterMembership.passiveMembers, is(""));
+            assertThat(numberOfMembers(clusterMembership), is(4));
         }
     }
 
@@ -200,10 +200,10 @@ public class DynamicMembershipTest
             cluster.awaitNodeTermination(follower);
             cluster.stopNode(follower);
 
-            final ClusterTool.ClusterMembersInfo clusterMembersInfo = leader.clusterMembersInfo();
+            final ClusterTool.ClusterMembership clusterMembership = leader.clusterMembership();
 
-            assertThat(clusterMembersInfo.leaderMemberId, is(leader.index()));
-            assertThat(numberOfMembers(clusterMembersInfo), is(2));
+            assertThat(clusterMembership.leaderMemberId, is(leader.index()));
+            assertThat(numberOfMembers(clusterMembership), is(2));
         }
     }
 
@@ -221,17 +221,17 @@ public class DynamicMembershipTest
             cluster.stopNode(initialLeader);
 
             final TestNode newLeader = cluster.awaitLeader(initialLeader.index());
-            final ClusterTool.ClusterMembersInfo clusterMembersInfo = newLeader.clusterMembersInfo();
+            final ClusterTool.ClusterMembership clusterMembership = newLeader.clusterMembership();
 
-            assertThat(clusterMembersInfo.leaderMemberId, is(newLeader.index()));
-            assertThat(clusterMembersInfo.leaderMemberId, not(initialLeader.index()));
-            assertThat(numberOfMembers(clusterMembersInfo), is(2));
+            assertThat(clusterMembership.leaderMemberId, is(newLeader.index()));
+            assertThat(clusterMembership.leaderMemberId, not(initialLeader.index()));
+            assertThat(numberOfMembers(clusterMembership), is(2));
         }
     }
 
-    private int numberOfMembers(final ClusterTool.ClusterMembersInfo clusterMembersInfo)
+    private int numberOfMembers(final ClusterTool.ClusterMembership clusterMembership)
     {
-        final String[] members = clusterMembersInfo.activeMembers.split("\\|");
+        final String[] members = clusterMembership.activeMembers.split("\\|");
 
         return members.length;
     }

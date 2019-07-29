@@ -25,6 +25,9 @@ import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.IdleStrategy;
 
+/**
+ * Based class of common functions required to take a snapshot of cluster state.
+ */
 public class SnapshotTaker
 {
     protected static final int ENCODED_MARKER_LENGTH =

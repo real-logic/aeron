@@ -25,6 +25,11 @@ import io.aeron.logbuffer.BufferClaim;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 
+/**
+ * Proxy for communicating with the Consensus Module over IPC.
+ * <p>
+ * This class is not for public use.
+ */
 public final class ConsensusModuleProxy implements AutoCloseable
 {
     private static final int SEND_ATTEMPTS = 3;

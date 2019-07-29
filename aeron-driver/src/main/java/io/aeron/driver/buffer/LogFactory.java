@@ -15,6 +15,9 @@
  */
 package io.aeron.driver.buffer;
 
+/**
+ * Factory interface for creating the log buffers under publications and images.
+ */
 public interface LogFactory
 {
     RawLog newPublication(

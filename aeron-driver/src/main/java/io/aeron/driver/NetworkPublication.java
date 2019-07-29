@@ -92,7 +92,7 @@ public class NetworkPublication
     extends NetworkPublicationPadding3
     implements RetransmitSender, DriverManagedResource, Subscribable
 {
-    public enum State
+    enum State
     {
         ACTIVE, DRAINING, LINGER, CLOSING
     }

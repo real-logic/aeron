@@ -15,6 +15,9 @@
  */
 package io.aeron.driver;
 
+/**
+ * Common behaviour supported for driver resources such as publications and images.
+ */
 public interface DriverManagedResource
 {
     /**
@@ -35,16 +38,16 @@ public interface DriverManagedResource
     /**
      * Inform resource of timeNs passing and pass it DriverConductor to inform of any state transitions.
      *
-     * @param timeNs    now in nanoseconds
-     * @param timeMs    now in milliseconds for epoch
-     * @param conductor to inform of any state transitions
+     * @param timeNs    now in nanoseconds.
+     * @param timeMs    now in milliseconds for epoch.
+     * @param conductor to inform of any state transitions.
      */
     void onTimeEvent(long timeNs, long timeMs, DriverConductor conductor);
 
     /**
      * Has resource reached end of its life and should be reclaimed?
      *
-     * @return whether resource has reached end of life or not
+     * @return whether resource has reached end of life or not.
      */
     boolean hasReachedEndOfLife();
 }

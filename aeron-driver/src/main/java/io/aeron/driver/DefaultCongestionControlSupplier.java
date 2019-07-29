@@ -28,7 +28,7 @@ public class DefaultCongestionControlSupplier implements CongestionControlSuppli
         final int sessionId,
         final int termLength,
         final int senderMtuLength,
-        final NanoClock clock,
+        final NanoClock nanoClock,
         final MediaDriver.Context context,
         final CountersManager countersManager)
     {
@@ -39,7 +39,7 @@ public class DefaultCongestionControlSupplier implements CongestionControlSuppli
             sessionId,
             termLength,
             senderMtuLength,
-            clock,
+            nanoClock,
             context,
             countersManager);
     }

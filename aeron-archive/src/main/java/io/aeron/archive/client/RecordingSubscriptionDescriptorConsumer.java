@@ -15,6 +15,9 @@
  */
 package io.aeron.archive.client;
 
+/**
+ * Consumer for descriptors os active archive recording {@link io.aeron.Subscription}s.
+ */
 @FunctionalInterface
 public interface RecordingSubscriptionDescriptorConsumer
 {

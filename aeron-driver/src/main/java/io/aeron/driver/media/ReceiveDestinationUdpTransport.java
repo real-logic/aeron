@@ -20,6 +20,9 @@ import io.aeron.driver.MediaDriver;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 
+/**
+ * Destination endpoint representation for reception into an image from a UDP transport.
+ */
 public class ReceiveDestinationUdpTransport extends UdpChannelTransport
 {
     public ReceiveDestinationUdpTransport(final UdpChannel udpChannel, final MediaDriver.Context context)

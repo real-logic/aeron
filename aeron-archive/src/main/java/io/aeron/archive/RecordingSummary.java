@@ -16,7 +16,7 @@
 package io.aeron.archive;
 
 /**
- * Summary for a recording record.
+ * Summary of the fixed length fields from a {@link io.aeron.archive.client.RecordingDescriptorConsumer}.
  */
 public class RecordingSummary
 {

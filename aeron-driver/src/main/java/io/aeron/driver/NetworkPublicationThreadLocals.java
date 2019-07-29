@@ -24,7 +24,7 @@ import org.agrona.BufferUtil;
 
 import java.nio.ByteBuffer;
 
-public class NetworkPublicationThreadLocals
+class NetworkPublicationThreadLocals
 {
     private final ByteBuffer heartbeatBuffer;
     private final DataHeaderFlyweight dataHeader;
@@ -33,7 +33,7 @@ public class NetworkPublicationThreadLocals
     private final ByteBuffer rttMeasurementBuffer;
     private final RttMeasurementFlyweight rttMeasurementHeader;
 
-    public NetworkPublicationThreadLocals()
+    NetworkPublicationThreadLocals()
     {
         final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(192, BitUtil.CACHE_LINE_LENGTH);
 

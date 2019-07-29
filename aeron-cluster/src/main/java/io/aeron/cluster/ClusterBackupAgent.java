@@ -49,6 +49,9 @@ import static io.aeron.cluster.ClusterBackup.State.*;
 import static io.aeron.cluster.MemberStatusAdapter.FRAGMENT_POLL_LIMIT;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
+/**
+ * {@link Agent} which backs up a remote cluster by replicating the log and polling for snapshots.
+ */
 public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCounterHandler
 {
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
@@ -418,6 +421,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
                 memberStatusUri.toString(), ctx.memberStatusStreamId());
             correlationId = NULL_VALUE;
             timeOfLastBackupQueryMs = nowMs;
+
             return 1;
         }
         else if (NULL_VALUE == correlationId && memberStatusPublication.isConnected())
@@ -434,6 +438,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
             {
                 timeOfLastBackupQueryMs = nowMs;
                 this.correlationId = correlationId;
+
                 return 1;
             }
         }
@@ -680,6 +685,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
 
         nextQueryDeadlineMsCounter.setOrdered(nowMs + backupQueryIntervalMs);
         state(BACKING_UP);
+
         return 1;
     }
 

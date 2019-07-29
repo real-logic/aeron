@@ -189,17 +189,17 @@ class TestNode implements AutoCloseable
         return countersReader().getCounterValue(SystemCounterDescriptor.ERRORS.id());
     }
 
-    ClusterTool.ClusterMembersInfo clusterMembersInfo()
+    ClusterTool.ClusterMembership clusterMembership()
     {
-        final ClusterTool.ClusterMembersInfo clusterMembersInfo = new ClusterTool.ClusterMembersInfo();
+        final ClusterTool.ClusterMembership clusterMembership = new ClusterTool.ClusterMembership();
         final File clusterDir = clusteredMediaDriver.consensusModule().context().clusterDir();
 
-        if (!ClusterTool.listMembers(clusterMembersInfo, clusterDir, TimeUnit.SECONDS.toMillis(3)))
+        if (!ClusterTool.listMembers(clusterMembership, clusterDir, TimeUnit.SECONDS.toMillis(3)))
         {
             throw new IllegalStateException("timeout waiting for cluster members info");
         }
 
-        return clusterMembersInfo;
+        return clusterMembership;
     }
 
     void removeMember(final int followerMemberId, final boolean isPassive)

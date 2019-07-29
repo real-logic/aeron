@@ -47,6 +47,9 @@ import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static org.agrona.SystemUtil.getDurationInNanos;
 
+/**
+ * Backup component which can run remote from a cluster which polls for snapshots and replicates the log.
+ */
 public final class ClusterBackup implements AutoCloseable
 {
     /**
@@ -209,6 +212,9 @@ public final class ClusterBackup implements AutoCloseable
         CloseHelper.close(clusterBackupAgentInvoker);
     }
 
+    /**
+     * Configuration options for {@link ClusterBackup} with defaults and constants for system properties lookup.
+     */
     public static class Configuration
     {
         public static final String MEMBER_STATUS_CHANNEL_DEFAULT;
@@ -277,6 +283,9 @@ public final class ClusterBackup implements AutoCloseable
         }
     }
 
+    /**
+     * Context for overriding default configuration for {@link ClusterBackup}.
+     */
     public static class Context
     {
         private static final AtomicIntegerFieldUpdater<Context> IS_CONCLUDED_UPDATER = newUpdater(

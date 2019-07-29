@@ -18,7 +18,7 @@ package io.aeron.driver;
 import java.net.InetSocketAddress;
 
 /**
- * Strategy for applying congestion control to determine the receiver window length of the Status Messages
+ * Strategy for applying congestion control to determine the receiver window length of the Status Messages.
  */
 public interface CongestionControl extends AutoCloseable
 {

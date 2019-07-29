@@ -23,6 +23,9 @@ import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 
+/**
+ * Poller for the egress from a cluster to capture administration message details.
+ */
 public class EgressPoller implements ControlledFragmentHandler
 {
     private final int fragmentLimit;

@@ -18,6 +18,9 @@ package io.aeron.driver;
 import io.aeron.driver.media.UdpChannel;
 import org.agrona.LangUtil;
 
+/**
+ * Supplier of {@link UnicastFlowControl} implementations.
+ */
 public class DefaultUnicastFlowControlSupplier implements FlowControlSupplier
 {
     public FlowControl newInstance(final UdpChannel udpChannel, final int streamId, final long registrationId)

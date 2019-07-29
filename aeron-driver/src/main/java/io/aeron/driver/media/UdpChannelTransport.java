@@ -38,6 +38,9 @@ import static io.aeron.logbuffer.FrameDescriptor.frameVersion;
 import static java.net.StandardSocketOptions.SO_RCVBUF;
 import static java.net.StandardSocketOptions.SO_SNDBUF;
 
+/**
+ * Base class for UDP channel transports which is specialised for send or receive endpoints.
+ */
 public abstract class UdpChannelTransport implements AutoCloseable
 {
     protected final MediaDriver.Context context;

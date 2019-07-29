@@ -28,7 +28,7 @@ import static java.lang.System.getProperty;
 import static org.agrona.SystemUtil.getDurationInNanos;
 
 /**
- * Minimum multicast sender flow control strategy only for preferred members.
+ * Minimum multicast sender flow control strategy only for preferred members identified by an ASF key.
  * <p>
  * Flow control is set to minimum of tracked preferred receivers.
  * <p>

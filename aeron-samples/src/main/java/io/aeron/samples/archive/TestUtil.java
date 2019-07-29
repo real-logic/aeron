@@ -20,7 +20,7 @@ import io.aeron.logbuffer.FragmentHandler;
 import java.io.File;
 import java.io.IOException;
 
-public class TestUtil
+class TestUtil
 {
     public static final double MEGABYTE = 1024.0d * 1024.0d;
     public static final FragmentHandler NOOP_FRAGMENT_HANDLER = (buffer, offset, length, header) -> {};
@@ -39,12 +39,12 @@ public class TestUtil
 
         if (!tempDirForTest.delete())
         {
-            throw new IllegalStateException("Failed to delete: " + tempDirForTest);
+            throw new IllegalStateException("failed to delete: " + tempDirForTest);
         }
 
         if (!tempDirForTest.mkdir())
         {
-            throw new IllegalStateException("Failed to create: " + tempDirForTest);
+            throw new IllegalStateException("failed to create: " + tempDirForTest);
         }
 
         return tempDirForTest;

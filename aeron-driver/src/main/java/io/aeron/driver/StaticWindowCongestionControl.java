@@ -21,6 +21,10 @@ import org.agrona.concurrent.status.CountersManager;
 
 import java.net.InetSocketAddress;
 
+/**
+ * Congestion control algorithm which uses the min of {@link MediaDriver.Context#initialWindowLength()} or half a term
+ * length as a static window.
+ */
 public class StaticWindowCongestionControl implements CongestionControl
 {
     private final long ccOutcome;

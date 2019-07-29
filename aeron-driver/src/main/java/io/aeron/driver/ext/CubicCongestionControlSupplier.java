@@ -22,8 +22,17 @@ import io.aeron.driver.media.UdpChannel;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.status.CountersManager;
 
+/**
+ * Supplier of {@link CubicCongestionControl} implementations.
+ * <p>
+ * <a target="_blank" href="https://research.csc.ncsu.edu/netsrv/?q=content/bic-and-cubic">
+ *     https://research.csc.ncsu.edu/netsrv/?q=content/bic-and-cubic</a>
+ */
 public class CubicCongestionControlSupplier implements CongestionControlSupplier
 {
+    /**
+     * {@inheritDoc}
+     */
     public CongestionControl newInstance(
         final long registrationId,
         final UdpChannel udpChannel,
@@ -31,7 +40,7 @@ public class CubicCongestionControlSupplier implements CongestionControlSupplier
         final int sessionId,
         final int termLength,
         final int senderMtuLength,
-        final NanoClock clock,
+        final NanoClock nanoClock,
         final MediaDriver.Context context,
         final CountersManager countersManager)
     {
@@ -42,7 +51,7 @@ public class CubicCongestionControlSupplier implements CongestionControlSupplier
             sessionId,
             termLength,
             senderMtuLength,
-            clock,
+            nanoClock,
             context,
             countersManager);
     }

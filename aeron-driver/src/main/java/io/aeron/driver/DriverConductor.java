@@ -1390,7 +1390,7 @@ public class DriverConductor implements Agent
                 clientLivenessTimeoutNs,
                 cachedEpochClock.time(),
                 ctx.systemCounters().get(SystemCounterDescriptor.CLIENT_TIMEOUTS),
-                ClientHeartbeatStatus.allocate(tempBuffer, countersManager, clientId));
+                ClientHeartbeatTimestamp.allocate(tempBuffer, countersManager, clientId));
             clients.add(client);
         }
 

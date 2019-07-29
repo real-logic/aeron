@@ -17,6 +17,9 @@ package io.aeron.driver.media;
 
 import java.net.InetSocketAddress;
 
+/**
+ * State tracking for a connection endpoint to an image.
+ */
 public class ImageConnection
 {
     public long timeOfLastFrameNs;

@@ -139,7 +139,7 @@ subprojects {
     jar.enabled = true
 
     dependencies {
-        checkstyle 'com.puppycrawl.tools:checkstyle:8.22'
+        checkstyle 'com.puppycrawl.tools:checkstyle:8.23'
 
         compile "org.agrona:agrona:${agronaVersion}"
 
@@ -148,7 +148,7 @@ subprojects {
         testCompile 'junit:junit:4.12'
     }
 
-    checkstyle.toolVersion = '8.22'
+    checkstyle.toolVersion = '8.23'
 
     compileJava {
         sourceCompatibility = aeronJavaVersion

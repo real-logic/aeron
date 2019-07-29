@@ -18,6 +18,7 @@ package io.aeron.cluster;
 import io.aeron.Publication;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.SnapshotTaker;
+import org.agrona.ExpandableRingBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.IdleStrategy;

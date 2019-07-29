@@ -25,7 +25,7 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.concurrent.status.CountersReader.MAX_LABEL_LENGTH;
 
 /**
- * Status for an Aeron media channel for a {@link io.aeron.Publication} or {@link io.aeron.Subscription}.
+ * Status of the Aeron media channel for a {@link io.aeron.Publication} or {@link io.aeron.Subscription}.
  */
 public class ChannelEndpointStatus
 {

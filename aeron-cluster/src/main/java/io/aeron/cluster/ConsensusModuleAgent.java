@@ -1794,9 +1794,9 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         if (Cluster.Role.LEADER == role && ConsensusModule.State.ACTIVE == state)
         {
+            workCount += timerService.poll(nowMs);
             workCount += pendingServiceMessages.forEach(
                 pendingServiceMessageHeadOffset, serviceSessionMessageAppender, SERVICE_MESSAGE_LIMIT);
-            workCount += timerService.poll(nowMs);
             workCount += ingressAdapter.poll();
         }
         else if (Cluster.Role.FOLLOWER == role &&

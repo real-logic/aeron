@@ -394,14 +394,14 @@ public class Image
      * Use a {@link ControlledFragmentAssembler} to assemble messages which span multiple fragments.
      *
      * @param handler       to which message fragments are delivered.
-     * @param maxPosition   to consume messages up to.
+     * @param limitPosition to consume messages up to.
      * @param fragmentLimit for the number of fragments to be consumed during one polling operation.
      * @return the number of fragments that have been consumed.
      * @see ControlledFragmentAssembler
      * @see ImageControlledFragmentAssembler
      */
     public int boundedControlledPoll(
-        final ControlledFragmentHandler handler, final long maxPosition, final int fragmentLimit)
+        final ControlledFragmentHandler handler, final long limitPosition, final int fragmentLimit)
     {
         if (isClosed)
         {
@@ -413,7 +413,7 @@ public class Image
         int initialOffset = (int)initialPosition & termLengthMask;
         int resultingOffset = initialOffset;
         final UnsafeBuffer termBuffer = activeTermBuffer(initialPosition);
-        final int endOffset = (int)Math.min(termBuffer.capacity(), maxPosition - initialPosition + initialOffset);
+        final int endOffset = (int)Math.min(termBuffer.capacity(), limitPosition - initialPosition + initialOffset);
         final Header header = this.header;
         header.buffer(termBuffer);
 
@@ -505,14 +505,14 @@ public class Image
         int offset = initialOffset;
         long position = initialPosition;
         final UnsafeBuffer termBuffer = activeTermBuffer(initialPosition);
-        final int capacity = termBuffer.capacity();
         final Header header = this.header;
+        final int endOffset = (int)Math.min(termBuffer.capacity(), limitPosition - initialPosition + initialOffset);
         header.buffer(termBuffer);
         long resultingPosition = initialPosition;
 
         try
         {
-            while (position < limitPosition && offset < capacity)
+            while (offset < endOffset)
             {
                 final int length = frameLengthVolatile(termBuffer, offset);
                 if (length <= 0)

@@ -22,6 +22,6 @@ public class DriverTimeoutException extends TimeoutException
 {
     public DriverTimeoutException(final String message)
     {
-        super(message, Type.FATAL);
+        super(message, Category.FATAL);
     }
 }

@@ -1161,7 +1161,8 @@ public class AeronArchive implements AutoCloseable
 
         if (deadlineNs - nanoClock.nanoTime() < 0)
         {
-            throw new TimeoutException(errorMessage + " - correlationId=" + correlationId, AeronException.Type.ERROR);
+            throw new TimeoutException(
+                errorMessage + " - correlationId=" + correlationId, AeronException.Category.ERROR);
         }
     }
 
@@ -2235,7 +2236,7 @@ public class AeronArchive implements AutoCloseable
             {
                 throw new TimeoutException(
                     "connect timeout for correlation id: " + correlationId + " step " + step,
-                    AeronException.Type.ERROR);
+                    AeronException.Category.ERROR);
             }
         }
     }

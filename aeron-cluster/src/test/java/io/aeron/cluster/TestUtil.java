@@ -62,25 +62,26 @@ class TestUtil
 
     public static ErrorHandler errorHandler(final int nodeId)
     {
-        return (ex) ->
-        {
-            if (ex instanceof ClusterException)
+        return
+            (ex) ->
             {
-                if (((ClusterException)ex).type() == AeronException.Type.WARNING)
+                if (ex instanceof ClusterException)
                 {
-                    return;
+                    if (((ClusterException)ex).category() == AeronException.Category.WARN)
+                    {
+                        return;
+                    }
                 }
-            }
 
-            System.err.println("\n*** Error in node " + nodeId + " followed by system thread dump ***\n\n");
-            ex.printStackTrace();
+                System.err.println("\n*** Error in node " + nodeId + " followed by system thread dump ***\n\n");
+                ex.printStackTrace();
 
-            System.err.println();
-            System.err.println(SystemUtil.threadDump());
-        };
+                System.err.println();
+                System.err.println(SystemUtil.threadDump());
+            };
     }
 
-    public static void printStats(final CountersReader countersReader, final PrintStream out)
+    public static void printCounters(final CountersReader countersReader, final PrintStream out)
     {
         countersReader.forEach(
             (counterId, typeId, keyBuffer, label) ->

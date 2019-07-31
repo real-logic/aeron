@@ -22,6 +22,6 @@ public class ClientTimeoutException extends TimeoutException
 {
     public ClientTimeoutException(final String message)
     {
-        super(message, Type.FATAL);
+        super(message, Category.FATAL);
     }
 }

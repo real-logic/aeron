@@ -28,9 +28,9 @@ public class ClusterException extends AeronException
         super(message);
     }
 
-    public ClusterException(final String message, final Type type)
+    public ClusterException(final String message, final Category category)
     {
-        super(message, type);
+        super(message, category);
     }
 
     public ClusterException(final String message, final Throwable cause)

@@ -168,7 +168,7 @@ public class TestUtil
 
             if ((deadlineNs - System.nanoTime()) <= 0)
             {
-                throw new TimeoutException(AeronException.Type.ERROR);
+                throw new TimeoutException(AeronException.Category.ERROR);
             }
 
             Thread.yield();

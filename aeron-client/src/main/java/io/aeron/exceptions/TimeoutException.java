@@ -20,24 +20,24 @@ package io.aeron.exceptions;
  */
 public class TimeoutException extends AeronException
 {
-    public TimeoutException(final Type type)
+    public TimeoutException(final Category category)
     {
-        super(type);
+        super(category);
     }
 
-    public TimeoutException(final String message, final Type type)
+    public TimeoutException(final String message, final Category category)
     {
-        super(message, type);
+        super(message, category);
     }
 
-    public TimeoutException(final String message, final Throwable cause, final Type type)
+    public TimeoutException(final String message, final Throwable cause, final Category category)
     {
-        super(message, cause, type);
+        super(message, cause, category);
     }
 
-    public TimeoutException(final Throwable cause, final Type type)
+    public TimeoutException(final Throwable cause, final Category category)
     {
-        super(cause, type);
+        super(cause, category);
     }
 
     protected TimeoutException(
@@ -45,8 +45,8 @@ public class TimeoutException extends AeronException
         final Throwable cause,
         final boolean enableSuppression,
         final boolean writableStackTrace,
-        final Type type)
+        final Category category)
     {
-        super(message, cause, enableSuppression, writableStackTrace, type);
+        super(message, cause, enableSuppression, writableStackTrace, category);
     }
 }

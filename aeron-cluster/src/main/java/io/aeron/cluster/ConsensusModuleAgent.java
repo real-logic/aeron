@@ -1746,7 +1746,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                     if (!ClusterMember.hasActiveQuorum(clusterMembers, nowMs, leaderHeartbeatTimeoutMs))
                     {
                         ctx.countedErrorHandler().onError(
-                            new ClusterException("no active follower quorum", AeronException.Type.WARNING));
+                            new ClusterException("no active follower quorum", AeronException.Category.WARN));
                         enterElection(nowMs);
                         workCount += 1;
                     }
@@ -1773,7 +1773,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 if (nowMs >= (timeOfLastLogUpdateMs + leaderHeartbeatTimeoutMs))
                 {
                     ctx.countedErrorHandler().onError(
-                        new ClusterException("heartbeat timeout from leader", AeronException.Type.WARNING));
+                        new ClusterException("heartbeat timeout from leader", AeronException.Category.WARN));
                     enterElection(nowMs);
                     workCount += 1;
                 }
@@ -2417,7 +2417,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         if (Thread.currentThread().isInterrupted())
         {
-            throw new TimeoutException("unexpected interrupt", AeronException.Type.ERROR);
+            throw new TimeoutException("unexpected interrupt", AeronException.Category.ERROR);
         }
     }
 

@@ -1504,7 +1504,7 @@ public final class AeronCluster implements AutoCloseable
 
             if (deadlineNs - nanoClock.nanoTime() < 0)
             {
-                throw new TimeoutException("connect timeout, step=" + step, AeronException.Type.ERROR);
+                throw new TimeoutException("connect timeout, step=" + step, AeronException.Category.ERROR);
             }
         }
 

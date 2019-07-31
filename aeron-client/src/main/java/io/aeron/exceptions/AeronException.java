@@ -23,7 +23,7 @@ public class AeronException extends RuntimeException
     /**
      * Type of exception.
      */
-    public enum Type
+    public enum Category
     {
         /**
          * Exception indicates a fatal condition. Recommendation is to terminate process immediately to avoid
@@ -40,62 +40,62 @@ public class AeronException extends RuntimeException
          * Exception is a warning. Action has been, or will be, taken to handle the condition.
          * Additional corrective action by the application may be needed.
          */
-        WARNING
+        WARN
     }
 
-    private final Type type;
+    private final Category category;
 
     public AeronException()
     {
-        this.type = Type.ERROR;
+        this.category = Category.ERROR;
     }
 
-    public AeronException(final Type type)
+    public AeronException(final Category category)
     {
-        this.type = type;
+        this.category = category;
     }
 
     public AeronException(final String message)
     {
         super(message);
-        this.type = Type.ERROR;
+        this.category = Category.ERROR;
     }
 
-    public AeronException(final String message, final Type type)
+    public AeronException(final String message, final Category category)
     {
         super(message);
-        this.type = type;
+        this.category = category;
     }
 
     public AeronException(final String message, final Throwable cause)
     {
         super(message, cause);
-        this.type = Type.ERROR;
+        this.category = Category.ERROR;
     }
 
-    public AeronException(final String message, final Throwable cause, final Type type)
+    public AeronException(final String message, final Throwable cause, final Category category)
     {
         super(message, cause);
-        this.type = type;
+        this.category = category;
     }
 
     public AeronException(final Throwable cause)
     {
         super(cause);
-        this.type = Type.ERROR;
+        this.category = Category.ERROR;
     }
 
-    public AeronException(final Throwable cause, final Type type)
+    public AeronException(final Throwable cause, final Category category)
     {
         super(cause);
-        this.type = type;
+        this.category = category;
     }
 
     public AeronException(
         final String message, final Throwable cause, final boolean enableSuppression, final boolean writableStackTrace)
     {
         super(message, cause, enableSuppression, writableStackTrace);
-        this.type = Type.ERROR;
+        this.category = Category.ERROR;
     }
 
     public AeronException(
@@ -103,14 +103,14 @@ public class AeronException extends RuntimeException
         final Throwable cause,
         final boolean enableSuppression,
         final boolean writableStackTrace,
-        final Type type)
+        final Category category)
     {
         super(message, cause, enableSuppression, writableStackTrace);
-        this.type = type;
+        this.category = category;
     }
 
-    public Type type()
+    public Category category()
     {
-        return type;
+        return category;
     }
 }

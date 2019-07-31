@@ -22,6 +22,6 @@ public class ConductorServiceTimeoutException extends TimeoutException
 {
     public ConductorServiceTimeoutException(final String message)
     {
-        super(message, Type.FATAL);
+        super(message, Category.FATAL);
     }
 }

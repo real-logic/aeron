@@ -496,7 +496,7 @@ public class Image
     {
         if (isClosed)
         {
-            return 0;
+            return initialPosition;
         }
 
         validatePosition(initialPosition);

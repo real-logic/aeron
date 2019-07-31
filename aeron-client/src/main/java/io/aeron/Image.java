@@ -500,6 +500,10 @@ public class Image
         }
 
         validatePosition(initialPosition);
+        if (initialPosition >= limitPosition)
+        {
+            return initialPosition;
+        }
 
         int initialOffset = (int)initialPosition & termLengthMask;
         int offset = initialOffset;

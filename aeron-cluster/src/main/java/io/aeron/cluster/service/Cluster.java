@@ -181,8 +181,8 @@ public interface Cluster
      * {@link ClusteredService#onSessionClose(ClientSession, long, CloseReason)}.
      * If applied to other events then they are not guaranteed to be reliable.
      *
-     * @param correlationId to identify the timer when it expires.
-     * @param deadlineMs    epoch time in milliseconds after which the timer will fire.
+     * @param correlationId to identify the timer when it expires. {@link Long#MAX_VALUE} not supported.
+     * @param deadlineMs    epoch time in after which the timer will fire. {@link Long#MAX_VALUE} not supported.
      * @return true if the event to schedule a timer request has been sent or false if back pressure is applied.
      * @see #cancelTimer(long)
      */
@@ -198,7 +198,7 @@ public interface Cluster
      * {@link ClusteredService#onSessionClose(ClientSession, long, CloseReason)}.
      * If applied to other events then they are not guaranteed to be reliable.
      *
-     * @param correlationId for the timer provided when it was scheduled.
+     * @param correlationId for the timer provided when it was scheduled. {@link Long#MAX_VALUE} not supported.
      * @return true if the event to cancel request has been sent or false if back pressure is applied.
      * @see #scheduleTimer(long, long)
      */

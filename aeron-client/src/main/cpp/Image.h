@@ -505,13 +505,13 @@ public:
      * To assemble messages that span multiple fragments then use ControlledFragmentAssembler.
      *
      * @param fragmentHandler to which message fragments are delivered.
-     * @param maxPosition     to consume messages up to.
+     * @param limitPosition   to consume messages up to.
      * @param fragmentLimit   for the number of fragments to be consumed during one polling operation.
      * @return the number of fragments that have been consumed.
      * @see controlled_poll_fragment_handler_t
      */
     template <typename F>
-    inline int boundedControlledPoll(F&& fragmentHandler, std::int64_t maxPosition, int fragmentLimit)
+    inline int boundedControlledPoll(F&& fragmentHandler, std::int64_t limitPosition, int fragmentLimit)
     {
         int result = 0;
 
@@ -526,7 +526,7 @@ public:
             std::int32_t resultingOffset = initialOffset;
             const std::int64_t capacity = termBuffer.capacity();
             const std::int32_t endOffset =
-                static_cast<std::int32_t>(std::min(capacity, (maxPosition - initialPosition) + initialOffset));
+                static_cast<std::int32_t>(std::min(capacity, (limitPosition - initialPosition) + initialOffset));
 
             m_header.buffer(termBuffer);
 
@@ -622,13 +622,15 @@ public:
             const int index = LogBufferDescriptor::indexByPosition(initialPosition, m_positionBitsToShift);
             assert(index >= 0 && index < LogBufferDescriptor::PARTITION_COUNT);
             AtomicBuffer &termBuffer = m_termBuffers[index];
-            const util::index_t capacity = termBuffer.capacity();
+            const std::int64_t capacity = termBuffer.capacity();
+            const std::int32_t endOffset =
+                static_cast<std::int32_t>(std::min(capacity, (limitPosition - initialPosition) + initialOffset));
 
             m_header.buffer(termBuffer);
 
             try
             {
-                while (position < limitPosition && offset < capacity)
+                while (offset < endOffset)
                 {
                     const std::int32_t length = FrameDescriptor::frameLengthVolatile(termBuffer, offset);
                     if (length <= 0)

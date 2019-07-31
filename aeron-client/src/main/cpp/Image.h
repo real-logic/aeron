@@ -615,6 +615,10 @@ public:
         if (!isClosed())
         {
             validatePosition(initialPosition);
+            if (initialPosition >= limitPosition)
+            {
+                return initialPosition;
+            }
 
             std::int32_t initialOffset = static_cast<std::int32_t>(initialPosition & m_termLengthMask);
             std::int32_t offset = initialOffset;

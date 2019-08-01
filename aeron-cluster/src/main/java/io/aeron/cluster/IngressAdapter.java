@@ -140,8 +140,9 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
                     messageHeaderDecoder.version());
 
                 consensusModuleAgent.onSessionKeepAlive(
-                    sessionKeepAliveDecoder.clusterSessionId(),
-                    sessionKeepAliveDecoder.leadershipTermId());
+                    sessionKeepAliveDecoder.leadershipTermId(),
+                    sessionKeepAliveDecoder.clusterSessionId()
+                );
                 break;
             }
 

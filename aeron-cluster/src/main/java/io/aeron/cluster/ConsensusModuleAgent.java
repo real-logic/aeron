@@ -376,7 +376,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         return ControlledFragmentHandler.Action.ABORT;
     }
 
-    public void onSessionKeepAlive(final long clusterSessionId, final long leadershipTermId)
+    public void onSessionKeepAlive(final long leadershipTermId, final long clusterSessionId)
     {
         if (Cluster.Role.LEADER == role && leadershipTermId == this.leadershipTermId)
         {

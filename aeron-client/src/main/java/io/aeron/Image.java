@@ -525,8 +525,7 @@ public class Image
                 }
 
                 final int frameOffset = offset;
-                final int alignedLength = BitUtil.align(length, FRAME_ALIGNMENT);
-                offset += alignedLength;
+                offset += BitUtil.align(length, FRAME_ALIGNMENT);
 
                 if (isPaddingFrame(termBuffer, frameOffset))
                 {

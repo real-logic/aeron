@@ -382,22 +382,21 @@ public:
         if (!isClosed())
         {
             const std::int64_t position = m_subscriberPosition.get();
-            const std::int32_t termOffset = static_cast<std::int32_t>(position & m_termLengthMask);
+            const std::int32_t offset = static_cast<std::int32_t>(position & m_termLengthMask);
             const int index = LogBufferDescriptor::indexByPosition(position, m_positionBitsToShift);
             assert(index >= 0 && index < LogBufferDescriptor::PARTITION_COUNT);
             AtomicBuffer &termBuffer = m_termBuffers[index];
-            TermReader::ReadOutcome readOutcome{};
+            TermReader::ReadOutcome outcome{};
 
-            TermReader::read(
-                readOutcome, termBuffer, termOffset, fragmentHandler, fragmentLimit, m_header, m_exceptionHandler);
+            TermReader::read(outcome, termBuffer, offset, fragmentHandler, fragmentLimit, m_header, m_exceptionHandler);
 
-            const std::int64_t newPosition = position + (readOutcome.offset - termOffset);
+            const std::int64_t newPosition = position + (outcome.offset - offset);
             if (newPosition > position)
             {
                 m_subscriberPosition.setOrdered(newPosition);
             }
 
-            result = readOutcome.fragmentsRead;
+            result = outcome.fragmentsRead;
         }
 
         return result;
@@ -428,24 +427,24 @@ public:
             const int index = LogBufferDescriptor::indexByPosition(initialPosition, m_positionBitsToShift);
             assert(index >= 0 && index < LogBufferDescriptor::PARTITION_COUNT);
             AtomicBuffer &termBuffer = m_termBuffers[index];
-            std::int32_t resultingOffset = initialOffset;
+            std::int32_t offset = initialOffset;
             const util::index_t capacity = termBuffer.capacity();
 
             m_header.buffer(termBuffer);
 
             try
             {
-                while (fragmentsRead < fragmentLimit && resultingOffset < capacity)
+                while (fragmentsRead < fragmentLimit && offset < capacity)
                 {
-                    const std::int32_t length = FrameDescriptor::frameLengthVolatile(termBuffer, resultingOffset);
+                    const std::int32_t length = FrameDescriptor::frameLengthVolatile(termBuffer, offset);
                     if (length <= 0)
                     {
                         break;
                     }
 
-                    const std::int32_t frameOffset = resultingOffset;
+                    const std::int32_t frameOffset = offset;
                     const std::int32_t alignedLength = util::BitUtil::align(length, FrameDescriptor::FRAME_ALIGNMENT);
-                    resultingOffset += alignedLength;
+                    offset += alignedLength;
 
                     if (FrameDescriptor::isPaddingFrame(termBuffer, frameOffset))
                     {
@@ -462,7 +461,7 @@ public:
 
                     if (ControlledPollAction::ABORT == action)
                     {
-                        resultingOffset -= alignedLength;
+                        offset -= alignedLength;
                         break;
                     }
 
@@ -474,8 +473,8 @@ public:
                     }
                     else if (ControlledPollAction::COMMIT == action)
                     {
-                        initialPosition += (resultingOffset - initialOffset);
-                        initialOffset = resultingOffset;
+                        initialPosition += (offset - initialOffset);
+                        initialOffset = offset;
                         m_subscriberPosition.setOrdered(initialPosition);
                     }
                 }
@@ -485,7 +484,7 @@ public:
                 m_exceptionHandler(ex);
             }
 
-            const std::int64_t resultingPosition = initialPosition + (resultingOffset - initialOffset);
+            const std::int64_t resultingPosition = initialPosition + (offset - initialOffset);
             if (resultingPosition > initialPosition)
             {
                 m_subscriberPosition.setOrdered(resultingPosition);
@@ -523,26 +522,26 @@ public:
             const int index = LogBufferDescriptor::indexByPosition(initialPosition, m_positionBitsToShift);
             assert(index >= 0 && index < LogBufferDescriptor::PARTITION_COUNT);
             AtomicBuffer &termBuffer = m_termBuffers[index];
-            std::int32_t resultingOffset = initialOffset;
+            std::int32_t offset = initialOffset;
             const std::int64_t capacity = termBuffer.capacity();
-            const std::int32_t endOffset =
-                static_cast<std::int32_t>(std::min(capacity, (limitPosition - initialPosition) + initialOffset));
+            const std::int32_t limitOffset =
+                static_cast<std::int32_t>(std::min(capacity, (limitPosition - initialPosition) + offset));
 
             m_header.buffer(termBuffer);
 
             try
             {
-                while (fragmentsRead < fragmentLimit && resultingOffset < endOffset)
+                while (fragmentsRead < fragmentLimit && offset < limitOffset)
                 {
-                    const std::int32_t length = FrameDescriptor::frameLengthVolatile(termBuffer, resultingOffset);
+                    const std::int32_t length = FrameDescriptor::frameLengthVolatile(termBuffer, offset);
                     if (length <= 0)
                     {
                         break;
                     }
 
-                    const std::int32_t frameOffset = resultingOffset;
+                    const std::int32_t frameOffset = offset;
                     const std::int32_t alignedLength = util::BitUtil::align(length, FrameDescriptor::FRAME_ALIGNMENT);
-                    resultingOffset += alignedLength;
+                    offset += alignedLength;
 
                     if (FrameDescriptor::isPaddingFrame(termBuffer, frameOffset))
                     {
@@ -559,7 +558,7 @@ public:
 
                     if (ControlledPollAction::ABORT == action)
                     {
-                        resultingOffset -= alignedLength;
+                        offset -= alignedLength;
                         break;
                     }
 
@@ -571,8 +570,8 @@ public:
                     }
                     else if (ControlledPollAction::COMMIT == action)
                     {
-                        initialPosition += (resultingOffset - initialOffset);
-                        initialOffset = resultingOffset;
+                        initialPosition += (offset - initialOffset);
+                        initialOffset = offset;
                         m_subscriberPosition.setOrdered(initialPosition);
                     }
                 }
@@ -582,7 +581,7 @@ public:
                 m_exceptionHandler(ex);
             }
 
-            const std::int64_t resultingPosition = initialPosition + (resultingOffset - initialOffset);
+            const std::int64_t resultingPosition = initialPosition + (offset - initialOffset);
             if (resultingPosition > initialPosition)
             {
                 m_subscriberPosition.setOrdered(resultingPosition);
@@ -627,14 +626,14 @@ public:
             assert(index >= 0 && index < LogBufferDescriptor::PARTITION_COUNT);
             AtomicBuffer &termBuffer = m_termBuffers[index];
             const std::int64_t capacity = termBuffer.capacity();
-            const std::int32_t endOffset =
-                static_cast<std::int32_t>(std::min(capacity, (limitPosition - initialPosition) + initialOffset));
+            const std::int32_t limitOffset =
+                static_cast<std::int32_t>(std::min(capacity, (limitPosition - initialPosition) + offset));
 
             m_header.buffer(termBuffer);
 
             try
             {
-                while (offset < endOffset)
+                while (offset < limitOffset)
                 {
                     const std::int32_t length = FrameDescriptor::frameLengthVolatile(termBuffer, offset);
                     if (length <= 0)
@@ -788,7 +787,7 @@ private:
         if (newPosition < position || newPosition > limitPosition)
         {
             throw util::IllegalArgumentException(
-                std::to_string(newPosition) + " newPosition out of range " +
+                std::to_string(newPosition) + " newPosition out of range: " +
                 std::to_string(position) + " - " + std::to_string(limitPosition),
                 SOURCEINFO);
         }

@@ -33,17 +33,17 @@ class StubClusteredService implements ClusteredService
         this.cluster = cluster;
     }
 
-    public void onSessionOpen(final ClientSession session, final long timestampMs)
+    public void onSessionOpen(final ClientSession session, final long timestamp)
     {
     }
 
-    public void onSessionClose(final ClientSession session, final long timestampMs, final CloseReason closeReason)
+    public void onSessionClose(final ClientSession session, final long timestamp, final CloseReason closeReason)
     {
     }
 
     public void onSessionMessage(
         final ClientSession session,
-        final long timestampMs,
+        final long timestamp,
         final DirectBuffer buffer,
         final int offset,
         final int length,
@@ -51,7 +51,7 @@ class StubClusteredService implements ClusteredService
     {
     }
 
-    public void onTimerEvent(final long correlationId, final long timestampMs)
+    public void onTimerEvent(final long correlationId, final long timestamp)
     {
     }
 

@@ -246,7 +246,7 @@ public class ClusterNodeTest
         {
             public void onSessionMessage(
                 final ClientSession session,
-                final long timestampMs,
+                final long timestamp,
                 final DirectBuffer buffer,
                 final int offset,
                 final int length,
@@ -276,7 +276,7 @@ public class ClusterNodeTest
 
             public void onSessionMessage(
                 final ClientSession session,
-                final long timestampMs,
+                final long timestamp,
                 final DirectBuffer buffer,
                 final int offset,
                 final int length,
@@ -285,13 +285,13 @@ public class ClusterNodeTest
                 clusterSessionId = session.id();
                 msg = buffer.getStringWithoutLengthAscii(offset, length);
 
-                while (!cluster.scheduleTimer(serviceCorrelationId(nextCorrelationId++), timestampMs + 100))
+                while (!cluster.scheduleTimer(serviceCorrelationId(nextCorrelationId++), timestamp + 100))
                 {
                     cluster.idle();
                 }
             }
 
-            public void onTimerEvent(final long correlationId, final long timestampMs)
+            public void onTimerEvent(final long correlationId, final long timestamp)
             {
                 final String responseMsg = msg + "-scheduled";
                 buffer.putStringWithoutLengthAscii(0, responseMsg);
@@ -317,7 +317,7 @@ public class ClusterNodeTest
         {
             public void onSessionMessage(
                 final ClientSession session,
-                final long timestampMs,
+                final long timestamp,
                 final DirectBuffer buffer,
                 final int offset,
                 final int length,

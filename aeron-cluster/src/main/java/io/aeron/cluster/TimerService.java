@@ -20,20 +20,24 @@ import org.agrona.collections.Long2LongHashMap;
 
 import java.util.concurrent.TimeUnit;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 class TimerService implements DeadlineTimerWheel.TimerHandler
 {
     private static final int POLL_LIMIT = 20;
 
     private final ConsensusModuleAgent consensusModuleAgent;
-    private final DeadlineTimerWheel timerWheel = new DeadlineTimerWheel(MILLISECONDS, 0, 8, 128);
+    private final DeadlineTimerWheel timerWheel;
     private final Long2LongHashMap timerIdByCorrelationIdMap = new Long2LongHashMap(Long.MAX_VALUE);
     private final Long2LongHashMap correlationIdByTimerIdMap = new Long2LongHashMap(Long.MAX_VALUE);
 
-    TimerService(final ConsensusModuleAgent consensusModuleAgent)
+    TimerService(
+        final ConsensusModuleAgent consensusModuleAgent,
+        final TimeUnit timeUnit,
+        final long startTime,
+        final int tickResolution,
+        final int ticksPerWheel)
     {
         this.consensusModuleAgent = consensusModuleAgent;
+        timerWheel = new DeadlineTimerWheel(timeUnit, startTime, tickResolution, ticksPerWheel);
     }
 
     int poll(final long now)

@@ -296,7 +296,7 @@ class TestNode implements AutoCloseable
 
         public void onSessionMessage(
             final ClientSession session,
-            final long timestampMs,
+            final long timestamp,
             final DirectBuffer buffer,
             final int offset,
             final int length,

@@ -239,9 +239,9 @@ class ClusteredServiceAgent implements Agent, Cluster
         return clusterLogPosition;
     }
 
-    public boolean scheduleTimer(final long correlationId, final long deadlineMs)
+    public boolean scheduleTimer(final long correlationId, final long deadline)
     {
-        return consensusModuleProxy.scheduleTimer(correlationId, deadlineMs);
+        return consensusModuleProxy.scheduleTimer(correlationId, deadline);
     }
 
     public boolean cancelTimer(final long correlationId)

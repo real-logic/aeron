@@ -182,11 +182,11 @@ public interface Cluster
      * If applied to other events then they are not guaranteed to be reliable.
      *
      * @param correlationId to identify the timer when it expires. {@link Long#MAX_VALUE} not supported.
-     * @param deadlineMs    epoch time in after which the timer will fire. {@link Long#MAX_VALUE} not supported.
+     * @param deadline      time in after which the timer will fire. {@link Long#MAX_VALUE} not supported.
      * @return true if the event to schedule a timer request has been sent or false if back pressure is applied.
      * @see #cancelTimer(long)
      */
-    boolean scheduleTimer(long correlationId, long deadlineMs);
+    boolean scheduleTimer(long correlationId, long deadline);
 
     /**
      * Cancel a previous scheduled timer. This action asynchronous and will race with the timer expiring.

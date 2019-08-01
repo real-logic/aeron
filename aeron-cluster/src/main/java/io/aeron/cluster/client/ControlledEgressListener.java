@@ -32,7 +32,7 @@ public interface ControlledEgressListener
      * Message event returned from the clustered service.
      *
      * @param clusterSessionId to which the message belongs.
-     * @param timestampMs      at which the correlated ingress was sequenced in the cluster.
+     * @param timestamp        at which the correlated ingress was sequenced in the cluster.
      * @param buffer           containing the message.
      * @param offset           at which the message begins.
      * @param length           of the message in bytes.
@@ -41,7 +41,7 @@ public interface ControlledEgressListener
      */
     ControlledFragmentHandler.Action onMessage(
         long clusterSessionId,
-        long timestampMs,
+        long timestamp,
         DirectBuffer buffer,
         int offset,
         int length,

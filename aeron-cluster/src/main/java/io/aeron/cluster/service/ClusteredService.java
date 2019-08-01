@@ -34,7 +34,7 @@ public interface ClusteredService
      * {@link Cluster#idle()} or {@link Cluster#idle(int)}, especially when polling the snapshot {@link Image}
      * returns 0.
      *
-     * @param cluster with which the service can interact.
+     * @param cluster       with which the service can interact.
      * @param snapshotImage from which the service can load its archived state which can be null when no snapshot.
      */
     void onStart(Cluster cluster, Image snapshotImage);
@@ -42,33 +42,33 @@ public interface ClusteredService
     /**
      * A session has been opened for a client to the cluster.
      *
-     * @param session     for the client which have been opened.
-     * @param timestampMs at which the session was opened.
+     * @param session   for the client which have been opened.
+     * @param timestamp at which the session was opened.
      */
-    void onSessionOpen(ClientSession session, long timestampMs);
+    void onSessionOpen(ClientSession session, long timestamp);
 
     /**
      * A session has been closed for a client to the cluster.
      *
      * @param session     that has been closed.
-     * @param timestampMs at which the session was closed.
+     * @param timestamp   at which the session was closed.
      * @param closeReason the session was closed.
      */
-    void onSessionClose(ClientSession session, long timestampMs, CloseReason closeReason);
+    void onSessionClose(ClientSession session, long timestamp, CloseReason closeReason);
 
     /**
      * A message has been received to be processed by a clustered service.
      *
-     * @param session     for the client which sent the message. This can be null if the client was a service.
-     * @param timestampMs for when the message was received.
-     * @param buffer      containing the message.
-     * @param offset      in the buffer at which the message is encoded.
-     * @param length      of the encoded message.
-     * @param header      aeron header for the incoming message.
+     * @param session   for the client which sent the message. This can be null if the client was a service.
+     * @param timestamp for when the message was received.
+     * @param buffer    containing the message.
+     * @param offset    in the buffer at which the message is encoded.
+     * @param length    of the encoded message.
+     * @param header    aeron header for the incoming message.
      */
     void onSessionMessage(
         ClientSession session,
-        long timestampMs,
+        long timestamp,
         DirectBuffer buffer,
         int offset,
         int length,
@@ -78,9 +78,9 @@ public interface ClusteredService
      * A scheduled timer has expired.
      *
      * @param correlationId for the expired timer.
-     * @param timestampMs   at which the timer expired.
+     * @param timestamp     at which the timer expired.
      */
-    void onTimerEvent(long correlationId, long timestampMs);
+    void onTimerEvent(long correlationId, long timestamp);
 
     /**
      * The service should take a snapshot and store its state to the provided archive {@link Publication}.

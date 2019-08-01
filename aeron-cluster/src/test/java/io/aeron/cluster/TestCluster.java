@@ -63,7 +63,7 @@ public class TestCluster implements AutoCloseable
     {
         public void onMessage(
             final long clusterSessionId,
-            final long timestampMs,
+            final long timestamp,
             final DirectBuffer buffer,
             final int offset,
             final int length,

@@ -219,19 +219,19 @@ public class ClusterTimerTest
 
             public void onSessionMessage(
                 final ClientSession session,
-                final long timestampMs,
+                final long timestamp,
                 final DirectBuffer buffer,
                 final int offset,
                 final int length,
                 final Header header)
             {
-                scheduleNext(serviceCorrelationId(timerId++), timestampMs + INTERVAL_MS);
+                scheduleNext(serviceCorrelationId(timerId++), timestamp + INTERVAL_MS);
             }
 
-            public void onTimerEvent(final long correlationId, final long timestampMs)
+            public void onTimerEvent(final long correlationId, final long timestamp)
             {
                 triggeredTimersCounter.getAndIncrement();
-                scheduleNext(serviceCorrelationId(timerId++), timestampMs + INTERVAL_MS);
+                scheduleNext(serviceCorrelationId(timerId++), timestamp + INTERVAL_MS);
             }
 
             public void onStart(final Cluster cluster, final Image snapshotImage)

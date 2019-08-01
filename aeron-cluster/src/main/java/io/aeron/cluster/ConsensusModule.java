@@ -246,6 +246,11 @@ public class ConsensusModule implements AutoCloseable
      */
     public static class Configuration
     {
+        static final TimeUnit TIMESTAMP_TIME_UNIT = TimeUnit.MILLISECONDS;
+        static final int WHEEL_START_TIME = 0;
+        static final int WHEEL_TICK_RESOLUTION = 8;
+        static final int TICKS_PER_WHEEL = 128;
+
         /**
          * Type of snapshot for this component.
          */

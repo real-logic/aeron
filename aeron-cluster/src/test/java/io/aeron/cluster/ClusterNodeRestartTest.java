@@ -468,7 +468,7 @@ public class ClusterNodeRestartTest
 
                 public void onSessionMessage(
                     final ClientSession session,
-                    final long timestampMs,
+                    final long timestamp,
                     final DirectBuffer buffer,
                     final int offset,
                     final int length,
@@ -484,7 +484,7 @@ public class ClusterNodeRestartTest
                     if (TIMER_MESSAGE_LENGTH == length)
                     {
                         final long correlationId = serviceCorrelationId(nextCorrelationId++);
-                        final long deadlineMs = timestampMs + buffer.getLong(offset + TIMER_MESSAGE_DELAY_OFFSET);
+                        final long deadlineMs = timestamp + buffer.getLong(offset + TIMER_MESSAGE_DELAY_OFFSET);
 
                         assertTrue(cluster.scheduleTimer(correlationId, deadlineMs));
                     }
@@ -523,19 +523,19 @@ public class ClusterNodeRestartTest
             {
                 public void onSessionMessage(
                     final ClientSession session,
-                    final long timestampMs,
+                    final long timestamp,
                     final DirectBuffer buffer,
                     final int offset,
                     final int length,
                     final Header header)
                 {
-                    scheduleNext(serviceCorrelationId(7), timestampMs + 100);
+                    scheduleNext(serviceCorrelationId(7), timestamp + 100);
                 }
 
-                public void onTimerEvent(final long correlationId, final long timestampMs)
+                public void onTimerEvent(final long correlationId, final long timestamp)
                 {
                     triggeredTimersCounter.getAndIncrement();
-                    scheduleNext(correlationId, timestampMs + 100);
+                    scheduleNext(correlationId, timestamp + 100);
                 }
 
                 public void onStart(final Cluster cluster, final Image snapshotImage)

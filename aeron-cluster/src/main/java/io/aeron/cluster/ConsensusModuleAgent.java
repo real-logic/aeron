@@ -113,7 +113,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private final ArrayList<ClusterSession> redirectSessions = new ArrayList<>();
     private final Int2ObjectHashMap<ClusterMember> clusterMemberByIdMap = new Int2ObjectHashMap<>();
     private final Long2LongCounterMap expiredTimerCountByCorrelationIdMap = new Long2LongCounterMap(0);
-    private final LongArrayQueue pendingTimers = new LongArrayQueue(Long.MAX_VALUE);
+    private final LongArrayQueue uncommittedTimers = new LongArrayQueue(Long.MAX_VALUE);
     private final ExpandableRingBuffer pendingServiceMessages = new ExpandableRingBuffer();
     private final ExpandableRingBuffer.MessageConsumer serviceSessionMessageAppender =
         this::serviceSessionMessageAppender;
@@ -412,8 +412,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         final long appendPosition = logPublisher.appendTimer(correlationId, leadershipTermId, nowMs);
         if (appendPosition > 0)
         {
-            pendingTimers.offerLong(appendPosition);
-            pendingTimers.offerLong(correlationId);
+            uncommittedTimers.offerLong(appendPosition);
+            uncommittedTimers.offerLong(correlationId);
             return true;
         }
 
@@ -849,7 +849,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         commitPosition.setOrdered(logPosition);
         pendingServiceMessageHeadOffset = 0;
 
-        for (final LongArrayQueue.LongIterator i = pendingTimers.iterator(); i.hasNext(); )
+        for (final LongArrayQueue.LongIterator i = uncommittedTimers.iterator(); i.hasNext(); )
         {
             final long appendPosition = i.nextValue();
             final long correlationId = i.nextValue();
@@ -2358,10 +2358,10 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                         pendingServiceMessages.consume(leaderServiceSessionMessageSweeper, Integer.MAX_VALUE);
                 }
 
-                while (pendingTimers.peekLong() <= commitPosition)
+                while (uncommittedTimers.peekLong() <= commitPosition)
                 {
-                    pendingTimers.pollLong();
-                    pendingTimers.pollLong();
+                    uncommittedTimers.pollLong();
+                    uncommittedTimers.pollLong();
                 }
 
                 workCount += 1;

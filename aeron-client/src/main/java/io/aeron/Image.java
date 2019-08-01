@@ -678,19 +678,19 @@ public class Image
         return termBuffers[indexByPosition(position, positionBitsToShift)];
     }
 
-    private void validatePosition(final long newPosition)
+    private void validatePosition(final long position)
     {
         final long currentPosition = subscriberPosition.get();
         final long limitPosition = (currentPosition - (currentPosition & termLengthMask)) + termLengthMask + 1;
-        if (newPosition < currentPosition || newPosition > limitPosition)
+        if (position < currentPosition || position > limitPosition)
         {
             throw new IllegalArgumentException(
-                newPosition + " newPosition out of range " + currentPosition + "-" + limitPosition);
+                position + " position out of range: " + currentPosition + "-" + limitPosition);
         }
 
-        if (0 != (newPosition & (FRAME_ALIGNMENT - 1)))
+        if (0 != (position & (FRAME_ALIGNMENT - 1)))
         {
-            throw new IllegalArgumentException(newPosition + " newPosition not aligned to FRAME_ALIGNMENT");
+            throw new IllegalArgumentException(position + " position not aligned to FRAME_ALIGNMENT");
         }
     }
 

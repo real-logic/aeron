@@ -851,8 +851,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         for (final LongArrayQueue.LongIterator i = pendingTimers.iterator(); i.hasNext(); )
         {
-            final long appendPosition = i.next();
-            final long correlationId = i.next();
+            final long appendPosition = i.nextValue();
+            final long correlationId = i.nextValue();
 
             if (appendPosition > logPosition)
             {

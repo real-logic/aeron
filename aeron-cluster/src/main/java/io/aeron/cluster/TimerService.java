@@ -24,11 +24,10 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 class TimerService implements DeadlineTimerWheel.TimerHandler
 {
-    private static final int ITERATION_LIMIT = 10_000_000;
     private static final int POLL_LIMIT = 20;
 
     private final ConsensusModuleAgent consensusModuleAgent;
-    private final DeadlineTimerWheel timerWheel = new DeadlineTimerWheel(MILLISECONDS, 0, 1, 128);
+    private final DeadlineTimerWheel timerWheel = new DeadlineTimerWheel(MILLISECONDS, 0, 8, 128);
     private final Long2LongHashMap timerIdByCorrelationIdMap = new Long2LongHashMap(Long.MAX_VALUE);
     private final Long2LongHashMap correlationIdByTimerIdMap = new Long2LongHashMap(Long.MAX_VALUE);
 
@@ -40,20 +39,14 @@ class TimerService implements DeadlineTimerWheel.TimerHandler
     int poll(final long now)
     {
         int expired = 0;
-        int iterations = 0;
 
         do
         {
             expired += timerWheel.poll(now, this, POLL_LIMIT);
         }
-        while (expired < POLL_LIMIT && timerWheel.currentTickTime() < now && ++iterations < ITERATION_LIMIT);
+        while (expired < POLL_LIMIT && timerWheel.currentTickTime() < now);
 
         return expired;
-    }
-
-    long timerCount()
-    {
-        return timerWheel.timerCount();
     }
 
     long currentTickTime()
@@ -61,9 +54,9 @@ class TimerService implements DeadlineTimerWheel.TimerHandler
         return timerWheel.currentTickTime();
     }
 
-    void resetStartTime(final long startTime)
+    void currentTickTime(final long timestamp)
     {
-        timerWheel.resetStartTime(startTime);
+        timerWheel.currentTickTime(timestamp);
     }
 
     public boolean onTimerExpiry(final TimeUnit timeUnit, final long now, final long timerId)

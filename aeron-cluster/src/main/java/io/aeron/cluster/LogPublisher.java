@@ -75,11 +75,6 @@ class LogPublisher
         return publication.position();
     }
 
-    Publication publication()
-    {
-        return publication;
-    }
-
     int sessionId()
     {
         return publication.sessionId();
@@ -156,7 +151,7 @@ class LogPublisher
             result = publication.offer(expandableArrayBuffer, 0, length, null);
             if (result > 0)
             {
-                return result;
+                break;
             }
 
             checkResult(result);
@@ -195,14 +190,15 @@ class LogPublisher
         return false;
     }
 
-    boolean appendTimer(final long correlationId, final long leadershipTermId, final long nowMs)
+    long appendTimer(final long correlationId, final long leadershipTermId, final long nowMs)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + TimerEventEncoder.BLOCK_LENGTH;
 
         int attempts = SEND_ATTEMPTS;
+        long result;
         do
         {
-            final long result = publication.tryClaim(length, bufferClaim);
+            result = publication.tryClaim(length, bufferClaim);
             if (result > 0)
             {
                 timerEventEncoder
@@ -212,15 +208,14 @@ class LogPublisher
                     .timestamp(nowMs);
 
                 bufferClaim.commit();
-
-                return true;
+                break;
             }
 
             checkResult(result);
         }
         while (--attempts > 0);
 
-        return false;
+        return result;
     }
 
     long computeClusterActionPosition()

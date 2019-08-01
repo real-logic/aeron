@@ -26,7 +26,7 @@
 
 namespace aeron { namespace util {
 
-AERON_DECLARE_SOURCED_EXCEPTION (CommandOptionException,ExceptionCategory::EXCEPTION_CATEGORY_ERROR);
+AERON_DECLARE_SOURCED_EXCEPTION (CommandOptionException, ExceptionCategory::EXCEPTION_CATEGORY_ERROR);
 
 class CommandOption
 {

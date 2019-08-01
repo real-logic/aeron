@@ -53,16 +53,35 @@ static constexpr const char* past_prefix(const char * const prefix, const char *
     #define AERON_NOEXCEPT noexcept
 #endif
 
+enum class ExceptionCategory : std::int64_t
+{
+    EXCEPTION_CATEGORY_FATAL = 0,
+    EXCEPTION_CATEGORY_ERROR = 1,
+    EXCEPTION_CATEGORY_WARN = 2
+};
+
 class SourcedException : public std::exception
 {
 private:
-    std::string m_where;
-    std::string m_what;
+    const std::string m_where;
+    const std::string m_what;
+    const ExceptionCategory m_category;
 
 public:
-    SourcedException(const std::string &what, const std::string& function, const std::string& file, const int line) :
+    SourcedException(
+        ExceptionCategory category,
+        const std::string& what,
+        const std::string& function,
+        const std::string& file,
+        const int line) :
         m_where(function + " : " + file + " : " + std::to_string(line)),
-        m_what(what)
+        m_what(what),
+        m_category(category)
+    {
+    }
+
+    SourcedException(const std::string &what, const std::string& function, const std::string& file, const int line) :
+        SourcedException(ExceptionCategory::EXCEPTION_CATEGORY_ERROR, what, function, file, line)
     {
     }
 
@@ -75,35 +94,40 @@ public:
     {
         return m_where.c_str();
     }
+
+    ExceptionCategory category() const AERON_NOEXCEPT
+    {
+        return m_category;
+    }
 };
 
-#define DECLARE_SOURCED_EXCEPTION(exceptionName)                \
-    class exceptionName : public aeron::util::SourcedException  \
-    {                                                           \
-    public:                                                     \
-        exceptionName(                                          \
-            const std::string& what,                            \
-            const std::string& function,                        \
-            const std::string& file,                            \
-            const int line) :                                   \
-            SourcedException(what, function, file, line)        \
-            {                                                   \
-            }                                                   \
-    }                                                           \
+#define AERON_DECLARE_SOURCED_EXCEPTION(exceptionName,category) \
+class exceptionName : public aeron::util::SourcedException     \
+{                                                              \
+public:                                                        \
+    exceptionName(                                             \
+        const std::string& what,                               \
+        const std::string& function,                           \
+        const std::string& file,                               \
+        const int line) :                                      \
+        SourcedException(category, what, function, file, line) \
+    {                                                          \
+    }                                                          \
+}                                                              \
 
-DECLARE_SOURCED_EXCEPTION(IOException);
-DECLARE_SOURCED_EXCEPTION(FormatException);
-DECLARE_SOURCED_EXCEPTION(OutOfBoundsException);
-DECLARE_SOURCED_EXCEPTION(ParseException);
-DECLARE_SOURCED_EXCEPTION(ElementNotFound);
-DECLARE_SOURCED_EXCEPTION(IllegalArgumentException);
-DECLARE_SOURCED_EXCEPTION(IllegalStateException);
-DECLARE_SOURCED_EXCEPTION(DriverTimeoutException);
-DECLARE_SOURCED_EXCEPTION(ConductorServiceTimeoutException);
-DECLARE_SOURCED_EXCEPTION(ClientTimeoutException);
-DECLARE_SOURCED_EXCEPTION(AeronException);
-DECLARE_SOURCED_EXCEPTION(UnknownSubscriptionException);
-DECLARE_SOURCED_EXCEPTION(ReentrantException);
+AERON_DECLARE_SOURCED_EXCEPTION(IOException, ExceptionCategory::EXCEPTION_CATEGORY_ERROR);
+AERON_DECLARE_SOURCED_EXCEPTION(FormatException, ExceptionCategory::EXCEPTION_CATEGORY_ERROR);
+AERON_DECLARE_SOURCED_EXCEPTION(OutOfBoundsException, ExceptionCategory::EXCEPTION_CATEGORY_ERROR);
+AERON_DECLARE_SOURCED_EXCEPTION(ParseException, ExceptionCategory::EXCEPTION_CATEGORY_ERROR);
+AERON_DECLARE_SOURCED_EXCEPTION(ElementNotFound, ExceptionCategory::EXCEPTION_CATEGORY_ERROR);
+AERON_DECLARE_SOURCED_EXCEPTION(IllegalArgumentException, ExceptionCategory::EXCEPTION_CATEGORY_ERROR);
+AERON_DECLARE_SOURCED_EXCEPTION(IllegalStateException, ExceptionCategory::EXCEPTION_CATEGORY_ERROR);
+AERON_DECLARE_SOURCED_EXCEPTION(DriverTimeoutException, ExceptionCategory::EXCEPTION_CATEGORY_FATAL);
+AERON_DECLARE_SOURCED_EXCEPTION(ConductorServiceTimeoutException, ExceptionCategory::EXCEPTION_CATEGORY_FATAL);
+AERON_DECLARE_SOURCED_EXCEPTION(ClientTimeoutException, ExceptionCategory::EXCEPTION_CATEGORY_FATAL);
+AERON_DECLARE_SOURCED_EXCEPTION(AeronException, ExceptionCategory::EXCEPTION_CATEGORY_ERROR);
+AERON_DECLARE_SOURCED_EXCEPTION(UnknownSubscriptionException, ExceptionCategory::EXCEPTION_CATEGORY_ERROR);
+AERON_DECLARE_SOURCED_EXCEPTION(ReentrantException, ExceptionCategory::EXCEPTION_CATEGORY_ERROR);
 
 class RegistrationException : public SourcedException
 {
@@ -135,8 +159,7 @@ public:
         const std::string& what,
         const std::string& function,
         const std::string& file,
-        const int line)
-        :
+        const int line) :
         AeronException(what, function, file, line)
     {
     }

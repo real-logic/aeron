@@ -334,10 +334,10 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
     }
 
-    public void onSessionClose(final long clusterSessionId)
+    public void onSessionClose(final long leadershipTermId, final long clusterSessionId)
     {
         final ClusterSession session = sessionByIdMap.get(clusterSessionId);
-        if (null != session && Cluster.Role.LEADER == role)
+        if (leadershipTermId == this.leadershipTermId && null != session && Cluster.Role.LEADER == role)
         {
             session.close(CloseReason.CLIENT_ACTION);
 

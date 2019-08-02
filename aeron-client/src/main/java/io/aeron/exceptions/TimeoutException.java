@@ -20,6 +20,10 @@ package io.aeron.exceptions;
  */
 public class TimeoutException extends AeronException
 {
+    public TimeoutException()
+    {
+    }
+
     public TimeoutException(final Category category)
     {
         super(category);

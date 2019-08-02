@@ -4,24 +4,24 @@
                    id="110"
                    version="0"
                    semanticVersion="5.2"
-                   description="Codecs for Mark file of an Aeron Cluster"
+                   description="Codecs for Mark file of an Aeron Cluster."
                    byteOrder="littleEndian">
     <types>
-        <composite name="messageHeader" description="Message identifiers and length of message root">
+        <composite name="messageHeader" description="Message identifiers and length of message root.">
             <type name="blockLength" primitiveType="uint16"/>
             <type name="templateId"  primitiveType="uint16"/>
             <type name="schemaId"    primitiveType="uint16"/>
             <type name="version"     primitiveType="uint16"/>
         </composite>
-        <composite name="groupSizeEncoding" description="Repeating group dimensions">
+        <composite name="groupSizeEncoding" description="Repeating group dimensions.">
             <type name="blockLength" primitiveType="uint16"/>
             <type name="numInGroup"  primitiveType="uint16"/>
         </composite>
-        <composite name="varAsciiEncoding">
+        <composite name="varAsciiEncoding" description="Variable length ASCII string header.">
             <type name="length"      primitiveType="uint32" maxValue="1073741824"/>
             <type name="varData"     primitiveType="uint8" length="0" characterEncoding="US-ASCII"/>
         </composite>
-        <type name="time_t" primitiveType="int64" description="Epoch time in milliseconds since 1 Jan 1970 UTC"/>
+        <type name="time_t" primitiveType="int64" description="Epoch time in milliseconds since 1 Jan 1970 UTC."/>
         <enum name="ClusterComponentType" encodingType="int32" description="Type of Cluster Component">
             <validValue name="NULL">0</validValue>
             <validValue name="CONSENSUS_MODULE">1</validValue>
@@ -30,12 +30,10 @@
         </enum>
     </types>
 
-    <!-- Cluster Component Mark File -->
-
     <sbe:message name="MarkFileHeader"
                  id="200"
                  blockLength="128"
-                 description="Header of Consensus Module and Container Mark file">
+                 description="Header of Consensus Module and Container Mark file.">
         <field name="version"                 id="1"  type="int32"/>
         <field name="componentType"           id="2"  type="ClusterComponentType"/>
         <field name="activityTimestamp"       id="3"  type="time_t"/>

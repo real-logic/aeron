@@ -4,32 +4,30 @@
                    id="100"
                    version="0"
                    semanticVersion="5.2"
-                   description="Codecs for Mark file of Aeron Archive"
+                   description="Codecs for Mark file of Aeron Archive."
                    byteOrder="littleEndian">
     <types>
-        <composite name="messageHeader" description="Message identifiers and length of message root">
+        <composite name="messageHeader" description="Message identifiers and length of message root.">
             <type name="blockLength" primitiveType="uint16"/>
             <type name="templateId"  primitiveType="uint16"/>
             <type name="schemaId"    primitiveType="uint16"/>
             <type name="version"     primitiveType="uint16"/>
         </composite>
-        <composite name="groupSizeEncoding" description="Repeating group dimensions">
+        <composite name="groupSizeEncoding" description="Repeating group dimensions.">
             <type name="blockLength" primitiveType="uint16"/>
             <type name="numInGroup"  primitiveType="uint16"/>
         </composite>
-        <composite name="varAsciiEncoding">
+        <composite name="varAsciiEncoding" description="Variable length ASCII string header.">
             <type name="length"      primitiveType="uint32" maxValue="1073741824"/>
             <type name="varData"     primitiveType="uint8" length="0" characterEncoding="US-ASCII"/>
         </composite>
-        <type name="time_t" primitiveType="int64" description="Epoch time in milliseconds since 1 Jan 1970 UTC"/>
+        <type name="time_t" primitiveType="int64" description="Epoch time in milliseconds since 1 Jan 1970 UTC."/>
     </types>
-
-    <!-- Mark file -->
 
     <sbe:message name="MarkFileHeader"
                  id="200"
                  blockLength="128"
-                 description="Mark file header">
+                 description="Mark file header.">
         <field name="version"              id="1"  type="int32"/>
         <field name="activityTimestamp"    id="2"  type="time_t" offset="8"/>
         <field name="startTimestamp"       id="3"  type="time_t"/>

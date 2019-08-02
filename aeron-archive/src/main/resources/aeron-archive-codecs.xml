@@ -4,38 +4,38 @@
                    id="101"
                    version="2"
                    semanticVersion="5.2"
-                   description="Message Codecs for communicating with an Aeron Archive"
+                   description="Message Codecs for communicating with an Aeron Archive."
                    byteOrder="littleEndian">
     <types>
-        <composite name="messageHeader" description="Message identifiers and length of message root">
+        <composite name="messageHeader" description="Message identifiers and length of message root.">
             <type name="blockLength" primitiveType="uint16"/>
             <type name="templateId"  primitiveType="uint16"/>
             <type name="schemaId"    primitiveType="uint16"/>
             <type name="version"     primitiveType="uint16"/>
         </composite>
-        <composite name="groupSizeEncoding" description="Repeating group dimensions">
+        <composite name="groupSizeEncoding" description="Repeating group dimensions.">
             <type name="blockLength" primitiveType="uint16"/>
             <type name="numInGroup"  primitiveType="uint16"/>
         </composite>
-        <composite name="varAsciiEncoding">
+        <composite name="varAsciiEncoding" description="Variable length ASCII string header.">
             <type name="length"      primitiveType="uint32" maxValue="1073741824"/>
             <type name="varData"     primitiveType="uint8" length="0" characterEncoding="US-ASCII"/>
         </composite>
-        <enum name="ControlResponseCode" encodingType="int32">
+        <enum name="ControlResponseCode" encodingType="int32" description="Control protocol response code.">
             <validValue name="OK">0</validValue>
             <validValue name="ERROR">1</validValue>
             <validValue name="RECORDING_UNKNOWN">2</validValue>
             <validValue name="SUBSCRIPTION_UNKNOWN">3</validValue>
         </enum>
-        <enum name="SourceLocation" encodingType="uint8">
+        <enum name="SourceLocation" encodingType="uint8" description="Source location for recorded stream.">
             <validValue name="LOCAL">0</validValue>
             <validValue name="REMOTE">1</validValue>
         </enum>
-        <enum name="BooleanType" encodingType="uint8">
+        <enum name="BooleanType" encodingType="uint8" description="Language independent boolean type.">
             <validValue name="FALSE">0</validValue>
             <validValue name="TRUE">1</validValue>
         </enum>
-        <type name="time_t" primitiveType="int64" description="Epoch time in milliseconds since 1 Jan 1970 UTC"/>
+        <type name="time_t" primitiveType="int64" description="Epoch time in milliseconds since 1 Jan 1970 UTC."/>
         <type name="version_t" primitiveType="int32" presence="optional" nullValue="0" minValue="2" maxValue="16777215"
               sinceVersion="2" description="Protocol suite version"/>
     </types>
@@ -91,22 +91,22 @@
 
     <sbe:message name="ControlResponse"
                  id="1"
-                 description="Generic response to a control request. Error message will be empty if code is OK">
+                 description="Generic response to a control request. Error message will be empty if code is OK.">
         <field name="controlSessionId"     id="1" type="int64"
-               description="Session id for a multiplexed session over a shared connection, i.e. same Image"/>
+               description="Session id for a multiplexed session over a shared connection, i.e. same Image."/>
         <field name="correlationId"        id="2" type="int64"
                description="Request correlation id with which this response is associated"/>
         <field name="relevantId"           id="3" type="int64"
-               description="Relevant identity of an object, e.g. recordingId if RECORDING_UNKNOWN, or error code"/>
+               description="Relevant identity of an object, e.g. recordingId if RECORDING_UNKNOWN, or error code."/>
         <field name="code"                 id="4" type="ControlResponseCode"
-               description="code type of the response"/>
+               description="Code type of the response."/>
         <data  name="errorMessage"         id="5" type="varAsciiEncoding"
-               description="Detailed error message which is provided when code is ERROR"/>
+               description="Detailed error message which is provided when code is ERROR."/>
     </sbe:message>
 
     <sbe:message name="ConnectRequest"
                  id="2"
-                 description="Request a connection to an archive and provide response details for the control session">
+                 description="Request a connection to an archive and provide response details for the control session.">
         <field name="correlationId"        id="1" type="int64"/>
         <field name="responseStreamId"     id="2" type="int32"/>
         <field name="version"              id="3" type="version_t" presence="optional" sinceVersion="2"/>
@@ -115,13 +115,13 @@
 
     <sbe:message name="CloseSessionRequest"
                  id="3"
-                 description="Close an existing control session">
+                 description="Close an existing control session.">
         <field name="controlSessionId"     id="1" type="int64"/>
     </sbe:message>
 
     <sbe:message name="StartRecordingRequest"
                  id="4"
-                 description="Request a channel:stream be recorded">
+                 description="Request a channel:stream be recorded.">
         <field name="controlSessionId"     id="1" type="int64"/>
         <field name="correlationId"        id="2" type="int64"/>
         <field name="streamId"             id="3" type="int32"/>
@@ -131,7 +131,7 @@
 
     <sbe:message name="StopRecordingRequest"
                  id="5"
-                 description="Request a channel:stream stop recording">
+                 description="Request a channel:stream stop recording.">
         <field name="controlSessionId"     id="1" type="int64"/>
         <field name="correlationId"        id="2" type="int64"/>
         <field name="streamId"             id="3" type="int32"/>
@@ -140,7 +140,7 @@
 
     <sbe:message name="ReplayRequest"
                  id="6"
-                 description="Replay recording range request">
+                 description="Replay recording range request.">
         <field name="controlSessionId"     id="1" type="int64"/>
         <field name="correlationId"        id="2" type="int64"/>
         <field name="recordingId"          id="3" type="int64"/>
@@ -152,7 +152,7 @@
 
     <sbe:message name="StopReplayRequest"
                  id="7"
-                 description="Stop Replay request">
+                 description="Stop active Replay request.">
         <field name="controlSessionId"     id="1" type="int64"/>
         <field name="correlationId"        id="2" type="int64"/>
         <field name="replaySessionId"      id="3" type="int64"/>
@@ -160,7 +160,7 @@
 
     <sbe:message name="ListRecordingsRequest"
                  id="8"
-                 description="Request a range of recording descriptors">
+                 description="Request a range of recording descriptors.">
         <field name="controlSessionId"     id="1" type="int64"/>
         <field name="correlationId"        id="2" type="int64"/>
         <field name="fromRecordingId"      id="3" type="int64"/>
@@ -169,7 +169,7 @@
 
     <sbe:message name="ListRecordingsForUriRequest"
                  id="9"
-                 description="Request a range of recording descriptors">
+                 description="Request a range of recording descriptors.">
         <field name="controlSessionId"     id="1" type="int64"/>
         <field name="correlationId"        id="2" type="int64"/>
         <field name="fromRecordingId"      id="3" type="int64"/>
@@ -180,7 +180,7 @@
 
     <sbe:message name="ListRecordingRequest"
                  id="10"
-                 description="Request a descriptor for a recording id">
+                 description="Request a descriptor for a recording id.">
         <field name="controlSessionId"     id="1" type="int64"/>
         <field name="correlationId"        id="2" type="int64"/>
         <field name="recordingId"          id="3" type="int64"/>
@@ -199,7 +199,7 @@
 
     <sbe:message name="RecordingPositionRequest"
                  id="12"
-                 description="Request the recorded position of an active recording">
+                 description="Request the recorded position of an active recording.">
         <field name="controlSessionId"     id="1" type="int64"/>
         <field name="correlationId"        id="2" type="int64"/>
         <field name="recordingId"          id="3" type="int64"/>
@@ -207,7 +207,7 @@
 
     <sbe:message name="TruncateRecordingRequest"
                  id="13"
-                 description="Request the truncation of stopped recording">
+                 description="Request the truncation of stopped recording.">
         <field name="controlSessionId"     id="1" type="int64"/>
         <field name="correlationId"        id="2" type="int64"/>
         <field name="recordingId"          id="3" type="int64"/>
@@ -216,7 +216,7 @@
 
     <sbe:message name="StopRecordingSubscriptionRequest"
                  id="14"
-                 description="Request a subscription stop recording">
+                 description="Request a subscription stop recording.">
         <field name="controlSessionId"     id="1" type="int64"/>
         <field name="correlationId"        id="2" type="int64"/>
         <field name="subscriptionId"       id="3" type="int64"/>
@@ -224,7 +224,7 @@
 
     <sbe:message name="StopPositionRequest"
                  id="15"
-                 description="Request the stop position of a recording">
+                 description="Request the stop position of a recording.">
         <field name="controlSessionId"     id="1" type="int64"/>
         <field name="correlationId"        id="2" type="int64"/>
         <field name="recordingId"          id="3" type="int64"/>
@@ -232,7 +232,7 @@
 
     <sbe:message name="FindLastMatchingRecordingRequest"
                  id="16"
-                 description="Find the last recording id after minRecordingId which matches criteria">
+                 description="Find the last recording id after minRecordingId which matches criteria.">
         <field name="controlSessionId"     id="1" type="int64"/>
         <field name="correlationId"        id="2" type="int64"/>
         <field name="minRecordingId"       id="3" type="int64"/>
@@ -243,7 +243,7 @@
 
     <sbe:message name="ListRecordingSubscriptionsRequest"
                  id="17"
-                 description="Request a range of active recording subscriptions which match a criteria">
+                 description="Request a range of active recording subscriptions which match a criteria.">
         <field name="controlSessionId"     id="1" type="int64"/>
         <field name="correlationId"        id="2" type="int64"/>
         <field name="pseudoIndex"          id="3" type="int32"/>
@@ -255,7 +255,7 @@
 
     <sbe:message name="BoundedReplayRequest"
                  id="18"
-                 description="Replay recording range request bounded by a position counter">
+                 description="Replay recording range request bounded by a position counter.">
         <field name="controlSessionId"     id="1" type="int64"/>
         <field name="correlationId"        id="2" type="int64"/>
         <field name="recordingId"          id="3" type="int64"/>
@@ -268,7 +268,7 @@
 
     <sbe:message name="StopAllReplaysRequest"
                  id="19"
-                 description="Replay recording range request">
+                 description="Replay recording range request.">
         <field name="controlSessionId"     id="1" type="int64"/>
         <field name="correlationId"        id="2" type="int64"/>
         <field name="recordingId"          id="3" type="int64"/>
@@ -278,14 +278,14 @@
 
     <sbe:message name="CatalogHeader"
                  id="20"
-                 description="Used as first element in Catalog to set the version and length of entries">
+                 description="Used as first element in Catalog to set the version and length of entries.">
         <field name="version"              id="1"  type="int32"/>
         <field name="entryLength"          id="2"  type="int32"/>
     </sbe:message>
 
     <sbe:message name="RecordingDescriptorHeader"
                  id="21"
-                 description="Used in the catalog to describe the recording descriptor entry which follows">
+                 description="Used in the catalog to describe the recording descriptor entry which follows.">
         <field name="length"               id="1" type="int32"/>
         <field name="valid"                id="2" type="int8"/>
         <field name="reserved"             id="3" type="int8" offset="31"/>
@@ -295,7 +295,7 @@
 
     <sbe:message name="RecordingDescriptor"
                  id="22"
-                 description="Describes a recording in the catalog">
+                 description="Describes a recording in the catalog.">
         <field name="controlSessionId"     id="1"  type="int64"/>
         <field name="correlationId"        id="2"  type="int64"/>
         <field name="recordingId"          id="3"  type="int64"/>
@@ -316,7 +316,7 @@
 
     <sbe:message name="RecordingSubscriptionDescriptor"
                  id="23"
-                 description="Describes a recording subscription that has been started and not yet stopped">
+                 description="Describes a recording subscription that has been started and not yet stopped.">
         <field name="controlSessionId"     id="1" type="int64"/>
         <field name="correlationId"        id="2" type="int64"/>
         <field name="subscriptionId"       id="3" type="int64"/>
@@ -328,7 +328,7 @@
 
     <sbe:message name="RecordingStarted"
                  id="101"
-                 description="Describes a new image recording as a notification">
+                 description="Describes a new image recording as a notification.">
         <field name="recordingId"          id="1" type="int64"/>
         <field name="startPosition"        id="2" type="int64"/>
         <field name="sessionId"            id="3" type="int32"/>
@@ -339,7 +339,7 @@
 
     <sbe:message name="RecordingProgress"
                  id="102"
-                 description="Recording progress notification for an image">
+                 description="Recording progress notification for an Image.">
         <field name="recordingId"          id="1" type="int64"/>
         <field name="startPosition"        id="2" type="int64"/>
         <field name="position"             id="3" type="int64"/>
@@ -347,7 +347,7 @@
 
     <sbe:message name="RecordingStopped"
                  id="103"
-                 description="Recording termination notification">
+                 description="Recording termination notification.">
         <field name="recordingId"          id="1" type="int64"/>
         <field name="startPosition"        id="2" type="int64"/>
         <field name="stopPosition"         id="3" type="int64"/>

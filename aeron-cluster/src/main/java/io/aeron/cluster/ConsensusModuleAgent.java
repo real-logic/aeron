@@ -860,6 +860,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 timerService.scheduleTimer(correlationId, timerService.currentTickTime());
             }
         }
+        uncommittedTimers.clear();
         pendingServiceMessages.consume(followerServiceSessionMessageSweeper, Integer.MAX_VALUE);
 
         if (uncommittedServiceMessages > 0)

@@ -57,7 +57,7 @@ public class MemoryOrderingTest
         driver.context().deleteAeronDirectory();
     }
 
-    @Test(timeout = 10_000)
+    @Test(timeout = 20_000)
     public void shouldReceiveMessagesInOrderWithFirstLongWordIntact() throws Exception
     {
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
@@ -108,7 +108,7 @@ public class MemoryOrderingTest
         }
     }
 
-    @Test(timeout = 10_000)
+    @Test(timeout = 20_000)
     public void shouldReceiveMessagesInOrderWithFirstLongWordIntactFromExclusivePublication() throws Exception
     {
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));

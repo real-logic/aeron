@@ -25,7 +25,6 @@ import org.agrona.concurrent.status.CountersReader;
 public class TestBackupNode
 {
     private final ClusterBackupMediaDriver clusterBackupMediaDriver;
-    private final Context context;
     private boolean isClosed = false;
 
     TestBackupNode(final Context context)
@@ -34,8 +33,6 @@ public class TestBackupNode
             context.mediaDriverContext,
             context.archiveContext,
             context.clusterBackupContext);
-
-        this.context = context;
     }
 
     public void close()

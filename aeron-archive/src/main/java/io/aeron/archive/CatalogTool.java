@@ -110,7 +110,7 @@ public class CatalogTool
         {
             try (Catalog catalog = openCatalogReadOnly())
             {
-                catalog.forEntry(Long.valueOf(args[2]), (he, hd, e, d) -> System.out.println(d));
+                catalog.forEntry(Long.parseLong(args[2]), (he, hd, e, d) -> System.out.println(d));
             }
         }
         else if (args.length == 2 && args[1].equals("verify"))
@@ -124,7 +124,7 @@ public class CatalogTool
         {
             try (Catalog catalog = openCatalog())
             {
-                catalog.forEntry(Long.valueOf(args[2]), CatalogTool::verify);
+                catalog.forEntry(Long.parseLong(args[2]), CatalogTool::verify);
             }
         }
         else if (args.length == 2 && args[1].equals("count-entries"))

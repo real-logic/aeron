@@ -6,7 +6,6 @@ import org.mockito.InOrder;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import static java.lang.Integer.valueOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
@@ -187,7 +186,7 @@ public class TermScannerTest
         final int paddingFrameLength = align(HEADER_LENGTH * 3, FRAME_ALIGNMENT);
         final int frameOffset = TERM_BUFFER_CAPACITY - (alignedFrameLength + paddingFrameLength);
 
-        when(valueOf(termBuffer.getIntVolatile(frameOffset))).thenReturn(alignedFrameLength);
+        when(termBuffer.getIntVolatile(frameOffset)).thenReturn(alignedFrameLength);
         when(termBuffer.getShort(typeOffset(frameOffset))).thenReturn((short)HDR_TYPE_DATA);
         when(termBuffer.getIntVolatile(frameOffset + alignedFrameLength)).thenReturn(paddingFrameLength);
         when(termBuffer.getShort(typeOffset(frameOffset + alignedFrameLength))).thenReturn((short)PADDING_FRAME_TYPE);
@@ -204,7 +203,7 @@ public class TermScannerTest
         final int frameOffset = TERM_BUFFER_CAPACITY - align(HEADER_LENGTH * 3, FRAME_ALIGNMENT);
         final int mtu = alignedFrameLength + 8;
 
-        when(valueOf(termBuffer.getIntVolatile(frameOffset))).thenReturn(alignedFrameLength);
+        when(termBuffer.getIntVolatile(frameOffset)).thenReturn(alignedFrameLength);
         when(termBuffer.getShort(typeOffset(frameOffset))).thenReturn((short)HDR_TYPE_DATA);
         when(termBuffer.getIntVolatile(frameOffset + alignedFrameLength)).thenReturn(alignedFrameLength * 2);
         when(termBuffer.getShort(typeOffset(frameOffset + alignedFrameLength))).thenReturn((short)PADDING_FRAME_TYPE);

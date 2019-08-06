@@ -272,23 +272,21 @@ public class SamplesUtil
     {
         IdleStrategy idleStrategy = null;
 
-        switch (strategyName)
+        if (DEFAULT_IDLE_STRATEGY.equals(strategyName))
         {
-            case DEFAULT_IDLE_STRATEGY:
-                idleStrategy = new BackoffIdleStrategy(
-                    IDLE_MAX_SPINS, IDLE_MAX_YIELDS, IDLE_MIN_PARK_NS, IDLE_MAX_PARK_NS);
-                break;
-
-            default:
-                try
-                {
-                    idleStrategy = (IdleStrategy)Class.forName(strategyName).getConstructor().newInstance();
-                }
-                catch (final Exception ex)
-                {
-                    LangUtil.rethrowUnchecked(ex);
-                }
-                break;
+            idleStrategy = new BackoffIdleStrategy(
+                IDLE_MAX_SPINS, IDLE_MAX_YIELDS, IDLE_MIN_PARK_NS, IDLE_MAX_PARK_NS);
+        }
+        else
+        {
+            try
+            {
+                idleStrategy = (IdleStrategy)Class.forName(strategyName).getConstructor().newInstance();
+            }
+            catch (final Exception ex)
+            {
+                LangUtil.rethrowUnchecked(ex);
+            }
         }
 
         return idleStrategy;

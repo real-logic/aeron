@@ -174,19 +174,28 @@ public class CatalogTest
 
         try (Catalog catalog = new Catalog(archiveDir, clock))
         {
-            catalog.forEntry(newRecordingId, (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
-                assertThat(descriptorDecoder.stopTimestamp(), is(NULL_TIMESTAMP)));
+            catalog.forEntry(
+                newRecordingId,
+                (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                {
+                    assertThat(descriptorDecoder.stopTimestamp(), is(NULL_TIMESTAMP));
+                });
         }
 
         currentTimeMs = 42L;
 
         try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock))
         {
-            catalog.forEntry(newRecordingId, (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
-                assertThat(descriptorDecoder.stopTimestamp(), is(42L)));
+            catalog.forEntry(
+                newRecordingId,
+                (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                {
+                    assertThat(descriptorDecoder.stopTimestamp(), is(42L));
+                });
         }
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     @Test
     public void shouldFixTimestampAndPositionAfterFailureSamePage() throws Exception
     {
@@ -214,7 +223,8 @@ public class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir, clock))
         {
             catalog.forEntry(
-                newRecordingId, (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                newRecordingId,
+                (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 {
                     assertThat(descriptorDecoder.stopTimestamp(), is(NULL_TIMESTAMP));
                     assertThat(descriptorDecoder.stopPosition(), is(NULL_POSITION));
@@ -227,7 +237,8 @@ public class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock))
         {
             catalog.forEntry(
-                newRecordingId, (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                newRecordingId,
+                (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 {
                     assertThat(descriptorDecoder.stopTimestamp(), is(42L));
                     assertThat(descriptorDecoder.stopPosition(), is(SEGMENT_LENGTH * 3 + 1024L + 128L));
@@ -246,7 +257,8 @@ public class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir, clock))
         {
             catalog.forEntry(
-                newRecordingId, (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                newRecordingId,
+                (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 {
                     assertThat(descriptorDecoder.stopTimestamp(), is(NULL_TIMESTAMP));
                     assertThat(descriptorDecoder.stopPosition(), is(NULL_POSITION));
@@ -259,7 +271,8 @@ public class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock))
         {
             assertTrue(catalog.forEntry(
-                newRecordingId, (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                newRecordingId,
+                (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 {
                     assertThat(descriptorDecoder.stopTimestamp(), is(42L));
                     assertThat(descriptorDecoder.stopPosition(), is((long)PAGE_SIZE - HEADER_LENGTH));
@@ -315,7 +328,8 @@ public class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir, clock))
         {
             catalog.forEntry(
-                newRecordingId, (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                newRecordingId,
+                (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 {
                     assertThat(descriptorDecoder.stopTimestamp(), is(NULL_TIMESTAMP));
                 }
@@ -325,7 +339,8 @@ public class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock))
         {
             catalog.forEntry(
-                newRecordingId, (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                newRecordingId,
+                (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 {
                     descriptorEncoder.stopPosition(NULL_POSITION);
                 }
@@ -337,7 +352,8 @@ public class CatalogTest
         try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock))
         {
             catalog.forEntry(
-                newRecordingId, (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                newRecordingId,
+                (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 {
                     assertThat(descriptorDecoder.stopTimestamp(), is(42L));
                     assertThat(descriptorDecoder.stopPosition(), is(expectedLastFrame));

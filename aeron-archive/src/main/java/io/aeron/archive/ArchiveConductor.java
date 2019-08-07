@@ -79,7 +79,7 @@ abstract class ArchiveConductor
     private final UnsafeBuffer replayBuffer = new UnsafeBuffer(
         allocateDirectAligned(Archive.Configuration.MAX_BLOCK_LENGTH, 128));
 
-    private final Runnable closeHandler = this::aeronCloseHandler;
+    private final Runnable aeronCloseHandler = this::abort;
     private final Aeron aeron;
     private final AgentInvoker aeronAgentInvoker;
     private final AgentInvoker driverAgentInvoker;
@@ -122,7 +122,7 @@ abstract class ArchiveConductor
         connectTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.connectTimeoutNs());
 
         aeron.addUnavailableCounterHandler(this);
-        aeron.addCloseHandler(closeHandler);
+        aeron.addCloseHandler(aeronCloseHandler);
 
         final ChannelUri controlChannelUri = ChannelUri.parse(ctx.controlChannel());
         controlChannelUri.put(CommonContext.SPARSE_PARAM_NAME, Boolean.toString(ctx.controlTermBufferSparse()));
@@ -193,15 +193,31 @@ abstract class ArchiveConductor
             CloseHelper.close(controlSubscription);
             CloseHelper.close(recordingEventsProxy);
             aeron.removeUnavailableCounterHandler(this);
-            aeron.removeCloseHandler(closeHandler);
+            aeron.removeCloseHandler(aeronCloseHandler);
         }
 
         ctx.close();
     }
 
+    protected void abort()
+    {
+        isAbort = true;
+        if (ctx.threadingMode() == ArchiveThreadingMode.DEDICATED)
+        {
+            replayer.abort();
+            recorder.abort();
+        }
+        super.abort();
+    }
+
     protected int preWork()
     {
         int workCount = 0;
+
+        if (isAbort)
+        {
+            throw new AgentTerminationException("unexpected Aeron close");
+        }
 
         final long nowMs = epochClock.time();
         if (cachedEpochClock.time() != nowMs)
@@ -224,11 +240,11 @@ abstract class ArchiveConductor
         if (null != aeronAgentInvoker)
         {
             workCount += aeronAgentInvoker.invoke();
-        }
 
-        if (isAbort)
-        {
-            throw new AgentTerminationException("unexpected Aeron close");
+            if (isAbort)
+            {
+                throw new AgentTerminationException("unexpected Aeron close");
+            }
         }
 
         return workCount;
@@ -1237,15 +1253,5 @@ abstract class ArchiveConductor
         }
 
         return counter;
-    }
-
-    private void aeronCloseHandler()
-    {
-        isAbort = true;
-        if (ctx.threadingMode() == ArchiveThreadingMode.DEDICATED)
-        {
-            replayer.abort();
-            recorder.abort();
-        }
     }
 }

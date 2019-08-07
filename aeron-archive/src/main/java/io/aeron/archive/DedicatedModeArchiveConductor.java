@@ -23,6 +23,7 @@ import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import org.agrona.concurrent.status.AtomicCounter;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 
 final class DedicatedModeArchiveConductor extends ArchiveConductor
@@ -52,12 +53,14 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
 
     protected SessionWorker<RecordingSession> newRecorder()
     {
-        return new DedicatedModeRecorder(errorHandler, ctx.errorCounter(), closeQueue, ctx.maxConcurrentRecordings());
+        return new DedicatedModeRecorder(
+            errorHandler, ctx.errorCounter(), closeQueue, ctx.maxConcurrentRecordings(), ctx.abortLatch());
     }
 
     protected SessionWorker<ReplaySession> newReplayer()
     {
-        return new DedicatedModeReplayer(errorHandler, ctx.errorCounter(), closeQueue, ctx.maxConcurrentReplays());
+        return new DedicatedModeReplayer(
+            errorHandler, ctx.errorCounter(), closeQueue, ctx.maxConcurrentReplays(), ctx.abortLatch());
     }
 
     protected int preWork()
@@ -119,19 +122,22 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         private final OneToOneConcurrentArrayQueue<RecordingSession> sessionsQueue;
         private final ManyToOneConcurrentArrayQueue<Session> closeQueue;
         private final AtomicCounter errorCounter;
+        private final CountDownLatch countDownLatch;
         private volatile boolean isAbort;
 
         DedicatedModeRecorder(
             final ErrorHandler errorHandler,
             final AtomicCounter errorCounter,
             final ManyToOneConcurrentArrayQueue<Session> closeQueue,
-            final int maxConcurrentSessions)
+            final int maxConcurrentSessions,
+            final CountDownLatch countDownLatch)
         {
             super("archive-recorder", errorHandler);
 
             this.closeQueue = closeQueue;
             this.errorCounter = errorCounter;
             this.sessionsQueue = new OneToOneConcurrentArrayQueue<>(maxConcurrentSessions);
+            this.countDownLatch = countDownLatch;
         }
 
         protected void abort()
@@ -174,6 +180,15 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
             }
         }
 
+        protected void postSessionsClose()
+        {
+            super.postSessionsClose();
+            if (isAbort)
+            {
+                countDownLatch.countDown();
+            }
+        }
+
         private void send(final RecordingSession session)
         {
             while (!sessionsQueue.offer(session))
@@ -189,19 +204,22 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         private final OneToOneConcurrentArrayQueue<ReplaySession> sessionsQueue;
         private final ManyToOneConcurrentArrayQueue<Session> closeQueue;
         private final AtomicCounter errorCounter;
+        private final CountDownLatch countDownLatch;
         private volatile boolean isAbort;
 
         DedicatedModeReplayer(
             final ErrorHandler errorHandler,
             final AtomicCounter errorCounter,
             final ManyToOneConcurrentArrayQueue<Session> closeQueue,
-            final int maxConcurrentSessions)
+            final int maxConcurrentSessions,
+            final CountDownLatch countDownLatch)
         {
             super("archive-replayer", errorHandler);
 
             this.closeQueue = closeQueue;
             this.errorCounter = errorCounter;
             this.sessionsQueue = new OneToOneConcurrentArrayQueue<>(maxConcurrentSessions);
+            this.countDownLatch = countDownLatch;
         }
 
         protected void abort()
@@ -241,6 +259,15 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
             {
                 errorCounter.increment();
                 Thread.yield();
+            }
+        }
+
+        protected void postSessionsClose()
+        {
+            super.postSessionsClose();
+            if (isAbort)
+            {
+                countDownLatch.countDown();
             }
         }
 

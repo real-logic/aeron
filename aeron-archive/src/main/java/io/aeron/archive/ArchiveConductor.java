@@ -182,8 +182,17 @@ abstract class ArchiveConductor
 
     protected void postSessionsClose()
     {
+        aeron.removeCloseHandler(aeronCloseHandler);
+
+        if (isAbort && null == aeronAgentInvoker)
+        {
+            ctx.abortLatch().countDown();
+        }
+
         if (!ctx.ownsAeronClient())
         {
+            aeron.removeUnavailableCounterHandler(this);
+
             for (final Subscription subscription : recordingSubscriptionMap.values())
             {
                 subscription.close();
@@ -192,8 +201,6 @@ abstract class ArchiveConductor
             CloseHelper.close(localControlSubscription);
             CloseHelper.close(controlSubscription);
             CloseHelper.close(recordingEventsProxy);
-            aeron.removeUnavailableCounterHandler(this);
-            aeron.removeCloseHandler(aeronCloseHandler);
         }
 
         ctx.close();
@@ -202,12 +209,27 @@ abstract class ArchiveConductor
     protected void abort()
     {
         isAbort = true;
+        final long latchCount = ctx.abortLatch().getCount();
+
         if (ctx.threadingMode() == ArchiveThreadingMode.DEDICATED)
         {
             replayer.abort();
             recorder.abort();
         }
+
         super.abort();
+
+        if (latchCount > 0)
+        {
+            try
+            {
+                ctx.abortLatch().await(AgentRunner.RETRY_CLOSE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            }
+            catch (final InterruptedException ignore)
+            {
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 
     protected int preWork()

@@ -34,11 +34,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Supplier;
 
+import static io.aeron.archive.ArchiveThreadingMode.DEDICATED;
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
@@ -60,7 +62,7 @@ public class Archive implements AutoCloseable
         this.ctx = ctx;
         ctx.conclude();
 
-        final ArchiveConductor conductor = ArchiveThreadingMode.DEDICATED == ctx.threadingMode() ?
+        final ArchiveConductor conductor = DEDICATED == ctx.threadingMode() ?
             new DedicatedModeArchiveConductor(ctx) :
             new SharedModeArchiveConductor(ctx);
 
@@ -261,7 +263,7 @@ public class Archive implements AutoCloseable
         public static ArchiveThreadingMode threadingMode()
         {
             return ArchiveThreadingMode.valueOf(System.getProperty(
-                THREADING_MODE_PROP_NAME, ArchiveThreadingMode.DEDICATED.name()));
+                THREADING_MODE_PROP_NAME, DEDICATED.name()));
         }
 
         /**
@@ -388,6 +390,7 @@ public class Archive implements AutoCloseable
 
         private ArchiveThreadingMode threadingMode = Configuration.threadingMode();
         private ThreadFactory threadFactory;
+        private CountDownLatch abortLatch;
 
         private Supplier<IdleStrategy> idleStrategySupplier;
         private EpochClock epochClock;
@@ -511,6 +514,10 @@ public class Archive implements AutoCloseable
                 catalog = new Catalog(
                     archiveDir, archiveDirChannel, catalogFileSyncLevel, maxCatalogEntries, epochClock);
             }
+
+            int expectedCount = DEDICATED == threadingMode ? 2 : 0;
+            expectedCount += aeron.conductorAgentInvoker() == null ? 1 : 0;
+            abortLatch = new CountDownLatch(expectedCount);
         }
 
         /**
@@ -1319,6 +1326,11 @@ public class Archive implements AutoCloseable
         public long maxCatalogEntries()
         {
             return maxCatalogEntries;
+        }
+
+        CountDownLatch abortLatch()
+        {
+            return abortLatch;
         }
 
         /**

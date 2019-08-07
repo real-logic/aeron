@@ -79,6 +79,7 @@ abstract class ArchiveConductor
     private final UnsafeBuffer replayBuffer = new UnsafeBuffer(
         allocateDirectAligned(Archive.Configuration.MAX_BLOCK_LENGTH, 128));
 
+    private final Runnable closeHandler = this::aeronCloseHandler;
     private final Aeron aeron;
     private final AgentInvoker aeronAgentInvoker;
     private final AgentInvoker driverAgentInvoker;
@@ -96,6 +97,7 @@ abstract class ArchiveConductor
     private final int maxConcurrentRecordings;
     private final int maxConcurrentReplays;
     private int replayId = 1;
+    private volatile boolean isAbort;
 
     protected final Archive.Context ctx;
     protected SessionWorker<ReplaySession> replayer;
@@ -120,6 +122,7 @@ abstract class ArchiveConductor
         connectTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.connectTimeoutNs());
 
         aeron.addUnavailableCounterHandler(this);
+        aeron.addCloseHandler(closeHandler);
 
         final ChannelUri controlChannelUri = ChannelUri.parse(ctx.controlChannel());
         controlChannelUri.put(CommonContext.SPARSE_PARAM_NAME, Boolean.toString(ctx.controlTermBufferSparse()));
@@ -190,6 +193,7 @@ abstract class ArchiveConductor
             CloseHelper.close(controlSubscription);
             CloseHelper.close(recordingEventsProxy);
             aeron.removeUnavailableCounterHandler(this);
+            aeron.removeCloseHandler(closeHandler);
         }
 
         ctx.close();
@@ -215,15 +219,15 @@ abstract class ArchiveConductor
 
     protected final int invokeAeronInvoker()
     {
-        final int workCount = aeronAgentInvoker.invoke();
-        if (aeron.isClosed())
-        {
-            if (ctx.threadingMode() == ArchiveThreadingMode.DEDICATED)
-            {
-                replayer.abort();
-                recorder.abort();
-            }
+        int workCount = 0;
 
+        if (null != aeronAgentInvoker)
+        {
+            workCount += aeronAgentInvoker.invoke();
+        }
+
+        if (isAbort)
+        {
             throw new AgentTerminationException("unexpected Aeron close");
         }
 
@@ -1233,5 +1237,15 @@ abstract class ArchiveConductor
         }
 
         return counter;
+    }
+
+    private void aeronCloseHandler()
+    {
+        isAbort = true;
+        if (ctx.threadingMode() == ArchiveThreadingMode.DEDICATED)
+        {
+            replayer.abort();
+            recorder.abort();
+        }
     }
 }

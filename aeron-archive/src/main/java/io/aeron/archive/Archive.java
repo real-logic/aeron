@@ -453,11 +453,6 @@ public class Archive implements AutoCloseable
                 }
             }
 
-            if (null == aeron.conductorAgentInvoker())
-            {
-                throw new ArchiveException("Aeron client must use conductor agent invoker");
-            }
-
             Objects.requireNonNull(errorCounter, "Error counter must be supplied if aeron client is");
 
             if (null == countedErrorHandler)

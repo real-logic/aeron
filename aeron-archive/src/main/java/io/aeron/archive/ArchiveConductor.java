@@ -100,8 +100,8 @@ abstract class ArchiveConductor
     private volatile boolean isAbort;
 
     protected final Archive.Context ctx;
-    protected SessionWorker<ReplaySession> replayer;
-    protected SessionWorker<RecordingSession> recorder;
+    SessionWorker<ReplaySession> replayer;
+    SessionWorker<RecordingSession> recorder;
 
     private long nextControlSessionId = ThreadLocalRandom.current().nextInt();
 
@@ -182,28 +182,33 @@ abstract class ArchiveConductor
 
     protected void postSessionsClose()
     {
-        aeron.removeCloseHandler(aeronCloseHandler);
-
-        if (isAbort && null == aeronAgentInvoker)
+        if (isAbort)
         {
-            ctx.abortLatch().countDown();
-        }
-
-        if (!ctx.ownsAeronClient())
-        {
-            aeron.removeUnavailableCounterHandler(this);
-
-            for (final Subscription subscription : recordingSubscriptionMap.values())
+            if (null == aeronAgentInvoker)
             {
-                subscription.close();
+                ctx.abortLatch().countDown();
+            }
+        }
+        else
+        {
+            aeron.removeCloseHandler(aeronCloseHandler);
+
+            if (!ctx.ownsAeronClient())
+            {
+                aeron.removeUnavailableCounterHandler(this);
+
+                for (final Subscription subscription : recordingSubscriptionMap.values())
+                {
+                    subscription.close();
+                }
+
+                CloseHelper.close(localControlSubscription);
+                CloseHelper.close(controlSubscription);
+                CloseHelper.close(recordingEventsProxy);
             }
 
-            CloseHelper.close(localControlSubscription);
-            CloseHelper.close(controlSubscription);
-            CloseHelper.close(recordingEventsProxy);
+            ctx.close();
         }
-
-        ctx.close();
     }
 
     protected void abort()
@@ -255,7 +260,7 @@ abstract class ArchiveConductor
         return workCount;
     }
 
-    protected final int invokeAeronInvoker()
+    final int invokeAeronInvoker()
     {
         int workCount = 0;
 
@@ -272,7 +277,7 @@ abstract class ArchiveConductor
         return workCount;
     }
 
-    protected final int invokeDriverConductor()
+    final int invokeDriverConductor()
     {
         return null != driverAgentInvoker ? driverAgentInvoker.invoke() : 0;
     }

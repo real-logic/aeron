@@ -48,6 +48,7 @@ import static io.aeron.CommonContext.SPY_PREFIX;
 import static io.aeron.CommonContext.UDP_MEDIA;
 import static io.aeron.archive.Archive.segmentFileIndex;
 import static io.aeron.archive.Archive.segmentFileName;
+import static io.aeron.archive.ArchiveThreadingMode.DEDICATED;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.ArchiveException.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
@@ -184,7 +185,7 @@ abstract class ArchiveConductor
     {
         if (isAbort)
         {
-            if (null == aeronAgentInvoker)
+            if (null == aeronAgentInvoker || ctx.threadingMode() == DEDICATED)
             {
                 ctx.abortLatch().countDown();
             }
@@ -206,29 +207,21 @@ abstract class ArchiveConductor
                 CloseHelper.close(controlSubscription);
                 CloseHelper.close(recordingEventsProxy);
             }
-
-            ctx.close();
         }
+
+        ctx.close();
     }
 
     protected void abort()
     {
         isAbort = true;
-        final long latchCount = ctx.abortLatch().getCount();
-
-        if (ctx.threadingMode() == ArchiveThreadingMode.DEDICATED)
-        {
-            replayer.abort();
-            recorder.abort();
-        }
-
         super.abort();
 
-        if (latchCount > 0)
+        if (ctx.abortLatch().getCount() > 0)
         {
             try
             {
-                ctx.abortLatch().await(AgentRunner.RETRY_CLOSE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+                ctx.abortLatch().await(AgentRunner.RETRY_CLOSE_TIMEOUT_MS * 2, TimeUnit.MILLISECONDS);
             }
             catch (final InterruptedException ignore)
             {
@@ -884,7 +877,10 @@ abstract class ArchiveConductor
     void closeRecordingSession(final RecordingSession session)
     {
         final long recordingId = session.sessionId();
-        catalog.recordingStopped(recordingId, session.recordedPosition(), epochClock.time());
+        if (!isAbort)
+        {
+            catalog.recordingStopped(recordingId, session.recordedPosition(), epochClock.time());
+        }
         recordingSessionByIdMap.remove(recordingId);
         closeSession(session);
     }

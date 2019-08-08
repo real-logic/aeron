@@ -515,8 +515,7 @@ public class Archive implements AutoCloseable
                     archiveDir, archiveDirChannel, catalogFileSyncLevel, maxCatalogEntries, epochClock);
             }
 
-            int expectedCount = DEDICATED == threadingMode ? 2 : 0;
-            expectedCount += aeron.conductorAgentInvoker() == null ? 1 : 0;
+            final int expectedCount = DEDICATED == threadingMode || aeron.conductorAgentInvoker() == null ? 1 : 0;
             abortLatch = new CountDownLatch(expectedCount);
         }
 

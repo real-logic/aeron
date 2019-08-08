@@ -1339,15 +1339,15 @@ public class Archive implements AutoCloseable
          */
         public void close()
         {
-            if (ownsAeronClient)
-            {
-                CloseHelper.close(aeron);
-            }
-
             CloseHelper.close(catalog);
             CloseHelper.close(markFile);
             CloseHelper.close(archiveDirChannel);
             archiveDirChannel = null;
+
+            if (ownsAeronClient)
+            {
+                CloseHelper.close(aeron);
+            }
         }
     }
 

@@ -2584,11 +2584,14 @@ public class ConsensusModule implements AutoCloseable
          */
         public void close()
         {
+            CloseHelper.close(recordingLog);
+            CloseHelper.close(markFile);
+
             if (ownsAeronClient)
             {
                 CloseHelper.close(aeron);
             }
-            else
+            else if (!aeron.isClosed())
             {
                 CloseHelper.close(moduleState);
                 CloseHelper.close(commitPosition);
@@ -2596,9 +2599,6 @@ public class ConsensusModule implements AutoCloseable
                 CloseHelper.close(controlToggle);
                 CloseHelper.close(snapshotCounter);
             }
-
-            CloseHelper.close(recordingLog);
-            CloseHelper.close(markFile);
         }
 
         private void concludeMarkFile()

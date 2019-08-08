@@ -32,6 +32,7 @@ import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.util.Collection;
+import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
@@ -114,30 +115,38 @@ class ClusteredServiceAgent implements Agent, Cluster
 
     public void onClose()
     {
-        if (isServiceActive)
+        if (isAbort)
         {
-            isServiceActive = false;
-            try
-            {
-                service.onTerminate(this);
-            }
-            catch (final Exception ex)
-            {
-                ctx.countedErrorHandler().onError(ex);
-            }
+            ctx.abortLatch().countDown();
         }
-
-        if (!ctx.ownsAeronClient())
+        else
         {
-            for (final ClientSession session : sessionByIdMap.values())
+            aeron.removeCloseHandler(abortHandler);
+
+            if (isServiceActive)
             {
-                session.disconnect();
+                isServiceActive = false;
+                try
+                {
+                    service.onTerminate(this);
+                }
+                catch (final Exception ex)
+                {
+                    ctx.countedErrorHandler().onError(ex);
+                }
             }
 
-            CloseHelper.close(logAdapter);
-            CloseHelper.close(serviceAdapter);
-            CloseHelper.close(consensusModuleProxy);
-            aeron.removeCloseHandler(abortHandler);
+            if (!ctx.ownsAeronClient())
+            {
+                for (final ClientSession session : sessionByIdMap.values())
+                {
+                    session.disconnect();
+                }
+
+                CloseHelper.close(logAdapter);
+                CloseHelper.close(serviceAdapter);
+                CloseHelper.close(consensusModuleProxy);
+            }
         }
 
         ctx.close();
@@ -866,7 +875,7 @@ class ClusteredServiceAgent implements Agent, Cluster
             if (null != aeronAgentInvoker)
             {
                 aeronAgentInvoker.invoke();
-                if (aeron.isClosed())
+                if (isAbort)
                 {
                     throw new AgentTerminationException("unexpected Aeron close");
                 }
@@ -943,6 +952,15 @@ class ClusteredServiceAgent implements Agent, Cluster
     private void abort()
     {
         isAbort = true;
+
+        try
+        {
+            ctx.abortLatch().await(AgentRunner.RETRY_CLOSE_TIMEOUT_MS * 2, TimeUnit.MILLISECONDS);
+        }
+        catch (final InterruptedException ignore)
+        {
+            Thread.currentThread().interrupt();
+        }
     }
 
     private static void checkPosition(final long existingPosition, final ActiveLogEvent activeLogEvent)

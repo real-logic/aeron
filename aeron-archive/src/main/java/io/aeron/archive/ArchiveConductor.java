@@ -48,7 +48,6 @@ import static io.aeron.CommonContext.SPY_PREFIX;
 import static io.aeron.CommonContext.UDP_MEDIA;
 import static io.aeron.archive.Archive.segmentFileIndex;
 import static io.aeron.archive.Archive.segmentFileName;
-import static io.aeron.archive.ArchiveThreadingMode.DEDICATED;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.ArchiveException.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
@@ -185,10 +184,7 @@ abstract class ArchiveConductor
     {
         if (isAbort)
         {
-            if (null == aeronAgentInvoker || ctx.threadingMode() == DEDICATED)
-            {
-                ctx.abortLatch().countDown();
-            }
+            ctx.abortLatch().countDown();
         }
         else
         {
@@ -217,16 +213,13 @@ abstract class ArchiveConductor
         isAbort = true;
         super.abort();
 
-        if (ctx.abortLatch().getCount() > 0)
+        try
         {
-            try
-            {
-                ctx.abortLatch().await(AgentRunner.RETRY_CLOSE_TIMEOUT_MS * 2, TimeUnit.MILLISECONDS);
-            }
-            catch (final InterruptedException ignore)
-            {
-                Thread.currentThread().interrupt();
-            }
+            ctx.abortLatch().await(AgentRunner.RETRY_CLOSE_TIMEOUT_MS * 2, TimeUnit.MILLISECONDS);
+        }
+        catch (final InterruptedException ignore)
+        {
+            Thread.currentThread().interrupt();
         }
     }
 

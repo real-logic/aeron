@@ -34,6 +34,7 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.StatusIndicator;
 
 import java.io.File;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Supplier;
@@ -452,6 +453,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private int errorBufferLength = Configuration.errorBufferLength();
         private boolean isRespondingService = Configuration.isRespondingService();
 
+        private CountDownLatch abortLatch;
         private ThreadFactory threadFactory;
         private Supplier<IdleStrategy> idleStrategySupplier;
         private EpochClock epochClock;
@@ -611,6 +613,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 }
             }
 
+            abortLatch = new CountDownLatch(aeron.conductorAgentInvoker() == null ? 1 : 0);
             concludeMarkFile();
         }
 
@@ -1276,12 +1279,17 @@ public final class ClusteredServiceContainer implements AutoCloseable
          */
         public void close()
         {
+            CloseHelper.close(markFile);
+
             if (ownsAeronClient)
             {
                 CloseHelper.close(aeron);
             }
+        }
 
-            CloseHelper.close(markFile);
+        CountDownLatch abortLatch()
+        {
+            return abortLatch;
         }
 
         private void concludeMarkFile()

@@ -955,7 +955,7 @@ class ClusteredServiceAgent implements Agent, Cluster
 
         try
         {
-            ctx.abortLatch().await(AgentRunner.RETRY_CLOSE_TIMEOUT_MS * 2, TimeUnit.MILLISECONDS);
+            ctx.abortLatch().await(AgentRunner.RETRY_CLOSE_TIMEOUT_MS * 2L, TimeUnit.MILLISECONDS);
         }
         catch (final InterruptedException ignore)
         {

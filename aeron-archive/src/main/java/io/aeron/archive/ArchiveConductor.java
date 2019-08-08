@@ -212,8 +212,10 @@ abstract class ArchiveConductor
     {
         try
         {
-            closeSessionWorkers();
+            replayer.abort();
+            recorder.abort();
             isAbort = true;
+
             ctx.abortLatch().await(AgentRunner.RETRY_CLOSE_TIMEOUT_MS * 2L, TimeUnit.MILLISECONDS);
         }
         catch (final InterruptedException ignore)
@@ -222,7 +224,6 @@ abstract class ArchiveConductor
         }
         catch (final Exception ex)
         {
-            isAbort = true;
             errorHandler.onError(ex);
         }
     }

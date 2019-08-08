@@ -210,16 +210,20 @@ abstract class ArchiveConductor
 
     protected void abort()
     {
-        isAbort = true;
-        super.abort();
-
         try
         {
+            closeSessionWorkers();
+            isAbort = true;
             ctx.abortLatch().await(AgentRunner.RETRY_CLOSE_TIMEOUT_MS * 2L, TimeUnit.MILLISECONDS);
         }
         catch (final InterruptedException ignore)
         {
             Thread.currentThread().interrupt();
+        }
+        catch (final Exception ex)
+        {
+            isAbort = true;
+            errorHandler.onError(ex);
         }
     }
 

@@ -86,6 +86,10 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
 
         while (processCloseQueue() > 0 || !closeQueue.isEmpty())
         {
+            if (Thread.currentThread().isInterrupted())
+            {
+                break;
+            }
             Thread.yield();
         }
     }
@@ -156,6 +160,10 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         {
             while (!closeQueue.offer(session))
             {
+                if (Thread.currentThread().isInterrupted())
+                {
+                    break;
+                }
                 errorCounter.increment();
                 Thread.yield();
             }
@@ -165,6 +173,10 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         {
             while (!sessionsQueue.offer(session))
             {
+                if (Thread.currentThread().isInterrupted())
+                {
+                    break;
+                }
                 errorCounter.increment();
                 Thread.yield();
             }
@@ -214,6 +226,10 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         {
             while (!closeQueue.offer(session))
             {
+                if (Thread.currentThread().isInterrupted())
+                {
+                    break;
+                }
                 errorCounter.increment();
                 Thread.yield();
             }
@@ -223,6 +239,10 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         {
             while (!sessionsQueue.offer(session))
             {
+                if (Thread.currentThread().isInterrupted())
+                {
+                    break;
+                }
                 errorCounter.increment();
                 Thread.yield();
             }

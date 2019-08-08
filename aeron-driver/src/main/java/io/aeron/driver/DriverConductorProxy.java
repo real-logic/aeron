@@ -114,6 +114,10 @@ public class DriverConductorProxy
     {
         while (!commandQueue.offer(cmd))
         {
+            if (Thread.currentThread().isInterrupted())
+            {
+                break;
+            }
             failCount.increment();
             Thread.yield();
         }

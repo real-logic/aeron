@@ -128,6 +128,10 @@ public class SenderProxy
     {
         while (!commandQueue.offer(cmd))
         {
+            if (Thread.currentThread().isInterrupted())
+            {
+                break;
+            }
             failCount.incrementOrdered();
             Thread.yield();
         }

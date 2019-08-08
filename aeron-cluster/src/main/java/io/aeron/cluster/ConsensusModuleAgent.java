@@ -154,7 +154,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         this.logPublisher = ctx.logPublisher();
         this.idleStrategy = ctx.idleStrategy();
         this.timerService = new TimerService(
-            this, TIMESTAMP_TIME_UNIT, WHEEL_START_TIME, WHEEL_TICK_RESOLUTION, TICKS_PER_WHEEL);
+            this, TimeUnit.MILLISECONDS, 0, ctx.wheelTickResolution(), ctx.ticksPerWheel());
         this.clusterMembers = ClusterMember.parse(ctx.clusterMembers());
         this.sessionProxy = new ClusterSessionProxy(egressPublisher);
         this.memberId = ctx.clusterMemberId();

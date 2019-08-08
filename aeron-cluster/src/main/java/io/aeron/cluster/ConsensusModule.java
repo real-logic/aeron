@@ -246,11 +246,6 @@ public class ConsensusModule implements AutoCloseable
      */
     public static class Configuration
     {
-        static final TimeUnit TIMESTAMP_TIME_UNIT = TimeUnit.MILLISECONDS;
-        static final int WHEEL_START_TIME = 0;
-        static final int WHEEL_TICK_RESOLUTION = 8;
-        static final int TICKS_PER_WHEEL = 128;
-
         /**
          * Type of snapshot for this component.
          */
@@ -549,7 +544,7 @@ public class ConsensusModule implements AutoCloseable
         /**
          * Name of class to use as a supplier of {@link Authenticator} for the cluster.
          */
-        public static final String AUTHENTICATOR_SUPPLIER_PROP_NAME = "aeron.cluster.Authenticator.supplier";
+        public static final String AUTHENTICATOR_SUPPLIER_PROP_NAME = "aeron.cluster.authenticator.supplier";
 
         /**
          * Name of the class to use as a supplier of {@link Authenticator} for the cluster. Default is
@@ -573,9 +568,31 @@ public class ConsensusModule implements AutoCloseable
         public static final String TERMINATION_TIMEOUT_PROP_NAME = "aeron.cluster.termination.timeout";
 
         /**
-         * Timeout waiting for follower termination by leader.
+         * Timeout waiting for follower termination by leader default value.
          */
         public static final long TERMINATION_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
+
+        /**
+         * Resolution for each tick of the timer wheel for scheduling deadlines.
+         */
+        public static final String WHEEL_TICK_RESOLUTION_PROP_NAME = "aeron.cluster.wheel.tick.resolution";
+
+        /**
+         * Resolution for each tick of the timer wheel for scheduling deadlines. Defaults to 8ms.
+         */
+        public static final int WHEEL_TICK_RESOLUTION_DEFAULT = 8;
+
+        /**
+         * Number of ticks, or spokes, on the timer wheel. Higher number of ticks reduces potential conflicts
+         * traded off against memory usage.
+         */
+        public static final String TICKS_PER_WHEEL_PROP_NAME = "aeron.cluster.ticks.per.wheel";
+
+        /**
+         * Number of ticks, or spokes, on the timer wheel. Higher number of ticks reduces potential conflicts
+         * traded off against memory usage. Defaults to 128 per wheel.
+         */
+        public static final int TICKS_PER_WHEEL_DEFAULT = 128;
 
         /**
          * The value {@link #CLUSTER_MEMBER_ID_DEFAULT} or system property
@@ -866,6 +883,30 @@ public class ConsensusModule implements AutoCloseable
         {
             return Integer.getInteger(MEMBER_STATUS_STREAM_ID_PROP_NAME, MEMBER_STATUS_STREAM_ID_DEFAULT);
         }
+
+        /**
+         * The value {@link #WHEEL_TICK_RESOLUTION_DEFAULT} or system property
+         * {@link #WHEEL_TICK_RESOLUTION_PROP_NAME} if set.
+         *
+         * @return {@link #WHEEL_TICK_RESOLUTION_DEFAULT} or system property
+         * {@link #WHEEL_TICK_RESOLUTION_PROP_NAME} if set.
+         */
+        public static int wheelTickResolution()
+        {
+            return Integer.getInteger(WHEEL_TICK_RESOLUTION_PROP_NAME, WHEEL_TICK_RESOLUTION_DEFAULT);
+        }
+
+        /**
+         * The value {@link #TICKS_PER_WHEEL_DEFAULT} or system property
+         * {@link #CLUSTER_MEMBER_ID_PROP_NAME} if set.
+         *
+         * @return {@link #TICKS_PER_WHEEL_DEFAULT} or system property
+         * {@link #TICKS_PER_WHEEL_PROP_NAME} if set.
+         */
+        public static int ticksPerWheel()
+        {
+            return Integer.getInteger(TICKS_PER_WHEEL_PROP_NAME, TICKS_PER_WHEEL_DEFAULT);
+        }
     }
 
     /**
@@ -914,6 +955,8 @@ public class ConsensusModule implements AutoCloseable
         private String memberStatusChannel = Configuration.memberStatusChannel();
         private int memberStatusStreamId = Configuration.memberStatusStreamId();
 
+        private int ticksPerWheel = Configuration.ticksPerWheel();
+        private int wheelTickResolution = Configuration.wheelTickResolution();
         private int serviceCount = Configuration.serviceCount();
         private int errorBufferLength = Configuration.errorBufferLength();
         private int maxConcurrentSessions = Configuration.maxConcurrentSessions();
@@ -1744,6 +1787,56 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * Resolution for each tick of the timer wheel for scheduling deadlines.
+         *
+         * @param wheelTickResolution the resolution of each tick on the timer wheel.
+         * @return this for a fluent API
+         * @see Configuration#WHEEL_TICK_RESOLUTION_PROP_NAME
+         */
+        public Context wheelTickResolution(final int wheelTickResolution)
+        {
+            this.wheelTickResolution = wheelTickResolution;
+            return this;
+        }
+
+        /**
+         * Resolution for each tick of the timer wheel for scheduling deadlines.
+         *
+         * @return the resolution of each tick on the timer wheel.
+         * @see Configuration#WHEEL_TICK_RESOLUTION_PROP_NAME
+         */
+        public int wheelTickResolution()
+        {
+            return wheelTickResolution;
+        }
+
+        /**
+         * Number of ticks, or spokes, on the timer wheel. Higher number of ticks reduces potential conflicts
+         * traded off against memory usage.
+         *
+         * @param ticksPerWheel the number of ticks on the timer wheel.
+         * @return this for a fluent API
+         * @see Configuration#TICKS_PER_WHEEL_PROP_NAME
+         */
+        public Context ticksPerWheel(final int ticksPerWheel)
+        {
+            this.ticksPerWheel = ticksPerWheel;
+            return this;
+        }
+
+        /**
+         * Number of ticks, or spokes, on the timer wheel. Higher number of ticks reduces potential conflicts
+         * traded off against memory usage.
+         *
+         * @return the number of ticks on the timer wheel.
+         * @see Configuration#TICKS_PER_WHEEL_PROP_NAME
+         */
+        public int ticksPerWheel()
+        {
+            return ticksPerWheel;
+        }
+
+        /**
          * Set the number of clustered services in this cluster instance.
          *
          * @param serviceCount the number of clustered services in this cluster instance.
@@ -2544,28 +2637,6 @@ public class ConsensusModule implements AutoCloseable
             return random;
         }
 
-        Context logPublisher(final LogPublisher logPublisher)
-        {
-            this.logPublisher = logPublisher;
-            return this;
-        }
-
-        LogPublisher logPublisher()
-        {
-            return logPublisher;
-        }
-
-        Context egressPublisher(final EgressPublisher egressPublisher)
-        {
-            this.egressPublisher = egressPublisher;
-            return this;
-        }
-
-        EgressPublisher egressPublisher()
-        {
-            return egressPublisher;
-        }
-
         /**
          * Delete the cluster directory.
          */
@@ -2599,6 +2670,28 @@ public class ConsensusModule implements AutoCloseable
                 CloseHelper.close(controlToggle);
                 CloseHelper.close(snapshotCounter);
             }
+        }
+
+        Context logPublisher(final LogPublisher logPublisher)
+        {
+            this.logPublisher = logPublisher;
+            return this;
+        }
+
+        LogPublisher logPublisher()
+        {
+            return logPublisher;
+        }
+
+        Context egressPublisher(final EgressPublisher egressPublisher)
+        {
+            this.egressPublisher = egressPublisher;
+            return this;
+        }
+
+        EgressPublisher egressPublisher()
+        {
+            return egressPublisher;
         }
 
         private void concludeMarkFile()

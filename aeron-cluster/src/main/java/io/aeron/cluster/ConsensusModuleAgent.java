@@ -1163,7 +1163,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         {
             final long recordingId = RecordingPos.getRecordingId(aeron.countersReader(), appendedPosition.counterId());
             election.onReplayNewLeadershipTermEvent(
-                recordingId, leadershipTermId, logPosition, cachedTimeMs, termBaseLogPosition);
+                recordingId, leadershipTermId, logPosition, timestamp, termBaseLogPosition);
         }
     }
 

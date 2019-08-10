@@ -573,14 +573,14 @@ public class ConsensusModule implements AutoCloseable
         public static final long TERMINATION_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
 
         /**
-         * Resolution for each tick of the timer wheel for scheduling deadlines.
+         * Resolution in nanoseconds for each tick of the timer wheel for scheduling deadlines.
          */
         public static final String WHEEL_TICK_RESOLUTION_PROP_NAME = "aeron.cluster.wheel.tick.resolution";
 
         /**
-         * Resolution for each tick of the timer wheel for scheduling deadlines. Defaults to 8ms.
+         * Resolution in nanoseconds for each tick of the timer wheel for scheduling deadlines. Defaults to 8ms.
          */
-        public static final int WHEEL_TICK_RESOLUTION_DEFAULT = 8;
+        public static final long WHEEL_TICK_RESOLUTION_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(8);
 
         /**
          * Number of ticks, or spokes, on the timer wheel. Higher number of ticks reduces potential conflicts
@@ -885,15 +885,15 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * The value {@link #WHEEL_TICK_RESOLUTION_DEFAULT} or system property
+         * The value {@link #WHEEL_TICK_RESOLUTION_DEFAULT_NS} or system property
          * {@link #WHEEL_TICK_RESOLUTION_PROP_NAME} if set.
          *
-         * @return {@link #WHEEL_TICK_RESOLUTION_DEFAULT} or system property
+         * @return {@link #WHEEL_TICK_RESOLUTION_DEFAULT_NS} or system property
          * {@link #WHEEL_TICK_RESOLUTION_PROP_NAME} if set.
          */
-        public static int wheelTickResolution()
+        public static long wheelTickResolutionNs()
         {
-            return Integer.getInteger(WHEEL_TICK_RESOLUTION_PROP_NAME, WHEEL_TICK_RESOLUTION_DEFAULT);
+            return getDurationInNanos(WHEEL_TICK_RESOLUTION_PROP_NAME, WHEEL_TICK_RESOLUTION_DEFAULT_NS);
         }
 
         /**
@@ -955,11 +955,11 @@ public class ConsensusModule implements AutoCloseable
         private String memberStatusChannel = Configuration.memberStatusChannel();
         private int memberStatusStreamId = Configuration.memberStatusStreamId();
 
-        private int ticksPerWheel = Configuration.ticksPerWheel();
-        private int wheelTickResolution = Configuration.wheelTickResolution();
         private int serviceCount = Configuration.serviceCount();
         private int errorBufferLength = Configuration.errorBufferLength();
         private int maxConcurrentSessions = Configuration.maxConcurrentSessions();
+        private int ticksPerWheel = Configuration.ticksPerWheel();
+        private long wheelTickResolutionNs = Configuration.wheelTickResolutionNs();
         private long sessionTimeoutNs = Configuration.sessionTimeoutNs();
         private long leaderHeartbeatTimeoutNs = Configuration.leaderHeartbeatTimeoutNs();
         private long leaderHeartbeatIntervalNs = Configuration.leaderHeartbeatIntervalNs();
@@ -1787,27 +1787,27 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Resolution for each tick of the timer wheel for scheduling deadlines.
+         * Resolution in nanoseconds for each tick of the timer wheel for scheduling deadlines.
          *
-         * @param wheelTickResolution the resolution of each tick on the timer wheel.
+         * @param wheelTickResolutionNs the resolution in nanoseconds of each tick on the timer wheel.
          * @return this for a fluent API
          * @see Configuration#WHEEL_TICK_RESOLUTION_PROP_NAME
          */
-        public Context wheelTickResolution(final int wheelTickResolution)
+        public Context wheelTickResolutionNs(final long wheelTickResolutionNs)
         {
-            this.wheelTickResolution = wheelTickResolution;
+            this.wheelTickResolutionNs = wheelTickResolutionNs;
             return this;
         }
 
         /**
-         * Resolution for each tick of the timer wheel for scheduling deadlines.
+         * Resolution in nanoseconds for each tick of the timer wheel for scheduling deadlines.
          *
-         * @return the resolution of each tick on the timer wheel.
+         * @return the resolution in nanoseconds for each tick on the timer wheel.
          * @see Configuration#WHEEL_TICK_RESOLUTION_PROP_NAME
          */
-        public int wheelTickResolution()
+        public long wheelTickResolutionNs()
         {
-            return wheelTickResolution;
+            return wheelTickResolutionNs;
         }
 
         /**

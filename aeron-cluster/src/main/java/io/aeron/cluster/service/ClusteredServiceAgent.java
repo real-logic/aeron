@@ -558,8 +558,9 @@ class ClusteredServiceAgent implements Agent, Cluster
             service.onStart(this, null);
         }
 
+        final long id = ackId++;
         idleStrategy.reset();
-        while (!consensusModuleProxy.ack(clusterLogPosition, ackId++, serviceId))
+        while (!consensusModuleProxy.ack(clusterLogPosition, id, serviceId))
         {
             idle();
         }
@@ -582,7 +583,6 @@ class ClusteredServiceAgent implements Agent, Cluster
 
                 final Image image = awaitImage(activeLogEvent.sessionId, subscription);
                 final BoundedLogAdapter adapter = new BoundedLogAdapter(image, commitPosition, this);
-
                 consumeImage(image, adapter, activeLogEvent.maxLogPosition);
             }
 

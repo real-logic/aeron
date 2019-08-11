@@ -30,7 +30,7 @@ using namespace std::placeholders;
 #define LOG_META_DATA_LENGTH (LogBufferDescriptor::LOG_META_DATA_LENGTH)
 #define SRC_BUFFER_LENGTH 1024
 
-static_assert(LogBufferDescriptor::PARTITION_COUNT==3, "partition count assumed to be 3 for these test");
+static_assert(LogBufferDescriptor::PARTITION_COUNT == 3, "partition count assumed to be 3 for these test");
 
 typedef std::array<std::uint8_t, ((TERM_LENGTH * 3) + LOG_META_DATA_LENGTH)> term_buffer_t;
 typedef std::array<std::uint8_t, SRC_BUFFER_LENGTH> src_buffer_t;

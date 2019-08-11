@@ -230,4 +230,3 @@ TEST_F(ExclusivePublicationTest, shouldRotateWhenClaimTrips)
     EXPECT_GT(m_publication->tryClaim(SRC_BUFFER_LENGTH, bufferClaim), initialPosition + DataFrameHeader::LENGTH + m_srcBuffer.capacity());
     EXPECT_GT(m_publication->position(), initialPosition + DataFrameHeader::LENGTH + m_srcBuffer.capacity());
 }
-

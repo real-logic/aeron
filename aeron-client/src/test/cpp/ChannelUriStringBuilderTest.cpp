@@ -81,4 +81,3 @@ TEST(ChannelUriStringBuilderTest, shouldGenerateReplayUdpChannel)
         builder.build(),
         "aeron:udp?endpoint=localhost:9999|term-length=131072|init-term-id=777|term-id=999|term-offset=64");
 }
-

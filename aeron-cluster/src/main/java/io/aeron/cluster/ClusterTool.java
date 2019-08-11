@@ -42,6 +42,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static io.aeron.Aeron.NULL_VALUE;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.agrona.SystemUtil.getDurationInNanos;
 
 /**
  * Tool for investigating the state of a cluster node.
@@ -52,15 +54,19 @@ import static io.aeron.Aeron.NULL_VALUE;
  *     recovery-plan: [service count] prints recovery plan of cluster component.
  *     recording-log: prints recording log of cluster component.
  *            errors: prints Aeron and cluster component error logs.
- *      list-members: print leader memberId, active members list, and passive members list
- *     remove-member: [memberId] requests node (if leader) to remove member specified in memberId
- *    remove-passive: [memberId] requests node (if leader) to remove passive member specified in memberId
- *      backup-query: [delay] schedules (or displays) time of next backup query for cluster backup
+ *      list-members: print leader memberId, active members list, and passive members list.
+ *     remove-member: [memberId] requests removal of a member specified in memberId.
+ *    remove-passive: [memberId] requests removal of passive member specified in memberId.
+ *      backup-query: [delay] schedules (or displays) time of next backup query for cluster backup.
  * </pre>
  */
 public class ClusterTool
 {
-    private static final long TIMEOUT_MS = Long.getLong("aeron.ClusterTool.timeoutMs", 0);
+    public static final String AERON_CLUSTER_TOOL_TIMEOUT_PROP_NAME = "aeron.cluster.tool.timeout";
+    public static final String AERON_CLUSTER_TOOL_DELAY_PROP_NAME = "aeron.cluster.tool.delay";
+
+    private static final long TIMEOUT_MS =
+        NANOSECONDS.toMillis(getDurationInNanos(AERON_CLUSTER_TOOL_TIMEOUT_PROP_NAME, 0));
 
     public static void main(final String[] args)
     {
@@ -137,7 +143,7 @@ public class ClusterTool
                     nextBackupQuery(
                         System.out,
                         clusterDir,
-                        TimeUnit.NANOSECONDS.toMillis(SystemUtil.parseDuration("delayNs", args[2])));
+                        NANOSECONDS.toMillis(SystemUtil.parseDuration(AERON_CLUSTER_TOOL_DELAY_PROP_NAME, args[2])));
                 }
                 break;
         }
@@ -525,7 +531,7 @@ public class ClusterTool
         String[] clusterMarkFileNames =
             clusterDir.list((dir, name) ->
                 name.startsWith(ClusterMarkFile.SERVICE_FILENAME_PREFIX) &&
-                name.endsWith(ClusterMarkFile.FILE_EXTENSION));
+                    name.endsWith(ClusterMarkFile.FILE_EXTENSION));
 
         if (null == clusterMarkFileNames)
         {
@@ -580,6 +586,9 @@ public class ClusterTool
         out.println("  recovery-plan: [service count] prints recovery plan of cluster component.");
         out.println("  recording-log: prints recording log of cluster component.");
         out.println("  errors: prints Aeron and cluster component error logs.");
-        out.println("  backup-query: [delayNs] display time of next backup query or set time of next backup query.");
+        out.println("  list-members: print leader memberId, active members list, and passive members list.");
+        out.println("  remove-member: [memberId] requests removal of a member specified in memberId.");
+        out.println("  remove-passive: [memberId] requests removal of passive member specified in memberId.");
+        out.println("  backup-query: [delay] display time of next backup query or set time of next backup query.");
     }
 }

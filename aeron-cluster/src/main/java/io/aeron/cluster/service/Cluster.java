@@ -25,6 +25,7 @@ import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 
 import java.util.Collection;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Interface for a {@link ClusteredService} to interact with cluster hosting it.
@@ -153,11 +154,18 @@ public interface Cluster
     boolean closeSession(long clusterSessionId);
 
     /**
-     * Current Epoch time in milliseconds.
+     * Cluster time as {@link #timeUnit()}s since 1 Jan 1970 UTC.
      *
-     * @return Epoch time in milliseconds.
+     * @return time as {@link #timeUnit()}s since 1 Jan 1970 UTC.
      */
-    long timeMs();
+    long time();
+
+    /**
+     * The unit of time applied to timestamps and {@link #time()}.
+     *
+     * @return the unit of time applied to timestamps and {@link #time()}.
+     */
+    TimeUnit timeUnit();
 
     /**
      * Position the log has reached in bytes as of the current message.

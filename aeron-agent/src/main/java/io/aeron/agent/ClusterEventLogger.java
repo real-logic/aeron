@@ -61,6 +61,7 @@ public final class ClusterEventLogger
         final long logLeadershipTermId,
         final long leadershipTermId,
         final long logPosition,
+        final long timestamp,
         final int leaderMemberId,
         final int logSessionId)
     {
@@ -72,6 +73,7 @@ public final class ClusterEventLogger
                 logLeadershipTermId,
                 leadershipTermId,
                 logPosition,
+                timestamp,
                 leaderMemberId,
                 logSessionId);
 

@@ -46,7 +46,7 @@ public final class ClusterMember
     private long catchupReplaySessionId = Aeron.NULL_VALUE;
     private long changeCorrelationId = Aeron.NULL_VALUE;
     private long removalPosition = NULL_POSITION;
-    private long timeOfLastAppendPositionMs = Aeron.NULL_VALUE;
+    private long timeOfLastAppendPositionNs = Aeron.NULL_VALUE;
     private final String clientFacingEndpoint;
     private final String memberFacingEndpoint;
     private final String logEndpoint;
@@ -378,25 +378,25 @@ public final class ClusterMember
     }
 
     /**
-     * Time (in ms) of last received appendPosition.
+     * Time (in ns) of last received appendPosition.
      *
-     * @param timeMs of the last received appendPosition
+     * @param timeNs of the last received appendPosition.
      * @return this for a fluent API.
      */
-    public ClusterMember timeOfLastAppendPositionMs(final long timeMs)
+    public ClusterMember timeOfLastAppendPositionNs(final long timeNs)
     {
-        this.timeOfLastAppendPositionMs = timeMs;
+        this.timeOfLastAppendPositionNs = timeNs;
         return this;
     }
 
     /**
-     * Time (in ms) of last received appendPosition.
+     * Time (in ns) of last received appendPosition.
      *
-     * @return time (in ms) of last received appendPosition or {@link Aeron#NULL_VALUE} if none received.
+     * @return time (in ns) of last received appendPosition or {@link Aeron#NULL_VALUE} if none received.
      */
-    public long timeOfLastAppendPositionMs()
+    public long timeOfLastAppendPositionNs()
     {
-        return timeOfLastAppendPositionMs;
+        return timeOfLastAppendPositionNs;
     }
 
     /**
@@ -659,18 +659,18 @@ public final class ClusterMember
      * Check if the cluster leader has an active quorum of cluster followers.
      *
      * @param clusterMembers for the current cluster.
-     * @param nowMs          for the current time.
-     * @param timeoutMs      after which a follower is not considered active.
+     * @param nowNs          for the current time.
+     * @param timeoutNs      after which a follower is not considered active.
      * @return true if quorum of cluster members are considered active.
      */
     public static boolean hasActiveQuorum(
-        final ClusterMember[] clusterMembers, final long nowMs, final long timeoutMs)
+        final ClusterMember[] clusterMembers, final long nowNs, final long timeoutNs)
     {
         int threshold = quorumThreshold(clusterMembers.length);
 
         for (final ClusterMember member : clusterMembers)
         {
-            if (member.isLeader() || nowMs <= (member.timeOfLastAppendPositionMs() + timeoutMs))
+            if (member.isLeader() || nowNs <= (member.timeOfLastAppendPositionNs() + timeoutNs))
             {
                 if (--threshold <= 0)
                 {
@@ -1043,7 +1043,7 @@ public final class ClusterMember
      * @param memberEndpoints to check for duplicates.
      * @return true if no duplicate is found otherwise false.
      */
-    public static boolean isNotDuplicateEndpoints(final ClusterMember[] members, final String memberEndpoints)
+    public static boolean isNotDuplicateEndpoint(final ClusterMember[] members, final String memberEndpoints)
     {
         for (final ClusterMember member : members)
         {
@@ -1178,7 +1178,7 @@ public final class ClusterMember
             ", catchupReplaySessionId=" + catchupReplaySessionId +
             ", correlationId=" + changeCorrelationId +
             ", removalPosition=" + removalPosition +
-            ", timeOfLastAppendPositionMs=" + timeOfLastAppendPositionMs +
+            ", timeOfLastAppendPositionNs=" + timeOfLastAppendPositionNs +
             ", clientFacingEndpoint='" + clientFacingEndpoint + '\'' +
             ", memberFacingEndpoint='" + memberFacingEndpoint + '\'' +
             ", logEndpoint='" + logEndpoint + '\'' +

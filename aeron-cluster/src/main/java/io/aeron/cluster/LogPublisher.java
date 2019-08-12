@@ -16,6 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.Publication;
+import io.aeron.cluster.client.ClusterClock;
 import io.aeron.cluster.codecs.*;
 import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
@@ -24,6 +25,8 @@ import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+
+import java.util.concurrent.TimeUnit;
 
 import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
@@ -99,7 +102,7 @@ class LogPublisher
     long appendMessage(
         final long leadershipTermId,
         final long clusterSessionId,
-        final long timestampMs,
+        final long timestamp,
         final DirectBuffer buffer,
         final int offset,
         final int length)
@@ -107,7 +110,7 @@ class LogPublisher
         sessionHeaderEncoder
             .leadershipTermId(leadershipTermId)
             .clusterSessionId(clusterSessionId)
-            .timestamp(timestampMs);
+            .timestamp(timestamp);
 
         int attempts = SEND_ATTEMPTS;
         long result;
@@ -127,7 +130,7 @@ class LogPublisher
         return result;
     }
 
-    long appendSessionOpen(final ClusterSession session, final long leadershipTermId, final long nowMs)
+    long appendSessionOpen(final ClusterSession session, final long leadershipTermId, final long timestamp)
     {
         long result;
         final byte[] encodedPrincipal = session.encodedPrincipal();
@@ -138,7 +141,7 @@ class LogPublisher
             .leadershipTermId(leadershipTermId)
             .clusterSessionId(session.id())
             .correlationId(session.correlationId())
-            .timestamp(nowMs)
+            .timestamp(timestamp)
             .responseStreamId(session.responseStreamId())
             .responseChannel(channel)
             .putEncodedPrincipal(encodedPrincipal, 0, encodedPrincipal.length);
@@ -161,7 +164,7 @@ class LogPublisher
         return result;
     }
 
-    boolean appendSessionClose(final ClusterSession session, final long leadershipTermId, final long nowMs)
+    boolean appendSessionClose(final ClusterSession session, final long leadershipTermId, final long timestamp)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + SessionCloseEventEncoder.BLOCK_LENGTH;
 
@@ -175,7 +178,7 @@ class LogPublisher
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .leadershipTermId(leadershipTermId)
                     .clusterSessionId(session.id())
-                    .timestamp(nowMs)
+                    .timestamp(timestamp)
                     .closeReason(session.closeReason());
 
                 bufferClaim.commit();
@@ -190,7 +193,7 @@ class LogPublisher
         return false;
     }
 
-    long appendTimer(final long correlationId, final long leadershipTermId, final long nowMs)
+    long appendTimer(final long correlationId, final long leadershipTermId, final long timestamp)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + TimerEventEncoder.BLOCK_LENGTH;
 
@@ -205,7 +208,7 @@ class LogPublisher
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .leadershipTermId(leadershipTermId)
                     .correlationId(correlationId)
-                    .timestamp(nowMs);
+                    .timestamp(timestamp);
 
                 bufferClaim.commit();
                 break;
@@ -228,7 +231,7 @@ class LogPublisher
     }
 
     boolean appendClusterAction(
-        final long leadershipTermId, final long logPosition, final long nowMs, final ClusterAction action)
+        final long leadershipTermId, final long logPosition, final long timestamp, final ClusterAction action)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClusterActionRequestEncoder.BLOCK_LENGTH;
 
@@ -242,7 +245,7 @@ class LogPublisher
                     bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .leadershipTermId(leadershipTermId)
                     .logPosition(logPosition)
-                    .timestamp(nowMs)
+                    .timestamp(timestamp)
                     .action(action);
 
                 bufferClaim.commit();
@@ -269,10 +272,12 @@ class LogPublisher
     boolean appendNewLeadershipTermEvent(
         final long leadershipTermId,
         final long logPosition,
-        final long nowMs,
+        final long timestamp,
         final long termBaseLogPosition,
         final int leaderMemberId,
-        final int logSessionId)
+        final int logSessionId,
+        final TimeUnit timeUnit,
+        final int appVersion)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + NewLeadershipTermEventEncoder.BLOCK_LENGTH;
 
@@ -286,10 +291,12 @@ class LogPublisher
                     bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .leadershipTermId(leadershipTermId)
                     .logPosition(logPosition)
-                    .timestamp(nowMs)
+                    .timestamp(timestamp)
                     .termBaseLogPosition(termBaseLogPosition)
                     .leaderMemberId(leaderMemberId)
-                    .logSessionId(logSessionId);
+                    .logSessionId(logSessionId)
+                    .timeUnit(ClusterClock.map(timeUnit))
+                    .appVersion(appVersion);
 
                 bufferClaim.commit();
 
@@ -318,7 +325,7 @@ class LogPublisher
     boolean appendMembershipChangeEvent(
         final long leadershipTermId,
         final long logPosition,
-        final long nowMs,
+        final long timestamp,
         final int leaderMemberId,
         final int clusterSize,
         final ChangeType changeType,
@@ -331,7 +338,7 @@ class LogPublisher
             .wrapAndApplyHeader(expandableArrayBuffer, 0, messageHeaderEncoder)
             .leadershipTermId(leadershipTermId)
             .logPosition(logPosition)
-            .timestamp(nowMs)
+            .timestamp(timestamp)
             .leaderMemberId(leaderMemberId)
             .clusterSize(clusterSize)
             .changeType(changeType)

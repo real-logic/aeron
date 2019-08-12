@@ -140,6 +140,7 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     newLeadershipTermDecoder.logLeadershipTermId(),
                     newLeadershipTermDecoder.leadershipTermId(),
                     newLeadershipTermDecoder.logPosition(),
+                    newLeadershipTermDecoder.timestamp(),
                     newLeadershipTermDecoder.leaderMemberId(),
                     newLeadershipTermDecoder.logSessionId());
                 break;

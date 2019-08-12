@@ -33,7 +33,7 @@ class TimerService implements DeadlineTimerWheel.TimerHandler
         final ConsensusModuleAgent consensusModuleAgent,
         final TimeUnit timeUnit,
         final long startTime,
-        final int tickResolution,
+        final long tickResolution,
         final int ticksPerWheel)
     {
         this.consensusModuleAgent = consensusModuleAgent;
@@ -67,7 +67,7 @@ class TimerService implements DeadlineTimerWheel.TimerHandler
     {
         final long correlationId = correlationIdByTimerIdMap.get(timerId);
 
-        if (consensusModuleAgent.onTimerEvent(correlationId, now))
+        if (consensusModuleAgent.onTimerEvent(correlationId))
         {
             correlationIdByTimerIdMap.remove(timerId);
             timerIdByCorrelationIdMap.remove(correlationId);

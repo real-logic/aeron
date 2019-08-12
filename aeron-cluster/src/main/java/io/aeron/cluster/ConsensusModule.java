@@ -20,6 +20,7 @@ import io.aeron.CommonContext;
 import io.aeron.Counter;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
+import io.aeron.cluster.client.ClusterClock;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.service.*;
@@ -935,6 +936,7 @@ public class ConsensusModule implements AutoCloseable
         private ClusterMarkFile markFile;
         private MutableDirectBuffer tempBuffer;
 
+        private int appVersion = 1;
         private int clusterMemberId = Configuration.clusterMemberId();
         private int appointedLeaderId = Configuration.appointedLeaderId();
         private String clusterMembers = Configuration.clusterMembers();
@@ -971,6 +973,7 @@ public class ConsensusModule implements AutoCloseable
 
         private ThreadFactory threadFactory;
         private Supplier<IdleStrategy> idleStrategySupplier;
+        private ClusterClock clusterClock;
         private EpochClock epochClock;
         private Random random;
 
@@ -1037,6 +1040,11 @@ public class ConsensusModule implements AutoCloseable
             if (null == tempBuffer)
             {
                 tempBuffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
+            }
+
+            if (null == clusterClock)
+            {
+                clusterClock = new MillisecondClusterClock();
             }
 
             if (null == epochClock)
@@ -1310,6 +1318,34 @@ public class ConsensusModule implements AutoCloseable
         public RecordingLog recordingLog()
         {
             return recordingLog;
+        }
+
+        /**
+         * User assigned application version which appended to the log as the appVersion in new leadership events.
+         * <p>
+         * This can be validated using {@link SemanticVersion} to ensure only application nodes of the same major
+         * version communicate with each other.
+         *
+         * @param appVersion for user application.
+         * @return this for a fluent API.
+         */
+        public Context appVersion(final int appVersion)
+        {
+            this.appVersion = appVersion;
+            return this;
+        }
+
+        /**
+         * This cluster member identity.
+         * <p>
+         * This can be validated using {@link SemanticVersion} to ensure only application nodes of the same major
+         * version communicate with each other.
+         *
+         * @return appVersion for user application.
+         */
+        public int appVersion()
+        {
+            return appVersion;
         }
 
         /**
@@ -2127,6 +2163,28 @@ public class ConsensusModule implements AutoCloseable
         public IdleStrategy idleStrategy()
         {
             return idleStrategySupplier.get();
+        }
+
+        /**
+         * Set the {@link ClusterClock} to be used for timestamping messages.
+         *
+         * @param clock {@link ClusterClock} to be used for timestamping message
+         * @return this for a fluent API.
+         */
+        public Context clusterClock(final ClusterClock clock)
+        {
+            this.clusterClock = clock;
+            return this;
+        }
+
+        /**
+         * Get the {@link ClusterClock} to used for timestamping message
+         *
+         * @return the {@link ClusterClock} to used for timestamping message
+         */
+        public ClusterClock clusterClock()
+        {
+            return clusterClock;
         }
 
         /**

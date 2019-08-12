@@ -557,6 +557,23 @@ public class RecordingLog implements AutoCloseable
     }
 
     /**
+     * Get the {@link Entry#timestamp} for a term.
+     *
+     * @param leadershipTermId to get {@link Entry#timestamp} for.
+     * @return the timestamp or {@link io.aeron.Aeron#NULL_VALUE} if not found.
+     */
+    public long getTermTimestamp(final long leadershipTermId)
+    {
+        final int index = (int)indexByLeadershipTermIdMap.get(leadershipTermId);
+        if (NULL_VALUE == index)
+        {
+            return NULL_VALUE;
+        }
+
+        return entries.get(index).timestamp;
+    }
+
+    /**
      * Create a recovery plan for the cluster that when the steps are replayed will bring the cluster back to the
      * latest stable state.
      *

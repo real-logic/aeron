@@ -43,7 +43,7 @@ class ClusterSession
     private final long id;
     private long correlationId;
     private long openedLogPosition = Aeron.NULL_VALUE;
-    private long timeOfLastActivityMs;
+    private long timeOfLastActivityNs;
     private boolean isBackupQuery = false;
     private final int responseStreamId;
     private final String responseChannel;
@@ -65,7 +65,7 @@ class ClusterSession
         final long sessionId,
         final long correlationId,
         final long openedLogPosition,
-        final long timeOfLastActivityMs,
+        final long timeOfLastActivityNs,
         final int responseStreamId,
         final String responseChannel,
         final CloseReason closeReason)
@@ -74,7 +74,7 @@ class ClusterSession
         this.responseStreamId = responseStreamId;
         this.responseChannel = responseChannel;
         this.openedLogPosition = openedLogPosition;
-        this.timeOfLastActivityMs = timeOfLastActivityMs;
+        this.timeOfLastActivityNs = timeOfLastActivityNs;
         this.correlationId = correlationId;
         this.closeReason = closeReason;
 
@@ -198,9 +198,9 @@ class ClusterSession
         return encodedPrincipal;
     }
 
-    void lastActivity(final long timeMs, final long correlationId)
+    void lastActivity(final long timeNs, final long correlationId)
     {
-        timeOfLastActivityMs = timeMs;
+        timeOfLastActivityNs = timeNs;
         this.correlationId = correlationId;
     }
 
@@ -221,14 +221,14 @@ class ClusterSession
         return responseDetail;
     }
 
-    long timeOfLastActivityMs()
+    long timeOfLastActivityNs()
     {
-        return timeOfLastActivityMs;
+        return timeOfLastActivityNs;
     }
 
-    void timeOfLastActivityMs(final long timeMs)
+    void timeOfLastActivityNs(final long timeNs)
     {
-        timeOfLastActivityMs = timeMs;
+        timeOfLastActivityNs = timeNs;
     }
 
     long correlationId()
@@ -284,7 +284,7 @@ class ClusterSession
             "id=" + id +
             ", correlationId=" + correlationId +
             ", openedLogPosition=" + openedLogPosition +
-            ", timeOfLastActivityMs=" + timeOfLastActivityMs +
+            ", timeOfLastActivityNs=" + timeOfLastActivityNs +
             ", responseStreamId=" + responseStreamId +
             ", responseChannel='" + responseChannel + '\'' +
             ", closeReason=" + closeReason +

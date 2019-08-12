@@ -17,6 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.Image;
 import io.aeron.ImageControlledFragmentAssembler;
+import io.aeron.cluster.client.ClusterClock;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.ControlledFragmentHandler;
@@ -167,7 +168,9 @@ final class LogAdapter implements ControlledFragmentHandler, AutoCloseable
                     newLeadershipTermEventDecoder.timestamp(),
                     newLeadershipTermEventDecoder.termBaseLogPosition(),
                     newLeadershipTermEventDecoder.leaderMemberId(),
-                    newLeadershipTermEventDecoder.logSessionId());
+                    newLeadershipTermEventDecoder.logSessionId(),
+                    ClusterClock.map(newLeadershipTermEventDecoder.timeUnit()),
+                    newLeadershipTermEventDecoder.appVersion());
                 break;
 
             case MembershipChangeEventDecoder.TEMPLATE_ID:

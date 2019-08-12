@@ -50,6 +50,7 @@ final class ClusterEventEncoder
         final long logLeadershipTermId,
         final long leadershipTermId,
         final long logPosition,
+        final long timestamp,
         final int leaderMemberId,
         final int logSessionId)
     {
@@ -59,6 +60,8 @@ final class ClusterEventEncoder
         encodedBuffer.putLong(offset, leadershipTermId);
         offset += BitUtil.SIZE_OF_LONG;
         encodedBuffer.putLong(offset, logPosition);
+        offset += BitUtil.SIZE_OF_LONG;
+        encodedBuffer.putLong(offset, timestamp);
         offset += BitUtil.SIZE_OF_LONG;
         encodedBuffer.putInt(offset, leaderMemberId);
         offset += BitUtil.SIZE_OF_INT;

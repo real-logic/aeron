@@ -151,6 +151,7 @@ class MemberStatusPublisher
         final long logLeadershipTermId,
         final long leadershipTermId,
         final long logPosition,
+        final long timestamp,
         final int leaderMemberId,
         final int logSessionId)
     {
@@ -167,6 +168,7 @@ class MemberStatusPublisher
                     .logLeadershipTermId(logLeadershipTermId)
                     .leadershipTermId(leadershipTermId)
                     .logPosition(logPosition)
+                    .timestamp(timestamp)
                     .leaderMemberId(leaderMemberId)
                     .logSessionId(logSessionId);
 

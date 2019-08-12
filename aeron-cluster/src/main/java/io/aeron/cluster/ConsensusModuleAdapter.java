@@ -125,6 +125,7 @@ final class ConsensusModuleAdapter implements AutoCloseable
 
                 consensusModuleAgent.onServiceAck(
                     serviceAckDecoder.logPosition(),
+                    serviceAckDecoder.timestamp(),
                     serviceAckDecoder.ackId(),
                     serviceAckDecoder.relevantId(),
                     serviceAckDecoder.serviceId());

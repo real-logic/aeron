@@ -54,6 +54,8 @@ class ClusterEventDissector
         relativeOffset += SIZE_OF_LONG;
         final long logPosition = buffer.getLong(relativeOffset);
         relativeOffset += SIZE_OF_LONG;
+        final long timestamp = buffer.getLong(relativeOffset);
+        relativeOffset += SIZE_OF_LONG;
         final int leaderMemberId = buffer.getInt(relativeOffset);
         relativeOffset += BitUtil.SIZE_OF_INT;
         final int logSessionId = buffer.getInt(relativeOffset);
@@ -62,6 +64,7 @@ class ClusterEventDissector
             .append(", logLeadershipTermId=").append(logLeadershipTermId)
             .append(", leadershipTermId=").append(leadershipTermId)
             .append(", logPosition=").append(logPosition)
+            .append(", timestamp=").append(timestamp)
             .append(", leaderMemberId=").append(leaderMemberId)
             .append(", logSessionId=").append(logSessionId);
     }

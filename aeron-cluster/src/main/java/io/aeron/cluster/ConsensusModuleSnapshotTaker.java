@@ -101,7 +101,7 @@ class ConsensusModuleSnapshotTaker extends SnapshotTaker implements ExpandableRi
                     .clusterSessionId(session.id())
                     .correlationId(session.correlationId())
                     .openedLogPosition(session.openedLogPosition())
-                    .timeOfLastActivity(session.timeOfLastActivityMs())
+                    .timeOfLastActivity(session.timeOfLastActivityNs())
                     .closeReason(session.closeReason())
                     .responseStreamId(session.responseStreamId())
                     .responseChannel(responseChannel);

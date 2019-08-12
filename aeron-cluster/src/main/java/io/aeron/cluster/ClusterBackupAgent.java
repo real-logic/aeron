@@ -634,7 +634,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
                 liveLogRecordingId,
                 leaderLogEntry.leadershipTermId,
                 leaderLogEntry.termBaseLogPosition,
-                NULL_VALUE);
+                leaderLogEntry.timestamp);
 
             recordingLog.force();
             wasRecordingLogUpdated = true;
@@ -667,7 +667,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
                 liveLogRecordingId,
                 leaderLastTermEntry.leadershipTermId,
                 leaderLastTermEntry.termBaseLogPosition,
-                NULL_VALUE);
+                leaderLastTermEntry.timestamp);
 
             recordingLog.force();
             wasRecordingLogUpdated = true;

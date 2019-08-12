@@ -43,6 +43,7 @@ final class ClusterInterceptor
             final long logLeadershipTermId,
             final long leadershipTermId,
             final long logPosition,
+            final long timestamp,
             final int leaderMemberId,
             final int logSessionId)
         {
@@ -50,6 +51,7 @@ final class ClusterInterceptor
                 logLeadershipTermId,
                 leadershipTermId,
                 logPosition,
+                timestamp,
                 leaderMemberId,
                 logSessionId);
         }

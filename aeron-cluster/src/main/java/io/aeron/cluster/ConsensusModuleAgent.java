@@ -1182,14 +1182,21 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         if (timeUnit != clusterTimeUnit)
         {
-            throw new AgentTerminationException("incompatible units: " + clusterTimeUnit + " log=" + timeUnit);
+            ctx.errorHandler().onError(new ClusterException(
+                "incompatible units: " + clusterTimeUnit + " log=" + timeUnit));
+            state(ConsensusModule.State.CLOSED);
+            ctx.terminationHook().run();
+            return;
         }
 
         if (SemanticVersion.major(ctx.appVersion()) != SemanticVersion.major(appVersion))
         {
-            throw new AgentTerminationException(
+            ctx.errorHandler().onError(new ClusterException(
                 "incompatible version: " + SemanticVersion.toString(ctx.appVersion()) +
-                " log=" + SemanticVersion.toString(appVersion));
+                " log=" + SemanticVersion.toString(appVersion)));
+            state(ConsensusModule.State.CLOSED);
+            ctx.terminationHook().run();
+            return;
         }
 
         this.leadershipTermId = leadershipTermId;

@@ -828,7 +828,9 @@ public class Election implements AutoCloseable
         consensusModuleAgent.awaitImageAndCreateFollowerLogAdapter(logSubscription, logSessionId);
         if (ctx.recordingLog().isUnknown(leadershipTermId))
         {
-            ctx.recordingLog().appendTerm(consensusModuleAgent.logRecordingId(), leadershipTermId, logPosition, nowNs);
+            final long timestamp = ctx.clusterClock().timeUnit().convert(nowNs, TimeUnit.NANOSECONDS);
+            final long recordingId = consensusModuleAgent.logRecordingId();
+            ctx.recordingLog().appendTerm(recordingId, leadershipTermId, logPosition, timestamp);
             ctx.recordingLog().force();
         }
 

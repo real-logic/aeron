@@ -30,7 +30,7 @@ public class NanosecondClusterClock implements ClusterClock
      */
     public TimeUnit timeUnit()
     {
-        return TimeUnit.MICROSECONDS;
+        return TimeUnit.NANOSECONDS;
     }
 
     /**

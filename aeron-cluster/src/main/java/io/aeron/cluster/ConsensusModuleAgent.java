@@ -2262,6 +2262,20 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 idle(fragments);
             }
 
+            final int appVersion = snapshotLoader.appVersion();
+            if (SemanticVersion.major(ctx.appVersion()) != SemanticVersion.major(appVersion))
+            {
+                throw new ClusterException(
+                    "incompatible version: " + SemanticVersion.toString(ctx.appVersion()) +
+                    " snapshot=" + SemanticVersion.toString(appVersion));
+            }
+
+            final TimeUnit timeUnit = snapshotLoader.timeUnit();
+            if (timeUnit != clusterTimeUnit)
+            {
+                throw new ClusterException("incompatible time unit: " + clusterTimeUnit + " snapshot=" + timeUnit);
+            }
+
             pendingServiceMessages.forEach(this::serviceSessionMessageReset, Integer.MAX_VALUE);
         }
 
@@ -2569,7 +2583,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         final ConsensusModuleSnapshotTaker snapshotTaker = new ConsensusModuleSnapshotTaker(
             publication, idleStrategy, aeronClientInvoker);
 
-        snapshotTaker.markBegin(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0);
+        snapshotTaker.markBegin(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0, clusterTimeUnit, ctx.appVersion());
 
         snapshotTaker.snapshotConsensusModuleState(
             nextSessionId, nextServiceSessionId, logServiceSessionId, pendingServiceMessages.size());
@@ -2586,7 +2600,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         timerService.snapshot(snapshotTaker);
         snapshotTaker.snapshot(pendingServiceMessages);
 
-        snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0);
+        snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0, clusterTimeUnit, ctx.appVersion());
     }
 
     private Publication createLogPublication(

@@ -39,6 +39,7 @@ import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
+import static io.aeron.cluster.service.ClusteredServiceContainer.SNAPSHOT_TYPE_ID;
 import static java.util.Collections.unmodifiableCollection;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
@@ -79,7 +80,7 @@ class ClusteredServiceAgent implements Agent, Cluster
     private ActiveLogEvent activeLogEvent;
     private Role role = Role.FOLLOWER;
     private String logChannel = null;
-    private TimeUnit timeUnit = TimeUnit.MILLISECONDS;
+    private TimeUnit timeUnit = null;
 
     ClusteredServiceAgent(final ClusteredServiceContainer.Context ctx)
     {
@@ -776,6 +777,16 @@ class ClusteredServiceAgent implements Agent, Cluster
 
             idle(fragments);
         }
+
+        final int appVersion = snapshotLoader.appVersion();
+        if (SemanticVersion.major(ctx.appVersion()) != SemanticVersion.major(appVersion))
+        {
+            throw new ClusterException(
+                "incompatible version: " + SemanticVersion.toString(ctx.appVersion()) +
+                " snapshot=" + SemanticVersion.toString(appVersion));
+        }
+
+        timeUnit = snapshotLoader.timeUnit();
     }
 
     private long onTakeSnapshot(final long logPosition, final long leadershipTermId)
@@ -836,14 +847,14 @@ class ClusteredServiceAgent implements Agent, Cluster
         final ServiceSnapshotTaker snapshotTaker = new ServiceSnapshotTaker(
             publication, idleStrategy, aeronAgentInvoker);
 
-        snapshotTaker.markBegin(ClusteredServiceContainer.SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0);
+        snapshotTaker.markBegin(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0, timeUnit, ctx.appVersion());
 
         for (final ClientSession clientSession : sessionByIdMap.values())
         {
             snapshotTaker.snapshotSession(clientSession);
         }
 
-        snapshotTaker.markEnd(ClusteredServiceContainer.SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0);
+        snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0, timeUnit, ctx.appVersion());
     }
 
     private void executeAction(final ClusterAction action, final long position, final long leadershipTermId)

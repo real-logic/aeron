@@ -67,7 +67,8 @@ public interface ClusterClock
      * Map {@link ClusterTimeUnit} to a corresponding {@link TimeUnit}.
      *
      * @param clusterTimeUnit to map to a corresponding {@link TimeUnit}.
-     * @return a corresponding {@link TimeUnit}, if null is passed then defaults to {@link TimeUnit#MILLISECONDS}.
+     * @return a corresponding {@link TimeUnit}, if {@link ClusterTimeUnit#NULL_VAL} is passed then defaults
+     * to {@link TimeUnit#MILLISECONDS}.
      */
     static TimeUnit map(final ClusterTimeUnit clusterTimeUnit)
     {

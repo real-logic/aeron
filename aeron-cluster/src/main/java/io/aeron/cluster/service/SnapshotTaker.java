@@ -16,6 +16,7 @@
 package io.aeron.cluster.service;
 
 import io.aeron.Publication;
+import io.aeron.cluster.client.ClusterClock;
 import io.aeron.cluster.codecs.MessageHeaderEncoder;
 import io.aeron.cluster.codecs.SnapshotMark;
 import io.aeron.cluster.codecs.SnapshotMarkerEncoder;
@@ -24,6 +25,8 @@ import io.aeron.logbuffer.BufferClaim;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.IdleStrategy;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * Based class of common functions required to take a snapshot of cluster state.
@@ -48,15 +51,27 @@ public class SnapshotTaker
     }
 
     public void markBegin(
-        final long snapshotTypeId, final long logPosition, final long leadershipTermId, final int snapshotIndex)
+        final long snapshotTypeId,
+        final long logPosition,
+        final long leadershipTermId,
+        final int snapshotIndex,
+        final TimeUnit timeUnit,
+        final int appVersion)
     {
-        markSnapshot(snapshotTypeId, logPosition, leadershipTermId, snapshotIndex, SnapshotMark.BEGIN);
+        markSnapshot(
+            snapshotTypeId, logPosition, leadershipTermId, snapshotIndex, SnapshotMark.BEGIN, timeUnit, appVersion);
     }
 
     public void markEnd(
-        final long snapshotTypeId, final long logPosition, final long leadershipTermId, final int snapshotIndex)
+        final long snapshotTypeId,
+        final long logPosition,
+        final long leadershipTermId,
+        final int snapshotIndex,
+        final TimeUnit timeUnit,
+        final int appVersion)
     {
-        markSnapshot(snapshotTypeId, logPosition, leadershipTermId, snapshotIndex, SnapshotMark.END);
+        markSnapshot(
+            snapshotTypeId, logPosition, leadershipTermId, snapshotIndex, SnapshotMark.END, timeUnit, appVersion);
     }
 
     public void markSnapshot(
@@ -64,7 +79,9 @@ public class SnapshotTaker
         final long logPosition,
         final long leadershipTermId,
         final int snapshotIndex,
-        final SnapshotMark snapshotMark)
+        final SnapshotMark snapshotMark,
+        final TimeUnit timeUnit,
+        final int appVersion)
     {
         idleStrategy.reset();
         while (true)
@@ -78,7 +95,9 @@ public class SnapshotTaker
                     .logPosition(logPosition)
                     .leadershipTermId(leadershipTermId)
                     .index(snapshotIndex)
-                    .mark(snapshotMark);
+                    .mark(snapshotMark)
+                    .timeUnit(ClusterClock.map(timeUnit))
+                    .appVersion(appVersion);
 
                 bufferClaim.commit();
                 break;

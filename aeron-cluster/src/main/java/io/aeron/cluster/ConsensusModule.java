@@ -936,7 +936,7 @@ public class ConsensusModule implements AutoCloseable
         private ClusterMarkFile markFile;
         private MutableDirectBuffer tempBuffer;
 
-        private int appVersion = 1;
+        private int appVersion = SemanticVersion.compose(0, 0, 1);
         private int clusterMemberId = Configuration.clusterMemberId();
         private int appointedLeaderId = Configuration.appointedLeaderId();
         private String clusterMembers = Configuration.clusterMembers();

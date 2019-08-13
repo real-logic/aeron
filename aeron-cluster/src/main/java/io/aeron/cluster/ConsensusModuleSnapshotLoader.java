@@ -16,11 +16,14 @@
 package io.aeron.cluster;
 
 import io.aeron.Image;
+import io.aeron.cluster.client.ClusterClock;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
+
+import java.util.concurrent.TimeUnit;
 
 import static io.aeron.cluster.ConsensusModule.Configuration.SNAPSHOT_TYPE_ID;
 
@@ -31,6 +34,9 @@ class ConsensusModuleSnapshotLoader implements ControlledFragmentHandler
 
     private boolean inSnapshot = false;
     private boolean isDone = false;
+    private int appVersion;
+    private TimeUnit timeUnit;
+
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SnapshotMarkerDecoder snapshotMarkerDecoder = new SnapshotMarkerDecoder();
     private final ClusterSessionDecoder clusterSessionDecoder = new ClusterSessionDecoder();
@@ -49,6 +55,16 @@ class ConsensusModuleSnapshotLoader implements ControlledFragmentHandler
     boolean isDone()
     {
         return isDone;
+    }
+
+    public int appVersion()
+    {
+        return appVersion;
+    }
+
+    public TimeUnit timeUnit()
+    {
+        return timeUnit;
     }
 
     int poll()
@@ -94,6 +110,8 @@ class ConsensusModuleSnapshotLoader implements ControlledFragmentHandler
                             throw new ClusterException("already in snapshot");
                         }
                         inSnapshot = true;
+                        appVersion = snapshotMarkerDecoder.appVersion();
+                        timeUnit = ClusterClock.map(snapshotMarkerDecoder.timeUnit());
                         return Action.CONTINUE;
 
                     case END:

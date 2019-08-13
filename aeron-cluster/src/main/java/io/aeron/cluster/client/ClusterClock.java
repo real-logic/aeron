@@ -71,16 +71,12 @@ public interface ClusterClock
      */
     static TimeUnit map(final ClusterTimeUnit clusterTimeUnit)
     {
-        if (null == clusterTimeUnit)
-        {
-            return TimeUnit.MILLISECONDS;
-        }
-
         switch (clusterTimeUnit)
         {
             case MILLIS: return TimeUnit.MILLISECONDS;
             case MICROS: return TimeUnit.MICROSECONDS;
             case NANOS: return TimeUnit.NANOSECONDS;
+            case NULL_VAL: return TimeUnit.MILLISECONDS;
         }
 
         throw new IllegalArgumentException("unsupported time unit: " + clusterTimeUnit);

@@ -1323,8 +1323,8 @@ public class ConsensusModule implements AutoCloseable
         /**
          * User assigned application version which appended to the log as the appVersion in new leadership events.
          * <p>
-         * This can be validated using {@link SemanticVersion} to ensure only application nodes of the same major
-         * version communicate with each other.
+         * This can be validated using {@link org.agrona.SemanticVersion} to ensure only application nodes of the same
+         * major version communicate with each other.
          *
          * @param appVersion for user application.
          * @return this for a fluent API.
@@ -1336,10 +1336,10 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * This cluster member identity.
+         * User assigned application version which appended to the log as the appVersion in new leadership events.
          * <p>
-         * This can be validated using {@link SemanticVersion} to ensure only application nodes of the same major
-         * version communicate with each other.
+         * This can be validated using {@link org.agrona.SemanticVersion} to ensure only application nodes of the same
+         * major version communicate with each other.
          *
          * @return appVersion for user application.
          */

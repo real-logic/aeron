@@ -27,6 +27,7 @@ import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.status.ReadableCounter;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.SemanticVersion;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
@@ -424,8 +425,17 @@ class ClusteredServiceAgent implements Agent, Cluster
         @SuppressWarnings("unused") final int leaderMemberId,
         @SuppressWarnings("unused") final int logSessionId,
         final TimeUnit timeUnit,
-        @SuppressWarnings("unused") final int appVersion)
+        final int appVersion)
     {
+        if (SemanticVersion.major(ctx.appVersion()) != SemanticVersion.major(appVersion))
+        {
+            ctx.errorHandler().onError(new ClusterException(
+                "incompatible version: " + SemanticVersion.toString(ctx.appVersion()) +
+                " log=" + SemanticVersion.toString(appVersion)));
+            ctx.terminationHook().run();
+            return;
+        }
+
         sessionMessageHeaderEncoder.leadershipTermId(leadershipTermId);
         clusterLogPosition = logPosition;
         clusterTime = timestamp;

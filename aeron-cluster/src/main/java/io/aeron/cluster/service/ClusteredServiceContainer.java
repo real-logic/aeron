@@ -441,6 +441,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
             Context.class, "isConcluded");
         private volatile int isConcluded;
 
+        private int appVersion = 1;
         private int serviceId = Configuration.serviceId();
         private String serviceName = Configuration.serviceName();
         private String replayChannel = Configuration.replayChannel();
@@ -615,6 +616,34 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
             abortLatch = new CountDownLatch(aeron.conductorAgentInvoker() == null ? 1 : 0);
             concludeMarkFile();
+        }
+
+        /**
+         * User assigned application version which appended to the log as the appVersion in new leadership events.
+         * <p>
+         * This can be validated using {@link org.agrona.SemanticVersion} to ensure only application nodes of the same
+         * major version communicate with each other.
+         *
+         * @param appVersion for user application.
+         * @return this for a fluent API.
+         */
+        public Context appVersion(final int appVersion)
+        {
+            this.appVersion = appVersion;
+            return this;
+        }
+
+        /**
+         * User assigned application version which appended to the log as the appVersion in new leadership events.
+         * <p>
+         * This can be validated using {@link org.agrona.SemanticVersion} to ensure only application nodes of the same
+         * major version communicate with each other.
+         *
+         * @return appVersion for user application.
+         */
+        public int appVersion()
+        {
+            return appVersion;
         }
 
         /**

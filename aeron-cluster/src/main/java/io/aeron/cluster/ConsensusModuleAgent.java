@@ -756,21 +756,21 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             {
                 final ClusterMember[] newClusterMembers = ClusterMember.removeMember(clusterMembers, memberId);
                 final String newClusterMembersString = ClusterMember.encodeAsString(newClusterMembers);
-                final long position = logPublisher.computeMembershipChangeEventPosition(newClusterMembersString);
 
                 final long now = clusterClock.time();
-                if (logPublisher.appendMembershipChangeEvent(
+                final long position = logPublisher.appendMembershipChangeEvent(
                     leadershipTermId,
-                    position,
                     now,
                     thisMember.id(),
                     clusterMembers.length,
                     ChangeType.QUIT,
                     memberId,
-                    newClusterMembersString))
+                    newClusterMembersString);
+
+                if (position > 0)
                 {
                     timeOfLastLogUpdateNs = clusterTimeUnit.toNanos(now) - leaderHeartbeatIntervalNs;
-                    member.removalPosition(logPublisher.position());
+                    member.removalPosition(position);
                     pendingMemberRemovals++;
                 }
             }
@@ -2113,18 +2113,17 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
                 if (logPublisher.appendMembershipChangeEvent(
                     this.leadershipTermId,
-                    logPublisher.position(),
                     now,
                     thisMember.id(),
                     newMembers.length,
                     ChangeType.JOIN,
                     member.id(),
-                    ClusterMember.encodeAsString(newMembers)))
+                    ClusterMember.encodeAsString(newMembers)) > 0)
                 {
                     timeOfLastLogUpdateNs = clusterTimeUnit.toNanos(now) - leaderHeartbeatIntervalNs;
 
                     this.passiveMembers = ClusterMember.removeMember(this.passiveMembers, member.id());
-                    this.clusterMembers = newMembers;
+                    clusterMembers = newMembers;
                     rankedPositions = new long[this.clusterMembers.length];
 
                     member.hasRequestedJoin(false);

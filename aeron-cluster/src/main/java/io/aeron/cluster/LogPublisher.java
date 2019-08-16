@@ -30,6 +30,8 @@ import java.util.concurrent.TimeUnit;
 
 import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
+import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
+import static org.agrona.BitUtil.align;
 
 class LogPublisher
 {
@@ -182,7 +184,6 @@ class LogPublisher
                     .closeReason(session.closeReason());
 
                 bufferClaim.commit();
-
                 return true;
             }
 
@@ -244,7 +245,6 @@ class LogPublisher
                     .action(action);
 
                 bufferClaim.commit();
-
                 return true;
             }
 
@@ -288,7 +288,6 @@ class LogPublisher
                     .appVersion(appVersion);
 
                 bufferClaim.commit();
-
                 return true;
             }
 
@@ -299,21 +298,8 @@ class LogPublisher
         return false;
     }
 
-    long computeMembershipChangeEventPosition(final String clusterMembers)
-    {
-        final int fragmentLength =
-            DataHeaderFlyweight.HEADER_LENGTH +
-            MessageHeaderEncoder.ENCODED_LENGTH +
-            MembershipChangeEventEncoder.BLOCK_LENGTH +
-            MembershipChangeEventEncoder.clusterMembersHeaderLength() +
-            clusterMembers.length();
-
-        return publication.position() + BitUtil.align(fragmentLength, FRAME_ALIGNMENT);
-    }
-
-    boolean appendMembershipChangeEvent(
+    long appendMembershipChangeEvent(
         final long leadershipTermId,
-        final long logPosition,
         final long timestamp,
         final int leaderMemberId,
         final int clusterSize,
@@ -322,34 +308,49 @@ class LogPublisher
         final String clusterMembers)
     {
         long result;
-
-        membershipChangeEventEncoder
-            .wrapAndApplyHeader(expandableArrayBuffer, 0, messageHeaderEncoder)
-            .leadershipTermId(leadershipTermId)
-            .logPosition(logPosition)
-            .timestamp(timestamp)
-            .leaderMemberId(leaderMemberId)
-            .clusterSize(clusterSize)
-            .changeType(changeType)
-            .memberId(memberId)
-            .clusterMembers(clusterMembers);
-
-        final int length = membershipChangeEventEncoder.encodedLength() + MessageHeaderEncoder.ENCODED_LENGTH;
+        final long fragmentedLength = computeMembershipChangeEventFragmentedLength(clusterMembers);
 
         int attempts = SEND_ATTEMPTS;
         do
         {
+            membershipChangeEventEncoder
+                .wrapAndApplyHeader(expandableArrayBuffer, 0, messageHeaderEncoder)
+                .leadershipTermId(leadershipTermId)
+                .logPosition(publication.position() + fragmentedLength)
+                .timestamp(timestamp)
+                .leaderMemberId(leaderMemberId)
+                .clusterSize(clusterSize)
+                .changeType(changeType)
+                .memberId(memberId)
+                .clusterMembers(clusterMembers);
+
+            final int length = membershipChangeEventEncoder.encodedLength() + MessageHeaderEncoder.ENCODED_LENGTH;
             result = publication.offer(expandableArrayBuffer, 0, length, null);
             if (result > 0)
             {
-                return true;
+                break;
             }
 
             checkResult(result);
         }
         while (--attempts > 0);
 
-        return false;
+        return result;
+    }
+
+    private long computeMembershipChangeEventFragmentedLength(final String clusterMembers)
+    {
+        final int messageLength = MessageHeaderEncoder.ENCODED_LENGTH +
+            MembershipChangeEventEncoder.BLOCK_LENGTH +
+            MembershipChangeEventEncoder.clusterMembersHeaderLength() +
+            clusterMembers.length();
+
+        final int maxPayloadLength = publication.maxPayloadLength();
+        final int numMaxPayloads = messageLength / maxPayloadLength;
+        final int remainingPayload = messageLength % maxPayloadLength;
+        final int lastFrameLength = remainingPayload > 0 ? align(remainingPayload + HEADER_LENGTH, FRAME_ALIGNMENT) : 0;
+
+        return (numMaxPayloads * (maxPayloadLength + HEADER_LENGTH)) + lastFrameLength;
     }
 
     private static void checkResult(final long result)

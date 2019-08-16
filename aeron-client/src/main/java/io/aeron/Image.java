@@ -709,12 +709,12 @@ public class Image
     {
         return "Image{" +
             "correlationId=" + correlationId +
-            ", joinPosition=" + joinPosition +
             ", sessionId=" + sessionId +
-            ", initialTermId=" + initialTermId +
-            ", termLength=" + termBufferLength() +
             ", isClosed=" + isClosed +
             ", isEos=" + isEos +
+            ", initialTermId=" + initialTermId +
+            ", termLength=" + termBufferLength() +
+            ", joinPosition=" + joinPosition +
             ", position=" + position() +
             ", sourceIdentity='" + sourceIdentity + '\'' +
             ", subscription=" + subscription +

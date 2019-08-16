@@ -403,23 +403,7 @@ class ClientConductor implements Agent, DriverEventsListener
 
     public void onUnavailableCounter(final long registrationId, final int counterId)
     {
-        for (int i = 0, size = unavailableCounterHandlers.size(); i < size; i++)
-        {
-            final UnavailableCounterHandler handler = unavailableCounterHandlers.get(i);
-            isInCallback = true;
-            try
-            {
-                handler.onUnavailableCounter(countersReader, registrationId, counterId);
-            }
-            catch (final Exception ex)
-            {
-                handleError(ex);
-            }
-            finally
-            {
-                isInCallback = false;
-            }
-        }
+        callUnavailableCounterHandlers(registrationId, counterId);
     }
 
     public void onClientTimeout()
@@ -1050,6 +1034,7 @@ class ClientConductor implements Agent, DriverEventsListener
             {
                 final Counter counter = (Counter)resource;
                 counter.internalClose();
+                callUnavailableCounterHandlers(counter.registrationId(), counter.id());
             }
         }
 
@@ -1082,6 +1067,27 @@ class ClientConductor implements Agent, DriverEventsListener
                 {
                     isInCallback = false;
                 }
+            }
+        }
+    }
+
+    private void callUnavailableCounterHandlers(final long registrationId, final int counterId)
+    {
+        for (int i = 0, size = unavailableCounterHandlers.size(); i < size; i++)
+        {
+            final UnavailableCounterHandler handler = unavailableCounterHandlers.get(i);
+            isInCallback = true;
+            try
+            {
+                handler.onUnavailableCounter(countersReader, registrationId, counterId);
+            }
+            catch (final Exception ex)
+            {
+                handleError(ex);
+            }
+            finally
+            {
+                isInCallback = false;
             }
         }
     }

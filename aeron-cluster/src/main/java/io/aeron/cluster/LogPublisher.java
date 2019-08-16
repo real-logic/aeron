@@ -308,7 +308,7 @@ class LogPublisher
         final String clusterMembers)
     {
         long result;
-        final long fragmentedLength = computeMembershipChangeEventFragmentedLength(clusterMembers);
+        final int fragmentedLength = computeMembershipChangeEventFragmentedLength(clusterMembers);
 
         int attempts = SEND_ATTEMPTS;
         do
@@ -338,7 +338,7 @@ class LogPublisher
         return result;
     }
 
-    private long computeMembershipChangeEventFragmentedLength(final String clusterMembers)
+    private int computeMembershipChangeEventFragmentedLength(final String clusterMembers)
     {
         final int messageLength = MessageHeaderEncoder.ENCODED_LENGTH +
             MembershipChangeEventEncoder.BLOCK_LENGTH +

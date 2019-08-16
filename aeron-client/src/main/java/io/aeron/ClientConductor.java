@@ -232,7 +232,7 @@ class ClientConductor implements Agent, DriverEventsListener
                 if (subscription.channelStatusId() == statusIndicatorId)
                 {
                     handleError(new ChannelEndpointException(statusIndicatorId, message));
-                    subscription.internalClose();
+                    closeImages(subscription.internalClose(), subscription.unavailableImageHandler);
                     iterator.remove();
                 }
             }
@@ -323,7 +323,7 @@ class ClientConductor implements Agent, DriverEventsListener
                 sourceIdentity,
                 correlationId);
 
-            final AvailableImageHandler handler = subscription.availableImageHandler();
+            final AvailableImageHandler handler = subscription.availableImageHandler;
             if (null != handler)
             {
                 isInCallback = true;
@@ -353,7 +353,7 @@ class ClientConductor implements Agent, DriverEventsListener
             final Image image = subscription.removeImage(correlationId);
             if (null != image)
             {
-                final UnavailableImageHandler handler = subscription.unavailableImageHandler();
+                final UnavailableImageHandler handler = subscription.unavailableImageHandler;
                 if (null != handler)
                 {
                     isInCallback = true;
@@ -554,7 +554,7 @@ class ClientConductor implements Agent, DriverEventsListener
                 ensureActive();
                 ensureNotReentrant();
 
-                subscription.internalClose();
+                closeImages(subscription.internalClose(), subscription.unavailableImageHandler);
                 final long registrationId = subscription.registrationId();
                 resourceByRegIdMap.remove(registrationId);
                 awaitResponse(driverProxy.removeSubscription(registrationId));
@@ -1038,7 +1038,7 @@ class ClientConductor implements Agent, DriverEventsListener
             if (resource instanceof Subscription)
             {
                 final Subscription subscription = (Subscription)resource;
-                subscription.internalClose();
+                closeImages(subscription.internalClose(), subscription.unavailableImageHandler);
             }
             else if (resource instanceof Publication)
             {
@@ -1054,5 +1054,35 @@ class ClientConductor implements Agent, DriverEventsListener
         }
 
         resourceByRegIdMap.clear();
+    }
+
+    private void closeImages(final Image[] images, final UnavailableImageHandler unavailableImageHandler)
+    {
+        for (final Image image : images)
+        {
+            image.close();
+        }
+
+        for (final Image image : images)
+        {
+            releaseLogBuffers(image.logBuffers(), image.correlationId());
+
+            if (null != unavailableImageHandler)
+            {
+                isInCallback = true;
+                try
+                {
+                    unavailableImageHandler.onUnavailableImage(image);
+                }
+                catch (final Throwable ex)
+                {
+                    handleError(ex);
+                }
+                finally
+                {
+                    isInCallback = false;
+                }
+            }
+        }
     }
 }

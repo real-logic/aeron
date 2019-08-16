@@ -448,10 +448,13 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
         return channelStatusId;
     }
 
-    void internalClose()
+    Image[] internalClose()
     {
         isClosed = true;
-        closeImages();
+        final Image[] images = this.images;
+        this.images = EMPTY_ARRAY;
+
+        return images;
     }
 
     void addImage(final Image image)
@@ -484,34 +487,6 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
         }
 
         return removedImage;
-    }
-
-    private void closeImages()
-    {
-        final Image[] images = this.images;
-        this.images = EMPTY_ARRAY;
-
-        for (final Image image : images)
-        {
-            image.close();
-        }
-
-        for (final Image image : images)
-        {
-            conductor.releaseLogBuffers(image.logBuffers(), image.correlationId());
-
-            try
-            {
-                if (null != unavailableImageHandler)
-                {
-                    unavailableImageHandler.onUnavailableImage(image);
-                }
-            }
-            catch (final Throwable ex)
-            {
-                conductor.handleError(ex);
-            }
-        }
     }
 
     public String toString()

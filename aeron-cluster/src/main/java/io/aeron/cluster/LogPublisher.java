@@ -221,24 +221,19 @@ class LogPublisher
         return result;
     }
 
-    long computeClusterActionPosition()
-    {
-        final int length = DataHeaderFlyweight.HEADER_LENGTH +
-            MessageHeaderEncoder.ENCODED_LENGTH +
-            ClusterActionRequestEncoder.BLOCK_LENGTH;
-
-        return position() + BitUtil.align(length, FRAME_ALIGNMENT);
-    }
-
-    boolean appendClusterAction(
-        final long leadershipTermId, final long logPosition, final long timestamp, final ClusterAction action)
+    boolean appendClusterAction(final long leadershipTermId, final long timestamp, final ClusterAction action)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + ClusterActionRequestEncoder.BLOCK_LENGTH;
+        final int fragmentLength = DataHeaderFlyweight.HEADER_LENGTH +
+            MessageHeaderEncoder.ENCODED_LENGTH +
+            ClusterActionRequestEncoder.BLOCK_LENGTH;
 
         int attempts = SEND_ATTEMPTS;
         do
         {
+            final long logPosition = publication.position() + BitUtil.align(fragmentLength, FRAME_ALIGNMENT);
             final long result = publication.tryClaim(length, bufferClaim);
+
             if (result > 0)
             {
                 clusterActionRequestEncoder.wrapAndApplyHeader(
@@ -260,18 +255,8 @@ class LogPublisher
         return false;
     }
 
-    long computeNewLeadershipPosition()
-    {
-        final int length = DataHeaderFlyweight.HEADER_LENGTH +
-            MessageHeaderEncoder.ENCODED_LENGTH +
-            NewLeadershipTermEventEncoder.BLOCK_LENGTH;
-
-        return position() + BitUtil.align(length, FRAME_ALIGNMENT);
-    }
-
     boolean appendNewLeadershipTermEvent(
         final long leadershipTermId,
-        final long logPosition,
         final long timestamp,
         final long termBaseLogPosition,
         final int leaderMemberId,
@@ -280,10 +265,14 @@ class LogPublisher
         final int appVersion)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + NewLeadershipTermEventEncoder.BLOCK_LENGTH;
+        final int fragmentLength = DataHeaderFlyweight.HEADER_LENGTH +
+            MessageHeaderEncoder.ENCODED_LENGTH +
+            NewLeadershipTermEventEncoder.BLOCK_LENGTH;
 
         int attempts = SEND_ATTEMPTS;
         do
         {
+            final long logPosition = publication.position() + BitUtil.align(fragmentLength, FRAME_ALIGNMENT);
             final long result = publication.tryClaim(length, bufferClaim);
             if (result > 0)
             {
@@ -312,14 +301,14 @@ class LogPublisher
 
     long computeMembershipChangeEventPosition(final String clusterMembers)
     {
-        final int length =
+        final int fragmentLength =
             DataHeaderFlyweight.HEADER_LENGTH +
             MessageHeaderEncoder.ENCODED_LENGTH +
             MembershipChangeEventEncoder.BLOCK_LENGTH +
             MembershipChangeEventEncoder.clusterMembersHeaderLength() +
             clusterMembers.length();
 
-        return position() + BitUtil.align(length, FRAME_ALIGNMENT);
+        return publication.position() + BitUtil.align(fragmentLength, FRAME_ALIGNMENT);
     }
 
     boolean appendMembershipChangeEvent(

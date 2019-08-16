@@ -80,7 +80,7 @@ public class ConsensusModuleAgentTest
         when(mockEgressPublisher.sendEvent(any(), anyLong(), anyInt(), any(), any())).thenReturn(TRUE);
         when(mockLogPublisher.appendSessionClose(any(), anyLong(), anyLong())).thenReturn(TRUE);
         when(mockLogPublisher.appendSessionOpen(any(), anyLong(), anyLong())).thenReturn(128L);
-        when(mockLogPublisher.appendClusterAction(anyLong(), anyLong(), anyLong(), any(ClusterAction.class)))
+        when(mockLogPublisher.appendClusterAction(anyLong(), anyLong(), any(ClusterAction.class)))
             .thenReturn(TRUE);
         when(mockAeron.addPublication(anyString(), anyInt())).thenReturn(mockResponsePublication);
         when(mockAeron.addSubscription(anyString(), anyInt())).thenReturn(mock(Subscription.class));
@@ -245,9 +245,7 @@ public class ConsensusModuleAgentTest
         assertThat((int)controlValue.get(), is(NEUTRAL.code()));
 
         final InOrder inOrder = Mockito.inOrder(mockLogPublisher);
-        inOrder.verify(mockLogPublisher).appendClusterAction(
-            anyLong(), anyLong(), anyLong(), eq(ClusterAction.SUSPEND));
-        inOrder.verify(mockLogPublisher).appendClusterAction(
-            anyLong(), anyLong(), anyLong(), eq(ClusterAction.RESUME));
+        inOrder.verify(mockLogPublisher).appendClusterAction(anyLong(), anyLong(), eq(ClusterAction.SUSPEND));
+        inOrder.verify(mockLogPublisher).appendClusterAction(anyLong(), anyLong(), eq(ClusterAction.RESUME));
     }
 }

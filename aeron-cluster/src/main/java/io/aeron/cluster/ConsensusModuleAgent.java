@@ -747,7 +747,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 passiveMembers = ClusterMember.removeMember(passiveMembers, memberId);
 
                 member.closePublication();
-
                 logPublisher.removePassiveFollower(member.logEndpoint());
 
                 clusterMemberByIdMap.remove(memberId);
@@ -1585,11 +1584,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         if (Cluster.Role.LEADER == role)
         {
-            final long logPosition = logPublisher.computeNewLeadershipPosition();
-
             if (!logPublisher.appendNewLeadershipTermEvent(
                 leadershipTermId,
-                logPosition,
                 now,
                 termBaseLogPosition,
                 memberId,
@@ -1964,9 +1960,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     private boolean appendAction(final ClusterAction action)
     {
-        final long position = logPublisher.computeClusterActionPosition();
-
-        return logPublisher.appendClusterAction(leadershipTermId, position, clusterClock.time(), action);
+        return logPublisher.appendClusterAction(leadershipTermId, clusterClock.time(), action);
     }
 
     private int processPendingSessions(

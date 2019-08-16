@@ -715,9 +715,9 @@ public class Image
             ", termLength=" + termBufferLength() +
             ", isClosed=" + isClosed +
             ", isEos=" + isEos +
+            ", position=" + position() +
             ", sourceIdentity='" + sourceIdentity + '\'' +
             ", subscription=" + subscription +
-            ", position=" + position() +
             '}';
     }
 }

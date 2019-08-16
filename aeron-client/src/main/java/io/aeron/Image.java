@@ -712,6 +712,8 @@ public class Image
             ", joinPosition=" + joinPosition +
             ", sessionId=" + sessionId +
             ", initialTermId=" + initialTermId +
+            ", termLength=" + termBufferLength() +
+            ", isClosed=" + isClosed +
             ", isEos=" + isEos +
             ", sourceIdentity='" + sourceIdentity + '\'' +
             ", subscription=" + subscription +

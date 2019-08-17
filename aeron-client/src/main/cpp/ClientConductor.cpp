@@ -732,7 +732,20 @@ void ClientConductor::closeAllResources(long long nowMs)
 
         if (nullptr != sub)
         {
-            lingerAllResources(nowMs, sub->removeAndCloseAllImages());
+            std::pair<Image::array_t, std::size_t> imageArrayPair = sub->closeAndRemoveImages();
+
+            auto imageArray = imageArrayPair.first;
+            lingerAllResources(nowMs, imageArray);
+
+            const std::size_t length = imageArrayPair.second;
+            for (std::size_t i = 0; i < length; i++)
+            {
+                auto image = *(imageArray[i]);
+                image.close();
+
+                CallbackGuard callbackGuard(m_isInCallback);
+                kv.second.m_onUnavailableImageHandler(image);
+            }
         }
     }
     m_subscriptionByRegistrationId.clear();

@@ -426,23 +426,14 @@ public:
         return result;
     }
 
-    Image::array_t removeAndCloseAllImages()
+    std::pair<Image::array_t, std::size_t> closeAndRemoveImages()
     {
-        auto imageArrayPair = m_imageArray.load();
-        auto imageArray = imageArrayPair.first;
-        const std::size_t length = imageArrayPair.second;
-
-        for (std::size_t i = 0; i < length; i++)
-        {
-            imageArray[i]->close();
-        }
-
-        auto newImageArray = new std::shared_ptr<Image>[0];
-
-        m_imageArray.store(newImageArray, 0);
         std::atomic_store_explicit(&m_isClosed, true, std::memory_order_release);
 
-        return imageArray;
+        std::pair<Image::array_t, std::size_t> imageArrayPair = m_imageArray.load();
+        m_imageArray.store(new std::shared_ptr<Image>[0], 0);
+
+        return imageArrayPair;
     }
     /// @endcond
 

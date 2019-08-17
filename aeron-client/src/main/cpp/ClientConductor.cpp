@@ -749,6 +749,25 @@ void ClientConductor::closeAllResources(long long nowMs)
         }
     }
     m_subscriptionByRegistrationId.clear();
+
+    for (auto& kv : m_counterByRegistrationId)
+    {
+        std::shared_ptr<Counter> counter = kv.second.m_counter.lock();
+
+        if (nullptr != counter)
+        {
+            counter->close();
+            std::int64_t registrationId = counter->registrationId();
+            std::int32_t counterId = counter->id();
+
+            for (auto const& handler: m_onUnavailableCounterHandlers)
+            {
+                CallbackGuard callbackGuard(m_isInCallback);
+                handler(m_countersReader, registrationId, counterId);
+            }
+        }
+    }
+    m_counterByRegistrationId.clear();
 }
 
 void ClientConductor::onCheckManagedResources(long long nowMs)

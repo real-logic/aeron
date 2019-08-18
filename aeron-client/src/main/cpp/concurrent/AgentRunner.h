@@ -39,7 +39,7 @@ public:
         m_agent(agent),
         m_idleStrategy(idleStrategy),
         m_exceptionHandler(exceptionHandler),
-        m_running(true),
+        m_running(false),
         m_name("aeron-agent")
     {
     }
@@ -88,6 +88,9 @@ public:
      */
     inline void run()
     {
+        bool expected = false;
+        std::atomic_compare_exchange_strong(&m_running, &expected, true);
+
         try
         {
             m_agent.onStart();

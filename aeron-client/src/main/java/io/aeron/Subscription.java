@@ -448,13 +448,13 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
         return channelStatusId;
     }
 
-    Image[] internalClose()
+    void internalClose()
     {
         isClosed = true;
         final Image[] images = this.images;
         this.images = EMPTY_ARRAY;
 
-        return images;
+        conductor.closeImages(images, unavailableImageHandler);
     }
 
     void addImage(final Image image)

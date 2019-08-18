@@ -232,7 +232,7 @@ class ClientConductor implements Agent, DriverEventsListener
                 if (subscription.channelStatusId() == statusIndicatorId)
                 {
                     handleError(new ChannelEndpointException(statusIndicatorId, message));
-                    closeImages(subscription.internalClose(), subscription.unavailableImageHandler());
+                    subscription.internalClose();
                     iterator.remove();
                 }
             }
@@ -538,7 +538,7 @@ class ClientConductor implements Agent, DriverEventsListener
                 ensureActive();
                 ensureNotReentrant();
 
-                closeImages(subscription.internalClose(), subscription.unavailableImageHandler());
+                subscription.internalClose();
                 final long registrationId = subscription.registrationId();
                 resourceByRegIdMap.remove(registrationId);
                 awaitResponse(driverProxy.removeSubscription(registrationId));
@@ -816,6 +816,35 @@ class ClientConductor implements Agent, DriverEventsListener
         }
     }
 
+    void closeImages(final Image[] images, final UnavailableImageHandler unavailableImageHandler)
+    {
+        for (final Image image : images)
+        {
+            image.close();
+            releaseLogBuffers(image.logBuffers(), image.correlationId());
+        }
+
+        if (null != unavailableImageHandler)
+        {
+            for (final Image image : images)
+            {
+                isInCallback = true;
+                try
+                {
+                    unavailableImageHandler.onUnavailableImage(image);
+                }
+                catch (final Throwable ex)
+                {
+                    handleError(ex);
+                }
+                finally
+                {
+                    isInCallback = false;
+                }
+            }
+        }
+    }
+
     private void ensureActive()
     {
         if (isClosed)
@@ -963,8 +992,7 @@ class ClientConductor implements Agent, DriverEventsListener
             final long serviceIntervalNs = nowNs - timeOfLastServiceNs;
 
             throw new ConductorServiceTimeoutException(
-                "service interval exceeded (ns): timeout=" + interServiceTimeoutNs + ", actual=" + serviceIntervalNs
-            );
+                "service interval exceeded (ns): timeout=" + interServiceTimeoutNs + ", actual=" + serviceIntervalNs);
         }
     }
 
@@ -983,8 +1011,7 @@ class ClientConductor implements Agent, DriverEventsListener
 
                 throw new DriverTimeoutException(
                     "MediaDriver keepalive age exceeded (ms): timeout= " +
-                        driverTimeoutMs + ", actual=" + keepAliveAgeMs
-                );
+                     driverTimeoutMs + ", actual=" + keepAliveAgeMs);
             }
 
             driverProxy.sendClientKeepalive();
@@ -1022,7 +1049,7 @@ class ClientConductor implements Agent, DriverEventsListener
             if (resource instanceof Subscription)
             {
                 final Subscription subscription = (Subscription)resource;
-                closeImages(subscription.internalClose(), subscription.unavailableImageHandler());
+                subscription.internalClose();
             }
             else if (resource instanceof Publication)
             {
@@ -1039,36 +1066,6 @@ class ClientConductor implements Agent, DriverEventsListener
         }
 
         resourceByRegIdMap.clear();
-    }
-
-    private void closeImages(final Image[] images, final UnavailableImageHandler unavailableImageHandler)
-    {
-        for (final Image image : images)
-        {
-            image.close();
-        }
-
-        for (final Image image : images)
-        {
-            releaseLogBuffers(image.logBuffers(), image.correlationId());
-
-            if (null != unavailableImageHandler)
-            {
-                isInCallback = true;
-                try
-                {
-                    unavailableImageHandler.onUnavailableImage(image);
-                }
-                catch (final Throwable ex)
-                {
-                    handleError(ex);
-                }
-                finally
-                {
-                    isInCallback = false;
-                }
-            }
-        }
     }
 
     private void callUnavailableCounterHandlers(final long registrationId, final int counterId)

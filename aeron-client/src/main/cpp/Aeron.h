@@ -68,6 +68,16 @@ public:
     ~Aeron();
 
     /**
+     * Indicate if the instance is closed and can not longer be used.
+     *
+     * @return true is the instance is closed and can no longer be used, otherwise false.
+     */
+    inline bool isClosed()
+    {
+        return m_conductor.isClosed();
+    }
+
+    /**
      * Create an Aeron instance and connect to the media driver.
      * <p>
      * Threads required for interacting with the media driver are created and managed within the Aeron instance.

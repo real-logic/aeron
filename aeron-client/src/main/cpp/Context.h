@@ -125,6 +125,12 @@ typedef std::function<void(
     std::int64_t registrationId,
     std::int32_t counterId)> on_unavailable_counter_t;
 
+/**
+ * Function called when the Aeron client is closed to notify that the client or any of it associated resources
+ * should not be used after this event.
+ */
+typedef std::function<void()> on_close_client_t;
+
 const static long NULL_TIMEOUT = -1;
 const static long DEFAULT_MEDIA_DRIVER_TIMEOUT_MS = 10000;
 const static long DEFAULT_RESOURCE_LINGER_MS = 5000;
@@ -177,6 +183,10 @@ inline void defaultOnAvailableCounterHandler(CountersReader&, std::int64_t, std:
 }
 
 inline void defaultOnUnavailableCounterHandler(CountersReader&, std::int64_t, std::int32_t)
+{
+}
+
+inline void defaultOnCloseClientHandler()
 {
 }
 
@@ -329,6 +339,18 @@ public:
     }
 
     /**
+     * Set the handler to be called when the Aeron client is closed and not longer active.
+     *
+     * @param handler to be called when the Aeron client is closed.
+     * @return reference to this Context instance.
+     */
+    inline this_t& closeClientHandler(const on_close_client_t &handler)
+    {
+        m_onCloseClientHandler = handler;
+        return *this;
+    }
+
+    /**
      * Set the amount of time, in milliseconds, that this client will wait until it determines the
      * Media Driver is unavailable. When this happens a DriverTimeoutException will be generated for the error handler.
      *
@@ -460,6 +482,7 @@ private:
     on_unavailable_image_t m_onUnavailableImageHandler = defaultOnUnavailableImageHandler;
     on_available_counter_t m_onAvailableCounterHandler = defaultOnAvailableCounterHandler;
     on_unavailable_counter_t m_onUnavailableCounterHandler = defaultOnUnavailableCounterHandler;
+    on_close_client_t m_onCloseClientHandler = defaultOnCloseClientHandler;
     long m_mediaDriverTimeout = DEFAULT_MEDIA_DRIVER_TIMEOUT_MS;
     long m_resourceLingerTimeout = DEFAULT_RESOURCE_LINGER_MS;
     bool m_useConductorAgentInvoker = false;

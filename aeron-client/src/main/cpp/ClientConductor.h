@@ -82,6 +82,7 @@ public:
         const exception_handler_t& errorHandler,
         const on_available_counter_t& availableCounterHandler,
         const on_unavailable_counter_t& unavailableCounterHandler,
+        const on_close_client_t& onCloseClientHandler,
         long driverTimeoutMs,
         long resourceLingerTimeoutMs,
         long long interServiceTimeoutNs,
@@ -107,6 +108,7 @@ public:
     {
         m_onAvailableCounterHandlers.emplace_back(availableCounterHandler);
         m_onUnavailableCounterHandlers.emplace_back(unavailableCounterHandler);
+        m_onCloseClientHandlers.emplace_back(onCloseClientHandler);
     }
 
     virtual ~ClientConductor();
@@ -127,7 +129,14 @@ public:
 
     void onClose()
     {
-        std::atomic_store_explicit(&m_isClosed, true, std::memory_order_release);
+        std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+        closeAllResources(m_epochClock());
+
+        for (auto const& handler: m_onCloseClientHandlers)
+        {
+            CallbackGuard callbackGuard(m_isInCallback);
+            handler();
+        }
     }
 
     std::int64_t addPublication(const std::string& channel, std::int32_t streamId);
@@ -177,7 +186,7 @@ public:
     void onOperationSuccess(std::int64_t correlationId);
 
     void onErrorResponse(
-        std::int64_t offendingCommandCorrelationId, std::int32_t errorCode, const std::string& errorMessage);
+        std::int64_t offendingCommandCorrelationId, std::int32_t errorCode, const std::string &errorMessage);
 
     void onAvailableImage(
         std::int64_t correlationId,
@@ -197,17 +206,20 @@ public:
 
     void closeAllResources(long long nowMs);
 
-    void addDestination(std::int64_t publicationRegistrationId, const std::string& endpointChannel);
-    void removeDestination(std::int64_t publicationRegistrationId, const std::string& endpointChannel);
+    void addDestination(std::int64_t publicationRegistrationId, const std::string &endpointChannel);
+    void removeDestination(std::int64_t publicationRegistrationId, const std::string &endpointChannel);
 
-    void addRcvDestination(std::int64_t subscriptionRegistrationId, const std::string& endpointChannel);
-    void removeRcvDestination(std::int64_t subscriptionRegistrationId, const std::string& endpointChannel);
+    void addRcvDestination(std::int64_t subscriptionRegistrationId, const std::string &endpointChannel);
+    void removeRcvDestination(std::int64_t subscriptionRegistrationId, const std::string &endpointChannel);
 
-    void addAvailableCounterHandler(const on_available_counter_t& handler);
-    void removeAvailableCounterHandler(const on_available_counter_t& handler);
+    void addAvailableCounterHandler(const on_available_counter_t &handler);
+    void removeAvailableCounterHandler(const on_available_counter_t &handler);
 
-    void addUnavailableCounterHandler(const on_unavailable_counter_t& handler);
-    void removeUnavailableCounterHandler(const on_unavailable_counter_t& handler);
+    void addUnavailableCounterHandler(const on_unavailable_counter_t &handler);
+    void removeUnavailableCounterHandler(const on_unavailable_counter_t &handler);
+
+    void addCloseClientHandler(const on_close_client_t &handler);
+    void removeCloseClientHandler(const on_close_client_t &handler);
 
     inline CountersReader& countersReader()
     {
@@ -241,11 +253,6 @@ public:
         {
             throw AeronException("Aeron client conductor is closed", SOURCEINFO);
         }
-    }
-
-    inline void forceClose()
-    {
-        std::atomic_store_explicit(&m_isClosed, true, std::memory_order_release);
     }
 
 protected:
@@ -409,6 +416,7 @@ private:
 
     std::vector<on_available_counter_t> m_onAvailableCounterHandlers;
     std::vector<on_unavailable_counter_t> m_onUnavailableCounterHandlers;
+    std::vector<on_close_client_t> m_onCloseClientHandlers;
 
     epoch_clock_t m_epochClock;
     long long m_timeOfLastKeepaliveMs;

@@ -462,6 +462,31 @@ void ClientConductor::removeUnavailableCounterHandler(const on_unavailable_count
     v.erase(std::remove_if(v.begin(), v.end(), predicate), v.end());
 }
 
+void ClientConductor::addCloseClientHandler(const on_close_client_t &handler)
+{
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+    ensureNotReentrant();
+    ensureOpen();
+
+    m_onCloseClientHandlers.emplace_back(handler);
+}
+
+void ClientConductor::removeCloseClientHandler(const on_close_client_t &handler)
+{
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+    ensureNotReentrant();
+    ensureOpen();
+
+    auto &v = m_onCloseClientHandlers;
+    auto predicate =
+        [handler](const on_close_client_t &item)
+        {
+            return getAddress(item) == getAddress(handler);
+        };
+
+    v.erase(std::remove_if(v.begin(), v.end(), predicate), v.end());
+}
+
 void ClientConductor::onNewPublication(
     std::int64_t registrationId,
     std::int64_t originalRegistrationId,
@@ -691,9 +716,8 @@ void ClientConductor::onClientTimeout(std::int64_t clientId)
     if (m_driverProxy.clientId() == clientId && !isClosed())
     {
         std::lock_guard<std::recursive_mutex> lock(m_adminLock);
-        const long long nowMs = m_epochClock();
 
-        closeAllResources(nowMs);
+        closeAllResources(m_epochClock());
 
         ClientTimeoutException exception("client timeout from driver", SOURCEINFO);
         m_errorHandler(exception);
@@ -702,7 +726,7 @@ void ClientConductor::onClientTimeout(std::int64_t clientId)
 
 void ClientConductor::closeAllResources(long long nowMs)
 {
-    forceClose();
+    std::atomic_store_explicit(&m_isClosed, true, std::memory_order_release);
 
     for (auto& kv : m_publicationByRegistrationId)
     {

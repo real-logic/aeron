@@ -51,6 +51,7 @@ Aeron::Aeron(Context &context) :
         m_context.m_exceptionHandler,
         m_context.m_onAvailableCounterHandler,
         m_context.m_onUnavailableCounterHandler,
+        m_context.m_onCloseClientHandler,
         m_context.m_mediaDriverTimeout,
         m_context.m_resourceLingerTimeout,
         CncFileDescriptor::clientLivenessTimeout(m_cncBuffer),

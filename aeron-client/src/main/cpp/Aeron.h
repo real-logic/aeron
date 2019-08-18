@@ -330,6 +330,26 @@ public:
     }
 
     /**
+     * Add a handler to the list to be called when the client is closed.
+     *
+     * @param handler to be added to the close client handlers list.
+     */
+    inline void addCloseClientHandler(const on_close_client_t & handler)
+    {
+        m_conductor.addCloseClientHandler(handler);
+    }
+
+    /**
+     * Remove a handler from the list to be called when the client is closed.
+     *
+     * @param handler to be removed from the close client handlers list.
+     */
+    inline void removeCloseClientHandler(const on_close_client_t & handler)
+    {
+        m_conductor.removeCloseClientHandler(handler);
+    }
+
+    /**
      * Return the AgentInvoker for the client conductor.
      *
      * @return AgentInvoker for the conductor.

@@ -92,6 +92,7 @@ public:
             [&](const std::exception& exception) { m_errorHandler(exception); },
             std::bind(&testing::NiceMock<MockClientConductorHandlers>::onAvailableCounter, &m_handlers, _1, _2, _3),
             std::bind(&testing::NiceMock<MockClientConductorHandlers>::onUnavailableCounter, &m_handlers, _1, _2, _3),
+            defaultOnCloseClientHandler,
             DRIVER_TIMEOUT_MS,
             RESOURCE_LINGER_TIMEOUT_MS,
             INTER_SERVICE_TIMEOUT_NS,

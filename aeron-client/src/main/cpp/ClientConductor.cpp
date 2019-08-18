@@ -280,15 +280,16 @@ void ClientConductor::releaseSubscription(std::int64_t registrationId, Image::ar
     if (it != m_subscriptionByRegistrationId.end())
     {
         m_driverProxy.removeSubscription(registrationId);
+        lingerAllResources(m_epochClock(), imageArray);
 
         for (std::size_t i = 0; i < length; i++)
         {
-            it->second.m_onUnavailableImageHandler(*imageArray[i]);
+            auto image = *imageArray[i];
+            image.close();
+            it->second.m_onUnavailableImageHandler(image);
         }
 
         m_subscriptionByRegistrationId.erase(it);
-
-        lingerAllResources(m_epochClock(), imageArray);
     }
     else
     {

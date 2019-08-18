@@ -45,7 +45,6 @@ ClientConductor::~ClientConductor()
         });
 
     m_driverProxy.clientClose();
-    std::atomic_store_explicit(&m_isClosed, true, std::memory_order_release);
 }
 
 std::int64_t ClientConductor::addPublication(const std::string &channel, std::int32_t streamId)

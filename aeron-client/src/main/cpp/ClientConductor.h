@@ -127,6 +127,7 @@ public:
 
     void onClose()
     {
+        std::atomic_store_explicit(&m_isClosed, true, std::memory_order_release);
     }
 
     std::int64_t addPublication(const std::string& channel, std::int32_t streamId);
@@ -210,6 +211,7 @@ public:
 
     inline CountersReader& countersReader()
     {
+        ensureOpen();
         return m_countersReader;
     }
 

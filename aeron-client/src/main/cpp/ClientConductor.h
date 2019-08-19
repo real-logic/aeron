@@ -129,13 +129,10 @@ public:
 
     void onClose()
     {
-        std::lock_guard<std::recursive_mutex> lock(m_adminLock);
-        closeAllResources(m_epochClock());
-
-        for (auto const& handler: m_onCloseClientHandlers)
+        if (!m_isClosed)
         {
-            CallbackGuard callbackGuard(m_isInCallback);
-            handler();
+            std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+            closeAllResources(m_epochClock());
         }
     }
 

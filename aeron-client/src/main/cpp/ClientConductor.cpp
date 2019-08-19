@@ -792,6 +792,12 @@ void ClientConductor::closeAllResources(long long nowMs)
         }
     }
     m_counterByRegistrationId.clear();
+
+    for (auto const& handler: m_onCloseClientHandlers)
+    {
+        CallbackGuard callbackGuard(m_isInCallback);
+        handler();
+    }
 }
 
 void ClientConductor::onCheckManagedResources(long long nowMs)

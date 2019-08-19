@@ -285,6 +285,8 @@ void ClientConductor::releaseSubscription(std::int64_t registrationId, Image::ar
         {
             auto image = *imageArray[i];
             image.close();
+
+            CallbackGuard callbackGuard(m_isInCallback);
             it->second.m_onUnavailableImageHandler(image);
         }
 

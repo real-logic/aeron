@@ -28,8 +28,7 @@ ExclusivePublication::ExclusivePublication(
     std::int32_t sessionId,
     UnsafeBufferPosition& publicationLimit,
     std::int32_t channelStatusId,
-    std::shared_ptr<LogBuffers> logBuffers)
-    :
+    std::shared_ptr<LogBuffers> logBuffers) :
     m_conductor(conductor),
     m_logMetaDataBuffer(logBuffers->atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX)),
     m_channel(channel),
@@ -69,6 +68,7 @@ ExclusivePublication::ExclusivePublication(
 
 ExclusivePublication::~ExclusivePublication()
 {
+    std::atomic_store_explicit(&m_isClosed, true, std::memory_order_release);
     m_conductor.releaseExclusivePublication(m_registrationId);
 }
 

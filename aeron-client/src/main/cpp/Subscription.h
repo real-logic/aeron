@@ -391,18 +391,18 @@ public:
         auto imageArrayPair = m_imageArray.load();
         auto imageArray = imageArrayPair.first;
         const std::size_t length = imageArrayPair.second;
-        bool isConnected = false;
+        bool hasImage = false;
 
         for (std::size_t i = 0; i < length; i++)
         {
             if (imageArray[i]->correlationId() == correlationId)
             {
-                isConnected = true;
+                hasImage = true;
                 break;
             }
         }
 
-        return isConnected;
+        return hasImage;
     }
 
     Image::array_t addImage(std::shared_ptr<Image> image)
@@ -428,10 +428,9 @@ public:
 
     std::pair<Image::array_t, std::size_t> closeAndRemoveImages()
     {
-        std::atomic_store_explicit(&m_isClosed, true, std::memory_order_release);
-
         std::pair<Image::array_t, std::size_t> imageArrayPair = m_imageArray.load();
         m_imageArray.store(new std::shared_ptr<Image>[0], 0);
+        std::atomic_store_explicit(&m_isClosed, true, std::memory_order_release);
 
         return imageArrayPair;
     }

@@ -36,7 +36,7 @@ int32_t aeron_channel_endpoint_status_allocate(
     size_t channel_length,
     const char *channel);
 
-int32_t aeron_heartbeat_status_allocate(
+int32_t aeron_heartbeat_timestamp_allocate(
     aeron_counters_manager_t *counters_manager,
     const char *name,
     int32_t type_id,
@@ -130,10 +130,10 @@ int32_t aeron_counter_receive_channel_status_allocate(
     size_t channel_length,
     const char *channel);
 
-#define AERON_COUNTER_CLIENT_HEARTBEAT_STATUS_NAME "client-heartbeat"
-#define AERON_COUNTER_CLIENT_HEARTBEAT_STATUS_TYPE_ID (11)
+#define AERON_COUNTER_CLIENT_HEARTBEAT_TIMESTAMP_NAME "client-heartbeat"
+#define AERON_COUNTER_CLIENT_HEARTBEAT_TIMESTAMP_TYPE_ID (11)
 
-int32_t aeron_counter_client_heartbeat_status_allocate(
+int32_t aeron_counter_client_heartbeat_timestamp_allocate(
     aeron_counters_manager_t *counters_manager,
     int64_t client_id);
 

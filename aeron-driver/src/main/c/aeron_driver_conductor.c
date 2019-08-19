@@ -226,7 +226,7 @@ aeron_client_t *aeron_driver_conductor_get_or_add_client(aeron_driver_conductor_
         {
             aeron_counter_t client_heartbeat;
 
-            client_heartbeat.counter_id = aeron_counter_client_heartbeat_status_allocate(
+            client_heartbeat.counter_id = aeron_counter_client_heartbeat_timestamp_allocate(
                 &conductor->counters_manager, client_id);
             client_heartbeat.value_addr = aeron_counter_addr(&conductor->counters_manager, client_heartbeat.counter_id);
 
@@ -240,9 +240,9 @@ aeron_client_t *aeron_driver_conductor_get_or_add_client(aeron_driver_conductor_
                 client->closed_by_command = false;
                 client->time_of_last_keepalive_ms = conductor->context->epoch_clock();
 
-                client->heartbeat_status.counter_id = client_heartbeat.counter_id;
-                client->heartbeat_status.value_addr = client_heartbeat.value_addr;
-                aeron_counter_set_ordered(client->heartbeat_status.value_addr, client->time_of_last_keepalive_ms);
+                client->heartbeat_timestamp.counter_id = client_heartbeat.counter_id;
+                client->heartbeat_timestamp.value_addr = client_heartbeat.value_addr;
+                aeron_counter_set_ordered(client->heartbeat_timestamp.value_addr, client->time_of_last_keepalive_ms);
 
                 client->client_liveness_timeout_ms = conductor->context->client_liveness_timeout_ns < 1000000 ?
                     1 : conductor->context->client_liveness_timeout_ns / 1000000;
@@ -359,7 +359,7 @@ void aeron_client_delete(aeron_driver_conductor_t *conductor, aeron_client_t *cl
         }
     }
 
-    aeron_counters_manager_free(&conductor->counters_manager, client->heartbeat_status.counter_id);
+    aeron_counters_manager_free(&conductor->counters_manager, client->heartbeat_timestamp.counter_id);
 
     aeron_free(client->publication_links.array);
     client->publication_links.array = NULL;
@@ -372,8 +372,8 @@ void aeron_client_delete(aeron_driver_conductor_t *conductor, aeron_client_t *cl
     client->counter_links.capacity = 0;
 
     client->client_id = -1;
-    client->heartbeat_status.counter_id = -1;
-    client->heartbeat_status.value_addr = NULL;
+    client->heartbeat_timestamp.counter_id = -1;
+    client->heartbeat_timestamp.value_addr = NULL;
 }
 
 void aeron_driver_conductor_on_available_image(
@@ -2340,7 +2340,7 @@ int aeron_driver_conductor_on_client_keepalive(aeron_driver_conductor_t *conduct
         aeron_client_t *client = &conductor->clients.array[index];
 
         client->time_of_last_keepalive_ms = conductor->epoch_clock();
-        aeron_counter_set_ordered(client->heartbeat_status.value_addr, client->time_of_last_keepalive_ms);
+        aeron_counter_set_ordered(client->heartbeat_timestamp.value_addr, client->time_of_last_keepalive_ms);
     }
 
     return 0;
@@ -2581,7 +2581,7 @@ int aeron_driver_conductor_on_client_close(aeron_driver_conductor_t *conductor, 
 
         client->closed_by_command = true;
         client->time_of_last_keepalive_ms = 0;
-        aeron_counter_set_ordered(client->heartbeat_status.value_addr, client->time_of_last_keepalive_ms);
+        aeron_counter_set_ordered(client->heartbeat_timestamp.value_addr, client->time_of_last_keepalive_ms);
     }
 
     return 0;

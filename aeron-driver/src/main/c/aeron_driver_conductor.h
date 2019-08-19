@@ -57,7 +57,7 @@ typedef struct aeron_client_stct
     int64_t client_liveness_timeout_ms;
     int64_t time_of_last_keepalive_ms;
 
-    aeron_counter_t heartbeat_status;
+    aeron_counter_t heartbeat_timestamp;
 
     struct publication_link_stct
     {

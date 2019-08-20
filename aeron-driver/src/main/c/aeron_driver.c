@@ -572,9 +572,9 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
 
     fprintf(fpout, "aeron_driver_context_t {");
     fprintf(fpout, "\n    cnc_version=%d.%d.%d",
-         (int)aeron_semantic_version_major(AERON_CNC_VERSION),
-         (int)aeron_semantic_version_minor(AERON_CNC_VERSION),
-         (int)aeron_semantic_version_patch(AERON_CNC_VERSION));
+        (int)aeron_semantic_version_major(AERON_CNC_VERSION),
+        (int)aeron_semantic_version_minor(AERON_CNC_VERSION),
+        (int)aeron_semantic_version_patch(AERON_CNC_VERSION));
     fprintf(fpout, "\n    aeron_dir=%s", context->aeron_dir);
     fprintf(fpout, "\n    driver_timeout_ms=%" PRIu64, context->driver_timeout_ms);
     fprintf(fpout, "\n    print_configuration_on_start=%d", context->print_configuration_on_start);

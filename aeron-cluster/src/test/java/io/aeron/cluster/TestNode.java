@@ -212,6 +212,11 @@ class TestNode implements AutoCloseable
         }
     }
 
+    String getClusterMembers()
+    {
+        return clusteredMediaDriver.consensusModule().context().clusterMembers();
+    }
+
     static class TestService extends StubClusteredService
     {
         private int index;

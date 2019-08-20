@@ -73,18 +73,14 @@ public class ArchiveTest
                         final AeronArchive archive = AeronArchive.connect(ctx);
                         archiveClientQueue.add(archive);
 
-                        archive.getRecordingPosition(0L);
+                        final long position = archive.getRecordingPosition(0L);
                         latch.countDown();
+
+                        assertEquals(AeronArchive.NULL_POSITION, position);
                     });
             }
 
             latch.await(driver.archive().context().connectTimeoutNs() * 2, TimeUnit.NANOSECONDS);
-
-            assertThat(latch.getCount(), is(0L));
-        }
-        finally
-        {
-            executor.shutdownNow();
 
             AeronArchive archiveClient;
             while (null != (archiveClient = archiveClientQueue.poll()))
@@ -92,6 +88,11 @@ public class ArchiveTest
                 archiveClient.close();
             }
 
+            assertThat(latch.getCount(), is(0L));
+        }
+        finally
+        {
+            executor.shutdownNow();
             archiveCtx.deleteArchiveDirectory();
             driverCtx.deleteAeronDirectory();
         }

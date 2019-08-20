@@ -2982,6 +2982,7 @@ public final class MediaDriver implements AutoCloseable
         public String toString()
         {
             return "MediaDriver.Context{" +
+                "\n    cncVersion=" + SemanticVersion.toString(CNC_VERSION) +
                 "\n    aeronDirectoryName=" + aeronDirectoryName() +
                 "\n    driverTimeoutMs=" + driverTimeoutMs() +
                 "\n    printConfigurationOnStart=" + printConfigurationOnStart +

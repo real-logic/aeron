@@ -122,6 +122,7 @@ int aeron_driver_receiver_do_work(void *clientd)
         &receiver->poller,
         mmsghdr,
         AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS,
+        &bytes_received,
         aeron_receive_channel_endpoint_dispatch,
         receiver);
 
@@ -130,11 +131,7 @@ int aeron_driver_receiver_do_work(void *clientd)
         AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver poller_poll: %s", aeron_errmsg());
     }
 
-    for (int i = 0; i < poll_result; i++)
-    {
-        bytes_received += mmsghdr[i].msg_len;
-        work_count++;
-    }
+    work_count = (bytes_received > 0) ? (int)bytes_received : 0;
 
     aeron_counter_add_ordered(receiver->total_bytes_received_counter, bytes_received);
 

@@ -45,8 +45,8 @@ struct Settings
     std::string dirPrefix = "";
     std::string channel = samples::configuration::DEFAULT_CHANNEL;
     std::int32_t streamId = samples::configuration::DEFAULT_STREAM_ID;
-    int numberOfMessages = samples::configuration::DEFAULT_NUMBER_OF_MESSAGES;
-    int lingerTimeoutMs = samples::configuration::DEFAULT_LINGER_TIMEOUT_MS;
+    long numberOfMessages = samples::configuration::DEFAULT_NUMBER_OF_MESSAGES;
+    long lingerTimeoutMs = samples::configuration::DEFAULT_LINGER_TIMEOUT_MS;
 };
 
 typedef std::array<std::uint8_t, 256> buffer_t;
@@ -126,12 +126,12 @@ int main(int argc, char** argv)
         concurrent::AtomicBuffer srcBuffer(&buffer[0], buffer.size());
         char message[256];
 
-        for (int i = 0; i < settings.numberOfMessages && running; i++)
+        for (long i = 0; i < settings.numberOfMessages && running; i++)
         {
 #if _MSC_VER
-            const int messageLen = ::sprintf_s(message, sizeof(message), "Hello World! %d", i);
+            const int messageLen = ::sprintf_s(message, sizeof(message), "Hello World! %ld", i);
 #else
-            const int messageLen = ::snprintf(message, sizeof(message), "Hello World! %d", i);
+            const int messageLen = ::snprintf(message, sizeof(message), "Hello World! %ld", i);
 #endif
 
             srcBuffer.putBytes(0, reinterpret_cast<std::uint8_t *>(message), messageLen);

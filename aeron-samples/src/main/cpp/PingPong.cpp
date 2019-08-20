@@ -63,10 +63,10 @@ struct Settings
     std::string pongChannel = samples::configuration::DEFAULT_PONG_CHANNEL;
     std::int32_t pingStreamId = samples::configuration::DEFAULT_PING_STREAM_ID;
     std::int32_t pongStreamId = samples::configuration::DEFAULT_PONG_STREAM_ID;
+    long numberOfWarmupMessages = samples::configuration::DEFAULT_NUMBER_OF_WARM_UP_MESSAGES;
     long numberOfMessages = samples::configuration::DEFAULT_NUMBER_OF_MESSAGES;
     int messageLength = samples::configuration::DEFAULT_MESSAGE_LENGTH;
     int fragmentCountLimit = samples::configuration::DEFAULT_FRAGMENT_COUNT_LIMIT;
-    long numberOfWarmupMessages = samples::configuration::DEFAULT_NUMBER_OF_WARM_UP_MESSAGES;
 };
 
 Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
@@ -111,7 +111,7 @@ void sendPingAndReceivePong(
     std::shared_ptr<Image> imageSharedPtr = subscription.imageByIndex(0);
     Image& image = *imageSharedPtr;
 
-    for (int i = 0; i < settings.numberOfMessages; i++)
+    for (long i = 0; i < settings.numberOfMessages; i++)
     {
         std::int64_t position;
 

@@ -32,7 +32,7 @@ void aeron_driver_conductor_proxy_offer(aeron_driver_conductor_proxy_t *conducto
 void aeron_driver_conductor_proxy_on_delete_cmd(
     aeron_driver_conductor_proxy_t *conductor_proxy, aeron_command_base_t *cmd)
 {
-    if (AERON_THREADING_MODE_SHARED == conductor_proxy->threading_mode)
+    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(conductor_proxy->threading_mode))
     {
         /* should not get here! */
     }
@@ -58,7 +58,7 @@ void aeron_driver_conductor_proxy_on_create_publication_image_cmd(
     struct sockaddr_storage *src_address,
     void *endpoint)
 {
-    if (AERON_THREADING_MODE_SHARED == conductor_proxy->threading_mode)
+    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(conductor_proxy->threading_mode))
     {
         aeron_command_create_publication_image_t cmd =
             {
@@ -109,7 +109,7 @@ void aeron_driver_conductor_proxy_on_create_publication_image_cmd(
 void aeron_driver_conductor_proxy_on_linger_buffer(
     aeron_driver_conductor_proxy_t *conductor_proxy, uint8_t *buffer)
 {
-    if (AERON_THREADING_MODE_SHARED == conductor_proxy->threading_mode)
+    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(conductor_proxy->threading_mode))
     {
         aeron_free(buffer);
     }

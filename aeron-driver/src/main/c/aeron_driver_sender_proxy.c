@@ -30,7 +30,7 @@ void aeron_driver_sender_proxy_offer(aeron_driver_sender_proxy_t *sender_proxy, 
 void aeron_driver_sender_proxy_on_add_endpoint(
     aeron_driver_sender_proxy_t *sender_proxy, aeron_send_channel_endpoint_t *endpoint)
 {
-    if (AERON_THREADING_MODE_SHARED == sender_proxy->threading_mode)
+    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(sender_proxy->threading_mode))
     {
         aeron_command_base_t cmd =
             {
@@ -60,7 +60,7 @@ void aeron_driver_sender_proxy_on_add_endpoint(
 void aeron_driver_sender_proxy_on_remove_endpoint(
     aeron_driver_sender_proxy_t *sender_proxy, aeron_send_channel_endpoint_t *endpoint)
 {
-    if (AERON_THREADING_MODE_SHARED == sender_proxy->threading_mode)
+    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(sender_proxy->threading_mode))
     {
         aeron_command_base_t cmd =
             {
@@ -90,7 +90,7 @@ void aeron_driver_sender_proxy_on_remove_endpoint(
 void aeron_driver_sender_proxy_on_add_publication(
     aeron_driver_sender_proxy_t *sender_proxy, aeron_network_publication_t *publication)
 {
-    if (AERON_THREADING_MODE_SHARED == sender_proxy->threading_mode)
+    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(sender_proxy->threading_mode))
     {
         aeron_command_base_t cmd =
             {
@@ -120,7 +120,7 @@ void aeron_driver_sender_proxy_on_add_publication(
 void aeron_driver_sender_proxy_on_remove_publication(
     aeron_driver_sender_proxy_t *sender_proxy, aeron_network_publication_t *publication)
 {
-    if (AERON_THREADING_MODE_SHARED == sender_proxy->threading_mode)
+    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(sender_proxy->threading_mode))
     {
         aeron_command_base_t cmd =
             {
@@ -150,7 +150,7 @@ void aeron_driver_sender_proxy_on_remove_publication(
 void aeron_driver_sender_proxy_on_add_destination(
     aeron_driver_sender_proxy_t *sender_proxy, aeron_send_channel_endpoint_t *endpoint, struct sockaddr_storage *addr)
 {
-    if (AERON_THREADING_MODE_SHARED == sender_proxy->threading_mode)
+    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(sender_proxy->threading_mode))
     {
         aeron_command_destination_t cmd =
             {
@@ -183,7 +183,7 @@ void aeron_driver_sender_proxy_on_add_destination(
 void aeron_driver_sender_proxy_on_remove_destination(
     aeron_driver_sender_proxy_t *sender_proxy, aeron_send_channel_endpoint_t *endpoint, struct sockaddr_storage *addr)
 {
-    if (AERON_THREADING_MODE_SHARED == sender_proxy->threading_mode)
+    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(sender_proxy->threading_mode))
     {
         aeron_command_destination_t cmd =
             {

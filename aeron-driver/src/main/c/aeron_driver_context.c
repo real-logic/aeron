@@ -232,6 +232,10 @@ aeron_threading_mode_t aeron_config_parse_threading_mode(const char *threading_m
         {
             result = AERON_THREADING_MODE_DEDICATED;
         }
+        else if (strncmp(threading_mode, "INVOKER", sizeof("INVOKER")) == 0)
+        {
+            result = AERON_THREADING_MODE_INVOKER;
+        }
         else
         {
             aeron_config_prop_warning(AERON_THREADING_MODE_ENV_VAR, threading_mode);

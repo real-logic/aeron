@@ -62,6 +62,8 @@ typedef aeron_rb_handler_t aeron_driver_conductor_to_driver_interceptor_func_t;
 typedef void (*aeron_driver_conductor_to_client_interceptor_func_t)(
     aeron_driver_conductor_t *conductor, int32_t msg_type_id, const void *message, size_t length);
 
+#define AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(m) (AERON_THREADING_MODE_SHARED == m || AERON_THREADING_MODE_INVOKER)
+
 typedef struct aeron_driver_context_stct
 {
     char *aeron_dir;                             /* aeron.dir */

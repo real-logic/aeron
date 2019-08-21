@@ -852,6 +852,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
 
     switch (_driver->context->threading_mode)
     {
+        case AERON_THREADING_MODE_INVOKER:
         case AERON_THREADING_MODE_SHARED:
             if (aeron_agent_init(
                 &_driver->runners[AERON_AGENT_RUNNER_SHARED],
@@ -968,6 +969,13 @@ int aeron_driver_start(aeron_driver_t *driver, bool manual_main_loop)
 
     if (!manual_main_loop)
     {
+        if (AERON_THREADING_MODE_INVOKER == driver->context->threading_mode)
+        {
+            errno = EINVAL;
+            aeron_set_err(EINVAL, "aeron_driver_start: %s", "INVOKER threading mode requires manual_main_loop");
+            return -1;
+        }
+
         if (aeron_agent_start(&driver->runners[0]) < 0)
         {
             return -1;

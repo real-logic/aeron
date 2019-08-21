@@ -2758,7 +2758,7 @@ void aeron_driver_conductor_on_linger_buffer(void *clientd, void *item)
         entry->timeout_ns = conductor->nano_clock() + AERON_DRIVER_CONDUCTOR_LINGER_RESOURCE_TIMEOUT_NS;
     }
 
-    if (conductor->context->threading_mode != AERON_THREADING_MODE_SHARED)
+    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(conductor->context->threading_mode))
     {
         aeron_free(command);
         /* do not know where it came from originally, so just free command on the conductor duty cycle */

@@ -31,7 +31,7 @@ void aeron_driver_receiver_proxy_offer(aeron_driver_receiver_proxy_t *receiver_p
 void aeron_driver_receiver_proxy_on_delete_create_publication_image_cmd(
     aeron_driver_receiver_proxy_t *receiver_proxy, aeron_command_base_t *cmd)
 {
-    if (AERON_THREADING_MODE_SHARED == receiver_proxy->threading_mode)
+    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(receiver_proxy->threading_mode))
     {
         return;
     }
@@ -47,7 +47,7 @@ void aeron_driver_receiver_proxy_on_delete_create_publication_image_cmd(
 void aeron_driver_receiver_proxy_on_add_endpoint(
     aeron_driver_receiver_proxy_t *receiver_proxy, aeron_receive_channel_endpoint_t *endpoint)
 {
-    if (AERON_THREADING_MODE_SHARED == receiver_proxy->threading_mode)
+    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(receiver_proxy->threading_mode))
     {
         aeron_command_base_t cmd =
             {
@@ -77,7 +77,7 @@ void aeron_driver_receiver_proxy_on_add_endpoint(
 void aeron_driver_receiver_proxy_on_remove_endpoint(
     aeron_driver_receiver_proxy_t *receiver_proxy, aeron_receive_channel_endpoint_t *endpoint)
 {
-    if (AERON_THREADING_MODE_SHARED == receiver_proxy->threading_mode)
+    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(receiver_proxy->threading_mode))
     {
         aeron_command_base_t cmd =
             {
@@ -107,7 +107,7 @@ void aeron_driver_receiver_proxy_on_remove_endpoint(
 void aeron_driver_receiver_proxy_on_add_subscription(
     aeron_driver_receiver_proxy_t *receiver_proxy, aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id)
 {
-    if (AERON_THREADING_MODE_SHARED == receiver_proxy->threading_mode)
+    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(receiver_proxy->threading_mode))
     {
         aeron_command_subscription_t cmd =
             {
@@ -140,7 +140,7 @@ void aeron_driver_receiver_proxy_on_add_subscription(
 void aeron_driver_receiver_proxy_on_remove_subscription(
     aeron_driver_receiver_proxy_t *receiver_proxy, aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id)
 {
-    if (AERON_THREADING_MODE_SHARED == receiver_proxy->threading_mode)
+    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(receiver_proxy->threading_mode))
     {
         aeron_command_subscription_t cmd =
             {
@@ -175,7 +175,7 @@ void aeron_driver_receiver_proxy_on_add_publication_image(
     aeron_receive_channel_endpoint_t *endpoint,
     aeron_publication_image_t *image)
 {
-    if (AERON_THREADING_MODE_SHARED == receiver_proxy->threading_mode)
+    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(receiver_proxy->threading_mode))
     {
         aeron_command_publication_image_t cmd =
             {
@@ -210,7 +210,7 @@ void aeron_driver_receiver_proxy_on_remove_publication_image(
     aeron_receive_channel_endpoint_t *endpoint,
     aeron_publication_image_t *image)
 {
-    if (AERON_THREADING_MODE_SHARED == receiver_proxy->threading_mode)
+    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(receiver_proxy->threading_mode))
     {
         aeron_command_publication_image_t cmd =
             {
@@ -246,7 +246,7 @@ void aeron_driver_receiver_proxy_on_remove_cool_down(
     int32_t session_id,
     int32_t stream_id)
 {
-    if (AERON_THREADING_MODE_SHARED == receiver_proxy->threading_mode)
+    if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(receiver_proxy->threading_mode))
     {
         aeron_command_remove_cool_down_t cmd =
             {

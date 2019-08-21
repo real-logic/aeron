@@ -1087,6 +1087,7 @@ public class ConsensusModule implements AutoCloseable
                         .errorHandler(errorHandler)
                         .epochClock(epochClock)
                         .useConductorAgentInvoker(true)
+                        .awaitingIdleStrategy(new YieldingIdleStrategy())
                         .clientLock(new NoOpLock()));
 
                 if (null == errorCounter)

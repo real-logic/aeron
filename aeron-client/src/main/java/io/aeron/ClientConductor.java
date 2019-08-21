@@ -62,6 +62,7 @@ class ClientConductor implements Agent, DriverEventsListener
     private final Lock clientLock;
     private final EpochClock epochClock;
     private final NanoClock nanoClock;
+    private final IdleStrategy awaitingIdleStrategy;
     private final DriverEventsAdapter driverEventsAdapter;
     private final LogBuffersFactory logBuffersFactory;
     private final Long2ObjectHashMap<LogBuffers> logBuffersByIdMap = new Long2ObjectHashMap<>();
@@ -85,6 +86,7 @@ class ClientConductor implements Agent, DriverEventsListener
         clientLock = ctx.clientLock();
         epochClock = ctx.epochClock();
         nanoClock = ctx.nanoClock();
+        awaitingIdleStrategy = ctx.awaitingIdleStrategy();
         driverProxy = ctx.driverProxy();
         logBuffersFactory = ctx.logBuffersFactory();
         keepAliveIntervalNs = ctx.keepAliveIntervalNs();
@@ -923,19 +925,12 @@ class ClientConductor implements Agent, DriverEventsListener
         driverException = null;
         final long deadlineNs = nanoClock.nanoTime() + driverTimeoutNs;
 
+        awaitingIdleStrategy.reset();
         do
         {
             if (null == driverAgentInvoker)
             {
-                try
-                {
-                    Thread.sleep(1);
-                }
-                catch (final InterruptedException ex)
-                {
-                    isTerminating = true;
-                    LangUtil.rethrowUnchecked(ex);
-                }
+                awaitingIdleStrategy.idle();
             }
             else
             {

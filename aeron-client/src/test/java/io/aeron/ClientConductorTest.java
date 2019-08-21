@@ -113,6 +113,7 @@ public class ClientConductorTest
             .clientLock(mockClientLock)
             .epochClock(epochClock)
             .nanoClock(nanoClock)
+            .awaitingIdleStrategy(new NoOpIdleStrategy())
             .toClientBuffer(mockToClientReceiver)
             .driverProxy(driverProxy)
             .logBuffersFactory(logBuffersFactory)

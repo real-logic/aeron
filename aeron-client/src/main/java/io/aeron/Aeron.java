@@ -447,6 +447,11 @@ public class Aeron implements AutoCloseable
         static final long IDLE_SLEEP_MS = 16;
 
         /**
+         * Duration in milliseconds for which the client will sleep when awaiting a response from the driver.
+         */
+        static final long AWAITING_IDLE_SLEEP_MS = 1;
+
+        /**
          * Duration in nanoseconds for which the client conductor will sleep between duty cycles.
          */
         static final long IDLE_SLEEP_NS = TimeUnit.MILLISECONDS.toNanos(IDLE_SLEEP_MS);
@@ -577,6 +582,7 @@ public class Aeron implements AutoCloseable
         private EpochClock epochClock;
         private NanoClock nanoClock;
         private IdleStrategy idleStrategy;
+        private IdleStrategy awaitingIdleStrategy;
         private CopyBroadcastReceiver toClientBuffer;
         private RingBuffer toDriverBuffer;
         private DriverProxy driverProxy;
@@ -635,6 +641,11 @@ public class Aeron implements AutoCloseable
             if (null == idleStrategy)
             {
                 idleStrategy = new SleepingMillisIdleStrategy(Configuration.IDLE_SLEEP_MS);
+            }
+
+            if (null == awaitingIdleStrategy)
+            {
+                awaitingIdleStrategy = new SleepingMillisIdleStrategy(Configuration.AWAITING_IDLE_SLEEP_MS);
             }
 
             if (cncFile() != null)
@@ -843,9 +854,9 @@ public class Aeron implements AutoCloseable
         }
 
         /**
-         * Provides an IdleStrategy for the thread responsible for communicating with the Aeron Media Driver.
+         * Provides an {@link IdleStrategy} for the thread responsible for the client duty cycle.
          *
-         * @param idleStrategy Thread idle strategy for communication with the Media Driver.
+         * @param idleStrategy Thread idle strategy for the client duty cycle.
          * @return this for a fluent API.
          */
         public Context idleStrategy(final IdleStrategy idleStrategy)
@@ -855,13 +866,38 @@ public class Aeron implements AutoCloseable
         }
 
         /**
-         * Get the {@link IdleStrategy} employed by the client conductor thread.
+         * Get the {@link IdleStrategy} employed by the client for the client duty cycle.
          *
-         * @return the {@link IdleStrategy} employed by the client conductor thread.
+         * @return the {@link IdleStrategy} employed by the client for the client duty cycle.
          */
         public IdleStrategy idleStrategy()
         {
             return idleStrategy;
+        }
+
+        /**
+         * Provides an {@link IdleStrategy} to be used when awaiting a response from the Media Driver.
+         *
+         * @param idleStrategy Thread idle strategy for awaiting a response from the Media Driver.
+         * @return this for a fluent API.
+         */
+        public Context awaitingIdleStrategy(final IdleStrategy idleStrategy)
+        {
+            this.awaitingIdleStrategy = idleStrategy;
+            return this;
+        }
+
+        /**
+         * The {@link IdleStrategy} to be used when awaiting a response from the Media Driver.
+         * <p>
+         * This can be change to a {@link BusySpinIdleStrategy} or {@link YieldingIdleStrategy} for lower response time,
+         * especially for adding counters or releasing resources, at the expense of CPU usage.
+         *
+         * @return the {@link IdleStrategy} to be used when awaiting a response from the Media Driver.
+         */
+        public IdleStrategy awaitingIdleStrategy()
+        {
+            return awaitingIdleStrategy;
         }
 
         /**
@@ -1292,7 +1328,7 @@ public class Aeron implements AutoCloseable
                         throw new DriverTimeoutException("CnC file is created but not initialised");
                     }
 
-                    sleep(1);
+                    sleep(Configuration.AWAITING_IDLE_SLEEP_MS);
                 }
 
                 CncFileDescriptor.checkVersion(cncVersion);
@@ -1307,7 +1343,7 @@ public class Aeron implements AutoCloseable
                         throw new DriverTimeoutException("no driver heartbeat detected");
                     }
 
-                    sleep(1);
+                    sleep(Configuration.AWAITING_IDLE_SLEEP_MS);
                 }
 
                 final long timeMs = epochClock.time();

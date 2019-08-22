@@ -70,6 +70,19 @@ public class EventLogReaderAgent implements Agent, MessageHandler
                 throw new RuntimeException(ex);
             }
         }
+
+        builder.setLength(0);
+        DriverEventDissector.dissectLogStartMessage(System.nanoTime(), System.currentTimeMillis(), builder);
+        builder.append(System.lineSeparator());
+
+        if (null == fileChannel)
+        {
+            System.out.print(builder);
+        }
+        else
+        {
+            write(byteBuffer, fileChannel);
+        }
     }
 
     public void onClose()

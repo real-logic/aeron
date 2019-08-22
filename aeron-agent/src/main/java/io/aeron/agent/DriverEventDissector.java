@@ -21,6 +21,8 @@ import io.aeron.protocol.*;
 import org.agrona.MutableDirectBuffer;
 
 import java.net.InetAddress;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_INT;
@@ -33,6 +35,8 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  */
 public class DriverEventDissector
 {
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
+
     private static final DataHeaderFlyweight DATA_HEADER = new DataHeaderFlyweight();
     private static final StatusMessageFlyweight SM_HEADER = new StatusMessageFlyweight();
     private static final NakFlyweight NAK_HEADER = new NakFlyweight();
@@ -237,6 +241,16 @@ public class DriverEventDissector
     {
         final int relativeOffset = dissectLogHeader(code, buffer, offset, builder);
         builder.append(": ").append(buffer.getStringUtf8(offset + relativeOffset, LITTLE_ENDIAN));
+    }
+
+    public static void dissectLogStartMessage(
+        final long timestampNs, final long timestampMs, final StringBuilder builder)
+    {
+        builder
+            .append('[')
+            .append(((double)timestampNs) / 1_000_000_000.0)
+            .append("] log started ")
+            .append(DATE_FORMAT.format(new Date(timestampMs)));
     }
 
     private static void readStackTraceElement(

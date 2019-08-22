@@ -16,15 +16,23 @@
 package io.aeron.cluster;
 
 import io.aeron.cluster.service.Cluster;
+import io.aeron.driver.ext.LossGenerator;
+
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.cluster.service.CommitPos.COMMIT_POSITION_TYPE_ID;
@@ -759,6 +767,109 @@ public class ClusterTest
 
             cluster.awaitMessageCountForService(cluster.node(2), totalMsgCount);
             assertEquals(totalMsgCount, cluster.node(2).service().messageCount());
+        }
+    }
+
+    @Test
+    @Ignore
+    public void shouldGoBackToNormalStateAfterLoss() throws Exception
+    {
+        final AtomicBoolean shouldDrop = new AtomicBoolean(false);
+        final AtomicReference<TestNode> leaderRef = new AtomicReference<>();
+        final List<Integer> followerPorts = new ArrayList<>();
+
+        // loss should only happen when the leader is sending messages to a targeted follower
+        // and shouldDrop is true
+        final Function<Integer, LossGenerator> funcLoss = id -> (address, buffer, length) ->
+        {
+            return leaderRef.get() != null && id == leaderRef.get().index() &&
+                address != null &&
+                followerPorts.contains(address.getPort()) &&
+                shouldDrop.get();
+        };
+
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticClusterWithLossGenerator(funcLoss))
+        {
+            cluster.awaitLeader();
+            leaderRef.set(cluster.findLeader());
+            final TestNode follower = cluster.followers().get(0);
+            final TestNode follower2 = cluster.followers().get(1);
+
+            final String followerDetails = cluster.findLeader().getClusterMembers().split("\\|")[follower.index()];
+            final Matcher matcher = Pattern.compile(":(\\d+),*").matcher(followerDetails);
+            while (matcher.find())
+            {
+                followerPorts.add(Integer.valueOf(matcher.group(1)));
+            }
+
+            cluster.connectClient();
+            cluster.sendMessages(100);
+
+            Thread.sleep(10_00);
+            assertNull("cluster is up, no election in progress", follower.electionState());
+            assertNull("cluster is up, no election in progress", follower2.electionState());
+
+            System.out.println("start loss");
+            shouldDrop.set(true);
+
+            // validate loss is happening by making sure follower goes to CANVASS
+            while (follower.electionState() != Election.State.CANVASS)
+            {
+                System.out.println("follower still in cluster - wait");
+                Thread.sleep(5_000);
+            }
+
+            // follower 2 is not impacted
+            assertNull(follower2.electionState());
+
+            System.out.println("end loss");
+            shouldDrop.set(false);
+            Thread.sleep(15_000);
+
+            assertNull("no election in progress", follower2.electionState());
+
+            // this is the issue instead of -1 (null) election state is Election.State.FOLLOWER_CATCHUP_TRANSITION
+            assertNull("no election in progress", follower.electionState());
+
+            System.out.println("success end test");
+        }
+    }
+
+    @Test(timeout = 180_000)
+    @Ignore
+    public void shouldRecoverQuicklyAfterKillingFollowersThenRestartingOne() throws Exception
+    {
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        {
+            cluster.awaitLeader();
+            final TestNode leader = cluster.findLeader();
+            final TestNode follower = cluster.followers().get(0);
+            final TestNode follower2 = cluster.followers().get(1);
+
+            // without client, it's ok, only 8 sec to get the leader...
+            cluster.connectClient();
+            cluster.sendMessages(10);
+
+            cluster.stopNode(follower);
+            cluster.stopNode(follower2);
+
+            while (leader.role() != Cluster.Role.FOLLOWER)
+            {
+                System.out.println("leader still present, wait");
+                Thread.sleep(5_000);
+            }
+            System.out.println("cluster is down");
+
+            System.out.println("restart 2nd follower");
+            cluster.startStaticNode(follower2.index(), true);
+
+            System.out.println("awaiting leader");
+            final long start = System.currentTimeMillis();
+            cluster.awaitLeader();
+            final long end = System.currentTimeMillis();
+            System.out.println("time to get leader again " + (end - start));
+
+            System.out.println("new leader " + cluster.findLeader().index());
         }
     }
 

@@ -161,7 +161,7 @@ public class TestCluster implements AutoCloseable
         final TestCluster testCluster = new TestCluster(3, 0, appointedLeaderId);
         for (int i = 0; i < 3; i++)
         {
-            testCluster.startStaticNode(i, true, serviceSupplier);
+            testCluster.startStaticNode(i, true, serviceSupplier, null);
         }
 
         return testCluster;
@@ -187,89 +187,24 @@ public class TestCluster implements AutoCloseable
     }
 
     static TestCluster startThreeNodeStaticClusterWithLossGenerator(
-        final int appointedLeaderId,
-        Function<Supplier<TestNode>, LossGenerator> lossGenerator)
+        final Function<Integer, LossGenerator> lossGenerator)
     {
-        final TestCluster testCluster = new TestCluster(3, 0, appointedLeaderId);
+        final TestCluster testCluster = new TestCluster(3, 0, NULL_VALUE);
         for (int i = 0; i < 3; i++)
         {
-            testCluster.startStaticNodeWithLossGenerator(i, true, TestNode.TestService::new, lossGenerator);
+            testCluster.startStaticNode(i, true, TestNode.TestService::new, lossGenerator);
         }
-
         return testCluster;
-    }
-
-    TestNode startStaticNodeWithLossGenerator(
-        final int index, final boolean cleanStart,
-        final Supplier<? extends TestNode.TestService> serviceSupplier,
-        final Function<Supplier<TestNode>, LossGenerator> lossGenerator)
-    {
-        final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + index;
-        final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + index + "-driver";
-        final TestNode.Context context = new TestNode.Context(serviceSupplier.get().index(index));
-
-        context.aeronArchiveContext
-            .controlRequestChannel(memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, index))
-            .controlRequestStreamId(100)
-            .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, index))
-            .controlResponseStreamId(110 + index)
-            .recordingEventsChannel(memberSpecificPort(ARCHIVE_RECORDING_EVENTS_CHANNEL, index))
-            .aeronDirectoryName(baseDirName);
-
-        context.mediaDriverContext
-            .aeronDirectoryName(aeronDirName)
-            .threadingMode(ThreadingMode.SHARED)
-            .termBufferSparseFile(true)
-            .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
-            .errorHandler(TestUtil.errorHandler(index))
-            .dirDeleteOnStart(true)
-            .sendChannelEndpointSupplier((udpChannel, statusIndicator, ctx) -> new DebugSendChannelEndpoint(
-                udpChannel, statusIndicator, ctx, lossGenerator.apply(() -> nodes[index]),
-                lossGenerator.apply(() -> nodes[index])));
-
-        context.archiveContext
-            .maxCatalogEntries(MAX_CATALOG_ENTRIES)
-            .aeronDirectoryName(aeronDirName)
-            .archiveDir(new File(baseDirName, "archive"))
-            .controlChannel(context.aeronArchiveContext.controlRequestChannel())
-            .controlStreamId(context.aeronArchiveContext.controlRequestStreamId())
-            .localControlChannel("aeron:ipc?term-length=64k")
-            .localControlStreamId(context.aeronArchiveContext.controlRequestStreamId())
-            .recordingEventsChannel(context.aeronArchiveContext.recordingEventsChannel())
-            .threadingMode(ArchiveThreadingMode.SHARED)
-            .deleteArchiveOnStart(cleanStart);
-
-        context.consensusModuleContext
-            .errorHandler(TestUtil.errorHandler(index))
-            .clusterMemberId(index)
-            .clusterMembers(staticClusterMembers)
-            .appointedLeaderId(appointedLeaderId)
-            .aeronDirectoryName(aeronDirName)
-            .clusterDir(new File(baseDirName, "consensus-module"))
-            .ingressChannel("aeron:udp?term-length=64k")
-            .logChannel(memberSpecificPort(LOG_CHANNEL, index))
-            .archiveContext(context.aeronArchiveContext.clone())
-            .deleteDirOnStart(cleanStart);
-
-        context.serviceContainerContext
-            .aeronDirectoryName(aeronDirName)
-            .archiveContext(context.aeronArchiveContext.clone())
-            .clusterDir(new File(baseDirName, "service"))
-            .clusteredService(context.service)
-            .errorHandler(TestUtil.errorHandler(index));
-
-        nodes[index] = new TestNode(context);
-
-        return nodes[index];
     }
 
     TestNode startStaticNode(final int index, final boolean cleanStart)
     {
-        return startStaticNode(index, cleanStart, TestNode.TestService::new);
+        return startStaticNode(index, cleanStart, TestNode.TestService::new, null);
     }
 
     TestNode startStaticNode(
-        final int index, final boolean cleanStart, final Supplier<? extends TestNode.TestService> serviceSupplier)
+        final int index, final boolean cleanStart, final Supplier<? extends TestNode.TestService> serviceSupplier,
+        final Function<Integer, LossGenerator> lossGenerator)
     {
         final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + index;
         final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + index + "-driver";
@@ -290,6 +225,14 @@ public class TestCluster implements AutoCloseable
             .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
             .errorHandler(TestUtil.errorHandler(index))
             .dirDeleteOnStart(true);
+
+        if (lossGenerator != null)
+        {
+            context.mediaDriverContext
+                .sendChannelEndpointSupplier((udpChannel, statusIndicator, ctx) -> new DebugSendChannelEndpoint(
+                udpChannel, statusIndicator, ctx, lossGenerator.apply(index),
+                lossGenerator.apply(index)));
+        }
 
         context.archiveContext
             .maxCatalogEntries(MAX_CATALOG_ENTRIES)

@@ -27,16 +27,17 @@
 #else
 #endif
 
-
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <time.h>
 #include <inttypes.h>
 #include <stdarg.h>
 #include "agent/aeron_driver_agent.h"
 #include "aeron_driver_context.h"
 #include "aeron_driver_agent.h"
 #include "util/aeron_dlopen.h"
+#include "util/aeron_strutil.h"
 #include "concurrent/aeron_thread.h"
 #include "aeron_windows.h"
 
@@ -63,6 +64,24 @@ int64_t aeron_agent_epoch_clock()
     }
 #endif
     return (ts.tv_sec * 1000) + (ts.tv_nsec / 1000000);
+}
+
+void aeron_agent_format_date(char *str, size_t count, int64_t timestamp)
+{
+    char time_buffer[80];
+    char msec_buffer[8];
+    char tz_buffer[8];
+    struct tm time;
+    time_t just_seconds = timestamp / 1000;
+    int64_t msec_after_sec = timestamp % 1000;
+
+    localtime_r(&just_seconds, &time);
+
+    strftime(time_buffer, sizeof(time_buffer) - 1, "%Y-%m-%d %H:%M:%S.", &time);
+    snprintf(msec_buffer, sizeof(msec_buffer) - 1, "%03" PRId64, msec_after_sec);
+    strftime(tz_buffer, sizeof(tz_buffer) - 1, "%z", &time);
+
+    snprintf(str, count, "%s%s%s", time_buffer, msec_buffer, tz_buffer);
 }
 
 bool aeron_agent_should_drop_frame(struct msghdr *message)
@@ -244,6 +263,8 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
 #pragma GCC diagnostic pop
 
         printf("hooked aeron_driver_context_init\n");
+
+        printf("%s\n", dissect_log_start(aeron_agent_epoch_clock()));
     }
 
     (void)aeron_thread_once(&agent_is_initialized, initialize_agent_logging);
@@ -497,6 +518,16 @@ static const char *dissect_timestamp(int64_t time_ms)
     static char buffer[256];
 
     snprintf(buffer, sizeof(buffer) - 1, "%" PRId64 ".%" PRId64, time_ms / 1000, time_ms % 1000);
+    return buffer;
+}
+
+static const char *dissect_log_start(int64_t time_ms)
+{
+    static char buffer[256];
+    char datestamp[80];
+
+    aeron_agent_format_date(datestamp, sizeof(datestamp) - 1, time_ms);
+    snprintf(buffer, sizeof(buffer) - 1, "[%s] log started %s", dissect_timestamp(time_ms), datestamp);
     return buffer;
 }
 

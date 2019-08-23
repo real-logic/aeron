@@ -35,8 +35,6 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  */
 public class DriverEventDissector
 {
-    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
-
     private static final DataHeaderFlyweight DATA_HEADER = new DataHeaderFlyweight();
     private static final StatusMessageFlyweight SM_HEADER = new StatusMessageFlyweight();
     private static final NakFlyweight NAK_HEADER = new NakFlyweight();
@@ -246,11 +244,13 @@ public class DriverEventDissector
     public static void dissectLogStartMessage(
         final long timestampNs, final long timestampMs, final StringBuilder builder)
     {
+        final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
+
         builder
             .append('[')
             .append(((double)timestampNs) / 1_000_000_000.0)
             .append("] log started ")
-            .append(DATE_FORMAT.format(new Date(timestampMs)));
+            .append(format.format(new Date(timestampMs)));
     }
 
     private static void readStackTraceElement(

@@ -72,33 +72,28 @@ public class DriverEventDissector
         {
             case HeaderFlyweight.HDR_TYPE_PAD:
             case HeaderFlyweight.HDR_TYPE_DATA:
-                final DataHeaderFlyweight dataFrame = DATA_HEADER;
-                dataFrame.wrap(buffer, frameOffset, buffer.capacity() - frameOffset);
-                dissect(dataFrame, builder);
+                DATA_HEADER.wrap(buffer, frameOffset, buffer.capacity() - frameOffset);
+                dissectDataFrame(builder);
                 break;
 
             case HeaderFlyweight.HDR_TYPE_SM:
-                final StatusMessageFlyweight smFrame = SM_HEADER;
-                smFrame.wrap(buffer, frameOffset, buffer.capacity() - frameOffset);
-                dissect(smFrame, builder);
+                SM_HEADER.wrap(buffer, frameOffset, buffer.capacity() - frameOffset);
+                dissectStatusFrame(builder);
                 break;
 
             case HeaderFlyweight.HDR_TYPE_NAK:
-                final NakFlyweight nakFrame = NAK_HEADER;
-                nakFrame.wrap(buffer, frameOffset, buffer.capacity() - frameOffset);
-                dissect(nakFrame, builder);
+                NAK_HEADER.wrap(buffer, frameOffset, buffer.capacity() - frameOffset);
+                dissectNakFrame(builder);
                 break;
 
             case HeaderFlyweight.HDR_TYPE_SETUP:
-                final SetupFlyweight setupFrame = SETUP_HEADER;
-                setupFrame.wrap(buffer, frameOffset, buffer.capacity() - frameOffset);
-                dissect(setupFrame, builder);
+                SETUP_HEADER.wrap(buffer, frameOffset, buffer.capacity() - frameOffset);
+                dissectSetupFrame(builder);
                 break;
 
             case HeaderFlyweight.HDR_TYPE_RTTM:
-                final RttMeasurementFlyweight rttMeasurementFlyweight = RTT_MEASUREMENT;
-                rttMeasurementFlyweight.wrap(buffer, frameOffset, buffer.capacity() - frameOffset);
-                dissect(rttMeasurementFlyweight, builder);
+                RTT_MEASUREMENT.wrap(buffer, frameOffset, buffer.capacity() - frameOffset);
+                dissectRttFrame(builder);
                 break;
 
             default:
@@ -119,101 +114,86 @@ public class DriverEventDissector
         {
             case CMD_IN_ADD_PUBLICATION:
             case CMD_IN_ADD_EXCLUSIVE_PUBLICATION:
-                final PublicationMessageFlyweight pubCommand = PUB_MSG;
-                pubCommand.wrap(buffer, offset + relativeOffset);
-                dissect(pubCommand, builder);
+                PUB_MSG.wrap(buffer, offset + relativeOffset);
+                dissectPublication(builder);
                 break;
 
             case CMD_IN_ADD_SUBSCRIPTION:
-                final SubscriptionMessageFlyweight subCommand = SUB_MSG;
-                subCommand.wrap(buffer, offset + relativeOffset);
-                dissect(subCommand, builder);
+                SUB_MSG.wrap(buffer, offset + relativeOffset);
+                dissectSubscription(builder);
                 break;
 
             case CMD_IN_REMOVE_PUBLICATION:
             case CMD_IN_REMOVE_SUBSCRIPTION:
             case CMD_IN_REMOVE_COUNTER:
-                final RemoveMessageFlyweight removeCmd = REMOVE_MSG;
-                removeCmd.wrap(buffer, offset + relativeOffset);
-                dissect(removeCmd, builder);
+                REMOVE_MSG.wrap(buffer, offset + relativeOffset);
+                dissectRemoveEvent(builder);
                 break;
 
             case CMD_OUT_PUBLICATION_READY:
             case CMD_OUT_EXCLUSIVE_PUBLICATION_READY:
-                final PublicationBuffersReadyFlyweight publicationReadyEvent = PUB_READY;
-                publicationReadyEvent.wrap(buffer, offset + relativeOffset);
-                dissect(publicationReadyEvent, builder);
+                PUB_READY.wrap(buffer, offset + relativeOffset);
+                dissectPublicationReady(builder);
                 break;
 
             case CMD_OUT_AVAILABLE_IMAGE:
-                final ImageBuffersReadyFlyweight imageAvailableEvent = IMAGE_READY;
-                imageAvailableEvent.wrap(buffer, offset + relativeOffset);
-                dissect(imageAvailableEvent, builder);
+                IMAGE_READY.wrap(buffer, offset + relativeOffset);
+                dissectImageReady(builder);
                 break;
 
             case CMD_OUT_ON_OPERATION_SUCCESS:
-                final OperationSucceededFlyweight operationSucceeded = OPERATION_SUCCEEDED;
-                operationSucceeded.wrap(buffer, offset + relativeOffset);
-                dissect(operationSucceeded, builder);
+                OPERATION_SUCCEEDED.wrap(buffer, offset + relativeOffset);
+                dissectOperationSuccess(builder);
                 break;
 
             case CMD_IN_KEEPALIVE_CLIENT:
             case CMD_IN_CLIENT_CLOSE:
-                final CorrelatedMessageFlyweight correlatedEvent = CORRELATED_MSG;
-                correlatedEvent.wrap(buffer, offset + relativeOffset);
-                dissect(correlatedEvent, builder);
+                CORRELATED_MSG.wrap(buffer, offset + relativeOffset);
+                dissectCorrelationEvent(builder);
                 break;
 
             case CMD_OUT_ON_UNAVAILABLE_IMAGE:
-                final ImageMessageFlyweight imageUnavailableEvent = IMAGE_MSG;
-                imageUnavailableEvent.wrap(buffer, offset + relativeOffset);
-                dissect(imageUnavailableEvent, builder);
+                IMAGE_MSG.wrap(buffer, offset + relativeOffset);
+                dissectImage(builder);
                 break;
 
             case CMD_IN_ADD_DESTINATION:
             case CMD_IN_REMOVE_DESTINATION:
             case CMD_IN_ADD_RCV_DESTINATION:
             case CMD_IN_REMOVE_RCV_DESTINATION:
-                final DestinationMessageFlyweight destinationMessageFlyweight = DESTINATION_MSG;
-                destinationMessageFlyweight.wrap(buffer, offset + relativeOffset);
-                dissect(destinationMessageFlyweight, builder);
+                DESTINATION_MSG.wrap(buffer, offset + relativeOffset);
+                dissectDestination(builder);
                 break;
 
             case CMD_OUT_ERROR:
-                final ErrorResponseFlyweight errorResponseFlyweight = ERROR_MSG;
-                errorResponseFlyweight.wrap(buffer, offset + relativeOffset);
-                dissect(errorResponseFlyweight, builder);
+                ERROR_MSG.wrap(buffer, offset + relativeOffset);
+                dissectError(builder);
                 break;
 
             case CMD_IN_ADD_COUNTER:
-                final CounterMessageFlyweight counterMessage = COUNTER_MSG;
-                counterMessage.wrap(buffer, offset + relativeOffset);
-                dissect(counterMessage, builder);
+                COUNTER_MSG.wrap(buffer, offset + relativeOffset);
+                dissectCounter(builder);
                 break;
 
             case CMD_OUT_SUBSCRIPTION_READY:
-                final SubscriptionReadyFlyweight subscriptionReady = SUBSCRIPTION_READY;
-                subscriptionReady.wrap(buffer, offset + relativeOffset);
-                dissect(subscriptionReady, builder);
+                SUBSCRIPTION_READY.wrap(buffer, offset + relativeOffset);
+                dissectSubscriptionReady(builder);
                 break;
 
             case CMD_OUT_COUNTER_READY:
             case CMD_OUT_ON_UNAVAILABLE_COUNTER:
-                final CounterUpdateFlyweight counterUpdate = COUNTER_UPDATE;
-                counterUpdate.wrap(buffer, offset + relativeOffset);
-                dissect(counterUpdate, builder);
+                COUNTER_UPDATE.wrap(buffer, offset + relativeOffset);
+                dissectCounterUpdate(builder);
                 break;
 
             case CMD_OUT_ON_CLIENT_TIMEOUT:
-                final ClientTimeoutFlyweight clientTimeout = CLIENT_TIMEOUT;
-                clientTimeout.wrap(buffer, offset + relativeOffset);
-                dissect(clientTimeout, builder);
+                CLIENT_TIMEOUT.wrap(buffer, offset + relativeOffset);
+                dissectClientTimeout(builder);
                 break;
 
             case CMD_IN_TERMINATE_DRIVER:
-                final TerminateDriverFlyweight terminateDriver = TERMINATE_DRIVER;
-                terminateDriver.wrap(buffer, offset + relativeOffset);
-                dissect(terminateDriver, builder);
+                TERMINATE_DRIVER.wrap(buffer, offset + relativeOffset);
+                dissectTerminateDriver(builder);
                 break;
 
             default:
@@ -336,284 +316,287 @@ public class DriverEventDissector
         return relativeOffset;
     }
 
-    private static void dissect(final DataHeaderFlyweight msg, final StringBuilder builder)
+    private static void dissectDataFrame(final StringBuilder builder)
     {
         builder
-            .append(msg.headerType() == HeaderFlyweight.HDR_TYPE_PAD ? "PAD" : "DATA")
+            .append(DATA_HEADER.headerType() == HeaderFlyweight.HDR_TYPE_PAD ? "PAD" : "DATA")
             .append(' ');
 
-        HeaderFlyweight.appendFlagsAsChars(msg.flags(), builder);
+        HeaderFlyweight.appendFlagsAsChars(DATA_HEADER.flags(), builder);
 
         builder
             .append(" len ")
-            .append(msg.frameLength())
+            .append(DATA_HEADER.frameLength())
             .append(' ')
-            .append(msg.sessionId())
+            .append(DATA_HEADER.sessionId())
             .append(':')
-            .append(msg.streamId())
+            .append(DATA_HEADER.streamId())
             .append(':')
-            .append(msg.termId())
+            .append(DATA_HEADER.termId())
             .append(" @")
-            .append(msg.termOffset());
+            .append(DATA_HEADER.termOffset());
     }
 
-    private static void dissect(final StatusMessageFlyweight msg, final StringBuilder builder)
+    private static void dissectStatusFrame(final StringBuilder builder)
     {
         builder.append("SM ");
 
-        HeaderFlyweight.appendFlagsAsChars(msg.flags(), builder);
+        HeaderFlyweight.appendFlagsAsChars(SM_HEADER.flags(), builder);
 
         builder
             .append(" len ")
-            .append(msg.frameLength())
+            .append(SM_HEADER.frameLength())
             .append(' ')
-            .append(msg.sessionId())
+            .append(SM_HEADER.sessionId())
             .append(':')
-            .append(msg.streamId())
+            .append(SM_HEADER.streamId())
             .append(':')
-            .append(msg.consumptionTermId())
+            .append(SM_HEADER.consumptionTermId())
             .append(" @")
-            .append(msg.consumptionTermOffset())
+            .append(SM_HEADER.consumptionTermOffset())
             .append(' ')
-            .append(msg.receiverWindowLength())
+            .append(SM_HEADER.receiverWindowLength())
             .append(' ')
-            .append(msg.receiverId());
+            .append(SM_HEADER.receiverId());
     }
 
-    private static void dissect(final NakFlyweight msg, final StringBuilder builder)
+    private static void dissectNakFrame(final StringBuilder builder)
     {
         builder.append("NAK ");
 
-        HeaderFlyweight.appendFlagsAsChars(msg.flags(), builder);
+        HeaderFlyweight.appendFlagsAsChars(NAK_HEADER.flags(), builder);
 
         builder
             .append(" len ")
-            .append(msg.frameLength())
+            .append(NAK_HEADER.frameLength())
             .append(' ')
-            .append(msg.sessionId())
+            .append(NAK_HEADER.sessionId())
             .append(':')
-            .append(msg.streamId())
+            .append(NAK_HEADER.streamId())
             .append(':')
-            .append(msg.termId())
+            .append(NAK_HEADER.termId())
             .append(" @")
-            .append(msg.termOffset())
+            .append(NAK_HEADER.termOffset())
             .append(' ')
-            .append(msg.length());
+            .append(NAK_HEADER.length());
     }
 
-    private static void dissect(final SetupFlyweight msg, final StringBuilder builder)
+    private static void dissectSetupFrame(final StringBuilder builder)
     {
         builder.append("SETUP ");
 
-        HeaderFlyweight.appendFlagsAsChars(msg.flags(), builder);
+        HeaderFlyweight.appendFlagsAsChars(SETUP_HEADER.flags(), builder);
 
         builder
             .append(" len ")
-            .append(msg.frameLength())
+            .append(SETUP_HEADER.frameLength())
             .append(' ')
-            .append(msg.sessionId())
+            .append(SETUP_HEADER.sessionId())
             .append(':')
-            .append(msg.streamId())
+            .append(SETUP_HEADER.streamId())
             .append(':')
-            .append(msg.activeTermId())
+            .append(SETUP_HEADER.activeTermId())
             .append(' ')
-            .append(msg.initialTermId())
+            .append(SETUP_HEADER.initialTermId())
             .append(" @")
-            .append(msg.termOffset())
+            .append(SETUP_HEADER.termOffset())
             .append(' ')
-            .append(msg.termLength())
+            .append(SETUP_HEADER.termLength())
             .append(" MTU ")
-            .append(msg.mtuLength())
+            .append(SETUP_HEADER.mtuLength())
             .append(" TTL ")
-            .append(msg.ttl());
+            .append(SETUP_HEADER.ttl());
     }
 
-    private static void dissect(final RttMeasurementFlyweight msg, final StringBuilder builder)
+    private static void dissectRttFrame(final StringBuilder builder)
     {
         builder.append("RTT ");
 
-        HeaderFlyweight.appendFlagsAsChars(msg.flags(), builder);
+        HeaderFlyweight.appendFlagsAsChars(RTT_MEASUREMENT.flags(), builder);
 
         builder
             .append(" len ")
-            .append(msg.frameLength())
+            .append(RTT_MEASUREMENT.frameLength())
             .append(' ')
-            .append(msg.sessionId())
+            .append(RTT_MEASUREMENT.sessionId())
             .append(':')
-            .append(msg.streamId())
+            .append(RTT_MEASUREMENT.streamId())
             .append(' ')
-            .append(msg.echoTimestampNs())
+            .append(RTT_MEASUREMENT.echoTimestampNs())
             .append(' ')
-            .append(msg.receptionDelta())
+            .append(RTT_MEASUREMENT.receptionDelta())
             .append(' ')
-            .append(msg.receiverId());
+            .append(RTT_MEASUREMENT.receiverId());
     }
 
-    private static void dissect(final PublicationMessageFlyweight msg, final StringBuilder builder)
+    private static void dissectPublication(final StringBuilder builder)
     {
-        msg.appendChannel(builder);
+        PUB_MSG.appendChannel(builder);
 
         builder
             .append(' ')
-            .append(msg.streamId())
+            .append(PUB_MSG.streamId())
             .append(" [")
-            .append(msg.clientId())
+            .append(PUB_MSG.clientId())
             .append(':')
-            .append(msg.correlationId())
+            .append(PUB_MSG.correlationId())
             .append(']');
     }
 
-    private static void dissect(final SubscriptionMessageFlyweight msg, final StringBuilder builder)
+    private static void dissectSubscription(final StringBuilder builder)
     {
-        msg.appendChannel(builder);
+        SUB_MSG.appendChannel(builder);
 
         builder
             .append(' ')
-            .append(msg.streamId())
+            .append(SUB_MSG.streamId())
             .append(" [")
-            .append(msg.registrationCorrelationId())
+            .append(SUB_MSG.registrationCorrelationId())
             .append("][")
-            .append(msg.clientId())
+            .append(SUB_MSG.clientId())
             .append(':')
-            .append(msg.correlationId())
+            .append(SUB_MSG.correlationId())
             .append(']');
     }
 
-    private static void dissect(final PublicationBuffersReadyFlyweight msg, final StringBuilder builder)
+    private static void dissectPublicationReady(final StringBuilder builder)
     {
         builder
-            .append(msg.sessionId())
+            .append(PUB_READY.sessionId())
             .append(':')
-            .append(msg.streamId())
+            .append(PUB_READY.streamId())
             .append(' ')
-            .append(msg.publicationLimitCounterId())
+            .append(PUB_READY.publicationLimitCounterId())
             .append(' ')
-            .append(msg.channelStatusCounterId())
+            .append(PUB_READY.channelStatusCounterId())
             .append(" [")
-            .append(msg.correlationId())
+            .append(PUB_READY.correlationId())
             .append(' ')
-            .append(msg.registrationId())
+            .append(PUB_READY.registrationId())
             .append("] ");
 
-        msg.appendLogFileName(builder);
+        PUB_READY.appendLogFileName(builder);
     }
 
-    private static void dissect(final ImageBuffersReadyFlyweight msg, final StringBuilder builder)
+    private static void dissectImageReady(final StringBuilder builder)
     {
         builder
-            .append(msg.sessionId())
+            .append(IMAGE_READY.sessionId())
             .append(':')
-            .append(msg.streamId())
+            .append(IMAGE_READY.streamId())
             .append(" [")
-            .append(msg.subscriberPositionId())
+            .append(IMAGE_READY.subscriberPositionId())
             .append(':')
-            .append(msg.subscriptionRegistrationId())
+            .append(IMAGE_READY.subscriptionRegistrationId())
             .append("] \"")
-            .append(msg.sourceIdentity())
+            .append(IMAGE_READY.sourceIdentity())
             .append("\" [")
-            .append(msg.correlationId())
+            .append(IMAGE_READY.correlationId())
             .append("] ");
 
-        msg.appendLogFileName(builder);
+        IMAGE_READY.appendLogFileName(builder);
     }
 
-    private static void dissect(final CorrelatedMessageFlyweight msg, final StringBuilder builder)
+    private static void dissectCorrelationEvent(final StringBuilder builder)
     {
         builder
             .append('[')
-            .append(msg.clientId())
+            .append(CORRELATED_MSG.clientId())
             .append(':')
-            .append(msg.correlationId())
+            .append(CORRELATED_MSG.correlationId())
             .append(']');
     }
 
-    private static void dissect(final ImageMessageFlyweight msg, final StringBuilder builder)
+    private static void dissectImage(final StringBuilder builder)
     {
-        msg.appendChannel(builder);
+        IMAGE_MSG.appendChannel(builder);
 
         builder
             .append(' ')
-            .append(msg.streamId())
+            .append(IMAGE_MSG.streamId())
             .append(" [")
-            .append(msg.correlationId())
+            .append(IMAGE_MSG.correlationId())
             .append(' ')
-            .append(msg.subscriptionRegistrationId())
+            .append(IMAGE_MSG.subscriptionRegistrationId())
             .append(']');
     }
 
-    private static void dissect(final RemoveMessageFlyweight msg, final StringBuilder builder)
+    private static void dissectRemoveEvent(final StringBuilder builder)
     {
         builder
-            .append(msg.registrationId())
+            .append(REMOVE_MSG.registrationId())
             .append(" [")
-            .append(msg.clientId())
+            .append(REMOVE_MSG.clientId())
             .append(':')
-            .append(msg.correlationId())
+            .append(REMOVE_MSG.correlationId())
             .append(']');
     }
 
-    private static void dissect(final DestinationMessageFlyweight msg, final StringBuilder builder)
+    private static void dissectDestination(final StringBuilder builder)
     {
-        msg.appendChannel(builder);
+        DESTINATION_MSG.appendChannel(builder);
 
         builder
             .append(' ')
-            .append(msg.registrationCorrelationId())
+            .append(DESTINATION_MSG.registrationCorrelationId())
             .append(" [")
-            .append(msg.clientId())
+            .append(DESTINATION_MSG.clientId())
             .append(':')
-            .append(msg.correlationId())
+            .append(DESTINATION_MSG.correlationId())
             .append(']');
     }
 
-    private static void dissect(final ErrorResponseFlyweight msg, final StringBuilder builder)
+    private static void dissectError(final StringBuilder builder)
     {
         builder
-            .append(msg.offendingCommandCorrelationId())
+            .append(ERROR_MSG.offendingCommandCorrelationId())
             .append(' ')
-            .append(msg.errorCode().toString())
+            .append(ERROR_MSG.errorCode().toString())
             .append(' ')
-            .append(msg.errorMessage());
+            .append(ERROR_MSG.errorMessage());
     }
 
-    private static void dissect(final CounterMessageFlyweight msg, final StringBuilder builder)
+    private static void dissectCounter(final StringBuilder builder)
     {
         builder
-            .append(msg.typeId())
+            .append(COUNTER_MSG.typeId())
             .append(" [")
-            .append(msg.keyBufferOffset()).append(' ').append(msg.keyBufferLength())
+            .append(COUNTER_MSG.keyBufferOffset()).append(' ').append(COUNTER_MSG.keyBufferLength())
             .append("][")
-            .append(msg.labelBufferOffset()).append(' ').append(msg.labelBufferLength())
+            .append(COUNTER_MSG.labelBufferOffset()).append(' ').append(COUNTER_MSG.labelBufferLength())
             .append("][")
-            .append(msg.clientId())
+            .append(COUNTER_MSG.clientId())
             .append(':')
-            .append(msg.correlationId())
+            .append(COUNTER_MSG.correlationId())
             .append(']');
     }
 
-    private static void dissect(final CounterUpdateFlyweight msg, final StringBuilder builder)
+    private static void dissectCounterUpdate(final StringBuilder builder)
     {
-        builder.append(msg.correlationId()).append(' ').append(msg.counterId());
+        builder.append(COUNTER_UPDATE.correlationId()).append(' ').append(COUNTER_UPDATE.counterId());
     }
 
-    private static void dissect(final OperationSucceededFlyweight msg, final StringBuilder builder)
+    private static void dissectOperationSuccess(final StringBuilder builder)
     {
-        builder.append(msg.correlationId());
+        builder.append(OPERATION_SUCCEEDED.correlationId());
     }
 
-    private static void dissect(final SubscriptionReadyFlyweight msg, final StringBuilder builder)
+    private static void dissectSubscriptionReady(final StringBuilder builder)
     {
-        builder.append(msg.correlationId()).append(' ').append(msg.channelStatusCounterId());
+        builder
+            .append(SUBSCRIPTION_READY.correlationId())
+            .append(' ')
+            .append(SUBSCRIPTION_READY.channelStatusCounterId());
     }
 
-    private static void dissect(final ClientTimeoutFlyweight msg, final StringBuilder builder)
+    private static void dissectClientTimeout(final StringBuilder builder)
     {
-        builder.append(msg.clientId());
+        builder.append(CLIENT_TIMEOUT.clientId());
     }
 
-    private static void dissect(final TerminateDriverFlyweight msg, final StringBuilder builder)
+    private static void dissectTerminateDriver(final StringBuilder builder)
     {
-        builder.append(msg.clientId()).append(' ').append(msg.tokenBufferLength());
+        builder.append(TERMINATE_DRIVER.clientId()).append(' ').append(TERMINATE_DRIVER.tokenBufferLength());
     }
 
     public static int frameType(final MutableDirectBuffer buffer, final int termOffset)

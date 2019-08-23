@@ -739,7 +739,7 @@ public class Configuration
      */
     public static int producerWindowLength(final int termBufferLength, final int defaultTermWindowLength)
     {
-        int termWindowLength = termBufferLength / 2;
+        int termWindowLength = termBufferLength >> 1;
 
         if (0 != defaultTermWindowLength)
         {

@@ -2730,8 +2730,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private boolean serviceSessionMessageReset(
         final MutableDirectBuffer buffer, final int offset, final int length, final int headOffset)
     {
-        final int headerOffset = offset + MessageHeaderDecoder.ENCODED_LENGTH;
-        final int timestampOffset = headerOffset + SessionMessageHeaderDecoder.timestampEncodingOffset();
+        final int timestampOffset = offset +
+            MessageHeaderDecoder.ENCODED_LENGTH + SessionMessageHeaderDecoder.timestampEncodingOffset();
         final long appendPosition = buffer.getLong(timestampOffset, SessionMessageHeaderDecoder.BYTE_ORDER);
 
         if (appendPosition < Long.MAX_VALUE)
@@ -2747,8 +2747,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private boolean leaderServiceSessionMessageSweeper(
         final MutableDirectBuffer buffer, final int offset, final int length, final int headOffset)
     {
-        final int headerOffset = offset + MessageHeaderDecoder.ENCODED_LENGTH;
-        final int timestampOffset = headerOffset + SessionMessageHeaderDecoder.timestampEncodingOffset();
+        final int timestampOffset = offset +
+            MessageHeaderDecoder.ENCODED_LENGTH + SessionMessageHeaderDecoder.timestampEncodingOffset();
         final long appendPosition = buffer.getLong(timestampOffset, SessionMessageHeaderDecoder.BYTE_ORDER);
 
         if (appendPosition <= commitPosition.getWeak())
@@ -2770,8 +2770,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private boolean followerServiceSessionMessageSweeper(
         final MutableDirectBuffer buffer, final int offset, final int length, final int headOffset)
     {
-        final int clusterSessionIdOffset =
-            offset + MessageHeaderDecoder.ENCODED_LENGTH + SessionMessageHeaderDecoder.clusterSessionIdEncodingOffset();
+        final int clusterSessionIdOffset = offset +
+            MessageHeaderDecoder.ENCODED_LENGTH + SessionMessageHeaderDecoder.clusterSessionIdEncodingOffset();
 
         return buffer.getLong(clusterSessionIdOffset, SessionMessageHeaderDecoder.BYTE_ORDER) <= logServiceSessionId;
     }

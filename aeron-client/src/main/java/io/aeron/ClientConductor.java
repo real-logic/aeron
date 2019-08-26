@@ -18,7 +18,6 @@ package io.aeron;
 import io.aeron.exceptions.*;
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.DirectBuffer;
-import org.agrona.LangUtil;
 import org.agrona.ManagedResource;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.Long2ObjectHashMap;
@@ -949,10 +948,10 @@ class ClientConductor implements Agent, DriverEventsListener
                 return;
             }
 
-            if (Thread.interrupted())
+            if (Thread.currentThread().isInterrupted())
             {
                 isTerminating = true;
-                LangUtil.rethrowUnchecked(new InterruptedException());
+                throw new AgentTerminationException("thread interrupted");
             }
         }
         while (deadlineNs - nanoClock.nanoTime() > 0);

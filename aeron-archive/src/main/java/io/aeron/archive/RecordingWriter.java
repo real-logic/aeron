@@ -114,8 +114,6 @@ class RecordingWriter implements BlockHandler
         }
         catch (final ClosedByInterruptException ex)
         {
-            //noinspection ResultOfMethodCallIgnored
-            Thread.interrupted();
             close();
             throw new ArchiveException("file closed by interrupt, recording aborted", ex, ArchiveException.GENERIC);
         }
@@ -130,8 +128,8 @@ class RecordingWriter implements BlockHandler
     {
         if (!isClosed)
         {
-            CloseHelper.close(recordingFileChannel);
             isClosed = true;
+            CloseHelper.quietClose(recordingFileChannel);
         }
     }
 

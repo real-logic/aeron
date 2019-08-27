@@ -46,7 +46,6 @@ public class ImageAvailabilityTest
 
     private final MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Throwable::printStackTrace)
-        .spiesSimulateConnection(true)
         .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(20))
         .threadingMode(ThreadingMode.SHARED));
 
@@ -96,6 +95,62 @@ public class ImageAvailabilityTest
             assertEquals(0, unavailableImageCount.get());
 
             publication.close();
+
+            while (subOne.isConnected() || subTwo.isConnected())
+            {
+                SystemTest.checkInterruptedStatus();
+                Thread.yield();
+                aeron.conductorAgentInvoker().invoke();
+            }
+
+            assertTrue(image.isClosed());
+            assertTrue(image.isEndOfStream());
+            assertTrue(spyImage.isClosed());
+            assertTrue(spyImage.isEndOfStream());
+
+            assertEquals(2, availableImageCount.get());
+            assertEquals(2, unavailableImageCount.get());
+        }
+    }
+
+    @Theory
+    @Test(timeout = 10_000)
+    public void shouldCallImageHandlersWithPublisherOnDifferentClient(final String channel)
+    {
+        final AtomicInteger unavailableImageCount = new AtomicInteger();
+        final AtomicInteger availableImageCount = new AtomicInteger();
+        final UnavailableImageHandler unavailableHandler = (image) -> unavailableImageCount.incrementAndGet();
+        final AvailableImageHandler availableHandler = (image) -> availableImageCount.incrementAndGet();
+
+        final String spyChannel = channel.contains("ipc") ? channel : CommonContext.SPY_PREFIX + channel;
+        final Aeron.Context ctx = new Aeron.Context()
+            .useConductorAgentInvoker(true)
+            .errorHandler(Throwable::printStackTrace);
+
+        try (Aeron aeronTwo = Aeron.connect(ctx);
+            Subscription subOne = aeron.addSubscription(channel, STREAM_ID, availableHandler, unavailableHandler);
+            Subscription subTwo = aeron.addSubscription(spyChannel, STREAM_ID, availableHandler, unavailableHandler);
+            Publication publication = aeronTwo.addPublication(channel, STREAM_ID))
+        {
+            while (!subOne.isConnected() || !subTwo.isConnected() || !publication.isConnected())
+            {
+                SystemTest.checkInterruptedStatus();
+                Thread.yield();
+                aeron.conductorAgentInvoker().invoke();
+            }
+
+            final Image image = subOne.imageAtIndex(0);
+            final Image spyImage = subTwo.imageAtIndex(0);
+
+            assertFalse(image.isClosed());
+            assertFalse(image.isEndOfStream());
+            assertFalse(spyImage.isClosed());
+            assertFalse(spyImage.isEndOfStream());
+
+            assertEquals(2, availableImageCount.get());
+            assertEquals(0, unavailableImageCount.get());
+
+            aeronTwo.close();
 
             while (subOne.isConnected() || subTwo.isConnected())
             {

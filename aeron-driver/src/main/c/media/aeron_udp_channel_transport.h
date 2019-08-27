@@ -20,11 +20,13 @@
 #include "aeron_socket.h"
 
 #include "aeron_driver_common.h"
+#include "aeron_udp_channel_transport_bindings.h"
 
 typedef struct aeron_udp_channel_transport_stct
 {
     aeron_fd_t fd;
     void *dispatch_clientd;
+    void *bindings_clientd;
 }
 aeron_udp_channel_transport_t;
 

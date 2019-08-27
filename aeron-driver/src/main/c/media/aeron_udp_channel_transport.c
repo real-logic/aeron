@@ -58,6 +58,7 @@ int aeron_udp_channel_transport_init(
     struct sockaddr_in6 *in6 = (struct sockaddr_in6 *)bind_addr;
 
     transport->fd = -1;
+    transport->bindings_clientd = NULL;
     if ((transport->fd = aeron_socket(bind_addr->ss_family, SOCK_DGRAM, 0)) < 0)
     {
         goto error;

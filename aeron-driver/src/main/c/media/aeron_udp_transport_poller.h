@@ -49,6 +49,8 @@ typedef struct aeron_udp_transport_poller_stct
 #elif defined(HAVE_POLL)
     struct pollfd *pollfds;
 #endif
+
+    void *bindings_clientd;
 }
 aeron_udp_transport_poller_t;
 
@@ -64,6 +66,7 @@ int aeron_udp_transport_poller_poll(
     size_t vlen,
     int64_t *bytes_rcved,
     aeron_udp_transport_recv_func_t recv_func,
+    aeron_udp_channel_transport_recvmmsg_func_t recvmmsg_func,
     void *clientd);
 
 #endif //AERON_UDP_TRANSPORT_POLLER_H

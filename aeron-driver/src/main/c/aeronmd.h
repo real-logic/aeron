@@ -580,6 +580,18 @@ uint64_t aeron_driver_context_get_retransmit_unicast_linger_ns(aeron_driver_cont
 #define AERON_SPY_PREFIX_LEN strlen(AERON_SPY_PREFIX)
 
 /**
+ * Bindings for UDP Channel Transports.
+ */
+#define AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_ENV_VAR "AERON_UDP_CHANNEL_TRANSPORT_BINDINGS"
+
+typedef struct aeron_udp_channel_transport_bindings_stct aeron_udp_channel_transport_bindings_t;
+
+int aeron_driver_context_set_udp_channel_transport_bindings(
+    aeron_driver_context_t *context, aeron_udp_channel_transport_bindings_t *value);
+aeron_udp_channel_transport_bindings_t *aeron_driver_context_get_udp_channel_transport_bindings(
+    aeron_driver_context_t *context);
+
+/**
  * Return full version and build string.
  *
  * @return full version and build string.

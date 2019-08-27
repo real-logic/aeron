@@ -159,6 +159,7 @@ SET(SOURCE
     media/aeron_udp_transport_poller.c
     media/aeron_receive_channel_endpoint.c
     media/aeron_udp_destination_tracker.c
+    media/aeron_udp_channel_transport_bindings.c
     uri/aeron_uri.c
     collections/aeron_int64_to_ptr_hash_map.c
     collections/aeron_str_to_ptr_hash_map.c
@@ -229,6 +230,7 @@ SET(HEADERS
     media/aeron_udp_transport_poller.h
     media/aeron_receive_channel_endpoint.h
     media/aeron_udp_destination_tracker.h
+    media/aeron_udp_channel_transport_bindings.h
     uri/aeron_uri.h
     collections/aeron_int64_to_ptr_hash_map.h
     collections/aeron_str_to_ptr_hash_map.h

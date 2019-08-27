@@ -75,6 +75,8 @@ typedef struct aeron_driver_receiver_stct
     pending_setups;
 
     aeron_driver_context_t *context;
+    aeron_udp_transport_poller_poll_func_t poller_poll_func;
+    aeron_udp_channel_transport_recvmmsg_func_t recvmmsg_func;
     aeron_distinct_error_log_t *error_log;
 
     int64_t *errors_counter;

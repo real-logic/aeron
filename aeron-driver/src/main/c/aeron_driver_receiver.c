@@ -40,7 +40,7 @@ int aeron_driver_receiver_init(
     aeron_system_counters_t *system_counters,
     aeron_distinct_error_log_t *error_log)
 {
-    if (aeron_udp_transport_poller_init(&receiver->poller) < 0)
+    if (context->udp_channel_transport_bindings->poller_init_func(&receiver->poller) < 0)
     {
         return -1;
     }
@@ -73,6 +73,8 @@ int aeron_driver_receiver_init(
     receiver->pending_setups.capacity = 0;
 
     receiver->context = context;
+    receiver->poller_poll_func = context->udp_channel_transport_bindings->poller_poll_func;
+    receiver->recvmmsg_func = context->udp_channel_transport_bindings->recvmmsg_func;
     receiver->error_log = error_log;
 
     receiver->receiver_proxy.command_queue = &context->receiver_command_queue;
@@ -118,12 +120,13 @@ int aeron_driver_receiver_do_work(void *clientd)
         mmsghdr[i].msg_len = 0;
     }
 
-    int poll_result = aeron_udp_transport_poller_poll(
+    int poll_result = receiver->poller_poll_func(
         &receiver->poller,
         mmsghdr,
         AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS,
         &bytes_received,
         aeron_receive_channel_endpoint_dispatch,
+        receiver->recvmmsg_func,
         receiver);
 
     if (poll_result < 0)
@@ -222,7 +225,7 @@ void aeron_driver_receiver_on_close(void *clientd)
     aeron_free(receiver->images.array);
     aeron_free(receiver->pending_setups.array);
 
-    aeron_udp_transport_poller_close(&receiver->poller);
+    receiver->context->udp_channel_transport_bindings->poller_close_func(&receiver->poller);
 }
 
 void aeron_driver_receiver_on_add_endpoint(void *clientd, void *command)
@@ -232,7 +235,7 @@ void aeron_driver_receiver_on_add_endpoint(void *clientd, void *command)
     aeron_receive_channel_endpoint_t *endpoint = (aeron_receive_channel_endpoint_t *)cmd->item;
     aeron_udp_channel_t *udp_channel = endpoint->conductor_fields.udp_channel;
 
-    if (aeron_udp_transport_poller_add(&receiver->poller, &endpoint->transport) < 0)
+    if (receiver->context->udp_channel_transport_bindings->poller_add_func(&receiver->poller, &endpoint->transport) < 0)
     {
         AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver on_add_endpoint: %s", aeron_errmsg());
     }
@@ -267,7 +270,7 @@ void aeron_driver_receiver_on_remove_endpoint(void *clientd, void *command)
     aeron_command_base_t *cmd = (aeron_command_base_t *)command;
     aeron_receive_channel_endpoint_t *endpoint = (aeron_receive_channel_endpoint_t *)cmd->item;
 
-    if (aeron_udp_transport_poller_remove(&receiver->poller, &endpoint->transport) < 0)
+    if (receiver->context->udp_channel_transport_bindings->poller_remove_func(&receiver->poller, &endpoint->transport) < 0)
     {
         AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver on_remove_endpoint: %s", aeron_errmsg());
     }

@@ -176,6 +176,8 @@ typedef struct aeron_driver_context_stct
     aeron_driver_termination_hook_func_t termination_hook_func;
     void *termination_hook_state;
 
+    aeron_udp_channel_transport_bindings_t *udp_channel_transport_bindings;
+
     int64_t receiver_id;
 
     aeron_feedback_delay_generator_state_t unicast_delay_feedback_generator;

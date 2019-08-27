@@ -70,6 +70,7 @@ int aeron_send_channel_endpoint_create(
         if (aeron_alloc((void **)&_endpoint->destination_tracker, sizeof(aeron_udp_destination_tracker_t)) < 0 ||
             aeron_udp_destination_tracker_init(
                 _endpoint->destination_tracker,
+                context->udp_channel_transport_bindings,
                 context->nano_clock,
                 destination_timeout_ns) < 0)
         {
@@ -86,8 +87,9 @@ int aeron_send_channel_endpoint_create(
     _endpoint->conductor_fields.status = AERON_SEND_CHANNEL_ENDPOINT_STATUS_ACTIVE;
     _endpoint->transport.fd = -1;
     _endpoint->channel_status.counter_id = -1;
+    _endpoint->transport_bindings = context->udp_channel_transport_bindings;
 
-    if (aeron_udp_channel_transport_init(
+    if (context->udp_channel_transport_bindings->init_func(
         &_endpoint->transport,
         (channel->multicast) ? &channel->remote_control : &channel->local_control,
         (channel->multicast) ? &channel->local_control : &channel->remote_control,
@@ -129,7 +131,7 @@ int aeron_send_channel_endpoint_delete(
 
     aeron_int64_to_ptr_hash_map_delete(&endpoint->publication_dispatch_map);
     aeron_udp_channel_delete(endpoint->conductor_fields.udp_channel);
-    aeron_udp_channel_transport_close(&endpoint->transport);
+    endpoint->transport_bindings->close_func(&endpoint->transport);
 
     if (NULL != endpoint->destination_tracker)
     {
@@ -173,7 +175,7 @@ int aeron_send_channel_sendmmsg(aeron_send_channel_endpoint_t *endpoint, struct 
             mmsghdr[i].msg_hdr.msg_namelen = AERON_ADDR_LEN(&endpoint->conductor_fields.udp_channel->remote_data);
         }
 
-        result = aeron_udp_channel_transport_sendmmsg(&endpoint->transport, mmsghdr, vlen);
+        result = endpoint->transport_bindings->sendmmsg_func(&endpoint->transport, mmsghdr, vlen);
     }
     else
     {
@@ -193,7 +195,7 @@ int aeron_send_channel_sendmsg(aeron_send_channel_endpoint_t *endpoint, struct m
         msghdr->msg_name = &endpoint->conductor_fields.udp_channel->remote_data;
         msghdr->msg_namelen = AERON_ADDR_LEN(&endpoint->conductor_fields.udp_channel->remote_data);
 
-        result = aeron_udp_channel_transport_sendmsg(&endpoint->transport, msghdr);
+        result = endpoint->transport_bindings->sendmsg_func(&endpoint->transport, msghdr);
     }
     else
     {

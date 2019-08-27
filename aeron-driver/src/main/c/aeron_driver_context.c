@@ -304,6 +304,7 @@ static void aeron_driver_conductor_to_client_interceptor_null(
 #define AERON_NAK_MULTICAST_GROUP_SIZE_DEFAULT (10)
 #define AERON_NAK_MULTICAST_MAX_BACKOFF_NS_DEFAULT (60 * 1000 * 1000LL)
 #define AERON_NAK_UNICAST_DELAY_NS_DEFAULT (60 * 1000 * 1000LL)
+#define AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_DEFAULT ("default")
 
 int aeron_driver_context_init(aeron_driver_context_t **context)
 {
@@ -811,6 +812,14 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
 
     _context->termination_hook_func = NULL;
     _context->termination_hook_state = NULL;
+
+    if ((_context->udp_channel_transport_bindings = aeron_udp_channel_transport_bindings_load(
+        AERON_CONFIG_GETENV_OR_DEFAULT(
+            AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_ENV_VAR,
+            AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_DEFAULT))) == NULL)
+    {
+        return -1;
+    }
 
 #ifdef HAVE_UUID_GENERATE
     uuid_t id;
@@ -1901,4 +1910,21 @@ int aeron_driver_context_set_nak_unicast_delay_ns(aeron_driver_context_t *contex
 uint64_t aeron_driver_context_get_nak_unicast_delay_ns(aeron_driver_context_t *context)
 {
     return NULL != context ? context->nak_unicast_delay_ns : AERON_NAK_UNICAST_DELAY_NS_DEFAULT;
+}
+
+int aeron_driver_context_set_udp_channel_transport_bindings(
+    aeron_driver_context_t *context, aeron_udp_channel_transport_bindings_t *value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->udp_channel_transport_bindings = value;
+    return 0;
+}
+
+aeron_udp_channel_transport_bindings_t *aeron_driver_context_get_udp_channel_transport_bindings(
+    aeron_driver_context_t *context)
+{
+    return NULL != context ?
+        context->udp_channel_transport_bindings :
+        aeron_udp_channel_transport_bindings_load(AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_DEFAULT);
 }

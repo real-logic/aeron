@@ -54,6 +54,7 @@ typedef struct aeron_receive_channel_endpoint_stct
     aeron_int64_to_ptr_hash_map_t stream_id_to_refcnt_map;
     aeron_counter_t channel_status;
     aeron_driver_receiver_proxy_t *receiver_proxy;
+    aeron_udp_channel_transport_bindings_t *transport_bindings;
     int64_t receiver_id;
     size_t so_rcvbuf;
     bool has_receiver_released;

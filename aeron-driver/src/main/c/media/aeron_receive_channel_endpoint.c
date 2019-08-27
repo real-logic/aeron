@@ -64,8 +64,9 @@ int aeron_receive_channel_endpoint_create(
     _endpoint->conductor_fields.status = AERON_RECEIVE_CHANNEL_ENDPOINT_STATUS_ACTIVE;
     _endpoint->transport.fd = -1;
     _endpoint->channel_status.counter_id = -1;
+    _endpoint->transport_bindings = context->udp_channel_transport_bindings;
 
-    if (aeron_udp_channel_transport_init(
+    if (context->udp_channel_transport_bindings->init_func(
         &_endpoint->transport,
         &channel->remote_data,
         &channel->local_data,
@@ -78,7 +79,7 @@ int aeron_receive_channel_endpoint_create(
         return -1;
     }
 
-    if (aeron_udp_channel_transport_get_so_rcvbuf(&_endpoint->transport, &_endpoint->so_rcvbuf) < 0)
+    if (context->udp_channel_transport_bindings->get_so_rcvbuf_func(&_endpoint->transport, &_endpoint->so_rcvbuf) < 0)
     {
         aeron_receive_channel_endpoint_delete(NULL, _endpoint);
         return -1;
@@ -122,7 +123,7 @@ int aeron_receive_channel_endpoint_delete(
     aeron_int64_to_ptr_hash_map_delete(&endpoint->stream_id_to_refcnt_map);
     aeron_data_packet_dispatcher_close(&endpoint->dispatcher);
     aeron_udp_channel_delete(endpoint->conductor_fields.udp_channel);
-    aeron_udp_channel_transport_close(&endpoint->transport);
+    endpoint->transport_bindings->close_func(&endpoint->transport);
     aeron_free(endpoint);
 
     return 0;
@@ -130,7 +131,7 @@ int aeron_receive_channel_endpoint_delete(
 
 int aeron_receive_channel_endpoint_sendmsg(aeron_receive_channel_endpoint_t *endpoint, struct msghdr *msghdr)
 {
-    return aeron_udp_channel_transport_sendmsg(&endpoint->transport, msghdr);
+    return endpoint->transport_bindings->sendmsg_func(&endpoint->transport, msghdr);
 }
 
 int aeron_receive_channel_endpoint_send_sm(

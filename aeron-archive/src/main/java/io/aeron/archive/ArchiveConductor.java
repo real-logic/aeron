@@ -338,7 +338,7 @@ abstract class ArchiveConductor
 
             if (oldSubscription == null)
             {
-                final String channel = channelUri.media().equals(UDP_MEDIA) && sourceLocation == SourceLocation.LOCAL ?
+                final String channel = sourceLocation == SourceLocation.LOCAL && channelUri.media().equals(UDP_MEDIA) ?
                     SPY_PREFIX + strippedChannel : strippedChannel;
 
                 final AvailableImageHandler handler = (image) -> taskQueue.addLast(() -> startRecordingSession(

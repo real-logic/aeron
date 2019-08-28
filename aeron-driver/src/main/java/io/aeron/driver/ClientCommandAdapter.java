@@ -23,8 +23,8 @@ import org.agrona.concurrent.MessageHandler;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 
+import static io.aeron.ChannelUri.SPY_QUALIFIER;
 import static io.aeron.CommonContext.IPC_CHANNEL;
-import static io.aeron.CommonContext.SPY_PREFIX;
 import static io.aeron.ErrorCode.GENERIC_ERROR;
 import static io.aeron.command.ControlProtocolEvents.*;
 
@@ -118,7 +118,7 @@ class ClientCommandAdapter implements MessageHandler
                     {
                         conductor.onAddIpcSubscription(channel, streamId, correlationId, clientId);
                     }
-                    else if (channel.startsWith(SPY_PREFIX))
+                    else if (channel.startsWith(SPY_QUALIFIER))
                     {
                         conductor.onAddSpySubscription(channel, streamId, correlationId, clientId);
                     }

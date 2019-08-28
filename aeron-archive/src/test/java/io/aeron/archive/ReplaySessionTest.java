@@ -136,12 +136,7 @@ public class ReplaySessionTest
     public void verifyRecordingFile()
     {
         try (RecordingReader reader = new RecordingReader(
-            mockCatalog,
-            recordingSummary,
-            archiveDir,
-            NULL_POSITION,
-            AeronArchive.NULL_LENGTH,
-            null))
+            recordingSummary, archiveDir, NULL_POSITION, AeronArchive.NULL_LENGTH))
         {
             int fragments = reader.poll(
                 (buffer, offset, length, frameType, flags, reservedValue) ->

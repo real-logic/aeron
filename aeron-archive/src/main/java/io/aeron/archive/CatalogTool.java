@@ -177,12 +177,10 @@ public class CatalogTool
         }
 
         final RecordingReader reader = new RecordingReader(
-            catalog,
             catalog.recordingSummary(descriptor.recordingId(), new RecordingSummary()),
             archiveDir,
             descriptor.startPosition(),
-            AeronArchive.NULL_POSITION,
-            null);
+            AeronArchive.NULL_POSITION);
 
         boolean isContinue = true;
         long fragmentCount = dataFragmentLimit;

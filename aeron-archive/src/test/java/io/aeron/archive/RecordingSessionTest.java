@@ -66,7 +66,6 @@ public class RecordingSessionTest
     private UnsafeBuffer mockLogBufferMapped;
     private File termFile;
     private final EpochClock epochClock = mock(EpochClock.class);
-    private final Catalog mockCatalog = mock(Catalog.class);
     private Archive.Context context;
     private long positionLong;
 
@@ -101,7 +100,6 @@ public class RecordingSessionTest
         context = new Archive.Context()
             .segmentFileLength(SEGMENT_LENGTH)
             .archiveDir(archiveDir)
-            .catalog(mockCatalog)
             .epochClock(epochClock);
     }
 
@@ -167,12 +165,7 @@ public class RecordingSessionTest
         recordingSummary.stopPosition = START_POSITION + RECORDED_BLOCK_LENGTH;
 
         try (RecordingReader reader = new RecordingReader(
-            mockCatalog,
-            recordingSummary,
-            archiveDir,
-            NULL_POSITION,
-            AeronArchive.NULL_LENGTH,
-            null))
+            recordingSummary, archiveDir, NULL_POSITION, AeronArchive.NULL_LENGTH))
         {
             final int fragments = reader.poll(
                 (buffer, offset, length, frameType, flags, reservedValue) ->

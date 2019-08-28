@@ -623,12 +623,10 @@ public class ArchiveTest
         }
 
         try (RecordingReader recordingReader = new RecordingReader(
-            catalog,
             catalog.recordingSummary(recordingId, new RecordingSummary()),
             archiveDir,
             NULL_POSITION,
-            AeronArchive.NULL_LENGTH,
-            null))
+            AeronArchive.NULL_LENGTH))
         {
             while (!recordingReader.isDone())
             {

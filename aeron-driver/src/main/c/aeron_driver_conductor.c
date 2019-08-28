@@ -2371,7 +2371,7 @@ int aeron_driver_conductor_on_add_destination(aeron_driver_conductor_t *conducto
             goto error_cleanup;
         }
 
-        if (NULL != endpoint->destination_tracker || !endpoint->destination_tracker->is_manual_control_mode)
+        if (NULL == endpoint->destination_tracker || !endpoint->destination_tracker->is_manual_control_mode)
         {
             aeron_set_err(
                 EINVAL,

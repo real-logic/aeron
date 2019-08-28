@@ -24,6 +24,7 @@
 
 #include <gtest/gtest.h>
 #include <concurrent/CountersReader.h>
+#include <command/DestinationMessageFlyweight.h>
 
 extern "C"
 {
@@ -58,6 +59,7 @@ using namespace aeron;
 #define CHANNEL_2 "aeron:udp?endpoint=localhost:40002"
 #define CHANNEL_3 "aeron:udp?endpoint=localhost:40003"
 #define CHANNEL_4 "aeron:udp?endpoint=localhost:40004"
+#define CHANNEL_MDC_MANUAL "aeron:udp?control=localhost:40005|control-mode=manual"
 #define INVALID_URI "aeron:udp://"
 
 #define STREAM_ID_1 (101)
@@ -396,6 +398,19 @@ public:
             });
 
         return found;
+    }
+
+    int addDestination(
+        int64_t client_id, int64_t correlation_id, int64_t publication_registration_id, const char *channel)
+    {
+        command::DestinationMessageFlyweight command(m_command, 0);
+
+        command.clientId(client_id);
+        command.correlationId(correlation_id);
+        command.registrationId(publication_registration_id);
+        command.channel(channel);
+
+        return writeCommand(AERON_COMMAND_ADD_DESTINATION, command.length());
     }
 
     int doWork()

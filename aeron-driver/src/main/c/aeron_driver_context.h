@@ -68,6 +68,7 @@ typedef struct aeron_driver_context_stct
 {
     char *aeron_dir;                             /* aeron.dir */
     aeron_threading_mode_t threading_mode;       /* aeron.threading.mode = DEDICATED */
+    aeron_inferable_boolean_t group_subscriptions; /* aeron.group.subscriptions = INFER */
     bool dirs_delete_on_start;                   /* aeron.dir.delete.on.start = false */
     bool warn_if_dirs_exist;                     /* aeron.dir.warn.if.exists = true */
     bool term_buffer_sparse_file;                /* aeron.term.buffer.sparse.file = false */
@@ -184,6 +185,9 @@ typedef struct aeron_driver_context_stct
     aeron_feedback_delay_generator_state_t multicast_delay_feedback_generator;
 }
 aeron_driver_context_t;
+
+aeron_inferable_boolean_t aeron_config_parse_inferable_boolean(
+    const char *inferable_boolean, aeron_inferable_boolean_t def);
 
 void aeron_driver_context_print_configuration(aeron_driver_context_t *context);
 

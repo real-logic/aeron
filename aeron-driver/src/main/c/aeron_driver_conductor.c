@@ -2018,6 +2018,7 @@ int aeron_driver_conductor_on_add_ipc_subscription(
     link->client_id = command->correlated.client_id;
     link->registration_id = command->correlated.correlation_id;
     link->is_reliable = true;
+    link->group = AERON_INFER;
     link->is_sparse = params.is_sparse;
     link->is_tether = params.is_tether;
     link->subscribable_list.length = 0;
@@ -2103,6 +2104,7 @@ int aeron_driver_conductor_on_add_spy_subscription(
     link->is_reliable = params.is_reliable;
     link->is_sparse = params.is_sparse;
     link->is_tether = params.is_tether;
+    link->group = AERON_INFER;
     link->subscribable_list.length = 0;
     link->subscribable_list.capacity = 0;
     link->subscribable_list.array = NULL;
@@ -2202,6 +2204,7 @@ int aeron_driver_conductor_on_add_network_subscription(
         link->is_reliable = params.is_reliable;
         link->is_sparse = params.is_sparse;
         link->is_tether = params.is_tether;
+        link->group = params.group;
         link->subscribable_list.length = 0;
         link->subscribable_list.capacity = 0;
         link->subscribable_list.array = NULL;
@@ -2677,6 +2680,11 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
     rcv_pos_position.value_addr = aeron_counter_addr(&conductor->counters_manager, rcv_pos_position.counter_id);
 
     bool is_reliable = conductor->network_subscriptions.array[0].is_reliable;
+    aeron_inferable_boolean_t group_subscription = conductor->network_subscriptions.array[0].group;
+    bool treat_as_multicast =
+        AERON_INFER == group_subscription ?
+        endpoint->conductor_fields.udp_channel->multicast : AERON_FORCE_TRUE == group_subscription;
+
     aeron_publication_image_t *image = NULL;
     if (aeron_publication_image_create(
         &image,
@@ -2698,6 +2706,7 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
         &conductor->loss_reporter,
         is_reliable,
         aeron_driver_conductor_is_oldest_subscription_sparse(conductor, endpoint, command->stream_id, registration_id),
+        treat_as_multicast,
         &conductor->system_counters) < 0)
     {
         return;

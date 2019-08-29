@@ -43,6 +43,7 @@ int aeron_publication_image_create(
     aeron_loss_reporter_t *loss_reporter,
     bool is_reliable,
     bool is_sparse,
+    bool treat_as_multicast,
     aeron_system_counters_t *system_counters)
 {
     char path[AERON_MAX_PATH];
@@ -59,7 +60,6 @@ int aeron_publication_image_create(
     const uint64_t usable_fs_space = context->usable_fs_space_func(context->aeron_dir);
     const uint64_t log_length = aeron_logbuffer_compute_log_length(
         (uint64_t)term_buffer_length, context->file_page_size);
-    bool is_multicast = endpoint->conductor_fields.udp_channel->multicast;
     int64_t now_ns = context->nano_clock();
 
     *image = NULL;
@@ -88,7 +88,7 @@ int aeron_publication_image_create(
 
     if (aeron_loss_detector_init(
         &_image->loss_detector,
-        is_multicast ? &context->multicast_delay_feedback_generator : &context->unicast_delay_feedback_generator,
+        treat_as_multicast ? &context->multicast_delay_feedback_generator : &context->unicast_delay_feedback_generator,
         aeron_publication_image_on_gap_detected, _image) < 0)
     {
         aeron_free(_image);

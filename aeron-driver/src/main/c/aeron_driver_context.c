@@ -245,6 +245,30 @@ aeron_threading_mode_t aeron_config_parse_threading_mode(const char *threading_m
     return result;
 }
 
+aeron_inferable_boolean_t aeron_config_parse_inferable_boolean(
+    const char *inferable_boolean, aeron_inferable_boolean_t def)
+{
+    aeron_inferable_boolean_t result = def;
+
+    if (NULL != inferable_boolean)
+    {
+        if (strncmp(inferable_boolean, "TRUE", sizeof("TRUE")) == 0)
+        {
+            result = AERON_FORCE_TRUE;
+        }
+        else if (strncmp(inferable_boolean, "INFER", sizeof("INFER")) == 0)
+        {
+            result = AERON_INFER;
+        }
+        else
+        {
+            result = AERON_FORCE_FALSE;
+        }
+    }
+
+    return result;
+}
+
 #define AERON_CONFIG_GETENV_OR_DEFAULT(e, d) ((NULL == getenv(e)) ? (d) : getenv(e))
 #define AERON_CONFIG_STRNDUP_GETENV_OR_NULL(e) ((NULL == getenv(e)) ? (NULL) : aeron_strndup(getenv(e), AERON_MAX_PATH))
 
@@ -305,6 +329,7 @@ static void aeron_driver_conductor_to_client_interceptor_null(
 #define AERON_NAK_MULTICAST_MAX_BACKOFF_NS_DEFAULT (60 * 1000 * 1000LL)
 #define AERON_NAK_UNICAST_DELAY_NS_DEFAULT (60 * 1000 * 1000LL)
 #define AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_DEFAULT ("default")
+#define AERON_GROUP_SUBSCRIPTIONS_DEFAULT (AERON_INFER)
 
 int aeron_driver_context_init(aeron_driver_context_t **context)
 {
@@ -380,6 +405,8 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
 
     _context->threading_mode = aeron_config_parse_threading_mode(
         getenv(AERON_THREADING_MODE_ENV_VAR), AERON_THREADING_MODE_DEFAULT);
+    _context->group_subscriptions = aeron_config_parse_inferable_boolean(
+        getenv(AERON_GROUP_SUBSCRIPTIONS_ENV_VAR), AERON_GROUP_SUBSCRIPTIONS_DEFAULT);
     _context->dirs_delete_on_start = AERON_DIR_DELETE_ON_START_DEFAULT;
     _context->warn_if_dirs_exist = AERON_DIR_WARN_IF_EXISTS_DEFAULT;
     _context->term_buffer_sparse_file = AERON_TERM_BUFFER_SPARSE_FILE_DEFAULT;
@@ -1927,4 +1954,17 @@ aeron_udp_channel_transport_bindings_t *aeron_driver_context_get_udp_channel_tra
     return NULL != context ?
         context->udp_channel_transport_bindings :
         aeron_udp_channel_transport_bindings_load(AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_DEFAULT);
+}
+
+int aeron_driver_context_set_group_subscriptions(aeron_driver_context_t *context, aeron_inferable_boolean_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->group_subscriptions = value;
+    return 0;
+}
+
+aeron_inferable_boolean_t aeron_driver_context_get_group_subscriptions(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->group_subscriptions : AERON_GROUP_SUBSCRIPTIONS_DEFAULT;
 }

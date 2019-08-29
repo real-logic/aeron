@@ -574,6 +574,22 @@ uint64_t aeron_driver_context_get_retransmit_unicast_delay_ns(aeron_driver_conte
 int aeron_driver_context_set_retransmit_unicast_linger_ns(aeron_driver_context_t *context, uint64_t value);
 uint64_t aeron_driver_context_get_retransmit_unicast_linger_ns(aeron_driver_context_t *context);
 
+/**
+ * Group semantics for
+ */
+#define AERON_GROUP_SUBSCRIPTIONS_ENV_VAR "AERON_GROUP_SUBSCRIPTIONS"
+
+typedef enum aeron_inferable_boolean_enum
+{
+    AERON_FORCE_FALSE,
+    AERON_FORCE_TRUE,
+    AERON_INFER
+}
+aeron_inferable_boolean_t;
+
+int aeron_driver_context_set_group_subscriptions(aeron_driver_context_t *context, aeron_inferable_boolean_t value);
+aeron_inferable_boolean_t aeron_driver_context_get_group_subscriptions(aeron_driver_context_t *context);
+
 #define AERON_IPC_CHANNEL "aeron:ipc"
 #define AERON_IPC_CHANNEL_LEN strlen(AERON_IPC_CHANNEL)
 #define AERON_SPY_PREFIX "aeron-spy:"

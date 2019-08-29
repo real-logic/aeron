@@ -15,7 +15,6 @@
  */
 package io.aeron.archive;
 
-import io.aeron.archive.client.AeronArchive;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -34,6 +33,7 @@ import java.util.EnumSet;
 
 import static io.aeron.archive.Archive.segmentFileIndex;
 import static io.aeron.archive.Archive.segmentFileName;
+import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.RESERVED_VALUE_OFFSET;
@@ -64,6 +64,16 @@ class RecordingReader implements AutoCloseable
     RecordingReader(
         final RecordingSummary recordingSummary, final File archiveDir, final long position, final long length)
     {
+        if (position < NULL_POSITION)
+        {
+            throw new IllegalArgumentException("invalid position: " + position);
+        }
+
+        if (length < NULL_LENGTH)
+        {
+            throw new IllegalArgumentException("invalid length: " + length);
+        }
+
         this.archiveDir = archiveDir;
         this.termLength = recordingSummary.termBufferLength;
         this.segmentLength = recordingSummary.segmentFileLength;
@@ -74,7 +84,7 @@ class RecordingReader implements AutoCloseable
         final long maxLength = recordingSummary.stopPosition != NULL_POSITION ?
             recordingSummary.stopPosition - fromPosition : Long.MAX_VALUE - fromPosition;
 
-        final long replayLength = length == AeronArchive.NULL_LENGTH ? maxLength : Math.min(length, maxLength);
+        final long replayLength = length == NULL_LENGTH ? maxLength : Math.min(length, maxLength);
         if (replayLength < 0)
         {
             throw new IllegalArgumentException("length must be positive");

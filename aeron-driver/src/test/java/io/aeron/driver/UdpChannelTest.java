@@ -32,7 +32,6 @@ import java.net.*;
 import java.util.HashMap;
 import java.util.Map;
 
-import static java.lang.String.format;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -426,11 +425,11 @@ public class UdpChannelTest
     private static String uri(
         final String endpointKey, final String endpointValue, final String interfaceKey, final String interfaceValue)
     {
-        return format("aeron:udp?%s=%s|%s=%s", endpointKey, endpointValue, interfaceKey, interfaceValue);
+        return "aeron:udp?" + endpointKey + "=" + endpointValue + "|" + interfaceKey + "=" + interfaceValue;
     }
 
     private static String uri(final String endpointKey, final String endpointValue)
     {
-        return format("aeron:udp?%s=%s", endpointKey, endpointValue);
+        return "aeron:udp?" + endpointKey + "=" + endpointValue;
     }
 }

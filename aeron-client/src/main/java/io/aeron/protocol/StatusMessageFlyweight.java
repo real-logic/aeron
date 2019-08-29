@@ -267,10 +267,9 @@ public class StatusMessageFlyweight extends HeaderFlyweight
         {
             if (frameLength > capacity())
             {
-                throw new AeronException(String.format(
-                    "SM application specific feedback (%d) is truncated (%d)",
-                    frameLength - HEADER_LENGTH,
-                    capacity() - HEADER_LENGTH));
+                throw new AeronException(
+                    "SM application specific feedback (" + (frameLength - HEADER_LENGTH) + ") is truncated (" +
+                    (capacity() - HEADER_LENGTH) + ")");
             }
 
             final int copyLength = Math.min(destination.length, frameLength - HEADER_LENGTH);

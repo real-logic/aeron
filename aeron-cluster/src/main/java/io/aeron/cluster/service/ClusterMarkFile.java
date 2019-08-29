@@ -49,7 +49,6 @@ public class ClusterMarkFile implements AutoCloseable
     public static final String FILE_EXTENSION = ".dat";
     public static final String FILENAME = "cluster-mark" + FILE_EXTENSION;
     public static final String SERVICE_FILENAME_PREFIX = "cluster-mark-service-";
-    public static final String SERVICE_FILENAME_FORMAT = SERVICE_FILENAME_PREFIX + "%d" + FILE_EXTENSION;
     public static final int HEADER_LENGTH = 8 * 1024;
     public static final int VERSION_FAILED = -1;
 
@@ -315,6 +314,6 @@ public class ClusterMarkFile implements AutoCloseable
 
     public static String markFilenameForService(final int serviceId)
     {
-        return String.format(SERVICE_FILENAME_FORMAT, serviceId);
+        return SERVICE_FILENAME_PREFIX + serviceId + FILE_EXTENSION;
     }
 }

@@ -15,6 +15,7 @@
  */
 package io.aeron.driver;
 
+import io.aeron.CommonContext;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.UdpChannel;
 import org.agrona.concurrent.status.ReadablePosition;
@@ -33,6 +34,7 @@ public abstract class SubscriptionLink implements DriverManagedResource
     protected final boolean isSparse;
     protected final boolean isTether;
     protected boolean reachedEndOfLife = false;
+    protected final CommonContext.InferableBoolean group;
     protected final String channel;
     protected final AeronClient aeronClient;
     protected final IdentityHashMap<Subscribable, ReadablePosition> positionBySubscribableMap;
@@ -52,6 +54,7 @@ public abstract class SubscriptionLink implements DriverManagedResource
         this.sessionId = params.sessionId;
         this.isSparse = params.isSparse;
         this.isTether = params.isTether;
+        this.group = params.group;
 
         positionBySubscribableMap = new IdentityHashMap<>(hasSessionId ? 1 : 8);
     }
@@ -94,6 +97,11 @@ public abstract class SubscriptionLink implements DriverManagedResource
     public boolean isSparse()
     {
         return isSparse;
+    }
+
+    public CommonContext.InferableBoolean group()
+    {
+        return group;
     }
 
     public boolean hasSessionId()

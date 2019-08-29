@@ -456,6 +456,8 @@ public final class MediaDriver implements AutoCloseable
         private int lossReportBufferLength = Configuration.lossReportBufferLength();
         private int sendToStatusMessagePollRatio = Configuration.sendToStatusMessagePollRatio();
 
+        private InferableBoolean groupSubscriptions = Configuration.groupSubscriptions();
+
         private EpochClock epochClock;
         private NanoClock nanoClock;
         private CachedEpochClock cachedEpochClock;
@@ -1394,6 +1396,41 @@ public final class MediaDriver implements AutoCloseable
         public Context tetherSubscriptions(final boolean tetherSubscription)
         {
             this.tetherSubscriptions = tetherSubscription;
+            return this;
+        }
+
+        /**
+         * Should subscriptions be considered part of a group even if using a unicast endpoint, should it be
+         * considered an individual even if using a multicast endpoint, or should the use of a unicast/multicast
+         * endpoint dictate the usage.
+         * <p>
+         * The default can be overridden with a channel param.
+         *
+         * @return true if subscriptions should be considered a group member, false if not, or depends on endpoint.
+         * @see Configuration#GROUP_SUBSCRIPTIONS_PROP_NAME
+         * @see CommonContext#GROUP_PARAM_NAME
+         */
+        public InferableBoolean groupSubscriptions()
+        {
+            return groupSubscriptions;
+        }
+
+        /**
+         * Should subscriptions be considered part of a group even if using a unicast endpoint, should it be
+         * considered an individual even if using a multicast endpoint, or should the use of a unicast/multicast
+         * endpoint dictate the usage.
+         * <p>
+         * The default can be overridden with a channel param.
+         *
+         * @param groupSubscription true if subscriptions should be considered a group member,
+         *                          false if not, or depends on endpoint.
+         * @return this for a fluent API.
+         * @see Configuration#GROUP_SUBSCRIPTIONS_PROP_NAME
+         * @see CommonContext#GROUP_PARAM_NAME
+         */
+        public Context groupSubscriptions(final InferableBoolean groupSubscription)
+        {
+            this.groupSubscriptions = groupSubscription;
             return this;
         }
 
@@ -2979,6 +3016,7 @@ public final class MediaDriver implements AutoCloseable
             }
         }
 
+        @SuppressWarnings("MethodLength")
         public String toString()
         {
             return "MediaDriver.Context{" +
@@ -2994,6 +3032,7 @@ public final class MediaDriver implements AutoCloseable
                 "\n    spiesSimulateConnection=" + spiesSimulateConnection +
                 "\n    reliableStream=" + reliableStream +
                 "\n    tetherSubscriptions=" + tetherSubscriptions +
+                "\n    groupSubscriptions=" + groupSubscriptions +
                 "\n    conductorBufferLength=" + conductorBufferLength +
                 "\n    toClientsBufferLength=" + toClientsBufferLength +
                 "\n    counterValuesBufferLength=" + counterValuesBufferLength +

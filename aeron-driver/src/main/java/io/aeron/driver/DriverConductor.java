@@ -17,6 +17,7 @@ package io.aeron.driver;
 
 import io.aeron.ChannelUri;
 import io.aeron.CommonContext;
+import io.aeron.CommonContext.InferableBoolean;
 import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.buffer.LogFactory;
 import io.aeron.driver.buffer.RawLog;
@@ -39,6 +40,8 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
+import static io.aeron.CommonContext.InferableBoolean.FORCE_TRUE;
+import static io.aeron.CommonContext.InferableBoolean.INFER;
 import static io.aeron.ErrorCode.*;
 import static io.aeron.driver.PublicationParams.*;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
@@ -232,6 +235,13 @@ public class DriverConductor implements Agent
                 ctx,
                 countersManager);
 
+            final InferableBoolean groupSubscription = subscriberPositions.get(0).subscription().group();
+            final boolean treatAsMulticast =
+                groupSubscription == INFER ? udpChannel.isMulticast() : groupSubscription == FORCE_TRUE;
+
+            final FeedbackDelayGenerator feedbackDelayGenerator =
+                treatAsMulticast ? ctx.multicastFeedbackDelayGenerator() : ctx.unicastFeedbackDelayGenerator();
+
             final PublicationImage image = new PublicationImage(
                 registrationId,
                 ctx.imageLivenessTimeoutNs(),
@@ -246,7 +256,7 @@ public class DriverConductor implements Agent
                 activeTermId,
                 initialTermOffset,
                 rawLog,
-                udpChannel.isMulticast() ? ctx.multicastFeedbackDelayGenerator() : ctx.unicastFeedbackDelayGenerator(),
+                feedbackDelayGenerator,
                 subscriberPositions,
                 ReceiverHwm.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, channel),
                 ReceiverPos.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, channel),

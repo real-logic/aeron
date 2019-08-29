@@ -55,6 +55,27 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 public class CommonContext implements Cloneable
 {
     /**
+     * Condition to specify a triple state conditional of always override to be true, always override to be false,
+     * or infer value.
+     */
+    public enum InferableBoolean
+    {
+        FORCE_FALSE,
+        FORCE_TRUE,
+        INFER;
+
+        public static InferableBoolean parse(final String value)
+        {
+            if (null == value || "infer".equalsIgnoreCase(value))
+            {
+                return INFER;
+            }
+
+            return "true".equalsIgnoreCase(value) ? FORCE_TRUE : FORCE_FALSE;
+        }
+    }
+
+    /**
      * Property name for driver timeout after which the driver is considered inactive.
      */
     public static final String DRIVER_TIMEOUT_PROP_NAME = "aeron.driver.timeout";
@@ -214,6 +235,11 @@ public class CommonContext implements Cloneable
      * true then that subscription is included in flow control. If only one subscription then it tethers pace.
      */
     public static final String TETHER_PARAM_NAME = "tether";
+
+    /**
+     * Parameter name for channel URI param to indicate Subscription represents a group member or individual.
+     */
+    public static final String GROUP_PARAM_NAME = "group";
 
     /**
      * Using an integer because there is no support for boolean. 1 is concluded, 0 is not concluded.

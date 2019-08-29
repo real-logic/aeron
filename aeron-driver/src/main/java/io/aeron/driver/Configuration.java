@@ -92,6 +92,11 @@ public class Configuration
     public static final String TERM_BUFFER_SPARSE_FILE_PROP_NAME = "aeron.term.buffer.sparse.file";
 
     /**
+     * Property name for default boolean value for if subscriptions should be considered a group member or individual.
+     */
+    public static final String GROUP_SUBSCRIPTIONS_PROP_NAME = "aeron.group.subscriptions";
+
+    /**
      * Property name for page size to align all files to.
      */
     public static final String FILE_PAGE_SIZE_PROP_NAME = "aeron.file.page.size";
@@ -661,6 +666,11 @@ public class Configuration
     public static boolean spiesSimulateConnection()
     {
         return "true".equalsIgnoreCase(getProperty(SPIES_SIMULATE_CONNECTION_PROP_NAME, "false"));
+    }
+
+    public static CommonContext.InferableBoolean groupSubscriptions()
+    {
+        return CommonContext.InferableBoolean.parse(getProperty(GROUP_SUBSCRIPTIONS_PROP_NAME));
     }
 
     public static int conductorBufferLength()

@@ -20,10 +20,10 @@ import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.*;
 import org.agrona.MutableDirectBuffer;
 
-import java.net.InetAddress;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import static java.lang.Integer.toHexString;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
@@ -303,29 +303,39 @@ public class DriverEventDissector
 
         if (4 == addressLength)
         {
+            final int i = offset + relativeOffset;
             builder
-                .append(buffer.getByte(offset + relativeOffset))
+                .append(buffer.getByte(i))
                 .append('.')
-                .append(buffer.getByte(offset + relativeOffset + 1))
+                .append(buffer.getByte(i + 1))
                 .append('.')
-                .append(buffer.getByte(offset + relativeOffset + 2))
+                .append(buffer.getByte(i + 2))
                 .append('.')
-                .append(buffer.getByte(offset + relativeOffset + 3))
+                .append(buffer.getByte(i + 3))
                 .append(':')
                 .append(port);
         }
         else if (16 == addressLength)
         {
-            try
-            {
-                final byte[] addressBuffer = new byte[addressLength];
-                buffer.getBytes(offset + relativeOffset, addressBuffer);
-                builder.append(InetAddress.getByAddress(addressBuffer).getHostAddress()).append(':').append(port);
-            }
-            catch (final Exception ex)
-            {
-                ex.printStackTrace();
-            }
+            final int i = offset + relativeOffset;
+            builder
+                .append(toHexString(((buffer.getByte(i) << 8) & 0xFF00) | buffer.getByte(i + 1) & 0xFF))
+                .append(':')
+                .append(toHexString(((buffer.getByte(i + 2) << 8) & 0xFF00) | buffer.getByte(i + 3) & 0xFF))
+                .append(':')
+                .append(toHexString(((buffer.getByte(i + 4) << 8) & 0xFF00) | buffer.getByte(i + 5) & 0xFF))
+                .append(':')
+                .append(toHexString(((buffer.getByte(i + 6) << 8) & 0xFF00) | buffer.getByte(i + 7) & 0xFF))
+                .append(':')
+                .append(toHexString(((buffer.getByte(i + 8) << 8) & 0xFF00) | buffer.getByte(i + 9) & 0xFF))
+                .append(':')
+                .append(toHexString(((buffer.getByte(i + 10) << 8) & 0xFF00) | buffer.getByte(i + 11) & 0xFF))
+                .append(':')
+                .append(toHexString(((buffer.getByte(i + 12) << 8) & 0xFF00) | buffer.getByte(i + 13) & 0xFF))
+                .append(':')
+                .append(toHexString(((buffer.getByte(i + 14) << 8) & 0xFF00) | buffer.getByte(i + 15) & 0xFF))
+                .append(':')
+                .append(port);
         }
         else
         {

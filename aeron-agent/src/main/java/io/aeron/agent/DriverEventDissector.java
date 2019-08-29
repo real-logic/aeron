@@ -298,20 +298,41 @@ public class DriverEventDissector
         final int port = buffer.getInt(offset + relativeOffset, LITTLE_ENDIAN);
         relativeOffset += SIZE_OF_INT;
 
-        final byte[] addressBuffer = new byte[buffer.getInt(offset + relativeOffset)];
+        final int addressLength = buffer.getInt(offset + relativeOffset);
         relativeOffset += SIZE_OF_INT;
 
-        buffer.getBytes(offset + relativeOffset, addressBuffer);
-        relativeOffset += addressBuffer.length;
+        if (4 == addressLength)
+        {
+            builder
+                .append(buffer.getByte(offset + relativeOffset))
+                .append('.')
+                .append(buffer.getByte(offset + relativeOffset + 1))
+                .append('.')
+                .append(buffer.getByte(offset + relativeOffset + 2))
+                .append('.')
+                .append(buffer.getByte(offset + relativeOffset + 3))
+                .append(':')
+                .append(port);
+        }
+        else if (16 == addressLength)
+        {
+            try
+            {
+                final byte[] addressBuffer = new byte[addressLength];
+                buffer.getBytes(offset + relativeOffset, addressBuffer);
+                builder.append(InetAddress.getByAddress(addressBuffer).getHostAddress()).append(':').append(port);
+            }
+            catch (final Exception ex)
+            {
+                ex.printStackTrace();
+            }
+        }
+        else
+        {
+            builder.append("unknown-address:").append(port);
+        }
 
-        try
-        {
-            builder.append(InetAddress.getByAddress(addressBuffer).getHostAddress()).append('.').append(port);
-        }
-        catch (final Exception ex)
-        {
-            ex.printStackTrace();
-        }
+        relativeOffset += addressLength;
 
         return relativeOffset;
     }

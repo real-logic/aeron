@@ -291,7 +291,7 @@ public final class AeronCluster implements AutoCloseable
      * <p>
      * This can be wrapped with a {@link IngressSessionDecorator} for pre-pending the cluster session header to
      * messages.
-     * {@link io.aeron.cluster.codecs.SessionMessageHeaderEncoder} or should be used for raw access.
+     * {@link io.aeron.cluster.codecs.SessionMessageHeaderEncoder} should be used for raw access.
      *
      * @return the raw {@link Publication} for connecting to the cluster.
      */
@@ -304,7 +304,7 @@ public final class AeronCluster implements AutoCloseable
      * Get the raw {@link Subscription} for receiving from the cluster.
      * <p>
      * The can be wrapped with a {@link EgressAdapter} for dispatching events from the cluster.
-     * {@link io.aeron.cluster.codecs.SessionMessageHeaderDecoder} or should be used for raw access.
+     * {@link io.aeron.cluster.codecs.SessionMessageHeaderDecoder} should be used for raw access.
      *
      * @return the raw {@link Subscription} for receiving from the cluster.
      */

@@ -164,7 +164,7 @@ public class ClientSession
      *              final MutableDirectBuffer buffer = bufferClaim.buffer();
      *              final int offset = bufferClaim.offset();
      *              // ensure that data is written at the correct offset
-     *              buffer.putBytes(offset + ClientSession.SESSION_HEADER_LENGTH, srcBuffer, 0, length);
+     *              buffer.putBytes(offset + AeronCluster.SESSION_HEADER_LENGTH, srcBuffer, 0, length);
      *         }
      *         finally
      *         {

@@ -33,7 +33,7 @@ public enum ErrorCode
     INVALID_CHANNEL(1),
 
     /**
-     * Attempted to reference a subscription, but it was not found
+     * Attempted to reference a subscription, but it was not found.
      */
     UNKNOWN_SUBSCRIPTION(2),
 

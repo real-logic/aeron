@@ -329,7 +329,7 @@ public class ConsensusModule implements AutoCloseable
         /**
          * Channel for the clustered log.
          */
-        public static final String LOG_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:9030";
+        public static final String LOG_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:9030|group=true";
 
         /**
          * Property name for the comma separated list of member endpoints.

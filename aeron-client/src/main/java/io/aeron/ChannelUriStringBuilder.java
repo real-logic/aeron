@@ -649,6 +649,8 @@ public class ChannelUriStringBuilder
      * @param group value to be set for the group param.
      * @return this for a fluent API.
      * @see CommonContext#GROUP_PARAM_NAME
+     * @see #controlMode()
+     * @see #controlEndpoint()
      */
     public ChannelUriStringBuilder group(final Boolean group)
     {
@@ -661,6 +663,8 @@ public class ChannelUriStringBuilder
      *
      * @return value of the group param.
      * @see CommonContext#GROUP_PARAM_NAME
+     * @see #controlMode()
+     * @see #controlEndpoint()
      */
     public Boolean group()
     {

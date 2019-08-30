@@ -40,21 +40,23 @@ import static org.mockito.Mockito.*;
 public class MultiDestinationCastTest
 {
     private static final String PUB_MDC_DYNAMIC_URI = "aeron:udp?control=localhost:54325|control-mode=dynamic";
-    private static final String SUB1_MDC_DYNAMIC_URI = "aeron:udp?endpoint=localhost:54326|control=localhost:54325";
-    private static final String SUB2_MDC_DYNAMIC_URI = "aeron:udp?endpoint=localhost:54327|control=localhost:54325";
+    private static final String SUB1_MDC_DYNAMIC_URI =
+        "aeron:udp?endpoint=localhost:54326|control=localhost:54325|group=true";
+    private static final String SUB2_MDC_DYNAMIC_URI =
+        "aeron:udp?endpoint=localhost:54327|control=localhost:54325|group=true";
     private static final String SUB3_MDC_DYNAMIC_URI = CommonContext.SPY_PREFIX + PUB_MDC_DYNAMIC_URI;
 
     private static final String PUB_MDC_MANUAL_URI = "aeron:udp?control=localhost:54325|control-mode=manual";
-    private static final String SUB1_MDC_MANUAL_URI = "aeron:udp?endpoint=localhost:54326";
-    private static final String SUB2_MDC_MANUAL_URI = "aeron:udp?endpoint=localhost:54327";
+    private static final String SUB1_MDC_MANUAL_URI = "aeron:udp?endpoint=localhost:54326|group=true";
+    private static final String SUB2_MDC_MANUAL_URI = "aeron:udp?endpoint=localhost:54327|group=true";
     private static final String SUB3_MDC_MANUAL_URI = CommonContext.SPY_PREFIX + PUB_MDC_MANUAL_URI;
 
     private static final int STREAM_ID = 1;
 
     private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
-    private static final int NUM_MESSAGES_PER_TERM = 64;
+    private static final int MESSAGES_PER_TERM = 64;
     private static final int MESSAGE_LENGTH =
-        (TERM_BUFFER_LENGTH / NUM_MESSAGES_PER_TERM) - DataHeaderFlyweight.HEADER_LENGTH;
+        (TERM_BUFFER_LENGTH / MESSAGES_PER_TERM) - DataHeaderFlyweight.HEADER_LENGTH;
     private static final String ROOT_DIR =
         SystemUtil.tmpDirName() + "aeron-system-tests-" + UUID.randomUUID().toString() + File.separator;
 
@@ -149,7 +151,7 @@ public class MultiDestinationCastTest
     @Test(timeout = 10_000)
     public void shouldSendToTwoPortsWithDynamic()
     {
-        final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
+        final int numMessagesToSend = MESSAGES_PER_TERM * 3;
 
         launch();
 
@@ -190,7 +192,7 @@ public class MultiDestinationCastTest
     @Test(timeout = 10_000)
     public void shouldSendToTwoPortsWithDynamicSingleDriver()
     {
-        final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
+        final int numMessagesToSend = MESSAGES_PER_TERM * 3;
 
         launch();
 
@@ -231,7 +233,7 @@ public class MultiDestinationCastTest
     @Test(timeout = 10_000)
     public void shouldSendToTwoPortsWithManualSingleDriver()
     {
-        final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
+        final int numMessagesToSend = MESSAGES_PER_TERM * 3;
 
         launch();
 
@@ -271,7 +273,7 @@ public class MultiDestinationCastTest
     @Test(timeout = 10_000)
     public void shouldManuallyRemovePortDuringActiveStream() throws Exception
     {
-        final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
+        final int numMessagesToSend = MESSAGES_PER_TERM * 3;
         final int numMessageForSub2 = 10;
         final CountDownLatch unavailableImage = new CountDownLatch(1);
 
@@ -332,7 +334,7 @@ public class MultiDestinationCastTest
     @Test(timeout = 10_000)
     public void shouldManuallyAddPortDuringActiveStream() throws Exception
     {
-        final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
+        final int numMessagesToSend = MESSAGES_PER_TERM * 3;
         final int numMessageForSub2 = 10;
         final CountDownLatch availableImage = new CountDownLatch(1);
 

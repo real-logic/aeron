@@ -239,6 +239,10 @@ public class CommonContext implements Cloneable
     /**
      * Parameter name for channel URI param to indicate Subscription represents a group member or individual
      * from the perspective of message reception. This can inform loss handling and similar semantics.
+     * <p>
+     * When configuring an subscription for an MDC publication then should be added as this is effective multicast.
+     * @see CommonContext#MDC_CONTROL_MODE_PARAM_NAME
+     * @see CommonContext#MDC_CONTROL_PARAM_NAME
      */
     public static final String GROUP_PARAM_NAME = "group";
 

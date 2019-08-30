@@ -1072,7 +1072,7 @@ abstract class ArchiveConductor
             ctx);
 
         recordingSessionByIdMap.put(recordingId, session);
-        catalog.extendRecording(recordingId, controlSession.sessionId(), correlationId);
+        catalog.extendRecording(recordingId, controlSession.sessionId(), correlationId, image.sessionId());
         recorder.addSession(session);
     }
 

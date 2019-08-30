@@ -524,15 +524,16 @@ class Catalog implements AutoCloseable
         forceWrites(catalogChannel, forceWrites, forceMetadata);
     }
 
-    public void extendRecording(final long recordingId, final long controlSessionId, final long correlationId)
+    public void extendRecording(
+        final long recordingId, final long controlSessionId, final long correlationId, final int sessionId)
     {
         final int offset = recordingDescriptorOffset(recordingId) + RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
-
         final long stopPosition = nativeOrder() == BYTE_ORDER ? NULL_POSITION : Long.reverseBytes(NULL_POSITION);
 
-        fieldAccessBuffer.putLong(offset + controlSessionIdEncodingOffset(), controlSessionId);
-        fieldAccessBuffer.putLong(offset + correlationIdEncodingOffset(), correlationId);
-        fieldAccessBuffer.putLong(offset + stopTimestampEncodingOffset(), NULL_TIMESTAMP);
+        fieldAccessBuffer.putLong(offset + controlSessionIdEncodingOffset(), controlSessionId, BYTE_ORDER);
+        fieldAccessBuffer.putLong(offset + correlationIdEncodingOffset(), correlationId, BYTE_ORDER);
+        fieldAccessBuffer.putLong(offset + stopTimestampEncodingOffset(), NULL_TIMESTAMP, BYTE_ORDER);
+        fieldAccessBuffer.putInt(offset + sessionIdEncodingOffset(), sessionId, BYTE_ORDER);
         fieldAccessBuffer.putLongVolatile(offset + stopPositionEncodingOffset(), stopPosition);
 
         forceWrites(catalogChannel, forceWrites, forceMetadata);

@@ -573,7 +573,7 @@ int aeron_uri_subscription_params(
     }
 
     params->group = aeron_config_parse_inferable_boolean(
-        aeron_uri_find_param_value(uri_params, AERON_URI_GROUP_KEY), context->group_subscriptions);
+        aeron_uri_find_param_value(uri_params, AERON_URI_GROUP_KEY), context->receiver_group_consideration);
 
     return 0;
 }

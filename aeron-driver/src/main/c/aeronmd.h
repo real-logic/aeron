@@ -575,9 +575,9 @@ int aeron_driver_context_set_retransmit_unicast_linger_ns(aeron_driver_context_t
 uint64_t aeron_driver_context_get_retransmit_unicast_linger_ns(aeron_driver_context_t *context);
 
 /**
- * Group semantics for
+ * Group semantics for network subscriptions.
  */
-#define AERON_GROUP_SUBSCRIPTIONS_ENV_VAR "AERON_GROUP_SUBSCRIPTIONS"
+#define AERON_RECEIVER_GROUP_CONSIDERATION_ENV_VAR "AERON_RECEIVER_GROUP_CONSIDERATION"
 
 typedef enum aeron_inferable_boolean_enum
 {
@@ -587,8 +587,9 @@ typedef enum aeron_inferable_boolean_enum
 }
 aeron_inferable_boolean_t;
 
-int aeron_driver_context_set_group_subscriptions(aeron_driver_context_t *context, aeron_inferable_boolean_t value);
-aeron_inferable_boolean_t aeron_driver_context_get_group_subscriptions(aeron_driver_context_t *context);
+int aeron_driver_context_set_receiver_group_consideration(
+    aeron_driver_context_t *context, aeron_inferable_boolean_t value);
+aeron_inferable_boolean_t aeron_driver_context_get_receiver_group_consideration(aeron_driver_context_t *context);
 
 #define AERON_IPC_CHANNEL "aeron:ipc"
 #define AERON_IPC_CHANNEL_LEN strlen(AERON_IPC_CHANNEL)

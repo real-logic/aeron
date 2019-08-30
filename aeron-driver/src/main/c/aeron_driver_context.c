@@ -329,7 +329,7 @@ static void aeron_driver_conductor_to_client_interceptor_null(
 #define AERON_NAK_MULTICAST_MAX_BACKOFF_NS_DEFAULT (60 * 1000 * 1000LL)
 #define AERON_NAK_UNICAST_DELAY_NS_DEFAULT (60 * 1000 * 1000LL)
 #define AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_DEFAULT ("default")
-#define AERON_GROUP_SUBSCRIPTIONS_DEFAULT (AERON_INFER)
+#define AERON_RECEIVER_GROUP_CONSIDERATION_DEFAULT (AERON_INFER)
 
 int aeron_driver_context_init(aeron_driver_context_t **context)
 {
@@ -405,8 +405,8 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
 
     _context->threading_mode = aeron_config_parse_threading_mode(
         getenv(AERON_THREADING_MODE_ENV_VAR), AERON_THREADING_MODE_DEFAULT);
-    _context->group_subscriptions = aeron_config_parse_inferable_boolean(
-        getenv(AERON_GROUP_SUBSCRIPTIONS_ENV_VAR), AERON_GROUP_SUBSCRIPTIONS_DEFAULT);
+    _context->receiver_group_consideration = aeron_config_parse_inferable_boolean(
+        getenv(AERON_RECEIVER_GROUP_CONSIDERATION_ENV_VAR), AERON_RECEIVER_GROUP_CONSIDERATION_DEFAULT);
     _context->dirs_delete_on_start = AERON_DIR_DELETE_ON_START_DEFAULT;
     _context->warn_if_dirs_exist = AERON_DIR_WARN_IF_EXISTS_DEFAULT;
     _context->term_buffer_sparse_file = AERON_TERM_BUFFER_SPARSE_FILE_DEFAULT;
@@ -1956,15 +1956,16 @@ aeron_udp_channel_transport_bindings_t *aeron_driver_context_get_udp_channel_tra
         aeron_udp_channel_transport_bindings_load(AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_DEFAULT);
 }
 
-int aeron_driver_context_set_group_subscriptions(aeron_driver_context_t *context, aeron_inferable_boolean_t value)
+int aeron_driver_context_set_receiver_group_consideration(
+    aeron_driver_context_t *context, aeron_inferable_boolean_t value)
 {
     AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
 
-    context->group_subscriptions = value;
+    context->receiver_group_consideration = value;
     return 0;
 }
 
-aeron_inferable_boolean_t aeron_driver_context_get_group_subscriptions(aeron_driver_context_t *context)
+aeron_inferable_boolean_t aeron_driver_context_get_receiver_group_consideration(aeron_driver_context_t *context)
 {
-    return NULL != context ? context->group_subscriptions : AERON_GROUP_SUBSCRIPTIONS_DEFAULT;
+    return NULL != context ? context->receiver_group_consideration : AERON_RECEIVER_GROUP_CONSIDERATION_DEFAULT;
 }

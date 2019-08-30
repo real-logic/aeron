@@ -68,7 +68,7 @@ typedef struct aeron_driver_context_stct
 {
     char *aeron_dir;                             /* aeron.dir */
     aeron_threading_mode_t threading_mode;       /* aeron.threading.mode = DEDICATED */
-    aeron_inferable_boolean_t group_subscriptions; /* aeron.group.subscriptions = INFER */
+    aeron_inferable_boolean_t receiver_group_consideration; /* aeron.receiver.group.consideration = INFER */
     bool dirs_delete_on_start;                   /* aeron.dir.delete.on.start = false */
     bool warn_if_dirs_exist;                     /* aeron.dir.warn.if.exists = true */
     bool term_buffer_sparse_file;                /* aeron.term.buffer.sparse.file = false */

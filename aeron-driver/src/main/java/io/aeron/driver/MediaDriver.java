@@ -456,7 +456,7 @@ public final class MediaDriver implements AutoCloseable
         private int lossReportBufferLength = Configuration.lossReportBufferLength();
         private int sendToStatusMessagePollRatio = Configuration.sendToStatusMessagePollRatio();
 
-        private InferableBoolean groupSubscriptions = Configuration.groupSubscriptions();
+        private InferableBoolean groupConsideration = Configuration.groupConsideration();
 
         private EpochClock epochClock;
         private NanoClock nanoClock;
@@ -1402,35 +1402,35 @@ public final class MediaDriver implements AutoCloseable
         /**
          * Should subscriptions be considered part of a group even if using a unicast endpoint, should it be
          * considered an individual even if using a multicast endpoint, or should the use of a unicast/multicast
-         * endpoint dictate the usage.
+         * endpoint infer the usage.
          * <p>
          * The default can be overridden with a channel param.
          *
          * @return true if subscriptions should be considered a group member, false if not, or depends on endpoint.
-         * @see Configuration#GROUP_SUBSCRIPTIONS_PROP_NAME
+         * @see Configuration#GROUP_CONSIDERATION_PROP_NAME
          * @see CommonContext#GROUP_PARAM_NAME
          */
-        public InferableBoolean groupSubscriptions()
+        public InferableBoolean groupConsideration()
         {
-            return groupSubscriptions;
+            return groupConsideration;
         }
 
         /**
          * Should subscriptions be considered part of a group even if using a unicast endpoint, should it be
          * considered an individual even if using a multicast endpoint, or should the use of a unicast/multicast
-         * endpoint dictate the usage.
+         * endpoint infer the usage.
          * <p>
          * The default can be overridden with a channel param.
          *
-         * @param groupSubscription true if subscriptions should be considered a group member,
-         *                          false if not, or depends on endpoint.
+         * @param groupConsideration true if subscriptions should be considered a group member,
+         *                          false if not, or infer from endpoint.
          * @return this for a fluent API.
-         * @see Configuration#GROUP_SUBSCRIPTIONS_PROP_NAME
+         * @see Configuration#GROUP_CONSIDERATION_PROP_NAME
          * @see CommonContext#GROUP_PARAM_NAME
          */
-        public Context groupSubscriptions(final InferableBoolean groupSubscription)
+        public Context groupConsideration(final InferableBoolean groupConsideration)
         {
-            this.groupSubscriptions = groupSubscription;
+            this.groupConsideration = groupConsideration;
             return this;
         }
 
@@ -3032,7 +3032,7 @@ public final class MediaDriver implements AutoCloseable
                 "\n    spiesSimulateConnection=" + spiesSimulateConnection +
                 "\n    reliableStream=" + reliableStream +
                 "\n    tetherSubscriptions=" + tetherSubscriptions +
-                "\n    groupSubscriptions=" + groupSubscriptions +
+                "\n    groupSubscriptions=" + groupConsideration +
                 "\n    conductorBufferLength=" + conductorBufferLength +
                 "\n    toClientsBufferLength=" + toClientsBufferLength +
                 "\n    counterValuesBufferLength=" + counterValuesBufferLength +

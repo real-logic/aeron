@@ -103,7 +103,7 @@ class SubscriptionParams
         params.isSparse = null != sparseStr ? "true".equals(sparseStr) : context.termBufferSparseFile();
 
         final String groupStr = channelUri.get(GROUP_PARAM_NAME);
-        params.group = null != groupStr ? InferableBoolean.parse(groupStr) : context.groupSubscriptions();
+        params.group = null != groupStr ? InferableBoolean.parse(groupStr) : context.groupConsideration();
 
         return params;
     }

@@ -94,7 +94,7 @@ public class Configuration
     /**
      * Property name for default boolean value for if subscriptions should be considered a group member or individual.
      */
-    public static final String GROUP_SUBSCRIPTIONS_PROP_NAME = "aeron.group.subscriptions";
+    public static final String GROUP_CONSIDERATION_PROP_NAME = "aeron.receiver.group.consideration";
 
     /**
      * Property name for page size to align all files to.
@@ -668,9 +668,9 @@ public class Configuration
         return "true".equalsIgnoreCase(getProperty(SPIES_SIMULATE_CONNECTION_PROP_NAME, "false"));
     }
 
-    public static CommonContext.InferableBoolean groupSubscriptions()
+    public static CommonContext.InferableBoolean groupConsideration()
     {
-        return CommonContext.InferableBoolean.parse(getProperty(GROUP_SUBSCRIPTIONS_PROP_NAME));
+        return CommonContext.InferableBoolean.parse(getProperty(GROUP_CONSIDERATION_PROP_NAME));
     }
 
     public static int conductorBufferLength()

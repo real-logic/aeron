@@ -54,6 +54,7 @@ public class ChannelUriStringBuilder
     private Boolean sparse;
     private Boolean eos;
     private Boolean tether;
+    private Boolean group;
     private boolean isSessionIdTagged;
 
     /**
@@ -83,6 +84,7 @@ public class ChannelUriStringBuilder
         sparse = null;
         eos = null;
         tether = null;
+        group = null;
         isSessionIdTagged = false;
 
         return this;
@@ -642,6 +644,30 @@ public class ChannelUriStringBuilder
     }
 
     /**
+     * Is the receiver likely to be part of a group. This informs behaviour such as loss handling.
+     *
+     * @param group value to be set for the group param.
+     * @return this for a fluent API.
+     * @see CommonContext#GROUP_PARAM_NAME
+     */
+    public ChannelUriStringBuilder group(final Boolean group)
+    {
+        this.group = group;
+        return this;
+    }
+
+    /**
+     * Is the receiver likely to be part of a group. This informs behaviour such as loss handling.
+     *
+     * @return value of the group param.
+     * @see CommonContext#GROUP_PARAM_NAME
+     */
+    public Boolean group()
+    {
+        return group;
+    }
+
+    /**
      * Set the tags for a channel used by a publication or subscription. Tags can be used to identify or tag a
      * channel so that a configuration can be referenced and reused.
      *
@@ -849,6 +875,11 @@ public class ChannelUriStringBuilder
         if (null != tether)
         {
             sb.append(TETHER_PARAM_NAME).append('=').append(tether).append('|');
+        }
+
+        if (null != group)
+        {
+            sb.append(GROUP_PARAM_NAME).append('=').append(group).append('|');
         }
 
         final char lastChar = sb.charAt(sb.length() - 1);

@@ -56,6 +56,7 @@ public:
         m_sparse.reset(nullptr);
         m_eos.reset(nullptr);
         m_tether.reset(nullptr);
+        m_group.reset(nullptr);
         m_isSessionIdTagged = false;
         return *this;
     }
@@ -235,6 +236,12 @@ public:
         return *this;
     }
 
+    inline this_t& group(bool group)
+    {
+        m_group.reset(new Value(group ? 1 : 0));
+        return *this;
+    }
+
     inline this_t& isSessionIdTagged(bool isSessionIdTagged)
     {
         m_isSessionIdTagged = isSessionIdTagged;
@@ -342,6 +349,11 @@ public:
             sb << TETHER_PARAM_NAME << '=' << (m_tether->value == 1 ? "true" : "false") << '|';
         }
 
+        if (m_group)
+        {
+            sb << GROUP_PARAM_NAME << '=' << (m_group->value == 1 ? "true" : "false") << '|';
+        }
+
         std::string result = sb.str();
         const char lastChar = result.back();
 
@@ -383,6 +395,7 @@ private:
     std::unique_ptr<Value> m_sparse;
     std::unique_ptr<Value> m_eos;
     std::unique_ptr<Value> m_tether;
+    std::unique_ptr<Value> m_group;
     bool m_isSessionIdTagged = false;
 
     inline static std::string prefixTag(bool isTagged, Value& value)

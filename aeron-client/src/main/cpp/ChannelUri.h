@@ -54,6 +54,7 @@ constexpr const char SPARSE_PARAM_NAME[] = "sparse";
 constexpr const char ALIAS_PARAM_NAME[] = "alias";
 constexpr const char EOS_PARAM_NAME[] = "eos";
 constexpr const char TETHER_PARAM_NAME[] = "tether";
+constexpr const char GROUP_PARAM_NAME[] = "group";
 
 using namespace aeron::util;
 

@@ -3032,7 +3032,7 @@ public final class MediaDriver implements AutoCloseable
                 "\n    spiesSimulateConnection=" + spiesSimulateConnection +
                 "\n    reliableStream=" + reliableStream +
                 "\n    tetherSubscriptions=" + tetherSubscriptions +
-                "\n    groupSubscriptions=" + groupConsideration +
+                "\n    groupConsideration=" + groupConsideration +
                 "\n    conductorBufferLength=" + conductorBufferLength +
                 "\n    toClientsBufferLength=" + toClientsBufferLength +
                 "\n    counterValuesBufferLength=" + counterValuesBufferLength +

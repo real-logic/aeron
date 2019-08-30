@@ -305,13 +305,13 @@ public class DriverEventDissector
         {
             final int i = offset + relativeOffset;
             builder
-                .append(buffer.getByte(i))
+                .append(buffer.getByte(i) & 0xFF)
                 .append('.')
-                .append(buffer.getByte(i + 1))
+                .append(buffer.getByte(i + 1) & 0xFF)
                 .append('.')
-                .append(buffer.getByte(i + 2))
+                .append(buffer.getByte(i + 2) & 0xFF)
                 .append('.')
-                .append(buffer.getByte(i + 3))
+                .append(buffer.getByte(i + 3) & 0xFF)
                 .append(':')
                 .append(port);
         }

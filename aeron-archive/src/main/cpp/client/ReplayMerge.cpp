@@ -83,6 +83,7 @@ int ReplayMerge::awaitInitialRecordingPosition()
     else if (pollForResponse(*m_archive, m_activeCorrelationId))
     {
         m_nextTargetPosition = m_archive->controlResponsePoller().relevantId();
+        m_activeCorrelationId = aeron::NULL_VALUE;
         if (NULL_POSITION == m_nextTargetPosition)
         {
             const std::int64_t correlationId = m_archive->context().aeron()->nextCorrelationId();
@@ -96,7 +97,6 @@ int ReplayMerge::awaitInitialRecordingPosition()
         else
         {
             m_initialMaxPosition = m_nextTargetPosition;
-            m_activeCorrelationId = aeron::NULL_VALUE;
             state(State::AWAIT_REPLAY);
         }
 
@@ -175,6 +175,7 @@ int ReplayMerge::awaitUpdatedRecordingPosition()
     else if (pollForResponse(*m_archive, m_activeCorrelationId))
     {
         m_nextTargetPosition = m_archive->controlResponsePoller().relevantId();
+        m_activeCorrelationId = aeron::NULL_VALUE;
         if (NULL_POSITION == m_nextTargetPosition)
         {
             const std::int64_t correlationId = m_archive->context().aeron()->nextCorrelationId();
@@ -204,7 +205,6 @@ int ReplayMerge::awaitUpdatedRecordingPosition()
                 }
             }
 
-            m_activeCorrelationId = aeron::NULL_VALUE;
             state(nextState);
         }
 

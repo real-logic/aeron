@@ -241,6 +241,7 @@ public class ReplayMerge implements AutoCloseable
         else if (pollForResponse(archive, activeCorrelationId))
         {
             nextTargetPosition = polledRelevantId(archive);
+            activeCorrelationId = Aeron.NULL_VALUE;
             if (AeronArchive.NULL_POSITION == nextTargetPosition)
             {
                 final long correlationId = archive.context().aeron().nextCorrelationId();
@@ -254,7 +255,6 @@ public class ReplayMerge implements AutoCloseable
             else
             {
                 initialMaxPosition = nextTargetPosition;
-                activeCorrelationId = Aeron.NULL_VALUE;
                 state(State.AWAIT_REPLAY);
             }
             workCount += 1;
@@ -333,6 +333,7 @@ public class ReplayMerge implements AutoCloseable
         else if (pollForResponse(archive, activeCorrelationId))
         {
             nextTargetPosition = polledRelevantId(archive);
+            activeCorrelationId = Aeron.NULL_VALUE;
             if (AeronArchive.NULL_POSITION == nextTargetPosition)
             {
                 final long correlationId = archive.context().aeron().nextCorrelationId();
@@ -361,7 +362,6 @@ public class ReplayMerge implements AutoCloseable
                     }
                 }
 
-                activeCorrelationId = Aeron.NULL_VALUE;
                 state(nextState);
             }
             workCount += 1;

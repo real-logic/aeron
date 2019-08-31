@@ -46,7 +46,7 @@ public class ClusterControl
     public enum ToggleState
     {
         /**
-         * Inactive state.
+         * Inactive state, not accepting new actions.
          */
         INACTIVE(0),
 

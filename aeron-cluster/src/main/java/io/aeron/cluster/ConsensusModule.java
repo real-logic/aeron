@@ -359,7 +359,7 @@ public class ConsensusModule implements AutoCloseable
         /**
          * Channel to be used for archiving snapshots.
          */
-        public static final String SNAPSHOT_CHANNEL_DEFAULT = CommonContext.IPC_CHANNEL;
+        public static final String SNAPSHOT_CHANNEL_DEFAULT = CommonContext.IPC_CHANNEL + "?alias=snapshot";
 
         /**
          * Stream id for the archived snapshots within a channel.

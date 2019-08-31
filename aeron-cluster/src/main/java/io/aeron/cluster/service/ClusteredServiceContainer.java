@@ -228,7 +228,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         /**
          * Default channel to be used for archiving snapshots.
          */
-        public static final String SNAPSHOT_CHANNEL_DEFAULT = CommonContext.IPC_CHANNEL;
+        public static final String SNAPSHOT_CHANNEL_DEFAULT = CommonContext.IPC_CHANNEL + "?alias=snapshot";
 
         /**
          * Stream id within a channel for archiving snapshots.

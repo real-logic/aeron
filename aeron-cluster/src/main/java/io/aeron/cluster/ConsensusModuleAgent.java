@@ -1313,8 +1313,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         closeExistingLog();
 
-        final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
-        final Publication publication = createLogPublication(channelUri, recoveryPlan, election.logPosition());
+        final Publication publication = createLogPublication(recoveryPlan, election.logPosition());
         logPublisher.publication(publication);
 
         return publication;
@@ -2596,11 +2595,12 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0, clusterTimeUnit, ctx.appVersion());
     }
 
-    private Publication createLogPublication(
-        final ChannelUri channelUri, final RecordingLog.RecoveryPlan plan, final long position)
+    private Publication createLogPublication(final RecordingLog.RecoveryPlan plan, final long position)
     {
+        final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
         logPublicationTag = (int)aeron.nextCorrelationId();
         channelUri.put(TAGS_PARAM_NAME, logPublicationChannelTag + "," + logPublicationTag);
+        channelUri.put(ALIAS_PARAM_NAME, "log");
 
         if (null != plan.log)
         {

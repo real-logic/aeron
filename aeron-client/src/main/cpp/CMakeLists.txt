@@ -126,10 +126,17 @@ SET(HEADERS
     protocol/SetupFlyweight.h
     protocol/DataHeaderFlyweight.h)
 
+# shared library
+add_library(aeron_client SHARED ${SOURCE} ${HEADERS})
+
 # static library
-add_library(aeron_client STATIC ${SOURCE} ${HEADERS})
+add_library(aeron_client_static STATIC ${SOURCE} ${HEADERS})
 
 target_include_directories(aeron_client
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_include_directories(aeron_client_static
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
@@ -146,6 +153,12 @@ target_compile_definitions(aeron_client
     PUBLIC "__PROJECT_SOURCE_DIR__=\"${NATIVE_PROJECT_SOURCE_DIR}\""
 )
 
+target_compile_definitions(aeron_client_static
+    PUBLIC $<$<NOT:$<CONFIG:Debug>>:DISABLE_BOUNDS_CHECKS>
+    # relative file paths for use in exceptions
+    PUBLIC "__PROJECT_SOURCE_DIR__=\"${NATIVE_PROJECT_SOURCE_DIR}\""
+)
+
 if (NOT WIN32)
     set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
     set(THREADS_PREFER_PTHREAD_FLAG TRUE)
@@ -155,7 +168,12 @@ target_link_libraries(aeron_client
     INTERFACE ${CMAKE_THREAD_LIBS_INIT}
 )
 
+target_link_libraries(aeron_client_static
+    INTERFACE ${CMAKE_THREAD_LIBS_INIT}
+)
+
 if (AERON_INSTALL_TARGETS)
     install(TARGETS aeron_client ARCHIVE DESTINATION lib)
+    install(TARGETS aeron_client_static ARCHIVE DESTINATION lib)
     install(DIRECTORY . DESTINATION  include FILES_MATCHING PATTERN "*.h")
 endif()

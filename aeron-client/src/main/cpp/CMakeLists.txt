@@ -173,7 +173,9 @@ target_link_libraries(aeron_client_static
 )
 
 if (AERON_INSTALL_TARGETS)
-    install(TARGETS aeron_client ARCHIVE DESTINATION lib)
-    install(TARGETS aeron_client_static ARCHIVE DESTINATION lib)
+    install(TARGETS aeron_client aeron_client_static
+        RUNTIME DESTINATION lib
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib)
     install(DIRECTORY . DESTINATION  include FILES_MATCHING PATTERN "*.h")
 endif()

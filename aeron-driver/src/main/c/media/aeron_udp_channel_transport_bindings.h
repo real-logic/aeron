@@ -22,6 +22,13 @@
 
 #include "aeron_driver_common.h"
 
+typedef enum aeron_udp_channel_transport_affinity_en
+{
+    AERON_UDP_CHANNEL_TRANSPORT_AFFINITY_SENDER,
+    AERON_UDP_CHANNEL_TRANSPORT_AFFINITY_RECEIVER
+}
+aeron_udp_channel_transport_affinity_t;
+
 struct mmsghdr;
 typedef struct aeron_udp_channel_transport_stct aeron_udp_channel_transport_t;
 typedef struct aeron_udp_transport_poller_stct aeron_udp_transport_poller_t;
@@ -33,7 +40,9 @@ typedef int (*aeron_udp_channel_transport_init_func_t)(
     unsigned int multicast_if_index,
     uint8_t ttl,
     size_t socket_rcvbuf,
-    size_t socket_sndbuf);
+    size_t socket_sndbuf,
+    aeron_driver_context_t *context,
+    aeron_udp_channel_transport_affinity_t affinity);
 
 typedef int (*aeron_udp_channel_transport_close_func_t)(aeron_udp_channel_transport_t *transport);
 

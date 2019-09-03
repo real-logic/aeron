@@ -95,7 +95,9 @@ int aeron_send_channel_endpoint_create(
         channel->interface_index,
         (0 != channel->multicast_ttl) ? channel->multicast_ttl : context->multicast_ttl,
         context->socket_rcvbuf,
-        context->socket_sndbuf) < 0)
+        context->socket_sndbuf,
+        context,
+        AERON_UDP_CHANNEL_TRANSPORT_AFFINITY_SENDER) < 0)
     {
         aeron_send_channel_endpoint_delete(NULL, _endpoint);
         return -1;

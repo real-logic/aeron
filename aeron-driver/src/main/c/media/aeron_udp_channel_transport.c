@@ -51,7 +51,9 @@ int aeron_udp_channel_transport_init(
     unsigned int multicast_if_index,
     uint8_t ttl,
     size_t socket_rcvbuf,
-    size_t socket_sndbuf)
+    size_t socket_sndbuf,
+    aeron_driver_context_t *context,
+    aeron_udp_channel_transport_affinity_t affinity)
 {
     bool is_ipv6, is_multicast;
     struct sockaddr_in *in4 = (struct sockaddr_in *)bind_addr;

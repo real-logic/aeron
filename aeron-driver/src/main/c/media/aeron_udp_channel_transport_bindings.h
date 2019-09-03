@@ -17,6 +17,7 @@
 #ifndef AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_H
 #define AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_H
 
+#include <uri/aeron_uri.h>
 #include "aeron_socket.h"
 
 #include "aeron_driver_common.h"
@@ -58,7 +59,8 @@ typedef int (*aeron_udp_channel_transport_sendmsg_func_t)(
 typedef int (*aeron_udp_channel_transport_get_so_rcvbuf_func_t)(
     aeron_udp_channel_transport_t *transport, size_t *so_rcvbuf);
 
-typedef int (*aeron_udp_transport_poller_init_func_t)(aeron_udp_transport_poller_t *poller);
+typedef int (*aeron_udp_transport_poller_init_func_t)(
+        aeron_udp_transport_poller_t *poller, aeron_driver_context_t *context);
 typedef int (*aeron_udp_transport_poller_close_func_t)(aeron_udp_transport_poller_t *poller);
 
 typedef int (*aeron_udp_transport_poller_add_func_t)(

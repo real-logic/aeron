@@ -25,7 +25,7 @@
 #include "aeron_alloc.h"
 #include "media/aeron_udp_transport_poller.h"
 
-int aeron_udp_transport_poller_init(aeron_udp_transport_poller_t *poller)
+int aeron_udp_transport_poller_init(aeron_udp_transport_poller_t *poller, aeron_driver_context_t *context)
 {
     poller->transports.array = NULL;
     poller->transports.length = 0;

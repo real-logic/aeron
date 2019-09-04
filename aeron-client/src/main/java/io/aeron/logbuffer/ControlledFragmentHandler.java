@@ -52,6 +52,9 @@ public interface ControlledFragmentHandler
 
     /**
      * Callback for handling fragments of data being read from a log.
+     * <p>
+     * Within this callback reentrant calls to the {@link io.aeron.Aeron} client are not permitted and
+     * will result in undefined behaviour.
      *
      * @param buffer containing the data.
      * @param offset at which the data begins.

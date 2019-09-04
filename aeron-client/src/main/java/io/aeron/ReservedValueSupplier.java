@@ -23,9 +23,20 @@ import org.agrona.DirectBuffer;
  * <p>
  * This will be called as the last action of encoding a data frame right before the length is set. All other fields
  * in the header plus the body of the frame will have been written at the point of supply.
+ * <p>
+ * The reserved value can be used for carrying out of band data with message fragments such a checksums or timestamps.
  */
 @FunctionalInterface
 public interface ReservedValueSupplier
 {
+    /**
+     * Callback to provide the reserved value to be encoded with each message fragment as the last action
+     * before the length field is set which commits the fragment for sending to the media.
+     *
+     * @param termBuffer  containing the encoding message fragment.
+     * @param termOffset  at which the header of the frame begins.
+     * @param frameLength Total length of the frame including header.
+     * @return the value to be used for storing in the reserved value field.
+     */
     long get(DirectBuffer termBuffer, int termOffset, int frameLength);
 }

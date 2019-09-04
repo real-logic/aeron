@@ -23,6 +23,9 @@ public interface AvailableImageHandler
 {
     /**
      * Method called by Aeron to deliver notification of a new {@link Image} being available for polling.
+     * <p>
+     * Within this callback reentrant calls to use the {@link Aeron} client are not permitted and
+     * will result in undefined behaviour.
      *
      * @param image that is now available
      */

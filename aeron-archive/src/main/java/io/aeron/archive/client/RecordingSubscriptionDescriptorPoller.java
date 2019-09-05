@@ -134,17 +134,17 @@ public class RecordingSubscriptionDescriptorPoller implements ControlledFragment
 
     public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
+        if (isDispatchComplete)
+        {
+            return Action.ABORT;
+        }
+
         messageHeaderDecoder.wrap(buffer, offset);
 
         final int schemaId = messageHeaderDecoder.schemaId();
         if (schemaId != MessageHeaderDecoder.SCHEMA_ID)
         {
             throw new ArchiveException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
-        }
-
-        if (isDispatchComplete)
-        {
-            return Action.ABORT;
         }
 
         final int templateId = messageHeaderDecoder.templateId();

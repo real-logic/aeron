@@ -45,7 +45,7 @@ public class ControlResponsePoller implements ControlledFragmentHandler
     private final int fragmentLimit;
     private ControlResponseCode code;
     private String errorMessage;
-    private boolean pollComplete = false;
+    private boolean isPollComplete = false;
 
     /**
      * Create a poller for a given subscription to an archive for control response messages.
@@ -92,7 +92,7 @@ public class ControlResponsePoller implements ControlledFragmentHandler
         relevantId = -1;
         templateId = -1;
         errorMessage = null;
-        pollComplete = false;
+        isPollComplete = false;
 
         return subscription.controlledPoll(fragmentAssembler, fragmentLimit);
     }
@@ -134,7 +134,7 @@ public class ControlResponsePoller implements ControlledFragmentHandler
      */
     public boolean isPollComplete()
     {
-        return pollComplete;
+        return isPollComplete;
     }
 
     /**
@@ -170,7 +170,7 @@ public class ControlResponsePoller implements ControlledFragmentHandler
     public ControlledFragmentAssembler.Action onFragment(
         final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
-        if (pollComplete)
+        if (isPollComplete)
         {
             return Action.ABORT;
         }
@@ -197,7 +197,7 @@ public class ControlResponsePoller implements ControlledFragmentHandler
             relevantId = controlResponseDecoder.relevantId();
             code = controlResponseDecoder.code();
             errorMessage = controlResponseDecoder.errorMessage();
-            pollComplete = true;
+            isPollComplete = true;
 
             return Action.BREAK;
         }
@@ -214,7 +214,7 @@ public class ControlResponsePoller implements ControlledFragmentHandler
             ", templateId=" + templateId +
             ", code=" + code +
             ", errorMessage='" + errorMessage + '\'' +
-            ", pollComplete=" + pollComplete +
+            ", isPollComplete=" + isPollComplete +
             '}';
     }
 }

@@ -410,6 +410,7 @@ public final class MediaDriver implements AutoCloseable
      */
     public static class Context extends CommonContext
     {
+        private boolean isClosed = false;
         private boolean printConfigurationOnStart = Configuration.printConfigurationOnStart();
         private boolean useWindowsHighResTimer = Configuration.useWindowsHighResTimer();
         private boolean warnIfDirectoryExists = Configuration.warnIfDirExists();
@@ -527,21 +528,24 @@ public final class MediaDriver implements AutoCloseable
          */
         public void close()
         {
-            final MappedByteBuffer lossReportBuffer = this.lossReportBuffer;
-            this.lossReportBuffer = null;
-            IoUtil.unmap(lossReportBuffer);
-
-
-            final MappedByteBuffer cncByteBuffer = this.cncByteBuffer;
-            this.cncByteBuffer = null;
-            IoUtil.unmap(cncByteBuffer);
-
-            if (dirDeleteOnShutdown && null != aeronDirectory())
+            if (!isClosed)
             {
-                deleteAeronDirectory();
-            }
+                isClosed = true;
+                final MappedByteBuffer lossReportBuffer = this.lossReportBuffer;
+                this.lossReportBuffer = null;
+                IoUtil.unmap(lossReportBuffer);
 
-            super.close();
+                final MappedByteBuffer cncByteBuffer = this.cncByteBuffer;
+                this.cncByteBuffer = null;
+                IoUtil.unmap(cncByteBuffer);
+
+                if (dirDeleteOnShutdown && null != aeronDirectory())
+                {
+                    deleteAeronDirectory();
+                }
+
+                super.close();
+            }
         }
 
         public Context conclude()
@@ -3050,6 +3054,7 @@ public final class MediaDriver implements AutoCloseable
         public String toString()
         {
             return "MediaDriver.Context{" +
+                "\n    isClosed=" + isClosed +
                 "\n    cncVersion=" + SemanticVersion.toString(CNC_VERSION) +
                 "\n    aeronDirectoryName=" + aeronDirectoryName() +
                 "\n    driverTimeoutMs=" + driverTimeoutMs() +

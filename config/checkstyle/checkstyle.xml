@@ -17,6 +17,11 @@
         <property name="eachLine" value="true"/>
     </module>
 
+    <module name="LineLength">
+        <property name="max" value="120"/>
+        <property name="ignorePattern" value="^[ \t]*\*.*@.*$"/>
+    </module>
+
     <module name="TreeWalker">
         <property name="tabWidth" value="4"/>
         <property name="severity" value="error"/>
@@ -58,11 +63,6 @@
         <module name="RedundantImport"/>
 
         <module name="UnusedImports"/>
-
-        <module name="LineLength">
-            <property name="max" value="120"/>
-            <property name="ignorePattern" value="^[ \t]*\*.*@.*$"/>
-        </module>
 
         <module name="MethodLength">
             <property name="tokens" value="METHOD_DEF"/>

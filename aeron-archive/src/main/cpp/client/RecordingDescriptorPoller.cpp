@@ -35,8 +35,7 @@ RecordingDescriptorPoller::RecordingDescriptorPoller(
     std::shared_ptr<Subscription> subscription,
     const exception_handler_t& errorHandler,
     std::int64_t controlSessionId,
-    int fragmentLimit)
-    :
+    int fragmentLimit) :
     m_fragmentAssembler(controlHandler(*this)),
     m_fragmentHandler(m_fragmentAssembler.handler()),
     m_errorHandler(errorHandler),
@@ -49,6 +48,11 @@ RecordingDescriptorPoller::RecordingDescriptorPoller(
 ControlledPollAction RecordingDescriptorPoller::onFragment(
     AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
 {
+    if (m_isDispatchComplete)
+    {
+        return ControlledPollAction::ABORT;
+    }
+
     MessageHeader msgHeader(
         buffer.sbeData() + offset,
         static_cast<std::uint64_t>(length),
@@ -103,8 +107,8 @@ ControlledPollAction RecordingDescriptorPoller::onFragment(
                     }
                 }
             }
+            break;
         }
-        break;
 
         case RecordingDescriptor::sbeTemplateId():
         {
@@ -141,8 +145,8 @@ ControlledPollAction RecordingDescriptorPoller::onFragment(
                     return ControlledPollAction::BREAK;
                 }
             }
+            break;
         }
-        break;
 
         default:
             break;

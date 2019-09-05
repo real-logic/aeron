@@ -48,6 +48,11 @@ RecordingSubscriptionDescriptorPoller::RecordingSubscriptionDescriptorPoller(
 ControlledPollAction RecordingSubscriptionDescriptorPoller::onFragment(
     AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
 {
+    if (m_isDispatchComplete)
+    {
+        return ControlledPollAction::ABORT;
+    }
+
     MessageHeader msgHeader(
         buffer.sbeData() + offset,
         static_cast<std::uint64_t>(length),
@@ -89,7 +94,7 @@ ControlledPollAction RecordingSubscriptionDescriptorPoller::onFragment(
                     ArchiveException ex(
                         static_cast<std::int32_t>(response.relevantId()),
                         "response for correlationId=" + std::to_string(m_correlationId) +
-                            ", error: " + response.errorMessage(),
+                        ", error: " + response.errorMessage(),
                         SOURCEINFO);
 
                     if (correlationId == m_correlationId)
@@ -102,8 +107,8 @@ ControlledPollAction RecordingSubscriptionDescriptorPoller::onFragment(
                     }
                 }
             }
+            break;
         }
-        break;
 
         case RecordingSubscriptionDescriptor::sbeTemplateId():
         {
@@ -129,8 +134,8 @@ ControlledPollAction RecordingSubscriptionDescriptorPoller::onFragment(
                     return ControlledPollAction::BREAK;
                 }
             }
-        }
             break;
+        }
 
         default:
             break;

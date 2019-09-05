@@ -29,13 +29,14 @@ import static org.mockito.Mockito.*;
 
 public class ReentrantClientTest
 {
-    final MediaDriver mediaDriver = MediaDriver.launch(new MediaDriver.Context().dirDeleteOnStart(true));
+    final MediaDriver mediaDriver = MediaDriver.launch(new MediaDriver.Context()
+        .dirDeleteOnShutdown(true)
+        .dirDeleteOnStart(true));
 
     @After
     public void after()
     {
         CloseHelper.close(mediaDriver);
-        mediaDriver.context().deleteAeronDirectory();
     }
 
     @Test

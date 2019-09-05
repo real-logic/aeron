@@ -54,6 +54,8 @@ public class GapFillLossTest
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .errorHandler(Throwable::printStackTrace)
             .threadingMode(ThreadingMode.SHARED)
+            .dirDeleteOnStart(true)
+            .dirDeleteOnShutdown(true)
             .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH);
 
         final LossReport lossReport = mock(LossReport.class);
@@ -98,10 +100,6 @@ public class GapFillLossTest
 
             assertThat(subscriber.messageCount, lessThan(NUM_MESSAGES));
             verify(lossReport).createEntry(anyLong(), anyLong(), anyInt(), eq(STREAM_ID), anyString(), anyString());
-        }
-        finally
-        {
-            ctx.deleteAeronDirectory();
         }
     }
 

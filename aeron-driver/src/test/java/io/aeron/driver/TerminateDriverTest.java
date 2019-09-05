@@ -33,6 +33,8 @@ public class TerminateDriverTest
     {
         final AtomicBoolean hasTerminated = new AtomicBoolean(false);
         final MediaDriver.Context ctx = new MediaDriver.Context()
+            .dirDeleteOnStart(true)
+            .dirDeleteOnShutdown(true)
             .terminationHook(() -> hasTerminated.lazySet(true))
             .terminationValidator(mockTerminationValidator);
 
@@ -49,8 +51,6 @@ public class TerminateDriverTest
         }
 
         verify(mockTerminationValidator).allowTermination(any(), any(), anyInt(), anyInt());
-
-        ctx.deleteAeronDirectory();
     }
 
     @Test(timeout = 10_000)
@@ -59,6 +59,8 @@ public class TerminateDriverTest
         final AtomicBoolean hasTerminated = new AtomicBoolean(false);
         final AtomicBoolean hasCalledTerminationValidator = new AtomicBoolean(false);
         final MediaDriver.Context ctx = new MediaDriver.Context()
+            .dirDeleteOnStart(true)
+            .dirDeleteOnShutdown(true)
             .terminationHook(() -> hasTerminated.lazySet(true))
             .terminationValidator((dir, buffer, offset, length) ->
             {
@@ -77,7 +79,5 @@ public class TerminateDriverTest
         }
 
         assertFalse(hasTerminated.get());
-
-        ctx.deleteAeronDirectory();
     }
 }

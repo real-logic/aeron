@@ -81,20 +81,19 @@ class TestNode implements AutoCloseable
     {
         if (!isClosed)
         {
+            isClosed = true;
             CloseHelper.close(container);
             CloseHelper.close(clusteredMediaDriver);
-
-            if (null != clusteredMediaDriver)
-            {
-                clusteredMediaDriver.mediaDriver().context().deleteAeronDirectory();
-            }
-
-            isClosed = true;
         }
     }
 
     void cleanUp()
     {
+        if (!isClosed)
+        {
+            close();
+        }
+
         if (null != container)
         {
             container.context().deleteDirectory();

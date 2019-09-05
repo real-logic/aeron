@@ -31,6 +31,7 @@ public class MediaDriverTest
         final MediaDriver.Context context = new MediaDriver.Context()
             .threadingMode(ThreadingMode.SHARED)
             .dirDeleteOnStart(true)
+            .dirDeleteOnShutdown(true)
             .printConfigurationOnStart(true);
 
         final ByteArrayOutputStream os = new ByteArrayOutputStream();
@@ -46,7 +47,6 @@ public class MediaDriverTest
         finally
         {
             System.setOut(out);
-            context.deleteAeronDirectory();
         }
     }
 }

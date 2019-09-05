@@ -83,6 +83,7 @@ public class PubAndSubTest
         context
             .threadingMode(THREADING_MODE)
             .errorHandler(Throwable::printStackTrace)
+            .dirDeleteOnShutdown(true)
             .publicationConnectionTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500))
             .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100));
 
@@ -99,11 +100,6 @@ public class PubAndSubTest
         CloseHelper.quietClose(publishingClient);
         CloseHelper.quietClose(subscribingClient);
         CloseHelper.quietClose(driver);
-
-        if (null != context.aeronDirectory())
-        {
-            context.deleteAeronDirectory();
-        }
     }
 
     @Theory

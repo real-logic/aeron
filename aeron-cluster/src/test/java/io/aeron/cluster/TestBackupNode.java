@@ -39,19 +39,18 @@ public class TestBackupNode
     {
         if (!isClosed)
         {
-            CloseHelper.close(clusterBackupMediaDriver);
-
-            if (null != clusterBackupMediaDriver)
-            {
-                clusterBackupMediaDriver.mediaDriver().context().deleteAeronDirectory();
-            }
-
             isClosed = true;
+            CloseHelper.close(clusterBackupMediaDriver);
         }
     }
 
     void cleanUp()
     {
+        if (!isClosed)
+        {
+            close();
+        }
+
         if (null != clusterBackupMediaDriver)
         {
             clusterBackupMediaDriver.clusterBackup().context().deleteDirectory();

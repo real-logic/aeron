@@ -15,15 +15,12 @@
  */
 package io.aeron;
 
-import org.agrona.ExpandableArrayBuffer;
-import org.agrona.MutableDirectBuffer;
+import org.agrona.*;
 import org.agrona.collections.MutableInteger;
 import org.junit.After;
 import org.junit.Test;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.FragmentHandler;
-import org.agrona.BitUtil;
-import org.agrona.LangUtil;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -65,11 +62,13 @@ public class StopStartSecondSubscriberTest
     {
         driverOne = MediaDriver.launchEmbedded(
             new MediaDriver.Context()
+                .dirDeleteOnShutdown(true)
                 .errorHandler(Throwable::printStackTrace)
                 .termBufferSparseFile(true));
 
         driverTwo = MediaDriver.launchEmbedded(
             new MediaDriver.Context()
+                .dirDeleteOnShutdown(true)
                 .errorHandler(Throwable::printStackTrace)
                 .termBufferSparseFile(true));
 
@@ -87,16 +86,13 @@ public class StopStartSecondSubscriberTest
     @After
     public void after()
     {
-        subscriberOne.close();
-        publisherOne.close();
-        subscriberTwo.close();
-        publisherTwo.close();
+        CloseHelper.close(subscriberOne);
+        CloseHelper.close(publisherOne);
+        CloseHelper.close(subscriberTwo);
+        CloseHelper.close(publisherTwo);
 
-        driverOne.close();
-        driverTwo.close();
-
-        driverOne.context().deleteAeronDirectory();
-        driverTwo.context().deleteAeronDirectory();
+        CloseHelper.close(driverOne);
+        CloseHelper.close(driverTwo);
     }
 
     @Test(timeout = 10_000)

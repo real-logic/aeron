@@ -54,6 +54,8 @@ public class UntetheredSubscriptionTest
     private final MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Throwable::printStackTrace)
         .spiesSimulateConnection(true)
+        .dirDeleteOnShutdown(true)
+        .dirDeleteOnStart(true)
         .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(20))
         .untetheredWindowLimitTimeoutNs(TimeUnit.MILLISECONDS.toNanos(100))
         .untetheredRestingTimeoutNs(TimeUnit.MILLISECONDS.toNanos(100))
@@ -68,7 +70,6 @@ public class UntetheredSubscriptionTest
     {
         CloseHelper.close(aeron);
         CloseHelper.close(driver);
-        driver.context().deleteAeronDirectory();
     }
 
     @Theory

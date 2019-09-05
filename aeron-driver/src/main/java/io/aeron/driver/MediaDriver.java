@@ -414,6 +414,7 @@ public final class MediaDriver implements AutoCloseable
         private boolean useWindowsHighResTimer = Configuration.useWindowsHighResTimer();
         private boolean warnIfDirectoryExists = Configuration.warnIfDirExists();
         private boolean dirDeleteOnStart = Configuration.dirDeleteOnStart();
+        private boolean dirDeleteOnShutdown = Configuration.dirDeleteOnShutdown();
         private boolean termBufferSparseFile = Configuration.termBufferSparseFile();
         private boolean performStorageChecks = Configuration.performStorageChecks();
         private boolean spiesSimulateConnection = Configuration.spiesSimulateConnection();
@@ -534,6 +535,11 @@ public final class MediaDriver implements AutoCloseable
             final MappedByteBuffer cncByteBuffer = this.cncByteBuffer;
             this.cncByteBuffer = null;
             IoUtil.unmap(cncByteBuffer);
+
+            if (dirDeleteOnShutdown && null != aeronDirectory())
+            {
+                deleteAeronDirectory();
+            }
 
             super.close();
         }
@@ -727,6 +733,30 @@ public final class MediaDriver implements AutoCloseable
         public Context dirDeleteOnStart(final boolean dirDeleteOnStart)
         {
             this.dirDeleteOnStart = dirDeleteOnStart;
+            return this;
+        }
+
+        /**
+         * Will the driver attempt to delete {@link #aeronDirectoryName()} on shutdown.
+         *
+         * @return true when directory will be deleted, otherwise false.
+         * @see Configuration#DIR_DELETE_ON_SHUTDOWN_PROP_NAME
+         */
+        public boolean dirDeleteOnShutdown()
+        {
+            return dirDeleteOnShutdown;
+        }
+
+        /**
+         * Should the driver attempt to delete {@link #aeronDirectoryName()} on shutdown.
+         *
+         * @param dirDeleteOnShutdown Attempt deletion.
+         * @return this for a fluent API.
+         * @see Configuration#DIR_DELETE_ON_SHUTDOWN_PROP_NAME
+         */
+        public Context dirDeleteOnShutdown(final boolean dirDeleteOnShutdown)
+        {
+            this.dirDeleteOnShutdown = dirDeleteOnShutdown;
             return this;
         }
 
@@ -3027,6 +3057,7 @@ public final class MediaDriver implements AutoCloseable
                 "\n    useWindowsHighResTimer=" + useWindowsHighResTimer +
                 "\n    warnIfDirectoryExists=" + warnIfDirectoryExists +
                 "\n    dirDeleteOnStart=" + dirDeleteOnStart +
+                "\n    dirDeleteOnShutdown=" + dirDeleteOnShutdown +
                 "\n    termBufferSparseFile=" + termBufferSparseFile +
                 "\n    performStorageChecks=" + performStorageChecks +
                 "\n    spiesSimulateConnection=" + spiesSimulateConnection +

@@ -53,6 +53,7 @@ public class CounterTest
 
         driver = MediaDriver.launch(
             new MediaDriver.Context()
+                .dirDeleteOnShutdown(true)
                 .errorHandler(Throwable::printStackTrace)
                 .threadingMode(ThreadingMode.SHARED));
 
@@ -74,7 +75,6 @@ public class CounterTest
         CloseHelper.quietClose(clientA);
 
         CloseHelper.close(driver);
-        driver.context().deleteAeronDirectory();
     }
 
     @Test(timeout = 2000)

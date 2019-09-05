@@ -221,9 +221,6 @@ public class ExtendRecordingTest
         CloseHelper.close(aeronArchive);
         CloseHelper.close(aeron);
         CloseHelper.close(archivingMediaDriver);
-
-        archivingMediaDriver.mediaDriver().context().deleteAeronDirectory();
-        // do not clean out archive directory
     }
 
     private void launchAeronAndArchive()
@@ -242,6 +239,7 @@ public class ExtendRecordingTest
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Throwable::printStackTrace)
                 .spiesSimulateConnection(false)
+                .dirDeleteOnShutdown(true)
                 .dirDeleteOnStart(true),
             new Archive.Context()
                 .maxCatalogEntries(MAX_CATALOG_ENTRIES)

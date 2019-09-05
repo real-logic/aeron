@@ -72,6 +72,11 @@ public class Configuration
     public static final String DIR_DELETE_ON_START_PROP_NAME = "aeron.dir.delete.on.start";
 
     /**
+     * Should driver attempt to delete {@link CommonContext#AERON_DIR_PROP_NAME} on shutdown.
+     */
+    public static final String DIR_DELETE_ON_SHUTDOWN_PROP_NAME = "aeron.dir.delete.on.shutdown";
+
+    /**
      * Should high resolution timer be used on Windows.
      */
     public static final String USE_WINDOWS_HIGH_RES_TIMER_PROP_NAME = "aeron.use.windows.high.res.timer";
@@ -641,6 +646,11 @@ public class Configuration
     public static boolean dirDeleteOnStart()
     {
         return "true".equalsIgnoreCase(getProperty(DIR_DELETE_ON_START_PROP_NAME, "false"));
+    }
+
+    public static boolean dirDeleteOnShutdown()
+    {
+        return "true".equalsIgnoreCase(getProperty(DIR_DELETE_ON_SHUTDOWN_PROP_NAME, "false"));
     }
 
     public static boolean termBufferSparseFile()

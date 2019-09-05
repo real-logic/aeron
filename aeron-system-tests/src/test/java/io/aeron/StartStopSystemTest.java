@@ -24,6 +24,7 @@ public class StartStopSystemTest
     public void shouldStartAndStopInstantly()
     {
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
+            .dirDeleteOnShutdown(true)
             .errorHandler(Throwable::printStackTrace);
 
         try (MediaDriver ignore = MediaDriver.launchEmbedded(driverCtx))
@@ -36,10 +37,6 @@ public class StartStopSystemTest
             {
                 // ignore
             }
-        }
-        finally
-        {
-            driverCtx.deleteAeronDirectory();
         }
     }
 }

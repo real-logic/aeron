@@ -74,6 +74,7 @@ public class SpySimulatedConnectionTest
     {
         driverContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .errorHandler(Throwable::printStackTrace)
+            .dirDeleteOnShutdown(true)
             .threadingMode(ThreadingMode.SHARED);
 
         driver = MediaDriver.launch(driverContext);
@@ -89,8 +90,6 @@ public class SpySimulatedConnectionTest
 
         CloseHelper.quietClose(client);
         CloseHelper.quietClose(driver);
-
-        driver.context().deleteAeronDirectory();
     }
 
     @Theory

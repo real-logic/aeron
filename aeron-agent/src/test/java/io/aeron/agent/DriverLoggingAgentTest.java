@@ -96,10 +96,6 @@ public class DriverLoggingAgentTest
 
             LATCH.await();
         }
-        finally
-        {
-            driverCtx.deleteAeronDirectory();
-        }
 
         assertTrue(MSG_ID_SET.contains(DriverEventCode.CMD_IN_ADD_PUBLICATION.id()));
         assertTrue(MSG_ID_SET.contains(DriverEventCode.CMD_IN_ADD_SUBSCRIPTION.id()));

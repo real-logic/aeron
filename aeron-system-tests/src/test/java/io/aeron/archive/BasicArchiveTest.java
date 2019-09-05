@@ -74,6 +74,7 @@ public class BasicArchiveTest
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Throwable::printStackTrace)
                 .spiesSimulateConnection(false)
+                .dirDeleteOnShutdown(true)
                 .dirDeleteOnStart(true),
             new Archive.Context()
                 .maxCatalogEntries(MAX_CATALOG_ENTRIES)
@@ -100,7 +101,6 @@ public class BasicArchiveTest
         CloseHelper.close(archivingMediaDriver);
 
         archivingMediaDriver.archive().context().deleteArchiveDirectory();
-        archivingMediaDriver.mediaDriver().context().deleteAeronDirectory();
     }
 
     @Test(timeout = 10_000)

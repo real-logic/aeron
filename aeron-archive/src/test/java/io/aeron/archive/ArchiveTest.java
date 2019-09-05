@@ -55,6 +55,8 @@ public class ArchiveTest
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .errorHandler(Throwable::printStackTrace)
             .clientLivenessTimeoutNs(connectTimeoutNs)
+            .dirDeleteOnShutdown(true)
+            .dirDeleteOnStart(true)
             .publicationUnblockTimeoutNs(connectTimeoutNs * 2)
             .threadingMode(ThreadingMode.SHARED);
         final Archive.Context archiveCtx = new Archive.Context()
@@ -94,7 +96,6 @@ public class ArchiveTest
         {
             executor.shutdownNow();
             archiveCtx.deleteArchiveDirectory();
-            driverCtx.deleteAeronDirectory();
         }
     }
 
@@ -112,7 +113,10 @@ public class ArchiveTest
                 descriptors.add(new SubscriptionDescriptor(
                     controlSessionId, correlationId, subscriptionId, streamId, strippedChannel));
 
-        final MediaDriver.Context driverCtx = new MediaDriver.Context().threadingMode(ThreadingMode.SHARED);
+        final MediaDriver.Context driverCtx = new MediaDriver.Context()
+            .dirDeleteOnStart(true)
+            .dirDeleteOnShutdown(true)
+            .threadingMode(ThreadingMode.SHARED);
         final Archive.Context archiveCtx = new Archive.Context().threadingMode(ArchiveThreadingMode.SHARED);
 
         try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(driverCtx, archiveCtx);
@@ -150,7 +154,6 @@ public class ArchiveTest
         finally
         {
             archiveCtx.deleteArchiveDirectory();
-            driverCtx.deleteAeronDirectory();
         }
     }
 

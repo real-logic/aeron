@@ -184,6 +184,7 @@ subprojects {
             'aeron.use.windows.high.res.timer': 'true',
             'aeron.dir.warn.if.exists': 'false',
             'aeron.dir.delete.on.start': 'true',
+            'aeron.dir.delete.on.shutdown': 'true',
             'aeron.term.buffer.sparse.file': 'true',
             'aeron.perform.storage.checks': 'false')
     }

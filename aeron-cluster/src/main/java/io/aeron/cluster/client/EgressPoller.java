@@ -41,7 +41,7 @@ public class EgressPoller implements ControlledFragmentHandler
     private long leadershipTermId = Aeron.NULL_VALUE;
     private int leaderMemberId = Aeron.NULL_VALUE;
     private int templateId = Aeron.NULL_VALUE;
-    private boolean pollComplete = false;
+    private boolean isPollComplete = false;
     private EventCode eventCode;
     private String detail = "";
     private byte[] encodedChallenge;
@@ -149,7 +149,7 @@ public class EgressPoller implements ControlledFragmentHandler
      */
     public boolean isPollComplete()
     {
-        return pollComplete;
+        return isPollComplete;
     }
 
     /**
@@ -172,7 +172,7 @@ public class EgressPoller implements ControlledFragmentHandler
         eventCode = null;
         detail = "";
         encodedChallenge = null;
-        pollComplete = false;
+        isPollComplete = false;
 
         return subscription.controlledPoll(fragmentAssembler, fragmentLimit);
     }
@@ -180,7 +180,7 @@ public class EgressPoller implements ControlledFragmentHandler
     public ControlledFragmentAssembler.Action onFragment(
         final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
-        if (pollComplete)
+        if (isPollComplete)
         {
             return Action.ABORT;
         }
@@ -205,7 +205,7 @@ public class EgressPoller implements ControlledFragmentHandler
 
                 leadershipTermId = sessionMessageHeaderDecoder.leadershipTermId();
                 clusterSessionId = sessionMessageHeaderDecoder.clusterSessionId();
-                pollComplete = true;
+                isPollComplete = true;
                 return Action.BREAK;
 
             case SessionEventDecoder.TEMPLATE_ID:
@@ -221,7 +221,7 @@ public class EgressPoller implements ControlledFragmentHandler
                 leaderMemberId = sessionEventDecoder.leaderMemberId();
                 eventCode = sessionEventDecoder.code();
                 detail = sessionEventDecoder.detail();
-                pollComplete = true;
+                isPollComplete = true;
                 return Action.BREAK;
 
             case NewLeaderEventDecoder.TEMPLATE_ID:
@@ -235,7 +235,7 @@ public class EgressPoller implements ControlledFragmentHandler
                 leadershipTermId = newLeaderEventDecoder.leadershipTermId();
                 leaderMemberId = newLeaderEventDecoder.leaderMemberId();
                 detail = newLeaderEventDecoder.memberEndpoints();
-                pollComplete = true;
+                isPollComplete = true;
                 return Action.BREAK;
 
             case ChallengeDecoder.TEMPLATE_ID:
@@ -250,7 +250,7 @@ public class EgressPoller implements ControlledFragmentHandler
 
                 clusterSessionId = challengeDecoder.clusterSessionId();
                 correlationId = challengeDecoder.correlationId();
-                pollComplete = true;
+                isPollComplete = true;
                 return Action.BREAK;
         }
 

@@ -43,7 +43,7 @@ with Java **downloads** at [Maven Central](http://search.maven.org/#search%7Cga%
 
 ### How does Aeron work?
 
-1. [Protocol Specification](https://github.com/real-logic/aeron/wiki/Protocol-Specification)
+1. [Transport Protocol Specification](https://github.com/real-logic/aeron/wiki/Transport-Protocol-Specification)
 1. [Design Overview](https://github.com/real-logic/aeron/wiki/Design-Overview)
 1. [Design Principles](https://github.com/real-logic/aeron/wiki/Design-Principles)
 1. [Flow Control Semantics](https://github.com/real-logic/aeron/wiki/Flow-and-Congestion-Control)

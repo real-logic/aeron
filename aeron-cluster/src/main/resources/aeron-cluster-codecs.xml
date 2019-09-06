@@ -26,39 +26,39 @@
             <type name="varData"        primitiveType="uint8" length="0"/>
         </composite>
         <enum name="BooleanType" encodingType="int32" description="Language independent boolean type.">
-            <validValue name="FALSE">0</validValue>
-            <validValue name="TRUE">1</validValue>
+            <validValue name="FALSE" description="Language independent boolean false.">0</validValue>
+            <validValue name="TRUE" description="Language independent boolean true.">1</validValue>
         </enum>
         <enum name="EventCode" encodingType="int32" description="Type of event for a response.">
-            <validValue name="OK">0</validValue>
-            <validValue name="ERROR">1</validValue>
-            <validValue name="REDIRECT">2</validValue>
-            <validValue name="AUTHENTICATION_REJECTED">3</validValue>
+            <validValue name="OK" description="Operation was successful">0</validValue>
+            <validValue name="ERROR" description="Error occurred during operation.">1</validValue>
+            <validValue name="REDIRECT" description="Redirect to cluster leader.">2</validValue>
+            <validValue name="AUTHENTICATION_REJECTED" description="Authentication credentials rejected.">3</validValue>
         </enum>
         <enum name="CloseReason" encodingType="int32" description="Reason why a session was closed.">
-            <validValue name="CLIENT_ACTION">0</validValue>
-            <validValue name="SERVICE_ACTION">1</validValue>
-            <validValue name="TIMEOUT">2</validValue>
+            <validValue name="CLIENT_ACTION" description="Client closed the session.">0</validValue>
+            <validValue name="SERVICE_ACTION" description="Service closed the session.">1</validValue>
+            <validValue name="TIMEOUT" description="Session timed out due to inactivity.">2</validValue>
         </enum>
         <enum name="ClusterAction" encodingType="int32" description="Action to be taken by cluster nodes.">
-            <validValue name="SUSPEND">0</validValue>
-            <validValue name="RESUME">1</validValue>
-            <validValue name="SNAPSHOT">2</validValue>
+            <validValue name="SUSPEND" description="Suspend ingress to the cluster.">0</validValue>
+            <validValue name="RESUME" description="Resume ingress to the cluster.">1</validValue>
+            <validValue name="SNAPSHOT" description="Snapshot state in the cluster.">2</validValue>
         </enum>
         <enum name="SnapshotMark" encodingType="int32" description="Mark within a snapshot.">
-            <validValue name="BEGIN">0</validValue>
-            <validValue name="SECTION">1</validValue>
-            <validValue name="END">2</validValue>
+            <validValue name="BEGIN" description="Begin marker for a snapshot.">0</validValue>
+            <validValue name="SECTION" description="Section marker for a snapshot.">1</validValue>
+            <validValue name="END" description="End marker for a snapshot.">2</validValue>
         </enum>
         <enum name="ChangeType" encodingType="int32" description="Type of Cluster Change Event.">
-            <validValue name="JOIN">0</validValue>
-            <validValue name="QUIT">1</validValue>
+            <validValue name="JOIN" description="Join cluster as dynamic member.">0</validValue>
+            <validValue name="QUIT" description="Quit cluster as dynamic member.">1</validValue>
         </enum>
         <enum name="ClusterTimeUnit" encodingType="int32" description="Type the time unit used for timestamps."
               sinceVersion="4">
-            <validValue name="MILLIS">0</validValue>
-            <validValue name="MICROS">1</validValue>
-            <validValue name="NANOS">2</validValue>
+            <validValue name="MILLIS" description="Time unit of milliseconds for timestamps.">0</validValue>
+            <validValue name="MICROS" description="Time unit of microseconds for timestamps.">1</validValue>
+            <validValue name="NANOS" description="Time unit of nanoseconds for timestamps.">2</validValue>
         </enum>
         <type name="time_t"    primitiveType="int64" description="Epoch time since 1 Jan 1970 UTC."/>
         <type name="version_t" primitiveType="int32" description="Protocol or application suite version."
@@ -73,8 +73,8 @@
 
         Session Protocol:
             -> session-connect, *[session-message | session-keep-alive], session-close
-                      \
-            <-          +session-event, *[session-event | session-message | new-leader-event]
+                              \
+            <-                 +session-event, *[session-event | session-message | new-leader-event]
 
         1. Session Connect
           - An attempt is made to establish a connection with the cluster via multicast or multi-destination-cast.
@@ -101,23 +101,23 @@
 
         1. Authenticated via Session Connect
             -> session-connect, ...
-                      \
-            <-          *session-event (OK), ...
+                              \
+            <-                 *session-event (OK), ...
 
         2. Authenticated via Challenge Response
-            -> session-connect,   challenge-response, ...
-                      \            /              \
-            <-          challenge,                  session-event (OK), ...
+            -> session-connect           challenge-response, ...
+                              \         /                  \
+            <-                 challenge                    session-event (OK), ...
 
         3. Rejected via Session Connect
             -> session-connect
-                      \
-            <-          *session-event (AUTHENTICATION_REJECTED)
+                              \
+            <-                 *session-event (AUTHENTICATION_REJECTED)
 
         4. Rejected via Challenge Response
-            -> session-connect,   challenge-response
-                      \            /              \
-            <-          challenge,                  session-event (AUTHENTICATION_REJECTED)
+            -> session-connect           challenge-response
+                              \         /                  \
+            <-                 challenge                     session-event (AUTHENTICATION_REJECTED)
 
     -->
 

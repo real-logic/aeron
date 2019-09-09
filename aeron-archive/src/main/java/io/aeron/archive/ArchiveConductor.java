@@ -19,6 +19,7 @@ import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
+import io.aeron.archive.codecs.RecordingTransitionType;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.logbuffer.LogBufferDescriptor;
@@ -878,8 +879,15 @@ abstract class ArchiveConductor
         if (!isAbort)
         {
             catalog.recordingStopped(recordingId, session.recordedPosition(), epochClock.time());
+
+            session.controlSession().attemptSendRecordingTransition(
+                recordingId,
+                session.image().subscription().registrationId(),
+                session.recordedPosition(),
+                RecordingTransitionType.STOP);
         }
         recordingSessionByIdMap.remove(recordingId);
+
         closeSession(session);
     }
 
@@ -1023,10 +1031,17 @@ abstract class ArchiveConductor
             image,
             position,
             archiveDirChannel,
-            ctx);
+            ctx,
+            controlSession);
 
         recordingSessionByIdMap.put(recordingId, session);
         recorder.addSession(session);
+
+        controlSession.attemptSendRecordingTransition(
+            recordingId,
+            image.subscription().registrationId(),
+            image.joinPosition(),
+            RecordingTransitionType.START);
     }
 
     private void extendRecordingSession(
@@ -1069,11 +1084,18 @@ abstract class ArchiveConductor
             image,
             position,
             archiveDirChannel,
-            ctx);
+            ctx,
+            controlSession);
 
         recordingSessionByIdMap.put(recordingId, session);
         catalog.extendRecording(recordingId, controlSession.sessionId(), correlationId, image.sessionId());
         recorder.addSession(session);
+
+        controlSession.attemptSendRecordingTransition(
+            recordingId,
+            image.subscription().registrationId(),
+            image.joinPosition(),
+            RecordingTransitionType.EXTEND);
     }
 
     private ExclusivePublication newReplayPublication(

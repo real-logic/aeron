@@ -56,7 +56,8 @@ public class RecordingSessionTest
     private static final int MTU_LENGTH = 1024;
     private static final long START_POSITION = TERM_OFFSET;
     private static final int INITIAL_TERM_ID = 0;
-    public static final FileChannel ARCHIVE_CHANNEL = null;
+    private static final FileChannel ARCHIVE_CHANNEL = null;
+    private static final ControlSession CONTROL_SESSION = null;
 
     private final RecordingEventsProxy recordingEventsProxy = mock(RecordingEventsProxy.class);
     private final Counter mockPosition = mock(Counter.class);
@@ -124,7 +125,8 @@ public class RecordingSessionTest
             image,
             mockPosition,
             ARCHIVE_CHANNEL,
-            context);
+            context,
+            CONTROL_SESSION);
 
         assertEquals(RECORDING_ID, session.sessionId());
 

@@ -355,7 +355,6 @@ public class ArchiveTest
         final int messageCount)
     {
         verifyDescriptorListOngoingArchive(archiveProxy, termBufferLength);
-
         assertNull(trackerError);
 
         final long requestStopCorrelationId = correlationId++;
@@ -435,6 +434,7 @@ public class ArchiveTest
     {
         final long requestRecordingsCorrelationId = correlationId++;
         archiveProxy.listRecording(recordingId, requestRecordingsCorrelationId, controlSessionId);
+        final MutableBoolean isDone = new MutableBoolean();
 
         final ControlResponseAdapter controlResponseAdapter = new ControlResponseAdapter(
             new FailControlResponseListener()
@@ -457,22 +457,26 @@ public class ArchiveTest
                     final String originalChannel,
                     final String sourceIdentity)
                 {
+                    assertThat(correlationId, is(requestRecordingsCorrelationId));
                     assertThat(recordingId, is(ArchiveTest.this.recordingId));
                     assertThat(termBufferLength, is(publicationTermBufferLength));
                     assertThat(streamId, is(PUBLISH_STREAM_ID));
-                    assertThat(correlationId, is(requestRecordingsCorrelationId));
                     assertThat(originalChannel, is(publishUri));
-                }
 
+                    isDone.set(true);
+                }
             },
             controlResponse,
             1
         );
 
-        while (controlResponseAdapter.poll() == 0)
+        while (!isDone.get())
         {
-            SystemTest.checkInterruptedStatus();
-            Thread.yield();
+            if (controlResponseAdapter.poll() == 0)
+            {
+                SystemTest.checkInterruptedStatus();
+                Thread.yield();
+            }
         }
     }
 
@@ -749,7 +753,7 @@ public class ArchiveTest
                         replayCorrelationId,
                         controlSessionId))
                     {
-                        throw new IllegalStateException("Failed to start replay");
+                        throw new IllegalStateException("failed to start replay");
                     }
 
                     TestUtil.awaitOk(controlResponse, replayCorrelationId);

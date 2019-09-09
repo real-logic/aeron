@@ -46,9 +46,7 @@ public class RecordingEventsAdapter implements FragmentHandler
      * @param fragmentLimit to apply for each polling operation.
      */
     public RecordingEventsAdapter(
-        final RecordingEventsListener listener,
-        final Subscription subscription,
-        final int fragmentLimit)
+        final RecordingEventsListener listener, final Subscription subscription, final int fragmentLimit)
     {
         this.fragmentLimit = fragmentLimit;
         this.listener = listener;

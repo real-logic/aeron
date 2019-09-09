@@ -43,6 +43,7 @@ class RecordingSession implements Session
     private final RecordingWriter recordingWriter;
     private State state = State.INIT;
     private final String originalChannel;
+    private final ControlSession controlSession;
 
     RecordingSession(
         final long recordingId,
@@ -53,13 +54,15 @@ class RecordingSession implements Session
         final Image image,
         final Counter position,
         final FileChannel archiveDirChannel,
-        final Archive.Context ctx)
+        final Archive.Context ctx,
+        final ControlSession controlSession)
     {
         this.recordingId = recordingId;
         this.originalChannel = originalChannel;
         this.recordingEventsProxy = recordingEventsProxy;
         this.image = image;
         this.position = position;
+        this.controlSession = controlSession;
 
         blockLengthLimit = Math.min(image.termBufferLength(), Archive.Configuration.MAX_BLOCK_LENGTH);
         recordingWriter = new RecordingWriter(recordingId, startPosition, segmentLength, image, ctx, archiveDirChannel);
@@ -124,6 +127,16 @@ class RecordingSession implements Session
         }
 
         return workDone;
+    }
+
+    Image image()
+    {
+        return image;
+    }
+
+    ControlSession controlSession()
+    {
+        return controlSession;
     }
 
     private int init()

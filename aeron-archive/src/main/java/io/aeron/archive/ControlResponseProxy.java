@@ -29,6 +29,7 @@ import static io.aeron.archive.codecs.RecordingDescriptorEncoder.recordingIdEnco
 
 class ControlResponseProxy
 {
+    private static final int SEND_ATTEMPTS = 3;
     private static final int MESSAGE_HEADER_LENGTH = MessageHeaderEncoder.ENCODED_LENGTH;
     private static final int DESCRIPTOR_CONTENT_OFFSET =
         RecordingDescriptorHeaderDecoder.BLOCK_LENGTH + recordingIdEncodingOffset();
@@ -41,6 +42,7 @@ class ControlResponseProxy
     private final RecordingDescriptorEncoder recordingDescriptorEncoder = new RecordingDescriptorEncoder();
     private final RecordingSubscriptionDescriptorEncoder recordingSubscriptionDescriptorEncoder =
         new RecordingSubscriptionDescriptorEncoder();
+    private final RecordingTransitionEncoder recordingTransitionEncoder = new RecordingTransitionEncoder();
 
     int sendDescriptor(
         final long controlSessionId,
@@ -51,7 +53,8 @@ class ControlResponseProxy
         final int messageLength = Catalog.descriptorLength(descriptorBuffer) + MESSAGE_HEADER_LENGTH;
         final int contentLength = messageLength - recordingIdEncodingOffset() - MESSAGE_HEADER_LENGTH;
 
-        for (int i = 0; i < 3; i++)
+        int attempts = SEND_ATTEMPTS;
+        do
         {
             final long result = session.controlPublication().tryClaim(messageLength, bufferClaim);
             if (result > 0)
@@ -74,6 +77,7 @@ class ControlResponseProxy
 
             checkResult(session, result);
         }
+        while (--attempts > 0);
 
         return 0;
     }
@@ -133,7 +137,8 @@ class ControlResponseProxy
 
         final int length = MESSAGE_HEADER_LENGTH + responseEncoder.encodedLength();
 
-        for (int i = 0; i < 3; i++)
+        int attempts = SEND_ATTEMPTS;
+        do
         {
             final long result = controlPublication.offer(buffer, 0, length);
             if (result > 0)
@@ -141,11 +146,47 @@ class ControlResponseProxy
                 break;
             }
         }
+        while (--attempts > 0);
+    }
+
+    void attemptSendRecordingTransition(
+        final long controlSessionId,
+        final long recordingId,
+        final long subscriptionId,
+        final long position,
+        final RecordingTransitionType recordingTransitionType,
+        final Publication controlPublication)
+    {
+        final int messageLength = MESSAGE_HEADER_LENGTH + RecordingTransitionEncoder.BLOCK_LENGTH;
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = controlPublication.tryClaim(messageLength, bufferClaim);
+            if (result > 0)
+            {
+                final MutableDirectBuffer buffer = bufferClaim.buffer();
+                final int bufferOffset = bufferClaim.offset();
+
+                recordingTransitionEncoder
+                    .wrapAndApplyHeader(buffer, bufferOffset, messageHeaderEncoder)
+                    .controlSessionId(controlSessionId)
+                    .recordingId(recordingId)
+                    .subscriptionId(subscriptionId)
+                    .position(position)
+                    .transitionType(recordingTransitionType);
+
+                bufferClaim.commit();
+                break;
+            }
+        }
+        while (--attempts > 0);
     }
 
     private boolean send(final ControlSession session, final DirectBuffer buffer, final int length)
     {
-        for (int i = 0; i < 3; i++)
+        int attempts = SEND_ATTEMPTS;
+        do
         {
             final long result = session.controlPublication().offer(buffer, 0, length);
             if (result > 0)
@@ -155,6 +196,7 @@ class ControlResponseProxy
 
             checkResult(session, result);
         }
+        while (--attempts > 0);
 
         return false;
     }

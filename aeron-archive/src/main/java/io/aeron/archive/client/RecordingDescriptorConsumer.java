@@ -15,6 +15,9 @@
  */
 package io.aeron.archive.client;
 
+import io.aeron.Image;
+import io.aeron.Subscription;
+
 /**
  * Consumer of events describing Aeron stream recordings.
  */
@@ -27,19 +30,19 @@ public interface RecordingDescriptorConsumer
      * @param controlSessionId  of the originating session requesting to list recordings.
      * @param correlationId     of the associated request to list recordings.
      * @param recordingId       of this recording descriptor.
-     * @param startTimestamp    for the recording.
-     * @param stopTimestamp     for the recording.
-     * @param startPosition     for the recording against the recorded publication.
-     * @param stopPosition      reached for the recording.
-     * @param initialTermId     for the recorded publication.
-     * @param segmentFileLength for the recording which is a multiple of termBufferLength.
-     * @param termBufferLength  for the recorded publication.
-     * @param mtuLength         for the recorded publication.
-     * @param sessionId         for the recorded publication.
-     * @param streamId          for the recorded publication.
-     * @param strippedChannel   for the recorded publication.
-     * @param originalChannel   for the recorded publication.
-     * @param sourceIdentity    for the recorded publication.
+     * @param startTimestamp    of the recording.
+     * @param stopTimestamp     of the recording.
+     * @param startPosition     of the recording against the recorded publication, the {@link Image#joinPosition()}.
+     * @param stopPosition      reached for the recording, final position for {@link Image#position()}.
+     * @param initialTermId     of the recorded stream, {@link Image#initialTermId()}.
+     * @param segmentFileLength of the recording which is a multiple of termBufferLength.
+     * @param termBufferLength  of the recorded stream, {@link Image#termBufferLength()}.
+     * @param mtuLength         of the recorded stream, {@link Image#mtuLength()}.
+     * @param sessionId         of the recorded stream, this will be most recent session id for extended recordings.
+     * @param streamId          of the recorded stream, {@link Subscription#streamId()}.
+     * @param strippedChannel   of the recorded stream which is used for the recording subscription in the archive.
+     * @param originalChannel   of the recorded stream provided to the start recording request, {@link Subscription#channel()}.
+     * @param sourceIdentity    of the recorded stream, the {@link Image#sourceIdentity()}.
      */
     void onRecordingDescriptor(
         long controlSessionId,

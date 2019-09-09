@@ -47,9 +47,7 @@ public class ControlResponseAdapter implements FragmentHandler
      * @param fragmentLimit to apply for each polling operation.
      */
     public ControlResponseAdapter(
-        final ControlResponseListener listener,
-        final Subscription subscription,
-        final int fragmentLimit)
+        final ControlResponseListener listener, final Subscription subscription, final int fragmentLimit)
     {
         this.fragmentLimit = fragmentLimit;
         this.listener = listener;
@@ -122,9 +120,7 @@ public class ControlResponseAdapter implements FragmentHandler
     }
 
     private void handleControlResponse(
-        final ControlResponseListener listener,
-        final DirectBuffer buffer,
-        final int offset)
+        final ControlResponseListener listener, final DirectBuffer buffer, final int offset)
     {
         controlResponseDecoder.wrap(
             buffer,
@@ -141,9 +137,7 @@ public class ControlResponseAdapter implements FragmentHandler
     }
 
     private void handleRecordingDescriptor(
-        final ControlResponseListener listener,
-        final DirectBuffer buffer,
-        final int offset)
+        final ControlResponseListener listener, final DirectBuffer buffer, final int offset)
     {
         recordingDescriptorDecoder.wrap(
             buffer,

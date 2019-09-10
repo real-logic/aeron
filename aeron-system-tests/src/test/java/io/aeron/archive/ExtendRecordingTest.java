@@ -45,8 +45,6 @@ import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 
 public class ExtendRecordingTest
@@ -104,6 +102,8 @@ public class ExtendRecordingTest
         final long controlSessionId = aeronArchive.controlSessionId();
         final RecordingTransitionAdapter recordingTransitionAdapter;
         final int messageCount = 10;
+        final long firstSubscriptionId;
+        final long secondSubscriptionId;
         final long firstStopPosition;
         final long secondStopPosition;
         final long recordingId;
@@ -120,7 +120,7 @@ public class ExtendRecordingTest
                 aeronArchive.controlResponsePoller().subscription(),
                 FRAGMENT_LIMIT);
 
-            aeronArchive.startRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID, LOCAL);
+            firstSubscriptionId = aeronArchive.startRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID, LOCAL);
             pollForTransition(recordingTransitionAdapter);
 
             try
@@ -142,7 +142,7 @@ public class ExtendRecordingTest
             }
             finally
             {
-                aeronArchive.stopRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID);
+                aeronArchive.stopRecording(firstSubscriptionId);
                 pollForTransition(recordingTransitionAdapter);
             }
         }
@@ -157,7 +157,8 @@ public class ExtendRecordingTest
         try (Publication publication = aeron.addExclusivePublication(publicationExtendChannel, RECORDING_STREAM_ID);
             Subscription subscription = aeron.addSubscription(SUBSCRIPTION_EXTEND_CHANNEL, RECORDING_STREAM_ID))
         {
-            aeronArchive.extendRecording(recordingId, SUBSCRIPTION_EXTEND_CHANNEL, RECORDING_STREAM_ID, LOCAL);
+            secondSubscriptionId = aeronArchive.extendRecording(
+                recordingId, SUBSCRIPTION_EXTEND_CHANNEL, RECORDING_STREAM_ID, LOCAL);
             pollForTransition(recordingTransitionAdapter);
 
             try
@@ -178,7 +179,7 @@ public class ExtendRecordingTest
             }
             finally
             {
-                aeronArchive.stopRecording(SUBSCRIPTION_EXTEND_CHANNEL, RECORDING_STREAM_ID);
+                aeronArchive.stopRecording(secondSubscriptionId);
                 pollForTransition(recordingTransitionAdapter);
             }
         }
@@ -188,13 +189,13 @@ public class ExtendRecordingTest
 
         final InOrder inOrder = Mockito.inOrder(recordingTransitionConsumer);
         inOrder.verify(recordingTransitionConsumer)
-            .onTransition(eq(controlSessionId), eq(0L), anyLong(), eq(0L), eq(START));
+            .onTransition(controlSessionId, recordingId, firstSubscriptionId, 0L, START);
         inOrder.verify(recordingTransitionConsumer)
-            .onTransition(eq(controlSessionId), eq(0L), anyLong(), eq(firstStopPosition), eq(STOP));
+            .onTransition(controlSessionId, recordingId, firstSubscriptionId, firstStopPosition, STOP);
         inOrder.verify(recordingTransitionConsumer)
-            .onTransition(eq(controlSessionId), eq(0L), anyLong(), eq(firstStopPosition), eq(EXTEND));
+            .onTransition(controlSessionId, recordingId, secondSubscriptionId, firstStopPosition, EXTEND);
         inOrder.verify(recordingTransitionConsumer)
-            .onTransition(eq(controlSessionId), eq(0L), anyLong(), eq(secondStopPosition), eq(STOP));
+            .onTransition(controlSessionId, recordingId, secondSubscriptionId, secondStopPosition, STOP);
     }
 
     private void replay(final int messageCount, final long secondStopPosition, final long recordingId)

@@ -63,7 +63,7 @@ ControlledPollAction RecordingSubscriptionDescriptorPoller::onFragment(
     {
         throw ArchiveException(
             "expected schemaId=" + std::to_string(MessageHeader::sbeSchemaId()) +
-                ", actual=" + std::to_string(schemaId),
+            ", actual=" + std::to_string(schemaId),
             SOURCEINFO);
     }
 

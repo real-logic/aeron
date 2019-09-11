@@ -389,7 +389,7 @@ public:
     }
 
     /**
-     * Extend an existing, non-active recording of a channel and stream pairing.
+     * Extend an existing, non-active recording for a channel and stream pairing.
      * <p>
      * The channel must be configured for the initial position from which it will be extended. This can be done
      * with ChannelUriStringBuilder#initialPosition(std::int64_t, std::int32_t, std::int32_t). The details required
@@ -547,24 +547,24 @@ public:
     }
 
     /**
- * Start a bound replay for a length in bytes of a recording from a position. If the position is #NULL_POSITION
- * then the stream will be replayed from the start. The replay is bounded by the limit counter's position value.
- * <p>
- * The lower 32-bits of the returned value contains the Image#sessionId of the received replay. All
- * 64-bits are required to uniquely identify the replay when calling #stopReplay. The lower 32-bits
- * can be obtained by casting the std::int64_t value to an std::int32_t.
- *
- * @param recordingId    to be replayed.
- * @param position       from which the replay should begin or #NULL_POSITION if from the start.
- * @param length         of the stream to be replayed. Use std::numeric_limits<std::int64_t>::max to follow a live
- *                       recording or #NULL_LENGTH to replay the whole stream of unknown length.
- * @param limitCounterId for the counter which bounds the replay by the position it contains.
- * @param replayChannel  to which the replay should be sent.
- * @param replayStreamId to which the replay should be sent.
- * @tparam IdleStrategy  to use for polling operations.
- * @return the id of the replay session which will be the same as the Image#sessionId of the received
- *         replay for correlation with the matching channel and stream id in the lower 32 bits.
- */
+     * Start a bound replay for a length in bytes of a recording from a position. If the position is #NULL_POSITION
+     * then the stream will be replayed from the start. The replay is bounded by the limit counter's position value.
+     * <p>
+     * The lower 32-bits of the returned value contains the Image#sessionId of the received replay. All
+     * 64-bits are required to uniquely identify the replay when calling #stopReplay. The lower 32-bits
+     * can be obtained by casting the std::int64_t value to an std::int32_t.
+     *
+     * @param recordingId    to be replayed.
+     * @param position       from which the replay should begin or #NULL_POSITION if from the start.
+     * @param length         of the stream to be replayed. Use std::numeric_limits<std::int64_t>::max to follow a live
+     *                       recording or #NULL_LENGTH to replay the whole stream of unknown length.
+     * @param limitCounterId for the counter which bounds the replay by the position it contains.
+     * @param replayChannel  to which the replay should be sent.
+     * @param replayStreamId to which the replay should be sent.
+     * @tparam IdleStrategy  to use for polling operations.
+     * @return the id of the replay session which will be the same as the Image#sessionId of the received
+     *         replay for correlation with the matching channel and stream id in the lower 32 bits.
+     */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline std::int64_t startBoundedReplay(
         std::int64_t recordingId,

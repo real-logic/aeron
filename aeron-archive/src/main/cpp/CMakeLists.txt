@@ -43,7 +43,8 @@ set(GENERATED_CODECS
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/RecordingSubscriptionDescriptor.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/RecordingStarted.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/RecordingProgress.h
-    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/RecordingStopped.h)
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/RecordingStopped.h
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/RecordingTransition.h)
 
 add_custom_command(OUTPUT ${GENERATED_CODECS}
     COMMAND ./gradlew -Dcodec.target.dir=${ARCHIVE_CODEC_TARGET_DIR} :aeron-archive:generateCppCodecs
@@ -61,6 +62,7 @@ SET(SOURCE
     client/RecordingSubscriptionDescriptorPoller.cpp
     client/RecordingEventsPoller.cpp
     client/RecordingEventsAdapter.cpp
+    client/RecordingTransitionAdapter.cpp
     client/AeronArchive.cpp
     client/ReplayMerge.cpp)
 
@@ -74,6 +76,7 @@ SET(HEADERS
     client/RecordingSubscriptionDescriptorPoller.h
     client/RecordingEventsPoller.h
     client/RecordingEventsAdapter.h
+    client/RecordingTransitionAdapter.h
     client/RecordingPos.h
     client/AeronArchive.h
     client/ReplayMerge.h)

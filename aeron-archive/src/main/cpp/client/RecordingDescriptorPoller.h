@@ -112,9 +112,9 @@ public:
     }
 
     /**
-     * Get the number of remaining records are expected.
+     * Get the number of remaining records expected.
      *
-     * @return the number of remaining records are expected.
+     * @return the number of remaining records expected.
      */
     inline std::int32_t remainingRecordCount()
     {

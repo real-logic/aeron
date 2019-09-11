@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-#include "ControlResponseAdapter.h"
+#include "RecordingTransitionAdapter.h"
 #include "ArchiveException.h"
 #include "aeron_archive_client/MessageHeader.h"
 #include "aeron_archive_client/ControlResponse.h"
-#include "aeron_archive_client/RecordingDescriptor.h"
+#include "aeron_archive_client/RecordingTransition.h"
 
 using namespace aeron;
 using namespace aeron::archive::client;
 
-static aeron::fragment_handler_t fragmentHandler(ControlResponseAdapter &adapter)
+static aeron::fragment_handler_t fragmentHandler(RecordingTransitionAdapter& adapter)
 {
     return [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
     {
@@ -31,20 +31,22 @@ static aeron::fragment_handler_t fragmentHandler(ControlResponseAdapter &adapter
     };
 }
 
-ControlResponseAdapter::ControlResponseAdapter(
+RecordingTransitionAdapter::RecordingTransitionAdapter(
     const on_control_response_t &onResponse,
-    const recording_descriptor_consumer_t &onRecordingDescriptor,
+    const on_recording_transition_t &onRecordingTransition,
     std::shared_ptr<aeron::Subscription> subscription,
+    std::int64_t controlSessionId,
     int fragmentLimit) :
     m_fragmentHandler(fragmentHandler(*this)),
     m_subscription(std::move(subscription)),
     m_onResponse(onResponse),
-    m_onRecordingDescriptor(onRecordingDescriptor),
+    m_onRecordingTransition(onRecordingTransition),
+    m_controlSessionId(controlSessionId),
     m_fragmentLimit(fragmentLimit)
 {
 }
 
-void ControlResponseAdapter::onFragment(
+void RecordingTransitionAdapter::onFragment(
     AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
 {
     MessageHeader msgHeader(
@@ -72,40 +74,35 @@ void ControlResponseAdapter::onFragment(
                 msgHeader.blockLength(),
                 msgHeader.version());
 
-            m_onResponse(
-                response.controlSessionId(),
-                response.correlationId(),
-                response.relevantId(),
-                response.code(),
-                response.errorMessage());
+            if (response.controlSessionId() == m_controlSessionId)
+            {
+                m_onResponse(
+                    response.controlSessionId(),
+                    response.correlationId(),
+                    response.relevantId(),
+                    response.code(),
+                    response.errorMessage());
+            }
             break;
         }
 
-        case RecordingDescriptor::sbeTemplateId():
+        case RecordingTransition::sbeTemplateId():
         {
-            RecordingDescriptor descriptor(
+            RecordingTransition recordingTransition(
                 buffer.sbeData() + offset + MessageHeader::encodedLength(),
                 static_cast<std::uint64_t>(length) - MessageHeader::encodedLength(),
                 msgHeader.blockLength(),
                 msgHeader.version());
 
-            m_onRecordingDescriptor(
-                descriptor.controlSessionId(),
-                descriptor.correlationId(),
-                descriptor.recordingId(),
-                descriptor.startTimestamp(),
-                descriptor.stopTimestamp(),
-                descriptor.startPosition(),
-                descriptor.stopPosition(),
-                descriptor.initialTermId(),
-                descriptor.segmentFileLength(),
-                descriptor.termBufferLength(),
-                descriptor.mtuLength(),
-                descriptor.sessionId(),
-                descriptor.streamId(),
-                descriptor.strippedChannel(),
-                descriptor.originalChannel(),
-                descriptor.sourceIdentity());
+            if (recordingTransition.controlSessionId() == m_controlSessionId)
+            {
+                m_onRecordingTransition(
+                    recordingTransition.controlSessionId(),
+                    recordingTransition.recordingId(),
+                    recordingTransition.subscriptionId(),
+                    recordingTransition.position(),
+                    recordingTransition.transitionType());
+            }
             break;
         }
 

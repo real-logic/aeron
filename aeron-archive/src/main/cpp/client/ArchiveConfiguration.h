@@ -42,7 +42,7 @@ constexpr const std::int64_t NULL_LENGTH = aeron::NULL_VALUE;
 namespace Configuration
 {
 constexpr const std::uint8_t ARCHIVE_MAJOR_VERSION = 0;
-constexpr const std::uint8_t ARCHIVE_MINOR_VERSION = 2;
+constexpr const std::uint8_t ARCHIVE_MINOR_VERSION = 3;
 constexpr const std::uint8_t ARCHIVE_PATCH_VERSION = 1;
 constexpr const std::int32_t ARCHIVE_SEMANTIC_VERSION = aeron::util::semanticVersionCompose(
     ARCHIVE_MAJOR_VERSION, ARCHIVE_MINOR_VERSION, ARCHIVE_PATCH_VERSION);

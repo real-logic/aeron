@@ -55,7 +55,9 @@ typedef struct aeron_udp_transport_poller_stct
 aeron_udp_transport_poller_t;
 
 int aeron_udp_transport_poller_init(
-    aeron_udp_transport_poller_t *poller, aeron_driver_context_t *context);
+    aeron_udp_transport_poller_t *poller,
+    aeron_driver_context_t *context,
+    aeron_udp_channel_transport_affinity_t affinity);
 int aeron_udp_transport_poller_close(aeron_udp_transport_poller_t *poller);
 
 int aeron_udp_transport_poller_add(aeron_udp_transport_poller_t *poller, aeron_udp_channel_transport_t *transport);

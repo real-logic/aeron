@@ -285,6 +285,7 @@ static void aeron_driver_conductor_to_client_interceptor_null(
 #define AERON_DIR_WARN_IF_EXISTS_DEFAULT true
 #define AERON_THREADING_MODE_DEFAULT AERON_THREADING_MODE_DEDICATED
 #define AERON_DIR_DELETE_ON_START_DEFAULT false
+#define AERON_DIR_DELETE_ON_SHUTDOWN_DEFAULT false
 #define AERON_TO_CONDUCTOR_BUFFER_LENGTH_DEFAULT (1024 * 1024 + AERON_RB_TRAILER_LENGTH)
 #define AERON_TO_CLIENTS_BUFFER_LENGTH_DEFAULT (1024 * 1024 + AERON_BROADCAST_BUFFER_TRAILER_LENGTH)
 #define AERON_COUNTERS_VALUES_BUFFER_LENGTH_DEFAULT (1024 * 1024)
@@ -408,6 +409,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->receiver_group_consideration = aeron_config_parse_inferable_boolean(
         getenv(AERON_RECEIVER_GROUP_CONSIDERATION_ENV_VAR), AERON_RECEIVER_GROUP_CONSIDERATION_DEFAULT);
     _context->dirs_delete_on_start = AERON_DIR_DELETE_ON_START_DEFAULT;
+    _context->dirs_delete_on_shutdown = AERON_DIR_DELETE_ON_SHUTDOWN_DEFAULT;
     _context->warn_if_dirs_exist = AERON_DIR_WARN_IF_EXISTS_DEFAULT;
     _context->term_buffer_sparse_file = AERON_TERM_BUFFER_SPARSE_FILE_DEFAULT;
     _context->perform_storage_checks = AERON_PERFORM_STORAGE_CHECKS_DEFAULT;
@@ -491,6 +493,10 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->dirs_delete_on_start = aeron_config_parse_bool(
         getenv(AERON_DIR_DELETE_ON_START_ENV_VAR),
         _context->dirs_delete_on_start);
+
+    _context->dirs_delete_on_shutdown = aeron_config_parse_bool(
+        getenv(AERON_DIR_DELETE_ON_SHUTDOWN_ENV_VAR),
+        _context->dirs_delete_on_shutdown);
 
     _context->warn_if_dirs_exist = aeron_config_parse_bool(
         getenv(AERON_DIR_WARN_IF_EXISTS_ENV_VAR),
@@ -1109,6 +1115,19 @@ int aeron_driver_context_set_dir_delete_on_start(aeron_driver_context_t * contex
 bool aeron_driver_context_get_dir_delete_on_start(aeron_driver_context_t *context)
 {
     return NULL != context ? context->dirs_delete_on_start : AERON_DIR_DELETE_ON_START_DEFAULT;
+}
+
+int aeron_driver_context_set_dir_delete_on_shutdown(aeron_driver_context_t * context, bool value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->dirs_delete_on_shutdown = value;
+    return 0;
+}
+
+bool aeron_driver_context_get_dir_delete_on_shutdown(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->dirs_delete_on_shutdown : AERON_DIR_DELETE_ON_SHUTDOWN_DEFAULT;
 }
 
 int aeron_driver_context_set_to_conductor_buffer_length(aeron_driver_context_t *context, size_t length)

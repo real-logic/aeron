@@ -578,6 +578,8 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
     fprintf(fpout, "\n    aeron_dir=%s", context->aeron_dir);
     fprintf(fpout, "\n    driver_timeout_ms=%" PRIu64, context->driver_timeout_ms);
     fprintf(fpout, "\n    print_configuration_on_start=%d", context->print_configuration_on_start);
+    fprintf(fpout, "\n    dirs_delete_on_start=%d", context->dirs_delete_on_start);
+    fprintf(fpout, "\n    dirs_delete_on_shutdown=%d", context->dirs_delete_on_shutdown);
     fprintf(fpout, "\n    warn_if_dirs_exists=%d", context->warn_if_dirs_exist);
     fprintf(fpout, "\n    term_buffer_sparse_file=%d", context->term_buffer_sparse_file);
     fprintf(fpout, "\n    perform_storage_checks=%d", context->perform_storage_checks);
@@ -1053,6 +1055,11 @@ int aeron_driver_close(aeron_driver_t *driver)
         {
             return -1;
         }
+    }
+
+    if (driver->context->dirs_delete_on_shutdown)
+    {
+        aeron_delete_directory(driver->context->aeron_dir);
     }
 
     aeron_free(driver);

@@ -24,6 +24,7 @@ class TimerService implements DeadlineTimerWheel.TimerHandler
 {
     private static final int POLL_LIMIT = 20;
 
+    private boolean isAbort;
     private final ConsensusModuleAgent consensusModuleAgent;
     private final DeadlineTimerWheel timerWheel;
     private final Long2LongHashMap timerIdByCorrelationIdMap = new Long2LongHashMap(Long.MAX_VALUE);
@@ -43,10 +44,16 @@ class TimerService implements DeadlineTimerWheel.TimerHandler
     int poll(final long now)
     {
         int expired = 0;
+        isAbort = false;
 
         do
         {
             expired += timerWheel.poll(now, this, POLL_LIMIT);
+
+            if (isAbort)
+            {
+                break;
+            }
         }
         while (expired < POLL_LIMIT && timerWheel.currentTickTime() < now);
 
@@ -74,8 +81,12 @@ class TimerService implements DeadlineTimerWheel.TimerHandler
 
             return true;
         }
+        else
+        {
+            isAbort = true;
 
-        return false;
+            return false;
+        }
     }
 
     void scheduleTimer(final long correlationId, final long deadline)

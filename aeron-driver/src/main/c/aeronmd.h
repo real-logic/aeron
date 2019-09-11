@@ -74,6 +74,14 @@ int aeron_driver_context_set_dir_delete_on_start(aeron_driver_context_t * contex
 bool aeron_driver_context_get_dir_delete_on_start(aeron_driver_context_t *context);
 
 /**
+ * Attempt to delete directories on shutdown.
+ */
+#define AERON_DIR_DELETE_ON_SHUTDOWN_ENV_VAR "AERON_DIR_DELETE_ON_SHUTDOWN"
+
+int aeron_driver_context_set_dir_delete_on_shutdown(aeron_driver_context_t * context, bool value);
+bool aeron_driver_context_get_dir_delete_on_shutdown(aeron_driver_context_t *context);
+
+/**
  * Length (in bytes) of the conductor buffer for control commands from the clients to the media driver conductor.
  */
 #define AERON_TO_CONDUCTOR_BUFFER_LENGTH_ENV_VAR "AERON_CONDUCTOR_BUFFER_LENGTH"

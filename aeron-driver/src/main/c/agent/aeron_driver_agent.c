@@ -523,7 +523,7 @@ static const char *dissect_timestamp(int64_t time_ms)
 
 static const char *dissect_log_start(int64_t time_ms)
 {
-    static char buffer[256];
+    static char buffer[384];
     char datestamp[80];
 
     aeron_agent_format_date(datestamp, sizeof(datestamp) - 1, time_ms);

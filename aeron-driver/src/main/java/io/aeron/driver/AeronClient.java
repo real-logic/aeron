@@ -27,8 +27,7 @@ public class AeronClient implements DriverManagedResource
     private final long clientId;
     private final long clientLivenessTimeoutMs;
     private final AtomicCounter clientTimeouts;
-    private final AtomicCounter heartbeatStatus;
-    private long timeOfLastKeepaliveMs;
+    private final AtomicCounter heartbeatTimestamp;
     private boolean reachedEndOfLife = false;
     private boolean closedByCommand = false;
 
@@ -37,22 +36,21 @@ public class AeronClient implements DriverManagedResource
         final long clientLivenessTimeoutNs,
         final long nowMs,
         final AtomicCounter clientTimeouts,
-        final AtomicCounter heartbeatStatus)
+        final AtomicCounter heartbeatTimestamp)
     {
         this.clientId = clientId;
         this.clientLivenessTimeoutMs = Math.max(1, TimeUnit.NANOSECONDS.toMillis(clientLivenessTimeoutNs));
-        this.timeOfLastKeepaliveMs = nowMs;
         this.clientTimeouts = clientTimeouts;
-        this.heartbeatStatus = heartbeatStatus;
+        this.heartbeatTimestamp = heartbeatTimestamp;
 
-        heartbeatStatus.setOrdered(nowMs);
+        heartbeatTimestamp.setOrdered(nowMs);
     }
 
     public void close()
     {
-        if (!heartbeatStatus.isClosed())
+        if (!heartbeatTimestamp.isClosed())
         {
-            heartbeatStatus.close();
+            heartbeatTimestamp.close();
         }
     }
 
@@ -63,8 +61,7 @@ public class AeronClient implements DriverManagedResource
 
     public void timeOfLastKeepaliveMs(final long nowMs)
     {
-        timeOfLastKeepaliveMs = nowMs;
-        heartbeatStatus.setOrdered(nowMs);
+        heartbeatTimestamp.setOrdered(nowMs);
     }
 
     public boolean hasTimedOut()
@@ -74,7 +71,7 @@ public class AeronClient implements DriverManagedResource
 
     public void onTimeEvent(final long timeNs, final long timeMs, final DriverConductor conductor)
     {
-        if (timeMs > (timeOfLastKeepaliveMs + clientLivenessTimeoutMs))
+        if (timeMs > (heartbeatTimestamp.get() + clientLivenessTimeoutMs))
         {
             reachedEndOfLife = true;
 
@@ -94,6 +91,6 @@ public class AeronClient implements DriverManagedResource
     void onClosedByCommand()
     {
         closedByCommand = true;
-        timeOfLastKeepaliveMs = 0;
+        heartbeatTimestamp.set(0);
     }
 }

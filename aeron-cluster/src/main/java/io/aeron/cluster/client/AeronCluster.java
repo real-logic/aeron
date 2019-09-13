@@ -41,7 +41,7 @@ import static org.agrona.SystemUtil.getDurationInNanos;
  * Client for interacting with an Aeron Cluster.
  * <p>
  * A client will attempt to open a session and then offer ingress messages which are replicated to clustered services
- * for reliability. If the clustered service responds then response messages and events come back via the egress stream.
+ * for reliability. If the clustered service responds then response messages and events are sent via the egress stream.
  * <p>
  * <b>Note:</b> Instances of this class are not threadsafe.
  */
@@ -53,7 +53,6 @@ public final class AeronCluster implements AutoCloseable
      */
     public static final int SESSION_HEADER_LENGTH =
         MessageHeaderEncoder.ENCODED_LENGTH + SessionMessageHeaderEncoder.BLOCK_LENGTH;
-
 
     static final int SEND_ATTEMPTS = 3;
     static final int FRAGMENT_LIMIT = 10;

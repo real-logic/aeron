@@ -116,12 +116,15 @@ public class AeronArchive implements AutoCloseable
             if (!isClosed)
             {
                 isClosed = true;
-                archiveProxy.closeSession(controlSessionId);
+                if (archiveProxy.publication().isConnected())
+                {
+                    archiveProxy.closeSession(controlSessionId);
+                }
 
                 if (!context.ownsAeronClient())
                 {
-                    CloseHelper.close(controlResponsePoller.subscription());
                     CloseHelper.close(archiveProxy.publication());
+                    CloseHelper.close(controlResponsePoller.subscription());
                 }
 
                 context.close();

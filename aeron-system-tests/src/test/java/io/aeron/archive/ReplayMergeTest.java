@@ -137,8 +137,8 @@ public class ReplayMergeTest
             System.out.println("received " + received.get() + "/" + (MIN_MESSAGES_PER_TERM * 6));
         }
 
-        CloseHelper.close(aeronArchive);
-        CloseHelper.close(aeron);
+        CloseHelper.quietClose(aeronArchive);
+        CloseHelper.quietClose(aeron);
         CloseHelper.close(archivingMediaDriver);
 
         archivingMediaDriver.archive().context().deleteArchiveDirectory();

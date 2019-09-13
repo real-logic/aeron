@@ -156,7 +156,10 @@ AeronArchive::AeronArchive(
 
 AeronArchive::~AeronArchive()
 {
-    m_archiveProxy->closeSession(m_controlSessionId);
+    if (m_archiveProxy->publication()->isConnected())
+    {
+        m_archiveProxy->closeSession(m_controlSessionId);
+    }
 }
 
 std::shared_ptr<AeronArchive::AsyncConnect> AeronArchive::asyncConnect(AeronArchive::Context_t &ctx)

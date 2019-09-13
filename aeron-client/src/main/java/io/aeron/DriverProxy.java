@@ -156,11 +156,7 @@ public class DriverProxy
     public void sendClientKeepalive()
     {
         correlatedMessage.correlationId(0);
-
-        if (!toDriverCommandBuffer.write(CLIENT_KEEPALIVE, buffer, 0, CorrelatedMessageFlyweight.LENGTH))
-        {
-            throw new AeronException("could not send client keepalive command");
-        }
+        toDriverCommandBuffer.write(CLIENT_KEEPALIVE, buffer, 0, CorrelatedMessageFlyweight.LENGTH);
     }
 
     public long addDestination(final long registrationId, final String endpointChannel)

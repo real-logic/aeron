@@ -22,19 +22,30 @@ import org.agrona.concurrent.status.CountersManager;
 
 /**
  * Counter for tracking the timestamp of a last heartbeat from an Aeron client.
+ *
+ * @see HeartbeatTimestamp
  */
 public class ClientHeartbeatTimestamp
 {
     /**
      * Type id of an Aeron client heartbeat.
      */
-    public static final int CLIENT_HEARTBEAT_TYPE_ID = 11;
+    public static final int CLIENT_HEARTBEAT_TYPE_ID = HeartbeatTimestamp.CLIENT_HEARTBEAT_TYPE_ID;
 
     /**
      * Human readable name for the counter.
      */
     public static final String NAME = "client-heartbeat";
 
+    /**
+     * Allocate a new counter by delegating to
+     * {@link HeartbeatTimestamp#allocate(MutableDirectBuffer, String, int, CountersManager, long)}.
+     *
+     * @param tempBuffer      for writing the metadata.
+     * @param countersManager for he counter.
+     * @param registrationId  for the client.
+     * @return the allocated counter.
+     */
     public static AtomicCounter allocate(
         final MutableDirectBuffer tempBuffer,
         final CountersManager countersManager,

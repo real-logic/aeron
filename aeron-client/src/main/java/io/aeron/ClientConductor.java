@@ -17,11 +17,13 @@ package io.aeron;
 
 import io.aeron.exceptions.*;
 import io.aeron.status.ChannelEndpointStatus;
+import io.aeron.status.HeartbeatTimestamp;
 import org.agrona.DirectBuffer;
 import org.agrona.ManagedResource;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.*;
+import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.CountersReader;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
@@ -76,6 +78,7 @@ class ClientConductor implements Agent, DriverEventsListener
     private final AgentInvoker driverAgentInvoker;
     private final UnsafeBuffer counterValuesBuffer;
     private final CountersReader countersReader;
+    private AtomicCounter heartbeatTimestamp;
 
     ClientConductor(final Aeron.Context ctx, final Aeron aeron)
     {
@@ -995,21 +998,46 @@ class ClientConductor implements Agent, DriverEventsListener
         if ((timeOfLastKeepAliveNs + keepAliveIntervalNs) - nowNs < 0)
         {
             final long lastKeepAliveMs = driverProxy.timeOfLastDriverKeepaliveMs();
+            final long nowMs = epochClock.time();
 
-            if (epochClock.time() > (lastKeepAliveMs + driverTimeoutMs))
+            if (nowMs > (lastKeepAliveMs + driverTimeoutMs))
             {
                 isTerminating = true;
                 forceCloseResources();
 
-                final long keepAliveAgeMs = epochClock.time() - lastKeepAliveMs;
+                final long keepAliveAgeMs = nowMs - lastKeepAliveMs;
 
                 throw new DriverTimeoutException(
                     "MediaDriver keepalive age exceeded (ms): timeout= " +
                      driverTimeoutMs + ", actual=" + keepAliveAgeMs);
             }
 
-            driverProxy.sendClientKeepalive();
-            timeOfLastKeepAliveNs = nowNs;
+            if (null == heartbeatTimestamp)
+            {
+                final int counterId = HeartbeatTimestamp.findCounterIdByRegistrationId(
+                    countersReader, HeartbeatTimestamp.CLIENT_HEARTBEAT_TYPE_ID, driverProxy.clientId());
+
+                if (counterId != CountersReader.NULL_COUNTER_ID)
+                {
+                    heartbeatTimestamp = new AtomicCounter(counterValuesBuffer, counterId);
+                    heartbeatTimestamp.setOrdered(nowMs);
+                    timeOfLastKeepAliveNs = nowNs;
+                }
+            }
+            else
+            {
+                final int counterId = heartbeatTimestamp.id();
+                if (!HeartbeatTimestamp.isValid(countersReader, counterId, driverProxy.clientId()))
+                {
+                    isTerminating = true;
+                    forceCloseResources();
+
+                    throw new AeronException("unexpected close of heartbeat timestamp counter: " + counterId);
+                }
+
+                heartbeatTimestamp.setOrdered(nowMs);
+                timeOfLastKeepAliveNs = nowNs;
+            }
 
             return 1;
         }

@@ -16,18 +16,27 @@
 package io.aeron.status;
 
 import org.agrona.BitUtil;
+import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
+import org.agrona.concurrent.status.CountersReader;
 
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.concurrent.status.CountersReader.*;
+import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
 /**
- * Allocate a counter for tracking the last heartbeat of an entity.
+ * Allocate a counter for tracking the last heartbeat of an entity with a given registration id.
  */
 public class HeartbeatTimestamp
 {
+    /**
+     * Type id of an Aeron client heartbeat.
+     */
+    public static final int CLIENT_HEARTBEAT_TYPE_ID = 11;
+
     /**
      * Offset in the key meta data for the registration id of the counter.
      */
@@ -56,6 +65,16 @@ public class HeartbeatTimestamp
             countersManager);
     }
 
+    /**
+     * Allocate a counter id for tracking the last heartbeat of an entity.
+     *
+     * @param tempBuffer      to be used for labels and key.
+     * @param name            of the counter for the label.
+     * @param typeId          of the counter for classification.
+     * @param countersManager from which to allocated the underlying storage.
+     * @param registrationId  to be associated with the counter.
+     * @return the counter id to be used.
+     */
     public static int allocateCounterId(
         final MutableDirectBuffer tempBuffer,
         final String name,
@@ -80,5 +99,56 @@ public class HeartbeatTimestamp
             tempBuffer,
             labelOffset,
             labelLength);
+    }
+
+    /**
+     * Find the active counter id for a heartbeat timestamp.
+     *
+     * @param countersReader to search within.
+     * @param counterTypeId  to match on.
+     * @param registrationId for the active client.
+     * @return the counter id if found otherwise {@link CountersReader#NULL_COUNTER_ID}.
+     */
+    public static int findCounterIdByRegistrationId(
+        final CountersReader countersReader, final int counterTypeId, final long registrationId)
+    {
+        final DirectBuffer buffer = countersReader.metaDataBuffer();
+
+        for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
+        {
+            if (countersReader.getCounterState(i) == RECORD_ALLOCATED)
+            {
+                final int recordOffset = CountersReader.metaDataOffset(i);
+
+                if (buffer.getInt(recordOffset + TYPE_ID_OFFSET) == counterTypeId &&
+                    buffer.getLong(recordOffset + KEY_OFFSET + REGISTRATION_ID_OFFSET) == registrationId)
+                {
+                    return i;
+                }
+            }
+        }
+
+        return NULL_COUNTER_ID;
+    }
+
+    /**
+     * Is the counter valid for usage? Checks to see if reclaimed or reused.
+     *
+     * @param countersReader to search within.
+     * @param counterId      to test.
+     * @param registrationId for the entity.
+     * @return true if still valid otherwise false.
+     */
+    public static boolean isValid(final CountersReader countersReader, final int counterId, final long registrationId)
+    {
+        final DirectBuffer buffer = countersReader.metaDataBuffer();
+
+        if (countersReader.getCounterState(counterId) == RECORD_ALLOCATED)
+        {
+            final int recordOffset = CountersReader.metaDataOffset(counterId);
+            return buffer.getLong(recordOffset + KEY_OFFSET + REGISTRATION_ID_OFFSET) == registrationId;
+        }
+
+        return false;
     }
 }

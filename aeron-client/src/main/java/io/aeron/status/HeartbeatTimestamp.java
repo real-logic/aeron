@@ -136,15 +136,18 @@ public class HeartbeatTimestamp
      *
      * @param countersReader to search within.
      * @param counterId      to test.
+     * @param counterTypeId  to validate type.
      * @param registrationId for the entity.
      * @return true if still valid otherwise false.
      */
-    public static boolean isActive(final CountersReader countersReader, final int counterId, final long registrationId)
+    public static boolean isActive(
+        final CountersReader countersReader, final int counterId, final int counterTypeId, final long registrationId)
     {
         final DirectBuffer buffer = countersReader.metaDataBuffer();
         final int recordOffset = CountersReader.metaDataOffset(counterId);
 
-        return buffer.getLong(recordOffset + KEY_OFFSET + REGISTRATION_ID_OFFSET) == registrationId &&
+        return buffer.getInt(recordOffset + TYPE_ID_OFFSET) == counterTypeId &&
+            buffer.getLong(recordOffset + KEY_OFFSET + REGISTRATION_ID_OFFSET) == registrationId &&
             countersReader.getCounterState(counterId) == RECORD_ALLOCATED;
     }
 }

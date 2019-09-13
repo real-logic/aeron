@@ -132,23 +132,19 @@ public class HeartbeatTimestamp
     }
 
     /**
-     * Is the counter valid for usage? Checks to see if reclaimed or reused.
+     * Is the counter active for usage? Checks to see if reclaimed or reused and matches registration id.
      *
      * @param countersReader to search within.
      * @param counterId      to test.
      * @param registrationId for the entity.
      * @return true if still valid otherwise false.
      */
-    public static boolean isValid(final CountersReader countersReader, final int counterId, final long registrationId)
+    public static boolean isActive(final CountersReader countersReader, final int counterId, final long registrationId)
     {
         final DirectBuffer buffer = countersReader.metaDataBuffer();
+        final int recordOffset = CountersReader.metaDataOffset(counterId);
 
-        if (countersReader.getCounterState(counterId) == RECORD_ALLOCATED)
-        {
-            final int recordOffset = CountersReader.metaDataOffset(counterId);
-            return buffer.getLong(recordOffset + KEY_OFFSET + REGISTRATION_ID_OFFSET) == registrationId;
-        }
-
-        return false;
+        return buffer.getLong(recordOffset + KEY_OFFSET + REGISTRATION_ID_OFFSET) == registrationId &&
+            countersReader.getCounterState(counterId) == RECORD_ALLOCATED;
     }
 }

@@ -1027,7 +1027,7 @@ class ClientConductor implements Agent, DriverEventsListener
             else
             {
                 final int counterId = heartbeatTimestamp.id();
-                if (!HeartbeatTimestamp.isValid(countersReader, counterId, driverProxy.clientId()))
+                if (!HeartbeatTimestamp.isActive(countersReader, counterId, driverProxy.clientId()))
                 {
                     isTerminating = true;
                     forceCloseResources();

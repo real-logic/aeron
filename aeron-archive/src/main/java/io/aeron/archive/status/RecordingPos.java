@@ -215,16 +215,10 @@ public class RecordingPos
     public static boolean isActive(final CountersReader countersReader, final int counterId, final long recordingId)
     {
         final DirectBuffer buffer = countersReader.metaDataBuffer();
+        final int recordOffset = CountersReader.metaDataOffset(counterId);
 
-        if (countersReader.getCounterState(counterId) == RECORD_ALLOCATED)
-        {
-            final int recordOffset = CountersReader.metaDataOffset(counterId);
-
-            return
-                buffer.getInt(recordOffset + TYPE_ID_OFFSET) == RECORDING_POSITION_TYPE_ID &&
-                buffer.getLong(recordOffset + KEY_OFFSET + RECORDING_ID_OFFSET) == recordingId;
-        }
-
-        return false;
+        return buffer.getInt(recordOffset + TYPE_ID_OFFSET) == RECORDING_POSITION_TYPE_ID &&
+            buffer.getLong(recordOffset + KEY_OFFSET + RECORDING_ID_OFFSET) == recordingId &&
+            countersReader.getCounterState(counterId) == RECORD_ALLOCATED;
     }
 }

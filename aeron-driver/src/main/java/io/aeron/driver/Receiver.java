@@ -158,6 +158,18 @@ public class Receiver implements Agent
 
     public void onCloseReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
+        final ArrayList<PendingSetupMessageFromSource> pendingSetupMessages = this.pendingSetupMessages;
+        for (int lastIndex = pendingSetupMessages.size() - 1, i = lastIndex; i >= 0; i--)
+        {
+            final PendingSetupMessageFromSource pending = pendingSetupMessages.get(i);
+
+            if (pending.channelEndpoint() == channelEndpoint)
+            {
+                ArrayListUtil.fastUnorderedRemove(pendingSetupMessages, i, lastIndex--);
+                pending.removeFromDataPacketDispatcher();
+            }
+        }
+
         channelEndpoint.closeMultiRcvDestination();
         channelEndpoint.close();
     }

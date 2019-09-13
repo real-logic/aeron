@@ -179,18 +179,13 @@ inline static std::string getSourceIdentity(CountersReader& countersReader, std:
 inline static bool isActive(CountersReader& countersReader, std::int32_t counterId, std::int64_t recordingId)
 {
     AtomicBuffer buffer = countersReader.metaDataBuffer();
+    const util::index_t recordOffset = CountersReader::metadataOffset(counterId);
+    auto key = buffer.overlayStruct<RecordingPosKeyDefn>(recordOffset + CountersReader::KEY_OFFSET);
 
-    if (countersReader.getCounterState(counterId) == CountersReader::RECORD_ALLOCATED)
-    {
-        const util::index_t recordOffset = CountersReader::metadataOffset(counterId);
-        auto key = buffer.overlayStruct<RecordingPosKeyDefn>(recordOffset + CountersReader::KEY_OFFSET);
-
-        return
-            buffer.getInt32(recordOffset + CountersReader::TYPE_ID_OFFSET) == RECORDING_POSITION_TYPE_ID &&
-            recordingId == key.recordingId;
-    }
-
-    return false;
+    return
+        buffer.getInt32(recordOffset + CountersReader::TYPE_ID_OFFSET) == RECORDING_POSITION_TYPE_ID &&
+        recordingId == key.recordingId &&
+        countersReader.getCounterState(counterId) == CountersReader::RECORD_ALLOCATED;
 }
 
 }

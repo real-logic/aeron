@@ -140,8 +140,9 @@ int aeron_counters_manager_free(volatile aeron_counters_manager_t *manager, int3
     aeron_counter_metadata_descriptor_t *metadata = (aeron_counter_metadata_descriptor_t *)
         (manager->metadata + (counter_id * AERON_COUNTERS_MANAGER_METADATA_LENGTH));
 
-    metadata->free_to_reuse_deadline = manager->clock_func() + manager->free_to_reuse_timeout_ms;
     AERON_PUT_ORDERED(metadata->state, AERON_COUNTER_RECORD_RECLAIMED);
+    memset(metadata->key, 0, sizeof(metadata->key));
+    metadata->free_to_reuse_deadline = manager->clock_func() + manager->free_to_reuse_timeout_ms;
 
     if ((manager->free_list_index + 1) >= (int32_t)manager->free_list_length)
     {

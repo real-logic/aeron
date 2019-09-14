@@ -55,7 +55,6 @@ typedef struct aeron_client_stct
     bool closed_by_command;
     int64_t client_id;
     int64_t client_liveness_timeout_ms;
-    int64_t time_of_last_keepalive_ms;
 
     aeron_counter_t heartbeat_timestamp;
 

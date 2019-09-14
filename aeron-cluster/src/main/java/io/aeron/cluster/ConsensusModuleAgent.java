@@ -788,9 +788,12 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     void state(final ConsensusModule.State newState)
     {
-        stateChange(state, newState, memberId);
-        state = newState;
-        moduleState.set(newState.code());
+        if (newState != state)
+        {
+            stateChange(state, newState, memberId);
+            state = newState;
+            moduleState.set(newState.code());
+        }
     }
 
     @SuppressWarnings("unused")
@@ -801,9 +804,12 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     void role(final Cluster.Role newRole)
     {
-        roleChange(role, newRole, memberId);
-        role = newRole;
-        clusterRoleCounter.setOrdered(newRole.code());
+        if (newRole != role)
+        {
+            roleChange(role, newRole, memberId);
+            role = newRole;
+            clusterRoleCounter.setOrdered(newRole.code());
+        }
     }
 
     @SuppressWarnings("unused")

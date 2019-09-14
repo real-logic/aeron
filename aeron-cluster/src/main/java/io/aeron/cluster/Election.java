@@ -936,6 +936,11 @@ public class Election implements AutoCloseable
     {
         stateChange(this.state, newState, thisMember.id());
 
+        if (State.CANVASS == this.state)
+        {
+            isStartup = false;
+        }
+
         if (State.CANVASS == newState)
         {
             consensusModuleAgent.stopAllCatchups();
@@ -943,27 +948,30 @@ public class Election implements AutoCloseable
 
             ClusterMember.reset(clusterMembers);
             thisMember.leadershipTermId(leadershipTermId).logPosition(logPosition);
-            consensusModuleAgent.role(Cluster.Role.FOLLOWER);
         }
 
-        if (State.CANVASS == this.state)
+        switch (newState)
         {
-            isStartup = false;
-        }
+            case INIT:
+            case CANVASS:
+            case NOMINATE:
+            case FOLLOWER_BALLOT:
+            case FOLLOWER_CATCHUP_TRANSITION:
+            case FOLLOWER_CATCHUP:
+            case FOLLOWER_REPLAY:
+            case FOLLOWER_TRANSITION:
+            case FOLLOWER_READY:
+                consensusModuleAgent.role(Cluster.Role.FOLLOWER);
+                break;
 
-        if (State.CANDIDATE_BALLOT == newState)
-        {
-            consensusModuleAgent.role(Cluster.Role.CANDIDATE);
-        }
+            case CANDIDATE_BALLOT:
+                consensusModuleAgent.role(Cluster.Role.CANDIDATE);
+                break;
 
-        if (State.CANDIDATE_BALLOT == this.state && State.LEADER_REPLAY != newState)
-        {
-            consensusModuleAgent.role(Cluster.Role.FOLLOWER);
-        }
-
-        if (State.LEADER_TRANSITION == newState)
-        {
-            consensusModuleAgent.role(Cluster.Role.LEADER);
+            case LEADER_TRANSITION:
+            case LEADER_READY:
+                consensusModuleAgent.role(Cluster.Role.LEADER);
+                break;
         }
 
         this.state = newState;

@@ -31,6 +31,7 @@
 #include "Context.h"
 #include "DriverListenerAdapter.h"
 #include "LogBuffers.h"
+#include "HeartbeatTimestamp.h"
 
 namespace aeron {
 
@@ -423,6 +424,7 @@ private:
     long m_resourceLingerTimeoutMs;
     long m_interServiceTimeoutMs;
 
+    std::unique_ptr<AtomicCounter> m_heartbeatTimestamp;
     std::atomic<bool> m_driverActive;
     std::atomic<bool> m_isClosed;
     bool m_preTouchMappedMemory;
@@ -446,8 +448,6 @@ private:
 
         if (nowMs > (m_timeOfLastKeepaliveMs + KEEPALIVE_TIMEOUT_MS))
         {
-            m_driverProxy.sendClientKeepalive();
-
             if (nowMs > (m_driverProxy.timeOfLastDriverKeepalive() + m_driverTimeoutMs))
             {
                 m_driverActive = false;
@@ -455,6 +455,37 @@ private:
                 DriverTimeoutException exception(
                     "driver has been inactive for over " + std::to_string(m_driverTimeoutMs) + " ms", SOURCEINFO);
                 m_errorHandler(exception);
+            }
+
+            std::int64_t clientId = m_driverProxy.clientId();
+            if (m_heartbeatTimestamp)
+            {
+                if (HeartbeatTimestamp::isActive(
+                    m_countersReader,
+                    m_heartbeatTimestamp->id(),
+                    HeartbeatTimestamp::CLIENT_HEARTBEAT_TYPE_ID,
+                    clientId))
+                {
+                    m_heartbeatTimestamp->setOrdered(nowMs);
+                }
+                else
+                {
+                    closeAllResources(nowMs);
+
+                    AeronException exception("client heartbeat timestamp not active", SOURCEINFO);
+                    m_errorHandler(exception);
+                }
+            }
+            else
+            {
+                std::int32_t counterId = HeartbeatTimestamp::findCounterIdByRegistrationId(
+                    m_countersReader, HeartbeatTimestamp::CLIENT_HEARTBEAT_TYPE_ID, clientId);
+
+                if (CountersReader::NULL_COUNTER_ID != counterId)
+                {
+                    m_heartbeatTimestamp.reset(new AtomicCounter(m_counterValuesBuffer, counterId));
+                    m_heartbeatTimestamp->setOrdered(nowMs);
+                }
             }
 
             m_timeOfLastKeepaliveMs = nowMs;

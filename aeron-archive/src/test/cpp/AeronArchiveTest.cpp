@@ -156,7 +156,7 @@ public:
     {
         std::int32_t counterId;
         while (CountersReader::NULL_COUNTER_ID ==
-            (counterId = RecordingPos::findCounterIdBySession(countersReader, sessionId)))
+            (counterId = RecordingPos::findCounterIdBySessionId(countersReader, sessionId)))
         {
             std::this_thread::yield();
         }

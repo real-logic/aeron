@@ -63,7 +63,7 @@ struct RecordingPosKeyDefn
  * @param recordingId    for the active recording.
  * @return the counter id if found otherwise #NULL_COUNTER_ID.
  */
-inline static std::int32_t findCounterIdByRecording(CountersReader& countersReader, std::int64_t recordingId)
+inline static std::int32_t findCounterIdByRecordingId(CountersReader& countersReader, std::int64_t recordingId)
 {
     AtomicBuffer buffer = countersReader.metaDataBuffer();
 
@@ -93,7 +93,7 @@ inline static std::int32_t findCounterIdByRecording(CountersReader& countersRead
  * @param sessionId      for the active recording.
  * @return the counter id if found otherwise #NULL_COUNTER_ID.
  */
-inline static std::int32_t findCounterIdBySession(CountersReader& countersReader, std::int32_t sessionId)
+inline static std::int32_t findCounterIdBySessionId(CountersReader& countersReader, std::int32_t sessionId)
 {
     AtomicBuffer buffer = countersReader.metaDataBuffer();
 

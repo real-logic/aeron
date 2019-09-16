@@ -89,6 +89,11 @@ public abstract class SubscriptionLink implements DriverManagedResource
         return true;
     }
 
+    public boolean isRejoin()
+    {
+        return true;
+    }
+
     public boolean isTether()
     {
         return isTether;
@@ -178,6 +183,7 @@ public abstract class SubscriptionLink implements DriverManagedResource
 class NetworkSubscriptionLink extends SubscriptionLink
 {
     private final boolean isReliable;
+    private final boolean isRejoin;
     private final ReceiveChannelEndpoint channelEndpoint;
 
     NetworkSubscriptionLink(
@@ -191,12 +197,18 @@ class NetworkSubscriptionLink extends SubscriptionLink
         super(registrationId, streamId, channelUri, aeronClient, params);
 
         this.isReliable = params.isReliable;
+        this.isRejoin = params.isRejoin;
         this.channelEndpoint = channelEndpoint;
     }
 
     public boolean isReliable()
     {
         return isReliable;
+    }
+
+    public boolean isRejoin()
+    {
+        return isRejoin;
     }
 
     public ReceiveChannelEndpoint channelEndpoint()

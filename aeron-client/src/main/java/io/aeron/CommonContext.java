@@ -247,6 +247,12 @@ public class CommonContext implements Cloneable
     public static final String GROUP_PARAM_NAME = "group";
 
     /**
+     * Parameter name for Subscription URI param to indicate if Images that go unavailable should be allowed to
+     * rejoin after a short cooldown or not.
+     */
+    public static final String REJOIN_PARAM_NAME = "rejoin";
+
+    /**
      * Using an integer because there is no support for boolean. 1 is concluded, 0 is not concluded.
      */
     private static final AtomicIntegerFieldUpdater<CommonContext> IS_CONCLUDED_UPDATER = newUpdater(

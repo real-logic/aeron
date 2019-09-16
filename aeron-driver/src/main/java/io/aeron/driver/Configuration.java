@@ -628,6 +628,11 @@ public class Configuration
      */
     public static final String TERMINATION_VALIDATOR_PROP_NAME = "aeron.driver.termination.validator";
 
+    /**
+     * Property name for default boolean value for if a stream is rejoinable. True to allow rejoin, false to not.
+     */
+    public static final String REJOIN_STREAM_PROP_NAME = "aeron.rejoin.stream";
+
     public static boolean printConfigurationOnStart()
     {
         return "true".equalsIgnoreCase(getProperty(PRINT_CONFIGURATION_ON_START_PROP_NAME, "false"));
@@ -748,6 +753,11 @@ public class Configuration
     {
         return getDurationInNanos(
             UNTETHERED_RESTING_TIMEOUT_PROP_NAME, UNTETHERED_RESTING_TIMEOUT_DEFAULT_NS);
+    }
+
+    public static boolean rejoinStream()
+    {
+        return "true".equalsIgnoreCase(getProperty(REJOIN_STREAM_PROP_NAME, "true"));
     }
 
     /**

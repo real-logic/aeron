@@ -55,6 +55,7 @@ public class ChannelUriStringBuilder
     private Boolean eos;
     private Boolean tether;
     private Boolean group;
+    private Boolean rejoin;
     private boolean isSessionIdTagged;
 
     /**
@@ -85,6 +86,7 @@ public class ChannelUriStringBuilder
         eos = null;
         tether = null;
         group = null;
+        rejoin = null;
         isSessionIdTagged = false;
 
         return this;
@@ -750,6 +752,30 @@ public class ChannelUriStringBuilder
     }
 
     /**
+     * Set the subscription semantics for if a stream should be rejoined after going unavailable.
+     *
+     * @param rejoin false if stream is not to be rejoined.
+     * @return this for a fluent API.
+     * @see CommonContext#REJOIN_PARAM_NAME
+     */
+    public ChannelUriStringBuilder rejoin(final Boolean rejoin)
+    {
+        this.rejoin = rejoin;
+        return this;
+    }
+
+    /**
+     * Get the subscription semantics for if a stream should be rejoined after going unavailable.
+     *
+     * @return the subscription semantics for if a stream should be rejoined after going unavailable.
+     * @see CommonContext#REJOIN_PARAM_NAME
+     */
+    public Boolean rejoin()
+    {
+        return rejoin;
+    }
+
+    /**
      * Initialise a channel for restarting a publication at a given position.
      *
      * @param position      at which the publication should be started.
@@ -884,6 +910,11 @@ public class ChannelUriStringBuilder
         if (null != group)
         {
             sb.append(GROUP_PARAM_NAME).append('=').append(group).append('|');
+        }
+
+        if (null != rejoin)
+        {
+            sb.append(REJOIN_PARAM_NAME).append('=').append(rejoin).append('|');
         }
 
         final char lastChar = sb.charAt(sb.length() - 1);

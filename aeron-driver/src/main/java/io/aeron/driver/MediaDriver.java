@@ -421,6 +421,7 @@ public final class MediaDriver implements AutoCloseable
         private boolean spiesSimulateConnection = Configuration.spiesSimulateConnection();
         private boolean reliableStream = Configuration.reliableStream();
         private boolean tetherSubscriptions = Configuration.tetherSubscriptions();
+        private boolean rejoinStream = Configuration.rejoinStream();
 
         private long lowStorageWarningThreshold = Configuration.lowStorageWarningThreshold();
         private long timerIntervalNs = Configuration.timerIntervalNs();
@@ -1465,6 +1466,36 @@ public final class MediaDriver implements AutoCloseable
         public Context receiverGroupConsideration(final InferableBoolean receiverGroupConsideration)
         {
             this.receiverGroupConsideration = receiverGroupConsideration;
+            return this;
+        }
+
+        /**
+         * Does a subscription attempt to rejoin an unavailable stream after a cooldown or not.
+         * <p>
+         * The default can be overridden with a channel param.
+         *
+         * @return true if subscription will rejoin after cooldown or false if not.
+         * @see Configuration#REJOIN_STREAM_PROP_NAME
+         * @see CommonContext#REJOIN_PARAM_NAME
+         */
+        public boolean rejoinStream()
+        {
+            return rejoinStream;
+        }
+
+        /**
+         * Does a subscription attempt to rejoin an unavailable stream after a cooldown or not.
+         * <p>
+         * The default can be overridden with a channel param.
+         *
+         * @param rejoinStream true if subscription will rejoin after cooldown or false if not.
+         * @return this for a fluent API.
+         * @see Configuration#REJOIN_STREAM_PROP_NAME
+         * @see CommonContext#REJOIN_PARAM_NAME
+         */
+        public Context rejoinStream(final boolean rejoinStream)
+        {
+            this.reliableStream = rejoinStream;
             return this;
         }
 

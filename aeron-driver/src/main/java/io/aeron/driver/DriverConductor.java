@@ -490,17 +490,23 @@ public class DriverConductor implements Agent
 
     void transitionToLinger(final PublicationImage image)
     {
+        boolean rejoin = true;
+
         for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
         {
             final SubscriptionLink link = subscriptionLinks.get(i);
             if (link.isLinked(image))
             {
+                rejoin = link.isRejoin();
                 clientProxy.onUnavailableImage(
                     image.correlationId(), link.registrationId(), image.streamId(), image.channel());
             }
         }
 
-        receiverProxy.removeCoolDown(image.channelEndpoint(), image.sessionId(), image.streamId());
+        if (rejoin)
+        {
+            receiverProxy.removeCoolDown(image.channelEndpoint(), image.sessionId(), image.streamId());
+        }
     }
 
     void transitionToLinger(final IpcPublication publication)
@@ -1257,6 +1263,7 @@ public class DriverConductor implements Agent
         if (null != channelEndpoint)
         {
             final boolean isReliable = params.isReliable;
+            final boolean isRejoin = params.isRejoin;
             final ArrayList<SubscriptionLink> existingLinks = subscriptionLinks;
             for (int i = 0, size = existingLinks.size(); i < size; i++)
             {
@@ -1265,6 +1272,12 @@ public class DriverConductor implements Agent
                 {
                     throw new IllegalStateException(
                         "option conflicts with existing subscriptions: reliable=" + isReliable);
+                }
+
+                if (isRejoin != subscription.isRejoin() && subscription.matches(channelEndpoint, streamId, params))
+                {
+                    throw new IllegalStateException(
+                        "option conflicts with existing subscriptions: rejoin=" + isRejoin);
                 }
             }
         }

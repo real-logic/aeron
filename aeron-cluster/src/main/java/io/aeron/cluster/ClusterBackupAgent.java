@@ -210,6 +210,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
         snapshotsRetrieved.clear();
         leaderLogEntry = null;
         leaderLastTermEntry = null;
+        clusterMembersStatusEndpointsCursor = NULL_VALUE;
 
         if (null != recordingLog)
         {

@@ -17,9 +17,11 @@
 @echo off
 "%JAVA_HOME%\bin\java" ^
     -cp ..\build\libs\samples.jar ^
-    -XX:+UnlockDiagnosticVMOptions ^
-    -XX:GuaranteedSafepointInterval=300000 ^
     -XX:BiasedLockingStartupDelay=0 ^
+    -XX:+UnlockExperimentalVMOptions ^
+    -XX:+TrustFinalNonStaticFields ^
+    -XX:+UseParallelOldGC ^
+    -XX:GuaranteedSafepointInterval=300000 ^
     -Djava.net.preferIPv4Stack=true ^
     -Dagrona.disable.bounds.checks=true ^
     -Daeron.pre.touch.mapped.memory=true ^

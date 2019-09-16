@@ -17,6 +17,10 @@
 @echo off
 "%JAVA_HOME%\bin\java" ^
     -cp ..\build\libs\samples.jar ^
+    -XX:BiasedLockingStartupDelay=0 ^
+    -XX:+UnlockExperimentalVMOptions ^
+    -XX:+TrustFinalNonStaticFields ^
+    -XX:+UseParallelOldGC ^
     -Dagrona.disable.bounds.checks=true ^
     -Daeron.sample.frameCountLimit=256 ^
     %JVM_OPTS% io.aeron.samples.RateSubscriber

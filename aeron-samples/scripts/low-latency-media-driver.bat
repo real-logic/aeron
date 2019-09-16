@@ -17,8 +17,10 @@
 @echo off
 "%JAVA_HOME%\bin\java" ^
     -cp ..\..\aeron-samples\build\libs\samples.jar ^
-    -XX:+UnlockDiagnosticVMOptions ^
-    -XX:GuaranteedSafepointInterval=300000 ^
     -XX:BiasedLockingStartupDelay=0 ^
+    -XX:+UnlockExperimentalVMOptions ^
+    -XX:+TrustFinalNonStaticFields ^
+    -XX:+UseParallelOldGC ^
+    -XX:GuaranteedSafepointInterval=300000 ^
     %JVM_OPTS% io.aeron.driver.MediaDriver ^
     low-latency.properties %*

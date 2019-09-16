@@ -17,7 +17,10 @@
 
 ${JAVA_HOME}/bin/java \
     -cp ../../build/libs/samples.jar \
-    -XX:+UnlockDiagnosticVMOptions \
+    -XX:+UnlockExperimentalVMOptions \
+    -XX:+TrustFinalNonStaticFields \
+    -XX:BiasedLockingStartupDelay=0 \
+    -XX:+UseParallelOldGC \
     -XX:GuaranteedSafepointInterval=300000 \
     -XX:BiasedLockingStartupDelay=0 \
     ${JVM_OPTS} io.aeron.archive.ArchivingMediaDriver "$@"

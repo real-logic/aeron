@@ -58,6 +58,7 @@ aeron_uri_params_t;
 #define AERON_URI_TAGS_KEY "tags"
 #define AERON_URI_SESSION_ID_KEY "session-id"
 #define AERON_URI_GROUP_KEY "group"
+#define AERON_URI_REJOIN_KEY "rejoin"
 
 typedef struct aeron_uri_publication_params_stct
 {
@@ -78,6 +79,7 @@ typedef struct aeron_uri_subscription_params_stct
     bool is_reliable;
     bool is_sparse;
     bool is_tether;
+    bool is_rejoin;
     aeron_inferable_boolean_t group;
 }
 aeron_uri_subscription_params_t;

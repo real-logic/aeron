@@ -599,6 +599,14 @@ int aeron_driver_context_set_receiver_group_consideration(
     aeron_driver_context_t *context, aeron_inferable_boolean_t value);
 aeron_inferable_boolean_t aeron_driver_context_get_receiver_group_consideration(aeron_driver_context_t *context);
 
+/**
+ * Property name for default boolean value for if a stream is rejoinable. True to allow rejoin, false to not.
+ * */
+#define AERON_REJOIN_STREAM_ENV_VAR "AERON_REJOIN_STREAM"
+
+int aeron_driver_context_set_rejoin_stream(aeron_driver_context_t *context, bool value);
+bool aeron_driver_context_get_rejoin_stream(aeron_driver_context_t *context);
+
 #define AERON_IPC_CHANNEL "aeron:ipc"
 #define AERON_IPC_CHANNEL_LEN strlen(AERON_IPC_CHANNEL)
 #define AERON_SPY_PREFIX "aeron-spy:"

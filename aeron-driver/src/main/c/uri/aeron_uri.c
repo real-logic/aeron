@@ -549,6 +549,7 @@ int aeron_uri_subscription_params(
     params->is_reliable = context->reliable_stream;
     params->is_sparse = context->term_buffer_sparse_file;
     params->is_tether = context->tether_subscriptions;
+    params->is_rejoin = context->rejoin_stream;
 
     const char *value_str;
     aeron_uri_params_t *uri_params = AERON_URI_IPC == uri->type ?
@@ -574,6 +575,12 @@ int aeron_uri_subscription_params(
 
     params->group = aeron_config_parse_inferable_boolean(
         aeron_uri_find_param_value(uri_params, AERON_URI_GROUP_KEY), context->receiver_group_consideration);
+
+    if ((value_str = aeron_uri_find_param_value(uri_params, AERON_URI_REJOIN_KEY)) != NULL &&
+        strncmp("false", value_str, strlen("false")) == 0)
+    {
+        params->is_rejoin = false;
+    }
 
     return 0;
 }

@@ -331,6 +331,7 @@ static void aeron_driver_conductor_to_client_interceptor_null(
 #define AERON_NAK_UNICAST_DELAY_NS_DEFAULT (60 * 1000 * 1000LL)
 #define AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_DEFAULT ("default")
 #define AERON_RECEIVER_GROUP_CONSIDERATION_DEFAULT (AERON_INFER)
+#define AERON_REJOIN_STREAM_DEFAULT (true)
 
 int aeron_driver_context_init(aeron_driver_context_t **context)
 {
@@ -417,6 +418,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->print_configuration_on_start = AERON_PRINT_CONFIGURATION_DEFAULT;
     _context->reliable_stream = AERON_RELIABLE_STREAM_DEFAULT;
     _context->tether_subscriptions = AERON_TETHER_SUBSCRIPTIONS_DEFAULT;
+    _context->rejoin_stream = AERON_REJOIN_STREAM_DEFAULT;
     _context->driver_timeout_ms = AERON_DRIVER_TIMEOUT_MS_DEFAULT;
     _context->to_driver_buffer_length = AERON_TO_CONDUCTOR_BUFFER_LENGTH_DEFAULT;
     _context->to_clients_buffer_length = AERON_TO_CLIENTS_BUFFER_LENGTH_DEFAULT;
@@ -525,6 +527,10 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->tether_subscriptions = aeron_config_parse_bool(
         getenv(AERON_TETHER_SUBSCRIPTIONS_ENV_VAR),
         _context->tether_subscriptions);
+
+    _context->rejoin_stream = aeron_config_parse_bool(
+        getenv(AERON_REJOIN_STREAM_ENV_VAR),
+        _context->rejoin_stream);
 
     _context->to_driver_buffer_length = aeron_config_parse_size64(
         AERON_TO_CONDUCTOR_BUFFER_LENGTH_ENV_VAR,
@@ -1987,4 +1993,17 @@ int aeron_driver_context_set_receiver_group_consideration(
 aeron_inferable_boolean_t aeron_driver_context_get_receiver_group_consideration(aeron_driver_context_t *context)
 {
     return NULL != context ? context->receiver_group_consideration : AERON_RECEIVER_GROUP_CONSIDERATION_DEFAULT;
+}
+
+int aeron_driver_context_set_rejoin_stream(aeron_driver_context_t *context, bool value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->rejoin_stream = value;
+    return 0;
+}
+
+bool aeron_driver_context_get_rejoin_stream(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->rejoin_stream : AERON_REJOIN_STREAM_DEFAULT;
 }

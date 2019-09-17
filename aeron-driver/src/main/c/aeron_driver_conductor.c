@@ -607,12 +607,16 @@ void aeron_driver_conductor_image_transition_to_linger(
 {
     if (NULL != image->endpoint)
     {
+        bool rejoin = true;
+
         for (size_t i = 0, size = conductor->network_subscriptions.length; i < size; i++)
         {
             aeron_subscription_link_t *link = &conductor->network_subscriptions.array[i];
 
             if (aeron_driver_conductor_is_subscribable_linked(link, &image->conductor_fields.subscribable))
             {
+                rejoin = link->is_rejoin;
+
                 aeron_driver_conductor_on_unavailable_image(
                     conductor,
                     image->conductor_fields.managed_resource.registration_id,
@@ -623,8 +627,11 @@ void aeron_driver_conductor_image_transition_to_linger(
             }
         }
 
-        aeron_driver_receiver_proxy_on_remove_cool_down(
-            conductor->context->receiver_proxy, image->endpoint, image->session_id, image->stream_id);
+        if (rejoin)
+        {
+            aeron_driver_receiver_proxy_on_remove_cool_down(
+                conductor->context->receiver_proxy, image->endpoint, image->session_id, image->stream_id);
+        }
     }
 }
 
@@ -2018,6 +2025,7 @@ int aeron_driver_conductor_on_add_ipc_subscription(
     link->client_id = command->correlated.client_id;
     link->registration_id = command->correlated.correlation_id;
     link->is_reliable = true;
+    link->is_rejoin = true;
     link->group = AERON_INFER;
     link->is_sparse = params.is_sparse;
     link->is_tether = params.is_tether;
@@ -2104,6 +2112,7 @@ int aeron_driver_conductor_on_add_spy_subscription(
     link->is_reliable = params.is_reliable;
     link->is_sparse = params.is_sparse;
     link->is_tether = params.is_tether;
+    link->is_rejoin = params.is_rejoin;
     link->group = AERON_INFER;
     link->subscribable_list.length = 0;
     link->subscribable_list.capacity = 0;
@@ -2159,10 +2168,14 @@ int aeron_driver_conductor_on_add_network_subscription(
     }
 
     bool is_reliable = params.is_reliable;
-    if (aeron_driver_conductor_has_clashing_subscription(conductor, endpoint, command->stream_id, is_reliable))
+    bool is_rejoin = params.is_reliable;
+    if (aeron_driver_conductor_has_clashing_subscription(
+        conductor, endpoint, command->stream_id, is_reliable, is_rejoin))
     {
         aeron_set_err(
-            EINVAL, "option conflicts with existing subscriptions: reliable=%s", is_reliable ? "true" : "false");
+            EINVAL, "option conflicts with existing subscriptions: reliable=%s rejoin=%s",
+            is_reliable ? "true" : "false",
+            is_rejoin ? "true" : "false");
         return -1;
     }
 
@@ -2204,6 +2217,7 @@ int aeron_driver_conductor_on_add_network_subscription(
         link->is_reliable = params.is_reliable;
         link->is_sparse = params.is_sparse;
         link->is_tether = params.is_tether;
+        link->is_rejoin = params.is_rejoin;
         link->group = params.group;
         link->subscribable_list.length = 0;
         link->subscribable_list.capacity = 0;
@@ -2783,7 +2797,8 @@ extern bool aeron_driver_conductor_has_clashing_subscription(
     aeron_driver_conductor_t *conductor,
     const aeron_receive_channel_endpoint_t *endpoint,
     int32_t stream_id,
-    bool is_reliable);
+    bool is_reliable,
+    bool is_rejoin);
 
 extern bool aeron_driver_conductor_is_oldest_subscription_sparse(
     aeron_driver_conductor_t *conductor,

@@ -146,7 +146,10 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
             CloseHelper.close(memberStatusSubscription);
             CloseHelper.close(memberStatusPublication);
         }
-
+        if (NULL_VALUE != liveLogReplaySubscriptionId)
+        {
+            backupArchive.stopRecording(liveLogReplaySubscriptionId);
+        }
         CloseHelper.close(backupArchive);
         CloseHelper.close(clusterArchive);
         CloseHelper.close(recordingLog);

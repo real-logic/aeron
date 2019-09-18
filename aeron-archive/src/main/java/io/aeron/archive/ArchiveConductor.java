@@ -914,9 +914,6 @@ abstract class ArchiveConductor
 
     private ChannelUriStringBuilder strippedChannelBuilder(final ChannelUri channelUri)
     {
-        final String sessionIdStr = channelUri.get(CommonContext.SESSION_ID_PARAM_NAME);
-        final String eosStr = channelUri.get(CommonContext.EOS_PARAM_NAME);
-
         channelBuilder
             .clear()
             .media(channelUri.media())
@@ -926,6 +923,7 @@ abstract class ArchiveConductor
             .tags(channelUri.get(CommonContext.TAGS_PARAM_NAME))
             .alias(channelUri.get(CommonContext.ALIAS_PARAM_NAME));
 
+        final String sessionIdStr = channelUri.get(CommonContext.SESSION_ID_PARAM_NAME);
         if (null != sessionIdStr)
         {
             if (ChannelUri.isTagged(sessionIdStr))
@@ -938,9 +936,16 @@ abstract class ArchiveConductor
             }
         }
 
+        final String eosStr = channelUri.get(CommonContext.EOS_PARAM_NAME);
         if (null != eosStr)
         {
             channelBuilder.eos(Boolean.valueOf(eosStr));
+        }
+
+        final String rejoinStr = channelUri.get(CommonContext.REJOIN_PARAM_NAME);
+        if (null != rejoinStr)
+        {
+            channelBuilder.rejoin(Boolean.valueOf(rejoinStr));
         }
 
         return channelBuilder;

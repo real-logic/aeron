@@ -40,6 +40,30 @@ static int64_t aeron_driver_conductor_null_epoch_clock()
     return 0;
 }
 
+static bool aeron_driver_conductor_has_clashing_subscription(
+    aeron_driver_conductor_t *conductor,
+    const aeron_receive_channel_endpoint_t *endpoint,
+    int32_t stream_id,
+    aeron_uri_subscription_params_t *params)
+{
+    for (size_t i = 0, length = conductor->network_subscriptions.length; i < length; i++)
+    {
+        aeron_subscription_link_t *link = &conductor->network_subscriptions.array[i];
+
+        if (endpoint == link->endpoint && stream_id == link->stream_id && params->is_reliable != link->is_reliable)
+        {
+            return true;
+        }
+
+        if (endpoint == link->endpoint && stream_id == link->stream_id && params->is_rejoin != link->is_rejoin)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_driver_context_t *context)
 {
     if (aeron_mpsc_rb_init(
@@ -2167,15 +2191,12 @@ int aeron_driver_conductor_on_add_network_subscription(
         return -1;
     }
 
-    bool is_reliable = params.is_reliable;
-    bool is_rejoin = params.is_reliable;
-    if (aeron_driver_conductor_has_clashing_subscription(
-        conductor, endpoint, command->stream_id, is_reliable, is_rejoin))
+    if (aeron_driver_conductor_has_clashing_subscription(conductor, endpoint, command->stream_id, &params))
     {
         aeron_set_err(
             EINVAL, "option conflicts with existing subscriptions: reliable=%s rejoin=%s",
-            is_reliable ? "true" : "false",
-            is_rejoin ? "true" : "false");
+            params.is_reliable ? "true" : "false",
+            params.is_rejoin ? "true" : "false");
         return -1;
     }
 
@@ -2792,13 +2813,6 @@ extern bool aeron_driver_conductor_is_subscribable_linked(
 
 extern bool aeron_driver_conductor_has_network_subscription_interest(
     aeron_driver_conductor_t *conductor, const aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);
-
-extern bool aeron_driver_conductor_has_clashing_subscription(
-    aeron_driver_conductor_t *conductor,
-    const aeron_receive_channel_endpoint_t *endpoint,
-    int32_t stream_id,
-    bool is_reliable,
-    bool is_rejoin);
 
 extern bool aeron_driver_conductor_is_oldest_subscription_sparse(
     aeron_driver_conductor_t *conductor,

@@ -20,7 +20,8 @@
     -XX:BiasedLockingStartupDelay=0 ^
     -XX:+UnlockExperimentalVMOptions ^
     -XX:+TrustFinalNonStaticFields ^
-    -XX:+UseParallelOldGC ^
+    -XX:+UnlockDiagnosticVMOptions ^
     -XX:GuaranteedSafepointInterval=300000 ^
+    -XX:+UseParallelOldGC ^
     %JVM_OPTS% io.aeron.driver.MediaDriver ^
     low-latency.properties %*

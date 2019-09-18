@@ -19,8 +19,9 @@ ${JAVA_HOME}/bin/java \
     -cp ../build/libs/samples.jar \
     -XX:+UnlockExperimentalVMOptions \
     -XX:+TrustFinalNonStaticFields \
+    -XX:+UnlockDiagnosticVMOptions \
+    -XX:GuaranteedSafepointInterval=300000 \
     -XX:BiasedLockingStartupDelay=0 \
     -XX:+UseParallelOldGC \
-    -XX:GuaranteedSafepointInterval=300000 \
     ${JVM_OPTS} io.aeron.driver.MediaDriver \
     low-latency.properties "$@"

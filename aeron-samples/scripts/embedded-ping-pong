@@ -17,9 +17,10 @@
 
 ${JAVA_HOME}/bin/java \
     -cp ../build/libs/samples.jar \
+    -XX:+UnlockExperimentalVMOptions \
+    -XX:+TrustFinalNonStaticFields \
     -XX:+UnlockDiagnosticVMOptions \
     -XX:GuaranteedSafepointInterval=300000 \
-    -XX:+TrustFinalNonStaticFields \
     -XX:BiasedLockingStartupDelay=0 \
     -XX:+UseParallelOldGC \
     -Djava.net.preferIPv4Stack=true \

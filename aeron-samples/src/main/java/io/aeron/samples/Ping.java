@@ -90,6 +90,7 @@ public class Ping
             for (int i = 0; i < WARMUP_NUMBER_OF_ITERATIONS; i++)
             {
                 roundTripMessages(fragmentHandler, publication, subscription, WARMUP_NUMBER_OF_MESSAGES);
+                Thread.yield();
             }
 
             Thread.sleep(100);

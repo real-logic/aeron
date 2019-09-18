@@ -17,9 +17,11 @@
 
 ${JAVA_HOME}/bin/java \
     -cp ../build/libs/samples.jar \
+    -XX:+UnlockExperimentalVMOptions \
+    -XX:+TrustFinalNonStaticFields \
     -XX:+UnlockDiagnosticVMOptions \
     -XX:GuaranteedSafepointInterval=300000 \
-    -XX:+TrustFinalNonStaticFields \
+    -XX:+UseParallelOldGC \
     -Dagrona.disable.bounds.checks=true \
     -Daeron.pre.touch.mapped.memory=true \
     -Daeron.sample.exclusive.publications=true \

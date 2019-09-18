@@ -71,7 +71,7 @@ public class SampleConfiguration
         IDLE_STRATEGY_NAME = System.getProperty(IDLE_STRATEGY_PROP, "org.agrona.concurrent.BusySpinIdleStrategy");
         LINGER_TIMEOUT_MS = Long.getLong(LINGER_TIMEOUT_MS_PROP, 0);
         PING_STREAM_ID = Integer.getInteger(PING_STREAM_ID_PROP, 10);
-        PONG_STREAM_ID = Integer.getInteger(PONG_STREAM_ID_PROP, 10);
+        PONG_STREAM_ID = Integer.getInteger(PONG_STREAM_ID_PROP, 11);
         FRAGMENT_COUNT_LIMIT = Integer.getInteger(FRAME_COUNT_LIMIT_PROP, 10);
         MESSAGE_LENGTH = Integer.getInteger(MESSAGE_LENGTH_PROP, 32);
         RANDOM_MESSAGE_LENGTH = Boolean.getBoolean(RANDOM_MESSAGE_LENGTH_PROP);

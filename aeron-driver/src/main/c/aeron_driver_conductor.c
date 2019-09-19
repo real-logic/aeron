@@ -52,11 +52,15 @@ static bool aeron_driver_conductor_has_clashing_subscription(
 
         if (endpoint == link->endpoint && stream_id == link->stream_id && params->is_reliable != link->is_reliable)
         {
+            const char *value = params->is_reliable ? "true" : "false";
+            aeron_set_err(EINVAL, "option conflicts with existing subscriptions: reliable=%s", value);
             return true;
         }
 
         if (endpoint == link->endpoint && stream_id == link->stream_id && params->is_rejoin != link->is_rejoin)
         {
+            const char *value = params->is_rejoin ? "true" : "false";
+            aeron_set_err(EINVAL, "option conflicts with existing subscriptions: rejoin=%s", value);
             return true;
         }
     }
@@ -2184,7 +2188,7 @@ int aeron_driver_conductor_on_add_network_subscription(
     size_t uri_length = command->channel_length;
     const char *uri = (const char *)command + sizeof(aeron_subscription_command_t);
     aeron_uri_subscription_params_t params;
-    
+
     if (aeron_udp_channel_parse(uri_length, uri, &udp_channel) < 0 ||
         aeron_uri_subscription_params(&udp_channel->uri, &params, conductor) < 0)
     {
@@ -2193,10 +2197,6 @@ int aeron_driver_conductor_on_add_network_subscription(
 
     if (aeron_driver_conductor_has_clashing_subscription(conductor, endpoint, command->stream_id, &params))
     {
-        aeron_set_err(
-            EINVAL, "option conflicts with existing subscriptions: reliable=%s rejoin=%s",
-            params.is_reliable ? "true" : "false",
-            params.is_rejoin ? "true" : "false");
         return -1;
     }
 

@@ -50,18 +50,21 @@ static bool aeron_driver_conductor_has_clashing_subscription(
     {
         aeron_subscription_link_t *link = &conductor->network_subscriptions.array[i];
 
-        if (endpoint == link->endpoint && stream_id == link->stream_id && params->is_reliable != link->is_reliable)
+        if (endpoint == link->endpoint && stream_id == link->stream_id)
         {
-            const char *value = params->is_reliable ? "true" : "false";
-            aeron_set_err(EINVAL, "option conflicts with existing subscriptions: reliable=%s", value);
-            return true;
-        }
+            if (params->is_reliable != link->is_reliable)
+            {
+                const char *value = params->is_reliable ? "true" : "false";
+                aeron_set_err(EINVAL, "option conflicts with existing subscriptions: reliable=%s", value);
+                return true;
+            }
 
-        if (endpoint == link->endpoint && stream_id == link->stream_id && params->is_rejoin != link->is_rejoin)
-        {
-            const char *value = params->is_rejoin ? "true" : "false";
-            aeron_set_err(EINVAL, "option conflicts with existing subscriptions: rejoin=%s", value);
-            return true;
+            if (params->is_rejoin != link->is_rejoin)
+            {
+                const char *value = params->is_rejoin ? "true" : "false";
+                aeron_set_err(EINVAL, "option conflicts with existing subscriptions: rejoin=%s", value);
+                return true;
+            }
         }
     }
 

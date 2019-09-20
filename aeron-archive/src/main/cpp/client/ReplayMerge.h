@@ -94,7 +94,7 @@ public:
                 break;
 
             case State::AWAIT_CURRENT_RECORDING_POSITION:
-                workCount += awaitUpdatedRecordingPosition();
+                workCount += awaitCurrentRecordingPosition();
                 break;
 
             case State::AWAIT_STOP_REPLAY:
@@ -203,7 +203,7 @@ private:
     int awaitInitialRecordingPosition();
     int awaitReplay();
     int awaitCatchUp();
-    int awaitUpdatedRecordingPosition();
+    int awaitCurrentRecordingPosition();
     int awaitStopReplay();
 
     static bool pollForResponse(AeronArchive& archive, std::int64_t correlationId);

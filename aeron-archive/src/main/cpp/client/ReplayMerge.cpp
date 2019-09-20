@@ -49,17 +49,21 @@ ReplayMerge::ReplayMerge(
 
 ReplayMerge::~ReplayMerge()
 {
-    if (State::CLOSED == m_state)
+    if (State::CLOSED != m_state)
     {
-        if (m_isReplayActive)
+        if (!m_archive->context().aeron()->isClosed())
         {
-            m_isReplayActive = false;
-            m_archive->stopReplay(m_replaySessionId);
-        }
+            if (State::MERGED != m_state && State::AWAIT_STOP_REPLAY != m_state)
+            {
+                m_subscription->removeDestination(m_replayDestination);
+            }
 
-        if (State::MERGED != m_state)
-        {
-            m_subscription->removeDestination(m_replayDestination);
+            if (m_isReplayActive)
+            {
+                m_isReplayActive = false;
+                const std::int64_t correlationId = m_archive->context().aeron()->nextCorrelationId();
+                m_archive->archiveProxy().stopReplay(m_replaySessionId, correlationId, m_archive->controlSessionId());
+            }
         }
 
         state(State::CLOSED);
@@ -158,7 +162,7 @@ int ReplayMerge::awaitCatchUp()
     return workCount;
 }
 
-int ReplayMerge::awaitUpdatedRecordingPosition()
+int ReplayMerge::awaitCurrentRecordingPosition()
 {
     int workCount = 0;
 
@@ -180,9 +184,9 @@ int ReplayMerge::awaitUpdatedRecordingPosition()
         {
             const std::int64_t correlationId = m_archive->context().aeron()->nextCorrelationId();
 
-            if (m_archive->archiveProxy().getRecordingPosition(
-                m_recordingId, correlationId, m_archive->controlSessionId()))
+            if (m_archive->archiveProxy().getStopPosition(m_recordingId, correlationId, m_archive->controlSessionId()))
             {
+                m_isReplayActive = false;
                 m_activeCorrelationId = correlationId;
             }
         }
@@ -201,7 +205,8 @@ int ReplayMerge::awaitUpdatedRecordingPosition()
                 }
                 else if (shouldStopAndRemoveReplay(position))
                 {
-                    nextState = State::AWAIT_STOP_REPLAY;
+                    m_subscription->removeDestination(m_replayDestination);
+                    nextState = m_isReplayActive ? State::AWAIT_STOP_REPLAY : State::MERGED;
                 }
             }
 
@@ -216,29 +221,13 @@ int ReplayMerge::awaitUpdatedRecordingPosition()
 
 int ReplayMerge::awaitStopReplay()
 {
-    int workCount = 0;
+    m_isReplayActive = false;
+    const std::int64_t correlationId = m_archive->context().aeron()->nextCorrelationId();
+    m_archive->archiveProxy().stopReplay(m_replaySessionId, correlationId, m_archive->controlSessionId());
 
-    if (aeron::NULL_VALUE == m_activeCorrelationId)
-    {
-        const std::int64_t correlationId = m_archive->context().aeron()->nextCorrelationId();
+    state(State::MERGED);
 
-        if (m_archive->archiveProxy().stopReplay(m_replaySessionId, correlationId, m_archive->controlSessionId()))
-        {
-            m_activeCorrelationId = correlationId;
-            workCount += 1;
-        }
-    }
-    else if (pollForResponse(*m_archive, m_activeCorrelationId))
-    {
-        m_isReplayActive = false;
-        m_replaySessionId = aeron::NULL_VALUE;
-        m_activeCorrelationId = aeron::NULL_VALUE;
-        m_subscription->removeDestination(m_replayDestination);
-        state(State::MERGED);
-        workCount += 1;
-    }
-
-    return workCount;
+    return 1;
 }
 
 bool ReplayMerge::pollForResponse(AeronArchive& archive, std::int64_t correlationId)

@@ -146,7 +146,7 @@ class ClientCommandAdapter implements MessageHandler
                     final long channelRegistrationId = destinationMsgFlyweight.registrationCorrelationId();
                     final String channel = destinationMsgFlyweight.channel();
 
-                    conductor.onAddDestination(channelRegistrationId, channel, correlationId);
+                    conductor.onAddSendDestination(channelRegistrationId, channel, correlationId);
                     break;
                 }
 
@@ -158,7 +158,7 @@ class ClientCommandAdapter implements MessageHandler
                     final long channelRegistrationId = destinationMsgFlyweight.registrationCorrelationId();
                     final String channel = destinationMsgFlyweight.channel();
 
-                    conductor.onRemoveDestination(channelRegistrationId, channel, correlationId);
+                    conductor.onRemoveSendDestination(channelRegistrationId, channel, correlationId);
                     break;
                 }
 

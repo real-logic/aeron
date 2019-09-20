@@ -610,7 +610,7 @@ public class DriverConductor implements Agent
         clientProxy.operationSucceeded(correlationId);
     }
 
-    void onAddDestination(final long registrationId, final String destinationChannel, final long correlationId)
+    void onAddSendDestination(final long registrationId, final String destinationChannel, final long correlationId)
     {
         SendChannelEndpoint sendChannelEndpoint = null;
 
@@ -638,7 +638,7 @@ public class DriverConductor implements Agent
         clientProxy.operationSucceeded(correlationId);
     }
 
-    void onRemoveDestination(final long registrationId, final String destinationChannel, final long correlationId)
+    void onRemoveSendDestination(final long registrationId, final String destinationChannel, final long correlationId)
     {
         SendChannelEndpoint sendChannelEndpoint = null;
 
@@ -902,10 +902,8 @@ public class DriverConductor implements Agent
 
         receiveChannelEndpoint.validateAllowsDestinationControl();
 
-        final UdpChannel destinationUdpChannel = UdpChannel.parse(destinationChannel);
-
-        final ReceiveDestinationUdpTransport transport =
-            new ReceiveDestinationUdpTransport(destinationUdpChannel, ctx);
+        final UdpChannel udpChannel = UdpChannel.parse(destinationChannel);
+        final ReceiveDestinationUdpTransport transport = new ReceiveDestinationUdpTransport(udpChannel, ctx);
 
         receiverProxy.addDestination(receiveChannelEndpoint, transport);
         clientProxy.operationSucceeded(correlationId);

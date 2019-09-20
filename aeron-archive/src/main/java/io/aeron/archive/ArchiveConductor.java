@@ -369,11 +369,11 @@ abstract class ArchiveConductor
         try
         {
             final String key = makeKey(streamId, ChannelUri.parse(channel));
-            final Subscription oldSubscription = recordingSubscriptionMap.remove(key);
+            final Subscription subscription = recordingSubscriptionMap.remove(key);
 
-            if (oldSubscription != null)
+            if (subscription != null)
             {
-                oldSubscription.close();
+                subscription.close();
                 controlSession.sendOkResponse(correlationId, controlResponseProxy);
             }
             else
@@ -395,12 +395,11 @@ abstract class ArchiveConductor
         final Iterator<Map.Entry<String, Subscription>> iter = recordingSubscriptionMap.entrySet().iterator();
         while (iter.hasNext())
         {
-            final Map.Entry<String, Subscription> entry = iter.next();
-            final Subscription subscription = entry.getValue();
+            final Subscription subscription = iter.next().getValue();
             if (subscription.registrationId() == subscriptionId)
             {
-                iter.remove();
                 subscription.close();
+                iter.remove();
                 controlSession.sendOkResponse(correlationId, controlResponseProxy);
 
                 return;

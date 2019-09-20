@@ -601,6 +601,82 @@ void ClientConductor::onOperationSuccess(std::int64_t correlationId)
 {
 }
 
+void ClientConductor::onChannelEndpointErrorResponse(
+        std::int64_t offendingCommandCorrelationId, const std::string &errorMessage)
+{
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+
+    for (auto it = m_subscriptionByRegistrationId.begin(); it != m_subscriptionByRegistrationId.end();)
+    {
+        std::shared_ptr<Subscription> subscription = it->second.m_subscription.lock();
+
+        if (subscription && subscription->channelStatusId() == offendingCommandCorrelationId)
+        {
+            ChannelEndpointException exception(offendingCommandCorrelationId, errorMessage, SOURCEINFO);
+            m_errorHandler(exception);
+
+            std::pair<Image::array_t, std::size_t> imageArrayPair = subscription->closeAndRemoveImages();
+
+            auto imageArray = imageArrayPair.first;
+            lingerAllResources(m_epochClock(), imageArray);
+
+            const std::size_t length = imageArrayPair.second;
+            for (std::size_t i = 0; i < length; i++)
+            {
+                auto image = *(imageArray[i]);
+                image.close();
+
+                CallbackGuard callbackGuard(m_isInCallback);
+                it->second.m_onUnavailableImageHandler(image);
+            }
+
+            it = m_subscriptionByRegistrationId.erase(it);
+        }
+        else
+        {
+            ++it;
+        }
+    }
+
+    for (auto it = m_publicationByRegistrationId.begin(); it != m_publicationByRegistrationId.end();)
+    {
+        std::shared_ptr<Publication> publication = it->second.m_publication.lock();
+
+        if (publication && publication->channelStatusId() == offendingCommandCorrelationId)
+        {
+            ChannelEndpointException exception(offendingCommandCorrelationId, errorMessage, SOURCEINFO);
+            m_errorHandler(exception);
+
+            publication->close();
+
+            it = m_publicationByRegistrationId.erase(it);
+        }
+        else
+        {
+            ++it;
+        }
+    }
+
+    for (auto it = m_exclusivePublicationByRegistrationId.begin(); it != m_exclusivePublicationByRegistrationId.end();)
+    {
+        std::shared_ptr<ExclusivePublication> publication = it->second.m_publication.lock();
+
+        if (publication && publication->channelStatusId() == offendingCommandCorrelationId)
+        {
+            ChannelEndpointException exception(offendingCommandCorrelationId, errorMessage, SOURCEINFO);
+            m_errorHandler(exception);
+
+            publication->close();
+
+            it = m_exclusivePublicationByRegistrationId.erase(it);
+        }
+        else
+        {
+            ++it;
+        }
+    }
+}
+
 void ClientConductor::onErrorResponse(
     std::int64_t offendingCommandCorrelationId, std::int32_t errorCode, const std::string &errorMessage)
 {

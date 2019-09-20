@@ -126,11 +126,21 @@ public:
                     case ControlProtocolEvents::ON_ERROR:
                     {
                         const ErrorResponseFlyweight errorResponse(buffer, offset);
+                        const std::int32_t errorCode = errorResponse.errorCode();
 
-                        m_driverListener.onErrorResponse(
-                            errorResponse.offendingCommandCorrelationId(),
-                            errorResponse.errorCode(),
-                            errorResponse.errorMessage());
+                        if (ERROR_CODE_CHANNEL_ENDPOINT_ERROR == errorCode)
+                        {
+                            m_driverListener.onChannelEndpointErrorResponse(
+                                errorResponse.offendingCommandCorrelationId(),
+                                errorResponse.errorMessage());
+                        }
+                        else
+                        {
+                            m_driverListener.onErrorResponse(
+                                errorResponse.offendingCommandCorrelationId(),
+                                errorCode,
+                                errorResponse.errorMessage());
+                        }
                         break;
                     }
 

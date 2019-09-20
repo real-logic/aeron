@@ -165,5 +165,28 @@ public:
     }
 };
 
+class ChannelEndpointException : public AeronException
+{
+private:
+    std::int32_t m_statusIndicatorCounterId;
+
+public:
+    ChannelEndpointException(
+        std::int32_t statusIndicatorCounterId,
+        const std::string& what,
+        const std::string& function,
+        const std::string& file,
+        const int line) :
+        AeronException(what, function, file, line),
+        m_statusIndicatorCounterId(statusIndicatorCounterId)
+    {
+    }
+
+    std::int32_t statusIndicatorId() const
+    {
+        return m_statusIndicatorCounterId;
+    }
+};
+
 }}
 #endif

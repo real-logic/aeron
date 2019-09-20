@@ -183,6 +183,8 @@ public:
 
     void onOperationSuccess(std::int64_t correlationId);
 
+    void onChannelEndpointErrorResponse(
+            std::int64_t offendingCommandCorrelationId, const std::string &errorMessage);
     void onErrorResponse(
         std::int64_t offendingCommandCorrelationId, std::int32_t errorCode, const std::string &errorMessage);
 

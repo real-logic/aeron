@@ -42,6 +42,7 @@ public class ChannelUriStringBuilder
     private String controlMode;
     private String tags;
     private String alias;
+    private String cc;
     private Boolean reliable;
     private Integer ttl;
     private Integer mtu;
@@ -73,6 +74,7 @@ public class ChannelUriStringBuilder
         controlMode = null;
         tags = null;
         alias = null;
+        cc = null;
         reliable = null;
         ttl = null;
         mtu = null;
@@ -752,6 +754,30 @@ public class ChannelUriStringBuilder
     }
 
     /**
+     * Set the congestion control for a URI.
+     *
+     * @param congestionControl for the URI.
+     * @return this for a fluent API.
+     * @see CommonContext#CONGESTION_CONTROL_PARAM_NAME
+     */
+    public ChannelUriStringBuilder congestionControl(final String congestionControl)
+    {
+        this.cc = congestionControl;
+        return this;
+    }
+
+    /**
+     * Get the congestion control present in the URI.
+     *
+     * @return alias for the URI.
+     * @see CommonContext#CONGESTION_CONTROL_PARAM_NAME
+     */
+    public String congestionControl()
+    {
+        return cc;
+    }
+
+    /**
      * Set the subscription semantics for if a stream should be rejoined after going unavailable.
      *
      * @param rejoin false if stream is not to be rejoined.
@@ -915,6 +941,11 @@ public class ChannelUriStringBuilder
         if (null != rejoin)
         {
             sb.append(REJOIN_PARAM_NAME).append('=').append(rejoin).append('|');
+        }
+
+        if (null != cc)
+        {
+            sb.append(CONGESTION_CONTROL_PARAM_NAME).append('=').append(cc).append('|');
         }
 
         final char lastChar = sb.charAt(sb.length() - 1);

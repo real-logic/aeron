@@ -120,16 +120,19 @@ public class ReplayMerge implements AutoCloseable
         final State state = this.state;
         if (State.CLOSED != state)
         {
-            if (State.MERGED != state && State.AWAIT_STOP_REPLAY != state)
+            if (!archive.context().aeron().isClosed())
             {
-                subscription.removeDestination(replayDestination);
-            }
+                if (State.MERGED != state && State.AWAIT_STOP_REPLAY != state)
+                {
+                    subscription.removeDestination(replayDestination);
+                }
 
-            if (isReplayActive)
-            {
-                isReplayActive = false;
-                final long correlationId = archive.context().aeron().nextCorrelationId();
-                archive.archiveProxy().stopReplay(replaySessionId, correlationId, archive.controlSessionId());
+                if (isReplayActive)
+                {
+                    isReplayActive = false;
+                    final long correlationId = archive.context().aeron().nextCorrelationId();
+                    archive.archiveProxy().stopReplay(replaySessionId, correlationId, archive.controlSessionId());
+                }
             }
 
             state(State.CLOSED);
@@ -374,7 +377,7 @@ public class ReplayMerge implements AutoCloseable
                     else if (shouldStopAndRemoveReplay(position))
                     {
                         subscription.removeDestination(replayDestination);
-                        nextState = State.AWAIT_STOP_REPLAY;
+                        nextState = isReplayActive ? State.AWAIT_STOP_REPLAY : State.MERGED;
                     }
                 }
 
@@ -389,22 +392,19 @@ public class ReplayMerge implements AutoCloseable
 
     private int awaitStopReplay()
     {
-        if (isReplayActive)
-        {
-            final long correlationId = archive.context().aeron().nextCorrelationId();
-            archive.archiveProxy().stopReplay(replaySessionId, correlationId, archive.controlSessionId());
-            isReplayActive = false;
-        }
+        final long correlationId = archive.context().aeron().nextCorrelationId();
+        archive.archiveProxy().stopReplay(replaySessionId, correlationId, archive.controlSessionId());
+        isReplayActive = false;
 
         state(State.MERGED);
 
         return 1;
     }
 
-    private void state(final ReplayMerge.State state)
+    private void state(final ReplayMerge.State newState)
     {
-        //System.out.println(this.state + " -> " + state);
-        this.state = state;
+        //System.out.println(state + " -> " + newState);
+        state = newState;
     }
 
     private boolean shouldAddLiveDestination(final long position)

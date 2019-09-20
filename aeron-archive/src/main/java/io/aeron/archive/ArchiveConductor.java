@@ -532,7 +532,7 @@ abstract class ArchiveConductor
 
         if (position != NULL_POSITION)
         {
-            if (!validateReplayPosition(correlationId, controlSession, recordingId, position, recordingSummary))
+            if (isInvalidReplayPosition(correlationId, controlSession, recordingId, position, recordingSummary))
             {
                 return;
             }
@@ -603,7 +603,7 @@ abstract class ArchiveConductor
 
         if (position != NULL_POSITION)
         {
-            if (!validateReplayPosition(correlationId, controlSession, recordingId, position, recordingSummary))
+            if (isInvalidReplayPosition(correlationId, controlSession, recordingId, position, recordingSummary))
             {
                 return;
             }
@@ -739,10 +739,18 @@ abstract class ArchiveConductor
 
     void getRecordingPosition(final long correlationId, final ControlSession controlSession, final long recordingId)
     {
-        final RecordingSession recordingSession = recordingSessionByIdMap.get(recordingId);
-        final long position = null == recordingSession ? NULL_POSITION : recordingSession.recordingPosition().get();
+        if (catalog.hasRecording(recordingId))
+        {
+            final RecordingSession recordingSession = recordingSessionByIdMap.get(recordingId);
+            final long position = null == recordingSession ? NULL_POSITION : recordingSession.recordingPosition().get();
 
-        controlSession.sendOkResponse(correlationId, position, controlResponseProxy);
+            controlSession.sendOkResponse(correlationId, position, controlResponseProxy);
+        }
+        else
+        {
+            final String msg = "unknown recording " + recordingId;
+            controlSession.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
+        }
     }
 
     void getStopPosition(final long correlationId, final ControlSession controlSession, final long recordingId)
@@ -1228,7 +1236,7 @@ abstract class ArchiveConductor
         return recordingSummary;
     }
 
-    private boolean validateReplayPosition(
+    private boolean isInvalidReplayPosition(
         final long correlationId,
         final ControlSession controlSession,
         final long recordingId,
@@ -1241,7 +1249,7 @@ abstract class ArchiveConductor
                 " is not a multiple of FRAME_ALIGNMENT (" + FRAME_ALIGNMENT + ") for recording " + recordingId;
             controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
 
-            return false;
+            return true;
         }
 
         final long startPosition = recordingSummary.startPosition;
@@ -1251,7 +1259,7 @@ abstract class ArchiveConductor
                 ") is less than recording start position " + startPosition + " for recording " + recordingId;
             controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
 
-            return false;
+            return true;
         }
 
         final long stopPosition = recordingSummary.stopPosition;
@@ -1261,10 +1269,10 @@ abstract class ArchiveConductor
                 " must be less than highest recorded position " + stopPosition + " for recording " + recordingId;
             controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
 
-            return false;
+            return true;
         }
 
-        return true;
+        return false;
     }
 
     private File segmentFile(

@@ -74,11 +74,7 @@ public class ArchiveTest
                         final AeronArchive.Context ctx = new AeronArchive.Context().messageTimeoutNs(connectTimeoutNs);
                         final AeronArchive archive = AeronArchive.connect(ctx);
                         archiveClientQueue.add(archive);
-
-                        final long position = archive.getRecordingPosition(0L);
                         latch.countDown();
-
-                        assertEquals(AeronArchive.NULL_POSITION, position);
                     });
             }
 

@@ -2625,18 +2625,17 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         if (!channelUri.containsKey(ENDPOINT_PARAM_NAME) && UDP_MEDIA.equals(channelUri.media()))
         {
-            final ChannelUriStringBuilder builder = new ChannelUriStringBuilder().media(UDP_MEDIA);
             for (final ClusterMember member : clusterMembers)
             {
                 if (member != thisMember)
                 {
-                    publication.addDestination(builder.endpoint(member.logEndpoint()).build());
+                    publication.addDestination("aeron:udp?endpoint=" + member.logEndpoint());
                 }
             }
 
             for (final ClusterMember member : passiveMembers)
             {
-                publication.addDestination(builder.endpoint(member.logEndpoint()).build());
+                publication.addDestination("aeron:udp?endpoint=" + member.logEndpoint());
             }
         }
 

@@ -15,7 +15,9 @@
  */
 package io.aeron.driver.media;
 
+import io.aeron.driver.DriverConductorProxy;
 import io.aeron.driver.MediaDriver;
+import org.agrona.concurrent.status.AtomicCounter;
 
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
@@ -30,9 +32,24 @@ public class ReceiveDestinationUdpTransport extends UdpChannelTransport
         super(udpChannel, udpChannel.remoteData(), udpChannel.remoteData(), null, context);
     }
 
-    public void openChannel()
+    public void openChannel(final DriverConductorProxy conductorProxy, final AtomicCounter statusIndicator)
     {
-        openDatagramChannel(null);
+        if (conductorProxy.notConcurrent())
+        {
+            openDatagramChannel(statusIndicator);
+        }
+        else
+        {
+            try
+            {
+                openDatagramChannel(statusIndicator);
+            }
+            catch (final Exception ex)
+            {
+                conductorProxy.channelEndpointError(statusIndicator.id(), ex);
+                throw ex;
+            }
+        }
     }
 
     public boolean hasExplicitControl()

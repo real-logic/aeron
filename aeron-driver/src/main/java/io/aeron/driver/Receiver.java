@@ -154,6 +154,10 @@ public class Receiver implements Agent
                     0, channelEndpoint.explicitControlAddress(), 0, 0);
             }
         }
+        else
+        {
+            channelEndpoint.indicateActive();
+        }
     }
 
     public void onCloseReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
@@ -182,7 +186,7 @@ public class Receiver implements Agent
     public void onAddDestination(
         final ReceiveChannelEndpoint channelEndpoint, final ReceiveDestinationUdpTransport transport)
     {
-        transport.openChannel();
+        transport.openChannel(conductorProxy, channelEndpoint.statusIndicatorCounter());
 
         final int transportIndex = channelEndpoint.addDestination(transport);
         final SelectionKey key = dataTransportPoller.registerForRead(channelEndpoint, transport, transportIndex);

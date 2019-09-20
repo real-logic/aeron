@@ -131,6 +131,11 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         return udpChannel().originalUriString();
     }
 
+    public AtomicCounter statusIndicatorCounter()
+    {
+        return statusIndicator;
+    }
+
     public int statusIndicatorCounterId()
     {
         return statusIndicator.id();

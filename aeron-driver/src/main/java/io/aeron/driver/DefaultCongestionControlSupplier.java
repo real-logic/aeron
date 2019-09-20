@@ -15,9 +15,13 @@
  */
 package io.aeron.driver;
 
+import io.aeron.CommonContext;
+import io.aeron.driver.ext.CubicCongestionControl;
 import io.aeron.driver.media.UdpChannel;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.status.CountersManager;
+
+import java.net.InetSocketAddress;
 
 public class DefaultCongestionControlSupplier implements CongestionControlSupplier
 {
@@ -28,19 +32,47 @@ public class DefaultCongestionControlSupplier implements CongestionControlSuppli
         final int sessionId,
         final int termLength,
         final int senderMtuLength,
+        final InetSocketAddress controlAddress,
+        final InetSocketAddress sourceAddress,
         final NanoClock nanoClock,
         final MediaDriver.Context context,
         final CountersManager countersManager)
     {
-        return new StaticWindowCongestionControl(
-            registrationId,
-            udpChannel,
-            streamId,
-            sessionId,
-            termLength,
-            senderMtuLength,
-            nanoClock,
-            context,
-            countersManager);
+        final String ccStr = udpChannel.channelUri().get(CommonContext.CONGESTION_CONTROL_PARAM_NAME);
+
+        if (null == ccStr || "static".equals(ccStr))
+        {
+            return new StaticWindowCongestionControl(
+                registrationId,
+                udpChannel,
+                streamId,
+                sessionId,
+                termLength,
+                senderMtuLength,
+                controlAddress,
+                sourceAddress,
+                nanoClock,
+                context,
+                countersManager);
+        }
+        else if ("cubic".equals(ccStr))
+        {
+            return new CubicCongestionControl(
+                registrationId,
+                udpChannel,
+                streamId,
+                sessionId,
+                termLength,
+                senderMtuLength,
+                controlAddress,
+                sourceAddress,
+                nanoClock,
+                context,
+                countersManager);
+        }
+        else
+        {
+            throw new IllegalArgumentException("URI parameter not understood: cc=" + ccStr);
+        }
     }
 }

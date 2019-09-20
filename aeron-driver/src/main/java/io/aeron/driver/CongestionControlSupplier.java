@@ -19,6 +19,8 @@ import io.aeron.driver.media.UdpChannel;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.status.CountersManager;
 
+import java.net.InetSocketAddress;
+
 /**
  * Supplier of {@link CongestionControl} algorithm implementations to be used by receivers.
  */
@@ -34,6 +36,8 @@ public interface CongestionControlSupplier
      * @param sessionId       for the publication image.
      * @param termLength      for the publication image.
      * @param senderMtuLength for the publication image.
+     * @param controlAddress  for the publication image.
+     * @param sourceAddress   for the publication image.
      * @param nanoClock       for the precise timing.
      * @param context         for configuration options applied in the driver.
      * @param countersManager for the driver.
@@ -46,6 +50,8 @@ public interface CongestionControlSupplier
         int sessionId,
         int termLength,
         int senderMtuLength,
+        InetSocketAddress controlAddress,
+        InetSocketAddress sourceAddress,
         NanoClock nanoClock,
         MediaDriver.Context context,
         CountersManager countersManager);

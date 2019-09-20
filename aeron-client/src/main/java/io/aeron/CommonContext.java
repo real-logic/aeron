@@ -253,6 +253,11 @@ public class CommonContext implements Cloneable
     public static final String REJOIN_PARAM_NAME = "rejoin";
 
     /**
+     * Parameter name for Subscription URI param to indicate the congestion control to be used.
+     */
+    public static final String CONGESTION_CONTROL_PARAM_NAME = "cc";
+
+    /**
      * Using an integer because there is no support for boolean. 1 is concluded, 0 is not concluded.
      */
     private static final AtomicIntegerFieldUpdater<CommonContext> IS_CONCLUDED_UPDATER = newUpdater(

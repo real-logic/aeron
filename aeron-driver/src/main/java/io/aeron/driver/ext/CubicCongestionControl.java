@@ -77,13 +77,15 @@ public class CubicCongestionControl implements CongestionControl
     private final AtomicCounter rttIndicator;
     private final AtomicCounter windowIndicator;
 
-    CubicCongestionControl(
+    public CubicCongestionControl(
         final long registrationId,
         final UdpChannel udpChannel,
         final int streamId,
         final int sessionId,
         final int termLength,
         final int senderMtuLength,
+        final InetSocketAddress controlAddress,
+        final InetSocketAddress sourceAddress,
         final NanoClock clock,
         final MediaDriver.Context context,
         final CountersManager countersManager)

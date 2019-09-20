@@ -231,6 +231,8 @@ public class DriverConductor implements Agent
                 sessionId,
                 termBufferLength,
                 senderMtuLength,
+                controlAddress,
+                sourceAddress,
                 cachedNanoClock,
                 ctx,
                 countersManager);

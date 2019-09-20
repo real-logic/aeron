@@ -22,6 +22,8 @@ import io.aeron.driver.media.UdpChannel;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.status.CountersManager;
 
+import java.net.InetSocketAddress;
+
 /**
  * Supplier of {@link CubicCongestionControl} implementations.
  * <p>
@@ -40,6 +42,8 @@ public class CubicCongestionControlSupplier implements CongestionControlSupplier
         final int sessionId,
         final int termLength,
         final int senderMtuLength,
+        final InetSocketAddress controladdress,
+        final InetSocketAddress sourceAddress,
         final NanoClock nanoClock,
         final MediaDriver.Context context,
         final CountersManager countersManager)
@@ -51,6 +55,8 @@ public class CubicCongestionControlSupplier implements CongestionControlSupplier
             sessionId,
             termLength,
             senderMtuLength,
+            controladdress,
+            sourceAddress,
             nanoClock,
             context,
             countersManager);

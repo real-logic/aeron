@@ -118,6 +118,28 @@ public class MultiDestinationSubscriptionTest
     }
 
     @Test(timeout = 10_000)
+    public void subscriptionCloseShouldAlsoCloseMediaDriverPorts()
+    {
+        launch();
+
+        final String publicationChannelA = new ChannelUriStringBuilder()
+            .media(CommonContext.UDP_MEDIA)
+            .endpoint(UNICAST_ENDPOINT_A)
+            .build();
+
+        subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
+        subscription.addDestination(publicationChannelA);
+
+        CloseHelper.close(subscription);
+        CloseHelper.close(clientA);
+
+        clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverContextA.aeronDirectoryName()));
+        subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
+
+        subscription.addDestination(publicationChannelA);
+    }
+
+    @Test(timeout = 10_000)
     public void shouldSpinUpAndShutdownWithUnicast()
     {
         launch();

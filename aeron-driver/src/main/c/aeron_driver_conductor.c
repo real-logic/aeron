@@ -2692,6 +2692,8 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
         registration_id,
         command->term_length,
         command->mtu_length,
+        &command->control_address,
+        &command->src_address,
         conductor->context,
         &conductor->counters_manager) < 0)
     {

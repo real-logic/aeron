@@ -316,6 +316,7 @@ size_t aeron_driver_context_get_rcv_initial_window_length(aeron_driver_context_t
 
 typedef struct aeron_congestion_control_strategy_stct aeron_congestion_control_strategy_t;
 typedef struct aeron_counters_manager_stct aeron_counters_manager_t;
+struct sockaddr_storage;
 
 typedef int (*aeron_congestion_control_strategy_supplier_func_t)(
     aeron_congestion_control_strategy_t **strategy,
@@ -326,6 +327,8 @@ typedef int (*aeron_congestion_control_strategy_supplier_func_t)(
     int64_t registration_id,
     int32_t term_length,
     int32_t sender_mtu_length,
+    struct sockaddr_storage *control_address,
+    struct sockaddr_storage *src_address,
     aeron_driver_context_t *context,
     aeron_counters_manager_t *counters_manager);
 

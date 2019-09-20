@@ -101,6 +101,8 @@ int aeron_static_window_congestion_control_strategy_supplier(
     int64_t registration_id,
     int32_t term_length,
     int32_t sender_mtu_length,
+    struct sockaddr_storage *control_address,
+    struct sockaddr_storage *src_address,
     aeron_driver_context_t *context,
     aeron_counters_manager_t *counters_manager)
 {

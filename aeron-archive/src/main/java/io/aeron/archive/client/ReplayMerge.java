@@ -120,15 +120,16 @@ public class ReplayMerge implements AutoCloseable
         final State state = this.state;
         if (State.CLOSED != state)
         {
+            if (State.MERGED != state && State.AWAIT_STOP_REPLAY != state)
+            {
+                subscription.removeDestination(replayDestination);
+            }
+
             if (isReplayActive)
             {
                 isReplayActive = false;
-                archive.stopReplay(replaySessionId);
-            }
-
-            if (State.MERGED != state)
-            {
-                subscription.removeDestination(replayDestination);
+                final long correlationId = archive.context().aeron().nextCorrelationId();
+                archive.archiveProxy().stopReplay(replaySessionId, correlationId, archive.controlSessionId());
             }
 
             state(State.CLOSED);
@@ -170,7 +171,7 @@ public class ReplayMerge implements AutoCloseable
                 break;
 
             case AWAIT_CURRENT_RECORDING_POSITION:
-                workCount += awaitUpdatedRecordingPosition();
+                workCount += awaitCurrentRecordingPosition();
                 break;
 
             case AWAIT_STOP_REPLAY:
@@ -328,7 +329,7 @@ public class ReplayMerge implements AutoCloseable
         return workCount;
     }
 
-    private int awaitUpdatedRecordingPosition()
+    private int awaitCurrentRecordingPosition()
     {
         int workCount = 0;
 
@@ -351,8 +352,9 @@ public class ReplayMerge implements AutoCloseable
             {
                 final long correlationId = archive.context().aeron().nextCorrelationId();
 
-                if (archive.archiveProxy().getRecordingPosition(recordingId, correlationId, archive.controlSessionId()))
+                if (archive.archiveProxy().getStopPosition(recordingId, correlationId, archive.controlSessionId()))
                 {
+                    isReplayActive = false;
                     activeCorrelationId = correlationId;
                 }
             }
@@ -371,6 +373,7 @@ public class ReplayMerge implements AutoCloseable
                     }
                     else if (shouldStopAndRemoveReplay(position))
                     {
+                        subscription.removeDestination(replayDestination);
                         nextState = State.AWAIT_STOP_REPLAY;
                     }
                 }
@@ -386,29 +389,16 @@ public class ReplayMerge implements AutoCloseable
 
     private int awaitStopReplay()
     {
-        int workCount = 0;
-
-        if (Aeron.NULL_VALUE == activeCorrelationId)
+        if (isReplayActive)
         {
             final long correlationId = archive.context().aeron().nextCorrelationId();
-
-            if (archive.archiveProxy().stopReplay(replaySessionId, correlationId, archive.controlSessionId()))
-            {
-                activeCorrelationId = correlationId;
-                workCount += 1;
-            }
-        }
-        else if (pollForResponse(archive, activeCorrelationId))
-        {
+            archive.archiveProxy().stopReplay(replaySessionId, correlationId, archive.controlSessionId());
             isReplayActive = false;
-            replaySessionId = Aeron.NULL_VALUE;
-            activeCorrelationId = Aeron.NULL_VALUE;
-            subscription.removeDestination(replayDestination);
-            state(State.MERGED);
-            workCount += 1;
         }
 
-        return workCount;
+        state(State.MERGED);
+
+        return 1;
     }
 
     private void state(final ReplayMerge.State state)
@@ -424,7 +414,7 @@ public class ReplayMerge implements AutoCloseable
 
     private boolean shouldStopAndRemoveReplay(final long position)
     {
-        return nextTargetPosition > initialMaxPosition &&
+        return nextTargetPosition >= initialMaxPosition &&
             isLiveAdded && (nextTargetPosition - position) <= replayRemoveThreshold;
     }
 

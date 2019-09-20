@@ -355,9 +355,8 @@ public class ReplayMerge implements AutoCloseable
             {
                 final long correlationId = archive.context().aeron().nextCorrelationId();
 
-                if (archive.archiveProxy().getStopPosition(recordingId, correlationId, archive.controlSessionId()))
+                if (archive.archiveProxy().getRecordingPosition(recordingId, correlationId, archive.controlSessionId()))
                 {
-                    isReplayActive = false;
                     activeCorrelationId = correlationId;
                 }
             }
@@ -377,7 +376,7 @@ public class ReplayMerge implements AutoCloseable
                     else if (shouldStopAndRemoveReplay(position))
                     {
                         subscription.removeDestination(replayDestination);
-                        nextState = isReplayActive ? State.AWAIT_STOP_REPLAY : State.MERGED;
+                        nextState = State.AWAIT_STOP_REPLAY;
                     }
                 }
 
@@ -392,13 +391,24 @@ public class ReplayMerge implements AutoCloseable
 
     private int awaitStopReplay()
     {
-        final long correlationId = archive.context().aeron().nextCorrelationId();
-        archive.archiveProxy().stopReplay(replaySessionId, correlationId, archive.controlSessionId());
-        isReplayActive = false;
+        int workCount = 0;
 
-        state(State.MERGED);
+        if (Aeron.NULL_VALUE == activeCorrelationId)
+        {
+            final long correlationId = archive.context().aeron().nextCorrelationId();
 
-        return 1;
+            if (archive.archiveProxy().stopReplay(replaySessionId, correlationId, archive.controlSessionId()))
+            {
+                activeCorrelationId = correlationId;
+                isReplayActive = false;
+                activeCorrelationId = Aeron.NULL_VALUE;
+                state(State.MERGED);
+
+                workCount += 1;
+            }
+        }
+
+        return workCount;
     }
 
     private void state(final ReplayMerge.State newState)
@@ -414,7 +424,7 @@ public class ReplayMerge implements AutoCloseable
 
     private boolean shouldStopAndRemoveReplay(final long position)
     {
-        return nextTargetPosition >= initialMaxPosition &&
+        return nextTargetPosition > initialMaxPosition &&
             isLiveAdded && (nextTargetPosition - position) <= replayRemoveThreshold;
     }
 

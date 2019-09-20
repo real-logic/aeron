@@ -170,9 +170,8 @@ public class Receiver implements Agent
             }
         }
 
-        channelEndpoint.closeMultiRcvDestination();
+        channelEndpoint.closeMultiRcvDestination(dataTransportPoller);
         channelEndpoint.close();
-        dataTransportPoller.selectNowWithoutProcessing();
     }
 
     public void onRemoveCoolDown(final ReceiveChannelEndpoint channelEndpoint, final int sessionId, final int streamId)

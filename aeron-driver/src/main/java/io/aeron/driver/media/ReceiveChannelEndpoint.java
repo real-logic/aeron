@@ -157,11 +157,11 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         }
     }
 
-    public void closeMultiRcvDestination()
+    public void closeMultiRcvDestination(final DataTransportPoller poller)
     {
         if (null != multiRcvDestination)
         {
-            multiRcvDestination.close();
+            multiRcvDestination.close(poller);
         }
     }
 

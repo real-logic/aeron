@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
 
 import static io.aeron.driver.media.UdpChannelTransport.sendError;
 
-class MultiRcvDestination implements AutoCloseable
+class MultiRcvDestination
 {
     private static final ReceiveDestinationUdpTransport[] EMPTY_TRANSPORTS = new ReceiveDestinationUdpTransport[0];
 
@@ -40,11 +40,15 @@ class MultiRcvDestination implements AutoCloseable
         this.destinationEndpointTimeoutNs = timeoutNs;
     }
 
-    public void close()
+    public void close(final DataTransportPoller poller)
     {
         for (final ReceiveDestinationUdpTransport transport : transports)
         {
             CloseHelper.close(transport);
+            if (null != poller)
+            {
+                poller.selectNowWithoutProcessing();
+            }
         }
     }
 

@@ -59,7 +59,7 @@ public class DataTransportPoller extends UdpTransportPoller
     {
         for (final ChannelAndTransport channelEndpoint : channelAndTransports)
         {
-            channelEndpoint.channelEndpoint.closeMultiRcvDestination();
+            channelEndpoint.channelEndpoint.closeMultiRcvDestination(this);
             channelEndpoint.channelEndpoint.close();
         }
 

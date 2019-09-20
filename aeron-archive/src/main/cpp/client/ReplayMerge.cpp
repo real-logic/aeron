@@ -184,9 +184,9 @@ int ReplayMerge::awaitCurrentRecordingPosition()
         {
             const std::int64_t correlationId = m_archive->context().aeron()->nextCorrelationId();
 
-            if (m_archive->archiveProxy().getStopPosition(m_recordingId, correlationId, m_archive->controlSessionId()))
+            if (m_archive->archiveProxy().getRecordingPosition(
+                m_recordingId, correlationId, m_archive->controlSessionId()))
             {
-                m_isReplayActive = false;
                 m_activeCorrelationId = correlationId;
             }
         }
@@ -206,7 +206,7 @@ int ReplayMerge::awaitCurrentRecordingPosition()
                 else if (shouldStopAndRemoveReplay(position))
                 {
                     m_subscription->removeDestination(m_replayDestination);
-                    nextState = m_isReplayActive ? State::AWAIT_STOP_REPLAY : State::MERGED;
+                    nextState = State::AWAIT_STOP_REPLAY;
                 }
             }
 
@@ -221,11 +221,15 @@ int ReplayMerge::awaitCurrentRecordingPosition()
 
 int ReplayMerge::awaitStopReplay()
 {
-    m_isReplayActive = false;
+    int workCount = 0;
     const std::int64_t correlationId = m_archive->context().aeron()->nextCorrelationId();
-    m_archive->archiveProxy().stopReplay(m_replaySessionId, correlationId, m_archive->controlSessionId());
 
-    state(State::MERGED);
+    if (m_archive->archiveProxy().stopReplay(m_replaySessionId, correlationId, m_archive->controlSessionId()))
+    {
+        m_isReplayActive = false;
+        state(State::MERGED);
+        workCount += 1;
+    }
 
     return 1;
 }
@@ -242,7 +246,7 @@ bool ReplayMerge::pollForResponse(AeronArchive& archive, std::int64_t correlatio
             {
                 throw ArchiveException(static_cast<std::int32_t>(poller.relevantId()),
                     "archive response for correlationId=" + std::to_string(correlationId) +
-                    ", errorL " + poller.errorMessage(), SOURCEINFO);
+                    ", error: " + poller.errorMessage(), SOURCEINFO);
             }
 
             return true;

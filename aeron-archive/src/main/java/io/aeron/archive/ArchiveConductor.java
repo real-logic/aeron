@@ -41,7 +41,6 @@ import java.nio.file.attribute.FileAttribute;
 import java.util.ArrayDeque;
 import java.util.EnumSet;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
@@ -392,10 +391,10 @@ abstract class ArchiveConductor
     void stopRecordingSubscription(
         final long correlationId, final ControlSession controlSession, final long subscriptionId)
     {
-        final Iterator<Map.Entry<String, Subscription>> iter = recordingSubscriptionMap.entrySet().iterator();
+        final Iterator<Subscription> iter = recordingSubscriptionMap.values().iterator();
         while (iter.hasNext())
         {
-            final Subscription subscription = iter.next().getValue();
+            final Subscription subscription = iter.next();
             if (subscription.registrationId() == subscriptionId)
             {
                 subscription.close();

@@ -26,13 +26,13 @@ import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.SystemUtil;
-import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.aeron.archive.codecs.SourceLocation.REMOTE;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
@@ -88,7 +88,7 @@ public class ReplayMergeTest
         .endpoint(REPLAY_ENDPOINT);
 
     private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
-    private final MutableInteger received = new MutableInteger(0);
+    private final AtomicInteger received = new AtomicInteger();
     private final MediaDriver.Context mediaDriverContext = new MediaDriver.Context();
 
     private ArchivingMediaDriver archivingMediaDriver;
@@ -151,6 +151,17 @@ public class ReplayMergeTest
         final int subsequentMessageCount = MIN_MESSAGES_PER_TERM * 3;
         final int totalMessageCount = initialMessageCount + subsequentMessageCount;
 
+        final FragmentHandler fragmentHandler = new FragmentAssembler(
+            (buffer, offset, length, header) ->
+            {
+                final String expected = MESSAGE_PREFIX + received.get();
+                final String actual = buffer.getStringWithoutLengthAscii(offset, length);
+
+                assertEquals(expected, actual);
+
+                received.incrementAndGet();
+            });
+
         try (Publication publication = aeron.addPublication(publicationChannel.build(), STREAM_ID))
         {
             final int sessionId = publication.sessionId();
@@ -176,17 +187,6 @@ public class ReplayMergeTest
                     recordingId,
                     0))
             {
-                final FragmentHandler fragmentHandler = new FragmentAssembler(
-                    (buffer, offset, length, header) ->
-                    {
-                        final String expected = MESSAGE_PREFIX + received.value;
-                        final String actual = buffer.getStringWithoutLengthAscii(offset, length);
-
-                        assertEquals(expected, actual);
-
-                        received.value++;
-                    });
-
                 for (int i = initialMessageCount; i < totalMessageCount; i++)
                 {
                     offer(publication, i, MESSAGE_PREFIX);
@@ -207,9 +207,10 @@ public class ReplayMergeTest
                     }
                 }
 
-                assertThat(received.get(), is(totalMessageCount));
                 assertTrue(replayMerge.isMerged());
+                assertTrue(replayMerge.isLiveAdded());
                 assertEquals(ReplayMerge.State.MERGED, replayMerge.state());
+                assertThat(received.get(), is(totalMessageCount));
             }
             finally
             {

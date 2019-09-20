@@ -27,11 +27,11 @@ import static io.aeron.CommonContext.MDC_CONTROL_MODE_MANUAL;
 import static io.aeron.CommonContext.MDC_CONTROL_MODE_PARAM_NAME;
 
 /**
- * Replay a recorded stream from a starting position and merge with live stream to consume a full history of a stream.
+ * Replay a recorded stream from a starting position and merge with live stream for a full history of a stream.
  * <p>
- * Once constructed the either of {@link #poll(FragmentHandler, int)} or {@link #doWork()} interleaved with consumption
- * of the {@link #image()} should be called in a duty cycle loop until {@link #isMerged()} is {@code true},
- * after which the {@link ReplayMerge} can be closed and continued usage can be made of the {@link Image} or its
+ * Once constructed either of {@link #poll(FragmentHandler, int)} or {@link #doWork()}, interleaved with consumption
+ * of the {@link #image()}, should be called in a duty cycle loop until {@link #isMerged()} is {@code true}.
+ * After which the {@link ReplayMerge} can be closed and continued usage can be made of the {@link Image} or its
  * parent {@link Subscription}.
  */
 public class ReplayMerge implements AutoCloseable
@@ -70,16 +70,16 @@ public class ReplayMerge implements AutoCloseable
     private boolean isReplayActive = false;
 
     /**
-     * Create a {@link ReplayMerge} to manage the merging of a replayed stream and switching to live stream as
+     * Create a {@link ReplayMerge} to manage the merging of a replayed stream and switching over to live stream as
      * appropriate.
      *
-     * @param subscription to use for the replay and live stream. Must be a multi-destination subscription.
-     * @param archive to use for the replay.
-     * @param replayChannel to use for the replay.
+     * @param subscription      to use for the replay and live stream. Must be a multi-destination subscription.
+     * @param archive           to use for the replay.
+     * @param replayChannel     to use for the replay.
      * @param replayDestination to send the replay to and the destination added by the {@link Subscription}.
-     * @param liveDestination for the live stream and the destination added by the {@link Subscription}.
-     * @param recordingId for the replay.
-     * @param startPosition for the replay.
+     * @param liveDestination   for the live stream and the destination added by the {@link Subscription}.
+     * @param recordingId       for the replay.
+     * @param startPosition     for the replay.
      */
     public ReplayMerge(
         final Subscription subscription,
@@ -112,8 +112,8 @@ public class ReplayMerge implements AutoCloseable
     }
 
     /**
-     * Close the merge and stop any active replay. Will remove the replay destination from the subscription. Will
-     * NOT remove the live destination if it has been added.
+     * Close and stop any active replay. Will remove the replay destination from the subscription.
+     * This operation Will NOT remove the live destination if it has been added so it can be used for live consumption.
      */
     public void close()
     {
@@ -136,7 +136,18 @@ public class ReplayMerge implements AutoCloseable
     }
 
     /**
-     * Process the operation of the merge. Do not call the processing of fragments on the subscription.
+     * Get the {@link Subscription} used to consume the replayed and merged stream.
+     *
+     * @return the {@link Subscription} used to consume the replayed and merged stream.
+     */
+    public Subscription subscription()
+    {
+        return subscription;
+    }
+
+    /**
+     * Perform the work of replaying and merging. Should only be used if polling the underlying {@link Image} directly,
+     * call {@link #poll(FragmentHandler, int)} on this class.
      *
      * @return indication of work done processing the merge.
      */
@@ -171,11 +182,11 @@ public class ReplayMerge implements AutoCloseable
     }
 
     /**
-     * Poll the {@link Image} used for the merging replay and live stream. The {@link ReplayMerge#doWork()} method
+     * Poll the {@link Image} used for replay and merging and live stream. The {@link ReplayMerge#doWork()} method
      * will be called before the poll so that processing of the merge can be done.
      *
-     * @param fragmentHandler to call for fragments
-     * @param fragmentLimit for poll call
+     * @param fragmentHandler to call for fragments.
+     * @param fragmentLimit   for poll call.
      * @return number of fragments processed.
      */
     public int poll(final FragmentHandler fragmentHandler, final int fragmentLimit)
@@ -185,7 +196,7 @@ public class ReplayMerge implements AutoCloseable
     }
 
     /**
-     * State of this {@link ReplayMerge}.
+     * Current {@link State} of this {@link ReplayMerge}.
      *
      * @return state of this {@link ReplayMerge}.
      */
@@ -205,9 +216,9 @@ public class ReplayMerge implements AutoCloseable
     }
 
     /**
-     * The {@link Image} used for the replay and live stream.
+     * The {@link Image} which is a merge of the replay and live stream.
      *
-     * @return the {@link Image} used for the replay and live stream.
+     * @return the {@link Image} which is a merge of the replay and live stream.
      */
     public Image image()
     {
@@ -215,7 +226,7 @@ public class ReplayMerge implements AutoCloseable
     }
 
     /**
-     * Is the live destination added to the subscription?
+     * Is the live destination added to the {@link #subscription()}?
      *
      * @return true if live destination added or false if not.
      */
@@ -242,6 +253,7 @@ public class ReplayMerge implements AutoCloseable
         {
             nextTargetPosition = polledRelevantId(archive);
             activeCorrelationId = Aeron.NULL_VALUE;
+
             if (AeronArchive.NULL_POSITION == nextTargetPosition)
             {
                 final long correlationId = archive.context().aeron().nextCorrelationId();
@@ -257,6 +269,7 @@ public class ReplayMerge implements AutoCloseable
                 initialMaxPosition = nextTargetPosition;
                 state(State.AWAIT_REPLAY);
             }
+
             workCount += 1;
         }
 
@@ -283,7 +296,6 @@ public class ReplayMerge implements AutoCloseable
                 activeCorrelationId = correlationId;
                 workCount += 1;
             }
-
         }
         else if (pollForResponse(archive, activeCorrelationId))
         {
@@ -334,6 +346,7 @@ public class ReplayMerge implements AutoCloseable
         {
             nextTargetPosition = polledRelevantId(archive);
             activeCorrelationId = Aeron.NULL_VALUE;
+
             if (AeronArchive.NULL_POSITION == nextTargetPosition)
             {
                 final long correlationId = archive.context().aeron().nextCorrelationId();
@@ -364,6 +377,7 @@ public class ReplayMerge implements AutoCloseable
 
                 state(nextState);
             }
+
             workCount += 1;
         }
 

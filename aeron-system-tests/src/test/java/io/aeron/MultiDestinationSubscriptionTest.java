@@ -442,6 +442,32 @@ public class MultiDestinationSubscriptionTest
         assertThat(subscription.imageCount(), is(1));
         verifyFragments(fragmentHandler, numMessagesToSend);
     }
+    
+    @Test(timeout = 10_000)
+    public void subscriptionCloseShouldAlsoCloseMediaDriverPorts()
+    {
+        launch();
+        
+        final String publicationChannelA = 
+            new ChannelUriStringBuilder()
+                .media(CommonContext.UDP_MEDIA)
+                .endpoint(UNICAST_ENDPOINT_A)
+                .build();
+        
+        // Set up a manual control subscription
+        subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
+        subscription.addDestination(publicationChannelA);
+        
+        // Close it without removing the destination
+        CloseHelper.close(subscription);
+        CloseHelper.close(clientA);
+        
+        // Try to create the subscription again
+        clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverContextA.aeronDirectoryName()));
+        subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
+        // This throws if the subscription close left the port open
+        subscription.addDestination(publicationChannelA);
+    }
 
     private void pollForFragment(
         final Subscription subscription, final FragmentHandler handler, final MutableInteger fragmentsRead)

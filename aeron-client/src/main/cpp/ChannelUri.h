@@ -56,6 +56,7 @@ constexpr const char EOS_PARAM_NAME[] = "eos";
 constexpr const char TETHER_PARAM_NAME[] = "tether";
 constexpr const char GROUP_PARAM_NAME[] = "group";
 constexpr const char REJOIN_PARAM_NAME[] = "rejoin";
+constexpr const char CONGESTION_CONTROL_PARAM_NAME[] = "cc";
 
 using namespace aeron::util;
 

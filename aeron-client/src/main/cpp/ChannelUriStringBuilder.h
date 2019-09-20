@@ -44,6 +44,7 @@ public:
         m_controlMode.reset(nullptr);
         m_tags.reset(nullptr);
         m_alias.reset(nullptr);
+        m_cc.reset(nullptr);
         m_reliable.reset(nullptr);
         m_ttl.reset(nullptr);
         m_mtu.reset(nullptr);
@@ -128,6 +129,12 @@ public:
     inline this_t& alias(const std::string& alias)
     {
         m_alias.reset(new std::string(alias));
+        return *this;
+    }
+
+    inline this_t& congestionControl(const std::string& congestionControl)
+    {
+        m_cc.reset(new std::string(congestionControl));
         return *this;
     }
 
@@ -372,6 +379,11 @@ public:
             sb << REJOIN_PARAM_NAME << '=' << (m_rejoin->value == 1 ? "true" : "false") << '|';
         }
 
+        if (m_cc)
+        {
+            sb << CONGESTION_CONTROL_PARAM_NAME << '=' << *m_cc << '|';
+        }
+
         std::string result = sb.str();
         const char lastChar = result.back();
 
@@ -401,6 +413,7 @@ private:
     std::unique_ptr<std::string> m_controlMode;
     std::unique_ptr<std::string> m_tags;
     std::unique_ptr<std::string> m_alias;
+    std::unique_ptr<std::string> m_cc;
     std::unique_ptr<Value> m_reliable;
     std::unique_ptr<Value> m_ttl;
     std::unique_ptr<Value> m_mtu;

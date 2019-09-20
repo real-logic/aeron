@@ -392,20 +392,14 @@ public class ReplayMerge implements AutoCloseable
     private int awaitStopReplay()
     {
         int workCount = 0;
+        final long correlationId = archive.context().aeron().nextCorrelationId();
 
-        if (Aeron.NULL_VALUE == activeCorrelationId)
+        if (archive.archiveProxy().stopReplay(replaySessionId, correlationId, archive.controlSessionId()))
         {
-            final long correlationId = archive.context().aeron().nextCorrelationId();
+            isReplayActive = false;
+            state(State.MERGED);
 
-            if (archive.archiveProxy().stopReplay(replaySessionId, correlationId, archive.controlSessionId()))
-            {
-                activeCorrelationId = correlationId;
-                isReplayActive = false;
-                activeCorrelationId = Aeron.NULL_VALUE;
-                state(State.MERGED);
-
-                workCount += 1;
-            }
+            workCount += 1;
         }
 
         return workCount;

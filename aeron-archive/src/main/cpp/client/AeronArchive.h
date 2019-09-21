@@ -30,6 +30,11 @@
 namespace aeron { namespace archive { namespace client {
 
 /**
+ * Client is not currently connected to an active archive.
+ */
+constexpr const char NOT_CONNECTED_MSG[] = "not connected";
+
+/**
  * Client for interacting with a local or remote Aeron Archive that records and replays message streams.
  * <p>
  * This client provides a simple interaction model which is mostly synchronous and may not be optimal.
@@ -51,6 +56,7 @@ public:
         std::unique_ptr<RecordingSubscriptionDescriptorPoller> recordingSubscriptionDescriptorPoller,
         std::shared_ptr<Aeron> aeron,
         std::int64_t controlSessionId);
+
     ~AeronArchive();
 
     /// Location of the source with respect to the archive.
@@ -216,7 +222,7 @@ public:
 
     /**
      * Poll the response stream once for an error. If another message is present then it will be skipped over
-     * so only call when not expecting another response.
+     * so only call when not expecting another response. If not connected then it will return NOT_CONNECTED.
      *
      * @return the error String otherwise an empty string is returned if no error is found.
      */
@@ -225,6 +231,11 @@ public:
         std::lock_guard<std::recursive_mutex> lock(m_lock);
 
         ensureOpen();
+
+        if (!m_controlResponsePoller->subscription()->isConnected())
+        {
+            return std::string(NOT_CONNECTED_MSG);
+        }
 
         if (m_controlResponsePoller->poll() != 0 && m_controlResponsePoller->isPollComplete())
         {
@@ -240,8 +251,8 @@ public:
     }
 
     /**
-     * Check if an error has been returned for the control session and throw a ArchiveException if
-     * Context#errorHandler is not set.
+     * Check if an error has been returned for the control session, or if it is no longer connected, and throw
+     * an ArchiveException if Context#errorHandler is not set.
      * <p>
      * To check for an error response without raising an exception then try #pollForErrorResponse.
      *
@@ -252,6 +263,19 @@ public:
         std::lock_guard<std::recursive_mutex> lock(m_lock);
 
         ensureOpen();
+
+        if (!m_controlResponsePoller->subscription()->isConnected())
+        {
+                if (m_ctx->errorHandler() != nullptr)
+                {
+                    ArchiveException ex(NOT_CONNECTED_MSG, SOURCEINFO);
+                    m_ctx->errorHandler()(ex);
+                }
+                else
+                {
+                    throw ArchiveException(NOT_CONNECTED_MSG, SOURCEINFO);
+                }
+        }
 
         if (m_controlResponsePoller->poll() != 0 && m_controlResponsePoller->isPollComplete())
         {

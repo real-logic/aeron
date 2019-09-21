@@ -253,7 +253,8 @@ public class CommonContext implements Cloneable
     public static final String REJOIN_PARAM_NAME = "rejoin";
 
     /**
-     * Parameter name for Subscription URI param to indicate the congestion control to be used.
+     * Parameter name for Subscription URI param to indicate the congestion control algorithm to be used.
+     * Options include {@code static} and {@code cubic}.
      */
     public static final String CONGESTION_CONTROL_PARAM_NAME = "cc";
 

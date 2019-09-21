@@ -754,7 +754,7 @@ public class ChannelUriStringBuilder
     }
 
     /**
-     * Set the congestion control for a URI.
+     * Set the congestion control algorithm to be used on a channel.
      *
      * @param congestionControl for the URI.
      * @return this for a fluent API.
@@ -767,7 +767,7 @@ public class ChannelUriStringBuilder
     }
 
     /**
-     * Get the congestion control present in the URI.
+     * Get the congestion control algorithm to be used on a channel.
      *
      * @return alias for the URI.
      * @see CommonContext#CONGESTION_CONTROL_PARAM_NAME
@@ -918,6 +918,11 @@ public class ChannelUriStringBuilder
             sb.append(ALIAS_PARAM_NAME).append('=').append(alias).append('|');
         }
 
+        if (null != cc)
+        {
+            sb.append(CONGESTION_CONTROL_PARAM_NAME).append('=').append(cc).append('|');
+        }
+
         if (null != sparse)
         {
             sb.append(SPARSE_PARAM_NAME).append('=').append(sparse).append('|');
@@ -941,11 +946,6 @@ public class ChannelUriStringBuilder
         if (null != rejoin)
         {
             sb.append(REJOIN_PARAM_NAME).append('=').append(rejoin).append('|');
-        }
-
-        if (null != cc)
-        {
-            sb.append(CONGESTION_CONTROL_PARAM_NAME).append('=').append(cc).append('|');
         }
 
         final char lastChar = sb.charAt(sb.length() - 1);

@@ -23,8 +23,15 @@ import org.agrona.concurrent.status.CountersManager;
 
 import java.net.InetSocketAddress;
 
+/**
+ * Supplier of congestion control algorithms which is aware of channel URI params otherwise defaults to
+ * {@link StaticWindowCongestionControl}.
+ */
 public class DefaultCongestionControlSupplier implements CongestionControlSupplier
 {
+    /**
+     * {@inheritDoc}
+     */
     public CongestionControl newInstance(
         final long registrationId,
         final UdpChannel udpChannel,
@@ -72,7 +79,7 @@ public class DefaultCongestionControlSupplier implements CongestionControlSuppli
         }
         else
         {
-            throw new IllegalArgumentException("URI parameter not understood: cc=" + ccStr);
+            throw new IllegalArgumentException("unsupported congestion control : cc=" + ccStr);
         }
     }
 }

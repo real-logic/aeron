@@ -16,7 +16,6 @@
 package io.aeron.driver.buffer;
 
 import io.aeron.exceptions.AeronException;
-import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
@@ -141,10 +140,8 @@ public class FileStoreLogFactory implements LogFactory
         final int termLength,
         final boolean useSparseFiles)
     {
-        checkStorage(termLength);
-
-        final File location = streamLocation(rootDir, channel, sessionId, streamId, correlationId);
         final long logLength = computeLogLength(termLength, filePageSize);
+        checkStorage(logLength);
 
         if (logLength > blankTemplateLength)
         {
@@ -160,16 +157,17 @@ public class FileStoreLogFactory implements LogFactory
             blankTemplateLength = logLength;
         }
 
+        final File location = streamLocation(rootDir, channel, sessionId, streamId, correlationId);
+
         return new MappedRawLog(
             location, blankChannel, useSparseFiles, logLength, termLength, filePageSize, errorHandler);
     }
 
-    private void checkStorage(final int termBufferLength)
+    private void checkStorage(final long logLength)
     {
         if (checkStorage)
         {
             final long usableSpace = getUsableSpace();
-            final long logLength = LogBufferDescriptor.computeLogLength(termBufferLength, filePageSize);
 
             if (usableSpace <= lowStorageWarningThreshold)
             {

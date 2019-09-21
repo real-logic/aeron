@@ -354,6 +354,11 @@ public:
             sb << ALIAS_PARAM_NAME << '=' << *m_alias << '|';
         }
 
+        if (m_cc)
+        {
+            sb << CONGESTION_CONTROL_PARAM_NAME << '=' << *m_cc << '|';
+        }
+
         if (m_sparse)
         {
             sb << SPARSE_PARAM_NAME << '=' << (m_sparse->value == 1 ? "true" : "false") << '|';
@@ -377,11 +382,6 @@ public:
         if (m_rejoin)
         {
             sb << REJOIN_PARAM_NAME << '=' << (m_rejoin->value == 1 ? "true" : "false") << '|';
-        }
-
-        if (m_cc)
-        {
-            sb << CONGESTION_CONTROL_PARAM_NAME << '=' << *m_cc << '|';
         }
 
         std::string result = sb.str();

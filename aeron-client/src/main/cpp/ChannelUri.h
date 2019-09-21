@@ -239,6 +239,7 @@ public:
                             builder.clear();
                             state = State::PARAMS_KEY;
                             break;
+
                         case ':':
                             throw IllegalArgumentException("encountered ':' within media definition", SOURCEINFO);
 

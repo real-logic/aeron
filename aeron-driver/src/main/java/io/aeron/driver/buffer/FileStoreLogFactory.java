@@ -17,15 +17,19 @@ package io.aeron.driver.buffer;
 
 import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
 import org.agrona.LangUtil;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.io.UncheckedIOException;
+import java.nio.channels.FileChannel;
 import java.nio.file.*;
 
-import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
+import static io.aeron.logbuffer.LogBufferDescriptor.computeLogLength;
 
 /**
  * Factory for creating {@link RawLog}s in the source publications or publication images directories as appropriate.
@@ -35,6 +39,7 @@ public class FileStoreLogFactory implements LogFactory
     private static final String PUBLICATIONS = "publications";
     private static final String IMAGES = "images";
 
+    private long blankTemplateLength;
     private final long lowStorageWarningThreshold;
     private final int filePageSize;
     private final boolean checkStorage;
@@ -42,6 +47,8 @@ public class FileStoreLogFactory implements LogFactory
     private final File publicationsDir;
     private final File imagesDir;
     private final FileStore fileStore;
+    private final RandomAccessFile blankFile;
+    private final FileChannel blankChannel;
 
     public FileStoreLogFactory(
         final String dataDirectoryName,
@@ -63,20 +70,21 @@ public class FileStoreLogFactory implements LogFactory
         IoUtil.ensureDirectoryExists(publicationsDir, PUBLICATIONS);
         IoUtil.ensureDirectoryExists(imagesDir, IMAGES);
 
-        FileStore fs = null;
         try
         {
-            if (checkStorage)
-            {
-                fs = Files.getFileStore(dataDir.toPath());
-            }
+            fileStore = checkStorage ? Files.getFileStore(dataDir.toPath()) : null;
+            blankFile = new RandomAccessFile(new File(dataDir, "blank.template"), "rw");
+            blankChannel = blankFile.getChannel();
         }
         catch (final IOException ex)
         {
-            LangUtil.rethrowUnchecked(ex);
+            throw new UncheckedIOException(ex);
         }
+    }
 
-        fileStore = fs;
+    public void close()
+    {
+        CloseHelper.close(blankChannel);
     }
 
     /**
@@ -130,15 +138,30 @@ public class FileStoreLogFactory implements LogFactory
         final int sessionId,
         final int streamId,
         final long correlationId,
-        final int termBufferLength,
+        final int termLength,
         final boolean useSparseFiles)
     {
-        validateTermBufferLength(termBufferLength);
-        checkStorage(termBufferLength);
+        checkStorage(termLength);
 
         final File location = streamLocation(rootDir, channel, sessionId, streamId, correlationId);
+        final long logLength = computeLogLength(termLength, filePageSize);
 
-        return new MappedRawLog(location, useSparseFiles, termBufferLength, filePageSize, errorHandler);
+        if (logLength > blankTemplateLength)
+        {
+            try
+            {
+                blankFile.setLength(logLength);
+            }
+            catch (final IOException ex)
+            {
+                throw new UncheckedIOException(ex);
+            }
+
+            blankTemplateLength = logLength;
+        }
+
+        return new MappedRawLog(
+            location, blankChannel, useSparseFiles, logLength, termLength, filePageSize, errorHandler);
     }
 
     private void checkStorage(final int termBufferLength)
@@ -176,15 +199,6 @@ public class FileStoreLogFactory implements LogFactory
         }
 
         return usableSpace;
-    }
-
-    private void validateTermBufferLength(final int termBufferLength)
-    {
-        if (termBufferLength < 0 || termBufferLength > TERM_MAX_LENGTH)
-        {
-            throw new IllegalArgumentException(
-                "invalid buffer length: " + termBufferLength + " max is " + TERM_MAX_LENGTH);
-        }
     }
 
     private static File streamLocation(

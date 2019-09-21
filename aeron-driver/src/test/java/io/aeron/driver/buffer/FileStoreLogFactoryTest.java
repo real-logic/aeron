@@ -18,6 +18,7 @@ package io.aeron.driver.buffer;
 import io.aeron.driver.Configuration;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
@@ -27,7 +28,6 @@ import org.junit.*;
 import java.io.*;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
-import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
@@ -42,8 +42,8 @@ public class FileStoreLogFactoryTest
     private static final int TERM_BUFFER_LENGTH = Configuration.TERM_BUFFER_LENGTH_DEFAULT;
     private static final long LOW_STORAGE_THRESHOLD = Configuration.LOW_FILE_STORE_WARNING_THRESHOLD_DEFAULT;
     private static final int PAGE_SIZE = 4 * 1024;
-    private static final boolean PRE_ZERO_LOG = false;
-    private static final boolean PERFORM_STORAGE_CHECKS = false;
+    private static final boolean PRE_ZERO_LOG = true;
+    private static final boolean PERFORM_STORAGE_CHECKS = true;
     private FileStoreLogFactory fileStoreLogFactory;
     private final UdpChannel udpChannel = UdpChannel.parse(CHANNEL);
 
@@ -59,6 +59,7 @@ public class FileStoreLogFactoryTest
     @After
     public void cleanupFiles()
     {
+        CloseHelper.close(fileStoreLogFactory);
         IoUtil.delete(DATA_DIR, false);
     }
 
@@ -94,20 +95,20 @@ public class FileStoreLogFactoryTest
     public void shouldCreateCorrectLengthAndZeroedFilesForImage()
     {
         final String canonicalForm = udpChannel.canonicalForm();
-        final int imageTermBufferMaxLength = TERM_BUFFER_LENGTH / 2;
+        final int imageTermBufferLength = TERM_BUFFER_LENGTH / 2;
         final RawLog rawLog = fileStoreLogFactory.newImage(
-            canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, imageTermBufferMaxLength, PRE_ZERO_LOG);
+            canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, imageTermBufferLength, PRE_ZERO_LOG);
 
-        assertThat(rawLog.termLength(), is(imageTermBufferMaxLength));
+        assertThat(rawLog.termLength(), is(imageTermBufferLength));
 
         final UnsafeBuffer[] termBuffers = rawLog.termBuffers();
         assertThat(termBuffers.length, is(PARTITION_COUNT));
 
         for (final UnsafeBuffer termBuffer : termBuffers)
         {
-            assertThat(termBuffer.capacity(), is(imageTermBufferMaxLength));
+            assertThat(termBuffer.capacity(), is(imageTermBufferLength));
             assertThat(termBuffer.getByte(0), is((byte)0));
-            assertThat(termBuffer.getByte(imageTermBufferMaxLength - 1), is((byte)0));
+            assertThat(termBuffer.getByte(imageTermBufferLength - 1), is((byte)0));
         }
 
         final UnsafeBuffer metaData = rawLog.metaData();
@@ -117,14 +118,5 @@ public class FileStoreLogFactoryTest
         assertThat(metaData.getByte(LogBufferDescriptor.LOG_META_DATA_LENGTH - 1), is((byte)0));
 
         rawLog.close();
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void shouldExceptionIfRequestedTermBufferLengthGreaterThanMax()
-    {
-        final String canonicalForm = udpChannel.canonicalForm();
-        final int imageTermBufferMaxLength = TERM_MAX_LENGTH + 1;
-        fileStoreLogFactory.newImage(
-            canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, imageTermBufferMaxLength, PRE_ZERO_LOG);
     }
 }

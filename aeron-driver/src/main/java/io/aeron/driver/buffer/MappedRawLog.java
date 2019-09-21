@@ -21,6 +21,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
@@ -53,7 +54,9 @@ class MappedRawLog implements RawLog
 
     MappedRawLog(
         final File location,
+        final FileChannel blankChannel,
         final boolean useSparseFiles,
+        final long logLength,
         final int termLength,
         final int filePageSize,
         final ErrorHandler errorHandler)
@@ -66,17 +69,10 @@ class MappedRawLog implements RawLog
 
         try (FileChannel logChannel = FileChannel.open(logFile.toPath(), options, NO_ATTRIBUTES))
         {
-            final long logLength = computeLogLength(termLength, filePageSize);
-
             if (logLength <= Integer.MAX_VALUE)
             {
                 final MappedByteBuffer mappedBuffer = logChannel.map(READ_WRITE, 0, logLength);
                 mappedBuffer.order(ByteOrder.LITTLE_ENDIAN);
-                if (!useSparseFiles)
-                {
-                    allocatePages(mappedBuffer, (int)logLength, filePageSize);
-                }
-
                 mappedBuffers = new MappedByteBuffer[]{ mappedBuffer };
 
                 for (int i = 0; i < PARTITION_COUNT; i++)
@@ -96,11 +92,6 @@ class MappedRawLog implements RawLog
                     final MappedByteBuffer buffer = logChannel.map(READ_WRITE, termLength * (long)i, termLength);
                     buffer.order(ByteOrder.LITTLE_ENDIAN);
                     mappedBuffers[i] = buffer;
-                    if (!useSparseFiles)
-                    {
-                        allocatePages(buffer, termLength, filePageSize);
-                    }
-
                     termBuffers[i] = new UnsafeBuffer(buffer, 0, termLength);
                 }
 
@@ -117,10 +108,15 @@ class MappedRawLog implements RawLog
                     metaDataMappingLength - LOG_META_DATA_LENGTH,
                     LOG_META_DATA_LENGTH);
             }
+
+            if (!useSparseFiles)
+            {
+                allocatePages(blankChannel, logChannel, logLength);
+            }
         }
         catch (final IOException ex)
         {
-            throw new IllegalStateException(ex);
+            throw new UncheckedIOException(ex);
         }
     }
 
@@ -206,13 +202,14 @@ class MappedRawLog implements RawLog
         return logFile.getAbsolutePath();
     }
 
-    private static void allocatePages(final MappedByteBuffer buffer, final int length, final int pageSize)
+    private static void allocatePages(final FileChannel blankChannel, final FileChannel logChannel, final long length)
+        throws IOException
     {
-        for (int i = 0; i < length; i += pageSize)
+        long remaining = length;
+        do
         {
-            buffer.put(i, (byte)0);
+            remaining -= blankChannel.transferTo(length - remaining, remaining, logChannel);
         }
-
-        UnsafeAccess.UNSAFE.fullFence();
+        while (remaining > 0);
     }
 }

@@ -532,6 +532,9 @@ public final class MediaDriver implements AutoCloseable
             if (!isClosed)
             {
                 isClosed = true;
+
+                CloseHelper.close(logFactory);
+
                 final MappedByteBuffer lossReportBuffer = this.lossReportBuffer;
                 this.lossReportBuffer = null;
                 IoUtil.unmap(lossReportBuffer);

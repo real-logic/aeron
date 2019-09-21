@@ -24,6 +24,10 @@ import static io.aeron.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
 
 public class TestLogFactory implements LogFactory
 {
+    public void close()
+    {
+    }
+
     public RawLog newPublication(
         final String channel,
         final int sessionId,

@@ -18,7 +18,7 @@ package io.aeron.driver.buffer;
 /**
  * Factory interface for creating the log buffers under publications and images.
  */
-public interface LogFactory
+public interface LogFactory extends AutoCloseable
 {
     RawLog newPublication(
         String channel,

@@ -69,7 +69,7 @@ public class AeronArchive implements AutoCloseable
     /**
      * Indicates the client is no longer connected to an archive.
      */
-    public static final String NOT_CONNECTED = "not connected";
+    public static final String NOT_CONNECTED_MSG = "not connected";
 
     private static final int FRAGMENT_LIMIT = 10;
 
@@ -332,7 +332,7 @@ public class AeronArchive implements AutoCloseable
 
     /**
      * Poll the response stream once for an error. If another message is present then it will be skipped over
-     * so only call when not expecting another response. If not connected then it will return {@link #NOT_CONNECTED}.
+     * so only call when not expecting another response. If not connected then return {@link #NOT_CONNECTED_MSG}.
      *
      * @return the error String otherwise null if no error is found.
      */
@@ -345,7 +345,7 @@ public class AeronArchive implements AutoCloseable
 
             if (!controlResponsePoller.subscription().isConnected())
             {
-                return NOT_CONNECTED;
+                return NOT_CONNECTED_MSG;
             }
 
             if (controlResponsePoller.poll() != 0 && controlResponsePoller.isPollComplete())
@@ -383,7 +383,7 @@ public class AeronArchive implements AutoCloseable
 
             if (!controlResponsePoller.subscription().isConnected())
             {
-                final ArchiveException ex = new ArchiveException(NOT_CONNECTED);
+                final ArchiveException ex = new ArchiveException(NOT_CONNECTED_MSG);
                 if (null != context.errorHandler())
                 {
                     context.errorHandler().onError(ex);

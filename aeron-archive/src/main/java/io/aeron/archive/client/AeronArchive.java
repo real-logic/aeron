@@ -66,7 +66,13 @@ public class AeronArchive implements AutoCloseable
      */
     public static final long NULL_LENGTH = Aeron.NULL_VALUE;
 
+    /**
+     * Indicates the client is no longer connected to an archive.
+     */
+    public static final String NOT_CONNECTED = "not connected";
+
     private static final int FRAGMENT_LIMIT = 10;
+
 
     private boolean isClosed = false;
     private final long controlSessionId;
@@ -326,7 +332,7 @@ public class AeronArchive implements AutoCloseable
 
     /**
      * Poll the response stream once for an error. If another message is present then it will be skipped over
-     * so only call when not expecting another response.
+     * so only call when not expecting another response. If not connected then it will return {@link #NOT_CONNECTED}.
      *
      * @return the error String otherwise null if no error is found.
      */
@@ -336,6 +342,11 @@ public class AeronArchive implements AutoCloseable
         try
         {
             ensureOpen();
+
+            if (!controlResponsePoller.subscription().isConnected())
+            {
+                return NOT_CONNECTED;
+            }
 
             if (controlResponsePoller.poll() != 0 && controlResponsePoller.isPollComplete())
             {
@@ -356,8 +367,8 @@ public class AeronArchive implements AutoCloseable
     }
 
     /**
-     * Check if an error has been returned for the control session and throw a {@link ArchiveException} if
-     * {@link Context#errorHandler(ErrorHandler)} is not set.
+     * Check if an error has been returned for the control session, or if it is no longer connected, and then throw
+     * a {@link ArchiveException} if {@link Context#errorHandler(ErrorHandler)} is not set.
      * <p>
      * To check for an error response without raising an exception then try {@link #pollForErrorResponse()}.
      *
@@ -369,6 +380,19 @@ public class AeronArchive implements AutoCloseable
         try
         {
             ensureOpen();
+
+            if (!controlResponsePoller.subscription().isConnected())
+            {
+                final ArchiveException ex = new ArchiveException(NOT_CONNECTED);
+                if (null != context.errorHandler())
+                {
+                    context.errorHandler().onError(ex);
+                }
+                else
+                {
+                    throw ex;
+                }
+            }
 
             if (controlResponsePoller.poll() != 0 && controlResponsePoller.isPollComplete())
             {

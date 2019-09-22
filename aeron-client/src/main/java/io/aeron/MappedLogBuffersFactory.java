@@ -16,7 +16,7 @@
 package io.aeron;
 
 /**
- * Default mapping byteBuffer lifecycle strategy for the client
+ * Default factory for mapping log buffers in the client.
  */
 class MappedLogBuffersFactory implements LogBuffersFactory
 {

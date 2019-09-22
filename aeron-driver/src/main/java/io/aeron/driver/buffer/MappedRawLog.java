@@ -69,6 +69,11 @@ class MappedRawLog implements RawLog
 
         try (FileChannel logChannel = FileChannel.open(logFile.toPath(), options, NO_ATTRIBUTES))
         {
+            if (!useSparseFiles)
+            {
+                allocatePages(blankChannel, logChannel, logLength);
+            }
+
             if (logLength <= Integer.MAX_VALUE)
             {
                 final MappedByteBuffer mappedBuffer = logChannel.map(READ_WRITE, 0, logLength);
@@ -107,11 +112,6 @@ class MappedRawLog implements RawLog
                     metaDataMappedBuffer,
                     metaDataMappingLength - LOG_META_DATA_LENGTH,
                     LOG_META_DATA_LENGTH);
-            }
-
-            if (!useSparseFiles)
-            {
-                allocatePages(blankChannel, logChannel, logLength);
             }
         }
         catch (final IOException ex)

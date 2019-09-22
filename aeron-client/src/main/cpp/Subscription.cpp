@@ -42,24 +42,29 @@ Subscription::~Subscription()
     m_conductor.releaseSubscription(m_registrationId, imageArrayPair.first, imageArrayPair.second);
 }
 
-void Subscription::addDestination(const std::string& endpointChannel)
+std::int64_t Subscription::addDestination(const std::string& endpointChannel)
 {
     if (isClosed())
     {
         throw util::IllegalStateException(std::string("Subscription is closed"), SOURCEINFO);
     }
 
-    m_conductor.addRcvDestination(m_registrationId, endpointChannel);
+    return m_conductor.addRcvDestination(m_registrationId, endpointChannel);
 }
 
-void Subscription::removeDestination(const std::string& endpointChannel)
+std::int64_t Subscription::removeDestination(const std::string& endpointChannel)
 {
     if (isClosed())
     {
         throw util::IllegalStateException(std::string("Subscription is closed"), SOURCEINFO);
     }
 
-    m_conductor.removeRcvDestination(m_registrationId, endpointChannel);
+    return m_conductor.removeRcvDestination(m_registrationId, endpointChannel);
+}
+
+bool Subscription::findDestinationResponse(std::int64_t correlationId)
+{
+    return m_conductor.findDestinationResponse(correlationId);
 }
 
 std::int64_t Subscription::channelStatus() const

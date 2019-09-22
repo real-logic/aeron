@@ -374,44 +374,113 @@ void ClientConductor::releaseCounter(std::int64_t registrationId)
     }
 }
 
-void ClientConductor::addDestination(std::int64_t publicationRegistrationId, const std::string &endpointChannel)
+std::int64_t ClientConductor::addDestination(
+    std::int64_t publicationRegistrationId, const std::string &endpointChannel)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     verifyDriverIsActive();
     ensureNotReentrant();
     ensureOpen();
 
-    m_driverProxy.addDestination(publicationRegistrationId, endpointChannel);
+    std::int64_t correlationId = m_driverProxy.addDestination(publicationRegistrationId, endpointChannel);
+
+    m_destinationStateByCorrelationId.insert(std::pair<std::int64_t, DestinationStateDefn>(
+        correlationId,
+        DestinationStateDefn(correlationId, publicationRegistrationId, m_epochClock())));
+
+    return correlationId;
 }
 
-void ClientConductor::removeDestination(std::int64_t publicationRegistrationId, const std::string &endpointChannel)
+std::int64_t ClientConductor::removeDestination(
+    std::int64_t publicationRegistrationId, const std::string &endpointChannel)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     verifyDriverIsActive();
     ensureNotReentrant();
     ensureOpen();
 
-    m_driverProxy.removeDestination(publicationRegistrationId, endpointChannel);
+    std::int64_t correlationId = m_driverProxy.removeDestination(publicationRegistrationId, endpointChannel);
+
+    m_destinationStateByCorrelationId.insert(std::pair<std::int64_t, DestinationStateDefn>(
+        correlationId,
+        DestinationStateDefn(correlationId, publicationRegistrationId, m_epochClock())));
+
+    return correlationId;
 }
 
-void ClientConductor::addRcvDestination(std::int64_t subscriptionRegistrationId, const std::string &endpointChannel)
+std::int64_t ClientConductor::addRcvDestination(
+    std::int64_t subscriptionRegistrationId, const std::string &endpointChannel)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     verifyDriverIsActive();
     ensureNotReentrant();
     ensureOpen();
 
-    m_driverProxy.addRcvDestination(subscriptionRegistrationId, endpointChannel);
+    std::int64_t correlationId = m_driverProxy.addRcvDestination(subscriptionRegistrationId, endpointChannel);
+
+    m_destinationStateByCorrelationId.insert(std::pair<std::int64_t, DestinationStateDefn>(
+        correlationId,
+        DestinationStateDefn(correlationId, subscriptionRegistrationId, m_epochClock())));
+
+    return correlationId;
 }
 
-void ClientConductor::removeRcvDestination(std::int64_t subscriptionRegistrationId, const std::string &endpointChannel)
+std::int64_t ClientConductor::removeRcvDestination(
+    std::int64_t subscriptionRegistrationId, const std::string &endpointChannel)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     verifyDriverIsActive();
     ensureNotReentrant();
     ensureOpen();
 
-    m_driverProxy.removeRcvDestination(subscriptionRegistrationId, endpointChannel);
+    std::int64_t correlationId = m_driverProxy.removeRcvDestination(subscriptionRegistrationId, endpointChannel);
+
+    m_destinationStateByCorrelationId.insert(std::pair<std::int64_t, DestinationStateDefn>(
+        correlationId,
+        DestinationStateDefn(correlationId, subscriptionRegistrationId, m_epochClock())));
+
+    return correlationId;
+}
+
+bool ClientConductor::findDestinationResponse(std::int64_t correlationId)
+{
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+    ensureNotReentrant();
+    ensureOpen();
+
+    auto it = m_destinationStateByCorrelationId.find(correlationId);
+    if (it == m_destinationStateByCorrelationId.end())
+    {
+        throw IllegalArgumentException("correlationId unknown", SOURCEINFO);
+    }
+
+    DestinationStateDefn &state = it->second;
+    bool result = false;
+
+    switch (state.m_status)
+    {
+        case RegistrationStatus::AWAITING_MEDIA_DRIVER:
+            if (m_epochClock() > (state.m_timeOfRegistrationMs + m_driverTimeoutMs))
+            {
+                m_destinationStateByCorrelationId.erase(it);
+                throw DriverTimeoutException(
+                    "no response from driver in " + std::to_string(m_driverTimeoutMs) + " ms", SOURCEINFO);
+            }
+            break;
+
+        case RegistrationStatus::REGISTERED_MEDIA_DRIVER:
+        {
+            m_destinationStateByCorrelationId.erase(it);
+            result = true;
+            break;
+        }
+
+        case RegistrationStatus::ERRORED_MEDIA_DRIVER:
+            m_destinationStateByCorrelationId.erase(it);
+            throw RegistrationException(state.m_errorCode, state.m_errorMessage, SOURCEINFO);
+    }
+
+    return result;
 }
 
 void ClientConductor::addAvailableCounterHandler(const on_available_counter_t& handler)
@@ -599,6 +668,15 @@ void ClientConductor::onUnavailableCounter(std::int64_t registrationId, std::int
 
 void ClientConductor::onOperationSuccess(std::int64_t correlationId)
 {
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+
+    auto it = m_destinationStateByCorrelationId.find(correlationId);
+    if (it != m_destinationStateByCorrelationId.end() && it->second.m_status == RegistrationStatus::AWAITING_MEDIA_DRIVER)
+    {
+        DestinationStateDefn &state = it->second;
+
+        state.m_status = RegistrationStatus::REGISTERED_MEDIA_DRIVER;
+    }
 }
 
 void ClientConductor::onChannelEndpointErrorResponse(
@@ -715,6 +793,15 @@ void ClientConductor::onErrorResponse(
         counterIt->second.m_status = RegistrationStatus::ERRORED_MEDIA_DRIVER;
         counterIt->second.m_errorCode = errorCode;
         counterIt->second.m_errorMessage = errorMessage;
+        return;
+    }
+
+    auto destinationIt = m_destinationStateByCorrelationId.find(offendingCommandCorrelationId);
+    if (destinationIt != m_destinationStateByCorrelationId.end())
+    {
+        destinationIt->second.m_status = RegistrationStatus::ERRORED_MEDIA_DRIVER;
+        destinationIt->second.m_errorCode = errorCode;
+        destinationIt->second.m_errorMessage = errorMessage;
         return;
     }
 }

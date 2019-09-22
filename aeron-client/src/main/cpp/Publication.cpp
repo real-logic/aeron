@@ -65,24 +65,29 @@ Publication::~Publication()
     m_conductor.releasePublication(m_registrationId);
 }
 
-void Publication::addDestination(const std::string& endpointChannel)
+std::int64_t Publication::addDestination(const std::string& endpointChannel)
 {
     if (isClosed())
     {
         throw util::IllegalStateException(std::string("Publication is closed"), SOURCEINFO);
     }
 
-    m_conductor.addDestination(m_originalRegistrationId, endpointChannel);
+    return m_conductor.addDestination(m_originalRegistrationId, endpointChannel);
 }
 
-void Publication::removeDestination(const std::string& endpointChannel)
+std::int64_t Publication::removeDestination(const std::string& endpointChannel)
 {
     if (isClosed())
     {
         throw util::IllegalStateException(std::string("Publication is closed"), SOURCEINFO);
     }
 
-    m_conductor.removeDestination(m_originalRegistrationId, endpointChannel);
+    return m_conductor.removeDestination(m_originalRegistrationId, endpointChannel);
+}
+
+bool Publication::findDestinationResponse(std::int64_t correlationId)
+{
+    return m_conductor.findDestinationResponse(correlationId);
 }
 
 std::int64_t Publication::channelStatus()

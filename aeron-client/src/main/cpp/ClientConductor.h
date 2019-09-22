@@ -161,6 +161,8 @@ public:
     std::shared_ptr<Counter> findCounter(std::int64_t registrationId);
     void releaseCounter(std::int64_t registrationId);
 
+    bool findDestinationResponse(std::int64_t correlationId);
+
     void onNewPublication(
         std::int64_t registrationId,
         std::int64_t originalRegistrationId,
@@ -206,11 +208,11 @@ public:
 
     void closeAllResources(long long nowMs);
 
-    void addDestination(std::int64_t publicationRegistrationId, const std::string &endpointChannel);
-    void removeDestination(std::int64_t publicationRegistrationId, const std::string &endpointChannel);
+    std::int64_t addDestination(std::int64_t publicationRegistrationId, const std::string &endpointChannel);
+    std::int64_t removeDestination(std::int64_t publicationRegistrationId, const std::string &endpointChannel);
 
-    void addRcvDestination(std::int64_t subscriptionRegistrationId, const std::string &endpointChannel);
-    void removeRcvDestination(std::int64_t subscriptionRegistrationId, const std::string &endpointChannel);
+    std::int64_t addRcvDestination(std::int64_t subscriptionRegistrationId, const std::string &endpointChannel);
+    std::int64_t removeRcvDestination(std::int64_t subscriptionRegistrationId, const std::string &endpointChannel);
 
     void addAvailableCounterHandler(const on_available_counter_t &handler);
     void removeAvailableCounterHandler(const on_available_counter_t &handler);
@@ -393,12 +395,30 @@ private:
         }
     };
 
+    struct DestinationStateDefn
+    {
+        std::int64_t m_correlationId;
+        std::int64_t m_registrationId;
+        long long m_timeOfRegistrationMs;
+        RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
+        std::int32_t m_errorCode = -1;
+        std::string m_errorMessage;
+
+        DestinationStateDefn(std::int64_t correlationId, std::int64_t registrationId, long long nowMs) :
+            m_correlationId(correlationId),
+            m_registrationId(registrationId),
+            m_timeOfRegistrationMs(nowMs)
+        {
+        }
+    };
+
     std::recursive_mutex m_adminLock;
 
     std::unordered_map<std::int64_t, PublicationStateDefn> m_publicationByRegistrationId;
     std::unordered_map<std::int64_t, ExclusivePublicationStateDefn> m_exclusivePublicationByRegistrationId;
     std::unordered_map<std::int64_t, SubscriptionStateDefn> m_subscriptionByRegistrationId;
     std::unordered_map<std::int64_t, CounterStateDefn> m_counterByRegistrationId;
+    std::unordered_map<std::int64_t, DestinationStateDefn> m_destinationStateByCorrelationId;
 
     std::unordered_map<std::int64_t, LogBuffersDefn> m_logBuffersByRegistrationId;
     std::vector<ImageListLingerDefn> m_lingeringImageLists;

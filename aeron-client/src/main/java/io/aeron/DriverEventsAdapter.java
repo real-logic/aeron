@@ -24,7 +24,7 @@ import static io.aeron.ErrorCode.CHANNEL_ENDPOINT_ERROR;
 import static io.aeron.command.ControlProtocolEvents.*;
 
 /**
- * Analogue of {@link DriverProxy} on the client side
+ * Analogue of {@link DriverProxy} on the client side for dispatching driver events to the client conductor.
  */
 class DriverEventsAdapter implements MessageHandler
 {
@@ -96,16 +96,15 @@ class DriverEventsAdapter implements MessageHandler
                 final int correlationId = (int)errorResponse.offendingCommandCorrelationId();
                 final int errorCodeValue = errorResponse.errorCodeValue();
                 final ErrorCode errorCode = ErrorCode.get(errorCodeValue);
-                final String message = errorResponse.errorMessage();
 
                 if (CHANNEL_ENDPOINT_ERROR == errorCode)
                 {
-                    listener.onChannelEndpointError(correlationId, message);
+                    listener.onChannelEndpointError(correlationId, errorResponse.errorMessage());
                 }
                 else if (correlationId == activeCorrelationId)
                 {
                     receivedCorrelationId = correlationId;
-                    listener.onError(correlationId, errorCodeValue, errorCode, message);
+                    listener.onError(correlationId, errorCodeValue, errorCode, errorResponse.errorMessage());
                 }
                 break;
             }

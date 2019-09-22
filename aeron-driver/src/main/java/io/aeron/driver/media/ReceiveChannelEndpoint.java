@@ -16,10 +16,12 @@
 package io.aeron.driver.media;
 
 import io.aeron.CommonContext;
+import io.aeron.ErrorCode;
 import io.aeron.driver.DataPacketDispatcher;
 import io.aeron.driver.DriverConductorProxy;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.PublicationImage;
+import io.aeron.driver.exceptions.ControlProtocolException;
 import io.aeron.exceptions.AeronException;
 import io.aeron.protocol.*;
 import io.aeron.status.ChannelEndpointStatus;
@@ -267,7 +269,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     {
         if (null == multiRcvDestination)
         {
-            throw new AeronException("channel does not allow manual control");
+            throw new ControlProtocolException(ErrorCode.INVALID_CHANNEL, "channel does not allow manual control");
         }
     }
 

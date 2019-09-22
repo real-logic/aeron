@@ -16,7 +16,9 @@
 package io.aeron.driver.media;
 
 import io.aeron.CommonContext;
+import io.aeron.ErrorCode;
 import io.aeron.driver.*;
+import io.aeron.driver.exceptions.ControlProtocolException;
 import io.aeron.status.ChannelEndpointStatus;
 import io.aeron.protocol.NakFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
@@ -283,7 +285,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
     {
         if (null == multiDestination || !multiDestination.isManualControlMode())
         {
-            throw new IllegalArgumentException("control channel does not allow manual control");
+            throw new ControlProtocolException(ErrorCode.INVALID_CHANNEL, "channel does not allow manual control");
         }
     }
 

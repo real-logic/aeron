@@ -223,13 +223,13 @@ class ClientConductor implements Agent, DriverEventsListener
 
     public void onError(final long correlationId, final int codeValue, final ErrorCode errorCode, final String message)
     {
-        driverException = new RegistrationException(codeValue, errorCode, message);
+        driverException = new RegistrationException(correlationId, codeValue, errorCode, message);
     }
 
     public void onAsyncError(
         final long correlationId, final int codeValue, final ErrorCode errorCode, final String message)
     {
-        handleError(new RegistrationException(codeValue, errorCode, message));
+        handleError(new RegistrationException(correlationId, codeValue, errorCode, message));
     }
 
     public void onChannelEndpointError(final int statusIndicatorId, final String message)

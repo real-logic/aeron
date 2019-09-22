@@ -262,8 +262,9 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
         final ControlSession controlSession = controlSessionByIdMap.get(controlSessionId);
         if (controlSession == null)
         {
-            throw new ArchiveException(
-                "unknown controlSessionId=" + controlSessionId + " for correlationId=" + correlationId);
+            throw new ArchiveException("unknown controlSessionId=" + controlSessionId +
+                " for correlationId=" + correlationId +
+                " from source=" + image.sourceIdentity());
         }
 
         return controlSession;

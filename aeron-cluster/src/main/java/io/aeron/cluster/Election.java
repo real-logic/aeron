@@ -766,7 +766,7 @@ public class Election implements AutoCloseable
                 .endpoint(thisMember.transferEndpoint())
                 .build();
 
-            logSubscription.addDestination(replayDestination);
+            logSubscription.asyncAddDestination(replayDestination);
             consensusModuleAgent.replayLogDestination(replayDestination);
         }
 
@@ -908,7 +908,7 @@ public class Election implements AutoCloseable
         final ChannelUri channelUri = followerLogDestination(ctx.logChannel(), thisMember.logEndpoint());
         liveLogDestination = channelUri.toString();
 
-        logSubscription.addDestination(liveLogDestination);
+        logSubscription.asyncAddDestination(liveLogDestination);
         consensusModuleAgent.liveLogDestination(liveLogDestination);
     }
 

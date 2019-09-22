@@ -22,6 +22,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.ManagedResource;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.collections.LongHashSet;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
@@ -70,6 +71,7 @@ class ClientConductor implements Agent, DriverEventsListener
     private final Long2ObjectHashMap<LogBuffers> logBuffersByIdMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<Object> resourceByRegIdMap = new Long2ObjectHashMap<>();
     private final ArrayList<ManagedResource> lingeringResources = new ArrayList<>();
+    private final LongHashSet asyncCommandIdSet = new LongHashSet();
     private final AvailableImageHandler defaultAvailableImageHandler;
     private final UnavailableImageHandler defaultUnavailableImageHandler;
     private final ArrayList<AvailableCounterHandler> availableCounterHandlers = new ArrayList<>();
@@ -99,7 +101,7 @@ class ClientConductor implements Agent, DriverEventsListener
         interServiceTimeoutNs = ctx.interServiceTimeoutNs();
         defaultAvailableImageHandler = ctx.availableImageHandler();
         defaultUnavailableImageHandler = ctx.unavailableImageHandler();
-        driverEventsAdapter = new DriverEventsAdapter(ctx.toClientBuffer(), ctx.clientId(), this);
+        driverEventsAdapter = new DriverEventsAdapter(ctx.toClientBuffer(), ctx.clientId(), this, asyncCommandIdSet);
         driverAgentInvoker = ctx.driverAgentInvoker();
         counterValuesBuffer = ctx.countersValuesBuffer();
         countersReader = new CountersReader(ctx.countersMetaDataBuffer(), ctx.countersValuesBuffer(), US_ASCII);
@@ -222,6 +224,12 @@ class ClientConductor implements Agent, DriverEventsListener
     public void onError(final long correlationId, final int codeValue, final ErrorCode errorCode, final String message)
     {
         driverException = new RegistrationException(codeValue, errorCode, message);
+    }
+
+    public void onAsyncError(
+        final long correlationId, final int codeValue, final ErrorCode errorCode, final String message)
+    {
+        handleError(new RegistrationException(codeValue, errorCode, message));
     }
 
     public void onChannelEndpointError(final int statusIndicatorId, final String message)
@@ -612,6 +620,70 @@ class ClientConductor implements Agent, DriverEventsListener
             ensureNotReentrant();
 
             awaitResponse(driverProxy.removeRcvDestination(registrationId, endpointChannel));
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
+    void asyncAddDestination(final long registrationId, final String endpointChannel)
+    {
+        clientLock.lock();
+        try
+        {
+            ensureActive();
+            ensureNotReentrant();
+
+            asyncCommandIdSet.add(driverProxy.addDestination(registrationId, endpointChannel));
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
+    void asyncRemoveDestination(final long registrationId, final String endpointChannel)
+    {
+        clientLock.lock();
+        try
+        {
+            ensureActive();
+            ensureNotReentrant();
+
+            asyncCommandIdSet.add(driverProxy.removeDestination(registrationId, endpointChannel));
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
+    void asyncAddRcvDestination(final long registrationId, final String endpointChannel)
+    {
+        clientLock.lock();
+        try
+        {
+            ensureActive();
+            ensureNotReentrant();
+
+            asyncCommandIdSet.add(driverProxy.addRcvDestination(registrationId, endpointChannel));
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
+    void asyncRemoveRcvDestination(final long registrationId, final String endpointChannel)
+    {
+        clientLock.lock();
+        try
+        {
+            ensureActive();
+            ensureNotReentrant();
+
+            asyncCommandIdSet.add(driverProxy.removeRcvDestination(registrationId, endpointChannel));
         }
         finally
         {

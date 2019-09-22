@@ -89,7 +89,7 @@ class LogPublisher
     {
         if (null != publication)
         {
-            publication.addDestination("aeron:udp?endpoint=" + followerLogEndpoint);
+            publication.asyncAddDestination("aeron:udp?endpoint=" + followerLogEndpoint);
         }
     }
 
@@ -97,7 +97,7 @@ class LogPublisher
     {
         if (null != publication)
         {
-            publication.removeDestination("aeron:udp?endpoint=" + followerLogEndpoint);
+            publication.asyncRemoveDestination("aeron:udp?endpoint=" + followerLogEndpoint);
         }
     }
 

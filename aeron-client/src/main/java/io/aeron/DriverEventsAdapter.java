@@ -17,6 +17,7 @@ package io.aeron;
 
 import io.aeron.command.*;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.collections.LongHashSet;
 import org.agrona.concurrent.MessageHandler;
 import org.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 
@@ -36,6 +37,7 @@ class DriverEventsAdapter implements MessageHandler
     private final ImageMessageFlyweight imageMessage = new ImageMessageFlyweight();
     private final CounterUpdateFlyweight counterUpdate = new CounterUpdateFlyweight();
     private final ClientTimeoutFlyweight clientTimeout = new ClientTimeoutFlyweight();
+    private final LongHashSet asyncCommandIdSet;
     private final CopyBroadcastReceiver receiver;
     private final DriverEventsListener listener;
     private final long clientId;
@@ -44,11 +46,16 @@ class DriverEventsAdapter implements MessageHandler
     private long receivedCorrelationId;
     private boolean isInvalid;
 
-    DriverEventsAdapter(final CopyBroadcastReceiver receiver, final long clientId, final DriverEventsListener listener)
+    DriverEventsAdapter(
+        final CopyBroadcastReceiver receiver,
+        final long clientId,
+        final DriverEventsListener listener,
+        final LongHashSet asyncCommandIdSet)
     {
         this.receiver = receiver;
         this.clientId = clientId;
         this.listener = listener;
+        this.asyncCommandIdSet = asyncCommandIdSet;
     }
 
     int receive(final long activeCorrelationId)
@@ -94,15 +101,23 @@ class DriverEventsAdapter implements MessageHandler
                 final int correlationId = (int)errorResponse.offendingCommandCorrelationId();
                 final int errorCodeValue = errorResponse.errorCodeValue();
                 final ErrorCode errorCode = ErrorCode.get(errorCodeValue);
+                boolean notProcessed = true;
 
                 if (CHANNEL_ENDPOINT_ERROR == errorCode)
                 {
+                    notProcessed = false;
                     listener.onChannelEndpointError(correlationId, errorResponse.errorMessage());
                 }
                 else if (correlationId == activeCorrelationId)
                 {
+                    notProcessed = false;
                     receivedCorrelationId = correlationId;
                     listener.onError(correlationId, errorCodeValue, errorCode, errorResponse.errorMessage());
+                }
+
+                if (asyncCommandIdSet.remove(correlationId) && notProcessed)
+                {
+                    listener.onAsyncError(correlationId, errorCodeValue, errorCode, errorResponse.errorMessage());
                 }
                 break;
             }
@@ -159,6 +174,7 @@ class DriverEventsAdapter implements MessageHandler
                 operationSucceeded.wrap(buffer, index);
 
                 final long correlationId = operationSucceeded.correlationId();
+                asyncCommandIdSet.remove(correlationId);
                 if (correlationId == activeCorrelationId)
                 {
                     receivedCorrelationId = correlationId;

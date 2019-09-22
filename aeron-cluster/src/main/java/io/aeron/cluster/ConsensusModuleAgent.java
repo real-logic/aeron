@@ -2629,13 +2629,13 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             {
                 if (member != thisMember)
                 {
-                    publication.addDestination("aeron:udp?endpoint=" + member.logEndpoint());
+                    publication.asyncAddDestination("aeron:udp?endpoint=" + member.logEndpoint());
                 }
             }
 
             for (final ClusterMember member : passiveMembers)
             {
-                publication.addDestination("aeron:udp?endpoint=" + member.logEndpoint());
+                publication.asyncAddDestination("aeron:udp?endpoint=" + member.logEndpoint());
             }
         }
 

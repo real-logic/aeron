@@ -516,7 +516,7 @@ public abstract class Publication implements AutoCloseable
     /**
      * Add a destination manually to a multi-destination-cast Publication.
      *
-     * @param endpointChannel for the destination to add
+     * @param endpointChannel for the destination to add.
      */
     public void addDestination(final String endpointChannel)
     {
@@ -531,7 +531,7 @@ public abstract class Publication implements AutoCloseable
     /**
      * Remove a previously added destination manually from a multi-destination-cast Publication.
      *
-     * @param endpointChannel for the destination to remove
+     * @param endpointChannel for the destination to remove.
      */
     public void removeDestination(final String endpointChannel)
     {
@@ -541,6 +541,40 @@ public abstract class Publication implements AutoCloseable
         }
 
         conductor.removeDestination(originalRegistrationId, endpointChannel);
+    }
+
+    /**
+     * Asynchronously add a destination manually to a multi-destination-cast Publication.
+     * <p>
+     * Errors will be delivered asynchronously to the {@link Aeron.Context#errorHandler()}.
+     *
+     * @param endpointChannel for the destination to add.
+     */
+    public void asyncAddDestination(final String endpointChannel)
+    {
+        if (isClosed)
+        {
+            throw new AeronException("Publication is closed");
+        }
+
+        conductor.asyncAddDestination(registrationId, endpointChannel);
+    }
+
+    /**
+     * Asynchronously remove a previously added destination from a multi-destination-cast Publication.
+     * <p>
+     * Errors will be delivered asynchronously to the {@link Aeron.Context#errorHandler()}.
+     *
+     * @param endpointChannel for the destination to remove.
+     */
+    public void asyncRemoveDestination(final String endpointChannel)
+    {
+        if (isClosed)
+        {
+            throw new AeronException("Publication is closed");
+        }
+
+        conductor.asyncRemoveDestination(registrationId, endpointChannel);
     }
 
     void internalClose()

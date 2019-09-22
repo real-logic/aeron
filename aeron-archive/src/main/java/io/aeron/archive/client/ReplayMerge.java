@@ -108,7 +108,7 @@ public class ReplayMerge implements AutoCloseable
         this.liveAddThreshold = LIVE_ADD_THRESHOLD;
         this.replayRemoveThreshold = REPLAY_REMOVE_THRESHOLD;
 
-        subscription.addDestination(replayDestination);
+        subscription.asyncAddDestination(replayDestination);
     }
 
     /**
@@ -375,7 +375,7 @@ public class ReplayMerge implements AutoCloseable
                     }
                     else if (shouldStopAndRemoveReplay(position))
                     {
-                        subscription.removeDestination(replayDestination);
+                        subscription.asyncRemoveDestination(replayDestination);
                         nextState = State.AWAIT_STOP_REPLAY;
                     }
                 }

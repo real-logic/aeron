@@ -28,8 +28,6 @@ import static io.aeron.command.ControlProtocolEvents.*;
  */
 class DriverEventsAdapter implements MessageHandler
 {
-    private final CopyBroadcastReceiver broadcastReceiver;
-
     private final ErrorResponseFlyweight errorResponse = new ErrorResponseFlyweight();
     private final PublicationBuffersReadyFlyweight publicationReady = new PublicationBuffersReadyFlyweight();
     private final SubscriptionReadyFlyweight subscriptionReady = new SubscriptionReadyFlyweight();
@@ -38,6 +36,7 @@ class DriverEventsAdapter implements MessageHandler
     private final ImageMessageFlyweight imageMessage = new ImageMessageFlyweight();
     private final CounterUpdateFlyweight counterUpdate = new CounterUpdateFlyweight();
     private final ClientTimeoutFlyweight clientTimeout = new ClientTimeoutFlyweight();
+    private final CopyBroadcastReceiver receiver;
     private final DriverEventsListener listener;
     private final long clientId;
 
@@ -45,22 +44,21 @@ class DriverEventsAdapter implements MessageHandler
     private long receivedCorrelationId;
     private boolean isInvalid;
 
-    DriverEventsAdapter(
-        final CopyBroadcastReceiver broadcastReceiver, final long clientId, final DriverEventsListener listener)
+    DriverEventsAdapter(final CopyBroadcastReceiver receiver, final long clientId, final DriverEventsListener listener)
     {
-        this.broadcastReceiver = broadcastReceiver;
+        this.receiver = receiver;
         this.clientId = clientId;
         this.listener = listener;
     }
 
-    public int receive(final long activeCorrelationId)
+    int receive(final long activeCorrelationId)
     {
         this.activeCorrelationId = activeCorrelationId;
         this.receivedCorrelationId = Aeron.NULL_VALUE;
 
         try
         {
-            return broadcastReceiver.receive(this);
+            return receiver.receive(this);
         }
         catch (final IllegalStateException ex)
         {
@@ -69,17 +67,17 @@ class DriverEventsAdapter implements MessageHandler
         }
     }
 
-    public long receivedCorrelationId()
+    long receivedCorrelationId()
     {
         return receivedCorrelationId;
     }
 
-    public boolean isInvalid()
+    boolean isInvalid()
     {
         return isInvalid;
     }
 
-    public long clientId()
+    long clientId()
     {
         return clientId;
     }

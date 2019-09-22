@@ -925,7 +925,6 @@ class ClientConductor implements Agent, DriverEventsListener
 
     private void awaitResponse(final long correlationId)
     {
-        driverException = null;
         final long deadlineNs = nanoClock.nanoTime() + driverTimeoutNs;
 
         awaitingIdleStrategy.reset();
@@ -944,9 +943,11 @@ class ClientConductor implements Agent, DriverEventsListener
 
             if (driverEventsAdapter.receivedCorrelationId() == correlationId)
             {
-                if (null != driverException)
+                final RegistrationException ex = driverException;
+                if (null != ex)
                 {
-                    throw driverException;
+                    driverException = null;
+                    throw ex;
                 }
 
                 return;

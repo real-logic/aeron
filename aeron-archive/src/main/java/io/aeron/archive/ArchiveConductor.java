@@ -157,6 +157,8 @@ abstract class ArchiveConductor
 
         if (null != counter)
         {
+            counter.close();
+
             for (final ReplaySession session : replaySessionByIdMap.values())
             {
                 if (session.limitPosition() == counter)
@@ -164,8 +166,6 @@ abstract class ArchiveConductor
                     session.abort();
                 }
             }
-
-            counter.close();
         }
     }
 

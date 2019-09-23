@@ -174,9 +174,5 @@
         <module name="JavadocMethod">
             <property name="allowUndeclaredRTE" value="true"/>
         </module>
-
-        <module name="OperatorWrap">
-            <property name="option" value="eol"/>
-        </module>
     </module>
 </module>

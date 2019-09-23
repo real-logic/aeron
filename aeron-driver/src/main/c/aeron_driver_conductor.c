@@ -1513,8 +1513,8 @@ void aeron_driver_conductor_on_command(int32_t msg_type_id, const void *message,
     if (result < 0)
     {
         int os_errno = aeron_errcode();
-        int code = os_errno > 0 ? -os_errno : AERON_ERROR_CODE_GENERIC_ERROR;
-        char *error_description = strerror(os_errno);
+        int code = os_errno < 0 ? -os_errno : AERON_ERROR_CODE_GENERIC_ERROR;
+        const char *error_description = os_errno > 0 ? strerror(os_errno) : aeron_error_code_str(code);
 
         AERON_FORMAT_BUFFER(error_message, "(%d) %s: %s", os_errno, error_description, aeron_errmsg());
         aeron_driver_conductor_on_error(conductor, code, error_message, strlen(error_message), correlation_id);
@@ -2014,7 +2014,7 @@ int aeron_driver_conductor_on_remove_publication(aeron_driver_conductor_t *condu
     }
 
     aeron_set_err(
-        EINVAL,
+        -AERON_ERROR_CODE_UNKNOWN_PUBLICATION,
         "unknown publication client_id=%" PRId64 ", registration_id=%" PRId64,
         command->correlated.client_id,
         command->registration_id);
@@ -2364,7 +2364,7 @@ int aeron_driver_conductor_on_remove_subscription(
     }
 
     aeron_set_err(
-        EINVAL,
+        -AERON_ERROR_CODE_UNKNOWN_SUBSCRIPTION,
         "unknown subscription client_id=%" PRId64 ", registration_id=%" PRId64,
         command->correlated.client_id,
         command->registration_id);
@@ -2448,7 +2448,7 @@ int aeron_driver_conductor_on_add_destination(aeron_driver_conductor_t *conducto
     }
 
     aeron_set_err(
-        EINVAL,
+        -AERON_ERROR_CODE_UNKNOWN_PUBLICATION,
         "unknown add destination registration_id=%" PRId64,
         command->correlated.client_id,
         command->registration_id);
@@ -2521,7 +2521,7 @@ int aeron_driver_conductor_on_remove_destination(
     }
 
     aeron_set_err(
-        EINVAL,
+        -AERON_ERROR_CODE_UNKNOWN_PUBLICATION,
         "unknown remove destination registration_id=%" PRId64,
         command->correlated.client_id,
         command->registration_id);
@@ -2602,7 +2602,7 @@ int aeron_driver_conductor_on_remove_counter(aeron_driver_conductor_t *conductor
     }
 
     aeron_set_err(
-        EINVAL,
+        -AERON_ERROR_CODE_UNKNOWN_COUNTER,
         "unknown counter client_id=%" PRId64 ", registration_id=%" PRId64,
         command->correlated.client_id,
         command->registration_id);

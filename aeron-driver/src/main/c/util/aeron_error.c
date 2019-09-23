@@ -22,6 +22,7 @@
 #include "concurrent/aeron_thread.h"
 #include "util/aeron_error.h"
 #include "aeron_alloc.h"
+#include "command/aeron_control_protocol.h"
 
 static AERON_INIT_ONCE error_is_initialized = AERON_INIT_ONCE_VALUE;
 static pthread_key_t error_key;
@@ -91,6 +92,42 @@ void aeron_set_err(int errcode, const char *format, ...)
     vsnprintf(stack_message, sizeof(stack_message) - 1, format, args);
     va_end(args);
     strncpy(error_state->errmsg, stack_message, sizeof(error_state->errmsg) - 1);
+}
+
+const char *aeron_error_code_str(int errcode)
+{
+    switch (errcode)
+    {
+        case AERON_ERROR_CODE_GENERIC_ERROR:
+            return "generic error, see message";
+
+        case AERON_ERROR_CODE_INVALID_CHANNEL:
+            return "invalid channel";
+
+        case AERON_ERROR_CODE_UNKNOWN_SUBSCRIPTION:
+            return "unknown subscription";
+
+        case AERON_ERROR_CODE_UNKNOWN_PUBLICATION:
+            return "unknown publication";
+
+        case AERON_ERROR_CODE_CHANNEL_ENDPOINT_ERROR:
+            return "channel endpoint error";
+
+        case AERON_ERROR_CODE_UNKNOWN_COUNTER:
+            return "unknown counter";
+
+        case AERON_ERROR_CODE_UNKNOWN_COMMAND_TYPE_ID:
+            return "unknown command type id";
+
+        case AERON_ERROR_CODE_MALFORMED_COMMAND:
+            return "malformed command";
+
+        case AERON_ERROR_CODE_ENOTSUP:
+            return "not supported";
+
+        default:
+            return "unknown error code";
+    }
 }
 
 #ifdef _MSC_VER

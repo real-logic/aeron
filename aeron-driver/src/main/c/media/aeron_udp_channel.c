@@ -28,6 +28,7 @@
 #include "util/aeron_error.h"
 #include "media/aeron_udp_channel.h"
 #include "concurrent/aeron_atomic.h"
+#include "command/aeron_control_protocol.h"
 
 int aeron_ipv4_multicast_control_address(struct sockaddr_in *data_addr, struct sockaddr_in *control_addr)
 {
@@ -233,7 +234,7 @@ int aeron_udp_channel_parse(size_t uri_length, const char *uri, aeron_udp_channe
 
     if (_channel->uri.type != AERON_URI_UDP)
     {
-        aeron_set_err(EINVAL, "%s", "UDP channels must use UDP URIs");
+        aeron_set_err(-AERON_ERROR_CODE_INVALID_CHANNEL, "%s", "UDP channels must use UDP URIs");
         goto error_cleanup;
     }
 
@@ -244,7 +245,7 @@ int aeron_udp_channel_parse(size_t uri_length, const char *uri, aeron_udp_channe
 
     if (has_no_distinguishing_characteristic && NULL == _channel->uri.params.udp.control_mode_key)
     {
-        aeron_set_err(EINVAL, "%s",
+        aeron_set_err(-AERON_ERROR_CODE_INVALID_CHANNEL, "%s",
             "Aeron URIs for UDP must specify an endpoint address, control address, tag-id, or control-mode");
         goto error_cleanup;
     }
@@ -254,7 +255,7 @@ int aeron_udp_channel_parse(size_t uri_length, const char *uri, aeron_udp_channe
         if (aeron_host_and_port_parse_and_resolve(_channel->uri.params.udp.endpoint_key, &endpoint_addr) < 0)
         {
             aeron_set_err(
-                aeron_errcode(),
+                -AERON_ERROR_CODE_INVALID_CHANNEL,
                 "could not resolve endpoint address=(%s): %s",
                 _channel->uri.params.udp.endpoint_key, aeron_errmsg());
             goto error_cleanup;
@@ -270,7 +271,7 @@ int aeron_udp_channel_parse(size_t uri_length, const char *uri, aeron_udp_channe
         if (aeron_host_and_port_parse_and_resolve(_channel->uri.params.udp.control_key, &explicit_control_addr) < 0)
         {
             aeron_set_err(
-                aeron_errcode(),
+                -AERON_ERROR_CODE_INVALID_CHANNEL,
                 "could not resolve control address=(%s): %s",
                 _channel->uri.params.udp.control_key, aeron_errmsg());
             goto error_cleanup;
@@ -281,7 +282,8 @@ int aeron_udp_channel_parse(size_t uri_length, const char *uri, aeron_udp_channe
     {
         if ((_channel->tag_id = aeron_uri_parse_tag(_channel->uri.params.udp.channel_tag_key)) == AERON_URI_INVALID_TAG)
         {
-            aeron_set_err(EINVAL, "could not parse channel tag string: %s", _channel->uri.params.udp.channel_tag_key);
+            aeron_set_err(-AERON_ERROR_CODE_INVALID_CHANNEL, "could not parse channel tag string: %s",
+                _channel->uri.params.udp.channel_tag_key);
             goto error_cleanup;
         }
     }
@@ -298,7 +300,7 @@ int aeron_udp_channel_parse(size_t uri_length, const char *uri, aeron_udp_channe
             endpoint_addr.ss_family, _channel->uri.params.udp.interface_key, &interface_addr, &interface_index) < 0)
         {
             aeron_set_err(
-                aeron_errcode(),
+                -AERON_ERROR_CODE_INVALID_CHANNEL,
                 "could not find interface=(%s): %s",
                 _channel->uri.params.udp.interface_key, aeron_errmsg());
             goto error_cleanup;

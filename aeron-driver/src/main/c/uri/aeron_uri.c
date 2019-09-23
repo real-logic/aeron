@@ -278,7 +278,7 @@ int aeron_uri_parse(size_t uri_length, const char *uri, aeron_uri_t *params)
         }
     }
 
-    aeron_set_err(EINVAL, "invalid URI scheme or transport: %s", uri);
+    aeron_set_err(-AERON_ERROR_CODE_INVALID_CHANNEL, "invalid URI scheme or transport: %s", uri);
 
     return -1;
 }

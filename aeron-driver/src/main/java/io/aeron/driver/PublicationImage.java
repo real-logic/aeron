@@ -632,6 +632,8 @@ public class PublicationImage
                     lastSmPosition = smPosition;
                     lastSmWindowLimit = smPosition + receiverWindowLength;
                     lastSmChangeNumber = changeNumber;
+
+                    updateNumberOfActiveTransports(cachedNanoClock.nanoTime());
                 }
 
                 workCount = 1;
@@ -754,7 +756,6 @@ public class PublicationImage
         {
             case ACTIVE:
                 checkUntetheredSubscriptions(timeNs, conductor);
-                updateNumberOfActiveTransports(timeNs);
                 break;
 
             case INACTIVE:

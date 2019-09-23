@@ -314,7 +314,7 @@ abstract class ArchiveConductor
         return controlSession;
     }
 
-    void startRecordingSubscription(
+    void startRecording(
         final long correlationId,
         final ControlSession controlSession,
         final int streamId,
@@ -570,7 +570,7 @@ abstract class ArchiveConductor
         replayer.addSession(replaySession);
     }
 
-    void boundedStartReplay(
+    void startBoundedReplay(
         final long correlationId,
         final ControlSession controlSession,
         final long recordingId,

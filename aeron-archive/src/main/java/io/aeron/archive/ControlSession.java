@@ -174,7 +174,7 @@ class ControlSession implements Session
         updateState();
         if (State.ACTIVE == state)
         {
-            conductor.startRecordingSubscription(correlationId, this, streamId, channel, sourceLocation);
+            conductor.startRecording(correlationId, this, streamId, channel, sourceLocation);
         }
     }
 
@@ -258,7 +258,7 @@ class ControlSession implements Session
         }
     }
 
-    void onBoundedStartReplay(
+    void onStartBoundedReplay(
         final long correlationId,
         final long recordingId,
         final long position,
@@ -270,7 +270,7 @@ class ControlSession implements Session
         updateState();
         if (State.ACTIVE == state)
         {
-            conductor.boundedStartReplay(
+            conductor.startBoundedReplay(
                 correlationId,
                 this,
                 recordingId,

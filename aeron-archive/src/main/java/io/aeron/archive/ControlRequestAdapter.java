@@ -347,7 +347,7 @@ class ControlRequestAdapter implements FragmentHandler
                     headerDecoder.blockLength(),
                     headerDecoder.version());
 
-                listener.onBoundedStartReplay(
+                listener.onStartBoundedReplay(
                     boundedReplayRequestDecoder.controlSessionId(),
                     boundedReplayRequestDecoder.correlationId(),
                     boundedReplayRequestDecoder.recordingId(),

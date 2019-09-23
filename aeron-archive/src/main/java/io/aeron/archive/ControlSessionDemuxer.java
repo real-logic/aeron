@@ -138,7 +138,7 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
         controlSession.onStartReplay(correlationId, recordingId, position, length, replayStreamId, replayChannel);
     }
 
-    public void onBoundedStartReplay(
+    public void onStartBoundedReplay(
         final long controlSessionId,
         final long correlationId,
         final long recordingId,
@@ -149,7 +149,7 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
         final String replayChannel)
     {
         final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
-        controlSession.onBoundedStartReplay(
+        controlSession.onStartBoundedReplay(
             correlationId, recordingId, position, length, limitCounterId, replayStreamId, replayChannel);
     }
 

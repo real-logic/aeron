@@ -86,6 +86,8 @@ const util::index_t LOG_META_DATA_SECTION_INDEX = PARTITION_COUNT;
  *  +---------------------------------------------------------------+
  *  |                        Is Connected                           |
  *  +---------------------------------------------------------------+
+ *  |                  Number of Active Transports                  |
+ *  +---------------------------------------------------------------+
  *  |                      Cache Line Padding                      ...
  * ...                                                              |
  *  +---------------------------------------------------------------+
@@ -122,7 +124,8 @@ struct LogMetaDataDefn
     std::int8_t pad1[(2 * util::BitUtil::CACHE_LINE_LENGTH) - ((PARTITION_COUNT * sizeof(std::int64_t)) + sizeof(std::int32_t))];
     std::int64_t endOfStreamPosition;
     std::int32_t isConnected;
-    std::int8_t pad2[(2 * util::BitUtil::CACHE_LINE_LENGTH) - (sizeof(std::int64_t) + sizeof(std::int32_t))];
+    std::int32_t numberOfActiveTransports;
+    std::int8_t pad2[(2 * util::BitUtil::CACHE_LINE_LENGTH) - (sizeof(std::int64_t) + (2 * sizeof(std::int32_t)))];
     std::int64_t correlationId;
     std::int32_t initialTermId;
     std::int32_t defaultFrameHeaderLength;
@@ -138,6 +141,8 @@ const util::index_t TERM_TAIL_COUNTER_OFFSET = (util::index_t)offsetof(LogMetaDa
 const util::index_t LOG_ACTIVE_TERM_COUNT_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, activeTermCount);
 const util::index_t LOG_END_OF_STREAM_POSITION_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, endOfStreamPosition);
 const util::index_t LOG_IS_CONNECTED_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, isConnected);
+const util::index_t LOG_NUMBER_OF_ACTIVE_TRANSPORTS =
+    (util::index_t)offsetof(LogMetaDataDefn, numberOfActiveTransports);
 const util::index_t LOG_INITIAL_TERM_ID_OFFSET = (util::index_t)offsetof(LogMetaDataDefn, initialTermId);
 const util::index_t LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET =
     (util::index_t)offsetof(LogMetaDataDefn, defaultFrameHeaderLength);
@@ -247,6 +252,16 @@ inline bool isConnected(const AtomicBuffer &logMetaDataBuffer) AERON_NOEXCEPT
 inline void isConnected(AtomicBuffer &logMetaDataBuffer, bool isConnected) AERON_NOEXCEPT
 {
     logMetaDataBuffer.putInt32Ordered(LOG_IS_CONNECTED_OFFSET, isConnected ? 1 : 0);
+}
+
+inline std::int32_t numberOfActiveTransports(AtomicBuffer &logMegaDataBuffer) AERON_NOEXCEPT
+{
+    return logMegaDataBuffer.getInt32Volatile(LOG_NUMBER_OF_ACTIVE_TRANSPORTS);
+}
+
+inline void numberOfActiveTransports(AtomicBuffer &logMetaDataBuffer, std::int32_t numberOfActiveTransports) AERON_NOEXCEPT
+{
+    logMetaDataBuffer.putInt32Ordered(LOG_NUMBER_OF_ACTIVE_TRANSPORTS, numberOfActiveTransports);
 }
 
 inline std::int64_t endOfStreamPosition(const AtomicBuffer &logMetaDataBuffer) AERON_NOEXCEPT

@@ -41,7 +41,8 @@ typedef struct aeron_logbuffer_metadata_stct
     uint8_t pad1[(2 * AERON_CACHE_LINE_LENGTH) - ((AERON_LOGBUFFER_PARTITION_COUNT * sizeof(int64_t)) + sizeof(int32_t))];
     int64_t end_of_stream_position;
     int32_t is_connected;
-    uint8_t pad2[(2 * AERON_CACHE_LINE_LENGTH) - (sizeof(int64_t) + sizeof(int32_t))];
+    int32_t number_of_active_transports;
+    uint8_t pad2[(2 * AERON_CACHE_LINE_LENGTH) - (sizeof(int64_t) + (2 * sizeof(int32_t)))];
     int64_t correlation_id;
     int32_t initial_term_id;
     int32_t default_frame_header_length;

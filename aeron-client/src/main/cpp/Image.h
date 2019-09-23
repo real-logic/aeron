@@ -365,6 +365,25 @@ public:
     }
 
     /**
+     * The number of transports active within the Image liveness timeout.
+     *
+     * If the Image is closed, then this is 0. This may also be 0 if no actual datagrams have arrived. IPC
+     * Images also will be 0.
+     *
+     * @return number of active transports. Or 0 if Image is closed, no datagrams yet, or IPC.
+     */
+    inline std::int32_t numberOfActiveTransports() const
+    {
+        if (isClosed())
+        {
+            return 0;
+        }
+
+        return LogBufferDescriptor::numberOfActiveTransports(
+            m_logBuffers->atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX));
+    }
+
+    /**
      * Poll for new messages in a stream. If new messages are found beyond the last consumed position then they
      * will be delivered via the fragment_handler_t up to a limited number of fragments as specified.
      *

@@ -850,7 +850,7 @@ public class PublicationImage
             imageConnections[transportIndex] = imageConnection;
         }
 
-        imageConnection.timeOfLastFrameNs = nowNs;
+        imageConnection.timeOfLastActivityNs = nowNs;
     }
 
     private boolean allEos(final int transportIndex)

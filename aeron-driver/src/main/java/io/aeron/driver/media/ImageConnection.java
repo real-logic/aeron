@@ -22,13 +22,13 @@ import java.net.InetSocketAddress;
  */
 public class ImageConnection
 {
-    public long timeOfLastFrameNs;
+    public long timeOfLastActivityNs;
     public boolean isEos;
     public final InetSocketAddress controlAddress;
 
-    public ImageConnection(final long timeOfLastFrameNs, final InetSocketAddress controlAddress)
+    public ImageConnection(final long timeOfLastActivityNs, final InetSocketAddress controlAddress)
     {
-        this.timeOfLastFrameNs = timeOfLastFrameNs;
+        this.timeOfLastActivityNs = timeOfLastActivityNs;
         this.controlAddress = controlAddress;
     }
 }

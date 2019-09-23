@@ -124,7 +124,7 @@ class MultiRcvDestination
             if (null != connection)
             {
                 final UdpChannelTransport transport = transports[i];
-                if (null != transport && ((connection.timeOfLastFrameNs + destinationEndpointTimeoutNs) - nowNs > 0))
+                if (null != transport && ((connection.timeOfLastActivityNs + destinationEndpointTimeoutNs) - nowNs > 0))
                 {
                     buffer.position(position);
                     minBytesSent = Math.min(minBytesSent, sendTo(transport, buffer, connection.controlAddress));

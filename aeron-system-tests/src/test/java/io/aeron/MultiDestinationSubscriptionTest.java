@@ -35,6 +35,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
 
@@ -162,7 +163,7 @@ public class MultiDestinationSubscriptionTest
         launch();
 
         subscription = clientA.addSubscription(SUB_URI, STREAM_ID);
-        subscription.addDestination(PUB_MULTICAST_URI);
+        final long correlationId = subscription.asyncAddDestination(PUB_MULTICAST_URI);
 
         publicationA = clientA.addPublication(PUB_MULTICAST_URI, STREAM_ID);
 
@@ -171,6 +172,8 @@ public class MultiDestinationSubscriptionTest
             SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
+
+        assertFalse(clientA.isCommandActive(correlationId));
     }
 
     @Test(timeout = 10_000)

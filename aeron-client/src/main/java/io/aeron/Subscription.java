@@ -441,35 +441,39 @@ public class Subscription extends SubscriptionFields implements AutoCloseable
     /**
      * Asynchronously add a destination manually to a multi-destination Subscription.
      * <p>
-     * Errors will be delivered asynchronously to the {@link Aeron.Context#errorHandler()}.
+     * Errors will be delivered asynchronously to the {@link Aeron.Context#errorHandler()}. Completion can be
+     * tracked by passing the returned correlation id to {@link Aeron#isCommandActive(long)}.
      *
      * @param endpointChannel for the destination to add.
+     * @return the correlationId for the command.
      */
-    public void asyncAddDestination(final String endpointChannel)
+    public long asyncAddDestination(final String endpointChannel)
     {
         if (isClosed)
         {
             throw new AeronException("Subscription is closed");
         }
 
-        conductor.asyncAddRcvDestination(registrationId, endpointChannel);
+        return conductor.asyncAddRcvDestination(registrationId, endpointChannel);
     }
 
     /**
      * Asynchronously remove a previously added destination from a multi-destination Subscription.
      * <p>
-     * Errors will be delivered asynchronously to the {@link Aeron.Context#errorHandler()}.
+     * Errors will be delivered asynchronously to the {@link Aeron.Context#errorHandler()}. Completion can be
+     * tracked by passing the returned correlation id to {@link Aeron#isCommandActive(long)}.
      *
      * @param endpointChannel for the destination to remove.
+     * @return the correlationId for the command.
      */
-    public void asyncRemoveDestination(final String endpointChannel)
+    public long asyncRemoveDestination(final String endpointChannel)
     {
         if (isClosed)
         {
             throw new AeronException("Subscription is closed");
         }
 
-        conductor.asyncRemoveRcvDestination(registrationId, endpointChannel);
+        return conductor.asyncRemoveRcvDestination(registrationId, endpointChannel);
     }
 
     void channelStatusId(final int id)

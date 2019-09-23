@@ -627,7 +627,7 @@ class ClientConductor implements Agent, DriverEventsListener
         }
     }
 
-    void asyncAddDestination(final long registrationId, final String endpointChannel)
+    long asyncAddDestination(final long registrationId, final String endpointChannel)
     {
         clientLock.lock();
         try
@@ -635,7 +635,9 @@ class ClientConductor implements Agent, DriverEventsListener
             ensureActive();
             ensureNotReentrant();
 
-            asyncCommandIdSet.add(driverProxy.addDestination(registrationId, endpointChannel));
+            final long correlationId = driverProxy.addDestination(registrationId, endpointChannel);
+            asyncCommandIdSet.add(correlationId);
+            return correlationId;
         }
         finally
         {
@@ -643,7 +645,7 @@ class ClientConductor implements Agent, DriverEventsListener
         }
     }
 
-    void asyncRemoveDestination(final long registrationId, final String endpointChannel)
+    long asyncRemoveDestination(final long registrationId, final String endpointChannel)
     {
         clientLock.lock();
         try
@@ -651,7 +653,9 @@ class ClientConductor implements Agent, DriverEventsListener
             ensureActive();
             ensureNotReentrant();
 
-            asyncCommandIdSet.add(driverProxy.removeDestination(registrationId, endpointChannel));
+            final long correlationId = driverProxy.removeDestination(registrationId, endpointChannel);
+            asyncCommandIdSet.add(correlationId);
+            return correlationId;
         }
         finally
         {
@@ -659,7 +663,7 @@ class ClientConductor implements Agent, DriverEventsListener
         }
     }
 
-    void asyncAddRcvDestination(final long registrationId, final String endpointChannel)
+    long asyncAddRcvDestination(final long registrationId, final String endpointChannel)
     {
         clientLock.lock();
         try
@@ -667,7 +671,9 @@ class ClientConductor implements Agent, DriverEventsListener
             ensureActive();
             ensureNotReentrant();
 
-            asyncCommandIdSet.add(driverProxy.addRcvDestination(registrationId, endpointChannel));
+            final long correlationId = driverProxy.addRcvDestination(registrationId, endpointChannel);
+            asyncCommandIdSet.add(correlationId);
+            return correlationId;
         }
         finally
         {
@@ -675,7 +681,7 @@ class ClientConductor implements Agent, DriverEventsListener
         }
     }
 
-    void asyncRemoveRcvDestination(final long registrationId, final String endpointChannel)
+    long asyncRemoveRcvDestination(final long registrationId, final String endpointChannel)
     {
         clientLock.lock();
         try
@@ -683,7 +689,24 @@ class ClientConductor implements Agent, DriverEventsListener
             ensureActive();
             ensureNotReentrant();
 
-            asyncCommandIdSet.add(driverProxy.removeRcvDestination(registrationId, endpointChannel));
+            final long correlationId = driverProxy.removeRcvDestination(registrationId, endpointChannel);
+            asyncCommandIdSet.add(correlationId);
+            return correlationId;
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
+    boolean isCommandActive(final long correlationId)
+    {
+        clientLock.lock();
+        try
+        {
+            ensureActive();
+
+            return asyncCommandIdSet.contains(correlationId);
         }
         finally
         {

@@ -35,6 +35,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.*;
 
 public class MultiDestinationCastTest
@@ -139,13 +140,15 @@ public class MultiDestinationCastTest
 
         publication = clientA.addPublication(PUB_MDC_MANUAL_URI, STREAM_ID);
         publication.addDestination(SUB1_MDC_MANUAL_URI);
-        publication.addDestination(SUB2_MDC_MANUAL_URI);
+        final long correlationId = publication.asyncAddDestination(SUB2_MDC_MANUAL_URI);
 
         while (subscriptionA.hasNoImages() || subscriptionB.hasNoImages() || subscriptionC.hasNoImages())
         {
             SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
+
+        assertFalse(clientA.isCommandActive(correlationId));
     }
 
     @Test(timeout = 10_000)

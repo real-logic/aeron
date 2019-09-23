@@ -546,35 +546,39 @@ public abstract class Publication implements AutoCloseable
     /**
      * Asynchronously add a destination manually to a multi-destination-cast Publication.
      * <p>
-     * Errors will be delivered asynchronously to the {@link Aeron.Context#errorHandler()}.
+     * Errors will be delivered asynchronously to the {@link Aeron.Context#errorHandler()}. Completion can be
+     * tracked by passing the returned correlation id to {@link Aeron#isCommandActive(long)}.
      *
      * @param endpointChannel for the destination to add.
+     * @return the correlationId for the command.
      */
-    public void asyncAddDestination(final String endpointChannel)
+    public long asyncAddDestination(final String endpointChannel)
     {
         if (isClosed)
         {
             throw new AeronException("Publication is closed");
         }
 
-        conductor.asyncAddDestination(registrationId, endpointChannel);
+        return conductor.asyncAddDestination(registrationId, endpointChannel);
     }
 
     /**
      * Asynchronously remove a previously added destination from a multi-destination-cast Publication.
      * <p>
-     * Errors will be delivered asynchronously to the {@link Aeron.Context#errorHandler()}.
+     * Errors will be delivered asynchronously to the {@link Aeron.Context#errorHandler()}. Completion can be
+     * tracked by passing the returned correlation id to {@link Aeron#isCommandActive(long)}.
      *
      * @param endpointChannel for the destination to remove.
+     * @return the correlationId for the command.
      */
-    public void asyncRemoveDestination(final String endpointChannel)
+    public long asyncRemoveDestination(final String endpointChannel)
     {
         if (isClosed)
         {
             throw new AeronException("Publication is closed");
         }
 
-        conductor.asyncRemoveDestination(registrationId, endpointChannel);
+        return conductor.asyncRemoveDestination(registrationId, endpointChannel);
     }
 
     void internalClose()

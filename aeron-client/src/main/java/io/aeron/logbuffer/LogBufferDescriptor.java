@@ -95,6 +95,11 @@ public class LogBufferDescriptor
     public static final int LOG_IS_CONNECTED_OFFSET;
 
     /**
+     * Offset within the log metadata where the number of active transports is stored.
+     */
+    public static final int LOG_NUMBER_OF_ACTIVE_TRANSPORTS;
+
+    /**
      * Offset within the log metadata where the active term id is stored.
      */
     public static final int LOG_INITIAL_TERM_ID_OFFSET;
@@ -159,6 +164,8 @@ public class LogBufferDescriptor
      *  +---------------------------------------------------------------+
      *  |                        Is Connected                           |
      *  +---------------------------------------------------------------+
+     *  |                  Number of Active Transports                  |
+     *  +---------------------------------------------------------------+
      *  |                      Cache Line Padding                      ...
      * ...                                                              |
      *  +---------------------------------------------------------------+
@@ -196,6 +203,7 @@ public class LogBufferDescriptor
         offset = (CACHE_LINE_LENGTH * 2);
         LOG_END_OF_STREAM_POSITION_OFFSET = offset;
         LOG_IS_CONNECTED_OFFSET = LOG_END_OF_STREAM_POSITION_OFFSET + SIZE_OF_LONG;
+        LOG_NUMBER_OF_ACTIVE_TRANSPORTS = LOG_IS_CONNECTED_OFFSET + SIZE_OF_INT;
 
         offset += (CACHE_LINE_LENGTH * 2);
         LOG_CORRELATION_ID_OFFSET = offset;
@@ -394,6 +402,28 @@ public class LogBufferDescriptor
     public static void isConnected(final UnsafeBuffer metadataBuffer, final boolean isConnected)
     {
         metadataBuffer.putIntOrdered(LOG_IS_CONNECTED_OFFSET, isConnected ? 1 : 0);
+    }
+
+    /**
+     * Get the number of active transports for the Image.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @return number of active transports.
+     */
+    public static int numberOfActiveTransports(final UnsafeBuffer metadataBuffer)
+    {
+        return metadataBuffer.getIntVolatile(LOG_NUMBER_OF_ACTIVE_TRANSPORTS);
+    }
+
+    /**
+     * Set the number of active transports for the Image.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @param numberOfActiveTransports value to be set.
+     */
+    public static void numberOfActiveTransports(final UnsafeBuffer metadataBuffer, final int numberOfActiveTransports)
+    {
+        metadataBuffer.putIntOrdered(LOG_NUMBER_OF_ACTIVE_TRANSPORTS, numberOfActiveTransports);
     }
 
     /**

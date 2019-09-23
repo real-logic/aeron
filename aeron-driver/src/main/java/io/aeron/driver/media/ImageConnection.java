@@ -23,6 +23,7 @@ import java.net.InetSocketAddress;
 public class ImageConnection
 {
     public long timeOfLastActivityNs;
+    public long timeOfLastFrameNs;
     public boolean isEos;
     public final InetSocketAddress controlAddress;
 

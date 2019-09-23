@@ -257,6 +257,24 @@ public class Image
     }
 
     /**
+     * The number of transports active within the image liveness timeout.
+     *
+     * If the image is closed, then this is 0. This may also be 0 if no actual datagrams have arrived. IPC
+     * Images also will be 0.
+     *
+     * @return number of active transports. Or 0 if Image is closed, no datagrams yet, or IPC.
+     */
+    public int numberOfActiveTransports()
+    {
+        if (isClosed)
+        {
+            return 0;
+        }
+
+        return LogBufferDescriptor.numberOfActiveTransports(logBuffers.metaDataBuffer());
+    }
+
+    /**
      * The {@link FileChannel} to the raw log of the Image.
      *
      * @return the {@link FileChannel} to the raw log of the Image.

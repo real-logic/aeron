@@ -754,6 +754,7 @@ public class PublicationImage
         {
             case ACTIVE:
                 checkUntetheredSubscriptions(timeNs, conductor);
+                updateNumberOfActiveTransports(timeNs);
                 break;
 
             case INACTIVE:
@@ -851,6 +852,7 @@ public class PublicationImage
         }
 
         imageConnection.timeOfLastActivityNs = nowNs;
+        imageConnection.timeOfLastFrameNs = nowNs;
     }
 
     private boolean allEos(final int transportIndex)
@@ -960,6 +962,21 @@ public class PublicationImage
                     break;
             }
         }
+    }
+
+    private void updateNumberOfActiveTransports(final long nowNs)
+    {
+        int numberOfActiveTransports = 0;
+
+        for (final ImageConnection imageConnection : imageConnections)
+        {
+            if (null != imageConnection && nowNs < (imageConnection.timeOfLastFrameNs + imageLivenessTimeoutNs))
+            {
+                numberOfActiveTransports++;
+            }
+        }
+
+        LogBufferDescriptor.numberOfActiveTransports(rawLog.metaData(), numberOfActiveTransports);
     }
 
     private ReadablePosition[] positionArray(final ArrayList<SubscriberPosition> subscriberPositions, final long nowNs)

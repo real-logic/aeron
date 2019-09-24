@@ -365,21 +365,21 @@ public:
     }
 
     /**
-     * The number of transports active within the Image liveness timeout.
+     * A count of observed active transports within the Image liveness timeout.
      *
      * If the Image is closed, then this is 0. This may also be 0 if no actual datagrams have arrived. IPC
      * Images also will be 0.
      *
-     * @return number of active transports. Or 0 if Image is closed, no datagrams yet, or IPC.
+     * @return count of active transports - or 0 if Image is closed, no datagrams yet, or IPC.
      */
-    inline std::int32_t numberOfActiveTransports() const
+    inline std::int32_t activeTransportCount() const
     {
         if (isClosed())
         {
             return 0;
         }
 
-        return LogBufferDescriptor::numberOfActiveTransports(
+        return LogBufferDescriptor::activeTransportCount(
             m_logBuffers->atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX));
     }
 

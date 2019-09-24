@@ -122,7 +122,7 @@ const char *aeron_error_code_str(int errcode)
         case AERON_ERROR_CODE_MALFORMED_COMMAND:
             return "malformed command";
 
-        case AERON_ERROR_CODE_ENOTSUP:
+        case AERON_ERROR_CODE_NOT_SUPPORTED:
             return "not supported";
 
         default:

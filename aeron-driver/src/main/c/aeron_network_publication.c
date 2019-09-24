@@ -133,7 +133,7 @@ int aeron_network_publication_create(
 
         _pub->log_meta_data->term_tail_counters[active_index] =
             (term_id * ((int64_t)1 << 32)) | params->term_offset;
-        
+
         for (int i = 1; i < AERON_LOGBUFFER_PARTITION_COUNT; i++)
         {
             int64_t expected_term_id = (term_id + i) - AERON_LOGBUFFER_PARTITION_COUNT;
@@ -161,7 +161,7 @@ int aeron_network_publication_create(
     _pub->log_meta_data->page_size = (int32_t)context->file_page_size;
     _pub->log_meta_data->correlation_id = registration_id;
     _pub->log_meta_data->is_connected = 0;
-    _pub->log_meta_data->number_of_active_transports = 0;
+    _pub->log_meta_data->active_transport_count = 0;
     _pub->log_meta_data->end_of_stream_position = INT64_MAX;
     aeron_logbuffer_fill_default_header(
         _pub->mapped_raw_log.log_meta_data.addr, session_id, stream_id, initial_term_id);

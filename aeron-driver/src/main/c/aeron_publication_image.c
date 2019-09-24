@@ -117,7 +117,7 @@ int aeron_publication_image_create(
     _image->log_meta_data->page_size = (int32_t)context->file_page_size;
     _image->log_meta_data->correlation_id = correlation_id;
     _image->log_meta_data->is_connected = 0;
-    _image->log_meta_data->number_of_active_transports = 0;
+    _image->log_meta_data->active_transport_count = 0;
     _image->log_meta_data->end_of_stream_position = INT64_MAX;
     aeron_logbuffer_fill_default_header(
         _image->mapped_raw_log.log_meta_data.addr, session_id, stream_id, initial_term_id);
@@ -444,7 +444,7 @@ int aeron_publication_image_send_pending_status_message(aeron_publication_image_
                 image->last_sm_position = sm_position;
                 image->last_sm_position_window_limit = sm_position + receiver_window_length;
 
-                AERON_PUT_ORDERED(image->log_meta_data->number_of_active_transports, 1);
+                AERON_PUT_ORDERED(image->log_meta_data->active_transport_count, 1);
 
                 work_count = send_sm_result < 0 ? send_sm_result : 1;
             }

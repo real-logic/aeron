@@ -110,8 +110,8 @@ public class DataTransportPoller extends UdpTransportPoller
         SelectionKey key = null;
         try
         {
-            final ChannelAndTransport channelAndTransport =
-                new ChannelAndTransport(channelEndpoint, transport, transportIndex);
+            final ChannelAndTransport channelAndTransport = new ChannelAndTransport(
+                channelEndpoint, transport, transportIndex);
 
             key = transport.receiveDatagramChannel().register(selector, SelectionKey.OP_READ, channelAndTransport);
             channelAndTransports = ArrayUtil.add(channelAndTransports, channelAndTransport);
@@ -145,7 +145,7 @@ public class DataTransportPoller extends UdpTransportPoller
 
         if (index != ArrayUtil.UNKNOWN_INDEX)
         {
-            this.channelAndTransports = ArrayUtil.remove(transports, index);
+            channelAndTransports = ArrayUtil.remove(transports, index);
         }
     }
 

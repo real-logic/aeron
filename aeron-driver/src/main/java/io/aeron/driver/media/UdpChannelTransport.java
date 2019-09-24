@@ -208,7 +208,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
     }
 
     /**
-     * Close transport, canceling any pending read operations and closing channel
+     * Close transport, canceling any pending read operations and closing channel.
      */
     public void close()
     {

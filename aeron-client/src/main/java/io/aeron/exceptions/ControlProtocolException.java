@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.driver.exceptions;
+package io.aeron.exceptions;
 
 import io.aeron.ErrorCode;
-import io.aeron.exceptions.AeronException;
 
 public class ControlProtocolException extends AeronException
 {

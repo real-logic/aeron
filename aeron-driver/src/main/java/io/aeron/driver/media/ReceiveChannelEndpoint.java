@@ -21,7 +21,7 @@ import io.aeron.driver.DataPacketDispatcher;
 import io.aeron.driver.DriverConductorProxy;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.PublicationImage;
-import io.aeron.driver.exceptions.ControlProtocolException;
+import io.aeron.exceptions.ControlProtocolException;
 import io.aeron.exceptions.AeronException;
 import io.aeron.protocol.*;
 import io.aeron.status.ChannelEndpointStatus;

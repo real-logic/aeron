@@ -18,7 +18,7 @@ package io.aeron.driver.media;
 import io.aeron.CommonContext;
 import io.aeron.ErrorCode;
 import io.aeron.driver.*;
-import io.aeron.driver.exceptions.ControlProtocolException;
+import io.aeron.exceptions.ControlProtocolException;
 import io.aeron.status.ChannelEndpointStatus;
 import io.aeron.protocol.NakFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;

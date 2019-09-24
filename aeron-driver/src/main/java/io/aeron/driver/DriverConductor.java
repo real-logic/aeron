@@ -21,7 +21,7 @@ import io.aeron.CommonContext.InferableBoolean;
 import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.buffer.LogFactory;
 import io.aeron.driver.buffer.RawLog;
-import io.aeron.driver.exceptions.ControlProtocolException;
+import io.aeron.exceptions.ControlProtocolException;
 import io.aeron.driver.media.*;
 import io.aeron.driver.status.*;
 import io.aeron.logbuffer.LogBufferDescriptor;

@@ -52,6 +52,21 @@ public enum ErrorCode
      */
     UNKNOWN_COUNTER(5),
 
+    /**
+     * Attempted to send a command unknown by the driver.
+     */
+    UNKNOWN_COMMAND_TYPE_ID(6),
+
+    /**
+     * Attempted to send a command that is malformed. Typically, too short.
+     */
+    MALFORMED_COMMAND(7),
+
+    /**
+     * Attempted to send a command known by the driver, but not currently supported.
+     */
+    NOT_SUPPORTED(8),
+
     // *** Insert new codes above here.
 
     /**

@@ -15,6 +15,8 @@
  */
 package io.aeron.command;
 
+import io.aeron.ErrorCode;
+import io.aeron.exceptions.ControlProtocolException;
 import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 
@@ -52,6 +54,7 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
 {
     private static final int COUNTER_TYPE_ID_FIELD_OFFSET = CORRELATION_ID_FIELD_OFFSET + SIZE_OF_LONG;
     private static final int KEY_LENGTH_OFFSET = COUNTER_TYPE_ID_FIELD_OFFSET + SIZE_OF_INT;
+    private static final int MINIMUM_LENGTH = KEY_LENGTH_OFFSET + SIZE_OF_INT;
 
     /**
      * return type id field
@@ -176,6 +179,35 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
     {
         final int labelOffset = labelOffset();
         return labelOffset + buffer.getInt(offset + labelOffset) + SIZE_OF_INT;
+    }
+
+    /**
+     * Validate buffer length is long enough for message.
+     *
+     * @param msgTypeId type of message.
+     * @param length of message in bytes to validate.
+     */
+    public void validateLength(final int msgTypeId, final int length)
+    {
+        if (length < MINIMUM_LENGTH)
+        {
+            throw new ControlProtocolException(
+                ErrorCode.MALFORMED_COMMAND, "command=" + msgTypeId + " too short: length=" + length);
+        }
+
+        final int labelOffset = labelOffset();
+
+        if ((length - labelOffset) < SIZE_OF_INT)
+        {
+            throw new ControlProtocolException(
+                ErrorCode.MALFORMED_COMMAND, "command=" + msgTypeId + " too short for key: length=" + length);
+        }
+
+        if (length < length())
+        {
+            throw new ControlProtocolException(
+                ErrorCode.MALFORMED_COMMAND, "command=" + msgTypeId + " too short for label: length=" + length);
+        }
     }
 
     private int labelOffset()

@@ -15,6 +15,10 @@
  */
 package io.aeron.command;
 
+import io.aeron.ErrorCode;
+import io.aeron.exceptions.ControlProtocolException;
+
+import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
@@ -44,6 +48,7 @@ public class DestinationMessageFlyweight extends CorrelatedMessageFlyweight
 {
     private static final int REGISTRATION_CORRELATION_ID_OFFSET = CORRELATION_ID_FIELD_OFFSET + SIZE_OF_LONG;
     private static final int CHANNEL_OFFSET = REGISTRATION_CORRELATION_ID_OFFSET + SIZE_OF_LONG;
+    private static final int MINIMUM_LENGTH = CHANNEL_OFFSET + SIZE_OF_INT;
 
     private int lengthOfChannel;
 
@@ -106,5 +111,26 @@ public class DestinationMessageFlyweight extends CorrelatedMessageFlyweight
     public int length()
     {
         return CHANNEL_OFFSET + lengthOfChannel;
+    }
+
+    /**
+     * Validate buffer length is long enough for message.
+     *
+     * @param msgTypeId type of message.
+     * @param length of message in bytes to validate.
+     */
+    public void validateLength(final int msgTypeId, final int length)
+    {
+        if (length < MINIMUM_LENGTH)
+        {
+            throw new ControlProtocolException(
+                ErrorCode.MALFORMED_COMMAND, "command=" + msgTypeId + " too short: length=" + length);
+        }
+
+        if ((length - MINIMUM_LENGTH) < buffer.getInt(CHANNEL_OFFSET))
+        {
+            throw new ControlProtocolException(
+                ErrorCode.MALFORMED_COMMAND, "command=" + msgTypeId + " too short for channel: length=" + length);
+        }
     }
 }

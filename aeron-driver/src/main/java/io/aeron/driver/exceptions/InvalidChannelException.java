@@ -16,6 +16,7 @@
 package io.aeron.driver.exceptions;
 
 import io.aeron.ErrorCode;
+import io.aeron.exceptions.ControlProtocolException;
 
 public class InvalidChannelException extends ControlProtocolException
 {

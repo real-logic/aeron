@@ -15,6 +15,8 @@
  */
 package io.aeron.command;
 
+import io.aeron.ErrorCode;
+import io.aeron.exceptions.ControlProtocolException;
 import org.agrona.MutableDirectBuffer;
 
 import static org.agrona.BitUtil.SIZE_OF_LONG;
@@ -100,5 +102,20 @@ public class CorrelatedMessageFlyweight
         buffer.putLong(offset + CORRELATION_ID_FIELD_OFFSET, correlationId);
 
         return this;
+    }
+
+    /**
+     * Validate buffer length is long enough for message.
+     *
+     * @param msgTypeId type of message.
+     * @param length of message in bytes to validate.
+     */
+    public void validateLength(final int msgTypeId, final int length)
+    {
+        if (length < LENGTH)
+        {
+            throw new ControlProtocolException(
+                ErrorCode.MALFORMED_COMMAND, "command=" + msgTypeId + " too short: length=" + length);
+        }
     }
 }

@@ -18,7 +18,7 @@ package io.aeron.driver.media;
 import java.net.InetSocketAddress;
 
 /**
- * State tracking for a connection endpoint to an image.
+ * State tracking for a connection endpoint to an image from a transport.
  */
 public class ImageConnection
 {

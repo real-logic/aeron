@@ -95,9 +95,9 @@ public class LogBufferDescriptor
     public static final int LOG_IS_CONNECTED_OFFSET;
 
     /**
-     * Offset within the log metadata where the number of active transports is stored.
+     * Offset within the log metadata where the count of active transports is stored.
      */
-    public static final int LOG_NUMBER_OF_ACTIVE_TRANSPORTS;
+    public static final int LOG_ACTIVE_TRANSPORT_COUNT;
 
     /**
      * Offset within the log metadata where the active term id is stored.
@@ -164,7 +164,7 @@ public class LogBufferDescriptor
      *  +---------------------------------------------------------------+
      *  |                        Is Connected                           |
      *  +---------------------------------------------------------------+
-     *  |                  Number of Active Transports                  |
+     *  |                    Active Transport Count                     |
      *  +---------------------------------------------------------------+
      *  |                      Cache Line Padding                      ...
      * ...                                                              |
@@ -203,7 +203,7 @@ public class LogBufferDescriptor
         offset = (CACHE_LINE_LENGTH * 2);
         LOG_END_OF_STREAM_POSITION_OFFSET = offset;
         LOG_IS_CONNECTED_OFFSET = LOG_END_OF_STREAM_POSITION_OFFSET + SIZE_OF_LONG;
-        LOG_NUMBER_OF_ACTIVE_TRANSPORTS = LOG_IS_CONNECTED_OFFSET + SIZE_OF_INT;
+        LOG_ACTIVE_TRANSPORT_COUNT = LOG_IS_CONNECTED_OFFSET + SIZE_OF_INT;
 
         offset += (CACHE_LINE_LENGTH * 2);
         LOG_CORRELATION_ID_OFFSET = offset;
@@ -405,14 +405,14 @@ public class LogBufferDescriptor
     }
 
     /**
-     * Get the number of active transports for the Image.
+     * Get the count of active transports for the Image.
      *
      * @param metadataBuffer containing the meta data.
-     * @return number of active transports.
+     * @return count of active transports.
      */
-    public static int numberOfActiveTransports(final UnsafeBuffer metadataBuffer)
+    public static int activeTransportCount(final UnsafeBuffer metadataBuffer)
     {
-        return metadataBuffer.getIntVolatile(LOG_NUMBER_OF_ACTIVE_TRANSPORTS);
+        return metadataBuffer.getIntVolatile(LOG_ACTIVE_TRANSPORT_COUNT);
     }
 
     /**
@@ -421,9 +421,9 @@ public class LogBufferDescriptor
      * @param metadataBuffer containing the meta data.
      * @param numberOfActiveTransports value to be set.
      */
-    public static void numberOfActiveTransports(final UnsafeBuffer metadataBuffer, final int numberOfActiveTransports)
+    public static void activeTransportCount(final UnsafeBuffer metadataBuffer, final int numberOfActiveTransports)
     {
-        metadataBuffer.putIntOrdered(LOG_NUMBER_OF_ACTIVE_TRANSPORTS, numberOfActiveTransports);
+        metadataBuffer.putIntOrdered(LOG_ACTIVE_TRANSPORT_COUNT, numberOfActiveTransports);
     }
 
     /**

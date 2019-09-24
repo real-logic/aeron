@@ -633,7 +633,7 @@ public class PublicationImage
                     lastSmWindowLimit = smPosition + receiverWindowLength;
                     lastSmChangeNumber = changeNumber;
 
-                    updateNumberOfActiveTransports(cachedNanoClock.nanoTime());
+                    updateActiveTransportCount();
                 }
 
                 workCount = 1;
@@ -965,19 +965,20 @@ public class PublicationImage
         }
     }
 
-    private void updateNumberOfActiveTransports(final long nowNs)
+    private void updateActiveTransportCount()
     {
-        int numberOfActiveTransports = 0;
+        final long nowNs = cachedNanoClock.nanoTime();
+        int activeTransportCount = 0;
 
         for (final ImageConnection imageConnection : imageConnections)
         {
             if (null != imageConnection && nowNs < (imageConnection.timeOfLastFrameNs + imageLivenessTimeoutNs))
             {
-                numberOfActiveTransports++;
+                activeTransportCount++;
             }
         }
 
-        LogBufferDescriptor.numberOfActiveTransports(rawLog.metaData(), numberOfActiveTransports);
+        LogBufferDescriptor.activeTransportCount(rawLog.metaData(), activeTransportCount);
     }
 
     private ReadablePosition[] positionArray(final ArrayList<SubscriberPosition> subscriberPositions, final long nowNs)

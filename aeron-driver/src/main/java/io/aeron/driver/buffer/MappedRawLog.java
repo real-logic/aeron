@@ -113,6 +113,11 @@ class MappedRawLog implements RawLog
                     metaDataMappingLength - LOG_META_DATA_LENGTH,
                     LOG_META_DATA_LENGTH);
             }
+
+            if (!useSparseFiles)
+            {
+                preTouchPages(termBuffers, termLength, filePageSize);
+            }
         }
         catch (final IOException ex)
         {
@@ -211,5 +216,16 @@ class MappedRawLog implements RawLog
             remaining -= blankChannel.transferTo(length - remaining, remaining, logChannel);
         }
         while (remaining > 0);
+    }
+
+    private static void preTouchPages(final UnsafeBuffer[] buffers, final int length, final int pageSize)
+    {
+        for (final UnsafeBuffer buffer : buffers)
+        {
+            for (long i = 0; i < length; i += pageSize)
+            {
+                buffer.putByte((int)i, (byte)0);
+            }
+        }
     }
 }

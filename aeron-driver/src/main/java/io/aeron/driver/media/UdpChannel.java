@@ -82,8 +82,8 @@ public final class UdpChannel
     /**
      * Parse channel URI and create a {@link UdpChannel}.
      *
-     * @param channelUriString to parse
-     * @return a new {@link UdpChannel}
+     * @param channelUriString to parse.
+     * @return a new {@link UdpChannel} as the result of parsing.
      * @throws InvalidChannelException if an error occurs.
      */
     @SuppressWarnings("MethodLength")
@@ -195,16 +195,6 @@ public final class UdpChannel
         }
     }
 
-    private static InetSocketAddress getMulticastControlAddress(final InetSocketAddress endpointAddress)
-        throws UnknownHostException
-    {
-        final byte[] addressAsBytes = endpointAddress.getAddress().getAddress();
-        validateDataAddress(addressAsBytes);
-
-        addressAsBytes[addressAsBytes.length - 1]++;
-        return new InetSocketAddress(getByAddress(addressAsBytes), endpointAddress.getPort());
-    }
-
     /**
      * Return a string which is a canonical form of the channel suitable for use as a file or directory
      * name and also as a method of hashing, etc.
@@ -219,9 +209,9 @@ public final class UdpChannel
      * The general format is:
      * UDP-interface-localPort-remoteAddress-remotePort
      *
-     * @param localData  address/interface for the channel
-     * @param remoteData address for the channel
-     * @return canonical representation as a string
+     * @param localData  address/interface for the channel.
+     * @param remoteData address for the channel.
+     * @return canonical representation as a string.
      */
     public static String canonicalise(final InetSocketAddress localData, final InetSocketAddress remoteData)
     {
@@ -243,9 +233,9 @@ public final class UdpChannel
     }
 
     /**
-     * Remote data address information
+     * Remote data address and port.
      *
-     * @return remote data address information
+     * @return remote data address and port.
      */
     public InetSocketAddress remoteData()
     {
@@ -253,9 +243,9 @@ public final class UdpChannel
     }
 
     /**
-     * Local data address information
+     * Local data address and port.
      *
-     * @return local data address information
+     * @return local data address port.
      */
     public InetSocketAddress localData()
     {
@@ -273,9 +263,9 @@ public final class UdpChannel
     }
 
     /**
-     * Local control address information
+     * Local control address and port.
      *
-     * @return local control address information
+     * @return local control address and port.
      */
     public InetSocketAddress localControl()
     {
@@ -297,15 +287,15 @@ public final class UdpChannel
      *
      * @return true if this channel is a multicast TTL set otherwise false.
      */
-    public boolean isHasMulticastTtl()
+    public boolean hasMulticastTtl()
     {
         return hasMulticastTtl;
     }
 
     /**
-     * Multicast TTL information
+     * Multicast TTL value.
      *
-     * @return multicast TTL value
+     * @return multicast TTL value.
      */
     public int multicastTtl()
     {
@@ -317,7 +307,7 @@ public final class UdpChannel
      * <p>
      * {@link UdpChannel#canonicalise(java.net.InetSocketAddress, java.net.InetSocketAddress)}
      *
-     * @return canonical form for channel
+     * @return canonical form for channel.
      */
     public String canonicalForm()
     {
@@ -352,9 +342,9 @@ public final class UdpChannel
     }
 
     /**
-     * Does channel represent a multicast or not
+     * Is the channel UDP multicast.
      *
-     * @return does channel represent a multicast or not
+     * @return true if the channel is UDP multicast.
      */
     public boolean isMulticast()
     {
@@ -364,7 +354,7 @@ public final class UdpChannel
     /**
      * Local interface to be used by the channel.
      *
-     * @return {@link NetworkInterface} for the local interface used by the channel
+     * @return {@link NetworkInterface} for the local interface used by the channel.
      */
     public NetworkInterface localInterface()
     {
@@ -374,7 +364,7 @@ public final class UdpChannel
     /**
      * Original URI of the channel URI.
      *
-     * @return the original uri
+     * @return the original uri string from the client.
      */
     public String originalUriString()
     {
@@ -442,14 +432,15 @@ public final class UdpChannel
             return true;
         }
 
-        throw new IllegalArgumentException("matching tag has set endpoint or control address");
+        throw new IllegalArgumentException(
+            "matching tag has set endpoint or control address - " + uriStr + " <> " + udpChannel.uriStr);
     }
 
     /**
-     * Get the endpoint address from the URI.
+     * Get the endpoint destination address from the URI.
      *
-     * @param uri to check
-     * @return endpoint address for URI
+     * @param uri to check.
+     * @return endpoint address for URI.
      */
     public static InetSocketAddress destinationAddress(final ChannelUri uri)
     {
@@ -486,6 +477,16 @@ public final class UdpChannel
             .append(", ttl: ").append(multicastTtl);
 
         return builder.toString();
+    }
+
+    private static InetSocketAddress getMulticastControlAddress(final InetSocketAddress endpointAddress)
+        throws UnknownHostException
+    {
+        final byte[] addressAsBytes = endpointAddress.getAddress().getAddress();
+        validateDataAddress(addressAsBytes);
+
+        addressAsBytes[addressAsBytes.length - 1]++;
+        return new InetSocketAddress(getByAddress(addressAsBytes), endpointAddress.getPort());
     }
 
     private static InterfaceSearchAddress getInterfaceSearchAddress(final ChannelUri uri) throws UnknownHostException
@@ -525,7 +526,7 @@ public final class UdpChannel
     {
         if (BitUtil.isEven(addressAsBytes[addressAsBytes.length - 1]))
         {
-            throw new IllegalArgumentException("Multicast data address must be odd");
+            throw new IllegalArgumentException("multicast data address must be odd");
         }
     }
 

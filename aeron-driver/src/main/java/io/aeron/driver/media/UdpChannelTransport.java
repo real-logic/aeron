@@ -109,7 +109,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
                 receiveDatagramChannel.join(endPointAddress.getAddress(), udpChannel.localInterface());
                 sendDatagramChannel.setOption(StandardSocketOptions.IP_MULTICAST_IF, udpChannel.localInterface());
 
-                if (udpChannel.isHasMulticastTtl())
+                if (udpChannel.hasMulticastTtl())
                 {
                     sendDatagramChannel.setOption(StandardSocketOptions.IP_MULTICAST_TTL, udpChannel.multicastTtl());
                     multicastTtl = sendDatagramChannel.getOption(StandardSocketOptions.IP_MULTICAST_TTL);

@@ -845,6 +845,7 @@ public class NetworkPublication
             case LINGER:
                 if ((timeOfLastActivityNs + lingerTimeoutNs) - timeNs < 0)
                 {
+                    channelEndpoint.decRef();
                     conductor.cleanupPublication(this);
                     state = State.CLOSING;
                 }
@@ -862,7 +863,6 @@ public class NetworkPublication
         if (0 == --refCount)
         {
             state = State.DRAINING;
-            channelEndpoint.decRef();
             timeOfLastActivityNs = nanoClock.nanoTime();
 
             final long producerPosition = producerPosition();

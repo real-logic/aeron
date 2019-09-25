@@ -285,7 +285,9 @@ abstract class ArchiveConductor
         final String channel,
         final ControlSessionDemuxer demuxer)
     {
-        final String controlChannel = strippedChannelBuilder(ChannelUri.parse(channel))
+        final ChannelUri channelUri = ChannelUri.parse(channel);
+        final String controlChannel = strippedChannelBuilder(channelUri)
+            .ttl(channelUri)
             .sparse(ctx.controlTermBufferSparse())
             .termLength(ctx.controlTermBufferLength())
             .mtu(ctx.controlMtuLength())
@@ -332,12 +334,12 @@ abstract class ArchiveConductor
         try
         {
             final ChannelUri channelUri = ChannelUri.parse(originalChannel);
-            final String strippedChannel = strippedChannelBuilder(channelUri).build();
             final String key = makeKey(streamId, channelUri);
             final Subscription oldSubscription = recordingSubscriptionMap.get(key);
 
             if (oldSubscription == null)
             {
+                final String strippedChannel = strippedChannelBuilder(channelUri).build();
                 final String channel = sourceLocation == SourceLocation.LOCAL && channelUri.media().equals(UDP_MEDIA) ?
                     SPY_PREFIX + strippedChannel : strippedChannel;
 
@@ -547,7 +549,7 @@ abstract class ArchiveConductor
         final ExclusivePublication replayPublication = newReplayPublication(
             correlationId, controlSession, replayChannel, replayStreamId, replayPosition, recordingSummary);
 
-        final long replaySessionId = ((long)replayId++ << 32) | (replayPublication.sessionId() & 0xFFFF_FFFFL);
+        final long replaySessionId = ((long)(replayId++) << 32) | (replayPublication.sessionId() & 0xFFFF_FFFFL);
         final RecordingSession recordingSession = recordingSessionByIdMap.get(recordingId);
         final ReplaySession replaySession = new ReplaySession(
             replayPosition,
@@ -620,7 +622,7 @@ abstract class ArchiveConductor
         final ExclusivePublication replayPublication = newReplayPublication(
             correlationId, controlSession, replayChannel, replayStreamId, replayPosition, recordingSummary);
 
-        final long replaySessionId = ((long)replayId++ << 32) | (replayPublication.sessionId() & 0xFFFF_FFFFL);
+        final long replaySessionId = ((long)(replayId++) << 32) | (replayPublication.sessionId() & 0xFFFF_FFFFL);
         final ReplaySession replaySession = new ReplaySession(
             replayPosition,
             length,
@@ -705,12 +707,12 @@ abstract class ArchiveConductor
         try
         {
             final ChannelUri channelUri = ChannelUri.parse(originalChannel);
-            final String strippedChannel = strippedChannelBuilder(channelUri).build();
             final String key = makeKey(streamId, channelUri);
             final Subscription oldSubscription = recordingSubscriptionMap.get(key);
 
             if (oldSubscription == null)
             {
+                final String strippedChannel = strippedChannelBuilder(channelUri).build();
                 final String channel = originalChannel.contains("udp") && sourceLocation == SourceLocation.LOCAL ?
                     SPY_PREFIX + strippedChannel : strippedChannel;
 
@@ -923,11 +925,15 @@ abstract class ArchiveConductor
         channelBuilder
             .clear()
             .media(channelUri.media())
-            .endpoint(channelUri.get(CommonContext.ENDPOINT_PARAM_NAME))
-            .networkInterface(channelUri.get(CommonContext.INTERFACE_PARAM_NAME))
-            .controlEndpoint(channelUri.get(CommonContext.MDC_CONTROL_PARAM_NAME))
-            .tags(channelUri.get(CommonContext.TAGS_PARAM_NAME))
-            .alias(channelUri.get(CommonContext.ALIAS_PARAM_NAME));
+            .endpoint(channelUri)
+            .networkInterface(channelUri)
+            .controlEndpoint(channelUri)
+            .tags(channelUri)
+            .eos(channelUri)
+            .rejoin(channelUri)
+            .group(channelUri)
+            .congestionControl(channelUri)
+            .alias(channelUri);
 
         final String sessionIdStr = channelUri.get(CommonContext.SESSION_ID_PARAM_NAME);
         if (null != sessionIdStr)
@@ -940,30 +946,6 @@ abstract class ArchiveConductor
             {
                 channelBuilder.sessionId(Integer.valueOf(sessionIdStr));
             }
-        }
-
-        final String eosStr = channelUri.get(CommonContext.EOS_PARAM_NAME);
-        if (null != eosStr)
-        {
-            channelBuilder.eos(Boolean.valueOf(eosStr));
-        }
-
-        final String rejoinStr = channelUri.get(CommonContext.REJOIN_PARAM_NAME);
-        if (null != rejoinStr)
-        {
-            channelBuilder.rejoin(Boolean.valueOf(rejoinStr));
-        }
-
-        final String groupStr = channelUri.get(CommonContext.GROUP_PARAM_NAME);
-        if (null != groupStr)
-        {
-            channelBuilder.group(Boolean.valueOf(groupStr));
-        }
-
-        final String ccStr = channelUri.get(CommonContext.CONGESTION_CONTROL_PARAM_NAME);
-        if (null != ccStr)
-        {
-            channelBuilder.congestionControl(ccStr);
         }
 
         return channelBuilder;
@@ -1132,6 +1114,7 @@ abstract class ArchiveConductor
         final ChannelUri channelUri = ChannelUri.parse(replayChannel);
         final ChannelUriStringBuilder channelBuilder = strippedChannelBuilder(channelUri)
             .initialPosition(position, recording.initialTermId, recording.termBufferLength)
+            .ttl(channelUri)
             .mtu(recording.mtuLength);
 
         final String lingerValue = channelUri.get(CommonContext.LINGER_PARAM_NAME);

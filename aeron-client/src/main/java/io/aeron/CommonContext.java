@@ -221,6 +221,8 @@ public class CommonContext implements Cloneable
 
     /**
      * Parameter name for channel URI param to indicate an alias for the given URI. Value not interpreted by Aeron.
+     * <p>
+     * This is a reserved application level param used to identify a particular channel for application purposes.
      */
     public static final String ALIAS_PARAM_NAME = "alias";
 

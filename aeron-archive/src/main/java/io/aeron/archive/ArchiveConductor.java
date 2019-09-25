@@ -954,6 +954,18 @@ abstract class ArchiveConductor
             channelBuilder.rejoin(Boolean.valueOf(rejoinStr));
         }
 
+        final String groupStr = channelUri.get(CommonContext.GROUP_PARAM_NAME);
+        if (null != groupStr)
+        {
+            channelBuilder.group(Boolean.valueOf(groupStr));
+        }
+
+        final String ccStr = channelUri.get(CommonContext.CONGESTION_CONTROL_PARAM_NAME);
+        if (null != ccStr)
+        {
+            channelBuilder.congestionControl(ccStr);
+        }
+
         return channelBuilder;
     }
 

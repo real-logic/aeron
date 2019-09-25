@@ -231,7 +231,7 @@ int ReplayMerge::awaitStopReplay()
         workCount += 1;
     }
 
-    return 1;
+    return workCount;
 }
 
 bool ReplayMerge::pollForResponse(AeronArchive& archive, std::int64_t correlationId)

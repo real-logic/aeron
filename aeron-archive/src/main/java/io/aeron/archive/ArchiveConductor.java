@@ -1249,7 +1249,7 @@ abstract class ArchiveConductor
         if (position - startPosition < 0)
         {
             final String msg = "requested replay start position " + position +
-                ") is less than recording start position " + startPosition + " for recording " + recordingId;
+                " is less than recording start position " + startPosition + " for recording " + recordingId;
             controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
 
             return true;

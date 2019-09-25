@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.cluster.client.ClusterClock;
 import io.aeron.cluster.service.Cluster;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.IdleStrategy;
@@ -51,6 +52,42 @@ public class ClusterTest
             Thread.sleep(1_000);
 
             assertThat(follower.role(), is(Cluster.Role.FOLLOWER));
+        }
+    }
+
+    @Test(timeout = 30_000)
+    public void shouldReElectLeader() throws Exception
+    {
+        ControlledClock clock = new ControlledClock();
+        try (TestCluster cluster = new TestCluster(3, 0, 0))
+        {
+            cluster.clock(clock);
+            cluster.restartAllNodes(true);
+
+            cluster.awaitLeader();
+
+            clock.offset = 10_000;
+
+            Thread.sleep(2_000);
+
+            cluster.awaitLeader();
+        }
+    }
+
+    private static final class ControlledClock implements ClusterClock
+    {
+        private volatile long offset;
+
+        @Override
+        public long time()
+        {
+            return System.currentTimeMillis() + offset;
+        }
+
+        @Override
+        public TimeUnit timeUnit()
+        {
+            return TimeUnit.MILLISECONDS;
         }
     }
 

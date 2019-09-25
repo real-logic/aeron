@@ -20,6 +20,7 @@ import io.aeron.CommonContext;
 import io.aeron.Counter;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.cluster.client.AeronCluster;
+import io.aeron.cluster.client.ClusterClock;
 import io.aeron.cluster.client.EgressListener;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.MinMulticastFlowControlSupplier;
@@ -92,6 +93,7 @@ public class TestCluster implements AutoCloseable
     private final int appointedLeaderId;
     private final int backupNodeIndex;
 
+    private ClusterClock clock = new MillisecondClusterClock();
     private MediaDriver clientMediaDriver;
     private AeronCluster client;
     private TestBackupNode backupNode;
@@ -134,6 +136,11 @@ public class TestCluster implements AutoCloseable
                 nodes[i].cleanUp();
             }
         }
+    }
+
+    void clock(ClusterClock clock)
+    {
+        this.clock = clock;
     }
 
     static TestCluster startThreeNodeStaticCluster(final int appointedLeaderId)
@@ -229,7 +236,8 @@ public class TestCluster implements AutoCloseable
             .ingressChannel("aeron:udp?term-length=64k")
             .logChannel(memberSpecificPort(LOG_CHANNEL, index))
             .archiveContext(context.aeronArchiveContext.clone())
-            .deleteDirOnStart(cleanStart);
+            .deleteDirOnStart(cleanStart)
+            .clusterClock(clock);
 
         context.serviceContainerContext
             .aeronDirectoryName(aeronDirName)

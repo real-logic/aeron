@@ -857,7 +857,7 @@ public final class ClusterBackup implements AutoCloseable
         /**
          * Set the transfer endpoint to use for snapshot and log retrieval.
          *
-         * @param transferEndpoint to use for the snpashot and log retrieval.
+         * @param transferEndpoint to use for the snapshot and log retrieval.
          * @return transfer endpoint to use for the snapshot and log retrieval.
          * @see Configuration#TRANSFER_ENDPOINT_DEFAULT
          */
@@ -907,7 +907,7 @@ public final class ClusterBackup implements AutoCloseable
         /**
          * Timeout within which a cluster backup will expect a response from a backup query.
          *
-         * @param clusterBackupResponseTimeoutNs wiwthin which a cluster backup will expect a response.
+         * @param clusterBackupResponseTimeoutNs within which a cluster backup will expect a response.
          * @return this for a fluent API.
          * @see Configuration#CLUSTER_BACKUP_RESPONSE_TIMEOUT_PROP_NAME
          * @see Configuration#CLUSTER_BACKUP_RESPONSE_TIMEOUT_DEFAULT_NS

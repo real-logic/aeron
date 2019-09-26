@@ -1115,6 +1115,7 @@ abstract class ArchiveConductor
         final ChannelUriStringBuilder channelBuilder = strippedChannelBuilder(channelUri)
             .initialPosition(position, recording.initialTermId, recording.termBufferLength)
             .ttl(channelUri)
+            .sparse(channelUri)
             .mtu(recording.mtuLength);
 
         final String lingerValue = channelUri.get(CommonContext.LINGER_PARAM_NAME);

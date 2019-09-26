@@ -681,11 +681,31 @@ public class RecordingLog implements AutoCloseable
         if (size > 0)
         {
             final Entry lastEntry = entries.get(size - 1);
-
             if (lastEntry.type != NULL_VALUE && lastEntry.leadershipTermId >= leadershipTermId)
             {
                 throw new ClusterException("leadershipTermId out of sequence: previous " +
                     lastEntry.leadershipTermId + " this " + leadershipTermId);
+            }
+
+            final long index = indexByLeadershipTermIdMap.get(leadershipTermId - 1);
+            if (NULL_VALUE != index)
+            {
+                final Entry entry = entries.get((int)index);
+
+                if (entry.logPosition != termBaseLogPosition)
+                {
+                    commitEntryValue(entry.entryIndex, termBaseLogPosition, LOG_POSITION_OFFSET);
+
+                    entries.set(entry.entryIndex, new Entry(
+                        entry.recordingId,
+                        entry.leadershipTermId,
+                        entry.termBaseLogPosition,
+                        termBaseLogPosition,
+                        entry.timestamp,
+                        entry.serviceId,
+                        entry.type,
+                        entry.entryIndex));
+                }
             }
         }
 
@@ -742,26 +762,28 @@ public class RecordingLog implements AutoCloseable
     }
 
     /**
-     * Commit the position reached in a leadership term before a clean shutdown.
+     * Commit the position reached in a leadership term.
      *
      * @param leadershipTermId for committing the term position reached.
      * @param logPosition      reached in the leadership term.
      */
     public void commitLogPosition(final long leadershipTermId, final long logPosition)
     {
-        final int index = getLeadershipTermEntryIndex(leadershipTermId);
-        commitEntryValue(index, logPosition, LOG_POSITION_OFFSET);
+        final Entry entry = getTermEntry(leadershipTermId);
+        if (entry.logPosition != logPosition)
+        {
+            commitEntryValue(entry.entryIndex, logPosition, LOG_POSITION_OFFSET);
 
-        final Entry entry = entries.get(index);
-        entries.set(index, new Entry(
-            entry.recordingId,
-            entry.leadershipTermId,
-            entry.termBaseLogPosition,
-            logPosition,
-            entry.timestamp,
-            entry.serviceId,
-            entry.type,
-            entry.entryIndex));
+            entries.set(entry.entryIndex, new Entry(
+                entry.recordingId,
+                entry.leadershipTermId,
+                entry.termBaseLogPosition,
+                logPosition,
+                entry.timestamp,
+                entry.serviceId,
+                entry.type,
+                entry.entryIndex));
+        }
     }
 
     /**
@@ -900,20 +922,6 @@ public class RecordingLog implements AutoCloseable
         catch (final IOException ignore)
         {
         }
-    }
-
-    private int getLeadershipTermEntryIndex(final long leadershipTermId)
-    {
-        for (int i = 0, size = entries.size(); i < size; i++)
-        {
-            final Entry entry = entries.get(i);
-            if (entry.leadershipTermId == leadershipTermId && entry.type == ENTRY_TYPE_TERM)
-            {
-                return entry.entryIndex;
-            }
-        }
-
-        throw new ClusterException("unknown leadershipTermId: " + leadershipTermId);
     }
 
     private void commitEntryValue(final int entryIndex, final long value, final int fieldOffset)

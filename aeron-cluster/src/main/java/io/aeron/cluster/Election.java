@@ -29,7 +29,7 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.ClusterMember.compareLog;
 
 /**
- * Election process to determine a new cluster leader.
+ * Election process to determine a new cluster leader and catch up followers.
  */
 public class Election implements AutoCloseable
 {
@@ -401,12 +401,12 @@ public class Election implements AutoCloseable
                 {
                     boolean hasUpdates = false;
 
-                    for (long id = this.logLeadershipTermId; id < leadershipTermId; id++)
+                    for (long termId = this.logLeadershipTermId; termId < leadershipTermId; termId++)
                     {
-                        if (ctx.recordingLog().isUnknown(id))
+                        if (ctx.recordingLog().isUnknown(termId))
                         {
                             ctx.recordingLog().appendTerm(
-                                consensusModuleAgent.logRecordingId(), id, logPosition, timestamp);
+                                consensusModuleAgent.logRecordingId(), termId, logPosition, timestamp);
                             hasUpdates = true;
                         }
                     }
@@ -470,22 +470,29 @@ public class Election implements AutoCloseable
         if (State.FOLLOWER_CATCHUP == state)
         {
             boolean hasUpdates = false;
+            final RecordingLog recordingLog = ctx.recordingLog();
 
-            for (long termId = this.logLeadershipTermId; termId <= leadershipTermId; termId++)
+            for (long termId = logLeadershipTermId; termId <= leadershipTermId; termId++)
             {
-                if (ctx.recordingLog().isUnknown(termId))
+                if (!recordingLog.isUnknown(termId - 1))
                 {
-                    ctx.recordingLog().appendTerm(logRecordingId, termId, termBaseLogPosition, timestamp);
+                    recordingLog.commitLogPosition(termId - 1, termBaseLogPosition);
+                    hasUpdates = true;
+                }
+
+                if (recordingLog.isUnknown(termId))
+                {
+                    recordingLog.appendTerm(logRecordingId, termId, termBaseLogPosition, timestamp);
                     hasUpdates = true;
                 }
             }
 
             if (hasUpdates)
             {
-                ctx.recordingLog().force();
+                recordingLog.force();
             }
 
-            this.logLeadershipTermId = leadershipTermId;
+            logLeadershipTermId = leadershipTermId;
             this.logPosition = logPosition;
         }
     }
@@ -671,18 +678,19 @@ public class Election implements AutoCloseable
     private int leaderTransition(final long nowNs)
     {
         consensusModuleAgent.becomeLeader(candidateTermId, logPosition, logSessionId);
+
         final long recordingId = consensusModuleAgent.logRecordingId();
         final long timestamp = ctx.clusterClock().timeUnit().convert(nowNs, TimeUnit.NANOSECONDS);
+        final RecordingLog recordingLog = ctx.recordingLog();
 
         for (long termId = leadershipTermId + 1; termId < candidateTermId; termId++)
         {
-            ctx.recordingLog().appendTerm(recordingId, termId, logPosition, timestamp);
-            ctx.recordingLog().commitLogPosition(termId, logPosition);
+            recordingLog.appendTerm(recordingId, termId, logPosition, timestamp);
         }
 
         leadershipTermId = candidateTermId;
-        ctx.recordingLog().appendTerm(recordingId, leadershipTermId, logPosition, timestamp);
-        ctx.recordingLog().force();
+        recordingLog.appendTerm(recordingId, leadershipTermId, logPosition, timestamp);
+        recordingLog.force();
 
         state(State.LEADER_READY);
 
@@ -827,12 +835,13 @@ public class Election implements AutoCloseable
         }
 
         consensusModuleAgent.awaitImageAndCreateFollowerLogAdapter(logSubscription, logSessionId);
-        if (ctx.recordingLog().isUnknown(leadershipTermId))
+
+        final RecordingLog recordingLog = ctx.recordingLog();
+        if (recordingLog.isUnknown(leadershipTermId))
         {
             final long timestamp = ctx.clusterClock().timeUnit().convert(nowNs, TimeUnit.NANOSECONDS);
-            final long recordingId = consensusModuleAgent.logRecordingId();
-            ctx.recordingLog().appendTerm(recordingId, leadershipTermId, logPosition, timestamp);
-            ctx.recordingLog().force();
+            recordingLog.appendTerm(consensusModuleAgent.logRecordingId(), leadershipTermId, logPosition, timestamp);
+            recordingLog.force();
         }
 
         state(State.FOLLOWER_READY);

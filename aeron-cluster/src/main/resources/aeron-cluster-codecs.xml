@@ -67,59 +67,58 @@
               presence="optional" nullValue="0" sinceVersion="3"/>
     </types>
 
-    <!--
-        Cluster Session Protocol
-        ========================
+<!--
+    Cluster Session Protocol
+    ========================
 
-        Session Protocol:
-            -> session-connect, *[session-message | session-keep-alive], session-close
-                              \
-            <-                 +session-event, *[session-event | session-message | new-leader-event]
+    Session Protocol:
+        -> session-connect, *[session-message | session-keep-alive], session-close
+                          \
+        <-                 +session-event, *[session-event | session-message | new-leader-event]
 
-        1. Session Connect
-          - An attempt is made to establish a connection with the cluster via multicast or multi-destination-cast.
-          - If successful, a OK session-event will be sent in the return path with the list of endpoint destinations
-            for the cluster members. The leader will come first.
-          - Followers can respond with a REDIRECT code and a list of member endpoint destinations in the
-            detail that will have the leader first.
-          - If a change of leader occurs mid session then a new-leader-event will be sent from the new leader.
+    1. Session Connect
+        - An attempt is made to establish a connection with the cluster via multicast or multi-destination-cast.
+        - If successful, a OK session-event will be sent in the return path with the list of endpoint destinations
+          for the cluster members. The leader will come first.
+        - Followers can respond with a REDIRECT code and a list of member endpoint destinations in the
+          detail that will have the leader first.
+        - If a change of leader occurs mid session then a new-leader-event will be sent from the new leader.
 
-        2. Ingress/Egress Messages - Session Messages which make up application protocol.
-          - Messages are sent to a clustered service with a SessionMessageHeader followed by an application payload.
-          - The service may emit responses and events with a SessionMessageHeader followed by an application payload.
-          - The application protocol is the user defined messages for interacting with the service being clustered.
-          - Keep alive messages should be sent when insufficient ingress messages are sent to keep the session open.
+    2. Ingress/Egress Messages - Session Messages which make up application protocol.
+        - Messages are sent to a clustered service with a SessionMessageHeader followed by an application payload.
+        - The service may emit responses and events with a SessionMessageHeader followed by an application payload.
+        - The application protocol is the user defined messages for interacting with the service being clustered.
+        - Keep alive messages should be sent when insufficient ingress messages are sent to keep the session open.
 
-        3. Session Close
-          - A cluster session can be closed with a CloseSessionRequest
-          - If the session is not explicitly closed then it will timeout if the connection becomes unavailable.
+    3. Session Close
+        - A cluster session can be closed with a CloseSessionRequest
+        - If the session is not explicitly closed then it will timeout if the connection becomes unavailable.
 
-        Cluster Authentication Protocol
-        ===============================
+    Cluster Authentication Protocol
+    ===============================
 
-        Connect protocol can occur in multiple valid sequences
+    Connect protocol can occur in multiple valid sequences
 
-        1. Authenticated via Session Connect
-            -> session-connect, ...
-                              \
-            <-                 *session-event (OK), ...
+    1. Authenticated via Session Connect
+        -> session-connect, ...
+                          \
+        <-                 *session-event (OK), ...
 
-        2. Authenticated via Challenge Response
-            -> session-connect           challenge-response, ...
-                              \         /                  \
-            <-                 challenge                    session-event (OK), ...
+    2. Authenticated via Challenge Response
+        -> session-connect           challenge-response, ...
+                          \         /                  \
+        <-                 challenge                    session-event (OK), ...
 
-        3. Rejected via Session Connect
-            -> session-connect
-                              \
-            <-                 *session-event (AUTHENTICATION_REJECTED)
+    3. Rejected via Session Connect
+        -> session-connect
+                          \
+        <-                 *session-event (AUTHENTICATION_REJECTED)
 
-        4. Rejected via Challenge Response
-            -> session-connect           challenge-response
-                              \         /                  \
-            <-                 challenge                     session-event (AUTHENTICATION_REJECTED)
-
-    -->
+    4. Rejected via Challenge Response
+        -> session-connect           challenge-response
+                          \         /                  \
+        <-                 challenge                     session-event (AUTHENTICATION_REJECTED)
+-->
 
     <sbe:message name="SessionMessageHeader"
                  id="1"
@@ -195,7 +194,7 @@
         <data  name="encodedCredentials"       id="3" type="varDataEncoding"/>
     </sbe:message>
 
-    <!-- Codecs for messages that get encoded into the log by the Consensus Module -->
+<!-- Codecs for messages that get encoded into the log by the Consensus Module -->
 
     <sbe:message name="TimerEvent"
                  id="20"
@@ -261,7 +260,7 @@
         <data  name="clusterMembers"           id="8" type="varAsciiEncoding"/>
     </sbe:message>
 
-    <!-- Messages for service control between clustered services and the Consensus Module -->
+<!-- Messages for service control between clustered services and the Consensus Module -->
 
     <sbe:message name="CloseSession"
                  id="30"
@@ -339,24 +338,24 @@
         <field name="logPosition"              id="1" type="int64"/>
     </sbe:message>
 
-    <!--
-        Cluster Consensus Protocol
-        ==========================
+<!--
+    Cluster Consensus Protocol
+    ==========================
 
-        The leader replicates a log stream to all followers for its term as leader. Leadership term ids are monotonic.
+    The leader replicates a log stream to all followers for its term as leader. Leadership term ids are monotonic.
 
-        The followers persist the replicated log locally and send updates to the leader with the highest position they
-        have persisted. The log position is an accumulation of the term positions over the leadership terms.
-        Each leadership term starts with base log position for the accumulated term positions.
+    The followers persist the replicated log locally and send updates to the leader with the highest position they
+    have persisted. The log position is an accumulation of the term positions over the leadership terms.
+    Each leadership term starts with base log position for the accumulated term positions.
 
-        The leader gathers the positions reached by the followers, plus its own locally persisted log, and publishes
-        the highest position for a quorum of the member nodes including itself which can be committed to the state
-        machines. If the quorum position does not progress within a timeout then the latest position will be
-        re-transmitted as a heartbeat from the leader.
+    The leader gathers the positions reached by the followers, plus its own locally persisted log, and publishes
+    the highest position for a quorum of the member nodes including itself which can be committed to the state
+    machines. If the quorum position does not progress within a timeout then the latest position will be
+    re-transmitted as a heartbeat from the leader.
 
-        Messages are only valid within the context of a leadership term and all updates are applied as monotonically
-        increasing state.
-    -->
+    Messages are only valid within the context of a leadership term and all updates are applied as monotonically
+    increasing state.
+-->
 
     <sbe:message name="CanvassPosition"
                  id="50"
@@ -522,7 +521,7 @@
         <data  name="clusterMembers"           id="16" type="varAsciiEncoding"/>
     </sbe:message>
 
-    <!-- Serialisation of major entities in addition to others above that can be in a snapshot -->
+<!-- Serialisation of major entities in addition to others above that can be in a snapshot -->
 
     <sbe:message name="SnapshotMarker"
                  id="100"

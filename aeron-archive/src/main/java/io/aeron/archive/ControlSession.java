@@ -363,6 +363,39 @@ class ControlSession implements Session
         }
     }
 
+    void onReplicate(
+        final long correlationId,
+        final long dstRecordingId,
+        final long srcRecordingId,
+        final boolean liveMerge,
+        final int srcControlStreamId,
+        final String srcControlChannel,
+        final String replayChannel)
+    {
+        updateState();
+        if (State.ACTIVE == state)
+        {
+            conductor.replicate(
+                correlationId,
+                dstRecordingId,
+                srcRecordingId,
+                liveMerge,
+                srcControlStreamId,
+                srcControlChannel,
+                replayChannel,
+                this);
+        }
+    }
+
+    void onStopReplication(final long correlationId, final long replicationId)
+    {
+        updateState();
+        if (State.ACTIVE == state)
+        {
+            conductor.stopReplication(correlationId, replicationId, this);
+        }
+    }
+
     void sendOkResponse(final long correlationId, final ControlResponseProxy proxy)
     {
         sendResponse(correlationId, 0L, OK, null, proxy);

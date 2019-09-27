@@ -18,11 +18,14 @@ package io.aeron.archive;
 import io.aeron.Image;
 import io.aeron.ImageFragmentAssembler;
 import io.aeron.archive.client.ArchiveException;
-import io.aeron.archive.codecs.SourceLocation;
+import io.aeron.archive.codecs.*;
 import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.logbuffer.Header;
+import org.agrona.DirectBuffer;
+import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.Long2ObjectHashMap;
 
-class ControlSessionDemuxer implements Session, ControlRequestListener
+class ControlSessionDemuxer implements Session, FragmentHandler
 {
     enum State
     {
@@ -31,15 +34,17 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
 
     private static final int FRAGMENT_LIMIT = 10;
 
+    private final ControlRequestDecoders decoders;
     private final Image image;
     private final ArchiveConductor conductor;
-    private final FragmentHandler adapter = new ImageFragmentAssembler(new ControlRequestAdapter(this));
+    private final FragmentHandler adapter = new ImageFragmentAssembler(this);
     private final Long2ObjectHashMap<ControlSession> controlSessionByIdMap = new Long2ObjectHashMap<>();
 
     private State state = State.ACTIVE;
 
-    ControlSessionDemuxer(final Image image, final ArchiveConductor conductor)
+    ControlSessionDemuxer(final ControlRequestDecoders decoders, final Image image, final ArchiveConductor conductor)
     {
+        this.decoders = decoders;
         this.image = image;
         this.conductor = conductor;
     }
@@ -85,171 +90,407 @@ class ControlSessionDemuxer implements Session, ControlRequestListener
         return workCount;
     }
 
-    public void onConnect(final long correlationId, final int streamId, final int version, final String channel)
+    @SuppressWarnings("MethodLength")
+    public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
-        final ControlSession session = conductor.newControlSession(correlationId, streamId, version, channel, this);
-        controlSessionByIdMap.put(session.sessionId(), session);
-    }
+        final MessageHeaderDecoder headerDecoder = decoders.header;
+        headerDecoder.wrap(buffer, offset);
 
-    public void onCloseSession(final long controlSessionId)
-    {
-        final ControlSession session = controlSessionByIdMap.get(controlSessionId);
-        if (null != session)
+        final int schemaId = headerDecoder.schemaId();
+        if (schemaId != MessageHeaderDecoder.SCHEMA_ID)
         {
-            session.abort();
+            throw new ArchiveException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
         }
-    }
 
-    public void onStartRecording(
-        final long controlSessionId,
-        final long correlationId,
-        final int streamId,
-        final String channel,
-        final SourceLocation sourceLocation)
-    {
-        final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
-        controlSession.onStartRecording(correlationId, channel, streamId, sourceLocation);
-    }
+        final int templateId = headerDecoder.templateId();
+        switch (templateId)
+        {
+            case ConnectRequestDecoder.TEMPLATE_ID:
+            {
+                final ConnectRequestDecoder connectRequest = decoders.connectRequest;
+                connectRequest.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
 
-    public void onStopRecording(
-        final long controlSessionId, final long correlationId, final int streamId, final String channel)
-    {
-        final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
-        controlSession.onStopRecording(correlationId, streamId, channel);
-    }
+                final ControlSession session = conductor.newControlSession(
+                    connectRequest.correlationId(),
+                    connectRequest.responseStreamId(),
+                    connectRequest.version(),
+                    connectRequest.responseChannel(),
+                    this);
+                controlSessionByIdMap.put(session.sessionId(), session);
+                break;
+            }
 
-    public void onStopRecordingSubscription(
-        final long controlSessionId, final long correlationId, final long subscriptionId)
-    {
-        final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
-        controlSession.onStopRecordingSubscription(correlationId, subscriptionId);
-    }
+            case CloseSessionRequestDecoder.TEMPLATE_ID:
+            {
+                final CloseSessionRequestDecoder closeSessionRequest = decoders.closeSessionRequest;
+                closeSessionRequest.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
 
-    public void onStartReplay(
-        final long controlSessionId,
-        final long correlationId,
-        final long recordingId,
-        final long position,
-        final long length,
-        final int replayStreamId,
-        final String replayChannel)
-    {
-        final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
-        controlSession.onStartReplay(correlationId, recordingId, position, length, replayStreamId, replayChannel);
-    }
+                final long controlSessionId = closeSessionRequest.controlSessionId();
+                final ControlSession session = controlSessionByIdMap.get(controlSessionId);
+                if (null != session)
+                {
+                    session.abort();
+                }
+                break;
+            }
 
-    public void onStartBoundedReplay(
-        final long controlSessionId,
-        final long correlationId,
-        final long recordingId,
-        final long position,
-        final long length,
-        final int limitCounterId,
-        final int replayStreamId,
-        final String replayChannel)
-    {
-        final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
-        controlSession.onStartBoundedReplay(
-            correlationId, recordingId, position, length, limitCounterId, replayStreamId, replayChannel);
-    }
+            case StartRecordingRequestDecoder.TEMPLATE_ID:
+            {
+                final StartRecordingRequestDecoder startRecordingRequest = decoders.startRecordingRequest;
+                startRecordingRequest.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
 
-    public void onStopReplay(final long controlSessionId, final long correlationId, final long replaySessionId)
-    {
-        final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
-        controlSession.onStopReplay(correlationId, replaySessionId);
-    }
+                final long correlationId = startRecordingRequest.correlationId();
+                final long controlSessionId = startRecordingRequest.controlSessionId();
+                getControlSession(controlSessionId, correlationId).onStartRecording(
+                    correlationId,
+                    startRecordingRequest.channel(),
+                    startRecordingRequest.streamId(),
+                    startRecordingRequest.sourceLocation());
+                break;
+            }
 
-    public void onStopAllReplays(final long controlSessionId, final long correlationId, final long recordingId)
-    {
-        final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
-        controlSession.onStopAllReplays(correlationId, recordingId);
-    }
+            case StopRecordingRequestDecoder.TEMPLATE_ID:
+            {
+                final StopRecordingRequestDecoder stopRecordingRequest = decoders.stopRecordingRequest;
+                stopRecordingRequest.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
 
-    public void onListRecordingsForUri(
-        final long controlSessionId,
-        final long correlationId,
-        final long fromRecordingId,
-        final int recordCount,
-        final int streamId,
-        final byte[] channelFragment)
-    {
-        final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
-        controlSession.onListRecordingsForUri(correlationId, fromRecordingId, recordCount, streamId, channelFragment);
-    }
+                final long correlationId = stopRecordingRequest.correlationId();
+                final long controlSessionId = stopRecordingRequest.controlSessionId();
+                getControlSession(controlSessionId, correlationId).onStopRecording(
+                    correlationId,
+                    stopRecordingRequest.streamId(),
+                    stopRecordingRequest.channel());
+                break;
+            }
 
-    public void onListRecordings(
-        final long controlSessionId, final long correlationId, final long fromRecordingId, final int recordCount)
-    {
-        final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
-        controlSession.onListRecordings(correlationId, fromRecordingId, recordCount);
-    }
+            case ReplayRequestDecoder.TEMPLATE_ID:
+            {
+                final ReplayRequestDecoder replayRequest = decoders.replayRequest;
+                replayRequest.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
 
-    public void onListRecording(final long controlSessionId, final long correlationId, final long recordingId)
-    {
-        final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
-        controlSession.onListRecording(correlationId, recordingId);
-    }
+                final long correlationId = replayRequest.correlationId();
+                final long controlSessionId = replayRequest.controlSessionId();
+                getControlSession(controlSessionId, correlationId).onStartReplay(
+                    correlationId,
+                    replayRequest.recordingId(),
+                    replayRequest.position(),
+                    replayRequest.length(),
+                    replayRequest.replayStreamId(),
+                    replayRequest.replayChannel());
+                break;
+            }
 
-    public void onExtendRecording(
-        final long controlSessionId,
-        final long correlationId,
-        final long recordingId,
-        final int streamId,
-        final String channel,
-        final SourceLocation sourceLocation)
-    {
-        final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
-        controlSession.onExtendRecording(correlationId, recordingId, channel, streamId, sourceLocation);
-    }
+            case StopReplayRequestDecoder.TEMPLATE_ID:
+            {
+                final StopReplayRequestDecoder stopReplayRequest = decoders.stopReplayRequest;
+                stopReplayRequest.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
 
-    public void onGetRecordingPosition(final long controlSessionId, final long correlationId, final long recordingId)
-    {
-        final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
-        controlSession.onGetRecordingPosition(correlationId, recordingId);
-    }
+                final long correlationId = stopReplayRequest.correlationId();
+                final long controlSessionId = stopReplayRequest.controlSessionId();
+                getControlSession(controlSessionId, correlationId).onStopReplay(
+                    correlationId,
+                    stopReplayRequest.replaySessionId());
+                break;
+            }
 
-    public void onTruncateRecording(
-        final long controlSessionId, final long correlationId, final long recordingId, final long position)
-    {
-        final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
-        controlSession.onTruncateRecording(correlationId, recordingId, position);
-    }
+            case ListRecordingsRequestDecoder.TEMPLATE_ID:
+            {
+                final ListRecordingsRequestDecoder listRecordingsRequest = decoders.listRecordingsRequest;
+                listRecordingsRequest.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
 
-    public void onGetStopPosition(final long controlSessionId, final long correlationId, final long recordingId)
-    {
-        final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
-        controlSession.onGetStopPosition(correlationId, recordingId);
-    }
+                final long correlationId = listRecordingsRequest.correlationId();
+                final long controlSessionId = listRecordingsRequest.controlSessionId();
+                getControlSession(controlSessionId, correlationId).onListRecordings(
+                    correlationId,
+                    listRecordingsRequest.fromRecordingId(),
+                    listRecordingsRequest.recordCount());
+                break;
+            }
 
-    public void onFindLastMatchingRecording(
-        final long controlSessionId,
-        final long correlationId,
-        final long minRecordingId,
-        final int sessionId,
-        final int streamId,
-        final byte[] channelFragment)
-    {
-        final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
-        controlSession.onFindLastMatchingRecording(correlationId, minRecordingId, sessionId, streamId, channelFragment);
-    }
+            case ListRecordingsForUriRequestDecoder.TEMPLATE_ID:
+            {
+                final ListRecordingsForUriRequestDecoder listRecordingsForUriRequest =
+                    decoders.listRecordingsForUriRequest;
+                listRecordingsForUriRequest.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
 
-    public void onListRecordingSubscriptions(
-        final long controlSessionId,
-        final long correlationId,
-        final int pseudoIndex,
-        final int subscriptionCount,
-        final boolean applyStreamId,
-        final int streamId,
-        final String channelFragment)
-    {
-        final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
-        controlSession.onListRecordingSubscriptions(
-            correlationId,
-            pseudoIndex,
-            subscriptionCount,
-            applyStreamId,
-            streamId,
-            channelFragment);
+                final int channelLength = listRecordingsForUriRequest.channelLength();
+                final byte[] bytes = 0 == channelLength ? ArrayUtil.EMPTY_BYTE_ARRAY : new byte[channelLength];
+                listRecordingsForUriRequest.getChannel(bytes, 0, channelLength);
+
+                final long correlationId = listRecordingsForUriRequest.correlationId();
+                final long controlSessionId = listRecordingsForUriRequest.controlSessionId();
+                getControlSession(controlSessionId, correlationId).onListRecordingsForUri(
+                    correlationId,
+                    listRecordingsForUriRequest.fromRecordingId(),
+                    listRecordingsForUriRequest.recordCount(),
+                    listRecordingsForUriRequest.streamId(),
+                    bytes);
+                break;
+            }
+
+            case ListRecordingRequestDecoder.TEMPLATE_ID:
+            {
+                final ListRecordingRequestDecoder listRecordingRequest = decoders.listRecordingRequest;
+                listRecordingRequest.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                final long correlationId = listRecordingRequest.correlationId();
+                final long controlSessionId = listRecordingRequest.controlSessionId();
+                getControlSession(controlSessionId, correlationId).onListRecording(
+                    correlationId,
+                    listRecordingRequest.recordingId());
+                break;
+            }
+
+            case ExtendRecordingRequestDecoder.TEMPLATE_ID:
+            {
+                final ExtendRecordingRequestDecoder extendRecordingRequest = decoders.extendRecordingRequest;
+                extendRecordingRequest.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                final long correlationId = extendRecordingRequest.correlationId();
+                final long controlSessionId = extendRecordingRequest.controlSessionId();
+                getControlSession(controlSessionId, correlationId).onExtendRecording(
+                    correlationId,
+                    extendRecordingRequest.recordingId(),
+                    extendRecordingRequest.channel(),
+                    extendRecordingRequest.streamId(),
+                    extendRecordingRequest.sourceLocation());
+                break;
+            }
+
+            case RecordingPositionRequestDecoder.TEMPLATE_ID:
+            {
+                final RecordingPositionRequestDecoder recordingPositionRequest = decoders.recordingPositionRequest;
+                recordingPositionRequest.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                final long correlationId = recordingPositionRequest.correlationId();
+                final long controlSessionId = recordingPositionRequest.controlSessionId();
+                getControlSession(controlSessionId, correlationId).onGetRecordingPosition(
+                    correlationId,
+                    recordingPositionRequest.recordingId());
+                break;
+            }
+
+            case TruncateRecordingRequestDecoder.TEMPLATE_ID:
+            {
+                final TruncateRecordingRequestDecoder truncateRecordingRequest = decoders.truncateRecordingRequest;
+                truncateRecordingRequest.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                final long correlationId = truncateRecordingRequest.correlationId();
+                final long controlSessionId = truncateRecordingRequest.controlSessionId();
+                getControlSession(controlSessionId, correlationId).onTruncateRecording(
+                    correlationId,
+                    truncateRecordingRequest.recordingId(),
+                    truncateRecordingRequest.position());
+                break;
+            }
+
+            case StopRecordingSubscriptionRequestDecoder.TEMPLATE_ID:
+            {
+                final StopRecordingSubscriptionRequestDecoder stopRecordingSubscriptionRequest =
+                    decoders.stopRecordingSubscriptionRequest;
+                stopRecordingSubscriptionRequest.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                final long correlationId = stopRecordingSubscriptionRequest.correlationId();
+                final long controlSessionId = stopRecordingSubscriptionRequest.controlSessionId();
+                getControlSession(controlSessionId, correlationId).onStopRecordingSubscription(
+                    correlationId,
+                    stopRecordingSubscriptionRequest.subscriptionId());
+                break;
+            }
+
+            case StopPositionRequestDecoder.TEMPLATE_ID:
+            {
+                final StopPositionRequestDecoder stopPositionRequest = decoders.stopPositionRequest;
+                stopPositionRequest.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                final long correlationId = stopPositionRequest.correlationId();
+                final long controlSessionId = stopPositionRequest.controlSessionId();
+                getControlSession(controlSessionId, correlationId).onGetStopPosition(
+                    correlationId,
+                    stopPositionRequest.recordingId());
+                break;
+            }
+
+            case FindLastMatchingRecordingRequestDecoder.TEMPLATE_ID:
+            {
+                final FindLastMatchingRecordingRequestDecoder findLastMatchingRecordingRequest =
+                    decoders.findLastMatchingRecordingRequest;
+                findLastMatchingRecordingRequest.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                final int channelLength = findLastMatchingRecordingRequest.channelLength();
+                final byte[] bytes = 0 == channelLength ? ArrayUtil.EMPTY_BYTE_ARRAY : new byte[channelLength];
+                findLastMatchingRecordingRequest.getChannel(bytes, 0, channelLength);
+
+                final long correlationId = findLastMatchingRecordingRequest.correlationId();
+                final long controlSessionId = findLastMatchingRecordingRequest.controlSessionId();
+                getControlSession(controlSessionId, correlationId).onFindLastMatchingRecording(
+                    correlationId,
+                    findLastMatchingRecordingRequest.minRecordingId(),
+                    findLastMatchingRecordingRequest.sessionId(),
+                    findLastMatchingRecordingRequest.streamId(), bytes);
+                break;
+            }
+
+            case ListRecordingSubscriptionsRequestDecoder.TEMPLATE_ID:
+            {
+                final ListRecordingSubscriptionsRequestDecoder listRecordingSubscriptionsRequest =
+                    decoders.listRecordingSubscriptionsRequest;
+                listRecordingSubscriptionsRequest.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                final long correlationId = listRecordingSubscriptionsRequest.correlationId();
+                final long controlSessionId = listRecordingSubscriptionsRequest.controlSessionId();
+                getControlSession(controlSessionId, correlationId).onListRecordingSubscriptions(
+                    correlationId,
+                    listRecordingSubscriptionsRequest.pseudoIndex(),
+                    listRecordingSubscriptionsRequest.subscriptionCount(),
+                    listRecordingSubscriptionsRequest.applyStreamId() == BooleanType.TRUE,
+                    listRecordingSubscriptionsRequest.streamId(),
+                    listRecordingSubscriptionsRequest.channel());
+                break;
+            }
+
+            case BoundedReplayRequestDecoder.TEMPLATE_ID:
+            {
+                final BoundedReplayRequestDecoder boundedReplayRequest = decoders.boundedReplayRequest;
+                boundedReplayRequest.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                final long correlationId = boundedReplayRequest.correlationId();
+                final long controlSessionId = boundedReplayRequest.controlSessionId();
+                getControlSession(controlSessionId, correlationId).onStartBoundedReplay(
+                    correlationId,
+                    boundedReplayRequest.recordingId(),
+                    boundedReplayRequest.position(),
+                    boundedReplayRequest.length(),
+                    boundedReplayRequest.limitCounterId(),
+                    boundedReplayRequest.replayStreamId(),
+                    boundedReplayRequest.replayChannel());
+                break;
+            }
+
+            case StopAllReplaysRequestDecoder.TEMPLATE_ID:
+            {
+                final StopAllReplaysRequestDecoder stopAllReplaysRequest = decoders.stopAllReplaysRequest;
+                stopAllReplaysRequest.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                final long correlationId = stopAllReplaysRequest.correlationId();
+                final long controlSessionId = stopAllReplaysRequest.controlSessionId();
+                getControlSession(controlSessionId, correlationId).onStopAllReplays(
+                    correlationId,
+                    stopAllReplaysRequest.recordingId());
+                break;
+            }
+
+            case ReplicateRequestDecoder.TEMPLATE_ID:
+            {
+                final ReplicateRequestDecoder replicateRequest = decoders.replicateRequest;
+                replicateRequest.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                final long correlationId = replicateRequest.correlationId();
+                final long controlSessionId = replicateRequest.controlSessionId();
+                getControlSession(controlSessionId, correlationId).onReplicate(
+                    correlationId,
+                    replicateRequest.dstRecordingId(),
+                    replicateRequest.srcRecordingId(),
+                    replicateRequest.liveMerge() == BooleanType.TRUE,
+                    replicateRequest.srcControlStreamId(),
+                    replicateRequest.srcControlChannel(),
+                    replicateRequest.replayChannel());
+                break;
+            }
+
+            case StopReplicationRequestDecoder.TEMPLATE_ID:
+            {
+                final StopReplicationRequestDecoder stopReplicationRequest = decoders.stopReplicationRequest;
+                stopReplicationRequest.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                final long correlationId = stopReplicationRequest.correlationId();
+                final long controlSessionId = stopReplicationRequest.controlSessionId();
+                getControlSession(controlSessionId, correlationId).onStopReplication(
+                    correlationId,
+                    stopReplicationRequest.replicationId());
+                break;
+            }
+        }
     }
 
     void removeControlSession(final ControlSession controlSession)

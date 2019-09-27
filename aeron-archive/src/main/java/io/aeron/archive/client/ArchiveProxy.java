@@ -64,10 +64,10 @@ public class ArchiveProxy
         new FindLastMatchingRecordingRequestEncoder();
     private final ListRecordingSubscriptionsRequestEncoder listRecordingSubscriptionsRequestEncoder =
         new ListRecordingSubscriptionsRequestEncoder();
-    private final BoundedReplayRequestEncoder boundedReplayRequestEncoder =
-        new BoundedReplayRequestEncoder();
-    private final StopAllReplaysRequestEncoder stopAllReplaysRequestEncoder =
-        new StopAllReplaysRequestEncoder();
+    private final BoundedReplayRequestEncoder boundedReplayRequestEncoder = new BoundedReplayRequestEncoder();
+    private final StopAllReplaysRequestEncoder stopAllReplaysRequestEncoder = new StopAllReplaysRequestEncoder();
+    private final ReplicateRequestEncoder replicateRequestEncoder = new ReplicateRequestEncoder();
+    private final StopReplicationRequestEncoder stopReplicationRequestEncoder = new StopReplicationRequestEncoder();
 
     /**
      * Create a proxy with a {@link Publication} for sending control message requests.
@@ -242,10 +242,7 @@ public class ArchiveProxy
      * @return true if successfully offered otherwise false.
      */
     public boolean stopRecording(
-        final String channel,
-        final int streamId,
-        final long correlationId,
-        final long controlSessionId)
+        final String channel, final int streamId, final long correlationId, final long controlSessionId)
     {
         stopRecordingRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
@@ -265,10 +262,7 @@ public class ArchiveProxy
      * @param controlSessionId for this request.
      * @return true if successfully offered otherwise false.
      */
-    public boolean stopRecording(
-        final long subscriptionId,
-        final long correlationId,
-        final long controlSessionId)
+    public boolean stopRecording(final long subscriptionId, final long correlationId, final long controlSessionId)
     {
         stopRecordingSubscriptionRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
@@ -462,7 +456,7 @@ public class ArchiveProxy
 
     /**
      * Extend an existing, non-active, recorded stream for a the same channel and stream id.
-     *
+     * <p>
      * The channel must be configured for the initial position from which it will be extended. This can be done
      * with {@link ChannelUriStringBuilder#initialPosition(long, int, int)}. The details required to initialise can
      * be found by calling {@link #listRecording(long, long, long)}.
@@ -619,6 +613,73 @@ public class ArchiveProxy
             .channel(channelFragment);
 
         return offer(listRecordingSubscriptionsRequestEncoder.encodedLength());
+    }
+
+    /**
+     * Replicate a recording from a source archive to a destination which can be considered a backup for a primary
+     * archive. The source recording will be replayed via the provided replay channel and use the original stream id.
+     * If the destination recording id is {@link io.aeron.Aeron#NULL_VALUE} then a new destination recording is created
+     * otherwise the provided destination recording id will be extended. The details of the source recording
+     * descriptor will be replicated.
+     * <p>
+     * For a source recording that is still active the replay can merge with the live stream and then follow it
+     * directly and no longer require the replay from the source.
+     * <p>
+     * Errors will be reported asynchronously and can be checked for with {@link AeronArchive#pollForErrorResponse()}
+     * or {@link AeronArchive#checkForErrorResponse()}.
+     *
+     * @param srcRecordingId     recording id which must exist in the source archive.
+     * @param dstRecordingId     recording to extend in the destination, otherwise {@link io.aeron.Aeron#NULL_VALUE}.
+     * @param replayChannel      to which the replay is sent.
+     * @param srcControlChannel  remote control channel for the source archive to instruct the replay on.
+     * @param srcControlStreamId remote control stream id for the source archive to instruct the replay on.
+     * @param liveMerge          true to follow a live stream if still active after replay, otherwise false to
+     *                           replay with merging with the live stream.
+     * @param correlationId      for this request.
+     * @param controlSessionId   for this request.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean replicate(
+        final long srcRecordingId,
+        final long dstRecordingId,
+        final String replayChannel,
+        final String srcControlChannel,
+        final int srcControlStreamId,
+        final boolean liveMerge,
+        final long correlationId,
+        final long controlSessionId)
+    {
+        replicateRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .srcRecordingId(srcRecordingId)
+            .dstRecordingId(dstRecordingId)
+            .srcControlStreamId(srcControlStreamId)
+            .liveMerge(liveMerge ? BooleanType.TRUE : BooleanType.FALSE)
+            .srcControlChannel(srcControlChannel)
+            .replayChannel(replayChannel);
+
+        return offer(replicateRequestEncoder.encodedLength());
+    }
+
+    /**
+     * Stop an active replication by the registration id it was registered with.
+     *
+     * @param replicationId    that identifies the session in the archive doing the replication.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean stopReplication(final long replicationId, final long correlationId, final long controlSessionId)
+    {
+        stopReplicationRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .replicationId(replicationId);
+
+        return offer(stopReplicationRequestEncoder.encodedLength());
     }
 
     private boolean offer(final int length)

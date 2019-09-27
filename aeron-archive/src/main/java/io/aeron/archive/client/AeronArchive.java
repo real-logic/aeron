@@ -40,7 +40,7 @@ import static org.agrona.SystemUtil.getDurationInNanos;
 import static org.agrona.SystemUtil.getSizeAsInt;
 
 /**
- * Client for interacting with a local or remote Aeron Archive that records and replays message streams.
+ * Client for interacting with a local or remote Aeron Archive which records and replays message streams from storage.
  * <p>
  * This client provides a simple interaction model which is mostly synchronous and may not be optimal.
  * The underlying components such as the {@link ArchiveProxy} and the {@link ControlResponsePoller} or
@@ -73,7 +73,6 @@ public class AeronArchive implements AutoCloseable
 
     private static final int FRAGMENT_LIMIT = 10;
 
-
     private boolean isClosed = false;
     private final long controlSessionId;
     private final long messageTimeoutNs;
@@ -82,31 +81,27 @@ public class AeronArchive implements AutoCloseable
     private final ArchiveProxy archiveProxy;
     private final IdleStrategy idleStrategy;
     private final ControlResponsePoller controlResponsePoller;
-    private final RecordingDescriptorPoller recordingDescriptorPoller;
-    private final RecordingSubscriptionDescriptorPoller recordingSubscriptionDescriptorPoller;
     private final Lock lock;
     private final NanoClock nanoClock;
     private final AgentInvoker aeronClientInvoker;
+    private RecordingDescriptorPoller recordingDescriptorPoller;
+    private RecordingSubscriptionDescriptorPoller recordingSubscriptionDescriptorPoller;
 
     AeronArchive(
-        final Context ctx,
+        final Context context,
         final ControlResponsePoller controlResponsePoller,
         final ArchiveProxy archiveProxy,
-        final RecordingDescriptorPoller recordingDescriptorPoller,
-        final RecordingSubscriptionDescriptorPoller recordingSubscriptionDescriptorPoller,
         final long controlSessionId)
     {
-        context = ctx;
-        aeron = ctx.aeron();
+        this.context = context;
+        aeron = context.aeron();
         aeronClientInvoker = aeron.conductorAgentInvoker();
-        idleStrategy = ctx.idleStrategy();
-        messageTimeoutNs = ctx.messageTimeoutNs();
-        lock = ctx.lock();
+        idleStrategy = context.idleStrategy();
+        messageTimeoutNs = context.messageTimeoutNs();
+        lock = context.lock();
         nanoClock = aeron.context().nanoClock();
         this.controlResponsePoller = controlResponsePoller;
         this.archiveProxy = archiveProxy;
-        this.recordingDescriptorPoller = recordingDescriptorPoller;
-        this.recordingSubscriptionDescriptorPoller = recordingSubscriptionDescriptorPoller;
         this.controlSessionId = controlSessionId;
     }
 
@@ -316,6 +311,12 @@ public class AeronArchive implements AutoCloseable
      */
     public RecordingDescriptorPoller recordingDescriptorPoller()
     {
+        if (null == recordingDescriptorPoller)
+        {
+            recordingDescriptorPoller = new RecordingDescriptorPoller(
+                controlResponsePoller.subscription(), context.errorHandler(), controlSessionId, FRAGMENT_LIMIT);
+        }
+
         return recordingDescriptorPoller;
     }
 
@@ -327,6 +328,12 @@ public class AeronArchive implements AutoCloseable
      */
     public RecordingSubscriptionDescriptorPoller recordingSubscriptionDescriptorPoller()
     {
+        if (null == recordingSubscriptionDescriptorPoller)
+        {
+            recordingSubscriptionDescriptorPoller = new RecordingSubscriptionDescriptorPoller(
+                controlResponsePoller.subscription(), context.errorHandler(), controlSessionId, FRAGMENT_LIMIT);
+        }
+
         return recordingSubscriptionDescriptorPoller;
     }
 
@@ -383,14 +390,13 @@ public class AeronArchive implements AutoCloseable
 
             if (!controlResponsePoller.subscription().isConnected())
             {
-                final ArchiveException ex = new ArchiveException(NOT_CONNECTED_MSG);
                 if (null != context.errorHandler())
                 {
-                    context.errorHandler().onError(ex);
+                    context.errorHandler().onError(new ArchiveException(NOT_CONNECTED_MSG));
                 }
                 else
                 {
-                    throw ex;
+                    throw new ArchiveException(NOT_CONNECTED_MSG);
                 }
             }
 
@@ -1180,6 +1186,91 @@ public class AeronArchive implements AutoCloseable
         }
     }
 
+    /**
+     * Replicate a recording from a source archive to a destination which can be considered a backup for a primary
+     * archive. The source recording will be replayed via the provided replay channel and use the original stream id.
+     * If the destination recording id is {@link io.aeron.Aeron#NULL_VALUE} then a new destination recording is created
+     * otherwise the provided destination recording id will be extended. The details of the source recording
+     * descriptor will be replicated.
+     * <p>
+     * For a source recording that is still active the replay can merge with the live stream and then follow it
+     * directly and no longer require the replay from the source.
+     * <p>
+     * Errors will be reported asynchronously and can be checked for with {@link AeronArchive#pollForErrorResponse()}
+     * or {@link AeronArchive#checkForErrorResponse()}.
+     *
+     * @param srcRecordingId     recording id which must exist in the source archive.
+     * @param dstRecordingId     recording to extend in the destination, otherwise {@link io.aeron.Aeron#NULL_VALUE}.
+     * @param replayChannel      to which the replay is sent.
+     * @param srcControlChannel  remote control channel for the source archive to instruct the replay on.
+     * @param srcControlStreamId remote control stream id for the source archive to instruct the replay on.
+     * @param liveMerge          true to follow a live stream if still active after replay, otherwise false to
+     *                           replay with merging with the live stream.
+     * @return return the replication session id which can be passed later to {@link #stopReplication(long)}.
+     */
+    public long replicate(
+        final long srcRecordingId,
+        final long dstRecordingId,
+        final String replayChannel,
+        final String srcControlChannel,
+        final int srcControlStreamId,
+        final boolean liveMerge)
+    {
+        lock.lock();
+        try
+        {
+            ensureOpen();
+
+            final long correlationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.replicate(
+                srcRecordingId,
+                dstRecordingId,
+                replayChannel,
+                srcControlChannel,
+                srcControlStreamId,
+                liveMerge,
+                correlationId,
+                controlSessionId))
+            {
+                throw new ArchiveException("failed to send replicate request");
+            }
+
+            return pollForResponse(correlationId);
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Stop a replication session.
+     *
+     * @param replicationId to stop replication for.
+     */
+    public void stopReplication(final long replicationId)
+    {
+        lock.lock();
+        try
+        {
+            ensureOpen();
+
+            final long correlationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.stopReplication(replicationId, correlationId, controlSessionId))
+            {
+                throw new ArchiveException("failed to send stop replication request");
+            }
+
+            pollForResponse(correlationId);
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
     private void checkDeadline(final long deadlineNs, final String errorMessage, final long correlationId)
     {
         if (Thread.interrupted())
@@ -1271,7 +1362,7 @@ public class AeronArchive implements AutoCloseable
     {
         int existingRemainCount = recordCount;
         long deadlineNs = nanoClock.nanoTime() + messageTimeoutNs;
-        final RecordingDescriptorPoller poller = recordingDescriptorPoller;
+        final RecordingDescriptorPoller poller = recordingDescriptorPoller();
         poller.reset(correlationId, recordCount, consumer);
         idleStrategy.reset();
 
@@ -1313,7 +1404,7 @@ public class AeronArchive implements AutoCloseable
     {
         int existingRemainCount = recordCount;
         long deadlineNs = nanoClock.nanoTime() + messageTimeoutNs;
-        final RecordingSubscriptionDescriptorPoller poller = recordingSubscriptionDescriptorPoller;
+        final RecordingSubscriptionDescriptorPoller poller = recordingSubscriptionDescriptorPoller();
         poller.reset(correlationId, recordCount, consumer);
         idleStrategy.reset();
 
@@ -2229,17 +2320,8 @@ public class AeronArchive implements AutoCloseable
                     throw new ArchiveException("unexpected response: code=" + code);
                 }
 
-                final long sessionId = controlResponsePoller.controlSessionId();
-                final Subscription subscription = controlResponsePoller.subscription();
-                final ErrorHandler errorHandler = ctx.errorHandler();
-
                 aeronArchive = new AeronArchive(
-                    ctx,
-                    controlResponsePoller,
-                    archiveProxy,
-                    new RecordingDescriptorPoller(subscription, errorHandler, sessionId, FRAGMENT_LIMIT),
-                    new RecordingSubscriptionDescriptorPoller(subscription, errorHandler, sessionId, FRAGMENT_LIMIT),
-                    sessionId);
+                    ctx, controlResponsePoller, archiveProxy, controlResponsePoller.controlSessionId());
 
                 step(5);
             }

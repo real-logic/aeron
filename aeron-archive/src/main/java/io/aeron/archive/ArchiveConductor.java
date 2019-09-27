@@ -63,6 +63,7 @@ abstract class ArchiveConductor
     private static final EnumSet<StandardOpenOption> FILE_OPTIONS = EnumSet.of(READ, WRITE);
     private static final FileAttribute<?>[] NO_ATTRIBUTES = new FileAttribute[0];
 
+    private final ControlRequestDecoders decoders = new ControlRequestDecoders();
     private final ArrayDeque<Runnable> taskQueue = new ArrayDeque<>();
     private final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder();
     private final Long2ObjectHashMap<ReplaySession> replaySessionByIdMap = new Long2ObjectHashMap<>();
@@ -147,7 +148,7 @@ abstract class ArchiveConductor
 
     public void onAvailableImage(final Image image)
     {
-        addSession(new ControlSessionDemuxer(image, this));
+        addSession(new ControlSessionDemuxer(decoders, image, this));
     }
 
     public void onUnavailableCounter(
@@ -904,6 +905,26 @@ abstract class ArchiveConductor
         replaySessionByIdMap.remove(session.sessionId());
         session.sendPendingError(controlResponseProxy);
         closeSession(session);
+    }
+
+    void replicate(
+        final long correlationId,
+        final long dstRecordingId,
+        final long srcRecordingId,
+        final boolean liveMerge,
+        final int srcControlStreamId,
+        final String srcControlChannel,
+        final String replayChannel,
+        final ControlSession controlSession)
+    {
+        final long replicationId = -7;
+
+        controlSession.sendOkResponse(correlationId, replicationId, controlResponseProxy);
+    }
+
+    void stopReplication(final long correlationId, final long replicationId, final ControlSession controlSession)
+    {
+        controlSession.sendOkResponse(correlationId, controlResponseProxy);
     }
 
     private int runTasks(final ArrayDeque<Runnable> taskQueue)

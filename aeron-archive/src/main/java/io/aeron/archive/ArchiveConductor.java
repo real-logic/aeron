@@ -929,7 +929,6 @@ abstract class ArchiveConductor
             .networkInterface(channelUri)
             .controlEndpoint(channelUri)
             .tags(channelUri)
-            .eos(channelUri)
             .rejoin(channelUri)
             .group(channelUri)
             .congestionControl(channelUri)
@@ -940,7 +939,12 @@ abstract class ArchiveConductor
         {
             if (ChannelUri.isTagged(sessionIdStr))
             {
-                channelBuilder.isSessionIdTagged(true).sessionId((int)ChannelUri.getTag(sessionIdStr));
+                final long tag = ChannelUri.getTag(sessionIdStr);
+                if (tag < Integer.MIN_VALUE || tag > Integer.MAX_VALUE)
+                {
+                    throw new IllegalArgumentException("invalid session id tag value: " + tag);
+                }
+                channelBuilder.isSessionIdTagged(true).sessionId((int)tag);
             }
             else
             {
@@ -1115,6 +1119,7 @@ abstract class ArchiveConductor
         final ChannelUriStringBuilder channelBuilder = strippedChannelBuilder(channelUri)
             .initialPosition(position, recording.initialTermId, recording.termBufferLength)
             .ttl(channelUri)
+            .eos(channelUri)
             .sparse(channelUri)
             .mtu(recording.mtuLength);
 

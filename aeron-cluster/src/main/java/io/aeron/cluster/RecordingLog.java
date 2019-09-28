@@ -439,7 +439,7 @@ public class RecordingLog implements AutoCloseable
     }
 
     /**
-     * Reload the log from disk.
+     * Reload the recording log from disk.
      */
     public void reload()
     {
@@ -574,8 +574,8 @@ public class RecordingLog implements AutoCloseable
     }
 
     /**
-     * Create a recovery plan for the cluster that when the steps are replayed will bring the cluster back to the
-     * latest stable state.
+     * Create a recovery plan for the cluster so that when the steps are replayed the plan will bring the cluster
+     * back to the latest stable state.
      *
      * @param archive      to lookup recording descriptors.
      * @param serviceCount of services that may have snapshots.
@@ -625,8 +625,8 @@ public class RecordingLog implements AutoCloseable
     /**
      * Create a recovery plan that has only snapshots. Used for dynamicJoin snapshot load.
      *
-     * @param snapshots to construct plan from
-     * @return a new {@link RecoveryPlan} for the cluster
+     * @param snapshots to construct plan from.
+     * @return a new {@link RecoveryPlan} for the cluster.
      */
     public static RecoveryPlan createRecoveryPlan(final ArrayList<RecordingLog.Snapshot> snapshots)
     {
@@ -656,9 +656,9 @@ public class RecordingLog implements AutoCloseable
     }
 
     /**
-     * Has the given leadershipTermId unknown to the log?
+     * Is the given leadershipTermId unknown for the log?
      *
-     * @param leadershipTermId to check
+     * @param leadershipTermId to check.
      * @return true if term has not yet been appended otherwise false.
      */
     public boolean isUnknown(final long leadershipTermId)
@@ -669,10 +669,10 @@ public class RecordingLog implements AutoCloseable
     /**
      * Append a log entry for a leadership term.
      *
-     * @param recordingId         of the log.
-     * @param leadershipTermId    for the current term.
-     * @param termBaseLogPosition reached at the beginning of the term.
-     * @param timestamp           at the beginning of the term.
+     * @param recordingId         of the log in the archive.
+     * @param leadershipTermId    for the appended term.
+     * @param termBaseLogPosition for the beginning of the term.
+     * @param timestamp           at the beginning of the appended term.
      */
     public void appendTerm(
         final long recordingId, final long leadershipTermId, final long termBaseLogPosition, final long timestamp)
@@ -687,31 +687,14 @@ public class RecordingLog implements AutoCloseable
                     lastEntry.leadershipTermId + " this " + leadershipTermId);
             }
 
-            final long index = indexByLeadershipTermIdMap.get(leadershipTermId - 1);
-            if (NULL_VALUE != index)
+            final long previousLeadershipTermId = leadershipTermId - 1;
+            if (NULL_VALUE != indexByLeadershipTermIdMap.get(previousLeadershipTermId))
             {
-                final Entry entry = entries.get((int)index);
-
-                if (entry.logPosition != termBaseLogPosition)
-                {
-                    commitEntryValue(entry.entryIndex, termBaseLogPosition, LOG_POSITION_OFFSET);
-
-                    entries.set(entry.entryIndex, new Entry(
-                        entry.recordingId,
-                        entry.leadershipTermId,
-                        entry.termBaseLogPosition,
-                        termBaseLogPosition,
-                        entry.timestamp,
-                        entry.serviceId,
-                        entry.type,
-                        entry.entryIndex));
-                }
+                commitLogPosition(previousLeadershipTermId, termBaseLogPosition);
             }
         }
 
-        indexByLeadershipTermIdMap.put(leadershipTermId, nextEntryIndex);
-
-        append(
+        final int entryIndex = append(
             ENTRY_TYPE_TERM,
             recordingId,
             leadershipTermId,
@@ -719,6 +702,8 @@ public class RecordingLog implements AutoCloseable
             NULL_POSITION,
             timestamp,
             NULL_VALUE);
+
+        indexByLeadershipTermIdMap.put(leadershipTermId, entryIndex);
     }
 
     /**
@@ -762,7 +747,7 @@ public class RecordingLog implements AutoCloseable
     }
 
     /**
-     * Commit the position reached in a leadership term.
+     * Commit the log position reached in a leadership term.
      *
      * @param leadershipTermId for committing the term position reached.
      * @param logPosition      reached in the leadership term.
@@ -840,7 +825,7 @@ public class RecordingLog implements AutoCloseable
             '}';
     }
 
-    private void append(
+    private int append(
         final int entryType,
         final long recordingId,
         final long leadershipTermId,
@@ -866,11 +851,12 @@ public class RecordingLog implements AutoCloseable
                 throw new ClusterException("failed to write entry atomically");
             }
         }
-        catch (final Exception ex)
+        catch (final IOException ex)
         {
             LangUtil.rethrowUnchecked(ex);
         }
 
+        final int entryIndex = nextEntryIndex++;
         entries.add(new Entry(
             recordingId,
             leadershipTermId,
@@ -879,7 +865,9 @@ public class RecordingLog implements AutoCloseable
             timestamp,
             serviceId,
             entryType,
-            nextEntryIndex++));
+            entryIndex));
+
+        return entryIndex;
     }
 
     private void captureEntriesFromBuffer(
@@ -937,7 +925,7 @@ public class RecordingLog implements AutoCloseable
                 throw new ClusterException("failed to write field atomically");
             }
         }
-        catch (final Exception ex)
+        catch (final IOException ex)
         {
             LangUtil.rethrowUnchecked(ex);
         }

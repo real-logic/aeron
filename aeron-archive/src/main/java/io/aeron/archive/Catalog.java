@@ -280,19 +280,21 @@ class Catalog implements AutoCloseable
         }
     }
 
-    public int maxEntries()
+    int maxEntries()
     {
         return maxRecordingId + 1;
     }
 
-    public int countEntries()
+    int countEntries()
     {
         return (int)nextRecordingId;
     }
 
-    public long addNewRecording(
+    long addNewRecording(
         final long startPosition,
+        final long stopPosition,
         final long startTimestamp,
+        final long stopTimestamp,
         final int imageInitialTermId,
         final int segmentFileLength,
         final int termBufferLength,
@@ -324,9 +326,9 @@ class Catalog implements AutoCloseable
             .wrap(catalogBuffer, DESCRIPTOR_HEADER_LENGTH)
             .recordingId(recordingId)
             .startTimestamp(startTimestamp)
-            .stopTimestamp(NULL_TIMESTAMP)
+            .stopTimestamp(stopTimestamp)
             .startPosition(startPosition)
-            .stopPosition(NULL_POSITION)
+            .stopPosition(stopPosition)
             .initialTermId(imageInitialTermId)
             .segmentFileLength(segmentFileLength)
             .termBufferLength(termBufferLength)
@@ -347,7 +349,36 @@ class Catalog implements AutoCloseable
         return recordingId;
     }
 
-    public boolean wrapDescriptor(final long recordingId, final UnsafeBuffer buffer)
+    long addNewRecording(
+        final long startPosition,
+        final long startTimestamp,
+        final int imageInitialTermId,
+        final int segmentFileLength,
+        final int termBufferLength,
+        final int mtuLength,
+        final int sessionId,
+        final int streamId,
+        final String strippedChannel,
+        final String originalChannel,
+        final String sourceIdentity)
+    {
+        return addNewRecording(
+            startPosition,
+            NULL_POSITION,
+            startTimestamp,
+            NULL_TIMESTAMP,
+            imageInitialTermId,
+            segmentFileLength,
+            termBufferLength,
+            mtuLength,
+            sessionId,
+            streamId,
+            strippedChannel,
+            originalChannel,
+            sourceIdentity);
+    }
+
+    boolean wrapDescriptor(final long recordingId, final UnsafeBuffer buffer)
     {
         if (recordingId < 0 || recordingId > maxRecordingId)
         {
@@ -359,7 +390,7 @@ class Catalog implements AutoCloseable
         return descriptorLength(buffer) > 0;
     }
 
-    public boolean wrapAndValidateDescriptor(final long recordingId, final UnsafeBuffer buffer)
+    boolean wrapAndValidateDescriptor(final long recordingId, final UnsafeBuffer buffer)
     {
         if (recordingId < 0 || recordingId > maxRecordingId)
         {
@@ -371,7 +402,7 @@ class Catalog implements AutoCloseable
         return descriptorLength(buffer) > 0 && isValidDescriptor(buffer);
     }
 
-    public boolean hasRecording(final long recordingId)
+    boolean hasRecording(final long recordingId)
     {
         return recordingId >= 0 && recordingId < nextRecordingId &&
             fieldAccessBuffer.getByte(
@@ -379,7 +410,7 @@ class Catalog implements AutoCloseable
                     RecordingDescriptorHeaderDecoder.validEncodingOffset()) == VALID;
     }
 
-    public int forEach(final CatalogEntryProcessor consumer)
+    int forEach(final CatalogEntryProcessor consumer)
     {
         int count = 0;
         long recordingId = 0L;
@@ -406,7 +437,7 @@ class Catalog implements AutoCloseable
         return count;
     }
 
-    public boolean forEntry(final long recordingId, final CatalogEntryProcessor consumer)
+    boolean forEntry(final long recordingId, final CatalogEntryProcessor consumer)
     {
         if (wrapDescriptor(recordingId, catalogBuffer))
         {
@@ -431,8 +462,7 @@ class Catalog implements AutoCloseable
         return false;
     }
 
-    public long findLast(
-        final long minRecordingId, final int sessionId, final int streamId, final byte[] channelFragment)
+    long findLast(final long minRecordingId, final int sessionId, final int streamId, final byte[] channelFragment)
     {
         long recordingId = nextRecordingId;
         while (--recordingId >= minRecordingId)
@@ -464,7 +494,7 @@ class Catalog implements AutoCloseable
     // Note: These methods are thread safe.
     /////////////////////////////////////////////////////////////
 
-    public static boolean originalChannelContains(
+    static boolean originalChannelContains(
         final RecordingDescriptorDecoder descriptorDecoder, final byte[] channelFragment)
     {
         final int fragmentLength = channelFragment.length;
@@ -504,7 +534,7 @@ class Catalog implements AutoCloseable
         return false;
     }
 
-    public void recordingStopped(final long recordingId, final long position, final long timestampMs)
+    void recordingStopped(final long recordingId, final long position, final long timestampMs)
     {
         final int offset = recordingDescriptorOffset(recordingId) + RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
         final long stopPosition = nativeOrder() == BYTE_ORDER ? position : Long.reverseBytes(position);
@@ -515,7 +545,7 @@ class Catalog implements AutoCloseable
         forceWrites(catalogChannel, forceWrites, forceMetadata);
     }
 
-    public void recordingStopped(final long recordingId, final long position)
+    void recordingStopped(final long recordingId, final long position)
     {
         final int offset = recordingDescriptorOffset(recordingId) + RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
         final long stopPosition = nativeOrder() == BYTE_ORDER ? position : Long.reverseBytes(position);
@@ -524,7 +554,7 @@ class Catalog implements AutoCloseable
         forceWrites(catalogChannel, forceWrites, forceMetadata);
     }
 
-    public void extendRecording(
+    void extendRecording(
         final long recordingId, final long controlSessionId, final long correlationId, final int sessionId)
     {
         final int offset = recordingDescriptorOffset(recordingId) + RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
@@ -539,7 +569,7 @@ class Catalog implements AutoCloseable
         forceWrites(catalogChannel, forceWrites, forceMetadata);
     }
 
-    public long stopPosition(final long recordingId)
+    long stopPosition(final long recordingId)
     {
         final int offset = recordingDescriptorOffset(recordingId) +
             RecordingDescriptorHeaderDecoder.BLOCK_LENGTH +
@@ -550,7 +580,7 @@ class Catalog implements AutoCloseable
         return nativeOrder() == BYTE_ORDER ? stopPosition : Long.reverseBytes(stopPosition);
     }
 
-    public RecordingSummary recordingSummary(final long recordingId, final RecordingSummary summary)
+    RecordingSummary recordingSummary(final long recordingId, final RecordingSummary summary)
     {
         final int offset = recordingDescriptorOffset(recordingId) + RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
 
@@ -567,22 +597,22 @@ class Catalog implements AutoCloseable
         return summary;
     }
 
-    public static int descriptorLength(final UnsafeBuffer descriptorBuffer)
+    static int descriptorLength(final UnsafeBuffer descriptorBuffer)
     {
         return descriptorBuffer.getInt(RecordingDescriptorHeaderDecoder.lengthEncodingOffset(), BYTE_ORDER);
     }
 
-    public static boolean isValidDescriptor(final UnsafeBuffer descriptorBuffer)
+    static boolean isValidDescriptor(final UnsafeBuffer descriptorBuffer)
     {
         return descriptorBuffer.getByte(RecordingDescriptorHeaderDecoder.validEncodingOffset()) == VALID;
     }
 
-    public static long calculateCatalogLength(final long maxEntries)
+    static long calculateCatalogLength(final long maxEntries)
     {
         return Math.min((maxEntries * DEFAULT_RECORD_LENGTH) + DEFAULT_RECORD_LENGTH, Integer.MAX_VALUE);
     }
 
-    public static long calculateMaxEntries(final long catalogLength, final long recordLength)
+    static long calculateMaxEntries(final long catalogLength, final long recordLength)
     {
         if (Integer.MAX_VALUE == catalogLength)
         {
@@ -597,7 +627,7 @@ class Catalog implements AutoCloseable
         return (int)(recordingId * recordLength) + recordLength;
     }
 
-    public static void validateMaxEntries(final long maxEntries)
+    static void validateMaxEntries(final long maxEntries)
     {
         if (maxEntries < 1 || maxEntries > MAX_ENTRIES)
         {
@@ -606,7 +636,7 @@ class Catalog implements AutoCloseable
         }
     }
 
-    public static long recoverStopOffset(final File segmentFile, final int segmentFileLength)
+    static long recoverStopOffset(final File segmentFile, final int segmentFileLength)
     {
         long lastFragmentOffset = 0;
         try (FileChannel segment = FileChannel.open(segmentFile.toPath(), READ))

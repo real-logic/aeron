@@ -165,6 +165,8 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
         dstRecordingId = catalog.addNewRecording(
             startPosition,
+            startPosition,
+            startTimestamp,
             startTimestamp,
             initialTermId,
             segmentFileLength,

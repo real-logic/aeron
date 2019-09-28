@@ -171,8 +171,7 @@ public class ControlResponsePoller implements ControlledFragmentHandler
             throw new ArchiveException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
         }
 
-        final int templateId = messageHeaderDecoder.templateId();
-        if (templateId == ControlResponseDecoder.TEMPLATE_ID)
+        if (messageHeaderDecoder.templateId() == ControlResponseDecoder.TEMPLATE_ID)
         {
             controlResponseDecoder.wrap(
                 buffer,

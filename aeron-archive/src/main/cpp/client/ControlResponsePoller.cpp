@@ -60,8 +60,7 @@ ControlledPollAction ControlResponsePoller::onFragment(
             SOURCEINFO);
     }
 
-    m_templateId = msgHeader.templateId();
-    if (ControlResponse::sbeTemplateId() == m_templateId)
+    if (ControlResponse::sbeTemplateId() == msgHeader.templateId())
     {
         ControlResponse response(
             buffer.sbeData() + offset + MessageHeader::encodedLength(),

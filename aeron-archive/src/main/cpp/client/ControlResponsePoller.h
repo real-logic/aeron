@@ -49,7 +49,6 @@ public:
         m_controlSessionId = -1;
         m_correlationId = -1;
         m_relevantId = -1;
-        m_templateId = -1;
         m_errorMessage = "";
         m_pollComplete = false;
         m_isCodeOk = false;
@@ -87,16 +86,6 @@ public:
     inline std::int64_t relevantId()
     {
         return m_relevantId;
-    }
-
-    /**
-     * Get the template id of the last received message.
-     *
-     * @return the template id of the last received message.
-     */
-    inline std::int64_t templateId()
-    {
-        return m_templateId;
     }
 
     /**
@@ -170,7 +159,6 @@ private:
     std::int64_t m_controlSessionId = -1;
     std::int64_t m_correlationId = -1;
     std::int64_t m_relevantId = -1;
-    std::int16_t m_templateId = -1;
     std::string m_errorMessage = "";
     int m_codeValue = -1;
     bool m_pollComplete = false;

@@ -1096,8 +1096,7 @@ private:
         {
             pollNextResponse<IdleStrategy>(correlationId, deadlineNs, *m_controlResponsePoller);
 
-            if (m_controlResponsePoller->controlSessionId() != controlSessionId() ||
-                !m_controlResponsePoller->isControlResponse())
+            if (m_controlResponsePoller->controlSessionId() != controlSessionId())
             {
                 invokeAeronClient();
                 continue;

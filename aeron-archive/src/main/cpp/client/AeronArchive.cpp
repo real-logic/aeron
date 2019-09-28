@@ -95,9 +95,7 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
     {
         m_controlResponsePoller->poll();
 
-        if (m_controlResponsePoller->isPollComplete() &&
-            m_controlResponsePoller->correlationId() == m_correlationId &&
-            m_controlResponsePoller->isControlResponse())
+        if (m_controlResponsePoller->isPollComplete() && m_controlResponsePoller->correlationId() == m_correlationId)
         {
             if (!m_controlResponsePoller->isCodeOk())
             {

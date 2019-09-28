@@ -17,7 +17,6 @@ package io.aeron.archive.client;
 
 import io.aeron.*;
 import io.aeron.archive.codecs.ControlResponseCode;
-import io.aeron.archive.codecs.ControlResponseDecoder;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ConcurrentConcludeException;
@@ -358,7 +357,6 @@ public class AeronArchive implements AutoCloseable
             if (controlResponsePoller.poll() != 0 && controlResponsePoller.isPollComplete())
             {
                 if (controlResponsePoller.controlSessionId() == controlSessionId &&
-                    controlResponsePoller.templateId() == ControlResponseDecoder.TEMPLATE_ID &&
                     controlResponsePoller.code() == ControlResponseCode.ERROR)
                 {
                     return controlResponsePoller.errorMessage();
@@ -403,7 +401,6 @@ public class AeronArchive implements AutoCloseable
             if (controlResponsePoller.poll() != 0 && controlResponsePoller.isPollComplete())
             {
                 if (controlResponsePoller.controlSessionId() == controlSessionId &&
-                    controlResponsePoller.templateId() == ControlResponseDecoder.TEMPLATE_ID &&
                     controlResponsePoller.code() == ControlResponseCode.ERROR)
                 {
                     final ArchiveException ex = new ArchiveException(
@@ -1189,7 +1186,7 @@ public class AeronArchive implements AutoCloseable
     /**
      * Replicate a recording from a source archive to a destination which can be considered a backup for a primary
      * archive. The source recording will be replayed via the provided replay channel and use the original stream id.
-     * If the destination recording id is {@link io.aeron.Aeron#NULL_VALUE} then a new destination recording is created
+     * If the destination recording id is {@link io.aeron.Aeron#NULL_VALUE} then a new destination recording is created,
      * otherwise the provided destination recording id will be extended. The details of the source recording
      * descriptor will be replicated.
      * <p>
@@ -1294,8 +1291,7 @@ public class AeronArchive implements AutoCloseable
         {
             pollNextResponse(correlationId, deadlineNs, poller);
 
-            if (poller.controlSessionId() != controlSessionId ||
-                poller.templateId() != ControlResponseDecoder.TEMPLATE_ID)
+            if (poller.controlSessionId() != controlSessionId)
             {
                 invokeAeronClient();
                 continue;
@@ -2255,6 +2251,16 @@ public class AeronArchive implements AutoCloseable
         }
 
         /**
+         * Get the index of the current step.
+         *
+         * @return the index of the current step.
+         */
+        public int step()
+        {
+            return step;
+        }
+
+        /**
          * Poll for a complete connection.
          *
          * @return a new {@link AeronArchive} if successfully connected otherwise null.
@@ -2304,9 +2310,7 @@ public class AeronArchive implements AutoCloseable
 
             controlResponsePoller.poll();
 
-            if (controlResponsePoller.isPollComplete() &&
-                controlResponsePoller.correlationId() == correlationId &&
-                controlResponsePoller.templateId() == ControlResponseDecoder.TEMPLATE_ID)
+            if (controlResponsePoller.isPollComplete() && controlResponsePoller.correlationId() == correlationId)
             {
                 final ControlResponseCode code = controlResponsePoller.code();
                 if (code != ControlResponseCode.OK)

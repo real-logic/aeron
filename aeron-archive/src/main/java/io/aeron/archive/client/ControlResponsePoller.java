@@ -41,7 +41,6 @@ public class ControlResponsePoller implements ControlledFragmentHandler
     private long controlSessionId = Aeron.NULL_VALUE;
     private long correlationId = Aeron.NULL_VALUE;
     private long relevantId = Aeron.NULL_VALUE;
-    private int templateId = Aeron.NULL_VALUE;
     private final int fragmentLimit;
     private ControlResponseCode code;
     private String errorMessage;
@@ -90,7 +89,6 @@ public class ControlResponsePoller implements ControlledFragmentHandler
         controlSessionId = -1;
         correlationId = -1;
         relevantId = -1;
-        templateId = -1;
         errorMessage = null;
         isPollComplete = false;
 
@@ -138,16 +136,6 @@ public class ControlResponsePoller implements ControlledFragmentHandler
     }
 
     /**
-     * Get the template id of the last received message.
-     *
-     * @return the template id of the last received message.
-     */
-    public int templateId()
-    {
-        return templateId;
-    }
-
-    /**
      * Get the response code of the last response.
      *
      * @return the response code of the last response.
@@ -183,7 +171,7 @@ public class ControlResponsePoller implements ControlledFragmentHandler
             throw new ArchiveException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
         }
 
-        templateId = messageHeaderDecoder.templateId();
+        final int templateId = messageHeaderDecoder.templateId();
         if (templateId == ControlResponseDecoder.TEMPLATE_ID)
         {
             controlResponseDecoder.wrap(
@@ -211,7 +199,6 @@ public class ControlResponsePoller implements ControlledFragmentHandler
             "controlSessionId=" + controlSessionId +
             ", correlationId=" + correlationId +
             ", relevantId=" + relevantId +
-            ", templateId=" + templateId +
             ", code=" + code +
             ", errorMessage='" + errorMessage + '\'' +
             ", isPollComplete=" + isPollComplete +

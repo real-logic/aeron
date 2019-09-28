@@ -135,6 +135,11 @@ class ControlSession implements Session
         return workCount;
     }
 
+    ArchiveConductor archiveConductor()
+    {
+        return conductor;
+    }
+
     Publication controlPublication()
     {
         return controlPublication;
@@ -365,8 +370,8 @@ class ControlSession implements Session
 
     void onReplicate(
         final long correlationId,
-        final long dstRecordingId,
         final long srcRecordingId,
+        final long dstRecordingId,
         final boolean liveMerge,
         final int srcControlStreamId,
         final String srcControlChannel,
@@ -377,8 +382,8 @@ class ControlSession implements Session
         {
             conductor.replicate(
                 correlationId,
-                dstRecordingId,
                 srcRecordingId,
+                dstRecordingId,
                 liveMerge,
                 srcControlStreamId,
                 srcControlChannel,

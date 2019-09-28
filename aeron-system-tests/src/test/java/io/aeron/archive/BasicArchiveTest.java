@@ -21,6 +21,7 @@ import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.SystemUtil;
@@ -43,7 +44,7 @@ public class BasicArchiveTest
 {
     private static final long MAX_CATALOG_ENTRIES = 1024;
     private static final int FRAGMENT_LIMIT = 10;
-    private static final int TERM_BUFFER_LENGTH = 64 * 1024;
+    private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
 
     private static final int RECORDING_STREAM_ID = 33;
     private static final String RECORDING_CHANNEL = new ChannelUriStringBuilder()

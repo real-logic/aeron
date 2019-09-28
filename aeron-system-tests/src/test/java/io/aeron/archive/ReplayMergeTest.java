@@ -22,6 +22,7 @@ import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
@@ -44,7 +45,7 @@ public class ReplayMergeTest
     private static final String MESSAGE_PREFIX = "Message-Prefix-";
     private static final long MAX_CATALOG_ENTRIES = 1024;
     private static final int FRAGMENT_LIMIT = 10;
-    private static final int TERM_BUFFER_LENGTH = 64 * 1024;
+    private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int MIN_MESSAGES_PER_TERM =
         TERM_BUFFER_LENGTH / (MESSAGE_PREFIX.length() + DataHeaderFlyweight.HEADER_LENGTH);
 

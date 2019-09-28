@@ -44,6 +44,7 @@ import java.util.Iterator;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
+import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.SPY_PREFIX;
 import static io.aeron.CommonContext.UDP_MEDIA;
 import static io.aeron.archive.Archive.segmentFileIndex;
@@ -63,14 +64,15 @@ abstract class ArchiveConductor
     private static final EnumSet<StandardOpenOption> FILE_OPTIONS = EnumSet.of(READ, WRITE);
     private static final FileAttribute<?>[] NO_ATTRIBUTES = new FileAttribute[0];
 
+    private final RecordingSummary recordingSummary = new RecordingSummary();
     private final ControlRequestDecoders decoders = new ControlRequestDecoders();
     private final ArrayDeque<Runnable> taskQueue = new ArrayDeque<>();
     private final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder();
     private final Long2ObjectHashMap<ReplaySession> replaySessionByIdMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<RecordingSession> recordingSessionByIdMap = new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<ReplicationSession> replicationSessionByIdMap = new Long2ObjectHashMap<>();
     private final Int2ObjectHashMap<Counter> counterByIdMap = new Int2ObjectHashMap<>();
     private final Object2ObjectHashMap<String, Subscription> recordingSubscriptionMap = new Object2ObjectHashMap<>();
-    private final RecordingSummary recordingSummary = new RecordingSummary();
     private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
     private final ControlResponseProxy controlResponseProxy = new ControlResponseProxy();
@@ -90,11 +92,11 @@ abstract class ArchiveConductor
     private final FileChannel archiveDirChannel;
     private final Subscription controlSubscription;
     private final Subscription localControlSubscription;
-    private final long connectTimeoutMs;
-
     private final Catalog catalog;
     private final ArchiveMarkFile markFile;
     private final RecordingEventsProxy recordingEventsProxy;
+    private final long connectTimeoutMs;
+    private long nextSessionId = ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE);
     private final int maxConcurrentRecordings;
     private final int maxConcurrentReplays;
     private int replayId = 1;
@@ -103,8 +105,6 @@ abstract class ArchiveConductor
     protected final Archive.Context ctx;
     SessionWorker<ReplaySession> replayer;
     SessionWorker<RecordingSession> recorder;
-
-    private long nextControlSessionId = ThreadLocalRandom.current().nextInt();
 
     ArchiveConductor(final Archive.Context ctx)
     {
@@ -135,9 +135,9 @@ abstract class ArchiveConductor
         recordingEventsProxy = new RecordingEventsProxy(
             aeron.addExclusivePublication(ctx.recordingEventsChannel(), ctx.recordingEventsStreamId()));
 
-        cachedEpochClock.update(epochClock.time());
         catalog = ctx.catalog();
         markFile = ctx.archiveMarkFile();
+        cachedEpochClock.update(epochClock.time());
     }
 
     public void onStart()
@@ -155,7 +155,6 @@ abstract class ArchiveConductor
         final CountersReader countersReader, final long registrationId, final int counterId)
     {
         final Counter counter = counterByIdMap.remove(counterId);
-
         if (null != counter)
         {
             counter.close();
@@ -216,7 +215,6 @@ abstract class ArchiveConductor
             replayer.abort();
             recorder.abort();
             isAbort = true;
-
             ctx.abortLatch().await(AgentRunner.RETRY_CLOSE_TIMEOUT_MS * 2L, TimeUnit.MILLISECONDS);
         }
         catch (final InterruptedException ignore)
@@ -302,7 +300,7 @@ abstract class ArchiveConductor
         }
 
         final ControlSession controlSession = new ControlSession(
-            nextControlSessionId++,
+            nextSessionId++,
             correlationId,
             connectTimeoutMs,
             invalidVersionMessage,
@@ -328,7 +326,6 @@ abstract class ArchiveConductor
         {
             final String msg = "max concurrent recordings reached " + maxConcurrentRecordings;
             controlSession.sendErrorResponse(correlationId, MAX_RECORDINGS, msg, controlResponseProxy);
-
             return;
         }
 
@@ -516,7 +513,6 @@ abstract class ArchiveConductor
         {
             final String msg = "max concurrent replays reached " + maxConcurrentReplays;
             controlSession.sendErrorResponse(correlationId, MAX_REPLAYS, msg, controlResponseProxy);
-
             return;
         }
 
@@ -524,7 +520,6 @@ abstract class ArchiveConductor
         {
             final String msg = "unknown recording id " + recordingId;
             controlSession.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
-
             return;
         }
 
@@ -587,7 +582,6 @@ abstract class ArchiveConductor
         {
             final String msg = "max concurrent replays reached " + maxConcurrentReplays;
             controlSession.sendErrorResponse(correlationId, MAX_REPLAYS, msg, controlResponseProxy);
-
             return;
         }
 
@@ -595,7 +589,6 @@ abstract class ArchiveConductor
         {
             final String msg = "unknown recording id " + recordingId;
             controlSession.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
-
             return;
         }
 
@@ -664,7 +657,7 @@ abstract class ArchiveConductor
     {
         for (final ReplaySession replaySession : replaySessionByIdMap.values())
         {
-            if (Aeron.NULL_VALUE == recordingId || replaySession.recordingId() == recordingId)
+            if (NULL_VALUE == recordingId || replaySession.recordingId() == recordingId)
             {
                 replaySession.abort();
             }
@@ -685,7 +678,6 @@ abstract class ArchiveConductor
         {
             final String msg = "max concurrent recordings reached of " + maxConcurrentRecordings;
             controlSession.sendErrorResponse(correlationId, MAX_RECORDINGS, msg, controlResponseProxy);
-
             return;
         }
 
@@ -693,7 +685,6 @@ abstract class ArchiveConductor
         {
             final String msg = "unknown recording id " + recordingId;
             controlSession.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
-
             return;
         }
 
@@ -701,7 +692,6 @@ abstract class ArchiveConductor
         {
             final String msg = "cannot extend active recording for " + recordingId;
             controlSession.sendErrorResponse(correlationId, ACTIVE_RECORDING, msg, controlResponseProxy);
-
             return;
         }
 
@@ -778,7 +768,6 @@ abstract class ArchiveConductor
             {
                 final String msg = "position " + position + " before start position " + startPosition;
                 controlSession.sendErrorResponse(correlationId, GENERIC, msg, controlResponseProxy);
-
                 return;
             }
 
@@ -786,7 +775,6 @@ abstract class ArchiveConductor
             if (stopPosition == position)
             {
                 controlSession.sendOkResponse(correlationId, controlResponseProxy);
-
                 return;
             }
 
@@ -909,22 +897,75 @@ abstract class ArchiveConductor
 
     void replicate(
         final long correlationId,
-        final long dstRecordingId,
         final long srcRecordingId,
+        final long dstRecordingId,
         final boolean liveMerge,
         final int srcControlStreamId,
         final String srcControlChannel,
         final String replayChannel,
         final ControlSession controlSession)
     {
-        final long replicationId = -7;
+        final boolean hasRecording = catalog.hasRecording(dstRecordingId);
+        if (NULL_VALUE != dstRecordingId && !hasRecording)
+        {
+            final String msg = "unknown destination recording id " + dstRecordingId;
+            controlSession.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
+            return;
+        }
+
+        final long replicationId = nextSessionId++;
+
+        final AeronArchive.Context context = new AeronArchive.Context()
+            .aeron(aeron)
+            .errorHandler(errorHandler)
+            .lock(new NoOpLock())
+            .controlRequestChannel(srcControlChannel)
+            .controlRequestStreamId(srcControlStreamId);
+
+        int replayStreamId = 0;
+        if (hasRecording)
+        {
+            catalog.recordingSummary(dstRecordingId, recordingSummary);
+            replayStreamId = recordingSummary.streamId;
+        }
+
+        final ReplicationSession replicationSession = new ReplicationSession(
+            correlationId,
+            srcRecordingId,
+            dstRecordingId,
+            replayChannel,
+            replayStreamId,
+            liveMerge,
+            replicationId,
+            context,
+            catalog,
+            controlResponseProxy,
+            controlSession);
+
+        replicationSessionByIdMap.put(replicationId, replicationSession);
+        addSession(replicationSession);
 
         controlSession.sendOkResponse(correlationId, replicationId, controlResponseProxy);
     }
 
     void stopReplication(final long correlationId, final long replicationId, final ControlSession controlSession)
     {
-        controlSession.sendOkResponse(correlationId, controlResponseProxy);
+        final ReplicationSession session = replicationSessionByIdMap.remove(replicationId);
+        if (null == session)
+        {
+            final String msg = "unknown replication id " + replicationId;
+            controlSession.sendErrorResponse(correlationId, replicationId, msg, controlResponseProxy);
+        }
+        else
+        {
+            session.abort();
+            controlSession.sendOkResponse(correlationId, controlResponseProxy);
+        }
+    }
+
+    void closeReplicationSession(final ReplicationSession replicationSession)
+    {
+        replicationSessionByIdMap.remove(replicationSession.sessionId());
     }
 
     private int runTasks(final ArrayDeque<Runnable> taskQueue)
@@ -1324,7 +1365,7 @@ abstract class ArchiveConductor
 
         if (null == counter)
         {
-            counter = new Counter(aeron.countersReader(), Aeron.NULL_VALUE, counterId);
+            counter = new Counter(aeron.countersReader(), NULL_VALUE, counterId);
             counterByIdMap.put(counterId, counter);
         }
 

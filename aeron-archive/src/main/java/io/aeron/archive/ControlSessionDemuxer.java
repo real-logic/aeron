@@ -465,8 +465,8 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                 final long controlSessionId = replicateRequest.controlSessionId();
                 getControlSession(controlSessionId, correlationId).onReplicate(
                     correlationId,
-                    replicateRequest.dstRecordingId(),
                     replicateRequest.srcRecordingId(),
+                    replicateRequest.dstRecordingId(),
                     replicateRequest.liveMerge() == BooleanType.TRUE,
                     replicateRequest.srcControlStreamId(),
                     replicateRequest.srcControlChannel(),

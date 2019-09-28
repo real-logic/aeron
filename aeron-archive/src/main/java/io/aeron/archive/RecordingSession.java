@@ -106,16 +106,16 @@ class RecordingSession implements Session
 
     public int doWork()
     {
-        int workDone = 0;
+        int workCount = 0;
 
         if (State.INIT == state)
         {
-            workDone += init();
+            workCount += init();
         }
 
         if (State.RECORDING == state)
         {
-            workDone += record();
+            workCount += record();
         }
 
         if (State.INACTIVE == state)
@@ -123,10 +123,10 @@ class RecordingSession implements Session
             state = State.STOPPED;
             recordingEventsProxy.stopped(recordingId, image.joinPosition(), image.position());
             recordingWriter.close();
-            workDone += 1;
+            workCount += 1;
         }
 
-        return workDone;
+        return workCount;
     }
 
     Image image()

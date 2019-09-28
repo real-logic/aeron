@@ -27,8 +27,10 @@
  *     <li><b>Query:</b> the catalog for existing recordings and the recorded position of an active recording.</li>
  *     <li><b>Truncate:</b> allows a stopped recording to have its length truncated, and if truncated to the start
  *     position then it is effectively deleted.</li>
+ *     <li><b>Replicate:</b> allows the replication of a stream from a source to destination archive with the
+ *     option to continue after catching up and merging with a live multicast stream.</li>
  *     <li><b>Replay Merge:</b> allows a late joining subscriber of a recorded stream to replay a recording and then
- *     merge with the live stream for cut over if the consumer is fast enough to keep up.</li>
+ *     merge with the live multicast stream for cut over if the consumer is fast enough to keep up.</li>
  * </ul>
  */
 package io.aeron.archive;

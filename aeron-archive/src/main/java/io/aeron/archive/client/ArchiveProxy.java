@@ -30,7 +30,7 @@ import static io.aeron.archive.client.AeronArchive.Configuration.MESSAGE_TIMEOUT
 public class ArchiveProxy
 {
     /**
-     * Default number of retry attempts to be made at offering requests.
+     * Default number of retry attempts to be made when offering requests.
      */
     public static final int DEFAULT_RETRY_ATTEMPTS = 3;
 
@@ -42,32 +42,24 @@ public class ArchiveProxy
     private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(256);
     private final Publication publication;
     private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
-    private final ConnectRequestEncoder connectRequestEncoder = new ConnectRequestEncoder();
-    private final CloseSessionRequestEncoder closeSessionRequestEncoder = new CloseSessionRequestEncoder();
-    private final StartRecordingRequestEncoder startRecordingRequestEncoder = new StartRecordingRequestEncoder();
-    private final ReplayRequestEncoder replayRequestEncoder = new ReplayRequestEncoder();
-    private final StopReplayRequestEncoder stopReplayRequestEncoder = new StopReplayRequestEncoder();
-    private final StopRecordingRequestEncoder stopRecordingRequestEncoder = new StopRecordingRequestEncoder();
-    private final StopRecordingSubscriptionRequestEncoder stopRecordingSubscriptionRequestEncoder =
-        new StopRecordingSubscriptionRequestEncoder();
-    private final ListRecordingsRequestEncoder listRecordingsRequestEncoder = new ListRecordingsRequestEncoder();
-    private final ListRecordingsForUriRequestEncoder listRecordingsForUriRequestEncoder =
-        new ListRecordingsForUriRequestEncoder();
-    private final ListRecordingRequestEncoder listRecordingRequestEncoder = new ListRecordingRequestEncoder();
-    private final ExtendRecordingRequestEncoder extendRecordingRequestEncoder = new ExtendRecordingRequestEncoder();
-    private final RecordingPositionRequestEncoder recordingPositionRequestEncoder =
-        new RecordingPositionRequestEncoder();
-    private final TruncateRecordingRequestEncoder truncateRecordingRequestEncoder =
-        new TruncateRecordingRequestEncoder();
-    private final StopPositionRequestEncoder stopPositionRequestEncoder = new StopPositionRequestEncoder();
-    private final FindLastMatchingRecordingRequestEncoder findLastMatchingRecordingRequestEncoder =
-        new FindLastMatchingRecordingRequestEncoder();
-    private final ListRecordingSubscriptionsRequestEncoder listRecordingSubscriptionsRequestEncoder =
-        new ListRecordingSubscriptionsRequestEncoder();
-    private final BoundedReplayRequestEncoder boundedReplayRequestEncoder = new BoundedReplayRequestEncoder();
-    private final StopAllReplaysRequestEncoder stopAllReplaysRequestEncoder = new StopAllReplaysRequestEncoder();
-    private final ReplicateRequestEncoder replicateRequestEncoder = new ReplicateRequestEncoder();
-    private final StopReplicationRequestEncoder stopReplicationRequestEncoder = new StopReplicationRequestEncoder();
+    private StartRecordingRequestEncoder startRecordingRequestEncoder;
+    private StopRecordingRequestEncoder stopRecordingRequestEncoder;
+    private StopRecordingSubscriptionRequestEncoder stopRecordingSubscriptionRequestEncoder;
+    private ReplayRequestEncoder replayRequestEncoder;
+    private StopReplayRequestEncoder stopReplayRequestEncoder;
+    private ListRecordingsRequestEncoder listRecordingsRequestEncoder;
+    private ListRecordingsForUriRequestEncoder listRecordingsForUriRequestEncoder;
+    private ListRecordingRequestEncoder listRecordingRequestEncoder;
+    private ExtendRecordingRequestEncoder extendRecordingRequestEncoder;
+    private RecordingPositionRequestEncoder recordingPositionRequestEncoder;
+    private TruncateRecordingRequestEncoder truncateRecordingRequestEncoder;
+    private StopPositionRequestEncoder stopPositionRequestEncoder;
+    private FindLastMatchingRecordingRequestEncoder findLastMatchingRecordingRequestEncoder;
+    private ListRecordingSubscriptionsRequestEncoder listRecordingSubscriptionsRequestEncoder;
+    private BoundedReplayRequestEncoder boundedReplayRequestEncoder;
+    private StopAllReplaysRequestEncoder stopAllReplaysRequestEncoder;
+    private ReplicateRequestEncoder replicateRequestEncoder;
+    private StopReplicationRequestEncoder stopReplicationRequestEncoder;
 
     /**
      * Create a proxy with a {@link Publication} for sending control message requests.
@@ -131,6 +123,7 @@ public class ArchiveProxy
      */
     public boolean connect(final String responseChannel, final int responseStreamId, final long correlationId)
     {
+        final ConnectRequestEncoder connectRequestEncoder = new ConnectRequestEncoder();
         connectRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .correlationId(correlationId)
@@ -152,6 +145,7 @@ public class ArchiveProxy
      */
     public boolean tryConnect(final String responseChannel, final int responseStreamId, final long correlationId)
     {
+        final ConnectRequestEncoder connectRequestEncoder = new ConnectRequestEncoder();
         connectRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .correlationId(correlationId)
@@ -179,6 +173,7 @@ public class ArchiveProxy
         final long correlationId,
         final AgentInvoker aeronClientInvoker)
     {
+        final ConnectRequestEncoder connectRequestEncoder = new ConnectRequestEncoder();
         connectRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .correlationId(correlationId)
@@ -197,6 +192,7 @@ public class ArchiveProxy
      */
     public boolean closeSession(final long controlSessionId)
     {
+        final CloseSessionRequestEncoder closeSessionRequestEncoder = new CloseSessionRequestEncoder();
         closeSessionRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .controlSessionId(controlSessionId);
@@ -221,6 +217,11 @@ public class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
+        if (null == startRecordingRequestEncoder)
+        {
+            startRecordingRequestEncoder = new StartRecordingRequestEncoder();
+        }
+
         startRecordingRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .controlSessionId(controlSessionId)
@@ -244,6 +245,11 @@ public class ArchiveProxy
     public boolean stopRecording(
         final String channel, final int streamId, final long correlationId, final long controlSessionId)
     {
+        if (null == stopRecordingRequestEncoder)
+        {
+            stopRecordingRequestEncoder = new StopRecordingRequestEncoder();
+        }
+
         stopRecordingRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .controlSessionId(controlSessionId)
@@ -264,6 +270,11 @@ public class ArchiveProxy
      */
     public boolean stopRecording(final long subscriptionId, final long correlationId, final long controlSessionId)
     {
+        if (null == stopRecordingSubscriptionRequestEncoder)
+        {
+            stopRecordingSubscriptionRequestEncoder = new StopRecordingSubscriptionRequestEncoder();
+        }
+
         stopRecordingSubscriptionRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .controlSessionId(controlSessionId)
@@ -294,6 +305,11 @@ public class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
+        if (null == replayRequestEncoder)
+        {
+            replayRequestEncoder = new ReplayRequestEncoder();
+        }
+
         replayRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .controlSessionId(controlSessionId)
@@ -330,6 +346,11 @@ public class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
+        if (null == boundedReplayRequestEncoder)
+        {
+            boundedReplayRequestEncoder = new BoundedReplayRequestEncoder();
+        }
+
         boundedReplayRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .controlSessionId(controlSessionId)
@@ -354,6 +375,11 @@ public class ArchiveProxy
      */
     public boolean stopReplay(final long replaySessionId, final long correlationId, final long controlSessionId)
     {
+        if (null == stopReplayRequestEncoder)
+        {
+            stopReplayRequestEncoder = new StopReplayRequestEncoder();
+        }
+
         stopReplayRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .controlSessionId(controlSessionId)
@@ -373,6 +399,11 @@ public class ArchiveProxy
      */
     public boolean stopAllReplays(final long recordingId, final long correlationId, final long controlSessionId)
     {
+        if (null == stopAllReplaysRequestEncoder)
+        {
+            stopAllReplaysRequestEncoder = new StopAllReplaysRequestEncoder();
+        }
+
         stopAllReplaysRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .controlSessionId(controlSessionId)
@@ -394,6 +425,11 @@ public class ArchiveProxy
     public boolean listRecordings(
         final long fromRecordingId, final int recordCount, final long correlationId, final long controlSessionId)
     {
+        if (null == listRecordingsRequestEncoder)
+        {
+            listRecordingsRequestEncoder = new ListRecordingsRequestEncoder();
+        }
+
         listRecordingsRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .controlSessionId(controlSessionId)
@@ -423,6 +459,11 @@ public class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
+        if (null == listRecordingsForUriRequestEncoder)
+        {
+            listRecordingsForUriRequestEncoder = new ListRecordingsForUriRequestEncoder();
+        }
+
         listRecordingsForUriRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .controlSessionId(controlSessionId)
@@ -445,6 +486,11 @@ public class ArchiveProxy
      */
     public boolean listRecording(final long recordingId, final long correlationId, final long controlSessionId)
     {
+        if (null == listRecordingRequestEncoder)
+        {
+            listRecordingRequestEncoder = new ListRecordingRequestEncoder();
+        }
+
         listRecordingRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .controlSessionId(controlSessionId)
@@ -477,6 +523,11 @@ public class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
+        if (null == extendRecordingRequestEncoder)
+        {
+            extendRecordingRequestEncoder = new ExtendRecordingRequestEncoder();
+        }
+
         extendRecordingRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .controlSessionId(controlSessionId)
@@ -499,6 +550,11 @@ public class ArchiveProxy
      */
     public boolean getRecordingPosition(final long recordingId, final long correlationId, final long controlSessionId)
     {
+        if (null == recordingPositionRequestEncoder)
+        {
+            recordingPositionRequestEncoder = new RecordingPositionRequestEncoder();
+        }
+
         recordingPositionRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .controlSessionId(controlSessionId)
@@ -521,6 +577,11 @@ public class ArchiveProxy
     public boolean truncateRecording(
         final long recordingId, final long position, final long correlationId, final long controlSessionId)
     {
+        if (null == truncateRecordingRequestEncoder)
+        {
+            truncateRecordingRequestEncoder = new TruncateRecordingRequestEncoder();
+        }
+
         truncateRecordingRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .controlSessionId(controlSessionId)
@@ -541,6 +602,11 @@ public class ArchiveProxy
      */
     public boolean getStopPosition(final long recordingId, final long correlationId, final long controlSessionId)
     {
+        if (null == stopPositionRequestEncoder)
+        {
+            stopPositionRequestEncoder = new StopPositionRequestEncoder();
+        }
+
         stopPositionRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .controlSessionId(controlSessionId)
@@ -569,6 +635,11 @@ public class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
+        if (null == findLastMatchingRecordingRequestEncoder)
+        {
+            findLastMatchingRecordingRequestEncoder = new FindLastMatchingRecordingRequestEncoder();
+        }
+
         findLastMatchingRecordingRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .controlSessionId(controlSessionId)
@@ -602,6 +673,11 @@ public class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
+        if (null == listRecordingSubscriptionsRequestEncoder)
+        {
+            listRecordingSubscriptionsRequestEncoder = new ListRecordingSubscriptionsRequestEncoder();
+        }
+
         listRecordingSubscriptionsRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .controlSessionId(controlSessionId)
@@ -618,7 +694,7 @@ public class ArchiveProxy
     /**
      * Replicate a recording from a source archive to a destination which can be considered a backup for a primary
      * archive. The source recording will be replayed via the provided replay channel and use the original stream id.
-     * If the destination recording id is {@link io.aeron.Aeron#NULL_VALUE} then a new destination recording is created
+     * If the destination recording id is {@link io.aeron.Aeron#NULL_VALUE} then a new destination recording is created,
      * otherwise the provided destination recording id will be extended. The details of the source recording
      * descriptor will be replicated.
      * <p>
@@ -649,6 +725,11 @@ public class ArchiveProxy
         final long correlationId,
         final long controlSessionId)
     {
+        if (null == replicateRequestEncoder)
+        {
+            replicateRequestEncoder = new ReplicateRequestEncoder();
+        }
+
         replicateRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .controlSessionId(controlSessionId)
@@ -673,6 +754,11 @@ public class ArchiveProxy
      */
     public boolean stopReplication(final long replicationId, final long correlationId, final long controlSessionId)
     {
+        if (null == stopReplicationRequestEncoder)
+        {
+            stopReplicationRequestEncoder = new StopReplicationRequestEncoder();
+        }
+
         stopReplicationRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .controlSessionId(controlSessionId)

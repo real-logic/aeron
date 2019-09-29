@@ -20,12 +20,8 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
-import io.aeron.logbuffer.FragmentHandler;
-import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.CloseHelper;
-import org.agrona.ExpandableArrayBuffer;
 import org.agrona.SystemUtil;
-import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.After;
 import org.junit.Before;
@@ -34,6 +30,7 @@ import org.junit.Test;
 import java.io.File;
 
 import static io.aeron.Aeron.NULL_VALUE;
+import static io.aeron.archive.Common.*;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static org.hamcrest.core.Is.is;
@@ -42,15 +39,11 @@ import static org.junit.Assert.assertThat;
 
 public class BasicArchiveTest
 {
-    private static final long MAX_CATALOG_ENTRIES = 1024;
-    private static final int FRAGMENT_LIMIT = 10;
-    private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
-
     private static final int RECORDING_STREAM_ID = 33;
     private static final String RECORDING_CHANNEL = new ChannelUriStringBuilder()
         .media("udp")
         .endpoint("localhost:3333")
-        .termLength(TERM_BUFFER_LENGTH)
+        .termLength(Common.TERM_BUFFER_LENGTH)
         .build();
 
     private static final int REPLAY_STREAM_ID = 66;
@@ -78,7 +71,7 @@ public class BasicArchiveTest
                 .dirDeleteOnShutdown(true)
                 .dirDeleteOnStart(true),
             new Archive.Context()
-                .maxCatalogEntries(MAX_CATALOG_ENTRIES)
+                .maxCatalogEntries(Common.MAX_CATALOG_ENTRIES)
                 .aeronDirectoryName(aeronDirectoryName)
                 .deleteArchiveOnStart(true)
                 .archiveDir(new File(SystemUtil.tmpDirName(), "archive"))
@@ -121,7 +114,7 @@ public class BasicArchiveTest
             sessionId = publication.sessionId();
 
             final CountersReader counters = aeron.countersReader();
-            final int counterId = getRecordingCounterId(sessionId, counters);
+            final int counterId = getRecordingCounterId(counters, sessionId);
             recordingIdFromCounter = RecordingPos.getRecordingId(counters, counterId);
 
             assertThat(RecordingPos.getSourceIdentity(counters, counterId), is(CommonContext.IPC_CHANNEL));
@@ -130,12 +123,7 @@ public class BasicArchiveTest
             consume(subscription, messageCount, messagePrefix);
 
             stopPosition = publication.position();
-
-            while (counters.getCounterValue(counterId) < stopPosition)
-            {
-                SystemTest.checkInterruptedStatus();
-                Thread.yield();
-            }
+            awaitPosition(counters, counterId, stopPosition);
 
             assertThat(aeronArchive.getRecordingPosition(recordingIdFromCounter), is(stopPosition));
             assertThat(aeronArchive.getStopPosition(recordingIdFromCounter), is((long)NULL_VALUE));
@@ -195,25 +183,21 @@ public class BasicArchiveTest
             Publication publication = aeronArchive.addRecordedPublication(RECORDING_CHANNEL, RECORDING_STREAM_ID))
         {
             final CountersReader counters = aeron.countersReader();
-            final int counterId = getRecordingCounterId(publication.sessionId(), counters);
+            final int counterId = Common.getRecordingCounterId(counters, publication.sessionId());
             recordingId = RecordingPos.getRecordingId(counters, counterId);
 
             offer(publication, messageCount, messagePrefix);
             consume(subscription, messageCount, messagePrefix);
 
             stopPosition = publication.position();
-
-            while (counters.getCounterValue(counterId) < stopPosition)
-            {
-                SystemTest.checkInterruptedStatus();
-                Thread.yield();
-            }
+            awaitPosition(counters, counterId, stopPosition);
 
             assertThat(aeronArchive.getRecordingPosition(recordingId), is(stopPosition));
 
             aeronArchive.stopRecording(publication);
             while (NULL_POSITION != aeronArchive.getRecordingPosition(recordingId))
             {
+                Thread.yield();
                 SystemTest.checkInterruptedStatus();
             }
         }
@@ -239,18 +223,14 @@ public class BasicArchiveTest
             Publication publication = aeron.addPublication(RECORDING_CHANNEL, RECORDING_STREAM_ID))
         {
             final CountersReader counters = aeron.countersReader();
-            final int counterId = getRecordingCounterId(publication.sessionId(), counters);
+            final int counterId = Common.getRecordingCounterId(counters, publication.sessionId());
             final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
             offer(publication, messageCount, messagePrefix);
             consume(subscription, messageCount, messagePrefix);
 
             final long currentPosition = publication.position();
-            while (counters.getCounterValue(counterId) < currentPosition)
-            {
-                SystemTest.checkInterruptedStatus();
-                Thread.yield();
-            }
+            awaitPosition(counters, counterId, currentPosition);
 
             try (Subscription replaySubscription = aeronArchive.replay(
                 recordingId, currentPosition, AeronArchive.NULL_LENGTH, REPLAY_CHANNEL, REPLAY_STREAM_ID))
@@ -265,60 +245,5 @@ public class BasicArchiveTest
         }
 
         aeronArchive.stopRecording(subscriptionId);
-    }
-
-    private int getRecordingCounterId(final int sessionId, final CountersReader counters)
-    {
-        int counterId;
-        while (NULL_VALUE == (counterId = RecordingPos.findCounterIdBySession(counters, sessionId)))
-        {
-            SystemTest.checkInterruptedStatus();
-            Thread.yield();
-        }
-
-        return counterId;
-    }
-
-    private static void offer(final Publication publication, final int count, final String prefix)
-    {
-        final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
-
-        for (int i = 0; i < count; i++)
-        {
-            final int length = buffer.putStringWithoutLengthAscii(0, prefix + i);
-
-            while (publication.offer(buffer, 0, length) <= 0)
-            {
-                SystemTest.checkInterruptedStatus();
-                Thread.yield();
-            }
-        }
-    }
-
-    private static void consume(final Subscription subscription, final int count, final String prefix)
-    {
-        final MutableInteger received = new MutableInteger(0);
-
-        final FragmentHandler fragmentHandler = new FragmentAssembler(
-            (buffer, offset, length, header) ->
-            {
-                final String expected = prefix + received.value;
-                final String actual = buffer.getStringWithoutLengthAscii(offset, length);
-
-                assertEquals(expected, actual);
-
-                received.value++;
-            });
-
-        while (received.value < count)
-        {
-            if (0 == subscription.poll(fragmentHandler, FRAGMENT_LIMIT))
-            {
-                SystemTest.checkInterruptedStatus();
-                Thread.yield();
-            }
-        }
-
-        assertThat(received.get(), is(count));
     }
 }

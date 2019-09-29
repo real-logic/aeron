@@ -22,7 +22,6 @@ import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
-import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
@@ -35,17 +34,14 @@ import org.junit.Test;
 import java.io.File;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static io.aeron.archive.Common.*;
 import static io.aeron.archive.codecs.SourceLocation.REMOTE;
-import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 
 public class ReplayMergeTest
 {
     private static final String MESSAGE_PREFIX = "Message-Prefix-";
-    private static final long MAX_CATALOG_ENTRIES = 1024;
-    private static final int FRAGMENT_LIMIT = 10;
-    private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int MIN_MESSAGES_PER_TERM =
         TERM_BUFFER_LENGTH / (MESSAGE_PREFIX.length() + DataHeaderFlyweight.HEADER_LENGTH);
 
@@ -172,7 +168,7 @@ public class ReplayMergeTest
             aeronArchive.startRecording(recordingChannel, STREAM_ID, REMOTE);
 
             final CountersReader counters = aeron.countersReader();
-            final int counterId = awaitCounterId(counters, publication.sessionId());
+            final int counterId = getRecordingCounterId(counters, publication.sessionId());
             final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
             offerMessages(publication, 0, initialMessageCount, MESSAGE_PREFIX);
@@ -240,25 +236,4 @@ public class ReplayMergeTest
         }
     }
 
-    private static int awaitCounterId(final CountersReader counters, final int sessionId)
-    {
-        int counterId;
-
-        while (NULL_COUNTER_ID == (counterId = RecordingPos.findCounterIdBySession(counters, sessionId)))
-        {
-            SystemTest.checkInterruptedStatus();
-            Thread.yield();
-        }
-
-        return counterId;
-    }
-
-    private static void awaitPosition(final CountersReader counters, final int counterId, final long position)
-    {
-        while (counters.getCounterValue(counterId) < position)
-        {
-            SystemTest.checkInterruptedStatus();
-            Thread.yield();
-        }
-    }
 }

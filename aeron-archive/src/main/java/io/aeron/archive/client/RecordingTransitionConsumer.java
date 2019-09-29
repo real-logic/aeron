@@ -26,7 +26,8 @@ public interface RecordingTransitionConsumer
     /**
      * Transition event in the lifecycle of a recording.
      *
-     * @param controlSessionId that initialed the action.
+     * @param controlSessionId that initiated the action.
+     * @param correlationId    that initiated the action would could be the replication id.
      * @param recordingId      which has transitioned.
      * @param subscriptionId   of the Subscription associated with the recording transition.
      * @param position         of the recorded stream at the point of transition.
@@ -34,6 +35,7 @@ public interface RecordingTransitionConsumer
      */
     void onTransition(
         long controlSessionId,
+        long correlationId,
         long recordingId,
         long subscriptionId,
         long position,

@@ -391,22 +391,33 @@ abstract class ArchiveConductor
     void stopRecordingSubscription(
         final long correlationId, final ControlSession controlSession, final long subscriptionId)
     {
+        final Subscription subscription = removeRecordingSubscription(subscriptionId);
+        if (null != subscription)
+        {
+            subscription.close();
+            controlSession.sendOkResponse(correlationId, controlResponseProxy);
+        }
+        else
+        {
+            final String msg = "no recording subscription found for " + subscriptionId;
+            controlSession.sendErrorResponse(correlationId, UNKNOWN_SUBSCRIPTION, msg, controlResponseProxy);
+        }
+    }
+
+    Subscription removeRecordingSubscription(final long subscriptionId)
+    {
         final Iterator<Subscription> iter = recordingSubscriptionMap.values().iterator();
         while (iter.hasNext())
         {
             final Subscription subscription = iter.next();
             if (subscription.registrationId() == subscriptionId)
             {
-                subscription.close();
                 iter.remove();
-                controlSession.sendOkResponse(correlationId, controlResponseProxy);
-
-                return;
+                return subscription;
             }
         }
 
-        final String msg = "no recording subscription found for " + subscriptionId;
-        controlSession.sendErrorResponse(correlationId, UNKNOWN_SUBSCRIPTION, msg, controlResponseProxy);
+        return null;
     }
 
     void newListRecordingsSession(
@@ -666,7 +677,7 @@ abstract class ArchiveConductor
         controlSession.sendOkResponse(correlationId, controlResponseProxy);
     }
 
-    void extendRecording(
+    Subscription extendRecording(
         final long correlationId,
         final ControlSession controlSession,
         final long recordingId,
@@ -678,21 +689,21 @@ abstract class ArchiveConductor
         {
             final String msg = "max concurrent recordings reached of " + maxConcurrentRecordings;
             controlSession.sendErrorResponse(correlationId, MAX_RECORDINGS, msg, controlResponseProxy);
-            return;
+            return null;
         }
 
         if (!catalog.hasRecording(recordingId))
         {
             final String msg = "unknown recording id " + recordingId;
             controlSession.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
-            return;
+            return null;
         }
 
         if (recordingSessionByIdMap.containsKey(recordingId))
         {
             final String msg = "cannot extend active recording for " + recordingId;
             controlSession.sendErrorResponse(correlationId, ACTIVE_RECORDING, msg, controlResponseProxy);
-            return;
+            return null;
         }
 
         try
@@ -714,6 +725,8 @@ abstract class ArchiveConductor
 
                 recordingSubscriptionMap.put(key, subscription);
                 controlSession.sendOkResponse(correlationId, subscription.registrationId(), controlResponseProxy);
+
+                return subscription;
             }
             else
             {
@@ -726,6 +739,8 @@ abstract class ArchiveConductor
             errorHandler.onError(ex);
             controlSession.sendErrorResponse(correlationId, ex.getMessage(), controlResponseProxy);
         }
+
+        return null;
     }
 
     void getRecordingPosition(final long correlationId, final ControlSession controlSession, final long recordingId)
@@ -878,6 +893,7 @@ abstract class ArchiveConductor
             catalog.recordingStopped(recordingId, session.recordedPosition(), epochClock.time());
 
             session.controlSession().attemptSendRecordingTransition(
+                session.correlationId(),
                 recordingId,
                 session.image().subscription().registrationId(),
                 session.recordedPosition(),
@@ -938,6 +954,7 @@ abstract class ArchiveConductor
             liveMerge,
             replicationId,
             context,
+            cachedEpochClock,
             catalog,
             controlResponseProxy,
             controlSession);
@@ -963,7 +980,7 @@ abstract class ArchiveConductor
         }
     }
 
-    void closeReplicationSession(final ReplicationSession replicationSession)
+    void removeReplicationSession(final ReplicationSession replicationSession)
     {
         replicationSessionByIdMap.remove(replicationSession.sessionId());
     }
@@ -1094,6 +1111,7 @@ abstract class ArchiveConductor
         position.setOrdered(startPosition);
 
         final RecordingSession session = new RecordingSession(
+            correlationId,
             recordingId,
             startPosition,
             segmentFileLength,
@@ -1109,6 +1127,7 @@ abstract class ArchiveConductor
         recorder.addSession(session);
 
         controlSession.attemptSendRecordingTransition(
+            correlationId,
             recordingId,
             image.subscription().registrationId(),
             image.joinPosition(),
@@ -1147,6 +1166,7 @@ abstract class ArchiveConductor
         position.setOrdered(image.joinPosition());
 
         final RecordingSession session = new RecordingSession(
+            correlationId,
             recordingId,
             recordingSummary.startPosition,
             recordingSummary.segmentFileLength,
@@ -1163,6 +1183,7 @@ abstract class ArchiveConductor
         recorder.addSession(session);
 
         controlSession.attemptSendRecordingTransition(
+            correlationId,
             recordingId,
             image.subscription().registrationId(),
             image.joinPosition(),

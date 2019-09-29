@@ -468,6 +468,7 @@ class ControlSession implements Session
     }
 
     void attemptSendRecordingTransition(
+        final long correlationId,
         final long recordingId,
         final long subscriptionId,
         final long position,
@@ -475,6 +476,7 @@ class ControlSession implements Session
     {
         controlResponseProxy.attemptSendRecordingTransition(
             controlSessionId,
+            correlationId,
             recordingId,
             subscriptionId,
             position,

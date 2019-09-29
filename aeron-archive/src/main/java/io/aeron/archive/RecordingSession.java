@@ -35,6 +35,7 @@ class RecordingSession implements Session
         INIT, RECORDING, INACTIVE, STOPPED
     }
 
+    private final long correlationId;
     private final long recordingId;
     private final int blockLengthLimit;
     private final RecordingEventsProxy recordingEventsProxy;
@@ -46,6 +47,7 @@ class RecordingSession implements Session
     private final ControlSession controlSession;
 
     RecordingSession(
+        final long correlationId,
         final long recordingId,
         final long startPosition,
         final int segmentLength,
@@ -57,6 +59,7 @@ class RecordingSession implements Session
         final Archive.Context ctx,
         final ControlSession controlSession)
     {
+        this.correlationId = correlationId;
         this.recordingId = recordingId;
         this.originalChannel = originalChannel;
         this.recordingEventsProxy = recordingEventsProxy;
@@ -66,6 +69,11 @@ class RecordingSession implements Session
 
         blockLengthLimit = Math.min(image.termBufferLength(), Archive.Configuration.MAX_BLOCK_LENGTH);
         recordingWriter = new RecordingWriter(recordingId, startPosition, segmentLength, image, ctx, archiveDirChannel);
+    }
+
+    public long correlationId()
+    {
+        return correlationId;
     }
 
     public long sessionId()

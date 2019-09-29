@@ -15,16 +15,18 @@
  */
 package io.aeron.archive;
 
-import io.aeron.Aeron;
-import io.aeron.ChannelUriStringBuilder;
-import io.aeron.CommonContext;
-import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.client.ArchiveException;
+import io.aeron.*;
+import io.aeron.archive.client.*;
+import io.aeron.archive.codecs.ControlResponseCode;
+import io.aeron.archive.codecs.RecordingTransitionType;
+import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
-import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.CloseHelper;
 import org.agrona.SystemUtil;
+import org.agrona.collections.MutableLong;
+import org.agrona.collections.MutableReference;
+import org.agrona.concurrent.status.CountersReader;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,15 +34,14 @@ import org.junit.Test;
 import java.io.File;
 
 import static io.aeron.Aeron.NULL_VALUE;
-import static junit.framework.TestCase.assertTrue;
+import static io.aeron.archive.Common.*;
+import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class ReplicateRecordingTest
 {
-    private static final long MAX_CATALOG_ENTRIES = 1024;
-    private static final int FRAGMENT_LIMIT = 10;
-    private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int SRC_CONTROL_STREAM_ID = AeronArchive.Configuration.CONTROL_STREAM_ID_DEFAULT;
     private static final String SRC_CONTROL_CHANNEL = "aeron:udp?endpoint=localhost:8090";
     private static final String DST_CONTROL_CHANNEL = "aeron:udp?endpoint=localhost:8091";
@@ -61,8 +62,10 @@ public class ReplicateRecordingTest
 
     private ArchivingMediaDriver srcArchivingMediaDriver;
     private ArchivingMediaDriver dstArchivingMediaDriver;
-    private Aeron aeron;
-    private AeronArchive aeronArchive;
+    private Aeron srcAeron;
+    private Aeron dstAeron;
+    private AeronArchive srcAeronArchive;
+    private AeronArchive dstAeronArchive;
 
     @Before
     public void before()
@@ -76,7 +79,7 @@ public class ReplicateRecordingTest
                 .termBufferSparseFile(true)
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Throwable::printStackTrace)
-                .spiesSimulateConnection(false)
+                .spiesSimulateConnection(true)
                 .dirDeleteOnShutdown(true)
                 .dirDeleteOnStart(true),
             new Archive.Context()
@@ -95,7 +98,7 @@ public class ReplicateRecordingTest
                 .termBufferSparseFile(true)
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Throwable::printStackTrace)
-                .spiesSimulateConnection(false)
+                .spiesSimulateConnection(true)
                 .dirDeleteOnShutdown(true)
                 .dirDeleteOnStart(true),
             new Archive.Context()
@@ -108,21 +111,32 @@ public class ReplicateRecordingTest
                 .fileSyncLevel(0)
                 .threadingMode(ArchiveThreadingMode.SHARED));
 
-        aeron = Aeron.connect(
+        srcAeron = Aeron.connect(
+            new Aeron.Context()
+                .aeronDirectoryName(srcAeronDirectoryName));
+
+        dstAeron = Aeron.connect(
             new Aeron.Context()
                 .aeronDirectoryName(dstAeronDirectoryName));
 
-        aeronArchive = AeronArchive.connect(
+        srcAeronArchive = AeronArchive.connect(
+            new AeronArchive.Context()
+                .controlRequestChannel(SRC_CONTROL_CHANNEL)
+                .aeron(dstAeron));
+
+        dstAeronArchive = AeronArchive.connect(
             new AeronArchive.Context()
                 .controlRequestChannel(DST_CONTROL_CHANNEL)
-                .aeron(aeron));
+                .aeron(dstAeron));
     }
 
     @After
     public void after()
     {
-        CloseHelper.close(aeronArchive);
-        CloseHelper.close(aeron);
+        CloseHelper.close(srcAeronArchive);
+        CloseHelper.close(dstAeronArchive);
+        CloseHelper.close(srcAeron);
+        CloseHelper.close(dstAeron);
         CloseHelper.close(dstArchivingMediaDriver);
         CloseHelper.close(srcArchivingMediaDriver);
 
@@ -130,14 +144,14 @@ public class ReplicateRecordingTest
         srcArchivingMediaDriver.archive().context().deleteArchiveDirectory();
     }
 
-    @Test
+    @Test(timeout = 10_000L)
     public void shouldThrowExceptionWhenDstRecordingIdUnknown()
     {
         final long unknownId = 7L;
         final boolean liveMerge = false;
         try
         {
-            aeronArchive.replicate(
+            dstAeronArchive.replicate(
                 NULL_VALUE, unknownId, REPLAY_CHANNEL, SRC_CONTROL_CHANNEL, SRC_CONTROL_STREAM_ID, liveMerge);
         }
         catch (final ArchiveException ex)
@@ -150,15 +164,117 @@ public class ReplicateRecordingTest
         fail("expected archive exception");
     }
 
-    @Test
-    public void shouldStopReplication()
+    @Test(timeout = 10_000L)
+    public void shouldReplicatedStoppedRecording()
     {
         final boolean liveMerge = false;
-        final long replicationId = aeronArchive.replicate(
-            NULL_VALUE, NULL_VALUE, REPLAY_CHANNEL, SRC_CONTROL_CHANNEL, SRC_CONTROL_STREAM_ID, liveMerge);
+        final String messagePrefix = "Message-Prefix-";
+        final int messageCount = 10;
+        final long recordingId;
 
-        Thread.yield();
+        final long subscriptionId = srcAeronArchive.startRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID, LOCAL);
 
-        aeronArchive.stopReplication(replicationId);
+        try (Publication publication = srcAeron.addPublication(RECORDING_CHANNEL, RECORDING_STREAM_ID))
+        {
+            final CountersReader counters = srcAeron.countersReader();
+            final int counterId = getRecordingCounterId(counters, publication.sessionId());
+            recordingId = RecordingPos.getRecordingId(counters, counterId);
+
+            offer(publication, messageCount, messagePrefix);
+            awaitPosition(counters, counterId, publication.position());
+        }
+
+        srcAeronArchive.stopRecording(subscriptionId);
+
+        final MutableLong dstRecordingId = new MutableLong();
+        final MutableReference<RecordingTransitionType> transitionTypeRef = new MutableReference<>();
+        final RecordingTransitionAdapter adapter = newRecordingTransitionAdapter(transitionTypeRef, dstRecordingId);
+
+        dstAeronArchive.replicate(
+            recordingId, NULL_VALUE, REPLAY_CHANNEL, SRC_CONTROL_CHANNEL, SRC_CONTROL_STREAM_ID, liveMerge);
+
+        awaitTransition(transitionTypeRef, adapter);
+        assertEquals(RecordingTransitionType.REPLICATE, transitionTypeRef.get());
+
+        awaitTransition(transitionTypeRef, adapter);
+        assertEquals(RecordingTransitionType.EXTEND, transitionTypeRef.get());
+
+        awaitTransition(transitionTypeRef, adapter);
+        assertEquals(RecordingTransitionType.STOP, transitionTypeRef.get());
+    }
+
+    @Test(timeout = 10_000L)
+    public void shouldReplicatedLiveRecording()
+    {
+        final boolean liveMerge = false;
+        final String messagePrefix = "Message-Prefix-";
+        final int messageCount = 10;
+        final long recordingId;
+
+        final long subscriptionId = srcAeronArchive.startRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID, LOCAL);
+
+        try (Publication publication = srcAeron.addPublication(RECORDING_CHANNEL, RECORDING_STREAM_ID))
+        {
+            final CountersReader srcCounters = srcAeron.countersReader();
+            final int counterId = getRecordingCounterId(srcCounters, publication.sessionId());
+            recordingId = RecordingPos.getRecordingId(srcCounters, counterId);
+
+            offer(publication, messageCount, messagePrefix);
+            awaitPosition(srcCounters, counterId, publication.position());
+
+            final MutableLong dstRecordingId = new MutableLong();
+            final MutableReference<RecordingTransitionType> transitionTypeRef = new MutableReference<>();
+            final RecordingTransitionAdapter adapter = newRecordingTransitionAdapter(transitionTypeRef, dstRecordingId);
+
+            final long replicationId = dstAeronArchive.replicate(
+                recordingId, NULL_VALUE, REPLAY_CHANNEL, SRC_CONTROL_CHANNEL, SRC_CONTROL_STREAM_ID, liveMerge);
+
+            awaitTransition(transitionTypeRef, adapter);
+            assertEquals(RecordingTransitionType.REPLICATE, transitionTypeRef.get());
+
+            awaitTransition(transitionTypeRef, adapter);
+            assertEquals(RecordingTransitionType.EXTEND, transitionTypeRef.get());
+
+            final CountersReader dstCounters = dstAeron.countersReader();
+            final int dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId.get());
+            awaitPosition(dstCounters, dstCounterId, publication.position());
+
+            offer(publication, messageCount, messagePrefix);
+            awaitPosition(srcCounters, counterId, publication.position());
+            awaitPosition(dstCounters, dstCounterId, publication.position());
+
+            dstAeronArchive.stopReplication(replicationId);
+
+            awaitTransition(transitionTypeRef, adapter);
+            assertEquals(RecordingTransitionType.STOP, transitionTypeRef.get());
+        }
+
+        srcAeronArchive.stopRecording(subscriptionId);
+    }
+
+    private RecordingTransitionAdapter newRecordingTransitionAdapter(
+        final MutableReference<RecordingTransitionType> transitionTypeRef,
+        final MutableLong recordingIdRef)
+    {
+        final ControlEventListener listener =
+            (controlSessionId, correlationId, relevantId, code, errorMessage) ->
+            {
+                if (code == ControlResponseCode.ERROR)
+                {
+                    fail(errorMessage + " " + code);
+                }
+            };
+
+        final RecordingTransitionConsumer consumer =
+            (controlSessionId, correlationId, recordingId, subscriptionId, position, transitionType) ->
+            {
+                recordingIdRef.set(recordingId);
+                transitionTypeRef.set(transitionType);
+            };
+
+        final Subscription subscription = dstAeronArchive.controlResponsePoller().subscription();
+        final long controlSessionId = dstAeronArchive.controlSessionId();
+
+        return new RecordingTransitionAdapter(controlSessionId, listener, consumer, subscription, FRAGMENT_LIMIT);
     }
 }

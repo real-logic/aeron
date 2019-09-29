@@ -34,6 +34,7 @@ import org.junit.Test;
 import java.io.File;
 import java.nio.channels.FileChannel;
 
+import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static java.nio.file.StandardOpenOption.*;
@@ -117,6 +118,7 @@ public class RecordingSessionTest
     public void shouldRecordFragmentsFromImage()
     {
         final RecordingSession session = new RecordingSession(
+            NULL_VALUE,
             RECORDING_ID,
             START_POSITION,
             SEGMENT_LENGTH,

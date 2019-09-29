@@ -25,7 +25,6 @@ import io.aeron.driver.Configuration;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
-import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.SystemUtil;
@@ -41,19 +40,19 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 
+import static io.aeron.archive.Common.*;
 import static io.aeron.archive.codecs.RecordingTransitionType.*;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 
 public class ExtendRecordingTest
 {
     private static final String MESSAGE_PREFIX = "Message-Prefix-";
-    private static final long MAX_CATALOG_ENTRIES = 1024;
-    private static final int FRAGMENT_LIMIT = 10;
-    private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int MTU_LENGTH = Configuration.mtuLength();
 
     private static final int RECORDING_STREAM_ID = 33;
@@ -103,10 +102,10 @@ public class ExtendRecordingTest
         final long controlSessionId = aeronArchive.controlSessionId();
         final RecordingTransitionAdapter recordingTransitionAdapter;
         final int messageCount = 10;
-        final long firstSubscriptionId;
-        final long secondSubscriptionId;
-        final long firstStopPosition;
-        final long secondStopPosition;
+        final long subscriptionIdOne;
+        final long subscriptionIdTwo;
+        final long stopOne;
+        final long stopTwo;
         final long recordingId;
         final int initialTermId;
 
@@ -121,7 +120,7 @@ public class ExtendRecordingTest
                 aeronArchive.controlResponsePoller().subscription(),
                 FRAGMENT_LIMIT);
 
-            firstSubscriptionId = aeronArchive.startRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID, LOCAL);
+            subscriptionIdOne = aeronArchive.startRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID, LOCAL);
             pollForTransition(recordingTransitionAdapter);
 
             try
@@ -134,16 +133,12 @@ public class ExtendRecordingTest
 
                 consume(subscription, 0, messageCount, MESSAGE_PREFIX);
 
-                firstStopPosition = publication.position();
-                while (counters.getCounterValue(counterId) < firstStopPosition)
-                {
-                    SystemTest.checkInterruptedStatus();
-                    Thread.yield();
-                }
+                stopOne = publication.position();
+                awaitPosition(counters, counterId, stopOne);
             }
             finally
             {
-                aeronArchive.stopRecording(firstSubscriptionId);
+                aeronArchive.stopRecording(subscriptionIdOne);
                 pollForTransition(recordingTransitionAdapter);
             }
         }
@@ -151,14 +146,14 @@ public class ExtendRecordingTest
         final String publicationExtendChannel = new ChannelUriStringBuilder()
             .media("udp")
             .endpoint("localhost:3333")
-            .initialPosition(firstStopPosition, initialTermId, TERM_BUFFER_LENGTH)
+            .initialPosition(stopOne, initialTermId, TERM_BUFFER_LENGTH)
             .mtu(MTU_LENGTH)
             .build();
 
         try (Publication publication = aeron.addExclusivePublication(publicationExtendChannel, RECORDING_STREAM_ID);
             Subscription subscription = aeron.addSubscription(SUBSCRIPTION_EXTEND_CHANNEL, RECORDING_STREAM_ID))
         {
-            secondSubscriptionId = aeronArchive.extendRecording(
+            subscriptionIdTwo = aeronArchive.extendRecording(
                 recordingId, SUBSCRIPTION_EXTEND_CHANNEL, RECORDING_STREAM_ID, LOCAL);
             pollForTransition(recordingTransitionAdapter);
 
@@ -171,32 +166,28 @@ public class ExtendRecordingTest
 
                 consume(subscription, messageCount, messageCount, MESSAGE_PREFIX);
 
-                secondStopPosition = publication.position();
-                while (counters.getCounterValue(counterId) < secondStopPosition)
-                {
-                    SystemTest.checkInterruptedStatus();
-                    Thread.yield();
-                }
+                stopTwo = publication.position();
+                awaitPosition(counters, counterId, stopTwo);
             }
             finally
             {
-                aeronArchive.stopRecording(secondSubscriptionId);
+                aeronArchive.stopRecording(subscriptionIdTwo);
                 pollForTransition(recordingTransitionAdapter);
             }
         }
 
-        replay(messageCount, secondStopPosition, recordingId);
+        replay(messageCount, stopTwo, recordingId);
         assertEquals(Collections.EMPTY_LIST, errors);
 
         final InOrder inOrder = Mockito.inOrder(recordingTransitionConsumer);
-        inOrder.verify(recordingTransitionConsumer)
-            .onTransition(controlSessionId, recordingId, firstSubscriptionId, 0L, START);
-        inOrder.verify(recordingTransitionConsumer)
-            .onTransition(controlSessionId, recordingId, firstSubscriptionId, firstStopPosition, STOP);
-        inOrder.verify(recordingTransitionConsumer)
-            .onTransition(controlSessionId, recordingId, secondSubscriptionId, firstStopPosition, EXTEND);
-        inOrder.verify(recordingTransitionConsumer)
-            .onTransition(controlSessionId, recordingId, secondSubscriptionId, secondStopPosition, STOP);
+        inOrder.verify(recordingTransitionConsumer).onTransition(
+            eq(controlSessionId), anyLong(), eq(recordingId), eq(subscriptionIdOne), eq(0L), eq(START));
+        inOrder.verify(recordingTransitionConsumer).onTransition(
+            eq(controlSessionId), anyLong(), eq(recordingId), eq(subscriptionIdOne), eq(stopOne), eq(STOP));
+        inOrder.verify(recordingTransitionConsumer).onTransition(
+            eq(controlSessionId), anyLong(), eq(recordingId), eq(subscriptionIdTwo), eq(stopOne), eq(EXTEND));
+        inOrder.verify(recordingTransitionConsumer).onTransition(
+            eq(controlSessionId), anyLong(), eq(recordingId), eq(subscriptionIdTwo), eq(stopTwo), eq(STOP));
     }
 
     private void replay(final int messageCount, final long secondStopPosition, final long recordingId)
@@ -209,15 +200,6 @@ public class ExtendRecordingTest
         {
             consume(subscription, 0, messageCount * 2, MESSAGE_PREFIX);
             assertEquals(secondStopPosition, subscription.imageAtIndex(0).position());
-        }
-    }
-
-    private static void pollForTransition(final RecordingTransitionAdapter recordingTransitionAdapter)
-    {
-        while (0 == recordingTransitionAdapter.poll())
-        {
-            SystemTest.checkInterruptedStatus();
-            Thread.yield();
         }
     }
 

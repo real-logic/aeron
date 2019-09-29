@@ -151,6 +151,7 @@ class ControlResponseProxy
 
     void attemptSendRecordingTransition(
         final long controlSessionId,
+        final long correlationId,
         final long recordingId,
         final long subscriptionId,
         final long position,
@@ -171,6 +172,7 @@ class ControlResponseProxy
                 recordingTransitionEncoder
                     .wrapAndApplyHeader(buffer, bufferOffset, messageHeaderEncoder)
                     .controlSessionId(controlSessionId)
+                    .correlationId(correlationId)
                     .recordingId(recordingId)
                     .subscriptionId(subscriptionId)
                     .position(position)

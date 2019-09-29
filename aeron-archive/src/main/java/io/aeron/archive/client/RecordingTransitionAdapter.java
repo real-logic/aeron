@@ -114,6 +114,7 @@ public class RecordingTransitionAdapter implements FragmentHandler
                 {
                     recordingTransitionConsumer.onTransition(
                         recordingTransitionDecoder.controlSessionId(),
+                        recordingTransitionDecoder.correlationId(),
                         recordingTransitionDecoder.recordingId(),
                         recordingTransitionDecoder.subscriptionId(),
                         recordingTransitionDecoder.position(),

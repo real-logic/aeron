@@ -15,27 +15,31 @@
  */
 package io.aeron.archive.client;
 
+import io.aeron.ControlledFragmentAssembler;
 import io.aeron.Subscription;
 import io.aeron.archive.codecs.*;
-import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
+
+import static io.aeron.logbuffer.ControlledFragmentHandler.Action.*;
 
 /**
  * Encapsulate the polling, decoding, and dispatching of recording transition events for a session plus the
  * asynchronous events to check for errors.
  */
-public class RecordingTransitionAdapter implements FragmentHandler
+public class RecordingTransitionAdapter
 {
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ControlResponseDecoder controlResponseDecoder = new ControlResponseDecoder();
     private final RecordingTransitionDecoder recordingTransitionDecoder = new RecordingTransitionDecoder();
-
-    private final int fragmentLimit;
-    private final long controlSessionId;
+    private final ControlledFragmentAssembler assembler = new ControlledFragmentAssembler(this::onFragment);
     private final ControlEventListener controlEventListener;
     private final RecordingTransitionConsumer recordingTransitionConsumer;
     private final Subscription subscription;
+    private final int fragmentLimit;
+    private final long controlSessionId;
+    private boolean isDone = false;
 
     /**
      * Create an adapter for a given subscription to an archive for recording events.
@@ -69,11 +73,18 @@ public class RecordingTransitionAdapter implements FragmentHandler
      */
     public int poll()
     {
-        return subscription.poll(this, fragmentLimit);
+        isDone = false;
+        return subscription.controlledPoll(assembler, fragmentLimit);
     }
 
-    public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
+    private ControlledFragmentHandler.Action onFragment(
+        final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
+        if (isDone)
+        {
+            return ABORT;
+        }
+
         messageHeaderDecoder.wrap(buffer, offset);
 
         final int schemaId = messageHeaderDecoder.schemaId();
@@ -119,8 +130,13 @@ public class RecordingTransitionAdapter implements FragmentHandler
                         recordingTransitionDecoder.subscriptionId(),
                         recordingTransitionDecoder.position(),
                         recordingTransitionDecoder.transitionType());
+
+                    isDone = true;
+                    return BREAK;
                 }
                 break;
         }
+
+        return CONTINUE;
     }
 }

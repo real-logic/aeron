@@ -46,7 +46,8 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
     private long activeCorrelationId = NULL_VALUE;
     private long srcReplaySessionId = NULL_VALUE;
-    private long stopPosition = NULL_VALUE;
+    private long replayPosition;
+    private long stopPosition = NULL_POSITION;
     private final long correlationId;
     private final long replicationId;
     private final long srcRecordingId;
@@ -70,6 +71,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         final long correlationId,
         final long srcRecordingId,
         final long dstRecordingId,
+        final long replayPosition,
         final String replayChannel,
         final int replayStreamId,
         final boolean liveMerge,
@@ -84,6 +86,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         this.replicationId = replicationId;
         this.srcRecordingId = srcRecordingId;
         this.dstRecordingId = dstRecordingId;
+        this.replayPosition = replayPosition;
         this.replayChannel = replayChannel;
         this.replayStreamId = replayStreamId;
         this.liveMerge = liveMerge;
@@ -211,6 +214,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             originalChannel,
             sourceIdentity);
 
+        replayPosition = startPosition;
         this.stopPosition = stopPosition;
         replayStreamId = streamId;
         activeCorrelationId = NULL_VALUE;
@@ -277,7 +281,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             final long correlationId = aeron.nextCorrelationId();
             if (srcArchive.archiveProxy().replay(
                 srcRecordingId,
-                NULL_POSITION,
+                replayPosition,
                 NULL_LENGTH,
                 replayChannel,
                 replayStreamId,

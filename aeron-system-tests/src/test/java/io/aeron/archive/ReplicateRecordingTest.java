@@ -252,6 +252,66 @@ public class ReplicateRecordingTest
         srcAeronArchive.stopRecording(subscriptionId);
     }
 
+    @Test(timeout = 10_000L)
+    public void shouldReplicateMoreThanOnce()
+    {
+        final boolean liveMerge = false;
+        final String messagePrefix = "Message-Prefix-";
+        final int messageCount = 10;
+        final long recordingId;
+
+        final long subscriptionId = srcAeronArchive.startRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID, LOCAL);
+
+        try (Publication publication = srcAeron.addPublication(RECORDING_CHANNEL, RECORDING_STREAM_ID))
+        {
+            final CountersReader srcCounters = srcAeron.countersReader();
+            final int counterId = getRecordingCounterId(srcCounters, publication.sessionId());
+            recordingId = RecordingPos.getRecordingId(srcCounters, counterId);
+
+            offer(publication, messageCount, messagePrefix);
+            awaitPosition(srcCounters, counterId, publication.position());
+
+            final MutableLong recordingIdRef = new MutableLong();
+            final MutableReference<RecordingTransitionType> transitionTypeRef = new MutableReference<>();
+            final RecordingTransitionAdapter adapter = newRecordingTransitionAdapter(transitionTypeRef, recordingIdRef);
+
+            long replicationId = dstAeronArchive.replicate(
+                recordingId, NULL_VALUE, REPLAY_CHANNEL, SRC_CONTROL_CHANNEL, SRC_CONTROL_STREAM_ID, liveMerge);
+
+            awaitTransition(transitionTypeRef, adapter);
+            assertEquals(RecordingTransitionType.REPLICATE, transitionTypeRef.get());
+
+            awaitTransition(transitionTypeRef, adapter);
+            assertEquals(RecordingTransitionType.EXTEND, transitionTypeRef.get());
+
+            final CountersReader dstCounters = dstAeron.countersReader();
+            final long dstRecordingId = recordingIdRef.get();
+            int dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId);
+            awaitPosition(dstCounters, dstCounterId, publication.position());
+
+            dstAeronArchive.stopReplication(replicationId);
+
+            awaitTransition(transitionTypeRef, adapter);
+            assertEquals(RecordingTransitionType.STOP, transitionTypeRef.get());
+
+            replicationId = dstAeronArchive.replicate(
+                recordingId, dstRecordingId, REPLAY_CHANNEL, SRC_CONTROL_CHANNEL, SRC_CONTROL_STREAM_ID, liveMerge);
+
+            awaitTransition(transitionTypeRef, adapter);
+            assertEquals(RecordingTransitionType.EXTEND, transitionTypeRef.get());
+
+            dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId);
+
+            offer(publication, messageCount, messagePrefix);
+            awaitPosition(srcCounters, counterId, publication.position());
+            awaitPosition(dstCounters, dstCounterId, publication.position());
+
+            dstAeronArchive.stopReplication(replicationId);
+        }
+
+        srcAeronArchive.stopRecording(subscriptionId);
+    }
+
     private RecordingTransitionAdapter newRecordingTransitionAdapter(
         final MutableReference<RecordingTransitionType> transitionTypeRef,
         final MutableLong recordingIdRef)

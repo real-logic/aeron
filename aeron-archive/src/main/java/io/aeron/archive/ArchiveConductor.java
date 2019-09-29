@@ -938,17 +938,20 @@ abstract class ArchiveConductor
             .controlRequestChannel(srcControlChannel)
             .controlRequestStreamId(srcControlStreamId);
 
+        long replayPosition = NULL_POSITION;
         int replayStreamId = 0;
         if (hasRecording)
         {
             catalog.recordingSummary(dstRecordingId, recordingSummary);
             replayStreamId = recordingSummary.streamId;
+            replayPosition = recordingSummary.stopPosition;
         }
 
         final ReplicationSession replicationSession = new ReplicationSession(
             correlationId,
             srcRecordingId,
             dstRecordingId,
+            replayPosition,
             replayChannel,
             replayStreamId,
             liveMerge,

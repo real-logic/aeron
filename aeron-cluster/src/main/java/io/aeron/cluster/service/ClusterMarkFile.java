@@ -176,11 +176,15 @@ public class ClusterMarkFile implements AutoCloseable
      * Record the fact that a node has voted in a current election for a candidate so it can survive a restart.
      *
      * @param candidateTermId to record that a vote has taken place.
+     * @param fileSyncLevel   as defined by cluster file sync level.
      */
-    public void candidateTermId(final long candidateTermId)
+    public void candidateTermId(final long candidateTermId, final int fileSyncLevel)
     {
         buffer.putLongVolatile(MarkFileHeaderEncoder.candidateTermIdEncodingOffset(), candidateTermId);
-        markFile.mappedByteBuffer().force();
+        if (fileSyncLevel > 0)
+        {
+            markFile.mappedByteBuffer().force();
+        }
     }
 
     public int memberId()

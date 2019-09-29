@@ -310,7 +310,7 @@ public class Election implements AutoCloseable
         else if (compareLog(this.logLeadershipTermId, this.logPosition, logLeadershipTermId, logPosition) > 0)
         {
             this.candidateTermId = candidateTermId;
-            ctx.clusterMarkFile().candidateTermId(candidateTermId);
+            ctx.clusterMarkFile().candidateTermId(candidateTermId, ctx.fileSyncLevel());
             state(State.CANVASS);
 
             placeVote(candidateTermId, candidateId, false);
@@ -318,7 +318,7 @@ public class Election implements AutoCloseable
         else
         {
             this.candidateTermId = candidateTermId;
-            ctx.clusterMarkFile().candidateTermId(candidateTermId);
+            ctx.clusterMarkFile().candidateTermId(candidateTermId, ctx.fileSyncLevel());
             state(State.FOLLOWER_BALLOT);
 
             placeVote(candidateTermId, candidateId, true);
@@ -413,7 +413,7 @@ public class Election implements AutoCloseable
 
                     if (hasUpdates)
                     {
-                        ctx.recordingLog().force();
+                        ctx.recordingLog().force(ctx.fileSyncLevel());
                     }
 
                     this.leadershipTermId = leadershipTermId;
@@ -489,7 +489,7 @@ public class Election implements AutoCloseable
 
             if (hasUpdates)
             {
-                recordingLog.force();
+                recordingLog.force(ctx.fileSyncLevel());
             }
 
             logLeadershipTermId = leadershipTermId;
@@ -566,7 +566,7 @@ public class Election implements AutoCloseable
         {
             candidateTermId = Math.max(leadershipTermId + 1, candidateTermId + 1);
             ClusterMember.becomeCandidate(clusterMembers, candidateTermId, thisMember.id());
-            ctx.clusterMarkFile().candidateTermId(candidateTermId);
+            ctx.clusterMarkFile().candidateTermId(candidateTermId, ctx.fileSyncLevel());
             state(State.CANDIDATE_BALLOT);
             return 1;
         }
@@ -690,7 +690,7 @@ public class Election implements AutoCloseable
 
         leadershipTermId = candidateTermId;
         recordingLog.appendTerm(recordingId, leadershipTermId, logPosition, timestamp);
-        recordingLog.force();
+        recordingLog.force(ctx.fileSyncLevel());
 
         state(State.LEADER_READY);
 
@@ -841,7 +841,7 @@ public class Election implements AutoCloseable
         {
             final long timestamp = ctx.clusterClock().timeUnit().convert(nowNs, TimeUnit.NANOSECONDS);
             recordingLog.appendTerm(consensusModuleAgent.logRecordingId(), leadershipTermId, logPosition, timestamp);
-            recordingLog.force();
+            recordingLog.force(ctx.fileSyncLevel());
         }
 
         state(State.FOLLOWER_READY);

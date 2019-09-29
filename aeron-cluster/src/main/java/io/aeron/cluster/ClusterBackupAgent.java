@@ -217,7 +217,6 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
 
         if (null != recordingLog)
         {
-            recordingLog.force();
             recordingLog.close();
             recordingLog = null;
         }
@@ -640,7 +639,6 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
                 leaderLogEntry.termBaseLogPosition,
                 leaderLogEntry.timestamp);
 
-            recordingLog.force();
             wasRecordingLogUpdated = true;
 
             leaderLogEntry = null;
@@ -661,7 +659,6 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
                     snapshot.serviceId);
             }
 
-            recordingLog.force();
             wasRecordingLogUpdated = true;
         }
 
@@ -673,7 +670,6 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
                 leaderLastTermEntry.termBaseLogPosition,
                 leaderLastTermEntry.timestamp);
 
-            recordingLog.force();
             wasRecordingLogUpdated = true;
 
             leaderLastTermEntry = null;

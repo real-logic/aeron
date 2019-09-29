@@ -405,16 +405,21 @@ public class RecordingLog implements AutoCloseable
 
     /**
      * Force the file to backing storage. Same as calling {@link FileChannel#force(boolean)} with true.
+     *
+     * @param fileSyncLevel as defined by {@link ConsensusModule.Configuration#FILE_SYNC_LEVEL_PROP_NAME}.
      */
-    public void force()
+    public void force(final int fileSyncLevel)
     {
-        try
+        if (fileSyncLevel > 0)
         {
-            fileChannel.force(true);
-        }
-        catch (final IOException ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
+            try
+            {
+                fileChannel.force(fileSyncLevel > 1);
+            }
+            catch (final IOException ex)
+            {
+                LangUtil.rethrowUnchecked(ex);
+            }
         }
     }
 

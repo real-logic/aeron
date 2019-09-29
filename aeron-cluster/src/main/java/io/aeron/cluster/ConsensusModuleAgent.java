@@ -2535,7 +2535,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 recordingLog.appendSnapshot(
                     recordingId, leadershipTermId, termBaseLogPosition, logPosition, timestamp, SERVICE_ID);
 
-                recordingLog.force();
+                recordingLog.force(ctx.fileSyncLevel());
                 recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());
             }
             finally

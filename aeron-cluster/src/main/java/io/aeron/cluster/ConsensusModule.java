@@ -18,6 +18,7 @@ package io.aeron.cluster;
 import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.Counter;
+import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterClock;
@@ -596,6 +597,21 @@ public class ConsensusModule implements AutoCloseable
         public static final int TICKS_PER_WHEEL_DEFAULT = 128;
 
         /**
+         * The level at which files should be sync'ed to disk.
+         * <ul>
+         * <li>0 - normal writes.</li>
+         * <li>1 - sync file data.</li>
+         * <li>2 - sync file data + metadata.</li>
+         * </ul>
+         */
+        public static final String FILE_SYNC_LEVEL_PROP_NAME = "aeron.cluster.file.sync.level";
+
+        /**
+         * Default file sync level of normal writes.
+         */
+        public static final int FILE_SYNC_LEVEL_DEFAULT = 0;
+
+        /**
          * The value {@link #CLUSTER_MEMBER_ID_DEFAULT} or system property
          * {@link #CLUSTER_MEMBER_ID_PROP_NAME} if set.
          *
@@ -908,6 +924,21 @@ public class ConsensusModule implements AutoCloseable
         {
             return Integer.getInteger(TICKS_PER_WHEEL_PROP_NAME, TICKS_PER_WHEEL_DEFAULT);
         }
+
+        /**
+         * The level at which files should be sync'ed to disk.
+         * <ul>
+         * <li>0 - normal writes.</li>
+         * <li>1 - sync file data.</li>
+         * <li>2 - sync file data + metadata.</li>
+         * </ul>
+         *
+         * @return level at which files should be sync'ed to disk.
+         */
+        public static int fileSyncLevel()
+        {
+            return Integer.getInteger(FILE_SYNC_LEVEL_PROP_NAME, FILE_SYNC_LEVEL_DEFAULT);
+        }
     }
 
     /**
@@ -935,6 +966,7 @@ public class ConsensusModule implements AutoCloseable
         private RecordingLog recordingLog;
         private ClusterMarkFile markFile;
         private MutableDirectBuffer tempBuffer;
+        private int fileSyncLevel = Archive.Configuration.fileSyncLevel();
 
         private int appVersion = SemanticVersion.compose(0, 0, 1);
         private int clusterMemberId = Configuration.clusterMemberId();
@@ -1347,6 +1379,40 @@ public class ConsensusModule implements AutoCloseable
         public int appVersion()
         {
             return appVersion;
+        }
+
+        /**
+         * Get level at which files should be sync'ed to disk.
+         * <ul>
+         * <li>0 - normal writes.</li>
+         * <li>1 - sync file data.</li>
+         * <li>2 - sync file data + metadata.</li>
+         * </ul>
+         *
+         * @return the level to be applied for file write.
+         * @see Configuration#FILE_SYNC_LEVEL_PROP_NAME
+         */
+        int fileSyncLevel()
+        {
+            return fileSyncLevel;
+        }
+
+        /**
+         * Set level at which files should be sync'ed to disk.
+         * <ul>
+         * <li>0 - normal writes.</li>
+         * <li>1 - sync file data.</li>
+         * <li>2 - sync file data + metadata.</li>
+         * </ul>
+         *
+         * @param syncLevel to be applied for file writes.
+         * @return this for a fluent API.
+         * @see Configuration#FILE_SYNC_LEVEL_PROP_NAME
+         */
+        public Context fileSyncLevel(final int syncLevel)
+        {
+            this.fileSyncLevel = syncLevel;
+            return this;
         }
 
         /**

@@ -370,6 +370,7 @@ public class Archive implements AutoCloseable
         private FileChannel archiveDirChannel;
         private Catalog catalog;
         private ArchiveMarkFile markFile;
+        private AeronArchive.Context archiveClientContext;
 
         private String controlChannel = AeronArchive.Configuration.controlChannel();
         private int controlStreamId = AeronArchive.Configuration.controlStreamId();
@@ -423,6 +424,7 @@ public class Archive implements AutoCloseable
         /**
          * Conclude the configuration parameters by resolving dependencies and null values to use defaults.
          */
+        @SuppressWarnings("MethodLength")
         public void conclude()
         {
             if (0 != IS_CONCLUDED_UPDATER.getAndSet(this, 1))
@@ -516,6 +518,13 @@ public class Archive implements AutoCloseable
                     archiveDir, archiveDirChannel, catalogFileSyncLevel, maxCatalogEntries, epochClock);
             }
 
+            if (null == archiveClientContext)
+            {
+                archiveClientContext = new AeronArchive.Context();
+            }
+
+            archiveClientContext.aeron(aeron).lock(new NoOpLock()).errorHandler(errorHandler);
+
             int expectedCount = DEDICATED == threadingMode ? 2 : 0;
             expectedCount += aeron.conductorAgentInvoker() == null ? 1 : 0;
             abortLatch = new CountDownLatch(expectedCount);
@@ -598,6 +607,31 @@ public class Archive implements AutoCloseable
         public FileChannel archiveDirChannel()
         {
             return archiveDirChannel;
+        }
+
+        /**
+         * Set the {@link io.aeron.archive.client.AeronArchive.Context} that should be used for communicating
+         * with a remote archive for replication.
+         *
+         * @param archiveContext that should be used for communicating with a remote Archive.
+         * @return this for a fluent API.
+         */
+        public Context archiveClientContext(final AeronArchive.Context archiveContext)
+        {
+            this.archiveClientContext = archiveContext;
+            return this;
+        }
+
+        /**
+         * Get the {@link io.aeron.archive.client.AeronArchive.Context} that should be used for communicating
+         * with a remote archive for replication.
+         *
+         * @return the {@link io.aeron.archive.client.AeronArchive.Context} that should be used for communicating
+         * with a remote archive for replication.
+         */
+        public AeronArchive.Context archiveClientContext()
+        {
+            return archiveClientContext;
         }
 
         /**

@@ -931,10 +931,7 @@ abstract class ArchiveConductor
 
         final long replicationId = nextSessionId++;
 
-        final AeronArchive.Context context = new AeronArchive.Context()
-            .aeron(aeron)
-            .errorHandler(errorHandler)
-            .lock(new NoOpLock())
+        final AeronArchive.Context remoteArchiveContext = ctx.archiveClientContext().clone()
             .controlRequestChannel(srcControlChannel)
             .controlRequestStreamId(srcControlStreamId);
 
@@ -956,7 +953,7 @@ abstract class ArchiveConductor
             replayStreamId,
             liveMerge,
             replicationId,
-            context,
+            remoteArchiveContext,
             cachedEpochClock,
             catalog,
             controlResponseProxy,

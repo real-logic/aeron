@@ -23,8 +23,11 @@ import io.aeron.archive.client.RecordingDescriptorConsumer;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.RecordingTransitionType;
 import io.aeron.archive.codecs.SourceLocation;
+import io.aeron.exceptions.TimeoutException;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.EpochClock;
+
+import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
@@ -48,6 +51,8 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     private long srcReplaySessionId = NULL_VALUE;
     private long replayPosition;
     private long stopPosition = NULL_POSITION;
+    private long timeOfLastActionMs;
+    private final long actionTimeoutMs;
     private final long correlationId;
     private final long replicationId;
     private final long srcRecordingId;
@@ -61,6 +66,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     private final ControlResponseProxy controlResponseProxy;
     private final Catalog catalog;
     private final Aeron aeron;
+    private final AeronArchive.Context context;
     private AeronArchive.AsyncConnect asyncConnect;
     private AeronArchive srcArchive;
     private Subscription recordingSubscription;
@@ -91,12 +97,13 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         this.replayStreamId = replayStreamId;
         this.liveMerge = liveMerge;
         this.aeron = context.aeron();
-        this.asyncConnect = AeronArchive.asyncConnect(context);
+        this.context = context;
         this.catalog = catalog;
         this.controlResponseProxy = controlResponseProxy;
         this.epochClock = epochClock;
         this.conductor = controlSession.archiveConductor();
         this.controlSession = controlSession;
+        this.actionTimeoutMs = TimeUnit.NANOSECONDS.toMillis(context.messageTimeoutNs());
     }
 
     public long sessionId()
@@ -228,23 +235,31 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     private int connect()
     {
         int workCount = 0;
-        final int step = asyncConnect.step();
-        final AeronArchive archive = asyncConnect.poll();
 
-        if (null == archive)
+        if (null == asyncConnect)
         {
-            if (asyncConnect.step() != step)
-            {
-                workCount += 1;
-            }
+            asyncConnect = AeronArchive.asyncConnect(context);
+            workCount += 1;
         }
         else
         {
-            srcArchive = archive;
-            asyncConnect = null;
-            state(NULL_VALUE == dstRecordingId ? State.AWAIT_DESCRIPTOR : State.AWAIT_REPLAY);
+            final int step = asyncConnect.step();
+            final AeronArchive archive = asyncConnect.poll();
 
-            workCount += 1;
+            if (null == archive)
+            {
+                if (asyncConnect.step() != step)
+                {
+                    workCount += 1;
+                }
+            }
+            else
+            {
+                srcArchive = archive;
+                asyncConnect = null;
+                state(NULL_VALUE == dstRecordingId ? State.AWAIT_DESCRIPTOR : State.AWAIT_REPLAY);
+                workCount += 1;
+            }
         }
 
         return workCount;
@@ -259,14 +274,26 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             final long correlationId = aeron.nextCorrelationId();
             if (srcArchive.archiveProxy().listRecording(srcRecordingId, correlationId, srcArchive.controlSessionId()))
             {
+                timeOfLastActionMs = epochClock.time();
                 activeCorrelationId = correlationId;
                 srcArchive.recordingDescriptorPoller().reset(correlationId, 1, this);
                 workCount += 1;
             }
+            else if (epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))
+            {
+                throw new TimeoutException("failed to list remote recording descriptor");
+            }
         }
         else
         {
-            workCount += srcArchive.recordingDescriptorPoller().poll();
+            final int fragments = srcArchive.recordingDescriptorPoller().poll();
+
+            if (0 == fragments && epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))
+            {
+                throw new TimeoutException("failed to fetch remote recording descriptor");
+            }
+
+            workCount += fragments;
         }
 
         return workCount;
@@ -288,8 +315,13 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                 correlationId,
                 srcArchive.controlSessionId()))
             {
+                timeOfLastActionMs = epochClock.time();
                 activeCorrelationId = correlationId;
                 workCount += 1;
+            }
+            else if (epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))
+            {
+                throw new TimeoutException("failed to send replay request");
             }
         }
         else
@@ -297,10 +329,14 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             final ControlResponsePoller poller = srcArchive.controlResponsePoller();
             workCount += poller.poll();
 
-            if (pollNextResponse(poller))
+            if (hasResponse(poller))
             {
                 srcReplaySessionId = poller.relevantId();
                 state(State.EXTEND);
+            }
+            else if (epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))
+            {
+                throw new TimeoutException("failed get acknowledgement of replay request");
             }
         }
 
@@ -336,6 +372,10 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         {
             state(State.REPLICATE);
             return 1;
+        }
+        else if (epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))
+        {
+            throw new TimeoutException("failed get image for replay");
         }
 
         return 0;
@@ -375,7 +415,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         }
     }
 
-    private boolean pollNextResponse(final ControlResponsePoller poller)
+    private boolean hasResponse(final ControlResponsePoller poller)
     {
         if (poller.isPollComplete() && poller.controlSessionId() == srcArchive.controlSessionId())
         {
@@ -393,7 +433,8 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
     private void state(final State newState)
     {
-        //System.out.println(state + " -> " + newState);
+        timeOfLastActionMs = epochClock.time();
+        //System.out.println(timeOfLastActionMs + ": " + state + " -> " + newState);
         state = newState;
     }
 }

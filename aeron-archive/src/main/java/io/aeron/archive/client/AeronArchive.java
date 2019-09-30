@@ -2251,6 +2251,16 @@ public class AeronArchive implements AutoCloseable
         }
 
         /**
+         * Get the {@link AeronArchive.Context} used for this client.
+         *
+         * @return the {@link AeronArchive.Context} used for this client.
+         */
+        public Context context()
+        {
+            return ctx;
+        }
+
+        /**
          * Get the index of the current step.
          *
          * @return the index of the current step.
@@ -2349,8 +2359,7 @@ public class AeronArchive implements AutoCloseable
             if (deadlineNs - nanoClock.nanoTime() < 0)
             {
                 throw new TimeoutException(
-                    "connect timeout for correlation id: " + correlationId + " step " + step,
-                    AeronException.Category.ERROR);
+                    "Archive connect timeout for correlation id: " + correlationId + " step " + step);
             }
         }
     }

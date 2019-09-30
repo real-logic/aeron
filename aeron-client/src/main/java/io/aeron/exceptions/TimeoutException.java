@@ -24,6 +24,11 @@ public class TimeoutException extends AeronException
     {
     }
 
+    public TimeoutException(final String message)
+    {
+        super(message);
+    }
+
     public TimeoutException(final Category category)
     {
         super(category);

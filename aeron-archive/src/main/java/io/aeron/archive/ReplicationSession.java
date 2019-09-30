@@ -49,7 +49,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
     private long activeCorrelationId = NULL_VALUE;
     private long srcReplaySessionId = NULL_VALUE;
-    private long replayPosition;
+    private long replayPosition = NULL_POSITION;
     private long stopPosition = NULL_POSITION;
     private long timeOfLastActionMs;
     private final long actionTimeoutMs;
@@ -77,11 +77,10 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         final long correlationId,
         final long srcRecordingId,
         final long dstRecordingId,
-        final long replayPosition,
         final String replayChannel,
-        final int replayStreamId,
         final boolean liveMerge,
         final long replicationId,
+        final RecordingSummary recordingSummary,
         final AeronArchive.Context context,
         final EpochClock epochClock,
         final Catalog catalog,
@@ -92,9 +91,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         this.replicationId = replicationId;
         this.srcRecordingId = srcRecordingId;
         this.dstRecordingId = dstRecordingId;
-        this.replayPosition = replayPosition;
         this.replayChannel = replayChannel;
-        this.replayStreamId = replayStreamId;
         this.liveMerge = liveMerge;
         this.aeron = context.aeron();
         this.context = context;
@@ -104,6 +101,12 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         this.conductor = controlSession.archiveConductor();
         this.controlSession = controlSession;
         this.actionTimeoutMs = TimeUnit.NANOSECONDS.toMillis(context.messageTimeoutNs());
+
+        if (null != recordingSummary)
+        {
+            replayPosition = recordingSummary.stopPosition;
+            replayStreamId = recordingSummary.streamId;
+        }
     }
 
     public long sessionId()

@@ -929,30 +929,24 @@ abstract class ArchiveConductor
             return;
         }
 
-        final long replicationId = nextSessionId++;
+        if (hasRecording)
+        {
+            catalog.recordingSummary(dstRecordingId, recordingSummary);
+        }
 
         final AeronArchive.Context remoteArchiveContext = ctx.archiveClientContext().clone()
             .controlRequestChannel(srcControlChannel)
             .controlRequestStreamId(srcControlStreamId);
 
-        long replayPosition = NULL_POSITION;
-        int replayStreamId = 0;
-        if (hasRecording)
-        {
-            catalog.recordingSummary(dstRecordingId, recordingSummary);
-            replayStreamId = recordingSummary.streamId;
-            replayPosition = recordingSummary.stopPosition;
-        }
-
+        final long replicationId = nextSessionId++;
         final ReplicationSession replicationSession = new ReplicationSession(
             correlationId,
             srcRecordingId,
             dstRecordingId,
-            replayPosition,
             replayChannel,
-            replayStreamId,
             liveMerge,
             replicationId,
+            hasRecording ? recordingSummary : null,
             remoteArchiveContext,
             cachedEpochClock,
             catalog,

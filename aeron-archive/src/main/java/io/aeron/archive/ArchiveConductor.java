@@ -1000,6 +1000,7 @@ abstract class ArchiveConductor
             .endpoint(channelUri)
             .networkInterface(channelUri)
             .controlEndpoint(channelUri)
+            .controlMode(channelUri)
             .tags(channelUri)
             .rejoin(channelUri)
             .group(channelUri)

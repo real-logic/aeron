@@ -161,6 +161,18 @@ public class ChannelUriStringBuilder
     }
 
     /**
+     * Set the prefix value to be what is in the {@link ChannelUri}.
+     *
+     * @param channelUri to read the value from.
+     * @return this for a fluent API.
+     * @see ChannelUri#SPY_QUALIFIER
+     */
+    public ChannelUriStringBuilder prefix(final ChannelUri channelUri)
+    {
+        return prefix(channelUri.prefix());
+    }
+
+    /**
      * Get the prefix for the additional action to be taken on the request.
      *
      * @return the prefix for the additional action to be taken on the request.
@@ -190,6 +202,17 @@ public class ChannelUriStringBuilder
 
         this.media = media;
         return this;
+    }
+
+    /**
+     * Set the endpoint value to be what is in the {@link ChannelUri}.
+     *
+     * @param channelUri to read the value from.
+     * @return this for a fluent API.
+     */
+    public ChannelUriStringBuilder media(final ChannelUri channelUri)
+    {
+        return media(channelUri.media());
     }
 
     /**

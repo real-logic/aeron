@@ -69,6 +69,6 @@ public class RegistrationException extends AeronException
 
     public String getMessage()
     {
-        return "correlationId=" + correlationId + "errorCodeValue=" + errorCodeValue + " " + super.getMessage();
+        return "correlationId=" + correlationId + ", errorCodeValue=" + errorCodeValue + ", " + super.getMessage();
     }
 }

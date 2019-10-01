@@ -348,10 +348,11 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     private int extend()
     {
         final ChannelUri channelUri = ChannelUri.parse(replicationChannel);
-        final String channel = new ChannelUriStringBuilder()
-            .media(channelUri.media())
+        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder();
+        final String channel =
+            builder
+            .media(channelUri)
             .alias(channelUri)
-            .endpoint(channelUri)
             .controlMode(CommonContext.MDC_CONTROL_MODE_MANUAL)
             .rejoin(false)
             .sessionId((int)srcReplaySessionId)
@@ -366,6 +367,8 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         }
         else
         {
+            final String destination = builder.clear().media(channelUri).endpoint(channelUri).build();
+            recordingSubscription.asyncAddDestination(destination);
             state(State.AWAIT_REPLICATION);
         }
 

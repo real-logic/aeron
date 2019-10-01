@@ -72,9 +72,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private long timeOfLastLogUpdateNs = 0;
     private long timeOfLastAppendPositionNs = 0;
     private long timeNs;
-    private final int logPublicationChannelTag;
-    private final int logSubscriptionTag;
-    private final int logSubscriptionChannelTag;
     private int pendingServiceMessageHeadOffset = 0;
     private int uncommittedServiceMessages = 0;
     private int logInitialTermId = NULL_VALUE;
@@ -84,6 +81,9 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private int highMemberId;
     private int pendingMemberRemovals = 0;
     private int logPublicationTag;
+    private int logPublicationChannelTag;
+    private final int logSubscriptionTag;
+    private final int logSubscriptionChannelTag;
     private ReadableCounter appendedPosition;
     private final Counter commitPosition;
     private ConsensusModule.State state = ConsensusModule.State.INIT;
@@ -2605,6 +2605,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
         logPublicationTag = (int)aeron.nextCorrelationId();
+        logPublicationChannelTag = (int)aeron.nextCorrelationId();
         channelUri.put(TAGS_PARAM_NAME, logPublicationChannelTag + "," + logPublicationTag);
         channelUri.put(ALIAS_PARAM_NAME, "log");
 

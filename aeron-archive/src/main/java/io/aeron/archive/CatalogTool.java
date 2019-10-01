@@ -21,18 +21,18 @@ import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorEncoder;
 import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorHeaderEncoder;
+import io.aeron.archive.migration.MigrationStep;
+import io.aeron.archive.migration.MigrationSupplier;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
-import org.agrona.AsciiEncoding;
-import org.agrona.BitUtil;
-import org.agrona.BufferUtil;
-import org.agrona.PrintBufferUtil;
+import org.agrona.*;
 import org.agrona.collections.ArrayUtil;
 
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Date;
+import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -58,6 +58,7 @@ public class CatalogTool
 
     private static File archiveDir;
 
+    @SuppressWarnings("MethodLength")
     public static void main(final String[] args)
     {
         if (args.length == 0 || args.length > 3)
@@ -148,6 +149,26 @@ public class CatalogTool
             try (Catalog catalog = new Catalog(archiveDir, null, 0, newMaxEntries, System::currentTimeMillis))
             {
                 System.out.println(catalog.maxEntries());
+            }
+        }
+        else if (args.length == 2 && args[1].equals("migrate"))
+        {
+            System.out.print(
+                "WARNING: please ensure archive is not running and that backups have been taken of archive " +
+                "directory before attempting migration(s). ");
+
+            if (readContinueAnswer())
+            {
+                try (ArchiveMarkFile markFile = openMarkFileReadWrite())
+                {
+                    final List<MigrationStep> steps = MigrationSupplier.createMigration(markFile.decoder().version());
+
+                    for (final MigrationStep step : steps)
+                    {
+                        System.out.println("Migration step " + step.toString());
+                        step.migrate(markFile, archiveDir);
+                    }
+                }
             }
         }
     }
@@ -242,6 +263,17 @@ public class CatalogTool
     {
         return new ArchiveMarkFile(
             archiveDir, ArchiveMarkFile.FILENAME, System::currentTimeMillis, TimeUnit.SECONDS.toMillis(5), logger);
+    }
+
+    private static ArchiveMarkFile openMarkFileReadWrite()
+    {
+        return new ArchiveMarkFile(
+            archiveDir,
+            ArchiveMarkFile.FILENAME,
+            System::currentTimeMillis,
+            TimeUnit.SECONDS.toMillis(5),
+            (version) -> {},
+            null);
     }
 
     private static Catalog openCatalogReadOnly()

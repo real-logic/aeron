@@ -25,6 +25,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
 import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 
 /**
  * Used to mark the presence of a running {@link Archive} in a directory to guard it.
@@ -87,13 +88,11 @@ public class ArchiveMarkFile implements AutoCloseable
         final long timeoutMs,
         final Consumer<String> logger)
     {
-        markFile = new MarkFile(
+        this(
             directory,
             filename,
-            MarkFileHeaderDecoder.versionEncodingOffset(),
-            MarkFileHeaderDecoder.activityTimestampEncodingOffset(),
-            timeoutMs,
             epochClock,
+            timeoutMs,
             (version) ->
             {
                 if (SemanticVersion.major(version) != AeronArchive.Configuration.MAJOR_VERSION)
@@ -103,15 +102,40 @@ public class ArchiveMarkFile implements AutoCloseable
                 }
             },
             logger);
+    }
+
+    public ArchiveMarkFile(
+        final File directory,
+        final String filename,
+        final EpochClock epochClock,
+        final long timeoutMs,
+        final IntConsumer versionCheck,
+        final Consumer<String> logger)
+    {
+        markFile = new MarkFile(
+            directory,
+            filename,
+            MarkFileHeaderDecoder.versionEncodingOffset(),
+            MarkFileHeaderDecoder.activityTimestampEncodingOffset(),
+            timeoutMs,
+            epochClock,
+            versionCheck,
+            logger);
 
         this.buffer = markFile.buffer();
 
+        headerEncoder.wrap(buffer, 0);
         headerDecoder.wrap(buffer, 0, MarkFileHeaderDecoder.BLOCK_LENGTH, MarkFileHeaderDecoder.SCHEMA_VERSION);
     }
 
     public void close()
     {
         CloseHelper.close(markFile);
+    }
+
+    public void force()
+    {
+        markFile.mappedByteBuffer().force();
     }
 
     public void signalReady()

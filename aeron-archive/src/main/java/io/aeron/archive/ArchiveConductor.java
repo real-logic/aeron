@@ -918,7 +918,6 @@ abstract class ArchiveConductor
         final boolean liveMerge,
         final int srcControlStreamId,
         final String srcControlChannel,
-        final String replayChannel,
         final ControlSession controlSession)
     {
         final boolean hasRecording = catalog.hasRecording(dstRecordingId);
@@ -943,9 +942,9 @@ abstract class ArchiveConductor
             correlationId,
             srcRecordingId,
             dstRecordingId,
-            replayChannel,
             liveMerge,
             replicationId,
+            ctx.replicationChannel(),
             hasRecording ? recordingSummary : null,
             remoteArchiveContext,
             cachedEpochClock,

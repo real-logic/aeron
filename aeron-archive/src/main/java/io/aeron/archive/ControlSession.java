@@ -374,8 +374,7 @@ class ControlSession implements Session
         final long dstRecordingId,
         final boolean liveMerge,
         final int srcControlStreamId,
-        final String srcControlChannel,
-        final String replayChannel)
+        final String srcControlChannel)
     {
         updateState();
         if (State.ACTIVE == state)
@@ -387,7 +386,6 @@ class ControlSession implements Session
                 liveMerge,
                 srcControlStreamId,
                 srcControlChannel,
-                replayChannel,
                 this);
         }
     }

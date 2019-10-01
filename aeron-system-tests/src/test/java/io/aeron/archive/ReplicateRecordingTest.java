@@ -49,17 +49,14 @@ public class ReplicateRecordingTest
     private static final String DST_CONTROL_RESPONSE_CHANNEL = "aeron:udp?endpoint=localhost:8096";
     private static final String SRC_EVENTS_CHANNEL = "aeron:udp?control-mode=dynamic|control=localhost:8030";
     private static final String DST_EVENTS_CHANNEL = "aeron:udp?control-mode=dynamic|control=localhost:8031";
+    private static final String SRC_REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:8040";
+    private static final String DST_REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:8041";
 
     private static final int RECORDING_STREAM_ID = 33;
     private static final String RECORDING_CHANNEL = new ChannelUriStringBuilder()
         .media("udp")
         .endpoint("localhost:3333")
         .termLength(TERM_BUFFER_LENGTH)
-        .build();
-
-    private static final String REPLAY_CHANNEL = new ChannelUriStringBuilder()
-        .media("udp")
-        .endpoint("localhost:6666")
         .build();
 
     private ArchivingMediaDriver srcArchivingMediaDriver;
@@ -90,6 +87,7 @@ public class ReplicateRecordingTest
                 .controlChannel(SRC_CONTROL_REQUEST_CHANNEL)
                 .archiveClientContext(new AeronArchive.Context().controlResponseChannel(SRC_CONTROL_RESPONSE_CHANNEL))
                 .recordingEventsChannel(SRC_EVENTS_CHANNEL)
+                .replicationChannel(SRC_REPLICATION_CHANNEL)
                 .deleteArchiveOnStart(true)
                 .archiveDir(new File(SystemUtil.tmpDirName(), "src-archive"))
                 .fileSyncLevel(0)
@@ -110,6 +108,7 @@ public class ReplicateRecordingTest
                 .controlChannel(DST_CONTROL_REQUEST_CHANNEL)
                 .archiveClientContext(new AeronArchive.Context().controlResponseChannel(DST_CONTROL_RESPONSE_CHANNEL))
                 .recordingEventsChannel(DST_EVENTS_CHANNEL)
+                .replicationChannel(DST_REPLICATION_CHANNEL)
                 .deleteArchiveOnStart(true)
                 .archiveDir(new File(SystemUtil.tmpDirName(), "dst-archive"))
                 .fileSyncLevel(0)
@@ -156,7 +155,7 @@ public class ReplicateRecordingTest
         try
         {
             dstAeronArchive.replicate(
-                NULL_VALUE, unknownId, REPLAY_CHANNEL, SRC_CONTROL_REQUEST_CHANNEL, SRC_CONTROL_STREAM_ID, liveMerge);
+                NULL_VALUE, unknownId, SRC_CONTROL_REQUEST_CHANNEL, SRC_CONTROL_STREAM_ID, liveMerge);
         }
         catch (final ArchiveException ex)
         {
@@ -195,7 +194,7 @@ public class ReplicateRecordingTest
         final RecordingTransitionAdapter adapter = newRecordingTransitionAdapter(transitionTypeRef, dstRecordingId);
 
         dstAeronArchive.replicate(
-            recordingId, NULL_VALUE, REPLAY_CHANNEL, SRC_CONTROL_REQUEST_CHANNEL, SRC_CONTROL_STREAM_ID, liveMerge);
+            recordingId, NULL_VALUE, SRC_CONTROL_REQUEST_CHANNEL, SRC_CONTROL_STREAM_ID, liveMerge);
 
         awaitTransition(transitionTypeRef, adapter);
         assertEquals(RecordingTransitionType.REPLICATE, transitionTypeRef.get());
@@ -231,7 +230,7 @@ public class ReplicateRecordingTest
             final RecordingTransitionAdapter adapter = newRecordingTransitionAdapter(transitionTypeRef, dstRecordingId);
 
             final long replicationId = dstAeronArchive.replicate(
-                recordingId, NULL_VALUE, REPLAY_CHANNEL, SRC_CONTROL_REQUEST_CHANNEL, SRC_CONTROL_STREAM_ID, liveMerge);
+                recordingId, NULL_VALUE, SRC_CONTROL_REQUEST_CHANNEL, SRC_CONTROL_STREAM_ID, liveMerge);
 
             awaitTransition(transitionTypeRef, adapter);
             assertEquals(RecordingTransitionType.REPLICATE, transitionTypeRef.get());
@@ -280,7 +279,7 @@ public class ReplicateRecordingTest
             final RecordingTransitionAdapter adapter = newRecordingTransitionAdapter(transitionTypeRef, recordingIdRef);
 
             long replicationId = dstAeronArchive.replicate(
-                recordingId, NULL_VALUE, REPLAY_CHANNEL, SRC_CONTROL_REQUEST_CHANNEL, SRC_CONTROL_STREAM_ID, liveMerge);
+                recordingId, NULL_VALUE, SRC_CONTROL_REQUEST_CHANNEL, SRC_CONTROL_STREAM_ID, liveMerge);
 
             awaitTransition(transitionTypeRef, adapter);
             assertEquals(RecordingTransitionType.REPLICATE, transitionTypeRef.get());
@@ -299,12 +298,7 @@ public class ReplicateRecordingTest
             assertEquals(RecordingTransitionType.STOP, transitionTypeRef.get());
 
             replicationId = dstAeronArchive.replicate(
-                recordingId,
-                dstRecordingId,
-                REPLAY_CHANNEL,
-                SRC_CONTROL_REQUEST_CHANNEL,
-                SRC_CONTROL_STREAM_ID,
-                liveMerge);
+                recordingId, dstRecordingId, SRC_CONTROL_REQUEST_CHANNEL, SRC_CONTROL_STREAM_ID, liveMerge);
 
             awaitTransition(transitionTypeRef, adapter);
             assertEquals(RecordingTransitionType.EXTEND, transitionTypeRef.get());

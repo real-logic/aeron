@@ -373,7 +373,6 @@
         <field name="srcControlStreamId"   id="5" type="int32"/>
         <field name="liveMerge"            id="6" type="BooleanType"/>
         <data  name="srcControlChannel"    id="7" type="varAsciiEncoding"/>
-        <data  name="replayChannel"        id="8" type="varAsciiEncoding"/>
     </sbe:message>
 
     <sbe:message name="StopReplicationRequest"

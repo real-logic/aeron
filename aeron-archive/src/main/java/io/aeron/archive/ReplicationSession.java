@@ -59,7 +59,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     private long dstRecordingId;
     private final boolean liveMerge;
     private int replayStreamId;
-    private final String replayChannel;
+    private final String replicationChannel;
     private final EpochClock epochClock;
     private final ArchiveConductor conductor;
     private final ControlSession controlSession;
@@ -77,9 +77,9 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         final long correlationId,
         final long srcRecordingId,
         final long dstRecordingId,
-        final String replayChannel,
         final boolean liveMerge,
         final long replicationId,
+        final String replicationChannel,
         final RecordingSummary recordingSummary,
         final AeronArchive.Context context,
         final EpochClock epochClock,
@@ -91,8 +91,8 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         this.replicationId = replicationId;
         this.srcRecordingId = srcRecordingId;
         this.dstRecordingId = dstRecordingId;
-        this.replayChannel = replayChannel;
         this.liveMerge = liveMerge;
+        this.replicationChannel = replicationChannel;
         this.aeron = context.aeron();
         this.context = context;
         this.catalog = catalog;
@@ -290,7 +290,6 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         else
         {
             final int fragments = srcArchive.recordingDescriptorPoller().poll();
-
             if (0 == fragments && epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))
             {
                 throw new TimeoutException("failed to fetch remote recording descriptor");
@@ -313,7 +312,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                 srcRecordingId,
                 replayPosition,
                 NULL_LENGTH,
-                replayChannel,
+                replicationChannel,
                 replayStreamId,
                 correlationId,
                 srcArchive.controlSessionId()))
@@ -348,7 +347,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
     private int extend()
     {
-        final ChannelUri channelUri = ChannelUri.parse(replayChannel);
+        final ChannelUri channelUri = ChannelUri.parse(replicationChannel);
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString((int)srcReplaySessionId));
         channelUri.put(CommonContext.REJOIN_PARAM_NAME, "false");
         final String channel = channelUri.toString();

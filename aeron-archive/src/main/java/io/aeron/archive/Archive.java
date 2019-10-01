@@ -199,6 +199,16 @@ public class Archive implements AutoCloseable
 
         public static final String ARCHIVE_DIR_DELETE_ON_START_PROP_NAME = "aeron.archive.dir.delete.on.start";
 
+        /**
+         * Channel for receiving replication streams replayed from another archive.
+         */
+        public static final String REPLICATION_CHANNEL_PROP_NAME = "aeron.archive.replication.channel";
+
+        /**
+         * Channel for receiving replication streams replayed from another archive.
+         */
+        public static final String REPLICATION_CHANNEL_DEFAULT = "aeron:udp?endpoint=8040";
+
         static final String CATALOG_FILE_NAME = "archive.catalog";
         static final String RECORDING_SEGMENT_POSTFIX = ".rec";
         static final int MAX_BLOCK_LENGTH = 2 * 1024 * 1024;
@@ -344,6 +354,18 @@ public class Archive implements AutoCloseable
         {
             return "true".equalsIgnoreCase(getProperty(ARCHIVE_DIR_DELETE_ON_START_PROP_NAME, "false"));
         }
+
+        /**
+         * The value {@link #REPLICATION_CHANNEL_DEFAULT} or system property
+         * {@link #REPLICATION_CHANNEL_PROP_NAME} if set.
+         *
+         * @return {@link #REPLICATION_CHANNEL_DEFAULT} or system property
+         * {@link #REPLICATION_CHANNEL_PROP_NAME} if set.
+         */
+        public static String replicationChannel()
+        {
+            return System.getProperty(REPLICATION_CHANNEL_PROP_NAME, REPLICATION_CHANNEL_DEFAULT);
+        }
     }
 
     /**
@@ -381,6 +403,7 @@ public class Archive implements AutoCloseable
         private int controlMtuLength = AeronArchive.Configuration.controlMtuLength();
         private String recordingEventsChannel = AeronArchive.Configuration.recordingEventsChannel();
         private int recordingEventsStreamId = AeronArchive.Configuration.recordingEventsStreamId();
+        private String replicationChannel = Configuration.replicationChannel();
 
         private long connectTimeoutNs = Configuration.connectTimeoutNs();
         private long replayLingerTimeoutNs = Configuration.replayLingerTimeoutNs();
@@ -851,6 +874,30 @@ public class Archive implements AutoCloseable
         public Context recordingEventsStreamId(final int recordingEventsStreamId)
         {
             this.recordingEventsStreamId = recordingEventsStreamId;
+            return this;
+        }
+
+        /**
+         * Get the channel URI for replicating stream from another archive as replays.
+         *
+         * @return the channel URI for replicating stream from another archive as replays.
+         * @see Archive.Configuration#REPLICATION_CHANNEL_PROP_NAME
+         */
+        public String replicationChannel()
+        {
+            return replicationChannel;
+        }
+
+        /**
+         * The channel URI for replicating stream from another archive as replays.
+         *
+         * @param replicationChannel channel URI for replicating stream from another archive as replays.
+         * @return this for a fluent API.
+         * @see Archive.Configuration#REPLICATION_CHANNEL_PROP_NAME
+         */
+        public Context replicationChannel(final String replicationChannel)
+        {
+            this.replicationChannel = replicationChannel;
             return this;
         }
 

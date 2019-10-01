@@ -99,6 +99,6 @@ public class TermGapScannerTest
         assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler),
             is(LOG_BUFFER_CAPACITY));
 
-        verifyZeroInteractions(gapHandler);
+        verifyNoInteractions(gapHandler);
     }
 }

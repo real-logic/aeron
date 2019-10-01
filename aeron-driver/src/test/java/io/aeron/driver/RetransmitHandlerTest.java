@@ -180,7 +180,7 @@ public class RetransmitHandlerTest
         currentTime = TimeUnit.MILLISECONDS.toNanos(100);
         handler.processTimeouts(currentTime, retransmitSender);
 
-        verifyZeroInteractions(retransmitSender);
+        verifyNoInteractions(retransmitSender);
     }
 
     @Theory
@@ -227,7 +227,7 @@ public class RetransmitHandlerTest
         createTermBuffer(creator, 5);
         handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH, TERM_BUFFER_LENGTH, retransmitSender);
 
-        verifyZeroInteractions(retransmitSender);
+        verifyNoInteractions(retransmitSender);
     }
 
     private RetransmitHandler newZeroDelayRetransmitHandler()

@@ -38,7 +38,7 @@ public class LossReportReaderTest
     {
         assertThat(LossReportReader.read(buffer, entryConsumer), is(0));
 
-        verifyZeroInteractions(entryConsumer);
+        verifyNoInteractions(entryConsumer);
     }
 
     @Test

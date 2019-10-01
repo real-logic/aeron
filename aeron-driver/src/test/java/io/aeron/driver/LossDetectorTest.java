@@ -86,7 +86,7 @@ public class LossDetectorTest
         currentTime = TimeUnit.MILLISECONDS.toNanos(100);
         lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        verifyZeroInteractions(lossHandler);
+        verifyNoInteractions(lossHandler);
     }
 
     @Test
@@ -103,7 +103,7 @@ public class LossDetectorTest
         currentTime = TimeUnit.MILLISECONDS.toNanos(40);
         lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        verifyZeroInteractions(lossHandler);
+        verifyNoInteractions(lossHandler);
     }
 
     @Test
@@ -157,7 +157,7 @@ public class LossDetectorTest
         currentTime = TimeUnit.MILLISECONDS.toNanos(100);
         lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        verifyZeroInteractions(lossHandler);
+        verifyNoInteractions(lossHandler);
     }
 
     @Test
@@ -238,7 +238,7 @@ public class LossDetectorTest
 
         lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        verifyZeroInteractions(lossHandler);
+        verifyNoInteractions(lossHandler);
     }
 
     @Test

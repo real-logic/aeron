@@ -348,9 +348,14 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     private int extend()
     {
         final ChannelUri channelUri = ChannelUri.parse(replicationChannel);
-        channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString((int)srcReplaySessionId));
-        channelUri.put(CommonContext.REJOIN_PARAM_NAME, "false");
-        final String channel = channelUri.toString();
+        final String channel = new ChannelUriStringBuilder()
+            .media(channelUri.media())
+            .alias(channelUri)
+            .endpoint(channelUri)
+            .controlMode(CommonContext.MDC_CONTROL_MODE_MANUAL)
+            .rejoin(false)
+            .sessionId((int)srcReplaySessionId)
+            .build();
 
         recordingSubscription = conductor.extendRecording(
             replicationId, controlSession, dstRecordingId, replayStreamId, channel, SourceLocation.REMOTE);

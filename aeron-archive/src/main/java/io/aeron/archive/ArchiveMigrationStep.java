@@ -13,14 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.archive.migration;
-
-import io.aeron.archive.ArchiveMarkFile;
-import io.aeron.archive.Catalog;
+package io.aeron.archive;
 
 import java.io.File;
 
-public interface MigrationStep
+public interface ArchiveMigrationStep
 {
     int minimumVersion();
 

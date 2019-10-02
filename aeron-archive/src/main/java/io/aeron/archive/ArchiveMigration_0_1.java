@@ -13,10 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.archive.migration;
+package io.aeron.archive;
 
-import io.aeron.archive.ArchiveMarkFile;
-import io.aeron.archive.Catalog;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorEncoder;
 import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
@@ -35,11 +33,10 @@ import java.nio.file.attribute.FileTime;
 
 import static io.aeron.archive.Catalog.INVALID;
 
-public class Migration0to1 implements MigrationStep
+@SuppressWarnings("TypeName")
+public class ArchiveMigration_0_1 implements ArchiveMigrationStep
 {
     private static final int MINIMUM_VERSION = SemanticVersion.compose(1, 0, 0);
-
-    private File archiveDir;
 
     public int minimumVersion()
     {

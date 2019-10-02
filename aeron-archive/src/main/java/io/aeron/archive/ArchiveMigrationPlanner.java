@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.archive.migration;
+package io.aeron.archive;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,19 +28,19 @@ import java.util.List;
  * A step need not be a complete operation. A series of operations may be broken down in steps and
  * included with the same minimum version.
  */
-public class MigrationPlanner
+public class ArchiveMigrationPlanner
 {
-    private static final ArrayList<MigrationStep> ALL_MIGRATION_STEPS = new ArrayList<>();
+    private static final ArrayList<ArchiveMigrationStep> ALL_MIGRATION_STEPS = new ArrayList<>();
 
     static
     {
-        ALL_MIGRATION_STEPS.add(new Migration0to1());
+        ALL_MIGRATION_STEPS.add(new ArchiveMigration_0_1());
         // as migrations are added, they are added to the static list in order of operation
     }
 
-    public static List<MigrationStep> createPlan(final int version)
+    public static List<ArchiveMigrationStep> createPlan(final int version)
     {
-        final List<MigrationStep> steps = new ArrayList<>();
+        final List<ArchiveMigrationStep> steps = new ArrayList<>();
 
         for (int i = 0; i < ALL_MIGRATION_STEPS.size(); i++)
         {

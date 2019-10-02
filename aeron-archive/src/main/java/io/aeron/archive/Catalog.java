@@ -80,7 +80,7 @@ import static org.agrona.BitUtil.align;
  *  +---------------------------------------------------------------+
  * </pre>
  */
-public class Catalog implements AutoCloseable
+class Catalog implements AutoCloseable
 {
     @FunctionalInterface
     public interface CatalogEntryProcessor
@@ -100,7 +100,7 @@ public class Catalog implements AutoCloseable
     static final long MAX_ENTRIES = calculateMaxEntries(Integer.MAX_VALUE, DEFAULT_RECORD_LENGTH);
     static final long DEFAULT_MAX_ENTRIES = 8 * 1024;
     static final byte VALID = 1;
-    public static final byte INVALID = 0;
+    static final byte INVALID = 0;
 
     private final RecordingDescriptorHeaderDecoder descriptorHeaderDecoder = new RecordingDescriptorHeaderDecoder();
     private final RecordingDescriptorHeaderEncoder descriptorHeaderEncoder = new RecordingDescriptorHeaderEncoder();
@@ -280,12 +280,12 @@ public class Catalog implements AutoCloseable
         }
     }
 
-    public int maxEntries()
+    int maxEntries()
     {
         return maxRecordingId + 1;
     }
 
-    public int countEntries()
+    int countEntries()
     {
         return (int)nextRecordingId;
     }
@@ -410,7 +410,7 @@ public class Catalog implements AutoCloseable
                     RecordingDescriptorHeaderDecoder.validEncodingOffset()) == VALID;
     }
 
-    public int forEach(final CatalogEntryProcessor consumer)
+    int forEach(final CatalogEntryProcessor consumer)
     {
         int count = 0;
         long recordingId = 0L;

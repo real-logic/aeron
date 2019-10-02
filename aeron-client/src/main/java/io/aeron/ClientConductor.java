@@ -280,7 +280,7 @@ class ClientConductor implements Agent, DriverEventsListener
             sessionId,
             new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
             statusIndicatorId,
-            logBuffers(registrationId, logFileName),
+            logBuffers(registrationId, logFileName, stashedChannel),
             registrationId,
             correlationId);
 
@@ -303,7 +303,7 @@ class ClientConductor implements Agent, DriverEventsListener
             sessionId,
             new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
             statusIndicatorId,
-            logBuffers(registrationId, logFileName),
+            logBuffers(registrationId, logFileName, stashedChannel),
             registrationId,
             correlationId);
 
@@ -331,7 +331,7 @@ class ClientConductor implements Agent, DriverEventsListener
                 subscription,
                 sessionId,
                 new UnsafeBufferPosition(counterValuesBuffer, subscriberPositionId),
-                logBuffers(correlationId, logFileName),
+                logBuffers(correlationId, logFileName, subscription.channel()),
                 ctx.errorHandler(),
                 sourceIdentity,
                 correlationId);
@@ -966,14 +966,14 @@ class ClientConductor implements Agent, DriverEventsListener
         }
     }
 
-    private LogBuffers logBuffers(final long registrationId, final String logFileName)
+    private LogBuffers logBuffers(final long registrationId, final String logFileName, final String channel)
     {
         LogBuffers logBuffers = logBuffersByIdMap.get(registrationId);
         if (null == logBuffers)
         {
             logBuffers = logBuffersFactory.map(logFileName);
 
-            if (ctx.preTouchMappedMemory())
+            if (ctx.preTouchMappedMemory() && !channel.contains("sparse=true"))
             {
                 logBuffers.preTouch();
             }

@@ -550,12 +550,14 @@ private:
         }
     }
 
-    inline std::shared_ptr<LogBuffers> getLogBuffers(std::int64_t registrationId, const std::string& logFilename)
+    inline std::shared_ptr<LogBuffers> getLogBuffers(
+        std::int64_t registrationId, const std::string& logFilename, const std::string& channel)
     {
         auto it = m_logBuffersByRegistrationId.find(registrationId);
         if (it == m_logBuffersByRegistrationId.end())
         {
-            auto logBuffers = std::make_shared<LogBuffers>(logFilename.c_str(), m_preTouchMappedMemory);
+            auto touch = m_preTouchMappedMemory && channel.find(std::string("sparse=true")) == std::string::npos;
+            auto logBuffers = std::make_shared<LogBuffers>(logFilename.c_str(), touch);
             m_logBuffersByRegistrationId.insert(std::pair<std::int64_t, LogBuffersDefn>(registrationId, logBuffers));
 
             return logBuffers;

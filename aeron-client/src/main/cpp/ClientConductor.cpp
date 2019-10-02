@@ -578,7 +578,7 @@ void ClientConductor::onNewPublication(
         state.m_sessionId = sessionId;
         state.m_publicationLimitCounterId = publicationLimitCounterId;
         state.m_channelStatusId = channelStatusIndicatorId;
-        state.m_buffers = getLogBuffers(originalRegistrationId, logFileName);
+        state.m_buffers = getLogBuffers(originalRegistrationId, logFileName, state.m_channel);
         state.m_originalRegistrationId = originalRegistrationId;
 
         CallbackGuard callbackGuard(m_isInCallback);
@@ -606,7 +606,7 @@ void ClientConductor::onNewExclusivePublication(
         state.m_sessionId = sessionId;
         state.m_publicationLimitCounterId = publicationLimitCounterId;
         state.m_channelStatusId = channelStatusIndicatorId;
-        state.m_buffers = getLogBuffers(originalRegistrationId, logFileName);
+        state.m_buffers = getLogBuffers(originalRegistrationId, logFileName, state.m_channel);
         state.m_originalRegistrationId = originalRegistrationId;
 
         CallbackGuard callbackGuard(m_isInCallback);
@@ -832,7 +832,7 @@ void ClientConductor::onAvailableImage(
                 subscriptionRegistrationId,
                 sourceIdentity,
                 subscriberPosition,
-                getLogBuffers(correlationId, logFilename),
+                getLogBuffers(correlationId, logFilename, entry.m_channel),
                 m_errorHandler);
 
             CallbackGuard callbackGuard(m_isInCallback);

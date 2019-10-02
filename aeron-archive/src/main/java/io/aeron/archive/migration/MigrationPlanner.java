@@ -28,7 +28,7 @@ import java.util.List;
  * A step need not be a complete operation. A series of operations may be broken down in steps and
  * included with the same minimum version.
  */
-public class MigrationSupplier
+public class MigrationPlanner
 {
     private static final ArrayList<MigrationStep> ALL_MIGRATION_STEPS = new ArrayList<>();
 
@@ -38,7 +38,7 @@ public class MigrationSupplier
         // as migrations are added, they are added to the static list in order of operation
     }
 
-    public static List<MigrationStep> createMigration(final int version)
+    public static List<MigrationStep> createPlan(final int version)
     {
         final List<MigrationStep> steps = new ArrayList<>();
 

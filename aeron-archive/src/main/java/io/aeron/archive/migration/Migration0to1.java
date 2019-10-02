@@ -46,7 +46,7 @@ public class Migration0to1 implements MigrationStep
     @Override
     public String toString()
     {
-        return "to " + MINIMUM_VERSION + " Major " + SemanticVersion.major(MINIMUM_VERSION) + " Minor " +
-            SemanticVersion.minor(MINIMUM_VERSION) + " Patch " + SemanticVersion.patch(MINIMUM_VERSION);
+        return "to " + minimumVersion() + " Major " + SemanticVersion.major(minimumVersion()) + " Minor " +
+            SemanticVersion.minor(minimumVersion()) + " Patch " + SemanticVersion.patch(minimumVersion());
     }
 }

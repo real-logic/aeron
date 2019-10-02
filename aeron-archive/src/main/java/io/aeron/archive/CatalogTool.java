@@ -22,7 +22,7 @@ import io.aeron.archive.codecs.RecordingDescriptorEncoder;
 import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorHeaderEncoder;
 import io.aeron.archive.migration.MigrationStep;
-import io.aeron.archive.migration.MigrationSupplier;
+import io.aeron.archive.migration.MigrationPlanner;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
@@ -161,7 +161,7 @@ public class CatalogTool
             {
                 try (ArchiveMarkFile markFile = openMarkFileReadWrite())
                 {
-                    final List<MigrationStep> steps = MigrationSupplier.createMigration(markFile.decoder().version());
+                    final List<MigrationStep> steps = MigrationPlanner.createPlan(markFile.decoder().version());
 
                     for (final MigrationStep step : steps)
                     {

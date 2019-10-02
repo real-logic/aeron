@@ -16,6 +16,7 @@
 package io.aeron.archive.migration;
 
 import io.aeron.archive.ArchiveMarkFile;
+import io.aeron.archive.Catalog;
 
 import java.io.File;
 
@@ -23,5 +24,5 @@ public interface MigrationStep
 {
     int minimumVersion();
 
-    void migrate(ArchiveMarkFile markFile, File archiveDir);
+    void migrate(ArchiveMarkFile markFile, Catalog catalog, File archiveDir);
 }

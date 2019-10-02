@@ -16,31 +16,133 @@
 package io.aeron.archive.migration;
 
 import io.aeron.archive.ArchiveMarkFile;
+import io.aeron.archive.Catalog;
+import io.aeron.archive.codecs.RecordingDescriptorDecoder;
+import io.aeron.archive.codecs.RecordingDescriptorEncoder;
+import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
+import io.aeron.archive.codecs.RecordingDescriptorHeaderEncoder;
+import io.aeron.logbuffer.LogBufferDescriptor;
+import org.agrona.AsciiEncoding;
 import org.agrona.CloseHelper;
 import org.agrona.SemanticVersion;
+import org.agrona.collections.ArrayUtil;
 
 import java.io.File;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
+
+import static io.aeron.archive.Catalog.INVALID;
 
 public class Migration0to1 implements MigrationStep
 {
     private static final int MINIMUM_VERSION = SemanticVersion.compose(1, 0, 0);
+
+    private File archiveDir;
 
     public int minimumVersion()
     {
         return MINIMUM_VERSION;
     }
 
-    public void migrate(final ArchiveMarkFile markFile, final File archiveDir)
+    public void migrate(final ArchiveMarkFile markFile, final Catalog catalog, final File archiveDir)
     {
         final FileChannel migrationTimestampFile = MigrationUtils.createMigrationTimestampFile(
-            archiveDir, markFile.decoder().version(), MINIMUM_VERSION);
+            archiveDir, markFile.decoder().version(), minimumVersion());
 
-        // TODO: rename segment files based on start position of each file
+        catalog.forEach(
+            (headerEncoder, headerDecoder, encoder, decoder) ->
+            {
+                final String version0Prefix = decoder.recordingId() + "-";
+                final String version0Suffix = ".rec";
+                String[] segmentFiles =
+                    archiveDir.list((dir, name) -> name.startsWith(version0Prefix) && name.endsWith(version0Suffix));
 
-        markFile.encoder().version(MINIMUM_VERSION);
+                if (null == segmentFiles)
+                {
+                    segmentFiles = ArrayUtil.EMPTY_STRING_ARRAY;
+                }
+
+                migrateRecording(
+                    archiveDir,
+                    segmentFiles,
+                    version0Prefix,
+                    version0Prefix,
+                    headerEncoder,
+                    headerDecoder,
+                    encoder,
+                    decoder);
+            });
+
+        markFile.encoder().version(minimumVersion());
 
         CloseHelper.close(migrationTimestampFile);
+    }
+
+    public void migrateRecording(
+        final File archiveDir,
+        final String[] segmentFiles,
+        final String prefix,
+        final String suffix,
+        final RecordingDescriptorHeaderEncoder headerEncoder,
+        final RecordingDescriptorHeaderDecoder headerDecoder,
+        final RecordingDescriptorEncoder encoder,
+        final RecordingDescriptorDecoder decoder)
+    {
+        final long recordingId = decoder.recordingId();
+        final int positionBitsToShift = LogBufferDescriptor.positionBitsToShift(decoder.segmentFileLength());
+
+        if (headerDecoder.valid() == INVALID)
+        {
+            return;
+        }
+
+        for (final String filename : segmentFiles)
+        {
+            final int length = filename.length();
+            final int offset = prefix.length();
+            final int remaining = length - offset - suffix.length();
+            final int segmentIndex;
+
+            if (remaining > 0)
+            {
+                try
+                {
+                    segmentIndex = AsciiEncoding.parseIntAscii(filename, offset, remaining);
+                }
+                catch (final Exception ignore)
+                {
+                    System.err.println(
+                        "(recordingId=" + recordingId + ") ERR: malformed recording filename:" + filename);
+                    return;
+                }
+
+                final long segmentPosition = segmentIndex << positionBitsToShift;
+                final String newFilename = prefix + segmentPosition + suffix;
+
+                final Path sourcePath = new File(archiveDir, filename).toPath();
+                final Path targetPath = sourcePath.resolveSibling(newFilename);
+
+                System.out.println("(recordingId=" + recordingId + ") renaming " + sourcePath + " -> " + targetPath);
+
+                try
+                {
+                    Files.move(sourcePath, targetPath);
+                    Files.setLastModifiedTime(targetPath, FileTime.fromMillis(System.currentTimeMillis()));
+                }
+                catch (final Exception ex)
+                {
+                    System.err.println(
+                        "(recordingId=" + recordingId + ") ERR: could not rename filename: " +
+                        sourcePath + " -> " + targetPath);
+                    ex.printStackTrace(System.err);
+                    return;
+                }
+            }
+        }
+
+        System.out.println("(recordingId=" + recordingId + ") OK");
     }
 
     @Override

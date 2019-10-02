@@ -70,7 +70,7 @@ import static org.agrona.BitUtil.align;
  *  +---------------------------------------------------------------+
  *  |                          Reserved                             |
  *  +---------------------------------------------------------------+
- *  |                Recording Descriptor (< 1024)                  |
+ *  |             Recording Descriptor (less than 1024)             |
  *  |                                                              ...
  * ...                                                              |
  *  +---------------------------------------------------------------+
@@ -80,10 +80,10 @@ import static org.agrona.BitUtil.align;
  *  +---------------------------------------------------------------+
  * </pre>
  */
-class Catalog implements AutoCloseable
+public class Catalog implements AutoCloseable
 {
     @FunctionalInterface
-    interface CatalogEntryProcessor
+    public interface CatalogEntryProcessor
     {
         void accept(
             RecordingDescriptorHeaderEncoder headerEncoder,
@@ -100,7 +100,7 @@ class Catalog implements AutoCloseable
     static final long MAX_ENTRIES = calculateMaxEntries(Integer.MAX_VALUE, DEFAULT_RECORD_LENGTH);
     static final long DEFAULT_MAX_ENTRIES = 8 * 1024;
     static final byte VALID = 1;
-    static final byte INVALID = 0;
+    public static final byte INVALID = 0;
 
     private final RecordingDescriptorHeaderDecoder descriptorHeaderDecoder = new RecordingDescriptorHeaderDecoder();
     private final RecordingDescriptorHeaderEncoder descriptorHeaderEncoder = new RecordingDescriptorHeaderEncoder();
@@ -280,12 +280,12 @@ class Catalog implements AutoCloseable
         }
     }
 
-    int maxEntries()
+    public int maxEntries()
     {
         return maxRecordingId + 1;
     }
 
-    int countEntries()
+    public int countEntries()
     {
         return (int)nextRecordingId;
     }
@@ -410,7 +410,7 @@ class Catalog implements AutoCloseable
                     RecordingDescriptorHeaderDecoder.validEncodingOffset()) == VALID;
     }
 
-    int forEach(final CatalogEntryProcessor consumer)
+    public int forEach(final CatalogEntryProcessor consumer)
     {
         int count = 0;
         long recordingId = 0L;

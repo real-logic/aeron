@@ -159,14 +159,15 @@ public class CatalogTool
 
             if (readContinueAnswer())
             {
-                try (ArchiveMarkFile markFile = openMarkFileReadWrite())
+                try (ArchiveMarkFile markFile = openMarkFileReadWrite();
+                    Catalog catalog = openCatalog())
                 {
                     final List<MigrationStep> steps = MigrationPlanner.createPlan(markFile.decoder().version());
 
                     for (final MigrationStep step : steps)
                     {
                         System.out.println("Migration step " + step.toString());
-                        step.migrate(markFile, archiveDir);
+                        step.migrate(markFile, catalog, archiveDir);
                     }
                 }
             }

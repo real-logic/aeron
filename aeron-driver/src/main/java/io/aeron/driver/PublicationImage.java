@@ -769,7 +769,7 @@ public class PublicationImage
                 break;
 
             case LINGER:
-                if ((timeOfLastStateChangeNs + imageLivenessTimeoutNs) - timeNs < 0)
+                if (hasNoSubscribeables() || ((timeOfLastStateChangeNs + imageLivenessTimeoutNs) - timeNs < 0))
                 {
                     state = State.DONE;
                     conductor.cleanupImage(this);
@@ -799,6 +799,11 @@ public class PublicationImage
         }
 
         return true;
+    }
+
+    private boolean hasNoSubscribeables()
+    {
+        return subscriberPositions.length == 0;
     }
 
     private boolean isFlowControlUnderRun(final long packetPosition)

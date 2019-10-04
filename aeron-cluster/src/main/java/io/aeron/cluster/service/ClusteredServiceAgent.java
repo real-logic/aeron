@@ -287,6 +287,11 @@ class ClusteredServiceAgent implements Agent, Cluster
         return consensusModuleProxy.tryClaim(length + SESSION_HEADER_LENGTH, bufferClaim, headerBuffer);
     }
 
+    public void reset()
+    {
+        idleStrategy.reset();
+    }
+
     public void idle()
     {
         checkForClockTick();

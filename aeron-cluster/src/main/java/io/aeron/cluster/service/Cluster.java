@@ -23,6 +23,7 @@ import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.IdleStrategy;
 
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
@@ -30,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Interface for a {@link ClusteredService} to interact with cluster hosting it.
  */
-public interface Cluster
+public interface Cluster extends IdleStrategy
 {
     enum Role
     {
@@ -272,6 +273,11 @@ public interface Cluster
      * @see BufferClaim#abort()
      */
     long tryClaim(int length, BufferClaim bufferClaim);
+
+    /**
+     * Reset idle strategy.
+     */
+    void reset();
 
     /**
      * Should be called by the service when it experiences back-pressure on egress, closing sessions, making

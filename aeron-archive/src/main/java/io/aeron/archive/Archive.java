@@ -473,8 +473,8 @@ public class Archive implements AutoCloseable
                         .epochClock(epochClock)
                         .driverAgentInvoker(mediaDriverAgentInvoker)
                         .useConductorAgentInvoker(true)
-                        .awaitingIdleStrategy(new YieldingIdleStrategy())
-                        .clientLock(new NoOpLock()));
+                        .awaitingIdleStrategy(YieldingIdleStrategy.INSTANCE)
+                        .clientLock(NoOpLock.INSTANCE));
 
                 if (null == errorCounter)
                 {

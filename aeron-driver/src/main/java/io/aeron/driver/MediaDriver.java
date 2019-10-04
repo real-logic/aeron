@@ -364,7 +364,7 @@ public final class MediaDriver implements AutoCloseable
             if (observations > 0)
             {
                 final StringBuilder builder = new StringBuilder(ctx.aeronDirectoryName());
-                removeTrailingSlashes(builder);
+                IoUtil.removeTrailingSlashes(builder);
 
                 final SimpleDateFormat dateFormat = new SimpleDateFormat("-yyyy-MM-dd-HH-mm-ss-SSSZ");
                 builder.append(dateFormat.format(new Date())).append("-error.log");
@@ -380,23 +380,6 @@ public final class MediaDriver implements AutoCloseable
         catch (final Exception ex)
         {
             LangUtil.rethrowUnchecked(ex);
-        }
-    }
-
-    private static void removeTrailingSlashes(final StringBuilder builder)
-    {
-        while (builder.length() > 1)
-        {
-            final int lastCharIndex = builder.length() - 1;
-            final char c = builder.charAt(lastCharIndex);
-            if ('/' == c || '\\' == c)
-            {
-                builder.setLength(lastCharIndex);
-            }
-            else
-            {
-                break;
-            }
         }
     }
 

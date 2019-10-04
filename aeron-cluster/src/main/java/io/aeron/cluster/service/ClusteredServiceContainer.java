@@ -550,7 +550,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
                     new Aeron.Context()
                         .aeronDirectoryName(aeronDirectoryName)
                         .errorHandler(errorHandler)
-                        .awaitingIdleStrategy(new YieldingIdleStrategy())
+                        .awaitingIdleStrategy(YieldingIdleStrategy.INSTANCE)
                         .epochClock(epochClock));
 
                 ownsAeronClient = true;
@@ -582,7 +582,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 .aeron(aeron)
                 .ownsAeronClient(false)
                 .errorHandler(countedErrorHandler)
-                .lock(new NoOpLock());
+                .lock(NoOpLock.INSTANCE);
 
             if (null == shutdownSignalBarrier)
             {

@@ -66,7 +66,7 @@ public class MemoryOrderingTest
         try (Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID);
             Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
         {
-            final BusySpinIdleStrategy idleStrategy = new BusySpinIdleStrategy();
+            final BusySpinIdleStrategy idleStrategy = BusySpinIdleStrategy.INSTANCE;
 
             final Thread subscriberThread = new Thread(new Subscriber(subscription));
             subscriberThread.setDaemon(true);
@@ -117,7 +117,7 @@ public class MemoryOrderingTest
         try (Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID);
             ExclusivePublication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID))
         {
-            final BusySpinIdleStrategy idleStrategy = new BusySpinIdleStrategy();
+            final BusySpinIdleStrategy idleStrategy = BusySpinIdleStrategy.INSTANCE;
 
             final Thread subscriberThread = new Thread(new Subscriber(subscription));
             subscriberThread.setDaemon(true);
@@ -174,7 +174,7 @@ public class MemoryOrderingTest
 
         public void run()
         {
-            final BusySpinIdleStrategy idleStrategy = new BusySpinIdleStrategy();
+            final BusySpinIdleStrategy idleStrategy = BusySpinIdleStrategy.INSTANCE;
 
             while (messageNum < NUM_MESSAGES && null == failedMessage)
             {

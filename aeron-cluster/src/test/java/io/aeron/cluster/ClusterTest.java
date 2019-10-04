@@ -838,7 +838,7 @@ public class ClusterTest
         final Thread thread = new Thread(
             () ->
             {
-                final IdleStrategy idleStrategy = new YieldingIdleStrategy();
+                final IdleStrategy idleStrategy = YieldingIdleStrategy.INSTANCE;
                 cluster.msgBuffer().putStringWithoutLengthAscii(0, MSG);
 
                 while (!Thread.interrupted())

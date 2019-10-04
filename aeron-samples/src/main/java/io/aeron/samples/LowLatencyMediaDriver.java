@@ -37,9 +37,9 @@ public class LowLatencyMediaDriver
             .termBufferSparseFile(false)
             .useWindowsHighResTimer(true)
             .threadingMode(ThreadingMode.DEDICATED)
-            .conductorIdleStrategy(new BusySpinIdleStrategy())
-            .receiverIdleStrategy(new NoOpIdleStrategy())
-            .senderIdleStrategy(new NoOpIdleStrategy());
+            .conductorIdleStrategy(BusySpinIdleStrategy.INSTANCE)
+            .receiverIdleStrategy(NoOpIdleStrategy.INSTANCE)
+            .senderIdleStrategy(NoOpIdleStrategy.INSTANCE);
 
         try (MediaDriver ignored = MediaDriver.launch(ctx))
         {

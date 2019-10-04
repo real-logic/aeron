@@ -70,8 +70,8 @@ public class EmbeddedPingPong
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .threadingMode(ThreadingMode.DEDICATED)
             .conductorIdleStrategy(new BackoffIdleStrategy(1, 1, 1000, 1000))
-            .receiverIdleStrategy(new NoOpIdleStrategy())
-            .senderIdleStrategy(new NoOpIdleStrategy());
+            .receiverIdleStrategy(NoOpIdleStrategy.INSTANCE)
+            .senderIdleStrategy(NoOpIdleStrategy.INSTANCE);
 
         try (MediaDriver ignored = MediaDriver.launch(ctx);
             Aeron aeron = Aeron.connect())

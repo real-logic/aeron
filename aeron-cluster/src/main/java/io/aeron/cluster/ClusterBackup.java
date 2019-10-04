@@ -403,7 +403,7 @@ public final class ClusterBackup implements AutoCloseable
                         .errorHandler(errorHandler)
                         .epochClock(epochClock)
                         .useConductorAgentInvoker(true)
-                        .clientLock(new NoOpLock()));
+                        .clientLock(NoOpLock.INSTANCE));
 
                 if (null == errorCounter)
                 {

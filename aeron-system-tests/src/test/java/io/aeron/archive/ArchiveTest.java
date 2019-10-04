@@ -142,7 +142,7 @@ public class ArchiveTest
             new MediaDriver.Context()
                 .termBufferSparseFile(true)
                 .threadingMode(threadingMode)
-                .sharedIdleStrategy(new YieldingIdleStrategy())
+                .sharedIdleStrategy(YieldingIdleStrategy.INSTANCE)
                 .spiesSimulateConnection(true)
                 .errorHandler(Throwable::printStackTrace)
                 .dirDeleteOnShutdown(true)

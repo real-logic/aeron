@@ -28,9 +28,7 @@ import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.BitUtil;
 import org.agrona.LangUtil;
 import org.agrona.collections.ArrayUtil;
-import org.agrona.concurrent.BackoffIdleStrategy;
-import org.agrona.concurrent.ControllableIdleStrategy;
-import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.*;
 import org.agrona.concurrent.broadcast.BroadcastBufferDescriptor;
 import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 import org.agrona.concurrent.status.CountersReader;
@@ -792,6 +790,18 @@ public class Configuration
 
         switch (strategyName)
         {
+            case "org.agrona.concurrent.NoOpIdleStrategy":
+                idleStrategy = NoOpIdleStrategy.INSTANCE;
+                break;
+
+            case "org.agrona.concurrent.BusySpinIdleStrategy":
+                idleStrategy = BusySpinIdleStrategy.INSTANCE;
+                break;
+
+            case "org.agrona.concurrent.YieldingIdleStrategy":
+                idleStrategy = YieldingIdleStrategy.INSTANCE;
+                break;
+
             case DEFAULT_IDLE_STRATEGY:
                 idleStrategy = new BackoffIdleStrategy(
                     IDLE_MAX_SPINS, IDLE_MAX_YIELDS, IDLE_MIN_PARK_NS, IDLE_MAX_PARK_NS);

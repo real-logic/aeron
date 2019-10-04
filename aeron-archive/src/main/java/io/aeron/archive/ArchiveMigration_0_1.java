@@ -88,7 +88,10 @@ public class ArchiveMigration_0_1 implements ArchiveMigrationStep
         final RecordingDescriptorDecoder decoder)
     {
         final long recordingId = decoder.recordingId();
-        final int positionBitsToShift = LogBufferDescriptor.positionBitsToShift(decoder.segmentFileLength());
+        final long startPosition = decoder.startPosition();
+        final long segmentLength = decoder.segmentFileLength();
+        final int positionBitsToShift = LogBufferDescriptor.positionBitsToShift((int)segmentLength);
+        final long startSegmentPosition = startPosition - (startPosition & (segmentLength - 1));
 
         if (headerDecoder.valid() == INVALID)
         {
@@ -115,7 +118,7 @@ public class ArchiveMigration_0_1 implements ArchiveMigrationStep
                     return;
                 }
 
-                final long segmentPosition = segmentIndex << positionBitsToShift;
+                final long segmentPosition = (segmentIndex << positionBitsToShift) + startSegmentPosition;
                 final String newFilename = prefix + segmentPosition + suffix;
 
                 final Path sourcePath = new File(archiveDir, filename).toPath();

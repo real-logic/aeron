@@ -35,7 +35,9 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 
 class ReplicationSession implements Session, RecordingDescriptorConsumer
 {
-    private enum State
+    private static final String REPLICATION_ALIAS = "replication";
+
+    enum State
     {
         CONNECT,
         AWAIT_DESCRIPTOR,
@@ -352,7 +354,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         final String channel =
             builder
             .media(channelUri)
-            .alias(channelUri)
+            .alias(REPLICATION_ALIAS)
             .controlMode(CommonContext.MDC_CONTROL_MODE_MANUAL)
             .rejoin(false)
             .sessionId((int)srcReplaySessionId)

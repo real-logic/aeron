@@ -117,6 +117,13 @@ public interface Cluster extends IdleStrategy
     Role role();
 
     /**
+     * Position the log has reached in bytes as of the current message.
+     *
+     * @return position the log has reached in bytes as of the current message.
+     */
+    long logPosition();
+
+    /**
      * Get the {@link Aeron} client used by the cluster.
      *
      * @return the {@link Aeron} client used by the cluster.
@@ -167,13 +174,6 @@ public interface Cluster extends IdleStrategy
      * @return the unit of time applied to timestamps and {@link #time()}.
      */
     TimeUnit timeUnit();
-
-    /**
-     * Position the log has reached in bytes as of the current message.
-     *
-     * @return position the log has reached in bytes as of the current message.
-     */
-    long logPosition();
 
     /**
      * Schedule a timer for a given deadline and provide a correlation id to identify the timer when it expires or

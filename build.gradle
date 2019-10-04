@@ -26,6 +26,7 @@ plugins {
     id 'com.github.johnrengelman.shadow' version '5.2.0' apply false
     id 'biz.aQute.bnd.builder' version '5.0.1' apply false
     id "com.github.ben-manes.versions" version "0.28.0"
+    id 'org.asciidoctor.convert' version '1.6.0' apply false
 }
 
 defaultTasks 'clean', 'build'
@@ -661,9 +662,11 @@ project(':aeron-agent') {
 project(':aeron-samples') {
     apply plugin: 'maven-publish'
     apply plugin: 'signing'
+    apply plugin: 'org.asciidoctor.convert'
 
     dependencies {
         api project(':aeron-archive')
+        api project(':aeron-cluster')
         implementation "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
     }
 
@@ -693,6 +696,10 @@ project(':aeron-samples') {
 
     signing {
         sign publishing.publications.aeronSamples
+    }
+
+    asciidoctor {
+        attributes 'aeronVersion': "${aeronVersion}"
     }
 }
 

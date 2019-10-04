@@ -21,6 +21,8 @@ import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.*;
 
+import java.util.Arrays;
+
 /**
  * Session representing a connected client to the cluster.
  */
@@ -214,5 +216,18 @@ public class ClientSession
     {
         CloseHelper.close(errorHandler, responsePublication);
         responsePublication = null;
+    }
+
+    public String toString()
+    {
+        return "ClientSession{" +
+            "id=" + id +
+            ", responseStreamId=" + responseStreamId +
+            ", responseChannel='" + responseChannel + '\'' +
+            ", encodedPrincipal=" + Arrays.toString(encodedPrincipal) +
+            ", clusteredServiceAgent=" + clusteredServiceAgent +
+            ", responsePublication=" + responsePublication +
+            ", isClosing=" + isClosing +
+            '}';
     }
 }

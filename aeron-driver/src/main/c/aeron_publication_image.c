@@ -665,8 +665,9 @@ void aeron_publication_image_on_time_event(
 
         case AERON_PUBLICATION_IMAGE_STATUS_LINGER:
         {
-            if (now_ns >
-                (image->conductor_fields.time_of_last_status_change_ns + image->conductor_fields.liveness_timeout_ns))
+            if (aeron_publication_image_has_no_subscribables(image) ||
+                (now_ns >
+                (image->conductor_fields.time_of_last_status_change_ns + image->conductor_fields.liveness_timeout_ns)))
             {
                 image->conductor_fields.status = AERON_PUBLICATION_IMAGE_STATUS_DONE;
             }
@@ -692,6 +693,8 @@ extern void aeron_publication_image_schedule_status_message(
     aeron_publication_image_t *image, int64_t now_ns, int64_t sm_position, int32_t window_length);
 
 extern bool aeron_publication_image_is_drained(aeron_publication_image_t *image);
+
+extern bool aeron_publication_image_has_no_subscribables(aeron_publication_image_t *image);
 
 extern bool aeron_publication_image_is_accepting_subscriptions(aeron_publication_image_t *image);
 

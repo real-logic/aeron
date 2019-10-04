@@ -769,7 +769,7 @@ public class PublicationImage
                 break;
 
             case LINGER:
-                if (hasNoSubscribeables() || ((timeOfLastStateChangeNs + imageLivenessTimeoutNs) - timeNs < 0))
+                if (hasNoSubscribers() || ((timeOfLastStateChangeNs + imageLivenessTimeoutNs) - timeNs < 0))
                 {
                     state = State.DONE;
                     conductor.cleanupImage(this);
@@ -801,7 +801,7 @@ public class PublicationImage
         return true;
     }
 
-    private boolean hasNoSubscribeables()
+    private boolean hasNoSubscribers()
     {
         return subscriberPositions.length == 0;
     }

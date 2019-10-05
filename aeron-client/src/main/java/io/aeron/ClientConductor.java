@@ -47,7 +47,7 @@ class ClientConductor implements Agent, DriverEventsListener
 {
     private static final long NO_CORRELATION_ID = Aeron.NULL_VALUE;
 
-    private final long closeLingerDurationMs;
+    private final long resourceLingerDurationNs;
     private final long keepAliveIntervalNs;
     private final long driverTimeoutMs;
     private final long driverTimeoutNs;
@@ -95,9 +95,9 @@ class ClientConductor implements Agent, DriverEventsListener
         driverProxy = ctx.driverProxy();
         logBuffersFactory = ctx.logBuffersFactory();
         keepAliveIntervalNs = ctx.keepAliveIntervalNs();
+        resourceLingerDurationNs = ctx.resourceLingerDurationNs();
         driverTimeoutMs = ctx.driverTimeoutMs();
         driverTimeoutNs = MILLISECONDS.toNanos(driverTimeoutMs);
-        closeLingerDurationMs = NANOSECONDS.toMillis(ctx.closeLingerDurationNs());
         interServiceTimeoutNs = ctx.interServiceTimeoutNs();
         defaultAvailableImageHandler = ctx.availableImageHandler();
         defaultUnavailableImageHandler = ctx.unavailableImageHandler();
@@ -160,7 +160,7 @@ class ClientConductor implements Agent, DriverEventsListener
                         Thread.sleep(IDLE_SLEEP_MS);
                     }
 
-                    Thread.sleep(closeLingerDurationMs);
+                    Thread.sleep(NANOSECONDS.toMillis(ctx.closeLingerDurationNs()));
                 }
                 catch (final InterruptedException ignore)
                 {
@@ -1151,7 +1151,7 @@ class ClientConductor implements Agent, DriverEventsListener
         for (int lastIndex = lingeringResources.size() - 1, i = lastIndex; i >= 0; i--)
         {
             final ManagedResource resource = lingeringResources.get(i);
-            if ((resource.timeOfLastStateChange() + ctx.resourceLingerDurationNs()) - nowNs < 0)
+            if ((resource.timeOfLastStateChange() + resourceLingerDurationNs) - nowNs < 0)
             {
                 ArrayListUtil.fastUnorderedRemove(lingeringResources, i, lastIndex--);
                 resource.delete();

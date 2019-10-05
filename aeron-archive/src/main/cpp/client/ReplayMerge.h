@@ -38,11 +38,11 @@ class ReplayMerge
 public:
     enum State : std::int8_t
     {
-        AWAIT_INITIAL_RECORDING_POSITION,
+        AWAIT_RECORDING_POSITION,
         AWAIT_REPLAY,
         AWAIT_CATCH_UP,
-        AWAIT_CURRENT_RECORDING_POSITION,
-        AWAIT_STOP_REPLAY,
+        AWAIT_LIVE_JOIN,
+        STOP_REPLAY,
         MERGED,
         CLOSED
     };
@@ -81,8 +81,8 @@ public:
 
         switch (m_state)
         {
-            case State::AWAIT_INITIAL_RECORDING_POSITION:
-                workCount += awaitInitialRecordingPosition();
+            case State::AWAIT_RECORDING_POSITION:
+                workCount += awaitRecordingPosition();
                 break;
 
             case State::AWAIT_REPLAY:
@@ -93,12 +93,12 @@ public:
                 workCount += awaitCatchUp();
                 break;
 
-            case State::AWAIT_CURRENT_RECORDING_POSITION:
-                workCount += awaitCurrentRecordingPosition();
+            case State::AWAIT_LIVE_JOIN:
+                workCount += awaitLiveJoin();
                 break;
 
-            case State::AWAIT_STOP_REPLAY:
-                workCount += awaitStopReplay();
+            case State::STOP_REPLAY:
+                workCount += stopReplay();
                 break;
 
             default:
@@ -174,7 +174,7 @@ private:
     const std::int64_t m_liveAddThreshold;
     const std::int64_t m_replayRemoveThreshold;
 
-    State m_state = AWAIT_INITIAL_RECORDING_POSITION;
+    State m_state = AWAIT_RECORDING_POSITION;
     std::shared_ptr<Image> m_image = nullptr;
     std::int64_t m_activeCorrelationId = aeron::NULL_VALUE;
     std::int64_t m_initialMaxPosition = aeron::NULL_VALUE;
@@ -196,15 +196,17 @@ private:
 
     inline bool shouldStopAndRemoveReplay(std::int64_t position)
     {
-        return m_nextTargetPosition > m_initialMaxPosition &&
-            m_isLiveAdded && (m_nextTargetPosition - position) <= m_replayRemoveThreshold;
+        return m_isLiveAdded &&
+            m_nextTargetPosition > m_initialMaxPosition &&
+            (m_nextTargetPosition - position) <= m_replayRemoveThreshold &&
+            m_image->activeTransportCount() >= 2;
     }
 
-    int awaitInitialRecordingPosition();
+    int awaitRecordingPosition();
     int awaitReplay();
     int awaitCatchUp();
-    int awaitCurrentRecordingPosition();
-    int awaitStopReplay();
+    int awaitLiveJoin();
+    int stopReplay();
 
     static bool pollForResponse(AeronArchive& archive, std::int64_t correlationId);
 };

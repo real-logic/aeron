@@ -27,15 +27,15 @@
             <validValue name="RECORDING_UNKNOWN" description="Recording id was unknown.">2</validValue>
             <validValue name="SUBSCRIPTION_UNKNOWN" description="Subscription id was unknown.">3</validValue>
         </enum>
-        <enum name="SourceLocation" encodingType="uint8" description="Source location for recorded stream.">
+        <enum name="SourceLocation" encodingType="int32" description="Source location for recorded stream.">
             <validValue name="LOCAL" description="Archive is local to driver.">0</validValue>
             <validValue name="REMOTE" description="Archive is remote to driver.">1</validValue>
         </enum>
-        <enum name="BooleanType" encodingType="uint8" description="Language independent boolean type.">
+        <enum name="BooleanType" encodingType="int32" description="Language independent boolean type.">
             <validValue name="FALSE" description="Language independent boolean false.">0</validValue>
             <validValue name="TRUE" description="Language independent boolean true.">1</validValue>
         </enum>
-        <enum name="RecordingTransitionType" encodingType="uint8" sinceVersion="3"
+        <enum name="RecordingTransitionType" encodingType="int32" sinceVersion="3"
               description="Recording lifecycle transition events.">
             <validValue name="START" description="Recording has started for a stream.">0</validValue>
             <validValue name="STOP" description="Recording has stopped for a stream.">1</validValue>
@@ -275,7 +275,7 @@
         <field name="pseudoIndex"          id="3" type="int32"/>
         <field name="subscriptionCount"    id="4" type="int32"/>
         <field name="applyStreamId"        id="5" type="BooleanType"/>
-        <field name="streamId"             id="6" type="int32" offset="28"/>
+        <field name="streamId"             id="6" type="int32"/>
         <data  name="channel"              id="7" type="varAsciiEncoding"/>
     </sbe:message>
 

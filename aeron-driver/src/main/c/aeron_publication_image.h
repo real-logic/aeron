@@ -222,7 +222,7 @@ inline bool aeron_publication_image_is_drained(aeron_publication_image_t *image)
     return true;
 }
 
-inline bool aeron_publication_image_has_no_subscribables(aeron_publication_image_t *image)
+inline bool aeron_publication_image_has_no_subscribers(aeron_publication_image_t *image)
 {
     return (0 == image->conductor_fields.subscribable.length);
 }

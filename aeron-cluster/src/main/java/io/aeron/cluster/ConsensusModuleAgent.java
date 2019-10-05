@@ -50,6 +50,7 @@ import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
+import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.MARK_FILE_UPDATE_INTERVAL_NS;
 import static org.agrona.BitUtil.findNextPositivePowerOfTwo;
 
 class ConsensusModuleAgent implements Agent, MemberStatusListener
@@ -71,6 +72,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private long lastAppendedPosition = 0;
     private long timeOfLastLogUpdateNs = 0;
     private long timeOfLastAppendPositionNs = 0;
+    private long timeOfLastMarkFileUpdateNs;
     private long timeNs;
     private int pendingServiceMessageHeadOffset = 0;
     private int uncommittedServiceMessages = 0;
@@ -1807,7 +1809,12 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             archive.checkForErrorResponse();
         }
 
-        markFile.updateActivityTimestamp(nowMs);
+        if (nowNs >= (timeOfLastMarkFileUpdateNs + MARK_FILE_UPDATE_INTERVAL_NS))
+        {
+            markFile.updateActivityTimestamp(nowMs);
+            timeOfLastMarkFileUpdateNs = nowMs;
+        }
+
         workCount += processRedirectSessions(redirectSessions, nowNs);
         workCount += processRejectedSessions(rejectedSessions, nowNs);
 

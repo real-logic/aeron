@@ -33,6 +33,7 @@ import org.agrona.concurrent.status.StatusIndicator;
 import java.io.File;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Supplier;
 
@@ -144,6 +145,11 @@ public final class ClusteredServiceContainer implements AutoCloseable
      */
     public static class Configuration
     {
+        /**
+         * Update interval for cluster mark file.
+         */
+        public static final long MARK_FILE_UPDATE_INTERVAL_NS = TimeUnit.SECONDS.toNanos(1);
+
         /**
          * Identity for a clustered service. Services should be numbered from 0 and be contiguous.
          */
@@ -369,7 +375,14 @@ public final class ClusteredServiceContainer implements AutoCloseable
             return Integer.getInteger(SNAPSHOT_STREAM_ID_PROP_NAME, SNAPSHOT_STREAM_ID_DEFAULT);
         }
 
+        /**
+         * Default {@link IdleStrategy} to be employed for cluster agents.
+         */
         public static final String DEFAULT_IDLE_STRATEGY = "org.agrona.concurrent.BackoffIdleStrategy";
+
+        /**
+         * {@link IdleStrategy} to be employed for cluster agents.
+         */
         public static final String CLUSTER_IDLE_STRATEGY_PROP_NAME = "aeron.cluster.idle.strategy";
 
         /**

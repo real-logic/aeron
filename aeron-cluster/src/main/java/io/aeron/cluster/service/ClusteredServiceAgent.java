@@ -39,22 +39,26 @@ import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
+import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.MARK_FILE_UPDATE_INTERVAL_NS;
 import static io.aeron.cluster.service.ClusteredServiceContainer.SNAPSHOT_TYPE_ID;
 import static java.util.Collections.unmodifiableCollection;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
 class ClusteredServiceAgent implements Agent, Cluster
 {
+    static final long MARK_FILE_UPDATE_INTERVAL_MS = TimeUnit.NANOSECONDS.toMillis(MARK_FILE_UPDATE_INTERVAL_NS);
+
+    private boolean isServiceActive;
+    private volatile boolean isAbort;
     private final int serviceId;
     private int memberId = NULL_VALUE;
     private long ackId = 0;
+    private long timeOfLastMarkFileUpdateMs;
     private long cachedTimeMs;
     private long clusterTime;
     private long clusterLogPosition = NULL_POSITION;
     private long terminationPosition = NULL_POSITION;
     private long roleChangePosition = NULL_POSITION;
-    private boolean isServiceActive;
-    private volatile boolean isAbort;
 
     private final AeronArchive.Context archiveCtx;
     private final ClusteredServiceContainer.Context ctx;
@@ -915,7 +919,11 @@ class ClusteredServiceAgent implements Agent, Cluster
                 }
             }
 
-            markFile.updateActivityTimestamp(nowMs);
+            if (nowMs >= (timeOfLastMarkFileUpdateMs + MARK_FILE_UPDATE_INTERVAL_MS))
+            {
+                markFile.updateActivityTimestamp(nowMs);
+                timeOfLastMarkFileUpdateMs = nowMs;
+            }
 
             return true;
         }

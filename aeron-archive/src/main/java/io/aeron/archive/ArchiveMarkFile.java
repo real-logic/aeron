@@ -55,7 +55,7 @@ public class ArchiveMarkFile implements AutoCloseable
         final EpochClock epochClock,
         final long timeoutMs)
     {
-        this.markFile = new MarkFile(
+        markFile = new MarkFile(
             file,
             file.exists(),
             MarkFileHeaderDecoder.versionEncodingOffset(),
@@ -73,7 +73,7 @@ public class ArchiveMarkFile implements AutoCloseable
             },
             null);
 
-        this.buffer = markFile.buffer();
+        buffer = markFile.buffer();
 
         headerEncoder.wrap(buffer, 0);
         headerDecoder.wrap(buffer, 0, MarkFileHeaderDecoder.BLOCK_LENGTH, MarkFileHeaderDecoder.SCHEMA_VERSION);
@@ -122,7 +122,7 @@ public class ArchiveMarkFile implements AutoCloseable
             versionCheck,
             logger);
 
-        this.buffer = markFile.buffer();
+        buffer = markFile.buffer();
 
         headerEncoder.wrap(buffer, 0);
         headerDecoder.wrap(buffer, 0, MarkFileHeaderDecoder.BLOCK_LENGTH, MarkFileHeaderDecoder.SCHEMA_VERSION);
@@ -131,11 +131,6 @@ public class ArchiveMarkFile implements AutoCloseable
     public void close()
     {
         CloseHelper.close(markFile);
-    }
-
-    public void force()
-    {
-        markFile.mappedByteBuffer().force();
     }
 
     public void signalReady()

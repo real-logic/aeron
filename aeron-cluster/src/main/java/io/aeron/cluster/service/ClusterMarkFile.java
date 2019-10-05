@@ -201,13 +201,11 @@ public class ClusterMarkFile implements AutoCloseable
     public void signalReady()
     {
         markFile.signalReady(AeronCluster.Configuration.SEMANTIC_VERSION);
-        markFile.mappedByteBuffer().force();
     }
 
     public void signalFailedStart()
     {
         markFile.signalReady(VERSION_FAILED);
-        markFile.mappedByteBuffer().force();
     }
 
     public void updateActivityTimestamp(final long nowMs)
@@ -254,7 +252,7 @@ public class ClusterMarkFile implements AutoCloseable
 
                 if (null != logger)
                 {
-                    logger.println("WARNING: Existing errors saved to: " + errorLogFilename);
+                    logger.println("WARNING: existing errors saved to: " + errorLogFilename);
                 }
 
                 try (FileOutputStream out = new FileOutputStream(errorLogFilename))

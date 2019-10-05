@@ -21,7 +21,6 @@ import io.aeron.Image;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.exceptions.ConcurrentConcludeException;
-import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
@@ -1434,14 +1433,14 @@ public class Archive implements AutoCloseable
         }
     }
 
-    static int segmentFileIndex(final long startPosition, final long position, final int segmentFileLength)
+    static long segmentFilePosition(final long position, final int segmentFileLength)
     {
-        return (int)((position - startPosition) >> LogBufferDescriptor.positionBitsToShift(segmentFileLength));
+        return (position - (position & (segmentFileLength - 1)));
     }
 
-    static String segmentFileName(final long recordingId, final int segmentIndex)
+    static String segmentFileName(final long recordingId, final long segmentPosition)
     {
-        return recordingId + "-" + segmentIndex + Configuration.RECORDING_SEGMENT_POSTFIX;
+        return recordingId + "-" + segmentPosition + Configuration.RECORDING_SEGMENT_POSTFIX;
     }
 
     static FileChannel channelForDirectorySync(final File directory, final int fileSyncLevel)

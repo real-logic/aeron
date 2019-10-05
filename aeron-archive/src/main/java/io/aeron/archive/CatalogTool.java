@@ -311,7 +311,7 @@ public class CatalogTool
         final File maxSegmentFile;
 
         long stopPosition = decoder.stopPosition();
-        int maxSegmentIndex = Aeron.NULL_VALUE;
+        long maxSegmentPosition = Aeron.NULL_VALUE;
 
         if (NULL_POSITION == stopPosition)
         {
@@ -334,9 +334,9 @@ public class CatalogTool
                 {
                     try
                     {
-                        maxSegmentIndex = Math.max(
-                            AsciiEncoding.parseIntAscii(filename, offset, remaining),
-                            maxSegmentIndex);
+                        maxSegmentPosition = Math.max(
+                            AsciiEncoding.parseLongAscii(filename, offset, remaining),
+                            maxSegmentPosition);
                     }
                     catch (final Exception ignore)
                     {
@@ -348,7 +348,7 @@ public class CatalogTool
                 }
             }
 
-            if (maxSegmentIndex < 0)
+            if (maxSegmentPosition < 0)
             {
                 System.err.println(
                     "(recordingId=" + recordingId + ") ERR: no recording segment files");
@@ -356,11 +356,10 @@ public class CatalogTool
                 return;
             }
 
-            maxSegmentFile = new File(archiveDir, segmentFileName(recordingId, maxSegmentIndex));
+            maxSegmentFile = new File(archiveDir, segmentFileName(recordingId, maxSegmentPosition));
             stopSegmentOffset = Catalog.recoverStopOffset(maxSegmentFile, segmentFileLength);
 
-            final long recordingLength =
-                startSegmentOffset + (maxSegmentIndex * (long)segmentFileLength) + stopSegmentOffset;
+            final long recordingLength = maxSegmentPosition + stopSegmentOffset - startSegmentOffset;
 
             stopPosition = startPosition + recordingLength;
 
@@ -373,8 +372,8 @@ public class CatalogTool
             final long dataLength = startSegmentOffset + recordingLength;
 
             stopSegmentOffset = dataLength & (segmentFileLength - 1);
-            maxSegmentIndex = (int)((recordingLength - startSegmentOffset - stopSegmentOffset) / segmentFileLength);
-            maxSegmentFile = new File(archiveDir, segmentFileName(recordingId, maxSegmentIndex));
+            maxSegmentPosition = stopPosition - (stopPosition & (segmentFileLength - 1));
+            maxSegmentFile = new File(archiveDir, segmentFileName(recordingId, maxSegmentPosition));
         }
 
         if (!maxSegmentFile.exists())

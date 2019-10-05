@@ -202,9 +202,9 @@ public class CatalogTest
         final long newRecordingId = newRecording();
 
         new File(archiveDir, segmentFileName(newRecordingId, 0)).createNewFile();
-        new File(archiveDir, segmentFileName(newRecordingId, 1)).createNewFile();
-        new File(archiveDir, segmentFileName(newRecordingId, 2)).createNewFile();
-        final File segmentFile = new File(archiveDir, segmentFileName(newRecordingId, 3));
+        new File(archiveDir, segmentFileName(newRecordingId, SEGMENT_LENGTH)).createNewFile();
+        new File(archiveDir, segmentFileName(newRecordingId, 2 * SEGMENT_LENGTH)).createNewFile();
+        final File segmentFile = new File(archiveDir, segmentFileName(newRecordingId, 3 * SEGMENT_LENGTH));
 
         try (FileChannel log = FileChannel.open(segmentFile.toPath(), READ, WRITE, CREATE))
         {

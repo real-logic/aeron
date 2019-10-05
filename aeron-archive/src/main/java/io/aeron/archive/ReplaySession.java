@@ -39,7 +39,6 @@ import java.nio.file.attribute.FileAttribute;
 import java.util.EnumSet;
 
 import static io.aeron.archive.Archive.Configuration.MAX_BLOCK_LENGTH;
-import static io.aeron.archive.Archive.segmentFileIndex;
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
@@ -80,9 +79,9 @@ class ReplaySession implements Session, AutoCloseable
     private long replayPosition;
     private long stopPosition;
     private long replayLimit;
+    private long segmentFilePosition;
     private int termOffset;
     private int termBaseSegmentOffset;
-    private int segmentFileIndex;
     private final int streamId;
     private final int termLength;
     private final int segmentLength;
@@ -159,7 +158,7 @@ class ReplaySession implements Session, AutoCloseable
             }
         }
 
-        segmentFileIndex = segmentFileIndex(startPosition, fromPosition, segmentLength);
+        segmentFilePosition = Archive.segmentFilePosition(fromPosition, segmentLength);
         replayPosition = fromPosition;
         replayLimit = fromPosition + replayLength;
 
@@ -439,7 +438,7 @@ class ReplaySession implements Session, AutoCloseable
         if (termBaseSegmentOffset == segmentLength)
         {
             closeRecordingSegment();
-            segmentFileIndex++;
+            segmentFilePosition += segmentLength;
             openRecordingSegment();
             termBaseSegmentOffset = 0;
         }
@@ -456,7 +455,7 @@ class ReplaySession implements Session, AutoCloseable
     {
         if (null == segmentFile)
         {
-            final String segmentFileName = segmentFileName(recordingId, segmentFileIndex);
+            final String segmentFileName = segmentFileName(recordingId, segmentFilePosition);
             segmentFile = new File(archiveDir, segmentFileName);
 
             if (!segmentFile.exists())

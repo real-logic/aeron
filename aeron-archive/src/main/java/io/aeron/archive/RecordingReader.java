@@ -31,15 +31,14 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
 import java.util.EnumSet;
 
-import static io.aeron.archive.Archive.segmentFileIndex;
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
-import static io.aeron.logbuffer.FrameDescriptor.*;
+import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.RESERVED_VALUE_OFFSET;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
-import static java.nio.file.StandardOpenOption.*;
+import static java.nio.file.StandardOpenOption.READ;
 
 class RecordingReader implements AutoCloseable
 {
@@ -56,9 +55,9 @@ class RecordingReader implements AutoCloseable
 
     private long replayPosition;
     private long replayLimit;
+    private long segmentFilePosition;
     private int termOffset;
     private int termBaseSegmentOffset;
-    private int segmentFileIndex;
     private boolean isDone = false;
 
     RecordingReader(
@@ -95,7 +94,7 @@ class RecordingReader implements AutoCloseable
         final int segmentOffset = (int)(fromPosition - startTermBasePosition) & (segmentLength - 1);
         final int termId = ((int)(fromPosition >> positionBitsToShift) + recordingSummary.initialTermId);
 
-        segmentFileIndex = segmentFileIndex(startPosition, fromPosition, segmentLength);
+        segmentFilePosition = Archive.segmentFilePosition(fromPosition, segmentLength);
         openRecordingSegment();
 
         termOffset = (int)(fromPosition & (termLength - 1));
@@ -189,7 +188,7 @@ class RecordingReader implements AutoCloseable
         if (termBaseSegmentOffset == segmentLength)
         {
             closeRecordingSegment();
-            segmentFileIndex++;
+            segmentFilePosition += segmentLength;
             openRecordingSegment();
             termBaseSegmentOffset = 0;
         }
@@ -205,7 +204,7 @@ class RecordingReader implements AutoCloseable
 
     private void openRecordingSegment()
     {
-        final String segmentFileName = segmentFileName(recordingId, segmentFileIndex);
+        final String segmentFileName = segmentFileName(recordingId, segmentFilePosition);
         final File segmentFile = new File(archiveDir, segmentFileName);
 
         if (!segmentFile.exists())

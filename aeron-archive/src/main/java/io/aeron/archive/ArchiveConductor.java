@@ -47,8 +47,7 @@ import java.util.concurrent.TimeUnit;
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.SPY_PREFIX;
 import static io.aeron.CommonContext.UDP_MEDIA;
-import static io.aeron.archive.Archive.segmentFileIndex;
-import static io.aeron.archive.Archive.segmentFileName;
+import static io.aeron.archive.Archive.*;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.ArchiveException.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
@@ -801,8 +800,8 @@ abstract class ArchiveConductor
             }
 
             final int segmentLength = summary.segmentFileLength;
-            final int segmentIndex = segmentFileIndex(startPosition, position, segmentLength);
-            final File file = new File(archiveDir, segmentFileName(recordingId, segmentIndex));
+            final long segmentPosition = segmentFilePosition(position, segmentLength);
+            final File file = new File(archiveDir, segmentFileName(recordingId, segmentPosition));
 
             final int segmentOffset = (int)(position & (segmentLength - 1));
             final int termLength = summary.termBufferLength;
@@ -841,9 +840,11 @@ abstract class ArchiveConductor
                 throw new ArchiveException(msg);
             }
 
-            for (int i = segmentIndex + 1; (i * (long)segmentLength) <= stopPosition; i++)
+            for (long filenamePosition = segmentPosition + segmentLength;
+                filenamePosition <= stopPosition;
+                filenamePosition += segmentLength)
             {
-                final File f = new File(archiveDir, segmentFileName(recordingId, i));
+                final File f = new File(archiveDir, segmentFileName(recordingId, filenamePosition));
                 if (!f.delete())
                 {
                     final String msg = "failed to delete " + file;
@@ -1366,9 +1367,8 @@ abstract class ArchiveConductor
         final long correlationId)
     {
         final long fromPosition = position == NULL_POSITION ? recordingSummary.startPosition : position;
-        final int segmentFileIndex = segmentFileIndex(
-            recordingSummary.startPosition, fromPosition, recordingSummary.segmentFileLength);
-        final File segmentFile = new File(archiveDir, segmentFileName(recordingId, segmentFileIndex));
+        final long segmentFilePosition = segmentFilePosition(fromPosition, recordingSummary.segmentFileLength);
+        final File segmentFile = new File(archiveDir, segmentFileName(recordingId, segmentFilePosition));
 
         if (!segmentFile.exists())
         {

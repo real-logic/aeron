@@ -36,10 +36,10 @@ public class ArchiveTest
     public void shouldGenerateRecordingName()
     {
         final long recordingId = 1L;
-        final int segmentIndex = 2;
-        final String expected = "1-2.rec";
+        final long segmentPosition = 2 * 64 * 1024;
+        final String expected = "1-" + (2 * 64 * 1024) + ".rec";
 
-        final String actual = Archive.segmentFileName(recordingId, segmentIndex);
+        final String actual = Archive.segmentFileName(recordingId, segmentPosition);
 
         assertThat(actual, is(expected));
     }

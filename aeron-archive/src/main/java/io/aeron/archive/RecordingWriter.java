@@ -53,8 +53,8 @@ class RecordingWriter implements BlockHandler
     private final FileChannel archiveDirChannel;
     private final File archiveDir;
 
+    private long segmentPosition;
     private int segmentOffset;
-    private int segmentIndex;
     private FileChannel recordingFileChannel;
 
     private boolean isClosed = false;
@@ -78,7 +78,7 @@ class RecordingWriter implements BlockHandler
         final long joinPosition = image.joinPosition();
         final long startTermBasePosition = startPosition - (startPosition & (image.termBufferLength() - 1));
         segmentOffset = (int)(joinPosition - startTermBasePosition) & (segmentLength - 1);
-        segmentIndex = Archive.segmentFileIndex(startPosition, joinPosition, segmentLength);
+        segmentPosition = Archive.segmentFilePosition(joinPosition, segmentLength);
     }
 
     public void onBlock(
@@ -150,7 +150,7 @@ class RecordingWriter implements BlockHandler
 
     private void openRecordingSegmentFile()
     {
-        final File file = new File(archiveDir, Archive.segmentFileName(recordingId, segmentIndex));
+        final File file = new File(archiveDir, Archive.segmentFileName(recordingId, segmentPosition));
 
         RandomAccessFile recordingFile = null;
         try
@@ -175,7 +175,7 @@ class RecordingWriter implements BlockHandler
     {
         CloseHelper.close(recordingFileChannel);
         segmentOffset = 0;
-        segmentIndex++;
+        segmentPosition += segmentLength;
 
         openRecordingSegmentFile();
     }

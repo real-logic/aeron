@@ -716,7 +716,7 @@ class Catalog implements AutoCloseable
                 segmentFiles = ArrayUtil.EMPTY_STRING_ARRAY;
             }
 
-            int maxSegmentIndex = -1;
+            long maxSegmentPosition = -1;
             for (final String filename : segmentFiles)
             {
                 final int length = filename.length();
@@ -727,9 +727,9 @@ class Catalog implements AutoCloseable
                 {
                     try
                     {
-                        maxSegmentIndex = Math.max(
-                            AsciiEncoding.parseIntAscii(filename, offset, remaining),
-                            maxSegmentIndex);
+                        maxSegmentPosition = Math.max(
+                            AsciiEncoding.parseLongAscii(filename, offset, remaining),
+                            maxSegmentPosition);
                     }
                     catch (final Exception ignore)
                     {
@@ -737,19 +737,18 @@ class Catalog implements AutoCloseable
                 }
             }
 
-            if (maxSegmentIndex < 0)
+            if (maxSegmentPosition < 0)
             {
                 encoder.stopPosition(decoder.startPosition());
             }
             else
             {
-                final File maxSegmentFile = new File(archiveDir, segmentFileName(recordingId, maxSegmentIndex));
+                final File maxSegmentFile = new File(archiveDir, segmentFileName(recordingId, maxSegmentPosition));
                 final int segmentFileLength = decoder.segmentFileLength();
                 final long stopOffset = recoverStopOffset(maxSegmentFile, segmentFileLength);
                 final int termBufferLength = decoder.termBufferLength();
                 final long startPosition = decoder.startPosition();
-                final long recordingLength =
-                    (startPosition & (termBufferLength - 1)) + (maxSegmentIndex * (long)segmentFileLength) + stopOffset;
+                final long recordingLength = maxSegmentPosition + stopOffset - startPosition;
                 encoder.stopPosition(startPosition + recordingLength);
             }
 

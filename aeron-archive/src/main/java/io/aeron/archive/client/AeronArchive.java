@@ -1194,7 +1194,7 @@ public class AeronArchive implements AutoCloseable
      * directly and no longer require the replay from the source.
      * <p>
      * Errors will be reported asynchronously and can be checked for with {@link AeronArchive#pollForErrorResponse()}
-     * or {@link AeronArchive#checkForErrorResponse()}.
+     * or {@link AeronArchive#checkForErrorResponse()}. Follow progress with {@link RecordingTransitionAdapter}.
      *
      * @param srcRecordingId     recording id which must exist in the source archive.
      * @param dstRecordingId     recording to extend in the destination, otherwise {@link io.aeron.Aeron#NULL_VALUE}.

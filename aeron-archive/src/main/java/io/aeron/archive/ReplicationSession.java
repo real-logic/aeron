@@ -21,6 +21,7 @@ import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.client.ControlResponsePoller;
 import io.aeron.archive.client.RecordingDescriptorConsumer;
 import io.aeron.archive.codecs.ControlResponseCode;
+import io.aeron.archive.codecs.RecordingTransitionType;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.exceptions.TimeoutException;
 import org.agrona.CloseHelper;
@@ -212,11 +213,10 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         final String originalChannel,
         final String sourceIdentity)
     {
-        if (srcRecordingId != recordingId)
-        {
-            state(State.DONE);
-            throw new IllegalStateException("invalid recording id " + recordingId + " expected " + srcRecordingId);
-        }
+        replayPosition = startPosition;
+        this.stopPosition = stopPosition;
+        replayStreamId = streamId;
+        activeCorrelationId = NULL_VALUE;
 
         dstRecordingId = catalog.addNewRecording(
             startPosition,
@@ -233,27 +233,22 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             originalChannel,
             sourceIdentity);
 
-        controlSession.attemptSendTransition(replicationId, dstRecordingId, NULL_VALUE, startPosition, REPLICATE);
+        notifyTransition(startPosition, REPLICATE);
 
         if (liveMerge && NULL_POSITION != stopPosition)
         {
             state(State.DONE);
-            final String message = "cannot live merge without active source recording";
-            controlSession.sendErrorResponse(this.correlationId, message, controlResponseProxy);
-            throw new ArchiveException(message);
+            final ArchiveException ex = new ArchiveException("cannot live merge without active source recording");
+            error(ex);
+            throw ex;
         }
 
         State nextState = State.AWAIT_REPLAY;
         if (startPosition == stopPosition)
         {
-            controlSession.attemptSendTransition(replicationId, dstRecordingId, NULL_VALUE, stopPosition, SYNC);
+            notifyTransition(stopPosition, SYNC);
             nextState = State.DONE;
         }
-
-        replayPosition = startPosition;
-        this.stopPosition = stopPosition;
-        replayStreamId = streamId;
-        activeCorrelationId = NULL_VALUE;
 
         state(nextState);
     }
@@ -355,7 +350,6 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                 {
                     if (liveMerge)
                     {
-                        state(State.DONE);
                         throw new ArchiveException("cannot live merge without active source recording");
                     }
 
@@ -401,16 +395,15 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
             if (hasResponse(poller))
             {
+                State nexState = State.AWAIT_REPLAY;
                 stopPosition = poller.relevantId();
                 if (replayPosition == stopPosition)
                 {
-                    controlSession.attemptSendTransition(replicationId, dstRecordingId, NULL_VALUE, stopPosition, SYNC);
-                    state(State.DONE);
+                    notifyTransition(stopPosition, SYNC);
+                    nexState = State.DONE;
                 }
-                else
-                {
-                    state(State.AWAIT_REPLAY);
-                }
+
+                state(nexState);
             }
             else if (epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))
             {
@@ -526,7 +519,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         {
             if (position == stopPosition)
             {
-                controlSession.attemptSendTransition(replicationId, dstRecordingId, NULL_VALUE, position, SYNC);
+                notifyTransition(position, SYNC);
             }
 
             state(State.DONE);
@@ -534,14 +527,6 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         }
 
         return workCount;
-    }
-
-    private void error(final Throwable ex)
-    {
-        if (!controlSession.controlPublication().isConnected())
-        {
-            controlSession.sendErrorResponse(correlationId, ex.getMessage(), controlResponseProxy);
-        }
     }
 
     private boolean hasResponse(final ControlResponsePoller poller)
@@ -558,6 +543,21 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         }
 
         return false;
+    }
+
+    private void error(final Throwable ex)
+    {
+        if (!controlSession.controlPublication().isConnected())
+        {
+            controlSession.sendErrorResponse(correlationId, ex.getMessage(), controlResponseProxy);
+        }
+    }
+
+    private void notifyTransition(final long position, final RecordingTransitionType recordingTransitionType)
+    {
+        final long subscriptionId = null != recordingSubscription ? recordingSubscription.registrationId() : NULL_VALUE;
+        controlSession.attemptSendTransition(
+            replicationId, dstRecordingId, subscriptionId, position, recordingTransitionType);
     }
 
     private void state(final State newState)

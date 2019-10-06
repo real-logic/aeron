@@ -27,6 +27,8 @@ import static io.aeron.logbuffer.ControlledFragmentHandler.Action.*;
 /**
  * Encapsulate the polling, decoding, and dispatching of recording transition events for a session plus the
  * asynchronous events to check for errors.
+ *
+ * @see RecordingTransitionType
  */
 public class RecordingTransitionAdapter
 {

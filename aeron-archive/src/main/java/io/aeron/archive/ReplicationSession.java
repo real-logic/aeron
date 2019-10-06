@@ -342,6 +342,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
             if (hasResponse(poller))
             {
+                State nextState = State.AWAIT_REPLAY;
                 final long recordingPosition = poller.relevantId();
                 if (NULL_POSITION == recordingPosition)
                 {
@@ -350,12 +351,10 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                         throw new ArchiveException("cannot live merge without active source recording");
                     }
 
-                    state(State.AWAIT_STOP_POSITION);
+                    nextState = State.AWAIT_STOP_POSITION;
                 }
-                else
-                {
-                    state(State.AWAIT_REPLAY);
-                }
+
+                state(nextState);
             }
             else if (epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))
             {
@@ -454,8 +453,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     {
         final ChannelUri channelUri = ChannelUri.parse(replicationChannel);
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder();
-        final String channel =
-            builder
+        final String channel = builder
             .media(channelUri)
             .alias(REPLICATION_ALIAS)
             .controlMode(CommonContext.MDC_CONTROL_MODE_MANUAL)

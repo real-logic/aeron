@@ -46,6 +46,11 @@ void termination_hook(void *state)
     AERON_PUT_ORDERED(running, false);
 }
 
+bool termination_validator(void *state, const char *data, int length)
+{
+    return true;
+}
+
 inline bool is_running()
 {
     bool result;
@@ -117,6 +122,12 @@ int main(int argc, char **argv)
     if (aeron_driver_context_set_driver_termination_hook(context, termination_hook, NULL) < 0)
     {
         fprintf(stderr, "ERROR: context set termination hook (%d) %s\n", aeron_errcode(), aeron_errmsg());
+        goto cleanup;
+    }
+
+    if (aeron_driver_context_set_driver_termination_validator(context, termination_validator, NULL) < 0)
+    {
+        fprintf(stderr, "ERROR: context set termination validator (%d) %s\n", aeron_errcode(), aeron_errmsg());
         goto cleanup;
     }
 

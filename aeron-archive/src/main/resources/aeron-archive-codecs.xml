@@ -39,9 +39,10 @@
               description="Recording lifecycle transition events.">
             <validValue name="START" description="Recording has started for a stream.">0</validValue>
             <validValue name="STOP" description="Recording has stopped for a stream.">1</validValue>
-            <validValue name="EXTEND" description="Recording has started extending for a stream.">2</validValue>
-            <validValue name="REPLICATE" description="Recording descriptor has been replicated.">3</validValue>
-            <validValue name="MERGE" description="Recording has merged with live stream.">4</validValue>
+            <validValue name="EXTEND" description="Recording has started extending.">2</validValue>
+            <validValue name="REPLICATE" description="Recording descriptor replicated from source archive.">3</validValue>
+            <validValue name="MERGE" description="Recording merged with live stream after replay.">4</validValue>
+            <validValue name="SYNC" description="Recording synchronised with source archive.">5</validValue>
         </enum>
         <type name="time_t" primitiveType="int64" description="Epoch time in milliseconds since 1 Jan 1970 UTC."/>
         <type name="version_t" primitiveType="int32" presence="optional" nullValue="0" minValue="2" maxValue="16777215"

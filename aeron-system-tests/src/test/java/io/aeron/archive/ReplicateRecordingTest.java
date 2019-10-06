@@ -26,6 +26,7 @@ import org.agrona.CloseHelper;
 import org.agrona.SystemUtil;
 import org.agrona.collections.MutableLong;
 import org.agrona.collections.MutableReference;
+import org.agrona.collections.ObjectHashSet;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.After;
 import org.junit.Before;
@@ -202,8 +203,15 @@ public class ReplicateRecordingTest
         awaitTransition(transitionTypeRef, adapter);
         assertEquals(RecordingTransitionType.EXTEND, transitionTypeRef.get());
 
+        final ObjectHashSet<RecordingTransitionType> transitionEventsSet = new ObjectHashSet<>();
         awaitTransition(transitionTypeRef, adapter);
-        assertEquals(RecordingTransitionType.STOP, transitionTypeRef.get());
+        transitionEventsSet.add(transitionTypeRef.get());
+
+        awaitTransition(transitionTypeRef, adapter);
+        transitionEventsSet.add(transitionTypeRef.get());
+
+        assertTrue(transitionEventsSet.contains(RecordingTransitionType.STOP));
+        assertTrue(transitionEventsSet.contains(RecordingTransitionType.SYNC));
     }
 
     @Test(timeout = 10_000L)

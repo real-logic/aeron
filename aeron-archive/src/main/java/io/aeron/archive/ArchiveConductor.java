@@ -900,7 +900,7 @@ abstract class ArchiveConductor
         {
             catalog.recordingStopped(recordingId, session.recordedPosition(), epochClock.time());
 
-            session.controlSession().attemptSendRecordingTransition(
+            session.controlSession().attemptSendTransition(
                 session.correlationId(),
                 recordingId,
                 session.image().subscription().registrationId(),
@@ -1128,7 +1128,7 @@ abstract class ArchiveConductor
         recordingSessionByIdMap.put(recordingId, session);
         recorder.addSession(session);
 
-        controlSession.attemptSendRecordingTransition(
+        controlSession.attemptSendTransition(
             correlationId,
             recordingId,
             image.subscription().registrationId(),
@@ -1184,7 +1184,7 @@ abstract class ArchiveConductor
         catalog.extendRecording(recordingId, controlSession.sessionId(), correlationId, image.sessionId());
         recorder.addSession(session);
 
-        controlSession.attemptSendRecordingTransition(
+        controlSession.attemptSendTransition(
             correlationId,
             recordingId,
             image.subscription().registrationId(),

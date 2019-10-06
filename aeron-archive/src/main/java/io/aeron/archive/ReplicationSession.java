@@ -21,7 +21,6 @@ import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.client.ControlResponsePoller;
 import io.aeron.archive.client.RecordingDescriptorConsumer;
 import io.aeron.archive.codecs.ControlResponseCode;
-import io.aeron.archive.codecs.RecordingTransitionType;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.exceptions.TimeoutException;
 import org.agrona.CloseHelper;
@@ -32,6 +31,8 @@ import java.util.concurrent.TimeUnit;
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static io.aeron.archive.codecs.RecordingTransitionType.REPLICATE;
+import static io.aeron.archive.codecs.RecordingTransitionType.SYNC;
 
 class ReplicationSession implements Session, RecordingDescriptorConsumer
 {
@@ -41,11 +42,12 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     {
         CONNECT,
         AWAIT_DESCRIPTOR,
+        AWAIT_RECORDING_POSITION,
+        AWAIT_STOP_POSITION,
         AWAIT_REPLAY,
         EXTEND,
         AWAIT_REPLICATION,
         REPLICATE,
-        CLEANUP,
         DONE
     }
 
@@ -123,7 +125,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
     public void abort()
     {
-        this.state(State.CLEANUP);
+        this.state(State.DONE);
     }
 
     public void close()
@@ -156,6 +158,14 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                     workCount += awaitDescriptor();
                     break;
 
+                case AWAIT_RECORDING_POSITION:
+                    workCount += awaitRecordingPosition();
+                    break;
+
+                case AWAIT_STOP_POSITION:
+                    workCount += awaitStopPosition();
+                    break;
+
                 case AWAIT_REPLAY:
                     workCount += awaitReplay();
                     break;
@@ -171,15 +181,12 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                 case REPLICATE:
                     workCount += replicate();
                     break;
-
-                case CLEANUP:
-                    workCount += cleanup();
-                    break;
             }
         }
         catch (final Throwable ex)
         {
-            state(State.CLEANUP);
+            controlSession.sendErrorResponse(correlationId, ex.getMessage(), controlResponseProxy);
+            state(State.DONE);
             error(ex);
             throw ex;
         }
@@ -207,7 +214,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     {
         if (srcRecordingId != recordingId)
         {
-            state(State.CLEANUP);
+            state(State.DONE);
             throw new IllegalStateException("invalid recording id " + recordingId + " expected " + srcRecordingId);
         }
 
@@ -226,15 +233,29 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             originalChannel,
             sourceIdentity);
 
+        controlSession.attemptSendTransition(replicationId, dstRecordingId, NULL_VALUE, startPosition, REPLICATE);
+
+        if (liveMerge && NULL_POSITION != stopPosition)
+        {
+            state(State.DONE);
+            final String message = "cannot live merge without active source recording";
+            controlSession.sendErrorResponse(this.correlationId, message, controlResponseProxy);
+            throw new ArchiveException(message);
+        }
+
+        State nextState = State.AWAIT_REPLAY;
+        if (startPosition == stopPosition)
+        {
+            controlSession.attemptSendTransition(replicationId, dstRecordingId, NULL_VALUE, stopPosition, SYNC);
+            nextState = State.DONE;
+        }
+
         replayPosition = startPosition;
         this.stopPosition = stopPosition;
         replayStreamId = streamId;
         activeCorrelationId = NULL_VALUE;
 
-        controlSession.attemptSendRecordingTransition(
-            replicationId, dstRecordingId, NULL_VALUE, startPosition, RecordingTransitionType.REPLICATE);
-
-        state(State.AWAIT_REPLAY);
+        state(nextState);
     }
 
     private int connect()
@@ -303,6 +324,103 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         return workCount;
     }
 
+    private int awaitRecordingPosition()
+    {
+        int workCount = 0;
+
+        if (NULL_VALUE == activeCorrelationId)
+        {
+            final long correlationId = aeron.nextCorrelationId();
+            if (srcArchive.archiveProxy().getRecordingPosition(
+                srcRecordingId, correlationId, srcArchive.controlSessionId()))
+            {
+                timeOfLastActionMs = epochClock.time();
+                activeCorrelationId = correlationId;
+                workCount += 1;
+            }
+            else if (epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))
+            {
+                throw new TimeoutException("failed to send recording position request");
+            }
+        }
+        else
+        {
+            final ControlResponsePoller poller = srcArchive.controlResponsePoller();
+            workCount += poller.poll();
+
+            if (hasResponse(poller))
+            {
+                final long recordingPosition = poller.relevantId();
+                if (NULL_POSITION == recordingPosition)
+                {
+                    if (liveMerge)
+                    {
+                        state(State.DONE);
+                        throw new ArchiveException("cannot live merge without active source recording");
+                    }
+
+                    state(State.AWAIT_STOP_POSITION);
+                }
+                else
+                {
+                    state(State.EXTEND);
+                }
+            }
+            else if (epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))
+            {
+                throw new TimeoutException("failed to get recording position");
+            }
+        }
+
+        return workCount;
+    }
+
+    private int awaitStopPosition()
+    {
+        int workCount = 0;
+
+        if (NULL_VALUE == activeCorrelationId)
+        {
+            final long correlationId = aeron.nextCorrelationId();
+            if (srcArchive.archiveProxy().getStopPosition(
+                srcRecordingId, correlationId, srcArchive.controlSessionId()))
+            {
+                timeOfLastActionMs = epochClock.time();
+                activeCorrelationId = correlationId;
+                workCount += 1;
+            }
+            else if (epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))
+            {
+                throw new TimeoutException("failed to send stop position request");
+            }
+        }
+        else
+        {
+            final ControlResponsePoller poller = srcArchive.controlResponsePoller();
+            workCount += poller.poll();
+
+            if (hasResponse(poller))
+            {
+                stopPosition = poller.relevantId();
+                if (replayPosition == stopPosition)
+                {
+                    controlSession.attemptSendTransition(replicationId, dstRecordingId, NULL_VALUE, stopPosition, SYNC);
+                    state(State.DONE);
+                }
+                else
+                {
+                    state(State.AWAIT_REPLAY);
+                }
+            }
+            else if (epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))
+            {
+                throw new TimeoutException("failed to get stop position");
+            }
+        }
+
+        return workCount;
+    }
+
     private int awaitReplay()
     {
         int workCount = 0;
@@ -365,7 +483,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
         if (null == recordingSubscription)
         {
-            state(State.CLEANUP);
+            state(State.DONE);
         }
         else
         {
@@ -399,24 +517,23 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
         if (recordingSubscription.isClosed())
         {
-            state(State.CLEANUP);
+            state(State.DONE);
             return 1;
         }
 
-        if (image.isClosed() || image.position() == stopPosition)
+        final long position = image.position();
+        if (position == stopPosition || image.isClosed())
         {
+            if (position == stopPosition)
+            {
+                controlSession.attemptSendTransition(replicationId, dstRecordingId, NULL_VALUE, position, SYNC);
+            }
+
             state(State.DONE);
             workCount += 1;
         }
 
         return workCount;
-    }
-
-    private int cleanup()
-    {
-        state(State.DONE);
-
-        return 1;
     }
 
     private void error(final Throwable ex)

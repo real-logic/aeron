@@ -465,14 +465,14 @@ class ControlSession implements Session
         return proxy.sendSubscriptionDescriptor(controlSessionId, correlationId, subscription, this);
     }
 
-    void attemptSendRecordingTransition(
+    void attemptSendTransition(
         final long correlationId,
         final long recordingId,
         final long subscriptionId,
         final long position,
         final RecordingTransitionType recordingTransitionType)
     {
-        controlResponseProxy.attemptSendRecordingTransition(
+        controlResponseProxy.attemptSendTransition(
             controlSessionId,
             correlationId,
             recordingId,

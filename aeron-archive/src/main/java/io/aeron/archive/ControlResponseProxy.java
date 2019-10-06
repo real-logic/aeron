@@ -149,7 +149,7 @@ class ControlResponseProxy
         while (--attempts > 0);
     }
 
-    void attemptSendRecordingTransition(
+    void attemptSendTransition(
         final long controlSessionId,
         final long correlationId,
         final long recordingId,

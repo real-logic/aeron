@@ -24,19 +24,20 @@ import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.RecordingTransitionType;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.exceptions.TimeoutException;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.EpochClock;
 
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
-import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
-import static io.aeron.archive.codecs.RecordingTransitionType.REPLICATE;
-import static io.aeron.archive.codecs.RecordingTransitionType.SYNC;
+import static io.aeron.archive.codecs.RecordingTransitionType.*;
 
 class ReplicationSession implements Session, RecordingDescriptorConsumer
 {
+    private static final int LIVE_ADD_THRESHOLD = LogBufferDescriptor.TERM_MIN_LENGTH >> 2;
+    private static final int REPLAY_REMOVE_THRESHOLD = 0;
     private static final String REPLICATION_ALIAS = "replication";
 
     enum State
@@ -66,8 +67,11 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     private final long srcRecordingId;
     private long dstRecordingId;
     private int replayStreamId;
+    private int retryAttempts = 3;
+    private boolean isLiveAdded;
     private final String replicationChannel;
     private final String liveDestination;
+    private String replayDestination;
     private final EpochClock epochClock;
     private final ArchiveConductor conductor;
     private final ControlSession controlSession;
@@ -148,6 +152,12 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
         try
         {
+            if (null != recordingSubscription && recordingSubscription.isClosed())
+            {
+                state(State.DONE);
+                return 1;
+            }
+
             switch (state)
             {
                 case CONNECT:
@@ -180,6 +190,14 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
                 case REPLICATE:
                     workCount += replicate();
+                    break;
+
+                case CATCHUP:
+                    workCount += catchup();
+                    break;
+
+                case ATTEMPT_LIVE_JOIN:
+                    workCount += attemptLiveJoin();
                     break;
             }
         }
@@ -414,7 +432,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             if (srcArchive.archiveProxy().replay(
                 srcRecordingId,
                 replayPosition,
-                NULL_LENGTH,
+                Long.MAX_VALUE,
                 replicationChannel,
                 replayStreamId,
                 correlationId,
@@ -467,8 +485,8 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         }
         else
         {
-            final String destination = builder.clear().media(channelUri).endpoint(channelUri).build();
-            recordingSubscription.asyncAddDestination(destination);
+            replayDestination = builder.clear().media(channelUri).endpoint(channelUri).build();
+            recordingSubscription.asyncAddDestination(replayDestination);
             state(State.AWAIT_IMAGE);
         }
 
@@ -482,7 +500,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         image = recordingSubscription.imageBySessionId((int)srcReplaySessionId);
         if (null != image)
         {
-            state(State.REPLICATE);
+            state(null == liveDestination ? State.REPLICATE : State.CATCHUP);
             workCount += 1;
         }
         else if (epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))
@@ -497,16 +515,10 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     {
         int workCount = 0;
 
-        if (recordingSubscription.isClosed())
-        {
-            state(State.DONE);
-            return 1;
-        }
-
         final long position = image.position();
         if (position == srcStopPosition || image.isClosed())
         {
-            if (position == srcStopPosition)
+            if (position == srcStopPosition || (NULL_VALUE == srcStopPosition && image.isEndOfStream()))
             {
                 srcReplaySessionId = NULL_VALUE;
                 notifyTransition(position, SYNC);
@@ -514,6 +526,94 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
             state(State.DONE);
             workCount += 1;
+        }
+
+        return workCount;
+    }
+
+    private int catchup()
+    {
+        int workCount = 0;
+
+        if (image.isClosed())
+        {
+            throw new ArchiveException("replication image closed unexpectedly");
+        }
+
+        if (image.position() >= srcRecordingPosition)
+        {
+            state(State.ATTEMPT_LIVE_JOIN);
+            workCount += 1;
+        }
+
+        return workCount;
+    }
+
+    private int attemptLiveJoin()
+    {
+        int workCount = 0;
+
+        if (image.isClosed())
+        {
+            throw new ArchiveException("replication image closed unexpectedly");
+        }
+
+        if (NULL_VALUE == activeCorrelationId)
+        {
+            final long correlationId = aeron.nextCorrelationId();
+            if (srcArchive.archiveProxy().getRecordingPosition(
+                srcRecordingId, correlationId, srcArchive.controlSessionId()))
+            {
+                workCount += trackAction(correlationId);
+            }
+            else if (epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))
+            {
+                throw new TimeoutException("failed to send recording position request");
+            }
+        }
+        else
+        {
+            final ControlResponsePoller poller = srcArchive.controlResponsePoller();
+            workCount += poller.poll();
+
+            if (hasResponse(poller))
+            {
+                trackAction(NULL_VALUE);
+                srcRecordingPosition = poller.relevantId();
+
+                if (NULL_POSITION == srcRecordingPosition)
+                {
+                    if (null != liveDestination)
+                    {
+                        throw new ArchiveException("cannot live merge without active source recording");
+                    }
+                }
+
+                final long position = image.position();
+
+                if (shouldAddLiveDestination(position))
+                {
+                    recordingSubscription.asyncAddDestination(liveDestination);
+                    isLiveAdded = true;
+                }
+                else if (shouldStopReplay(position))
+                {
+                    recordingSubscription.asyncRemoveDestination(replayDestination);
+                    notifyTransition(position, MERGE);
+                    state(State.DONE);
+                }
+
+                workCount += 1;
+            }
+            else if (epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))
+            {
+                if (--retryAttempts == 0)
+                {
+                    throw new TimeoutException("failed to get recording position");
+                }
+
+                trackAction(NULL_VALUE);
+            }
         }
 
         return workCount;
@@ -567,6 +667,18 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             conductor.removeRecordingSubscription(recordingSubscription.registrationId());
             recordingSubscription.close();
         }
+    }
+
+    private boolean shouldAddLiveDestination(final long position)
+    {
+        return !isLiveAdded && (srcRecordingPosition - position) <= LIVE_ADD_THRESHOLD;
+    }
+
+    private boolean shouldStopReplay(final long position)
+    {
+        return isLiveAdded &&
+            (srcRecordingPosition - position) <= REPLAY_REMOVE_THRESHOLD &&
+            image.activeTransportCount() >= 2;
     }
 
     private int trackAction(final long correlationId)

@@ -131,18 +131,12 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
     public void close()
     {
-        controlSession.archiveConductor().removeReplicationSession(this);
-
         stopReplaySession();
-
-        if (null != recordingSubscription)
-        {
-            conductor.removeRecordingSubscription(recordingSubscription.registrationId());
-            recordingSubscription.close();
-        }
+        stopRecording();
 
         CloseHelper.close(asyncConnect);
         CloseHelper.close(srcArchive);
+        controlSession.archiveConductor().removeReplicationSession(this);
     }
 
     public int doWork()
@@ -560,6 +554,15 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             final long correlationId = aeron.nextCorrelationId();
             srcArchive.archiveProxy().stopReplay(srcReplaySessionId, correlationId, srcArchive.controlSessionId());
             srcReplaySessionId = NULL_VALUE;
+        }
+    }
+
+    private void stopRecording()
+    {
+        if (null != recordingSubscription)
+        {
+            conductor.removeRecordingSubscription(recordingSubscription.registrationId());
+            recordingSubscription.close();
         }
     }
 

@@ -18,9 +18,7 @@
 
 #include "AeronArchive.h"
 
-namespace aeron {
-namespace archive {
-namespace client {
+namespace aeron { namespace archive { namespace client {
 
 constexpr const std::int64_t REPLAY_MERGE_LIVE_ADD_THRESHOLD = LogBufferDescriptor::TERM_MIN_LENGTH / 4;
 constexpr const std::int64_t REPLAY_MERGE_REPLAY_REMOVE_THRESHOLD = 0;
@@ -36,17 +34,6 @@ constexpr const std::int64_t REPLAY_MERGE_REPLAY_REMOVE_THRESHOLD = 0;
 class ReplayMerge
 {
 public:
-    enum State : std::int8_t
-    {
-        AWAIT_RECORDING_POSITION,
-        AWAIT_REPLAY,
-        AWAIT_CATCH_UP,
-        AWAIT_LIVE_JOIN,
-        STOP_REPLAY,
-        MERGED,
-        CLOSED
-    };
-
     /**
      * Create a ReplayMerge to manage the merging of a replayed stream and switching to live stream as
      * appropriate.
@@ -81,20 +68,20 @@ public:
 
         switch (m_state)
         {
-            case State::AWAIT_RECORDING_POSITION:
-                workCount += awaitRecordingPosition();
+            case State::GET_RECORDING_POSITION:
+                workCount += getRecordingPosition();
                 break;
 
-            case State::AWAIT_REPLAY:
-                workCount += awaitReplay();
+            case State::REPLAY:
+                workCount += replay();
                 break;
 
-            case State::AWAIT_CATCH_UP:
-                workCount += awaitCatchUp();
+            case State::CATCHUP:
+                workCount += catchup();
                 break;
 
-            case State::AWAIT_LIVE_JOIN:
-                workCount += awaitLiveJoin();
+            case State::ATTEMPT_LIVE_JOIN:
+                workCount += attemptLiveJoin();
                 break;
 
             case State::STOP_REPLAY:
@@ -121,16 +108,6 @@ public:
     {
         doWork();
         return nullptr == m_image ? 0 : m_image->poll(fragmentHandler, fragmentLimit);
-    }
-
-    /**
-     * State of this ReplayMerge.
-     *
-     * @return state of this ReplayMerge.
-     */
-    inline State state()
-    {
-        return m_state;
     }
 
     /**
@@ -164,6 +141,17 @@ public:
     }
 
 private:
+    enum State : std::int8_t
+    {
+        GET_RECORDING_POSITION,
+        REPLAY,
+        CATCHUP,
+        ATTEMPT_LIVE_JOIN,
+        STOP_REPLAY,
+        MERGED,
+        CLOSED
+    };
+
     const std::shared_ptr<Subscription> m_subscription;
     const std::shared_ptr<AeronArchive> m_archive;
     const std::string m_replayChannel;
@@ -172,9 +160,8 @@ private:
     const std::int64_t m_recordingId;
     const std::int64_t m_startPosition;
     const std::int64_t m_liveAddThreshold;
-    const std::int64_t m_replayRemoveThreshold;
 
-    State m_state = AWAIT_RECORDING_POSITION;
+    State m_state = GET_RECORDING_POSITION;
     std::shared_ptr<Image> m_image = nullptr;
     std::int64_t m_activeCorrelationId = aeron::NULL_VALUE;
     std::int64_t m_initialMaxPosition = aeron::NULL_VALUE;
@@ -198,14 +185,14 @@ private:
     {
         return m_isLiveAdded &&
             m_nextTargetPosition > m_initialMaxPosition &&
-            (m_nextTargetPosition - position) <= m_replayRemoveThreshold &&
+            (m_nextTargetPosition - position) <= REPLAY_MERGE_REPLAY_REMOVE_THRESHOLD &&
             m_image->activeTransportCount() >= 2;
     }
 
-    int awaitRecordingPosition();
-    int awaitReplay();
-    int awaitCatchUp();
-    int awaitLiveJoin();
+    int getRecordingPosition();
+    int replay();
+    int catchup();
+    int attemptLiveJoin();
     int stopReplay();
 
     static bool pollForResponse(AeronArchive& archive, std::int64_t correlationId);

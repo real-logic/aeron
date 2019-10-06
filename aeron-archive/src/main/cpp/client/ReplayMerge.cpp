@@ -33,8 +33,7 @@ ReplayMerge::ReplayMerge(
     m_liveDestination(liveDestination),
     m_recordingId(recordingId),
     m_startPosition(startPosition),
-    m_liveAddThreshold(REPLAY_MERGE_LIVE_ADD_THRESHOLD),
-    m_replayRemoveThreshold(REPLAY_MERGE_REPLAY_REMOVE_THRESHOLD)
+    m_liveAddThreshold(REPLAY_MERGE_LIVE_ADD_THRESHOLD)
 {
     std::shared_ptr<ChannelUri> subscriptionChannelUri = ChannelUri::parse(m_subscription->channel());
 
@@ -70,7 +69,7 @@ ReplayMerge::~ReplayMerge()
     }
 }
 
-int ReplayMerge::awaitRecordingPosition()
+int ReplayMerge::getRecordingPosition()
 {
     int workCount = 0;
 
@@ -101,7 +100,7 @@ int ReplayMerge::awaitRecordingPosition()
         else
         {
             m_initialMaxPosition = m_nextTargetPosition;
-            state(State::AWAIT_REPLAY);
+            state(State::REPLAY);
         }
 
         workCount += 1;
@@ -110,7 +109,7 @@ int ReplayMerge::awaitRecordingPosition()
     return workCount;
 }
 
-int ReplayMerge::awaitReplay()
+int ReplayMerge::replay()
 {
     int workCount = 0;
 
@@ -136,14 +135,14 @@ int ReplayMerge::awaitReplay()
         m_isReplayActive = true;
         m_replaySessionId = m_archive->controlResponsePoller().relevantId();
         m_activeCorrelationId = aeron::NULL_VALUE;
-        state(State::AWAIT_CATCH_UP);
+        state(State::CATCHUP);
         workCount += 1;
     }
 
     return workCount;
 }
 
-int ReplayMerge::awaitCatchUp()
+int ReplayMerge::catchup()
 {
     int workCount = 0;
 
@@ -155,14 +154,14 @@ int ReplayMerge::awaitCatchUp()
     if (nullptr != m_image && m_image->position() >= m_nextTargetPosition)
     {
         m_activeCorrelationId = aeron::NULL_VALUE;
-        state(State::AWAIT_LIVE_JOIN);
+        state(State::ATTEMPT_LIVE_JOIN);
         workCount += 1;
     }
 
     return workCount;
 }
 
-int ReplayMerge::awaitLiveJoin()
+int ReplayMerge::attemptLiveJoin()
 {
     int workCount = 0;
 
@@ -192,7 +191,7 @@ int ReplayMerge::awaitLiveJoin()
         }
         else
         {
-            State nextState = State::AWAIT_CATCH_UP;
+            State nextState = State::CATCHUP;
 
             if (nullptr != m_image)
             {

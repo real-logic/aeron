@@ -438,11 +438,22 @@ TEST_F(AeronArchiveTest, shouldRecordThenReplayThenTruncate)
 
     const std::int32_t count = aeronArchive->listRecording(
         recordingId,
-        [&](std::int64_t controlSessionId, std::int64_t correlationId, std::int64_t recordingId1,
-            std::int64_t startTimestamp, std::int64_t stopTimestamp, std::int64_t startPosition,
-            std::int64_t newStopPosition, std::int32_t initialTermId, std::int32_t segmentFileLength,
-            std::int32_t termBufferLength, std::int32_t mtuLength, std::int32_t sessionId1, std::int32_t streamId,
-            const std::string& strippedChannel, const std::string& originalChannel, const std::string& sourceIdentity)
+        [&](std::int64_t controlSessionId,
+            std::int64_t correlationId,
+            std::int64_t recordingId1,
+            std::int64_t startTimestamp,
+            std::int64_t stopTimestamp,
+            std::int64_t startPosition,
+            std::int64_t newStopPosition,
+            std::int32_t initialTermId,
+            std::int32_t segmentFileLength,
+            std::int32_t termBufferLength,
+            std::int32_t mtuLength,
+            std::int32_t sessionId1,
+            std::int32_t streamId,
+            const std::string& strippedChannel,
+            const std::string& originalChannel,
+            const std::string& sourceIdentity)
         {
             EXPECT_EQ(startPosition, newStopPosition);
         });
@@ -559,8 +570,7 @@ struct SubscriptionDescriptor
         std::int64_t correlationId,
         std::int64_t subscriptionId,
         std::int32_t streamId,
-        const std::string& strippedChannel)
-        :
+        const std::string& strippedChannel) :
         m_controlSessionId(controlSessionId),
         m_correlationId(correlationId),
         m_subscriptionId(subscriptionId),
@@ -633,7 +643,7 @@ TEST_F(AeronArchiveTest, shouldListRegisteredRecordingSubscriptions)
 
 TEST_F(AeronArchiveTest, shouldMergeFromReplayToLive)
 {
-    const std::size_t termLength = 64*1024;
+    const std::size_t termLength = 64 * 1024;
     const std::string messagePrefix = "Message ";
     const std::size_t minMessagesPerTerm = termLength / (messagePrefix.length() + DataFrameHeader::LENGTH);
     const std::string controlEndpoint = "localhost:43265";
@@ -755,7 +765,6 @@ TEST_F(AeronArchiveTest, shouldMergeFromReplayToLive)
 
         EXPECT_EQ(received, totalMessageCount);
         EXPECT_TRUE(replayMerge.isMerged());
-        EXPECT_EQ(replayMerge.state(), ReplayMerge::State::MERGED);
     }
 
     aeronArchive->stopRecording(recordingSubscriptionId);

@@ -378,6 +378,7 @@ public class MultiDestinationSubscriptionTest
         }
 
         assertThat(subscription.imageCount(), is(1));
+        assertThat(subscription.imageAtIndex(0).activeTransportCount(), is(2));
         verifyFragments(fragmentHandler, numMessagesToSend);
     }
 

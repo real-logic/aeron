@@ -372,9 +372,9 @@ class ControlSession implements Session
         final long correlationId,
         final long srcRecordingId,
         final long dstRecordingId,
-        final boolean liveMerge,
         final int srcControlStreamId,
-        final String srcControlChannel)
+        final String srcControlChannel,
+        final String liveChannel)
     {
         updateState();
         if (State.ACTIVE == state)
@@ -383,9 +383,9 @@ class ControlSession implements Session
                 correlationId,
                 srcRecordingId,
                 dstRecordingId,
-                liveMerge,
                 srcControlStreamId,
                 srcControlChannel,
+                liveChannel,
                 this);
         }
     }

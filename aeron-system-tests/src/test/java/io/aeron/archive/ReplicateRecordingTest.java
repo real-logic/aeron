@@ -152,11 +152,10 @@ public class ReplicateRecordingTest
     public void shouldThrowExceptionWhenDstRecordingIdUnknown()
     {
         final long unknownId = 7L;
-        final boolean liveMerge = false;
         try
         {
             dstAeronArchive.replicate(
-                NULL_VALUE, unknownId, SRC_CONTROL_REQUEST_CHANNEL, SRC_CONTROL_STREAM_ID, liveMerge);
+                NULL_VALUE, unknownId, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
         }
         catch (final ArchiveException ex)
         {
@@ -171,7 +170,6 @@ public class ReplicateRecordingTest
     @Test(timeout = 10_000L)
     public void shouldReplicatedStoppedRecording()
     {
-        final boolean liveMerge = false;
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;
         final long srcRecordingId;
@@ -195,7 +193,7 @@ public class ReplicateRecordingTest
         final RecordingTransitionAdapter adapter = newRecordingTransitionAdapter(transitionTypeRef, dstRecordingId);
 
         dstAeronArchive.replicate(
-            srcRecordingId, NULL_VALUE, SRC_CONTROL_REQUEST_CHANNEL, SRC_CONTROL_STREAM_ID, liveMerge);
+            srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
 
         awaitTransition(transitionTypeRef, adapter);
         assertEquals(RecordingTransitionType.REPLICATE, transitionTypeRef.get());
@@ -217,7 +215,6 @@ public class ReplicateRecordingTest
     @Test(timeout = 10_000L)
     public void shouldReplicatedLiveRecording()
     {
-        final boolean liveMerge = false;
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;
         final long srcRecordingId;
@@ -238,7 +235,7 @@ public class ReplicateRecordingTest
             final RecordingTransitionAdapter adapter = newRecordingTransitionAdapter(transitionTypeRef, dstRecordingId);
 
             final long replicationId = dstAeronArchive.replicate(
-                srcRecordingId, NULL_VALUE, SRC_CONTROL_REQUEST_CHANNEL, SRC_CONTROL_STREAM_ID, liveMerge);
+                srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
 
             awaitTransition(transitionTypeRef, adapter);
             assertEquals(RecordingTransitionType.REPLICATE, transitionTypeRef.get());
@@ -266,7 +263,6 @@ public class ReplicateRecordingTest
     @Test(timeout = 10_000L)
     public void shouldReplicateMoreThanOnce()
     {
-        final boolean liveMerge = false;
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;
         final long srcRecordingId;
@@ -287,7 +283,7 @@ public class ReplicateRecordingTest
             final RecordingTransitionAdapter adapter = newRecordingTransitionAdapter(transitionTypeRef, recordingIdRef);
 
             long replicationId = dstAeronArchive.replicate(
-                srcRecordingId, NULL_VALUE, SRC_CONTROL_REQUEST_CHANNEL, SRC_CONTROL_STREAM_ID, liveMerge);
+                srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
 
             awaitTransition(transitionTypeRef, adapter);
             assertEquals(RecordingTransitionType.REPLICATE, transitionTypeRef.get());
@@ -306,7 +302,7 @@ public class ReplicateRecordingTest
             assertEquals(RecordingTransitionType.STOP, transitionTypeRef.get());
 
             replicationId = dstAeronArchive.replicate(
-                srcRecordingId, dstRecordingId, SRC_CONTROL_REQUEST_CHANNEL, SRC_CONTROL_STREAM_ID, liveMerge);
+                srcRecordingId, dstRecordingId, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
 
             awaitTransition(transitionTypeRef, adapter);
             assertEquals(RecordingTransitionType.EXTEND, transitionTypeRef.get());

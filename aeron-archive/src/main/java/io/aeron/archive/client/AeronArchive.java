@@ -1198,18 +1198,17 @@ public class AeronArchive implements AutoCloseable
      *
      * @param srcRecordingId     recording id which must exist in the source archive.
      * @param dstRecordingId     recording to extend in the destination, otherwise {@link io.aeron.Aeron#NULL_VALUE}.
-     * @param srcControlChannel  remote control channel for the source archive to instruct the replay on.
      * @param srcControlStreamId remote control stream id for the source archive to instruct the replay on.
-     * @param liveMerge          true to follow a live stream if still active after replay, otherwise false to
-     *                           replay with merging with the live stream.
+     * @param srcControlChannel  remote control channel for the source archive to instruct the replay on.
+     * @param liveChannel        channel for the live stream is a merge is required. Empty string or null for no merge.
      * @return return the replication session id which can be passed later to {@link #stopReplication(long)}.
      */
     public long replicate(
         final long srcRecordingId,
         final long dstRecordingId,
-        final String srcControlChannel,
         final int srcControlStreamId,
-        final boolean liveMerge)
+        final String srcControlChannel,
+        final String liveChannel)
     {
         lock.lock();
         try
@@ -1221,9 +1220,9 @@ public class AeronArchive implements AutoCloseable
             if (!archiveProxy.replicate(
                 srcRecordingId,
                 dstRecordingId,
-                srcControlChannel,
                 srcControlStreamId,
-                liveMerge,
+                srcControlChannel,
+                liveChannel,
                 correlationId,
                 controlSessionId))
             {

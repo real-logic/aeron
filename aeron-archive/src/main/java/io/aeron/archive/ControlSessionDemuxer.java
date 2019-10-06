@@ -467,9 +467,9 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                     correlationId,
                     replicateRequest.srcRecordingId(),
                     replicateRequest.dstRecordingId(),
-                    replicateRequest.liveMerge() == BooleanType.TRUE,
                     replicateRequest.srcControlStreamId(),
-                    replicateRequest.srcControlChannel());
+                    replicateRequest.srcControlChannel(),
+                    replicateRequest.liveChannel());
                 break;
             }
 

@@ -708,8 +708,7 @@ public class ArchiveProxy
      * @param dstRecordingId     recording to extend in the destination, otherwise {@link io.aeron.Aeron#NULL_VALUE}.
      * @param srcControlChannel  remote control channel for the source archive to instruct the replay on.
      * @param srcControlStreamId remote control stream id for the source archive to instruct the replay on.
-     * @param liveMerge          true to follow a live stream if still active after replay, otherwise false to
-     *                           replay with merging with the live stream.
+     * @param liveChannel        channel for the live stream is a merge is required. Empty string or null for no merge.
      * @param correlationId      for this request.
      * @param controlSessionId   for this request.
      * @return true if successfully offered otherwise false.
@@ -717,9 +716,9 @@ public class ArchiveProxy
     public boolean replicate(
         final long srcRecordingId,
         final long dstRecordingId,
-        final String srcControlChannel,
         final int srcControlStreamId,
-        final boolean liveMerge,
+        final String srcControlChannel,
+        final String liveChannel,
         final long correlationId,
         final long controlSessionId)
     {
@@ -735,8 +734,8 @@ public class ArchiveProxy
             .srcRecordingId(srcRecordingId)
             .dstRecordingId(dstRecordingId)
             .srcControlStreamId(srcControlStreamId)
-            .liveMerge(liveMerge ? BooleanType.TRUE : BooleanType.FALSE)
-            .srcControlChannel(srcControlChannel);
+            .srcControlChannel(srcControlChannel)
+            .liveChannel(liveChannel);
 
         return offer(replicateRequestEncoder.encodedLength());
     }

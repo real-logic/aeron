@@ -133,6 +133,8 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     {
         controlSession.archiveConductor().removeReplicationSession(this);
 
+        stopReplaySession();
+
         if (null != recordingSubscription)
         {
             conductor.removeRecordingSubscription(recordingSubscription.registrationId());
@@ -216,7 +218,6 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         replayPosition = startPosition;
         this.stopPosition = stopPosition;
         replayStreamId = streamId;
-        activeCorrelationId = NULL_VALUE;
 
         dstRecordingId = catalog.addNewRecording(
             startPosition,
@@ -278,7 +279,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             {
                 srcArchive = archive;
                 asyncConnect = null;
-                state(NULL_VALUE == dstRecordingId ? State.AWAIT_DESCRIPTOR : State.AWAIT_REPLAY);
+                state(NULL_VALUE == dstRecordingId ? State.AWAIT_DESCRIPTOR : State.AWAIT_RECORDING_POSITION);
                 workCount += 1;
             }
         }
@@ -295,10 +296,8 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             final long correlationId = aeron.nextCorrelationId();
             if (srcArchive.archiveProxy().listRecording(srcRecordingId, correlationId, srcArchive.controlSessionId()))
             {
-                timeOfLastActionMs = epochClock.time();
-                activeCorrelationId = correlationId;
+                workCount += trackAction(correlationId);
                 srcArchive.recordingDescriptorPoller().reset(correlationId, 1, this);
-                workCount += 1;
             }
             else if (epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))
             {
@@ -329,9 +328,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             if (srcArchive.archiveProxy().getRecordingPosition(
                 srcRecordingId, correlationId, srcArchive.controlSessionId()))
             {
-                timeOfLastActionMs = epochClock.time();
-                activeCorrelationId = correlationId;
-                workCount += 1;
+                workCount += trackAction(correlationId);
             }
             else if (epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))
             {
@@ -357,7 +354,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                 }
                 else
                 {
-                    state(State.EXTEND);
+                    state(State.AWAIT_REPLAY);
                 }
             }
             else if (epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))
@@ -376,12 +373,9 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         if (NULL_VALUE == activeCorrelationId)
         {
             final long correlationId = aeron.nextCorrelationId();
-            if (srcArchive.archiveProxy().getStopPosition(
-                srcRecordingId, correlationId, srcArchive.controlSessionId()))
+            if (srcArchive.archiveProxy().getStopPosition(srcRecordingId, correlationId, srcArchive.controlSessionId()))
             {
-                timeOfLastActionMs = epochClock.time();
-                activeCorrelationId = correlationId;
-                workCount += 1;
+                workCount += trackAction(correlationId);
             }
             else if (epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))
             {
@@ -430,9 +424,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                 correlationId,
                 srcArchive.controlSessionId()))
             {
-                timeOfLastActionMs = epochClock.time();
-                activeCorrelationId = correlationId;
-                workCount += 1;
+                workCount += trackAction(correlationId);
             }
             else if (epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))
             {
@@ -490,18 +482,20 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
     private int awaitReplication()
     {
+        int workCount = 0;
+
         image = recordingSubscription.imageBySessionId((int)srcReplaySessionId);
         if (null != image)
         {
             state(State.REPLICATE);
-            return 1;
+            workCount += 1;
         }
         else if (epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))
         {
-            throw new TimeoutException("failed get image for replay");
+            throw new TimeoutException("failed get replay image");
         }
 
-        return 0;
+        return workCount;
     }
 
     private int replicate()
@@ -519,6 +513,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         {
             if (position == stopPosition)
             {
+                srcReplaySessionId = NULL_VALUE;
                 notifyTransition(position, SYNC);
             }
 
@@ -560,10 +555,28 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             replicationId, dstRecordingId, subscriptionId, position, recordingTransitionType);
     }
 
+    private void stopReplaySession()
+    {
+        if (NULL_VALUE != srcReplaySessionId)
+        {
+            final long correlationId = aeron.nextCorrelationId();
+            srcArchive.archiveProxy().stopReplay(srcReplaySessionId, correlationId, srcArchive.controlSessionId());
+            srcReplaySessionId = NULL_VALUE;
+        }
+    }
+
+    private int trackAction(final long correlationId)
+    {
+        timeOfLastActionMs = epochClock.time();
+        activeCorrelationId = correlationId;
+        return 1;
+    }
+
     private void state(final State newState)
     {
         timeOfLastActionMs = epochClock.time();
         //System.out.println(timeOfLastActionMs + ": " + state + " -> " + newState);
         state = newState;
+        activeCorrelationId = NULL_VALUE;
     }
 }

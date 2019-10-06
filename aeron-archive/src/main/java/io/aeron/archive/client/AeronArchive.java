@@ -1191,7 +1191,7 @@ public class AeronArchive implements AutoCloseable
      * descriptor will be replicated.
      * <p>
      * For a source recording that is still active the replay can merge with the live stream and then follow it
-     * directly and no longer require the replay from the source.
+     * directly and no longer require the replay from the source. This would require a multicast live destination.
      * <p>
      * Errors will be reported asynchronously and can be checked for with {@link AeronArchive#pollForErrorResponse()}
      * or {@link AeronArchive#checkForErrorResponse()}. Follow progress with {@link RecordingTransitionAdapter}.
@@ -1200,7 +1200,7 @@ public class AeronArchive implements AutoCloseable
      * @param dstRecordingId     recording to extend in the destination, otherwise {@link io.aeron.Aeron#NULL_VALUE}.
      * @param srcControlStreamId remote control stream id for the source archive to instruct the replay on.
      * @param srcControlChannel  remote control channel for the source archive to instruct the replay on.
-     * @param liveChannel        channel for the live stream is a merge is required. Empty string or null for no merge.
+     * @param liveDestination    destination for the live stream if merge is required. Empty or null for no merge.
      * @return return the replication session id which can be passed later to {@link #stopReplication(long)}.
      */
     public long replicate(
@@ -1208,7 +1208,7 @@ public class AeronArchive implements AutoCloseable
         final long dstRecordingId,
         final int srcControlStreamId,
         final String srcControlChannel,
-        final String liveChannel)
+        final String liveDestination)
     {
         lock.lock();
         try
@@ -1222,7 +1222,7 @@ public class AeronArchive implements AutoCloseable
                 dstRecordingId,
                 srcControlStreamId,
                 srcControlChannel,
-                liveChannel,
+                liveDestination,
                 correlationId,
                 controlSessionId))
             {

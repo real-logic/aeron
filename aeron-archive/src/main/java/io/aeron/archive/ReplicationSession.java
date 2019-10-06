@@ -64,7 +64,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     private long dstRecordingId;
     private int replayStreamId;
     private final String replicationChannel;
-    private final String liveChannel;
+    private final String liveDestination;
     private final EpochClock epochClock;
     private final ArchiveConductor conductor;
     private final ControlSession controlSession;
@@ -83,7 +83,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         final long srcRecordingId,
         final long dstRecordingId,
         final long replicationId,
-        final String liveChannel,
+        final String liveDestination,
         final String replicationChannel,
         final RecordingSummary recordingSummary,
         final AeronArchive.Context context,
@@ -96,7 +96,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         this.replicationId = replicationId;
         this.srcRecordingId = srcRecordingId;
         this.dstRecordingId = dstRecordingId;
-        this.liveChannel = "".equals(liveChannel) ? null : liveChannel;
+        this.liveDestination = "".equals(liveDestination) ? null : liveDestination;
         this.replicationChannel = replicationChannel;
         this.aeron = context.aeron();
         this.context = context;
@@ -236,7 +236,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
         notifyTransition(startPosition, REPLICATE);
 
-        if (null != liveChannel && NULL_POSITION != stopPosition)
+        if (null != liveDestination && NULL_POSITION != stopPosition)
         {
             state(State.DONE);
             final ArchiveException ex = new ArchiveException("cannot live merge without active source recording");
@@ -346,7 +346,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                 final long recordingPosition = poller.relevantId();
                 if (NULL_POSITION == recordingPosition)
                 {
-                    if (null != liveChannel)
+                    if (null != liveDestination)
                     {
                         throw new ArchiveException("cannot live merge without active source recording");
                     }

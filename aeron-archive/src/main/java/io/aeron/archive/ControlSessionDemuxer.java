@@ -469,7 +469,7 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                     replicateRequest.dstRecordingId(),
                     replicateRequest.srcControlStreamId(),
                     replicateRequest.srcControlChannel(),
-                    replicateRequest.liveChannel());
+                    replicateRequest.liveDestination());
                 break;
             }
 

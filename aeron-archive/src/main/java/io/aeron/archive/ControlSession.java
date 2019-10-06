@@ -374,7 +374,7 @@ class ControlSession implements Session
         final long dstRecordingId,
         final int srcControlStreamId,
         final String srcControlChannel,
-        final String liveChannel)
+        final String liveDestination)
     {
         updateState();
         if (State.ACTIVE == state)
@@ -385,7 +385,7 @@ class ControlSession implements Session
                 dstRecordingId,
                 srcControlStreamId,
                 srcControlChannel,
-                liveChannel,
+                liveDestination,
                 this);
         }
     }

@@ -925,7 +925,7 @@ abstract class ArchiveConductor
         final long dstRecordingId,
         final int srcControlStreamId,
         final String srcControlChannel,
-        final String liveChannel,
+        final String liveDestination,
         final ControlSession controlSession)
     {
         final boolean hasRecording = catalog.hasRecording(dstRecordingId);
@@ -951,7 +951,7 @@ abstract class ArchiveConductor
             srcRecordingId,
             dstRecordingId,
             replicationId,
-            liveChannel,
+            liveDestination,
             ctx.replicationChannel(),
             hasRecording ? recordingSummary : null,
             remoteArchiveContext,

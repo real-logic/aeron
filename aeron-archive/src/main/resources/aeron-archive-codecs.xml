@@ -373,7 +373,7 @@
         <field name="dstRecordingId"       id="4" type="int64"/>
         <field name="srcControlStreamId"   id="5" type="int32"/>
         <data  name="srcControlChannel"    id="6" type="varAsciiEncoding"/>
-        <data  name="liveChannel"          id="7" type="varAsciiEncoding"/>
+        <data  name="liveDestination"      id="7" type="varAsciiEncoding"/>
     </sbe:message>
 
     <sbe:message name="StopReplicationRequest"

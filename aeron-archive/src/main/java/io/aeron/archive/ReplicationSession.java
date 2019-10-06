@@ -45,7 +45,6 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         CONNECT,
         REPLICATE_DESCRIPTOR,
         SRC_RECORDING_POSITION,
-        SRC_STOP_POSITION,
         REPLAY,
         EXTEND,
         AWAIT_IMAGE,
@@ -67,6 +66,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     private final long srcRecordingId;
     private long dstRecordingId;
     private int replayStreamId;
+    private int replaySessionId;
     private int retryAttempts = 3;
     private boolean isLiveAdded;
     private final String replicationChannel;
@@ -172,10 +172,6 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                     workCount += srcRecordingPosition();
                     break;
 
-                case SRC_STOP_POSITION:
-                    workCount += srcStopPosition();
-                    break;
-
                 case REPLAY:
                     workCount += replay();
                     break;
@@ -230,36 +226,46 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         final String originalChannel,
         final String sourceIdentity)
     {
-        replayPosition = startPosition;
         srcStopPosition = stopPosition;
         replayStreamId = streamId;
+        replaySessionId = sessionId;
 
-        dstRecordingId = catalog.addNewRecording(
-            startPosition,
-            startPosition,
-            startTimestamp,
-            startTimestamp,
-            initialTermId,
-            segmentFileLength,
-            termBufferLength,
-            mtuLength,
-            sessionId,
-            streamId,
-            strippedChannel,
-            originalChannel,
-            sourceIdentity);
-
-        notifyTransition(startPosition, REPLICATE);
-
-        if (null != liveDestination && NULL_POSITION != stopPosition)
+        if (NULL_VALUE == dstRecordingId)
         {
-            state(State.DONE);
-            final ArchiveException ex = new ArchiveException("cannot live merge without active source recording");
-            error(ex);
-            throw ex;
+            replayPosition = startPosition;
+            dstRecordingId = catalog.addNewRecording(
+                startPosition,
+                startPosition,
+                startTimestamp,
+                startTimestamp,
+                initialTermId,
+                segmentFileLength,
+                termBufferLength,
+                mtuLength,
+                sessionId,
+                streamId,
+                strippedChannel,
+                originalChannel,
+                sourceIdentity);
+
+            notifyTransition(startPosition, REPLICATE);
         }
 
         State nextState = State.REPLAY;
+
+        if (null != liveDestination)
+        {
+            if (NULL_POSITION != stopPosition)
+            {
+                state(State.DONE);
+                final ArchiveException ex = new ArchiveException("cannot live merge without active source recording");
+                error(ex);
+                throw ex;
+            }
+
+            nextState = State.SRC_RECORDING_POSITION;
+        }
+
         if (startPosition == stopPosition)
         {
             notifyTransition(stopPosition, SYNC);
@@ -294,7 +300,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             {
                 srcArchive = archive;
                 asyncConnect = null;
-                state(NULL_VALUE == dstRecordingId ? State.REPLICATE_DESCRIPTOR : State.SRC_RECORDING_POSITION);
+                state(State.REPLICATE_DESCRIPTOR);
                 workCount += 1;
             }
         }
@@ -357,7 +363,6 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
             if (hasResponse(poller))
             {
-                State nextState = State.REPLAY;
                 srcRecordingPosition = poller.relevantId();
                 if (NULL_POSITION == srcRecordingPosition)
                 {
@@ -365,57 +370,13 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                     {
                         throw new ArchiveException("cannot live merge without active source recording");
                     }
-
-                    nextState = State.SRC_STOP_POSITION;
                 }
 
-                state(nextState);
+                state(State.REPLAY);
             }
             else if (epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))
             {
                 throw new TimeoutException("failed to get recording position");
-            }
-        }
-
-        return workCount;
-    }
-
-    private int srcStopPosition()
-    {
-        int workCount = 0;
-
-        if (NULL_VALUE == activeCorrelationId)
-        {
-            final long correlationId = aeron.nextCorrelationId();
-            if (srcArchive.archiveProxy().getStopPosition(srcRecordingId, correlationId, srcArchive.controlSessionId()))
-            {
-                workCount += trackAction(correlationId);
-            }
-            else if (epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))
-            {
-                throw new TimeoutException("failed to send stop position request");
-            }
-        }
-        else
-        {
-            final ControlResponsePoller poller = srcArchive.controlResponsePoller();
-            workCount += poller.poll();
-
-            if (hasResponse(poller))
-            {
-                State nexState = State.REPLAY;
-                srcStopPosition = poller.relevantId();
-                if (replayPosition == srcStopPosition)
-                {
-                    notifyTransition(srcStopPosition, SYNC);
-                    nexState = State.DONE;
-                }
-
-                state(nexState);
-            }
-            else if (epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))
-            {
-                throw new TimeoutException("failed to get stop position");
             }
         }
 
@@ -433,7 +394,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                 srcRecordingId,
                 replayPosition,
                 Long.MAX_VALUE,
-                replicationChannel,
+                null == liveDestination ? replicationChannel : replicationChannel + "|session-id=" + replaySessionId,
                 replayStreamId,
                 correlationId,
                 srcArchive.controlSessionId()))

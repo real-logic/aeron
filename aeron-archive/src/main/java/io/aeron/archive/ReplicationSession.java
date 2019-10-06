@@ -42,20 +42,23 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     enum State
     {
         CONNECT,
-        AWAIT_DESCRIPTOR,
-        AWAIT_RECORDING_POSITION,
-        AWAIT_STOP_POSITION,
-        AWAIT_REPLAY,
+        REPLICATE_DESCRIPTOR,
+        SRC_RECORDING_POSITION,
+        SRC_STOP_POSITION,
+        REPLAY,
         EXTEND,
-        AWAIT_REPLICATION,
+        AWAIT_IMAGE,
         REPLICATE,
+        CATCHUP,
+        ATTEMPT_LIVE_JOIN,
         DONE
     }
 
     private long activeCorrelationId = NULL_VALUE;
     private long srcReplaySessionId = NULL_VALUE;
     private long replayPosition = NULL_POSITION;
-    private long stopPosition = NULL_POSITION;
+    private long srcStopPosition = NULL_POSITION;
+    private long srcRecordingPosition = NULL_POSITION;
     private long timeOfLastActionMs;
     private final long actionTimeoutMs;
     private final long correlationId;
@@ -151,28 +154,28 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                     workCount += connect();
                     break;
 
-                case AWAIT_DESCRIPTOR:
-                    workCount += awaitDescriptor();
+                case REPLICATE_DESCRIPTOR:
+                    workCount += replicateDescriptor();
                     break;
 
-                case AWAIT_RECORDING_POSITION:
-                    workCount += awaitRecordingPosition();
+                case SRC_RECORDING_POSITION:
+                    workCount += srcRecordingPosition();
                     break;
 
-                case AWAIT_STOP_POSITION:
-                    workCount += awaitStopPosition();
+                case SRC_STOP_POSITION:
+                    workCount += srcStopPosition();
                     break;
 
-                case AWAIT_REPLAY:
-                    workCount += awaitReplay();
+                case REPLAY:
+                    workCount += replay();
                     break;
 
                 case EXTEND:
                     workCount += extend();
                     break;
 
-                case AWAIT_REPLICATION:
-                    workCount += awaitReplication();
+                case AWAIT_IMAGE:
+                    workCount += awaitImage();
                     break;
 
                 case REPLICATE:
@@ -210,7 +213,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         final String sourceIdentity)
     {
         replayPosition = startPosition;
-        this.stopPosition = stopPosition;
+        srcStopPosition = stopPosition;
         replayStreamId = streamId;
 
         dstRecordingId = catalog.addNewRecording(
@@ -238,7 +241,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             throw ex;
         }
 
-        State nextState = State.AWAIT_REPLAY;
+        State nextState = State.REPLAY;
         if (startPosition == stopPosition)
         {
             notifyTransition(stopPosition, SYNC);
@@ -273,7 +276,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             {
                 srcArchive = archive;
                 asyncConnect = null;
-                state(NULL_VALUE == dstRecordingId ? State.AWAIT_DESCRIPTOR : State.AWAIT_RECORDING_POSITION);
+                state(NULL_VALUE == dstRecordingId ? State.REPLICATE_DESCRIPTOR : State.SRC_RECORDING_POSITION);
                 workCount += 1;
             }
         }
@@ -281,7 +284,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         return workCount;
     }
 
-    private int awaitDescriptor()
+    private int replicateDescriptor()
     {
         int workCount = 0;
 
@@ -312,7 +315,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         return workCount;
     }
 
-    private int awaitRecordingPosition()
+    private int srcRecordingPosition()
     {
         int workCount = 0;
 
@@ -336,16 +339,16 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
             if (hasResponse(poller))
             {
-                State nextState = State.AWAIT_REPLAY;
-                final long recordingPosition = poller.relevantId();
-                if (NULL_POSITION == recordingPosition)
+                State nextState = State.REPLAY;
+                srcRecordingPosition = poller.relevantId();
+                if (NULL_POSITION == srcRecordingPosition)
                 {
                     if (null != liveDestination)
                     {
                         throw new ArchiveException("cannot live merge without active source recording");
                     }
 
-                    nextState = State.AWAIT_STOP_POSITION;
+                    nextState = State.SRC_STOP_POSITION;
                 }
 
                 state(nextState);
@@ -359,7 +362,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         return workCount;
     }
 
-    private int awaitStopPosition()
+    private int srcStopPosition()
     {
         int workCount = 0;
 
@@ -382,11 +385,11 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
             if (hasResponse(poller))
             {
-                State nexState = State.AWAIT_REPLAY;
-                stopPosition = poller.relevantId();
-                if (replayPosition == stopPosition)
+                State nexState = State.REPLAY;
+                srcStopPosition = poller.relevantId();
+                if (replayPosition == srcStopPosition)
                 {
-                    notifyTransition(stopPosition, SYNC);
+                    notifyTransition(srcStopPosition, SYNC);
                     nexState = State.DONE;
                 }
 
@@ -401,7 +404,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         return workCount;
     }
 
-    private int awaitReplay()
+    private int replay()
     {
         int workCount = 0;
 
@@ -466,13 +469,13 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         {
             final String destination = builder.clear().media(channelUri).endpoint(channelUri).build();
             recordingSubscription.asyncAddDestination(destination);
-            state(State.AWAIT_REPLICATION);
+            state(State.AWAIT_IMAGE);
         }
 
         return 1;
     }
 
-    private int awaitReplication()
+    private int awaitImage()
     {
         int workCount = 0;
 
@@ -501,9 +504,9 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         }
 
         final long position = image.position();
-        if (position == stopPosition || image.isClosed())
+        if (position == srcStopPosition || image.isClosed())
         {
-            if (position == stopPosition)
+            if (position == srcStopPosition)
             {
                 srcReplaySessionId = NULL_VALUE;
                 notifyTransition(position, SYNC);

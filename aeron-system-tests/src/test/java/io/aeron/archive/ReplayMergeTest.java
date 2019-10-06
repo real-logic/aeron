@@ -206,7 +206,6 @@ public class ReplayMergeTest
 
                 assertTrue(replayMerge.isMerged());
                 assertTrue(replayMerge.isLiveAdded());
-                assertEquals(ReplayMerge.State.MERGED, replayMerge.state());
                 assertThat(received.get(), is(totalMessageCount));
             }
             finally
@@ -235,5 +234,4 @@ public class ReplayMergeTest
             offer(publication, i, prefix);
         }
     }
-
 }

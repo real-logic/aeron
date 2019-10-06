@@ -39,12 +39,12 @@ public class ReplayMerge implements AutoCloseable
     private static final int LIVE_ADD_THRESHOLD = LogBufferDescriptor.TERM_MIN_LENGTH >> 2;
     private static final int REPLAY_REMOVE_THRESHOLD = 0;
 
-    public enum State
+    enum State
     {
-        AWAIT_RECORDING_POSITION,
-        AWAIT_REPLAY,
-        AWAIT_CATCH_UP,
-        AWAIT_LIVE_JOIN,
+        GET_RECORDING_POSITION,
+        REPLAY,
+        CATCHUP,
+        ATTEMPT_LIVE_JOIN,
         STOP_REPLAY,
         MERGED,
         CLOSED
@@ -58,9 +58,8 @@ public class ReplayMerge implements AutoCloseable
     private final long recordingId;
     private final long startPosition;
     private final long liveAddThreshold;
-    private final long replayRemoveThreshold;
 
-    private State state = State.AWAIT_RECORDING_POSITION;
+    private State state = State.GET_RECORDING_POSITION;
     private Image image;
     private long activeCorrelationId = Aeron.NULL_VALUE;
     private long initialMaxPosition = Aeron.NULL_VALUE;
@@ -106,7 +105,6 @@ public class ReplayMerge implements AutoCloseable
         this.recordingId = recordingId;
         this.startPosition = startPosition;
         this.liveAddThreshold = LIVE_ADD_THRESHOLD;
-        this.replayRemoveThreshold = REPLAY_REMOVE_THRESHOLD;
 
         subscription.asyncAddDestination(replayDestination);
     }
@@ -161,20 +159,20 @@ public class ReplayMerge implements AutoCloseable
 
         switch (state)
         {
-            case AWAIT_RECORDING_POSITION:
-                workCount += awaitRecordingPosition();
+            case GET_RECORDING_POSITION:
+                workCount += getRecordingPosition();
                 break;
 
-            case AWAIT_REPLAY:
-                workCount += awaitReplay();
+            case REPLAY:
+                workCount += replay();
                 break;
 
-            case AWAIT_CATCH_UP:
-                workCount += awaitCatchUp();
+            case CATCHUP:
+                workCount += catchup();
                 break;
 
-            case AWAIT_LIVE_JOIN:
-                workCount += awaitCurrentRecordingPosition();
+            case ATTEMPT_LIVE_JOIN:
+                workCount += attemptLiveJoin();
                 break;
 
             case STOP_REPLAY:
@@ -197,16 +195,6 @@ public class ReplayMerge implements AutoCloseable
     {
         doWork();
         return null == image ? 0 : image.poll(fragmentHandler, fragmentLimit);
-    }
-
-    /**
-     * Current {@link State} of this {@link ReplayMerge}.
-     *
-     * @return state of this {@link ReplayMerge}.
-     */
-    public ReplayMerge.State state()
-    {
-        return state;
     }
 
     /**
@@ -239,7 +227,7 @@ public class ReplayMerge implements AutoCloseable
         return isLiveAdded;
     }
 
-    private int awaitRecordingPosition()
+    private int getRecordingPosition()
     {
         int workCount = 0;
 
@@ -271,7 +259,7 @@ public class ReplayMerge implements AutoCloseable
             else
             {
                 initialMaxPosition = nextTargetPosition;
-                state(State.AWAIT_REPLAY);
+                state(State.REPLAY);
             }
 
             workCount += 1;
@@ -280,7 +268,7 @@ public class ReplayMerge implements AutoCloseable
         return workCount;
     }
 
-    private int awaitReplay()
+    private int replay()
     {
         int workCount = 0;
 
@@ -306,14 +294,14 @@ public class ReplayMerge implements AutoCloseable
             isReplayActive = true;
             replaySessionId = polledRelevantId(archive);
             activeCorrelationId = Aeron.NULL_VALUE;
-            state(State.AWAIT_CATCH_UP);
+            state(State.CATCHUP);
             workCount += 1;
         }
 
         return workCount;
     }
 
-    private int awaitCatchUp()
+    private int catchup()
     {
         int workCount = 0;
 
@@ -325,14 +313,14 @@ public class ReplayMerge implements AutoCloseable
         if (null != image && image.position() >= nextTargetPosition)
         {
             activeCorrelationId = Aeron.NULL_VALUE;
-            state(State.AWAIT_LIVE_JOIN);
+            state(State.ATTEMPT_LIVE_JOIN);
             workCount += 1;
         }
 
         return workCount;
     }
 
-    private int awaitCurrentRecordingPosition()
+    private int attemptLiveJoin()
     {
         int workCount = 0;
 
@@ -362,7 +350,7 @@ public class ReplayMerge implements AutoCloseable
             }
             else
             {
-                State nextState = State.AWAIT_CATCH_UP;
+                State nextState = State.CATCHUP;
 
                 if (null != image)
                 {
@@ -420,7 +408,7 @@ public class ReplayMerge implements AutoCloseable
     {
         return isLiveAdded &&
             nextTargetPosition > initialMaxPosition &&
-            (nextTargetPosition - position) <= replayRemoveThreshold &&
+            (nextTargetPosition - position) <= REPLAY_REMOVE_THRESHOLD &&
             image.activeTransportCount() >= 2;
     }
 

@@ -159,12 +159,10 @@ private:
     const std::string m_liveDestination;
     const std::int64_t m_recordingId;
     const std::int64_t m_startPosition;
-    const std::int64_t m_liveAddThreshold;
 
     State m_state = GET_RECORDING_POSITION;
     std::shared_ptr<Image> m_image = nullptr;
     std::int64_t m_activeCorrelationId = aeron::NULL_VALUE;
-    std::int64_t m_initialMaxPosition = aeron::NULL_VALUE;
     std::int64_t m_nextTargetPosition = aeron::NULL_VALUE;
     std::int64_t m_replaySessionId = aeron::NULL_VALUE;
     bool m_isLiveAdded = false;
@@ -178,13 +176,12 @@ private:
 
     inline bool shouldAddLiveDestination(std::int64_t position)
     {
-        return !m_isLiveAdded && (m_nextTargetPosition - position) <= m_liveAddThreshold;
+        return !m_isLiveAdded && (m_nextTargetPosition - position) <= REPLAY_MERGE_LIVE_ADD_THRESHOLD;
     }
 
     inline bool shouldStopAndRemoveReplay(std::int64_t position)
     {
         return m_isLiveAdded &&
-            m_nextTargetPosition > m_initialMaxPosition &&
             (m_nextTargetPosition - position) <= REPLAY_MERGE_REPLAY_REMOVE_THRESHOLD &&
             m_image->activeTransportCount() >= 2;
     }

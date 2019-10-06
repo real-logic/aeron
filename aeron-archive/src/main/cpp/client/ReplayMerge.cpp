@@ -32,8 +32,7 @@ ReplayMerge::ReplayMerge(
     m_replayDestination(replayDestination),
     m_liveDestination(liveDestination),
     m_recordingId(recordingId),
-    m_startPosition(startPosition),
-    m_liveAddThreshold(REPLAY_MERGE_LIVE_ADD_THRESHOLD)
+    m_startPosition(startPosition)
 {
     std::shared_ptr<ChannelUri> subscriptionChannelUri = ChannelUri::parse(m_subscription->channel());
 
@@ -99,7 +98,6 @@ int ReplayMerge::getRecordingPosition()
         }
         else
         {
-            m_initialMaxPosition = m_nextTargetPosition;
             state(State::REPLAY);
         }
 

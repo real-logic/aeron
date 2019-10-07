@@ -610,8 +610,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     private void signal(final long position, final RecordingSignal recordingSignal)
     {
         final long subscriptionId = null != recordingSubscription ? recordingSubscription.registrationId() : NULL_VALUE;
-        controlSession.attemptSendSignal(
-            replicationId, dstRecordingId, subscriptionId, position, recordingSignal);
+        controlSession.attemptSendSignal(replicationId, dstRecordingId, subscriptionId, position, recordingSignal);
     }
 
     private void stopReplaySession()

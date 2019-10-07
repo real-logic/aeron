@@ -42,7 +42,7 @@ class ControlResponseProxy
     private final RecordingDescriptorEncoder recordingDescriptorEncoder = new RecordingDescriptorEncoder();
     private final RecordingSubscriptionDescriptorEncoder recordingSubscriptionDescriptorEncoder =
         new RecordingSubscriptionDescriptorEncoder();
-    private final RecordingTransitionEncoder recordingTransitionEncoder = new RecordingTransitionEncoder();
+    private final RecordingSignalEventEncoder recordingSignalEventEncoder = new RecordingSignalEventEncoder();
 
     int sendDescriptor(
         final long controlSessionId,
@@ -149,16 +149,16 @@ class ControlResponseProxy
         while (--attempts > 0);
     }
 
-    void attemptSendTransition(
+    void attemptSendSignal(
         final long controlSessionId,
         final long correlationId,
         final long recordingId,
         final long subscriptionId,
         final long position,
-        final RecordingTransitionType recordingTransitionType,
+        final RecordingSignal recordingSignal,
         final Publication controlPublication)
     {
-        final int messageLength = MESSAGE_HEADER_LENGTH + RecordingTransitionEncoder.BLOCK_LENGTH;
+        final int messageLength = MESSAGE_HEADER_LENGTH + RecordingSignalEventEncoder.BLOCK_LENGTH;
 
         int attempts = SEND_ATTEMPTS;
         do
@@ -169,14 +169,14 @@ class ControlResponseProxy
                 final MutableDirectBuffer buffer = bufferClaim.buffer();
                 final int bufferOffset = bufferClaim.offset();
 
-                recordingTransitionEncoder
+                recordingSignalEventEncoder
                     .wrapAndApplyHeader(buffer, bufferOffset, messageHeaderEncoder)
                     .controlSessionId(controlSessionId)
                     .correlationId(correlationId)
                     .recordingId(recordingId)
                     .subscriptionId(subscriptionId)
                     .position(position)
-                    .transitionType(recordingTransitionType);
+                    .signal(recordingSignal);
 
                 bufferClaim.commit();
                 break;

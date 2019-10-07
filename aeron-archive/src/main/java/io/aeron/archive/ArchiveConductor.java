@@ -19,7 +19,7 @@ import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
-import io.aeron.archive.codecs.RecordingTransitionType;
+import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.logbuffer.LogBufferDescriptor;
@@ -900,12 +900,12 @@ abstract class ArchiveConductor
         {
             catalog.recordingStopped(recordingId, session.recordedPosition(), epochClock.time());
 
-            session.controlSession().attemptSendTransition(
+            session.controlSession().attemptSendSignal(
                 session.correlationId(),
                 recordingId,
                 session.image().subscription().registrationId(),
                 session.recordedPosition(),
-                RecordingTransitionType.STOP);
+                RecordingSignal.STOP);
         }
         recordingSessionByIdMap.remove(recordingId);
 
@@ -1128,12 +1128,12 @@ abstract class ArchiveConductor
         recordingSessionByIdMap.put(recordingId, session);
         recorder.addSession(session);
 
-        controlSession.attemptSendTransition(
+        controlSession.attemptSendSignal(
             correlationId,
             recordingId,
             image.subscription().registrationId(),
             image.joinPosition(),
-            RecordingTransitionType.START);
+            RecordingSignal.START);
     }
 
     private void extendRecordingSession(
@@ -1184,12 +1184,12 @@ abstract class ArchiveConductor
         catalog.extendRecording(recordingId, controlSession.sessionId(), correlationId, image.sessionId());
         recorder.addSession(session);
 
-        controlSession.attemptSendTransition(
+        controlSession.attemptSendSignal(
             correlationId,
             recordingId,
             image.subscription().registrationId(),
             image.joinPosition(),
-            RecordingTransitionType.EXTEND);
+            RecordingSignal.EXTEND);
     }
 
     private ExclusivePublication newReplayPublication(

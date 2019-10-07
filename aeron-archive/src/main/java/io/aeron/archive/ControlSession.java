@@ -19,7 +19,7 @@ import io.aeron.Aeron;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.archive.codecs.ControlResponseCode;
-import io.aeron.archive.codecs.RecordingTransitionType;
+import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.codecs.SourceLocation;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.EpochClock;
@@ -465,20 +465,20 @@ class ControlSession implements Session
         return proxy.sendSubscriptionDescriptor(controlSessionId, correlationId, subscription, this);
     }
 
-    void attemptSendTransition(
+    void attemptSendSignal(
         final long correlationId,
         final long recordingId,
         final long subscriptionId,
         final long position,
-        final RecordingTransitionType recordingTransitionType)
+        final RecordingSignal recordingSignal)
     {
-        controlResponseProxy.attemptSendTransition(
+        controlResponseProxy.attemptSendSignal(
             controlSessionId,
             correlationId,
             recordingId,
             subscriptionId,
             position,
-            recordingTransitionType,
+            recordingSignal,
             controlPublication);
     }
 

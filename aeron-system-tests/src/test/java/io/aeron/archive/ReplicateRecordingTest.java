@@ -18,7 +18,7 @@ package io.aeron.archive;
 import io.aeron.*;
 import io.aeron.archive.client.*;
 import io.aeron.archive.codecs.ControlResponseCode;
-import io.aeron.archive.codecs.RecordingTransitionType;
+import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
@@ -193,27 +193,27 @@ public class ReplicateRecordingTest
         srcAeronArchive.stopRecording(subscriptionId);
 
         final MutableLong dstRecordingId = new MutableLong();
-        final MutableReference<RecordingTransitionType> transitionTypeRef = new MutableReference<>();
-        final RecordingTransitionAdapter adapter = newRecordingTransitionAdapter(transitionTypeRef, dstRecordingId);
+        final MutableReference<RecordingSignal> signalRef = new MutableReference<>();
+        final RecordingSignalAdapter adapter = newRecordingSignalAdapter(signalRef, dstRecordingId);
 
         dstAeronArchive.replicate(
             srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
 
-        awaitTransition(transitionTypeRef, adapter);
-        assertEquals(RecordingTransitionType.REPLICATE, transitionTypeRef.get());
+        awaitSignal(signalRef, adapter);
+        assertEquals(RecordingSignal.REPLICATE, signalRef.get());
 
-        awaitTransition(transitionTypeRef, adapter);
-        assertEquals(RecordingTransitionType.EXTEND, transitionTypeRef.get());
+        awaitSignal(signalRef, adapter);
+        assertEquals(RecordingSignal.EXTEND, signalRef.get());
 
-        final ObjectHashSet<RecordingTransitionType> transitionEventsSet = new ObjectHashSet<>();
-        awaitTransition(transitionTypeRef, adapter);
-        transitionEventsSet.add(transitionTypeRef.get());
+        final ObjectHashSet<RecordingSignal> transitionEventsSet = new ObjectHashSet<>();
+        awaitSignal(signalRef, adapter);
+        transitionEventsSet.add(signalRef.get());
 
-        awaitTransition(transitionTypeRef, adapter);
-        transitionEventsSet.add(transitionTypeRef.get());
+        awaitSignal(signalRef, adapter);
+        transitionEventsSet.add(signalRef.get());
 
-        assertTrue(transitionEventsSet.contains(RecordingTransitionType.STOP));
-        assertTrue(transitionEventsSet.contains(RecordingTransitionType.SYNC));
+        assertTrue(transitionEventsSet.contains(RecordingSignal.STOP));
+        assertTrue(transitionEventsSet.contains(RecordingSignal.SYNC));
     }
 
     @Test(timeout = 10_000L)
@@ -235,17 +235,17 @@ public class ReplicateRecordingTest
             awaitPosition(srcCounters, counterId, publication.position());
 
             final MutableLong dstRecordingId = new MutableLong();
-            final MutableReference<RecordingTransitionType> transitionTypeRef = new MutableReference<>();
-            final RecordingTransitionAdapter adapter = newRecordingTransitionAdapter(transitionTypeRef, dstRecordingId);
+            final MutableReference<RecordingSignal> signalRef = new MutableReference<>();
+            final RecordingSignalAdapter adapter = newRecordingSignalAdapter(signalRef, dstRecordingId);
 
             final long replicationId = dstAeronArchive.replicate(
                 srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
 
-            awaitTransition(transitionTypeRef, adapter);
-            assertEquals(RecordingTransitionType.REPLICATE, transitionTypeRef.get());
+            awaitSignal(signalRef, adapter);
+            assertEquals(RecordingSignal.REPLICATE, signalRef.get());
 
-            awaitTransition(transitionTypeRef, adapter);
-            assertEquals(RecordingTransitionType.EXTEND, transitionTypeRef.get());
+            awaitSignal(signalRef, adapter);
+            assertEquals(RecordingSignal.EXTEND, signalRef.get());
 
             final CountersReader dstCounters = dstAeron.countersReader();
             final int dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId.get());
@@ -256,8 +256,8 @@ public class ReplicateRecordingTest
 
             dstAeronArchive.stopReplication(replicationId);
 
-            awaitTransition(transitionTypeRef, adapter);
-            assertEquals(RecordingTransitionType.STOP, transitionTypeRef.get());
+            awaitSignal(signalRef, adapter);
+            assertEquals(RecordingSignal.STOP, signalRef.get());
         }
 
         srcAeronArchive.stopRecording(subscriptionId);
@@ -282,17 +282,17 @@ public class ReplicateRecordingTest
             awaitPosition(srcCounters, counterId, publication.position());
 
             final MutableLong recordingIdRef = new MutableLong();
-            final MutableReference<RecordingTransitionType> transitionTypeRef = new MutableReference<>();
-            final RecordingTransitionAdapter adapter = newRecordingTransitionAdapter(transitionTypeRef, recordingIdRef);
+            final MutableReference<RecordingSignal> signalRef = new MutableReference<>();
+            final RecordingSignalAdapter adapter = newRecordingSignalAdapter(signalRef, recordingIdRef);
 
             long replicationId = dstAeronArchive.replicate(
                 srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
 
-            awaitTransition(transitionTypeRef, adapter);
-            assertEquals(RecordingTransitionType.REPLICATE, transitionTypeRef.get());
+            awaitSignal(signalRef, adapter);
+            assertEquals(RecordingSignal.REPLICATE, signalRef.get());
 
-            awaitTransition(transitionTypeRef, adapter);
-            assertEquals(RecordingTransitionType.EXTEND, transitionTypeRef.get());
+            awaitSignal(signalRef, adapter);
+            assertEquals(RecordingSignal.EXTEND, signalRef.get());
 
             final CountersReader dstCounters = dstAeron.countersReader();
             final long dstRecordingId = recordingIdRef.get();
@@ -301,14 +301,14 @@ public class ReplicateRecordingTest
 
             dstAeronArchive.stopReplication(replicationId);
 
-            awaitTransition(transitionTypeRef, adapter);
-            assertEquals(RecordingTransitionType.STOP, transitionTypeRef.get());
+            awaitSignal(signalRef, adapter);
+            assertEquals(RecordingSignal.STOP, signalRef.get());
 
             replicationId = dstAeronArchive.replicate(
                 srcRecordingId, dstRecordingId, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
 
-            awaitTransition(transitionTypeRef, adapter);
-            assertEquals(RecordingTransitionType.EXTEND, transitionTypeRef.get());
+            awaitSignal(signalRef, adapter);
+            assertEquals(RecordingSignal.EXTEND, signalRef.get());
 
             dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId);
 
@@ -329,8 +329,8 @@ public class ReplicateRecordingTest
         final long srcRecordingId;
 
         final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
-        final MutableReference<RecordingTransitionType> transitionTypeRef = new MutableReference<>();
-        final RecordingTransitionAdapter adapter;
+        final MutableReference<RecordingSignal> signalRef = new MutableReference<>();
+        final RecordingSignalAdapter adapter;
 
         try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
         {
@@ -342,21 +342,21 @@ public class ReplicateRecordingTest
             awaitPosition(srcCounters, counterId, publication.position());
 
             final MutableLong dstRecordingId = new MutableLong();
-            adapter = newRecordingTransitionAdapter(transitionTypeRef, dstRecordingId);
+            adapter = newRecordingSignalAdapter(signalRef, dstRecordingId);
 
             dstAeronArchive.replicate(
                 srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, LIVE_CHANNEL);
 
             offer(publication, messageCount, messagePrefix);
 
-            awaitTransition(transitionTypeRef, adapter);
-            assertEquals(RecordingTransitionType.REPLICATE, transitionTypeRef.get());
+            awaitSignal(signalRef, adapter);
+            assertEquals(RecordingSignal.REPLICATE, signalRef.get());
 
-            awaitTransition(transitionTypeRef, adapter);
-            assertEquals(RecordingTransitionType.EXTEND, transitionTypeRef.get());
+            awaitSignal(signalRef, adapter);
+            assertEquals(RecordingSignal.EXTEND, signalRef.get());
 
-            awaitTransition(transitionTypeRef, adapter);
-            assertEquals(RecordingTransitionType.MERGE, transitionTypeRef.get());
+            awaitSignal(signalRef, adapter);
+            assertEquals(RecordingSignal.MERGE, signalRef.get());
 
             final CountersReader dstCounters = dstAeron.countersReader();
             final int dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId.get());
@@ -367,13 +367,12 @@ public class ReplicateRecordingTest
 
         srcAeronArchive.stopRecording(subscriptionId);
 
-        awaitTransition(transitionTypeRef, adapter);
-        assertEquals(RecordingTransitionType.STOP, transitionTypeRef.get());
+        awaitSignal(signalRef, adapter);
+        assertEquals(RecordingSignal.STOP, signalRef.get());
     }
 
-    private RecordingTransitionAdapter newRecordingTransitionAdapter(
-        final MutableReference<RecordingTransitionType> transitionTypeRef,
-        final MutableLong recordingIdRef)
+    private RecordingSignalAdapter newRecordingSignalAdapter(
+        final MutableReference<RecordingSignal> signalRef, final MutableLong recordingIdRef)
     {
         final ControlEventListener listener =
             (controlSessionId, correlationId, relevantId, code, errorMessage) ->
@@ -384,16 +383,16 @@ public class ReplicateRecordingTest
                 }
             };
 
-        final RecordingTransitionConsumer consumer =
+        final RecordingSignalConsumer consumer =
             (controlSessionId, correlationId, recordingId, subscriptionId, position, transitionType) ->
             {
                 recordingIdRef.set(recordingId);
-                transitionTypeRef.set(transitionType);
+                signalRef.set(transitionType);
             };
 
         final Subscription subscription = dstAeronArchive.controlResponsePoller().subscription();
         final long controlSessionId = dstAeronArchive.controlSessionId();
 
-        return new RecordingTransitionAdapter(controlSessionId, listener, consumer, subscription, FRAGMENT_LIMIT);
+        return new RecordingSignalAdapter(controlSessionId, listener, consumer, subscription, FRAGMENT_LIMIT);
     }
 }

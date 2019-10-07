@@ -15,29 +15,29 @@
  */
 package io.aeron.archive.client;
 
-import io.aeron.archive.codecs.RecordingTransitionType;
+import io.aeron.archive.codecs.RecordingSignal;
 
 /**
- * Consumer of transition events related to the lifecycle of stream recordings.
+ * Consumer of signals representing operations applied to a recording.
  */
 @FunctionalInterface
-public interface RecordingTransitionConsumer
+public interface RecordingSignalConsumer
 {
     /**
-     * Transition event in the lifecycle of a recording.
+     * Signal of operation taken on a recording.
      *
-     * @param controlSessionId that initiated the action.
-     * @param correlationId    that initiated the action would could be the replication id.
-     * @param recordingId      which has transitioned.
-     * @param subscriptionId   of the Subscription associated with the recording transition.
-     * @param position         of the recorded stream at the point of transition.
-     * @param transitionType   type of the transition the recording has undertaken.
+     * @param controlSessionId that initiated the operation.
+     * @param correlationId    that initiated the operation would could be the replication id.
+     * @param recordingId      which has signalled.
+     * @param subscriptionId   of the Subscription associated with the recording.
+     * @param position         of the recorded stream at the point of signal.
+     * @param signal           type of the operation applied to the recording.
      */
-    void onTransition(
+    void onSignal(
         long controlSessionId,
         long correlationId,
         long recordingId,
         long subscriptionId,
         long position,
-        RecordingTransitionType transitionType);
+        RecordingSignal signal);
 }

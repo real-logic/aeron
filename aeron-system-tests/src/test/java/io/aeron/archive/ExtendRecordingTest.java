@@ -18,8 +18,8 @@ package io.aeron.archive;
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ControlEventListener;
-import io.aeron.archive.client.RecordingTransitionAdapter;
-import io.aeron.archive.client.RecordingTransitionConsumer;
+import io.aeron.archive.client.RecordingSignalAdapter;
+import io.aeron.archive.client.RecordingSignalConsumer;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.Configuration;
 import io.aeron.driver.MediaDriver;
@@ -41,7 +41,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 import static io.aeron.archive.Common.*;
-import static io.aeron.archive.codecs.RecordingTransitionType.*;
+import static io.aeron.archive.codecs.RecordingSignal.*;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
@@ -78,7 +78,7 @@ public class ExtendRecordingTest
     private File archiveDir;
     private AeronArchive aeronArchive;
 
-    private final RecordingTransitionConsumer recordingTransitionConsumer = mock(RecordingTransitionConsumer.class);
+    private final RecordingSignalConsumer recordingSignalConsumer = mock(RecordingSignalConsumer.class);
     private final ArrayList<String> errors = new ArrayList<>();
     private final ControlEventListener controlEventListener =
         (controlSessionId, correlationId, relevantId, code, errorMessage) -> errors.add(errorMessage);
@@ -100,7 +100,7 @@ public class ExtendRecordingTest
     public void shouldExtendRecordingAndReplay()
     {
         final long controlSessionId = aeronArchive.controlSessionId();
-        final RecordingTransitionAdapter recordingTransitionAdapter;
+        final RecordingSignalAdapter recordingSignalAdapter;
         final int messageCount = 10;
         final long subscriptionIdOne;
         final long subscriptionIdTwo;
@@ -113,15 +113,15 @@ public class ExtendRecordingTest
             Subscription subscription = aeron.addSubscription(RECORDING_CHANNEL, RECORDING_STREAM_ID))
         {
             initialTermId = publication.initialTermId();
-            recordingTransitionAdapter = new RecordingTransitionAdapter(
+            recordingSignalAdapter = new RecordingSignalAdapter(
                 controlSessionId,
                 controlEventListener,
-                recordingTransitionConsumer,
+                recordingSignalConsumer,
                 aeronArchive.controlResponsePoller().subscription(),
                 FRAGMENT_LIMIT);
 
             subscriptionIdOne = aeronArchive.startRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID, LOCAL);
-            pollForTransition(recordingTransitionAdapter);
+            pollForSignal(recordingSignalAdapter);
 
             try
             {
@@ -139,7 +139,7 @@ public class ExtendRecordingTest
             finally
             {
                 aeronArchive.stopRecording(subscriptionIdOne);
-                pollForTransition(recordingTransitionAdapter);
+                pollForSignal(recordingSignalAdapter);
             }
         }
 
@@ -155,7 +155,7 @@ public class ExtendRecordingTest
         {
             subscriptionIdTwo = aeronArchive.extendRecording(
                 recordingId, SUBSCRIPTION_EXTEND_CHANNEL, RECORDING_STREAM_ID, LOCAL);
-            pollForTransition(recordingTransitionAdapter);
+            pollForSignal(recordingSignalAdapter);
 
             try
             {
@@ -172,21 +172,21 @@ public class ExtendRecordingTest
             finally
             {
                 aeronArchive.stopRecording(subscriptionIdTwo);
-                pollForTransition(recordingTransitionAdapter);
+                pollForSignal(recordingSignalAdapter);
             }
         }
 
         replay(messageCount, stopTwo, recordingId);
         assertEquals(Collections.EMPTY_LIST, errors);
 
-        final InOrder inOrder = Mockito.inOrder(recordingTransitionConsumer);
-        inOrder.verify(recordingTransitionConsumer).onTransition(
+        final InOrder inOrder = Mockito.inOrder(recordingSignalConsumer);
+        inOrder.verify(recordingSignalConsumer).onSignal(
             eq(controlSessionId), anyLong(), eq(recordingId), eq(subscriptionIdOne), eq(0L), eq(START));
-        inOrder.verify(recordingTransitionConsumer).onTransition(
+        inOrder.verify(recordingSignalConsumer).onSignal(
             eq(controlSessionId), anyLong(), eq(recordingId), eq(subscriptionIdOne), eq(stopOne), eq(STOP));
-        inOrder.verify(recordingTransitionConsumer).onTransition(
+        inOrder.verify(recordingSignalConsumer).onSignal(
             eq(controlSessionId), anyLong(), eq(recordingId), eq(subscriptionIdTwo), eq(stopOne), eq(EXTEND));
-        inOrder.verify(recordingTransitionConsumer).onTransition(
+        inOrder.verify(recordingSignalConsumer).onSignal(
             eq(controlSessionId), anyLong(), eq(recordingId), eq(subscriptionIdTwo), eq(stopTwo), eq(STOP));
     }
 

@@ -28,16 +28,16 @@ import static io.aeron.logbuffer.ControlledFragmentHandler.Action.*;
  * Encapsulate the polling, decoding, and dispatching of recording transition events for a session plus the
  * asynchronous events to check for errors.
  *
- * @see RecordingTransitionType
+ * @see RecordingSignal
  */
-public class RecordingTransitionAdapter
+public class RecordingSignalAdapter
 {
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ControlResponseDecoder controlResponseDecoder = new ControlResponseDecoder();
-    private final RecordingTransitionDecoder recordingTransitionDecoder = new RecordingTransitionDecoder();
+    private final RecordingSignalEventDecoder recordingSignalEventDecoder = new RecordingSignalEventDecoder();
     private final ControlledFragmentAssembler assembler = new ControlledFragmentAssembler(this::onFragment);
     private final ControlEventListener controlEventListener;
-    private final RecordingTransitionConsumer recordingTransitionConsumer;
+    private final RecordingSignalConsumer recordingSignalConsumer;
     private final Subscription subscription;
     private final int fragmentLimit;
     private final long controlSessionId;
@@ -48,26 +48,26 @@ public class RecordingTransitionAdapter
      *
      * @param controlSessionId            to listen for associated asynchronous control events, such as errors.
      * @param controlEventListener        listener for control events which may indicate an error on the session.
-     * @param recordingTransitionConsumer consumer of recording transition events.
+     * @param recordingSignalConsumer consumer of recording transition events.
      * @param subscription                to poll for new events.
      * @param fragmentLimit               to apply for each polling operation.
      */
-    public RecordingTransitionAdapter(
+    public RecordingSignalAdapter(
         final long controlSessionId,
         final ControlEventListener controlEventListener,
-        final RecordingTransitionConsumer recordingTransitionConsumer,
+        final RecordingSignalConsumer recordingSignalConsumer,
         final Subscription subscription,
         final int fragmentLimit)
     {
         this.controlSessionId = controlSessionId;
         this.controlEventListener = controlEventListener;
-        this.recordingTransitionConsumer = recordingTransitionConsumer;
+        this.recordingSignalConsumer = recordingSignalConsumer;
         this.subscription = subscription;
         this.fragmentLimit = fragmentLimit;
     }
 
     /**
-     * Poll for recording transitions and dispatch them to the {@link RecordingTransitionDecoder} for this instance,
+     * Poll for recording transitions and dispatch them to the {@link RecordingSignalConsumer} for this instance,
      * plus check for async responses for this control session which may have an exception and dispatch to the
      * {@link ControlResponseListener}.
      *
@@ -116,22 +116,22 @@ public class RecordingTransitionAdapter
                 }
                 break;
 
-            case RecordingTransitionDecoder.TEMPLATE_ID:
-                recordingTransitionDecoder.wrap(
+            case RecordingSignalEventDecoder.TEMPLATE_ID:
+                recordingSignalEventDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                if (recordingTransitionDecoder.controlSessionId() == controlSessionId)
+                if (recordingSignalEventDecoder.controlSessionId() == controlSessionId)
                 {
-                    recordingTransitionConsumer.onTransition(
-                        recordingTransitionDecoder.controlSessionId(),
-                        recordingTransitionDecoder.correlationId(),
-                        recordingTransitionDecoder.recordingId(),
-                        recordingTransitionDecoder.subscriptionId(),
-                        recordingTransitionDecoder.position(),
-                        recordingTransitionDecoder.transitionType());
+                    recordingSignalConsumer.onSignal(
+                        recordingSignalEventDecoder.controlSessionId(),
+                        recordingSignalEventDecoder.correlationId(),
+                        recordingSignalEventDecoder.recordingId(),
+                        recordingSignalEventDecoder.subscriptionId(),
+                        recordingSignalEventDecoder.position(),
+                        recordingSignalEventDecoder.signal());
 
                     isDone = true;
                     return BREAK;

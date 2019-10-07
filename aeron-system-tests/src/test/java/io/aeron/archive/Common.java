@@ -19,8 +19,8 @@ import io.aeron.FragmentAssembler;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.SystemTest;
-import io.aeron.archive.client.RecordingTransitionAdapter;
-import io.aeron.archive.codecs.RecordingTransitionType;
+import io.aeron.archive.client.RecordingSignalAdapter;
+import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.LogBufferDescriptor;
@@ -109,24 +109,23 @@ class Common
         }
     }
 
-    public static void pollForTransition(final RecordingTransitionAdapter recordingTransitionAdapter)
+    public static void pollForSignal(final RecordingSignalAdapter recordingSignalAdapter)
     {
-        while (0 == recordingTransitionAdapter.poll())
+        while (0 == recordingSignalAdapter.poll())
         {
             SystemTest.checkInterruptedStatus();
             Thread.yield();
         }
     }
 
-    static void awaitTransition(
-        final MutableReference<RecordingTransitionType> transitionTypeRef, final RecordingTransitionAdapter adapter)
+    static void awaitSignal(final MutableReference<RecordingSignal> signalRef, final RecordingSignalAdapter adapter)
     {
-        transitionTypeRef.set(null);
+        signalRef.set(null);
 
         do
         {
-            pollForTransition(adapter);
+            pollForSignal(adapter);
         }
-        while (transitionTypeRef.get() == null);
+        while (signalRef.get() == null);
     }
 }

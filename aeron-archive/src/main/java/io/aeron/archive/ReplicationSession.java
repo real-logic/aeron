@@ -21,7 +21,7 @@ import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.client.ControlResponsePoller;
 import io.aeron.archive.client.RecordingDescriptorConsumer;
 import io.aeron.archive.codecs.ControlResponseCode;
-import io.aeron.archive.codecs.RecordingTransitionType;
+import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.LogBufferDescriptor;
@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
-import static io.aeron.archive.codecs.RecordingTransitionType.*;
+import static io.aeron.archive.codecs.RecordingSignal.*;
 
 class ReplicationSession implements Session, RecordingDescriptorConsumer
 {
@@ -249,7 +249,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                 originalChannel,
                 sourceIdentity);
 
-            notifyTransition(startPosition, REPLICATE);
+            signal(startPosition, REPLICATE);
         }
 
         State nextState = State.REPLAY;
@@ -269,7 +269,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
         if (startPosition == stopPosition)
         {
-            notifyTransition(stopPosition, SYNC);
+            signal(stopPosition, SYNC);
             nextState = State.DONE;
         }
 
@@ -483,7 +483,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             if (position == srcStopPosition || (NULL_VALUE == srcStopPosition && image.isEndOfStream()))
             {
                 srcReplaySessionId = NULL_VALUE;
-                notifyTransition(position, SYNC);
+                signal(position, SYNC);
             }
 
             state(State.DONE);
@@ -563,7 +563,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                 {
                     recordingSubscription.asyncRemoveDestination(replayDestination);
                     recordingSubscription = null;
-                    notifyTransition(position, MERGE);
+                    signal(position, MERGE);
                     state(State.DONE);
                 }
 
@@ -607,11 +607,11 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         }
     }
 
-    private void notifyTransition(final long position, final RecordingTransitionType recordingTransitionType)
+    private void signal(final long position, final RecordingSignal recordingSignal)
     {
         final long subscriptionId = null != recordingSubscription ? recordingSubscription.registrationId() : NULL_VALUE;
-        controlSession.attemptSendTransition(
-            replicationId, dstRecordingId, subscriptionId, position, recordingTransitionType);
+        controlSession.attemptSendSignal(
+            replicationId, dstRecordingId, subscriptionId, position, recordingSignal);
     }
 
     private void stopReplaySession()

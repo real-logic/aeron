@@ -1238,7 +1238,7 @@ public class AeronArchive implements AutoCloseable
     }
 
     /**
-     * Stop a replication session.
+     * Stop a replication session by id.
      *
      * @param replicationId to stop replication for.
      */

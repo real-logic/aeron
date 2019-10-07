@@ -34,9 +34,7 @@ constexpr const std::size_t PROXY_REQUEST_BUFFER_LENGTH = 8 * 1024;
 class ArchiveProxy
 {
 public:
-    explicit ArchiveProxy(
-        std::shared_ptr<ExclusivePublication> publication,
-        int retryAttempts = 3) :
+    explicit ArchiveProxy(std::shared_ptr<ExclusivePublication> publication, int retryAttempts = 3) :
         m_array(),
         m_buffer(m_array.data(), m_array.size()),
         m_publication(std::move(publication)),
@@ -467,6 +465,69 @@ public:
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
 
+    /**
+     * Replicate a recording from a source archive to a destination which can be considered a backup for a primary
+     * archive. The source recording will be replayed via the provided replay channel and use the original stream id.
+     * If the destination recording id is Aeron#NULL_VALUE then a new destination recording is created,
+     * otherwise the provided destination recording id will be extended. The details of the source recording
+     * descriptor will be replicated.
+     * <p>
+     * For a source recording that is still active the replay can merge with the live stream and then follow it
+     * directly and no longer require the replay from the source. This would require a multicast live destination.
+     * <p>
+     * Errors will be reported asynchronously and can be checked for with AeronArchive#pollForErrorResponse()
+     * or AeronArchive#checkForErrorResponse(). Follow progress with RecordingSignalAdapter.
+     *
+     * @param srcRecordingId     recording id which must exist in the source archive.
+     * @param dstRecordingId     recording to extend in the destination, otherwise Aeron#NULL_VALUE.
+     * @param srcControlStreamId remote control stream id for the source archive to instruct the replay on.
+     * @param srcControlChannel  remote control channel for the source archive to instruct the replay on.
+     * @param liveDestination    destination for the live stream if merge is required. Empty string for no merge.
+     * @param correlationId      for this request.
+     * @param controlSessionId   for this request.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool replicate(
+        std::int64_t srcRecordingId,
+        std::int64_t dstRecordingId,
+        std::int32_t srcControlStreamId,
+        const std::string& srcControlChannel,
+        const std::string& liveDestination,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId)
+    {
+        const util::index_t length = replicate(
+            m_buffer,
+            srcRecordingId,
+            dstRecordingId,
+            srcControlStreamId,
+            srcControlChannel,
+            liveDestination,
+            correlationId,
+            controlSessionId);
+
+        return offer<IdleStrategy>(m_buffer, 0, length);
+    }
+
+    /**
+     * Stop a replication session by id.
+     *
+     * @param replicationId    of replication session to be stopped.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool stopReplication(std::int64_t replicationId, std::int64_t correlationId, std::int64_t controlSessionId)
+    {
+        const util::index_t length = stopReplication(m_buffer, replicationId, correlationId, controlSessionId);
+
+        return offer<IdleStrategy>(m_buffer, 0, length);
+    }
+
 private:
     std::array<std::uint8_t, PROXY_REQUEST_BUFFER_LENGTH> m_array;
     AtomicBuffer m_buffer;
@@ -639,6 +700,22 @@ private:
         const std::string& channelFragment,
         std::int32_t streamId,
         bool applyStreamId,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId);
+
+    static util::index_t replicate(
+        AtomicBuffer& buffer,
+        std::int64_t srcRecordingId,
+        std::int64_t dstRecordingId,
+        std::int32_t srcControlStreamId,
+        const std::string& srcControlChannel,
+        const std::string& liveDestination,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId);
+
+    static util::index_t stopReplication(
+        AtomicBuffer& buffer,
+        std::int64_t replicationId,
         std::int64_t correlationId,
         std::int64_t controlSessionId);
 };

@@ -36,6 +36,8 @@
 #include "aeron_archive_client/FindLastMatchingRecordingRequest.h"
 #include "aeron_archive_client/TruncateRecordingRequest.h"
 #include "aeron_archive_client/ListRecordingSubscriptionsRequest.h"
+#include "aeron_archive_client/ReplicateRequest.h"
+#include "aeron_archive_client/StopReplicationRequest.h"
 
 using namespace aeron;
 using namespace aeron::concurrent;
@@ -387,6 +389,46 @@ util::index_t ArchiveProxy::listRecordingSubscriptions(
         .applyStreamId(applyStreamId ? BooleanType::Value::TRUE : BooleanType::Value::FALSE)
         .streamId(streamId)
         .putChannel(channelFragment);
+
+    return messageAndHeaderLength(request);
+}
+
+util::index_t ArchiveProxy::replicate(
+    AtomicBuffer& buffer,
+    std::int64_t srcRecordingId,
+    std::int64_t dstRecordingId,
+    std::int32_t srcControlStreamId,
+    const std::string& srcControlChannel,
+    const std::string& liveDestination,
+    std::int64_t correlationId,
+    std::int64_t controlSessionId)
+{
+    ReplicateRequest request;
+
+    wrapAndApplyHeader(request, buffer)
+        .controlSessionId(controlSessionId)
+        .correlationId(correlationId)
+        .srcRecordingId(srcRecordingId)
+        .dstRecordingId(dstRecordingId)
+        .srcControlStreamId(srcControlStreamId)
+        .putSrcControlChannel(srcControlChannel)
+        .putLiveDestination(liveDestination);
+
+    return messageAndHeaderLength(request);
+}
+
+util::index_t ArchiveProxy::stopReplication(
+    AtomicBuffer& buffer,
+    std::int64_t replicationId,
+    std::int64_t correlationId,
+    std::int64_t controlSessionId)
+{
+    StopReplicationRequest request;
+
+    wrapAndApplyHeader(request, buffer)
+        .controlSessionId(controlSessionId)
+        .correlationId(correlationId)
+        .replicationId(replicationId);
 
     return messageAndHeaderLength(request);
 }

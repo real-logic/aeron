@@ -46,7 +46,7 @@ public class ArchiveMigrationPlanner
         {
             if (ALL_MIGRATION_STEPS.get(i).minimumVersion() > version)
             {
-                steps.addAll(ALL_MIGRATION_STEPS.subList(i, ALL_MIGRATION_STEPS.size() - 1));
+                steps.addAll(ALL_MIGRATION_STEPS.subList(i, ALL_MIGRATION_STEPS.size()));
                 break;
             }
         }

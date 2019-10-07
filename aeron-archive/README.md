@@ -81,3 +81,20 @@ The Archive is backed by 3 file types, all of which are expected to reside in th
  
   - **Mark File:** This file contains the archive distinct error log and heartbeat timestamp to ensure two or more
  archives do not run in the same directory.
+
+Migration
+=====
+The Archive may need to be migrated between major versions. This migration will be evident if attempting
+to run `CatalogTool` with the `describe` command on the archive directory. A previous version will
+only be readable by a previous version of `CatalogTool`. To migrate the archive, please follow
+the steps below.
+
+- Ensure archive is shutdown and all stopPositions have been updated.
+- Ensure archive directory is backed up appropriately.
+- Run `CatalogTool` command `migrate`. Information on versions, etc. will be displayed. Errors
+will also be displayed.
+- Run `CatalogTool` command `verify` to check for validity.
+
+This is a list of Version that require migration are below.
+
+- Version previous to 1.0.0 must migrate as the names of segment files was changed.

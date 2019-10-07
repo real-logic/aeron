@@ -16,6 +16,7 @@
 package io.aeron.archive;
 
 import org.agrona.LangUtil;
+import org.agrona.SemanticVersion;
 
 import java.io.File;
 import java.nio.channels.FileChannel;
@@ -44,9 +45,19 @@ public class MigrationUtils
         }
         catch (final Exception ex)
         {
+            System.err.println("Could not create migration timestamp file:" + timestampFile);
             LangUtil.rethrowUnchecked(ex);
         }
 
         return fileChannel;
     }
+
+    public static String fullVersionString(final int version)
+    {
+        return version +
+            "(Major " + SemanticVersion.major(version) +
+            " Minor " + SemanticVersion.minor(version) +
+            " Patch " + SemanticVersion.patch(version) + ")";
+    }
+
 }

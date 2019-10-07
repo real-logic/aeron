@@ -30,6 +30,7 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
+import java.util.function.IntConsumer;
 
 import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_POSTFIX;
 import static io.aeron.archive.Archive.segmentFileName;
@@ -211,10 +212,10 @@ class Catalog implements AutoCloseable
 
     Catalog(final File archiveDir, final EpochClock epochClock)
     {
-        this(archiveDir, epochClock, false);
+        this(archiveDir, epochClock, false, null);
     }
 
-    Catalog(final File archiveDir, final EpochClock epochClock, final boolean writable)
+    Catalog(final File archiveDir, final EpochClock epochClock, final boolean writable, final IntConsumer versionCheck)
     {
         this.archiveDir = archiveDir;
         this.forceWrites = false;
@@ -250,10 +251,17 @@ class Catalog implements AutoCloseable
                 catalogBuffer, 0, CatalogHeaderDecoder.BLOCK_LENGTH, CatalogHeaderDecoder.SCHEMA_VERSION);
 
             final int version = catalogHeaderDecoder.version();
-            if (SemanticVersion.major(version) != AeronArchive.Configuration.MAJOR_VERSION)
+            if (null == versionCheck)
             {
-                throw new ArchiveException("invalid version " + SemanticVersion.toString(version) +
-                    ", archive is " + SemanticVersion.toString(AeronArchive.Configuration.SEMANTIC_VERSION));
+                if (SemanticVersion.major(version) != AeronArchive.Configuration.MAJOR_VERSION)
+                {
+                    throw new ArchiveException("invalid version " + SemanticVersion.toString(version) +
+                        ", archive is " + SemanticVersion.toString(AeronArchive.Configuration.SEMANTIC_VERSION));
+                }
+            }
+            else
+            {
+                versionCheck.accept(version);
             }
 
             recordLength = catalogHeaderDecoder.entryLength();
@@ -288,6 +296,23 @@ class Catalog implements AutoCloseable
     int countEntries()
     {
         return (int)nextRecordingId;
+    }
+
+    int version()
+    {
+        final UnsafeBuffer buffer = new UnsafeBuffer(catalogByteBuffer);
+        final CatalogHeaderDecoder catalogHeaderDecoder = new CatalogHeaderDecoder()
+            .wrap(buffer, 0, CatalogHeaderDecoder.BLOCK_LENGTH, CatalogHeaderDecoder.SCHEMA_VERSION);
+
+        return catalogHeaderDecoder.version();
+    }
+
+    void updateVersion(final int version)
+    {
+        final UnsafeBuffer buffer = new UnsafeBuffer(catalogByteBuffer);
+        new CatalogHeaderEncoder()
+            .wrap(buffer, 0)
+            .version(version);
     }
 
     long addNewRecording(

@@ -39,6 +39,7 @@ import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_POSTFIX;
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.Catalog.INVALID;
 import static io.aeron.archive.Catalog.VALID;
+import static io.aeron.archive.MigrationUtils.fullVersionString;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_DATA;
@@ -158,8 +159,15 @@ public class CatalogTool
             if (readContinueAnswer())
             {
                 try (ArchiveMarkFile markFile = openMarkFileReadWrite();
-                    Catalog catalog = openCatalog())
+                    Catalog catalog = openCatalogReadWrite())
                 {
+                    System.out.println(
+                        "MarkFile version=" + fullVersionString(markFile.decoder().version()));
+                    System.out.println(
+                        "Catalog version=" + fullVersionString(catalog.version()));
+                    System.out.println(
+                        "Latest version=" + fullVersionString(AeronArchive.Configuration.SEMANTIC_VERSION));
+
                     final List<ArchiveMigrationStep> steps = ArchiveMigrationPlanner.createPlan(
                         markFile.decoder().version());
 
@@ -168,6 +176,10 @@ public class CatalogTool
                         System.out.println("Migration step " + step.toString());
                         step.migrate(markFile, catalog, archiveDir);
                     }
+                }
+                catch (final Exception ex)
+                {
+                    ex.printStackTrace();
                 }
             }
         }
@@ -283,7 +295,12 @@ public class CatalogTool
 
     private static Catalog openCatalog()
     {
-        return new Catalog(archiveDir, System::currentTimeMillis, true);
+        return new Catalog(archiveDir, System::currentTimeMillis, true, null);
+    }
+
+    private static Catalog openCatalogReadWrite()
+    {
+        return new Catalog(archiveDir, System::currentTimeMillis, true, (version) -> {});
     }
 
     private static void printMarkInformation(final ArchiveMarkFile markFile)
@@ -464,5 +481,7 @@ public class CatalogTool
         System.out.println("  count-entries: queries the number of recording entries in the catalog.");
         System.out.println("  max-entries <optional number of entries>: gets or increases the maximum number of");
         System.out.println("     recording entries the catalog can store.");
+        System.out.println("  migrate: migrate from a previous archive MarkFile and Catalog and recordings to latest");
+        System.out.println("     version from previous version.");
     }
 }

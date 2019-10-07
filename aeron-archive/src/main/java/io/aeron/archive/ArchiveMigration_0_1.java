@@ -22,6 +22,7 @@ import io.aeron.archive.codecs.RecordingDescriptorHeaderEncoder;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.AsciiEncoding;
 import org.agrona.CloseHelper;
+import org.agrona.LangUtil;
 import org.agrona.SemanticVersion;
 import org.agrona.collections.ArrayUtil;
 
@@ -32,6 +33,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 
 import static io.aeron.archive.Catalog.INVALID;
+import static io.aeron.archive.MigrationUtils.fullVersionString;
 
 @SuppressWarnings("TypeName")
 public class ArchiveMigration_0_1 implements ArchiveMigrationStep
@@ -65,7 +67,7 @@ public class ArchiveMigration_0_1 implements ArchiveMigrationStep
                     archiveDir,
                     segmentFiles,
                     version0Prefix,
-                    version0Prefix,
+                    version0Suffix,
                     headerEncoder,
                     headerDecoder,
                     encoder,
@@ -73,6 +75,7 @@ public class ArchiveMigration_0_1 implements ArchiveMigrationStep
             });
 
         markFile.encoder().version(minimumVersion());
+        catalog.updateVersion(minimumVersion());
 
         CloseHelper.close(migrationTimestampFile);
     }
@@ -98,12 +101,16 @@ public class ArchiveMigration_0_1 implements ArchiveMigrationStep
             return;
         }
 
+        System.out.println(
+            "(recordingId=" + recordingId + ") startSegmentPosition=" + startSegmentPosition + " " +
+            "segmentLength=" + segmentLength + "(" + positionBitsToShift + ")");
+
         for (final String filename : segmentFiles)
         {
             final int length = filename.length();
             final int offset = prefix.length();
             final int remaining = length - offset - suffix.length();
-            final int segmentIndex;
+            final long segmentIndex;
 
             if (remaining > 0)
             {
@@ -111,11 +118,11 @@ public class ArchiveMigration_0_1 implements ArchiveMigrationStep
                 {
                     segmentIndex = AsciiEncoding.parseIntAscii(filename, offset, remaining);
                 }
-                catch (final Exception ignore)
+                catch (final Exception ex)
                 {
                     System.err.println(
                         "(recordingId=" + recordingId + ") ERR: malformed recording filename:" + filename);
-                    return;
+                    throw ex;
                 }
 
                 final long segmentPosition = (segmentIndex << positionBitsToShift) + startSegmentPosition;
@@ -136,8 +143,7 @@ public class ArchiveMigration_0_1 implements ArchiveMigrationStep
                     System.err.println(
                         "(recordingId=" + recordingId + ") ERR: could not rename filename: " +
                         sourcePath + " -> " + targetPath);
-                    ex.printStackTrace(System.err);
-                    return;
+                    LangUtil.rethrowUnchecked(ex);
                 }
             }
         }
@@ -148,7 +154,6 @@ public class ArchiveMigration_0_1 implements ArchiveMigrationStep
     @Override
     public String toString()
     {
-        return "to " + minimumVersion() + " Major " + SemanticVersion.major(minimumVersion()) + " Minor " +
-            SemanticVersion.minor(minimumVersion()) + " Patch " + SemanticVersion.patch(minimumVersion());
+        return "to " + fullVersionString(minimumVersion());
     }
 }

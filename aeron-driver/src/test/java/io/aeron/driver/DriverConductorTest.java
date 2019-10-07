@@ -1428,34 +1428,6 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldAvoidAssigningClashingSessionIdOnAddPublication()
-    {
-        driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
-        driverConductor.doWork();
-
-        final ArgumentCaptor<NetworkPublication> argumentCaptor = ArgumentCaptor.forClass(NetworkPublication.class);
-        verify(senderProxy).newNetworkPublication(argumentCaptor.capture());
-
-        final int sessionId = argumentCaptor.getValue().sessionId();
-        final String sessionIdParam = "|" + CommonContext.SESSION_ID_PARAM_NAME + "=" + (sessionId + 1);
-        driverProxy.addExclusivePublication(CHANNEL_4000 + sessionIdParam, STREAM_ID_1);
-        driverConductor.doWork();
-
-        final long correlationId = driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1 + 1);
-        driverConductor.doWork();
-
-        verify(mockClientProxy).onPublicationReady(
-            eq(correlationId),
-            anyLong(),
-            eq(STREAM_ID_1 + 1),
-            eq(sessionId + 2),
-            anyString(),
-            anyInt(),
-            anyInt(),
-            eq(false));
-    }
-
-    @Test
     public void shouldAddIpcPublicationThenSubscriptionWithSessionId()
     {
         final int sessionId = -4097;

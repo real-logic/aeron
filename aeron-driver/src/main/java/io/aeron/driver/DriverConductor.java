@@ -30,8 +30,8 @@ import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.collections.IntHashSet;
 import org.agrona.collections.Object2ObjectHashMap;
+import org.agrona.collections.ObjectHashSet;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.agrona.concurrent.status.*;
@@ -40,6 +40,7 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
+import static io.aeron.CommonContext.IPC_MEDIA;
 import static io.aeron.CommonContext.InferableBoolean.FORCE_TRUE;
 import static io.aeron.CommonContext.InferableBoolean.INFER;
 import static io.aeron.ErrorCode.*;
@@ -84,7 +85,7 @@ public class DriverConductor implements Agent
     private final ArrayList<SubscriptionLink> subscriptionLinks = new ArrayList<>();
     private final ArrayList<CounterLink> counterLinks = new ArrayList<>();
     private final ArrayList<AeronClient> clients = new ArrayList<>();
-    private final IntHashSet activeSessionIds = new IntHashSet();
+    private final ObjectHashSet<SessionKey> activeSessionSet = new ObjectHashSet<>();
     private final EpochClock epochClock;
     private final NanoClock nanoClock;
     private final CachedEpochClock cachedEpochClock;
@@ -385,9 +386,9 @@ public class DriverConductor implements Agent
 
         if (null == publication)
         {
-            if (params.hasSessionId && !params.isSessionIdTagged)
+            if (params.hasSessionId)
             {
-                confirmSessionIdNotInUse(params.sessionId);
+                checkForSessionClash(params.sessionId, streamId, udpChannel);
             }
 
             publication = newNetworkPublication(
@@ -448,7 +449,7 @@ public class DriverConductor implements Agent
 
     void cleanupPublication(final NetworkPublication publication)
     {
-        activeSessionIds.remove(publication.sessionId());
+        activeSessionSet.remove(new SessionKey(publication.sessionId(), publication.streamId(), publication.channel()));
         senderProxy.removeNetworkPublication(publication);
 
         final SendChannelEndpoint channelEndpoint = publication.channelEndpoint();
@@ -537,7 +538,7 @@ public class DriverConductor implements Agent
 
     void cleanupIpcPublication(final IpcPublication publication)
     {
-        activeSessionIds.remove(publication.sessionId());
+        activeSessionSet.remove(new SessionKey(publication.sessionId(), publication.streamId(), IPC_MEDIA));
 
         for (int i = 0, size = subscriptionLinks.size(); i < size; i++)
         {
@@ -1039,7 +1040,7 @@ public class DriverConductor implements Agent
         final PublicationParams params,
         final boolean isExclusive)
     {
-        final int sessionId = params.hasSessionId ? params.sessionId : nextAvailableSessionId();
+        final int sessionId = params.hasSessionId ? params.sessionId : nextAvailableSessionId(streamId, udpChannel);
         final int initialTermId = params.isReplay ? params.initialTermId : BitUtil.generateRandomisedId();
 
         final UnsafeBufferPosition publisherPosition = PublisherPos.allocate(
@@ -1104,7 +1105,7 @@ public class DriverConductor implements Agent
         networkPublications.add(publication);
         senderProxy.newNetworkPublication(publication);
         linkSpies(subscriptionLinks, publication);
-        activeSessionIds.add(sessionId);
+        activeSessionSet.add(new SessionKey(sessionId, streamId, udpChannel));
 
         return publication;
     }
@@ -1133,7 +1134,7 @@ public class DriverConductor implements Agent
         final PublicationParams params)
     {
         final RawLog rawLog = logFactory.newPublication(
-            CommonContext.IPC_MEDIA, sessionId, streamId, registrationId, params.termLength, params.isSparse);
+            IPC_MEDIA, sessionId, streamId, registrationId, params.termLength, params.isSparse);
 
         initPublicationMetadata(sessionId, streamId, initialTermId, registrationId, params, rawLog);
 
@@ -1434,9 +1435,9 @@ public class DriverConductor implements Agent
 
         if (null == publication)
         {
-            if (params.hasSessionId && !params.isSessionIdTagged)
+            if (params.hasSessionId)
             {
-                confirmSessionIdNotInUse(params.sessionId);
+                checkForSessionClash(params.sessionId, streamId, IPC_MEDIA);
             }
 
             validateMtuForMaxMessage(params);
@@ -1457,7 +1458,7 @@ public class DriverConductor implements Agent
         final boolean isExclusive,
         final PublicationParams params)
     {
-        final int sessionId = params.hasSessionId ? params.sessionId : nextAvailableSessionId();
+        final int sessionId = params.hasSessionId ? params.sessionId : nextAvailableSessionId(streamId, IPC_MEDIA);
         final int initialTermId = params.isReplay ? params.initialTermId : BitUtil.generateRandomisedId();
         final RawLog rawLog = newIpcPublicationLog(sessionId, streamId, initialTermId, registrationId, params);
 
@@ -1492,7 +1493,7 @@ public class DriverConductor implements Agent
             isExclusive);
 
         ipcPublications.add(publication);
-        activeSessionIds.add(sessionId);
+        activeSessionSet.add(new SessionKey(sessionId, streamId, IPC_MEDIA));
 
         return publication;
     }
@@ -1553,16 +1554,18 @@ public class DriverConductor implements Agent
         return ipcPublication;
     }
 
-    private void confirmSessionIdNotInUse(final int sessionId)
+    private void checkForSessionClash(final int sessionId, final int streamId, final Object channel)
     {
-        if (activeSessionIds.contains(sessionId))
+        if (activeSessionSet.contains(new SessionKey(sessionId, streamId, channel)))
         {
-            throw new IllegalStateException("existing publication has same session id: " + sessionId);
+            throw new IllegalStateException("existing publication has clashing session id: " + sessionId);
         }
     }
 
-    private int nextAvailableSessionId()
+    private int nextAvailableSessionId(final int streamId, final Object channel)
     {
+        final SessionKey sessionKey = new SessionKey(streamId, channel);
+
         while (true)
         {
             int sessionId = nextSessionId++;
@@ -1574,7 +1577,8 @@ public class DriverConductor implements Agent
                 sessionId = nextSessionId++;
             }
 
-            if (!activeSessionIds.contains(sessionId))
+            sessionKey.sessionId = sessionId;
+            if (!activeSessionSet.contains(sessionKey))
             {
                 return sessionId;
             }
@@ -1666,5 +1670,54 @@ public class DriverConductor implements Agent
         }
 
         return isSparse;
+    }
+
+    static final class SessionKey
+    {
+        int sessionId;
+        final int streamId;
+        final Object channel;
+
+        SessionKey(final int streamId, final Object channel)
+        {
+            this.streamId = streamId;
+            this.channel = channel;
+        }
+
+        SessionKey(final int sessionId, final int streamId, final Object channel)
+        {
+            this.sessionId = sessionId;
+            this.streamId = streamId;
+            this.channel = channel;
+        }
+
+        public boolean equals(final Object o)
+        {
+            if (this == o)
+            {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass())
+            {
+                return false;
+            }
+
+            final SessionKey that = (SessionKey)o;
+            return sessionId == that.sessionId && streamId == that.streamId && channel.equals(that.channel);
+        }
+
+        public int hashCode()
+        {
+            return 31 * sessionId * streamId * channel.hashCode();
+        }
+
+        public String toString()
+        {
+            return "SessionKey{" +
+                "sessionId=" + sessionId +
+                ", streamId=" + streamId +
+                ", channel=" + channel +
+                '}';
+        }
     }
 }

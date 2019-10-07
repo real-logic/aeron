@@ -315,6 +315,12 @@ public final class UdpChannel
         return canonicalForm;
     }
 
+    /**
+     * Channels are considered equal if the {@link #canonicalForm()} is equal.
+     *
+     * @param o object to be compared with.
+     * @return true if the {@link #canonicalForm()} is equal, otherwise false.
+     */
     public boolean equals(final Object o)
     {
         if (this == o)
@@ -332,11 +338,21 @@ public final class UdpChannel
         return Objects.equals(canonicalForm, that.canonicalForm);
     }
 
+    /**
+     * The hash code for the {@link #canonicalForm()}.
+     *
+     * @return the hash code for the {@link #canonicalForm()}.
+     */
     public int hashCode()
     {
         return canonicalForm != null ? canonicalForm.hashCode() : 0;
     }
 
+    /**
+     * The {@link #canonicalForm()} for the channel.
+     *
+     * @return the {@link #canonicalForm()} for the channel.
+     */
     public String toString()
     {
         return canonicalForm;

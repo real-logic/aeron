@@ -305,7 +305,10 @@ class ClusteredServiceAgent implements Agent, Cluster
     public void idle(final int workCount)
     {
         idleStrategy.idle(workCount);
-        checkForClockTick();
+        if (workCount <= 0)
+        {
+            checkForClockTick();
+        }
     }
 
     public void onJoinLog(

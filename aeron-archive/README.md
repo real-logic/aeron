@@ -11,26 +11,26 @@ systems tests [here](https://github.com/real-logic/aeron/tree/master/aeron-syste
 Features:
 
 - **Record:** service can record a particular subscription, described by `<channel, streamId>`. Each resulting image
-for the subscription will be recorded under a new `recordingId`. Local network publications are recorded using the spy
-feature for efficiency. If no subscribers are active then the recording can advance the stream by setting the
-`aeron.spies.simulate.connection` system property to true.
+ for the subscription will be recorded under a new `recordingId`. Local network publications are recorded using the spy
+ feature for efficiency. If no subscribers are active then the recording can advance the stream by setting the
+ `aeron.spies.simulate.connection` system property to true.
 
 - **Extend:** service can extend an existing recording by appending.
 
 - **Replay:** service can replay a recorded `recordingId` from a particular `position`, and for a particular `length`
-which can be `Aeron.NULL_VALUE` for an open ended replay. An open ended replay will stop when it reaches the stop
-position of a recording.
+ which can be `Aeron.NULL_VALUE` for an open ended replay. An open ended replay will stop when it reaches the stop
+ position of a recording.
 
 - **Query:** the catalog for existing recordings and the recorded position of an active recording.
 
 - **Truncate:** allows a stopped recording to have its length truncated, and if truncated to the start position then it
-is effectively deleted.
+ is effectively deleted.
 
 - **Replay Merge:** allows a late joining subscriber of a recorded stream to replay a recording and then merge with the
-live stream for cut over if the consumer is fast enough to keep up.
+ live stream for cut over if the consumer is fast enough to keep up.
 
 - **Replicate:** recordings can be replicated from a source to destination archive with the option to follow on with
-a live stream when the source is multicast.
+ a live stream when the source is multicast.
 
 Usage
 =====

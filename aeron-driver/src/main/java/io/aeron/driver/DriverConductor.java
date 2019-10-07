@@ -388,7 +388,7 @@ public class DriverConductor implements Agent
         {
             if (params.hasSessionId)
             {
-                checkForSessionClash(params.sessionId, streamId, udpChannel);
+                checkForSessionClash(params.sessionId, streamId, udpChannel.canonicalForm());
             }
 
             publication = newNetworkPublication(
@@ -449,7 +449,8 @@ public class DriverConductor implements Agent
 
     void cleanupPublication(final NetworkPublication publication)
     {
-        activeSessionSet.remove(new SessionKey(publication.sessionId(), publication.streamId(), publication.channel()));
+        final String channel = publication.channelEndpoint().udpChannel().canonicalForm();
+        activeSessionSet.remove(new SessionKey(publication.sessionId(), publication.streamId(), channel));
         senderProxy.removeNetworkPublication(publication);
 
         final SendChannelEndpoint channelEndpoint = publication.channelEndpoint();
@@ -1040,7 +1041,8 @@ public class DriverConductor implements Agent
         final PublicationParams params,
         final boolean isExclusive)
     {
-        final int sessionId = params.hasSessionId ? params.sessionId : nextAvailableSessionId(streamId, udpChannel);
+        final String canonicalForm = udpChannel.canonicalForm();
+        final int sessionId = params.hasSessionId ? params.sessionId : nextAvailableSessionId(streamId, canonicalForm);
         final int initialTermId = params.isReplay ? params.initialTermId : BitUtil.generateRandomisedId();
 
         final UnsafeBufferPosition publisherPosition = PublisherPos.allocate(
@@ -1105,7 +1107,7 @@ public class DriverConductor implements Agent
         networkPublications.add(publication);
         senderProxy.newNetworkPublication(publication);
         linkSpies(subscriptionLinks, publication);
-        activeSessionSet.add(new SessionKey(sessionId, streamId, udpChannel));
+        activeSessionSet.add(new SessionKey(sessionId, streamId, canonicalForm));
 
         return publication;
     }
@@ -1554,7 +1556,7 @@ public class DriverConductor implements Agent
         return ipcPublication;
     }
 
-    private void checkForSessionClash(final int sessionId, final int streamId, final Object channel)
+    private void checkForSessionClash(final int sessionId, final int streamId, final String channel)
     {
         if (activeSessionSet.contains(new SessionKey(sessionId, streamId, channel)))
         {
@@ -1562,7 +1564,7 @@ public class DriverConductor implements Agent
         }
     }
 
-    private int nextAvailableSessionId(final int streamId, final Object channel)
+    private int nextAvailableSessionId(final int streamId, final String channel)
     {
         final SessionKey sessionKey = new SessionKey(streamId, channel);
 
@@ -1676,15 +1678,15 @@ public class DriverConductor implements Agent
     {
         int sessionId;
         final int streamId;
-        final Object channel;
+        final String channel;
 
-        SessionKey(final int streamId, final Object channel)
+        SessionKey(final int streamId, final String channel)
         {
             this.streamId = streamId;
             this.channel = channel;
         }
 
-        SessionKey(final int sessionId, final int streamId, final Object channel)
+        SessionKey(final int sessionId, final int streamId, final String channel)
         {
             this.sessionId = sessionId;
             this.streamId = streamId;

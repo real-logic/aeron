@@ -99,6 +99,11 @@ class Common
     {
         while (counters.getCounterValue(counterId) < position)
         {
+            if (counters.getCounterState(counterId) != CountersReader.RECORD_ALLOCATED)
+            {
+                throw new IllegalStateException("count not active: " + counterId);
+            }
+
             SystemTest.checkInterruptedStatus();
             Thread.yield();
         }

@@ -31,7 +31,6 @@ import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -322,7 +321,6 @@ public class ReplicateRecordingTest
         srcAeronArchive.stopRecording(subscriptionId);
     }
 
-    @Ignore
     @Test(timeout = 10_000L)
     public void shouldReplicatedLiveRecordingAndMerge()
     {
@@ -360,10 +358,10 @@ public class ReplicateRecordingTest
             awaitTransition(transitionTypeRef, adapter);
             assertEquals(RecordingTransitionType.MERGE, transitionTypeRef.get());
 
-            offer(publication, messageCount, messagePrefix);
-
             final CountersReader dstCounters = dstAeron.countersReader();
             final int dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId.get());
+
+            offer(publication, messageCount, messagePrefix);
             awaitPosition(dstCounters, dstCounterId, publication.position());
         }
 

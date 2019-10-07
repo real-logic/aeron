@@ -38,6 +38,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 {
     private static final int LIVE_ADD_THRESHOLD = LogBufferDescriptor.TERM_MIN_LENGTH >> 2;
     private static final int REPLAY_REMOVE_THRESHOLD = 0;
+    private static final int RETRY_ATTEMPTS = 3;
     private static final String REPLICATION_ALIAS = "replication";
 
     enum State
@@ -67,7 +68,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     private long dstRecordingId;
     private int replayStreamId;
     private int replaySessionId;
-    private int retryAttempts = 3;
+    private int retryAttempts = RETRY_ATTEMPTS;
     private boolean isLiveAdded;
     private final String replicationChannel;
     private final String liveDestination;
@@ -540,6 +541,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             if (hasResponse(poller))
             {
                 trackAction(NULL_VALUE);
+                retryAttempts = RETRY_ATTEMPTS;
                 srcRecordingPosition = poller.relevantId();
 
                 if (NULL_POSITION == srcRecordingPosition)
@@ -560,6 +562,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
                 else if (shouldStopReplay(position))
                 {
                     recordingSubscription.asyncRemoveDestination(replayDestination);
+                    recordingSubscription = null;
                     notifyTransition(position, MERGE);
                     state(State.DONE);
                 }

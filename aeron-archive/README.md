@@ -18,7 +18,8 @@ feature for efficiency. If no subscribers are active then the recording can adva
 - **Extend:** service can extend an existing recording by appending.
 
 - **Replay:** service can replay a recorded `recordingId` from a particular `position`, and for a particular `length`
- which can be `Aeron.NULL_VALUE` for an open ended replay.
+which can be `Aeron.NULL_VALUE` for an open ended replay. An open ended replay will stop when it reaches the stop
+position of a recording.
 
 - **Query:** the catalog for existing recordings and the recorded position of an active recording.
 
@@ -27,6 +28,9 @@ is effectively deleted.
 
 - **Replay Merge:** allows a late joining subscriber of a recorded stream to replay a recording and then merge with the
 live stream for cut over if the consumer is fast enough to keep up.
+
+- **Replicate:** recordings can be replicated from a source to destination archive with the option to follow on with
+a live stream when the source is multicast.
 
 Usage
 =====
@@ -47,15 +51,20 @@ The Archive communicates via the following interfaces:
 A control session can be established with the Archive after a `ConnectRequest`. Operations happen within
 the context of such a ControlSession which is allocated a `controlSessionId`.
 
-Recording Events
+Recording Progress Events
 ----
 Aeron clients wishing to observe the Archive recordings lifecycle can do so by subscribing to the recording events
 channel. The messages are described in the codec. To fully capture the state of the Archive a client could subscribe
 to these events as well as query for the full list of descriptors.
 
+Recording Signal Events
+----
+On a control session signals can be tracked for when a recording starts and stop plus other operations like extend,
+replicate, and live merge.
+
 Persisted Format
 =====
-The Archive is backed by 2 file types, all of which are expected to reside in the `archiveDir`.
+The Archive is backed by 3 file types, all of which are expected to reside in the `archiveDir`.
 
  -  **Catalog (one per archive):** The catalog contains fixed length (1k) records of recording
  descriptors. The descriptors can be queried as described above. Each descriptor entry is 1k aligned,
@@ -64,8 +73,11 @@ The Archive is backed by 2 file types, all of which are expected to reside in th
  length of the RecordingDescriptor. See the codec schema for full descriptor details.
  
  - **Recording Segment Files (many per recorded stream):** This is where the recorded data is kept.
- Recording segments follow the naming convention of: `<recordingId>-<segmentIndex>.rec`
+ Recording segments follow the naming convention of: `<recordingId>-<segment base position>.rec`
  The Archive copies data as is from the recorded Image. As such the files follow the same convention
  as Aeron data streams. Data starts at `startPosition`, which translates into the offset
  `startPosition % termBufferLength` in the first segment file. From there one can read fragments
  as described by the `DataHeaderFlyweight` up to the `stopPosition`. Segment length is a multiple of `termBufferLength`.
+ 
+  - **Mark File:** This file contains the archive distinct error log and heartbeat timestamp to ensure two or more
+ archives do not run in the same directory.

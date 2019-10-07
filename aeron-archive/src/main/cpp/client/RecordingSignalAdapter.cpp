@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-#include "RecordingTransitionAdapter.h"
+#include "RecordingSignalAdapter.h"
 #include "ArchiveException.h"
 #include "aeron_archive_client/MessageHeader.h"
 #include "aeron_archive_client/ControlResponse.h"
-#include "aeron_archive_client/RecordingTransition.h"
+#include "aeron_archive_client/RecordingSignalEvent.h"
 
 using namespace aeron;
 using namespace aeron::archive::client;
 
-static aeron::fragment_handler_t fragmentHandler(RecordingTransitionAdapter& adapter)
+static aeron::fragment_handler_t fragmentHandler(RecordingSignalAdapter& adapter)
 {
     return [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
     {
@@ -31,22 +31,22 @@ static aeron::fragment_handler_t fragmentHandler(RecordingTransitionAdapter& ada
     };
 }
 
-RecordingTransitionAdapter::RecordingTransitionAdapter(
+RecordingSignalAdapter::RecordingSignalAdapter(
     const on_control_response_t &onResponse,
-    const on_recording_transition_t &onRecordingTransition,
+    const on_recording_signal_t &onRecordingSignal,
     std::shared_ptr<aeron::Subscription> subscription,
     std::int64_t controlSessionId,
     int fragmentLimit) :
     m_fragmentHandler(fragmentHandler(*this)),
     m_subscription(std::move(subscription)),
     m_onResponse(onResponse),
-    m_onRecordingTransition(onRecordingTransition),
+    m_onRecordingSignal(onRecordingSignal),
     m_controlSessionId(controlSessionId),
     m_fragmentLimit(fragmentLimit)
 {
 }
 
-void RecordingTransitionAdapter::onFragment(
+void RecordingSignalAdapter::onFragment(
     AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
 {
     MessageHeader msgHeader(
@@ -86,22 +86,22 @@ void RecordingTransitionAdapter::onFragment(
             break;
         }
 
-        case RecordingTransition::sbeTemplateId():
+        case RecordingSignalEvent::sbeTemplateId():
         {
-            RecordingTransition recordingTransition(
+            RecordingSignalEvent recordingSignalEvent(
                 buffer.sbeData() + offset + MessageHeader::encodedLength(),
                 static_cast<std::uint64_t>(length) - MessageHeader::encodedLength(),
                 msgHeader.blockLength(),
                 msgHeader.version());
 
-            if (recordingTransition.controlSessionId() == m_controlSessionId)
+            if (recordingSignalEvent.controlSessionId() == m_controlSessionId)
             {
-                m_onRecordingTransition(
-                    recordingTransition.controlSessionId(),
-                    recordingTransition.recordingId(),
-                    recordingTransition.subscriptionId(),
-                    recordingTransition.position(),
-                    recordingTransition.transitionType());
+                m_onRecordingSignal(
+                    recordingSignalEvent.controlSessionId(),
+                    recordingSignalEvent.recordingId(),
+                    recordingSignalEvent.subscriptionId(),
+                    recordingSignalEvent.position(),
+                    recordingSignalEvent.signal());
             }
             break;
         }

@@ -13,47 +13,47 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef AERON_ARCHIVE_RECORDING_TRANSITION_ADAPTER_H
-#define AERON_ARCHIVE_RECORDING_TRANSITION_ADAPTER_H
+#ifndef AERON_ARCHIVE_RECORDING_SIGNAL_ADAPTER_H
+#define AERON_ARCHIVE_RECORDING_SIGNAL_ADAPTER_H
 
 #include "Aeron.h"
 #include "ControlResponseAdapter.h"
-#include "aeron_archive_client/RecordingTransitionType.h"
+#include "aeron_archive_client/RecordingSignal.h"
 
 namespace aeron { namespace archive { namespace client {
 
 /**
- * An event has been received from the Archive indicating a lifecycle transition for a recording.
+ * An signal has been received from the Archive indicating an operation on a recording.
  *
  * @param controlSessionId of the originating session.
  * @param recordingId      of the recording which transitioned.
  * @param subscriptionId   of the subscription which captured the recording.
  * @param position         of the recording at the time of transition.
- * @param transitionType   type of transition the recording has undertaken.
+ * @param signal           signal for operation the recording has undertaken.
  */
 typedef std::function<void(
     std::int64_t controlSessionId,
     std::int64_t recordingId,
     std::int64_t subscriptionId,
     std::int64_t position,
-    RecordingTransitionType::Value transitionType)> on_recording_transition_t;
+    RecordingSignal::Value signal)> on_recording_signal_t;
 
-class RecordingTransitionAdapter
+class RecordingSignalAdapter
 {
 public:
     /**
      * Create an adapter for a given subscription to an archive for control response messages and
-     * recording lifecycle transition for a given archive session.
+     * recording operation signals for a given archive session.
      *
-     * @param onResponse            to which control responses are dispatched.
-     * @param onRecordingTransition to which recording descriptors are dispatched.
-     * @param subscription          to poll for new events.
-     * @param controlSessionId      to filter on.
+     * @param onResponse        to which control responses are dispatched.
+     * @param onRecordingSignal to which recording signals are dispatched.
+     * @param subscription      to poll for new events.
+     * @param controlSessionId  to filter on.
      * @param fragmentLimit to apply for each polling operation.
      */
-    RecordingTransitionAdapter(
+    RecordingSignalAdapter(
         const on_control_response_t &onResponse,
-        const on_recording_transition_t &onRecordingTransition,
+        const on_recording_signal_t &onRecordingSignal,
         std::shared_ptr<Subscription> subscription,
         std::int64_t controlSessionId,
         int fragmentLimit = 10);
@@ -94,10 +94,10 @@ private:
     fragment_handler_t m_fragmentHandler;
     std::shared_ptr<Subscription> m_subscription;
     on_control_response_t m_onResponse;
-    on_recording_transition_t m_onRecordingTransition;
+    on_recording_signal_t m_onRecordingSignal;
     const std::int64_t m_controlSessionId;
     const int m_fragmentLimit;
 };
 
 }}}
-#endif //AERON_ARCHIVE_RECORDING_TRANSITION_ADAPTER_H
+#endif //AERON_ARCHIVE_RECORDING_SIGNAL_ADAPTER_H

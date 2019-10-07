@@ -62,7 +62,7 @@ SET(SOURCE
     client/RecordingSubscriptionDescriptorPoller.cpp
     client/RecordingEventsPoller.cpp
     client/RecordingEventsAdapter.cpp
-    client/RecordingTransitionAdapter.cpp
+    client/RecordingSignalAdapter.cpp
     client/AeronArchive.cpp
     client/ReplayMerge.cpp)
 
@@ -76,7 +76,7 @@ SET(HEADERS
     client/RecordingSubscriptionDescriptorPoller.h
     client/RecordingEventsPoller.h
     client/RecordingEventsAdapter.h
-    client/RecordingTransitionAdapter.h
+    client/RecordingSignalAdapter.h
     client/RecordingPos.h
     client/AeronArchive.h
     client/ReplayMerge.h)

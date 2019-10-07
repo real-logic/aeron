@@ -23,11 +23,11 @@
 using namespace aeron;
 using namespace aeron::archive::client;
 
-static aeron::fragment_handler_t fragmentHandler(RecordingSignalAdapter& adapter)
+static aeron::controlled_poll_fragment_handler_t controlHandler(RecordingSignalAdapter& adapter)
 {
     return [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
     {
-        adapter.onFragment(buffer, offset, length, header);
+        return adapter.onFragment(buffer, offset, length, header);
     };
 }
 
@@ -37,7 +37,8 @@ RecordingSignalAdapter::RecordingSignalAdapter(
     std::shared_ptr<aeron::Subscription> subscription,
     std::int64_t controlSessionId,
     int fragmentLimit) :
-    m_fragmentHandler(fragmentHandler(*this)),
+    m_fragmentAssembler(controlHandler(*this)),
+    m_fragmentHandler(m_fragmentAssembler.handler()),
     m_subscription(std::move(subscription)),
     m_onResponse(onResponse),
     m_onRecordingSignal(onRecordingSignal),
@@ -46,9 +47,14 @@ RecordingSignalAdapter::RecordingSignalAdapter(
 {
 }
 
-void RecordingSignalAdapter::onFragment(
+ControlledPollAction RecordingSignalAdapter::onFragment(
     AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
 {
+    if (m_isAbort)
+    {
+        return ControlledPollAction::ABORT;
+    }
+
     MessageHeader msgHeader(
         buffer.sbeData() + offset,
         static_cast<std::uint64_t>(length),
@@ -102,11 +108,12 @@ void RecordingSignalAdapter::onFragment(
                     recordingSignalEvent.subscriptionId(),
                     recordingSignalEvent.position(),
                     recordingSignalEvent.signal());
-            }
-            break;
-        }
 
-        default:
-            break;
+                m_isAbort = true;
+                return ControlledPollAction::BREAK;
+            }
+        }
     }
+
+    return ControlledPollAction::CONTINUE;
 }

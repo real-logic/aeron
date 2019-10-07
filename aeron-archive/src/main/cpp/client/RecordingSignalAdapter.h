@@ -17,6 +17,7 @@
 #define AERON_ARCHIVE_RECORDING_SIGNAL_ADAPTER_H
 
 #include "Aeron.h"
+#include "ControlledFragmentAssembler.h"
 #include "ControlResponseAdapter.h"
 #include "aeron_archive_client/RecordingSignal.h"
 
@@ -85,18 +86,22 @@ public:
      */
     inline int poll()
     {
-        return m_subscription->poll(m_fragmentHandler, m_fragmentLimit);
+        m_isAbort = false;
+
+        return m_subscription->controlledPoll(m_fragmentHandler, m_fragmentLimit);
     }
 
-    void onFragment(AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header);
+    ControlledPollAction onFragment(AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header);
 
 private:
-    fragment_handler_t m_fragmentHandler;
+    ControlledFragmentAssembler m_fragmentAssembler;
+    controlled_poll_fragment_handler_t m_fragmentHandler;
     std::shared_ptr<Subscription> m_subscription;
     on_control_response_t m_onResponse;
     on_recording_signal_t m_onRecordingSignal;
     const std::int64_t m_controlSessionId;
     const int m_fragmentLimit;
+    bool m_isAbort = false;
 };
 
 }}}

@@ -17,7 +17,7 @@ package io.aeron.archive;
 
 import java.io.File;
 
-public interface ArchiveMigrationStep
+interface ArchiveMigrationStep
 {
     int minimumVersion();
 

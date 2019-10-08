@@ -35,8 +35,7 @@ import java.nio.file.attribute.FileTime;
 import static io.aeron.archive.Catalog.INVALID;
 import static io.aeron.archive.MigrationUtils.fullVersionString;
 
-@SuppressWarnings("TypeName")
-public class ArchiveMigration_0_1 implements ArchiveMigrationStep
+class ArchiveMigration_0_1 implements ArchiveMigrationStep
 {
     private static final int MINIMUM_VERSION = SemanticVersion.compose(1, 0, 0);
 
@@ -55,8 +54,8 @@ public class ArchiveMigration_0_1 implements ArchiveMigrationStep
             {
                 final String version0Prefix = decoder.recordingId() + "-";
                 final String version0Suffix = ".rec";
-                String[] segmentFiles =
-                    archiveDir.list((dir, name) -> name.startsWith(version0Prefix) && name.endsWith(version0Suffix));
+                String[] segmentFiles = archiveDir.list(
+                    (dir, filename) -> filename.startsWith(version0Prefix) && filename.endsWith(version0Suffix));
 
                 if (null == segmentFiles)
                 {
@@ -93,8 +92,8 @@ public class ArchiveMigration_0_1 implements ArchiveMigrationStep
         final long recordingId = decoder.recordingId();
         final long startPosition = decoder.startPosition();
         final long segmentLength = decoder.segmentFileLength();
+        final long segmentBasePosition = startPosition - (startPosition & (segmentLength - 1));
         final int positionBitsToShift = LogBufferDescriptor.positionBitsToShift((int)segmentLength);
-        final long startSegmentPosition = startPosition - (startPosition & (segmentLength - 1));
 
         if (headerDecoder.valid() == INVALID)
         {
@@ -102,7 +101,7 @@ public class ArchiveMigration_0_1 implements ArchiveMigrationStep
         }
 
         System.out.println(
-            "(recordingId=" + recordingId + ") startSegmentPosition=" + startSegmentPosition + " " +
+            "(recordingId=" + recordingId + ") segmentBasePosition=" + segmentBasePosition + " " +
             "segmentLength=" + segmentLength + "(" + positionBitsToShift + ")");
 
         for (final String filename : segmentFiles)
@@ -125,7 +124,7 @@ public class ArchiveMigration_0_1 implements ArchiveMigrationStep
                     throw ex;
                 }
 
-                final long segmentPosition = (segmentIndex << positionBitsToShift) + startSegmentPosition;
+                final long segmentPosition = (segmentIndex << positionBitsToShift) + segmentBasePosition;
                 final String newFilename = prefix + segmentPosition + suffix;
 
                 final Path sourcePath = new File(archiveDir, filename).toPath();
@@ -151,7 +150,6 @@ public class ArchiveMigration_0_1 implements ArchiveMigrationStep
         System.out.println("(recordingId=" + recordingId + ") OK");
     }
 
-    @Override
     public String toString()
     {
         return "to " + fullVersionString(minimumVersion());

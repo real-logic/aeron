@@ -35,7 +35,7 @@ import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_POSTFIX;
+import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_SUFFIX;
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.Catalog.INVALID;
 import static io.aeron.archive.Catalog.VALID;
@@ -47,7 +47,8 @@ import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
 import static java.nio.file.StandardOpenOption.READ;
 
 /**
- * Tool for getting a listing from or verifying the archive catalog.
+ * Tool for inspecting and performing administrative tasks on an {@link Archive} and its contents which is described in
+ * the {@link Catalog}.
  */
 public class CatalogTool
 {
@@ -334,7 +335,7 @@ public class CatalogTool
         {
             final String prefix = recordingId + "-";
             String[] segmentFiles = archiveDir.list(
-                (dir, name) -> name.startsWith(prefix) && name.endsWith(RECORDING_SEGMENT_POSTFIX));
+                (dir, name) -> name.startsWith(prefix) && name.endsWith(RECORDING_SEGMENT_SUFFIX));
 
             if (null == segmentFiles)
             {
@@ -345,7 +346,7 @@ public class CatalogTool
             {
                 final int length = filename.length();
                 final int offset = prefix.length();
-                final int remaining = length - offset - RECORDING_SEGMENT_POSTFIX.length();
+                final int remaining = length - offset - RECORDING_SEGMENT_SUFFIX.length();
 
                 if (remaining > 0)
                 {
@@ -481,7 +482,7 @@ public class CatalogTool
         System.out.println("  count-entries: queries the number of recording entries in the catalog.");
         System.out.println("  max-entries <optional number of entries>: gets or increases the maximum number of");
         System.out.println("     recording entries the catalog can store.");
-        System.out.println("  migrate: migrate from a previous archive MarkFile and Catalog and recordings to latest");
-        System.out.println("     version from previous version.");
+        System.out.println("  migrate: migrate previous archive MarkFile, Catalog, and recordings from previous");
+        System.out.println("     to the latest version.");
     }
 }

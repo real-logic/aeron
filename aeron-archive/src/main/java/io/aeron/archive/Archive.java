@@ -164,38 +164,145 @@ public class Archive implements AutoCloseable
      */
     public static class Configuration
     {
+        /**
+         * Directory in which the archive stores it files such as the catalog and recordings.
+         */
         public static final String ARCHIVE_DIR_PROP_NAME = "aeron.archive.dir";
+
+        /**
+         * Default directory for the archive files.
+         * @see #ARCHIVE_DIR_PROP_NAME
+         */
         public static final String ARCHIVE_DIR_DEFAULT = "aeron-archive";
 
+        /**
+         * Recordings will be segmented on disk in files limited to the segment length which must be a multiple of
+         * the term length for each stream. For lots of small recording this value may be reduced.
+         */
         public static final String SEGMENT_FILE_LENGTH_PROP_NAME = "aeron.archive.segment.file.length";
+
+        /**
+         * Default segment file length which is multiple of terms.
+         * @see #SEGMENT_FILE_LENGTH_PROP_NAME
+         */
         public static final int SEGMENT_FILE_LENGTH_DEFAULT = 128 * 1024 * 1024;
 
+        /**
+         * The level at which recording files should be sync'ed to disk.
+         * <ul>
+         * <li>0 - normal writes.</li>
+         * <li>1 - sync file data.</li>
+         * <li>2 - sync file data + metadata.</li>
+         * </ul>
+         */
         public static final String FILE_SYNC_LEVEL_PROP_NAME = "aeron.archive.file.sync.level";
+
+        /**
+         * Default is to use normal file writes which may mean some data loss in the event of a power failure.
+         * @see #FILE_SYNC_LEVEL_PROP_NAME
+         */
         public static final int FILE_SYNC_LEVEL_DEFAULT = 0;
 
+        /**
+         * The level at which catalog updates should be sync'ed to disk.
+         * <ul>
+         * <li>0 - normal writes.</li>
+         * <li>1 - sync file data.</li>
+         * <li>2 - sync file data + metadata.</li>
+         * </ul>
+         */
         public static final String CATALOG_FILE_SYNC_LEVEL_PROP_NAME = "aeron.archive.catalog.file.sync.level";
+
+        /**
+         * Default is to use normal file writes which may mean some data loss in the event of a power failure.
+         * @see #CATALOG_FILE_SYNC_LEVEL_PROP_NAME
+         */
         public static final int CATALOG_FILE_SYNC_LEVEL_DEFAULT = FILE_SYNC_LEVEL_DEFAULT;
 
+        /**
+         * What {@link ArchiveThreadingMode} should be used.
+         */
         public static final String THREADING_MODE_PROP_NAME = "aeron.archive.threading.mode";
+
+        /**
+         * {@link IdleStrategy} to be used for the archive {@link Agent}s when not busy.
+         */
         public static final String ARCHIVE_IDLE_STRATEGY_PROP_NAME = "aeron.archive.idle.strategy";
+
+        /**
+         * Default {@link IdleStrategy} to be used for the archive {@link Agent}s when not busy.
+         * @see #ARCHIVE_IDLE_STRATEGY_PROP_NAME
+         */
         public static final String DEFAULT_IDLE_STRATEGY = "org.agrona.concurrent.BackoffIdleStrategy";
 
+        /**
+         * Maximum number of concurrent recordings which can be active at a time. Going beyond this number will
+         * result in an exception and further recordings will be rejected. Since wildcard subscriptions can have
+         * multiple images, and thus multiple recordings, then some of the exception may come later. It is best to
+         * use session based subscriptions.
+         */
         public static final String MAX_CONCURRENT_RECORDINGS_PROP_NAME = "aeron.archive.max.concurrent.recordings";
+
+        /**
+         * Default maximum number of concurrent recordings. Unless on a very fast SSD and having sufficient memory
+         * for the page cache then this number should be kept low, especially when sync'ing writes.
+         * @see #MAX_CONCURRENT_RECORDINGS_PROP_NAME
+         */
         public static final int MAX_CONCURRENT_RECORDINGS_DEFAULT = 20;
 
+        /**
+         * Maximum number of concurrent replays. Beyond this maximum an exception will be raised and further replays
+         * will be rejected.
+         */
         public static final String MAX_CONCURRENT_REPLAYS_PROP_NAME = "aeron.archive.max.concurrent.replays";
+
+        /**
+         * Default maximum number of concurrent replays. Unless on a  fast SSD and having sufficient memory
+         * for the page cache then this number should be kept low.
+         */
         public static final int MAX_CONCURRENT_REPLAYS_DEFAULT = 20;
 
+        /**
+         * Maximum number of entries for the archive {@link Catalog}. Increasing this limit will require use of the
+         * {@link CatalogTool}. The number of entries can be reduced by extending existing recordings rather than
+         * creating new ones.
+         */
         public static final String MAX_CATALOG_ENTRIES_PROP_NAME = "aeron.archive.max.catalog.entries";
+
+        /**
+         * Default limit for the entries in the {@link Catalog}
+         * @see #MAX_CATALOG_ENTRIES_PROP_NAME
+         */
         public static final long MAX_CATALOG_ENTRIES_DEFAULT = Catalog.DEFAULT_MAX_ENTRIES;
 
+        /**
+         * Timeout for making a connection back to a client for a control session or replay.
+         */
         public static final String CONNECT_TIMEOUT_PROP_NAME = "aeron.archive.connect.timeout";
+
+        /**
+         * Default timeout for connecting back to a client for a control session or replay. You may want to
+         * increase this on higher latency networks.
+         * @see #CONNECT_TIMEOUT_PROP_NAME
+         */
         public static final long CONNECT_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
 
+        /**
+         * How long a replay publication should linger after all data is sent. Longer linger can help avoid tail loss.
+         */
         public static final String REPLAY_LINGER_TIMEOUT_PROP_NAME = "aeron.archive.replay.linger.timeout";
+
+        /**
+         * Default for long to linger a replay connection which defaults to
+         * {@link io.aeron.driver.Configuration#publicationLingerTimeoutNs()}.
+         * @see #REPLAY_LINGER_TIMEOUT_PROP_NAME
+         */
         public static final long REPLAY_LINGER_TIMEOUT_DEFAULT_NS =
             io.aeron.driver.Configuration.publicationLingerTimeoutNs();
 
+        /**
+         * Should the archive delete existing files on start. Default is false and should only be true for testing.
+         */
         public static final String ARCHIVE_DIR_DELETE_ON_START_PROP_NAME = "aeron.archive.dir.delete.on.start";
 
         /**
@@ -205,11 +312,23 @@ public class Archive implements AutoCloseable
 
         /**
          * Channel for receiving replication streams replayed from another archive.
+         * @see #REPLICATION_CHANNEL_PROP_NAME
          */
         public static final String REPLICATION_CHANNEL_DEFAULT = "aeron:udp?endpoint=8040";
 
+        /**
+         * Filename for the single instance of a {@link Catalog} contents for an archive.
+         */
         static final String CATALOG_FILE_NAME = "archive.catalog";
-        static final String RECORDING_SEGMENT_POSTFIX = ".rec";
+
+        /**
+         * Recording segment file suffix extension.
+         */
+        static final String RECORDING_SEGMENT_SUFFIX = ".rec";
+
+        /**
+         * Maximum block length of data read from disk in a single operation during a replay.
+         */
         static final int MAX_BLOCK_LENGTH = 2 * 1024 * 1024;
 
         /**
@@ -1433,16 +1552,40 @@ public class Archive implements AutoCloseable
         }
     }
 
+    /**
+     * Position of the recorded stream at the beginning of a segment file. If a recording starts within a term
+     * then the base position can be before the recording started.
+     *
+     * @param position          of the stream to calculate the segment base position from.
+     * @param segmentFileLength which is a multiple of term length.
+     * @return the position of the recorded stream at the beginning of a segment file.
+     */
     static long segmentFilePosition(final long position, final int segmentFileLength)
     {
         return (position - (position & (segmentFileLength - 1)));
     }
 
-    static String segmentFileName(final long recordingId, final long segmentPosition)
+    /**
+     * The filename to be used for a segment file based on recording id and position the segment begins.
+     *
+     * @param recordingId         to identify the recorded stream.
+     * @param segmentBasePosition at which the segment file begins.
+     * @return the filename to be used for a segment file based on recording id and position the segment begins.
+     */
+    static String segmentFileName(final long recordingId, final long segmentBasePosition)
     {
-        return recordingId + "-" + segmentPosition + Configuration.RECORDING_SEGMENT_POSTFIX;
+        return recordingId + "-" + segmentBasePosition + Configuration.RECORDING_SEGMENT_SUFFIX;
     }
 
+    /**
+     * Get the {@link FileChannel} for the parent directory for the recordings and catalog so it can be sync'ed
+     * to storage when new files are created.
+     *
+     * @param directory     which will store the files created by the archive.
+     * @param fileSyncLevel to be applied for file updates, {@link Archive.Configuration#FILE_SYNC_LEVEL_PROP_NAME}.
+     * @return the the {@link FileChannel} for the parent directory for the recordings and catalog if fileSyncLevel
+     * greater than zero otherwise null.
+     */
     static FileChannel channelForDirectorySync(final File directory, final int fileSyncLevel)
     {
         if (fileSyncLevel > 0)

@@ -28,7 +28,7 @@ import java.util.List;
  * A step need not be a complete operation. A series of operations may be broken down in steps and
  * included with the same minimum version.
  */
-public class ArchiveMigrationPlanner
+class ArchiveMigrationPlanner
 {
     private static final ArrayList<ArchiveMigrationStep> ALL_MIGRATION_STEPS = new ArrayList<>();
 
@@ -42,11 +42,11 @@ public class ArchiveMigrationPlanner
     {
         final List<ArchiveMigrationStep> steps = new ArrayList<>();
 
-        for (int i = 0; i < ALL_MIGRATION_STEPS.size(); i++)
+        for (int i = 0, size = ALL_MIGRATION_STEPS.size(); i < size; i++)
         {
             if (ALL_MIGRATION_STEPS.get(i).minimumVersion() > version)
             {
-                steps.addAll(ALL_MIGRATION_STEPS.subList(i, ALL_MIGRATION_STEPS.size()));
+                steps.addAll(ALL_MIGRATION_STEPS.subList(i, size));
                 break;
             }
         }

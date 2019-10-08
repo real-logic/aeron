@@ -24,7 +24,7 @@ import java.nio.channels.FileChannel;
 import static java.nio.file.StandardOpenOption.*;
 import static java.nio.file.StandardOpenOption.SPARSE;
 
-public class MigrationUtils
+class MigrationUtils
 {
     private static final String MIGRATION_TIMESTAMP_FILE_PREFIX = "migration-";
     private static final String MIGRATION_TIMESTAMP_FILE_SUFFIX = ".dat";
@@ -59,5 +59,4 @@ public class MigrationUtils
             " Minor " + SemanticVersion.minor(version) +
             " Patch " + SemanticVersion.patch(version) + ")";
     }
-
 }

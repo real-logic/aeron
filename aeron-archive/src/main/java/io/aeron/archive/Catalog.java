@@ -32,7 +32,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
 import java.util.function.IntConsumer;
 
-import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_POSTFIX;
+import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_SUFFIX;
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
@@ -734,7 +734,7 @@ class Catalog implements AutoCloseable
         {
             final String prefix = recordingId + "-";
             String[] segmentFiles = archiveDir.list(
-                (dir, name) -> name.startsWith(prefix) && name.endsWith(RECORDING_SEGMENT_POSTFIX));
+                (dir, name) -> name.startsWith(prefix) && name.endsWith(RECORDING_SEGMENT_SUFFIX));
 
             if (null == segmentFiles)
             {
@@ -746,7 +746,7 @@ class Catalog implements AutoCloseable
             {
                 final int length = filename.length();
                 final int offset = prefix.length();
-                final int remaining = length - offset - RECORDING_SEGMENT_POSTFIX.length();
+                final int remaining = length - offset - RECORDING_SEGMENT_SUFFIX.length();
 
                 if (remaining > 0)
                 {

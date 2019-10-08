@@ -22,7 +22,6 @@ import java.io.File;
 import java.nio.channels.FileChannel;
 
 import static java.nio.file.StandardOpenOption.*;
-import static java.nio.file.StandardOpenOption.SPARSE;
 
 class MigrationUtils
 {

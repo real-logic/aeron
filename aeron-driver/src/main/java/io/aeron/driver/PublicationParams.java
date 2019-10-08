@@ -40,6 +40,10 @@ final class PublicationParams
     boolean isSparse;
     boolean signalEos = true;
 
+    PublicationParams()
+    {
+    }
+
     static PublicationParams getPublicationParams(
         final MediaDriver.Context context,
         final ChannelUri channelUri,

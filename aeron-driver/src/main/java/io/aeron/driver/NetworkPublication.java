@@ -149,7 +149,7 @@ public class NetworkPublication
 
     public NetworkPublication(
         final long registrationId,
-        final long tag,
+        final PublicationParams params,
         final SendChannelEndpoint channelEndpoint,
         final NanoClock nanoClock,
         final RawLog rawLog,
@@ -162,27 +162,24 @@ public class NetworkPublication
         final int sessionId,
         final int streamId,
         final int initialTermId,
-        final int mtuLength,
         final SystemCounters systemCounters,
         final FlowControl flowControl,
         final RetransmitHandler retransmitHandler,
         final NetworkPublicationThreadLocals threadLocals,
         final long unblockTimeoutNs,
         final long connectionTimeoutNs,
-        final long lingerTimeoutNs,
         final long untetheredWindowLimitTimeoutNs,
         final long untetheredRestingTimeoutNs,
-        final boolean isExclusive,
         final boolean spiesSimulateConnection,
-        final boolean signalEos)
+        final boolean isExclusive)
     {
         this.registrationId = registrationId;
         this.unblockTimeoutNs = unblockTimeoutNs;
         this.connectionTimeoutNs = connectionTimeoutNs;
-        this.lingerTimeoutNs = lingerTimeoutNs;
+        this.lingerTimeoutNs = params.lingerTimeoutNs;
         this.untetheredWindowLimitTimeoutNs = untetheredWindowLimitTimeoutNs;
         this.untetheredRestingTimeoutNs = untetheredRestingTimeoutNs;
-        this.tag = tag;
+        this.tag = params.entityTag;
         this.channelEndpoint = channelEndpoint;
         this.rawLog = rawLog;
         this.nanoClock = nanoClock;
@@ -192,13 +189,13 @@ public class NetworkPublication
         this.retransmitHandler = retransmitHandler;
         this.publisherPos = publisherPos;
         this.publisherLimit = publisherLimit;
-        this.mtuLength = mtuLength;
+        this.mtuLength = params.mtuLength;
         this.initialTermId = initialTermId;
         this.sessionId = sessionId;
         this.streamId = streamId;
-        this.isExclusive = isExclusive;
         this.spiesSimulateConnection = spiesSimulateConnection;
-        this.signalEos = signalEos;
+        this.isExclusive = isExclusive;
+        this.signalEos = params.signalEos;
 
         metaDataBuffer = rawLog.metaData();
         setupBuffer = threadLocals.setupBuffer();

@@ -1076,7 +1076,7 @@ public class DriverConductor implements Agent
 
         final NetworkPublication publication = new NetworkPublication(
             registrationId,
-            params.entityTag,
+            params,
             channelEndpoint,
             cachedNanoClock,
             newNetworkPublicationLog(sessionId, streamId, initialTermId, udpChannel, registrationId, params),
@@ -1089,19 +1089,16 @@ public class DriverConductor implements Agent
             sessionId,
             streamId,
             initialTermId,
-            params.mtuLength,
             ctx.systemCounters(),
             flowControl,
             retransmitHandler,
             networkPublicationThreadLocals,
             ctx.publicationUnblockTimeoutNs(),
             ctx.publicationConnectionTimeoutNs(),
-            params.lingerTimeoutNs,
             ctx.untetheredWindowLimitTimeoutNs(),
             ctx.untetheredRestingTimeoutNs(),
-            isExclusive,
             ctx.spiesSimulateConnection(),
-            params.signalEos);
+            isExclusive);
 
         channelEndpoint.incRef();
         networkPublications.add(publication);

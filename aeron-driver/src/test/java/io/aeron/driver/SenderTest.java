@@ -133,9 +133,15 @@ public class SenderTest
             termAppenders[i] = new TermAppender(rawLog.termBuffers()[i], rawLog.metaData(), i);
         }
 
+        final PublicationParams params = new PublicationParams();
+        params.entityTag = 101;
+        params.mtuLength = MAX_FRAME_LENGTH;
+        params.lingerTimeoutNs = Configuration.publicationLingerTimeoutNs();
+        params.signalEos = true;
+
         publication = new NetworkPublication(
             1,
-            101,
+            params,
             mockSendChannelEndpoint,
             () -> currentTimestamp,
             rawLog,
@@ -148,19 +154,16 @@ public class SenderTest
             SESSION_ID,
             STREAM_ID,
             INITIAL_TERM_ID,
-            MAX_FRAME_LENGTH,
             mockSystemCounters,
             flowControl,
             mockRetransmitHandler,
             new NetworkPublicationThreadLocals(),
             Configuration.publicationUnblockTimeoutNs(),
             Configuration.publicationConnectionTimeoutNs(),
-            Configuration.publicationLingerTimeoutNs(),
             Configuration.untetheredWindowLimitTimeoutNs(),
             Configuration.untetheredRestingTimeoutNs(),
             false,
-            false,
-            true);
+            false);
 
         senderCommandQueue.offer(() -> sender.onNewNetworkPublication(publication));
     }

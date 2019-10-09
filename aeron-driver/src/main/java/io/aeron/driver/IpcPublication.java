@@ -47,7 +47,6 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
 
     private final long registrationId;
     private final long unblockTimeoutNs;
-    private final long imageLivenessTimeoutNs;
     private final long untetheredWindowLimitTimeoutNs;
     private final long untetheredRestingTimeoutNs;
     private final long tag;
@@ -63,7 +62,6 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
     private long lastConsumerPosition;
     private long timeOfLastConsumerPositionUpdateNs;
     private long cleanPosition;
-    private long timeOfLastStateChangeNs;
     private int refCount = 0;
     private boolean reachedEndOfLife = false;
     private final boolean isExclusive;
@@ -87,7 +85,6 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         final RawLog rawLog,
         final int termWindowLength,
         final long unblockTimeoutNs,
-        final long imageLivenessTimeoutNs,
         final long untetheredWindowLimitTimeoutNs,
         final long untetheredRestingTimeoutNs,
         final long nowNs,
@@ -106,12 +103,11 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         this.termBufferLength = termLength;
         this.positionBitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
         this.termWindowLength = termWindowLength;
-        this.tripGain = termWindowLength / 8;
+        this.tripGain = termWindowLength >> 3;
         this.publisherPos = publisherPos;
         this.publisherLimit = publisherLimit;
         this.rawLog = rawLog;
         this.unblockTimeoutNs = unblockTimeoutNs;
-        this.imageLivenessTimeoutNs = imageLivenessTimeoutNs;
         this.untetheredWindowLimitTimeoutNs = untetheredWindowLimitTimeoutNs;
         this.untetheredRestingTimeoutNs = untetheredRestingTimeoutNs;
         this.unblockedPublications = systemCounters.get(UNBLOCKED_PUBLICATIONS);
@@ -121,7 +117,6 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         lastConsumerPosition = consumerPosition;
         cleanPosition = consumerPosition;
         timeOfLastConsumerPositionUpdateNs = nowNs;
-        timeOfLastStateChangeNs = nowNs;
     }
 
     public int sessionId()
@@ -254,7 +249,6 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
                 if (isDrained(producerPosition))
                 {
                     state = State.LINGER;
-                    timeOfLastStateChangeNs = timeNs;
                     conductor.transitionToLinger(this);
                 }
                 else if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, consumerPosition, termBufferLength))
@@ -265,11 +259,8 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
             }
 
             case LINGER:
-                if ((timeOfLastStateChangeNs + imageLivenessTimeoutNs) - timeNs < 0)
-                {
-                    reachedEndOfLife = true;
-                    conductor.cleanupIpcPublication(this);
-                }
+                reachedEndOfLife = true;
+                conductor.cleanupIpcPublication(this);
                 break;
         }
     }

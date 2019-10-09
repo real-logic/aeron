@@ -38,7 +38,6 @@ public class UntetheredSubscriptionTest
     private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int TERM_WINDOW_LENGTH = TERM_BUFFER_LENGTH / 2;
     private static final long TIME_NS = 1000;
-    private static final long IMAGE_LIVENESS_TIMEOUT_NS = Configuration.imageLivenessTimeoutNs();
     private static final long UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS = Configuration.untetheredWindowLimitTimeoutNs();
     private static final long UNTETHERED_RESTING_TIMEOUT_NS = Configuration.untetheredRestingTimeoutNs();
 
@@ -59,7 +58,6 @@ public class UntetheredSubscriptionTest
             rawLog,
             TERM_WINDOW_LENGTH,
             Configuration.publicationUnblockTimeoutNs(),
-            IMAGE_LIVENESS_TIMEOUT_NS,
             UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS,
             UNTETHERED_RESTING_TIMEOUT_NS,
             TIME_NS,

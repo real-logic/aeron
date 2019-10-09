@@ -1484,7 +1484,6 @@ public class DriverConductor implements Agent
             rawLog,
             Configuration.producerWindowLength(params.termLength, ctx.ipcPublicationTermWindowLength()),
             ctx.publicationUnblockTimeoutNs(),
-            ctx.imageLivenessTimeoutNs(),
             ctx.untetheredWindowLimitTimeoutNs(),
             ctx.untetheredRestingTimeoutNs(),
             cachedNanoClock.nanoTime(),

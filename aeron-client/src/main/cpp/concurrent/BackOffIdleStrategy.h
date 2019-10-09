@@ -112,10 +112,10 @@ public:
 
 protected:
     std::uint8_t m_prePad[aeron::util::BitUtil::CACHE_LINE_LENGTH * 2];
-    const std::int64_t m_maxSpins;
-    const std::int64_t m_maxYields;
-    const std::chrono::duration<long, std::nano> m_minParkPeroidNs;
-    const std::chrono::duration<long, std::nano> m_maxParkPeriodNs;
+    std::int64_t m_maxSpins;
+    std::int64_t m_maxYields;
+    std::chrono::duration<long, std::nano> m_minParkPeroidNs;
+    std::chrono::duration<long, std::nano> m_maxParkPeriodNs;
     std::int64_t m_spins;
     std::int64_t m_yields;
     std::chrono::duration<long, std::nano> m_parkPeriodNs;

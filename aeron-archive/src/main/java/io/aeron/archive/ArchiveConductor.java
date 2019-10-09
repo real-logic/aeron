@@ -1084,8 +1084,6 @@ abstract class ArchiveConductor
         final String originalChannel,
         final Image image)
     {
-        validateMaxConcurrentRecordings(correlationId, controlSession, originalChannel, image);
-
         final int sessionId = image.sessionId();
         final int streamId = image.subscription().streamId();
         final String sourceIdentity = image.sourceIdentity();
@@ -1150,8 +1148,6 @@ abstract class ArchiveConductor
             controlSession.attemptErrorResponse(correlationId, ACTIVE_RECORDING, msg, controlResponseProxy);
             throw new ArchiveException(msg);
         }
-
-        validateMaxConcurrentRecordings(correlationId, controlSession, originalChannel, image);
 
         catalog.recordingSummary(recordingId, recordingSummary);
         validateImageForExtendRecording(correlationId, controlSession, image, recordingSummary);
@@ -1220,22 +1216,6 @@ abstract class ArchiveConductor
             final String msg = "failed to create replay publication - " + ex;
             controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
             throw ex;
-        }
-    }
-
-    private void validateMaxConcurrentRecordings(
-        final long correlationId,
-        final ControlSession controlSession,
-        final String originalChannel,
-        final Image image)
-    {
-        if (recordingSessionByIdMap.size() >= maxConcurrentRecordings)
-        {
-            final String msg = "max concurrent recordings reached, cannot record " +
-                image.subscription().streamId() + ":" + originalChannel;
-
-            controlSession.attemptErrorResponse(correlationId, MAX_RECORDINGS, msg, controlResponseProxy);
-            throw new ArchiveException(msg);
         }
     }
 

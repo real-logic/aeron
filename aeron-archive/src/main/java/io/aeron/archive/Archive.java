@@ -238,7 +238,7 @@ public class Archive implements AutoCloseable
         /**
          * Maximum number of concurrent recordings which can be active at a time. Going beyond this number will
          * result in an exception and further recordings will be rejected. Since wildcard subscriptions can have
-         * multiple images, and thus multiple recordings, then some of the exception may come later. It is best to
+         * multiple images, and thus multiple recordings, then the limit may come later. It is best to
          * use session based subscriptions.
          */
         public static final String MAX_CONCURRENT_RECORDINGS_PROP_NAME = "aeron.archive.max.concurrent.recordings";

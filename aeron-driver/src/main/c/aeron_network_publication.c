@@ -181,7 +181,7 @@ int aeron_network_publication_create(
     _pub->conductor_fields.managed_resource.decref = aeron_network_publication_decref;
     _pub->conductor_fields.has_reached_end_of_life = false;
     _pub->conductor_fields.clean_position = 0;
-    _pub->conductor_fields.status = AERON_NETWORK_PUBLICATION_STATUS_ACTIVE;
+    _pub->conductor_fields.state = AERON_NETWORK_PUBLICATION_STATE_ACTIVE;
     _pub->conductor_fields.refcnt = 1;
     _pub->conductor_fields.time_of_last_activity_ns = now_ns;
     _pub->conductor_fields.last_snd_pos = 0;
@@ -699,7 +699,7 @@ void aeron_network_publication_clean_buffer(aeron_network_publication_t *publica
 
 int aeron_network_publication_update_pub_lmt(aeron_network_publication_t *publication)
 {
-    if (AERON_NETWORK_PUBLICATION_STATUS_ACTIVE != publication->conductor_fields.status)
+    if (AERON_NETWORK_PUBLICATION_STATE_ACTIVE != publication->conductor_fields.state)
     {
         return 0;
     }
@@ -754,9 +754,7 @@ void aeron_network_publication_check_for_blocked_publisher(
         if (now_ns > (publication->conductor_fields.time_of_last_activity_ns + publication->unblock_timeout_ns))
         {
             if (aeron_logbuffer_unblocker_unblock(
-                publication->mapped_raw_log.term_buffers,
-                publication->log_meta_data,
-                snd_pos))
+                publication->mapped_raw_log.term_buffers, publication->log_meta_data, snd_pos))
             {
                 aeron_counter_ordered_increment(publication->unblocked_publications_counter, 1);
             }
@@ -784,7 +782,7 @@ void aeron_network_publication_decref(void *clientd)
     {
         const int64_t producer_position = aeron_network_publication_producer_position(publication);
 
-        publication->conductor_fields.status = AERON_NETWORK_PUBLICATION_STATUS_DRAINING;
+        publication->conductor_fields.state = AERON_NETWORK_PUBLICATION_STATE_DRAINING;
         publication->conductor_fields.time_of_last_activity_ns = publication->nano_clock();
 
         aeron_counter_set_ordered(publication->pub_lmt_position.value_addr, producer_position);
@@ -919,9 +917,9 @@ void aeron_network_publication_on_time_event(
 
     aeron_counter_set_ordered(publication->pub_pos_position.value_addr, producer_position);
 
-    switch (publication->conductor_fields.status)
+    switch (publication->conductor_fields.state)
     {
-        case AERON_NETWORK_PUBLICATION_STATUS_ACTIVE:
+        case AERON_NETWORK_PUBLICATION_STATE_ACTIVE:
         {
             aeron_network_publication_check_untethered_subscriptions(conductor, publication, now_ns);
             if (!publication->is_exclusive)
@@ -935,7 +933,7 @@ void aeron_network_publication_on_time_event(
             break;
         }
 
-        case AERON_NETWORK_PUBLICATION_STATUS_DRAINING:
+        case AERON_NETWORK_PUBLICATION_STATE_DRAINING:
         {
             int64_t sender_position = aeron_counter_get_volatile(publication->snd_pos_position.value_addr);
 
@@ -961,22 +959,22 @@ void aeron_network_publication_on_time_event(
             if (aeron_network_publication_spies_finished_consuming(publication, conductor, producer_position))
             {
                 publication->conductor_fields.time_of_last_activity_ns = now_ns;
-                publication->conductor_fields.status = AERON_NETWORK_PUBLICATION_STATUS_LINGER;
+                publication->conductor_fields.state = AERON_NETWORK_PUBLICATION_STATE_LINGER;
             }
             break;
         }
 
-        case AERON_NETWORK_PUBLICATION_STATUS_LINGER:
+        case AERON_NETWORK_PUBLICATION_STATE_LINGER:
         {
             if (now_ns > (publication->conductor_fields.time_of_last_activity_ns + publication->linger_timeout_ns))
             {
                 aeron_driver_conductor_cleanup_network_publication(conductor, publication);
-                publication->conductor_fields.status = AERON_NETWORK_PUBLICATION_STATUS_CLOSING;
+                publication->conductor_fields.state = AERON_NETWORK_PUBLICATION_STATE_CLOSING;
             }
             break;
         }
 
-        case AERON_NETWORK_PUBLICATION_STATUS_CLOSING:
+        case AERON_NETWORK_PUBLICATION_STATE_CLOSING:
             break;
     }
 }

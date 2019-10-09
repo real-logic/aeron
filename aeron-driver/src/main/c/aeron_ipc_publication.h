@@ -25,20 +25,20 @@
 #include "concurrent/aeron_counters_manager.h"
 #include "aeron_system_counters.h"
 
-typedef enum aeron_ipc_publication_status_enum
+typedef enum aeron_ipc_publication_state_enum
 {
-    AERON_IPC_PUBLICATION_STATUS_ACTIVE,
-    AERON_IPC_PUBLICATION_STATUS_INACTIVE,
-    AERON_IPC_PUBLICATION_STATUS_LINGER
+    AERON_IPC_PUBLICATION_STATE_ACTIVE,
+    AERON_IPC_PUBLICATION_STATE_INACTIVE,
+    AERON_IPC_PUBLICATION_STATE_LINGER
 }
-aeron_ipc_publication_status_t;
+aeron_ipc_publication_state_t;
 
 typedef struct aeron_ipc_publication_stct
 {
     struct aeron_ipc_publication_conductor_fields_stct
     {
         bool has_reached_end_of_life;
-        aeron_ipc_publication_status_t status;
+        aeron_ipc_publication_state_t state;
         int32_t refcnt;
         aeron_driver_managed_resource_t managed_resource;
         aeron_subscribable_t subscribable;

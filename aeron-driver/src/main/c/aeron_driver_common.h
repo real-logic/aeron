@@ -32,7 +32,7 @@ typedef int (*aeron_idle_strategy_init_func_t)(void **state, const char *env_var
 typedef struct aeron_driver_managed_resource_stct
 {
     int64_t registration_id;
-    int64_t time_of_last_status_change;
+    int64_t time_of_last_state_change;
     void *clientd;
     void (*decref)(void *);
     void (*incref)(void *);

@@ -142,7 +142,7 @@ int aeron_ipc_publication_create(
     _pub->conductor_fields.has_reached_end_of_life = false;
     _pub->conductor_fields.trip_limit = 0;
     _pub->conductor_fields.time_of_last_consumer_position_change = now_ns;
-    _pub->conductor_fields.status = AERON_IPC_PUBLICATION_STATUS_ACTIVE;
+    _pub->conductor_fields.state = AERON_IPC_PUBLICATION_STATE_ACTIVE;
     _pub->conductor_fields.refcnt = 1;
     _pub->session_id = session_id;
     _pub->stream_id = stream_id;
@@ -344,9 +344,9 @@ void aeron_ipc_publication_on_time_event(
     const int64_t producer_position = aeron_ipc_publication_producer_position(publication);
     aeron_counter_set_ordered(publication->pub_pos_position.value_addr, producer_position);
 
-    switch (publication->conductor_fields.status)
+    switch (publication->conductor_fields.state)
     {
-        case AERON_IPC_PUBLICATION_STATUS_ACTIVE:
+        case AERON_IPC_PUBLICATION_STATE_ACTIVE:
             aeron_ipc_publication_check_untethered_subscriptions(conductor, publication, now_ns);
             if (!publication->is_exclusive)
             {
@@ -354,11 +354,11 @@ void aeron_ipc_publication_on_time_event(
             }
             break;
 
-        case AERON_IPC_PUBLICATION_STATUS_INACTIVE:
+        case AERON_IPC_PUBLICATION_STATE_INACTIVE:
             if (aeron_ipc_publication_is_drained(publication))
             {
-                publication->conductor_fields.status = AERON_IPC_PUBLICATION_STATUS_LINGER;
-                publication->conductor_fields.managed_resource.time_of_last_status_change = now_ns;
+                publication->conductor_fields.state = AERON_IPC_PUBLICATION_STATE_LINGER;
+                publication->conductor_fields.managed_resource.time_of_last_state_change = now_ns;
 
                 for (size_t i = 0, size = conductor->ipc_subscriptions.length; i < size; i++)
                 {
@@ -385,9 +385,9 @@ void aeron_ipc_publication_on_time_event(
             }
             break;
 
-        case AERON_IPC_PUBLICATION_STATUS_LINGER:
+        case AERON_IPC_PUBLICATION_STATE_LINGER:
             if (now_ns >
-                (publication->conductor_fields.managed_resource.time_of_last_status_change +
+                (publication->conductor_fields.managed_resource.time_of_last_state_change +
                  publication->image_liveness_timeout_ns))
             {
                 publication->conductor_fields.has_reached_end_of_life = true;
@@ -412,7 +412,7 @@ void aeron_ipc_publication_decref(void *clientd)
 
     if (0 == ref_count)
     {
-        publication->conductor_fields.status = AERON_IPC_PUBLICATION_STATUS_INACTIVE;
+        publication->conductor_fields.state = AERON_IPC_PUBLICATION_STATE_INACTIVE;
         int64_t producer_position = aeron_ipc_publication_producer_position(publication);
 
         if (aeron_counter_get(publication->pub_lmt_position.value_addr) > producer_position)

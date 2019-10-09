@@ -26,14 +26,14 @@
 #include "aeron_system_counters.h"
 #include "aeron_retransmit_handler.h"
 
-typedef enum aeron_network_publication_status_enum
+typedef enum aeron_network_publication_state_enum
 {
-    AERON_NETWORK_PUBLICATION_STATUS_ACTIVE,
-    AERON_NETWORK_PUBLICATION_STATUS_DRAINING,
-    AERON_NETWORK_PUBLICATION_STATUS_LINGER,
-    AERON_NETWORK_PUBLICATION_STATUS_CLOSING
+    AERON_NETWORK_PUBLICATION_STATE_ACTIVE,
+    AERON_NETWORK_PUBLICATION_STATE_DRAINING,
+    AERON_NETWORK_PUBLICATION_STATE_LINGER,
+    AERON_NETWORK_PUBLICATION_STATE_CLOSING
 }
-aeron_network_publication_status_t;
+aeron_network_publication_state_t;
 
 #define AERON_NETWORK_PUBLICATION_HEARTBEAT_TIMEOUT_NS (100 * 1000 * 1000L)
 #define AERON_NETWORK_PUBLICATION_SETUP_TIMEOUT_NS (100 * 1000 * 1000L)
@@ -48,7 +48,7 @@ typedef struct aeron_network_publication_stct
     struct aeron_network_publication_conductor_fields_stct
     {
         bool has_reached_end_of_life;
-        aeron_network_publication_status_t status;
+        aeron_network_publication_state_t state;
         int32_t refcnt;
         aeron_driver_managed_resource_t managed_resource;
         aeron_subscribable_t subscribable;

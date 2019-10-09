@@ -139,7 +139,7 @@ int aeron_publication_image_create(
     _image->conductor_fields.managed_resource.incref = NULL;
     _image->conductor_fields.managed_resource.decref = NULL;
     _image->conductor_fields.is_reliable = is_reliable;
-    _image->conductor_fields.status = AERON_PUBLICATION_IMAGE_STATUS_ACTIVE;
+    _image->conductor_fields.state = AERON_PUBLICATION_IMAGE_STATE_ACTIVE;
     _image->conductor_fields.liveness_timeout_ns = context->image_liveness_timeout_ns;
     _image->session_id = session_id;
     _image->stream_id = stream_id;
@@ -191,7 +191,7 @@ int aeron_publication_image_create(
     _image->last_packet_timestamp_ns = now_ns;
     _image->last_status_message_timestamp = 0;
     _image->conductor_fields.clean_position = initial_position;
-    _image->conductor_fields.time_of_last_status_change_ns = now_ns;
+    _image->conductor_fields.time_of_last_state_change_ns = now_ns;
 
     aeron_counter_set_ordered(_image->rcv_hwm_position.value_addr, initial_position);
     aeron_counter_set_ordered(_image->rcv_pos_position.value_addr, initial_position);
@@ -410,7 +410,7 @@ int aeron_publication_image_send_pending_status_message(aeron_publication_image_
 {
     int work_count = 0;
 
-    if (NULL != image->endpoint && AERON_PUBLICATION_IMAGE_STATUS_ACTIVE == image->conductor_fields.status)
+    if (NULL != image->endpoint && AERON_PUBLICATION_IMAGE_STATE_ACTIVE == image->conductor_fields.state)
     {
         int64_t change_number;
         AERON_GET_VOLATILE(change_number, image->end_sm_change);
@@ -458,7 +458,7 @@ int aeron_publication_image_send_pending_loss(aeron_publication_image_t *image)
 {
     int work_count = 0;
 
-    if (NULL != image->endpoint && AERON_PUBLICATION_IMAGE_STATUS_ACTIVE == image->conductor_fields.status)
+    if (NULL != image->endpoint && AERON_PUBLICATION_IMAGE_STATE_ACTIVE == image->conductor_fields.state)
     {
         int64_t change_number;
         AERON_GET_VOLATILE(change_number, image->end_loss_change);
@@ -512,7 +512,7 @@ int aeron_publication_image_initiate_rttm(aeron_publication_image_t *image, int6
 {
     int work_count = 0;
 
-    if (NULL != image->endpoint && AERON_PUBLICATION_IMAGE_STATUS_ACTIVE == image->conductor_fields.status)
+    if (NULL != image->endpoint && AERON_PUBLICATION_IMAGE_STATE_ACTIVE == image->conductor_fields.state)
     {
         if (image->congestion_control->should_measure_rtt(image->congestion_control->state, now_ns))
         {
@@ -625,9 +625,9 @@ void aeron_publication_image_check_untethered_subscriptions(
 void aeron_publication_image_on_time_event(
     aeron_driver_conductor_t *conductor, aeron_publication_image_t *image, int64_t now_ns, int64_t now_ms)
 {
-    switch (image->conductor_fields.status)
+    switch (image->conductor_fields.state)
     {
-        case AERON_PUBLICATION_IMAGE_STATUS_ACTIVE:
+        case AERON_PUBLICATION_IMAGE_STATE_ACTIVE:
         {
             aeron_publication_image_check_untethered_subscriptions(conductor, image, now_ns);
 
@@ -642,8 +642,8 @@ void aeron_publication_image_on_time_event(
                  aeron_counter_get(image->rcv_pos_position.value_addr) >=
                  aeron_counter_get_volatile(image->rcv_hwm_position.value_addr)))
             {
-                image->conductor_fields.status = AERON_PUBLICATION_IMAGE_STATUS_INACTIVE;
-                image->conductor_fields.time_of_last_status_change_ns = now_ns;
+                image->conductor_fields.state = AERON_PUBLICATION_IMAGE_STATE_INACTIVE;
+                image->conductor_fields.time_of_last_state_change_ns = now_ns;
 
                 aeron_driver_receiver_proxy_on_remove_publication_image(
                     conductor->context->receiver_proxy, image->endpoint, image);
@@ -651,25 +651,25 @@ void aeron_publication_image_on_time_event(
             break;
         }
 
-        case AERON_PUBLICATION_IMAGE_STATUS_INACTIVE:
+        case AERON_PUBLICATION_IMAGE_STATE_INACTIVE:
         {
             if (aeron_publication_image_is_drained(image))
             {
-                image->conductor_fields.status = AERON_PUBLICATION_IMAGE_STATUS_LINGER;
-                image->conductor_fields.time_of_last_status_change_ns = now_ns;
+                image->conductor_fields.state = AERON_PUBLICATION_IMAGE_STATE_LINGER;
+                image->conductor_fields.time_of_last_state_change_ns = now_ns;
 
                 aeron_driver_conductor_image_transition_to_linger(conductor, image);
             }
             break;
         }
 
-        case AERON_PUBLICATION_IMAGE_STATUS_LINGER:
+        case AERON_PUBLICATION_IMAGE_STATE_LINGER:
         {
             if (aeron_publication_image_has_no_subscribers(image) ||
                 (now_ns >
-                (image->conductor_fields.time_of_last_status_change_ns + image->conductor_fields.liveness_timeout_ns)))
+                (image->conductor_fields.time_of_last_state_change_ns + image->conductor_fields.liveness_timeout_ns)))
             {
-                image->conductor_fields.status = AERON_PUBLICATION_IMAGE_STATUS_DONE;
+                image->conductor_fields.state = AERON_PUBLICATION_IMAGE_STATE_DONE;
             }
             break;
         }

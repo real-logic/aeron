@@ -23,25 +23,25 @@
 #include "aeron_loss_detector.h"
 #include "reports/aeron_loss_reporter.h"
 
-typedef enum aeron_publication_image_status_enum
+typedef enum aeron_publication_image_state_enum
 {
-    AERON_PUBLICATION_IMAGE_STATUS_INACTIVE,
-    AERON_PUBLICATION_IMAGE_STATUS_ACTIVE,
-    AERON_PUBLICATION_IMAGE_STATUS_LINGER,
-    AERON_PUBLICATION_IMAGE_STATUS_DONE
+    AERON_PUBLICATION_IMAGE_STATE_INACTIVE,
+    AERON_PUBLICATION_IMAGE_STATE_ACTIVE,
+    AERON_PUBLICATION_IMAGE_STATE_LINGER,
+    AERON_PUBLICATION_IMAGE_STATE_DONE
 }
-aeron_publication_image_status_t;
+aeron_publication_image_state_t;
 
 typedef struct aeron_publication_image_stct
 {
     struct aeron_publication_image_conductor_fields_stct
     {
         bool is_reliable;
-        aeron_publication_image_status_t status;
+        aeron_publication_image_state_t state;
         aeron_driver_managed_resource_t managed_resource;
         aeron_subscribable_t subscribable;
         int64_t clean_position;
-        int64_t time_of_last_status_change_ns;
+        int64_t time_of_last_state_change_ns;
         int64_t liveness_timeout_ns;
     }
     conductor_fields;
@@ -230,7 +230,7 @@ inline bool aeron_publication_image_has_no_subscribers(aeron_publication_image_t
 inline bool aeron_publication_image_is_accepting_subscriptions(aeron_publication_image_t *image)
 {
     return (image->conductor_fields.subscribable.length > 0 &&
-        image->conductor_fields.status == AERON_PUBLICATION_IMAGE_STATUS_ACTIVE);
+            image->conductor_fields.state == AERON_PUBLICATION_IMAGE_STATE_ACTIVE);
 }
 
 inline void aeron_publication_image_disconnect_endpoint(aeron_publication_image_t *image)

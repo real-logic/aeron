@@ -597,7 +597,7 @@ void aeron_publication_image_entry_on_time_event(
 bool aeron_publication_image_entry_has_reached_end_of_life(
     aeron_driver_conductor_t *conductor, aeron_publication_image_entry_t *entry)
 {
-    return AERON_PUBLICATION_IMAGE_STATUS_DONE == entry->image->conductor_fields.status;
+    return AERON_PUBLICATION_IMAGE_STATE_DONE == entry->image->conductor_fields.state;
 }
 
 void aeron_publication_image_entry_delete(
@@ -719,7 +719,7 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
 
             if (stream_id == pub_entry->stream_id &&
                 !pub_entry->is_exclusive &&
-                AERON_IPC_PUBLICATION_STATUS_ACTIVE == pub_entry->conductor_fields.status)
+                AERON_IPC_PUBLICATION_STATE_ACTIVE == pub_entry->conductor_fields.state)
             {
                 publication = pub_entry;
                 break;
@@ -790,7 +790,7 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
                     client->publication_links.length++;
 
                     conductor->ipc_publications.array[conductor->ipc_publications.length++].publication = publication;
-                    publication->conductor_fields.managed_resource.time_of_last_status_change = conductor->nano_clock();
+                    publication->conductor_fields.managed_resource.time_of_last_state_change = conductor->nano_clock();
                 }
             }
         }
@@ -833,7 +833,7 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
             if (endpoint == pub_entry->endpoint &&
                 stream_id == pub_entry->stream_id &&
                 !pub_entry->is_exclusive &&
-                pub_entry->conductor_fields.status == AERON_NETWORK_PUBLICATION_STATUS_ACTIVE)
+                pub_entry->conductor_fields.state == AERON_NETWORK_PUBLICATION_STATE_ACTIVE)
             {
                 publication = pub_entry;
                 break;
@@ -953,7 +953,7 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                     client->publication_links.length++;
 
                     conductor->network_publications.array[conductor->network_publications.length++].publication = publication;
-                    publication->conductor_fields.managed_resource.time_of_last_status_change = conductor->nano_clock();
+                    publication->conductor_fields.managed_resource.time_of_last_state_change = conductor->nano_clock();
                 }
             }
         }
@@ -2159,7 +2159,7 @@ int aeron_driver_conductor_on_add_spy_subscription(
         aeron_network_publication_t *publication = conductor->network_publications.array[i].publication;
 
         if (command->stream_id == publication->stream_id && endpoint == publication->endpoint &&
-            AERON_NETWORK_PUBLICATION_STATUS_ACTIVE == publication->conductor_fields.status)
+            AERON_NETWORK_PUBLICATION_STATE_ACTIVE == publication->conductor_fields.state)
         {
             if (aeron_driver_conductor_link_subscribable(
                 conductor,

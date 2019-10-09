@@ -155,7 +155,6 @@ int aeron_ipc_publication_create(
     _pub->term_window_length = (int64_t)aeron_producer_window_length(
         context->ipc_publication_window_length, params->term_length);
     _pub->trip_gain = _pub->term_window_length / 8;
-    _pub->image_liveness_timeout_ns = (int64_t)context->image_liveness_timeout_ns;
     _pub->unblock_timeout_ns = (int64_t)context->publication_unblock_timeout_ns;
     _pub->is_exclusive = is_exclusive;
 
@@ -386,12 +385,7 @@ void aeron_ipc_publication_on_time_event(
             break;
 
         case AERON_IPC_PUBLICATION_STATE_LINGER:
-            if (now_ns >
-                (publication->conductor_fields.managed_resource.time_of_last_state_change +
-                 publication->image_liveness_timeout_ns))
-            {
-                publication->conductor_fields.has_reached_end_of_life = true;
-            }
+            publication->conductor_fields.has_reached_end_of_life = true;
             break;
 
         default:

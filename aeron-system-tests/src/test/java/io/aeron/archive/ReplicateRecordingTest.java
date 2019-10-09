@@ -172,7 +172,7 @@ public class ReplicateRecordingTest
     }
 
     @Test(timeout = 10_000L)
-    public void shouldReplicatedStoppedRecording()
+    public void shouldReplicateStoppedRecording()
     {
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;
@@ -217,7 +217,7 @@ public class ReplicateRecordingTest
     }
 
     @Test(timeout = 10_000L)
-    public void shouldReplicatedLiveRecording()
+    public void shouldReplicateLiveRecording()
     {
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;
@@ -322,7 +322,7 @@ public class ReplicateRecordingTest
     }
 
     @Test(timeout = 10_000L)
-    public void shouldReplicatedLiveRecordingAndMerge()
+    public void shouldReplicateLiveRecordingAndMerge()
     {
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;

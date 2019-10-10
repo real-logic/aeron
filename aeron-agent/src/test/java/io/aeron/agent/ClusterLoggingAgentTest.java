@@ -88,6 +88,7 @@ public class ClusterLoggingAgentTest
         final String aeronDirectoryName = Paths.get(testDirName, "media").toString();
 
         final MediaDriver.Context mediaDriverCtx = new Context()
+            .errorHandler(Throwable::printStackTrace)
             .aeronDirectoryName(aeronDirectoryName)
             .threadingMode(ThreadingMode.SHARED);
 
@@ -101,6 +102,7 @@ public class ClusterLoggingAgentTest
 
         final Archive.Context archiveCtx = new Archive.Context()
             .aeronDirectoryName(aeronDirectoryName)
+            .errorHandler(Throwable::printStackTrace)
             .archiveDir(new File(testDirName, "archive"))
             .controlChannel(aeronArchiveContext.controlRequestChannel())
             .controlStreamId(aeronArchiveContext.controlRequestStreamId())
@@ -109,8 +111,8 @@ public class ClusterLoggingAgentTest
             .threadingMode(ArchiveThreadingMode.SHARED);
 
         final ConsensusModule.Context consensusModuleCtx = new ConsensusModule.Context()
-            .errorHandler(Throwable::printStackTrace)
             .aeronDirectoryName(aeronDirectoryName)
+            .errorHandler(Throwable::printStackTrace)
             .clusterDir(new File(testDirName, "consensus-module"))
             .archiveContext(aeronArchiveContext.clone())
             .clusterMemberId(0)
@@ -119,6 +121,7 @@ public class ClusterLoggingAgentTest
 
         final ClusteredServiceContainer.Context clusteredServiceCtx = new ClusteredServiceContainer.Context()
             .aeronDirectoryName(aeronDirectoryName)
+            .errorHandler(Throwable::printStackTrace)
             .archiveContext(aeronArchiveContext.clone())
             .clusterDir(new File(testDirName, "service"))
             .clusteredService(mock(ClusteredService.class));

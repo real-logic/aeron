@@ -22,8 +22,7 @@
 namespace aeron { namespace command {
 
 /**
-* List of event types used in the control protocol between the
-* media driver and the core.
+* List of event types used in the control protocol between the media driver and the core.
 */
 struct ControlProtocolEvents
 {

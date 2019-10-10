@@ -128,7 +128,7 @@ public class ArchiveProxy
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .correlationId(correlationId)
             .responseStreamId(responseStreamId)
-            .version(AeronArchive.Configuration.SEMANTIC_VERSION)
+            .version(AeronArchive.Configuration.PROTOCOL_SEMANTIC_VERSION)
             .responseChannel(responseChannel);
 
         return offerWithTimeout(connectRequestEncoder.encodedLength(), null);
@@ -150,7 +150,7 @@ public class ArchiveProxy
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .correlationId(correlationId)
             .responseStreamId(responseStreamId)
-            .version(AeronArchive.Configuration.SEMANTIC_VERSION)
+            .version(AeronArchive.Configuration.PROTOCOL_SEMANTIC_VERSION)
             .responseChannel(responseChannel);
 
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + connectRequestEncoder.encodedLength();
@@ -178,7 +178,7 @@ public class ArchiveProxy
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .correlationId(correlationId)
             .responseStreamId(responseStreamId)
-            .version(AeronArchive.Configuration.SEMANTIC_VERSION)
+            .version(AeronArchive.Configuration.PROTOCOL_SEMANTIC_VERSION)
             .responseChannel(responseChannel);
 
         return offerWithTimeout(connectRequestEncoder.encodedLength(), aeronClientInvoker);

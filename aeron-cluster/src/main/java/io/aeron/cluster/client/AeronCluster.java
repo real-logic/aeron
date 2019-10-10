@@ -736,10 +736,11 @@ public final class AeronCluster implements AutoCloseable
      */
     public static class Configuration
     {
-        public static final int MAJOR_VERSION = 0;
-        public static final int MINOR_VERSION = 0;
-        public static final int PATCH_VERSION = 1;
-        public static final int SEMANTIC_VERSION = SemanticVersion.compose(MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION);
+        public static final int PROTOCOL_MAJOR_VERSION = 0;
+        public static final int PROTOCOL_MINOR_VERSION = 0;
+        public static final int PROTOCOL_PATCH_VERSION = 1;
+        public static final int PROTOCOL_SEMANTIC_VERSION = SemanticVersion.compose(
+            PROTOCOL_MAJOR_VERSION, PROTOCOL_MINOR_VERSION, PROTOCOL_PATCH_VERSION);
 
         /**
          * Timeout when waiting on a message to be sent or received.
@@ -1555,7 +1556,7 @@ public final class AeronCluster implements AutoCloseable
                 .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
                 .correlationId(correlationId)
                 .responseStreamId(ctx.egressStreamId())
-                .version(Configuration.SEMANTIC_VERSION)
+                .version(Configuration.PROTOCOL_SEMANTIC_VERSION)
                 .responseChannel(ctx.egressChannel())
                 .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
 

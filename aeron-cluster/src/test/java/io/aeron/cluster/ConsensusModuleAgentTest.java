@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
 import static io.aeron.cluster.ClusterControl.ToggleState.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static io.aeron.cluster.ConsensusModuleAgent.SLOW_TICK_INTERVAL_NS;
-import static io.aeron.cluster.client.AeronCluster.Configuration.SEMANTIC_VERSION;
+import static io.aeron.cluster.client.AeronCluster.Configuration.PROTOCOL_SEMANTIC_VERSION;
 import static java.lang.Boolean.TRUE;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -103,7 +103,7 @@ public class ConsensusModuleAgentTest
         agent.state(ConsensusModule.State.ACTIVE);
         agent.role(Cluster.Role.LEADER);
         agent.appendedPositionCounter(mock(ReadableCounter.class));
-        agent.onSessionConnect(correlationIdOne, 2, SEMANTIC_VERSION, RESPONSE_CHANNEL_ONE, new byte[0]);
+        agent.onSessionConnect(correlationIdOne, 2, PROTOCOL_SEMANTIC_VERSION, RESPONSE_CHANNEL_ONE, new byte[0]);
 
         clock.update(17, TimeUnit.MILLISECONDS);
         agent.doWork();
@@ -111,7 +111,7 @@ public class ConsensusModuleAgentTest
         verify(mockLogPublisher).appendSessionOpen(any(ClusterSession.class), anyLong(), anyLong());
 
         final long correlationIdTwo = 2L;
-        agent.onSessionConnect(correlationIdTwo, 3, SEMANTIC_VERSION, RESPONSE_CHANNEL_TWO, new byte[0]);
+        agent.onSessionConnect(correlationIdTwo, 3, PROTOCOL_SEMANTIC_VERSION, RESPONSE_CHANNEL_TWO, new byte[0]);
         clock.update(clock.time() + 10L, TimeUnit.MILLISECONDS);
         agent.doWork();
 
@@ -135,7 +135,7 @@ public class ConsensusModuleAgentTest
         agent.state(ConsensusModule.State.ACTIVE);
         agent.role(Cluster.Role.LEADER);
         agent.appendedPositionCounter(mock(ReadableCounter.class));
-        agent.onSessionConnect(correlationId, 2, SEMANTIC_VERSION, RESPONSE_CHANNEL_ONE, new byte[0]);
+        agent.onSessionConnect(correlationId, 2, PROTOCOL_SEMANTIC_VERSION, RESPONSE_CHANNEL_ONE, new byte[0]);
 
         agent.doWork();
 
@@ -171,7 +171,7 @@ public class ConsensusModuleAgentTest
         agent.state(ConsensusModule.State.ACTIVE);
         agent.role(Cluster.Role.LEADER);
         agent.appendedPositionCounter(mock(ReadableCounter.class));
-        agent.onSessionConnect(correlationId, 2, SEMANTIC_VERSION, RESPONSE_CHANNEL_ONE, new byte[0]);
+        agent.onSessionConnect(correlationId, 2, PROTOCOL_SEMANTIC_VERSION, RESPONSE_CHANNEL_ONE, new byte[0]);
 
         agent.doWork();
 

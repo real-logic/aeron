@@ -16,7 +16,6 @@
 package io.aeron.archive;
 
 import io.aeron.Aeron;
-import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.*;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -178,10 +177,10 @@ class Catalog implements AutoCloseable
             if (catalogPreExists)
             {
                 final int version = catalogHeaderDecoder.version();
-                if (SemanticVersion.major(version) != AeronArchive.Configuration.MAJOR_VERSION)
+                if (SemanticVersion.major(version) != ArchiveMarkFile.MAJOR_VERSION)
                 {
                     throw new ArchiveException("invalid version " + SemanticVersion.toString(version) +
-                        ", archive is " + SemanticVersion.toString(AeronArchive.Configuration.SEMANTIC_VERSION));
+                        ", archive is " + SemanticVersion.toString(ArchiveMarkFile.SEMANTIC_VERSION));
                 }
 
                 recordLength = catalogHeaderDecoder.entryLength();
@@ -194,7 +193,7 @@ class Catalog implements AutoCloseable
                 new CatalogHeaderEncoder()
                     .wrap(catalogBuffer, 0)
                     .entryLength(DEFAULT_RECORD_LENGTH)
-                    .version(AeronArchive.Configuration.SEMANTIC_VERSION);
+                    .version(ArchiveMarkFile.SEMANTIC_VERSION);
             }
 
             maxDescriptorStringsCombinedLength =
@@ -253,10 +252,10 @@ class Catalog implements AutoCloseable
             final int version = catalogHeaderDecoder.version();
             if (null == versionCheck)
             {
-                if (SemanticVersion.major(version) != AeronArchive.Configuration.MAJOR_VERSION)
+                if (SemanticVersion.major(version) != ArchiveMarkFile.MAJOR_VERSION)
                 {
                     throw new ArchiveException("invalid version " + SemanticVersion.toString(version) +
-                        ", archive is " + SemanticVersion.toString(AeronArchive.Configuration.SEMANTIC_VERSION));
+                        ", archive is " + SemanticVersion.toString(ArchiveMarkFile.SEMANTIC_VERSION));
                 }
             }
             else

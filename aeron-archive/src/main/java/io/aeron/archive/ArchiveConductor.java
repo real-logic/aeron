@@ -299,10 +299,10 @@ abstract class ArchiveConductor
             .build();
 
         String invalidVersionMessage = null;
-        if (SemanticVersion.major(version) != AeronArchive.Configuration.MAJOR_VERSION)
+        if (SemanticVersion.major(version) != AeronArchive.Configuration.PROTOCOL_MAJOR_VERSION)
         {
             invalidVersionMessage = "invalid client version " + SemanticVersion.toString(version) +
-                ", archive is " + SemanticVersion.toString(AeronArchive.Configuration.SEMANTIC_VERSION);
+                ", archive is " + SemanticVersion.toString(AeronArchive.Configuration.PROTOCOL_SEMANTIC_VERSION);
         }
 
         final ControlSession controlSession = new ControlSession(

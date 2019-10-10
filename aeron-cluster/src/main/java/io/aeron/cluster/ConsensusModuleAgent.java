@@ -326,10 +326,10 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
         else
         {
-            if (AeronCluster.Configuration.MAJOR_VERSION != SemanticVersion.major(version))
+            if (AeronCluster.Configuration.PROTOCOL_MAJOR_VERSION != SemanticVersion.major(version))
             {
                 final String detail = SESSION_INVALID_VERSION_MSG + " " + SemanticVersion.toString(version) +
-                    ", cluster is " + SemanticVersion.toString(AeronCluster.Configuration.SEMANTIC_VERSION);
+                    ", cluster is " + SemanticVersion.toString(AeronCluster.Configuration.PROTOCOL_SEMANTIC_VERSION);
                 session.reject(EventCode.ERROR, detail);
                 rejectedSessions.add(session);
             }
@@ -717,10 +717,10 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             session.isBackupQuery(true);
             session.connect(aeron);
 
-            if (AeronCluster.Configuration.MAJOR_VERSION != SemanticVersion.major(version))
+            if (AeronCluster.Configuration.PROTOCOL_MAJOR_VERSION != SemanticVersion.major(version))
             {
                 final String detail = SESSION_INVALID_VERSION_MSG + " " + SemanticVersion.toString(version) +
-                    ", cluster is " + SemanticVersion.toString(AeronCluster.Configuration.SEMANTIC_VERSION);
+                    ", cluster is " + SemanticVersion.toString(AeronCluster.Configuration.PROTOCOL_SEMANTIC_VERSION);
                 session.reject(EventCode.ERROR, detail);
                 rejectedSessions.add(session);
             }

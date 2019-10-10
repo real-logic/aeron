@@ -167,7 +167,7 @@ public class CatalogTool
                     System.out.println(
                         "Catalog version=" + fullVersionString(catalog.version()));
                     System.out.println(
-                        "Latest version=" + fullVersionString(AeronArchive.Configuration.SEMANTIC_VERSION));
+                        "Latest version=" + fullVersionString(ArchiveMarkFile.SEMANTIC_VERSION));
 
                     final List<ArchiveMigrationStep> steps = ArchiveMigrationPlanner.createPlan(
                         markFile.decoder().version());

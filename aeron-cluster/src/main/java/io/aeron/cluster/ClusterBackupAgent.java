@@ -435,7 +435,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
                 memberStatusPublication,
                 correlationId,
                 ctx.memberStatusStreamId(),
-                AeronCluster.Configuration.SEMANTIC_VERSION,
+                AeronCluster.Configuration.PROTOCOL_SEMANTIC_VERSION,
                 ctx.memberStatusChannel(),
                 ArrayUtil.EMPTY_BYTE_ARRAY))
             {

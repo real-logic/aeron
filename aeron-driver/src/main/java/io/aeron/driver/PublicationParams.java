@@ -287,4 +287,23 @@ final class PublicationParams
             throw new IllegalArgumentException(entityTag + " entityTag already in use");
         }
     }
+
+    public String toString()
+    {
+        return "PublicationParams{" +
+            "lingerTimeoutNs=" + lingerTimeoutNs +
+            ", entityTag=" + entityTag +
+            ", termLength=" + termLength +
+            ", mtuLength=" + mtuLength +
+            ", initialTermId=" + initialTermId +
+            ", termId=" + termId +
+            ", termOffset=" + termOffset +
+            ", sessionId=" + sessionId +
+            ", isReplay=" + isReplay +
+            ", hasSessionId=" + hasSessionId +
+            ", isSessionIdTagged=" + isSessionIdTagged +
+            ", isSparse=" + isSparse +
+            ", signalEos=" + signalEos +
+            '}';
+    }
 }

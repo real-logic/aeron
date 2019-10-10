@@ -111,4 +111,21 @@ class SubscriptionParams
 
         return params;
     }
+
+    public String toString()
+    {
+        return "SubscriptionParams{" +
+            "initialTermId=" + initialTermId +
+            ", termId=" + termId +
+            ", termOffset=" + termOffset +
+            ", sessionId=" + sessionId +
+            ", hasJoinPosition=" + hasJoinPosition +
+            ", hasSessionId=" + hasSessionId +
+            ", isReliable=" + isReliable +
+            ", isSparse=" + isSparse +
+            ", isTether=" + isTether +
+            ", isRejoin=" + isRejoin +
+            ", group=" + group +
+            '}';
+    }
 }

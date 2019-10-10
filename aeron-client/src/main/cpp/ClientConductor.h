@@ -373,11 +373,11 @@ private:
 
     struct ImageListLingerDefn
     {
-        long long m_timeOfLastStatusChangeMs = LLONG_MAX;
+        long long m_timeOfLastStateChangeMs = LLONG_MAX;
         Image::array_t m_imageArray;
 
         ImageListLingerDefn(long long nowMs, Image::array_t imageArray) :
-            m_timeOfLastStatusChangeMs(nowMs),
+            m_timeOfLastStateChangeMs(nowMs),
             m_imageArray(imageArray)
         {
         }
@@ -385,11 +385,11 @@ private:
 
     struct LogBuffersDefn
     {
-        long long m_timeOfLastStatusChangeMs;
+        long long m_timeOfLastStateChangeMs;
         std::shared_ptr<LogBuffers> m_logBuffers;
 
         LogBuffersDefn(std::shared_ptr<LogBuffers> buffers) :
-            m_timeOfLastStatusChangeMs(LLONG_MAX),
+            m_timeOfLastStateChangeMs(LLONG_MAX),
             m_logBuffers(std::move(buffers))
         {
         }
@@ -564,7 +564,7 @@ private:
         }
         else
         {
-            it->second.m_timeOfLastStatusChangeMs = LLONG_MAX;
+            it->second.m_timeOfLastStateChangeMs = LLONG_MAX;
             return it->second.m_logBuffers;
         }
     }

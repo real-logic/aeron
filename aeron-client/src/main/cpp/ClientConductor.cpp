@@ -975,11 +975,11 @@ void ClientConductor::onCheckManagedResources(long long nowMs)
 
         if (entry.m_logBuffers.use_count() == 1)
         {
-            if (LLONG_MAX == entry.m_timeOfLastStatusChangeMs)
+            if (LLONG_MAX == entry.m_timeOfLastStateChangeMs)
             {
-                entry.m_timeOfLastStatusChangeMs = nowMs;
+                entry.m_timeOfLastStateChangeMs = nowMs;
             }
-            else if ((nowMs - m_resourceLingerTimeoutMs) > entry.m_timeOfLastStatusChangeMs)
+            else if ((nowMs - m_resourceLingerTimeoutMs) > entry.m_timeOfLastStateChangeMs)
             {
                 it = m_logBuffersByRegistrationId.erase(it);
                 continue;
@@ -992,7 +992,7 @@ void ClientConductor::onCheckManagedResources(long long nowMs)
     auto arrayIt = std::remove_if(m_lingeringImageLists.begin(), m_lingeringImageLists.end(),
         [nowMs, this](ImageListLingerDefn &entry)
         {
-            if ((nowMs - m_resourceLingerTimeoutMs) > entry.m_timeOfLastStatusChangeMs)
+            if ((nowMs - m_resourceLingerTimeoutMs) > entry.m_timeOfLastStateChangeMs)
             {
                 delete [] entry.m_imageArray;
                 entry.m_imageArray = nullptr;

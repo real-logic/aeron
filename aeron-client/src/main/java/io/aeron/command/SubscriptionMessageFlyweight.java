@@ -149,7 +149,7 @@ public class SubscriptionMessageFlyweight extends CorrelatedMessageFlyweight
                 ErrorCode.MALFORMED_COMMAND, "command=" + msgTypeId + " too short: length=" + length);
         }
 
-        if ((length - MINIMUM_LENGTH) < buffer.getInt(CHANNEL_OFFSET))
+        if ((length - MINIMUM_LENGTH) < buffer.getInt(offset + CHANNEL_OFFSET))
         {
             throw new ControlProtocolException(
                 ErrorCode.MALFORMED_COMMAND, "command=" + msgTypeId + " too short for channel: length=" + length);

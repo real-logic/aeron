@@ -111,7 +111,7 @@ public class TerminateDriverFlyweight extends CorrelatedMessageFlyweight
                 ErrorCode.MALFORMED_COMMAND, "command=" + msgTypeId + " too short: length=" + length);
         }
 
-        if ((length - MINIMUM_LENGTH) < buffer.getInt(TOKEN_LENGTH_OFFSET))
+        if ((length - MINIMUM_LENGTH) < buffer.getInt(offset + TOKEN_LENGTH_OFFSET))
         {
             throw new ControlProtocolException(
                 ErrorCode.MALFORMED_COMMAND, "command=" + msgTypeId + " too short for token buffer: length=" + length);

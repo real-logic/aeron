@@ -570,10 +570,10 @@ private:
     std::int32_t m_maxMessageLength;
     std::int32_t m_positionBitsToShift;
 
-    std::int64_t m_termBeginPosition;
-    std::int32_t m_activePartitionIndex;
-    std::int32_t m_termId;
     std::int32_t m_termOffset;
+    std::int32_t m_termId;
+    std::int32_t m_activePartitionIndex;
+    std::int64_t m_termBeginPosition;
 
     ReadablePosition<UnsafeBufferPosition> m_publicationLimit;
     std::int32_t m_channelStatusId;

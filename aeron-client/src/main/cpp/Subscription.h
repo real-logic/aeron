@@ -470,7 +470,9 @@ private:
     ClientConductor& m_conductor;
     const std::string m_channel;
     std::int32_t m_channelStatusId;
+    char paddingBefore[56];
     std::size_t m_roundRobinIndex = 0;
+    char paddingAfter[56];
     std::int64_t m_registrationId;
     std::int32_t m_streamId;
 

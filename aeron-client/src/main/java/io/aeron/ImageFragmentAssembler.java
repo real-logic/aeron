@@ -87,7 +87,7 @@ public class ImageFragmentAssembler implements FragmentHandler
      *
      * @return the {@link BufferBuilder} for resetting this assembler.
      */
-    BufferBuilder bufferBuilder()
+    public BufferBuilder bufferBuilder()
     {
         return builder;
     }

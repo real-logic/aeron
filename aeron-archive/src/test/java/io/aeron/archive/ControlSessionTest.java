@@ -25,6 +25,7 @@ public class ControlSessionTest
     public void before()
     {
         session = new ControlSession(
+            0,
             1,
             2,
             CONNECT_TIMEOUT_MS,

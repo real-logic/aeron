@@ -17,11 +17,13 @@ package io.aeron.archive;
 
 import io.aeron.Image;
 import io.aeron.ImageFragmentAssembler;
+import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.*;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.Long2ObjectHashMap;
 
@@ -37,7 +39,7 @@ class ControlSessionDemuxer implements Session, FragmentHandler
     private final ControlRequestDecoders decoders;
     private final Image image;
     private final ArchiveConductor conductor;
-    private final FragmentHandler adapter = new ImageFragmentAssembler(this);
+    private final ImageFragmentAssembler assembler = new ImageFragmentAssembler(this);
     private final Long2ObjectHashMap<ControlSession> controlSessionByIdMap = new Long2ObjectHashMap<>();
 
     private State state = State.ACTIVE;
@@ -75,7 +77,7 @@ class ControlSessionDemuxer implements Session, FragmentHandler
 
         if (state == State.ACTIVE)
         {
-            workCount += image.poll(adapter, FRAGMENT_LIMIT);
+            workCount += image.poll(assembler, FRAGMENT_LIMIT);
 
             if (0 == workCount && image.isClosed())
             {
@@ -153,11 +155,30 @@ class ControlSessionDemuxer implements Session, FragmentHandler
 
                 final long correlationId = startRecordingRequest.correlationId();
                 final long controlSessionId = startRecordingRequest.controlSessionId();
-                getControlSession(controlSessionId, correlationId).onStartRecording(
+                final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
+
+                if (controlSession.majorVersion() < AeronArchive.Configuration.PROTOCOL_MAJOR_VERSION)
+                {
+                    final ExpandableArrayBuffer tempBuffer = decoders.tempBuffer;
+                    final int fixedLength = StartRecordingRequestDecoder.sourceLocationEncodingOffset() + 1;
+                    int i = MessageHeaderDecoder.ENCODED_LENGTH;
+
+                    tempBuffer.putBytes(0, buffer, offset + i, fixedLength);
+                    i += fixedLength;
+
+                    final int padLength = 3;
+                    tempBuffer.setMemory(fixedLength, padLength, (byte)0);
+                    tempBuffer.putBytes(fixedLength + padLength, buffer, offset + i, length - i);
+
+                    startRecordingRequest.wrap(
+                        tempBuffer, 0, StartRecordingRequestDecoder.BLOCK_LENGTH, headerDecoder.version());
+                }
+
+                controlSession.onStartRecording(
                     correlationId,
-                    startRecordingRequest.channel(),
                     startRecordingRequest.streamId(),
-                    startRecordingRequest.sourceLocation());
+                    startRecordingRequest.sourceLocation(),
+                    startRecordingRequest.channel());
                 break;
             }
 
@@ -172,7 +193,8 @@ class ControlSessionDemuxer implements Session, FragmentHandler
 
                 final long correlationId = stopRecordingRequest.correlationId();
                 final long controlSessionId = stopRecordingRequest.controlSessionId();
-                getControlSession(controlSessionId, correlationId).onStopRecording(
+                final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
+                controlSession.onStopRecording(
                     correlationId,
                     stopRecordingRequest.streamId(),
                     stopRecordingRequest.channel());
@@ -190,7 +212,8 @@ class ControlSessionDemuxer implements Session, FragmentHandler
 
                 final long correlationId = replayRequest.correlationId();
                 final long controlSessionId = replayRequest.controlSessionId();
-                getControlSession(controlSessionId, correlationId).onStartReplay(
+                final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
+                controlSession.onStartReplay(
                     correlationId,
                     replayRequest.recordingId(),
                     replayRequest.position(),
@@ -211,7 +234,8 @@ class ControlSessionDemuxer implements Session, FragmentHandler
 
                 final long correlationId = stopReplayRequest.correlationId();
                 final long controlSessionId = stopReplayRequest.controlSessionId();
-                getControlSession(controlSessionId, correlationId).onStopReplay(
+                final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
+                controlSession.onStopReplay(
                     correlationId,
                     stopReplayRequest.replaySessionId());
                 break;
@@ -228,7 +252,8 @@ class ControlSessionDemuxer implements Session, FragmentHandler
 
                 final long correlationId = listRecordingsRequest.correlationId();
                 final long controlSessionId = listRecordingsRequest.controlSessionId();
-                getControlSession(controlSessionId, correlationId).onListRecordings(
+                final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
+                controlSession.onListRecordings(
                     correlationId,
                     listRecordingsRequest.fromRecordingId(),
                     listRecordingsRequest.recordCount());
@@ -251,7 +276,8 @@ class ControlSessionDemuxer implements Session, FragmentHandler
 
                 final long correlationId = listRecordingsForUriRequest.correlationId();
                 final long controlSessionId = listRecordingsForUriRequest.controlSessionId();
-                getControlSession(controlSessionId, correlationId).onListRecordingsForUri(
+                final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
+                controlSession.onListRecordingsForUri(
                     correlationId,
                     listRecordingsForUriRequest.fromRecordingId(),
                     listRecordingsForUriRequest.recordCount(),
@@ -271,7 +297,8 @@ class ControlSessionDemuxer implements Session, FragmentHandler
 
                 final long correlationId = listRecordingRequest.correlationId();
                 final long controlSessionId = listRecordingRequest.controlSessionId();
-                getControlSession(controlSessionId, correlationId).onListRecording(
+                final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
+                controlSession.onListRecording(
                     correlationId,
                     listRecordingRequest.recordingId());
                 break;
@@ -288,12 +315,31 @@ class ControlSessionDemuxer implements Session, FragmentHandler
 
                 final long correlationId = extendRecordingRequest.correlationId();
                 final long controlSessionId = extendRecordingRequest.controlSessionId();
-                getControlSession(controlSessionId, correlationId).onExtendRecording(
+                final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
+
+                if (controlSession.majorVersion() < AeronArchive.Configuration.PROTOCOL_MAJOR_VERSION)
+                {
+                    final ExpandableArrayBuffer tempBuffer = decoders.tempBuffer;
+                    final int fixedLength = ExtendRecordingRequestDecoder.sourceLocationEncodingOffset() + 1;
+                    int i = MessageHeaderDecoder.ENCODED_LENGTH;
+
+                    tempBuffer.putBytes(0, buffer, offset + i, fixedLength);
+                    i += fixedLength;
+
+                    final int padLength = 3;
+                    tempBuffer.setMemory(fixedLength, padLength, (byte)0);
+                    tempBuffer.putBytes(fixedLength + padLength, buffer, offset + i, length - i);
+
+                    extendRecordingRequest.wrap(
+                        tempBuffer, 0, ExtendRecordingRequestDecoder.BLOCK_LENGTH, headerDecoder.version());
+                }
+
+                controlSession.onExtendRecording(
                     correlationId,
                     extendRecordingRequest.recordingId(),
-                    extendRecordingRequest.channel(),
                     extendRecordingRequest.streamId(),
-                    extendRecordingRequest.sourceLocation());
+                    extendRecordingRequest.sourceLocation(),
+                    extendRecordingRequest.channel());
                 break;
             }
 
@@ -308,7 +354,8 @@ class ControlSessionDemuxer implements Session, FragmentHandler
 
                 final long correlationId = recordingPositionRequest.correlationId();
                 final long controlSessionId = recordingPositionRequest.controlSessionId();
-                getControlSession(controlSessionId, correlationId).onGetRecordingPosition(
+                final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
+                controlSession.onGetRecordingPosition(
                     correlationId,
                     recordingPositionRequest.recordingId());
                 break;
@@ -325,7 +372,8 @@ class ControlSessionDemuxer implements Session, FragmentHandler
 
                 final long correlationId = truncateRecordingRequest.correlationId();
                 final long controlSessionId = truncateRecordingRequest.controlSessionId();
-                getControlSession(controlSessionId, correlationId).onTruncateRecording(
+                final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
+                controlSession.onTruncateRecording(
                     correlationId,
                     truncateRecordingRequest.recordingId(),
                     truncateRecordingRequest.position());
@@ -344,7 +392,8 @@ class ControlSessionDemuxer implements Session, FragmentHandler
 
                 final long correlationId = stopRecordingSubscriptionRequest.correlationId();
                 final long controlSessionId = stopRecordingSubscriptionRequest.controlSessionId();
-                getControlSession(controlSessionId, correlationId).onStopRecordingSubscription(
+                final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
+                controlSession.onStopRecordingSubscription(
                     correlationId,
                     stopRecordingSubscriptionRequest.subscriptionId());
                 break;
@@ -361,7 +410,8 @@ class ControlSessionDemuxer implements Session, FragmentHandler
 
                 final long correlationId = stopPositionRequest.correlationId();
                 final long controlSessionId = stopPositionRequest.controlSessionId();
-                getControlSession(controlSessionId, correlationId).onGetStopPosition(
+                final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
+                controlSession.onGetStopPosition(
                     correlationId,
                     stopPositionRequest.recordingId());
                 break;
@@ -383,7 +433,8 @@ class ControlSessionDemuxer implements Session, FragmentHandler
 
                 final long correlationId = findLastMatchingRecordingRequest.correlationId();
                 final long controlSessionId = findLastMatchingRecordingRequest.controlSessionId();
-                getControlSession(controlSessionId, correlationId).onFindLastMatchingRecording(
+                final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
+                controlSession.onFindLastMatchingRecording(
                     correlationId,
                     findLastMatchingRecordingRequest.minRecordingId(),
                     findLastMatchingRecordingRequest.sessionId(),
@@ -403,7 +454,8 @@ class ControlSessionDemuxer implements Session, FragmentHandler
 
                 final long correlationId = listRecordingSubscriptionsRequest.correlationId();
                 final long controlSessionId = listRecordingSubscriptionsRequest.controlSessionId();
-                getControlSession(controlSessionId, correlationId).onListRecordingSubscriptions(
+                final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
+                controlSession.onListRecordingSubscriptions(
                     correlationId,
                     listRecordingSubscriptionsRequest.pseudoIndex(),
                     listRecordingSubscriptionsRequest.subscriptionCount(),
@@ -424,7 +476,8 @@ class ControlSessionDemuxer implements Session, FragmentHandler
 
                 final long correlationId = boundedReplayRequest.correlationId();
                 final long controlSessionId = boundedReplayRequest.controlSessionId();
-                getControlSession(controlSessionId, correlationId).onStartBoundedReplay(
+                final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
+                controlSession.onStartBoundedReplay(
                     correlationId,
                     boundedReplayRequest.recordingId(),
                     boundedReplayRequest.position(),
@@ -446,7 +499,8 @@ class ControlSessionDemuxer implements Session, FragmentHandler
 
                 final long correlationId = stopAllReplaysRequest.correlationId();
                 final long controlSessionId = stopAllReplaysRequest.controlSessionId();
-                getControlSession(controlSessionId, correlationId).onStopAllReplays(
+                final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
+                controlSession.onStopAllReplays(
                     correlationId,
                     stopAllReplaysRequest.recordingId());
                 break;
@@ -463,7 +517,8 @@ class ControlSessionDemuxer implements Session, FragmentHandler
 
                 final long correlationId = replicateRequest.correlationId();
                 final long controlSessionId = replicateRequest.controlSessionId();
-                getControlSession(controlSessionId, correlationId).onReplicate(
+                final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
+                controlSession.onReplicate(
                     correlationId,
                     replicateRequest.srcRecordingId(),
                     replicateRequest.dstRecordingId(),
@@ -484,7 +539,8 @@ class ControlSessionDemuxer implements Session, FragmentHandler
 
                 final long correlationId = stopReplicationRequest.correlationId();
                 final long controlSessionId = stopReplicationRequest.controlSessionId();
-                getControlSession(controlSessionId, correlationId).onStopReplication(
+                final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
+                controlSession.onStopReplication(
                     correlationId,
                     stopReplicationRequest.replicationId());
                 break;

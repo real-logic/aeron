@@ -299,13 +299,14 @@ abstract class ArchiveConductor
             .build();
 
         String invalidVersionMessage = null;
-        if (SemanticVersion.major(version) != AeronArchive.Configuration.PROTOCOL_MAJOR_VERSION)
+        if (SemanticVersion.major(version) > AeronArchive.Configuration.PROTOCOL_MAJOR_VERSION)
         {
             invalidVersionMessage = "invalid client version " + SemanticVersion.toString(version) +
                 ", archive is " + SemanticVersion.toString(AeronArchive.Configuration.PROTOCOL_SEMANTIC_VERSION);
         }
 
         final ControlSession controlSession = new ControlSession(
+            SemanticVersion.major(version),
             nextSessionId++,
             correlationId,
             connectTimeoutMs,
@@ -325,8 +326,8 @@ abstract class ArchiveConductor
         final long correlationId,
         final ControlSession controlSession,
         final int streamId,
-        final String originalChannel,
-        final SourceLocation sourceLocation)
+        final SourceLocation sourceLocation,
+        final String originalChannel)
     {
         if (recordingSessionByIdMap.size() >= maxConcurrentRecordings)
         {
@@ -688,8 +689,8 @@ abstract class ArchiveConductor
         final ControlSession controlSession,
         final long recordingId,
         final int streamId,
-        final String originalChannel,
-        final SourceLocation sourceLocation)
+        final SourceLocation sourceLocation,
+        final String originalChannel)
     {
         if (recordingSessionByIdMap.size() >= maxConcurrentRecordings)
         {

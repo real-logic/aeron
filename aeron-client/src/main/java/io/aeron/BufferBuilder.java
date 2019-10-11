@@ -194,5 +194,4 @@ public class BufferBuilder
             buffer.wrap(Arrays.copyOf(buffer.byteArray(), newCapacity));
         }
     }
-
 }

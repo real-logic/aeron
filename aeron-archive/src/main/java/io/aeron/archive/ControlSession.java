@@ -44,12 +44,13 @@ class ControlSession implements Session
         INIT, CONNECTED, ACTIVE, INACTIVE, CLOSED
     }
 
-    private Session activeListing = null;
+    private final int majorVersion;
     private final long controlSessionId;
     private final long correlationId;
     private final long connectTimeoutMs;
     private long resendDeadlineMs;
     private long activityDeadlineMs;
+    private Session activeListing = null;
     private final ArchiveConductor conductor;
     private final EpochClock epochClock;
     private final ControlResponseProxy controlResponseProxy;
@@ -60,6 +61,7 @@ class ControlSession implements Session
     private State state = State.INIT;
 
     ControlSession(
+        final int majorVersion,
         final long controlSessionId,
         final long correlationId,
         final long connectTimeoutMs,
@@ -70,6 +72,7 @@ class ControlSession implements Session
         final EpochClock epochClock,
         final ControlResponseProxy controlResponseProxy)
     {
+        this.majorVersion = majorVersion;
         this.controlSessionId = controlSessionId;
         this.correlationId = correlationId;
         this.connectTimeoutMs = connectTimeoutMs;
@@ -80,6 +83,11 @@ class ControlSession implements Session
         this.epochClock = epochClock;
         this.controlResponseProxy = controlResponseProxy;
         this.activityDeadlineMs = epochClock.time() + connectTimeoutMs;
+    }
+
+    public int majorVersion()
+    {
+        return majorVersion;
     }
 
     public long sessionId()
@@ -174,12 +182,12 @@ class ControlSession implements Session
     }
 
     void onStartRecording(
-        final long correlationId, final String channel, final int streamId, final SourceLocation sourceLocation)
+        final long correlationId, final int streamId, final SourceLocation sourceLocation, final String channel)
     {
         updateState();
         if (State.ACTIVE == state)
         {
-            conductor.startRecording(correlationId, this, streamId, channel, sourceLocation);
+            conductor.startRecording(correlationId, this, streamId, sourceLocation, channel);
         }
     }
 
@@ -308,14 +316,14 @@ class ControlSession implements Session
     void onExtendRecording(
         final long correlationId,
         final long recordingId,
-        final String channel,
         final int streamId,
-        final SourceLocation sourceLocation)
+        final SourceLocation sourceLocation,
+        final String channel)
     {
         updateState();
         if (State.ACTIVE == state)
         {
-            conductor.extendRecording(correlationId, this, recordingId, streamId, channel, sourceLocation);
+            conductor.extendRecording(correlationId, this, recordingId, streamId, sourceLocation, channel);
         }
     }
 
@@ -612,6 +620,7 @@ class ControlSession implements Session
     {
         return "ControlSession{" +
             "controlSessionId=" + controlSessionId +
+            ", state=" + state +
             ", controlPublication=" + controlPublication +
             '}';
     }

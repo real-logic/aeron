@@ -522,7 +522,7 @@ public final class UdpChannel
         final String endpointValue = uri.get(CommonContext.ENDPOINT_PARAM_NAME);
         if (null != endpointValue)
         {
-            return SocketAddressUtil.parse(endpointValue);
+            return SocketAddressParser.parse(endpointValue);
         }
 
         return null;
@@ -533,7 +533,7 @@ public final class UdpChannel
         final String controlValue = uri.get(CommonContext.MDC_CONTROL_PARAM_NAME);
         if (null != controlValue)
         {
-            return SocketAddressUtil.parse(controlValue);
+            return SocketAddressParser.parse(controlValue);
         }
 
         return null;

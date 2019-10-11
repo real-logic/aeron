@@ -19,11 +19,21 @@ import org.agrona.AsciiEncoding;
 
 import java.net.InetSocketAddress;
 
-class SocketAddressUtil
+class SocketAddressParser
 {
+    enum IpV4State
+    {
+        HOST, PORT
+    }
+
+    enum IpV6State
+    {
+        START_ADDR, HOST, SCOPE, END_ADDR, PORT
+    }
+
     /**
-     * Utility for parsing socket addresses from a {@link CharSequence}. Supports
-     * hostname:port, ipV4Address:port and [ipV6Address]:port
+     * Parse socket addresses from a {@link CharSequence}. Supports
+     * hostname:port, ipV4Address:port, and [ipV6Address]:port.
      *
      * @param cs to be parsed for the socket address.
      * @return An {@link InetSocketAddress} for the parsed input.
@@ -32,7 +42,7 @@ class SocketAddressUtil
     {
         if (null == cs || cs.length() == 0)
         {
-            throw new NullPointerException("Input string must not be null or empty");
+            throw new NullPointerException("input string must not be null or empty");
         }
 
         InetSocketAddress address = tryParseIpV4(cs);
@@ -44,20 +54,10 @@ class SocketAddressUtil
 
         if (null == address)
         {
-            throw new IllegalArgumentException("Invalid format: " + cs);
+            throw new IllegalArgumentException("invalid format: " + cs);
         }
 
         return address;
-    }
-
-    enum IpV4State
-    {
-        HOST, PORT
-    }
-
-    enum IpV6State
-    {
-        START_ADDR, HOST, SCOPE, END_ADDR, PORT
     }
 
     private static InetSocketAddress tryParseIpV4(final CharSequence cs)
@@ -100,8 +100,7 @@ class SocketAddressUtil
             return new InetSocketAddress(hostname, port);
         }
 
-        throw new IllegalArgumentException(
-                "The 'port' portion of the address is required for ipv4 address " + cs);
+        throw new IllegalArgumentException("'port' part of the address is required for ipv4: " + cs);
     }
 
     private static InetSocketAddress tryParseIpV6(final CharSequence cs)
@@ -189,7 +188,6 @@ class SocketAddressUtil
             return new InetSocketAddress(hostname, port);
         }
 
-        throw new IllegalArgumentException(
-                "The 'port' portion of the address is required for ipv6 address " + cs);
+        throw new IllegalArgumentException("'port' part of the address is required for ipv6: " + cs);
     }
 }

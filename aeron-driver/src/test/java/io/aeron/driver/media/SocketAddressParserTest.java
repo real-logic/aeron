@@ -26,7 +26,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
-public class SocketAddressUtilTest
+public class SocketAddressParserTest
 {
     @Test
     public void shouldParseIpV4AddressAndPort() throws Exception
@@ -43,43 +43,43 @@ public class SocketAddressUtilTest
     @Test(expected = IllegalArgumentException.class)
     public void shouldRejectOnInvalidPort()
     {
-        SocketAddressUtil.parse("192.168.1.20:aa");
+        SocketAddressParser.parse("192.168.1.20:aa");
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldRejectOnInvalidPort2()
     {
-        SocketAddressUtil.parse("192.168.1.20::123");
+        SocketAddressParser.parse("192.168.1.20::123");
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldRejectOnMissingPort()
     {
-        SocketAddressUtil.parse("192.168.1.20");
+        SocketAddressParser.parse("192.168.1.20");
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldRejectOnEmptyPort()
     {
-        SocketAddressUtil.parse("192.168.1.20:");
+        SocketAddressParser.parse("192.168.1.20:");
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldRejectOnEmptyIpV6Port()
     {
-        SocketAddressUtil.parse("[::1]:");
+        SocketAddressParser.parse("[::1]:");
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldRejectOnInvalidIpV6()
     {
-        SocketAddressUtil.parse("[FG07::789:1:0:0:3]:111");
+        SocketAddressParser.parse("[FG07::789:1:0:0:3]:111");
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldRejectOnInvalidIpV6Scope()
     {
-        SocketAddressUtil.parse("[FC07::789:1:0:0:3%^]:111");
+        SocketAddressParser.parse("[FC07::789:1:0:0:3%^]:111");
     }
 
     @Test
@@ -93,20 +93,20 @@ public class SocketAddressUtilTest
     @Test
     public void shouldParseWithScope()
     {
-        final InetSocketAddress address = SocketAddressUtil.parse("[::1%12~_.-34]:1234");
+        final InetSocketAddress address = SocketAddressParser.parse("[::1%12~_.-34]:1234");
         assertThat(address.getAddress(), instanceOf(Inet6Address.class));
     }
 
     private void assertCorrectParse(final String host, final int port) throws UnknownHostException
     {
-        final InetSocketAddress address = SocketAddressUtil.parse(host + ":" + port);
+        final InetSocketAddress address = SocketAddressParser.parse(host + ":" + port);
         assertThat(address.getAddress(), is(InetAddress.getByName(host)));
         assertThat(address.getPort(), is(port));
     }
 
     private void assertCorrectParseIpV6(final String host, final int port) throws UnknownHostException
     {
-        final InetSocketAddress address = SocketAddressUtil.parse("[" + host + "]:" + port);
+        final InetSocketAddress address = SocketAddressParser.parse("[" + host + "]:" + port);
         assertThat(address.getAddress(), is(InetAddress.getByName(host)));
         assertThat(address.getPort(), is(port));
     }

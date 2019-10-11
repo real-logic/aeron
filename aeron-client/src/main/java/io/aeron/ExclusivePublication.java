@@ -42,10 +42,10 @@ import static io.aeron.logbuffer.LogBufferDescriptor.*;
  */
 public class ExclusivePublication extends Publication
 {
-    private long termBeginPosition;
-    private int activePartitionIndex;
-    private int termId;
     private int termOffset;
+    private int termId;
+    private int activePartitionIndex;
+    private long termBeginPosition;
 
     private final ExclusiveTermAppender[] termAppenders = new ExclusiveTermAppender[PARTITION_COUNT];
 
@@ -384,7 +384,6 @@ public class ExclusivePublication extends Publication
         if (resultingOffset > 0)
         {
             termOffset = resultingOffset;
-
             return termBeginPosition + resultingOffset;
         }
 

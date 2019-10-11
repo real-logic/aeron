@@ -26,7 +26,7 @@ import java.util.function.Consumer;
 class SubscriptionLhsPadding
 {
     @SuppressWarnings("unused")
-    protected long p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15;
+    protected long p1, p2, p3, p4, p5, p6, p7;
 }
 
 class SubscriptionFields extends SubscriptionLhsPadding
@@ -34,8 +34,8 @@ class SubscriptionFields extends SubscriptionLhsPadding
     protected static final Image[] EMPTY_ARRAY = new Image[0];
 
     protected final long registrationId;
-    protected int roundRobinIndex = 0;
     protected final int streamId;
+    protected int roundRobinIndex = 0;
     protected volatile boolean isClosed = false;
     protected volatile Image[] images = EMPTY_ARRAY;
     protected final ClientConductor conductor;
@@ -84,7 +84,7 @@ class SubscriptionFields extends SubscriptionLhsPadding
 public class Subscription extends SubscriptionFields implements AutoCloseable
 {
     @SuppressWarnings("unused")
-    protected long p16, p17, p18, p19, p20, p21, p22, p23, p24, p25, p26, p27, p28, p29, p30;
+    protected long p1, p2, p3, p4, p5, p6, p7;
 
     Subscription(
         final ClientConductor conductor,

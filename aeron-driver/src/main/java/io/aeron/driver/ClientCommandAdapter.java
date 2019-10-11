@@ -311,7 +311,11 @@ class ClientCommandAdapter implements MessageHandler
 
     private void recordError(final Exception ex)
     {
-        errors.increment();
+        if (!errors.isClosed())
+        {
+            errors.increment();
+        }
+
         errorHandler.onError(ex);
     }
 }

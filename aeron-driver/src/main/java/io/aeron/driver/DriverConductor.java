@@ -57,14 +57,15 @@ public class DriverConductor implements Agent
 {
     private static final long CLOCK_UPDATE_DURATION_NS = TimeUnit.MILLISECONDS.toNanos(1);
 
+    private int nextSessionId = BitUtil.generateRandomisedId();
+
     private final long timerIntervalNs;
     private final long clientLivenessTimeoutNs;
     private final long statusMessageTimeoutNs;
     private long timeOfLastToDriverPositionChangeNs;
-    private long timeOfLastTimerCheckNs;
     private long lastConsumerCommandPosition;
+    private long timeOfLastTimerCheckNs;
     private long clockUpdateDeadlineNs;
-    private int nextSessionId = BitUtil.generateRandomisedId();
 
     private final Context ctx;
     private final LogFactory logFactory;

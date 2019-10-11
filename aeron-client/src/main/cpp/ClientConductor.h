@@ -97,9 +97,9 @@ public:
         m_onNewSubscriptionHandler(newSubscriptionHandler),
         m_errorHandler(errorHandler),
         m_epochClock(std::move(epochClock)),
+        m_timeOfLastDoWorkMs(m_epochClock()),
         m_timeOfLastKeepaliveMs(m_epochClock()),
         m_timeOfLastCheckManagedResourcesMs(m_epochClock()),
-        m_timeOfLastDoWorkMs(m_epochClock()),
         m_driverTimeoutMs(driverTimeoutMs),
         m_resourceLingerTimeoutMs(resourceLingerTimeoutMs),
         m_interServiceTimeoutMs(static_cast<long>(interServiceTimeoutNs / 1000000)),
@@ -412,8 +412,6 @@ private:
         }
     };
 
-    std::recursive_mutex m_adminLock;
-
     std::unordered_map<std::int64_t, PublicationStateDefn> m_publicationByRegistrationId;
     std::unordered_map<std::int64_t, ExclusivePublicationStateDefn> m_exclusivePublicationByRegistrationId;
     std::unordered_map<std::int64_t, SubscriptionStateDefn> m_subscriptionByRegistrationId;
@@ -439,13 +437,14 @@ private:
     std::vector<on_close_client_t> m_onCloseClientHandlers;
 
     epoch_clock_t m_epochClock;
+    long long m_timeOfLastDoWorkMs;
     long long m_timeOfLastKeepaliveMs;
     long long m_timeOfLastCheckManagedResourcesMs;
-    long long m_timeOfLastDoWorkMs;
     long m_driverTimeoutMs;
     long m_resourceLingerTimeoutMs;
     long m_interServiceTimeoutMs;
 
+    std::recursive_mutex m_adminLock;
     std::unique_ptr<AtomicCounter> m_heartbeatTimestamp;
     std::atomic<bool> m_driverActive;
     std::atomic<bool> m_isClosed;
@@ -466,7 +465,10 @@ private:
             m_errorHandler(exception);
         }
 
-        m_timeOfLastDoWorkMs = nowMs;
+        if (nowMs != m_timeOfLastDoWorkMs)
+        {
+            m_timeOfLastDoWorkMs = nowMs;
+        }
 
         if (nowMs > (m_timeOfLastKeepaliveMs + KEEPALIVE_TIMEOUT_MS))
         {

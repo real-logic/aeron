@@ -100,7 +100,8 @@ class SocketAddressUtil
             return new InetSocketAddress(hostname, port);
         }
 
-        throw new IllegalArgumentException("The 'port' portion of the address is required");
+        throw new IllegalArgumentException(
+                "The 'port' portion of the address is required for ipv4 address " + cs);
     }
 
     private static InetSocketAddress tryParseIpV6(final CharSequence cs)
@@ -188,6 +189,7 @@ class SocketAddressUtil
             return new InetSocketAddress(hostname, port);
         }
 
-        throw new IllegalArgumentException("The 'port' portion of the address is required");
+        throw new IllegalArgumentException(
+                "The 'port' portion of the address is required for ipv6 address " + cs);
     }
 }

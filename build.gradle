@@ -726,6 +726,10 @@ project(':aeron-system-tests') {
         testCompile project(path: ':aeron-archive', configuration: 'tests')
     }
 
+    test {
+        systemProperties('java.net.preferIPv4Stack': 'true')
+    }
+
     uploadArchives {
         repositories {
             mavenDeployer {

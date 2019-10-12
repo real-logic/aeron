@@ -935,6 +935,11 @@ void ClientConductor::closeAllResources(long long nowMs)
                 CallbackGuard callbackGuard(m_isInCallback);
                 kv.second.m_onUnavailableImageHandler(image);
             }
+
+            if (kv.second.m_subscriptionCache)
+            {
+                kv.second.m_subscriptionCache.reset();
+            }
         }
     }
     m_subscriptionByRegistrationId.clear();
@@ -953,6 +958,11 @@ void ClientConductor::closeAllResources(long long nowMs)
             {
                 CallbackGuard callbackGuard(m_isInCallback);
                 handler(m_countersReader, registrationId, counterId);
+            }
+
+            if (kv.second.m_counterCache)
+            {
+                kv.second.m_counterCache.reset();
             }
         }
     }

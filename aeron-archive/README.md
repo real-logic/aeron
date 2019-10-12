@@ -30,7 +30,8 @@ Features:
  live stream for cut over if the consumer is fast enough to keep up.
 
 - **Replicate:** recordings can be replicated from a source to destination archive with the option to follow on with
- a live stream when the source is multicast.
+ a live stream when the source is multicast. When using replication it is necessary to configure the replication channel for
+ thedestination archive with `aeron.archive.replication.channel`.
 
 Usage
 =====
@@ -61,6 +62,21 @@ Recording Signal Events
 ----
 On a control session signals can be tracked for when a recording starts and stop plus other operations like extend,
 replicate, and live merge.
+
+Recording Durability
+----
+An archive can be instructed to record streams, i.e. `<channel, streamId>` pairs. These streams are recorded with the file sync level the archive has been launched with. Progress is reported on the recording events stream.
+
+- `aeron.archive.file.sync.level=0`: for normal writes to the OS page cache for background writing to disk.
+- `aeron.archive.file.sync.level=1`: for forcing the dirty data pages to disk. 
+- `aeron.archive.file.sync.level=2`: for forcing the dirty data pages and file metadata to disk.
+
+When setting file sync level greater than zero it is also important to sync the archive catalog with the
+ `aeron.archive.catalog.file.sync.level` to the same value.
+
+Recordings will be assigned a `recordingId` and a full description of the stream is captured in the Archive Catalog. The Catalog chronicles the contents of an archive as `RecordingDescriptor`s which can be queried.
+
+The progress of active recordings can be tracked using `AeronStat` to view the `rec-pos` counter for each stream.
 
 Persisted Format
 =====

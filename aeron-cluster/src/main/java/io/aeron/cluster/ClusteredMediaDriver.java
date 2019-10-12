@@ -79,17 +79,29 @@ public class ClusteredMediaDriver implements AutoCloseable
         final Archive.Context archiveCtx,
         final ConsensusModule.Context consensusModuleCtx)
     {
-        final MediaDriver driver = MediaDriver.launch(driverCtx
-            .spiesSimulateConnection(true));
+        MediaDriver driver = null;
+        Archive archive = null;
+        ConsensusModule consensusModule = null;
 
-        final Archive archive = Archive.launch(archiveCtx
-            .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
-            .errorHandler(driverCtx.errorHandler())
-            .errorCounter(driverCtx.systemCounters().get(SystemCounterDescriptor.ERRORS)));
+        try
+        {
+            driver = MediaDriver.launch(driverCtx
+                .spiesSimulateConnection(true));
 
-        final ConsensusModule consensusModule = ConsensusModule.launch(consensusModuleCtx);
+            archive = Archive.launch(archiveCtx
+                .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
+                .errorHandler(driverCtx.errorHandler())
+                .errorCounter(driverCtx.systemCounters().get(SystemCounterDescriptor.ERRORS)));
 
-        return new ClusteredMediaDriver(driver, archive, consensusModule);
+            consensusModule = ConsensusModule.launch(consensusModuleCtx);
+
+            return new ClusteredMediaDriver(driver, archive, consensusModule);
+        }
+        catch (final Exception ex)
+        {
+            CloseHelper.quietCloseAll(consensusModule, archive, driver);
+            throw ex;
+        }
     }
 
     /**

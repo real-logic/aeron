@@ -33,6 +33,8 @@ Subscription::Subscription(
     m_imageArray(),
     m_isClosed(false)
 {
+    static_cast<void>(paddingBefore);
+    static_cast<void>(paddingAfter);
 }
 
 Subscription::~Subscription()

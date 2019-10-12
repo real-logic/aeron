@@ -107,6 +107,9 @@ public:
         m_isClosed(false),
         m_preTouchMappedMemory(preTouchMappedMemory)
     {
+        static_cast<void>(paddingBefore);
+        static_cast<void>(paddingAfter);
+
         m_onAvailableCounterHandlers.emplace_back(availableCounterHandler);
         m_onUnavailableCounterHandlers.emplace_back(unavailableCounterHandler);
         m_onCloseClientHandlers.emplace_back(onCloseClientHandler);

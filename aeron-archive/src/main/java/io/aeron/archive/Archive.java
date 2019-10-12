@@ -314,7 +314,7 @@ public class Archive implements AutoCloseable
          * Channel for receiving replication streams replayed from another archive.
          * @see #REPLICATION_CHANNEL_PROP_NAME
          */
-        public static final String REPLICATION_CHANNEL_DEFAULT = "aeron:udp?endpoint=8040";
+        public static final String REPLICATION_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:8040";
 
         /**
          * Filename for the single instance of a {@link Catalog} contents for an archive.

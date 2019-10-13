@@ -2782,6 +2782,10 @@ public class ConsensusModule implements AutoCloseable
         {
             CloseHelper.close(recordingLog);
             CloseHelper.close(markFile);
+            if (errorHandler instanceof AutoCloseable)
+            {
+                CloseHelper.close((AutoCloseable)errorHandler);
+            }
 
             if (ownsAeronClient)
             {

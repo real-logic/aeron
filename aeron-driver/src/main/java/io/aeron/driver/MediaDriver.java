@@ -518,6 +518,11 @@ public final class MediaDriver implements AutoCloseable
 
                 CloseHelper.close(logFactory);
 
+                if (errorHandler instanceof AutoCloseable)
+                {
+                    CloseHelper.close((AutoCloseable)errorHandler);
+                }
+
                 final MappedByteBuffer lossReportBuffer = this.lossReportBuffer;
                 this.lossReportBuffer = null;
                 IoUtil.unmap(lossReportBuffer);

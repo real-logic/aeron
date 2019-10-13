@@ -1545,6 +1545,11 @@ public class Archive implements AutoCloseable
             CloseHelper.close(archiveDirChannel);
             archiveDirChannel = null;
 
+            if (errorHandler instanceof AutoCloseable)
+            {
+                CloseHelper.close((AutoCloseable)errorHandler);
+            }
+
             if (ownsAeronClient)
             {
                 CloseHelper.close(aeron);

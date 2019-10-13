@@ -30,8 +30,7 @@ import static io.aeron.driver.media.UdpChannelTransport.sendError;
 
 abstract class MultiDestination
 {
-    abstract int send(
-        DatagramChannel datagramChannel, ByteBuffer buffer, SendChannelEndpoint channelEndpoint, int bytesToSend);
+    abstract int send(DatagramChannel channel, ByteBuffer buffer, SendChannelEndpoint channelEndpoint, int bytesToSend);
 
     abstract void onStatusMessage(StatusMessageFlyweight msg, InetSocketAddress address);
 
@@ -52,11 +51,10 @@ abstract class MultiDestination
         int bytesSent = 0;
         try
         {
-            channelEndpoint.sendHook(buffer, destination);
-
-            buffer.position(position);
             if (datagramChannel.isOpen())
             {
+                channelEndpoint.sendHook(buffer, destination);
+                buffer.position(position);
                 bytesSent = datagramChannel.send(buffer, destination);
             }
         }
@@ -115,7 +113,7 @@ class DynamicMultiDestination extends MultiDestination
     }
 
     int send(
-        final DatagramChannel datagramChannel,
+        final DatagramChannel channel,
         final ByteBuffer buffer,
         final SendChannelEndpoint channelEndpoint,
         final int bytesToSend)
@@ -136,8 +134,7 @@ class DynamicMultiDestination extends MultiDestination
             else
             {
                 minBytesSent = Math.min(
-                    minBytesSent,
-                    send(datagramChannel, buffer, channelEndpoint, bytesToSend, position, destination.address));
+                    minBytesSent, send(channel, buffer, channelEndpoint, bytesToSend, position, destination.address));
             }
         }
 
@@ -185,7 +182,7 @@ class ManualMultiDestination extends MultiDestination
     }
 
     int send(
-        final DatagramChannel datagramChannel,
+        final DatagramChannel channel,
         final ByteBuffer buffer,
         final SendChannelEndpoint channelEndpoint,
         final int bytesToSend)
@@ -196,8 +193,7 @@ class ManualMultiDestination extends MultiDestination
         for (final InetSocketAddress destination : destinations)
         {
             minBytesSent = Math.min(
-                minBytesSent,
-                send(datagramChannel, buffer, channelEndpoint, bytesToSend, position, destination));
+                minBytesSent, send(channel, buffer, channelEndpoint, bytesToSend, position, destination));
         }
 
         return minBytesSent;

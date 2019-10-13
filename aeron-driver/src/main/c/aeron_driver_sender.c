@@ -115,9 +115,8 @@ int aeron_driver_sender_do_work(void *clientd)
     aeron_driver_sender_t *sender = (aeron_driver_sender_t *)clientd;
     int work_count = 0;
 
-    work_count +=
-        aeron_spsc_concurrent_array_queue_drain(
-            sender->sender_proxy.command_queue, aeron_driver_sender_on_command, sender, 10);
+    work_count += aeron_spsc_concurrent_array_queue_drain(
+        sender->sender_proxy.command_queue, aeron_driver_sender_on_command, sender, 10);
 
     int64_t now_ns = sender->context->nano_clock();
     int64_t bytes_received = 0;
@@ -125,7 +124,7 @@ int aeron_driver_sender_do_work(void *clientd)
     int poll_result;
 
     if (0 == bytes_sent ||
-        ++sender->duty_cycle_counter == sender->duty_cycle_ratio ||
+        ++sender->duty_cycle_counter >= sender->duty_cycle_ratio ||
         now_ns > sender->control_poll_timeout_ns)
     {
         struct mmsghdr mmsghdr[AERON_DRIVER_SENDER_NUM_RECV_BUFFERS];

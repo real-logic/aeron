@@ -275,6 +275,12 @@ void ClientConductor::releaseSubscription(std::int64_t registrationId, Image::ar
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     verifyDriverIsActiveViaErrorHandler();
 
+    if (m_isClosed)
+    {
+        delete [] imageArray;
+        return;
+    }
+
     auto it = m_subscriptionByRegistrationId.find(registrationId);
     if (it != m_subscriptionByRegistrationId.end())
     {

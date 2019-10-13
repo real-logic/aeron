@@ -435,7 +435,7 @@ public:
 
     std::pair<Image::array_t, int> removeImage(std::int64_t correlationId)
     {
-        auto result = m_imageArray.removeElement([&](std::shared_ptr<Image> image)
+        auto result = m_imageArray.removeElement([&](const std::shared_ptr<Image>& image)
         {
             if (image->correlationId() == correlationId)
             {

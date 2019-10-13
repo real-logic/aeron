@@ -419,7 +419,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             }
             else if (epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))
             {
-                throw new TimeoutException("failed get acknowledgement of replay request");
+                throw new TimeoutException("failed get acknowledgement of replay request to: " + replicationChannel);
             }
         }
 

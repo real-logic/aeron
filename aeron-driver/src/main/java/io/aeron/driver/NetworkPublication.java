@@ -49,7 +49,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 class NetworkPublicationPadding1
 {
     @SuppressWarnings("unused")
-    protected long p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15;
+    protected long p1, p2, p3, p4, p5, p6, p7;
 }
 
 class NetworkPublicationConductorFields extends NetworkPublicationPadding1
@@ -67,7 +67,7 @@ class NetworkPublicationConductorFields extends NetworkPublicationPadding1
 class NetworkPublicationPadding2 extends NetworkPublicationConductorFields
 {
     @SuppressWarnings("unused")
-    protected long p16, p17, p18, p19, p20, p21, p22, p23, p24, p25, p26, p27, p28, p29, p30;
+    protected long p1, p2, p3, p4, p5, p6, p7;
 }
 
 class NetworkPublicationSenderFields extends NetworkPublicationPadding2
@@ -82,7 +82,7 @@ class NetworkPublicationSenderFields extends NetworkPublicationPadding2
 class NetworkPublicationPadding3 extends NetworkPublicationSenderFields
 {
     @SuppressWarnings("unused")
-    protected long p31, p32, p33, p34, p35, p36, p37, p38, p39, p40, p41, p42, p43, p44, p45;
+    protected long p1, p2, p3, p4, p5, p6, p7;
 }
 
 /**

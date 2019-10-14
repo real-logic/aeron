@@ -94,22 +94,22 @@ public class PublicationImage
         INIT, ACTIVE, INACTIVE, LINGER, DONE
     }
 
-    private volatile long beginLossChange = Aeron.NULL_VALUE;
-    private volatile long endLossChange = Aeron.NULL_VALUE;
-    private int lossTermId;
-    private int lossTermOffset;
-    private int lossLength;
-
     private volatile long beginSmChange = Aeron.NULL_VALUE;
     private volatile long endSmChange = Aeron.NULL_VALUE;
     private long nextSmPosition;
     private int nextSmReceiverWindowLength;
     private long timeOfLastStatusMessageScheduleNs;
 
-    private long lastLossChangeNumber = Aeron.NULL_VALUE;
-    private long lastSmChangeNumber = Aeron.NULL_VALUE;
     private long lastSmPosition;
     private long lastSmWindowLimit;
+    private long lastSmChangeNumber = Aeron.NULL_VALUE;
+    private long lastLossChangeNumber = Aeron.NULL_VALUE;
+
+    private volatile long beginLossChange = Aeron.NULL_VALUE;
+    private volatile long endLossChange = Aeron.NULL_VALUE;
+    private int lossTermId;
+    private int lossTermOffset;
+    private int lossLength;
 
     private long timeOfLastStateChangeNs;
 

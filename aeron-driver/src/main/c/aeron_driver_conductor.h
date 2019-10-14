@@ -275,6 +275,8 @@ typedef struct aeron_driver_conductor_stct
     int64_t time_of_last_timeout_check_ns;
     int64_t time_of_last_to_driver_position_change_ns;
     int64_t last_consumer_command_position;
+
+    uint8_t padding[AERON_CACHE_LINE_LENGTH];
 }
 aeron_driver_conductor_t;
 

@@ -77,7 +77,7 @@ class DynamicJoin implements AutoCloseable
     private long correlationId = NULL_VALUE;
     private long snapshotRetrieveSubscriptionId = NULL_VALUE;
     private int memberId = NULL_VALUE;
-    private int clusterMembersStatusEndpointsCursor = -1;
+    private int clusterMembersStatusEndpointsCursor = NULL_VALUE;
     private int snapshotCursor = 0;
     private int snapshotReplaySessionId = NULL_VALUE;
 
@@ -249,14 +249,17 @@ class DynamicJoin implements AutoCloseable
     {
         if (nowNs > (timeOfLastActivityNs + intervalNs))
         {
-            clusterMembersStatusEndpointsCursor = Math.min(
-                clusterMembersStatusEndpointsCursor + 1, clusterMemberStatusEndpoints.length - 1);
+            int cursor = ++clusterMembersStatusEndpointsCursor;
+            if (cursor >= clusterMemberStatusEndpoints.length)
+            {
+                clusterMembersStatusEndpointsCursor = 0;
+                cursor = 0;
+            }
 
             CloseHelper.close(memberStatusPublication);
-            final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
-            memberStatusUri.put(ENDPOINT_PARAM_NAME, clusterMemberStatusEndpoints[clusterMembersStatusEndpointsCursor]);
-            memberStatusPublication = ctx.aeron().addExclusivePublication(
-                memberStatusUri.toString(), ctx.memberStatusStreamId());
+            final ChannelUri uri = ChannelUri.parse(ctx.memberStatusChannel());
+            uri.put(ENDPOINT_PARAM_NAME, clusterMemberStatusEndpoints[cursor]);
+            memberStatusPublication = ctx.aeron().addExclusivePublication(uri.toString(), ctx.memberStatusStreamId());
             correlationId = NULL_VALUE;
             timeOfLastActivityNs = nowNs;
 

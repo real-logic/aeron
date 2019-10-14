@@ -100,7 +100,7 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
     private long liveLogRecordingId = NULL_VALUE;
     private long liveLogReplayId = NULL_VALUE;
     private int leaderCommitPositionCounterId = NULL_VALUE;
-    private int clusterMembersStatusEndpointsCursor = -1;
+    private int clusterMembersStatusEndpointsCursor = NULL_VALUE;
     private int snapshotCursor = 0;
     private int snapshotReplaySessionId = NULL_VALUE;
     private int liveLogReplaySessionId = NULL_VALUE;
@@ -109,14 +109,14 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
     ClusterBackupAgent(final ClusterBackup.Context ctx)
     {
         this.ctx = ctx;
-        this.aeron = ctx.aeron();
-        this.epochClock = ctx.epochClock();
-        this.backupResponseTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.clusterBackupResponseTimeoutNs());
-        this.backupQueryIntervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.clusterBackupIntervalNs());
-        this.markFile = ctx.clusterMarkFile();
-        this.eventsListener = ctx.eventsListener();
+        aeron = ctx.aeron();
+        epochClock = ctx.epochClock();
+        backupResponseTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.clusterBackupResponseTimeoutNs());
+        backupQueryIntervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.clusterBackupIntervalNs());
+        markFile = ctx.clusterMarkFile();
+        eventsListener = ctx.eventsListener();
 
-        this.clusterMemberStatusEndpoints = ctx.clusterMembersStatusEndpoints().split(",");
+        clusterMemberStatusEndpoints = ctx.clusterMembersStatusEndpoints().split(",");
 
         aeronClientInvoker = aeron.conductorAgentInvoker();
         aeronClientInvoker.invoke();
@@ -414,14 +414,17 @@ public class ClusterBackupAgent implements Agent, FragmentHandler, UnavailableCo
     {
         if (null == memberStatusPublication || nowMs > (timeOfLastBackupQueryMs + backupResponseTimeoutMs))
         {
-            clusterMembersStatusEndpointsCursor = Math.min(
-                clusterMembersStatusEndpointsCursor + 1, clusterMemberStatusEndpoints.length - 1);
+            int cursor = ++clusterMembersStatusEndpointsCursor;
+            if (cursor >= clusterMemberStatusEndpoints.length)
+            {
+                clusterMembersStatusEndpointsCursor = 0;
+                cursor = 0;
+            }
 
             CloseHelper.close(memberStatusPublication);
-            final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
-            memberStatusUri.put(ENDPOINT_PARAM_NAME, clusterMemberStatusEndpoints[clusterMembersStatusEndpointsCursor]);
-            memberStatusPublication = aeron.addExclusivePublication(
-                memberStatusUri.toString(), ctx.memberStatusStreamId());
+            final ChannelUri uri = ChannelUri.parse(ctx.memberStatusChannel());
+            uri.put(ENDPOINT_PARAM_NAME, clusterMemberStatusEndpoints[cursor]);
+            memberStatusPublication = aeron.addExclusivePublication(uri.toString(), ctx.memberStatusStreamId());
             correlationId = NULL_VALUE;
             timeOfLastBackupQueryMs = nowMs;
 

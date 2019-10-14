@@ -105,9 +105,10 @@ public:
         m_isClosed(false),
         m_timeOfLastDoWorkMs(m_epochClock()),
         m_timeOfLastKeepaliveMs(m_epochClock()),
-        m_timeOfLastCheckManagedResourcesMs(m_epochClock())
+        m_timeOfLastCheckManagedResourcesMs(m_epochClock()),
+        m_padding()
     {
-        static_cast<void>(padding);
+        static_cast<void>(m_padding);
 
         m_onAvailableCounterHandlers.emplace_back(availableCounterHandler);
         m_onUnavailableCounterHandlers.emplace_back(unavailableCounterHandler);
@@ -116,28 +117,9 @@ public:
 
     virtual ~ClientConductor();
 
-    void onStart()
-    {
-    }
-
-    int doWork()
-    {
-        int workCount = 0;
-
-        workCount += m_driverListenerAdapter.receiveMessages();
-        workCount += onHeartbeatCheckTimeouts();
-
-        return workCount;
-    }
-
-    void onClose()
-    {
-        if (!m_isClosed)
-        {
-            std::lock_guard<std::recursive_mutex> lock(m_adminLock);
-            closeAllResources(m_epochClock());
-        }
-    }
+    void onStart();
+    int doWork();
+    void onClose();
 
     std::int64_t addPublication(const std::string& channel, std::int32_t streamId);
     std::shared_ptr<Publication> findPublication(std::int64_t registrationId);
@@ -267,106 +249,106 @@ protected:
     void lingerAllResources(long long nowMs, Image::array_t imageArray);
 
 private:
-    enum class RegistrationStatus
+    enum class RegistrationStatus : std::int8_t
     {
         AWAITING_MEDIA_DRIVER, REGISTERED_MEDIA_DRIVER, ERRORED_MEDIA_DRIVER
     };
 
     struct PublicationStateDefn
     {
-        std::string m_channel;
-        std::int64_t m_registrationId;
-        std::int64_t m_originalRegistrationId = -1;
-        std::int32_t m_streamId;
-        std::int32_t m_sessionId = -1;
-        std::int32_t m_publicationLimitCounterId = -1;
-        std::int32_t m_channelStatusId = -1;
-        long long m_timeOfRegistrationMs;
-        RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
-        std::int32_t m_errorCode = -1;
         std::string m_errorMessage;
         std::shared_ptr<LogBuffers> m_buffers;
         std::weak_ptr<Publication> m_publication;
+        const std::string m_channel;
+        const std::int64_t m_registrationId;
+        std::int64_t m_originalRegistrationId = -1;
+        const long long m_timeOfRegistrationMs;
+        const std::int32_t m_streamId;
+        std::int32_t m_sessionId = -1;
+        std::int32_t m_publicationLimitCounterId = -1;
+        std::int32_t m_channelStatusId = -1;
+        std::int32_t m_errorCode = -1;
+        RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
 
-        PublicationStateDefn(
+        inline PublicationStateDefn(
             const std::string& channel, std::int64_t registrationId, std::int32_t streamId, long long nowMs) :
             m_channel(channel),
             m_registrationId(registrationId),
-            m_streamId(streamId),
-            m_timeOfRegistrationMs(nowMs)
+            m_timeOfRegistrationMs(nowMs),
+            m_streamId(streamId)
         {
         }
     };
 
     struct ExclusivePublicationStateDefn
     {
-        std::string m_channel;
-        std::int64_t m_registrationId;
-        std::int64_t m_originalRegistrationId = -1;
-        std::int32_t m_streamId;
-        std::int32_t m_sessionId = -1;
-        std::int32_t m_publicationLimitCounterId = -1;
-        std::int32_t m_channelStatusId = -1;
-        long long m_timeOfRegistrationMs;
-        RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
-        std::int32_t m_errorCode = -1;
         std::string m_errorMessage;
         std::shared_ptr<LogBuffers> m_buffers;
         std::weak_ptr<ExclusivePublication> m_publication;
+        const std::string m_channel;
+        const std::int64_t m_registrationId;
+        std::int64_t m_originalRegistrationId = -1;
+        const long long m_timeOfRegistrationMs;
+        const std::int32_t m_streamId;
+        std::int32_t m_sessionId = -1;
+        std::int32_t m_publicationLimitCounterId = -1;
+        std::int32_t m_channelStatusId = -1;
+        std::int32_t m_errorCode = -1;
+        RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
 
-        ExclusivePublicationStateDefn(
+        inline ExclusivePublicationStateDefn(
             const std::string& channel, std::int64_t registrationId, std::int32_t streamId, long long nowMs) :
             m_channel(channel),
             m_registrationId(registrationId),
-            m_streamId(streamId),
-            m_timeOfRegistrationMs(nowMs)
+            m_timeOfRegistrationMs(nowMs),
+            m_streamId(streamId)
         {
         }
     };
 
     struct SubscriptionStateDefn
     {
-        std::string m_channel;
-        std::int64_t m_registrationId;
-        std::int32_t m_streamId;
-        long long m_timeOfRegistrationMs;
-        RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
-        std::int32_t m_errorCode = -1;
         std::string m_errorMessage;
         std::shared_ptr<Subscription> m_subscriptionCache;
         std::weak_ptr<Subscription> m_subscription;
         on_available_image_t m_onAvailableImageHandler;
         on_unavailable_image_t m_onUnavailableImageHandler;
+        const std::string m_channel;
+        const std::int64_t m_registrationId;
+        const long long m_timeOfRegistrationMs;
+        const std::int32_t m_streamId;
+        std::int32_t m_errorCode = -1;
+        RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
 
-        SubscriptionStateDefn(
+        inline SubscriptionStateDefn(
             const std::string& channel,
             std::int64_t registrationId,
             std::int32_t streamId,
             long long nowMs,
             const on_available_image_t &onAvailableImageHandler,
             const on_unavailable_image_t &onUnavailableImageHandler) :
+            m_onAvailableImageHandler(onAvailableImageHandler),
+            m_onUnavailableImageHandler(onUnavailableImageHandler),
             m_channel(channel),
             m_registrationId(registrationId),
-            m_streamId(streamId),
             m_timeOfRegistrationMs(nowMs),
-            m_onAvailableImageHandler(onAvailableImageHandler),
-            m_onUnavailableImageHandler(onUnavailableImageHandler)
+            m_streamId(streamId)
         {
         }
     };
 
     struct CounterStateDefn
     {
-        std::int64_t m_registrationId;
-        std::int32_t m_counterId = -1;
-        long long m_timeOfRegistrationMs;
-        RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
-        std::int32_t m_errorCode = -1;
         std::string m_errorMessage;
         std::shared_ptr<Counter> m_counterCache;
         std::weak_ptr<Counter> m_counter;
+        const std::int64_t m_registrationId;
+        const long long m_timeOfRegistrationMs;
+        std::int32_t m_counterId = -1;
+        RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
+        std::int32_t m_errorCode = -1;
 
-        CounterStateDefn(std::int64_t registrationId, long long nowMs) :
+        inline CounterStateDefn(std::int64_t registrationId, long long nowMs) :
             m_registrationId(registrationId),
             m_timeOfRegistrationMs(nowMs)
         {
@@ -375,38 +357,38 @@ private:
 
     struct ImageListLingerDefn
     {
-        long long m_timeOfLastStateChangeMs = LLONG_MAX;
         Image::array_t m_imageArray;
+        long long m_timeOfLastStateChangeMs = LLONG_MAX;
 
-        ImageListLingerDefn(long long nowMs, Image::array_t imageArray) :
-            m_timeOfLastStateChangeMs(nowMs),
-            m_imageArray(imageArray)
+        inline ImageListLingerDefn(long long nowMs, Image::array_t imageArray) :
+            m_imageArray(imageArray),
+            m_timeOfLastStateChangeMs(nowMs)
         {
         }
     };
 
     struct LogBuffersDefn
     {
-        long long m_timeOfLastStateChangeMs;
         std::shared_ptr<LogBuffers> m_logBuffers;
+        long long m_timeOfLastStateChangeMs;
 
-        LogBuffersDefn(std::shared_ptr<LogBuffers> buffers) :
-            m_timeOfLastStateChangeMs(LLONG_MAX),
-            m_logBuffers(std::move(buffers))
+        inline explicit LogBuffersDefn(std::shared_ptr<LogBuffers> buffers) :
+            m_logBuffers(std::move(buffers)),
+            m_timeOfLastStateChangeMs(LLONG_MAX)
         {
         }
     };
 
     struct DestinationStateDefn
     {
-        std::int64_t m_correlationId;
-        std::int64_t m_registrationId;
-        long long m_timeOfRegistrationMs;
-        RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
-        std::int32_t m_errorCode = -1;
         std::string m_errorMessage;
+        const std::int64_t m_correlationId;
+        const std::int64_t m_registrationId;
+        const long long m_timeOfRegistrationMs;
+        std::int32_t m_errorCode = -1;
+        RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
 
-        DestinationStateDefn(std::int64_t correlationId, std::int64_t registrationId, long long nowMs) :
+        inline DestinationStateDefn(std::int64_t correlationId, std::int64_t registrationId, long long nowMs) :
             m_correlationId(correlationId),
             m_registrationId(registrationId),
             m_timeOfRegistrationMs(nowMs)
@@ -453,7 +435,7 @@ private:
     long long m_timeOfLastKeepaliveMs;
     long long m_timeOfLastCheckManagedResourcesMs;
 
-    char padding[util::BitUtil::CACHE_LINE_LENGTH];
+    char m_padding[util::BitUtil::CACHE_LINE_LENGTH];
 
     inline int onHeartbeatCheckTimeouts()
     {

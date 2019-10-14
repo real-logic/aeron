@@ -47,6 +47,29 @@ ClientConductor::~ClientConductor()
     m_driverProxy.clientClose();
 }
 
+void ClientConductor::onStart()
+{
+}
+
+int ClientConductor::doWork()
+{
+    int workCount = 0;
+
+    workCount += m_driverListenerAdapter.receiveMessages();
+    workCount += onHeartbeatCheckTimeouts();
+
+    return workCount;
+}
+
+void ClientConductor::onClose()
+{
+    if (!m_isClosed)
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_adminLock);
+        closeAllResources(m_epochClock());
+    }
+}
+
 std::int64_t ClientConductor::addPublication(const std::string &channel, std::int32_t streamId)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);

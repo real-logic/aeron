@@ -42,7 +42,7 @@ public:
      * Construct an adapter to reassembly message fragments and delegate on only whole messages.
      *
      * @param delegate            onto which whole messages are forwarded.
-     * @param initialBufferLength to be used for each session.
+     * @param initialBufferLength to be used for rebuilding.
      */
     ImageControlledFragmentAssembler(
         const controlled_poll_fragment_handler_t& delegate,

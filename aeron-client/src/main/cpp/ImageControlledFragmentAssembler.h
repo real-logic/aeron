@@ -53,7 +53,7 @@ public:
     }
 
     /**
-     * Compose a controlled_poll_fragment_handler_t that calls the  ControlledFragmentAssembler instance for
+     * Compose a controlled_poll_fragment_handler_t that calls the ImageControlledFragmentAssembler instance for
      * reassembly. Suitable for passing to Image::controlledPoll(controlled_poll_fragment_handler_t, int).
      *
      * @return controlled_poll_fragment_handler_t composed with the ImageControlledFragmentAssembler instance

@@ -54,7 +54,7 @@ public:
     }
 
     /**
-     * Compose a fragment_handler_t that calls the FragmentAssembler instance for reassembly. Suitable for
+     * Compose a fragment_handler_t that calls the ImageFragmentAssembler instance for reassembly. Suitable for
      * passing to Image::poll(fragment_handler_t, int).
      *
      * @return fragment_handler_t composed with the FragmentAssembler instance

@@ -78,7 +78,10 @@ public:
 
     inline void buffer(AtomicBuffer& buffer)
     {
-        m_buffer.wrap(buffer);
+        if (&buffer != &m_buffer)
+        {
+            m_buffer.wrap(buffer);
+        }
     }
 
     /**

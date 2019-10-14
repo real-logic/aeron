@@ -111,18 +111,18 @@ public:
         UnsafeBufferPosition& subscriberPosition,
         std::shared_ptr<LogBuffers> logBuffers,
         const exception_handler_t& exceptionHandler) :
-        m_header(
-            LogBufferDescriptor::initialTermId(logBuffers->atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX)),
-            logBuffers->atomicBuffer(0).capacity(),
-            this),
-        m_subscriberPosition(subscriberPosition),
-        m_logBuffers(std::move(logBuffers)),
         m_sourceIdentity(sourceIdentity),
-        m_isClosed(false),
+        m_logBuffers(std::move(logBuffers)),
         m_exceptionHandler(exceptionHandler),
-        m_correlationId(correlationId),
+        m_subscriberPosition(subscriberPosition),
+        m_header(
+            LogBufferDescriptor::initialTermId(m_logBuffers->atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX)),
+            m_logBuffers->atomicBuffer(0).capacity(),
+            this),
+        m_isClosed(false),
+        m_sessionId(sessionId),
         m_subscriptionRegistrationId(subscriptionRegistrationId),
-        m_sessionId(sessionId)
+        m_correlationId(correlationId)
     {
         for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
         {
@@ -139,81 +139,81 @@ public:
     }
 
     Image(const Image& image) :
-        m_termBuffers(image.m_termBuffers),
-        m_header(image.m_header),
-        m_subscriberPosition(image.m_subscriberPosition),
-        m_logBuffers(image.m_logBuffers),
         m_sourceIdentity(image.m_sourceIdentity),
-        m_isClosed(image.isClosed()),
+        m_logBuffers(image.m_logBuffers),
         m_exceptionHandler(image.m_exceptionHandler),
-        m_correlationId(image.m_correlationId),
-        m_subscriptionRegistrationId(image.m_subscriptionRegistrationId),
-        m_joinPosition(image.m_joinPosition),
-        m_finalPosition(image.m_finalPosition),
-        m_sessionId(image.m_sessionId),
+        m_termBuffers(image.m_termBuffers),
+        m_subscriberPosition(image.m_subscriberPosition),
+        m_header(image.m_header),
+        m_isClosed(image.isClosed()),
+        m_isEos(image.m_isEos),
         m_termLengthMask(image.m_termLengthMask),
         m_positionBitsToShift(image.m_positionBitsToShift),
-        m_isEos(image.m_isEos)
+        m_sessionId(image.m_sessionId),
+        m_joinPosition(image.m_joinPosition),
+        m_finalPosition(image.m_finalPosition),
+        m_subscriptionRegistrationId(image.m_subscriptionRegistrationId),
+        m_correlationId(image.m_correlationId)
     {
     }
 
     Image& operator = (const Image& image)
     {
-        m_termBuffers = image.m_termBuffers;
-        m_header = image.m_header;
-        m_subscriberPosition = image.m_subscriberPosition;
-        m_logBuffers = image.m_logBuffers;
         m_sourceIdentity = image.m_sourceIdentity;
-        m_isClosed = image.isClosed();
+        m_logBuffers = image.m_logBuffers;
         m_exceptionHandler = image.m_exceptionHandler;
-        m_correlationId = image.m_correlationId;
-        m_subscriptionRegistrationId = image.m_subscriptionRegistrationId;
-        m_joinPosition = image.m_joinPosition;
-        m_finalPosition = image.m_finalPosition;
-        m_sessionId = image.m_sessionId;
+        m_termBuffers = image.m_termBuffers;
+        m_subscriberPosition = image.m_subscriberPosition;
+        m_header = image.m_header;
+        m_isClosed = image.isClosed();
+        m_isEos = image.m_isEos;
         m_termLengthMask = image.m_termLengthMask;
         m_positionBitsToShift = image.m_positionBitsToShift;
-        m_isEos = image.m_isEos;
+        m_sessionId = image.m_sessionId;
+        m_joinPosition = image.m_joinPosition;
+        m_finalPosition = image.m_finalPosition;
+        m_subscriptionRegistrationId = image.m_subscriptionRegistrationId;
+        m_correlationId = image.m_correlationId;
 
         return *this;
     }
 
     Image(Image&& image) noexcept :
-        m_termBuffers(image.m_termBuffers),
-        m_header(image.m_header),
-        m_subscriberPosition(image.m_subscriberPosition),
-        m_logBuffers(std::move(image.m_logBuffers)),
         m_sourceIdentity(std::move(image.m_sourceIdentity)),
-        m_isClosed(image.isClosed()),
+        m_logBuffers(std::move(image.m_logBuffers)),
         m_exceptionHandler(std::move(image.m_exceptionHandler)),
-        m_correlationId(image.m_correlationId),
-        m_subscriptionRegistrationId(image.m_subscriptionRegistrationId),
-        m_joinPosition(image.m_joinPosition),
-        m_finalPosition(image.m_finalPosition),
-        m_sessionId(image.m_sessionId),
+        m_termBuffers(image.m_termBuffers),
+        m_subscriberPosition(image.m_subscriberPosition),
+        m_header(image.m_header),
+        m_isClosed(image.isClosed()),
+        m_isEos(image.m_isEos),
         m_termLengthMask(image.m_termLengthMask),
         m_positionBitsToShift(image.m_positionBitsToShift),
-        m_isEos(image.m_isEos)
+        m_sessionId(image.m_sessionId),
+        m_joinPosition(image.m_joinPosition),
+        m_finalPosition(image.m_finalPosition),
+        m_subscriptionRegistrationId(image.m_subscriptionRegistrationId),
+        m_correlationId(image.m_correlationId)
     {
     }
 
     Image& operator = (Image&& image) noexcept
     {
-        m_termBuffers = image.m_termBuffers;
-        m_header = image.m_header;
-        m_subscriberPosition = image.m_subscriberPosition;
-        m_logBuffers = std::move(image.m_logBuffers);
         m_sourceIdentity = std::move(image.m_sourceIdentity);
-        m_isClosed = image.isClosed();
+        m_logBuffers = std::move(image.m_logBuffers);
         m_exceptionHandler = std::move(image.m_exceptionHandler);
-        m_correlationId = image.m_correlationId;
-        m_subscriptionRegistrationId = image.m_subscriptionRegistrationId;
-        m_joinPosition = image.m_joinPosition;
-        m_finalPosition = image.m_finalPosition;
-        m_sessionId = image.m_sessionId;
+        m_termBuffers = image.m_termBuffers;
+        m_subscriberPosition = image.m_subscriberPosition;
+        m_header = image.m_header;
+        m_isClosed = image.isClosed();
+        m_isEos = image.m_isEos;
         m_termLengthMask = image.m_termLengthMask;
         m_positionBitsToShift = image.m_positionBitsToShift;
-        m_isEos = image.m_isEos;
+        m_sessionId = image.m_sessionId;
+        m_joinPosition = image.m_joinPosition;
+        m_finalPosition = image.m_finalPosition;
+        m_subscriptionRegistrationId = image.m_subscriptionRegistrationId;
+        m_correlationId = image.m_correlationId;
 
         return *this;
     }
@@ -781,22 +781,22 @@ public:
     /// @endcond
 
 private:
-    std::array<AtomicBuffer, LogBufferDescriptor::PARTITION_COUNT> m_termBuffers;
-    Header m_header;
-    Position<UnsafeBufferPosition> m_subscriberPosition;
-    std::shared_ptr<LogBuffers> m_logBuffers;
     std::string m_sourceIdentity;
-    std::atomic<bool> m_isClosed;
+    std::shared_ptr<LogBuffers> m_logBuffers;
     exception_handler_t m_exceptionHandler;
+    std::array<AtomicBuffer, LogBufferDescriptor::PARTITION_COUNT> m_termBuffers;
+    Position<UnsafeBufferPosition> m_subscriberPosition;
+    Header m_header;
+    std::atomic<bool> m_isClosed;
+    bool m_isEos;
 
-    std::int64_t m_correlationId;
-    std::int64_t m_subscriptionRegistrationId;
-    std::int64_t m_joinPosition;
-    std::int64_t m_finalPosition;
-    std::int32_t m_sessionId;
     std::int32_t m_termLengthMask;
     std::int32_t m_positionBitsToShift;
-    bool m_isEos;
+    std::int32_t m_sessionId;
+    std::int64_t m_joinPosition;
+    std::int64_t m_finalPosition;
+    std::int64_t m_subscriptionRegistrationId;
+    std::int64_t m_correlationId;
 
     void validatePosition(std::int64_t newPosition)
     {

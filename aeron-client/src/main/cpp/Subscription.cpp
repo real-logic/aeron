@@ -28,10 +28,10 @@ Subscription::Subscription(
     m_conductor(conductor),
     m_channel(channel),
     m_channelStatusId(channelStatusId),
-    m_registrationId(registrationId),
-    m_streamId(streamId),
     m_imageArray(),
-    m_isClosed(false)
+    m_isClosed(false),
+    m_registrationId(registrationId),
+    m_streamId(streamId)
 {
     static_cast<void>(paddingBefore);
     static_cast<void>(paddingAfter);

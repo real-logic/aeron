@@ -472,12 +472,11 @@ private:
     std::int32_t m_channelStatusId;
     char paddingBefore[util::BitUtil::CACHE_LINE_LENGTH];
     std::size_t m_roundRobinIndex = 0;
+    AtomicArrayUpdater<std::shared_ptr<Image>> m_imageArray;
+    std::atomic<bool> m_isClosed;
     char paddingAfter[util::BitUtil::CACHE_LINE_LENGTH];
     std::int64_t m_registrationId;
     std::int32_t m_streamId;
-
-    AtomicArrayUpdater<std::shared_ptr<Image>> m_imageArray;
-    std::atomic<bool> m_isClosed;
 };
 
 }

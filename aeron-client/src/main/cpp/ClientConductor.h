@@ -97,18 +97,17 @@ public:
         m_onNewSubscriptionHandler(newSubscriptionHandler),
         m_errorHandler(errorHandler),
         m_epochClock(std::move(epochClock)),
-        m_timeOfLastDoWorkMs(m_epochClock()),
-        m_timeOfLastKeepaliveMs(m_epochClock()),
-        m_timeOfLastCheckManagedResourcesMs(m_epochClock()),
         m_driverTimeoutMs(driverTimeoutMs),
         m_resourceLingerTimeoutMs(resourceLingerTimeoutMs),
         m_interServiceTimeoutMs(static_cast<long>(interServiceTimeoutNs / 1000000)),
+        m_preTouchMappedMemory(preTouchMappedMemory),
         m_driverActive(true),
         m_isClosed(false),
-        m_preTouchMappedMemory(preTouchMappedMemory)
+        m_timeOfLastDoWorkMs(m_epochClock()),
+        m_timeOfLastKeepaliveMs(m_epochClock()),
+        m_timeOfLastCheckManagedResourcesMs(m_epochClock())
     {
-        static_cast<void>(paddingBefore);
-        static_cast<void>(paddingAfter);
+        static_cast<void>(padding);
 
         m_onAvailableCounterHandlers.emplace_back(availableCounterHandler);
         m_onUnavailableCounterHandlers.emplace_back(unavailableCounterHandler);
@@ -440,21 +439,21 @@ private:
     std::vector<on_close_client_t> m_onCloseClientHandlers;
 
     epoch_clock_t m_epochClock;
-    char paddingBefore[util::BitUtil::CACHE_LINE_LENGTH];
-    long long m_timeOfLastDoWorkMs;
-    long long m_timeOfLastKeepaliveMs;
-    long long m_timeOfLastCheckManagedResourcesMs;
-    char paddingAfter[util::BitUtil::CACHE_LINE_LENGTH];
     long m_driverTimeoutMs;
     long m_resourceLingerTimeoutMs;
     long m_interServiceTimeoutMs;
-
-    std::recursive_mutex m_adminLock;
-    std::unique_ptr<AtomicCounter> m_heartbeatTimestamp;
-    std::atomic<bool> m_driverActive;
-    std::atomic<bool> m_isClosed;
     bool m_preTouchMappedMemory;
     bool m_isInCallback = false;
+    std::atomic<bool> m_driverActive;
+    std::atomic<bool> m_isClosed;
+    std::recursive_mutex m_adminLock;
+    std::unique_ptr<AtomicCounter> m_heartbeatTimestamp;
+
+    long long m_timeOfLastDoWorkMs;
+    long long m_timeOfLastKeepaliveMs;
+    long long m_timeOfLastCheckManagedResourcesMs;
+
+    char padding[util::BitUtil::CACHE_LINE_LENGTH];
 
     inline int onHeartbeatCheckTimeouts()
     {

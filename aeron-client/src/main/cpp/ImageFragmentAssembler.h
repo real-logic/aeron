@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef AERON_FRAGMENT_ASSEMBLER_H
-#define AERON_FRAGMENT_ASSEMBLER_H
+#ifndef AERON_IMAGE_FRAGMENT_ASSEMBLER_H
+#define AERON_IMAGE_FRAGMENT_ASSEMBLER_H
 
-#include <unordered_map>
 #include "Aeron.h"
 #include "BufferBuilder.h"
 
 namespace aeron {
 
-static const std::size_t DEFAULT_FRAGMENT_ASSEMBLY_BUFFER_LENGTH = 4096;
+static const std::size_t DEFAULT_IMAGE_FRAGMENT_ASSEMBLY_BUFFER_LENGTH = 4096;
 
 /**
  * A handler that sits in a chain-of-responsibility pattern that reassembles fragmented messages
@@ -34,11 +33,9 @@ static const std::size_t DEFAULT_FRAGMENT_ASSEMBLY_BUFFER_LENGTH = 4096;
  * <p>
  * The Header passed to the delegate on assembling a message will be that of the last fragment.
  * <p>
- * Session based buffers will be allocated and grown as necessary based on the length of messages to be assembled.
- * When sessions go inactive see {@link on_unavailable_image_t}, it is possible to free the buffer by calling
- * {@link #deleteSessionBuffer(std::int32_t)}.
+ * This handler is not session aware and must only be used when polling a single Image.
  */
-class FragmentAssembler
+class ImageFragmentAssembler
 {
 public:
 
@@ -48,15 +45,17 @@ public:
      * @param delegate            onto which whole messages are forwarded.
      * @param initialBufferLength to be used for each session.
      */
-    FragmentAssembler(
-        const fragment_handler_t& delegate, size_t initialBufferLength = DEFAULT_FRAGMENT_ASSEMBLY_BUFFER_LENGTH) :
-        m_initialBufferLength(initialBufferLength), m_delegate(delegate)
+    ImageFragmentAssembler(
+        const fragment_handler_t& delegate,
+        size_t initialBufferLength = DEFAULT_IMAGE_FRAGMENT_ASSEMBLY_BUFFER_LENGTH) :
+        m_delegate(delegate),
+        m_builder(initialBufferLength)
     {
     }
 
     /**
-     * Compose a fragment_handler_t that calls the this FragmentAssembler instance for reassembly. Suitable for
-     * passing to Subscription::poll(fragment_handler_t, int).
+     * Compose a fragment_handler_t that calls the FragmentAssembler instance for reassembly. Suitable for
+     * passing to Image::poll(fragment_handler_t, int).
      *
      * @return fragment_handler_t composed with the FragmentAssembler instance
      */
@@ -68,21 +67,9 @@ public:
         };
     }
 
-    /**
-     * Free an existing session buffer to reduce memory pressure when an Image goes inactive or no more
-     * large messages are expected.
-     *
-     * @param sessionId to have its buffer freed
-     */
-    void deleteSessionBuffer(std::int32_t sessionId)
-    {
-        m_builderBySessionIdMap.erase(sessionId);
-    }
-
 private:
-    const std::size_t m_initialBufferLength;
     fragment_handler_t m_delegate;
-    std::unordered_map<std::int32_t, BufferBuilder> m_builderBySessionIdMap;
+    BufferBuilder m_builder;
 
     inline void onFragment(AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
     {
@@ -96,35 +83,24 @@ private:
         {
             if ((flags & FrameDescriptor::BEGIN_FRAG) == FrameDescriptor::BEGIN_FRAG)
             {
-                auto result = m_builderBySessionIdMap.emplace(
-                    header.sessionId(), static_cast<std::uint32_t>(m_initialBufferLength));
-                BufferBuilder& builder = result.first->second;
-
-                builder
+                m_builder
                     .reset()
                     .append(buffer, offset, length, header);
             }
             else
             {
-                auto result = m_builderBySessionIdMap.find(header.sessionId());
-
-                if (result != m_builderBySessionIdMap.end())
+                if (m_builder.limit() != DataFrameHeader::LENGTH)
                 {
-                    BufferBuilder& builder = result->second;
+                    m_builder.append(buffer, offset, length, header);
 
-                    if (builder.limit() != DataFrameHeader::LENGTH)
+                    if ((flags & FrameDescriptor::END_FRAG) == FrameDescriptor::END_FRAG)
                     {
-                        builder.append(buffer, offset, length, header);
+                        const util::index_t msgLength = m_builder.limit() - DataFrameHeader::LENGTH;
+                        AtomicBuffer msgBuffer(m_builder.buffer(), m_builder.limit());
 
-                        if ((flags & FrameDescriptor::END_FRAG) == FrameDescriptor::END_FRAG)
-                        {
-                            const util::index_t msgLength = builder.limit() - DataFrameHeader::LENGTH;
-                            AtomicBuffer msgBuffer(builder.buffer(), builder.limit());
+                        m_delegate(msgBuffer, DataFrameHeader::LENGTH, msgLength, header);
 
-                            m_delegate(msgBuffer, DataFrameHeader::LENGTH, msgLength, header);
-
-                            builder.reset();
-                        }
+                        m_builder.reset();
                     }
                 }
             }

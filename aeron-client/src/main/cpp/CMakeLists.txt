@@ -41,6 +41,8 @@ SET(HEADERS
     BufferBuilder.h
     FragmentAssembler.h
     ControlledFragmentAssembler.h
+    ImageFragmentAssembler.h
+    ImageControlledFragmentAssembler.h
     ExclusivePublication.h
     Counter.h
     ChannelUri.h

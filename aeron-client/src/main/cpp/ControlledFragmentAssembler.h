@@ -56,8 +56,8 @@ public:
     }
 
     /**
-     * Compose a controlled_poll_fragment_handler_t that calls the this ControlledFragmentAssembler instance for reassembly. Suitable for
-     * passing to Subscription::poll(controlled_poll_fragment_handler_t, int).
+     * Compose a controlled_poll_fragment_handler_t that calls the this ControlledFragmentAssembler instance for
+     * reassembly. Suitable for passing to Subscription::controlledPoll(controlled_poll_fragment_handler_t, int).
      *
      * @return controlled_poll_fragment_handler_t composed with the ControlledFragmentAssembler instance
      */

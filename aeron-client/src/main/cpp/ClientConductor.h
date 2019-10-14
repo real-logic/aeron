@@ -440,11 +440,11 @@ private:
     std::vector<on_close_client_t> m_onCloseClientHandlers;
 
     epoch_clock_t m_epochClock;
-    char paddingBefore[56];
+    char paddingBefore[util::BitUtil::CACHE_LINE_LENGTH];
     long long m_timeOfLastDoWorkMs;
     long long m_timeOfLastKeepaliveMs;
     long long m_timeOfLastCheckManagedResourcesMs;
-    char paddingAfter[56];
+    char paddingAfter[util::BitUtil::CACHE_LINE_LENGTH];
     long m_driverTimeoutMs;
     long m_resourceLingerTimeoutMs;
     long m_interServiceTimeoutMs;
@@ -470,10 +470,7 @@ private:
             m_errorHandler(exception);
         }
 
-        if (nowMs != m_timeOfLastDoWorkMs)
-        {
-            m_timeOfLastDoWorkMs = nowMs;
-        }
+        m_timeOfLastDoWorkMs = nowMs;
 
         if (nowMs > (m_timeOfLastKeepaliveMs + KEEPALIVE_TIMEOUT_MS))
         {

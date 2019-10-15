@@ -33,8 +33,8 @@ Subscription::Subscription(
     m_registrationId(registrationId),
     m_streamId(streamId)
 {
-    static_cast<void>(paddingBefore);
-    static_cast<void>(paddingAfter);
+    static_cast<void>(m_paddingBefore);
+    static_cast<void>(m_paddingAfter);
 }
 
 Subscription::~Subscription()

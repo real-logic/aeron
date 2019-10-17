@@ -1264,6 +1264,35 @@ public class AeronArchive implements AutoCloseable
         }
     }
 
+    /**
+     * Get the start position for a recording.
+     *
+     * @param recordingId of the recording for which the position is required.
+     * @return the start position of a recording.
+     * @see #getStopPosition(long)
+     */
+    public long getStartPosition(final long recordingId)
+    {
+        lock.lock();
+        try
+        {
+            ensureOpen();
+
+            final long correlationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.getStartPosition(recordingId, correlationId, controlSessionId))
+            {
+                throw new ArchiveException("failed to send get start position request");
+            }
+
+            return pollForResponse(correlationId);
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
     private void checkDeadline(final long deadlineNs, final String errorMessage, final long correlationId)
     {
         if (Thread.interrupted())
@@ -1455,7 +1484,7 @@ public class AeronArchive implements AutoCloseable
     public static class Configuration
     {
         public static final int PROTOCOL_MAJOR_VERSION = 1;
-        public static final int PROTOCOL_MINOR_VERSION = 0;
+        public static final int PROTOCOL_MINOR_VERSION = 1;
         public static final int PROTOCOL_PATCH_VERSION = 0;
         public static final int PROTOCOL_SEMANTIC_VERSION = SemanticVersion.compose(
             PROTOCOL_MAJOR_VERSION, PROTOCOL_MINOR_VERSION, PROTOCOL_PATCH_VERSION);

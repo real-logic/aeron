@@ -750,6 +750,19 @@ abstract class ArchiveConductor
         return null;
     }
 
+    void getStartPosition(final long correlationId, final ControlSession controlSession, final long recordingId)
+    {
+        if (catalog.hasRecording(recordingId))
+        {
+            controlSession.sendOkResponse(correlationId, catalog.startPosition(recordingId), controlResponseProxy);
+        }
+        else
+        {
+            final String msg = "unknown recording " + recordingId;
+            controlSession.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
+        }
+    }
+
     void getRecordingPosition(final long correlationId, final ControlSession controlSession, final long recordingId)
     {
         if (catalog.hasRecording(recordingId))

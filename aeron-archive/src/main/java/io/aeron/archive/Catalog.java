@@ -593,6 +593,17 @@ class Catalog implements AutoCloseable
         forceWrites(catalogChannel, forceWrites, forceMetadata);
     }
 
+    long startPosition(final long recordingId)
+    {
+        final int offset = recordingDescriptorOffset(recordingId) +
+            RecordingDescriptorHeaderDecoder.BLOCK_LENGTH +
+            startPositionEncodingOffset();
+
+        final long startPosition = fieldAccessBuffer.getLongVolatile(offset);
+
+        return nativeOrder() == BYTE_ORDER ? startPosition : Long.reverseBytes(startPosition);
+    }
+
     long stopPosition(final long recordingId)
     {
         final int offset = recordingDescriptorOffset(recordingId) +

@@ -125,6 +125,8 @@ public class BasicArchiveTest
             stopPosition = publication.position();
             awaitPosition(counters, counterId, stopPosition);
 
+            final long joinPosition = subscription.imageBySessionId(sessionId).joinPosition();
+            assertThat(aeronArchive.getStartPosition(recordingIdFromCounter), is(joinPosition));
             assertThat(aeronArchive.getRecordingPosition(recordingIdFromCounter), is(stopPosition));
             assertThat(aeronArchive.getStopPosition(recordingIdFromCounter), is((long)NULL_VALUE));
         }

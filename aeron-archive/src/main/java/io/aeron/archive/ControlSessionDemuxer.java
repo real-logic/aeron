@@ -545,6 +545,24 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                     stopReplicationRequest.replicationId());
                 break;
             }
+
+            case StartPositionRequestDecoder.TEMPLATE_ID:
+            {
+                final StartPositionRequestDecoder startPositionRequestDecoder = decoders.startPositionRequestDecoder;
+                startPositionRequestDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                final long correlationId = startPositionRequestDecoder.correlationId();
+                final long controlSessionId = startPositionRequestDecoder.controlSessionId();
+                final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
+                controlSession.onGetStartPosition(
+                    correlationId,
+                    startPositionRequestDecoder.recordingId());
+                break;
+            }
         }
     }
 

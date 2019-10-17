@@ -44,6 +44,7 @@ class ControlRequestDecoders
     final StopAllReplaysRequestDecoder stopAllReplaysRequest = new StopAllReplaysRequestDecoder();
     final ReplicateRequestDecoder replicateRequest = new ReplicateRequestDecoder();
     final StopReplicationRequestDecoder stopReplicationRequest = new StopReplicationRequestDecoder();
+    final StartPositionRequestDecoder startPositionRequestDecoder = new StartPositionRequestDecoder();
 
     final ExpandableArrayBuffer tempBuffer = new ExpandableArrayBuffer();
 }

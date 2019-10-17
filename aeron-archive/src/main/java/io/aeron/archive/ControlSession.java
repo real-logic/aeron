@@ -407,6 +407,15 @@ class ControlSession implements Session
         }
     }
 
+    void onGetStartPosition(final long correlationId, final long recordingId)
+    {
+        updateState();
+        if (State.ACTIVE == state)
+        {
+            conductor.getStartPosition(correlationId, this, recordingId);
+        }
+    }
+
     void sendOkResponse(final long correlationId, final ControlResponseProxy proxy)
     {
         sendResponse(correlationId, 0L, OK, null, proxy);

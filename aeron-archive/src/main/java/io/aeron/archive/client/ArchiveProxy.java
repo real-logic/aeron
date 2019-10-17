@@ -60,6 +60,7 @@ public class ArchiveProxy
     private StopAllReplaysRequestEncoder stopAllReplaysRequestEncoder;
     private ReplicateRequestEncoder replicateRequestEncoder;
     private StopReplicationRequestEncoder stopReplicationRequestEncoder;
+    private StartPositionRequestEncoder startPositionRequestEncoder;
 
     /**
      * Create a proxy with a {@link Publication} for sending control message requests.
@@ -762,6 +763,30 @@ public class ArchiveProxy
             .replicationId(replicationId);
 
         return offer(stopReplicationRequestEncoder.encodedLength());
+    }
+
+    /**
+     * Get the start position of a recording.
+     *
+     * @param recordingId      of the recording that the position is being requested for.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean getStartPosition(final long recordingId, final long correlationId, final long controlSessionId)
+    {
+        if (null == startPositionRequestEncoder)
+        {
+            startPositionRequestEncoder = new StartPositionRequestEncoder();
+        }
+
+        startPositionRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .recordingId(recordingId);
+
+        return offer(startPositionRequestEncoder.encodedLength());
     }
 
     private boolean offer(final int length)

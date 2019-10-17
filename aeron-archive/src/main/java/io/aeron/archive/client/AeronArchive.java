@@ -701,13 +701,13 @@ public class AeronArchive implements AutoCloseable
      * 64-bits are required to uniquely identify the replay when calling {@link #stopReplay(long)}. The lower 32-bits
      * can be obtained by casting the {@code long} value to an {@code int}.
      *
-     * @param recordingId       to be replayed.
-     * @param position          from which the replay should begin or {@link #NULL_POSITION} if from the start.
-     * @param length            of the stream to be replayed. Use {@link Long#MAX_VALUE} to follow a live recording or
-     *                          {@link #NULL_LENGTH} to replay the whole stream of unknown length.
-     * @param limitCounterId    to use to bound replay.
-     * @param replayChannel     to which the replay should be sent.
-     * @param replayStreamId    to which the replay should be sent.
+     * @param recordingId    to be replayed.
+     * @param position       from which the replay should begin or {@link #NULL_POSITION} if from the start.
+     * @param length         of the stream to be replayed. Use {@link Long#MAX_VALUE} to follow a live recording or
+     *                       {@link #NULL_LENGTH} to replay the whole stream of unknown length.
+     * @param limitCounterId to use to bound replay.
+     * @param replayChannel  to which the replay should be sent.
+     * @param replayStreamId to which the replay should be sent.
      * @return the id of the replay session which will be the same as the {@link Image#sessionId()} of the received
      * replay for correlation with the matching channel and stream id in the lower 32 bits.
      */
@@ -1015,6 +1015,35 @@ public class AeronArchive implements AutoCloseable
     }
 
     /**
+     * Get the start position for a recording.
+     *
+     * @param recordingId of the recording for which the position is required.
+     * @return the start position of a recording.
+     * @see #getStopPosition(long)
+     */
+    public long getStartPosition(final long recordingId)
+    {
+        lock.lock();
+        try
+        {
+            ensureOpen();
+
+            final long correlationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.getStartPosition(recordingId, correlationId, controlSessionId))
+            {
+                throw new ArchiveException("failed to send get start position request");
+            }
+
+            return pollForResponse(correlationId);
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
+    /**
      * Get the position recorded for an active recording. If no active recording then return {@link #NULL_POSITION}.
      *
      * @param recordingId of the active recording for which the position is required.
@@ -1257,35 +1286,6 @@ public class AeronArchive implements AutoCloseable
             }
 
             pollForResponse(correlationId);
-        }
-        finally
-        {
-            lock.unlock();
-        }
-    }
-
-    /**
-     * Get the start position for a recording.
-     *
-     * @param recordingId of the recording for which the position is required.
-     * @return the start position of a recording.
-     * @see #getStopPosition(long)
-     */
-    public long getStartPosition(final long recordingId)
-    {
-        lock.lock();
-        try
-        {
-            ensureOpen();
-
-            final long correlationId = aeron.nextCorrelationId();
-
-            if (!archiveProxy.getStartPosition(recordingId, correlationId, controlSessionId))
-            {
-                throw new ArchiveException("failed to send get start position request");
-            }
-
-            return pollForResponse(correlationId);
         }
         finally
         {

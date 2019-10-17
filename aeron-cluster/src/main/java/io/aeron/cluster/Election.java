@@ -369,18 +369,16 @@ public class Election implements AutoCloseable
         {
             this.leadershipTermId = leadershipTermId;
             this.logSessionId = logSessionId;
-
             consensusModuleAgent.truncateLogEntry(logLeadershipTermId, logPosition);
             consensusModuleAgent.prepareForNewLeadership(logPosition);
             this.logPosition = logPosition;
             state(State.FOLLOWER_REPLAY);
         }
-        else if ((State.FOLLOWER_BALLOT == state || State.CANDIDATE_BALLOT == state || State.CANVASS == state) &&
-            leadershipTermId == this.candidateTermId)
+        else if (leadershipTermId == candidateTermId &&
+            (State.FOLLOWER_BALLOT == state || State.CANDIDATE_BALLOT == state || State.CANVASS == state))
         {
             this.leadershipTermId = leadershipTermId;
             this.logSessionId = logSessionId;
-
             catchupLogPosition = logPosition;
             state(State.FOLLOWER_REPLAY);
         }
@@ -391,10 +389,9 @@ public class Election implements AutoCloseable
                 if (this.logPosition < logPosition)
                 {
                     this.leadershipTermId = leadershipTermId;
-                    this.candidateTermId = NULL_VALUE;
                     this.logSessionId = logSessionId;
+                    candidateTermId = NULL_VALUE;
                     catchupLogPosition = logPosition;
-
                     state(State.FOLLOWER_REPLAY);
                 }
                 else if (logPosition == this.logPosition)
@@ -403,30 +400,31 @@ public class Election implements AutoCloseable
                     if (NULL_VALUE == recordingId)
                     {
                         this.leadershipTermId = leadershipTermId;
-                        this.candidateTermId = leadershipTermId;
                         this.logSessionId = logSessionId;
+                        candidateTermId = leadershipTermId;
                         state(State.FOLLOWER_TRANSITION);
-                        return;
                     }
-
-                    boolean hasUpdates = false;
-                    for (long termId = this.logLeadershipTermId; termId < leadershipTermId; termId++)
+                    else
                     {
-                        if (ctx.recordingLog().isUnknown(termId))
+                        boolean hasUpdates = false;
+                        for (long termId = this.logLeadershipTermId; termId < leadershipTermId; termId++)
                         {
-                            ctx.recordingLog().appendTerm(recordingId, termId, logPosition, timestamp);
-                            hasUpdates = true;
+                            if (ctx.recordingLog().isUnknown(termId))
+                            {
+                                ctx.recordingLog().appendTerm(recordingId, termId, logPosition, timestamp);
+                                hasUpdates = true;
+                            }
                         }
-                    }
 
-                    if (hasUpdates)
-                    {
-                        ctx.recordingLog().force(ctx.fileSyncLevel());
-                    }
+                        if (hasUpdates)
+                        {
+                            ctx.recordingLog().force(ctx.fileSyncLevel());
+                        }
 
-                    this.leadershipTermId = leadershipTermId;
-                    this.logLeadershipTermId = leadershipTermId;
-                    this.candidateTermId = leadershipTermId;
+                        this.leadershipTermId = leadershipTermId;
+                        this.logLeadershipTermId = leadershipTermId;
+                        candidateTermId = leadershipTermId;
+                    }
                 }
             }
         }
@@ -960,9 +958,9 @@ public class Election implements AutoCloseable
 
     private void state(final State newState)
     {
-        stateChange(this.state, newState, thisMember.id());
+        stateChange(state, newState, thisMember.id());
 
-        if (State.CANVASS == this.state)
+        if (State.CANVASS == state)
         {
             isStartup = false;
         }
@@ -1000,7 +998,7 @@ public class Election implements AutoCloseable
                 break;
         }
 
-        this.state = newState;
+        state = newState;
         stateCounter.setOrdered(newState.code());
         timeOfLastStateChangeNs = nowNs;
     }

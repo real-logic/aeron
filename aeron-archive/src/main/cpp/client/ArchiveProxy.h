@@ -345,6 +345,23 @@ public:
     }
 
     /**
+     * Get the start position of a recording.
+     *
+     * @param recordingId      of the recording that the start position is being requested for.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool getStartPosition(std::int64_t recordingId, std::int64_t correlationId, std::int64_t controlSessionId)
+    {
+        const util::index_t length = getStartPosition(m_buffer, recordingId, correlationId, controlSessionId);
+
+        return offer<IdleStrategy>(m_buffer, 0, length);
+    }
+
+    /**
      * Get the recorded position of an active recording.
      *
      * @param recordingId      of the active recording that the position is being requested for.
@@ -660,6 +677,12 @@ private:
         std::int64_t controlSessionId);
 
     static util::index_t listRecording(
+        AtomicBuffer& buffer,
+        std::int64_t recordingId,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId);
+
+    static util::index_t getStartPosition(
         AtomicBuffer& buffer,
         std::int64_t recordingId,
         std::int64_t correlationId,

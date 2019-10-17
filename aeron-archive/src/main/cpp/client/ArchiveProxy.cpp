@@ -32,6 +32,7 @@
 #include "aeron_archive_client/ListRecordingsForUriRequest.h"
 #include "aeron_archive_client/ListRecordingRequest.h"
 #include "aeron_archive_client/RecordingPositionRequest.h"
+#include "aeron_archive_client/StartPositionRequest.h"
 #include "aeron_archive_client/StopPositionRequest.h"
 #include "aeron_archive_client/FindLastMatchingRecordingRequest.h"
 #include "aeron_archive_client/TruncateRecordingRequest.h"
@@ -288,6 +289,22 @@ util::index_t ArchiveProxy::listRecording(
     std::int64_t controlSessionId)
 {
     ListRecordingRequest request;
+
+    wrapAndApplyHeader(request, buffer)
+        .controlSessionId(controlSessionId)
+        .correlationId(correlationId)
+        .recordingId(recordingId);
+
+    return messageAndHeaderLength(request);
+}
+
+util::index_t ArchiveProxy::getStartPosition(
+    AtomicBuffer& buffer,
+    std::int64_t recordingId,
+    std::int64_t correlationId,
+    std::int64_t controlSessionId)
+{
+    StartPositionRequest request;
 
     wrapAndApplyHeader(request, buffer)
         .controlSessionId(controlSessionId)

@@ -866,6 +866,32 @@ public:
     }
 
     /**
+     * Get the start position for a recording.
+     *
+     * @param recordingId of the active recording for which the position is required.
+     * @tparam IdleStrategy to use for polling operations.
+     * @return the start position
+     * @see #getRecordingPosition
+     * @see #getStopPosition
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    inline std::int64_t getStartPosition(std::int64_t recordingId)
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_lock);
+
+        ensureOpen();
+
+        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+
+        if (!m_archiveProxy->getStartPosition<IdleStrategy>(recordingId, correlationId, m_controlSessionId))
+        {
+            throw ArchiveException("failed to send get start position request", SOURCEINFO);
+        }
+
+        return pollForResponse<IdleStrategy>(correlationId);
+    }
+
+    /**
      * Get the position recorded for an active recording. If no active recording then return #NULL_POSITION.
      *
      * @param recordingId of the active recording for which the position is required.

@@ -357,7 +357,6 @@ public class Election implements AutoCloseable
         final int logSessionId)
     {
         final ClusterMember leader = clusterMemberByIdMap.get(leaderMemberId);
-
         if (null == leader)
         {
             return;
@@ -386,45 +385,13 @@ public class Election implements AutoCloseable
         {
             if (NULL_POSITION == catchupLogPosition)
             {
-                if (this.logPosition < logPosition)
+                if (this.logPosition <= logPosition)
                 {
                     this.leadershipTermId = leadershipTermId;
                     this.logSessionId = logSessionId;
-                    candidateTermId = NULL_VALUE;
+                    candidateTermId = leadershipTermId;
                     catchupLogPosition = logPosition;
                     state(State.FOLLOWER_REPLAY);
-                }
-                else if (logPosition == this.logPosition)
-                {
-                    final long recordingId = consensusModuleAgent.logRecordingId();
-                    if (NULL_VALUE == recordingId)
-                    {
-                        this.leadershipTermId = leadershipTermId;
-                        this.logSessionId = logSessionId;
-                        candidateTermId = leadershipTermId;
-                        state(State.FOLLOWER_TRANSITION);
-                    }
-                    else
-                    {
-                        boolean hasUpdates = false;
-                        for (long termId = this.logLeadershipTermId; termId < leadershipTermId; termId++)
-                        {
-                            if (ctx.recordingLog().isUnknown(termId))
-                            {
-                                ctx.recordingLog().appendTerm(recordingId, termId, logPosition, timestamp);
-                                hasUpdates = true;
-                            }
-                        }
-
-                        if (hasUpdates)
-                        {
-                            ctx.recordingLog().force(ctx.fileSyncLevel());
-                        }
-
-                        this.leadershipTermId = leadershipTermId;
-                        this.logLeadershipTermId = leadershipTermId;
-                        candidateTermId = leadershipTermId;
-                    }
                 }
             }
         }

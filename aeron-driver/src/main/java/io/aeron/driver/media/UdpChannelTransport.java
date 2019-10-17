@@ -82,7 +82,8 @@ public abstract class UdpChannelTransport implements AutoCloseable
      */
     public static void sendError(final int bytesToSend, final IOException ex, final InetSocketAddress destination)
     {
-        throw new AeronException("failed to send packet of " + bytesToSend + " bytes to " + destination, ex);
+        throw new AeronException(
+            "failed to send " + bytesToSend + " byte packet to " + destination, ex, AeronException.Category.WARN);
     }
 
     /**

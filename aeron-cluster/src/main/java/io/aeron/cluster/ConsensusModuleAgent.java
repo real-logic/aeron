@@ -1558,6 +1558,11 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             return recoveryPlan.log.recordingId;
         }
 
+        if (null == appendedPosition)
+        {
+            return NULL_VALUE;
+        }
+
         return RecordingPos.getRecordingId(aeron.countersReader(), appendedPosition.counterId());
     }
 

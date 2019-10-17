@@ -399,14 +399,22 @@ public class Election implements AutoCloseable
                 }
                 else if (logPosition == this.logPosition)
                 {
-                    boolean hasUpdates = false;
+                    final long recordingId = consensusModuleAgent.logRecordingId();
+                    if (NULL_VALUE == recordingId)
+                    {
+                        this.leadershipTermId = leadershipTermId;
+                        this.candidateTermId = leadershipTermId;
+                        this.logSessionId = logSessionId;
+                        state(State.FOLLOWER_TRANSITION);
+                        return;
+                    }
 
+                    boolean hasUpdates = false;
                     for (long termId = this.logLeadershipTermId; termId < leadershipTermId; termId++)
                     {
                         if (ctx.recordingLog().isUnknown(termId))
                         {
-                            ctx.recordingLog().appendTerm(
-                                consensusModuleAgent.logRecordingId(), termId, logPosition, timestamp);
+                            ctx.recordingLog().appendTerm(recordingId, termId, logPosition, timestamp);
                             hasUpdates = true;
                         }
                     }
@@ -683,14 +691,13 @@ public class Election implements AutoCloseable
         final long timestamp = ctx.clusterClock().timeUnit().convert(nowNs, TimeUnit.NANOSECONDS);
         final RecordingLog recordingLog = ctx.recordingLog();
 
-        for (long termId = leadershipTermId + 1; termId < candidateTermId; termId++)
+        for (long termId = leadershipTermId + 1; termId <= candidateTermId; termId++)
         {
             recordingLog.appendTerm(recordingId, termId, logPosition, timestamp);
         }
 
-        leadershipTermId = candidateTermId;
-        recordingLog.appendTerm(recordingId, leadershipTermId, logPosition, timestamp);
         recordingLog.force(ctx.fileSyncLevel());
+        leadershipTermId = candidateTermId;
 
         state(State.LEADER_READY);
 
@@ -836,12 +843,22 @@ public class Election implements AutoCloseable
 
         consensusModuleAgent.awaitImageAndCreateFollowerLogAdapter(logSubscription, logSessionId);
 
-        final RecordingLog recordingLog = ctx.recordingLog();
-        if (recordingLog.isUnknown(leadershipTermId))
+        final long timestamp = ctx.clusterClock().timeUnit().convert(nowNs, TimeUnit.NANOSECONDS);
+        final long recordingId = consensusModuleAgent.logRecordingId();
+        boolean hasUpdates = false;
+
+        for (long termId = logLeadershipTermId + 1; termId <= leadershipTermId; termId++)
         {
-            final long timestamp = ctx.clusterClock().timeUnit().convert(nowNs, TimeUnit.NANOSECONDS);
-            recordingLog.appendTerm(consensusModuleAgent.logRecordingId(), leadershipTermId, logPosition, timestamp);
-            recordingLog.force(ctx.fileSyncLevel());
+            if (ctx.recordingLog().isUnknown(termId))
+            {
+                ctx.recordingLog().appendTerm(recordingId, termId, logPosition, timestamp);
+                hasUpdates = true;
+            }
+        }
+
+        if (hasUpdates)
+        {
+            ctx.recordingLog().force(ctx.fileSyncLevel());
         }
 
         state(State.FOLLOWER_READY);

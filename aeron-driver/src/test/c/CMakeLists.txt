@@ -19,7 +19,7 @@ endif()
 
 include_directories(${AERON_DRIVER_SOURCE_PATH})
 
-set(TEST_HEADERS aeron_driver_conductor_test.h)
+set(TEST_HEADERS aeron_driver_conductor_test.h EmbeddedMediaDriver.h)
 
 function(aeron_driver_test name file)
     add_executable(${name} ${file} ${TEST_HEADERS})
@@ -53,3 +53,4 @@ aeron_driver_test(term_gap_filler_test aeron_term_gap_filler_test.cpp)
 aeron_driver_test(parse_util_test aeron_parse_util_test.cpp)
 aeron_driver_test(properties_test aeron_properties_test.cpp)
 aeron_driver_test(driver_configuration_test aeron_driver_configuration_test.cpp)
+aeron_driver_test(system_test aeron_system_test.cpp)

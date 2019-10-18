@@ -780,30 +780,22 @@ abstract class ArchiveConductor
     void truncateRecording(
         final long correlationId, final long recordingId, final long position, final ControlSession controlSession)
     {
-        final RecordingSummary summary = validateFramePosition(correlationId, controlSession, recordingId, position);
-        if (null != summary)
+        if (hasRecording(recordingId, correlationId, controlSession) &&
+            isValidTruncatePosition(correlationId, controlSession, recordingId, position))
         {
-            final long startPosition = summary.startPosition;
-            if (position < startPosition)
-            {
-                final String msg = "position " + position + " before start position " + startPosition;
-                controlSession.sendErrorResponse(correlationId, GENERIC, msg, controlResponseProxy);
-                return;
-            }
-
-            final long stopPosition = summary.stopPosition;
+            final long stopPosition = recordingSummary.stopPosition;
             if (stopPosition == position)
             {
                 controlSession.sendOkResponse(correlationId, controlResponseProxy);
                 return;
             }
 
-            final int segmentLength = summary.segmentFileLength;
+            final int segmentLength = recordingSummary.segmentFileLength;
             final long segmentPosition = segmentFilePosition(position, segmentLength);
             final File file = new File(archiveDir, segmentFileName(recordingId, segmentPosition));
 
             final int segmentOffset = (int)(position & (segmentLength - 1));
-            final int termLength = summary.termBufferLength;
+            final int termLength = recordingSummary.termBufferLength;
             final int termOffset = (int)(position & (termLength - 1));
 
             if (termOffset > 0)
@@ -811,14 +803,13 @@ abstract class ArchiveConductor
                 try (FileChannel channel = FileChannel.open(file.toPath(), FILE_OPTIONS, NO_ATTRIBUTES))
                 {
                     final int termCount = (int)(position >> LogBufferDescriptor.positionBitsToShift(termLength));
-                    final int termId = summary.initialTermId + termCount;
+                    final int termId = recordingSummary.initialTermId + termCount;
 
                     if (ReplaySession.notHeaderAligned(
-                        channel, dataHeaderBuffer, segmentOffset, termOffset, termId, summary.streamId))
+                        channel, dataHeaderBuffer, segmentOffset, termOffset, termId, recordingSummary.streamId))
                     {
                         final String msg = position + " position not aligned to data header";
                         controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
-
                         return;
                     }
 
@@ -1299,45 +1290,41 @@ abstract class ArchiveConductor
         }
     }
 
-    private RecordingSummary validateFramePosition(
+    private boolean isValidTruncatePosition(
         final long correlationId, final ControlSession controlSession, final long recordingId, final long position)
     {
-        if (hasRecording(recordingId, correlationId, controlSession))
+        for (final ReplaySession replaySession : replaySessionByIdMap.values())
         {
-            for (final ReplaySession replaySession : replaySessionByIdMap.values())
+            if (replaySession.recordingId() == recordingId)
             {
-                if (replaySession.recordingId() == recordingId)
-                {
-                    final String msg = "cannot truncate recording with active replay " + recordingId;
-                    controlSession.sendErrorResponse(correlationId, ACTIVE_RECORDING, msg, controlResponseProxy);
-
-                    return null;
-                }
-            }
-
-            catalog.recordingSummary(recordingId, recordingSummary);
-            final long stopPosition = recordingSummary.stopPosition;
-            final long startPosition = recordingSummary.startPosition;
-
-            if (stopPosition == NULL_POSITION)
-            {
-                final String msg = "cannot truncate active recording";
+                final String msg = "cannot truncate recording with active replay " + recordingId;
                 controlSession.sendErrorResponse(correlationId, ACTIVE_RECORDING, msg, controlResponseProxy);
-
-                return null;
+                return false;
             }
-
-            if (position < startPosition || position > stopPosition || ((position & (FRAME_ALIGNMENT - 1)) != 0))
-            {
-                controlSession.sendErrorResponse(correlationId, "invalid position " + position, controlResponseProxy);
-
-                return null;
-            }
-
-            return recordingSummary;
         }
 
-        return null;
+        catalog.recordingSummary(recordingId, recordingSummary);
+        final long stopPosition = recordingSummary.stopPosition;
+        final long startPosition = recordingSummary.startPosition;
+
+        if (stopPosition == NULL_POSITION)
+        {
+            final String msg = "cannot truncate active recording";
+            controlSession.sendErrorResponse(correlationId, ACTIVE_RECORDING, msg, controlResponseProxy);
+            return false;
+        }
+
+        if (position < startPosition || position > stopPosition || ((position & (FRAME_ALIGNMENT - 1)) != 0))
+        {
+            final String msg = "invalid position " + position +
+                ": start=" + recordingSummary.startPosition +
+                " stop=" + recordingSummary.stopPosition +
+                " alignment=" + FRAME_ALIGNMENT;
+            controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
+            return false;
+        }
+
+        return true;
     }
 
     private boolean isInvalidReplayPosition(

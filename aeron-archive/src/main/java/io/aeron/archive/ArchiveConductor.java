@@ -324,10 +324,10 @@ abstract class ArchiveConductor
 
     void startRecording(
         final long correlationId,
-        final ControlSession controlSession,
         final int streamId,
         final SourceLocation sourceLocation,
-        final String originalChannel)
+        final String originalChannel,
+        final ControlSession controlSession)
     {
         if (recordingSessionByIdMap.size() >= maxConcurrentRecordings)
         {
@@ -370,7 +370,7 @@ abstract class ArchiveConductor
     }
 
     void stopRecording(
-        final long correlationId, final ControlSession controlSession, final int streamId, final String channel)
+        final long correlationId, final int streamId, final String channel, final ControlSession controlSession)
     {
         try
         {
@@ -396,7 +396,7 @@ abstract class ArchiveConductor
     }
 
     void stopRecordingSubscription(
-        final long correlationId, final ControlSession controlSession, final long subscriptionId)
+        final long correlationId, final long subscriptionId, final ControlSession controlSession)
     {
         final Subscription subscription = removeRecordingSubscription(subscriptionId);
         if (null != subscription)
@@ -481,7 +481,7 @@ abstract class ArchiveConductor
         }
     }
 
-    void listRecording(final long correlationId, final ControlSession controlSession, final long recordingId)
+    void listRecording(final long correlationId, final long recordingId, final ControlSession controlSession)
     {
         if (controlSession.hasActiveListing())
         {
@@ -520,12 +520,12 @@ abstract class ArchiveConductor
 
     void startReplay(
         final long correlationId,
-        final ControlSession controlSession,
         final long recordingId,
         final long position,
         final long length,
         final int replayStreamId,
-        final String replayChannel)
+        final String replayChannel,
+        final ControlSession controlSession)
     {
         if (replaySessionByIdMap.size() >= maxConcurrentReplays)
         {
@@ -588,13 +588,13 @@ abstract class ArchiveConductor
 
     void startBoundedReplay(
         final long correlationId,
-        final ControlSession controlSession,
         final long recordingId,
         final long position,
         final long length,
         final int limitCounterId,
         final int replayStreamId,
-        final String replayChannel)
+        final String replayChannel,
+        final ControlSession controlSession)
     {
         if (replaySessionByIdMap.size() >= maxConcurrentReplays)
         {
@@ -656,7 +656,7 @@ abstract class ArchiveConductor
         replayer.addSession(replaySession);
     }
 
-    void stopReplay(final long correlationId, final ControlSession controlSession, final long replaySessionId)
+    void stopReplay(final long correlationId, final long replaySessionId, final ControlSession controlSession)
     {
         final ReplaySession replaySession = replaySessionByIdMap.get(replaySessionId);
         if (null == replaySession)
@@ -671,7 +671,7 @@ abstract class ArchiveConductor
         }
     }
 
-    void stopAllReplays(final long correlationId, final ControlSession controlSession, final long recordingId)
+    void stopAllReplays(final long correlationId, final long recordingId, final ControlSession controlSession)
     {
         for (final ReplaySession replaySession : replaySessionByIdMap.values())
         {
@@ -686,11 +686,11 @@ abstract class ArchiveConductor
 
     Subscription extendRecording(
         final long correlationId,
-        final ControlSession controlSession,
         final long recordingId,
         final int streamId,
         final SourceLocation sourceLocation,
-        final String originalChannel)
+        final String originalChannel,
+        final ControlSession controlSession)
     {
         if (recordingSessionByIdMap.size() >= maxConcurrentRecordings)
         {
@@ -750,50 +750,35 @@ abstract class ArchiveConductor
         return null;
     }
 
-    void getStartPosition(final long correlationId, final ControlSession controlSession, final long recordingId)
+    void getStartPosition(final long correlationId, final long recordingId, final ControlSession controlSession)
     {
-        if (catalog.hasRecording(recordingId))
+        if (hasRecording(recordingId, correlationId, controlSession))
         {
             controlSession.sendOkResponse(correlationId, catalog.startPosition(recordingId), controlResponseProxy);
         }
-        else
-        {
-            final String msg = "unknown recording " + recordingId;
-            controlSession.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
-        }
     }
 
-    void getRecordingPosition(final long correlationId, final ControlSession controlSession, final long recordingId)
+    void getRecordingPosition(final long correlationId, final long recordingId, final ControlSession controlSession)
     {
-        if (catalog.hasRecording(recordingId))
+        if (hasRecording(recordingId, correlationId, controlSession))
         {
             final RecordingSession recordingSession = recordingSessionByIdMap.get(recordingId);
             final long position = null == recordingSession ? NULL_POSITION : recordingSession.recordingPosition().get();
 
             controlSession.sendOkResponse(correlationId, position, controlResponseProxy);
         }
-        else
-        {
-            final String msg = "unknown recording " + recordingId;
-            controlSession.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
-        }
     }
 
-    void getStopPosition(final long correlationId, final ControlSession controlSession, final long recordingId)
+    void getStopPosition(final long correlationId, final long recordingId, final ControlSession controlSession)
     {
-        if (catalog.hasRecording(recordingId))
+        if (hasRecording(recordingId, correlationId, controlSession))
         {
             controlSession.sendOkResponse(correlationId, catalog.stopPosition(recordingId), controlResponseProxy);
-        }
-        else
-        {
-            final String msg = "unknown recording " + recordingId;
-            controlSession.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
         }
     }
 
     void truncateRecording(
-        final long correlationId, final ControlSession controlSession, final long recordingId, final long position)
+        final long correlationId, final long recordingId, final long position, final ControlSession controlSession)
     {
         final RecordingSummary summary = validateFramePosition(correlationId, controlSession, recordingId, position);
         if (null != summary)
@@ -995,6 +980,38 @@ abstract class ArchiveConductor
         }
     }
 
+    void detachSegments(
+        final long correlationId,
+        final long recordingId,
+        final long newStartPosition,
+        final ControlSession controlSession)
+    {
+        if (hasRecording(recordingId, correlationId, controlSession))
+        {
+            controlSession.sendOkResponse(correlationId, controlResponseProxy);
+        }
+    }
+
+    void deleteDetachedSegments(final long correlationId, final long recordingId, final ControlSession controlSession)
+    {
+        if (hasRecording(recordingId, correlationId, controlSession))
+        {
+            controlSession.sendOkResponse(correlationId, controlResponseProxy);
+        }
+    }
+
+    void purgeSegments(
+        final long correlationId,
+        final long recordingId,
+        final long newStartPosition,
+        final ControlSession controlSession)
+    {
+        if (hasRecording(recordingId, correlationId, controlSession))
+        {
+            controlSession.sendOkResponse(correlationId, controlResponseProxy);
+        }
+    }
+
     void removeReplicationSession(final ReplicationSession replicationSession)
     {
         replicationSessionByIdMap.remove(replicationSession.sessionId());
@@ -1089,6 +1106,18 @@ abstract class ArchiveConductor
         sb.setLength(sb.length() - 1);
 
         return sb.toString();
+    }
+
+    private boolean hasRecording(final long recordingId, final long correlationId, final ControlSession session)
+    {
+        if (!catalog.hasRecording(recordingId))
+        {
+            final String msg = "unknown recording " + recordingId;
+            session.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
+            return false;
+        }
+
+        return true;
     }
 
     private void startRecordingSession(
@@ -1273,45 +1302,42 @@ abstract class ArchiveConductor
     private RecordingSummary validateFramePosition(
         final long correlationId, final ControlSession controlSession, final long recordingId, final long position)
     {
-        if (!catalog.hasRecording(recordingId))
+        if (hasRecording(recordingId, correlationId, controlSession))
         {
-            final String msg = "unknown recording " + recordingId;
-            controlSession.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
-
-            return null;
-        }
-
-        for (final ReplaySession replaySession : replaySessionByIdMap.values())
-        {
-            if (replaySession.recordingId() == recordingId)
+            for (final ReplaySession replaySession : replaySessionByIdMap.values())
             {
-                final String msg = "cannot truncate recording with active replay " + recordingId;
+                if (replaySession.recordingId() == recordingId)
+                {
+                    final String msg = "cannot truncate recording with active replay " + recordingId;
+                    controlSession.sendErrorResponse(correlationId, ACTIVE_RECORDING, msg, controlResponseProxy);
+
+                    return null;
+                }
+            }
+
+            catalog.recordingSummary(recordingId, recordingSummary);
+            final long stopPosition = recordingSummary.stopPosition;
+            final long startPosition = recordingSummary.startPosition;
+
+            if (stopPosition == NULL_POSITION)
+            {
+                final String msg = "cannot truncate active recording";
                 controlSession.sendErrorResponse(correlationId, ACTIVE_RECORDING, msg, controlResponseProxy);
 
                 return null;
             }
+
+            if (position < startPosition || position > stopPosition || ((position & (FRAME_ALIGNMENT - 1)) != 0))
+            {
+                controlSession.sendErrorResponse(correlationId, "invalid position " + position, controlResponseProxy);
+
+                return null;
+            }
+
+            return recordingSummary;
         }
 
-        catalog.recordingSummary(recordingId, recordingSummary);
-        final long stopPosition = recordingSummary.stopPosition;
-        final long startPosition = recordingSummary.startPosition;
-
-        if (stopPosition == NULL_POSITION)
-        {
-            final String msg = "cannot truncate active recording";
-            controlSession.sendErrorResponse(correlationId, ACTIVE_RECORDING, msg, controlResponseProxy);
-
-            return null;
-        }
-
-        if (position < startPosition || position > stopPosition || ((position & (FRAME_ALIGNMENT - 1)) != 0))
-        {
-            controlSession.sendErrorResponse(correlationId, "invalid position " + position, controlResponseProxy);
-
-            return null;
-        }
-
-        return recordingSummary;
+        return null;
     }
 
     private boolean isInvalidReplayPosition(

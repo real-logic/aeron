@@ -61,6 +61,9 @@ public class ArchiveProxy
     private ReplicateRequestEncoder replicateRequestEncoder;
     private StopReplicationRequestEncoder stopReplicationRequestEncoder;
     private StartPositionRequestEncoder startPositionRequestEncoder;
+    private DetachSegmentsRequestEncoder detachSegmentsRequestEncoder;
+    private DeleteDetachedSegmentsRequestEncoder deleteDetachedSegmentsRequestEncoder;
+    private PurgeSegmentsRequestEncoder purgeSegmentsRequestEncoder;
 
     /**
      * Create a proxy with a {@link Publication} for sending control message requests.
@@ -594,6 +597,30 @@ public class ArchiveProxy
     }
 
     /**
+     * Get the start position of a recording.
+     *
+     * @param recordingId      of the recording that the position is being requested for.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean getStartPosition(final long recordingId, final long correlationId, final long controlSessionId)
+    {
+        if (null == startPositionRequestEncoder)
+        {
+            startPositionRequestEncoder = new StartPositionRequestEncoder();
+        }
+
+        startPositionRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .recordingId(recordingId);
+
+        return offer(startPositionRequestEncoder.encodedLength());
+    }
+
+    /**
      * Get the stop position of a recording.
      *
      * @param recordingId      of the recording that the stop position is being requested for.
@@ -766,27 +793,92 @@ public class ArchiveProxy
     }
 
     /**
-     * Get the start position of a recording.
+     * Detach segments from the beginning of a recording up to the provided new start position.
+     * <p>
+     * The new start position must be first byte position of a segment after the existing start position.
+     * <p>
+     * It is not possible to detach segments which are active for recording or being replayed.
      *
-     * @param recordingId      of the recording that the position is being requested for.
+     * @param recordingId      to which the operation applies.
+     * @param newStartPosition for the recording after the segments are detached.
      * @param correlationId    for this request.
      * @param controlSessionId for this request.
      * @return true if successfully offered otherwise false.
      */
-    public boolean getStartPosition(final long recordingId, final long correlationId, final long controlSessionId)
+    public boolean detachSegments(
+        final long recordingId, final long newStartPosition, final long correlationId, final long controlSessionId)
     {
-        if (null == startPositionRequestEncoder)
+        if (null == detachSegmentsRequestEncoder)
         {
-            startPositionRequestEncoder = new StartPositionRequestEncoder();
+            detachSegmentsRequestEncoder = new DetachSegmentsRequestEncoder();
         }
 
-        startPositionRequestEncoder
+        detachSegmentsRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .recordingId(recordingId)
+            .newStartPosition(newStartPosition);
+
+        return offer(detachSegmentsRequestEncoder.encodedLength());
+    }
+
+    /**
+     * Delete segments which have been previously detached from a recording.
+     *
+     * @param recordingId      to which the operation applies.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @return true if successfully offered otherwise false.
+     * @see #detachSegments(long, long, long, long)
+     */
+    public boolean deleteDetachedSegments(final long recordingId, final long correlationId, final long controlSessionId)
+    {
+        if (null == deleteDetachedSegmentsRequestEncoder)
+        {
+            deleteDetachedSegmentsRequestEncoder = new DeleteDetachedSegmentsRequestEncoder();
+        }
+
+        deleteDetachedSegmentsRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId)
             .recordingId(recordingId);
 
-        return offer(startPositionRequestEncoder.encodedLength());
+        return offer(deleteDetachedSegmentsRequestEncoder.encodedLength());
+    }
+
+    /**
+     * Purge (detach and delete) segments from the beginning of a recording up to the provided new start position.
+     * <p>
+     * The new start position must be first byte position of a segment after the existing start position.
+     * <p>
+     * It is not possible to purge segments which are active for recording or being replayed.
+     *
+     * @param recordingId      to which the operation applies.
+     * @param newStartPosition for the recording after the segments are detached.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @return true if successfully offered otherwise false.
+     * @see #detachSegments(long, long, long, long)
+     * @see #deleteDetachedSegments(long, long, long)
+     */
+    public boolean purgeSegments(
+        final long recordingId, final long newStartPosition, final long correlationId, final long controlSessionId)
+    {
+        if (null == purgeSegmentsRequestEncoder)
+        {
+            purgeSegmentsRequestEncoder = new PurgeSegmentsRequestEncoder();
+        }
+
+        purgeSegmentsRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .recordingId(recordingId)
+            .newStartPosition(newStartPosition);
+
+        return offer(purgeSegmentsRequestEncoder.encodedLength());
     }
 
     private boolean offer(final int length)

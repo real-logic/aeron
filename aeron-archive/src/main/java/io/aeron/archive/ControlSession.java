@@ -168,7 +168,7 @@ class ControlSession implements Session
         updateState();
         if (State.ACTIVE == state)
         {
-            conductor.stopRecording(correlationId, this, streamId, channel);
+            conductor.stopRecording(correlationId, streamId, channel, this);
         }
     }
 
@@ -177,7 +177,7 @@ class ControlSession implements Session
         updateState();
         if (State.ACTIVE == state)
         {
-            conductor.stopRecordingSubscription(correlationId, this, subscriptionId);
+            conductor.stopRecordingSubscription(correlationId, subscriptionId, this);
         }
     }
 
@@ -187,7 +187,7 @@ class ControlSession implements Session
         updateState();
         if (State.ACTIVE == state)
         {
-            conductor.startRecording(correlationId, this, streamId, sourceLocation, channel);
+            conductor.startRecording(correlationId, streamId, sourceLocation, channel, this);
         }
     }
 
@@ -225,7 +225,7 @@ class ControlSession implements Session
         updateState();
         if (State.ACTIVE == state)
         {
-            conductor.listRecording(correlationId, this, recordingId);
+            conductor.listRecording(correlationId, recordingId, this);
         }
     }
 
@@ -261,13 +261,7 @@ class ControlSession implements Session
         if (State.ACTIVE == state)
         {
             conductor.startReplay(
-                correlationId,
-                this,
-                recordingId,
-                position,
-                length,
-                replayStreamId,
-                replayChannel);
+                correlationId, recordingId, position, length, replayStreamId, replayChannel, this);
         }
     }
 
@@ -285,13 +279,13 @@ class ControlSession implements Session
         {
             conductor.startBoundedReplay(
                 correlationId,
-                this,
                 recordingId,
                 position,
                 length,
                 limitCounterId,
                 replayStreamId,
-                replayChannel);
+                replayChannel,
+                this);
         }
     }
 
@@ -300,7 +294,7 @@ class ControlSession implements Session
         updateState();
         if (State.ACTIVE == state)
         {
-            conductor.stopReplay(correlationId, this, replaySessionId);
+            conductor.stopReplay(correlationId, replaySessionId, this);
         }
     }
 
@@ -309,7 +303,7 @@ class ControlSession implements Session
         updateState();
         if (State.ACTIVE == state)
         {
-            conductor.stopAllReplays(correlationId, this, recordingId);
+            conductor.stopAllReplays(correlationId, recordingId, this);
         }
     }
 
@@ -323,7 +317,7 @@ class ControlSession implements Session
         updateState();
         if (State.ACTIVE == state)
         {
-            conductor.extendRecording(correlationId, this, recordingId, streamId, sourceLocation, channel);
+            conductor.extendRecording(correlationId, recordingId, streamId, sourceLocation, channel, this);
         }
     }
 
@@ -332,7 +326,7 @@ class ControlSession implements Session
         updateState();
         if (State.ACTIVE == state)
         {
-            conductor.getRecordingPosition(correlationId, this, recordingId);
+            conductor.getRecordingPosition(correlationId, recordingId, this);
         }
     }
 
@@ -341,7 +335,7 @@ class ControlSession implements Session
         updateState();
         if (State.ACTIVE == state)
         {
-            conductor.truncateRecording(correlationId, this, recordingId, position);
+            conductor.truncateRecording(correlationId, recordingId, position, this);
         }
     }
 
@@ -350,7 +344,7 @@ class ControlSession implements Session
         updateState();
         if (State.ACTIVE == state)
         {
-            conductor.getStopPosition(correlationId, this, recordingId);
+            conductor.getStopPosition(correlationId, recordingId, this);
         }
     }
 
@@ -412,7 +406,34 @@ class ControlSession implements Session
         updateState();
         if (State.ACTIVE == state)
         {
-            conductor.getStartPosition(correlationId, this, recordingId);
+            conductor.getStartPosition(correlationId, recordingId, this);
+        }
+    }
+
+    void onDetachSegments(final long correlationId, final long recordingId, final long newStartPosition)
+    {
+        updateState();
+        if (State.ACTIVE == state)
+        {
+            conductor.detachSegments(correlationId, recordingId, newStartPosition, this);
+        }
+    }
+
+    void onDeleteDetachedSegments(final long correlationId, final long recordingId)
+    {
+        updateState();
+        if (State.ACTIVE == state)
+        {
+            conductor.deleteDetachedSegments(correlationId, recordingId, this);
+        }
+    }
+
+    void onPurgeSegments(final long correlationId, final long recordingId, final long newStartPosition)
+    {
+        updateState();
+        if (State.ACTIVE == state)
+        {
+            conductor.purgeSegments(correlationId, recordingId, newStartPosition, this);
         }
     }
 

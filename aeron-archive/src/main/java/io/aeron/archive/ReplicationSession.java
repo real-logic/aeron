@@ -439,7 +439,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             .build();
 
         recordingSubscription = conductor.extendRecording(
-            replicationId, controlSession, dstRecordingId, replayStreamId, SourceLocation.REMOTE, channel);
+            replicationId, dstRecordingId, replayStreamId, SourceLocation.REMOTE, channel, controlSession);
 
         if (null == recordingSubscription)
         {

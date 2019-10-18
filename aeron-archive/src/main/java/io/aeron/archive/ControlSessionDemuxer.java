@@ -563,6 +563,63 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                     startPositionRequestDecoder.recordingId());
                 break;
             }
+
+            case DetachSegmentsRequestDecoder.TEMPLATE_ID:
+            {
+                final DetachSegmentsRequestDecoder detachSegmentsRequestDecoder = decoders.detachSegmentsRequestDecoder;
+                detachSegmentsRequestDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                final long correlationId = detachSegmentsRequestDecoder.correlationId();
+                final long controlSessionId = detachSegmentsRequestDecoder.controlSessionId();
+                final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
+                controlSession.onDetachSegments(
+                    correlationId,
+                    detachSegmentsRequestDecoder.recordingId(),
+                    detachSegmentsRequestDecoder.newStartPosition());
+                break;
+            }
+
+            case DeleteDetachedSegmentsRequestDecoder.TEMPLATE_ID:
+            {
+                final DeleteDetachedSegmentsRequestDecoder deleteDetachedSegmentsRequestDecoder =
+                    decoders.deleteDetachedSegmentsRequestDecoder;
+                deleteDetachedSegmentsRequestDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                final long correlationId = deleteDetachedSegmentsRequestDecoder.correlationId();
+                final long controlSessionId = deleteDetachedSegmentsRequestDecoder.controlSessionId();
+                final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
+                controlSession.onDeleteDetachedSegments(
+                    correlationId,
+                    deleteDetachedSegmentsRequestDecoder.recordingId());
+                break;
+            }
+
+            case PurgeSegmentsRequestDecoder.TEMPLATE_ID:
+            {
+                final PurgeSegmentsRequestDecoder purgeSegmentsRequestDecoder = decoders.purgeSegmentsRequestDecoder;
+                purgeSegmentsRequestDecoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                final long correlationId = purgeSegmentsRequestDecoder.correlationId();
+                final long controlSessionId = purgeSegmentsRequestDecoder.controlSessionId();
+                final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
+                controlSession.onPurgeSegments(
+                    correlationId,
+                    purgeSegmentsRequestDecoder.recordingId(),
+                    purgeSegmentsRequestDecoder.newStartPosition());
+                break;
+            }
         }
     }
 

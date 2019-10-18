@@ -1293,6 +1293,100 @@ public class AeronArchive implements AutoCloseable
         }
     }
 
+    /**
+     * Detach segments from the beginning of a recording up to the provided new start position.
+     * <p>
+     * The new start position must be first byte position of a segment after the existing start position.
+     * <p>
+     * It is not possible to detach segments which are active for recording or being replayed.
+     *
+     * @param recordingId      to which the operation applies.
+     * @param newStartPosition for the recording after the segments are detached.
+     */
+    public void detachSegments(final long recordingId, final long newStartPosition)
+    {
+        lock.lock();
+        try
+        {
+            ensureOpen();
+
+            final long correlationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.detachSegments(recordingId, newStartPosition, correlationId, controlSessionId))
+            {
+                throw new ArchiveException("failed to send detach segments request");
+            }
+
+            pollForResponse(correlationId);
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Delete segments which have been previously detached from a recording.
+     *
+     * @param recordingId to which the operation applies.
+     * @see #detachSegments(long, long)
+     */
+    public void deleteDetachedSegments(final long recordingId)
+    {
+        lock.lock();
+        try
+        {
+            ensureOpen();
+
+            final long correlationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.deleteDetachedSegments(recordingId, correlationId, controlSessionId))
+            {
+                throw new ArchiveException("failed to send delete detached segments request");
+            }
+
+            pollForResponse(correlationId);
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Purge (detach and delete) segments from the beginning of a recording up to the provided new start position.
+     * <p>
+     * The new start position must be first byte position of a segment after the existing start position.
+     * <p>
+     * It is not possible to detach segments which are active for recording or being replayed.
+     *
+     * @param recordingId      to which the operation applies.
+     * @param newStartPosition for the recording after the segments are detached.
+     * @see #detachSegments(long, long)
+     * @see #deleteDetachedSegments(long)
+     */
+    public void purgeSegments(final long recordingId, final long newStartPosition)
+    {
+        lock.lock();
+        try
+        {
+            ensureOpen();
+
+            final long correlationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.purgeSegments(recordingId, newStartPosition, correlationId, controlSessionId))
+            {
+                throw new ArchiveException("failed to send purge segments request");
+            }
+
+            pollForResponse(correlationId);
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
     private void checkDeadline(final long deadlineNs, final String errorMessage, final long correlationId)
     {
         if (Thread.interrupted())

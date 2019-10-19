@@ -159,7 +159,7 @@ class ReplaySession implements Session, AutoCloseable
             }
         }
 
-        segmentFilePosition = Archive.segmentFilePosition(fromPosition, segmentLength);
+        segmentFilePosition = Archive.segmentFilePosition(startPosition, fromPosition, termLength, segmentLength);
         segmentFileBasePosition = segmentFilePosition;
         replayPosition = fromPosition;
         replayLimit = fromPosition + replayLength;

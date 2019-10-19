@@ -791,7 +791,8 @@ abstract class ArchiveConductor
             }
 
             final int segmentLength = recordingSummary.segmentFileLength;
-            final long segmentPosition = segmentFilePosition(position, segmentLength);
+            final long segmentPosition = segmentFilePosition(
+                recordingSummary.startPosition, position, recordingSummary.termBufferLength, segmentLength);
             final File file = new File(archiveDir, segmentFileName(recordingId, segmentPosition));
 
             final int segmentOffset = (int)(position & (segmentLength - 1));
@@ -1397,9 +1398,12 @@ abstract class ArchiveConductor
 
         final int segmentFileLength = recordingSummary.segmentFileLength;
         final long startPosition = recordingSummary.startPosition;
-        final long lowerBound = Archive.segmentFilePosition(startPosition, segmentFileLength) + segmentFileLength;
+        final int termBufferLength = recordingSummary.termBufferLength;
+        final long lowerBound =
+            Archive.segmentFilePosition(startPosition, startPosition, termBufferLength, segmentFileLength) +
+            segmentFileLength;
 
-        if (position != Archive.segmentFilePosition(position, segmentFileLength))
+        if (position != Archive.segmentFilePosition(startPosition, position, termBufferLength, segmentFileLength))
         {
             final String msg = "invalid segment start: newStartPosition=" + position;
             controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
@@ -1416,7 +1420,7 @@ abstract class ArchiveConductor
         final long stopPosition = recordingSummary.stopPosition;
         long upperBound = NULL_VALUE == stopPosition ?
             recordingSessionByIdMap.get(recordingId).recordedPosition() : stopPosition;
-        upperBound = Archive.segmentFilePosition(upperBound, segmentFileLength);
+        upperBound = Archive.segmentFilePosition(startPosition, upperBound, termBufferLength, segmentFileLength);
 
         for (final ReplaySession replaySession : replaySessionByIdMap.values())
         {
@@ -1444,7 +1448,11 @@ abstract class ArchiveConductor
         final long correlationId)
     {
         final long fromPosition = position == NULL_POSITION ? recordingSummary.startPosition : position;
-        final long segmentFilePosition = segmentFilePosition(fromPosition, recordingSummary.segmentFileLength);
+        final long segmentFilePosition = segmentFilePosition(
+            recordingSummary.startPosition,
+            fromPosition,
+            recordingSummary.termBufferLength,
+            recordingSummary.segmentFileLength);
         final File segmentFile = new File(archiveDir, segmentFileName(recordingId, segmentFilePosition));
 
         if (!segmentFile.exists())

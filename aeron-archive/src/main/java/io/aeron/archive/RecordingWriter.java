@@ -78,7 +78,8 @@ class RecordingWriter implements BlockHandler
         final long joinPosition = image.joinPosition();
         final long startTermBasePosition = startPosition - (startPosition & (image.termBufferLength() - 1));
         segmentOffset = (int)(joinPosition - startTermBasePosition) & (segmentLength - 1);
-        segmentPosition = Archive.segmentFilePosition(joinPosition, segmentLength);
+        segmentPosition = Archive.segmentFilePosition(
+            startPosition, joinPosition, image.termBufferLength(), segmentLength);
     }
 
     public void onBlock(

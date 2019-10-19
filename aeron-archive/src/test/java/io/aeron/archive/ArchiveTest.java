@@ -19,11 +19,15 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.RecordingSubscriptionDescriptorConsumer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.logbuffer.FrameDescriptor;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static org.hamcrest.core.Is.is;
@@ -42,6 +46,53 @@ public class ArchiveTest
         final String actual = Archive.segmentFileName(recordingId, segmentPosition);
 
         assertThat(actual, is(expected));
+    }
+
+    @Test
+    public void shouldCalculateCorrectSegmentFilePosition()
+    {
+        final int termLength = 64 * 1024;
+        final int segmentLength = termLength * 8;
+
+        long startPosition = 0;
+        long position = 0;
+        assertThat(Archive.segmentFilePosition(startPosition, position, termLength, segmentLength), is(0L));
+
+        startPosition = 0;
+        position = termLength * 2;
+        assertThat(Archive.segmentFilePosition(startPosition, position, termLength, segmentLength), is(0L));
+
+        startPosition = 0;
+        position = segmentLength;
+        assertThat(
+            Archive.segmentFilePosition(startPosition, position, termLength, segmentLength),
+            is((long)segmentLength));
+
+        startPosition = termLength;
+        position = termLength;
+        assertThat(Archive.segmentFilePosition(startPosition, position, termLength, segmentLength), is(startPosition));
+
+        startPosition = termLength * 4;
+        position = termLength * 4;
+        assertThat(Archive.segmentFilePosition(startPosition, position, termLength, segmentLength), is(startPosition));
+
+        startPosition = termLength;
+        position = termLength + segmentLength;
+        assertThat(
+            Archive.segmentFilePosition(startPosition, position, termLength, segmentLength),
+            is((long)(termLength + segmentLength)));
+
+        startPosition = termLength;
+        position = termLength + segmentLength - FrameDescriptor.FRAME_ALIGNMENT;
+        assertThat(
+            Archive.segmentFilePosition(startPosition, position, termLength, segmentLength),
+            is((long)termLength));
+
+        startPosition = termLength + FrameDescriptor.FRAME_ALIGNMENT;
+        position = termLength + segmentLength;
+        assertThat(
+            Archive.segmentFilePosition(startPosition, position, termLength, segmentLength),
+            is((long)(termLength + segmentLength)));
     }
 
     @Test

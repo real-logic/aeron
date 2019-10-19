@@ -31,7 +31,7 @@ import java.util.function.IntConsumer;
  */
 public class ArchiveMarkFile implements AutoCloseable
 {
-    public static final int MAJOR_VERSION = 1;
+    public static final int MAJOR_VERSION = 2;
     public static final int MINOR_VERSION = 0;
     public static final int PATCH_VERSION = 0;
     public static final int SEMANTIC_VERSION = SemanticVersion.compose(MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION);

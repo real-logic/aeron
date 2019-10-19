@@ -129,8 +129,8 @@ public class PurgeHistoryTest
             offerToPosition(publication, messagePrefix, targetPosition);
             awaitPosition(counters, counterId, publication.position());
 
-            aeronArchive.purgeSegments(recordingId, SEGMENT_LENGTH * 2L);
-            assertThat(aeronArchive.getStartPosition(recordingId), is(SEGMENT_LENGTH * 2L));
+            aeronArchive.purgeSegments(recordingId, TERM_LENGTH + (SEGMENT_LENGTH * 2L));
+            assertThat(aeronArchive.getStartPosition(recordingId), is(TERM_LENGTH + (SEGMENT_LENGTH * 2L)));
 
             aeronArchive.stopRecording(publication);
         }

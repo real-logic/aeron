@@ -60,14 +60,13 @@ public class MemoryOrderingTest
     @Test(timeout = 20_000)
     public void shouldReceiveMessagesInOrderWithFirstLongWordIntact() throws Exception
     {
-        final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
         srcBuffer.setMemory(0, MESSAGE_LENGTH, (byte)7);
 
         try (Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID);
             Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
         {
-            final BusySpinIdleStrategy idleStrategy = BusySpinIdleStrategy.INSTANCE;
-
+            final IdleStrategy idleStrategy = YieldingIdleStrategy.INSTANCE;
             final Thread subscriberThread = new Thread(new Subscriber(subscription));
             subscriberThread.setDaemon(true);
             subscriberThread.start();
@@ -88,8 +87,8 @@ public class MemoryOrderingTest
                         fail(failedMessage);
                     }
 
-                    SystemTest.checkInterruptedStatus();
                     idleStrategy.idle();
+                    SystemTest.checkInterruptedStatus();
                 }
 
                 if (i % BURST_LENGTH == 0)
@@ -111,14 +110,13 @@ public class MemoryOrderingTest
     @Test(timeout = 20_000)
     public void shouldReceiveMessagesInOrderWithFirstLongWordIntactFromExclusivePublication() throws Exception
     {
-        final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
         srcBuffer.setMemory(0, MESSAGE_LENGTH, (byte)7);
 
         try (Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID);
             ExclusivePublication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID))
         {
-            final BusySpinIdleStrategy idleStrategy = BusySpinIdleStrategy.INSTANCE;
-
+            final IdleStrategy idleStrategy = YieldingIdleStrategy.INSTANCE;
             final Thread subscriberThread = new Thread(new Subscriber(subscription));
             subscriberThread.setDaemon(true);
             subscriberThread.start();
@@ -134,13 +132,13 @@ public class MemoryOrderingTest
 
                 while (publication.offer(srcBuffer) < 0L)
                 {
-                    SystemTest.checkInterruptedStatus();
                     if (null != failedMessage)
                     {
                         fail(failedMessage);
                     }
 
                     idleStrategy.idle();
+                    SystemTest.checkInterruptedStatus();
                 }
 
                 if (i % BURST_LENGTH == 0)
@@ -174,7 +172,7 @@ public class MemoryOrderingTest
 
         public void run()
         {
-            final BusySpinIdleStrategy idleStrategy = BusySpinIdleStrategy.INSTANCE;
+            final IdleStrategy idleStrategy = YieldingIdleStrategy.INSTANCE;
 
             while (messageNum < NUM_MESSAGES && null == failedMessage)
             {

@@ -934,11 +934,7 @@ public class Election implements AutoCloseable
 
         if (State.CANVASS == newState)
         {
-            consensusModuleAgent.stopAllCatchups();
-            catchupLogPosition = NULL_POSITION;
-
-            ClusterMember.reset(clusterMembers);
-            thisMember.leadershipTermId(leadershipTermId).logPosition(logPosition);
+            resetCatchupAndLogPosition();
         }
 
         switch (newState)
@@ -970,10 +966,13 @@ public class Election implements AutoCloseable
         timeOfLastStateChangeNs = nowNs;
     }
 
-    @SuppressWarnings("unused")
-    void stateChange(final State oldState, final State newState, final int memberId)
+    private void resetCatchupAndLogPosition()
     {
-        //System.out.println("memberId=" + memberId + " " + oldState + " -> " + newState);
+        consensusModuleAgent.stopAllCatchups();
+        catchupLogPosition = NULL_POSITION;
+
+        ClusterMember.reset(clusterMembers);
+        thisMember.leadershipTermId(leadershipTermId).logPosition(logPosition);
     }
 
     private void cleanupReplay()
@@ -984,5 +983,11 @@ public class Election implements AutoCloseable
             logReplay = null;
             shouldReplay = false;
         }
+    }
+
+    @SuppressWarnings("unused")
+    void stateChange(final State oldState, final State newState, final int memberId)
+    {
+        //System.out.println("memberId=" + memberId + " " + oldState + " -> " + newState);
     }
 }

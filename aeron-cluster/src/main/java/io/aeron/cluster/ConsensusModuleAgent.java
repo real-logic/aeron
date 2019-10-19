@@ -905,6 +905,10 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
 
         clearSessionsAfter(logPosition);
+        for (final ClusterSession session : sessionByIdMap.values())
+        {
+            session.disconnect();
+        }
     }
 
     void stopLogRecording()
@@ -917,6 +921,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         if (null != logAdapter && null != replayLogDestination)
         {
+
             logAdapter.removeDestination(replayLogDestination);
             replayLogDestination = null;
         }

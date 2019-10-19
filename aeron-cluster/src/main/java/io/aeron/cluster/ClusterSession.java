@@ -137,6 +137,12 @@ class ClusterSession
         }
     }
 
+    void disconnect()
+    {
+        CloseHelper.close(responsePublication);
+        responsePublication = null;
+    }
+
     boolean isResponsePublicationConnected()
     {
         return null != responsePublication && responsePublication.isConnected();

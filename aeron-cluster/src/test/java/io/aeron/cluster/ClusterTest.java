@@ -768,6 +768,7 @@ public class ClusterTest
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
             cluster.awaitLeader();
+
             final TestNode leader = cluster.findLeader();
             final TestNode follower = cluster.followers().get(0);
             final TestNode follower2 = cluster.followers().get(1);
@@ -781,10 +782,10 @@ public class ClusterTest
             while (leader.role() != Cluster.Role.FOLLOWER)
             {
                 Thread.sleep(1_000);
+                cluster.sendMessages(1);
             }
 
             cluster.startStaticNode(follower2.index(), true);
-
             cluster.awaitLeader();
         }
     }

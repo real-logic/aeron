@@ -55,8 +55,8 @@ public class ExtendRecordingTest
     private static final String MESSAGE_PREFIX = "Message-Prefix-";
     private static final int MTU_LENGTH = Configuration.mtuLength();
 
-    private static final int RECORDING_STREAM_ID = 33;
-    private static final String RECORDING_CHANNEL = new ChannelUriStringBuilder()
+    private static final int RECORDED_STREAM_ID = 33;
+    private static final String RECORDED_CHANNEL = new ChannelUriStringBuilder()
         .media("udp")
         .endpoint("localhost:3333")
         .termLength(TERM_BUFFER_LENGTH)
@@ -68,7 +68,7 @@ public class ExtendRecordingTest
         .endpoint("localhost:6666")
         .build();
 
-    private static final String SUBSCRIPTION_EXTEND_CHANNEL = new ChannelUriStringBuilder()
+    private static final String EXTEND_CHANNEL = new ChannelUriStringBuilder()
         .media("udp")
         .endpoint("localhost:3333")
         .build();
@@ -109,8 +109,8 @@ public class ExtendRecordingTest
         final long recordingId;
         final int initialTermId;
 
-        try (Publication publication = aeron.addPublication(RECORDING_CHANNEL, RECORDING_STREAM_ID);
-            Subscription subscription = aeron.addSubscription(RECORDING_CHANNEL, RECORDING_STREAM_ID))
+        try (Publication publication = aeron.addPublication(RECORDED_CHANNEL, RECORDED_STREAM_ID);
+            Subscription subscription = aeron.addSubscription(RECORDED_CHANNEL, RECORDED_STREAM_ID))
         {
             initialTermId = publication.initialTermId();
             recordingSignalAdapter = new RecordingSignalAdapter(
@@ -120,7 +120,7 @@ public class ExtendRecordingTest
                 aeronArchive.controlResponsePoller().subscription(),
                 FRAGMENT_LIMIT);
 
-            subscriptionIdOne = aeronArchive.startRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID, LOCAL);
+            subscriptionIdOne = aeronArchive.startRecording(RECORDED_CHANNEL, RECORDED_STREAM_ID, LOCAL);
             pollForSignal(recordingSignalAdapter);
 
             try
@@ -150,11 +150,10 @@ public class ExtendRecordingTest
             .mtu(MTU_LENGTH)
             .build();
 
-        try (Publication publication = aeron.addExclusivePublication(publicationExtendChannel, RECORDING_STREAM_ID);
-            Subscription subscription = aeron.addSubscription(SUBSCRIPTION_EXTEND_CHANNEL, RECORDING_STREAM_ID))
+        try (Publication publication = aeron.addExclusivePublication(publicationExtendChannel, RECORDED_STREAM_ID);
+            Subscription subscription = aeron.addSubscription(EXTEND_CHANNEL, RECORDED_STREAM_ID))
         {
-            subscriptionIdTwo = aeronArchive.extendRecording(
-                recordingId, SUBSCRIPTION_EXTEND_CHANNEL, RECORDING_STREAM_ID, LOCAL);
+            subscriptionIdTwo = aeronArchive.extendRecording(recordingId, EXTEND_CHANNEL, RECORDED_STREAM_ID, LOCAL);
             pollForSignal(recordingSignalAdapter);
 
             try

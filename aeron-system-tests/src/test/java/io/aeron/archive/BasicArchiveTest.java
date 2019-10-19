@@ -39,8 +39,8 @@ import static org.junit.Assert.assertThat;
 
 public class BasicArchiveTest
 {
-    private static final int RECORDING_STREAM_ID = 33;
-    private static final String RECORDING_CHANNEL = new ChannelUriStringBuilder()
+    private static final int RECORDED_STREAM_ID = 33;
+    private static final String RECORDED_CHANNEL = new ChannelUriStringBuilder()
         .media("udp")
         .endpoint("localhost:3333")
         .termLength(Common.TERM_BUFFER_LENGTH)
@@ -104,17 +104,17 @@ public class BasicArchiveTest
         final int messageCount = 10;
         final long stopPosition;
 
-        final long subscriptionId = aeronArchive.startRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID, LOCAL);
+        final long subscriptionId = aeronArchive.startRecording(RECORDED_CHANNEL, RECORDED_STREAM_ID, LOCAL);
         final long recordingIdFromCounter;
         final int sessionId;
 
-        try (Subscription subscription = aeron.addSubscription(RECORDING_CHANNEL, RECORDING_STREAM_ID);
-            Publication publication = aeron.addPublication(RECORDING_CHANNEL, RECORDING_STREAM_ID))
+        try (Subscription subscription = aeron.addSubscription(RECORDED_CHANNEL, RECORDED_STREAM_ID);
+            Publication publication = aeron.addPublication(RECORDED_CHANNEL, RECORDED_STREAM_ID))
         {
             sessionId = publication.sessionId();
 
             final CountersReader counters = aeron.countersReader();
-            final int counterId = getRecordingCounterId(counters, sessionId);
+            final int counterId = awaitRecordingCounterId(counters, sessionId);
             recordingIdFromCounter = RecordingPos.getRecordingId(counters, counterId);
 
             assertThat(RecordingPos.getSourceIdentity(counters, counterId), is(CommonContext.IPC_CHANNEL));
@@ -134,7 +134,7 @@ public class BasicArchiveTest
         aeronArchive.stopRecording(subscriptionId);
 
         final long recordingId = aeronArchive.findLastMatchingRecording(
-            0, "endpoint=localhost:3333", RECORDING_STREAM_ID, sessionId);
+            0, "endpoint=localhost:3333", RECORDED_STREAM_ID, sessionId);
 
         assertEquals(recordingIdFromCounter, recordingId);
         assertThat(aeronArchive.getStopPosition(recordingIdFromCounter), is(stopPosition));
@@ -181,11 +181,11 @@ public class BasicArchiveTest
         final int messageCount = 10;
         final long recordingId;
 
-        try (Subscription subscription = aeron.addSubscription(RECORDING_CHANNEL, RECORDING_STREAM_ID);
-            Publication publication = aeronArchive.addRecordedPublication(RECORDING_CHANNEL, RECORDING_STREAM_ID))
+        try (Subscription subscription = aeron.addSubscription(RECORDED_CHANNEL, RECORDED_STREAM_ID);
+            Publication publication = aeronArchive.addRecordedPublication(RECORDED_CHANNEL, RECORDED_STREAM_ID))
         {
             final CountersReader counters = aeron.countersReader();
-            final int counterId = Common.getRecordingCounterId(counters, publication.sessionId());
+            final int counterId = Common.awaitRecordingCounterId(counters, publication.sessionId());
             recordingId = RecordingPos.getRecordingId(counters, counterId);
 
             offer(publication, messageCount, messagePrefix);
@@ -219,13 +219,13 @@ public class BasicArchiveTest
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;
 
-        final long subscriptionId = aeronArchive.startRecording(RECORDING_CHANNEL, RECORDING_STREAM_ID, LOCAL);
+        final long subscriptionId = aeronArchive.startRecording(RECORDED_CHANNEL, RECORDED_STREAM_ID, LOCAL);
 
-        try (Subscription subscription = aeron.addSubscription(RECORDING_CHANNEL, RECORDING_STREAM_ID);
-            Publication publication = aeron.addPublication(RECORDING_CHANNEL, RECORDING_STREAM_ID))
+        try (Subscription subscription = aeron.addSubscription(RECORDED_CHANNEL, RECORDED_STREAM_ID);
+            Publication publication = aeron.addPublication(RECORDED_CHANNEL, RECORDED_STREAM_ID))
         {
             final CountersReader counters = aeron.countersReader();
-            final int counterId = Common.getRecordingCounterId(counters, publication.sessionId());
+            final int counterId = Common.awaitRecordingCounterId(counters, publication.sessionId());
             final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
             offer(publication, messageCount, messagePrefix);

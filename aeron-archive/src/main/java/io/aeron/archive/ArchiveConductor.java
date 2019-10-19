@@ -781,7 +781,7 @@ abstract class ArchiveConductor
         final long correlationId, final long recordingId, final long position, final ControlSession controlSession)
     {
         if (hasRecording(recordingId, correlationId, controlSession) &&
-            isValidTruncatePosition(correlationId, controlSession, recordingId, position))
+            isValidTruncate(correlationId, controlSession, recordingId, position))
         {
             final long stopPosition = recordingSummary.stopPosition;
             if (stopPosition == position)
@@ -826,7 +826,7 @@ abstract class ArchiveConductor
             else if (!file.delete())
             {
                 final String msg = "failed to delete " + file;
-                controlSession.sendErrorResponse(correlationId, GENERIC, msg, controlResponseProxy);
+                controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
                 throw new ArchiveException(msg);
             }
 
@@ -838,7 +838,7 @@ abstract class ArchiveConductor
                 if (!f.delete())
                 {
                     final String msg = "failed to delete " + file;
-                    controlSession.sendErrorResponse(correlationId, GENERIC, msg, controlResponseProxy);
+                    controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
                     throw new ArchiveException(msg);
                 }
             }
@@ -977,8 +977,10 @@ abstract class ArchiveConductor
         final long newStartPosition,
         final ControlSession controlSession)
     {
-        if (hasRecording(recordingId, correlationId, controlSession))
+        if (hasRecording(recordingId, correlationId, controlSession) &&
+            isValidDetach(correlationId, controlSession, recordingId, newStartPosition))
         {
+            catalog.startPosition(recordingId, newStartPosition);
             controlSession.sendOkResponse(correlationId, controlResponseProxy);
         }
     }
@@ -987,6 +989,7 @@ abstract class ArchiveConductor
     {
         if (hasRecording(recordingId, correlationId, controlSession))
         {
+            deleteDetachedSegments(recordingId);
             controlSession.sendOkResponse(correlationId, controlResponseProxy);
         }
     }
@@ -997,8 +1000,11 @@ abstract class ArchiveConductor
         final long newStartPosition,
         final ControlSession controlSession)
     {
-        if (hasRecording(recordingId, correlationId, controlSession))
+        if (hasRecording(recordingId, correlationId, controlSession) &&
+            isValidDetach(correlationId, controlSession, recordingId, newStartPosition))
         {
+            catalog.startPosition(recordingId, newStartPosition);
+            deleteDetachedSegments(recordingId);
             controlSession.sendOkResponse(correlationId, controlResponseProxy);
         }
     }
@@ -1006,6 +1012,24 @@ abstract class ArchiveConductor
     void removeReplicationSession(final ReplicationSession replicationSession)
     {
         replicationSessionByIdMap.remove(replicationSession.sessionId());
+    }
+
+    private void deleteDetachedSegments(final long recordingId)
+    {
+        catalog.recordingSummary(recordingId, recordingSummary);
+        final int segmentFileLength = recordingSummary.segmentFileLength;
+        long filenamePosition = recordingSummary.startPosition - segmentFileLength;
+
+        while (filenamePosition >= 0)
+        {
+            final File f = new File(archiveDir, segmentFileName(recordingId, filenamePosition));
+            if (!f.delete())
+            {
+                break;
+            }
+
+            filenamePosition -= segmentFileLength;
+        }
     }
 
     private int runTasks(final ArrayDeque<Runnable> taskQueue)
@@ -1290,7 +1314,7 @@ abstract class ArchiveConductor
         }
     }
 
-    private boolean isValidTruncatePosition(
+    private boolean isValidTruncate(
         final long correlationId, final ControlSession controlSession, final long recordingId, final long position)
     {
         for (final ReplaySession replaySession : replaySessionByIdMap.values())
@@ -1364,6 +1388,52 @@ abstract class ArchiveConductor
         }
 
         return false;
+    }
+
+    private boolean isValidDetach(
+        final long correlationId, final ControlSession controlSession, final long recordingId, final long position)
+    {
+        catalog.recordingSummary(recordingId, recordingSummary);
+
+        final int segmentFileLength = recordingSummary.segmentFileLength;
+        final long startPosition = recordingSummary.startPosition;
+        final long lowerBound = Archive.segmentFilePosition(startPosition, segmentFileLength) + segmentFileLength;
+
+        if (position != Archive.segmentFilePosition(position, segmentFileLength))
+        {
+            final String msg = "invalid segment start: newStartPosition=" + position;
+            controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
+            return false;
+        }
+
+        if (position < lowerBound)
+        {
+            final String msg = "invalid detach: newStartPosition=" + position + " lowerBound=" + lowerBound;
+            controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
+            return false;
+        }
+
+        final long stopPosition = recordingSummary.stopPosition;
+        long upperBound = NULL_VALUE == stopPosition ?
+            recordingSessionByIdMap.get(recordingId).recordedPosition() : stopPosition;
+        upperBound = Archive.segmentFilePosition(upperBound, segmentFileLength);
+
+        for (final ReplaySession replaySession : replaySessionByIdMap.values())
+        {
+            if (replaySession.recordingId() == recordingId)
+            {
+                upperBound = Math.min(upperBound, replaySession.segmentFileBasePosition());
+            }
+        }
+
+        if (position > upperBound)
+        {
+            final String msg = "invalid detach: newStartPosition=" + position + " upperBound=" + upperBound;
+            controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
+            return false;
+        }
+
+        return true;
     }
 
     private File segmentFile(

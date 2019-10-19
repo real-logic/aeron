@@ -80,6 +80,7 @@ class ReplaySession implements Session, AutoCloseable
     private long stopPosition;
     private long replayLimit;
     private long segmentFilePosition;
+    private volatile long segmentFileBasePosition;
     private int termOffset;
     private int termBaseSegmentOffset;
     private final int streamId;
@@ -159,6 +160,7 @@ class ReplaySession implements Session, AutoCloseable
         }
 
         segmentFilePosition = Archive.segmentFilePosition(fromPosition, segmentLength);
+        segmentFileBasePosition = segmentFilePosition;
         replayPosition = fromPosition;
         replayLimit = fromPosition + replayLength;
 
@@ -231,6 +233,11 @@ class ReplaySession implements Session, AutoCloseable
     State state()
     {
         return state;
+    }
+
+    long segmentFileBasePosition()
+    {
+        return segmentFileBasePosition;
     }
 
     Counter limitPosition()
@@ -439,6 +446,7 @@ class ReplaySession implements Session, AutoCloseable
         {
             closeRecordingSegment();
             segmentFilePosition += segmentLength;
+            segmentFileBasePosition = segmentFilePosition;
             openRecordingSegment();
             termBaseSegmentOffset = 0;
         }
@@ -455,7 +463,7 @@ class ReplaySession implements Session, AutoCloseable
     {
         if (null == segmentFile)
         {
-            final String segmentFileName = segmentFileName(recordingId, segmentFilePosition);
+            final String segmentFileName = segmentFileName(recordingId, segmentFileBasePosition);
             segmentFile = new File(archiveDir, segmentFileName);
 
             if (!segmentFile.exists())

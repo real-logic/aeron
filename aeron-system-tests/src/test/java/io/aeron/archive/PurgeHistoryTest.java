@@ -113,13 +113,15 @@ public class PurgeHistoryTest
     public void shouldPurgeForLateJoinedStream()
     {
         final String messagePrefix = "Message-Prefix-";
-        final long targetPosition = (SEGMENT_LENGTH * 3L) + 1;
         final int initialTermId = 7;
-        final int initialPosition = TERM_LENGTH + (FrameDescriptor.FRAME_ALIGNMENT * 2);
+        final long targetPosition = (SEGMENT_LENGTH * 3L) + 1;
+        final long initialPosition = (long)TERM_LENGTH + (FrameDescriptor.FRAME_ALIGNMENT * 2);
         uriBuilder.initialPosition(initialPosition, initialTermId, TERM_LENGTH);
 
-        try (Publication publication = aeronArchive.addRecordedPublication(uriBuilder.build(), STREAM_ID))
+        try (Publication publication = aeronArchive.addRecordedExclusivePublication(uriBuilder.build(), STREAM_ID))
         {
+            assertThat(publication.position(), is(initialPosition));
+
             final CountersReader counters = aeron.countersReader();
             final int counterId = Common.awaitRecordingCounterId(counters, publication.sessionId());
             final long recordingId = RecordingPos.getRecordingId(counters, counterId);

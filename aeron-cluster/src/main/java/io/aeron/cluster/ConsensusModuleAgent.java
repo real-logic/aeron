@@ -921,7 +921,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         if (null != logAdapter && null != replayLogDestination)
         {
-
             logAdapter.removeDestination(replayLogDestination);
             replayLogDestination = null;
         }

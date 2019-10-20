@@ -471,7 +471,7 @@ util::index_t ArchiveProxy::detachSegments(
     return messageAndHeaderLength(request);
 }
 
-util::index_t ArchiveProxy::deleteSegments(
+util::index_t ArchiveProxy::deleteDetachedSegments(
     AtomicBuffer& buffer,
     std::int64_t recordingId,
     std::int64_t correlationId,

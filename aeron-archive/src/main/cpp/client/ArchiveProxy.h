@@ -574,7 +574,7 @@ public:
     }
 
     /**
-     * Delete segments which have been previously detached from a recording.
+     * Delete detached segments which have been previously detached from a recording.
      *
      * @param recordingId      of the recording to purge segments from.
      * @param newStartPosition for the recording after segments are purged.
@@ -584,9 +584,9 @@ public:
      * @return true if successfully offered otherwise false.
      */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
-    bool deleteSegments(std::int64_t recordingId, std::int64_t correlationId, std::int64_t controlSessionId)
+    bool deleteDetachedSegments(std::int64_t recordingId, std::int64_t correlationId, std::int64_t controlSessionId)
     {
-        const util::index_t length = deleteSegments(m_buffer, recordingId, correlationId, controlSessionId);
+        const util::index_t length = deleteDetachedSegments(m_buffer, recordingId, correlationId, controlSessionId);
 
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
@@ -822,7 +822,7 @@ private:
         std::int64_t correlationId,
         std::int64_t controlSessionId);
 
-    static util::index_t deleteSegments(
+    static util::index_t deleteDetachedSegments(
         AtomicBuffer& buffer,
         std::int64_t recordingId,
         std::int64_t correlationId,

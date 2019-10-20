@@ -38,6 +38,9 @@ set(GENERATED_CODECS
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/StopPositionRequest.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/FindLastMatchingRecordingRequest.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/ListRecordingSubscriptionsRequest.h
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/DetachSegmentsRequest.h
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/DeleteDetachedSegmentsRequest.h
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/PurgeSegmentsRequest.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/CatalogHeader.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/RecordingDescriptorHeader.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/RecordingDescriptor.h

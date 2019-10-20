@@ -545,6 +545,79 @@ public:
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
 
+
+    /**
+     * Detach segments from the beginning of a recording up to the provided new start position.
+     * <p>
+     * The new start position must be first byte position of a segment after the existing start position.
+     * <p>
+     * It is not possible to detach segments which are active for recording or being replayed.
+     *
+     * @param recordingId      of the recording to detach segments from.
+     * @param newStartPosition for the recording after segments are detached.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool detachSegments(
+        std::int64_t recordingId,
+        std::int64_t newStartPosition,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId)
+    {
+        const util::index_t length = detachSegments(
+            m_buffer, recordingId, newStartPosition, correlationId, controlSessionId);
+
+        return offer<IdleStrategy>(m_buffer, 0, length);
+    }
+
+    /**
+     * Delete segments which have been previously detached from a recording.
+     *
+     * @param recordingId      of the recording to purge segments from.
+     * @param newStartPosition for the recording after segments are purged.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool deleteSegments(std::int64_t recordingId, std::int64_t correlationId, std::int64_t controlSessionId)
+    {
+        const util::index_t length = deleteSegments(m_buffer, recordingId, correlationId, controlSessionId);
+
+        return offer<IdleStrategy>(m_buffer, 0, length);
+    }
+
+    /**
+     * Purge (detach and delete) segments from the beginning of a recording up to the provided new start position.
+     * <p>
+     * The new start position must be first byte position of a segment after the existing start position.
+     * <p>
+     * It is not possible to detach segments which are active for recording or being replayed.
+     *
+     * @param recordingId      of the recording to purge segments from.
+     * @param newStartPosition for the recording after segments are purged.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool purgeSegments(
+        std::int64_t recordingId,
+        std::int64_t newStartPosition,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId)
+    {
+        const util::index_t length = purgeSegments(
+            m_buffer, recordingId, newStartPosition, correlationId, controlSessionId);
+
+        return offer<IdleStrategy>(m_buffer, 0, length);
+    }
+
 private:
     std::array<std::uint8_t, PROXY_REQUEST_BUFFER_LENGTH> m_array;
     AtomicBuffer m_buffer;
@@ -739,6 +812,26 @@ private:
     static util::index_t stopReplication(
         AtomicBuffer& buffer,
         std::int64_t replicationId,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId);
+
+    static util::index_t detachSegments(
+        AtomicBuffer& buffer,
+        std::int64_t recordingId,
+        std::int64_t newStartPosition,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId);
+
+    static util::index_t deleteSegments(
+        AtomicBuffer& buffer,
+        std::int64_t recordingId,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId);
+
+    static util::index_t purgeSegments(
+        AtomicBuffer& buffer,
+        std::int64_t recordingId,
+        std::int64_t newStartPosition,
         std::int64_t correlationId,
         std::int64_t controlSessionId);
 };

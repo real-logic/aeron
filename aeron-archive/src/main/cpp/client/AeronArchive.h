@@ -1110,6 +1110,94 @@ public:
     }
 
     /**
+     * Detach segments from the beginning of a recording up to the provided new start position.
+     * <p>
+     * The new start position must be first byte position of a segment after the existing start position.
+     * <p>
+     * It is not possible to detach segments which are active for recording or being replayed.
+     *
+     * @param recordingId      of the recording to detach segments from.
+     * @param newStartPosition for the recording after segments are detached.
+     * @tparam IdleStrategy to use for polling operations.
+     * @return the count of segments purged.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    inline void detachSegments(std::int64_t recordingId, std::int64_t newStartPosition)
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_lock);
+
+        ensureOpen();
+
+        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+
+        if (!m_archiveProxy->detachSegments<IdleStrategy>(
+            recordingId, newStartPosition, correlationId, m_controlSessionId))
+        {
+            throw ArchiveException("failed to send detach segments request", SOURCEINFO);
+        }
+
+        pollForResponse<IdleStrategy>(correlationId);
+    }
+
+    /**
+     * Purge (detach and delete) segments from the beginning of a recording up to the provided new start position.
+     * <p>
+     * The new start position must be first byte position of a segment after the existing start position.
+     * <p>
+     * It is not possible to detach segments which are active for recording or being replayed.
+     *
+     * @param recordingId of the recording to delete previously detached segments from.
+     * @tparam IdleStrategy to use for polling operations.
+     * @return the count of segments deleted.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    inline std::uint64_t deleteSegments(std::int64_t recordingId)
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_lock);
+
+        ensureOpen();
+
+        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+
+        if (!m_archiveProxy->deleteSegments<IdleStrategy>(recordingId, correlationId, m_controlSessionId))
+        {
+            throw ArchiveException("failed to send delete segments request", SOURCEINFO);
+        }
+
+        return pollForResponse<IdleStrategy>(correlationId);
+    }
+
+    /**
+     * Purge (detach and delete) segments from the beginning of a recording up to the provided new start position.
+     * <p>
+     * The new start position must be first byte position of a segment after the existing start position.
+     * <p>
+     * It is not possible to detach segments which are active for recording or being replayed.
+     *
+     * @param recordingId      of the recording to purge segments from.
+     * @param newStartPosition for the recording after segments are purged.
+     * @tparam IdleStrategy to use for polling operations.
+     * @return the count of segments purged.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    inline std::uint64_t purgeSegments(std::int64_t recordingId, std::int64_t newStartPosition)
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_lock);
+
+        ensureOpen();
+
+        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+
+        if (!m_archiveProxy->purgeSegments<IdleStrategy>(
+            recordingId, newStartPosition, correlationId, m_controlSessionId))
+        {
+            throw ArchiveException("failed to send purge segments request", SOURCEINFO);
+        }
+
+        return pollForResponse<IdleStrategy>(correlationId);
+    }
+
+    /**
      * Return the static version string for the binary library.
      *
      * @return static version and build string

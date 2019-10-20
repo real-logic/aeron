@@ -39,6 +39,9 @@
 #include "aeron_archive_client/ListRecordingSubscriptionsRequest.h"
 #include "aeron_archive_client/ReplicateRequest.h"
 #include "aeron_archive_client/StopReplicationRequest.h"
+#include "aeron_archive_client/DetachSegmentsRequest.h"
+#include "aeron_archive_client/DeleteDetachedSegmentsRequest.h"
+#include "aeron_archive_client/PurgeSegmentsRequest.h"
 
 using namespace aeron;
 using namespace aeron::concurrent;
@@ -446,6 +449,58 @@ util::index_t ArchiveProxy::stopReplication(
         .controlSessionId(controlSessionId)
         .correlationId(correlationId)
         .replicationId(replicationId);
+
+    return messageAndHeaderLength(request);
+}
+
+util::index_t ArchiveProxy::detachSegments(
+    AtomicBuffer& buffer,
+    std::int64_t recordingId,
+    std::int64_t newStartPosition,
+    std::int64_t correlationId,
+    std::int64_t controlSessionId)
+{
+    DetachSegmentsRequest request;
+
+    wrapAndApplyHeader(request, buffer)
+        .controlSessionId(controlSessionId)
+        .correlationId(correlationId)
+        .recordingId(recordingId)
+        .newStartPosition(newStartPosition);
+
+    return messageAndHeaderLength(request);
+}
+
+util::index_t ArchiveProxy::deleteSegments(
+    AtomicBuffer& buffer,
+    std::int64_t recordingId,
+    std::int64_t correlationId,
+    std::int64_t controlSessionId)
+{
+    DeleteDetachedSegmentsRequest request;
+
+    wrapAndApplyHeader(request, buffer)
+        .controlSessionId(controlSessionId)
+        .correlationId(correlationId)
+        .recordingId(recordingId);
+
+    return messageAndHeaderLength(request);
+}
+
+util::index_t ArchiveProxy::purgeSegments(
+    AtomicBuffer& buffer,
+    std::int64_t recordingId,
+    std::int64_t newStartPosition,
+    std::int64_t correlationId,
+    std::int64_t controlSessionId)
+{
+    PurgeSegmentsRequest request;
+
+    wrapAndApplyHeader(request, buffer)
+        .controlSessionId(controlSessionId)
+        .correlationId(correlationId)
+        .recordingId(recordingId)
+        .newStartPosition(newStartPosition);
 
     return messageAndHeaderLength(request);
 }

@@ -1322,6 +1322,7 @@ public class AeronArchive implements AutoCloseable
      *
      * @param recordingId      to which the operation applies.
      * @param newStartPosition for the recording after the segments are detached.
+     * @see #segmentFileBasePosition(long, long, int, int)
      */
     public void detachSegments(final long recordingId, final long newStartPosition)
     {
@@ -1386,6 +1387,7 @@ public class AeronArchive implements AutoCloseable
      * @return count of deleted segment files.
      * @see #detachSegments(long, long)
      * @see #deleteDetachedSegments(long)
+     * @see #segmentFileBasePosition(long, long, int, int)
      */
     public long purgeSegments(final long recordingId, final long newStartPosition)
     {

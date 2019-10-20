@@ -804,6 +804,7 @@ public class ArchiveProxy
      * @param correlationId    for this request.
      * @param controlSessionId for this request.
      * @return true if successfully offered otherwise false.
+     * @see AeronArchive#segmentFileBasePosition(long, long, int, int)
      */
     public boolean detachSegments(
         final long recordingId, final long newStartPosition, final long correlationId, final long controlSessionId)
@@ -862,6 +863,7 @@ public class ArchiveProxy
      * @return true if successfully offered otherwise false.
      * @see #detachSegments(long, long, long, long)
      * @see #deleteDetachedSegments(long, long, long)
+     * @see AeronArchive#segmentFileBasePosition(long, long, int, int)
      */
     public boolean purgeSegments(
         final long recordingId, final long newStartPosition, final long correlationId, final long controlSessionId)

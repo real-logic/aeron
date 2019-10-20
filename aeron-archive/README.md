@@ -30,8 +30,11 @@ Features:
  live stream for cut over if the consumer is fast enough to keep up.
 
 - **Replicate:** recordings can be replicated from a source to destination archive with the option to follow on with
- a live stream when the source is multicast. When using replication it is necessary to configure the replication channel for
- thedestination archive with `aeron.archive.replication.channel`.
+ a live stream when the source is multicast. When using replication it is necessary to configure the replication channel
+ for the destination archive with `aeron.archive.replication.channel`.
+
+- **Recording Storage Maintenance:** Manage the storage of large recordings by performing purge, detach, or delete
+ operations on the beginning of recordings. 
 
 Usage
 =====

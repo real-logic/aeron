@@ -78,7 +78,7 @@ public class Aeron implements AutoCloseable
     private final AgentRunner conductorRunner;
     private final Context ctx;
 
-    Aeron(final Context ctx)
+    private Aeron(final Context ctx)
     {
         ctx.conclude();
 

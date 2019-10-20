@@ -35,6 +35,7 @@ class ArchiveMigrationPlanner
     static
     {
         ALL_MIGRATION_STEPS.add(new ArchiveMigration_0_1());
+        ALL_MIGRATION_STEPS.add(new ArchiveMigration_1_2());
         // as migrations are added, they are added to the static list in order of operation
     }
 

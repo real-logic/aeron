@@ -990,8 +990,8 @@ abstract class ArchiveConductor
     {
         if (hasRecording(recordingId, correlationId, controlSession))
         {
-            deleteDetachedSegments(recordingId);
-            controlSession.sendOkResponse(correlationId, controlResponseProxy);
+            final long deletedSegmentsCount = deleteDetachedSegments(recordingId);
+            controlSession.sendOkResponse(correlationId, deletedSegmentsCount, controlResponseProxy);
         }
     }
 
@@ -1005,8 +1005,8 @@ abstract class ArchiveConductor
             isValidDetach(correlationId, controlSession, recordingId, newStartPosition))
         {
             catalog.startPosition(recordingId, newStartPosition);
-            deleteDetachedSegments(recordingId);
-            controlSession.sendOkResponse(correlationId, controlResponseProxy);
+            final long deletedSegmentsCount = deleteDetachedSegments(recordingId);
+            controlSession.sendOkResponse(correlationId, deletedSegmentsCount, controlResponseProxy);
         }
     }
 
@@ -1015,11 +1015,12 @@ abstract class ArchiveConductor
         replicationSessionByIdMap.remove(replicationSession.sessionId());
     }
 
-    private void deleteDetachedSegments(final long recordingId)
+    private long deleteDetachedSegments(final long recordingId)
     {
         catalog.recordingSummary(recordingId, recordingSummary);
         final int segmentFileLength = recordingSummary.segmentFileLength;
         long filenamePosition = recordingSummary.startPosition - segmentFileLength;
+        long count = 0;
 
         while (filenamePosition >= 0)
         {
@@ -1029,8 +1030,11 @@ abstract class ArchiveConductor
                 break;
             }
 
+            count += 1;
             filenamePosition -= segmentFileLength;
         }
+
+        return count;
     }
 
     private int runTasks(final ArrayDeque<Runnable> taskQueue)

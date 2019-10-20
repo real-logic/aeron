@@ -1329,9 +1329,10 @@ public class AeronArchive implements AutoCloseable
      * Delete segments which have been previously detached from a recording.
      *
      * @param recordingId to which the operation applies.
+     * @return count of deleted segment files.
      * @see #detachSegments(long, long)
      */
-    public void deleteDetachedSegments(final long recordingId)
+    public long deleteDetachedSegments(final long recordingId)
     {
         lock.lock();
         try
@@ -1345,7 +1346,7 @@ public class AeronArchive implements AutoCloseable
                 throw new ArchiveException("failed to send delete detached segments request");
             }
 
-            pollForResponse(correlationId);
+            return pollForResponse(correlationId);
         }
         finally
         {
@@ -1362,10 +1363,11 @@ public class AeronArchive implements AutoCloseable
      *
      * @param recordingId      to which the operation applies.
      * @param newStartPosition for the recording after the segments are detached.
+     * @return count of deleted segment files.
      * @see #detachSegments(long, long)
      * @see #deleteDetachedSegments(long)
      */
-    public void purgeSegments(final long recordingId, final long newStartPosition)
+    public long purgeSegments(final long recordingId, final long newStartPosition)
     {
         lock.lock();
         try
@@ -1379,7 +1381,7 @@ public class AeronArchive implements AutoCloseable
                 throw new ArchiveException("failed to send purge segments request");
             }
 
-            pollForResponse(correlationId);
+            return pollForResponse(correlationId);
         }
         finally
         {

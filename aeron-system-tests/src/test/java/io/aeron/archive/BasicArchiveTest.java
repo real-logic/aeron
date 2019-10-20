@@ -43,7 +43,7 @@ public class BasicArchiveTest
     private static final String RECORDED_CHANNEL = new ChannelUriStringBuilder()
         .media("udp")
         .endpoint("localhost:3333")
-        .termLength(Common.TERM_BUFFER_LENGTH)
+        .termLength(Common.TERM_LENGTH)
         .build();
 
     private static final int REPLAY_STREAM_ID = 66;

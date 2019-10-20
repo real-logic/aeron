@@ -159,7 +159,8 @@ class ReplaySession implements Session, AutoCloseable
             }
         }
 
-        segmentFilePosition = Archive.segmentFilePosition(startPosition, fromPosition, termLength, segmentLength);
+        segmentFilePosition = AeronArchive.segmentFileBasePosition(
+            startPosition, fromPosition, termLength, segmentLength);
         segmentFileBasePosition = segmentFilePosition;
         replayPosition = fromPosition;
         replayLimit = fromPosition + replayLength;

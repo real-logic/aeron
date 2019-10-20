@@ -32,8 +32,7 @@ import java.nio.file.attribute.FileAttribute;
 import java.util.EnumSet;
 
 import static io.aeron.archive.Archive.segmentFileName;
-import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
-import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static io.aeron.archive.client.AeronArchive.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.RESERVED_VALUE_OFFSET;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
@@ -94,7 +93,7 @@ class RecordingReader implements AutoCloseable
         final int segmentOffset = (int)(fromPosition - startTermBasePosition) & (segmentLength - 1);
         final int termId = ((int)(fromPosition >> positionBitsToShift) + recordingSummary.initialTermId);
 
-        segmentFilePosition = Archive.segmentFilePosition(startPosition, fromPosition, termLength, segmentLength);
+        segmentFilePosition = segmentFileBasePosition(startPosition, fromPosition, termLength, segmentLength);
         openRecordingSegment();
 
         termOffset = (int)(fromPosition & (termLength - 1));

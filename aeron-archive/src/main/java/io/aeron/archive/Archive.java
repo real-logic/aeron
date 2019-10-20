@@ -1558,26 +1558,6 @@ public class Archive implements AutoCloseable
     }
 
     /**
-     * Position of the recorded stream at the beginning of a segment file. If a recording starts within a term
-     * then the base position can be before the recording started.
-     *
-     * @param startPosition     of the stream.
-     * @param position          of the stream to calculate the segment base position from.
-     * @param termBufferLength  of the stream.
-     * @param segmentFileLength which is a multiple of term length.
-     * @return the position of the recorded stream at the beginning of a segment file.
-     */
-    static long segmentFilePosition(
-        final long startPosition, final long position, final int termBufferLength, final int segmentFileLength)
-    {
-        final long startTermBasePosition = startPosition - (startPosition & (termBufferLength - 1));
-        final long lengthFromBasePosition = position - startTermBasePosition;
-        final long segments = (lengthFromBasePosition - (lengthFromBasePosition & (segmentFileLength - 1)));
-
-        return startTermBasePosition + segments;
-    }
-
-    /**
      * The filename to be used for a segment file based on recording id and position the segment begins.
      *
      * @param recordingId         to identify the recorded stream.

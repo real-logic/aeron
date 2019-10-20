@@ -49,6 +49,7 @@ import static io.aeron.CommonContext.SPY_PREFIX;
 import static io.aeron.CommonContext.UDP_MEDIA;
 import static io.aeron.archive.Archive.*;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
 import static io.aeron.archive.client.ArchiveException.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static java.nio.file.StandardOpenOption.READ;
@@ -791,7 +792,7 @@ abstract class ArchiveConductor
             }
 
             final int segmentLength = recordingSummary.segmentFileLength;
-            final long segmentPosition = segmentFilePosition(
+            final long segmentPosition = segmentFileBasePosition(
                 recordingSummary.startPosition, position, recordingSummary.termBufferLength, segmentLength);
             final File file = new File(archiveDir, segmentFileName(recordingId, segmentPosition));
 
@@ -1400,14 +1401,13 @@ abstract class ArchiveConductor
     {
         catalog.recordingSummary(recordingId, recordingSummary);
 
-        final int segmentFileLength = recordingSummary.segmentFileLength;
+        final int segmentLength = recordingSummary.segmentFileLength;
         final long startPosition = recordingSummary.startPosition;
-        final int termBufferLength = recordingSummary.termBufferLength;
+        final int termLength = recordingSummary.termBufferLength;
         final long lowerBound =
-            Archive.segmentFilePosition(startPosition, startPosition, termBufferLength, segmentFileLength) +
-            segmentFileLength;
+            segmentFileBasePosition(startPosition, startPosition, termLength, segmentLength) + segmentLength;
 
-        if (position != Archive.segmentFilePosition(startPosition, position, termBufferLength, segmentFileLength))
+        if (position != segmentFileBasePosition(startPosition, position, termLength, segmentLength))
         {
             final String msg = "invalid segment start: newStartPosition=" + position;
             controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
@@ -1424,7 +1424,7 @@ abstract class ArchiveConductor
         final long stopPosition = recordingSummary.stopPosition;
         long upperBound = NULL_VALUE == stopPosition ?
             recordingSessionByIdMap.get(recordingId).recordedPosition() : stopPosition;
-        upperBound = Archive.segmentFilePosition(startPosition, upperBound, termBufferLength, segmentFileLength);
+        upperBound = segmentFileBasePosition(startPosition, upperBound, termLength, segmentLength);
 
         for (final ReplaySession replaySession : replaySessionByIdMap.values())
         {
@@ -1452,12 +1452,12 @@ abstract class ArchiveConductor
         final long correlationId)
     {
         final long fromPosition = position == NULL_POSITION ? recordingSummary.startPosition : position;
-        final long segmentFilePosition = segmentFilePosition(
+        final long segmentFileBasePosition = segmentFileBasePosition(
             recordingSummary.startPosition,
             fromPosition,
             recordingSummary.termBufferLength,
             recordingSummary.segmentFileLength);
-        final File segmentFile = new File(archiveDir, segmentFileName(recordingId, segmentFilePosition));
+        final File segmentFile = new File(archiveDir, segmentFileName(recordingId, segmentFileBasePosition));
 
         if (!segmentFile.exists())
         {

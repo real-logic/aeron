@@ -43,7 +43,7 @@ public class ReplayMergeTest
 {
     private static final String MESSAGE_PREFIX = "Message-Prefix-";
     private static final int MIN_MESSAGES_PER_TERM =
-        TERM_BUFFER_LENGTH / (MESSAGE_PREFIX.length() + DataHeaderFlyweight.HEADER_LENGTH);
+        TERM_LENGTH / (MESSAGE_PREFIX.length() + DataHeaderFlyweight.HEADER_LENGTH);
 
     private static final int PUBLICATION_TAG = 2;
     private static final int STREAM_ID = 33;
@@ -58,7 +58,7 @@ public class ReplayMergeTest
         .tags("1," + PUBLICATION_TAG)
         .controlEndpoint(CONTROL_ENDPOINT)
         .controlMode(CommonContext.MDC_CONTROL_MODE_DYNAMIC)
-        .termLength(TERM_BUFFER_LENGTH);
+        .termLength(TERM_LENGTH);
 
     private ChannelUriStringBuilder recordingChannel = new ChannelUriStringBuilder()
         .media(CommonContext.UDP_MEDIA)
@@ -100,7 +100,7 @@ public class ReplayMergeTest
         archivingMediaDriver = ArchivingMediaDriver.launch(
             mediaDriverContext
                 .termBufferSparseFile(true)
-                .publicationTermBufferLength(TERM_BUFFER_LENGTH)
+                .publicationTermBufferLength(TERM_LENGTH)
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Throwable::printStackTrace)
                 .spiesSimulateConnection(false)

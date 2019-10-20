@@ -105,6 +105,26 @@ public class AeronArchive implements AutoCloseable
     }
 
     /**
+     * Position of the recorded stream at the base of a segment file. If a recording starts within a term
+     * then the base position can be before the recording started.
+     *
+     * @param startPosition     of the stream.
+     * @param position          of the stream to calculate the segment base position from.
+     * @param termBufferLength  of the stream.
+     * @param segmentFileLength which is a multiple of term length.
+     * @return the position of the recorded stream at the beginning of a segment file.
+     */
+    public static long segmentFileBasePosition(
+        final long startPosition, final long position, final int termBufferLength, final int segmentFileLength)
+    {
+        final long startTermBasePosition = startPosition - (startPosition & (termBufferLength - 1));
+        final long lengthFromBasePosition = position - startTermBasePosition;
+        final long segments = (lengthFromBasePosition - (lengthFromBasePosition & (segmentFileLength - 1)));
+
+        return startTermBasePosition + segments;
+    }
+
+    /**
      * Notify the archive that this control session is closed so it can promptly release resources then close the
      * local resources associated with the client.
      */

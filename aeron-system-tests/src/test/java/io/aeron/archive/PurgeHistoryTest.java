@@ -44,7 +44,7 @@ public class PurgeHistoryTest
     private final ChannelUriStringBuilder uriBuilder = new ChannelUriStringBuilder()
         .media("udp")
         .endpoint("localhost:3333")
-        .termLength(Common.TERM_BUFFER_LENGTH);
+        .termLength(Common.TERM_LENGTH);
 
     private ArchivingMediaDriver archivingMediaDriver;
     private Aeron aeron;
@@ -55,7 +55,7 @@ public class PurgeHistoryTest
     {
         archivingMediaDriver = ArchivingMediaDriver.launch(
             new MediaDriver.Context()
-                .publicationTermBufferLength(TERM_BUFFER_LENGTH)
+                .publicationTermBufferLength(Common.TERM_LENGTH)
                 .termBufferSparseFile(true)
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Throwable::printStackTrace)
@@ -102,9 +102,12 @@ public class PurgeHistoryTest
             offerToPosition(publication, messagePrefix, targetPosition);
             awaitPosition(counters, counterId, publication.position());
 
-            final long count = aeronArchive.purgeSegments(recordingId, SEGMENT_LENGTH * 2L);
+            final long segmentFileBasePosition = AeronArchive.segmentFileBasePosition(
+                0L, SEGMENT_LENGTH * 2L, TERM_LENGTH, SEGMENT_LENGTH);
+
+            final long count = aeronArchive.purgeSegments(recordingId, segmentFileBasePosition);
             assertThat(count, is(2L));
-            assertThat(aeronArchive.getStartPosition(recordingId), is(SEGMENT_LENGTH * 2L));
+            assertThat(aeronArchive.getStartPosition(recordingId), is(segmentFileBasePosition));
 
             aeronArchive.stopRecording(publication);
         }
@@ -116,12 +119,12 @@ public class PurgeHistoryTest
         final String messagePrefix = "Message-Prefix-";
         final int initialTermId = 7;
         final long targetPosition = (SEGMENT_LENGTH * 3L) + 1;
-        final long initialPosition = (long)TERM_LENGTH + (FrameDescriptor.FRAME_ALIGNMENT * 2);
-        uriBuilder.initialPosition(initialPosition, initialTermId, TERM_LENGTH);
+        final long startPosition = (long)TERM_LENGTH + (FrameDescriptor.FRAME_ALIGNMENT * 2);
+        uriBuilder.initialPosition(startPosition, initialTermId, TERM_LENGTH);
 
         try (Publication publication = aeronArchive.addRecordedExclusivePublication(uriBuilder.build(), STREAM_ID))
         {
-            assertThat(publication.position(), is(initialPosition));
+            assertThat(publication.position(), is(startPosition));
 
             final CountersReader counters = aeron.countersReader();
             final int counterId = Common.awaitRecordingCounterId(counters, publication.sessionId());
@@ -130,9 +133,12 @@ public class PurgeHistoryTest
             offerToPosition(publication, messagePrefix, targetPosition);
             awaitPosition(counters, counterId, publication.position());
 
-            final long count = aeronArchive.purgeSegments(recordingId, TERM_LENGTH + (SEGMENT_LENGTH * 2L));
+            final long segmentFileBasePosition = AeronArchive.segmentFileBasePosition(
+                startPosition, startPosition + (SEGMENT_LENGTH * 2L), TERM_LENGTH, SEGMENT_LENGTH);
+
+            final long count = aeronArchive.purgeSegments(recordingId, segmentFileBasePosition);
             assertThat(count, is(2L));
-            assertThat(aeronArchive.getStartPosition(recordingId), is(TERM_LENGTH + (SEGMENT_LENGTH * 2L)));
+            assertThat(aeronArchive.getStartPosition(recordingId), is(segmentFileBasePosition));
 
             aeronArchive.stopRecording(publication);
         }

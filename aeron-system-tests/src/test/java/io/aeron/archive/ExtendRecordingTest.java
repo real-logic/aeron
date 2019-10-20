@@ -59,7 +59,7 @@ public class ExtendRecordingTest
     private static final String RECORDED_CHANNEL = new ChannelUriStringBuilder()
         .media("udp")
         .endpoint("localhost:3333")
-        .termLength(TERM_BUFFER_LENGTH)
+        .termLength(TERM_LENGTH)
         .build();
 
     private static final int REPLAY_STREAM_ID = 66;
@@ -146,7 +146,7 @@ public class ExtendRecordingTest
         final String publicationExtendChannel = new ChannelUriStringBuilder()
             .media("udp")
             .endpoint("localhost:3333")
-            .initialPosition(stopOne, initialTermId, TERM_BUFFER_LENGTH)
+            .initialPosition(stopOne, initialTermId, TERM_LENGTH)
             .mtu(MTU_LENGTH)
             .build();
 

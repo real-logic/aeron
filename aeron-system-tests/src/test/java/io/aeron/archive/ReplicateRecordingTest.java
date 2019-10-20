@@ -59,7 +59,7 @@ public class ReplicateRecordingTest
         .media("udp")
         .endpoint("224.20.30.39:54326")
         .networkInterface("localhost")
-        .termLength(TERM_BUFFER_LENGTH)
+        .termLength(TERM_LENGTH)
         .build();
 
     private ArchivingMediaDriver srcArchivingMediaDriver;

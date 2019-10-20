@@ -37,7 +37,7 @@ import static org.junit.Assert.assertThat;
 class Common
 {
     static final long MAX_CATALOG_ENTRIES = 128;
-    static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
+    static final int TERM_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     static final int FRAGMENT_LIMIT = 10;
 
     static int awaitRecordingCounterId(final CountersReader counters, final int sessionId)

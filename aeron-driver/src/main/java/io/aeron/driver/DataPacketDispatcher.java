@@ -89,12 +89,14 @@ public class DataPacketDispatcher
         {
             streamInterest.isForAllSessions = true;
 
-            for (final int sessionId : streamInterest.sessionInterestByIdMap.keySet())
+            final Int2ObjectHashMap<SessionInterest>.ValueIterator iterator =
+                streamInterest.sessionInterestByIdMap.values().iterator();
+
+            while (iterator.hasNext())
             {
-                final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.get(sessionId);
-                if (NO_INTEREST == sessionInterest.state)
+                if (NO_INTEREST == iterator.next().state)
                 {
-                    streamInterest.sessionInterestByIdMap.remove(sessionId);
+                    iterator.remove();
                 }
             }
         }
@@ -124,12 +126,17 @@ public class DataPacketDispatcher
         final StreamInterest streamInterest = streamInterestByIdMap.get(streamId);
         if (null == streamInterest)
         {
-            throw new UnknownSubscriptionException("No subscription registered on stream " + streamId);
+            throw new UnknownSubscriptionException("no subscription for stream " + streamId);
         }
 
-        for (final int sessionId : streamInterest.sessionInterestByIdMap.keySet())
+        final Int2ObjectHashMap<SessionInterest>.EntryIterator iterator =
+            streamInterest.sessionInterestByIdMap.entrySet().iterator();
+
+        while (iterator.hasNext())
         {
-            final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.get(sessionId);
+            iterator.next();
+            final SessionInterest sessionInterest = iterator.getValue();
+            final int sessionId = iterator.getIntKey();
 
             if (!streamInterest.subscribedSessionIds.contains(sessionId))
             {
@@ -138,7 +145,7 @@ public class DataPacketDispatcher
                     sessionInterest.image.ifActiveGoInactive();
                 }
 
-                streamInterest.sessionInterestByIdMap.remove(sessionId);
+                iterator.remove();
             }
         }
 
@@ -155,7 +162,7 @@ public class DataPacketDispatcher
         final StreamInterest streamInterest = streamInterestByIdMap.get(streamId);
         if (null == streamInterest)
         {
-            throw new UnknownSubscriptionException("No subscription registered on stream " + streamId);
+            throw new UnknownSubscriptionException("no subscription for stream " + streamId);
         }
 
         final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.remove(sessionId);
@@ -191,7 +198,6 @@ public class DataPacketDispatcher
         }
 
         sessionInterest.image = image;
-
         image.activate();
     }
 
@@ -297,13 +303,11 @@ public class DataPacketDispatcher
         if (null != streamInterest)
         {
             final int sessionId = header.sessionId();
-            final int initialTermId = header.initialTermId();
-            final int activeTermId = header.activeTermId();
             final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.get(sessionId);
 
             if (null != sessionInterest)
             {
-                if (null == sessionInterest.image && (PENDING_SETUP_FRAME == sessionInterest.state))
+                if (null == sessionInterest.image && PENDING_SETUP_FRAME == sessionInterest.state)
                 {
                     sessionInterest.state = INIT_IN_PROGRESS;
 
@@ -313,8 +317,8 @@ public class DataPacketDispatcher
                         srcAddress,
                         streamId,
                         sessionId,
-                        initialTermId,
-                        activeTermId,
+                        header.initialTermId(),
+                        header.activeTermId(),
                         header.termOffset(),
                         header.termLength(),
                         header.mtuLength(),
@@ -334,8 +338,8 @@ public class DataPacketDispatcher
                     srcAddress,
                     streamId,
                     sessionId,
-                    initialTermId,
-                    activeTermId,
+                    header.initialTermId(),
+                    header.activeTermId(),
                     header.termOffset(),
                     header.termLength(),
                     header.mtuLength(),

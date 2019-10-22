@@ -39,7 +39,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     private static final int LIVE_ADD_THRESHOLD = LogBufferDescriptor.TERM_MIN_LENGTH >> 2;
     private static final int REPLAY_REMOVE_THRESHOLD = 0;
     private static final int RETRY_ATTEMPTS = 3;
-    private static final String REPLICATION_ALIAS = "replication";
+    private static final String REPLICATION_ALIAS = "replication:";
 
     enum State
     {
@@ -432,7 +432,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder();
         final String channel = builder
             .media(channelUri)
-            .alias(REPLICATION_ALIAS + ":" + replicationId)
+            .alias(REPLICATION_ALIAS + replicationId)
             .controlMode(CommonContext.MDC_CONTROL_MODE_MANUAL)
             .rejoin(false)
             .sessionId((int)srcReplaySessionId)

@@ -397,7 +397,7 @@ int aeron_uri_publication_params(
     params->initial_term_id = 0;
     params->term_offset = 0;
     params->term_id = 0;
-    params->is_replay = false;
+    params->has_position = false;
     params->is_sparse = context->term_buffer_sparse_file;
     params->signal_eos = true;
     aeron_uri_params_t *uri_params = AERON_URI_IPC == uri->type ?
@@ -520,7 +520,7 @@ int aeron_uri_publication_params(
                 return -1;
             }
 
-            params->is_replay = true;
+            params->has_position = true;
         }
     }
 

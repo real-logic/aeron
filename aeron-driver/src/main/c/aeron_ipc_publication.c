@@ -86,7 +86,7 @@ int aeron_ipc_publication_create(
     _pub->log_file_name_length = (size_t)path_length;
     _pub->log_meta_data = (aeron_logbuffer_metadata_t *)(_pub->mapped_raw_log.log_meta_data.addr);
 
-    if (params->is_replay)
+    if (params->has_position)
     {
         int64_t term_id = params->term_id;
         int32_t term_count = params->term_id - initial_term_id;

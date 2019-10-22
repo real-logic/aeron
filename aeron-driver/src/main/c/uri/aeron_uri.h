@@ -63,7 +63,7 @@ aeron_uri_params_t;
 
 typedef struct aeron_uri_publication_params_stct
 {
-    bool is_replay;
+    bool has_position;
     bool is_sparse;
     bool signal_eos;
     size_t mtu_length;

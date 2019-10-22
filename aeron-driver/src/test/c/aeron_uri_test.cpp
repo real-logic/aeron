@@ -245,7 +245,7 @@ TEST_F(UriTest, shouldParsePublicationParamsForReplayUdp)
 
     EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=224.10.9.8|init-term-id=120|term-id=127|term-offset=64", &m_uri), 0);
     EXPECT_EQ(aeron_uri_publication_params(&m_uri, &params, &m_conductor, true), 0) << aeron_errmsg();
-    EXPECT_EQ(params.is_replay, true);
+    EXPECT_EQ(params.has_position, true);
     EXPECT_EQ(params.initial_term_id, 120l);
     EXPECT_EQ(params.term_id, 127l);
     EXPECT_EQ(params.term_offset, 64u);
@@ -257,7 +257,7 @@ TEST_F(UriTest, shouldParsePublicationParamsForReplayIpc)
 
     EXPECT_EQ(AERON_URI_PARSE("aeron:ipc?init-term-id=250|term-id=257|term-offset=128", &m_uri), 0);
     EXPECT_EQ(aeron_uri_publication_params(&m_uri, &params, &m_conductor, true), 0) << aeron_errmsg();
-    EXPECT_EQ(params.is_replay, true);
+    EXPECT_EQ(params.has_position, true);
     EXPECT_EQ(params.initial_term_id, 250l);
     EXPECT_EQ(params.term_id, 257l);
     EXPECT_EQ(params.term_offset, 128u);

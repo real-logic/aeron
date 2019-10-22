@@ -740,7 +740,7 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
             if (ensure_capacity_result >= 0)
             {
                 int32_t session_id = conductor->next_session_id++;
-                int32_t initial_term_id = params->is_replay ? params->initial_term_id : aeron_randomised_int32();
+                int32_t initial_term_id = params->has_position ? params->initial_term_id : aeron_randomised_int32();
                 aeron_position_t pub_pos_position;
                 aeron_position_t pub_lmt_position;
 
@@ -758,7 +758,7 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
                     return NULL;
                 }
 
-                if (params->is_replay)
+                if (params->has_position)
                 {
                     int64_t position = aeron_logbuffer_compute_position(
                         params->term_id,
@@ -854,7 +854,7 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
             if (ensure_capacity_result >= 0)
             {
                 int32_t session_id = conductor->next_session_id++;
-                int32_t initial_term_id = params->is_replay ? params->initial_term_id : aeron_randomised_int32();
+                int32_t initial_term_id = params->has_position ? params->initial_term_id : aeron_randomised_int32();
 
                 aeron_position_t pub_pos_position;
                 aeron_position_t pub_lmt_position;
@@ -891,7 +891,7 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                 snd_bpe_counter.value_addr = aeron_counter_addr(
                     &conductor->counters_manager, snd_bpe_counter.counter_id);
 
-                if (params->is_replay)
+                if (params->has_position)
                 {
                     int64_t position = aeron_logbuffer_compute_position(
                         params->term_id,

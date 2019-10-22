@@ -1044,7 +1044,7 @@ public class DriverConductor implements Agent
     {
         final String canonicalForm = udpChannel.canonicalForm();
         final int sessionId = params.hasSessionId ? params.sessionId : nextAvailableSessionId(streamId, canonicalForm);
-        final int initialTermId = params.isReplay ? params.initialTermId : BitUtil.generateRandomisedId();
+        final int initialTermId = params.hasPosition ? params.initialTermId : BitUtil.generateRandomisedId();
 
         final UnsafeBufferPosition publisherPosition = PublisherPos.allocate(
             tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
@@ -1055,7 +1055,7 @@ public class DriverConductor implements Agent
         final UnsafeBufferPosition senderLimit = SenderLimit.allocate(
             tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
 
-        if (params.isReplay)
+        if (params.hasPosition)
         {
             final int bits = LogBufferDescriptor.positionBitsToShift(params.termLength);
             final long position = computePosition(params.termId, params.termOffset, bits, initialTermId);
@@ -1167,7 +1167,7 @@ public class DriverConductor implements Agent
     private static void initialisePositionCounters(
         final int initialTermId, final PublicationParams params, final UnsafeBuffer logMetaData)
     {
-        if (params.isReplay)
+        if (params.hasPosition)
         {
             final int termId = params.termId;
             final int termCount = termId - initialTermId;
@@ -1459,7 +1459,7 @@ public class DriverConductor implements Agent
         final PublicationParams params)
     {
         final int sessionId = params.hasSessionId ? params.sessionId : nextAvailableSessionId(streamId, IPC_MEDIA);
-        final int initialTermId = params.isReplay ? params.initialTermId : BitUtil.generateRandomisedId();
+        final int initialTermId = params.hasPosition ? params.initialTermId : BitUtil.generateRandomisedId();
         final RawLog rawLog = newIpcPublicationLog(sessionId, streamId, initialTermId, registrationId, params);
 
         final UnsafeBufferPosition publisherPosition = PublisherPos.allocate(
@@ -1467,7 +1467,7 @@ public class DriverConductor implements Agent
         final UnsafeBufferPosition publisherLimit = PublisherLimit.allocate(
             tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
 
-        if (params.isReplay)
+        if (params.hasPosition)
         {
             final int positionBitsToShift = positionBitsToShift(params.termLength);
             final long position = computePosition(params.termId, params.termOffset, positionBitsToShift, initialTermId);

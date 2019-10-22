@@ -34,7 +34,7 @@ final class PublicationParams
     int termId = 0;
     int termOffset = 0;
     int sessionId = 0;
-    boolean isReplay = false;
+    boolean hasPosition = false;
     boolean hasSessionId = false;
     boolean isSessionIdTagged = false;
     boolean isSparse;
@@ -113,7 +113,7 @@ final class PublicationParams
 
                 }
 
-                params.isReplay = true;
+                params.hasPosition = true;
             }
         }
 
@@ -299,7 +299,7 @@ final class PublicationParams
             ", termId=" + termId +
             ", termOffset=" + termOffset +
             ", sessionId=" + sessionId +
-            ", isReplay=" + isReplay +
+            ", hasPosition=" + hasPosition +
             ", hasSessionId=" + hasSessionId +
             ", isSessionIdTagged=" + isSessionIdTagged +
             ", isSparse=" + isSparse +

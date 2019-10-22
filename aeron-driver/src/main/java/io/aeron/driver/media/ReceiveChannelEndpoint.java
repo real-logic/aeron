@@ -315,6 +315,21 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         }
     }
 
+    public boolean hasTag()
+    {
+        return super.udpChannel.hasTag();
+    }
+
+    public long tag()
+    {
+        return super.udpChannel.tag();
+    }
+
+    public boolean matchesTag(final UdpChannel udpChannel)
+    {
+        return super.udpChannel.matchesTag(udpChannel);
+    }
+
     public int multicastTtl()
     {
         return multicastTtl(0);

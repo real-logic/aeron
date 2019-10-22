@@ -430,9 +430,11 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     {
         final ChannelUri channelUri = ChannelUri.parse(replicationChannel);
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder();
+        final String tags = aeron.nextCorrelationId() + "," + replicationId;
         final String channel = builder
             .media(channelUri)
             .alias(REPLICATION_ALIAS + replicationId)
+            .tags(tags)
             .controlMode(CommonContext.MDC_CONTROL_MODE_MANUAL)
             .rejoin(false)
             .sessionId((int)srcReplaySessionId)

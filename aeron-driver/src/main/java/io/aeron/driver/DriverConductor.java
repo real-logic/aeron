@@ -1394,14 +1394,21 @@ public class DriverConductor implements Agent
         {
             for (final ReceiveChannelEndpoint endpoint : receiveChannelEndpointByChannelMap.values())
             {
-                if (endpoint.udpChannel().matchesTag(udpChannel))
+                if (endpoint.matchesTag(udpChannel))
                 {
                     return endpoint;
                 }
             }
         }
 
-        return receiveChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
+        ReceiveChannelEndpoint endpoint = receiveChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
+
+        if (null != endpoint && endpoint.hasTag() && udpChannel.hasTag() && endpoint.tag() != udpChannel.tag())
+        {
+            endpoint = null;
+        }
+
+        return endpoint;
     }
 
     private AeronClient getOrAddClient(final long clientId)

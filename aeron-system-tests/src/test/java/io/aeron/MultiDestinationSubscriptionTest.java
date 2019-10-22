@@ -70,9 +70,11 @@ public class MultiDestinationSubscriptionTest
     private Publication publicationA;
     private Publication publicationB;
     private Subscription subscription;
+    private Subscription copySubscription;
 
     private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
     private final FragmentHandler fragmentHandler = mock(FragmentHandler.class);
+    private final FragmentHandler copyFragmentHandler = mock(FragmentHandler.class);
 
     private void launch()
     {
@@ -110,6 +112,7 @@ public class MultiDestinationSubscriptionTest
         CloseHelper.close(publicationA);
         CloseHelper.close(publicationB);
         CloseHelper.close(subscription);
+        CloseHelper.close(copySubscription);
         CloseHelper.close(clientA);
         CloseHelper.close(driverA);
         CloseHelper.close(clientB);
@@ -224,6 +227,52 @@ public class MultiDestinationSubscriptionTest
         }
 
         verifyFragments(fragmentHandler, numMessagesToSend);
+    }
+
+    @Test(timeout = 10_000)
+    public void shouldSendToSingleDestinationMultipleSubscriptionsWithUnicast()
+    {
+        final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
+        final String tags = "1,2";
+
+        launch();
+
+        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
+            .media(CommonContext.UDP_MEDIA)
+            .tags(tags)
+            .controlMode(CommonContext.MDC_CONTROL_MODE_MANUAL);
+
+        final String subscriptionChannel = builder.build();
+
+        subscription = clientA.addSubscription(subscriptionChannel, STREAM_ID);
+        copySubscription = clientA.addSubscription(subscriptionChannel, STREAM_ID);
+        subscription.addDestination(PUB_UNICAST_URI);
+
+        publicationA = clientA.addPublication(PUB_UNICAST_URI, STREAM_ID);
+
+        while (subscription.hasNoImages())
+        {
+            SystemTest.checkInterruptedStatus();
+            Thread.yield();
+        }
+
+        for (int i = 0; i < numMessagesToSend; i++)
+        {
+            while (publicationA.offer(buffer, 0, buffer.capacity()) < 0L)
+            {
+                SystemTest.checkInterruptedStatus();
+                Thread.yield();
+            }
+
+            final MutableInteger fragmentsRead = new MutableInteger();
+            final MutableInteger copyFragmentsRead = new MutableInteger();
+
+            pollForFragment(subscription, fragmentHandler, fragmentsRead);
+            pollForFragment(copySubscription, copyFragmentHandler, copyFragmentsRead);
+        }
+
+        verifyFragments(fragmentHandler, numMessagesToSend);
+        verifyFragments(copyFragmentHandler, numMessagesToSend);
     }
 
     @Test(timeout = 10_000)

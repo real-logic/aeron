@@ -139,8 +139,8 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
     public void close()
     {
-        stopReplaySession();
         stopRecording();
+        stopReplaySession();
 
         CloseHelper.close(asyncConnect);
         CloseHelper.close(srcArchive);
@@ -484,6 +484,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             {
                 srcReplaySessionId = NULL_VALUE;
                 signal(position, SYNC);
+                stopRecording();
             }
 
             state(State.DONE);
@@ -629,6 +630,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         {
             conductor.removeRecordingSubscription(recordingSubscription.registrationId());
             recordingSubscription.close();
+            recordingSubscription = null;
         }
     }
 

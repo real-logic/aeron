@@ -186,7 +186,7 @@ class ReplaySession implements Session, AutoCloseable
 
         if (isAborted)
         {
-            state = State.INACTIVE;
+            state(State.INACTIVE);
         }
 
         try
@@ -210,7 +210,7 @@ class ReplaySession implements Session, AutoCloseable
         if (State.INACTIVE == state)
         {
             closeRecordingSegment();
-            state = State.DONE;
+            state(State.DONE);
         }
 
         return workCount;
@@ -288,7 +288,7 @@ class ReplaySession implements Session, AutoCloseable
             return 0;
         }
 
-        state = State.REPLAY;
+        state(State.REPLAY);
 
         return 1;
     }
@@ -299,7 +299,7 @@ class ReplaySession implements Session, AutoCloseable
 
         if (!publication.isConnected())
         {
-            state = State.INACTIVE;
+            state(State.INACTIVE);
             return fragments;
         }
 
@@ -362,7 +362,7 @@ class ReplaySession implements Session, AutoCloseable
 
                 if (replayPosition >= replayLimit)
                 {
-                    state = State.INACTIVE;
+                    state(State.INACTIVE);
                     break;
                 }
             }
@@ -403,7 +403,7 @@ class ReplaySession implements Session, AutoCloseable
 
     private void onError(final String errorMessage)
     {
-        state = State.INACTIVE;
+        state(State.INACTIVE);
         this.errorMessage = errorMessage;
     }
 
@@ -427,7 +427,7 @@ class ReplaySession implements Session, AutoCloseable
 
         if (replayPosition >= replayLimit)
         {
-            state = State.INACTIVE;
+            state(State.INACTIVE);
         }
         else if (newStopPosition > oldStopPosition)
         {
@@ -494,6 +494,12 @@ class ReplaySession implements Session, AutoCloseable
         }
 
         return isInvalidHeader(buffer, streamId, termId, termOffset);
+    }
+
+    private void state(final State newState)
+    {
+        //System.out.println(epochClock.time() + ": " + state + " -> " + newState);
+        state = newState;
     }
 
     static boolean isInvalidHeader(

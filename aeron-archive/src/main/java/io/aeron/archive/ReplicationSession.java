@@ -432,7 +432,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder();
         final String channel = builder
             .media(channelUri)
-            .alias(REPLICATION_ALIAS)
+            .alias(REPLICATION_ALIAS + ":" + replicationId)
             .controlMode(CommonContext.MDC_CONTROL_MODE_MANUAL)
             .rejoin(false)
             .sessionId((int)srcReplaySessionId)

@@ -82,7 +82,7 @@ public:
     void createPub()
     {
         m_publication = std::unique_ptr<ExclusivePublication>(new ExclusivePublication(
-            m_conductor, CHANNEL, CORRELATION_ID, CORRELATION_ID, STREAM_ID, SESSION_ID,
+            m_conductor, CHANNEL, CORRELATION_ID, STREAM_ID, SESSION_ID,
             m_publicationLimit, ChannelEndpointStatus::NO_ID_ALLOCATED, m_logBuffers));
     }
 

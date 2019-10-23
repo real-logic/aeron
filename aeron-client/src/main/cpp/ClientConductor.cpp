@@ -16,6 +16,8 @@
 
 #include "ClientConductor.h"
 
+#include <cassert>
+
 namespace aeron {
 
 template<typename T, typename... U>
@@ -204,7 +206,6 @@ std::shared_ptr<ExclusivePublication> ClientConductor::findExclusivePublication(
                     *this,
                     state.m_channel,
                     state.m_registrationId,
-                    state.m_originalRegistrationId,
                     state.m_streamId,
                     state.m_sessionId,
                     publicationLimit,
@@ -624,6 +625,8 @@ void ClientConductor::onNewExclusivePublication(
     std::int32_t channelStatusIndicatorId,
     const std::string &logFileName)
 {
+    assert(registrationId == originalRegistrationId);
+
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
     auto it = m_exclusivePublicationByRegistrationId.find(registrationId);
@@ -636,7 +639,6 @@ void ClientConductor::onNewExclusivePublication(
         state.m_publicationLimitCounterId = publicationLimitCounterId;
         state.m_channelStatusId = channelStatusIndicatorId;
         state.m_buffers = getLogBuffers(originalRegistrationId, logFileName, state.m_channel);
-        state.m_originalRegistrationId = originalRegistrationId;
 
         CallbackGuard callbackGuard(m_isInCallback);
         m_onNewExclusivePublicationHandler(state.m_channel, streamId, sessionId, registrationId);

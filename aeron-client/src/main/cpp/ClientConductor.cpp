@@ -31,14 +31,6 @@ static size_t getAddress(const std::function<T(U...)>& f)
 
 ClientConductor::~ClientConductor()
 {
-    std::vector<std::shared_ptr<Subscription>> subscriptions;
-
-    for (auto& kv : m_subscriptionByRegistrationId)
-    {
-        subscriptions.push_back(kv.second.m_subscriptionCache);
-        kv.second.m_subscriptionCache.reset();
-    }
-
     std::for_each(m_lingeringImageLists.begin(), m_lingeringImageLists.end(),
         [](ImageListLingerDefn &entry)
         {
@@ -298,12 +290,6 @@ void ClientConductor::releaseSubscription(std::int64_t registrationId, Image::ar
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     verifyDriverIsActiveViaErrorHandler();
-
-    if (m_isClosed)
-    {
-        delete [] imageArray;
-        return;
-    }
 
     auto it = m_subscriptionByRegistrationId.find(registrationId);
     if (it != m_subscriptionByRegistrationId.end())
@@ -946,6 +932,8 @@ void ClientConductor::closeAllResources(long long nowMs)
     }
     m_exclusivePublicationByRegistrationId.clear();
 
+    std::vector<std::shared_ptr<Subscription>> subscriptionsToHoldUntilCleared;
+
     for (auto& kv : m_subscriptionByRegistrationId)
     {
         std::shared_ptr<Subscription> sub = kv.second.m_subscription.lock();
@@ -969,11 +957,14 @@ void ClientConductor::closeAllResources(long long nowMs)
 
             if (kv.second.m_subscriptionCache)
             {
+                subscriptionsToHoldUntilCleared.push_back(kv.second.m_subscriptionCache);
                 kv.second.m_subscriptionCache.reset();
             }
         }
     }
     m_subscriptionByRegistrationId.clear();
+
+    std::vector<std::shared_ptr<Counter>> countersToHoldUntilCleared;
 
     for (auto& kv : m_counterByRegistrationId)
     {
@@ -993,6 +984,7 @@ void ClientConductor::closeAllResources(long long nowMs)
 
             if (kv.second.m_counterCache)
             {
+                countersToHoldUntilCleared.push_back(kv.second.m_counterCache);
                 kv.second.m_counterCache.reset();
             }
         }

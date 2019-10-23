@@ -451,11 +451,17 @@ public:
 
     std::pair<Image::array_t, std::size_t> closeAndRemoveImages()
     {
-        std::pair<Image::array_t, std::size_t> imageArrayPair = m_imageArray.load();
-        m_imageArray.store(new std::shared_ptr<Image>[0], 0);
-        std::atomic_store_explicit(&m_isClosed, true, std::memory_order_release);
+        if (!m_isClosed.exchange(true))
+        {
+            std::pair<Image::array_t, std::size_t> imageArrayPair = m_imageArray.load();
+            m_imageArray.store(new std::shared_ptr<Image>[0], 0);
 
-        return imageArrayPair;
+            return imageArrayPair;
+        }
+        else
+        {
+            return {nullptr, 0};
+        }
     }
     /// @endcond
 

@@ -2,7 +2,7 @@
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
                    package="io.aeron.cluster.codecs"
                    id="111"
-                   version="4"
+                   version="5"
                    semanticVersion="5.2"
                    description="Message Codecs for communicating with, and within, an Aeron Cluster."
                    byteOrder="littleEndian">
@@ -295,6 +295,7 @@
                  id="34"
                  description="Request list of cluster members and passive followers to be sent.">
         <field name="correlationId"            id="1" type="int64"/>
+        <field name="extended"                 id="2" type="BooleanType" sinceVersion="5" presence="optional"/>
     </sbe:message>
 
     <sbe:message name="RemoveMember"
@@ -338,24 +339,55 @@
         <field name="logPosition"              id="1" type="int64"/>
     </sbe:message>
 
-<!--
-    Cluster Consensus Protocol
-    ==========================
+    <sbe:message name="ClusterMembersExtendedResponse"
+                 id="44"
+                 description="Cluster Members status for active and passive members">
+        <field name="correlationId"            id="1" type="int64"/>
+        <field name="currentTimeNs"            id="2" type="time_t"/>
+        <field name="leaderMemberId"           id="3" type="int32"/>
+        <field name="memberId"                 id="4" type="int32"/>
+        <group name="activeMembers"            id="5" dimensionType="groupSizeEncoding">
+            <field name="leadershipTermId"     id="6" type="int64"/>
+            <field name="logPosition"          id="7" type="int64"/>
+            <field name="timeOfLastAppendNs"   id="8" type="time_t"/>
+            <field name="memberId"             id="9" type="int32"/>
+            <data name="clientFacingEndpoint"  id="10" type="varAsciiEncoding"/>
+            <data name="memberFacingEndpoint"  id="11" type="varAsciiEncoding"/>
+            <data name="logEndpoint"           id="12" type="varAsciiEncoding"/>
+            <data name="transferEndpoint"      id="13" type="varAsciiEncoding"/>
+            <data name="archiveEndpoint"       id="14" type="varAsciiEncoding"/>
+        </group>
+        <group name="passiveMembers"           id="15" dimensionType="groupSizeEncoding">
+            <field name="leadershipTermId"     id="16" type="int64"/>
+            <field name="logPosition"          id="17" type="int64"/>
+            <field name="timeOfLastAppendNs"   id="18" type="time_t"/>
+            <field name="memberId"             id="19" type="int32"/>
+            <data name="clientFacingEndpoint"  id="20" type="varAsciiEncoding"/>
+            <data name="memberFacingEndpoint"  id="21" type="varAsciiEncoding"/>
+            <data name="logEndpoint"           id="22" type="varAsciiEncoding"/>
+            <data name="transferEndpoint"      id="23" type="varAsciiEncoding"/>
+            <data name="archiveEndpoint"       id="24" type="varAsciiEncoding"/>
+        </group>
+    </sbe:message>
 
-    The leader replicates a log stream to all followers for its term as leader. Leadership term ids are monotonic.
+    <!--
+        Cluster Consensus Protocol
+        ==========================
 
-    The followers persist the replicated log locally and send updates to the leader with the highest position they
-    have persisted. The log position is an accumulation of the term positions over the leadership terms.
-    Each leadership term starts with base log position for the accumulated term positions.
+        The leader replicates a log stream to all followers for its term as leader. Leadership term ids are monotonic.
 
-    The leader gathers the positions reached by the followers, plus its own locally persisted log, and publishes
-    the highest position for a quorum of the member nodes including itself which can be committed to the state
-    machines. If the quorum position does not progress within a timeout then the latest position will be
-    re-transmitted as a heartbeat from the leader.
+        The followers persist the replicated log locally and send updates to the leader with the highest position they
+        have persisted. The log position is an accumulation of the term positions over the leadership terms.
+        Each leadership term starts with base log position for the accumulated term positions.
 
-    Messages are only valid within the context of a leadership term and all updates are applied as monotonically
-    increasing state.
--->
+        The leader gathers the positions reached by the followers, plus its own locally persisted log, and publishes
+        the highest position for a quorum of the member nodes including itself which can be committed to the state
+        machines. If the quorum position does not progress within a timeout then the latest position will be
+        re-transmitted as a heartbeat from the leader.
+
+        Messages are only valid within the context of a leadership term and all updates are applied as monotonically
+        increasing state.
+    -->
 
     <sbe:message name="CanvassPosition"
                  id="50"

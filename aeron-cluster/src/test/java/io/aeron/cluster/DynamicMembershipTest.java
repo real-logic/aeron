@@ -24,7 +24,7 @@ import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertThat;
 
-@Ignore
+//@Ignore
 public class DynamicMembershipTest
 {
     @Test(timeout = 10_000)
@@ -37,8 +37,8 @@ public class DynamicMembershipTest
             final ClusterTool.ClusterMembership clusterMembership = leader.clusterMembership();
 
             assertThat(clusterMembership.leaderMemberId, is(leader.index()));
-            assertThat(clusterMembership.passiveMembers, is(""));
-            assertThat(clusterMembership.activeMembers, is(cluster.staticClusterMembers()));
+            assertThat(clusterMembership.passiveMembersStr, is(""));
+            assertThat(clusterMembership.activeMembersStr, is(cluster.staticClusterMembers()));
         }
     }
 
@@ -57,7 +57,7 @@ public class DynamicMembershipTest
             final ClusterTool.ClusterMembership clusterMembership = leader.clusterMembership();
 
             assertThat(clusterMembership.leaderMemberId, is(leader.index()));
-            assertThat(clusterMembership.passiveMembers, is(""));
+            assertThat(clusterMembership.passiveMembersStr, is(""));
             assertThat(numberOfMembers(clusterMembership), is(4));
         }
     }
@@ -231,8 +231,6 @@ public class DynamicMembershipTest
 
     private int numberOfMembers(final ClusterTool.ClusterMembership clusterMembership)
     {
-        final String[] members = clusterMembership.activeMembers.split("\\|");
-
-        return members.length;
+        return clusterMembership.activeMembers.size();
     }
 }

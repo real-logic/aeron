@@ -21,6 +21,7 @@ import io.aeron.cluster.codecs.*;
 import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.CloseHelper;
+import org.agrona.ExpandableArrayBuffer;
 
 final class ServiceProxy implements AutoCloseable
 {
@@ -33,6 +34,9 @@ final class ServiceProxy implements AutoCloseable
     private final ServiceTerminationPositionEncoder serviceTerminationPositionEncoder =
         new ServiceTerminationPositionEncoder();
     private final ElectionStartEventEncoder electionStartEventEncoder = new ElectionStartEventEncoder();
+    private final ClusterMembersExtendedResponseEncoder clusterMembersExtendedResponseEncoder =
+        new ClusterMembersExtendedResponseEncoder();
+    private final ExpandableArrayBuffer expandableArrayBuffer = new ExpandableArrayBuffer();
     private final Publication publication;
 
     ServiceProxy(final Publication publication)
@@ -115,6 +119,71 @@ final class ServiceProxy implements AutoCloseable
         while (--attempts > 0);
 
         throw new ClusterException("failed to send cluster members response");
+    }
+
+    void clusterMembersExtendedResponse(
+        final long correlationId,
+        final long currentTimeNs,
+        final int leaderMemberId,
+        final int memberId,
+        final ClusterMember[] activeMembers,
+        final ClusterMember[] passiveMembers)
+    {
+        clusterMembersExtendedResponseEncoder
+            .wrapAndApplyHeader(expandableArrayBuffer, 0, messageHeaderEncoder)
+            .correlationId(correlationId)
+            .currentTimeNs(currentTimeNs)
+            .leaderMemberId(leaderMemberId)
+            .memberId(memberId);
+
+        final ClusterMembersExtendedResponseEncoder.ActiveMembersEncoder activeMembersEncoder =
+            clusterMembersExtendedResponseEncoder.activeMembersCount(activeMembers.length);
+        for (final ClusterMember member : activeMembers)
+        {
+            activeMembersEncoder.next()
+                .leadershipTermId(member.leadershipTermId())
+                .logPosition(member.logPosition())
+                .timeOfLastAppendNs(member.timeOfLastAppendPositionNs())
+                .memberId(member.id())
+                .clientFacingEndpoint(member.clientFacingEndpoint())
+                .memberFacingEndpoint(member.memberFacingEndpoint())
+                .logEndpoint(member.logEndpoint())
+                .transferEndpoint(member.transferEndpoint())
+                .archiveEndpoint(member.archiveEndpoint());
+        }
+
+        final ClusterMembersExtendedResponseEncoder.PassiveMembersEncoder passiveMembersEncoder =
+            clusterMembersExtendedResponseEncoder.passiveMembersCount(passiveMembers.length);
+        for (final ClusterMember member : passiveMembers)
+        {
+            passiveMembersEncoder.next()
+                .leadershipTermId(member.leadershipTermId())
+                .logPosition(member.logPosition())
+                .timeOfLastAppendNs(member.timeOfLastAppendPositionNs())
+                .memberId(member.id())
+                .clientFacingEndpoint(member.clientFacingEndpoint())
+                .memberFacingEndpoint(member.memberFacingEndpoint())
+                .logEndpoint(member.logEndpoint())
+                .transferEndpoint(member.transferEndpoint())
+                .archiveEndpoint(member.archiveEndpoint());
+        }
+
+        final int length = clusterMembersExtendedResponseEncoder.encodedLength() + MessageHeaderEncoder.ENCODED_LENGTH;
+
+        int attempts = SEND_ATTEMPTS * 2;
+        do
+        {
+            final long result = publication.offer(expandableArrayBuffer, 0, length, null);
+            if (result > 0)
+            {
+                return;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
+
+        throw new ClusterException("failed to send cluster members extended response");
     }
 
     void terminationPosition(final long logPosition)

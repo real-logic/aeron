@@ -38,6 +38,7 @@ import java.io.File;
 import java.io.PrintStream;
 import java.nio.MappedByteBuffer;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -154,9 +155,13 @@ public class ClusterTool
      */
     public static class ClusterMembership
     {
+        long currentTimeNs = NULL_VALUE;
         int leaderMemberId = NULL_VALUE;
-        String activeMembers = null;
-        String passiveMembers = null;
+        int memberId = NULL_VALUE;
+        String activeMembersStr = null;
+        String passiveMembersStr = null;
+        List<ClusterMember> activeMembers = null;
+        List<ClusterMember> passiveMembers = null;
     }
 
     public static void describe(final PrintStream out, final File clusterDir)
@@ -240,14 +245,16 @@ public class ClusterTool
 
                 if (queryClusterMembers(markFile, clusterMembership, timeoutMs))
                 {
-                    out.format("leaderMemberId=%d, activeMembers=%s, passiveMembers=%s%n",
-                        clusterMembership.leaderMemberId,
-                        clusterMembership.activeMembers,
-                        clusterMembership.passiveMembers);
+                    out.println(
+                        "currentTimeNs=" + clusterMembership.currentTimeNs +
+                        ", leaderMemberId=" + clusterMembership.leaderMemberId +
+                        ", memberId=" + clusterMembership.memberId +
+                        ", activeMembers=" + clusterMembership.activeMembers +
+                        ", passiveMembers=" + clusterMembership.passiveMembers);
                 }
                 else
                 {
-                    out.format("timeout waiting for response from node");
+                    out.println("timeout waiting for response from node");
                 }
             }
         }
@@ -377,17 +384,50 @@ public class ClusterTool
         final int toConsensusModuleStreamId = markFile.decoder().consensusModuleStreamId();
 
         final MutableLong id = new MutableLong(NULL_VALUE);
-        final MemberServiceAdapter.MemberServiceHandler handler =
-            (correlationId, leaderMemberId, activeMembers, passiveMembers) ->
+        final MemberServiceAdapter.MemberServiceHandler handler = new MemberServiceAdapter.MemberServiceHandler()
+        {
+            public void onClusterMembersResponse(
+                final long correlationId,
+                final int leaderMemberId,
+                final String activeMembers,
+                final String passiveMembers)
             {
                 if (correlationId == id.longValue())
                 {
                     clusterMembership.leaderMemberId = leaderMemberId;
-                    clusterMembership.activeMembers = activeMembers;
-                    clusterMembership.passiveMembers = passiveMembers;
+                    clusterMembership.activeMembersStr = activeMembers;
+                    clusterMembership.passiveMembersStr = passiveMembers;
                     id.set(NULL_VALUE);
                 }
-            };
+            }
+
+            public void onClusterMembersExtendedResponse(
+                final long correlationId,
+                final long currentTimeNs,
+                final int leaderMemberId,
+                final int memberId,
+                final List<ClusterMember> activeMembers,
+                final List<ClusterMember> passiveMembers)
+            {
+                if (correlationId == id.longValue())
+                {
+                    clusterMembership.currentTimeNs = currentTimeNs;
+                    clusterMembership.leaderMemberId = leaderMemberId;
+                    clusterMembership.memberId = memberId;
+                    clusterMembership.activeMembers = activeMembers;
+                    clusterMembership.passiveMembers = passiveMembers;
+
+                    ClusterMember[] activeMemberArray = new ClusterMember[activeMembers.size()];
+                    ClusterMember[] passiveMemberArray = new ClusterMember[passiveMembers.size()];
+                    activeMemberArray = activeMembers.toArray(activeMemberArray);
+                    passiveMemberArray = passiveMembers.toArray(passiveMemberArray);
+
+                    clusterMembership.activeMembersStr = ClusterMember.encodeAsString(activeMemberArray);
+                    clusterMembership.passiveMembersStr = ClusterMember.encodeAsString(passiveMemberArray);
+                    id.set(NULL_VALUE);
+                }
+            }
+        };
 
         try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDirectoryName));
             ConsensusModuleProxy consensusModuleProxy = new ConsensusModuleProxy(

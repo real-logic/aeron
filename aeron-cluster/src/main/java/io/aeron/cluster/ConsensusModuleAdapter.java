@@ -56,7 +56,7 @@ final class ConsensusModuleAdapter implements AutoCloseable
         return subscription.poll(fragmentAssembler, FRAGMENT_LIMIT);
     }
 
-    @SuppressWarnings("unused")
+    @SuppressWarnings({"unused", "MethodLength"})
     private void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
@@ -138,7 +138,9 @@ final class ConsensusModuleAdapter implements AutoCloseable
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                consensusModuleAgent.onClusterMembersQuery(clusterMembersQueryDecoder.correlationId());
+                consensusModuleAgent.onClusterMembersQuery(
+                    clusterMembersQueryDecoder.correlationId(),
+                    BooleanType.TRUE == clusterMembersQueryDecoder.extended());
                 break;
 
             case RemoveMemberDecoder.TEMPLATE_ID:

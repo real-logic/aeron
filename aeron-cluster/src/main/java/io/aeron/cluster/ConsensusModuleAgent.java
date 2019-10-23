@@ -779,13 +779,21 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
     }
 
-    public void onClusterMembersQuery(final long correlationId)
+    public void onClusterMembersQuery(final long correlationId, final boolean returnExtended)
     {
-        serviceProxy.clusterMembersResponse(
-            correlationId,
-            leaderMember.id(),
-            ClusterMember.encodeAsString(clusterMembers),
-            ClusterMember.encodeAsString(passiveMembers));
+        if (returnExtended)
+        {
+            serviceProxy.clusterMembersExtendedResponse(
+                correlationId, timeNs, leaderMember.id(), memberId, clusterMembers, passiveMembers);
+        }
+        else
+        {
+            serviceProxy.clusterMembersResponse(
+                correlationId,
+                leaderMember.id(),
+                ClusterMember.encodeAsString(clusterMembers),
+                ClusterMember.encodeAsString(passiveMembers));
+        }
     }
 
     void state(final ConsensusModule.State newState)

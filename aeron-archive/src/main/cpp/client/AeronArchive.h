@@ -1119,7 +1119,6 @@ public:
      * @param recordingId      of the recording to detach segments from.
      * @param newStartPosition for the recording after segments are detached.
      * @tparam IdleStrategy to use for polling operations.
-     * @return the count of segments purged.
      */
     template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
     inline void detachSegments(std::int64_t recordingId, std::int64_t newStartPosition)

@@ -1411,6 +1411,73 @@ public class AeronArchive implements AutoCloseable
         }
     }
 
+    /**
+     * Attach segments to the beginning of a recording to restore history that was previously detached.
+     * <p>
+     * Segment files must match the existing recording and join exactly to the start position of the recording
+     * they are being attached to.
+     *
+     * @param recordingId to which the operation applies.
+     * @return count of attached segment files.
+     * @see #detachSegments(long, long)
+     */
+    public long attachSegments(final long recordingId)
+    {
+        lock.lock();
+        try
+        {
+            ensureOpen();
+
+            final long correlationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.attachSegments(recordingId, correlationId, controlSessionId))
+            {
+                throw new ArchiveException("failed to send attach segments request");
+            }
+
+            return pollForResponse(correlationId);
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
+    /**
+     * Migrate segments from a source recording and attach them to the beginning of a destination recording.
+     * <p>
+     * The source recording must match the destination recording for segment length, term length, mtu length,
+     * stream id, plus the stop position and term id of the source must join with the start position of the destination
+     * and be on a segment boundary.
+     * <p>
+     * The source recording will be effectively truncated back to its start position after the migration.
+     *
+     * @param srcRecordingId source recording from which the segments will be migrated.
+     * @param dstRecordingId destination recording to which the segments will be attached.
+     * @return count of attached segment files.
+     */
+    public long migrateSegments(final long srcRecordingId, final long dstRecordingId)
+    {
+        lock.lock();
+        try
+        {
+            ensureOpen();
+
+            final long correlationId = aeron.nextCorrelationId();
+
+            if (!archiveProxy.migrateSegments(srcRecordingId, dstRecordingId, correlationId, controlSessionId))
+            {
+                throw new ArchiveException("failed to send migrate segments request");
+            }
+
+            return pollForResponse(correlationId);
+        }
+        finally
+        {
+            lock.unlock();
+        }
+    }
+
     private void checkDeadline(final long deadlineNs, final String errorMessage, final long correlationId)
     {
         if (Thread.interrupted())

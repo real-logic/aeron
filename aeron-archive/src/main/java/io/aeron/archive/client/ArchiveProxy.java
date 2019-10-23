@@ -64,6 +64,8 @@ public class ArchiveProxy
     private DetachSegmentsRequestEncoder detachSegmentsRequestEncoder;
     private DeleteDetachedSegmentsRequestEncoder deleteDetachedSegmentsRequestEncoder;
     private PurgeSegmentsRequestEncoder purgeSegmentsRequestEncoder;
+    private AttachSegmentsRequestEncoder attachSegmentsRequestEncoder;
+    private MigrateSegmentsRequestEncoder migrateSegmentsRequestEncoder;
 
     /**
      * Create a proxy with a {@link Publication} for sending control message requests.
@@ -881,6 +883,67 @@ public class ArchiveProxy
             .newStartPosition(newStartPosition);
 
         return offer(purgeSegmentsRequestEncoder.encodedLength());
+    }
+
+    /**
+     * Attach segments to the beginning of a recording to restore history that was previously detached.
+     * <p>
+     * Segment files must match the existing recording and join exactly to the start position of the recording
+     * they are being attached to.
+     *
+     * @param recordingId      to which the operation applies.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @return true if successfully offered otherwise false.
+     * @see #detachSegments(long, long, long, long)
+     */
+    public boolean attachSegments(final long recordingId, final long correlationId, final long controlSessionId)
+    {
+        if (null == attachSegmentsRequestEncoder)
+        {
+            attachSegmentsRequestEncoder = new AttachSegmentsRequestEncoder();
+        }
+
+        attachSegmentsRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .recordingId(recordingId);
+
+        return offer(attachSegmentsRequestEncoder.encodedLength());
+    }
+
+    /**
+     * Migrate segments from a source recording and attach them to the beginning of a destination recording.
+     * <p>
+     * The source recording must match the destination recording for segment length, term length, mtu length,
+     * stream id, plus the stop position and term id of the source must join with the start position of the destination
+     * and be on a segment boundary.
+     * <p>
+     * The source recording will be effectively truncated back to its start position after the migration.
+     *
+     * @param srcRecordingId   source recording from which the segments will be migrated.
+     * @param dstRecordingId   destination recording to which the segments will be attached.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean migrateSegments(
+        final long srcRecordingId, final long dstRecordingId, final long correlationId, final long controlSessionId)
+    {
+        if (null == migrateSegmentsRequestEncoder)
+        {
+            migrateSegmentsRequestEncoder = new MigrateSegmentsRequestEncoder();
+        }
+
+        migrateSegmentsRequestEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .srcRecordingId(srcRecordingId)
+            .dstRecordingId(dstRecordingId);
+
+        return offer(migrateSegmentsRequestEncoder.encodedLength());
     }
 
     private boolean offer(final int length)

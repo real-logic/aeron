@@ -437,6 +437,24 @@ class ControlSession implements Session
         }
     }
 
+    void onAttachSegments(final long correlationId, final long recordingId)
+    {
+        updateState();
+        if (State.ACTIVE == state)
+        {
+            conductor.attachSegments(correlationId, recordingId, this);
+        }
+    }
+
+    void onMigrateSegments(final long correlationId, final long srcRecordingId, final long dstRecordingId)
+    {
+        updateState();
+        if (State.ACTIVE == state)
+        {
+            conductor.migrateSegments(correlationId, srcRecordingId, dstRecordingId, this);
+        }
+    }
+
     void sendOkResponse(final long correlationId, final ControlResponseProxy proxy)
     {
         sendResponse(correlationId, 0L, OK, null, proxy);

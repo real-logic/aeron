@@ -55,11 +55,12 @@
 
     Control Protocol:
         -> connect,
-           *[start-recording | stop-recording | stop-recording-subscription | replay | stop-replay | stop-all-replays
+           *[start-recording | stop-recording | stop-recording-subscription | replay | stop-replay | stop-all-replays |
              list-recordings | list-recordings-by-uri | list-recording | find-last-matching-recording |
              list-recording-subscriptions |
-             extend-recording | truncate-recording | replicate-recording | stop-replication | stop-all-replication
-             recording-position | stop-position],
+             extend-recording | truncate-recording | replicate-recording | stop-replication | stop-all-replication |
+             start-position | recording-position | stop-position |
+             detach-segments | delete-detached-segments | purge-segments | attach-segments | migrate-segments],
            close
                 \
         <-       +control-response,
@@ -118,6 +119,8 @@
         - Detach segments from the beginning of a recording so they can be moved or deleted.
         - Delete segments from the beginning of a recording which have been detached.
         - Purge segments from the beginning of a recording which is composite action of detach and delete.
+        - Attach segments to the beginning of a recording which have been previously detached.
+        - Migrate segments from another matching recording and attached them to the beginning of a recording.
 
 -->
 
@@ -421,6 +424,23 @@
         <field name="correlationId"        id="2" type="int64"/>
         <field name="recordingId"          id="3" type="int64"/>
         <field name="newStartPosition"     id="4" type="int64"/>
+    </sbe:message>
+
+    <sbe:message name="AttachSegmentsRequest"
+                 id="56"
+                 description="Attach segments to beginning of a recording to give a new start position.">
+        <field name="controlSessionId"     id="1" type="int64"/>
+        <field name="correlationId"        id="2" type="int64"/>
+        <field name="recordingId"          id="3" type="int64"/>
+    </sbe:message>
+
+    <sbe:message name="MigrateSegmentsRequest"
+                 id="57"
+                 description="Migrate segments to beginning of a recording to give a new start position.">
+        <field name="controlSessionId"     id="1" type="int64"/>
+        <field name="correlationId"        id="2" type="int64"/>
+        <field name="srcRecordingId"       id="3" type="int64"/>
+        <field name="dstRecordingId"       id="4" type="int64"/>
     </sbe:message>
 
 <!-- Archive Recording Progress Events -->

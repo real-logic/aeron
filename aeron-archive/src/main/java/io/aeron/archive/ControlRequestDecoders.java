@@ -44,11 +44,13 @@ class ControlRequestDecoders
     final StopAllReplaysRequestDecoder stopAllReplaysRequest = new StopAllReplaysRequestDecoder();
     final ReplicateRequestDecoder replicateRequest = new ReplicateRequestDecoder();
     final StopReplicationRequestDecoder stopReplicationRequest = new StopReplicationRequestDecoder();
-    final StartPositionRequestDecoder startPositionRequestDecoder = new StartPositionRequestDecoder();
-    final DetachSegmentsRequestDecoder detachSegmentsRequestDecoder = new DetachSegmentsRequestDecoder();
-    final DeleteDetachedSegmentsRequestDecoder deleteDetachedSegmentsRequestDecoder =
+    final StartPositionRequestDecoder startPositionRequest = new StartPositionRequestDecoder();
+    final DetachSegmentsRequestDecoder detachSegmentsRequest = new DetachSegmentsRequestDecoder();
+    final DeleteDetachedSegmentsRequestDecoder deleteDetachedSegmentsRequest =
         new DeleteDetachedSegmentsRequestDecoder();
-    final PurgeSegmentsRequestDecoder purgeSegmentsRequestDecoder = new PurgeSegmentsRequestDecoder();
+    final PurgeSegmentsRequestDecoder purgeSegmentsRequest = new PurgeSegmentsRequestDecoder();
+    final AttachSegmentsRequestDecoder attachSegmentsRequest = new AttachSegmentsRequestDecoder();
+    final MigrateSegmentsRequestDecoder migrateSegmentsRequest = new MigrateSegmentsRequestDecoder();
 
     final ExpandableArrayBuffer tempBuffer = new ExpandableArrayBuffer();
 }

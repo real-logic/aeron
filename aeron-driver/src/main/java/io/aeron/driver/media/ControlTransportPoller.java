@@ -19,6 +19,7 @@ import io.aeron.driver.Configuration;
 import io.aeron.protocol.NakFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
+import org.agrona.BufferUtil;
 import org.agrona.LangUtil;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -36,26 +37,17 @@ import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_SM;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 
 /**
- * Encapsulates the polling of a number of {@link UdpChannelTransport}s using whatever means provides the lowest latency.
+ * Encapsulates the polling of control {@link UdpChannelTransport}s using whatever means provides the lowest latency.
  */
 public class ControlTransportPoller extends UdpTransportPoller
 {
-    private final ByteBuffer byteBuffer;
-    private final UnsafeBuffer unsafeBuffer;
-    private final NakFlyweight nakMessage;
-    private final StatusMessageFlyweight statusMessage;
-    private final RttMeasurementFlyweight rttMeasurement;
+    private final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(
+        Configuration.MAX_UDP_PAYLOAD_LENGTH, CACHE_LINE_LENGTH);
+    private final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(byteBuffer);
+    private final NakFlyweight nakMessage = new NakFlyweight(unsafeBuffer);
+    private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight(unsafeBuffer);
+    private final RttMeasurementFlyweight rttMeasurement = new RttMeasurementFlyweight(unsafeBuffer);
     private SendChannelEndpoint[] transports = new SendChannelEndpoint[0];
-
-    public ControlTransportPoller()
-    {
-        byteBuffer = NetworkUtil.allocateDirectAlignedAndPadded(
-            Configuration.MAX_UDP_PAYLOAD_LENGTH, CACHE_LINE_LENGTH * 2);
-        unsafeBuffer = new UnsafeBuffer(byteBuffer);
-        nakMessage = new NakFlyweight(unsafeBuffer);
-        statusMessage = new StatusMessageFlyweight(unsafeBuffer);
-        rttMeasurement = new RttMeasurementFlyweight(unsafeBuffer);
-    }
 
     public void close()
     {

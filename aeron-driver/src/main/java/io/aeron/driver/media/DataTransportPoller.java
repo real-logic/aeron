@@ -19,6 +19,7 @@ import io.aeron.driver.Configuration;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.SetupFlyweight;
+import org.agrona.BufferUtil;
 import org.agrona.LangUtil;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -34,26 +35,17 @@ import static io.aeron.protocol.HeaderFlyweight.*;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 
 /**
- * Encapsulates the polling of a number of {@link UdpChannelTransport}s using whatever means provides the lowest latency.
+ * Encapsulates the polling of data {@link UdpChannelTransport}s using whatever means provides the lowest latency.
  */
 public class DataTransportPoller extends UdpTransportPoller
 {
-    private final ByteBuffer byteBuffer;
-    private final UnsafeBuffer unsafeBuffer;
-    private final DataHeaderFlyweight dataMessage;
-    private final SetupFlyweight setupMessage;
-    private final RttMeasurementFlyweight rttMeasurement;
+    private final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(
+        Configuration.MAX_UDP_PAYLOAD_LENGTH, CACHE_LINE_LENGTH);
+    private final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(byteBuffer);
+    private final DataHeaderFlyweight dataMessage = new DataHeaderFlyweight(unsafeBuffer);
+    private final SetupFlyweight setupMessage = new SetupFlyweight(unsafeBuffer);
+    private final RttMeasurementFlyweight rttMeasurement = new RttMeasurementFlyweight(unsafeBuffer);
     private ChannelAndTransport[] channelAndTransports = new ChannelAndTransport[0];
-
-    public DataTransportPoller()
-    {
-        byteBuffer = NetworkUtil.allocateDirectAlignedAndPadded(
-            Configuration.MAX_UDP_PAYLOAD_LENGTH, CACHE_LINE_LENGTH * 2);
-        unsafeBuffer = new UnsafeBuffer(byteBuffer);
-        dataMessage = new DataHeaderFlyweight(unsafeBuffer);
-        setupMessage = new SetupFlyweight(unsafeBuffer);
-        rttMeasurement = new RttMeasurementFlyweight(unsafeBuffer);
-    }
 
     public void close()
     {

@@ -24,7 +24,7 @@ import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertThat;
 
-//@Ignore
+@Ignore
 public class DynamicMembershipTest
 {
     @Test(timeout = 10_000)

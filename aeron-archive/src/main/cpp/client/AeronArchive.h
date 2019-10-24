@@ -30,12 +30,12 @@
 namespace aeron { namespace archive { namespace client {
 
 /**
- * Client is not currently connected to an active archive.
+ * Client is not currently connected to an active archive error message.
  */
 constexpr const char NOT_CONNECTED_MSG[] = "not connected";
 
 /**
- * Client for interacting with a local or remote Aeron Archive that records and replays message streams.
+ * Client for interacting with a local or remote Aeron Archive for requesting the recording and replay message streams.
  * <p>
  * This client provides a simple interaction model which is mostly synchronous and may not be optimal.
  * The underlying components such as the ArchiveProxy and the ControlResponsePoller or
@@ -229,7 +229,6 @@ public:
     inline std::string pollForErrorResponse()
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
-
         ensureOpen();
 
         if (!m_controlResponsePoller->subscription()->isConnected())
@@ -261,7 +260,6 @@ public:
     inline void checkForErrorResponse()
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
-
         ensureOpen();
 
         if (!m_controlResponsePoller->subscription()->isConnected())
@@ -321,7 +319,6 @@ public:
         IdleStrategy idle;
 
         std::lock_guard<std::recursive_mutex> lock(m_lock);
-
         ensureOpen();
 
         const std::int64_t publicationId = m_aeron->addPublication(channel, streamId);
@@ -363,7 +360,6 @@ public:
         IdleStrategy idle;
 
         std::lock_guard<std::recursive_mutex> lock(m_lock);
-
         ensureOpen();
 
         const std::int64_t publicationId = m_aeron->addExclusivePublication(channel, streamId);
@@ -398,7 +394,6 @@ public:
         const std::string& channel, std::int32_t streamId, SourceLocation sourceLocation)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
-
         ensureOpen();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
@@ -431,7 +426,6 @@ public:
         std::int64_t recordingId, const std::string& channel, std::int32_t streamId, SourceLocation sourceLocation)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
-
         ensureOpen();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
@@ -460,7 +454,6 @@ public:
     inline void stopRecording(const std::string& channel, std::int32_t streamId)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
-
         ensureOpen();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
@@ -516,7 +509,6 @@ public:
     inline void stopRecording(std::int64_t subscriptionId)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
-
         ensureOpen();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
@@ -556,7 +548,6 @@ public:
         std::int32_t replayStreamId)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
-
         ensureOpen();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
@@ -599,7 +590,6 @@ public:
         std::int32_t replayStreamId)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
-
         ensureOpen();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
@@ -630,7 +620,6 @@ public:
     inline void stopReplay(std::int64_t replaySessionId)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
-
         ensureOpen();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
@@ -653,7 +642,6 @@ public:
     inline void stopAllReplays(std::int64_t recordingId)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
-
         ensureOpen();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
@@ -688,7 +676,6 @@ public:
         std::int32_t replayStreamId)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
-
         ensureOpen();
 
         std::shared_ptr<ChannelUri> replayChannelUri = ChannelUri::parse(replayChannel);
@@ -742,7 +729,6 @@ public:
         const on_unavailable_image_t& unavailableImageHandler)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
-
         ensureOpen();
 
         std::shared_ptr<ChannelUri> replayChannelUri = ChannelUri::parse(replayChannel);
@@ -787,7 +773,6 @@ public:
         std::int64_t fromRecordingId, std::int32_t recordCount, const recording_descriptor_consumer_t& consumer)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
-
         ensureOpen();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
@@ -824,7 +809,6 @@ public:
         const recording_descriptor_consumer_t& consumer)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
-
         ensureOpen();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
@@ -852,7 +836,6 @@ public:
     inline std::int32_t listRecording(std::int64_t recordingId, const recording_descriptor_consumer_t& consumer)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
-
         ensureOpen();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
@@ -878,7 +861,6 @@ public:
     inline std::int64_t getStartPosition(std::int64_t recordingId)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
-
         ensureOpen();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
@@ -903,7 +885,6 @@ public:
     inline std::int64_t getRecordingPosition(std::int64_t recordingId)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
-
         ensureOpen();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
@@ -928,7 +909,6 @@ public:
     inline std::int64_t getStopPosition(std::int64_t recordingId)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
-
         ensureOpen();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
@@ -959,7 +939,6 @@ public:
         std::int32_t sessionId)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
-
         ensureOpen();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
@@ -985,7 +964,6 @@ public:
     inline void truncateRecording(std::int64_t recordingId, std::int64_t position)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
-
         ensureOpen();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
@@ -1023,7 +1001,6 @@ public:
         const recording_subscription_descriptor_consumer_t& consumer)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
-
         ensureOpen();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
@@ -1066,7 +1043,6 @@ public:
         const std::string& liveDestination)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
-
         ensureOpen();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
@@ -1096,7 +1072,6 @@ public:
     inline void stopReplication(std::int64_t replicationId)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
-
         ensureOpen();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
@@ -1124,7 +1099,6 @@ public:
     inline void detachSegments(std::int64_t recordingId, std::int64_t newStartPosition)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
-
         ensureOpen();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
@@ -1149,7 +1123,6 @@ public:
     inline std::uint64_t deleteDetachedSegments(std::int64_t recordingId)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
-
         ensureOpen();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
@@ -1178,7 +1151,6 @@ public:
     inline std::uint64_t purgeSegments(std::int64_t recordingId, std::int64_t newStartPosition)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
-
         ensureOpen();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
@@ -1206,7 +1178,6 @@ public:
     inline std::uint64_t attachSegments(std::int64_t recordingId)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
-
         ensureOpen();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
@@ -1237,7 +1208,6 @@ public:
     inline std::uint64_t migrateSegments(std::int64_t srcRecordingId, std::int64_t dstRecordingId)
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
-
         ensureOpen();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();

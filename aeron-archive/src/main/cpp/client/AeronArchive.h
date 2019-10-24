@@ -1193,6 +1193,65 @@ public:
     }
 
     /**
+     * Attach segments to the beginning of a recording to restore history that was previously detached.
+     * <p>
+     * Segment files must match the existing recording and join exactly to the start position of the recording
+     * they are being attached to.
+     *
+     * @param recordingId of the recording to attach segments to.
+     * @tparam IdleStrategy to use for polling operations.
+     * @return the count of segments attached.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    inline std::uint64_t attachSegments(std::int64_t recordingId)
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_lock);
+
+        ensureOpen();
+
+        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+
+        if (!m_archiveProxy->attachSegments<IdleStrategy>(recordingId, correlationId, m_controlSessionId))
+        {
+            throw ArchiveException("failed to send attach segments request", SOURCEINFO);
+        }
+
+        return pollForResponse<IdleStrategy>(correlationId);
+    }
+
+    /**
+     * Migrate segments from a source recording and attach them to the beginning of a destination recording.
+     * <p>
+     * The source recording must match the destination recording for segment length, term length, mtu length,
+     * stream id, plus the stop position and term id of the source must join with the start position of the destination
+     * and be on a segment boundary.
+     * <p>
+     * The source recording will be effectively truncated back to its start position after the migration.
+     *
+     * @param srcRecordingId source recording from which the segments will be migrated.
+     * @param dstRecordingId destination recording to which the segments will be attached.
+     * @tparam IdleStrategy to use for polling operations.
+     * @return the count of segments purged.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    inline std::uint64_t migrateSegments(std::int64_t srcRecordingId, std::int64_t dstRecordingId)
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_lock);
+
+        ensureOpen();
+
+        const std::int64_t correlationId = m_aeron->nextCorrelationId();
+
+        if (!m_archiveProxy->migrateSegments<IdleStrategy>(
+            srcRecordingId, dstRecordingId, correlationId, m_controlSessionId))
+        {
+            throw ArchiveException("failed to send migrate segments request", SOURCEINFO);
+        }
+
+        return pollForResponse<IdleStrategy>(correlationId);
+    }
+
+    /**
      * Return the static version string for the binary library.
      *
      * @return static version and build string

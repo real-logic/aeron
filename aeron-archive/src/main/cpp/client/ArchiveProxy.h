@@ -577,7 +577,6 @@ public:
      * Delete detached segments which have been previously detached from a recording.
      *
      * @param recordingId      of the recording to purge segments from.
-     * @param newStartPosition for the recording after segments are purged.
      * @param correlationId    for this request.
      * @param controlSessionId for this request.
      * @tparam IdleStrategy to use between Publication::offer attempts.
@@ -614,6 +613,55 @@ public:
     {
         const util::index_t length = purgeSegments(
             m_buffer, recordingId, newStartPosition, correlationId, controlSessionId);
+
+        return offer<IdleStrategy>(m_buffer, 0, length);
+    }
+
+    /**
+     * Attach segments to the beginning of a recording to restore history that was previously detached.
+     * <p>
+     * Segment files must match the existing recording and join exactly to the start position of the recording
+     * they are being attached to.
+     *
+     * @param recordingId      of the recording to attach segments to.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool attachSegments(std::int64_t recordingId, std::int64_t correlationId, std::int64_t controlSessionId)
+    {
+        const util::index_t length = attachSegments(m_buffer, recordingId, correlationId, controlSessionId);
+
+        return offer<IdleStrategy>(m_buffer, 0, length);
+    }
+
+    /**
+     * Migrate segments from a source recording and attach them to the beginning of a destination recording.
+     * <p>
+     * The source recording must match the destination recording for segment length, term length, mtu length,
+     * stream id, plus the stop position and term id of the source must join with the start position of the destination
+     * and be on a segment boundary.
+     * <p>
+     * The source recording will be effectively truncated back to its start position after the migration.
+     *
+     * @param srcRecordingId   source recording from which the segments will be migrated.
+     * @param dstRecordingId   destination recording to which the segments will be attached.
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool migrateSegments(
+        std::int64_t srcRecordingId,
+        std::int64_t dstRecordingId,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId)
+    {
+        const util::index_t length = migrateSegments(
+            m_buffer, srcRecordingId, dstRecordingId, correlationId, controlSessionId);
 
         return offer<IdleStrategy>(m_buffer, 0, length);
     }
@@ -832,6 +880,19 @@ private:
         AtomicBuffer& buffer,
         std::int64_t recordingId,
         std::int64_t newStartPosition,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId);
+
+    static util::index_t attachSegments(
+        AtomicBuffer& buffer,
+        std::int64_t recordingId,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId);
+
+    static util::index_t migrateSegments(
+        AtomicBuffer& buffer,
+        std::int64_t srcRecordingId,
+        std::int64_t dstRecordingId,
         std::int64_t correlationId,
         std::int64_t controlSessionId);
 };

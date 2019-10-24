@@ -42,6 +42,8 @@
 #include "aeron_archive_client/DetachSegmentsRequest.h"
 #include "aeron_archive_client/DeleteDetachedSegmentsRequest.h"
 #include "aeron_archive_client/PurgeSegmentsRequest.h"
+#include "aeron_archive_client/AttachSegmentsRequest.h"
+#include "aeron_archive_client/MigrateSegmentsRequest.h"
 
 using namespace aeron;
 using namespace aeron::concurrent;
@@ -501,6 +503,40 @@ util::index_t ArchiveProxy::purgeSegments(
         .correlationId(correlationId)
         .recordingId(recordingId)
         .newStartPosition(newStartPosition);
+
+    return messageAndHeaderLength(request);
+}
+
+util::index_t ArchiveProxy::attachSegments(
+    AtomicBuffer& buffer,
+    std::int64_t recordingId,
+    std::int64_t correlationId,
+    std::int64_t controlSessionId)
+{
+    AttachSegmentsRequest request;
+
+    wrapAndApplyHeader(request, buffer)
+        .controlSessionId(controlSessionId)
+        .correlationId(correlationId)
+        .recordingId(recordingId);
+
+    return messageAndHeaderLength(request);
+}
+
+util::index_t ArchiveProxy::migrateSegments(
+    AtomicBuffer& buffer,
+    std::int64_t srcRecordingId,
+    std::int64_t dstRecordingId,
+    std::int64_t correlationId,
+    std::int64_t controlSessionId)
+{
+    MigrateSegmentsRequest request;
+
+    wrapAndApplyHeader(request, buffer)
+        .controlSessionId(controlSessionId)
+        .correlationId(correlationId)
+        .srcRecordingId(srcRecordingId)
+        .dstRecordingId(dstRecordingId);
 
     return messageAndHeaderLength(request);
 }

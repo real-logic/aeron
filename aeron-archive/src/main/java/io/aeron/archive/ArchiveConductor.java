@@ -817,7 +817,7 @@ abstract class ArchiveConductor
                 throw new ArchiveException(msg);
             }
 
-            catalog.recordingStopped(recordingId, position);
+            catalog.stopPosition(recordingId, position);
 
             for (long p = segmentPosition + segmentLength; p <= stopPosition; p += segmentLength)
             {
@@ -1027,7 +1027,7 @@ abstract class ArchiveConductor
                 {
                     final int termCount = (int)(position >> bitsToShift);
                     final int termId = recordingSummary.initialTermId + termCount;
-                    final int termOffset = findStartTermOffset(
+                    final int termOffset = findTermOffsetForStart(
                         correlationId, controlSession, file, fileChannel, streamId, termId, termLength);
 
                     if (termOffset < 0)
@@ -1058,7 +1058,83 @@ abstract class ArchiveConductor
         }
     }
 
-    private int findStartTermOffset(
+    void migrateSegments(
+        final long correlationId,
+        final long srcRecordingId,
+        final long dstRecordingId,
+        final ControlSession controlSession)
+    {
+        if (hasRecording(srcRecordingId, correlationId, controlSession) &&
+            hasRecording(dstRecordingId, correlationId, controlSession) &&
+            isValidAttach(correlationId, controlSession, srcRecordingId, dstRecordingId))
+        {
+            long attachedSegmentCount = 0;
+            long position = recordingSummary.stopPosition;
+            final long startPosition = recordingSummary.startPosition;
+            final int segmentLength = recordingSummary.segmentFileLength;
+            final long segmentFileBasePosition = segmentFileBasePosition(
+                startPosition, startPosition, recordingSummary.termBufferLength, segmentLength);
+
+            while (position >= segmentFileBasePosition)
+            {
+                final File srcFile = new File(archiveDir, segmentFileName(srcRecordingId, position));
+                if (position == recordingSummary.stopPosition)
+                {
+                    srcFile.delete();
+                    position -= segmentLength;
+                    continue;
+                }
+                else if (!srcFile.exists())
+                {
+                    break;
+                }
+
+                final String dstFile = segmentFileName(dstRecordingId, position);
+                if (!srcFile.renameTo(new File(archiveDir, dstFile)))
+                {
+                    final String msg = "failed to rename " + srcFile + " to " + dstFile;
+                    controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
+                    return;
+                }
+
+                attachedSegmentCount++;
+                position -= segmentLength;
+            }
+
+            catalog.startPosition(dstRecordingId, startPosition);
+            catalog.stopPosition(srcRecordingId, startPosition);
+            controlSession.sendOkResponse(correlationId, attachedSegmentCount, controlResponseProxy);
+        }
+    }
+
+    void removeReplicationSession(final ReplicationSession replicationSession)
+    {
+        replicationSessionByIdMap.remove(replicationSession.sessionId());
+    }
+
+    private long deleteDetachedSegments(final long recordingId)
+    {
+        catalog.recordingSummary(recordingId, recordingSummary);
+        final int segmentFile = recordingSummary.segmentFileLength;
+        long filenamePosition = recordingSummary.startPosition - segmentFile;
+        long count = 0;
+
+        while (filenamePosition >= 0)
+        {
+            final File f = new File(archiveDir, segmentFileName(recordingId, filenamePosition));
+            if (!f.delete())
+            {
+                break;
+            }
+
+            count += 1;
+            filenamePosition -= segmentFile;
+        }
+
+        return count;
+    }
+
+    private int findTermOffsetForStart(
         final long correlationId,
         final ControlSession controlSession,
         final File file,
@@ -1136,48 +1212,6 @@ abstract class ArchiveConductor
         }
 
         return termOffset;
-    }
-
-    void migrateSegments(
-        final long correlationId,
-        final long srcRecordingId,
-        final long dstRecordingId,
-        final ControlSession controlSession)
-    {
-        if (hasRecording(srcRecordingId, correlationId, controlSession) &&
-            hasRecording(dstRecordingId, correlationId, controlSession) &&
-            isValidAttach(correlationId, controlSession, srcRecordingId, dstRecordingId))
-        {
-            final long attachedSegmentCount = 0;
-            controlSession.sendOkResponse(correlationId, attachedSegmentCount, controlResponseProxy);
-        }
-    }
-
-    void removeReplicationSession(final ReplicationSession replicationSession)
-    {
-        replicationSessionByIdMap.remove(replicationSession.sessionId());
-    }
-
-    private long deleteDetachedSegments(final long recordingId)
-    {
-        catalog.recordingSummary(recordingId, recordingSummary);
-        final int segmentFile = recordingSummary.segmentFileLength;
-        long filenamePosition = recordingSummary.startPosition - segmentFile;
-        long count = 0;
-
-        while (filenamePosition >= 0)
-        {
-            final File f = new File(archiveDir, segmentFileName(recordingId, filenamePosition));
-            if (!f.delete())
-            {
-                break;
-            }
-
-            count += 1;
-            filenamePosition -= segmentFile;
-        }
-
-        return count;
     }
 
     private int runTasks(final ArrayDeque<Runnable> taskQueue)
@@ -1589,6 +1623,78 @@ abstract class ArchiveConductor
         final long srcRecordingId,
         final long dstRecordingId)
     {
+        catalog.recordingSummary(dstRecordingId, recordingSummary);
+
+        final long dstStartPosition = recordingSummary.startPosition;
+        final int dstSegmentFileLength = recordingSummary.segmentFileLength;
+        final int dstTermBufferLength = recordingSummary.termBufferLength;
+        final int dstInitialTermId = recordingSummary.initialTermId;
+        final int dstStreamId = recordingSummary.streamId;
+        final int dstMtuLength = recordingSummary.mtuLength;
+
+        catalog.recordingSummary(srcRecordingId, recordingSummary);
+
+        final long srcStopPosition = recordingSummary.stopPosition;
+        if (NULL_POSITION == srcStopPosition)
+        {
+            final String msg = "source recording still active " + srcRecordingId;
+            controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
+            return false;
+        }
+
+        if (dstStartPosition != srcStopPosition)
+        {
+            final String msg =
+                "invalid migrate: srcStopPosition=" + srcStopPosition + " dstStartPosition=" + dstStartPosition;
+            controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
+            return false;
+        }
+
+        final int srcSegmentFileLength = recordingSummary.segmentFileLength;
+        if (dstSegmentFileLength != srcSegmentFileLength)
+        {
+            final String msg = "invalid migrate: srcSegmentFileLength=" + srcSegmentFileLength +
+                " dstSegmentFileLength=" + dstSegmentFileLength;
+            controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
+            return false;
+        }
+
+        final int srcTermBufferLength = recordingSummary.termBufferLength;
+        if (dstTermBufferLength != srcTermBufferLength)
+        {
+            final String msg = "invalid migrate: srcTermBufferLength=" + srcTermBufferLength +
+                " dstTermBufferLength=" + dstTermBufferLength;
+            controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
+            return false;
+        }
+
+        final int srcInitialTermId = recordingSummary.initialTermId;
+        if (dstInitialTermId != srcInitialTermId)
+        {
+            final String msg = "invalid migrate: srcInitialTermId=" + srcInitialTermId +
+                " dstInitialTermId=" + dstInitialTermId;
+            controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
+            return false;
+        }
+
+        final int srcStreamId = recordingSummary.streamId;
+        if (dstStreamId != srcStreamId)
+        {
+            final String msg = "invalid migrate: srcStreamId=" + srcStreamId +
+                " dstStreamId=" + dstStreamId;
+            controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
+            return false;
+        }
+
+        final int srcMtuLength = recordingSummary.mtuLength;
+        if (dstMtuLength != srcMtuLength)
+        {
+            final String msg = "invalid migrate: srcMtuLength=" + srcMtuLength +
+                " dstMtuLength=" + dstMtuLength;
+            controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
+            return false;
+        }
+
         return true;
     }
 

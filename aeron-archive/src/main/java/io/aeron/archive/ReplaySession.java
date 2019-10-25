@@ -79,10 +79,9 @@ class ReplaySession implements Session, AutoCloseable
     private long replayPosition;
     private long stopPosition;
     private long replayLimit;
-    private long segmentFilePosition;
     private volatile long segmentFileBasePosition;
-    private int termOffset;
     private int termBaseSegmentOffset;
+    private int termOffset;
     private final int streamId;
     private final int termLength;
     private final int segmentLength;
@@ -159,9 +158,8 @@ class ReplaySession implements Session, AutoCloseable
             }
         }
 
-        segmentFilePosition = AeronArchive.segmentFileBasePosition(
+        segmentFileBasePosition = AeronArchive.segmentFileBasePosition(
             startPosition, fromPosition, termLength, segmentLength);
-        segmentFileBasePosition = segmentFilePosition;
         replayPosition = fromPosition;
         replayLimit = fromPosition + replayLength;
 
@@ -446,8 +444,7 @@ class ReplaySession implements Session, AutoCloseable
         if (termBaseSegmentOffset == segmentLength)
         {
             closeRecordingSegment();
-            segmentFilePosition += segmentLength;
-            segmentFileBasePosition = segmentFilePosition;
+            segmentFileBasePosition += segmentLength;
             openRecordingSegment();
             termBaseSegmentOffset = 0;
         }

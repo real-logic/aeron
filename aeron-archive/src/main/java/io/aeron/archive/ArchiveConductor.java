@@ -36,6 +36,7 @@ import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
@@ -49,6 +50,7 @@ import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.SPY_PREFIX;
 import static io.aeron.CommonContext.UDP_MEDIA;
 import static io.aeron.archive.Archive.*;
+import static io.aeron.archive.Archive.Configuration.MAX_BLOCK_LENGTH;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
 import static io.aeron.archive.client.ArchiveException.*;
@@ -80,9 +82,9 @@ abstract class ArchiveConductor
     private final ControlResponseProxy controlResponseProxy = new ControlResponseProxy();
     private final UnsafeBuffer counterMetadataBuffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
     private final UnsafeBuffer dataBuffer = new UnsafeBuffer(
-        allocateDirectAligned(DataHeaderFlyweight.HEADER_LENGTH, BitUtil.CACHE_LINE_LENGTH));
+        allocateDirectAligned(MAX_BLOCK_LENGTH, BitUtil.CACHE_LINE_LENGTH));
     private final UnsafeBuffer replayBuffer = new UnsafeBuffer(
-        allocateDirectAligned(Archive.Configuration.MAX_BLOCK_LENGTH, BitUtil.CACHE_LINE_LENGTH));
+        allocateDirectAligned(MAX_BLOCK_LENGTH, BitUtil.CACHE_LINE_LENGTH));
 
     private final Runnable aeronCloseHandler = this::abort;
     private final Aeron aeron;
@@ -997,9 +999,143 @@ abstract class ArchiveConductor
     {
         if (hasRecording(recordingId, correlationId, controlSession))
         {
-            final long attachedSegmentCount = attachSegments(recordingId);
-            controlSession.sendOkResponse(correlationId, attachedSegmentCount, controlResponseProxy);
+            catalog.recordingSummary(recordingId, recordingSummary);
+            final int segmentLength = recordingSummary.segmentFileLength;
+            final int termLength = recordingSummary.termBufferLength;
+            final int bitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
+            final int streamId = recordingSummary.streamId;
+            long position = recordingSummary.startPosition - segmentLength;
+            long count = 0;
+
+            while (position >= 0)
+            {
+                final File file = new File(archiveDir, segmentFileName(recordingId, position));
+                if (!file.exists())
+                {
+                    break;
+                }
+
+                final long fileLength = file.length();
+                if (fileLength != segmentLength)
+                {
+                    final String msg = "file length " + fileLength + " not equal to segment length " + segmentLength;
+                    controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
+                    return;
+                }
+
+                try (FileChannel fileChannel = FileChannel.open(file.toPath(), FILE_OPTIONS, NO_ATTRIBUTES))
+                {
+                    final int termCount = (int)(position >> bitsToShift);
+                    final int termId = recordingSummary.initialTermId + termCount;
+                    final int termOffset = findStartTermOffset(
+                        correlationId, controlSession, file, fileChannel, streamId, termId, termLength);
+
+                    if (termOffset < 0)
+                    {
+                        return;
+                    }
+                    else if (0 == termOffset)
+                    {
+                        catalog.startPosition(recordingId, position);
+                        count += 1;
+                        position -= segmentLength;
+                    }
+                    else
+                    {
+                        catalog.startPosition(recordingId, position + termOffset);
+                        count += 1;
+                        break;
+                    }
+                }
+                catch (final IOException ex)
+                {
+                    controlSession.sendErrorResponse(correlationId, ex.getMessage(), controlResponseProxy);
+                    LangUtil.rethrowUnchecked(ex);
+                }
+            }
+
+            controlSession.sendOkResponse(correlationId, count, controlResponseProxy);
         }
+    }
+
+    private int findStartTermOffset(
+        final long correlationId,
+        final ControlSession controlSession,
+        final File file,
+        final FileChannel fileChannel,
+        final int streamId,
+        final int termId,
+        final int termLength)
+        throws IOException
+    {
+        int termOffset = 0;
+        final ByteBuffer byteBuffer = dataBuffer.byteBuffer();
+        byteBuffer.clear().limit(DataHeaderFlyweight.HEADER_LENGTH);
+
+        if (DataHeaderFlyweight.HEADER_LENGTH != fileChannel.read(byteBuffer, 0))
+        {
+            final String msg = "failed to read segment file";
+            controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
+            return termOffset;
+        }
+
+        final int fragmentLength = DataHeaderFlyweight.fragmentLength(dataBuffer, termOffset);
+        if (fragmentLength <= 0)
+        {
+            boolean found = false;
+            do
+            {
+                byteBuffer.clear().limit(Math.min(termLength - termOffset, MAX_BLOCK_LENGTH));
+                final int bytesRead = fileChannel.read(byteBuffer, termOffset);
+                if (-1 == bytesRead)
+                {
+                    final String msg = "read failed on " + file;
+                    controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
+                    return NULL_VALUE;
+                }
+
+                final int limit = bytesRead - (bytesRead & (FRAME_ALIGNMENT - 1));
+                int offset = 0;
+                while (offset < limit)
+                {
+                    if (DataHeaderFlyweight.fragmentLength(dataBuffer, offset) > 0)
+                    {
+                        found = true;
+                        break;
+                    }
+
+                    offset += FRAME_ALIGNMENT;
+                }
+
+                termOffset += offset;
+            }
+            while (termOffset < termLength && !found);
+        }
+
+        if (termOffset >= termLength)
+        {
+            final String msg = "fragment not found in first term of segment " + file;
+            controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
+            return NULL_VALUE;
+        }
+
+        final int fileTermId = DataHeaderFlyweight.termId(dataBuffer, termOffset);
+        if (fileTermId != termId)
+        {
+            final String msg = "term id does not match: actual=" + fileTermId + " expected=" + termId;
+            controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
+            return NULL_VALUE;
+        }
+
+        final int fileStreamId = DataHeaderFlyweight.streamId(dataBuffer, termOffset);
+        if (fileStreamId != streamId)
+        {
+            final String msg = "stream id does not match: actual=" + fileStreamId + " expected=" + streamId;
+            controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
+            return NULL_VALUE;
+        }
+
+        return termOffset;
     }
 
     void migrateSegments(
@@ -1039,28 +1175,6 @@ abstract class ArchiveConductor
 
             count += 1;
             filenamePosition -= segmentFile;
-        }
-
-        return count;
-    }
-
-    private long attachSegments(final long recordingId)
-    {
-        catalog.recordingSummary(recordingId, recordingSummary);
-        final int segmentLength = recordingSummary.segmentFileLength;
-        long filenamePosition = recordingSummary.startPosition - segmentLength;
-        long count = 0;
-
-        while (filenamePosition >= 0)
-        {
-            final File f = new File(archiveDir, segmentFileName(recordingId, filenamePosition));
-            if (!f.exists())
-            {
-                break;
-            }
-
-            count += 1;
-            filenamePosition -= segmentLength;
         }
 
         return count;

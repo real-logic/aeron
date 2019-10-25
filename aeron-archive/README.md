@@ -33,8 +33,8 @@ Features:
  a live stream when the source is multicast. When using replication it is necessary to configure the replication channel
  for the destination archive with `aeron.archive.replication.channel`.
 
-- **Recording Storage Maintenance:** Manage the storage of large recordings by performing purge, detach, or delete
- operations on the beginning of recordings. 
+- **Recording Storage Maintenance:** Manage the storage of large recordings by performing purge, detach, and delete
+ operations, plus the ability to attach and migrate segments at the beginning of recordings. 
 
 Usage
 =====

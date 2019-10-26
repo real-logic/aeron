@@ -225,9 +225,19 @@ public class Archive implements AutoCloseable
         public static final String THREADING_MODE_PROP_NAME = "aeron.archive.threading.mode";
 
         /**
-         * {@link IdleStrategy} to be used for the archive {@link Agent}s when not busy.
+         * Default {@link IdleStrategy} to be used for the archive {@link Agent}s when not busy.
          */
         public static final String ARCHIVE_IDLE_STRATEGY_PROP_NAME = "aeron.archive.idle.strategy";
+
+        /**
+         * The {@link IdleStrategy} to be used for the archive recorder {@link Agent} when not busy.
+         */
+        public static final String ARCHIVE_RECORDER_IDLE_STRATEGY_PROP_NAME = "aeron.archive.recorder.idle.strategy";
+
+        /**
+         * The {@link IdleStrategy} to be used for the archive replayer {@link Agent} when not busy.
+         */
+        public static final String ARCHIVE_REPLAYER_IDLE_STRATEGY_PROP_NAME = "aeron.archive.replayer.idle.strategy";
 
         /**
          * Default {@link IdleStrategy} to be used for the archive {@link Agent}s when not busy.
@@ -390,15 +400,15 @@ public class Archive implements AutoCloseable
          */
         public static ArchiveThreadingMode threadingMode()
         {
-            return ArchiveThreadingMode.valueOf(System.getProperty(
-                THREADING_MODE_PROP_NAME, DEDICATED.name()));
+            return ArchiveThreadingMode.valueOf(System.getProperty(THREADING_MODE_PROP_NAME, DEDICATED.name()));
         }
 
         /**
-         * Create a supplier of {@link IdleStrategy}s that will use the system property.
+         * Create a supplier of {@link IdleStrategy}s for the {@link #ARCHIVE_IDLE_STRATEGY_PROP_NAME}
+         * system property.
          *
          * @param controllableStatus if a {@link org.agrona.concurrent.ControllableIdleStrategy} is required.
-         * @return the new idle strategy
+         * @return the new idle strategy {@link Supplier}.
          */
         public static Supplier<IdleStrategy> idleStrategySupplier(final StatusIndicator controllableStatus)
         {
@@ -407,6 +417,42 @@ public class Archive implements AutoCloseable
                 final String name = System.getProperty(ARCHIVE_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
                 return io.aeron.driver.Configuration.agentIdleStrategy(name, controllableStatus);
             };
+        }
+
+        /**
+         * Create a supplier of {@link IdleStrategy}s for the {@link #ARCHIVE_RECORDER_IDLE_STRATEGY_PROP_NAME}
+         * system property.
+         *
+         * @param controllableStatus if a {@link org.agrona.concurrent.ControllableIdleStrategy} is required.
+         * @return the new idle strategy {@link Supplier}.
+         */
+        public static Supplier<IdleStrategy> recorderIdleStrategySupplier(final StatusIndicator controllableStatus)
+        {
+            final String name = System.getProperty(ARCHIVE_RECORDER_IDLE_STRATEGY_PROP_NAME);
+            if (null == name)
+            {
+                return null;
+            }
+
+            return () -> io.aeron.driver.Configuration.agentIdleStrategy(name, controllableStatus);
+        }
+
+        /**
+         * Create a supplier of {@link IdleStrategy}s for the {@link #ARCHIVE_REPLAYER_IDLE_STRATEGY_PROP_NAME}
+         * system property.
+         *
+         * @param controllableStatus if a {@link org.agrona.concurrent.ControllableIdleStrategy} is required.
+         * @return the new idle strategy {@link Supplier}.
+         */
+        public static Supplier<IdleStrategy> replayerIdleStrategySupplier(final StatusIndicator controllableStatus)
+        {
+            final String name = System.getProperty(ARCHIVE_REPLAYER_IDLE_STRATEGY_PROP_NAME);
+            if (null == name)
+            {
+                return null;
+            }
+
+            return () -> io.aeron.driver.Configuration.agentIdleStrategy(name, controllableStatus);
         }
 
         /**
@@ -535,6 +581,8 @@ public class Archive implements AutoCloseable
         private CountDownLatch abortLatch;
 
         private Supplier<IdleStrategy> idleStrategySupplier;
+        private Supplier<IdleStrategy> replayerIdleStrategySupplier;
+        private Supplier<IdleStrategy> recorderIdleStrategySupplier;
         private EpochClock epochClock;
 
         private ErrorHandler errorHandler;
@@ -619,6 +667,27 @@ public class Archive implements AutoCloseable
             if (null == idleStrategySupplier)
             {
                 idleStrategySupplier = Configuration.idleStrategySupplier(null);
+            }
+
+            if (DEDICATED == threadingMode)
+            {
+                if (null == recorderIdleStrategySupplier)
+                {
+                    recorderIdleStrategySupplier = Configuration.recorderIdleStrategySupplier(null);
+                    if (null == recorderIdleStrategySupplier)
+                    {
+                        recorderIdleStrategySupplier = idleStrategySupplier;
+                    }
+                }
+
+                if (null == replayerIdleStrategySupplier)
+                {
+                    replayerIdleStrategySupplier = Configuration.replayerIdleStrategySupplier(null);
+                    if (null == replayerIdleStrategySupplier)
+                    {
+                        replayerIdleStrategySupplier = idleStrategySupplier;
+                    }
+                }
             }
 
             if (null == archiveDir)
@@ -1070,7 +1139,8 @@ public class Archive implements AutoCloseable
         }
 
         /**
-         * Provides an {@link IdleStrategy} supplier for idling the conductor.
+         * Provides an {@link IdleStrategy} supplier for idling the conductor or composite {@link Agent}. Which is also
+         * the default for recorder and replayer {@link Agent}s.
          *
          * @param idleStrategySupplier supplier for idling the conductor.
          * @return this for a fluent API.
@@ -1082,13 +1152,58 @@ public class Archive implements AutoCloseable
         }
 
         /**
-         * Get a new {@link IdleStrategy} based on configured supplier.
+         * Get a new {@link IdleStrategy} for idling the conductor or composite {@link Agent}. Which is also
+         * the default for recorder and replayer {@link Agent}s.
          *
-         * @return a new {@link IdleStrategy} based on configured supplier.
+         * @return a new {@link IdleStrategy} for idling the conductor or composite {@link Agent}.
          */
         public IdleStrategy idleStrategy()
         {
             return idleStrategySupplier.get();
+        }
+
+        /**
+         * Provides an {@link IdleStrategy} supplier for idling the recorder {@link Agent}.
+         *
+         * @param idleStrategySupplier supplier for idling the conductor.
+         * @return this for a fluent API.
+         */
+        public Context recorderIdleStrategySupplier(final Supplier<IdleStrategy> idleStrategySupplier)
+        {
+            this.recorderIdleStrategySupplier = idleStrategySupplier;
+            return this;
+        }
+
+        /**
+         * Get a new {@link IdleStrategy} for idling the recorder {@link Agent}.
+         *
+         * @return a new {@link IdleStrategy} for idling the recorder {@link Agent}.
+         */
+        public IdleStrategy recorderIdleStrategy()
+        {
+            return recorderIdleStrategySupplier.get();
+        }
+
+        /**
+         * Provides an {@link IdleStrategy} supplier for idling the replayer {@link Agent}.
+         *
+         * @param idleStrategySupplier supplier for idling the replayer.
+         * @return this for a fluent API.
+         */
+        public Context replayerIdleStrategySupplier(final Supplier<IdleStrategy> idleStrategySupplier)
+        {
+            this.replayerIdleStrategySupplier = idleStrategySupplier;
+            return this;
+        }
+
+        /**
+         * Get a new {@link IdleStrategy} for idling the replayer {@link Agent}.
+         *
+         * @return a new {@link IdleStrategy} for idling the replayer {@link Agent}.
+         */
+        public IdleStrategy replayerIdleStrategy()
+        {
+            return replayerIdleStrategySupplier.get();
         }
 
         /**

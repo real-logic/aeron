@@ -1314,7 +1314,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             ctx.clusterMarkFile().memberId(memberId);
         }
 
-        if (ClusterMember.EMPTY_CLUSTER_MEMBER_ARRAY == this.clusterMembers)
+        if (ClusterMember.EMPTY_CLUSTER_MEMBER_ARRAY == clusterMembers)
         {
             clusterMembers = snapshotClusterMembers;
             this.highMemberId = Math.max(ClusterMember.highMemberId(clusterMembers), highMemberId);
@@ -2153,7 +2153,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
                     this.passiveMembers = ClusterMember.removeMember(this.passiveMembers, member.id());
                     clusterMembers = newMembers;
-                    rankedPositions = new long[this.clusterMembers.length];
+                    rankedPositions = new long[ClusterMember.quorumThreshold(clusterMembers.length)];
 
                     member.hasRequestedJoin(false);
                     workCount++;
@@ -2413,7 +2413,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
 
         clusterMembers = newClusterMembers;
-        rankedPositions = new long[clusterMembers.length];
+        rankedPositions = new long[ClusterMember.quorumThreshold(clusterMembers.length)];
     }
 
     private int updateMemberPosition(final long nowNs)
@@ -2690,14 +2690,14 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
         clusterMembers = ClusterMember.addMember(clusterMembers, eventMember);
         clusterMemberByIdMap.put(memberId, eventMember);
-        rankedPositions = new long[clusterMembers.length];
+        rankedPositions = new long[ClusterMember.quorumThreshold(clusterMembers.length)];
     }
 
     private void clusterMemberQuit(final int memberId)
     {
         clusterMembers = ClusterMember.removeMember(clusterMembers, memberId);
         clusterMemberByIdMap.remove(memberId);
-        rankedPositions = new long[clusterMembers.length];
+        rankedPositions = new long[ClusterMember.quorumThreshold(clusterMembers.length)];
     }
 
     private void closeExistingLog()

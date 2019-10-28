@@ -790,10 +790,8 @@ class Catalog implements AutoCloseable
                 final File maxSegmentFile = new File(archiveDir, segmentFileName(recordingId, maxSegmentPosition));
                 final int segmentFileLength = decoder.segmentFileLength();
                 final long stopOffset = recoverStopOffset(maxSegmentFile, segmentFileLength);
-                final int termBufferLength = decoder.termBufferLength();
-                final long startPosition = decoder.startPosition();
-                final long recordingLength = maxSegmentPosition + stopOffset - startPosition;
-                encoder.stopPosition(startPosition + recordingLength);
+                final long streamStopPosition = maxSegmentPosition + stopOffset;
+                encoder.stopPosition(streamStopPosition);
             }
 
             encoder.stopTimestamp(epochClock.time());

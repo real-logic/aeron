@@ -752,6 +752,7 @@ class Catalog implements AutoCloseable
         if (headerDecoder.valid() == VALID && decoder.stopPosition() == NULL_POSITION)
         {
             final String prefix = recordingId + "-";
+            final int prefixLength = prefix.length();
             String[] segmentFiles = archiveDir.list(
                 (dir, name) -> name.startsWith(prefix) && name.endsWith(RECORDING_SEGMENT_SUFFIX));
 
@@ -760,20 +761,18 @@ class Catalog implements AutoCloseable
                 segmentFiles = ArrayUtil.EMPTY_STRING_ARRAY;
             }
 
-            long maxSegmentPosition = -1;
+            long maxSegmentBasePosition = -1;
             for (final String filename : segmentFiles)
             {
                 final int length = filename.length();
-                final int offset = prefix.length();
-                final int remaining = length - offset - RECORDING_SEGMENT_SUFFIX.length();
+                final int remaining = length - prefixLength - RECORDING_SEGMENT_SUFFIX.length();
 
                 if (remaining > 0)
                 {
                     try
                     {
-                        maxSegmentPosition = Math.max(
-                            AsciiEncoding.parseLongAscii(filename, offset, remaining),
-                            maxSegmentPosition);
+                        maxSegmentBasePosition = Math.max(
+                            AsciiEncoding.parseLongAscii(filename, prefixLength, remaining), maxSegmentBasePosition);
                     }
                     catch (final Exception ignore)
                     {
@@ -781,16 +780,16 @@ class Catalog implements AutoCloseable
                 }
             }
 
-            if (maxSegmentPosition < 0)
+            if (maxSegmentBasePosition < 0)
             {
                 encoder.stopPosition(decoder.startPosition());
             }
             else
             {
-                final File maxSegmentFile = new File(archiveDir, segmentFileName(recordingId, maxSegmentPosition));
+                final File maxSegmentFile = new File(archiveDir, segmentFileName(recordingId, maxSegmentBasePosition));
                 final int segmentFileLength = decoder.segmentFileLength();
                 final long stopOffset = recoverStopOffset(maxSegmentFile, segmentFileLength);
-                final long streamStopPosition = maxSegmentPosition + stopOffset;
+                final long streamStopPosition = maxSegmentBasePosition + stopOffset;
                 encoder.stopPosition(streamStopPosition);
             }
 

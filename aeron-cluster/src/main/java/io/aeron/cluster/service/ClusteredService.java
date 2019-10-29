@@ -21,6 +21,8 @@ import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * Interface which a service must implement to be contained in the cluster.
  */
@@ -105,4 +107,28 @@ public interface ClusteredService
      * @param cluster with which the service can interact.
      */
     void onTerminate(Cluster cluster);
+
+    /**
+     * An election has been successful and a leader has entered a new term.
+     *
+     * @param leadershipTermId    identity for the new leadership term.
+     * @param logPosition         position the log has reached as the result of this message.
+     * @param timestamp           for the new leadership term.
+     * @param termBaseLogPosition position at the beginning of the leadership term.
+     * @param leaderMemberId      who won the election.
+     * @param logSessionId        session id for the publication of the log.
+     * @param timeUnit            for the timestamps in the coming leadership term.
+     * @param appVersion          for the application configured in the consensus module.
+     */
+    default void onNewLeadershipTermEvent(
+        long leadershipTermId,
+        long logPosition,
+        long timestamp,
+        long termBaseLogPosition,
+        int leaderMemberId,
+        int logSessionId,
+        TimeUnit timeUnit,
+        int appVersion)
+    {
+    }
 }

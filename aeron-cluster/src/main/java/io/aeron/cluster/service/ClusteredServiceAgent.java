@@ -434,9 +434,9 @@ class ClusteredServiceAgent implements Agent, Cluster
         final long leadershipTermId,
         final long logPosition,
         final long timestamp,
-        @SuppressWarnings("unused") final long termBaseLogPosition,
-        @SuppressWarnings("unused") final int leaderMemberId,
-        @SuppressWarnings("unused") final int logSessionId,
+        final long termBaseLogPosition,
+        final int leaderMemberId,
+        final int logSessionId,
         final TimeUnit timeUnit,
         final int appVersion)
     {
@@ -446,13 +446,24 @@ class ClusteredServiceAgent implements Agent, Cluster
                 "incompatible version: " + SemanticVersion.toString(ctx.appVersion()) +
                 " log=" + SemanticVersion.toString(appVersion)));
             ctx.terminationHook().run();
-            return;
         }
+        else
+        {
+            sessionMessageHeaderEncoder.leadershipTermId(leadershipTermId);
+            clusterLogPosition = logPosition;
+            clusterTime = timestamp;
+            this.timeUnit = timeUnit;
 
-        sessionMessageHeaderEncoder.leadershipTermId(leadershipTermId);
-        clusterLogPosition = logPosition;
-        clusterTime = timestamp;
-        this.timeUnit = timeUnit;
+            service.onNewLeadershipTermEvent(
+                leadershipTermId,
+                logPosition,
+                timestamp,
+                termBaseLogPosition,
+                leaderMemberId,
+                logSessionId,
+                timeUnit, appVersion
+            );
+        }
     }
 
     @SuppressWarnings("unused")

@@ -597,10 +597,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 passiveMembers = ClusterMember.addMember(passiveMembers, newMember);
                 clusterMemberByIdMap.put(newMember.id(), newMember);
 
-                final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
-
                 ClusterMember.addMemberStatusPublication(
-                    newMember, memberStatusUri, ctx.memberStatusStreamId(), aeron);
+                    newMember, ChannelUri.parse(ctx.memberStatusChannel()), ctx.memberStatusStreamId(), aeron);
 
                 logPublisher.addPassiveFollower(newMember.logEndpoint());
             }
@@ -878,7 +876,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             final RecordingExtent recordingExtent = new RecordingExtent();
             if (0 == archive.listRecording(recordingId, recordingExtent))
             {
-                throw new ClusterException("recording not found id=" + recordingId);
+                throw new ClusterException("recording not found: " + recordingId);
             }
 
             logInitialTermId = recordingExtent.initialTermId;

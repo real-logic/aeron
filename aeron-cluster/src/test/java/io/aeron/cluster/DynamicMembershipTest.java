@@ -229,6 +229,31 @@ public class DynamicMembershipTest
         }
     }
 
+    @Test(timeout = 10_000)
+    public void shouldRemoveLeaderAfterDynamicNodeJoined() throws Exception
+    {
+        try (TestCluster cluster = TestCluster.startCluster(3, 1))
+        {
+            final TestNode initialLeader = cluster.awaitLeader();
+            cluster.startDynamicNode(3, true);
+
+            Thread.sleep(1000);
+
+            initialLeader.terminationExpected(true);
+            initialLeader.removeMember(initialLeader.index(), false);
+
+            cluster.awaitNodeTermination(initialLeader);
+            cluster.stopNode(initialLeader);
+
+            final TestNode newLeader = cluster.awaitLeader(initialLeader.index());
+            final ClusterTool.ClusterMembership clusterMembership = newLeader.clusterMembership();
+
+            assertThat(clusterMembership.leaderMemberId, is(newLeader.index()));
+            assertThat(clusterMembership.leaderMemberId, not(initialLeader.index()));
+            assertThat(numberOfMembers(clusterMembership), is(3));
+        }
+    }
+
     private int numberOfMembers(final ClusterTool.ClusterMembership clusterMembership)
     {
         return clusterMembership.activeMembers.size();

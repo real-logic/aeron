@@ -2687,6 +2687,11 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         highMemberId = Math.max(highMemberId, memberId);
 
         final ClusterMember eventMember = ClusterMember.findMember(newMembers, memberId);
+        if (eventMember != null && eventMember.publication() == null)
+        {
+            final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
+            ClusterMember.addMemberStatusPublication(eventMember, memberStatusUri, ctx.memberStatusStreamId(), aeron);
+        }
 
         clusterMembers = ClusterMember.addMember(clusterMembers, eventMember);
         clusterMemberByIdMap.put(memberId, eventMember);

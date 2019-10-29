@@ -461,8 +461,8 @@ class ClusteredServiceAgent implements Agent, Cluster
                 termBaseLogPosition,
                 leaderMemberId,
                 logSessionId,
-                timeUnit, appVersion
-            );
+                timeUnit,
+                appVersion);
         }
     }
 

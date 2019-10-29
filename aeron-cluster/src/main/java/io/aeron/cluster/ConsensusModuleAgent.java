@@ -2687,15 +2687,19 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         highMemberId = Math.max(highMemberId, memberId);
 
         final ClusterMember eventMember = ClusterMember.findMember(newMembers, memberId);
-        if (eventMember != null && eventMember.publication() == null)
+        if (null != eventMember)
         {
-            final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
-            ClusterMember.addMemberStatusPublication(eventMember, memberStatusUri, ctx.memberStatusStreamId(), aeron);
-        }
+            if (null == eventMember.publication())
+            {
+                final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
+                ClusterMember.addMemberStatusPublication(
+                    eventMember, memberStatusUri, ctx.memberStatusStreamId(), aeron);
+            }
 
-        clusterMembers = ClusterMember.addMember(clusterMembers, eventMember);
-        clusterMemberByIdMap.put(memberId, eventMember);
-        rankedPositions = new long[ClusterMember.quorumThreshold(clusterMembers.length)];
+            clusterMembers = ClusterMember.addMember(clusterMembers, eventMember);
+            clusterMemberByIdMap.put(memberId, eventMember);
+            rankedPositions = new long[ClusterMember.quorumThreshold(clusterMembers.length)];
+        }
     }
 
     private void clusterMemberQuit(final int memberId)

@@ -69,7 +69,7 @@ public final class ClusterBackup implements AutoCloseable
 
     enum State
     {
-        CHECK_BACKUP(0),
+        INIT(0),
         BACKUP_QUERY(1),
         SNAPSHOT_RETRIEVE(2),
         LIVE_LOG_REPLAY(3),

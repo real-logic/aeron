@@ -44,6 +44,10 @@ public class SessionSpecificSubscriptionTest
     private static final int FRAGMENT_COUNT_LIMIT = 10;
     private static final int MESSAGE_LENGTH = 1024 - DataHeaderFlyweight.HEADER_LENGTH;
     private static final int EXPECTED_NUMBER_OF_MESSAGES = 10;
+    private static final int MTU_1 = 4096;
+    private static final int MTU_2 = 8192;
+    private static final int TERM_LENGTH_1 = 64 * 1024;
+    private static final int TERM_LENGTH_2 = 128 * 1024;
 
     private final FragmentHandler mockFragmentHandler = mock(FragmentHandler.class);
     private final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
@@ -159,7 +163,7 @@ public class SessionSpecificSubscriptionTest
     }
 
     @Test
-    public void shouldNotCreateDuplicateExclusivePublications()
+    public void shouldNotCreateExclusivePublicationWhenSessionIdCollidesWithExistingPublication()
     {
         try (Subscription subscription = aeron.addSubscription(channelUriWithoutSessionId, STREAM_ID);
              Publication publication = aeron.addExclusivePublication(channelUriWithoutSessionId, STREAM_ID))
@@ -177,7 +181,7 @@ public class SessionSpecificSubscriptionTest
 
             try (Publication invalidPublication = aeron.addExclusivePublication(invalidChannel, STREAM_ID))
             {
-                fail("Exception should have been thrown due to duplication session id");
+                fail("Exception should have been thrown due to duplicate session id");
             }
             catch (RegistrationException re)
             {
@@ -192,8 +196,8 @@ public class SessionSpecificSubscriptionTest
         final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder()
             .media(UDP_MEDIA).endpoint(ENDPOINT).sessionId(SESSION_ID_1);
 
-        try (Publication publicationOne = aeron.addPublication(channelBuilder.mtu(4096).build(), STREAM_ID);
-            Publication publicationTwo = aeron.addPublication(channelBuilder.mtu(8192).build(), STREAM_ID))
+        try (Publication publicationOne = aeron.addPublication(channelBuilder.mtu(MTU_1).build(), STREAM_ID);
+             Publication publicationTwo = aeron.addPublication(channelBuilder.mtu(MTU_2).build(), STREAM_ID))
         {
             fail("Exception should have been thrown due to non-matching mtu");
         }
@@ -208,13 +212,13 @@ public class SessionSpecificSubscriptionTest
     {
         final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder()
             .media(UDP_MEDIA).endpoint(ENDPOINT).sessionId(SESSION_ID_1);
-        final String channelOne = channelBuilder.termLength(64 * 1024).build();
-        final String channelTwo = channelBuilder.termLength(128 * 1024).build();
+        final String channelOne = channelBuilder.termLength(TERM_LENGTH_1).build();
+        final String channelTwo = channelBuilder.termLength(TERM_LENGTH_2).build();
 
         try (Publication publicationOne = aeron.addPublication(channelOne, STREAM_ID);
              Publication publicationTwo = aeron.addPublication(channelTwo, STREAM_ID))
         {
-            fail("Exception should have been thrown due to non-matching mtu");
+            fail("Exception should have been thrown due to non-matching term length");
         }
         catch (RegistrationException re)
         {
@@ -223,17 +227,17 @@ public class SessionSpecificSubscriptionTest
     }
 
     @Test
-    public void shouldNotCreateNonExclusivePublicationsWithDiffentSessionIdsForTheSameEndpoint()
+    public void shouldNotCreateNonExclusivePublicationsWithDifferentSessionIdsForTheSameEndpoint()
     {
         final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder()
             .media(UDP_MEDIA).endpoint(ENDPOINT);
-        final String channelOne = channelBuilder.sessionId(1001).build();
-        final String channelTwo = channelBuilder.sessionId(1002).build();
+        final String channelOne = channelBuilder.sessionId(SESSION_ID_1).build();
+        final String channelTwo = channelBuilder.sessionId(SESSION_ID_2).build();
 
         try (Publication publicationOne = aeron.addPublication(channelOne, STREAM_ID);
              Publication publicationTwo = aeron.addPublication(channelTwo, STREAM_ID))
         {
-            fail("Exception should have been thrown due to non-matching mtu");
+            fail("Exception should have been thrown due using different session ids");
         }
         catch (RegistrationException re)
         {

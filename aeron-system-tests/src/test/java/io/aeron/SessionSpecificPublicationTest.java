@@ -23,13 +23,20 @@ import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.junit.After;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+import java.util.Arrays;
+import java.util.Collection;
+
+import static io.aeron.CommonContext.IPC_MEDIA;
 import static io.aeron.CommonContext.UDP_MEDIA;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+@RunWith(value = Parameterized.class)
 public class SessionSpecificPublicationTest
 {
     private static final String ENDPOINT = "localhost:54325";
@@ -41,8 +48,23 @@ public class SessionSpecificPublicationTest
     private static final int TERM_LENGTH_1 = 64 * 1024;
     private static final int TERM_LENGTH_2 = 128 * 1024;
 
-    private final String channelUriWithoutSessionId = new ChannelUriStringBuilder()
-        .endpoint(ENDPOINT).media(UDP_MEDIA).build();
+    @Parameterized.Parameter
+    public String mediaType;
+
+    @Parameterized.Parameter(1)
+    public ChannelUriStringBuilder channelBuilder;
+
+    @Parameterized.Parameters(name = "media type = {0}")
+    public static Collection<Object[]> data()
+    {
+        return Arrays.asList(
+            new Object[][]
+            {
+                { UDP_MEDIA, new ChannelUriStringBuilder().media(UDP_MEDIA).endpoint(ENDPOINT) },
+                { IPC_MEDIA, new ChannelUriStringBuilder().media(IPC_MEDIA) }
+            }
+        );
+    }
 
     private final ErrorHandler mockErrorHandler = mock(ErrorHandler.class);
     private final MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()
@@ -63,8 +85,8 @@ public class SessionSpecificPublicationTest
     @Test(expected = RegistrationException.class)
     public void shouldNotCreateExclusivePublicationWhenSessionIdCollidesWithExistingPublication()
     {
-        try (Subscription ignored = aeron.addSubscription(channelUriWithoutSessionId, STREAM_ID);
-            Publication publication = aeron.addExclusivePublication(channelUriWithoutSessionId, STREAM_ID))
+        try (Subscription ignored = aeron.addSubscription(channelBuilder.build(), STREAM_ID);
+            Publication publication = aeron.addExclusivePublication(channelBuilder.build(), STREAM_ID))
         {
             while (!publication.isConnected())
             {
@@ -74,8 +96,7 @@ public class SessionSpecificPublicationTest
 
             final int existingSessionId = publication.sessionId();
 
-            final String invalidChannel = new ChannelUriStringBuilder()
-                .media(UDP_MEDIA).endpoint(ENDPOINT).sessionId(existingSessionId).build();
+            final String invalidChannel = channelBuilder.sessionId(existingSessionId).build();
 
             try (Publication ignored1 = aeron.addExclusivePublication(invalidChannel, STREAM_ID))
             {
@@ -91,8 +112,7 @@ public class SessionSpecificPublicationTest
     @Test(expected = RegistrationException.class)
     public void shouldNotCreatePublicationsSharingSessionIdWithDifferentMtu()
     {
-        final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder()
-            .media(UDP_MEDIA).endpoint(ENDPOINT).sessionId(SESSION_ID_1);
+        channelBuilder.sessionId(SESSION_ID_1);
 
         try (Publication ignored1 = aeron.addPublication(channelBuilder.mtu(MTU_1).build(), STREAM_ID);
             Publication ignored2 = aeron.addPublication(channelBuilder.mtu(MTU_2).build(), STREAM_ID))
@@ -108,8 +128,8 @@ public class SessionSpecificPublicationTest
     @Test(expected = RegistrationException.class)
     public void shouldNotCreatePublicationsSharingSessionIdWithDifferentTermLength()
     {
-        final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder()
-            .media(UDP_MEDIA).endpoint(ENDPOINT).sessionId(SESSION_ID_1);
+        channelBuilder.sessionId(SESSION_ID_1);
+
         final String channelOne = channelBuilder.termLength(TERM_LENGTH_1).build();
         final String channelTwo = channelBuilder.termLength(TERM_LENGTH_2).build();
 
@@ -127,8 +147,8 @@ public class SessionSpecificPublicationTest
     @Test(expected = RegistrationException.class)
     public void shouldNotCreateNonExclusivePublicationsWithDifferentSessionIdsForTheSameEndpoint()
     {
-        final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder()
-            .media(UDP_MEDIA).endpoint(ENDPOINT);
+        channelBuilder.endpoint(ENDPOINT);
+
         final String channelOne = channelBuilder.sessionId(SESSION_ID_1).build();
         final String channelTwo = channelBuilder.sessionId(SESSION_ID_2).build();
 

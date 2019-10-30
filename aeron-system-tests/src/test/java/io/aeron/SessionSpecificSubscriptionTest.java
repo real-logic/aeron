@@ -162,7 +162,7 @@ public class SessionSpecificSubscriptionTest
         }
     }
 
-    @Test
+    @Test(expected = RegistrationException.class)
     public void shouldNotCreateExclusivePublicationWhenSessionIdCollidesWithExistingPublication()
     {
         try (Subscription ignored = aeron.addSubscription(channelUriWithoutSessionId, STREAM_ID);
@@ -183,14 +183,10 @@ public class SessionSpecificSubscriptionTest
             {
                 fail("Exception should have been thrown due to duplicate session id");
             }
-            catch (RegistrationException re)
-            {
-                // Expected
-            }
         }
     }
 
-    @Test
+    @Test(expected = RegistrationException.class)
     public void shouldNotCreatePublicationsSharingSessionIdWithDifferentMtu()
     {
         final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder()
@@ -201,13 +197,9 @@ public class SessionSpecificSubscriptionTest
         {
             fail("Exception should have been thrown due to non-matching mtu");
         }
-        catch (RegistrationException re)
-        {
-            // Expected
-        }
     }
 
-    @Test
+    @Test(expected = RegistrationException.class)
     public void shouldNotCreatePublicationsSharingSessionIdWithDifferentTermLength()
     {
         final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder()
@@ -220,13 +212,9 @@ public class SessionSpecificSubscriptionTest
         {
             fail("Exception should have been thrown due to non-matching term length");
         }
-        catch (RegistrationException re)
-        {
-            // Expected
-        }
     }
 
-    @Test
+    @Test(expected = RegistrationException.class)
     public void shouldNotCreateNonExclusivePublicationsWithDifferentSessionIdsForTheSameEndpoint()
     {
         final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder()
@@ -238,10 +226,6 @@ public class SessionSpecificSubscriptionTest
              Publication ignored2 = aeron.addPublication(channelTwo, STREAM_ID))
         {
             fail("Exception should have been thrown due using different session ids");
-        }
-        catch (RegistrationException re)
-        {
-            // Expected
         }
     }
 

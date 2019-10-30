@@ -22,6 +22,7 @@ import io.aeron.archive.codecs.*;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
+import org.agrona.SemanticVersion;
 
 /**
  * Encapsulate the polling and decoding of archive control protocol response messages.
@@ -41,6 +42,7 @@ public class ControlResponsePoller implements ControlledFragmentHandler
     private long controlSessionId = Aeron.NULL_VALUE;
     private long correlationId = Aeron.NULL_VALUE;
     private long relevantId = Aeron.NULL_VALUE;
+    private int version = 0;
     private final int fragmentLimit;
     private ControlResponseCode code;
     private String errorMessage;
@@ -86,9 +88,10 @@ public class ControlResponsePoller implements ControlledFragmentHandler
      */
     public int poll()
     {
-        controlSessionId = -1;
-        correlationId = -1;
-        relevantId = -1;
+        controlSessionId = Aeron.NULL_VALUE;
+        correlationId = Aeron.NULL_VALUE;
+        relevantId = Aeron.NULL_VALUE;
+        version = 0;
         errorMessage = null;
         isPollComplete = false;
 
@@ -123,6 +126,16 @@ public class ControlResponsePoller implements ControlledFragmentHandler
     public long relevantId()
     {
         return relevantId;
+    }
+
+    /**
+     * Version response from the server in semantic version form.
+     *
+     * @return response from the server in semantic version form.
+     */
+    public int version()
+    {
+        return version;
     }
 
     /**
@@ -183,6 +196,7 @@ public class ControlResponsePoller implements ControlledFragmentHandler
             correlationId = controlResponseDecoder.correlationId();
             relevantId = controlResponseDecoder.relevantId();
             code = controlResponseDecoder.code();
+            version = controlResponseDecoder.version();
             errorMessage = controlResponseDecoder.errorMessage();
             isPollComplete = true;
 
@@ -199,6 +213,7 @@ public class ControlResponsePoller implements ControlledFragmentHandler
             ", correlationId=" + correlationId +
             ", relevantId=" + relevantId +
             ", code=" + code +
+            ", version=" + SemanticVersion.toString(version) +
             ", errorMessage='" + errorMessage + '\'' +
             ", isPollComplete=" + isPollComplete +
             '}';

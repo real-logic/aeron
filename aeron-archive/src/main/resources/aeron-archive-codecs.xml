@@ -2,7 +2,7 @@
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
                    package="io.aeron.archive.codecs"
                    id="101"
-                   version="3"
+                   version="4"
                    semanticVersion="5.2"
                    description="Message Codecs for communicating with an Aeron Archive."
                    byteOrder="littleEndian">
@@ -46,7 +46,7 @@
         </enum>
         <type name="time_t" primitiveType="int64" description="Epoch time in milliseconds since 1 Jan 1970 UTC."/>
         <type name="version_t" primitiveType="int32" presence="optional" nullValue="0" minValue="2" maxValue="16777215"
-              sinceVersion="2" description="Protocol suite version"/>
+              sinceVersion="2" description="Protocol suite version using semantic version form."/>
     </types>
 
 <!--
@@ -121,7 +121,6 @@
         - Purge segments from the beginning of a recording which is composite action of detach and delete.
         - Attach segments to the beginning of a recording which have been previously detached.
         - Migrate segments from another matching recording and attached them to the beginning of a recording.
-
 -->
 
     <sbe:message name="ControlResponse"
@@ -135,7 +134,9 @@
                description="Relevant identity of an object, e.g. recordingId if RECORDING_UNKNOWN, or error code."/>
         <field name="code"                 id="4" type="ControlResponseCode"
                description="Code type of the response which is one of ControlResponseCode."/>
-        <data  name="errorMessage"         id="5" type="varAsciiEncoding"
+        <field name="version"              id="5" type="version_t" presence="optional" sinceVersion="4"
+               description="Protocol version for the server using semantic versioning."/>
+        <data  name="errorMessage"         id="6" type="varAsciiEncoding"
                description="Detailed error message which is provided when code is ERROR."/>
     </sbe:message>
 

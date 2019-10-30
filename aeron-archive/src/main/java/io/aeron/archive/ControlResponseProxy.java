@@ -17,6 +17,7 @@ package io.aeron.archive;
 
 import io.aeron.Publication;
 import io.aeron.Subscription;
+import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.*;
 import io.aeron.logbuffer.BufferClaim;
@@ -115,6 +116,7 @@ class ControlResponseProxy
             .correlationId(correlationId)
             .relevantId(relevantId)
             .code(code)
+            .version(AeronArchive.Configuration.PROTOCOL_SEMANTIC_VERSION)
             .errorMessage(errorMessage);
 
         return send(session, buffer, MESSAGE_HEADER_LENGTH + responseEncoder.encodedLength());
@@ -133,6 +135,7 @@ class ControlResponseProxy
             .correlationId(correlationId)
             .relevantId(relevantId)
             .code(ControlResponseCode.ERROR)
+            .version(AeronArchive.Configuration.PROTOCOL_SEMANTIC_VERSION)
             .errorMessage(errorMessage);
 
         final int length = MESSAGE_HEADER_LENGTH + responseEncoder.encodedLength();

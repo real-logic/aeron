@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.BufferClaim;
 import org.agrona.ExpandableArrayBuffer;
@@ -57,6 +58,7 @@ class EgressPublisher
                     .leadershipTermId(leadershipTermId)
                     .leaderMemberId(leaderMemberId)
                     .code(code)
+                    .version(AeronCluster.Configuration.PROTOCOL_SEMANTIC_VERSION)
                     .detail(detail);
 
                 bufferClaim.commit();

@@ -41,6 +41,7 @@ public class EgressPoller implements ControlledFragmentHandler
     private long leadershipTermId = Aeron.NULL_VALUE;
     private int leaderMemberId = Aeron.NULL_VALUE;
     private int templateId = Aeron.NULL_VALUE;
+    private int version = 0;
     private boolean isPollComplete = false;
     private EventCode eventCode;
     private String detail = "";
@@ -123,6 +124,16 @@ public class EgressPoller implements ControlledFragmentHandler
     }
 
     /**
+     * Version response from the server in semantic version form.
+     *
+     * @return response from the server in semantic version form.
+     */
+    public int version()
+    {
+        return version;
+    }
+
+    /**
      * Get the detail returned in the last session event.
      *
      * @return the detail returned in the last session event.
@@ -169,6 +180,7 @@ public class EgressPoller implements ControlledFragmentHandler
         leadershipTermId = Aeron.NULL_VALUE;
         leaderMemberId = Aeron.NULL_VALUE;
         templateId = Aeron.NULL_VALUE;
+        version = 0;
         eventCode = null;
         detail = "";
         encodedChallenge = null;
@@ -220,6 +232,7 @@ public class EgressPoller implements ControlledFragmentHandler
                 leadershipTermId = sessionEventDecoder.leadershipTermId();
                 leaderMemberId = sessionEventDecoder.leaderMemberId();
                 eventCode = sessionEventDecoder.code();
+                version = sessionEventDecoder.version();
                 detail = sessionEventDecoder.detail();
                 isPollComplete = true;
                 return Action.BREAK;

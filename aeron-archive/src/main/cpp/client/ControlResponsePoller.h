@@ -49,6 +49,8 @@ public:
         m_controlSessionId = -1;
         m_correlationId = -1;
         m_relevantId = -1;
+        m_version = 0;
+        m_codeValue = -1;
         m_errorMessage = "";
         m_pollComplete = false;
         m_isCodeOk = false;
@@ -86,6 +88,16 @@ public:
     inline std::int64_t relevantId()
     {
         return m_relevantId;
+    }
+
+    /**
+     * Version response from the server in semantic version form.
+     *
+     * @return response from the server in semantic version form.
+     */
+    inline std::int32_t version()
+    {
+        return m_version;
     }
 
     /**
@@ -159,8 +171,9 @@ private:
     std::int64_t m_controlSessionId = -1;
     std::int64_t m_correlationId = -1;
     std::int64_t m_relevantId = -1;
-    std::string m_errorMessage = "";
+    std::int32_t m_version = 0;
     int m_codeValue = -1;
+    std::string m_errorMessage = "";
     bool m_pollComplete = false;
     bool m_isCodeOk = false;
     bool m_isCodeError = false;

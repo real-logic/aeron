@@ -165,7 +165,7 @@ public class SessionSpecificSubscriptionTest
     @Test
     public void shouldNotCreateExclusivePublicationWhenSessionIdCollidesWithExistingPublication()
     {
-        try (Subscription subscription = aeron.addSubscription(channelUriWithoutSessionId, STREAM_ID);
+        try (Subscription ignored = aeron.addSubscription(channelUriWithoutSessionId, STREAM_ID);
              Publication publication = aeron.addExclusivePublication(channelUriWithoutSessionId, STREAM_ID))
         {
             while (!publication.isConnected())
@@ -179,7 +179,7 @@ public class SessionSpecificSubscriptionTest
             final String invalidChannel = new ChannelUriStringBuilder()
                 .media(UDP_MEDIA).endpoint(ENDPOINT).sessionId(existingSessionId).build();
 
-            try (Publication invalidPublication = aeron.addExclusivePublication(invalidChannel, STREAM_ID))
+            try (Publication ignored1 = aeron.addExclusivePublication(invalidChannel, STREAM_ID))
             {
                 fail("Exception should have been thrown due to duplicate session id");
             }
@@ -196,8 +196,8 @@ public class SessionSpecificSubscriptionTest
         final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder()
             .media(UDP_MEDIA).endpoint(ENDPOINT).sessionId(SESSION_ID_1);
 
-        try (Publication publicationOne = aeron.addPublication(channelBuilder.mtu(MTU_1).build(), STREAM_ID);
-             Publication publicationTwo = aeron.addPublication(channelBuilder.mtu(MTU_2).build(), STREAM_ID))
+        try (Publication ignored1 = aeron.addPublication(channelBuilder.mtu(MTU_1).build(), STREAM_ID);
+             Publication ignored2 = aeron.addPublication(channelBuilder.mtu(MTU_2).build(), STREAM_ID))
         {
             fail("Exception should have been thrown due to non-matching mtu");
         }
@@ -215,8 +215,8 @@ public class SessionSpecificSubscriptionTest
         final String channelOne = channelBuilder.termLength(TERM_LENGTH_1).build();
         final String channelTwo = channelBuilder.termLength(TERM_LENGTH_2).build();
 
-        try (Publication publicationOne = aeron.addPublication(channelOne, STREAM_ID);
-             Publication publicationTwo = aeron.addPublication(channelTwo, STREAM_ID))
+        try (Publication ignored1 = aeron.addPublication(channelOne, STREAM_ID);
+             Publication ignored2 = aeron.addPublication(channelTwo, STREAM_ID))
         {
             fail("Exception should have been thrown due to non-matching term length");
         }
@@ -234,8 +234,8 @@ public class SessionSpecificSubscriptionTest
         final String channelOne = channelBuilder.sessionId(SESSION_ID_1).build();
         final String channelTwo = channelBuilder.sessionId(SESSION_ID_2).build();
 
-        try (Publication publicationOne = aeron.addPublication(channelOne, STREAM_ID);
-             Publication publicationTwo = aeron.addPublication(channelTwo, STREAM_ID))
+        try (Publication ignored1 = aeron.addPublication(channelOne, STREAM_ID);
+             Publication ignored2 = aeron.addPublication(channelTwo, STREAM_ID))
         {
             fail("Exception should have been thrown due using different session ids");
         }

@@ -17,6 +17,7 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -31,6 +32,7 @@ import static io.aeron.CommonContext.UDP_MEDIA;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
 public class SessionSpecificSubscriptionTest
@@ -153,6 +155,89 @@ public class SessionSpecificSubscriptionTest
 
             assertFalse(publicationWildcard.isConnected());
             assertFalse(publicationWrongSession.isConnected());
+        }
+    }
+
+    @Test
+    public void shouldNotCreateDuplicateExclusivePublications()
+    {
+        try (Subscription subscription = aeron.addSubscription(channelUriWithoutSessionId, STREAM_ID);
+             Publication publication = aeron.addExclusivePublication(channelUriWithoutSessionId, STREAM_ID))
+        {
+            while (!publication.isConnected())
+            {
+                SystemTest.checkInterruptedStatus();
+                Thread.yield();
+            }
+
+            final int existingSessionId = publication.sessionId();
+
+            final String invalidChannel = new ChannelUriStringBuilder()
+                .media(UDP_MEDIA).endpoint(ENDPOINT).sessionId(existingSessionId).build();
+
+            try (Publication invalidPublication = aeron.addExclusivePublication(invalidChannel, STREAM_ID))
+            {
+                fail("Exception should have been thrown due to duplication session id");
+            }
+            catch (RegistrationException re)
+            {
+                // Expected
+            }
+        }
+    }
+
+    @Test
+    public void shouldNotCreatePublicationsSharingSessionIdWithDifferentMtu()
+    {
+        final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder()
+            .media(UDP_MEDIA).endpoint(ENDPOINT).sessionId(SESSION_ID_1);
+
+        try (Publication publicationOne = aeron.addPublication(channelBuilder.mtu(4096).build(), STREAM_ID);
+            Publication publicationTwo = aeron.addPublication(channelBuilder.mtu(8192).build(), STREAM_ID))
+        {
+            fail("Exception should have been thrown due to non-matching mtu");
+        }
+        catch (RegistrationException re)
+        {
+            // Expected
+        }
+    }
+
+    @Test
+    public void shouldNotCreatePublicationsSharingSessionIdWithDifferentTermLength()
+    {
+        final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder()
+            .media(UDP_MEDIA).endpoint(ENDPOINT).sessionId(SESSION_ID_1);
+        final String channelOne = channelBuilder.termLength(64 * 1024).build();
+        final String channelTwo = channelBuilder.termLength(128 * 1024).build();
+
+        try (Publication publicationOne = aeron.addPublication(channelOne, STREAM_ID);
+             Publication publicationTwo = aeron.addPublication(channelTwo, STREAM_ID))
+        {
+            fail("Exception should have been thrown due to non-matching mtu");
+        }
+        catch (RegistrationException re)
+        {
+            // Expected
+        }
+    }
+
+    @Test
+    public void shouldNotCreateNonExclusivePublicationsWithDiffentSessionIdsForTheSameEndpoint()
+    {
+        final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder()
+            .media(UDP_MEDIA).endpoint(ENDPOINT);
+        final String channelOne = channelBuilder.sessionId(1001).build();
+        final String channelTwo = channelBuilder.sessionId(1002).build();
+
+        try (Publication publicationOne = aeron.addPublication(channelOne, STREAM_ID);
+             Publication publicationTwo = aeron.addPublication(channelTwo, STREAM_ID))
+        {
+            fail("Exception should have been thrown due to non-matching mtu");
+        }
+        catch (RegistrationException re)
+        {
+            // Expected
         }
     }
 

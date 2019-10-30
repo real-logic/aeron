@@ -166,7 +166,7 @@ public class SessionSpecificSubscriptionTest
     public void shouldNotCreateExclusivePublicationWhenSessionIdCollidesWithExistingPublication()
     {
         try (Subscription ignored = aeron.addSubscription(channelUriWithoutSessionId, STREAM_ID);
-             Publication publication = aeron.addExclusivePublication(channelUriWithoutSessionId, STREAM_ID))
+            Publication publication = aeron.addExclusivePublication(channelUriWithoutSessionId, STREAM_ID))
         {
             while (!publication.isConnected())
             {
@@ -193,7 +193,7 @@ public class SessionSpecificSubscriptionTest
             .media(UDP_MEDIA).endpoint(ENDPOINT).sessionId(SESSION_ID_1);
 
         try (Publication ignored1 = aeron.addPublication(channelBuilder.mtu(MTU_1).build(), STREAM_ID);
-             Publication ignored2 = aeron.addPublication(channelBuilder.mtu(MTU_2).build(), STREAM_ID))
+            Publication ignored2 = aeron.addPublication(channelBuilder.mtu(MTU_2).build(), STREAM_ID))
         {
             fail("Exception should have been thrown due to non-matching mtu");
         }
@@ -208,7 +208,7 @@ public class SessionSpecificSubscriptionTest
         final String channelTwo = channelBuilder.termLength(TERM_LENGTH_2).build();
 
         try (Publication ignored1 = aeron.addPublication(channelOne, STREAM_ID);
-             Publication ignored2 = aeron.addPublication(channelTwo, STREAM_ID))
+            Publication ignored2 = aeron.addPublication(channelTwo, STREAM_ID))
         {
             fail("Exception should have been thrown due to non-matching term length");
         }
@@ -223,7 +223,7 @@ public class SessionSpecificSubscriptionTest
         final String channelTwo = channelBuilder.sessionId(SESSION_ID_2).build();
 
         try (Publication ignored1 = aeron.addPublication(channelOne, STREAM_ID);
-             Publication ignored2 = aeron.addPublication(channelTwo, STREAM_ID))
+            Publication ignored2 = aeron.addPublication(channelTwo, STREAM_ID))
         {
             fail("Exception should have been thrown due using different session ids");
         }

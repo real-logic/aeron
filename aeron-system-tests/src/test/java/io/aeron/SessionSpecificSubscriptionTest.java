@@ -17,6 +17,7 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -31,6 +32,7 @@ import static io.aeron.CommonContext.UDP_MEDIA;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
 public class SessionSpecificSubscriptionTest
@@ -42,6 +44,10 @@ public class SessionSpecificSubscriptionTest
     private static final int FRAGMENT_COUNT_LIMIT = 10;
     private static final int MESSAGE_LENGTH = 1024 - DataHeaderFlyweight.HEADER_LENGTH;
     private static final int EXPECTED_NUMBER_OF_MESSAGES = 10;
+    private static final int MTU_1 = 4096;
+    private static final int MTU_2 = 8192;
+    private static final int TERM_LENGTH_1 = 64 * 1024;
+    private static final int TERM_LENGTH_2 = 128 * 1024;
 
     private final FragmentHandler mockFragmentHandler = mock(FragmentHandler.class);
     private final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
@@ -153,6 +159,73 @@ public class SessionSpecificSubscriptionTest
 
             assertFalse(publicationWildcard.isConnected());
             assertFalse(publicationWrongSession.isConnected());
+        }
+    }
+
+    @Test(expected = RegistrationException.class)
+    public void shouldNotCreateExclusivePublicationWhenSessionIdCollidesWithExistingPublication()
+    {
+        try (Subscription ignored = aeron.addSubscription(channelUriWithoutSessionId, STREAM_ID);
+            Publication publication = aeron.addExclusivePublication(channelUriWithoutSessionId, STREAM_ID))
+        {
+            while (!publication.isConnected())
+            {
+                SystemTest.checkInterruptedStatus();
+                Thread.yield();
+            }
+
+            final int existingSessionId = publication.sessionId();
+
+            final String invalidChannel = new ChannelUriStringBuilder()
+                .media(UDP_MEDIA).endpoint(ENDPOINT).sessionId(existingSessionId).build();
+
+            try (Publication ignored1 = aeron.addExclusivePublication(invalidChannel, STREAM_ID))
+            {
+                fail("Exception should have been thrown due to duplicate session id");
+            }
+        }
+    }
+
+    @Test(expected = RegistrationException.class)
+    public void shouldNotCreatePublicationsSharingSessionIdWithDifferentMtu()
+    {
+        final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder()
+            .media(UDP_MEDIA).endpoint(ENDPOINT).sessionId(SESSION_ID_1);
+
+        try (Publication ignored1 = aeron.addPublication(channelBuilder.mtu(MTU_1).build(), STREAM_ID);
+            Publication ignored2 = aeron.addPublication(channelBuilder.mtu(MTU_2).build(), STREAM_ID))
+        {
+            fail("Exception should have been thrown due to non-matching mtu");
+        }
+    }
+
+    @Test(expected = RegistrationException.class)
+    public void shouldNotCreatePublicationsSharingSessionIdWithDifferentTermLength()
+    {
+        final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder()
+            .media(UDP_MEDIA).endpoint(ENDPOINT).sessionId(SESSION_ID_1);
+        final String channelOne = channelBuilder.termLength(TERM_LENGTH_1).build();
+        final String channelTwo = channelBuilder.termLength(TERM_LENGTH_2).build();
+
+        try (Publication ignored1 = aeron.addPublication(channelOne, STREAM_ID);
+            Publication ignored2 = aeron.addPublication(channelTwo, STREAM_ID))
+        {
+            fail("Exception should have been thrown due to non-matching term length");
+        }
+    }
+
+    @Test(expected = RegistrationException.class)
+    public void shouldNotCreateNonExclusivePublicationsWithDifferentSessionIdsForTheSameEndpoint()
+    {
+        final ChannelUriStringBuilder channelBuilder = new ChannelUriStringBuilder()
+            .media(UDP_MEDIA).endpoint(ENDPOINT);
+        final String channelOne = channelBuilder.sessionId(SESSION_ID_1).build();
+        final String channelTwo = channelBuilder.sessionId(SESSION_ID_2).build();
+
+        try (Publication ignored1 = aeron.addPublication(channelOne, STREAM_ID);
+            Publication ignored2 = aeron.addPublication(channelTwo, STREAM_ID))
+        {
+            fail("Exception should have been thrown due using different session ids");
         }
     }
 

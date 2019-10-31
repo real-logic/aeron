@@ -21,8 +21,12 @@
 
 #include <stdint.h>
 
-#if defined(AERON_COMPILER_GCC) && defined(AERON_CPU_X64)
-    #include <concurrent/aeron_atomic64_gcc_x86_64.h>
+#if defined(AERON_COMPILER_GCC)
+    #if defined(AERON_CPU_X64)
+        #include <concurrent/aeron_atomic64_gcc_x86_64.h>
+    #else
+        #include <concurrent/aeron_atomic64_gcc_cpp11.h>
+    #endif
 #elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
     #include <concurrent/aeron_atomic64_msvc.h>
 #else

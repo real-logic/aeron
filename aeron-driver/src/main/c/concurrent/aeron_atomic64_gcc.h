@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef AERON_ATOMIC64_CLANG_ARM64_H
-#define AERON_ATOMIC64_CLANG_ARM64_H
+#ifndef AERON_ATOMIC64_GCC_H
+#define AERON_ATOMIC64_GCC_H
+
+#include <stdbool.h>
 
 #define AERON_GET_VOLATILE(dst, src) \
 do \
@@ -79,31 +81,12 @@ inline bool aeron_cmpxchg32(volatile int32_t* destination, int32_t expected, int
 }
 
 /* loadFence */
-inline void aeron_acquire()
-{
-    std::atomic_thread_fence(std::memory_order_acquire);
-    volatile int64_t* dummy;
-    __asm__ volatile("movq 0(%%rsp), %0" : "=r" (dummy) : : "memory");
-}
+#define aeron_acquire() \
+    __atomic_thread_fence (__ATOMIC_ACQUIRE)
 
 /* storeFence */
-inline void aeron_release()
-{
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-variable"
-    volatile int64_t dummy = 0;
-}
-#pragma GCC diagnostic pop
-
-#define AERON_CMPXCHG32(original, dst, expected, desired) \
-do \
-{ \
-    asm volatile( \
-        "lock; cmpxchgl %2, %1" \
-        : "=a"(original), "+m"(dst) \
-        : "q"(desired), "0"(expected)); \
-} \
-while (false)
+#define aeron_release() \
+    __atomic_thread_fence (__ATOMIC_RELEASE)
 
 /*-------------------------------------
  *  Alignment
@@ -113,4 +96,4 @@ while (false)
  */
 #define AERON_DECL_ALIGNED(declaration, amt) declaration __attribute__((aligned(amt)))
 
-#endif //AERON_ATOMIC64_CLANG_ARM64_H
+#endif //AERON_ATOMIC64_GCC_H

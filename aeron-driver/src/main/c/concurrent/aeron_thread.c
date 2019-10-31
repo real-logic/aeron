@@ -156,12 +156,20 @@ void * aeron_thread_get_specific(pthread_key_t key)
 
 #if defined(AERON_COMPILER_GCC)
 
+#if defined(AERON_CPU_X64)
 #include <sched.h>
 
 void proc_yield()
 {
     __asm__ volatile("pause\n": : : "memory");
 }
+#elif defined(__aarch64__)
+
+void proc_yield()
+{
+    __asm__ volatile("yield" ::: "memory");
+}
+#endif
 
 #elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
 

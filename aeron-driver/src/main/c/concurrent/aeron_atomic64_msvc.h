@@ -24,6 +24,10 @@
 #include <stdint.h>
 #include <intrin.h>
 
+extern void aeron_acquire();
+
+extern void aeron_release();
+
 #define AERON_GET_VOLATILE(dst, src) \
 do \
 { \

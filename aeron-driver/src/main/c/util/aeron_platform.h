@@ -31,6 +31,16 @@
         #error Unsupported CPU!
     #endif
 
+#elif defined(__clang__)
+    #define AERON_COMPILER_CLANG 1
+
+    #if defined(__aarch64__)
+        #define AERON_CPU_ARM64 1
+
+    #else
+        #error Unsupported CPU!
+    #endif
+
 #elif defined(__GNUC__)
     #define AERON_COMPILER_GCC 1
 

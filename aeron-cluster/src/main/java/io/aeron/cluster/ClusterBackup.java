@@ -240,6 +240,16 @@ public final class ClusterBackup implements AutoCloseable
          */
         public static final long CLUSTER_BACKUP_RESPONSE_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(2);
 
+        /**
+         * Timeout within which a cluster backup will expect progress.
+         */
+        public static final String CLUSTER_BACKUP_PROGRESS_TIMEOUT_PROP_NAME = "aeron.cluster.backup.progress.timeout";
+
+        /**
+         * Default timeout within which a cluster backup will expect progress.
+         */
+        public static final long CLUSTER_BACKUP_PROGRESS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
+
         static
         {
             final ClusterMember[] clusterMembers = ClusterMember.parse(ConsensusModule.Configuration.clusterMembers());
@@ -273,13 +283,25 @@ public final class ClusterBackup implements AutoCloseable
         /**
          * Timeout within which a cluster backup will expect a response from a backup query.
          *
-         * @return timeout within which a cluster backup wil;l expect a response from a backup query.
+         * @return timeout within which a cluster backup will expect a response from a backup query.
          * @see #CLUSTER_BACKUP_RESPONSE_TIMEOUT_PROP_NAME
          */
         public static long clusterBackupResponseTimeoutNs()
         {
             return getDurationInNanos(
                 CLUSTER_BACKUP_RESPONSE_TIMEOUT_PROP_NAME, CLUSTER_BACKUP_RESPONSE_TIMEOUT_DEFAULT_NS);
+        }
+
+        /**
+         * Timeout within which a cluster backup will expect progress.
+         *
+         * @return timeout within which a cluster backup will expect progress.
+         * @see #CLUSTER_BACKUP_PROGRESS_TIMEOUT_PROP_NAME
+         */
+        public static long clusterBackupProgressTimeoutNs()
+        {
+            return getDurationInNanos(
+                CLUSTER_BACKUP_PROGRESS_TIMEOUT_PROP_NAME, CLUSTER_BACKUP_PROGRESS_TIMEOUT_DEFAULT_NS);
         }
     }
 
@@ -303,6 +325,7 @@ public final class ClusterBackup implements AutoCloseable
 
         private long clusterBackupIntervalNs = Configuration.clusterBackupIntervalNs();
         private long clusterBackupResponseTimeoutNs = Configuration.clusterBackupResponseTimeoutNs();
+        private long clusterBackupProgressTimeoutNs = Configuration.clusterBackupProgressTimeoutNs();
         private int errorBufferLength = ConsensusModule.Configuration.errorBufferLength();
 
         private boolean deleteDirOnStart = false;
@@ -928,6 +951,32 @@ public final class ClusterBackup implements AutoCloseable
         public long clusterBackupResponseTimeoutNs()
         {
             return clusterBackupResponseTimeoutNs;
+        }
+
+        /**
+         * Timeout within which a cluster backup will expect progress.
+         *
+         * @param clusterBackupProgressTimeoutNs within which a cluster backup will expect a response.
+         * @return this for a fluent API.
+         * @see Configuration#CLUSTER_BACKUP_PROGRESS_TIMEOUT_PROP_NAME
+         * @see Configuration#CLUSTER_BACKUP_PROGRESS_TIMEOUT_DEFAULT_NS
+         */
+        public Context clusterBackupProgressTimeoutNs(final long clusterBackupProgressTimeoutNs)
+        {
+            this.clusterBackupProgressTimeoutNs = clusterBackupProgressTimeoutNs;
+            return this;
+        }
+
+        /**
+         * Timeout within which a cluster backup will expect progress.
+         *
+         * @return timeout within which a cluster backup will expect progress.
+         * @see Configuration#CLUSTER_BACKUP_PROGRESS_TIMEOUT_PROP_NAME
+         * @see Configuration#CLUSTER_BACKUP_PROGRESS_TIMEOUT_DEFAULT_NS
+         */
+        public long clusterBackupProgressTimeoutNs()
+        {
+            return clusterBackupProgressTimeoutNs;
         }
 
         /**

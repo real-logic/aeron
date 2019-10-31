@@ -135,7 +135,7 @@
         <field name="code"                 id="4" type="ControlResponseCode"
                description="Code type of the response which is one of ControlResponseCode."/>
         <field name="version"              id="5" type="version_t" presence="optional" sinceVersion="4"
-               description="Protocol version for the server using semantic versioning."/>
+               description="Protocol version for the server using semantic version form."/>
         <data  name="errorMessage"         id="6" type="varAsciiEncoding"
                description="Detailed error message which is provided when code is ERROR."/>
     </sbe:message>

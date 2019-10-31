@@ -46,66 +46,39 @@ do \
 while (false)
 
 #define AERON_GET_AND_ADD_INT64(original, dst, value) \
-do \
-{ \
-    __asm__ volatile( \
-        "lock; xaddq %0, %1" \
-        : "=r"(original), "+m"(dst) \
-        : "0"(value)); \
-} \
-while (false)
+    dst = __atomic_fetch_add(&original, value, __ATOMIC_SEQ_CST)
 
 #define AERON_GET_AND_ADD_INT32(original, dst, value) \
-do \
-{ \
-    __asm__ volatile( \
-        "lock; xaddl %0, %1" \
-        : "=r"(original), "+m"(dst) \
-        : "0"(value)); \
-} \
-while (false)
-
-#define AERON_CMPXCHG64(original, dst, expected, desired) \
-do \
-{ \
-    asm volatile( \
-        "lock; cmpxchgq %2, %1" \
-        : "=a"(original), "+m"(dst) \
-        : "q"(desired), "0"(expected)); \
-} \
-while (false)
+    dst = __atomic_fetch_add(&original, value, __ATOMIC_SEQ_CST)
 
 inline bool aeron_cmpxchg64(volatile int64_t* destination, int64_t expected, int64_t desired)
 {
-    int64_t original;
-    __asm__ volatile(
-    "lock; cmpxchgq %2, %1"
-    : "=a"(original), "+m"(*destination)
-    : "q"(desired), "0"(expected));
-
-    return original == expected;
+    // Semantics: return _InterlockedCompareExchange64(destination, desired, expected);
+    if (__atomic_compare_exchange(destination, &expected, &desired, false /* strong */, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)) {
+        return expected;
+    } else {
+        return *destination;
+    }
 }
 
 inline bool aeron_cmpxchgu64(volatile uint64_t* destination, uint64_t expected, uint64_t desired)
 {
-    uint64_t original;
-    __asm__ volatile(
-    "lock; cmpxchgq %2, %1"
-    : "=a"(original), "+m"(*destination)
-    : "q"(desired), "0"(expected));
-
-    return original == expected;
+    // Semantics: return _InterlockedCompareExchange64(destination, desired, expected);
+    if (__atomic_compare_exchange(destination, &expected, &desired, false /* strong */, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)) {
+        return expected;
+    } else {
+        return *destination;
+    }
 }
 
 inline bool aeron_cmpxchg32(volatile int32_t* destination, int32_t expected, int32_t desired)
 {
-    int32_t original;
-    __asm__ volatile(
-    "lock; cmpxchgl %2, %1"
-    : "=a"(original), "+m"(*destination)
-    : "q"(desired), "0"(expected));
-
-    return original == expected;
+    // Semantics: return _InterlockedCompareExchange(destination, desired, expected);
+    if (__atomic_compare_exchange(destination, &expected, &desired, false /* strong */, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)) {
+        return expected;
+    } else {
+        return *destination;
+    }
 }
 
 /* loadFence */

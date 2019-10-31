@@ -553,28 +553,35 @@ public class PublicationImage
         final long packetPosition = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
         final long proposedPosition = isHeartbeat ? packetPosition : packetPosition + length;
 
-        if (!isFlowControlUnderRun(packetPosition) && !isFlowControlOverRun(proposedPosition))
+        if (!isFlowControlOverRun(proposedPosition))
         {
-            trackConnection(transportIndex, srcAddress, lastPacketTimestampNs);
-
-            if (isHeartbeat)
+            if (!isFlowControlUnderRun(packetPosition))
             {
-                if (DataHeaderFlyweight.isEndOfStream(buffer) && !isEndOfStream && allEos(transportIndex))
+                trackConnection(transportIndex, srcAddress, lastPacketTimestampNs);
+
+                if (isHeartbeat)
                 {
-                    LogBufferDescriptor.endOfStreamPosition(rawLog.metaData(), proposedPosition);
-                    isEndOfStream = true;
+                    if (DataHeaderFlyweight.isEndOfStream(buffer) && !isEndOfStream && allEos(transportIndex))
+                    {
+                        LogBufferDescriptor.endOfStreamPosition(rawLog.metaData(), proposedPosition);
+                        isEndOfStream = true;
+                    }
+
+                    heartbeatsReceived.incrementOrdered();
+                }
+                else
+                {
+                    final UnsafeBuffer termBuffer = termBuffers[indexByPosition(packetPosition, positionBitsToShift)];
+                    TermRebuilder.insert(termBuffer, termOffset, buffer, length);
                 }
 
-                heartbeatsReceived.incrementOrdered();
+                lastPacketTimestampNs = cachedNanoClock.nanoTime();
+                hwmPosition.proposeMaxOrdered(proposedPosition);
             }
-            else
+            else if (packetPosition >= (lastSmPosition - nextSmReceiverWindowLength))
             {
-                final UnsafeBuffer termBuffer = termBuffers[indexByPosition(packetPosition, positionBitsToShift)];
-                TermRebuilder.insert(termBuffer, termOffset, buffer, length);
+                trackConnection(transportIndex, srcAddress, lastPacketTimestampNs);
             }
-
-            lastPacketTimestampNs = cachedNanoClock.nanoTime();
-            hwmPosition.proposeMaxOrdered(proposedPosition);
         }
 
         return length;
@@ -808,7 +815,7 @@ public class PublicationImage
 
     private boolean isFlowControlUnderRun(final long packetPosition)
     {
-        final boolean isFlowControlUnderRun = packetPosition < lastSmPosition;
+        final boolean isFlowControlUnderRun = packetPosition < (lastSmPosition - DataHeaderFlyweight.HEADER_LENGTH);
 
         if (isFlowControlUnderRun)
         {

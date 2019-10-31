@@ -171,33 +171,46 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
             markFile.updateActivityTimestamp(nowMs);
         }
 
-        workCount += memberStatusSubscription.poll(memberStatusFragmentAssembler, FRAGMENT_POLL_LIMIT);
-
-        switch (state)
+        try
         {
-            case BACKUP_QUERY:
-                workCount += backupQuery(nowMs);
-                break;
+            workCount += memberStatusSubscription.poll(memberStatusFragmentAssembler, FRAGMENT_POLL_LIMIT);
 
-            case SNAPSHOT_RETRIEVE:
-                workCount += snapshotRetrieve(nowMs);
-                break;
+            switch (state)
+            {
+                case BACKUP_QUERY:
+                    workCount += backupQuery(nowMs);
+                    break;
 
-            case LIVE_LOG_REPLAY:
-                workCount += liveLogReplay(nowMs);
-                break;
+                case SNAPSHOT_RETRIEVE:
+                    workCount += snapshotRetrieve(nowMs);
+                    break;
 
-            case UPDATE_RECORDING_LOG:
-                workCount += updateRecordingLog(nowMs);
-                break;
+                case LIVE_LOG_REPLAY:
+                    workCount += liveLogReplay(nowMs);
+                    break;
 
-            case RESET_BACKUP:
-                workCount += resetBackup(nowMs);
-                break;
+                case UPDATE_RECORDING_LOG:
+                    workCount += updateRecordingLog(nowMs);
+                    break;
 
-            case BACKING_UP:
-                workCount += backingUp(nowMs);
-                break;
+                case RESET_BACKUP:
+                    workCount += resetBackup(nowMs);
+                    break;
+
+                case BACKING_UP:
+                    workCount += backingUp(nowMs);
+                    break;
+            }
+        }
+        catch (final Exception ex)
+        {
+            if (null != eventsListener)
+            {
+                eventsListener.onPossibleClusterFailure();
+            }
+
+            state(RESET_BACKUP, epochClock.time());
+            throw ex;
         }
 
         return workCount;

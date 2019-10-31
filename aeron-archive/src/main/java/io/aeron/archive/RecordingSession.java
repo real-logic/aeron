@@ -187,17 +187,17 @@ class RecordingSession implements Session
             }
             else if (image.isEndOfStream() || image.isClosed())
             {
-                this.state = State.INACTIVE;
+                state = State.INACTIVE;
             }
 
             if (recordingWriter.isClosed())
             {
-                this.state = State.INACTIVE;
+                state = State.INACTIVE;
             }
         }
         catch (final Exception ex)
         {
-            this.state = State.INACTIVE;
+            state = State.INACTIVE;
             LangUtil.rethrowUnchecked(ex);
         }
 

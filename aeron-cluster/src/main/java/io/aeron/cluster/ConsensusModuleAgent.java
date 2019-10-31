@@ -1745,6 +1745,16 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         return result;
     }
 
+    void catchupInitiated(final long nowNs)
+    {
+        timeOfLastAppendPositionNs = nowNs;
+    }
+
+    boolean hasCatchupStalled(final long nowNs, final long catchupTimeoutNs)
+    {
+        return nowNs > (timeOfLastAppendPositionNs + catchupTimeoutNs);
+    }
+
     void stopAllCatchups()
     {
         for (final ClusterMember member : clusterMembers)

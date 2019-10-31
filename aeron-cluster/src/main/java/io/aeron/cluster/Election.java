@@ -753,6 +753,7 @@ public class Election implements AutoCloseable
         if (catchupPosition(leadershipTermId, logPosition))
         {
             timeOfLastUpdateNs = nowNs;
+            consensusModuleAgent.catchupInitiated(nowNs);
             state(State.FOLLOWER_CATCHUP);
         }
 
@@ -780,7 +781,14 @@ public class Election implements AutoCloseable
         }
         else if (nowNs > (timeOfLastUpdateNs + ctx.leaderHeartbeatIntervalNs()))
         {
-            if (consensusModuleAgent.hasReplayDestination() && catchupPosition(leadershipTermId, logPosition))
+            if (consensusModuleAgent.hasCatchupStalled(nowNs, ctx.leaderHeartbeatTimeoutNs()))
+            {
+                ctx.countedErrorHandler().onError(new ClusterException("no catchup progress"));
+                logPosition = ctx.commitPositionCounter().get();
+                state(State.INIT);
+                workCount += 1;
+            }
+            else if (consensusModuleAgent.hasReplayDestination() && catchupPosition(leadershipTermId, logPosition))
             {
                 timeOfLastUpdateNs = nowNs;
                 workCount += 1;

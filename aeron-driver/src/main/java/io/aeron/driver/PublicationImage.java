@@ -536,9 +536,9 @@ public class PublicationImage
      * @param termId         for the data packet to insert into the appropriate term.
      * @param termOffset     for the start of the packet in the term.
      * @param buffer         for the data packet to insert into the appropriate term.
-     * @param length         of the data packet
-     * @param transportIndex which the packet came from.
-     * @param srcAddress     which the packet came from.
+     * @param length         of the data packet.
+     * @param transportIndex from which the packet came.
+     * @param srcAddress     from which the packet came.
      * @return number of bytes applied as a result of this insertion.
      */
     int insertPacket(
@@ -815,7 +815,7 @@ public class PublicationImage
 
     private boolean isFlowControlUnderRun(final long packetPosition)
     {
-        final boolean isFlowControlUnderRun = packetPosition < (lastSmPosition - DataHeaderFlyweight.HEADER_LENGTH);
+        final boolean isFlowControlUnderRun = packetPosition < lastSmPosition;
 
         if (isFlowControlUnderRun)
         {

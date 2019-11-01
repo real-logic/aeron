@@ -137,8 +137,8 @@ abstract class ArchiveConductor
         localControlSubscription = aeron.addSubscription(
             ctx.localControlChannel(), ctx.localControlStreamId(), this, null);
 
-        recordingEventsProxy = new RecordingEventsProxy(
-            aeron.addExclusivePublication(ctx.recordingEventsChannel(), ctx.recordingEventsStreamId()));
+        recordingEventsProxy = new RecordingEventsProxy(ctx.recordingEventEnabled() ?
+            aeron.addExclusivePublication(ctx.recordingEventsChannel(), ctx.recordingEventsStreamId()) : null);
 
         catalog = ctx.catalog();
         markFile = ctx.archiveMarkFile();

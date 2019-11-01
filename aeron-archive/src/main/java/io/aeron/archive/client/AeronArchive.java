@@ -1768,6 +1768,16 @@ public class AeronArchive implements AutoCloseable
         public static final int RECORDING_EVENTS_STREAM_ID_DEFAULT = 30;
 
         /**
+         * Is channel enabled for recording progress events of recordings from an archive.
+         */
+        public static final String RECORDING_EVENTS_ENABLED_PROP_NAME = "aeron.archive.recording.events.stream.id";
+
+        /**
+         * Channel enabled for recording progress events of recordings from an archive which defaults to true.
+         */
+        public static final boolean RECORDING_EVENTS_ENABLED_DEFAULT = true;
+
+        /**
          * Sparse term buffer indicator for control streams.
          */
         public static final String CONTROL_TERM_BUFFER_SPARSE_PROP_NAME = "aeron.archive.control.term.buffer.sparse";
@@ -1937,6 +1947,18 @@ public class AeronArchive implements AutoCloseable
         public static int recordingEventsStreamId()
         {
             return Integer.getInteger(RECORDING_EVENTS_STREAM_ID_PROP_NAME, RECORDING_EVENTS_STREAM_ID_DEFAULT);
+        }
+
+        /**
+         * Should the recording events stream be enabled.
+         *
+         * @return true if the recording events stream be enabled.
+         * @see #RECORDING_EVENTS_ENABLED_PROP_NAME
+         */
+        public static boolean recordingEventsEnabled()
+        {
+            final String propValue = System.getProperty(RECORDING_EVENTS_ENABLED_PROP_NAME);
+            return null != propValue ? "true".equals(propValue) : RECORDING_EVENTS_ENABLED_DEFAULT;
         }
     }
 

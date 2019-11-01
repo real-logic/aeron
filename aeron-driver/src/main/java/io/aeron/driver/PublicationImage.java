@@ -557,7 +557,9 @@ public class PublicationImage
         {
             if (!isFlowControlUnderRun(packetPosition))
             {
-                trackConnection(transportIndex, srcAddress, lastPacketTimestampNs);
+                final long nowNs = cachedNanoClock.nanoTime();
+                lastPacketTimestampNs = nowNs;
+                trackConnection(transportIndex, srcAddress, nowNs);
 
                 if (isHeartbeat)
                 {
@@ -575,12 +577,11 @@ public class PublicationImage
                     TermRebuilder.insert(termBuffer, termOffset, buffer, length);
                 }
 
-                lastPacketTimestampNs = cachedNanoClock.nanoTime();
                 hwmPosition.proposeMaxOrdered(proposedPosition);
             }
             else if (packetPosition >= (lastSmPosition - nextSmReceiverWindowLength))
             {
-                trackConnection(transportIndex, srcAddress, lastPacketTimestampNs);
+                trackConnection(transportIndex, srcAddress, cachedNanoClock.nanoTime());
             }
         }
 

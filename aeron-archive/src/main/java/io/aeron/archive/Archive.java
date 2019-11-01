@@ -567,7 +567,7 @@ public class Archive implements AutoCloseable
         private int controlMtuLength = AeronArchive.Configuration.controlMtuLength();
         private String recordingEventsChannel = AeronArchive.Configuration.recordingEventsChannel();
         private int recordingEventsStreamId = AeronArchive.Configuration.recordingEventsStreamId();
-        private boolean recordingEventEnabled = AeronArchive.Configuration.recordingEventsEnabled();
+        private boolean recordingEventsEnabled = AeronArchive.Configuration.recordingEventsEnabled();
         private String replicationChannel = Configuration.replicationChannel();
 
         private long connectTimeoutNs = Configuration.connectTimeoutNs();
@@ -1071,21 +1071,21 @@ public class Archive implements AutoCloseable
          * @return true if the recording events channel should be enabled.
          * @see io.aeron.archive.client.AeronArchive.Configuration#RECORDING_EVENTS_ENABLED_PROP_NAME
          */
-        public boolean recordingEventEnabled()
+        public boolean recordingEventsEnabled()
         {
-            return recordingEventEnabled;
+            return recordingEventsEnabled;
         }
 
         /**
          * Set if the recording events channel should be enabled.
          *
-         * @param recordingEventEnabled indication of if the recording events channel should be enabled.
+         * @param recordingEventsEnabled indication of if the recording events channel should be enabled.
          * @return this for a fluent API.
          * @see io.aeron.archive.client.AeronArchive.Configuration#RECORDING_EVENTS_ENABLED_PROP_NAME
          */
-        public Context recordingEventEnabled(final boolean recordingEventEnabled)
+        public Context recordingEventsEnabled(final boolean recordingEventsEnabled)
         {
-            this.recordingEventEnabled = recordingEventEnabled;
+            this.recordingEventsEnabled = recordingEventsEnabled;
             return this;
         }
 

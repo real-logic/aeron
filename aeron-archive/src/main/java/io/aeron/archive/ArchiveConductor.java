@@ -137,7 +137,7 @@ abstract class ArchiveConductor
         localControlSubscription = aeron.addSubscription(
             ctx.localControlChannel(), ctx.localControlStreamId(), this, null);
 
-        recordingEventsProxy = new RecordingEventsProxy(ctx.recordingEventEnabled() ?
+        recordingEventsProxy = new RecordingEventsProxy(ctx.recordingEventsEnabled() ?
             aeron.addExclusivePublication(ctx.recordingEventsChannel(), ctx.recordingEventsStreamId()) : null);
 
         catalog = ctx.catalog();

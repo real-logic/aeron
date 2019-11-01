@@ -214,6 +214,7 @@ public class TestCluster implements AutoCloseable
             .controlChannel(context.aeronArchiveContext.controlRequestChannel())
             .controlStreamId(context.aeronArchiveContext.controlRequestStreamId())
             .localControlChannel("aeron:ipc?term-length=64k")
+            .recordingEventsEnabled(false)
             .localControlStreamId(context.aeronArchiveContext.controlRequestStreamId())
             .recordingEventsChannel(context.aeronArchiveContext.recordingEventsChannel())
             .threadingMode(ArchiveThreadingMode.SHARED)
@@ -282,6 +283,7 @@ public class TestCluster implements AutoCloseable
             .localControlChannel("aeron:ipc?term-length=64k")
             .localControlStreamId(context.aeronArchiveContext.controlRequestStreamId())
             .recordingEventsChannel(context.aeronArchiveContext.recordingEventsChannel())
+            .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
             .deleteArchiveOnStart(cleanStart);
 

@@ -551,10 +551,23 @@ public class RecordingLog implements AutoCloseable
     {
         for (int i = entries.size() - 1; i >= 0; i--)
         {
-            final Entry entry = entries.get(i);
-            if (ENTRY_TYPE_SNAPSHOT == entry.type && serviceId == entry.serviceId)
+            final Entry e = entries.get(i);
+            if (ENTRY_TYPE_SNAPSHOT == e.type && ConsensusModule.Configuration.SERVICE_ID == e.serviceId)
             {
-                return entry;
+                if (ConsensusModule.Configuration.SERVICE_ID == serviceId)
+                {
+                    return e;
+                }
+
+                final int serviceSnapshotIndex = i - (serviceId + 1);
+                if (serviceSnapshotIndex > 0)
+                {
+                    final Entry snapshot = entries.get(serviceSnapshotIndex);
+                    if (ENTRY_TYPE_SNAPSHOT == snapshot.type && serviceId == snapshot.serviceId)
+                    {
+                        return snapshot;
+                    }
+                }
             }
         }
 

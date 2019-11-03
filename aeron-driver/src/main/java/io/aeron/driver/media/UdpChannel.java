@@ -44,6 +44,8 @@ public final class UdpChannel
 
     private static final AtomicInteger UNIQUE_CANONICAL_FORM_VALUE = new AtomicInteger();
 
+    private final boolean isManualControlMode;
+    private final boolean isDynamicControlMode;
     private final boolean hasExplicitControl;
     private final boolean isMulticast;
     private final boolean hasMulticastTtl;
@@ -62,6 +64,8 @@ public final class UdpChannel
 
     private UdpChannel(final Context context)
     {
+        isManualControlMode = context.isManualControlMode;
+        isDynamicControlMode = context.isDynamicControlMode;
         hasExplicitControl = context.hasExplicitControl;
         isMulticast = context.isMulticast;
         hasTag = context.hasTagId;
@@ -99,6 +103,7 @@ public final class UdpChannel
 
             final String tagIdStr = channelUri.channelTag();
             final String controlMode = channelUri.get(CommonContext.MDC_CONTROL_MODE_PARAM_NAME);
+
             final boolean hasNoDistinguishingCharacteristic =
                 null == endpointAddress && null == explicitControlAddress && null == tagIdStr;
 
@@ -122,6 +127,8 @@ public final class UdpChannel
             final Context context = new Context()
                 .uriStr(channelUriString)
                 .channelUri(channelUri)
+                .isManualControlMode(CommonContext.MDC_CONTROL_MODE_MANUAL.equals(controlMode))
+                .isDynamicControlMode(CommonContext.MDC_CONTROL_MODE_DYNAMIC.equals(controlMode))
                 .hasNoDistinguishingCharacteristic(hasNoDistinguishingCharacteristic);
 
             if (null != tagIdStr)
@@ -204,7 +211,7 @@ public final class UdpChannel
      * <ul>
      *     <li>begins with the string "UDP-"</li>
      *     <li>has all addresses converted to hexadecimal</li>
-     *     <li>uses "-" as all field separators</li>
+     *     <li>uses "-" as field separator</li>
      * </ul>
      * <p>
      * The general format is:
@@ -406,6 +413,26 @@ public final class UdpChannel
     public long tag()
     {
         return tag;
+    }
+
+    /**
+     * Does the channel have manual control mode specified.
+     *
+     * @return does channel have manual control mode specified.
+     */
+    public boolean isManualControlMode()
+    {
+        return isManualControlMode;
+    }
+
+    /**
+     * Does the channel have dynamic control mode specified.
+     *
+     * @return does channel have dynamic control mode specified.
+     */
+    public boolean isDynamicControlMode()
+    {
+        return isDynamicControlMode;
     }
 
     /**
@@ -645,6 +672,8 @@ public final class UdpChannel
         NetworkInterface localInterface;
         ProtocolFamily protocolFamily;
         ChannelUri channelUri;
+        boolean isManualControlMode = false;
+        boolean isDynamicControlMode = false;
         boolean hasExplicitControl = false;
         boolean isMulticast = false;
         boolean hasMulticastTtl = false;
@@ -720,6 +749,18 @@ public final class UdpChannel
         Context channelUri(final ChannelUri channelUri)
         {
             this.channelUri = channelUri;
+            return this;
+        }
+
+        Context isManualControlMode(final boolean isManualControlMode)
+        {
+            this.isManualControlMode = isManualControlMode;
+            return this;
+        }
+
+        Context isDynamicControlMode(final boolean isDynamicControlMode)
+        {
+            this.isDynamicControlMode = isDynamicControlMode;
             return this;
         }
 

@@ -15,7 +15,6 @@
  */
 package io.aeron.driver.media;
 
-import io.aeron.CommonContext;
 import io.aeron.ErrorCode;
 import io.aeron.driver.DataPacketDispatcher;
 import io.aeron.driver.DriverConductorProxy;
@@ -87,15 +86,8 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         rttMeasurementFlyweight = threadLocals.rttMeasurementFlyweight();
         receiverId = threadLocals.receiverId();
 
-        final String mode = udpChannel.channelUri().get(CommonContext.MDC_CONTROL_MODE_PARAM_NAME);
-        if (CommonContext.MDC_CONTROL_MODE_MANUAL.equals(mode))
-        {
-            this.multiRcvDestination = new MultiRcvDestination(context.nanoClock(), DESTINATION_ADDRESS_TIMEOUT);
-        }
-        else
-        {
-            this.multiRcvDestination = null;
-        }
+        multiRcvDestination = udpChannel.isManualControlMode() ?
+            new MultiRcvDestination(context.nanoClock(), DESTINATION_ADDRESS_TIMEOUT) : null;
     }
 
     /**

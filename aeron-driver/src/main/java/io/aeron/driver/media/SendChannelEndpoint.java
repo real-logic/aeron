@@ -15,7 +15,6 @@
  */
 package io.aeron.driver.media;
 
-import io.aeron.CommonContext;
 import io.aeron.ErrorCode;
 import io.aeron.driver.*;
 import io.aeron.exceptions.ControlProtocolException;
@@ -59,7 +58,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
             udpChannel,
             udpChannel.remoteControl(),
             udpChannel.localControl(),
-            !udpChannel.hasExplicitControl() ? udpChannel.remoteData() : null,
+            udpChannel.hasExplicitControl() || udpChannel.isManualControlMode() ? null : udpChannel.remoteData(),
             context);
 
         nakMessagesReceived = context.systemCounters().get(NAK_MESSAGES_RECEIVED);
@@ -67,17 +66,13 @@ public class SendChannelEndpoint extends UdpChannelTransport
         this.statusIndicator = statusIndicator;
 
         MultiDestination multiDestination = null;
-        if (udpChannel.hasExplicitControl())
+        if (udpChannel.isManualControlMode())
         {
-            final String mode = udpChannel.channelUri().get(CommonContext.MDC_CONTROL_MODE_PARAM_NAME);
-            if (CommonContext.MDC_CONTROL_MODE_MANUAL.equals(mode))
-            {
-                multiDestination = new ManualMultiDestination();
-            }
-            else if (null == mode || CommonContext.MDC_CONTROL_MODE_DYNAMIC.equals(mode))
-            {
-                multiDestination = new DynamicMultiDestination(context.cachedNanoClock(), DESTINATION_TIMEOUT);
-            }
+            multiDestination = new ManualMultiDestination();
+        }
+        else if (udpChannel.isDynamicControlMode())
+        {
+            multiDestination = new DynamicMultiDestination(context.cachedNanoClock(), DESTINATION_TIMEOUT);
         }
 
         this.multiDestination = multiDestination;

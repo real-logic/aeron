@@ -20,6 +20,7 @@ import io.aeron.ChannelUri;
 import io.aeron.Image;
 import io.aeron.Subscription;
 import io.aeron.archive.codecs.ControlResponseCode;
+import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.concurrent.EpochClock;
@@ -395,8 +396,7 @@ public class ReplayMerge implements AutoCloseable
             }
             else if (image.isClosed())
             {
-                state(State.ERRORED);
-                workCount += 1;
+                throw new IllegalStateException("ReplayMerge Image closed unexpectedly.");
             }
             else if (image.position() > positionOfLastProgress)
             {
@@ -513,7 +513,7 @@ public class ReplayMerge implements AutoCloseable
     {
         if (hasProgressStalled(nowMs))
         {
-            state(State.ERRORED);
+            throw new TimeoutException("ReplayMerge no progress state=" + state);
         }
     }
 

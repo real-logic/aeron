@@ -22,6 +22,9 @@ import io.aeron.Subscription;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import org.agrona.concurrent.EpochClock;
+
+import java.util.concurrent.TimeUnit;
 
 import static io.aeron.CommonContext.MDC_CONTROL_MODE_MANUAL;
 import static io.aeron.CommonContext.MDC_CONTROL_MODE_PARAM_NAME;
@@ -32,10 +35,12 @@ import static io.aeron.CommonContext.MDC_CONTROL_MODE_PARAM_NAME;
  * Once constructed either of {@link #poll(FragmentHandler, int)} or {@link #doWork()}, interleaved with consumption
  * of the {@link #image()}, should be called in a duty cycle loop until {@link #isMerged()} is {@code true}.
  * After which the {@link ReplayMerge} can be closed and continued usage can be made of the {@link Image} or its
- * parent {@link Subscription}.
+ * parent {@link Subscription}. If an exception occurs or progress stops, the merge will fail and
+ * {@link #hasErrored()} will be {@code true}.
  */
 public class ReplayMerge implements AutoCloseable
 {
+    private static final long MERGE_PROGRESS_TIMEOUT_DEFAULT_MS = TimeUnit.SECONDS.toMillis(10);
     private static final int LIVE_ADD_THRESHOLD = LogBufferDescriptor.TERM_MIN_LENGTH >> 2;
     private static final int REPLAY_REMOVE_THRESHOLD = 0;
 
@@ -47,24 +52,76 @@ public class ReplayMerge implements AutoCloseable
         ATTEMPT_LIVE_JOIN,
         STOP_REPLAY,
         MERGED,
+        ERRORED,
         CLOSED
     }
 
     private final AeronArchive archive;
     private final Subscription subscription;
+    private final EpochClock epochClock;
     private final String replayChannel;
     private final String replayDestination;
     private final String liveDestination;
     private final long recordingId;
     private final long startPosition;
+    private final long mergeProgressTimeoutMs;
 
     private State state = State.GET_RECORDING_POSITION;
     private Image image;
     private long activeCorrelationId = Aeron.NULL_VALUE;
     private long nextTargetPosition = Aeron.NULL_VALUE;
     private long replaySessionId = Aeron.NULL_VALUE;
+    private long positionOfLastProgress = Aeron.NULL_VALUE;
+    private long timeOfLastPorgressMs;
     private boolean isLiveAdded = false;
     private boolean isReplayActive = false;
+
+    /**
+     * Create a {@link ReplayMerge} to manage the merging of a replayed stream and switching over to live stream as
+     * appropriate.
+     *
+     * @param subscription           to use for the replay and live stream. Must be a multi-destination subscription.
+     * @param archive                to use for the replay.
+     * @param replayChannel          to use for the replay.
+     * @param replayDestination      to send the replay to and the destination added by the {@link Subscription}.
+     * @param liveDestination        for the live stream and the destination added by the {@link Subscription}.
+     * @param recordingId            for the replay.
+     * @param startPosition          for the replay.
+     * @param epochClock             to use for progress checks.
+     * @param mergeProgressTimeoutMs to use for progress checks.
+     */
+    public ReplayMerge(
+        final Subscription subscription,
+        final AeronArchive archive,
+        final String replayChannel,
+        final String replayDestination,
+        final String liveDestination,
+        final long recordingId,
+        final long startPosition,
+        final EpochClock epochClock,
+        final long mergeProgressTimeoutMs)
+    {
+        final ChannelUri subscriptionChannelUri = ChannelUri.parse(subscription.channel());
+
+        if (!MDC_CONTROL_MODE_MANUAL.equals(subscriptionChannelUri.get(MDC_CONTROL_MODE_PARAM_NAME)))
+        {
+            throw new IllegalArgumentException("Subscription channel must be manual control mode: mode=" +
+                subscriptionChannelUri.get(MDC_CONTROL_MODE_PARAM_NAME));
+        }
+
+        this.archive = archive;
+        this.subscription = subscription;
+        this.epochClock = epochClock;
+        this.replayDestination = replayDestination;
+        this.replayChannel = replayChannel;
+        this.liveDestination = liveDestination;
+        this.recordingId = recordingId;
+        this.startPosition = startPosition;
+        this.timeOfLastPorgressMs = epochClock.time();
+        this.mergeProgressTimeoutMs = mergeProgressTimeoutMs;
+
+        subscription.asyncAddDestination(replayDestination);
+    }
 
     /**
      * Create a {@link ReplayMerge} to manage the merging of a replayed stream and switching over to live stream as
@@ -87,23 +144,16 @@ public class ReplayMerge implements AutoCloseable
         final long recordingId,
         final long startPosition)
     {
-        final ChannelUri subscriptionChannelUri = ChannelUri.parse(subscription.channel());
-
-        if (!MDC_CONTROL_MODE_MANUAL.equals(subscriptionChannelUri.get(MDC_CONTROL_MODE_PARAM_NAME)))
-        {
-            throw new IllegalArgumentException("Subscription channel must be manual control mode: mode=" +
-                subscriptionChannelUri.get(MDC_CONTROL_MODE_PARAM_NAME));
-        }
-
-        this.archive = archive;
-        this.subscription = subscription;
-        this.replayDestination = replayDestination;
-        this.replayChannel = replayChannel;
-        this.liveDestination = liveDestination;
-        this.recordingId = recordingId;
-        this.startPosition = startPosition;
-
-        subscription.asyncAddDestination(replayDestination);
+        this(
+            subscription,
+            archive,
+            replayChannel,
+            replayDestination,
+            liveDestination,
+            recordingId,
+            startPosition,
+            archive.context().aeron().context().epochClock(),
+            MERGE_PROGRESS_TIMEOUT_DEFAULT_MS);
     }
 
     /**
@@ -153,28 +203,41 @@ public class ReplayMerge implements AutoCloseable
     public int doWork()
     {
         int workCount = 0;
+        final long nowMs = epochClock.time();
 
-        switch (state)
+        try
         {
-            case GET_RECORDING_POSITION:
-                workCount += getRecordingPosition();
-                break;
+            switch (state)
+            {
+                case GET_RECORDING_POSITION:
+                    workCount += getRecordingPosition(nowMs);
+                    checkProgress(nowMs);
+                    break;
 
-            case REPLAY:
-                workCount += replay();
-                break;
+                case REPLAY:
+                    workCount += replay(nowMs);
+                    checkProgress(nowMs);
+                    break;
 
-            case CATCHUP:
-                workCount += catchup();
-                break;
+                case CATCHUP:
+                    workCount += catchup(nowMs);
+                    checkProgress(nowMs);
+                    break;
 
-            case ATTEMPT_LIVE_JOIN:
-                workCount += attemptLiveJoin();
-                break;
+                case ATTEMPT_LIVE_JOIN:
+                    workCount += attemptLiveJoin(nowMs);
+                    checkProgress(nowMs);
+                    break;
 
-            case STOP_REPLAY:
-                workCount += stopReplay();
-                break;
+                case STOP_REPLAY:
+                    workCount += stopReplay();
+                    break;
+            }
+        }
+        catch (final Exception ex)
+        {
+            state(State.ERRORED);
+            throw ex;
         }
 
         return workCount;
@@ -205,6 +268,16 @@ public class ReplayMerge implements AutoCloseable
     }
 
     /**
+     * Has the replay merge failed and entered into an errored state?
+     *
+     * @return true if merge is in the errored state or false if not.
+     */
+    public boolean hasErrored()
+    {
+        return state == State.ERRORED;
+    }
+
+    /**
      * The {@link Image} which is a merge of the replay and live stream.
      *
      * @return the {@link Image} which is a merge of the replay and live stream.
@@ -224,7 +297,7 @@ public class ReplayMerge implements AutoCloseable
         return isLiveAdded;
     }
 
-    private int getRecordingPosition()
+    private int getRecordingPosition(final long nowMs)
     {
         int workCount = 0;
 
@@ -235,6 +308,7 @@ public class ReplayMerge implements AutoCloseable
             if (archive.archiveProxy().getRecordingPosition(recordingId, correlationId, archive.controlSessionId()))
             {
                 activeCorrelationId = correlationId;
+                timeOfLastPorgressMs = nowMs;
                 workCount += 1;
             }
         }
@@ -250,11 +324,13 @@ public class ReplayMerge implements AutoCloseable
                 if (archive.archiveProxy().getStopPosition(recordingId, correlationId, archive.controlSessionId()))
                 {
                     activeCorrelationId = correlationId;
+                    timeOfLastPorgressMs = nowMs;
                     workCount += 1;
                 }
             }
             else
             {
+                timeOfLastPorgressMs = nowMs;
                 state(State.REPLAY);
             }
 
@@ -264,7 +340,7 @@ public class ReplayMerge implements AutoCloseable
         return workCount;
     }
 
-    private int replay()
+    private int replay(final long nowMs)
     {
         int workCount = 0;
 
@@ -282,6 +358,7 @@ public class ReplayMerge implements AutoCloseable
                 archive.controlSessionId()))
             {
                 activeCorrelationId = correlationId;
+                timeOfLastPorgressMs = nowMs;
                 workCount += 1;
             }
         }
@@ -289,6 +366,7 @@ public class ReplayMerge implements AutoCloseable
         {
             isReplayActive = true;
             replaySessionId = polledRelevantId(archive);
+            timeOfLastPorgressMs = nowMs;
             state(State.CATCHUP);
             workCount += 1;
         }
@@ -296,25 +374,41 @@ public class ReplayMerge implements AutoCloseable
         return workCount;
     }
 
-    private int catchup()
+    private int catchup(final long nowMs)
     {
         int workCount = 0;
 
         if (null == image && subscription.isConnected())
         {
+            timeOfLastPorgressMs = nowMs;
             image = subscription.imageBySessionId((int)replaySessionId);
+            positionOfLastProgress = null == image ? Aeron.NULL_VALUE : image.position();
         }
 
-        if (null != image && image.position() >= nextTargetPosition)
+        if (null != image)
         {
-            state(State.ATTEMPT_LIVE_JOIN);
-            workCount += 1;
+            if (image.position() >= nextTargetPosition)
+            {
+                timeOfLastPorgressMs = nowMs;
+                state(State.ATTEMPT_LIVE_JOIN);
+                workCount += 1;
+            }
+            else if (image.isClosed())
+            {
+                state(State.ERRORED);
+                workCount += 1;
+            }
+            else if (image.position() > positionOfLastProgress)
+            {
+                timeOfLastPorgressMs = nowMs;
+                positionOfLastProgress = image.position();
+            }
         }
 
         return workCount;
     }
 
-    private int attemptLiveJoin()
+    private int attemptLiveJoin(final long nowMs)
     {
         int workCount = 0;
 
@@ -325,6 +419,7 @@ public class ReplayMerge implements AutoCloseable
             if (archive.archiveProxy().getRecordingPosition(recordingId, correlationId, archive.controlSessionId()))
             {
                 activeCorrelationId = correlationId;
+                timeOfLastPorgressMs = nowMs;
                 workCount += 1;
             }
         }
@@ -340,6 +435,7 @@ public class ReplayMerge implements AutoCloseable
                 if (archive.archiveProxy().getRecordingPosition(recordingId, correlationId, archive.controlSessionId()))
                 {
                     activeCorrelationId = correlationId;
+                    timeOfLastPorgressMs = nowMs;
                 }
             }
             else
@@ -353,11 +449,13 @@ public class ReplayMerge implements AutoCloseable
                     if (shouldAddLiveDestination(position))
                     {
                         subscription.asyncAddDestination(liveDestination);
+                        timeOfLastPorgressMs = nowMs;
                         isLiveAdded = true;
                     }
                     else if (shouldStopAndRemoveReplay(position))
                     {
                         subscription.asyncRemoveDestination(replayDestination);
+                        timeOfLastPorgressMs = nowMs;
                         nextState = State.STOP_REPLAY;
                     }
                 }
@@ -404,6 +502,19 @@ public class ReplayMerge implements AutoCloseable
         return isLiveAdded &&
             (nextTargetPosition - position) <= REPLAY_REMOVE_THRESHOLD &&
             image.activeTransportCount() >= 2;
+    }
+
+    private boolean hasProgressStalled(final long nowMs)
+    {
+        return (nowMs > (timeOfLastPorgressMs + mergeProgressTimeoutMs));
+    }
+
+    private void checkProgress(final long nowMs)
+    {
+        if (hasProgressStalled(nowMs))
+        {
+            state(State.ERRORED);
+        }
     }
 
     private static boolean pollForResponse(final AeronArchive archive, final long correlationId)

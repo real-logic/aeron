@@ -40,6 +40,7 @@ if (env.CI || env.TRAVIS) {
 def aeronGroup = 'io.aeron'
 def aeronVersion = file('version.txt').text.trim()
 def aeronJavaVersion = JavaVersion.VERSION_1_8
+def aeronJavaReleaseVersion = '8'
 
 def agronaVersion = '1.0.10'
 def sbeVersion = '1.14.0'
@@ -151,15 +152,25 @@ subprojects {
     checkstyle.toolVersion = '8.25'
 
     compileJava {
-        sourceCompatibility = aeronJavaVersion
-        targetCompatibility = aeronJavaVersion
+        if (JavaVersion.current().ordinal() >= JavaVersion.VERSION_1_9.ordinal()) {
+            options.compilerArgs.addAll(['--release', aeronJavaReleaseVersion])
+        }
+        else {
+            sourceCompatibility = aeronJavaVersion
+            targetCompatibility = aeronJavaVersion
+        }
         options.encoding = 'UTF-8'
         options.deprecation = true
     }
 
     compileTestJava {
-        sourceCompatibility = aeronJavaVersion
-        targetCompatibility = aeronJavaVersion
+        if (JavaVersion.current().ordinal() >= JavaVersion.VERSION_1_9.ordinal()) {
+            options.compilerArgs.addAll(['--release', aeronJavaReleaseVersion])
+        }
+        else {
+            sourceCompatibility = aeronJavaVersion
+            targetCompatibility = aeronJavaVersion
+        }
         options.encoding = 'UTF-8'
         options.deprecation = true
     }
@@ -362,8 +373,13 @@ project(':aeron-archive') {
 
     compileGeneratedJava {
         dependsOn 'generateCodecs'
-        sourceCompatibility = aeronJavaVersion
-        targetCompatibility = aeronJavaVersion
+        if (JavaVersion.current().ordinal() >= JavaVersion.VERSION_1_9.ordinal()) {
+            options.compilerArgs.addAll(['--release', aeronJavaReleaseVersion])
+        }
+        else {
+            sourceCompatibility = aeronJavaVersion
+            targetCompatibility = aeronJavaVersion
+        }
         options.encoding = 'UTF-8'
         options.deprecation = true
         classpath += configurations.codecGeneration
@@ -474,8 +490,13 @@ project(':aeron-cluster') {
 
     compileGeneratedJava {
         dependsOn 'generateCodecs'
-        sourceCompatibility = aeronJavaVersion
-        targetCompatibility = aeronJavaVersion
+        if (JavaVersion.current().ordinal() >= JavaVersion.VERSION_1_9.ordinal()) {
+            options.compilerArgs.addAll(['--release', aeronJavaReleaseVersion])
+        }
+        else {
+            sourceCompatibility = aeronJavaVersion
+            targetCompatibility = aeronJavaVersion
+        }
         options.encoding = 'UTF-8'
         options.deprecation = true
         classpath += configurations.codecGeneration

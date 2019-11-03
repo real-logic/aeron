@@ -151,15 +151,15 @@ subprojects {
     checkstyle.toolVersion = '8.25'
 
     compileJava {
-        sourceCompatibility = sbeJavaVersion
-        targetCompatibility = sbeJavaVersion
+        sourceCompatibility = aeronJavaVersion
+        targetCompatibility = aeronJavaVersion
         options.encoding = 'UTF-8'
         options.deprecation = true
     }
 
     compileTestJava {
-        sourceCompatibility = sbeJavaVersion
-        targetCompatibility = sbeJavaVersion
+        sourceCompatibility = aeronJavaVersion
+        targetCompatibility = aeronJavaVersion
         options.encoding = 'UTF-8'
         options.deprecation = true
     }
@@ -362,8 +362,8 @@ project(':aeron-archive') {
 
     compileGeneratedJava {
         dependsOn 'generateCodecs'
-        sourceCompatibility = sbeJavaVersion
-        targetCompatibility = sbeJavaVersion
+        sourceCompatibility = aeronJavaVersion
+        targetCompatibility = aeronJavaVersion
         options.encoding = 'UTF-8'
         options.deprecation = true
         classpath += configurations.codecGeneration
@@ -474,8 +474,8 @@ project(':aeron-cluster') {
 
     compileGeneratedJava {
         dependsOn 'generateCodecs'
-        sourceCompatibility = sbeJavaVersion
-        targetCompatibility = sbeJavaVersion
+        sourceCompatibility = aeronJavaVersion
+        targetCompatibility = aeronJavaVersion
         options.encoding = 'UTF-8'
         options.deprecation = true
         classpath += configurations.codecGeneration

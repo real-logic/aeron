@@ -25,14 +25,19 @@ ReplayMerge::ReplayMerge(
     const std::string& replayDestination,
     const std::string& liveDestination,
     std::int64_t recordingId,
-    std::int64_t startPosition) :
+    std::int64_t startPosition,
+    epoch_clock_t epochClock,
+    std::int64_t mergeProgressTimeoutMs) :
     m_subscription(std::move(subscription)),
     m_archive(std::move(archive)),
     m_replayChannel(replayChannel),
     m_replayDestination(replayDestination),
     m_liveDestination(liveDestination),
     m_recordingId(recordingId),
-    m_startPosition(startPosition)
+    m_startPosition(startPosition),
+    m_mergeProgressTimeoutMs(mergeProgressTimeoutMs),
+    m_epochClock(std::move(epochClock)),
+    m_timeOfLastProgressMs(epochClock())
 {
     std::shared_ptr<ChannelUri> subscriptionChannelUri = ChannelUri::parse(m_subscription->channel());
 
@@ -68,7 +73,7 @@ ReplayMerge::~ReplayMerge()
     }
 }
 
-int ReplayMerge::getRecordingPosition()
+int ReplayMerge::getRecordingPosition(long long nowMs)
 {
     int workCount = 0;
 
@@ -78,6 +83,7 @@ int ReplayMerge::getRecordingPosition()
 
         if (m_archive->archiveProxy().getRecordingPosition(m_recordingId, correlationId, m_archive->controlSessionId()))
         {
+            m_timeOfLastProgressMs = nowMs;
             m_activeCorrelationId = correlationId;
             workCount += 1;
         }
@@ -92,12 +98,14 @@ int ReplayMerge::getRecordingPosition()
 
             if (m_archive->archiveProxy().getStopPosition(m_recordingId, correlationId, m_archive->controlSessionId()))
             {
+                m_timeOfLastProgressMs = nowMs;
                 m_activeCorrelationId = correlationId;
                 workCount += 1;
             }
         }
         else
         {
+            m_timeOfLastProgressMs = nowMs;
             state(State::REPLAY);
         }
 
@@ -107,7 +115,7 @@ int ReplayMerge::getRecordingPosition()
     return workCount;
 }
 
-int ReplayMerge::replay()
+int ReplayMerge::replay(long long nowMs)
 {
     int workCount = 0;
 
@@ -124,6 +132,7 @@ int ReplayMerge::replay()
             correlationId,
             m_archive->controlSessionId()))
         {
+            m_timeOfLastProgressMs = nowMs;
             m_activeCorrelationId = correlationId;
             workCount += 1;
         }
@@ -132,6 +141,7 @@ int ReplayMerge::replay()
     {
         m_isReplayActive = true;
         m_replaySessionId = m_archive->controlResponsePoller().relevantId();
+        m_timeOfLastProgressMs = nowMs;
         m_activeCorrelationId = aeron::NULL_VALUE;
         state(State::CATCHUP);
         workCount += 1;
@@ -140,26 +150,41 @@ int ReplayMerge::replay()
     return workCount;
 }
 
-int ReplayMerge::catchup()
+int ReplayMerge::catchup(long long nowMs)
 {
     int workCount = 0;
 
     if (nullptr == m_image && m_subscription->isConnected())
     {
+        m_timeOfLastProgressMs = nowMs;
         m_image = m_subscription->imageBySessionId(static_cast<std::int32_t>(m_replaySessionId));
+        m_positionOfLastProgress = m_image ? m_image->position() : aeron::NULL_VALUE;
     }
 
-    if (nullptr != m_image && m_image->position() >= m_nextTargetPosition)
+    if (nullptr != m_image)
     {
-        m_activeCorrelationId = aeron::NULL_VALUE;
-        state(State::ATTEMPT_LIVE_JOIN);
-        workCount += 1;
+        if (m_image->position() >= m_nextTargetPosition)
+        {
+            m_timeOfLastProgressMs = nowMs;
+            m_activeCorrelationId = aeron::NULL_VALUE;
+            state(State::ATTEMPT_LIVE_JOIN);
+            workCount += 1;
+        }
+        else if (m_image->isClosed())
+        {
+            throw TimeoutException("ReplayMerge Image closed unexpectedly.", SOURCEINFO);
+        }
+        else if (m_image->position() > m_positionOfLastProgress)
+        {
+            m_timeOfLastProgressMs = nowMs;
+            m_positionOfLastProgress = m_image->position();
+        }
     }
 
     return workCount;
 }
 
-int ReplayMerge::attemptLiveJoin()
+int ReplayMerge::attemptLiveJoin(long long nowMs)
 {
     int workCount = 0;
 
@@ -169,6 +194,7 @@ int ReplayMerge::attemptLiveJoin()
 
         if (m_archive->archiveProxy().getRecordingPosition(m_recordingId, correlationId, m_archive->controlSessionId()))
         {
+            m_timeOfLastProgressMs = nowMs;
             m_activeCorrelationId = correlationId;
             workCount += 1;
         }
@@ -184,6 +210,7 @@ int ReplayMerge::attemptLiveJoin()
             if (m_archive->archiveProxy().getRecordingPosition(
                 m_recordingId, correlationId, m_archive->controlSessionId()))
             {
+                m_timeOfLastProgressMs = nowMs;
                 m_activeCorrelationId = correlationId;
             }
         }
@@ -198,11 +225,13 @@ int ReplayMerge::attemptLiveJoin()
                 if (shouldAddLiveDestination(position))
                 {
                     m_subscription->addDestination(m_liveDestination);
+                    m_timeOfLastProgressMs = nowMs;
                     m_isLiveAdded = true;
                 }
                 else if (shouldStopAndRemoveReplay(position))
                 {
                     m_subscription->removeDestination(m_replayDestination);
+                    m_timeOfLastProgressMs = nowMs;
                     nextState = State::STOP_REPLAY;
                 }
             }
@@ -229,6 +258,14 @@ int ReplayMerge::stopReplay()
     }
 
     return workCount;
+}
+
+void ReplayMerge::checkProgress(long long nowMs)
+{
+    if (hasProgressStalled(nowMs))
+    {
+        throw TimeoutException("ReplayMerge no progress state=" + std::to_string(m_state), SOURCEINFO);
+    }
 }
 
 bool ReplayMerge::pollForResponse(AeronArchive& archive, std::int64_t correlationId)

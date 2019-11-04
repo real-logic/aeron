@@ -433,7 +433,7 @@ public:
         return m_imageArray.addElement(std::move(image)).first;
     }
 
-    std::pair<Image::array_t, int> removeImage(std::int64_t correlationId)
+    std::pair<Image::array_t, std::size_t> removeImage(std::int64_t correlationId)
     {
         auto result = m_imageArray.removeElement([&](const std::shared_ptr<Image>& image)
         {

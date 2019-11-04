@@ -103,11 +103,13 @@ public final class UdpChannel
 
             final String tagIdStr = channelUri.channelTag();
             final String controlMode = channelUri.get(CommonContext.MDC_CONTROL_MODE_PARAM_NAME);
+            final boolean isManualControlMode = CommonContext.MDC_CONTROL_MODE_MANUAL.equals(controlMode);
+            final boolean isDynamicControlMode = CommonContext.MDC_CONTROL_MODE_DYNAMIC.equals(controlMode);
 
             final boolean hasNoDistinguishingCharacteristic =
                 null == endpointAddress && null == explicitControlAddress && null == tagIdStr;
 
-            if (hasNoDistinguishingCharacteristic && null == controlMode)
+            if (hasNoDistinguishingCharacteristic && !isManualControlMode)
             {
                 throw new IllegalArgumentException(
                     "Aeron URIs for UDP must specify an endpoint address, control address, tag-id, or control-mode: " +
@@ -127,8 +129,8 @@ public final class UdpChannel
             final Context context = new Context()
                 .uriStr(channelUriString)
                 .channelUri(channelUri)
-                .isManualControlMode(CommonContext.MDC_CONTROL_MODE_MANUAL.equals(controlMode))
-                .isDynamicControlMode(CommonContext.MDC_CONTROL_MODE_DYNAMIC.equals(controlMode))
+                .isManualControlMode(isManualControlMode)
+                .isDynamicControlMode(isDynamicControlMode)
                 .hasNoDistinguishingCharacteristic(hasNoDistinguishingCharacteristic);
 
             if (null != tagIdStr)

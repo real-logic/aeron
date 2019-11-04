@@ -116,7 +116,7 @@ public:
     }
 
     template<typename F>
-    std::pair<E*, int> removeElement(F&& func)
+    std::pair<E*, std::size_t> removeElement(F&& func)
     {
         std::pair<E*, std::size_t> oldArray = load();
         const std::size_t length = oldArray.second;
@@ -133,7 +133,7 @@ public:
             }
         }
 
-        return {nullptr, -1};
+        return {nullptr, 0};
     }
 
 private:

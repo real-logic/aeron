@@ -878,9 +878,9 @@ void ClientConductor::onUnavailableImage(std::int64_t correlationId, std::int64_
 
         if (nullptr != subscription)
         {
-            std::pair<Image::array_t, int> result = subscription->removeImage(correlationId);
+            std::pair<Image::array_t, std::size_t> result = subscription->removeImage(correlationId);
             Image::array_t oldImageArray = result.first;
-            const int index = result.second;
+            const std::size_t index = result.second;
 
             if (nullptr != oldImageArray)
             {

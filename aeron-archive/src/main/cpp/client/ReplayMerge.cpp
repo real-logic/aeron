@@ -37,7 +37,7 @@ ReplayMerge::ReplayMerge(
     m_startPosition(startPosition),
     m_mergeProgressTimeoutMs(mergeProgressTimeoutMs),
     m_epochClock(std::move(epochClock)),
-    m_timeOfLastProgressMs(epochClock())
+    m_timeOfLastProgressMs(m_epochClock())
 {
     std::shared_ptr<ChannelUri> subscriptionChannelUri = ChannelUri::parse(m_subscription->channel());
 

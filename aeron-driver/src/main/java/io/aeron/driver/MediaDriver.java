@@ -1486,7 +1486,7 @@ public final class MediaDriver implements AutoCloseable
          */
         public Context rejoinStream(final boolean rejoinStream)
         {
-            this.reliableStream = rejoinStream;
+            this.rejoinStream = rejoinStream;
             return this;
         }
 
@@ -3090,6 +3090,7 @@ public final class MediaDriver implements AutoCloseable
                 "\n    spiesSimulateConnection=" + spiesSimulateConnection +
                 "\n    reliableStream=" + reliableStream +
                 "\n    tetherSubscriptions=" + tetherSubscriptions +
+                "\n    rejoinStream=" + rejoinStream +
                 "\n    receiverGroupConsideration=" + receiverGroupConsideration +
                 "\n    conductorBufferLength=" + conductorBufferLength +
                 "\n    toClientsBufferLength=" + toClientsBufferLength +

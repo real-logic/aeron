@@ -184,8 +184,8 @@ public class RecordingLogTest
     public void shouldTombstoneLatestSnapshot()
     {
         final long termBaseLogPosition = 0L;
-        final long leadershipTermId = 7L;
         final long logIncrement = 640L;
+        long leadershipTermId = 7L;
         long logPosition = 0L;
         long timestamp = 1000L;
         long recordingId = 1L;
@@ -208,26 +208,30 @@ public class RecordingLogTest
             recordingLog.appendSnapshot(
                 recordingId++, leadershipTermId, termBaseLogPosition, logPosition, timestamp, 0);
             recordingLog.appendSnapshot(
-                recordingId, leadershipTermId, termBaseLogPosition, logPosition, timestamp, SERVICE_ID);
+                recordingId++, leadershipTermId, termBaseLogPosition, logPosition, timestamp, SERVICE_ID);
+
+            leadershipTermId++;
+            recordingLog.appendTerm(recordingId, leadershipTermId, logPosition, timestamp);
 
             assertTrue(recordingLog.tombstoneLatestSnapshot());
-            assertThat(recordingLog.entries().size(), is(3));
+            assertThat(recordingLog.entries().size(), is(4));
         }
 
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
         {
-            assertThat(recordingLog.entries().size(), is(3));
+            assertThat(recordingLog.entries().size(), is(4));
             assertEquals(2L, recordingLog.getLatestSnapshot(0).recordingId);
             assertEquals(3L, recordingLog.getLatestSnapshot(SERVICE_ID).recordingId);
 
             assertTrue(recordingLog.tombstoneLatestSnapshot());
-            assertThat(recordingLog.entries().size(), is(1));
+            assertThat(recordingLog.entries().size(), is(2));
         }
 
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
         {
-            assertThat(recordingLog.entries().size(), is(1));
+            assertThat(recordingLog.entries().size(), is(2));
             assertFalse(recordingLog.tombstoneLatestSnapshot());
+            assertEquals(leadershipTermId, recordingLog.getTermEntry(leadershipTermId).leadershipTermId);
         }
     }
 

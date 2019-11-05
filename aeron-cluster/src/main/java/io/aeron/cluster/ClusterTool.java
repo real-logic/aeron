@@ -566,11 +566,13 @@ public class ClusterTool
         return result.value;
     }
 
-    public static void tombstoneLatestSnapshot(final PrintStream out, final File clusterDir)
+    public static boolean tombstoneLatestSnapshot(final PrintStream out, final File clusterDir)
     {
         try (RecordingLog recordingLog = new RecordingLog(clusterDir))
         {
-            out.println(" tombstone latest snapshot: " + recordingLog.tombstoneLatestSnapshot());
+            final boolean result = recordingLog.tombstoneLatestSnapshot();
+            out.println(" tombstone latest snapshot: " + result);
+            return result;
         }
     }
 

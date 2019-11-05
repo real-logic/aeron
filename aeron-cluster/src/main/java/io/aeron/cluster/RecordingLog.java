@@ -366,8 +366,8 @@ public class RecordingLog implements AutoCloseable
     private final FileChannel fileChannel;
     private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4096).order(LITTLE_ENDIAN);
     private final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
-    private final ArrayList<Entry> entries = new ArrayList<>();
-    private final Long2LongHashMap indexByLeadershipTermIdMap = new Long2LongHashMap(NULL_VALUE);
+    private final ArrayList<Entry> entriesCache = new ArrayList<>();
+    private final Long2LongHashMap cacheIndexByLeadershipTermIdMap = new Long2LongHashMap(NULL_VALUE);
 
     /**
      * Create a log that appends to an existing log or creates a new one.
@@ -430,7 +430,7 @@ public class RecordingLog implements AutoCloseable
      */
     public List<Entry> entries()
     {
-        return entries;
+        return entriesCache;
     }
 
     /**
@@ -448,9 +448,9 @@ public class RecordingLog implements AutoCloseable
      */
     public void reload()
     {
-        entries.clear();
-        indexByLeadershipTermIdMap.clear();
-        indexByLeadershipTermIdMap.compact();
+        entriesCache.clear();
+        cacheIndexByLeadershipTermIdMap.clear();
+        cacheIndexByLeadershipTermIdMap.compact();
 
         nextEntryIndex = 0;
         byteBuffer.clear();
@@ -463,7 +463,7 @@ public class RecordingLog implements AutoCloseable
                 if (byteBuffer.remaining() == 0)
                 {
                     byteBuffer.flip();
-                    captureEntriesFromBuffer(byteBuffer, buffer, entries);
+                    captureEntriesFromBuffer(byteBuffer, buffer, entriesCache);
                     byteBuffer.clear();
                 }
 
@@ -472,7 +472,7 @@ public class RecordingLog implements AutoCloseable
                     if (byteBuffer.position() > 0)
                     {
                         byteBuffer.flip();
-                        captureEntriesFromBuffer(byteBuffer, buffer, entries);
+                        captureEntriesFromBuffer(byteBuffer, buffer, entriesCache);
                         byteBuffer.clear();
                     }
 
@@ -493,9 +493,9 @@ public class RecordingLog implements AutoCloseable
      */
     public long findLastTermRecordingId()
     {
-        for (int i = entries.size() - 1; i >= 0; i--)
+        for (int i = entriesCache.size() - 1; i >= 0; i--)
         {
-            final Entry entry = entries.get(i);
+            final Entry entry = entriesCache.get(i);
             if (ENTRY_TYPE_TERM == entry.type)
             {
                 return entry.recordingId;
@@ -512,9 +512,9 @@ public class RecordingLog implements AutoCloseable
      */
     public Entry findLastTerm()
     {
-        for (int i = entries.size() - 1; i >= 0; i--)
+        for (int i = entriesCache.size() - 1; i >= 0; i--)
         {
-            final Entry entry = entries.get(i);
+            final Entry entry = entriesCache.get(i);
             if (ENTRY_TYPE_TERM == entry.type)
             {
                 return entry;
@@ -532,10 +532,10 @@ public class RecordingLog implements AutoCloseable
      */
     public Entry getTermEntry(final long leadershipTermId)
     {
-        final int index = (int)indexByLeadershipTermIdMap.get(leadershipTermId);
+        final int index = (int)cacheIndexByLeadershipTermIdMap.get(leadershipTermId);
         if (NULL_VALUE != index)
         {
-            return entries.get(index);
+            return entriesCache.get(index);
         }
 
         throw new ClusterException("unknown leadershipTermId=" + leadershipTermId);
@@ -549,20 +549,20 @@ public class RecordingLog implements AutoCloseable
      */
     public Entry getLatestSnapshot(final int serviceId)
     {
-        for (int i = entries.size() - 1; i >= 0; i--)
+        for (int i = entriesCache.size() - 1; i >= 0; i--)
         {
-            final Entry e = entries.get(i);
-            if (ENTRY_TYPE_SNAPSHOT == e.type && ConsensusModule.Configuration.SERVICE_ID == e.serviceId)
+            final Entry entry = entriesCache.get(i);
+            if (ENTRY_TYPE_SNAPSHOT == entry.type && ConsensusModule.Configuration.SERVICE_ID == entry.serviceId)
             {
                 if (ConsensusModule.Configuration.SERVICE_ID == serviceId)
                 {
-                    return e;
+                    return entry;
                 }
 
                 final int serviceSnapshotIndex = i - (serviceId + 1);
                 if (serviceSnapshotIndex > 0)
                 {
-                    final Entry snapshot = entries.get(serviceSnapshotIndex);
+                    final Entry snapshot = entriesCache.get(serviceSnapshotIndex);
                     if (ENTRY_TYPE_SNAPSHOT == snapshot.type && serviceId == snapshot.serviceId)
                     {
                         return snapshot;
@@ -582,9 +582,9 @@ public class RecordingLog implements AutoCloseable
     public boolean tombstoneLatestSnapshot()
     {
         int index = -1;
-        for (int i = entries.size() - 1; i >= 0; i--)
+        for (int i = entriesCache.size() - 1; i >= 0; i--)
         {
-            final Entry entry = entries.get(i);
+            final Entry entry = entriesCache.get(i);
             if (ENTRY_TYPE_SNAPSHOT == entry.type && ConsensusModule.Configuration.SERVICE_ID == entry.serviceId)
             {
                 index = i;
@@ -597,7 +597,7 @@ public class RecordingLog implements AutoCloseable
             int serviceId = ConsensusModule.Configuration.SERVICE_ID;
             for (int i = index; i >= 0; i--)
             {
-                final Entry entry = entries.get(i);
+                final Entry entry = entriesCache.get(i);
                 if (ENTRY_TYPE_SNAPSHOT == entry.type && entry.serviceId == serviceId)
                 {
                     tombstoneEntry(entry.leadershipTermId, entry.entryIndex);
@@ -623,10 +623,10 @@ public class RecordingLog implements AutoCloseable
      */
     public long getTermTimestamp(final long leadershipTermId)
     {
-        final int index = (int)indexByLeadershipTermIdMap.get(leadershipTermId);
+        final int index = (int)cacheIndexByLeadershipTermIdMap.get(leadershipTermId);
         if (NULL_VALUE != index)
         {
-            return entries.get(index).timestamp;
+            return entriesCache.get(index).timestamp;
         }
 
         return NULL_VALUE;
@@ -644,7 +644,7 @@ public class RecordingLog implements AutoCloseable
     {
         final ArrayList<Snapshot> snapshots = new ArrayList<>();
         final MutableReference<Log> logRef = new MutableReference<>();
-        planRecovery(snapshots, logRef, entries, archive, serviceCount);
+        planRecovery(snapshots, logRef, entriesCache, archive, serviceCount);
 
         long lastLeadershipTermId = NULL_VALUE;
         long lastTermBaseLogPosition = 0;
@@ -722,7 +722,7 @@ public class RecordingLog implements AutoCloseable
      */
     public boolean isUnknown(final long leadershipTermId)
     {
-        return NULL_VALUE == indexByLeadershipTermIdMap.get(leadershipTermId);
+        return NULL_VALUE == cacheIndexByLeadershipTermIdMap.get(leadershipTermId);
     }
 
     /**
@@ -736,10 +736,10 @@ public class RecordingLog implements AutoCloseable
     public void appendTerm(
         final long recordingId, final long leadershipTermId, final long termBaseLogPosition, final long timestamp)
     {
-        final int size = entries.size();
+        final int size = entriesCache.size();
         if (size > 0)
         {
-            final Entry lastEntry = entries.get(size - 1);
+            final Entry lastEntry = entriesCache.get(size - 1);
             if (lastEntry.type != NULL_VALUE && lastEntry.leadershipTermId >= leadershipTermId)
             {
                 throw new ClusterException("leadershipTermId out of sequence: previous " +
@@ -747,13 +747,13 @@ public class RecordingLog implements AutoCloseable
             }
 
             final long previousLeadershipTermId = leadershipTermId - 1;
-            if (NULL_VALUE != indexByLeadershipTermIdMap.get(previousLeadershipTermId))
+            if (NULL_VALUE != cacheIndexByLeadershipTermIdMap.get(previousLeadershipTermId))
             {
                 commitLogPosition(previousLeadershipTermId, termBaseLogPosition);
             }
         }
 
-        final int entryIndex = append(
+        append(
             ENTRY_TYPE_TERM,
             recordingId,
             leadershipTermId,
@@ -762,7 +762,7 @@ public class RecordingLog implements AutoCloseable
             timestamp,
             NULL_VALUE);
 
-        indexByLeadershipTermIdMap.put(leadershipTermId, entryIndex);
+        cacheIndexByLeadershipTermIdMap.put(leadershipTermId, entriesCache.size() - 1);
     }
 
     /**
@@ -783,10 +783,10 @@ public class RecordingLog implements AutoCloseable
         final long timestamp,
         final int serviceId)
     {
-        final int size = entries.size();
+        final int size = entriesCache.size();
         if (size > 0)
         {
-            final Entry entry = entries.get(size - 1);
+            final Entry entry = entriesCache.get(size - 1);
 
             if (entry.type == ENTRY_TYPE_TERM && entry.leadershipTermId != leadershipTermId)
             {
@@ -813,12 +813,18 @@ public class RecordingLog implements AutoCloseable
      */
     public void commitLogPosition(final long leadershipTermId, final long logPosition)
     {
-        final Entry entry = getTermEntry(leadershipTermId);
+        final int index = (int)cacheIndexByLeadershipTermIdMap.get(leadershipTermId);
+        if (NULL_VALUE == index)
+        {
+            throw new ClusterException("unknown leadershipTermId=" + leadershipTermId);
+        }
+
+        final Entry entry = entriesCache.get(index);
         if (entry.logPosition != logPosition)
         {
             commitEntryValue(entry.entryIndex, logPosition, LOG_POSITION_OFFSET);
 
-            entries.set(entry.entryIndex, new Entry(
+            entriesCache.set(index, new Entry(
                 entry.recordingId,
                 entry.leadershipTermId,
                 entry.termBaseLogPosition,
@@ -839,17 +845,26 @@ public class RecordingLog implements AutoCloseable
     public void tombstoneEntry(final long leadershipTermId, final int entryIndex)
     {
         int index = -1;
-        for (int i = entries.size() - 1; i >= 0; i--)
+        for (int i = entriesCache.size() - 1; i >= 0; i--)
         {
-            final Entry entry = entries.get(i);
+            final Entry entry = entriesCache.get(i);
             if (entry.leadershipTermId == leadershipTermId && entry.entryIndex == entryIndex)
             {
                 index = entry.entryIndex;
-                entries.remove(i);
+                entriesCache.remove(i);
 
                 if (ENTRY_TYPE_TERM == entry.type)
                 {
-                    indexByLeadershipTermIdMap.remove(leadershipTermId);
+                    cacheIndexByLeadershipTermIdMap.remove(leadershipTermId);
+                }
+
+                for (int j = i, size = entriesCache.size(); j < size; j++)
+                {
+                    final Entry e = entriesCache.get(j);
+                    if (ENTRY_TYPE_TERM == entry.type)
+                    {
+                        cacheIndexByLeadershipTermIdMap.put(e.leadershipTermId, j);
+                    }
                 }
 
                 break;
@@ -881,11 +896,12 @@ public class RecordingLog implements AutoCloseable
     public String toString()
     {
         return "RecordingLog{" +
-            "entries=" + entries +
+            "entries=" + entriesCache +
+            ", cacheIndex=" + entriesCache +
             '}';
     }
 
-    private int append(
+    private void append(
         final int entryType,
         final long recordingId,
         final long leadershipTermId,
@@ -917,7 +933,7 @@ public class RecordingLog implements AutoCloseable
         }
 
         final int entryIndex = nextEntryIndex++;
-        entries.add(new Entry(
+        entriesCache.add(new Entry(
             recordingId,
             leadershipTermId,
             termBaseLogPosition,
@@ -926,8 +942,6 @@ public class RecordingLog implements AutoCloseable
             serviceId,
             entryType,
             entryIndex));
-
-        return entryIndex;
     }
 
     private void captureEntriesFromBuffer(
@@ -953,7 +967,7 @@ public class RecordingLog implements AutoCloseable
 
                 if (ENTRY_TYPE_TERM == entryType)
                 {
-                    indexByLeadershipTermIdMap.put(entry.leadershipTermId, nextEntryIndex);
+                    cacheIndexByLeadershipTermIdMap.put(entry.leadershipTermId, entries.size() - 1);
                 }
             }
 

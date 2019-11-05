@@ -80,8 +80,7 @@ public class AuthenticationTest
         final MutableLong authenticatorSessionId = new MutableLong(-1L);
         final MutableReference<byte[]> encodedPrincipal = new MutableReference<>();
 
-        final CredentialsSupplier credentialsSupplier =
-            spy(new CredentialsSupplier()
+        final CredentialsSupplier credentialsSupplier = spy(new CredentialsSupplier()
             {
                 public byte[] encodedCredentials()
                 {
@@ -95,8 +94,7 @@ public class AuthenticationTest
                 }
             });
 
-        final Authenticator authenticator =
-            spy(new Authenticator()
+        final Authenticator authenticator = spy(new Authenticator()
             {
                 public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
                 {
@@ -145,8 +143,7 @@ public class AuthenticationTest
         final MutableLong authenticatorSessionId = new MutableLong(-1L);
         final MutableReference<byte[]> encodedPrincipal = new MutableReference<>();
 
-        final CredentialsSupplier credentialsSupplier =
-            spy(new CredentialsSupplier()
+        final CredentialsSupplier credentialsSupplier = spy(new CredentialsSupplier()
             {
                 public byte[] encodedCredentials()
                 {
@@ -160,8 +157,7 @@ public class AuthenticationTest
                 }
             });
 
-        final Authenticator authenticator =
-            spy(new Authenticator()
+        final Authenticator authenticator = spy(new Authenticator()
             {
                 public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
                 {
@@ -210,8 +206,7 @@ public class AuthenticationTest
         final MutableLong authenticatorSessionId = new MutableLong(-1L);
         final MutableReference<byte[]> encodedPrincipal = new MutableReference<>();
 
-        final CredentialsSupplier credentialsSupplier =
-            spy(new CredentialsSupplier()
+        final CredentialsSupplier credentialsSupplier = spy(new CredentialsSupplier()
             {
                 public byte[] encodedCredentials()
                 {
@@ -225,8 +220,7 @@ public class AuthenticationTest
                 }
             });
 
-        final Authenticator authenticator =
-            spy(new Authenticator()
+        final Authenticator authenticator = spy(new Authenticator()
             {
                 boolean challengeSuccessful = false;
 
@@ -283,8 +277,7 @@ public class AuthenticationTest
         final MutableLong authenticatorSessionId = new MutableLong(-1L);
         final MutableReference<byte[]> encodedPrincipal = new MutableReference<>();
 
-        final CredentialsSupplier credentialsSupplier =
-            spy(new CredentialsSupplier()
+        final CredentialsSupplier credentialsSupplier = spy(new CredentialsSupplier()
             {
                 public byte[] encodedCredentials()
                 {
@@ -298,8 +291,7 @@ public class AuthenticationTest
                 }
             });
 
-        final Authenticator authenticator =
-            spy(new Authenticator()
+        final Authenticator authenticator = spy(new Authenticator()
             {
                 public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
                 {
@@ -348,8 +340,7 @@ public class AuthenticationTest
         final MutableLong authenticatorSessionId = new MutableLong(-1L);
         final MutableReference<byte[]> encodedPrincipal = new MutableReference<>();
 
-        final CredentialsSupplier credentialsSupplier =
-            spy(new CredentialsSupplier()
+        final CredentialsSupplier credentialsSupplier = spy(new CredentialsSupplier()
             {
                 public byte[] encodedCredentials()
                 {
@@ -363,8 +354,7 @@ public class AuthenticationTest
                 }
             });
 
-        final Authenticator authenticator =
-            spy(new Authenticator()
+        final Authenticator authenticator = spy(new Authenticator()
             {
                 boolean challengeRespondedTo = false;
 
@@ -427,8 +417,7 @@ public class AuthenticationTest
     private void launchService(
         final MutableLong sessionId, final MutableReference<byte[]> encodedPrincipal, final AtomicLong msgCounter)
     {
-        final ClusteredService service =
-            new StubClusteredService()
+        final ClusteredService service = new StubClusteredService()
             {
                 private int counterValue = 0;
 
@@ -488,6 +477,7 @@ public class AuthenticationTest
             new Archive.Context()
                 .maxCatalogEntries(MAX_CATALOG_ENTRIES)
                 .threadingMode(ArchiveThreadingMode.SHARED)
+                .recordingEventsEnabled(false)
                 .deleteArchiveOnStart(true),
             new ConsensusModule.Context()
                 .errorHandler(Throwable::printStackTrace)

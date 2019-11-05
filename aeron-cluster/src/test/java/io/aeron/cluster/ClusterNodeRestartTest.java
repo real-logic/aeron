@@ -506,8 +506,7 @@ public class ClusterNodeRestartTest
 
     private void launchService(final AtomicLong msgCounter)
     {
-        final ClusteredService service =
-            new StubClusteredService()
+        final ClusteredService service = new StubClusteredService()
             {
                 private int nextCorrelationId = 0;
                 private int counterValue = 0;
@@ -596,8 +595,7 @@ public class ClusterNodeRestartTest
 
     private void launchReschedulingService(final AtomicInteger triggeredTimersCounter)
     {
-        final ClusteredService service =
-            new StubClusteredService()
+        final ClusteredService service = new StubClusteredService()
             {
                 public void onSessionMessage(
                     final ClientSession session,
@@ -698,6 +696,7 @@ public class ClusterNodeRestartTest
                 .dirDeleteOnStart(true),
             new Archive.Context()
                 .maxCatalogEntries(MAX_CATALOG_ENTRIES)
+                .recordingEventsEnabled(false)
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .deleteArchiveOnStart(initialLaunch),
             new ConsensusModule.Context()

@@ -353,6 +353,7 @@ public class StartFromTruncatedRecordingLogTest
                 .localControlChannel("aeron:ipc?term-length=64k")
                 .localControlStreamId(archiveCtx.controlRequestStreamId())
                 .recordingEventsChannel("aeron:udp?control-mode=dynamic|control=localhost:803" + index)
+                .recordingEventsEnabled(false)
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .errorHandler(Throwable::printStackTrace)
                 .deleteArchiveOnStart(cleanStart),

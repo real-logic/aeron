@@ -206,6 +206,7 @@ public class ReplayMergeTest
 
                 assertTrue(replayMerge.isMerged());
                 assertTrue(replayMerge.isLiveAdded());
+                assertFalse(replayMerge.hasError());
                 assertThat(received.get(), is(totalMessageCount));
             }
             finally

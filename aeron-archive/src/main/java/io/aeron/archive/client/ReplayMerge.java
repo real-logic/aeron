@@ -37,7 +37,7 @@ import static io.aeron.CommonContext.MDC_CONTROL_MODE_PARAM_NAME;
  * of the {@link #image()}, should be called in a duty cycle loop until {@link #isMerged()} is {@code true}.
  * After which the {@link ReplayMerge} can be closed and continued usage can be made of the {@link Image} or its
  * parent {@link Subscription}. If an exception occurs or progress stops, the merge will fail and
- * {@link #hasErrored()} will be {@code true}.
+ * {@link #hasError()} will be {@code true}.
  */
 public class ReplayMerge implements AutoCloseable
 {
@@ -53,7 +53,7 @@ public class ReplayMerge implements AutoCloseable
         ATTEMPT_LIVE_JOIN,
         STOP_REPLAY,
         MERGED,
-        ERRORED,
+        ERROR,
         CLOSED
     }
 
@@ -237,7 +237,7 @@ public class ReplayMerge implements AutoCloseable
         }
         catch (final Exception ex)
         {
-            state(State.ERRORED);
+            state(State.ERROR);
             throw ex;
         }
 
@@ -269,13 +269,13 @@ public class ReplayMerge implements AutoCloseable
     }
 
     /**
-     * Has the replay merge failed and entered into an errored state?
+     * Has the replay merge failed and entered into an error state?
      *
-     * @return true if merge is in the errored state or false if not.
+     * @return true if merge is in the error state or false if not.
      */
-    public boolean hasErrored()
+    public boolean hasError()
     {
-        return state == State.ERRORED;
+        return state == State.ERROR;
     }
 
     /**

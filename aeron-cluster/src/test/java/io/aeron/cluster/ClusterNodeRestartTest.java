@@ -392,6 +392,80 @@ public class ClusterNodeRestartTest
         }
     }
 
+    @Test(timeout = 10_000)
+    public void shouldRestartServiceTwiceWithTombstonedSnapshotAndFurtherLog() throws Exception
+    {
+        final AtomicLong serviceMsgCounter = new AtomicLong(0);
+
+        launchService(serviceMsgCounter);
+        connectClient();
+
+        sendCountedMessageIntoCluster(0);
+        sendCountedMessageIntoCluster(1);
+        sendCountedMessageIntoCluster(2);
+
+        while (serviceMsgCounter.get() != 3)
+        {
+            Thread.yield();
+        }
+
+        final CountersReader counters = container.context().aeron().countersReader();
+        final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters);
+        assertNotNull(controlToggle);
+        assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
+
+        while (snapshotCount.get() == 0)
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.sleep(1);
+        }
+
+        sendCountedMessageIntoCluster(3);
+
+        while (serviceMsgCounter.get() != 4)
+        {
+            Thread.yield();
+        }
+
+        forceCloseForRestart();
+
+        ClusterTool.tombstoneLatestSnapshot(System.out, clusteredMediaDriver.consensusModule().context().clusterDir());
+
+        serviceMsgCounter.set(0);
+        launchClusteredMediaDriver(false);
+        launchService(serviceMsgCounter);
+
+        while (serviceMsgCounter.get() != 4)
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.yield();
+        }
+
+        assertThat(serviceState.get(), is("4"));
+
+        connectClient();
+        sendCountedMessageIntoCluster(4);
+
+        while (serviceMsgCounter.get() != 5)
+        {
+            Thread.yield();
+        }
+
+        forceCloseForRestart();
+
+        serviceMsgCounter.set(0);
+        launchClusteredMediaDriver(false);
+        launchService(serviceMsgCounter);
+
+        while (serviceMsgCounter.get() != 2)
+        {
+            TestUtil.checkInterruptedStatus();
+            Thread.yield();
+        }
+
+        assertThat(serviceState.get(), is("5"));
+    }
+
     private void sendCountedMessageIntoCluster(final int value)
     {
         msgBuffer.putInt(MESSAGE_VALUE_OFFSET, value);

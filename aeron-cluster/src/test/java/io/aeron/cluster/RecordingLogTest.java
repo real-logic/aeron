@@ -32,6 +32,8 @@ import static io.aeron.cluster.RecordingLog.ENTRY_TYPE_TERM;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 
 public class RecordingLogTest
@@ -117,7 +119,6 @@ public class RecordingLogTest
             final long timestamp = 3333L;
 
             recordingLog.appendTerm(recordingId, leadershipTermId, logPosition, timestamp);
-
             recordingLog.commitLogPosition(leadershipTermId, newPosition);
         }
 
@@ -146,6 +147,7 @@ public class RecordingLogTest
                 entryTwo.recordingId, entryTwo.leadershipTermId, entryTwo.termBaseLogPosition, entryTwo.timestamp);
 
             recordingLog.tombstoneEntry(entryTwo.leadershipTermId, recordingLog.nextEntryIndex() - 1);
+            assertThat(recordingLog.entries().size(), is(1));
         }
 
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
@@ -176,6 +178,57 @@ public class RecordingLogTest
         assertThat(snapshots.get(1).serviceId, is(0));
         assertThat(snapshots.get(2).serviceId, is(1));
         assertThat(snapshots.get(3).serviceId, is(2));
+    }
+
+    @Test
+    public void shouldTombstoneLatestSnapshot()
+    {
+        final long termBaseLogPosition = 0L;
+        final long leadershipTermId = 7L;
+        final long logIncrement = 640L;
+        long logPosition = 0L;
+        long timestamp = 1000L;
+        long recordingId = 1L;
+
+        try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
+        {
+            recordingLog.appendTerm(recordingId++, leadershipTermId, termBaseLogPosition, timestamp);
+
+            timestamp += 1;
+            logPosition += logIncrement;
+
+            recordingLog.appendSnapshot(
+                recordingId++, leadershipTermId, termBaseLogPosition, logPosition, timestamp, 0);
+            recordingLog.appendSnapshot(
+                recordingId++, leadershipTermId, termBaseLogPosition, logPosition, timestamp, SERVICE_ID);
+
+            timestamp += 1;
+            logPosition += logIncrement;
+
+            recordingLog.appendSnapshot(
+                recordingId++, leadershipTermId, termBaseLogPosition, logPosition, timestamp, 0);
+            recordingLog.appendSnapshot(
+                recordingId, leadershipTermId, termBaseLogPosition, logPosition, timestamp, SERVICE_ID);
+
+            assertTrue(recordingLog.tombstoneLatestSnapshot());
+            assertThat(recordingLog.entries().size(), is(3));
+        }
+
+        try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
+        {
+            assertThat(recordingLog.entries().size(), is(3));
+            assertEquals(2L, recordingLog.getLatestSnapshot(0).recordingId);
+            assertEquals(3L, recordingLog.getLatestSnapshot(SERVICE_ID).recordingId);
+
+            assertTrue(recordingLog.tombstoneLatestSnapshot());
+            assertThat(recordingLog.entries().size(), is(1));
+        }
+
+        try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
+        {
+            assertThat(recordingLog.entries().size(), is(1));
+            assertFalse(recordingLog.tombstoneLatestSnapshot());
+        }
     }
 
     private static void addRecordingLogEntry(

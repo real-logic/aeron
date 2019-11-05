@@ -533,12 +533,12 @@ public class RecordingLog implements AutoCloseable
     public Entry getTermEntry(final long leadershipTermId)
     {
         final int index = (int)indexByLeadershipTermIdMap.get(leadershipTermId);
-        if (NULL_VALUE == index)
+        if (NULL_VALUE != index)
         {
-            throw new ClusterException("unknown leadershipTermId=" + leadershipTermId);
+            return entries.get(index);
         }
 
-        return entries.get(index);
+        throw new ClusterException("unknown leadershipTermId=" + leadershipTermId);
     }
 
     /**
@@ -575,6 +575,47 @@ public class RecordingLog implements AutoCloseable
     }
 
     /**
+     * Tombstone the last snapshot taken by the cluster so that on restart it can revert to the previous one.
+     *
+     * @return true if the latest snapshot was found and marked as a tombstone so it will not be reloaded.
+     */
+    public boolean tombstoneLatestSnapshot()
+    {
+        int index = -1;
+        for (int i = entries.size() - 1; i >= 0; i--)
+        {
+            final Entry entry = entries.get(i);
+            if (ENTRY_TYPE_SNAPSHOT == entry.type && ConsensusModule.Configuration.SERVICE_ID == entry.serviceId)
+            {
+                index = i;
+                break;
+            }
+        }
+
+        if (index >= 0)
+        {
+            int serviceId = ConsensusModule.Configuration.SERVICE_ID;
+            for (int i = index; i >= 0; i--)
+            {
+                final Entry entry = entries.get(i);
+                if (ENTRY_TYPE_SNAPSHOT == entry.type && entry.serviceId == serviceId)
+                {
+                    tombstoneEntry(entry.leadershipTermId, entry.entryIndex);
+                    serviceId++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Get the {@link Entry#timestamp} for a term.
      *
      * @param leadershipTermId to get {@link Entry#timestamp} for.
@@ -583,12 +624,12 @@ public class RecordingLog implements AutoCloseable
     public long getTermTimestamp(final long leadershipTermId)
     {
         final int index = (int)indexByLeadershipTermIdMap.get(leadershipTermId);
-        if (NULL_VALUE == index)
+        if (NULL_VALUE != index)
         {
-            return NULL_VALUE;
+            return entries.get(index).timestamp;
         }
 
-        return entries.get(index).timestamp;
+        return NULL_VALUE;
     }
 
     /**
@@ -798,12 +839,13 @@ public class RecordingLog implements AutoCloseable
     public void tombstoneEntry(final long leadershipTermId, final int entryIndex)
     {
         int index = -1;
-        for (int i = 0, size = entries.size(); i < size; i++)
+        for (int i = entries.size() - 1; i >= 0; i--)
         {
             final Entry entry = entries.get(i);
             if (entry.leadershipTermId == leadershipTermId && entry.entryIndex == entryIndex)
             {
                 index = entry.entryIndex;
+                entries.remove(i);
 
                 if (ENTRY_TYPE_TERM == entry.type)
                 {

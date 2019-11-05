@@ -50,15 +50,16 @@ import static org.agrona.SystemUtil.getDurationInNanos;
  * Tool for investigating the state of a cluster node.
  * <pre>
  * Usage: ClusterTool &#60;cluster-dir&#62; &#60;command&#62; [options]
- *          describe: prints out all descriptors in the file.
- *               pid: prints PID of cluster component.
- *     recovery-plan: [service count] prints recovery plan of cluster component.
- *     recording-log: prints recording log of cluster component.
- *            errors: prints Aeron and cluster component error logs.
- *      list-members: print leader memberId, active members list, and passive members list.
- *     remove-member: [memberId] requests removal of a member specified in memberId.
- *    remove-passive: [memberId] requests removal of passive member specified in memberId.
- *      backup-query: [delay] schedules (or displays) time of next backup query for cluster backup.
+ *                   describe: prints out all descriptors in the file.
+ *                        pid: prints PID of cluster component.
+ *              recovery-plan: [service count] prints recovery plan of cluster component.
+ *              recording-log: prints recording log of cluster component.
+ *                     errors: prints Aeron and cluster component error logs.
+ *               list-members: print leader memberId, active members list, and passive members list.
+ *              remove-member: [memberId] requests removal of a member specified in memberId.
+ *             remove-passive: [memberId] requests removal of passive member specified in memberId.
+ *               backup-query: [delay] schedules (or displays) time of next backup query for cluster backup.
+ *  tombstone-latest-snapshot: Mark the latest snapshot as a tombstone so previous is loaded..
  * </pre>
  */
 public class ClusterTool
@@ -146,6 +147,10 @@ public class ClusterTool
                         clusterDir,
                         NANOSECONDS.toMillis(SystemUtil.parseDuration(AERON_CLUSTER_TOOL_DELAY_PROP_NAME, args[2])));
                 }
+                break;
+
+            case "tombstone-latest-snapshot":
+                tombstoneLatestSnapshot(System.out, clusterDir);
                 break;
         }
     }
@@ -561,6 +566,14 @@ public class ClusterTool
         return result.value;
     }
 
+    public static void tombstoneLatestSnapshot(final PrintStream out, final File clusterDir)
+    {
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir))
+        {
+            out.println(" tombstone latest snapshot: " + recordingLog.tombstoneLatestSnapshot());
+        }
+    }
+
     private static ClusterMarkFile openMarkFile(final File clusterDir, final Consumer<String> logger)
     {
         return new ClusterMarkFile(clusterDir, ClusterMarkFile.FILENAME, System::currentTimeMillis, TIMEOUT_MS, logger);
@@ -621,14 +634,25 @@ public class ClusterTool
     private static void printHelp(final PrintStream out)
     {
         out.println("Usage: <cluster-dir> <command> [options]");
-        out.println("  describe: prints out all descriptors in the file.");
-        out.println("  pid: prints PID of cluster component.");
-        out.println("  recovery-plan: [service count] prints recovery plan of cluster component.");
-        out.println("  recording-log: prints recording log of cluster component.");
-        out.println("  errors: prints Aeron and cluster component error logs.");
-        out.println("  list-members: print leader memberId, active members list, and passive members list.");
-        out.println("  remove-member: [memberId] requests removal of a member specified in memberId.");
-        out.println("  remove-passive: [memberId] requests removal of passive member specified in memberId.");
-        out.println("  backup-query: [delay] display time of next backup query or set time of next backup query.");
+        out.println(
+            "                    describe: prints out all descriptors in the file.");
+        out.println(
+            "                        pid: prints PID of cluster component.");
+        out.println(
+            "              recovery-plan: [service count] prints recovery plan of cluster component.");
+        out.println(
+            "              recording-log: prints recording log of cluster component.");
+        out.println(
+            "                     errors: prints Aeron and cluster component error logs.");
+        out.println(
+            "               list-members: print leader memberId, active members list, and passive members list.");
+        out.println(
+            "              remove-member: [memberId] requests removal of a member specified in memberId.");
+        out.println(
+            "             remove-passive: [memberId] requests removal of passive member specified in memberId.");
+        out.println(
+            "               backup-query: [delay] display time of next backup query or set time of next backup query.");
+        out.println(
+            "  tombstone-latest-snapshot: Mark the latest snapshot as a tombstone so previous is loaded.");
     }
 }

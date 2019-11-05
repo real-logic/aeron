@@ -371,3 +371,6 @@ extern int aeron_send_channel_endpoint_remove_destination(
 
 extern bool aeron_send_channel_endpoint_tags_match(
     aeron_send_channel_endpoint_t *endpoint, aeron_udp_channel_t *channel);
+
+extern int aeron_send_channel_endpoint_bind_addr_and_port(
+    aeron_send_channel_endpoint_t *endpoint, char *buffer, size_t length);

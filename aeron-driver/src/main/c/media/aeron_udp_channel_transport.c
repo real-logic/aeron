@@ -403,3 +403,20 @@ int aeron_udp_channel_transport_get_so_rcvbuf(aeron_udp_channel_transport_t *tra
 
     return 0;
 }
+
+int aeron_udp_channel_transport_bind_addr_and_port(
+    aeron_udp_channel_transport_t *transport, char *buffer, size_t length)
+{
+    struct sockaddr_storage addr;
+    socklen_t addr_len = sizeof(addr);
+
+    if (getsockname(transport->fd, (struct sockaddr *)&addr, &addr_len) < 0)
+    {
+        int errcode = errno;
+
+        aeron_set_err(errcode, "getsockname %s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+        return -1;
+    }
+
+    return aeron_format_source_identity(buffer, length, &addr);
+}

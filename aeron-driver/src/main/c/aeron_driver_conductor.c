@@ -1033,6 +1033,8 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
     {
         aeron_counter_t status_indicator;
         int ensure_capacity_result = 0;
+        char bind_addr_and_port[AERON_MAX_PATH];
+        int bind_addr_and_port_length;
 
         AERON_ARRAY_ENSURE_CAPACITY(
             ensure_capacity_result, conductor->send_channel_endpoints, aeron_send_channel_endpoint_entry_t);
@@ -1052,6 +1054,23 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
         {
             return NULL;
         }
+
+        if ((bind_addr_and_port_length = aeron_send_channel_endpoint_bind_addr_and_port(
+            endpoint, bind_addr_and_port, sizeof(bind_addr_and_port))) < 0)
+        {
+            aeron_send_channel_endpoint_delete(&conductor->counters_manager, endpoint);
+            return NULL;
+        }
+
+        aeron_channel_endpoint_status_update_label(
+            &conductor->counters_manager,
+            status_indicator.counter_id,
+            AERON_COUNTER_SEND_CHANNEL_STATUS_NAME,
+            channel->uri_length,
+            channel->original_uri,
+            bind_addr_and_port_length,
+            bind_addr_and_port);
+
 
         if (aeron_str_to_ptr_hash_map_put(
             &conductor->send_channel_endpoint_by_channel_map,
@@ -1094,6 +1113,8 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
     {
         aeron_counter_t status_indicator;
         int ensure_capacity_result = 0;
+        char bind_addr_and_port[AERON_MAX_PATH];
+        int bind_addr_and_port_length;
 
         AERON_ARRAY_ENSURE_CAPACITY(
             ensure_capacity_result, conductor->receive_channel_endpoints, aeron_receive_channel_endpoint_entry_t);
@@ -1118,6 +1139,22 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
         {
             return NULL;
         }
+
+        if ((bind_addr_and_port_length = aeron_receive_channel_endpoint_bind_addr_and_port(
+            endpoint, bind_addr_and_port, sizeof(bind_addr_and_port))) < 0)
+        {
+            aeron_receive_channel_endpoint_delete(&conductor->counters_manager, endpoint);
+            return NULL;
+        }
+
+        aeron_channel_endpoint_status_update_label(
+            &conductor->counters_manager,
+            status_indicator.counter_id,
+            AERON_COUNTER_RECEIVE_CHANNEL_STATUS_NAME,
+            channel->uri_length,
+            channel->original_uri,
+            bind_addr_and_port_length,
+            bind_addr_and_port);
 
         if (aeron_str_to_ptr_hash_map_put(
             &conductor->receive_channel_endpoint_by_channel_map,

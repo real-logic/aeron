@@ -36,6 +36,15 @@ int32_t aeron_channel_endpoint_status_allocate(
     size_t channel_length,
     const char *channel);
 
+void aeron_channel_endpoint_status_update_label(
+    aeron_counters_manager_t *counters_manager,
+    int32_t counter_id,
+    const char *name,
+    size_t channel_length,
+    const char *channel,
+    size_t additional_length,
+    const char *additional);
+
 int32_t aeron_heartbeat_timestamp_allocate(
     aeron_counters_manager_t *counters_manager,
     const char *name,

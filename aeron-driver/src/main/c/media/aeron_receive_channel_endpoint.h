@@ -161,4 +161,10 @@ inline bool aeron_receive_channel_endpoint_should_elicit_setup_message(aeron_rec
     return aeron_data_packet_dispatcher_should_elicit_setup_message(&endpoint->dispatcher);
 }
 
+inline int aeron_receive_channel_endpoint_bind_addr_and_port(
+    aeron_receive_channel_endpoint_t *endpoint, char *buffer, size_t length)
+{
+    return endpoint->transport_bindings->bind_addr_and_port_func(&endpoint->transport, buffer, length);
+}
+
 #endif //AERON_RECEIVE_CHANNEL_ENDPOINT_H

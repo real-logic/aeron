@@ -36,6 +36,7 @@ aeron_udp_channel_transport_bindings_t aeron_udp_channel_transport_bindings_defa
         aeron_udp_channel_transport_sendmmsg,
         aeron_udp_channel_transport_sendmsg,
         aeron_udp_channel_transport_get_so_rcvbuf,
+        aeron_udp_channel_transport_bind_addr_and_port,
         aeron_udp_transport_poller_init,
         aeron_udp_transport_poller_close,
         aeron_udp_transport_poller_add,

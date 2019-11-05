@@ -68,6 +68,9 @@ typedef int (*aeron_udp_channel_transport_sendmsg_func_t)(
 typedef int (*aeron_udp_channel_transport_get_so_rcvbuf_func_t)(
     aeron_udp_channel_transport_t *transport, size_t *so_rcvbuf);
 
+typedef int (*aeron_udp_channel_transport_bind_addr_and_port_func_t)(
+    aeron_udp_channel_transport_t *transport, char *buffer, size_t length);
+
 typedef int (*aeron_udp_transport_poller_init_func_t)(
     aeron_udp_transport_poller_t *poller,
     aeron_driver_context_t *context,
@@ -97,6 +100,7 @@ typedef struct aeron_udp_channel_transport_bindings_stct
     aeron_udp_channel_transport_sendmmsg_func_t sendmmsg_func;
     aeron_udp_channel_transport_sendmsg_func_t sendmsg_func;
     aeron_udp_channel_transport_get_so_rcvbuf_func_t get_so_rcvbuf_func;
+    aeron_udp_channel_transport_bind_addr_and_port_func_t bind_addr_and_port_func;
     aeron_udp_transport_poller_init_func_t poller_init_func;
     aeron_udp_transport_poller_close_func_t poller_close_func;
     aeron_udp_transport_poller_add_func_t poller_add_func;

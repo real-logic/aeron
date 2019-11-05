@@ -95,6 +95,9 @@ int32_t aeron_counters_manager_allocate(
     const char *label,
     size_t label_length);
 
+void aeron_counters_manager_update_label(
+    volatile aeron_counters_manager_t *manager, int32_t counter_id, size_t label_length, const char *label);
+
 int32_t aeron_counters_manager_next_counter_id(volatile aeron_counters_manager_t *manager);
 
 int aeron_counters_manager_free(volatile aeron_counters_manager_t *manager, int32_t counter_id);

@@ -115,4 +115,10 @@ inline int aeron_send_channel_endpoint_remove_destination(
     return aeron_udp_destination_tracker_remove_destination(endpoint->destination_tracker, addr);
 }
 
+inline int aeron_send_channel_endpoint_bind_addr_and_port(
+    aeron_send_channel_endpoint_t *endpoint, char *buffer, size_t length)
+{
+    return endpoint->transport_bindings->bind_addr_and_port_func(&endpoint->transport, buffer, length);
+}
+
 #endif //AERON_SEND_CHANNEL_ENDPOINT_H

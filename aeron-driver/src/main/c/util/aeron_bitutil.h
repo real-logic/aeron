@@ -48,7 +48,7 @@ inline int aeron_number_of_trailing_zeroes(int32_t value)
 
     return 32;
 #else
-    static char table[32] =
+    char table[32] =
     {
         0, 1, 2, 24, 3, 19, 6, 25,
         22, 4, 20, 10, 16, 7, 12, 26,
@@ -61,7 +61,7 @@ inline int aeron_number_of_trailing_zeroes(int32_t value)
         return 32;
     }
 
-    uint32_t index = static_cast<uint32_t>((value & -value) * 0x04D7651F);
+    uint32_t index = (uint32_t)((value & -value) * 0x04D7651F);
 
     return table[index >> 27];
 #endif

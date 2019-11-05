@@ -26,7 +26,7 @@ class ListRecordingSubscriptionsSession implements Session
     private int pseudoIndex;
     private int sent;
     private final int streamId;
-    private boolean applyStreamId;
+    private final boolean applyStreamId;
     private boolean isDone = false;
     private final String channelFragment;
     private final Object2ObjectHashMap<String, Subscription> subscriptionByKeyMap;

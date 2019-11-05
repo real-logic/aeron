@@ -85,8 +85,8 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
     private Image snapshotRetrieveImage;
     private SnapshotReader snapshotReader;
 
-    private FragmentAssembler memberStatusFragmentAssembler = new FragmentAssembler(this::onFragment);
-    private Subscription memberStatusSubscription;
+    private final FragmentAssembler memberStatusFragmentAssembler = new FragmentAssembler(this::onFragment);
+    private final Subscription memberStatusSubscription;
     private ExclusivePublication memberStatusPublication;
     private ClusterMember[] clusterMembers;
     private ClusterMember leaderMember;

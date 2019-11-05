@@ -25,7 +25,6 @@ import org.agrona.concurrent.status.CountersReader;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.concurrent.status.CountersReader.*;
-import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
 /**
  * Allocate a counter for tracking the last heartbeat of an entity with a given registration id.

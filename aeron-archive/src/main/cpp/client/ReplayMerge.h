@@ -107,7 +107,7 @@ public:
         }
         catch (std::exception &ex)
         {
-            state(State::ERRORED);
+            state(State::ERROR);
             throw ex;
         }
 
@@ -140,13 +140,13 @@ public:
     }
 
     /**
-     * Has the replay merge failed and entered into an errored state?
+     * Has the replay merge failed and entered into an error state?
      *
-     * @return true if merge is in the errored state or false if not.
+     * @return true if merge is in the error state or false if not.
      */
-    inline bool hasErrored()
+    inline bool hasError()
     {
-        return m_state == State::ERRORED;
+        return m_state == State::ERROR;
     }
 
     /**
@@ -178,7 +178,7 @@ private:
         ATTEMPT_LIVE_JOIN,
         STOP_REPLAY,
         MERGED,
-        ERRORED,
+        ERROR,
         CLOSED
     };
 

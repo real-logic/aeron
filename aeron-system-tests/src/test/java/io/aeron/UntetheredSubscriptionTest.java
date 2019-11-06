@@ -91,18 +91,18 @@ public class UntetheredSubscriptionTest
         {
             while (!tetheredSub.isConnected() || !untetheredSub.isConnected())
             {
-                SystemTest.checkInterruptedStatus();
-                Thread.yield();
                 aeron.conductorAgentInvoker().invoke();
+                Thread.yield();
+                SystemTest.checkInterruptedStatus();
             }
 
             while (true)
             {
                 if (publication.offer(srcBuffer) < 0)
                 {
-                    SystemTest.checkInterruptedStatus();
-                    Thread.yield();
                     aeron.conductorAgentInvoker().invoke();
+                    Thread.yield();
+                    SystemTest.checkInterruptedStatus();
                 }
 
                 if (pollingUntethered && untetheredSub.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT) > 0)
@@ -119,9 +119,9 @@ public class UntetheredSubscriptionTest
 
                     while (publication.offer(srcBuffer) < 0)
                     {
-                        SystemTest.checkInterruptedStatus();
-                        Thread.yield();
                         aeron.conductorAgentInvoker().invoke();
+                        Thread.yield();
+                        SystemTest.checkInterruptedStatus();
                     }
 
                     return;
@@ -152,18 +152,18 @@ public class UntetheredSubscriptionTest
         {
             while (!tetheredSub.isConnected() || !untetheredSub.isConnected())
             {
-                SystemTest.checkInterruptedStatus();
-                Thread.yield();
                 aeron.conductorAgentInvoker().invoke();
+                Thread.yield();
+                SystemTest.checkInterruptedStatus();
             }
 
             while (true)
             {
                 if (publication.offer(srcBuffer) < 0)
                 {
-                    SystemTest.checkInterruptedStatus();
-                    Thread.yield();
                     aeron.conductorAgentInvoker().invoke();
+                    Thread.yield();
+                    SystemTest.checkInterruptedStatus();
                 }
 
                 if (pollingUntethered && untetheredSub.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT) > 0)
@@ -177,9 +177,9 @@ public class UntetheredSubscriptionTest
                 {
                     while (availableImageCount.get() < 2)
                     {
-                        SystemTest.checkInterruptedStatus();
-                        Thread.yield();
                         aeron.conductorAgentInvoker().invoke();
+                        Thread.yield();
+                        SystemTest.checkInterruptedStatus();
                     }
 
                     return;

@@ -93,8 +93,8 @@ public class PongTest
 
         while (pingPublication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
 
         final MutableInteger fragmentsRead = new MutableInteger();
@@ -136,8 +136,8 @@ public class PongTest
 
         while (pingPublication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
 
         final MutableInteger fragmentsRead = new MutableInteger();
@@ -171,8 +171,8 @@ public class PongTest
         // wait for disconnect to ensure we stay in lock step
         while (pingPublication.isConnected())
         {
-            SystemTest.checkInterruptedStatus();
             Thread.sleep(100);
+            SystemTest.checkInterruptedStatus();
         }
 
         // restart Pong side
@@ -183,8 +183,8 @@ public class PongTest
 
         while (pingPublication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
 
         SystemTest.executeUntil(
@@ -221,8 +221,8 @@ public class PongTest
     {
         while (pongPublication.offer(buffer, offset, length) < 0L)
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
     }
 }

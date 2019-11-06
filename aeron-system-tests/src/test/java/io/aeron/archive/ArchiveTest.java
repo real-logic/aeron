@@ -24,6 +24,7 @@ import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.driver.status.SystemCounterDescriptor;
+import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
 import org.agrona.*;
@@ -338,8 +339,8 @@ public class ArchiveTest
         {
             if (recordingEventsAdapter.poll() == 0)
             {
-                SystemTest.checkInterruptedStatus();
                 Thread.yield();
+                SystemTest.checkInterruptedStatus();
             }
         }
 
@@ -382,8 +383,8 @@ public class ArchiveTest
         {
             if (recordingEventsAdapter.poll() == 0)
             {
-                SystemTest.checkInterruptedStatus();
                 Thread.yield();
+                SystemTest.checkInterruptedStatus();
             }
         }
 
@@ -474,8 +475,8 @@ public class ArchiveTest
         {
             if (controlResponseAdapter.poll() == 0)
             {
-                SystemTest.checkInterruptedStatus();
                 Thread.yield();
+                SystemTest.checkInterruptedStatus();
             }
         }
     }
@@ -553,8 +554,8 @@ public class ArchiveTest
                     throw new IllegalStateException("Publication not connected: result=" + result);
                 }
 
-                SystemTest.checkInterruptedStatus();
                 Thread.yield();
+                SystemTest.checkInterruptedStatus();
             }
         }
 
@@ -603,8 +604,8 @@ public class ArchiveTest
                 final int fragments = replay.poll(this::validateFragment, 10);
                 if (0 == fragments)
                 {
-                    SystemTest.checkInterruptedStatus();
                     Thread.yield();
+                    SystemTest.checkInterruptedStatus();
                 }
             }
 
@@ -622,8 +623,8 @@ public class ArchiveTest
 
         while (catalog.stopPosition(recordingId) != stopPosition)
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
 
         try (RecordingReader recordingReader = new RecordingReader(
@@ -703,8 +704,8 @@ public class ArchiveTest
                     {
                         if (recordingEventsAdapter.poll() == 0)
                         {
-                            SystemTest.checkInterruptedStatus();
                             SystemTest.sleep(1);
+                            SystemTest.checkInterruptedStatus();
                         }
                     }
                 }
@@ -768,13 +769,14 @@ public class ArchiveTest
                     this.messageCount = 0;
                     remaining = totalDataLength;
 
+                    final FragmentHandler fragmentHandler = this::validateFragment;
                     while (this.messageCount < messageCount)
                     {
-                        final int fragments = replay.poll(this::validateFragment, 10);
+                        final int fragments = replay.poll(fragmentHandler, 10);
                         if (0 == fragments)
                         {
-                            SystemTest.checkInterruptedStatus();
                             Thread.yield();
+                            SystemTest.checkInterruptedStatus();
                         }
                     }
                 }

@@ -145,8 +145,8 @@ public class CounterTest
 
         while (null == readableCounter)
         {
-            SystemTest.checkInterruptedStatus();
             SystemTest.sleep(1);
+            SystemTest.checkInterruptedStatus();
         }
 
         assertFalse(readableCounter.isClosed());
@@ -156,8 +156,8 @@ public class CounterTest
 
         while (!readableCounter.isClosed())
         {
-            SystemTest.checkInterruptedStatus();
             SystemTest.sleep(1);
+            SystemTest.checkInterruptedStatus();
         }
     }
 

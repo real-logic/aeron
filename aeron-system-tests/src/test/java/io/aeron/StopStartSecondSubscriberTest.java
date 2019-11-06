@@ -112,14 +112,14 @@ public class StopStartSecondSubscriberTest
 
         while (publicationOne.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
 
         while (publicationTwo.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
 
         final MutableInteger fragmentsRead1 = new MutableInteger();
@@ -244,7 +244,7 @@ public class StopStartSecondSubscriberTest
         {
             while (!executor.awaitTermination(1, TimeUnit.SECONDS))
             {
-                System.err.println("Still awaiting termination");
+                System.err.println("awaiting termination");
             }
         }
         catch (final InterruptedException ex)

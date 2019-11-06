@@ -131,8 +131,8 @@ public class ChannelEndpointStatusTest
 
         while (subscription.channelStatus() == ChannelEndpointStatus.INITIALIZING)
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
 
         assertThat(subscription.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
@@ -145,8 +145,8 @@ public class ChannelEndpointStatusTest
 
         while (publication.channelStatus() == ChannelEndpointStatus.INITIALIZING)
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
 
         assertThat(publication.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
@@ -159,8 +159,8 @@ public class ChannelEndpointStatusTest
 
         while (subscriptionA.channelStatus() == ChannelEndpointStatus.INITIALIZING)
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
 
         assertThat(subscriptionA.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
@@ -189,8 +189,8 @@ public class ChannelEndpointStatusTest
 
         while (publicationA.channelStatus() == ChannelEndpointStatus.INITIALIZING)
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
 
         assertThat(publicationA.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
@@ -220,8 +220,8 @@ public class ChannelEndpointStatusTest
 
         while (subscriptionA.channelStatus() == ChannelEndpointStatus.INITIALIZING)
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
 
         final Subscription subscriptionB = clientB.addSubscription(URI_NO_CONFLICT, STREAM_ID);
@@ -230,8 +230,8 @@ public class ChannelEndpointStatusTest
         while (subscriptionB.channelStatus() == ChannelEndpointStatus.INITIALIZING ||
             subscriptionC.channelStatus() == ChannelEndpointStatus.INITIALIZING)
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
 
         verify(errorHandlerClientC, timeout(5000)).onError(any(ChannelEndpointException.class));

@@ -45,8 +45,8 @@ class Common
         int counterId;
         while (NULL_VALUE == (counterId = RecordingPos.findCounterIdBySession(counters, sessionId)))
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
 
         return counterId;
@@ -62,8 +62,8 @@ class Common
 
             while (publication.offer(buffer, 0, length) <= 0)
             {
-                SystemTest.checkInterruptedStatus();
                 Thread.yield();
+                SystemTest.checkInterruptedStatus();
             }
         }
     }
@@ -78,8 +78,8 @@ class Common
 
             while (publication.offer(buffer, 0, length) <= 0)
             {
-                SystemTest.checkInterruptedStatus();
                 Thread.yield();
+                SystemTest.checkInterruptedStatus();
             }
         }
     }
@@ -103,8 +103,8 @@ class Common
         {
             if (0 == subscription.poll(fragmentHandler, FRAGMENT_LIMIT))
             {
-                SystemTest.checkInterruptedStatus();
                 Thread.yield();
+                SystemTest.checkInterruptedStatus();
             }
         }
 
@@ -120,8 +120,8 @@ class Common
                 throw new IllegalStateException("count not active: " + counterId);
             }
 
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
     }
 
@@ -129,8 +129,8 @@ class Common
     {
         while (0 == recordingSignalAdapter.poll())
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
     }
 

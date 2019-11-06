@@ -79,9 +79,9 @@ public class ImageAvailabilityTest
         {
             while (!subOne.isConnected() || !subTwo.isConnected() || !publication.isConnected())
             {
-                SystemTest.checkInterruptedStatus();
-                Thread.yield();
                 aeron.conductorAgentInvoker().invoke();
+                Thread.yield();
+                SystemTest.checkInterruptedStatus();
             }
 
             final Image image = subOne.imageAtIndex(0);
@@ -99,9 +99,9 @@ public class ImageAvailabilityTest
 
             while (subOne.isConnected() || subTwo.isConnected())
             {
-                SystemTest.checkInterruptedStatus();
-                Thread.yield();
                 aeron.conductorAgentInvoker().invoke();
+                Thread.yield();
+                SystemTest.checkInterruptedStatus();
             }
 
             assertTrue(image.isClosed());
@@ -135,9 +135,9 @@ public class ImageAvailabilityTest
         {
             while (!subOne.isConnected() || !subTwo.isConnected() || !publication.isConnected())
             {
-                SystemTest.checkInterruptedStatus();
-                Thread.yield();
                 aeron.conductorAgentInvoker().invoke();
+                Thread.yield();
+                SystemTest.checkInterruptedStatus();
             }
 
             final Image image = subOne.imageAtIndex(0);
@@ -155,9 +155,9 @@ public class ImageAvailabilityTest
 
             while (subOne.isConnected() || subTwo.isConnected())
             {
-                SystemTest.checkInterruptedStatus();
-                Thread.yield();
                 aeron.conductorAgentInvoker().invoke();
+                Thread.yield();
+                SystemTest.checkInterruptedStatus();
             }
 
             assertTrue(image.isClosed());

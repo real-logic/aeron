@@ -90,8 +90,8 @@ public class GapFillLossTest
 
                 while ((position = publication.offer(srcBuffer)) < 0L)
                 {
-                    SystemTest.checkInterruptedStatus();
                     Thread.yield();
+                    SystemTest.checkInterruptedStatus();
                 }
             }
 
@@ -117,8 +117,8 @@ public class GapFillLossTest
         {
             while (!subscription.isConnected())
             {
-                SystemTest.checkInterruptedStatus();
                 Thread.yield();
+                SystemTest.checkInterruptedStatus();
             }
 
             final Image image = subscription.imageAtIndex(0);
@@ -134,6 +134,7 @@ public class GapFillLossTest
                         return;
                     }
                 }
+
                 Thread.yield();
             }
         }

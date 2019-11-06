@@ -74,8 +74,8 @@ public class ExclusivePublicationTest
         {
             while (subscription.imageCount() < 2)
             {
-                SystemTest.checkInterruptedStatus();
                 Thread.yield();
+                SystemTest.checkInterruptedStatus();
             }
 
             final int expectedNumberOfFragments = 778;
@@ -100,8 +100,8 @@ public class ExclusivePublicationTest
 
                 if (0 == fragmentsRead)
                 {
-                    SystemTest.checkInterruptedStatus();
                     Thread.yield();
+                    SystemTest.checkInterruptedStatus();
                 }
 
                 totalFragmentsRead += fragmentsRead;
@@ -116,8 +116,8 @@ public class ExclusivePublicationTest
     {
         while (publication.offer(srcBuffer, 0, MESSAGE_LENGTH) < 0L)
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
     }
 }

@@ -155,8 +155,8 @@ public class MultiDestinationSubscriptionTest
 
         while (subscription.hasNoImages())
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
     }
 
@@ -172,8 +172,8 @@ public class MultiDestinationSubscriptionTest
 
         while (subscription.hasNoImages())
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
 
         assertFalse(clientA.isCommandActive(correlationId));
@@ -191,8 +191,8 @@ public class MultiDestinationSubscriptionTest
 
         while (subscription.hasNoImages())
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
     }
 
@@ -210,16 +210,16 @@ public class MultiDestinationSubscriptionTest
 
         while (subscription.hasNoImages())
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
             while (publicationA.offer(buffer, 0, buffer.capacity()) < 0L)
             {
-                SystemTest.checkInterruptedStatus();
                 Thread.yield();
+                SystemTest.checkInterruptedStatus();
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();
@@ -252,16 +252,16 @@ public class MultiDestinationSubscriptionTest
 
         while (subscription.hasNoImages())
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
             while (publicationA.offer(buffer, 0, buffer.capacity()) < 0L)
             {
-                SystemTest.checkInterruptedStatus();
                 Thread.yield();
+                SystemTest.checkInterruptedStatus();
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();
@@ -289,16 +289,16 @@ public class MultiDestinationSubscriptionTest
 
         while (subscription.hasNoImages())
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
             while (publicationA.offer(buffer, 0, buffer.capacity()) < 0L)
             {
-                SystemTest.checkInterruptedStatus();
                 Thread.yield();
+                SystemTest.checkInterruptedStatus();
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();
@@ -322,16 +322,16 @@ public class MultiDestinationSubscriptionTest
 
         while (subscription.hasNoImages())
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
             while (publicationA.offer(buffer, 0, buffer.capacity()) < 0L)
             {
-                SystemTest.checkInterruptedStatus();
                 Thread.yield();
+                SystemTest.checkInterruptedStatus();
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();
@@ -369,16 +369,16 @@ public class MultiDestinationSubscriptionTest
 
         while (subscription.hasNoImages())
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
 
         for (int i = 0; i < numMessagesToSendForA; i++)
         {
             while (publicationA.offer(buffer, 0, buffer.capacity()) < 0L)
             {
-                SystemTest.checkInterruptedStatus();
                 Thread.yield();
+                SystemTest.checkInterruptedStatus();
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();
@@ -418,8 +418,8 @@ public class MultiDestinationSubscriptionTest
         {
             while (publicationB.offer(buffer, 0, buffer.capacity()) < 0L)
             {
-                SystemTest.checkInterruptedStatus();
                 Thread.yield();
+                SystemTest.checkInterruptedStatus();
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();
@@ -478,8 +478,8 @@ public class MultiDestinationSubscriptionTest
         {
             while (publicationA.offer(buffer, 0, buffer.capacity()) < 0L)
             {
-                SystemTest.checkInterruptedStatus();
                 Thread.yield();
+                SystemTest.checkInterruptedStatus();
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();
@@ -487,8 +487,8 @@ public class MultiDestinationSubscriptionTest
 
             while (publicationB.offer(buffer, 0, buffer.capacity()) < 0L)
             {
-                SystemTest.checkInterruptedStatus();
                 Thread.yield();
+                SystemTest.checkInterruptedStatus();
             }
 
             assertThat(subscription.poll(fragmentHandler, 10), is(0));
@@ -507,8 +507,8 @@ public class MultiDestinationSubscriptionTest
 
             while (publicationA.offer(buffer, 0, buffer.capacity()) < 0L)
             {
-                SystemTest.checkInterruptedStatus();
                 Thread.yield();
+                SystemTest.checkInterruptedStatus();
             }
 
             assertThat(subscription.poll(fragmentHandler, 10), is(0));
@@ -526,8 +526,13 @@ public class MultiDestinationSubscriptionTest
             () -> fragmentsRead.get() > 0,
             (j) ->
             {
-                fragmentsRead.value += subscription.poll(handler, 10);
-                Thread.yield();
+                final int fragments = subscription.poll(handler, 10);
+                if (fragments == 0)
+                {
+                    Thread.yield();
+                }
+
+                fragmentsRead.value += fragments;
             },
             Integer.MAX_VALUE,
             TimeUnit.MILLISECONDS.toNanos(500));

@@ -103,8 +103,8 @@ public class SpySimulatedConnectionTest
 
         while (!spy.isConnected())
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
 
         assertFalse(publication.isConnected());
@@ -128,16 +128,16 @@ public class SpySimulatedConnectionTest
 
         while (!spy.isConnected() || !publication.isConnected())
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
 
         for (int i = 0; i < messagesToSend; i++)
         {
             while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
             {
-                SystemTest.checkInterruptedStatus();
                 Thread.yield();
+                SystemTest.checkInterruptedStatus();
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();
@@ -191,8 +191,8 @@ public class SpySimulatedConnectionTest
                 }
             }
 
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
 
             fragmentsFromSpy += spy.poll(fragmentHandlerSpy, 10);
 
@@ -265,27 +265,27 @@ public class SpySimulatedConnectionTest
     {
         while (!spy.isConnected() || !subscription.isConnected() || !publication.isConnected())
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
 
         // send initial message to ensure connectivity
         while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
 
         while (spy.poll(mock(FragmentHandler.class), 1) == 0)
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
 
         while (subscription.poll(mock(FragmentHandler.class), 1) == 0)
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
     }
 }

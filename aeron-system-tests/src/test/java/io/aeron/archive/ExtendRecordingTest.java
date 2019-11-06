@@ -213,8 +213,8 @@ public class ExtendRecordingTest
 
             while (publication.offer(buffer, 0, length) <= 0)
             {
-                SystemTest.checkInterruptedStatus();
                 Thread.yield();
+                SystemTest.checkInterruptedStatus();
             }
         }
     }
@@ -239,8 +239,8 @@ public class ExtendRecordingTest
         {
             if (0 == subscription.poll(fragmentHandler, FRAGMENT_LIMIT))
             {
-                SystemTest.checkInterruptedStatus();
                 Thread.yield();
+                SystemTest.checkInterruptedStatus();
             }
         }
 

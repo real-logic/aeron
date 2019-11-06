@@ -190,8 +190,8 @@ public class ReplayMergeTest
 
                     if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
                     {
-                        SystemTest.checkInterruptedStatus();
                         Thread.yield();
+                        SystemTest.checkInterruptedStatus();
                     }
                 }
 
@@ -199,8 +199,8 @@ public class ReplayMergeTest
                 {
                     if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
                     {
-                        SystemTest.checkInterruptedStatus();
                         Thread.yield();
+                        SystemTest.checkInterruptedStatus();
                     }
                 }
 
@@ -222,8 +222,8 @@ public class ReplayMergeTest
 
         while (publication.offer(buffer, 0, length) <= 0)
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
     }
 

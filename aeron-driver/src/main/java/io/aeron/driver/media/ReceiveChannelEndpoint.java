@@ -144,6 +144,11 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
                 "channel cannot be registered unless INITIALISING: status=" + status(currentStatus));
         }
 
+        if (null == multiRcvDestination)
+        {
+            statusIndicator.updateLabel(statusIndicator.label() + " " + bindAddressAndPort());
+        }
+
         statusIndicator.setOrdered(ChannelEndpointStatus.ACTIVE);
     }
 

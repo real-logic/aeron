@@ -27,9 +27,7 @@ import org.agrona.concurrent.errors.DistinctErrorLog;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.PortUnreachableException;
-import java.net.StandardSocketOptions;
+import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
@@ -206,6 +204,32 @@ public abstract class UdpChannelTransport implements AutoCloseable
     public int multicastTtl()
     {
         return multicastTtl;
+    }
+
+    /**
+     * Get the bind address and port in endpoint-style format (ip:port).
+     *
+     * Must be called after the channel is opened.
+     *
+     * @return the bind address and port in endpoint-style format (ip:port).
+     */
+    public String bindAddressAndPort()
+    {
+        try
+        {
+            final InetSocketAddress localAddress = (InetSocketAddress)receiveDatagramChannel.getLocalAddress();
+
+            if (null == localAddress)
+            {
+                return "";
+            }
+
+            return localAddress.getAddress().getHostAddress() + ":" + localAddress.getPort();
+        }
+        catch (final IOException ex)
+        {
+            return "";
+        }
     }
 
     /**

@@ -436,6 +436,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     {
         if (!isClosed)
         {
+            rttMeasurementBuffer.clear();
             rttMeasurementFlyweight
                 .sessionId(sessionId)
                 .streamId(streamId)
@@ -504,6 +505,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     {
         if (!isClosed)
         {
+            rttMeasurementBuffer.clear();
             rttMeasurementFlyweight
                 .sessionId(sessionId)
                 .streamId(streamId)

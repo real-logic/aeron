@@ -466,6 +466,7 @@ public class NetworkPublication
     {
         if (RttMeasurementFlyweight.REPLY_FLAG == (msg.flags() & RttMeasurementFlyweight.REPLY_FLAG))
         {
+            rttMeasurementBuffer.clear();
             rttMeasurementHeader
                 .receiverId(msg.receiverId())
                 .echoTimestampNs(msg.echoTimestampNs())

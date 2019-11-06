@@ -218,7 +218,6 @@ public abstract class UdpChannelTransport implements AutoCloseable
         try
         {
             final InetSocketAddress localAddress = (InetSocketAddress)receiveDatagramChannel.getLocalAddress();
-
             if (null == localAddress)
             {
                 return "";

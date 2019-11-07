@@ -267,7 +267,7 @@ public class Archive implements AutoCloseable
         public static final String MAX_CONCURRENT_REPLAYS_PROP_NAME = "aeron.archive.max.concurrent.replays";
 
         /**
-         * Default maximum number of concurrent replays. Unless on a  fast SSD and having sufficient memory
+         * Default maximum number of concurrent replays. Unless on a fast SSD and having sufficient memory
          * for the page cache then this number should be kept low.
          */
         public static final int MAX_CONCURRENT_REPLAYS_DEFAULT = 20;

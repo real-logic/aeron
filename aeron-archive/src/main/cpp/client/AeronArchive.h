@@ -25,6 +25,7 @@
 #include "RecordingSubscriptionDescriptorPoller.h"
 #include "concurrent/BackOffIdleStrategy.h"
 #include "concurrent/YieldingIdleStrategy.h"
+#include "util/ScopeUtils.h"
 #include "ArchiveException.h"
 
 namespace aeron { namespace archive { namespace client {
@@ -320,6 +321,7 @@ public:
 
         std::lock_guard<std::recursive_mutex> lock(m_lock);
         ensureOpen();
+        ensureNotReentrant();
 
         const std::int64_t publicationId = m_aeron->addPublication(channel, streamId);
         publication = m_aeron->findPublication(publicationId);
@@ -361,6 +363,7 @@ public:
 
         std::lock_guard<std::recursive_mutex> lock(m_lock);
         ensureOpen();
+        ensureNotReentrant();
 
         const std::int64_t publicationId = m_aeron->addExclusivePublication(channel, streamId);
         publication = m_aeron->findExclusivePublication(publicationId);
@@ -395,6 +398,7 @@ public:
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
         ensureOpen();
+        ensureNotReentrant();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
 
@@ -427,6 +431,7 @@ public:
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
         ensureOpen();
+        ensureNotReentrant();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
 
@@ -455,6 +460,7 @@ public:
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
         ensureOpen();
+        ensureNotReentrant();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
 
@@ -510,6 +516,7 @@ public:
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
         ensureOpen();
+        ensureNotReentrant();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
 
@@ -549,6 +556,7 @@ public:
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
         ensureOpen();
+        ensureNotReentrant();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
 
@@ -591,6 +599,7 @@ public:
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
         ensureOpen();
+        ensureNotReentrant();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
 
@@ -621,6 +630,7 @@ public:
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
         ensureOpen();
+        ensureNotReentrant();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
 
@@ -643,6 +653,7 @@ public:
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
         ensureOpen();
+        ensureNotReentrant();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
 
@@ -677,6 +688,7 @@ public:
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
         ensureOpen();
+        ensureNotReentrant();
 
         std::shared_ptr<ChannelUri> replayChannelUri = ChannelUri::parse(replayChannel);
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
@@ -730,6 +742,7 @@ public:
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
         ensureOpen();
+        ensureNotReentrant();
 
         std::shared_ptr<ChannelUri> replayChannelUri = ChannelUri::parse(replayChannel);
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
@@ -774,8 +787,10 @@ public:
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
         ensureOpen();
+        ensureNotReentrant();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
+        CallbackGuard callbackGuard(m_isInCallback);
 
         if (!m_archiveProxy->listRecordings<IdleStrategy>(
             fromRecordingId, recordCount, correlationId, m_controlSessionId))
@@ -810,8 +825,10 @@ public:
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
         ensureOpen();
+        ensureNotReentrant();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
+        CallbackGuard callbackGuard(m_isInCallback);
 
         if (!m_archiveProxy->listRecordingsForUri<IdleStrategy>(
             fromRecordingId, recordCount, channelFragment, streamId, correlationId, m_controlSessionId))
@@ -837,8 +854,10 @@ public:
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
         ensureOpen();
+        ensureNotReentrant();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
+        CallbackGuard callbackGuard(m_isInCallback);
 
         if (!m_archiveProxy->listRecording<IdleStrategy>(recordingId, correlationId, m_controlSessionId))
         {
@@ -862,6 +881,7 @@ public:
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
         ensureOpen();
+        ensureNotReentrant();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
 
@@ -886,6 +906,7 @@ public:
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
         ensureOpen();
+        ensureNotReentrant();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
 
@@ -910,6 +931,7 @@ public:
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
         ensureOpen();
+        ensureNotReentrant();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
 
@@ -940,6 +962,7 @@ public:
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
         ensureOpen();
+        ensureNotReentrant();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
 
@@ -965,6 +988,7 @@ public:
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
         ensureOpen();
+        ensureNotReentrant();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
 
@@ -1002,8 +1026,10 @@ public:
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
         ensureOpen();
+        ensureNotReentrant();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
+        CallbackGuard callbackGuard(m_isInCallback);
 
         if (!m_archiveProxy->listRecordingSubscriptions<IdleStrategy>(
             pseudoIndex, subscriptionCount, channelFragment, streamId, applyStreamId, correlationId, m_controlSessionId))
@@ -1044,6 +1070,7 @@ public:
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
         ensureOpen();
+        ensureNotReentrant();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
 
@@ -1073,6 +1100,7 @@ public:
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
         ensureOpen();
+        ensureNotReentrant();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
 
@@ -1100,6 +1128,7 @@ public:
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
         ensureOpen();
+        ensureNotReentrant();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
 
@@ -1124,6 +1153,7 @@ public:
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
         ensureOpen();
+        ensureNotReentrant();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
 
@@ -1152,6 +1182,7 @@ public:
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
         ensureOpen();
+        ensureNotReentrant();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
 
@@ -1179,6 +1210,7 @@ public:
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
         ensureOpen();
+        ensureNotReentrant();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
 
@@ -1209,6 +1241,7 @@ public:
     {
         std::lock_guard<std::recursive_mutex> lock(m_lock);
         ensureOpen();
+        ensureNotReentrant();
 
         const std::int64_t correlationId = m_aeron->nextCorrelationId();
 
@@ -1242,12 +1275,21 @@ private:
     const std::int64_t m_controlSessionId;
     const long long m_messageTimeoutNs;
     bool m_isClosed = false;
+    bool m_isInCallback = false;
 
     inline void ensureOpen()
     {
         if (m_isClosed)
         {
             throw ArchiveException("client is closed", SOURCEINFO);
+        }
+    }
+
+    inline void ensureNotReentrant()
+    {
+        if (m_isInCallback)
+        {
+            throw ReentrantException("client cannot be invoked within callback", SOURCEINFO);
         }
     }
 

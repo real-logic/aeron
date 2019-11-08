@@ -794,18 +794,19 @@ abstract class ArchiveConductor
                 return;
             }
 
+            final long startPosition = recordingSummary.startPosition;
             final int segmentLength = recordingSummary.segmentFileLength;
-            final long segmentPosition = segmentFileBasePosition(
-                recordingSummary.startPosition, position, recordingSummary.termBufferLength, segmentLength);
+            final int termLength = recordingSummary.termBufferLength;
+            final long segmentPosition = segmentFileBasePosition(startPosition, position, termLength, segmentLength);
             final File file = new File(archiveDir, segmentFileName(recordingId, segmentPosition));
 
-            final int termLength = recordingSummary.termBufferLength;
-            final int termOffset = (int)(position & (termLength - 1));
+            final long startTermBasePosition = startPosition - (startPosition & (termLength - 1));
+            final int segmentOffset = (int)(position - startTermBasePosition) & (segmentLength - 1);
 
-            if (termOffset > 0)
+            if (segmentOffset > 0)
             {
                 if (!eraseRemainingSegment(
-                    correlationId, controlSession, position, segmentLength, termLength, termOffset, file))
+                    correlationId, controlSession, position, segmentLength, segmentOffset, termLength, file))
                 {
                     return;
                 }
@@ -1728,13 +1729,13 @@ abstract class ArchiveConductor
         final ControlSession controlSession,
         final long position,
         final int segmentLength,
+        final int segmentOffset,
         final int termLength,
-        final int termOffset,
         final File file)
     {
         try (FileChannel channel = FileChannel.open(file.toPath(), FILE_OPTIONS, NO_ATTRIBUTES))
         {
-            final int segmentOffset = (int)(position & (segmentLength - 1));
+            final int termOffset = (int)(position & (termLength - 1));
             final int termCount = (int)(position >> LogBufferDescriptor.positionBitsToShift(termLength));
             final int termId = recordingSummary.initialTermId + termCount;
 

@@ -54,6 +54,27 @@ private:
     std::unique_ptr<FuncHolderBase> m_holder;
 };
 
+class CallbackGuard
+{
+public:
+    explicit CallbackGuard(bool& isInCallback) : m_isInCallback(isInCallback)
+    {
+        m_isInCallback = true;
+    }
+
+    ~CallbackGuard()
+    {
+        m_isInCallback = false;
+    }
+
+    CallbackGuard(const CallbackGuard&) = delete;
+
+    CallbackGuard& operator = (const CallbackGuard&) = delete;
+
+private:
+    bool& m_isInCallback;
+};
+
 }}
 
 

@@ -23,6 +23,7 @@
 #include <concurrent/logbuffer/TermReader.h>
 #include <concurrent/status/UnsafeBufferPosition.h>
 #include <util/LangUtil.h>
+#include <util/ScopeUtils.h>
 #include "Publication.h"
 #include "ExclusivePublication.h"
 #include "Subscription.h"
@@ -38,34 +39,13 @@ namespace aeron {
 using namespace aeron::concurrent::logbuffer;
 using namespace aeron::concurrent::status;
 using namespace aeron::concurrent;
+using namespace aeron::util;
 
 typedef std::function<long long()> epoch_clock_t;
 typedef std::function<long long()> nano_clock_t;
 
 static const long KEEPALIVE_TIMEOUT_MS = 500;
 static const long RESOURCE_TIMEOUT_MS = 1000;
-
-
-class CallbackGuard
-{
-public:
-    explicit CallbackGuard(bool& isInCallback) : m_isInCallback(isInCallback)
-    {
-        m_isInCallback = true;
-    }
-
-    ~CallbackGuard()
-    {
-        m_isInCallback = false;
-    }
-
-    CallbackGuard(const CallbackGuard&) = delete;
-
-    CallbackGuard& operator = (const CallbackGuard&) = delete;
-
-private:
-    bool& m_isInCallback;
-};
 
 class ClientConductor
 {

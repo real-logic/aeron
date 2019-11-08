@@ -15,8 +15,10 @@
 ## limitations under the License.
 ##
 
+VERSION=`cat ../../version.txt`
+
 ${JAVA_HOME}/bin/java \
-    -cp ../build/libs/samples.jar \
+    -cp ../../aeron-all/build/libs/aeron-all-${VERSION}.jar \
     -XX:+UnlockExperimentalVMOptions \
     -XX:+TrustFinalNonStaticFields \
     -XX:+UnlockDiagnosticVMOptions \

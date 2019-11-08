@@ -15,11 +15,10 @@
 ::
 
 @echo off
-
 set /p VERSION=<..\..\version.txt
 
 "%JAVA_HOME%\bin\java" ^
-    -cp ..\build\libs\samples.jar ^
+    -cp ..\..\aeron-all\build\libs\aeron-all-${VERSION}.jar ^
     -javaagent:..\..\aeron-agent\build\libs\aeron-agent-%VERSION%-all.jar ^
     -Daeron.event.log=all ^
     %JVM_OPTS% io.aeron.driver.MediaDriver %*

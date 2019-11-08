@@ -668,16 +668,6 @@ project(':aeron-samples') {
         compile "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
     }
 
-    shadowJar {
-        archiveFileName = 'samples.jar'
-        manifest.attributes(
-            'Implementation-Title': 'Aeron',
-            'Implementation-Version': "${aeronVersion}",
-            'Implementation-Vendor': 'Real Logic Limited',
-            'Automatic-Module-Name': 'io.aeron.samples'
-        )
-    }
-
     uploadArchives {
         repositories {
             mavenDeployer {

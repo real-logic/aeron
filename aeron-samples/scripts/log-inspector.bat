@@ -15,6 +15,8 @@
 ::
 
 @echo off
+set /p VERSION=<..\..\version.txt
+
 "%JAVA_HOME%\bin\java" ^
-    -cp ..\build\libs\samples.jar ^
+    -cp ..\..\aeron-all\build\libs\aeron-all-${VERSION}.jar ^
     %JVM_OPTS% io.aeron.samples.LogInspector %*

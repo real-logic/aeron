@@ -25,6 +25,7 @@ import org.agrona.SystemUtil;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -171,6 +172,42 @@ public class BasicArchiveTest
             sourceIdentity) -> assertEquals(startPosition, newStopPosition));
 
         assertEquals(1, count);
+    }
+
+    @Test
+    @Ignore
+    public void shouldTruncateToStartPosition()
+    {
+        try (Subscription subscription = aeron.addSubscription(RECORDED_CHANNEL, RECORDED_STREAM_ID);
+             Publication publication = aeron.addPublication(RECORDED_CHANNEL, RECORDED_STREAM_ID))
+        {
+            final String messagePrefix = "Message-Prefix-";
+
+            while (publication.position() <= publication.termBufferLength())
+            {
+                offer(publication, 1, messagePrefix);
+                consume(subscription, 1, messagePrefix);
+            }
+
+            final long startPosition = publication.position();
+
+            final long subscriptionId = aeronArchive.startRecording(RECORDED_CHANNEL, RECORDED_STREAM_ID, LOCAL);
+            final int sessionId = publication.sessionId();
+            final CountersReader counters = aeron.countersReader();
+            final int counterId = awaitRecordingCounterId(counters, sessionId);
+            final long recordingIdFromCounter = RecordingPos.getRecordingId(counters, counterId);
+            awaitPosition(counters, counterId, startPosition);
+
+            offer(publication, 1, messagePrefix);
+            consume(subscription, 1, messagePrefix);
+
+            final long stopPosition = publication.position();
+
+            awaitPosition(counters, counterId, stopPosition);
+            aeronArchive.stopRecording(subscriptionId);
+
+            aeronArchive.truncateRecording(recordingIdFromCounter, startPosition);
+        }
     }
 
     @Test(timeout = 10_000)

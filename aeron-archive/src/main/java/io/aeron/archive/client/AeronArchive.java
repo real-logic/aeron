@@ -73,6 +73,7 @@ public class AeronArchive implements AutoCloseable
     private static final int FRAGMENT_LIMIT = 10;
 
     private boolean isClosed = false;
+    private boolean isInCallback = false;
     private final long controlSessionId;
     private final long messageTimeoutNs;
     private final Context context;
@@ -461,6 +462,7 @@ public class AeronArchive implements AutoCloseable
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
             publication = aeron.addPublication(channel, streamId);
             if (!publication.isOriginal())
@@ -500,6 +502,7 @@ public class AeronArchive implements AutoCloseable
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
             publication = aeron.addExclusivePublication(channel, streamId);
             startRecording(ChannelUri.addSessionId(channel, publication.sessionId()), streamId, SourceLocation.LOCAL);
@@ -536,6 +539,7 @@ public class AeronArchive implements AutoCloseable
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
             final long correlationId = aeron.nextCorrelationId();
 
@@ -572,6 +576,7 @@ public class AeronArchive implements AutoCloseable
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
             final long correlationId = aeron.nextCorrelationId();
 
@@ -605,6 +610,7 @@ public class AeronArchive implements AutoCloseable
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
             final long correlationId = aeron.nextCorrelationId();
 
@@ -646,6 +652,7 @@ public class AeronArchive implements AutoCloseable
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
             final long correlationId = aeron.nextCorrelationId();
 
@@ -690,6 +697,7 @@ public class AeronArchive implements AutoCloseable
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
             final long correlationId = aeron.nextCorrelationId();
 
@@ -743,6 +751,7 @@ public class AeronArchive implements AutoCloseable
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
             final long correlationId = aeron.nextCorrelationId();
 
@@ -778,6 +787,7 @@ public class AeronArchive implements AutoCloseable
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
             final long correlationId = aeron.nextCorrelationId();
 
@@ -805,6 +815,7 @@ public class AeronArchive implements AutoCloseable
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
             final long correlationId = aeron.nextCorrelationId();
 
@@ -843,6 +854,7 @@ public class AeronArchive implements AutoCloseable
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
             final ChannelUri replayChannelUri = ChannelUri.parse(replayChannel);
             final long correlationId = aeron.nextCorrelationId();
@@ -896,6 +908,7 @@ public class AeronArchive implements AutoCloseable
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
             final ChannelUri replayChannelUri = ChannelUri.parse(replayChannel);
             final long correlationId = aeron.nextCorrelationId();
@@ -941,7 +954,9 @@ public class AeronArchive implements AutoCloseable
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
+            isInCallback = true;
             final long correlationId = aeron.nextCorrelationId();
 
             if (!archiveProxy.listRecordings(fromRecordingId, recordCount, correlationId, controlSessionId))
@@ -953,6 +968,7 @@ public class AeronArchive implements AutoCloseable
         }
         finally
         {
+            isInCallback = false;
             lock.unlock();
         }
     }
@@ -981,7 +997,9 @@ public class AeronArchive implements AutoCloseable
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
+            isInCallback = true;
             final long correlationId = aeron.nextCorrelationId();
 
             if (!archiveProxy.listRecordingsForUri(
@@ -999,6 +1017,7 @@ public class AeronArchive implements AutoCloseable
         }
         finally
         {
+            isInCallback = false;
             lock.unlock();
         }
     }
@@ -1018,6 +1037,8 @@ public class AeronArchive implements AutoCloseable
         try
         {
             ensureOpen();
+            ensureNotReentrant();
+            isInCallback = true;
 
             final long correlationId = aeron.nextCorrelationId();
 
@@ -1030,6 +1051,7 @@ public class AeronArchive implements AutoCloseable
         }
         finally
         {
+            isInCallback = false;
             lock.unlock();
         }
     }
@@ -1047,6 +1069,7 @@ public class AeronArchive implements AutoCloseable
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
             final long correlationId = aeron.nextCorrelationId();
 
@@ -1076,6 +1099,7 @@ public class AeronArchive implements AutoCloseable
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
             final long correlationId = aeron.nextCorrelationId();
 
@@ -1105,6 +1129,7 @@ public class AeronArchive implements AutoCloseable
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
             final long correlationId = aeron.nextCorrelationId();
 
@@ -1137,6 +1162,7 @@ public class AeronArchive implements AutoCloseable
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
             final long correlationId = aeron.nextCorrelationId();
 
@@ -1167,6 +1193,7 @@ public class AeronArchive implements AutoCloseable
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
             final long correlationId = aeron.nextCorrelationId();
 
@@ -1209,7 +1236,9 @@ public class AeronArchive implements AutoCloseable
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
+            isInCallback = true;
             final long correlationId = aeron.nextCorrelationId();
 
             if (!archiveProxy.listRecordingSubscriptions(
@@ -1228,6 +1257,7 @@ public class AeronArchive implements AutoCloseable
         }
         finally
         {
+            isInCallback = false;
             lock.unlock();
         }
     }
@@ -1263,6 +1293,7 @@ public class AeronArchive implements AutoCloseable
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
             final long correlationId = aeron.nextCorrelationId();
 
@@ -1297,6 +1328,7 @@ public class AeronArchive implements AutoCloseable
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
             final long correlationId = aeron.nextCorrelationId();
 
@@ -1330,6 +1362,7 @@ public class AeronArchive implements AutoCloseable
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
             final long correlationId = aeron.nextCorrelationId();
 
@@ -1359,6 +1392,7 @@ public class AeronArchive implements AutoCloseable
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
             final long correlationId = aeron.nextCorrelationId();
 
@@ -1395,6 +1429,7 @@ public class AeronArchive implements AutoCloseable
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
             final long correlationId = aeron.nextCorrelationId();
 
@@ -1427,6 +1462,7 @@ public class AeronArchive implements AutoCloseable
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
             final long correlationId = aeron.nextCorrelationId();
 
@@ -1462,6 +1498,7 @@ public class AeronArchive implements AutoCloseable
         try
         {
             ensureOpen();
+            ensureNotReentrant();
 
             final long correlationId = aeron.nextCorrelationId();
 
@@ -1660,6 +1697,14 @@ public class AeronArchive implements AutoCloseable
         if (isClosed)
         {
             throw new ArchiveException("client is closed");
+        }
+    }
+
+    private void ensureNotReentrant()
+    {
+        if (isInCallback)
+        {
+            throw new AeronException("reentrant calls not permitted during callbacks");
         }
     }
 

@@ -18,7 +18,7 @@
 set /p VERSION=<..\..\..\version.txt
 
 "%JAVA_HOME%\bin\java" ^
-    -cp ..\..\..\aeron-all\build\libs\aeron-all-${VERSION}.jar ^
+    -cp ..\..\..\aeron-all\build\libs\aeron-all-%VERSION%.jar ^
     -XX:BiasedLockingStartupDelay=0 ^
     -XX:+UnlockExperimentalVMOptions ^
     -XX:+TrustFinalNonStaticFields ^

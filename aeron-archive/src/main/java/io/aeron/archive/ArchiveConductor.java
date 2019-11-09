@@ -794,14 +794,13 @@ abstract class ArchiveConductor
                 return;
             }
 
-            final long startPosition = recordingSummary.startPosition;
             final int segmentLength = recordingSummary.segmentFileLength;
             final int termLength = recordingSummary.termBufferLength;
-            final long segmentPosition = segmentFileBasePosition(startPosition, position, termLength, segmentLength);
-            final File file = new File(archiveDir, segmentFileName(recordingId, segmentPosition));
-
-            final long startTermBasePosition = startPosition - (startPosition & (termLength - 1));
-            final int segmentOffset = (int)(position - startTermBasePosition) & (segmentLength - 1);
+            final long startPosition = recordingSummary.startPosition;
+            final long segmentBasePosition = segmentFileBasePosition(
+                startPosition, position, termLength, segmentLength);
+            final int segmentOffset = (int)(position - segmentBasePosition);
+            final File file = new File(archiveDir, segmentFileName(recordingId, segmentBasePosition));
 
             if (segmentOffset > 0)
             {
@@ -820,7 +819,7 @@ abstract class ArchiveConductor
 
             catalog.stopPosition(recordingId, position);
 
-            for (long p = segmentPosition + segmentLength; p <= stopPosition; p += segmentLength)
+            for (long p = segmentBasePosition + segmentLength; p <= stopPosition; p += segmentLength)
             {
                 final File f = new File(archiveDir, segmentFileName(recordingId, p));
                 if (!f.delete())

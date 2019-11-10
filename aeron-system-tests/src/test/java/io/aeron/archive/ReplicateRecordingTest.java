@@ -36,6 +36,7 @@ import org.junit.Test;
 import java.io.File;
 
 import static io.aeron.Aeron.NULL_VALUE;
+import static io.aeron.CommonContext.*;
 import static io.aeron.archive.Common.*;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static org.junit.Assert.assertEquals;
@@ -55,8 +56,7 @@ public class ReplicateRecordingTest
     private static final int LIVE_STREAM_ID = 33;
     private static final String LIVE_CHANNEL = new ChannelUriStringBuilder()
         .media("udp")
-        .endpoint("224.20.30.39:54326")
-        .networkInterface("localhost")
+        .controlEndpoint("localhost:8100")
         .termLength(TERM_LENGTH)
         .build();
 
@@ -70,8 +70,8 @@ public class ReplicateRecordingTest
     @Before
     public void before()
     {
-        final String srcAeronDirectoryName = CommonContext.generateRandomDirName();
-        final String dstAeronDirectoryName = CommonContext.generateRandomDirName();
+        final String srcAeronDirectoryName = generateRandomDirName();
+        final String dstAeronDirectoryName = generateRandomDirName();
 
         srcArchivingMediaDriver = ArchivingMediaDriver.launch(
             new MediaDriver.Context()
@@ -215,7 +215,7 @@ public class ReplicateRecordingTest
     }
 
     @Test(timeout = 10_000L)
-    public void shouldReplicateLiveRecording()
+    public void shouldReplicateLiveWithoutMergingRecording()
     {
         final String messagePrefix = "Message-Prefix-";
         final int messageCount = 10;

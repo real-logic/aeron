@@ -109,6 +109,12 @@ public final class UdpChannel
             final boolean hasNoDistinguishingCharacteristic =
                 null == endpointAddress && null == explicitControlAddress && null == tagIdStr;
 
+            if (isDynamicControlMode && null == explicitControlAddress)
+            {
+                throw new IllegalArgumentException(
+                    "explicit control expected with dynamic control mode: " + channelUriString);
+            }
+
             if (hasNoDistinguishingCharacteristic && !isManualControlMode)
             {
                 throw new IllegalArgumentException(

@@ -70,7 +70,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
         {
             multiDestination = new ManualMultiDestination();
         }
-        else if (udpChannel.isDynamicControlMode())
+        else if (udpChannel.isDynamicControlMode() || udpChannel.hasExplicitControl())
         {
             multiDestination = new DynamicMultiDestination(context.cachedNanoClock(), DESTINATION_TIMEOUT);
         }

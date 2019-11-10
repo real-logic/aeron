@@ -26,6 +26,7 @@ plugins {
     id 'io.freefair.javadoc-links' version '4.1.3' apply false
     id 'com.github.johnrengelman.shadow' version '5.2.0' apply false
     id 'biz.aQute.bnd.builder' version '4.2.0' apply false
+    id "com.github.ben-manes.versions" version "0.27.0"
 }
 
 defaultTasks 'clean', 'build', 'shadowJar', 'install'
@@ -139,16 +140,16 @@ subprojects {
     jar.enabled = true
 
     dependencies {
-        checkstyle 'com.puppycrawl.tools:checkstyle:8.25'
+        checkstyle 'com.puppycrawl.tools:checkstyle:8.26'
 
         compile "org.agrona:agrona:${agronaVersion}"
 
-        testCompile 'org.hamcrest:hamcrest:2.1'
+        testCompile 'org.hamcrest:hamcrest:2.2'
         testCompile "org.mockito:mockito-core:${mockitoVersion}"
         testCompile 'junit:junit:4.12'
     }
 
-    checkstyle.toolVersion = '8.25'
+    checkstyle.toolVersion = '8.26'
 
     compileJava {
         if (JavaVersion.current().ordinal() >= JavaVersion.VERSION_1_9.ordinal()) {

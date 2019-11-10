@@ -21,6 +21,7 @@ import io.aeron.CommonContext.InferableBoolean;
 import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.buffer.LogFactory;
 import io.aeron.driver.buffer.RawLog;
+import io.aeron.driver.exceptions.InvalidChannelException;
 import io.aeron.exceptions.ControlProtocolException;
 import io.aeron.driver.media.*;
 import io.aeron.driver.status.*;
@@ -1251,6 +1252,14 @@ public class DriverConductor implements Agent
                 {
                     return endpoint;
                 }
+            }
+
+            if (!udpChannel.hasExplicitControl() && !udpChannel.isManualControlMode() &&
+                !udpChannel.channelUri().containsKey(CommonContext.ENDPOINT_PARAM_NAME))
+            {
+                throw new InvalidChannelException(
+                    "URI must have explicit control, endpoint, or be manual control-mode when original: " +
+                    udpChannel.originalUriString());
             }
         }
 

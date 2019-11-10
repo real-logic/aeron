@@ -20,6 +20,7 @@ import io.aeron.DriverProxy;
 import io.aeron.ErrorCode;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.buffer.TestLogFactory;
+import io.aeron.driver.exceptions.InvalidChannelException;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.ReceiveChannelEndpointThreadLocals;
 import io.aeron.driver.media.UdpChannel;
@@ -34,6 +35,7 @@ import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -52,7 +54,7 @@ import static io.aeron.ErrorCode.*;
 import static io.aeron.driver.Configuration.*;
 import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
 import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
-import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -172,6 +174,26 @@ public class DriverConductorTest
         driverConductor.closeChannelEndpoints();
         driverConductor.onClose();
     }
+
+
+    @Test
+    public void shouldErrorWhenOriginalPublicationHasNoDistinguishingCharacteristicBeyondTag()
+    {
+        final String expectedMessage =
+            "URI must have explicit control, endpoint, or be manual control-mode when original:";
+
+        driverProxy.addPublication("aeron:udp?tags=1001", STREAM_ID_1);
+        driverConductor.doWork();
+
+        verify(mockErrorHandler).onError(argThat(
+            (ex) ->
+            {
+                assertThat(ex, instanceOf(InvalidChannelException.class));
+                assertThat(ex.getMessage(), Matchers.containsString(expectedMessage));
+                return true;
+            }));
+    }
+
 
     @Test
     public void shouldBeAbleToAddSinglePublication()
@@ -536,13 +558,13 @@ public class DriverConductorTest
             });
 
         assertThat(publication.state(),
-            anyOf(is(NetworkPublication.State.DRAINING), is(NetworkPublication.State.LINGER)));
+            Matchers.anyOf(is(NetworkPublication.State.DRAINING), is(NetworkPublication.State.LINGER)));
 
         final long endTime = nanoClock.nanoTime() + publicationConnectionTimeoutNs() + timerIntervalNs();
         doWorkUntil(() -> nanoClock.nanoTime() >= endTime, publication::updateHasReceivers);
 
         assertThat(publication.state(),
-            anyOf(is(NetworkPublication.State.LINGER), is(NetworkPublication.State.CLOSING)));
+            Matchers.anyOf(is(NetworkPublication.State.LINGER), is(NetworkPublication.State.CLOSING)));
 
         currentTimeNs += timerIntervalNs() + PUBLICATION_LINGER_TIMEOUT_NS;
         driverConductor.doWork();

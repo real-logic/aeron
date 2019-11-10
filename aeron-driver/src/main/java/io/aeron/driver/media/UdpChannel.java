@@ -17,7 +17,6 @@ package io.aeron.driver.media;
 
 import io.aeron.ChannelUri;
 import io.aeron.CommonContext;
-import io.aeron.ErrorCode;
 import io.aeron.driver.exceptions.InvalidChannelException;
 import org.agrona.BitUtil;
 
@@ -207,7 +206,7 @@ public final class UdpChannel
         }
         catch (final Exception ex)
         {
-            throw new InvalidChannelException(ErrorCode.INVALID_CHANNEL, ex);
+            throw new InvalidChannelException(ex);
         }
     }
 
@@ -503,7 +502,7 @@ public final class UdpChannel
         }
         catch (final Exception ex)
         {
-            throw new InvalidChannelException(ErrorCode.INVALID_CHANNEL, ex);
+            throw new InvalidChannelException(ex);
         }
     }
 

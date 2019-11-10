@@ -20,13 +20,13 @@ import io.aeron.exceptions.ControlProtocolException;
 
 public class InvalidChannelException extends ControlProtocolException
 {
-    public InvalidChannelException(final ErrorCode code, final String msg)
+    public InvalidChannelException(final String msg)
     {
-        super(code, msg);
+        super(ErrorCode.INVALID_CHANNEL, msg);
     }
 
-    public InvalidChannelException(final ErrorCode code, final Exception rootCause)
+    public InvalidChannelException(final Exception rootCause)
     {
-        super(code, rootCause);
+        super(ErrorCode.INVALID_CHANNEL, rootCause);
     }
 }

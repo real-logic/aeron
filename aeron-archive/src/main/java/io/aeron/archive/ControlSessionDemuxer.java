@@ -170,7 +170,11 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                     tempBuffer.setMemory(fixedLength, padLength, (byte)0);
                     tempBuffer.putBytes(fixedLength + padLength, buffer, offset + i, length - i);
 
-                    decoder.wrap(tempBuffer, 0, StartRecordingRequestDecoder.BLOCK_LENGTH, headerDecoder.version());
+                    decoder.wrap(
+                        tempBuffer,
+                        0,
+                        StartRecordingRequestDecoder.BLOCK_LENGTH,
+                        StartRecordingRequestDecoder.SCHEMA_VERSION);
                 }
 
                 controlSession.onStartRecording(
@@ -328,7 +332,11 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                     tempBuffer.setMemory(fixedLength, padLength, (byte)0);
                     tempBuffer.putBytes(fixedLength + padLength, buffer, offset + i, length - i);
 
-                    decoder.wrap(tempBuffer, 0, ExtendRecordingRequestDecoder.BLOCK_LENGTH, headerDecoder.version());
+                    decoder.wrap(
+                        tempBuffer,
+                        0,
+                        ExtendRecordingRequestDecoder.BLOCK_LENGTH,
+                        ExtendRecordingRequestDecoder.SCHEMA_VERSION);
                 }
 
                 controlSession.onExtendRecording(

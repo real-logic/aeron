@@ -490,7 +490,7 @@ public final class ClusterBackup implements AutoCloseable
                 .aeron(aeron)
                 .errorHandler(errorHandler)
                 .ownsAeronClient(false)
-                .lock(new NoOpLock());
+                .lock(NoOpLock.INSTANCE);
 
             if (null == shutdownSignalBarrier)
             {

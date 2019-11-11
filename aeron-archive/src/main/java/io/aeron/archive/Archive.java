@@ -734,7 +734,7 @@ public class Archive implements AutoCloseable
                 archiveClientContext = new AeronArchive.Context();
             }
 
-            archiveClientContext.aeron(aeron).lock(new NoOpLock()).errorHandler(errorHandler);
+            archiveClientContext.aeron(aeron).lock(NoOpLock.INSTANCE).errorHandler(errorHandler);
 
             int expectedCount = DEDICATED == threadingMode ? 2 : 0;
             expectedCount += aeron.conductorAgentInvoker() == null ? 1 : 0;

@@ -1204,7 +1204,7 @@ public class ConsensusModule implements AutoCloseable
                 .aeron(aeron)
                 .errorHandler(countedErrorHandler)
                 .ownsAeronClient(false)
-                .lock(new NoOpLock());
+                .lock(NoOpLock.INSTANCE);
 
             if (null == shutdownSignalBarrier)
             {

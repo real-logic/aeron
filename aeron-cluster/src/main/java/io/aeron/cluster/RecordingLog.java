@@ -897,7 +897,7 @@ public class RecordingLog implements AutoCloseable
     {
         return "RecordingLog{" +
             "entries=" + entriesCache +
-            ", cacheIndex=" + entriesCache +
+            ", cacheIndex=" + cacheIndexByLeadershipTermIdMap +
             '}';
     }
 

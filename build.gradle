@@ -202,6 +202,9 @@ subprojects {
     javadoc {
         title = '<h1>Aeron Message Transport</h1>'
         options.bottom = '<i>Copyright &#169; 2014-2019 Real Logic Ltd. All Rights Reserved.</i>'
+        options.encoding = 'UTF-8'
+        options.docEncoding = 'UTF-8'
+        options.charSet = 'UTF-8'
         if (JavaVersion.current().ordinal() >= JavaVersion.VERSION_1_10.ordinal()) {
             options.addBooleanOption 'html5', true
         }

@@ -49,13 +49,13 @@ import static org.agrona.SystemUtil.getDurationInNanos;
 public final class AeronCluster implements AutoCloseable
 {
     /**
-     * Length of a session message header for an ingress or egress with a cluster.
+     * Length of a session message header for cluster ingress or egress.
      */
     public static final int SESSION_HEADER_LENGTH =
         MessageHeaderEncoder.ENCODED_LENGTH + SessionMessageHeaderEncoder.BLOCK_LENGTH;
 
-    static final int SEND_ATTEMPTS = 3;
-    static final int FRAGMENT_LIMIT = 10;
+    private static final int SEND_ATTEMPTS = 3;
+    private static final int FRAGMENT_LIMIT = 10;
 
     private final long clusterSessionId;
     private long leadershipTermId;

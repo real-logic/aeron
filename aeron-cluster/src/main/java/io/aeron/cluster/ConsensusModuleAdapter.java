@@ -17,6 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.FragmentAssembler;
 import io.aeron.Subscription;
+import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.Header;
@@ -25,8 +26,6 @@ import org.agrona.DirectBuffer;
 
 final class ConsensusModuleAdapter implements AutoCloseable
 {
-    private static final int SESSION_MESSAGE_HEADER =
-        MessageHeaderDecoder.ENCODED_LENGTH + SessionMessageHeaderDecoder.BLOCK_LENGTH;
     private static final int FRAGMENT_LIMIT = 10;
     private final Subscription subscription;
     private final ConsensusModuleAgent consensusModuleAgent;
@@ -80,8 +79,8 @@ final class ConsensusModuleAdapter implements AutoCloseable
                 consensusModuleAgent.onServiceMessage(
                     sessionMessageHeaderDecoder.leadershipTermId(),
                     buffer,
-                    offset + SESSION_MESSAGE_HEADER,
-                    length - SESSION_MESSAGE_HEADER);
+                    offset + AeronCluster.SESSION_HEADER_LENGTH,
+                    length - AeronCluster.SESSION_HEADER_LENGTH);
                 break;
 
             case CloseSessionDecoder.TEMPLATE_ID:

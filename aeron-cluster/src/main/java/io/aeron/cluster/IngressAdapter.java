@@ -17,6 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.ControlledFragmentAssembler;
 import io.aeron.Subscription;
+import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.ControlledFragmentHandler;
@@ -28,24 +29,24 @@ import org.agrona.concurrent.status.AtomicCounter;
 
 class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
 {
-    private static final int SESSION_MESSAGE_HEADER =
-        MessageHeaderDecoder.ENCODED_LENGTH + SessionMessageHeaderDecoder.BLOCK_LENGTH;
-    private static final int FRAGMENT_POLL_LIMIT = 100;
-
+    private final int fragmentPollLimit;
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SessionConnectRequestDecoder connectRequestDecoder = new SessionConnectRequestDecoder();
     private final SessionCloseRequestDecoder closeRequestDecoder = new SessionCloseRequestDecoder();
     private final SessionMessageHeaderDecoder sessionMessageHeaderDecoder = new SessionMessageHeaderDecoder();
     private final SessionKeepAliveDecoder sessionKeepAliveDecoder = new SessionKeepAliveDecoder();
     private final ChallengeResponseDecoder challengeResponseDecoder = new ChallengeResponseDecoder();
-
-    private Subscription subscription;
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this);
     private final ConsensusModuleAgent consensusModuleAgent;
     private final AtomicCounter invalidRequests;
+    private Subscription subscription;
 
-    IngressAdapter(final ConsensusModuleAgent consensusModuleAgent, final AtomicCounter invalidRequests)
+    IngressAdapter(
+        final int fragmentPollLimit,
+        final ConsensusModuleAgent consensusModuleAgent,
+        final AtomicCounter invalidRequests)
     {
+        this.fragmentPollLimit = fragmentPollLimit;
         this.consensusModuleAgent = consensusModuleAgent;
         this.invalidRequests = invalidRequests;
     }
@@ -81,8 +82,8 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
                 sessionMessageHeaderDecoder.leadershipTermId(),
                 sessionMessageHeaderDecoder.clusterSessionId(),
                 buffer,
-                offset + SESSION_MESSAGE_HEADER,
-                length - SESSION_MESSAGE_HEADER);
+                offset + AeronCluster.SESSION_HEADER_LENGTH,
+                length - AeronCluster.SESSION_HEADER_LENGTH);
         }
 
         switch (templateId)
@@ -178,12 +179,12 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
 
     int poll()
     {
-        if (null == subscription)
+        if (null != subscription)
         {
-            return 0;
+            return subscription.controlledPoll(fragmentAssembler, fragmentPollLimit);
         }
 
-        return subscription.controlledPoll(fragmentAssembler, FRAGMENT_POLL_LIMIT);
+        return 0;
     }
 
     void freeSessionBuffer(final int imageSessionId)

@@ -249,6 +249,16 @@ public class ConsensusModule implements AutoCloseable
     public static class Configuration
     {
         /**
+         * Property name for the limit for fragments to be consumed on each poll of ingress.
+         */
+        public static final String CLUSTER_INGRESS_FRAGMENT_LIMIT_PROP_NAME = "aeron.cluster.ingress.fragment.limit";
+
+        /**
+         * Default for the limit for fragments to be consumed on each poll of ingress.
+         */
+        public static final int CLUSTER_INGRESS_FRAGMENT_LIMIT_DEFAULT = 50;
+
+        /**
          * Type of snapshot for this component.
          */
         public static final long SNAPSHOT_TYPE_ID = 1;
@@ -610,6 +620,18 @@ public class ConsensusModule implements AutoCloseable
          * Default file sync level of normal writes.
          */
         public static final int FILE_SYNC_LEVEL_DEFAULT = 0;
+
+        /**
+         * The value {@link #CLUSTER_INGRESS_FRAGMENT_LIMIT_DEFAULT} or system property
+         * {@link #CLUSTER_INGRESS_FRAGMENT_LIMIT_PROP_NAME} if set.
+         *
+         * @return {@link #CLUSTER_INGRESS_FRAGMENT_LIMIT_DEFAULT} or system property
+         * {@link #CLUSTER_INGRESS_FRAGMENT_LIMIT_PROP_NAME} if set.
+         */
+        public static int ingressFragmentLimit()
+        {
+            return Integer.getInteger(CLUSTER_INGRESS_FRAGMENT_LIMIT_PROP_NAME, CLUSTER_INGRESS_FRAGMENT_LIMIT_DEFAULT);
+        }
 
         /**
          * The value {@link #CLUSTER_MEMBER_ID_DEFAULT} or system property
@@ -976,6 +998,7 @@ public class ConsensusModule implements AutoCloseable
         private boolean clusterMembersIgnoreSnapshot = Configuration.clusterMembersIgnoreSnapshot();
         private String ingressChannel = AeronCluster.Configuration.ingressChannel();
         private int ingressStreamId = AeronCluster.Configuration.ingressStreamId();
+        private int ingressFragmentLimit = Configuration.ingressFragmentLimit();
         private String logChannel = Configuration.logChannel();
         private int logStreamId = Configuration.logStreamId();
         private String memberEndpoints = Configuration.memberEndpoints();
@@ -1599,6 +1622,30 @@ public class ConsensusModule implements AutoCloseable
         public int ingressStreamId()
         {
             return ingressStreamId;
+        }
+
+        /**
+         * Set limit for fragments to be consumed on each poll of ingress.
+         *
+         * @param ingressFragmentLimit for the ingress channel.
+         * @return this for a fluent API
+         * @see Configuration#CLUSTER_INGRESS_FRAGMENT_LIMIT_PROP_NAME
+         */
+        public Context ingressFragmentLimit(final int ingressFragmentLimit)
+        {
+            this.ingressFragmentLimit = ingressFragmentLimit;
+            return this;
+        }
+
+        /**
+         * The limit for fragments to be consumed on each poll of ingress.
+         *
+         * @return the limit for fragments to be consumed on each poll of ingress.
+         * @see Configuration#CLUSTER_INGRESS_FRAGMENT_LIMIT_PROP_NAME
+         */
+        public int ingressFragmentLimit()
+        {
+            return ingressFragmentLimit;
         }
 
         /**

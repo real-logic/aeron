@@ -17,8 +17,7 @@ package io.aeron.cluster.service;
 
 import io.aeron.Image;
 import io.aeron.ImageControlledFragmentAssembler;
-import io.aeron.cluster.client.ClusterClock;
-import io.aeron.cluster.client.ClusterException;
+import io.aeron.cluster.client.*;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.*;
 import io.aeron.status.ReadableCounter;
@@ -31,8 +30,6 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
 {
     private static final int FRAGMENT_LIMIT = 100;
     private static final int INITIAL_BUFFER_LENGTH = 4096;
-    private static final int SESSION_HEADER_LENGTH =
-        MessageHeaderEncoder.ENCODED_LENGTH + SessionMessageHeaderEncoder.BLOCK_LENGTH;
 
     private final ImageControlledFragmentAssembler fragmentAssembler = new ImageControlledFragmentAssembler(
         this, INITIAL_BUFFER_LENGTH, true);
@@ -101,8 +98,8 @@ final class BoundedLogAdapter implements ControlledFragmentHandler, AutoCloseabl
                 sessionHeaderDecoder.clusterSessionId(),
                 sessionHeaderDecoder.timestamp(),
                 buffer,
-                offset + SESSION_HEADER_LENGTH,
-                length - SESSION_HEADER_LENGTH,
+                offset + AeronCluster.SESSION_HEADER_LENGTH,
+                length - AeronCluster.SESSION_HEADER_LENGTH,
                 header);
 
             return Action.CONTINUE;

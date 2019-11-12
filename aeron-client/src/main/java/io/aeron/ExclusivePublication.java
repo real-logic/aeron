@@ -17,11 +17,12 @@ package io.aeron;
 
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.ExclusiveTermAppender;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.ReadablePosition;
 
-import static io.aeron.logbuffer.LogBufferDescriptor.*;
+import static io.aeron.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
 
 /**
  * Aeron publisher API for sending messages to subscribers of a given channel and streamId pair. ExclusivePublications
@@ -79,14 +80,14 @@ public class ExclusivePublication extends Publication
             termAppenders[i] = new ExclusiveTermAppender(buffers[i], logMetaDataBuffer, i);
         }
 
-        final int termCount = activeTermCount(logMetaDataBuffer);
-        final int index = indexByTermCount(termCount);
+        final int termCount = LogBufferDescriptor.activeTermCount(logMetaDataBuffer);
+        final int index = LogBufferDescriptor.indexByTermCount(termCount);
         activePartitionIndex = index;
 
-        final long rawTail = rawTail(logMetaDataBuffer, index);
-        termId = termId(rawTail);
-        termOffset = termOffset(rawTail);
-        termBeginPosition = computeTermBeginPosition(termId, positionBitsToShift, initialTermId);
+        final long rawTail = LogBufferDescriptor.rawTail(logMetaDataBuffer, index);
+        termId = LogBufferDescriptor.termId(rawTail);
+        termOffset = LogBufferDescriptor.termOffset(rawTail);
+        termBeginPosition = LogBufferDescriptor.computeTermBeginPosition(termId, positionBitsToShift, initialTermId);
     }
 
     public long position()
@@ -107,6 +108,26 @@ public class ExclusivePublication extends Publication
         }
 
         return positionLimit.getVolatile() - (termBeginPosition + termOffset);
+    }
+
+    /**
+     * The current term-id of the publication.
+     *
+     * @return the current term-id of the publication.
+     */
+    public int termId()
+    {
+        return termId;
+    }
+
+    /**
+     * The current term-offset of the publication.
+     *
+     * @return the current term-offset of the publication.
+     */
+    public int termOffset()
+    {
+        return termOffset;
     }
 
     /**
@@ -392,7 +413,7 @@ public class ExclusivePublication extends Publication
             return MAX_POSITION_EXCEEDED;
         }
 
-        final int nextIndex = nextPartitionIndex(activePartitionIndex);
+        final int nextIndex = LogBufferDescriptor.nextPartitionIndex(activePartitionIndex);
         final int nextTermId = termId + 1;
 
         activePartitionIndex = nextIndex;
@@ -402,8 +423,8 @@ public class ExclusivePublication extends Publication
 
         final int termCount = nextTermId - initialTermId;
 
-        initialiseTailWithTermId(logMetaDataBuffer, nextIndex, nextTermId);
-        activeTermCountOrdered(logMetaDataBuffer, termCount);
+        LogBufferDescriptor.initialiseTailWithTermId(logMetaDataBuffer, nextIndex, nextTermId);
+        LogBufferDescriptor.activeTermCountOrdered(logMetaDataBuffer, termCount);
 
         return ADMIN_ACTION;
     }

@@ -108,6 +108,26 @@ public:
     }
 
     /**
+     * The term-id the publication has reached.
+     *
+     * @return the term-id the publication has reached.
+     */
+    inline std::int32_t termId() const
+    {
+        return m_termId;
+    }
+
+    /**
+     * The term-offset the publication has reached.
+     *
+     * @return the term-offset the publication has reached.
+     */
+    inline std::int32_t termOffset() const
+    {
+        return m_termOffset;
+    }
+
+    /**
      * Get the original registration used to register this Publication with the media driver by the first publisher.
      *
      * @return the original registrationId of the publication.

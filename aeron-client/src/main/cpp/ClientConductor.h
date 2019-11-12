@@ -95,7 +95,7 @@ public:
         m_onCloseClientHandlers.emplace_back(onCloseClientHandler);
     }
 
-    virtual ~ClientConductor();
+    ~ClientConductor();
 
     void onStart();
     int doWork();

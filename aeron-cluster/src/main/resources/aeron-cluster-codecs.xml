@@ -54,17 +54,16 @@
             <validValue name="JOIN" description="Join cluster as dynamic member.">0</validValue>
             <validValue name="QUIT" description="Quit cluster as dynamic member.">1</validValue>
         </enum>
-        <enum name="ClusterTimeUnit" encodingType="int32" description="Type the time unit used for timestamps."
-              sinceVersion="4">
+        <enum name="ClusterTimeUnit" encodingType="int32" description="Type the time unit used for timestamps.">
             <validValue name="MILLIS" description="Time unit of milliseconds for timestamps.">0</validValue>
             <validValue name="MICROS" description="Time unit of microseconds for timestamps.">1</validValue>
             <validValue name="NANOS" description="Time unit of nanoseconds for timestamps.">2</validValue>
         </enum>
         <type name="time_t"    primitiveType="int64" description="Epoch time since 1 Jan 1970 UTC."/>
         <type name="version_t" primitiveType="int32" description="Protocol or application suite version."
-              presence="optional" nullValue="0" minValue="1" maxValue="16777215" sinceVersion="2"/>
+              presence="optional" nullValue="0" minValue="1" maxValue="16777215"/>
         <type name="capacity_t" primitiveType="int32" description="Capacity of a container."
-              presence="optional" nullValue="0" sinceVersion="3"/>
+              presence="optional" nullValue="0"/>
     </types>
 
 <!--

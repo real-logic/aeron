@@ -71,6 +71,7 @@ ControlledPollAction ControlResponsePoller::onFragment(
         m_controlSessionId = response.controlSessionId();
         m_correlationId = response.correlationId();
         m_relevantId = response.relevantId();
+        m_version = response.version();
 
         ControlResponseCode::Value code = response.code();
         m_codeValue = code;

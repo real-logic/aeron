@@ -692,6 +692,7 @@ public final class AeronCluster implements AutoCloseable
             {
                 sessionCloseRequestEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .leadershipTermId(leadershipTermId)
                     .clusterSessionId(clusterSessionId);
 
                 bufferClaim.commit();

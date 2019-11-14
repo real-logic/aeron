@@ -221,13 +221,6 @@ public:
         }
     }
 
-protected:
-    void onCheckManagedResources(long long nowMs);
-
-    void lingerResource(long long nowMs, Image::array_t imageArray);
-
-    void lingerAllResources(long long nowMs, Image::array_t imageArray);
-
 private:
     enum class RegistrationStatus : std::int8_t
     {
@@ -532,6 +525,12 @@ private:
             return it->second.m_logBuffers;
         }
     }
+
+    void onCheckManagedResources(long long nowMs);
+
+    void lingerResource(long long nowMs, Image::array_t imageArray);
+
+    void lingerAllResources(long long nowMs, Image::array_t imageArray);
 };
 
 inline long long currentTimeMillis()

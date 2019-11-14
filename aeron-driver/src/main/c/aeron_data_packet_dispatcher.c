@@ -207,7 +207,7 @@ int aeron_data_packet_dispatcher_on_setup(
             aeron_data_packet_dispatcher_is_not_already_in_progress_or_on_cool_down(
                 dispatcher, header->stream_id, header->session_id))
         {
-            if (endpoint->conductor_fields.udp_channel->multicast &&
+            if (endpoint->conductor_fields.udp_channel->is_multicast &&
                 endpoint->conductor_fields.udp_channel->multicast_ttl < header->ttl)
             {
                 aeron_counter_ordered_increment(endpoint->possible_ttl_asymmetry_counter, 1);
@@ -225,7 +225,7 @@ int aeron_data_packet_dispatcher_on_setup(
             }
 
             struct sockaddr_storage *control_addr =
-                endpoint->conductor_fields.udp_channel->multicast ? &endpoint->conductor_fields.udp_channel->remote_control : addr;
+                endpoint->conductor_fields.udp_channel->is_multicast ? &endpoint->conductor_fields.udp_channel->remote_control : addr;
 
             aeron_driver_conductor_proxy_on_create_publication_image_cmd(
                 dispatcher->conductor_proxy,
@@ -265,7 +265,7 @@ int aeron_data_packet_dispatcher_on_rttm(
             if (header->frame_header.flags & AERON_RTTM_HEADER_REPLY_FLAG)
             {
                 struct sockaddr_storage *control_addr =
-                    endpoint->conductor_fields.udp_channel->multicast ? &endpoint->conductor_fields.udp_channel->remote_control : addr;
+                    endpoint->conductor_fields.udp_channel->is_multicast ? &endpoint->conductor_fields.udp_channel->remote_control : addr;
 
                 return aeron_receive_channel_endpoint_send_rttm(
                     endpoint, control_addr, header->stream_id, header->session_id, header->echo_timestamp, 0, false);
@@ -288,7 +288,7 @@ int aeron_data_packet_dispatcher_elicit_setup_from_source(
     int32_t session_id)
 {
     struct sockaddr_storage *control_addr =
-        endpoint->conductor_fields.udp_channel->multicast ? &endpoint->conductor_fields.udp_channel->remote_control : addr;
+        endpoint->conductor_fields.udp_channel->is_multicast ? &endpoint->conductor_fields.udp_channel->remote_control : addr;
 
     if (aeron_int64_to_ptr_hash_map_put(
         &dispatcher->ignored_sessions_map,

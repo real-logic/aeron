@@ -241,7 +241,7 @@ void aeron_driver_receiver_on_add_endpoint(void *clientd, void *command)
         AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver on_add_endpoint: %s", aeron_errmsg());
     }
 
-    if (udp_channel->explicit_control)
+    if (udp_channel->has_explicit_control)
     {
         if (aeron_driver_receiver_add_pending_setup(receiver, endpoint, 0, 0, &udp_channel->local_control) < 0)
         {

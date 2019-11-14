@@ -131,23 +131,23 @@ static int aeron_udp_uri_params_func(void *clientd, const char *key, const char 
 
     if (strcmp(key, AERON_UDP_CHANNEL_ENDPOINT_KEY) == 0)
     {
-        params->endpoint_key = value;
+        params->endpoint = value;
     }
     else if (strcmp(key, AERON_UDP_CHANNEL_INTERFACE_KEY) == 0)
     {
-        params->interface_key = value;
+        params->interface = value;
     }
     else if (strcmp(key, AERON_UDP_CHANNEL_TTL_KEY) == 0)
     {
-        params->ttl_key = value;
+        params->ttl = value;
     }
     else if (strcmp(key, AERON_UDP_CHANNEL_CONTROL_KEY) == 0)
     {
-        params->control_key = value;
+        params->control = value;
     }
     else if (strcmp(key, AERON_UDP_CHANNEL_CONTROL_MODE_KEY) == 0)
     {
-        params->control_mode_key = value;
+        params->control_mode = value;
     }
     else if (strcmp(key, AERON_URI_TAGS_KEY) == 0)
     {
@@ -156,10 +156,10 @@ static int aeron_udp_uri_params_func(void *clientd, const char *key, const char 
         if (NULL != ptr)
         {
             *ptr++ = '\0';
-            params->entity_tag_key = '\0' == *ptr ? NULL : ptr;
+            params->entity_tag = '\0' == *ptr ? NULL : ptr;
         }
 
-        params->channel_tag_key = '\0' == *value ? NULL : value;
+        params->channel_tag = '\0' == *value ? NULL : value;
     }
     else
     {
@@ -182,12 +182,12 @@ int aeron_udp_uri_parse(char *uri, aeron_udp_channel_params_t *params)
 {
     params->additional_params.length = 0;
     params->additional_params.array = NULL;
-    params->endpoint_key = NULL;
-    params->interface_key = NULL;
-    params->ttl_key = NULL;
-    params->control_key = NULL;
-    params->channel_tag_key = NULL;
-    params->entity_tag_key = NULL;
+    params->endpoint = NULL;
+    params->interface = NULL;
+    params->ttl = NULL;
+    params->control = NULL;
+    params->channel_tag = NULL;
+    params->entity_tag = NULL;
 
     return aeron_uri_parse_params(uri, aeron_udp_uri_params_func, params);
 }
@@ -203,10 +203,10 @@ static int aeron_ipc_uri_params_func(void *clientd, const char *key, const char 
         if (NULL != ptr)
         {
             *ptr++ = '\0';
-            params->entity_tag_key = '\0' == *ptr ? NULL : ptr;
+            params->entity_tag = '\0' == *ptr ? NULL : ptr;
         }
 
-        params->channel_tag_key = '\0' == *value ? NULL : value;
+        params->channel_tag = '\0' == *value ? NULL : value;
     }
     else
     {
@@ -229,8 +229,8 @@ int aeron_ipc_uri_parse(char *uri, aeron_ipc_channel_params_t *params)
 {
     params->additional_params.length = 0;
     params->additional_params.array = NULL;
-    params->channel_tag_key = NULL;
-    params->entity_tag_key = NULL;
+    params->channel_tag = NULL;
+    params->entity_tag = NULL;
 
     return aeron_uri_parse_params(uri, aeron_ipc_uri_params_func, params);
 }
@@ -287,9 +287,9 @@ uint8_t aeron_uri_multicast_ttl(aeron_uri_t *uri)
 {
     uint8_t result = 0;
 
-    if (AERON_URI_UDP == uri->type && NULL != uri->params.udp.ttl_key)
+    if (AERON_URI_UDP == uri->type && NULL != uri->params.udp.ttl)
     {
-        uint64_t value = strtoull(uri->params.udp.ttl_key, NULL, 0);
+        uint64_t value = strtoull(uri->params.udp.ttl, NULL, 0);
         result = value > 255u ? (uint8_t)255 : (uint8_t)value;
     }
 

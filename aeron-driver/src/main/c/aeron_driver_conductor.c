@@ -906,7 +906,7 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                 }
 
                 aeron_flow_control_strategy_supplier_func_t flow_control_strategy_supplier_func =
-                    udp_channel->explicit_control || udp_channel->multicast ?
+                    udp_channel->has_explicit_control || udp_channel->is_multicast ?
                         conductor->context->multicast_flow_control_supplier_func :
                         conductor->context->unicast_flow_control_supplier_func;
                 aeron_flow_control_strategy_t *flow_control_strategy;
@@ -2456,19 +2456,19 @@ int aeron_driver_conductor_on_add_destination(aeron_driver_conductor_t *conducto
             goto error_cleanup;
         }
 
-        if (uri_params.type != AERON_URI_UDP || NULL == uri_params.params.udp.endpoint_key)
+        if (uri_params.type != AERON_URI_UDP || NULL == uri_params.params.udp.endpoint)
         {
             aeron_set_err(EINVAL, "incorrect URI format for destination: %.*s", command->channel_length, command_uri);
             goto error_cleanup;
         }
 
         struct sockaddr_storage destination_addr;
-        if (aeron_host_and_port_parse_and_resolve(uri_params.params.udp.endpoint_key, &destination_addr) < 0)
+        if (aeron_host_and_port_parse_and_resolve(uri_params.params.udp.endpoint, &destination_addr) < 0)
         {
             aeron_set_err(
                 aeron_errcode(),
                 "could not resolve destination address=(%s): %s",
-                uri_params.params.udp.endpoint_key,
+                uri_params.params.udp.endpoint,
                 aeron_errmsg());
             goto error_cleanup;
         }
@@ -2529,19 +2529,19 @@ int aeron_driver_conductor_on_remove_destination(
         }
 
 
-        if (uri_params.type != AERON_URI_UDP || NULL == uri_params.params.udp.endpoint_key)
+        if (uri_params.type != AERON_URI_UDP || NULL == uri_params.params.udp.endpoint)
         {
             aeron_set_err(EINVAL, "incorrect URI format for destination: %.*s", command->channel_length, command_uri);
             goto error_cleanup;
         }
 
         struct sockaddr_storage destination_addr;
-        if (aeron_host_and_port_parse_and_resolve(uri_params.params.udp.endpoint_key, &destination_addr) < 0)
+        if (aeron_host_and_port_parse_and_resolve(uri_params.params.udp.endpoint, &destination_addr) < 0)
         {
             aeron_set_err(
                 aeron_errcode(),
                 "could not resolve destination address=(%s): %s",
-                uri_params.params.udp.endpoint_key,
+                uri_params.params.udp.endpoint,
                 aeron_errmsg());
             goto error_cleanup;
         }
@@ -2757,7 +2757,7 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
     aeron_inferable_boolean_t group_subscription = conductor->network_subscriptions.array[0].group;
     bool treat_as_multicast =
         AERON_INFER == group_subscription ?
-        endpoint->conductor_fields.udp_channel->multicast : AERON_FORCE_TRUE == group_subscription;
+        endpoint->conductor_fields.udp_channel->is_multicast : AERON_FORCE_TRUE == group_subscription;
 
     aeron_publication_image_t *image = NULL;
     if (aeron_publication_image_create(

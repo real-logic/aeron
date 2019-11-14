@@ -52,9 +52,9 @@ int aeron_send_channel_endpoint_create(
     }
 
     _endpoint->destination_tracker = NULL;
-    if (channel->explicit_control)
+    if (channel->has_explicit_control)
     {
-        const char *control_mode = channel->uri.params.udp.control_mode_key;
+        const char *control_mode = channel->uri.params.udp.control_mode;
         int64_t destination_timeout_ns = AERON_UDP_DESTINATION_TRACKER_DESTINATION_TIMEOUT_NS;
 
         if (NULL != control_mode &&
@@ -90,8 +90,8 @@ int aeron_send_channel_endpoint_create(
 
     if (context->udp_channel_transport_bindings->init_func(
         &_endpoint->transport,
-        (channel->multicast) ? &channel->remote_control : &channel->local_control,
-        (channel->multicast) ? &channel->local_control : &channel->remote_control,
+        (channel->is_multicast) ? &channel->remote_control : &channel->local_control,
+        (channel->is_multicast) ? &channel->local_control : &channel->remote_control,
         channel->interface_index,
         (0 != channel->multicast_ttl) ? channel->multicast_ttl : context->multicast_ttl,
         context->socket_rcvbuf,

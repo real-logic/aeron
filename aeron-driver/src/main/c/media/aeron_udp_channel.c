@@ -228,8 +228,10 @@ int aeron_udp_channel_parse(size_t uri_length, const char *uri, aeron_udp_channe
     _channel->original_uri[copy_length] = '\0';
     _channel->uri_length = copy_length;
 
-    _channel->explicit_control = false;
-    _channel->multicast = false;
+    _channel->has_explicit_control = false;
+    _channel->is_manual_control_mode = false;
+    _channel->is_dynamic_control_mode = false;
+    _channel->is_multicast = false;
     _channel->tag_id = AERON_URI_INVALID_TAG;
 
     if (_channel->uri.type != AERON_URI_UDP)
@@ -238,26 +240,40 @@ int aeron_udp_channel_parse(size_t uri_length, const char *uri, aeron_udp_channe
         goto error_cleanup;
     }
 
-    bool has_no_distinguishing_characteristic =
-        NULL == _channel->uri.params.udp.endpoint_key &&
-        NULL == _channel->uri.params.udp.control_key &&
-        NULL == _channel->uri.params.udp.channel_tag_key;
-
-    if (has_no_distinguishing_characteristic && NULL == _channel->uri.params.udp.control_mode_key)
+    if (NULL != _channel->uri.params.udp.control_mode)
     {
-        aeron_set_err(-AERON_ERROR_CODE_INVALID_CHANNEL, "%s",
-            "Aeron URIs for UDP must specify an endpoint address, control address, tag-id, or control-mode");
+        _channel->is_manual_control_mode =
+            strcmp(_channel->uri.params.udp.control_mode, AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL_VALUE) == 0;
+        _channel->is_dynamic_control_mode =
+            strcmp(_channel->uri.params.udp.control_mode, AERON_UDP_CHANNEL_CONTROL_MODE_DYNAMIC_VALUE) == 0;
+    }
+
+    if (_channel->is_dynamic_control_mode && NULL == _channel->uri.params.udp.control)
+    {
+        aeron_set_err(-AERON_ERROR_CODE_INVALID_CHANNEL, "%s", "explicit control expected with dynamic control mode");
         goto error_cleanup;
     }
 
-    if (NULL != _channel->uri.params.udp.endpoint_key)
+    bool has_no_distinguishing_characteristic =
+        NULL == _channel->uri.params.udp.endpoint &&
+        NULL == _channel->uri.params.udp.control &&
+        NULL == _channel->uri.params.udp.channel_tag;
+
+    if (has_no_distinguishing_characteristic && !_channel->is_manual_control_mode)
     {
-        if (aeron_host_and_port_parse_and_resolve(_channel->uri.params.udp.endpoint_key, &endpoint_addr) < 0)
+        aeron_set_err(-AERON_ERROR_CODE_INVALID_CHANNEL, "%s",
+            "URIs for UDP must specify endpoint, control, tag-id, or be control-mode=manual");
+        goto error_cleanup;
+    }
+
+    if (NULL != _channel->uri.params.udp.endpoint)
+    {
+        if (aeron_host_and_port_parse_and_resolve(_channel->uri.params.udp.endpoint, &endpoint_addr) < 0)
         {
             aeron_set_err(
                 -AERON_ERROR_CODE_INVALID_CHANNEL,
                 "could not resolve endpoint address=(%s): %s",
-                _channel->uri.params.udp.endpoint_key, aeron_errmsg());
+                _channel->uri.params.udp.endpoint, aeron_errmsg());
             goto error_cleanup;
         }
     }
@@ -266,24 +282,24 @@ int aeron_udp_channel_parse(size_t uri_length, const char *uri, aeron_udp_channe
         aeron_set_ipv4_wildcard_host_and_port(&endpoint_addr);
     }
 
-    if (NULL != _channel->uri.params.udp.control_key)
+    if (NULL != _channel->uri.params.udp.control)
     {
-        if (aeron_host_and_port_parse_and_resolve(_channel->uri.params.udp.control_key, &explicit_control_addr) < 0)
+        if (aeron_host_and_port_parse_and_resolve(_channel->uri.params.udp.control, &explicit_control_addr) < 0)
         {
             aeron_set_err(
                 -AERON_ERROR_CODE_INVALID_CHANNEL,
                 "could not resolve control address=(%s): %s",
-                _channel->uri.params.udp.control_key, aeron_errmsg());
+                _channel->uri.params.udp.control, aeron_errmsg());
             goto error_cleanup;
         }
     }
 
-    if (NULL != _channel->uri.params.udp.channel_tag_key)
+    if (NULL != _channel->uri.params.udp.channel_tag)
     {
-        if ((_channel->tag_id = aeron_uri_parse_tag(_channel->uri.params.udp.channel_tag_key)) == AERON_URI_INVALID_TAG)
+        if ((_channel->tag_id = aeron_uri_parse_tag(_channel->uri.params.udp.channel_tag)) == AERON_URI_INVALID_TAG)
         {
             aeron_set_err(-AERON_ERROR_CODE_INVALID_CHANNEL, "could not parse channel tag string: %s",
-                _channel->uri.params.udp.channel_tag_key);
+                _channel->uri.params.udp.channel_tag);
             goto error_cleanup;
         }
     }
@@ -297,12 +313,12 @@ int aeron_udp_channel_parse(size_t uri_length, const char *uri, aeron_udp_channe
         }
 
         if (aeron_find_multicast_interface(
-            endpoint_addr.ss_family, _channel->uri.params.udp.interface_key, &interface_addr, &interface_index) < 0)
+            endpoint_addr.ss_family, _channel->uri.params.udp.interface, &interface_addr, &interface_index) < 0)
         {
             aeron_set_err(
                 -AERON_ERROR_CODE_INVALID_CHANNEL,
                 "could not find interface=(%s): %s",
-                _channel->uri.params.udp.interface_key, aeron_errmsg());
+                _channel->uri.params.udp.interface, aeron_errmsg());
             goto error_cleanup;
         }
 
@@ -313,9 +329,9 @@ int aeron_udp_channel_parse(size_t uri_length, const char *uri, aeron_udp_channe
         aeron_uri_udp_canonicalise(
             _channel->canonical_form, sizeof(_channel->canonical_form), &interface_addr, &endpoint_addr, false);
         _channel->canonical_length = strlen(_channel->canonical_form);
-        _channel->multicast = true;
+        _channel->is_multicast = true;
     }
-    else if (NULL != _channel->uri.params.udp.control_key)
+    else if (NULL != _channel->uri.params.udp.control)
     {
         _channel->interface_index = 0;
         _channel->multicast_ttl = 0;
@@ -326,12 +342,12 @@ int aeron_udp_channel_parse(size_t uri_length, const char *uri, aeron_udp_channe
         aeron_uri_udp_canonicalise(
             _channel->canonical_form, sizeof(_channel->canonical_form), &explicit_control_addr, &endpoint_addr, false);
         _channel->canonical_length = strlen(_channel->canonical_form);
-        _channel->explicit_control = true;
+        _channel->has_explicit_control = true;
     }
     else
     {
         if (aeron_find_unicast_interface(
-            endpoint_addr.ss_family, _channel->uri.params.udp.interface_key, &interface_addr, &interface_index) < 0)
+            endpoint_addr.ss_family, _channel->uri.params.udp.interface, &interface_addr, &interface_index) < 0)
         {
             goto error_cleanup;
         }

@@ -87,21 +87,21 @@ aeron_uri_subscription_params_t;
 
 typedef struct aeron_udp_channel_params_stct
 {
-    const char *endpoint_key;
-    const char *interface_key;
-    const char *ttl_key;
-    const char *control_key;
-    const char *control_mode_key;
-    const char *channel_tag_key;
-    const char *entity_tag_key;
+    const char *endpoint;
+    const char *interface;
+    const char *control;
+    const char *control_mode;
+    const char *channel_tag;
+    const char *entity_tag;
+    const char *ttl;
     aeron_uri_params_t additional_params;
 }
 aeron_udp_channel_params_t;
 
 typedef struct aeron_ipc_channel_params_stct
 {
-    const char *channel_tag_key;
-    const char *entity_tag_key;
+    const char *channel_tag;
+    const char *entity_tag;
     aeron_uri_params_t additional_params;
 }
 aeron_ipc_channel_params_t;

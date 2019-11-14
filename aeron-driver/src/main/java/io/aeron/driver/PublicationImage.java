@@ -28,9 +28,7 @@ import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.ArrayUtil;
-import org.agrona.concurrent.EpochClock;
-import org.agrona.concurrent.NanoClock;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.Position;
 import org.agrona.concurrent.status.ReadablePosition;
@@ -128,7 +126,7 @@ public class PublicationImage
     private volatile State state = INIT;
 
     private final NanoClock nanoClock;
-    private final NanoClock cachedNanoClock;
+    private final CachedNanoClock cachedNanoClock;
     private final ReceiveChannelEndpoint channelEndpoint;
     private final UnsafeBuffer[] termBuffers;
     private final Position hwmPosition;
@@ -142,7 +140,7 @@ public class PublicationImage
     private final AtomicCounter flowControlUnderRuns;
     private final AtomicCounter flowControlOverRuns;
     private final AtomicCounter lossGapFills;
-    private final EpochClock cachedEpochClock;
+    private final CachedEpochClock cachedEpochClock;
     private final RawLog rawLog;
 
     public PublicationImage(
@@ -164,8 +162,8 @@ public class PublicationImage
         final Position hwmPosition,
         final Position rebuildPosition,
         final NanoClock nanoClock,
-        final NanoClock cachedNanoClock,
-        final EpochClock cachedEpochClock,
+        final CachedNanoClock cachedNanoClock,
+        final CachedEpochClock cachedEpochClock,
         final SystemCounters systemCounters,
         final InetSocketAddress sourceAddress,
         final CongestionControl congestionControl,

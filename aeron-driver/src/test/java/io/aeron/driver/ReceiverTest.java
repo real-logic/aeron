@@ -81,9 +81,8 @@ public class ReceiverTest
     private final StatusMessageFlyweight statusHeader = new StatusMessageFlyweight();
     private final SetupFlyweight setupHeader = new SetupFlyweight();
 
-    private long currentTime = 0;
-    private final NanoClock nanoClock = () -> currentTime;
-    private final EpochClock epochClock = mock(EpochClock.class);
+    private final CachedNanoClock nanoClock = new CachedNanoClock();
+    private final CachedEpochClock epochClock = new CachedEpochClock();
     private final LossReport lossReport = mock(LossReport.class);
 
     private final RawLog rawLog = TestLogFactory.newLogBuffers(TERM_BUFFER_LENGTH);
@@ -117,9 +116,6 @@ public class ReceiverTest
             .thenReturn(CongestionControl.packOutcome(INITIAL_WINDOW_LENGTH, false));
         when(congestionControl.initialWindowLength()).thenReturn(INITIAL_WINDOW_LENGTH);
 
-        final CachedNanoClock mockCachedNanoClock = mock(CachedNanoClock.class);
-        when(mockCachedNanoClock.nanoTime()).thenAnswer((invocation) -> currentTime);
-
         final DriverConductorProxy driverConductorProxy =
             new DriverConductorProxy(ThreadingMode.DEDICATED, toConductorQueue, mock(AtomicCounter.class));
 
@@ -132,8 +128,8 @@ public class ReceiverTest
             .systemCounters(mockSystemCounters)
             .applicationSpecificFeedback(Configuration.applicationSpecificFeedback())
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
-            .nanoClock(() -> currentTime)
-            .cachedNanoClock(mockCachedNanoClock)
+            .nanoClock(nanoClock)
+            .cachedNanoClock(nanoClock)
             .driverConductorProxy(driverConductorProxy);
 
         receiverProxy = new ReceiverProxy(
@@ -218,7 +214,7 @@ public class ReceiverTest
 
         receiver.doWork();
 
-        image.trackRebuild(currentTime + (2 * STATUS_MESSAGE_TIMEOUT), STATUS_MESSAGE_TIMEOUT);
+        image.trackRebuild(nanoClock.nanoTime() + (2 * STATUS_MESSAGE_TIMEOUT), STATUS_MESSAGE_TIMEOUT);
         image.sendPendingStatusMessage();
 
         final ByteBuffer rcvBuffer = ByteBuffer.allocateDirect(256);

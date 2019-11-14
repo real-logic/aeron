@@ -27,7 +27,7 @@ import io.aeron.protocol.SetupFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.ArrayUtil;
-import org.agrona.concurrent.NanoClock;
+import org.agrona.concurrent.CachedNanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.Position;
@@ -136,7 +136,7 @@ public class NetworkPublication
     private final ByteBuffer rttMeasurementBuffer;
     private final RttMeasurementFlyweight rttMeasurementHeader;
     private final FlowControl flowControl;
-    private final NanoClock nanoClock;
+    private final CachedNanoClock nanoClock;
     private final RetransmitHandler retransmitHandler;
     private final UnsafeBuffer metaDataBuffer;
     private final RawLog rawLog;
@@ -151,7 +151,7 @@ public class NetworkPublication
         final long registrationId,
         final PublicationParams params,
         final SendChannelEndpoint channelEndpoint,
-        final NanoClock nanoClock,
+        final CachedNanoClock nanoClock,
         final RawLog rawLog,
         final int termWindowLength,
         final Position publisherPos,

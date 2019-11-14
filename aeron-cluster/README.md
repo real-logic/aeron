@@ -11,7 +11,7 @@ Aeron Cluster works on the concept of a strong leader using an adaptation of the
 protocol. The leader sequences the log and is responsible for replicating it to other cluster members known as
 followers.
 
-Aeron Cluster is composes of a number of components. Central is the Consensus Module which sequences the log and
+Aeron Cluster is composed of a number of components. Central is the Consensus Module which sequences the log and
 coordinates consensus on the recording of the sequenced log to persistent storage, and the services consuming the log
 across cluster members. Recording of the log to persistent storage is performed by the Aeron Archive module. Services
 are allowed to consume the log once a majority of the cluster members have safely recorded the log to persistent storage.

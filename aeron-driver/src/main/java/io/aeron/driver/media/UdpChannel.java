@@ -117,7 +117,7 @@ public final class UdpChannel
             if (hasNoDistinguishingCharacteristic && !isManualControlMode)
             {
                 throw new IllegalArgumentException(
-                    "Aeron URIs for UDP must specify an endpoint address, control address, tag-id, or control-mode: " +
+                    "URIs for UDP must specify an endpoint, control, tag-id, or control-mode manual: " +
                     channelUriString);
             }
 

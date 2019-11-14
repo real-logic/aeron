@@ -125,32 +125,32 @@ public class ControlTransportPoller extends UdpTransportPoller
 
     private int poll(final SendChannelEndpoint channelEndpoint)
     {
-        int byteReceived = 0;
+        int bytesReceived = 0;
         final InetSocketAddress srcAddress = channelEndpoint.receive(byteBuffer);
 
         if (null != srcAddress)
         {
-            byteReceived = byteBuffer.position();
-            if (channelEndpoint.isValidFrame(unsafeBuffer, byteReceived))
+            bytesReceived = byteBuffer.position();
+            if (channelEndpoint.isValidFrame(unsafeBuffer, bytesReceived))
             {
-                channelEndpoint.receiveHook(unsafeBuffer, byteReceived, srcAddress);
+                channelEndpoint.receiveHook(unsafeBuffer, bytesReceived, srcAddress);
 
                 final int frameType = frameType(unsafeBuffer, 0);
                 if (HDR_TYPE_NAK == frameType)
                 {
-                    channelEndpoint.onNakMessage(nakMessage, unsafeBuffer, byteReceived, srcAddress);
+                    channelEndpoint.onNakMessage(nakMessage, unsafeBuffer, bytesReceived, srcAddress);
                 }
                 else if (HDR_TYPE_SM == frameType)
                 {
-                    channelEndpoint.onStatusMessage(statusMessage, unsafeBuffer, byteReceived, srcAddress);
+                    channelEndpoint.onStatusMessage(statusMessage, unsafeBuffer, bytesReceived, srcAddress);
                 }
                 else if (HDR_TYPE_RTTM == frameType)
                 {
-                    channelEndpoint.onRttMeasurement(rttMeasurement, unsafeBuffer, byteReceived, srcAddress);
+                    channelEndpoint.onRttMeasurement(rttMeasurement, unsafeBuffer, bytesReceived, srcAddress);
                 }
             }
         }
 
-        return byteReceived;
+        return bytesReceived;
     }
 }

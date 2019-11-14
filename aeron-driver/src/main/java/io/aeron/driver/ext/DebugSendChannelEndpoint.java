@@ -34,7 +34,7 @@ public class DebugSendChannelEndpoint extends SendChannelEndpoint
 {
     private final LossGenerator dataLossGenerator;
     private final LossGenerator controlLossGenerator;
-    private final UnsafeBuffer dataBuffer = new UnsafeBuffer(ByteBuffer.allocate(0));
+    private final UnsafeBuffer dataBuffer = new UnsafeBuffer();
 
     public DebugSendChannelEndpoint(
         final UdpChannel udpChannel, final AtomicCounter statusIndicator, final MediaDriver.Context context)
@@ -62,15 +62,15 @@ public class DebugSendChannelEndpoint extends SendChannelEndpoint
 
     public int send(final ByteBuffer buffer)
     {
-        int result = buffer.remaining();
+        int count = buffer.remaining();
 
-        dataBuffer.wrap(buffer, buffer.position(), buffer.remaining());
-        if (!dataLossGenerator.shouldDropFrame(connectAddress, dataBuffer, buffer.remaining()))
+        dataBuffer.wrap(buffer, buffer.position(), count);
+        if (!dataLossGenerator.shouldDropFrame(connectAddress, dataBuffer, count))
         {
-            result = super.send(buffer);
+            count = super.send(buffer);
         }
 
-        return result;
+        return count;
     }
 
     public void onStatusMessage(

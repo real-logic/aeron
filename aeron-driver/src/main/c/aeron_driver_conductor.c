@@ -1071,7 +1071,6 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
             bind_addr_and_port_length,
             bind_addr_and_port);
 
-
         if (aeron_str_to_ptr_hash_map_put(
             &conductor->send_channel_endpoint_by_channel_map,
             channel->canonical_form,
@@ -2528,7 +2527,6 @@ int aeron_driver_conductor_on_remove_destination(
             goto error_cleanup;
         }
 
-
         if (uri_params.type != AERON_URI_UDP || NULL == uri_params.params.udp.endpoint)
         {
             aeron_set_err(EINVAL, "incorrect URI format for destination: %.*s", command->channel_length, command_uri);
@@ -2919,4 +2917,3 @@ extern void aeron_driver_conductor_on_unavailable_image(
     int32_t stream_id,
     const char *channel,
     size_t channel_length);
-

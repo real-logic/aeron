@@ -609,7 +609,6 @@ void aeron_network_publication_on_status_message(
     aeron_network_publication_t *publication, const uint8_t *buffer, size_t length, struct sockaddr_storage *addr)
 {
     const int64_t time_ns = publication->nano_clock();
-
     publication->status_message_deadline_ns = time_ns + publication->connection_timeout_ns;
 
     if (!publication->has_receivers)

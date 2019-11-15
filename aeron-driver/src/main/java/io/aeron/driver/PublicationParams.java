@@ -194,22 +194,22 @@ final class PublicationParams
     }
 
     static void confirmMatch(
-        final ChannelUri uri, final PublicationParams params, final RawLog rawLog, final int existingSessionId)
+        final ChannelUri channelUri, final PublicationParams params, final RawLog rawLog, final int existingSessionId)
     {
         final int mtuLength = LogBufferDescriptor.mtuLength(rawLog.metaData());
-        if (uri.containsKey(MTU_LENGTH_PARAM_NAME) && mtuLength != params.mtuLength)
+        if (channelUri.containsKey(MTU_LENGTH_PARAM_NAME) && mtuLength != params.mtuLength)
         {
             throw new IllegalStateException("existing publication has different MTU length: existing=" +
                 mtuLength + " requested=" + params.mtuLength);
         }
 
-        if (uri.containsKey(TERM_LENGTH_PARAM_NAME) && rawLog.termLength() != params.termLength)
+        if (channelUri.containsKey(TERM_LENGTH_PARAM_NAME) && rawLog.termLength() != params.termLength)
         {
             throw new IllegalStateException("existing publication has different term length: existing=" +
                 rawLog.termLength() + " requested=" + params.termLength);
         }
 
-        if (uri.containsKey(SESSION_ID_PARAM_NAME) && params.sessionId != existingSessionId)
+        if (channelUri.containsKey(SESSION_ID_PARAM_NAME) && params.sessionId != existingSessionId)
         {
             throw new IllegalStateException("existing publication has different session id: existing=" +
                 existingSessionId + " requested=" + params.sessionId);

@@ -241,11 +241,11 @@ public class DriverConductor implements Agent
                 countersManager);
 
             final InferableBoolean groupSubscription = subscriberPositions.get(0).subscription().group();
-            final boolean treatAsMulticast =
-                groupSubscription == INFER ? udpChannel.isMulticast() : groupSubscription == FORCE_TRUE;
+            final boolean treatAsMulticast = groupSubscription == INFER ?
+                udpChannel.isMulticast() : groupSubscription == FORCE_TRUE;
 
-            final FeedbackDelayGenerator feedbackDelayGenerator =
-                treatAsMulticast ? ctx.multicastFeedbackDelayGenerator() : ctx.unicastFeedbackDelayGenerator();
+            final FeedbackDelayGenerator feedbackDelayGenerator = treatAsMulticast ?
+                ctx.multicastFeedbackDelayGenerator() : ctx.unicastFeedbackDelayGenerator();
 
             final PublicationImage image = new PublicationImage(
                 registrationId,
@@ -295,9 +295,9 @@ public class DriverConductor implements Agent
         }
     }
 
-    void onChannelEndpointError(final long statusIndicatorId, final Exception error)
+    void onChannelEndpointError(final long statusIndicatorId, final Exception ex)
     {
-        final String errorMessage = error.getClass().getSimpleName() + " : " + error.getMessage();
+        final String errorMessage = ex.getClass().getSimpleName() + " : " + ex.getMessage();
         clientProxy.onError(statusIndicatorId, CHANNEL_ENDPOINT_ERROR, errorMessage);
     }
 
@@ -612,7 +612,6 @@ public class DriverConductor implements Agent
         }
 
         publicationLink.close();
-
         clientProxy.operationSucceeded(correlationId);
     }
 
@@ -679,7 +678,6 @@ public class DriverConductor implements Agent
         final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), ctx);
 
         checkForClashingSubscription(params, udpChannel, streamId);
-
         final ReceiveChannelEndpoint channelEndpoint = getOrCreateReceiveChannelEndpoint(udpChannel);
 
         if (params.hasSessionId)
@@ -873,7 +871,6 @@ public class DriverConductor implements Agent
 
         clientProxy.operationSucceeded(correlationId);
         clientProxy.onUnavailableCounter(registrationId, counterLink.counterId());
-
         counterLink.close();
     }
 
@@ -937,8 +934,7 @@ public class DriverConductor implements Agent
 
         receiveChannelEndpoint.validateAllowsDestinationControl();
 
-        final UdpChannel destinationUdpChannel = UdpChannel.parse(destinationChannel);
-        receiverProxy.removeDestination(receiveChannelEndpoint, destinationUdpChannel);
+        receiverProxy.removeDestination(receiveChannelEndpoint, UdpChannel.parse(destinationChannel));
         clientProxy.operationSucceeded(correlationId);
     }
 
@@ -1685,54 +1681,5 @@ public class DriverConductor implements Agent
         }
 
         return isSparse;
-    }
-
-    static final class SessionKey
-    {
-        int sessionId;
-        final int streamId;
-        final String channel;
-
-        SessionKey(final int streamId, final String channel)
-        {
-            this.streamId = streamId;
-            this.channel = channel;
-        }
-
-        SessionKey(final int sessionId, final int streamId, final String channel)
-        {
-            this.sessionId = sessionId;
-            this.streamId = streamId;
-            this.channel = channel;
-        }
-
-        public boolean equals(final Object o)
-        {
-            if (this == o)
-            {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass())
-            {
-                return false;
-            }
-
-            final SessionKey that = (SessionKey)o;
-            return sessionId == that.sessionId && streamId == that.streamId && channel.equals(that.channel);
-        }
-
-        public int hashCode()
-        {
-            return 31 * sessionId * streamId * channel.hashCode();
-        }
-
-        public String toString()
-        {
-            return "SessionKey{" +
-                "sessionId=" + sessionId +
-                ", streamId=" + streamId +
-                ", channel=" + channel +
-                '}';
-        }
     }
 }

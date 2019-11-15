@@ -1025,6 +1025,15 @@ aeron_send_channel_endpoint_t *aeron_driver_conductor_get_or_add_send_channel_en
     }
     else
     {
+        if (AERON_URI_INVALID_TAG != channel->tag_id &&
+            !channel->has_explicit_control &&
+            !channel->is_manual_control_mode &&
+            NULL == channel->uri.params.udp.endpoint)
+        {
+            aeron_set_err(EINVAL, "URI must have explicit control, endpoint, or be manual control-mode when original");
+            return NULL;
+        }
+
         endpoint = aeron_str_to_ptr_hash_map_get(
             &conductor->send_channel_endpoint_by_channel_map, channel->canonical_form, channel->canonical_length);
     }

@@ -70,9 +70,14 @@ MemoryMappedFile::ptr_t MemoryMappedFile::createNew(const char *filename, size_t
         throw IOException(std::string("Failed to create file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
     }
 
+    OnScopeExit tidy(
+        [&]()
+        {
+            CloseHandle(fd.handle);
+        });
+
     if (!fill(fd, size, 0))
     {
-        CloseHandle(fd.handle);
         throw IOException(std::string("Failed to write to file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
     }
 
@@ -83,13 +88,19 @@ MemoryMappedFile::ptr_t MemoryMappedFile::mapExisting(const char *filename, size
 {
     FileHandle fd;
     DWORD dwDesiredAccess = readOnly ? GENERIC_READ : (GENERIC_READ | GENERIC_WRITE);
-    DWORD dwSharedMode =FILE_SHARE_READ | FILE_SHARE_WRITE;
+    DWORD dwSharedMode = FILE_SHARE_READ | FILE_SHARE_WRITE;
     fd.handle = CreateFile(filename, dwDesiredAccess, dwSharedMode, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
     if (fd.handle == INVALID_HANDLE_VALUE)
     {
         throw IOException(std::string("Failed to create file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
     }
+
+    OnScopeExit tidy(
+        [&]()
+        {
+            CloseHandle(fd.handle);
+        });
 
     return MemoryMappedFile::ptr_t(new MemoryMappedFile(fd, offset, size, readOnly));
 }
@@ -116,6 +127,7 @@ bool MemoryMappedFile::fill(FileHandle fd, size_t size, uint8_t value)
             return false;
         }
     }
+
     return true;
 }
 
@@ -129,10 +141,11 @@ MemoryMappedFile::ptr_t MemoryMappedFile::createNew(const char *filename, off_t 
         throw IOException(std::string("failed to create file: ") + filename, SOURCEINFO);
     }
 
-    OnScopeExit tidy([&]()
-    {
-        close(fd.handle);
-    });
+    OnScopeExit tidy(
+        [&]()
+        {
+            close(fd.handle);
+        });
 
     if (!fill(fd, size, 0))
     {
@@ -152,10 +165,11 @@ MemoryMappedFile::ptr_t MemoryMappedFile::mapExisting(const char *filename, off_
         throw IOException(std::string("failed to open existing file: ") + filename, SOURCEINFO);
     }
 
-    OnScopeExit tidy([&]()
-    {
-        close(fd.handle);
-    });
+    OnScopeExit tidy(
+        [&]()
+        {
+            close(fd.handle);
+        });
 
     return MemoryMappedFile::ptr_t(new MemoryMappedFile(fd, offset, length, readOnly));
 }
@@ -226,7 +240,7 @@ MemoryMappedFile::~MemoryMappedFile()
     cleanUp();
 }
 
-uint8_t* MemoryMappedFile::doMapping(size_t size, FileHandle fd, size_t offset, bool readOnly)
+uint8_t * MemoryMappedFile::doMapping(size_t size, FileHandle fd, size_t offset, bool readOnly)
 {
     DWORD flProtect = readOnly ? PAGE_READONLY : PAGE_READWRITE;
     m_mapping = CreateFileMapping(fd.handle, NULL, flProtect, 0, (DWORD)size, NULL);
@@ -236,7 +250,7 @@ uint8_t* MemoryMappedFile::doMapping(size_t size, FileHandle fd, size_t offset, 
     }
 
     DWORD dwDesiredAccess = readOnly ? FILE_MAP_READ : FILE_MAP_ALL_ACCESS;
-    void* memory = (LPTSTR)MapViewOfFile(m_mapping, dwDesiredAccess, 0, (DWORD)offset, size);
+    void *memory = (LPTSTR)MapViewOfFile(m_mapping, dwDesiredAccess, 0, (DWORD)offset, size);
 
     return static_cast<uint8_t*>(memory);
 }
@@ -285,10 +299,10 @@ MemoryMappedFile::~MemoryMappedFile()
 
 uint8_t* MemoryMappedFile::doMapping(size_t length, FileHandle fd, size_t offset, bool readOnly)
 {
-    void* memory = ::mmap(
+    void *memory = ::mmap(
         NULL,
         length,
-        (readOnly ? PROT_READ : (PROT_READ | PROT_WRITE)),
+        readOnly ? PROT_READ : (PROT_READ | PROT_WRITE),
         MAP_SHARED,
         fd.handle,
         static_cast<off_t>(offset));

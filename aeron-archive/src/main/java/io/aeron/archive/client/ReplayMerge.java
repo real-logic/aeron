@@ -487,7 +487,6 @@ public class ReplayMerge implements AutoCloseable
 
     private void state(final ReplayMerge.State newState)
     {
-        //System.out.println(state + " -> " + newState);
         state = newState;
         activeCorrelationId = Aeron.NULL_VALUE;
     }

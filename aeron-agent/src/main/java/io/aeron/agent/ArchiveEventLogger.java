@@ -39,6 +39,7 @@ public final class ArchiveEventLogger
         ringBuffer = eventRingBuffer;
     }
 
+    @SuppressWarnings("MethodLength")
     public void logControlRequest(final DirectBuffer buffer, final int offset, final int length)
     {
         headerDecoder.wrap(buffer, offset);
@@ -116,6 +117,38 @@ public final class ArchiveEventLogger
 
             case StopAllReplaysRequestDecoder.TEMPLATE_ID:
                 dispatchIfEnabled(buffer, offset, length, CMD_IN_STOP_ALL_REPLAYS);
+                break;
+
+            case ReplicateRequestDecoder.TEMPLATE_ID:
+                dispatchIfEnabled(buffer, offset, length, CMD_IN_REPLICATE);
+                break;
+
+            case StopReplicationRequestDecoder.TEMPLATE_ID:
+                dispatchIfEnabled(buffer, offset, length, CMD_IN_STOP_REPLICATION);
+                break;
+
+            case StartPositionRequestDecoder.TEMPLATE_ID:
+                dispatchIfEnabled(buffer, offset, length, CMD_IN_START_POSITION);
+                break;
+
+            case DetachSegmentsRequestDecoder.TEMPLATE_ID:
+                dispatchIfEnabled(buffer, offset, length, CMD_IN_DETACH_SEGMENTS);
+                break;
+
+            case DeleteDetachedSegmentsRequestDecoder.TEMPLATE_ID:
+                dispatchIfEnabled(buffer, offset, length, CMD_IN_DELETE_DETACHED_SEGMENTS);
+                break;
+
+            case PurgeSegmentsRequestDecoder.TEMPLATE_ID:
+                dispatchIfEnabled(buffer, offset, length, CMD_IN_PURGE_SEGMENTS);
+                break;
+
+            case AttachSegmentsRequestDecoder.TEMPLATE_ID:
+                dispatchIfEnabled(buffer, offset, length, CMD_IN_ATTACH_SEGMENTS);
+                break;
+
+            case MigrateSegmentsRequestDecoder.TEMPLATE_ID:
+                dispatchIfEnabled(buffer, offset, length, CMD_IN_MIGRATE_SEGMENTS);
                 break;
         }
     }

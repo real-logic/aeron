@@ -226,7 +226,7 @@ public class EventLogAgent
     private static AgentBuilder addArchiveInstrumentation(final AgentBuilder agentBuilder)
     {
         return agentBuilder
-            .type(nameEndsWith("ControlRequestAdapter"))
+            .type(nameEndsWith("ControlSessionDemuxer"))
             .transform(((builder, typeDescription, classLoader, module) -> builder
                 .visit(to(ControlRequestInterceptor.ControlRequest.class)
                     .on(named("onFragment")))));

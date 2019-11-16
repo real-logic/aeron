@@ -50,13 +50,13 @@ public class DriverLoggingAgentTest
     public static void installAgent()
     {
         System.setProperty(EventLogAgent.READER_CLASSNAME_PROP_NAME, StubEventLogReaderAgent.class.getName());
-        Common.before();
+        Common.beforeAgent();
     }
 
     @AfterClass
     public static void removeAgent()
     {
-        Common.after();
+        Common.afterAfter();
     }
 
     @Test(timeout = 10_000L)

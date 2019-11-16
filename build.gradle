@@ -581,6 +581,10 @@ project(':aeron-agent') {
         compile "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
     }
 
+    test {
+        forkEvery = 1
+    }
+
     jar {
         manifest.attributes(
             'Implementation-Title': 'Aeron',

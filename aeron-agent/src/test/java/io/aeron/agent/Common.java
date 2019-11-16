@@ -19,7 +19,7 @@ import net.bytebuddy.agent.ByteBuddyAgent;
 
 public class Common
 {
-    public static void before()
+    public static void beforeAgent()
     {
         System.setProperty(EventConfiguration.ENABLED_EVENT_CODES_PROP_NAME, "all");
         System.setProperty(EventConfiguration.ENABLED_ARCHIVE_EVENT_CODES_PROP_NAME, "all");
@@ -27,7 +27,7 @@ public class Common
         EventLogAgent.agentmain("", ByteBuddyAgent.install());
     }
 
-    public static void after()
+    public static void afterAfter()
     {
         EventLogAgent.removeTransformer();
         System.clearProperty(EventConfiguration.ENABLED_EVENT_CODES_PROP_NAME);

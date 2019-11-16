@@ -35,13 +35,13 @@ public class ArchiveLoggingAgentTest
     public void before()
     {
         System.setProperty(EventLogAgent.READER_CLASSNAME_PROP_NAME, StubEventLogReaderAgent.class.getName());
-        Common.before();
+        Common.beforeAgent();
     }
 
     @After
     public void after()
     {
-        Common.after();
+        Common.afterAfter();
 
         CloseHelper.close(aeronArchive);
         CloseHelper.close(archivingMediaDriver);

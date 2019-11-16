@@ -45,10 +45,9 @@ public class EventLogReaderAgent implements Agent, MessageHandler
      */
     public static final String LOG_FILENAME_PROP_NAME = "aeron.event.log.filename";
 
-    private final CharsetEncoder encoder = StandardCharsets.UTF_8.newEncoder();
-    private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(
-        EventConfiguration.MAX_EVENT_LENGTH + System.lineSeparator().length());
     private final StringBuilder builder = new StringBuilder();
+    private CharsetEncoder encoder;
+    private ByteBuffer byteBuffer;
     private FileChannel fileChannel = null;
 
     public void onStart()
@@ -64,6 +63,10 @@ public class EventLogReaderAgent implements Agent, MessageHandler
             {
                 LangUtil.rethrowUnchecked(ex);
             }
+
+            encoder = StandardCharsets.UTF_8.newEncoder();
+            byteBuffer = ByteBuffer.allocateDirect(
+                EventConfiguration.MAX_EVENT_LENGTH + System.lineSeparator().length());
         }
 
         builder.setLength(0);
@@ -107,13 +110,13 @@ public class EventLogReaderAgent implements Agent, MessageHandler
         {
             DriverEventCode.get(eventCodeId).decode(buffer, index, builder);
         }
-        else if (ClusterEventCode.EVENT_CODE_TYPE == eventCodeTypeId)
-        {
-            ClusterEventCode.get(eventCodeId).decode(buffer, index, builder);
-        }
         else if (ArchiveEventCode.EVENT_CODE_TYPE == eventCodeTypeId)
         {
             ArchiveEventCode.get(eventCodeId).decode(buffer, index, builder);
+        }
+        else if (ClusterEventCode.EVENT_CODE_TYPE == eventCodeTypeId)
+        {
+            ClusterEventCode.get(eventCodeId).decode(buffer, index, builder);
         }
         else
         {
@@ -138,8 +141,8 @@ public class EventLogReaderAgent implements Agent, MessageHandler
         {
             buffer.clear();
             encoder.reset();
-            final CoderResult coderResult = encoder.encode(CharBuffer.wrap(builder), buffer, false);
 
+            final CoderResult coderResult = encoder.encode(CharBuffer.wrap(builder), buffer, false);
             if (CoderResult.UNDERFLOW != coderResult)
             {
                 coderResult.throwException();

@@ -49,15 +49,14 @@ public class DriverLoggingAgentTest
     @BeforeClass
     public static void installAgent()
     {
-        System.setProperty(EventConfiguration.ENABLED_EVENT_CODES_PROP_NAME, "all");
         System.setProperty(EventLogAgent.READER_CLASSNAME_PROP_NAME, StubEventLogReaderAgent.class.getName());
+        Common.before();
     }
 
     @AfterClass
     public static void removeAgent()
     {
-        EventLogAgent.removeTransformer();
-        System.clearProperty(EventConfiguration.ENABLED_EVENT_CODES_PROP_NAME);
+        Common.after();
     }
 
     @Test(timeout = 10_000L)

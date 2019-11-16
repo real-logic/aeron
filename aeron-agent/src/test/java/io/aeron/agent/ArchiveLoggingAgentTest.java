@@ -14,7 +14,6 @@ import java.io.File;
 import java.nio.file.Paths;
 import java.util.concurrent.CountDownLatch;
 
-import net.bytebuddy.agent.ByteBuddyAgent;
 import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
 import org.agrona.MutableDirectBuffer;
@@ -35,17 +34,14 @@ public class ArchiveLoggingAgentTest
     @Before
     public void before()
     {
-        System.setProperty(EventConfiguration.ENABLED_ARCHIVE_EVENT_CODES_PROP_NAME, "all");
         System.setProperty(EventLogAgent.READER_CLASSNAME_PROP_NAME, StubEventLogReaderAgent.class.getName());
-        EventLogAgent.agentmain("", ByteBuddyAgent.install());
+        Common.before();
     }
 
     @After
     public void after()
     {
-        EventLogAgent.removeTransformer();
-        System.clearProperty(EventConfiguration.ENABLED_ARCHIVE_EVENT_CODES_PROP_NAME);
-        System.clearProperty(EventLogAgent.READER_CLASSNAME_PROP_NAME);
+        Common.after();
 
         CloseHelper.close(aeronArchive);
         CloseHelper.close(archivingMediaDriver);

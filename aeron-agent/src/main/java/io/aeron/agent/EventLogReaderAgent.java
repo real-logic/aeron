@@ -45,21 +45,16 @@ public class EventLogReaderAgent implements Agent, MessageHandler
      */
     public static final String LOG_FILENAME_PROP_NAME = "aeron.event.log.filename";
 
-    private final FileChannel fileChannel;
-    final CharsetEncoder encoder = StandardCharsets.UTF_8.newEncoder();
-    final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(
+    private final CharsetEncoder encoder = StandardCharsets.UTF_8.newEncoder();
+    private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(
         EventConfiguration.MAX_EVENT_LENGTH + System.lineSeparator().length());
     private final StringBuilder builder = new StringBuilder();
-    private final EventCodeIdentifier identifier = new EventCodeIdentifier();
+    private FileChannel fileChannel = null;
 
-    public EventLogReaderAgent()
+    public void onStart()
     {
         final String filename = System.getProperty(LOG_FILENAME_PROP_NAME);
-        if (null == filename)
-        {
-            fileChannel = null;
-        }
-        else
+        if (null != filename)
         {
             try
             {
@@ -67,7 +62,7 @@ public class EventLogReaderAgent implements Agent, MessageHandler
             }
             catch (final IOException ex)
             {
-                throw new RuntimeException(ex);
+                LangUtil.rethrowUnchecked(ex);
             }
         }
 
@@ -88,6 +83,7 @@ public class EventLogReaderAgent implements Agent, MessageHandler
     public void onClose()
     {
         CloseHelper.close(fileChannel);
+        fileChannel = null;
     }
 
     public String roleName()
@@ -102,24 +98,28 @@ public class EventLogReaderAgent implements Agent, MessageHandler
 
     public void onMessage(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
     {
-        populateIdentifier(msgTypeId, identifier);
+        final int eventCodeTypeId = msgTypeId >> 16;
+        final int eventCodeId = msgTypeId & 0xFFFF;
+
         builder.setLength(0);
-        if (DriverEventCode.EVENT_CODE_TYPE == identifier.eventCodeTypeId)
+
+        if (DriverEventCode.EVENT_CODE_TYPE == eventCodeTypeId)
         {
-            DriverEventCode.get(identifier.eventCodeId).decode(buffer, index, builder);
+            DriverEventCode.get(eventCodeId).decode(buffer, index, builder);
         }
-        else if (ClusterEventCode.EVENT_CODE_TYPE == identifier.eventCodeTypeId)
+        else if (ClusterEventCode.EVENT_CODE_TYPE == eventCodeTypeId)
         {
-            ClusterEventCode.get(identifier.eventCodeId).decode(buffer, index, builder);
+            ClusterEventCode.get(eventCodeId).decode(buffer, index, builder);
         }
-        else if (ArchiveEventCode.EVENT_CODE_TYPE == identifier.eventCodeTypeId)
+        else if (ArchiveEventCode.EVENT_CODE_TYPE == eventCodeTypeId)
         {
-            ArchiveEventCode.get(identifier.eventCodeId).decode(buffer, index, builder);
+            ArchiveEventCode.get(eventCodeId).decode(buffer, index, builder);
         }
         else
         {
-            builder.append("Unknown EventCodeType: ").append(identifier.eventCodeTypeId);
+            builder.append("Unknown EventCodeType: ").append(eventCodeTypeId);
         }
+
         builder.append(System.lineSeparator());
 
         if (null == fileChannel)
@@ -157,17 +157,5 @@ public class EventLogReaderAgent implements Agent, MessageHandler
         {
             LangUtil.rethrowUnchecked(ex);
         }
-    }
-
-    private static void populateIdentifier(final int msgTypeId, final EventCodeIdentifier identifier)
-    {
-        identifier.eventCodeTypeId = msgTypeId >> 16;
-        identifier.eventCodeId = msgTypeId & 0xFFFF;
-    }
-
-    private static final class EventCodeIdentifier
-    {
-        private int eventCodeTypeId;
-        private int eventCodeId;
     }
 }

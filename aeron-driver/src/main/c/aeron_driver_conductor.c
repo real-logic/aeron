@@ -329,12 +329,12 @@ struct aeron_driver_conductor_bounds_stct
 typedef struct aeron_driver_conductor_bounds_stct aeron_driver_conductor_bounds_t;
 
 static aeron_driver_conductor_bounds_t aeron_track_session_id_offset_bounds(
+    aeron_driver_conductor_t *conductor,
     aeron_driver_conductor_bounds_t bounds,
     int32_t num_publications,
-    int32_t conductor_next_session_id,
     int32_t publication_session_id)
 {
-    const int32_t session_id_offset = conductor_next_session_id - publication_session_id;
+    const int32_t session_id_offset = conductor->next_session_id - publication_session_id;
     aeron_driver_conductor_bounds_t new_bounds;
 
     new_bounds.min = (0 <= session_id_offset && session_id_offset < bounds.min)
@@ -793,9 +793,9 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
         }
 
         session_id_offsets = aeron_track_session_id_offset_bounds(
+            conductor,
             session_id_offsets,
             (int32_t) conductor->ipc_publications.length,
-            conductor->next_session_id,
             pub_entry->session_id);
     }
 
@@ -942,9 +942,9 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
         }
 
         session_id_offsets = aeron_track_session_id_offset_bounds(
+            conductor,
             session_id_offsets,
             (int32_t) conductor->network_publications.length,
-            conductor->next_session_id,
             pub_entry->session_id);
     }
 

@@ -103,27 +103,27 @@ public class DriverLoggingAgentTest
         assertTrue(MSG_ID_SET.contains(DriverEventCode.CMD_OUT_AVAILABLE_IMAGE.id()));
         assertTrue(MSG_ID_SET.contains(DriverEventCode.CMD_IN_CLIENT_CLOSE.id()));
     }
-}
 
-class StubEventLogReaderAgent implements Agent, MessageHandler
-{
-    public String roleName()
+    static class StubEventLogReaderAgent implements Agent, MessageHandler
     {
-        return "event-log-reader";
-    }
-
-    public int doWork()
-    {
-        return EVENT_RING_BUFFER.read(this, EVENT_READER_FRAME_LIMIT);
-    }
-
-    public void onMessage(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
-    {
-        DriverLoggingAgentTest.MSG_ID_SET.add(msgTypeId);
-
-        if (DriverEventCode.CMD_IN_CLIENT_CLOSE.id() == msgTypeId)
+        public String roleName()
         {
-            DriverLoggingAgentTest.LATCH.countDown();
+            return "event-log-reader";
+        }
+
+        public int doWork()
+        {
+            return EVENT_RING_BUFFER.read(this, EVENT_READER_FRAME_LIMIT);
+        }
+
+        public void onMessage(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
+        {
+            DriverLoggingAgentTest.MSG_ID_SET.add(msgTypeId);
+
+            if (DriverEventCode.CMD_IN_CLIENT_CLOSE.id() == msgTypeId)
+            {
+                DriverLoggingAgentTest.LATCH.countDown();
+            }
         }
     }
 }

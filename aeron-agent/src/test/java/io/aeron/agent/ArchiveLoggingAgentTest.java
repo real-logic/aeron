@@ -93,7 +93,7 @@ public class ArchiveLoggingAgentTest
         LATCH.await();
     }
 
-    public static class StubEventLogReaderAgent implements Agent, MessageHandler
+    static class StubEventLogReaderAgent implements Agent, MessageHandler
     {
         public String roleName()
         {

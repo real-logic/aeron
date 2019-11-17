@@ -347,7 +347,7 @@ static aeron_driver_conductor_bounds_t aeron_driver_conductor_track_session_id_o
     int32_t num_publications,
     int32_t publication_session_id)
 {
-    const int32_t session_id_offset = aeron_driver_conductor_next_session_id(conductor) - publication_session_id;
+    const int32_t session_id_offset = publication_session_id - aeron_driver_conductor_next_session_id(conductor);
     aeron_driver_conductor_bounds_t new_bounds;
 
     new_bounds.min = (0 <= session_id_offset && session_id_offset < bounds.min)

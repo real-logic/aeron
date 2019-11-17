@@ -72,14 +72,23 @@ using namespace aeron;
 
 #define _SESSION_ID_1 1000
 #define _SESSION_ID_2 1001
+#define _SESSION_ID_3 100000
+#define _SESSION_ID_4 100002
+#define _SESSION_ID_5 100003
 
 #define CHANNEL_1_WITH_SESSION_ID_1 "aeron:udp?endpoint=localhost:40001|session-id=" STR(_SESSION_ID_1)
 #define CHANNEL_1_WITH_SESSION_ID_2 "aeron:udp?endpoint=localhost:40001|session-id=" STR(_SESSION_ID_2)
+#define CHANNEL_1_WITH_SESSION_ID_3 "aeron:udp?endpoint=localhost:40001|session-id=" STR(_SESSION_ID_3)
+#define CHANNEL_1_WITH_SESSION_ID_4 "aeron:udp?endpoint=localhost:40001|session-id=" STR(_SESSION_ID_4)
+#define CHANNEL_1_WITH_SESSION_ID_5 "aeron:udp?endpoint=localhost:40001|session-id=" STR(_SESSION_ID_5)
 
 #define IPC_CHANNEL_WITH_SESSION_ID_1 "aeron:ipc?session-id=" STR(_SESSION_ID_1)
 #define IPC_CHANNEL_WITH_SESSION_ID_2 "aeron:ipc?session-id=" STR(_SESSION_ID_2)
 
 #define SESSION_ID_1 (_SESSION_ID_1)
+#define SESSION_ID_3 (_SESSION_ID_3)
+#define SESSION_ID_4 (_SESSION_ID_4)
+#define SESSION_ID_5 (_SESSION_ID_5)
 
 #define SESSION_ID (0x5E5510)
 #define INITIAL_TERM_ID (0x3456)

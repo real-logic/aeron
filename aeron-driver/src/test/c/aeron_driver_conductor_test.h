@@ -76,11 +76,29 @@ using namespace aeron;
 #define _SESSION_ID_4 100002
 #define _SESSION_ID_5 100003
 
+#define _MTU_1 4096
+#define _MTU_2 8192
+
+#define MTU_1 (_MTU_1)
+#define MTU_2 (_MTU_2)
+
+#define _TERM_LENGTH_1 65536
+#define _TERM_LENGTH_2 131072
+
+#define TERM_LENGTH_1 (_TERM_LENGTH_1)
+#define TERM_LENGTH_2 (_TERM_LENGTH_2)
+
 #define CHANNEL_1_WITH_SESSION_ID_1 "aeron:udp?endpoint=localhost:40001|session-id=" STR(_SESSION_ID_1)
 #define CHANNEL_1_WITH_SESSION_ID_2 "aeron:udp?endpoint=localhost:40001|session-id=" STR(_SESSION_ID_2)
 #define CHANNEL_1_WITH_SESSION_ID_3 "aeron:udp?endpoint=localhost:40001|session-id=" STR(_SESSION_ID_3)
 #define CHANNEL_1_WITH_SESSION_ID_4 "aeron:udp?endpoint=localhost:40001|session-id=" STR(_SESSION_ID_4)
 #define CHANNEL_1_WITH_SESSION_ID_5 "aeron:udp?endpoint=localhost:40001|session-id=" STR(_SESSION_ID_5)
+
+#define CHANNEL_1_WITH_SESSION_ID_1_MTU_1 "aeron:udp?endpoint=localhost:40001|session-id=" STR(_SESSION_ID_1) "|mtu=" STR(_MTU_1)
+#define CHANNEL_1_WITH_SESSION_ID_1_MTU_2 "aeron:udp?endpoint=localhost:40001|session-id=" STR(_SESSION_ID_1) "|mtu=" STR(_MTU_2)
+
+#define CHANNEL_1_WITH_SESSION_ID_1_TERM_LENGTH_1 "aeron:udp?endpoint=localhost:40001|session-id=" STR(_SESSION_ID_1) "|term-length=" STR(_TERM_LENGTH_1)
+#define CHANNEL_1_WITH_SESSION_ID_1_TERM_LENGTH_2 "aeron:udp?endpoint=localhost:40001|session-id=" STR(_SESSION_ID_1) "|term-length=" STR(_TERM_LENGTH_2)
 
 #define IPC_CHANNEL_WITH_SESSION_ID_1 "aeron:ipc?session-id=" STR(_SESSION_ID_1)
 #define IPC_CHANNEL_WITH_SESSION_ID_2 "aeron:ipc?session-id=" STR(_SESSION_ID_2)

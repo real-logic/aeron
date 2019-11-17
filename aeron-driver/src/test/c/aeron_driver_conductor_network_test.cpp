@@ -329,6 +329,115 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddSingleNetworkPublicationWith
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
 
+TEST_F(DriverConductorNetworkTest, shouldAddSecondNetworkPublicationWithSpecifiedSessionIdAndSameMtu)
+{
+    int64_t client_id1 = nextCorrelationId();
+    int64_t pub_id1 = nextCorrelationId();
+    int64_t client_id2 = nextCorrelationId();
+    int64_t pub_id2 = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkPublication(client_id1, pub_id1, CHANNEL_1_WITH_SESSION_ID_1_MTU_1, STREAM_ID_1, false), 0);
+    doWork();
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
+
+    ASSERT_EQ(addNetworkPublication(client_id2, pub_id2, CHANNEL_1_WITH_SESSION_ID_1_MTU_1, STREAM_ID_1, false), 0);
+
+    doWork();
+
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
+}
+
+
+TEST_F(DriverConductorNetworkTest, shouldFailToAddSecondNetworkPublicationWithSpecifiedSessionIdAndDifferentMtu)
+{
+    int64_t client_id1 = nextCorrelationId();
+    int64_t pub_id1 = nextCorrelationId();
+    int64_t client_id2 = nextCorrelationId();
+    int64_t pub_id2 = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkPublication(client_id1, pub_id1, CHANNEL_1_WITH_SESSION_ID_1_MTU_1, STREAM_ID_1, false), 0);
+    doWork();
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
+
+    ASSERT_EQ(addNetworkPublication(client_id2, pub_id2, CHANNEL_1_WITH_SESSION_ID_1_MTU_2, STREAM_ID_1, false), 0);
+
+    doWork();
+
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+
+        const command::ErrorResponseFlyweight response(buffer, offset);
+
+        EXPECT_EQ(response.offendingCommandCorrelationId(), pub_id2);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
+}
+
+TEST_F(DriverConductorNetworkTest, shouldAddSecondNetworkPublicationWithSpecifiedSessionIdAndSameTermLength)
+{
+    int64_t client_id1 = nextCorrelationId();
+    int64_t pub_id1 = nextCorrelationId();
+    int64_t client_id2 = nextCorrelationId();
+    int64_t pub_id2 = nextCorrelationId();
+
+    const char *channelUri = CHANNEL_1_WITH_SESSION_ID_1_TERM_LENGTH_1;
+    
+    ASSERT_EQ(addNetworkPublication(client_id1, pub_id1, channelUri, STREAM_ID_1, false), 0);
+    doWork();
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
+
+    ASSERT_EQ(addNetworkPublication(client_id2, pub_id2, channelUri, STREAM_ID_1, false), 0);
+
+    doWork();
+
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
+}
+
+TEST_F(DriverConductorNetworkTest, shouldFailToAddSecondNetworkPublicationWithSpecifiedSessionIdAndDifferentTermLength)
+{
+    int64_t client_id1 = nextCorrelationId();
+    int64_t pub_id1 = nextCorrelationId();
+    int64_t client_id2 = nextCorrelationId();
+    int64_t pub_id2 = nextCorrelationId();
+
+    const char *channelUri1 = CHANNEL_1_WITH_SESSION_ID_1_TERM_LENGTH_1;
+    ASSERT_EQ(addNetworkPublication(client_id1, pub_id1, channelUri1, STREAM_ID_1, false), 0);
+    doWork();
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
+
+    const char *channelUri2 = CHANNEL_1_WITH_SESSION_ID_1_TERM_LENGTH_2;
+    ASSERT_EQ(addNetworkPublication(client_id2, pub_id2, channelUri2, STREAM_ID_1, false), 0);
+
+    doWork();
+
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+
+        const command::ErrorResponseFlyweight response(buffer, offset);
+
+        EXPECT_EQ(response.offendingCommandCorrelationId(), pub_id2);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
+}
+
 TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddAndRemoveSingleNetworkPublicationWithExplicitSessionId)
 {
     int64_t client_id = nextCorrelationId();

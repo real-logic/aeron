@@ -15,6 +15,8 @@
  */
 
 #include <stdio.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <inttypes.h>
 #include <errno.h>
 #include "media/aeron_receive_channel_endpoint.h"
@@ -359,10 +361,8 @@ static int aeron_driver_conductor_speculate_next_session_id(
 }
 
 int aeron_confirm_publication_match(
-    const char* uri,
-    int32_t stream_id,
-    aeron_uri_publication_params_t* params,
-    int32_t existing_session_id)
+    const char *uri, int32_t stream_id, aeron_uri_publication_params_t *params, int32_t existing_session_id,
+    aeron_logbuffer_metadata_t *logbuffer_metadata)
 {
     if (params->has_session_id && params->session_id != existing_session_id)
     {
@@ -370,6 +370,26 @@ int aeron_confirm_publication_match(
             EINVAL,
             "Existing session-id [%d] doesn't match specified channel: %s, stream-id: %" PRId32,
             existing_session_id, uri, stream_id);
+
+        return -1;
+    }
+
+    if (params->mtu_length != logbuffer_metadata->mtu_length)
+    {
+        aeron_set_err(
+            EINVAL,
+            "Existing publication's mtu [%d] doesn't match specified mtu: %s, stream-id: %" PRId32,
+            logbuffer_metadata->mtu_length, uri, stream_id);
+
+        return -1;
+    }
+
+    if (params->term_length != logbuffer_metadata->term_length)
+    {
+        aeron_set_err(
+            EINVAL,
+            "Existing publication's term length [%d] doesn't match specified term length: %s, stream-id: %" PRId32,
+            logbuffer_metadata->term_length, uri, stream_id);
 
         return -1;
     }
@@ -818,7 +838,8 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
 
     if (!is_exclusive && NULL != publication)
     {
-        if (0 != aeron_confirm_publication_match(uri, stream_id, params, publication->session_id))
+        if (0 != aeron_confirm_publication_match(
+            uri, stream_id, params, publication->session_id, publication->log_meta_data))
         {
             return NULL;
         }
@@ -971,7 +992,8 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
 
     if (!is_exclusive && NULL != publication)
     {
-        if (0 != aeron_confirm_publication_match(uri, stream_id, params, publication->session_id))
+        if (0 != aeron_confirm_publication_match(
+            uri, stream_id, params, publication->session_id, publication->log_meta_data))
         {
             return NULL;
         }

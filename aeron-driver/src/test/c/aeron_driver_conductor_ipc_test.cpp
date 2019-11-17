@@ -960,3 +960,118 @@ TEST_F(DriverConductorIpcTest, shouldNotAddDynamicSessionIdInReservedRange)
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
+
+TEST_F(DriverConductorIpcTest, shouldAddSecondIpcPublicationWithSpecifiedSessionIdAndSameMtu)
+{
+    int64_t client_id1 = nextCorrelationId();
+    int64_t pub_id1 = nextCorrelationId();
+    int64_t client_id2 = nextCorrelationId();
+    int64_t pub_id2 = nextCorrelationId();
+
+    const char* channelUri1 = IPC_CHANNEL_WITH_SESSION_ID_1 "|mtu=" STR(_MTU_1);
+
+    ASSERT_EQ(addIpcPublicationWithChannel(client_id1, pub_id1, channelUri1, STREAM_ID_1, false), 0);
+    doWork();
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
+
+    ASSERT_EQ(addIpcPublicationWithChannel(client_id2, pub_id2, channelUri1, STREAM_ID_1, false), 0);
+
+    doWork();
+
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
+}
+
+TEST_F(DriverConductorIpcTest, shouldFailToAddSecondIpcPublicationWithSpecifiedSessionIdAndDifferentMtu)
+{
+    int64_t client_id1 = nextCorrelationId();
+    int64_t pub_id1 = nextCorrelationId();
+    int64_t client_id2 = nextCorrelationId();
+    int64_t pub_id2 = nextCorrelationId();
+
+    const char* channelUri1 = IPC_CHANNEL_WITH_SESSION_ID_1 "|mtu=" STR(_MTU_1);
+    const char* channelUri2 = IPC_CHANNEL_WITH_SESSION_ID_1 "|mtu=" STR(_MTU_2);
+
+    ASSERT_EQ(addNetworkPublication(client_id1, pub_id1, channelUri1, STREAM_ID_1, false), 0);
+    doWork();
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
+
+    ASSERT_EQ(addNetworkPublication(client_id2, pub_id2, channelUri2, STREAM_ID_1, false), 0);
+
+    doWork();
+
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+
+        const command::ErrorResponseFlyweight response(buffer, offset);
+
+        EXPECT_EQ(response.offendingCommandCorrelationId(), pub_id2);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
+}
+
+TEST_F(DriverConductorIpcTest, shouldAddSecondIpcPublicationWithSpecifiedSessionIdAndSameTermLength)
+{
+    int64_t client_id1 = nextCorrelationId();
+    int64_t pub_id1 = nextCorrelationId();
+    int64_t client_id2 = nextCorrelationId();
+    int64_t pub_id2 = nextCorrelationId();
+
+    const char *channelUri = IPC_CHANNEL_WITH_SESSION_ID_1 "|term-length=" STR(_TERM_LENGTH_1);
+
+    ASSERT_EQ(addNetworkPublication(client_id1, pub_id1, channelUri, STREAM_ID_1, false), 0);
+    doWork();
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
+
+    ASSERT_EQ(addNetworkPublication(client_id2, pub_id2, channelUri, STREAM_ID_1, false), 0);
+
+    doWork();
+
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
+}
+
+TEST_F(DriverConductorIpcTest, shouldFailToAddSecondIpcPublicationWithSpecifiedSessionIdAndDifferentTermLength)
+{
+    int64_t client_id1 = nextCorrelationId();
+    int64_t pub_id1 = nextCorrelationId();
+    int64_t client_id2 = nextCorrelationId();
+    int64_t pub_id2 = nextCorrelationId();
+
+    const char *channelUri1 = IPC_CHANNEL_WITH_SESSION_ID_1 "|term-length=" STR(_TERM_LENGTH_1);
+    const char *channelUri2 = IPC_CHANNEL_WITH_SESSION_ID_1 "|term-length=" STR(_TERM_LENGTH_2);
+
+    ASSERT_EQ(addNetworkPublication(client_id1, pub_id1, channelUri1, STREAM_ID_1, false), 0);
+    doWork();
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
+
+    ASSERT_EQ(addNetworkPublication(client_id2, pub_id2, channelUri2, STREAM_ID_1, false), 0);
+
+    doWork();
+
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
+
+        const command::ErrorResponseFlyweight response(buffer, offset);
+
+        EXPECT_EQ(response.offendingCommandCorrelationId(), pub_id2);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
+}
+

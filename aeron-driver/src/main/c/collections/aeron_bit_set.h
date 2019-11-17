@@ -32,7 +32,7 @@ struct aeron_bit_set_stct
 
 typedef struct aeron_bit_set_stct aeron_bit_set_t;
 
-int aeron_bit_set_init(aeron_bit_set_t* bit_set, bool initial_value)
+inline int aeron_bit_set_init(aeron_bit_set_t* bit_set, bool initial_value)
 {
     const size_t memory_size = ((bit_set->bit_count + 63) / 64) * sizeof(uint64_t);
     int c = initial_value ? 0xFF : 0;

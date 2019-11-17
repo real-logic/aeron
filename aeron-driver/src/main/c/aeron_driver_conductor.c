@@ -27,7 +27,10 @@
 #include "aeron_driver_sender.h"
 #include "aeron_driver_receiver.h"
 #include "aeron_publication_image.h"
+#include "collections/aeron_bit_set.h"
 #include "concurrent/aeron_logbuffer_unblocker.h"
+
+#define STATIC_BIT_SET_U64_LEN (512)
 
 static void aeron_error_log_resource_linger(void *clientd, uint8_t *resource)
 {
@@ -334,41 +337,26 @@ int32_t aeron_driver_conductor_update_next_session_id(aeron_driver_conductor_t* 
     return session_id;
 }
 
-struct aeron_driver_conductor_bounds_stct
-{
-    int32_t min;
-    int32_t max;
-};
-typedef struct aeron_driver_conductor_bounds_stct aeron_driver_conductor_bounds_t;
-
-static aeron_driver_conductor_bounds_t aeron_driver_conductor_track_session_id_offset_bounds(
-    aeron_driver_conductor_t* conductor,
-    aeron_driver_conductor_bounds_t bounds,
-    int32_t num_publications,
+static void aeron_driver_conductor_track_session_id_offsets(
+    aeron_driver_conductor_t *conductor,
+    aeron_bit_set_t *session_id_offsets,
     int32_t publication_session_id)
 {
     const int32_t session_id_offset = publication_session_id - aeron_driver_conductor_next_session_id(conductor);
-    aeron_driver_conductor_bounds_t new_bounds;
-
-    new_bounds.min = (0 <= session_id_offset && session_id_offset < bounds.min)
-        ? session_id_offset
-        : bounds.min;
-
-    new_bounds.max = (session_id_offset < num_publications && bounds.max < session_id_offset)
-        ? session_id_offset
-        : bounds.max;
-
-    return new_bounds;
+    if (0 <= session_id_offset && (size_t) session_id_offset < session_id_offsets->bit_count)
+    {
+        aeron_bit_set_set(session_id_offsets, (size_t) session_id_offset, true);
+    }
 }
 
 static int aeron_driver_conductor_speculate_next_session_id(
     aeron_driver_conductor_t *conductor,
-    aeron_driver_conductor_bounds_t session_id_offsets)
+    aeron_bit_set_t *session_id_offsets)
 {
-    const int32_t next_session_id_offset = 0 < session_id_offsets.min ? 0 : session_id_offsets.max + 1;
-    return aeron_driver_conductor_next_session_id(conductor) + next_session_id_offset;
+    size_t index;
+    assert(-1 < aeron_bit_set_find_first(session_id_offsets, false, &index));
+    return aeron_driver_conductor_next_session_id(conductor) + (int) index;
 }
-
 
 int aeron_confirm_publication_match(
     const char* uri,
@@ -785,7 +773,12 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
 {
     aeron_ipc_publication_t *publication = NULL;
 
-    aeron_driver_conductor_bounds_t session_id_offsets = { .min = INT32_MAX, .max = 0 };
+    uint64_t bits[STATIC_BIT_SET_U64_LEN];
+    aeron_bit_set_t session_id_offsets_mem;
+    aeron_bit_set_t *session_id_offsets = &session_id_offsets_mem;
+    aeron_bit_set_alloc_init(
+        conductor->network_publications.length + 1, bits, STATIC_BIT_SET_U64_LEN, false, &session_id_offsets);
+
     bool is_session_id_in_use = false;
 
     for (size_t i = 0; i < conductor->ipc_publications.length; i++)
@@ -804,14 +797,15 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
             {
                 is_session_id_in_use = true;
             }
-        }
 
-        session_id_offsets = aeron_driver_conductor_track_session_id_offset_bounds(
-            conductor,
-            session_id_offsets,
-            (int32_t) conductor->ipc_publications.length,
-            pub_entry->session_id);
+            aeron_driver_conductor_track_session_id_offsets(conductor, session_id_offsets, pub_entry->session_id);
+        }
     }
+
+    assert(conductor->network_publications.length < session_id_offsets->bit_count);
+    const int32_t speculated_session_id = aeron_driver_conductor_speculate_next_session_id(
+        conductor, session_id_offsets);
+    aeron_bit_set_free_bits_only(session_id_offsets);
 
     if (is_session_id_in_use && (is_exclusive || NULL == publication))
     {
@@ -830,9 +824,6 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
             return NULL;
         }
     }
-
-    const int32_t speculated_session_id = aeron_driver_conductor_speculate_next_session_id(
-        conductor, session_id_offsets);
 
     int ensure_capacity_result = 0;
     AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, client->publication_links, aeron_publication_link_t);
@@ -933,34 +924,42 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
     aeron_network_publication_t *publication = NULL;
     aeron_udp_channel_t *udp_channel = endpoint->conductor_fields.udp_channel;
 
-    aeron_driver_conductor_bounds_t session_id_offsets = { .min = INT32_MAX, .max = 0 };
+    uint64_t bits[STATIC_BIT_SET_U64_LEN];
+    aeron_bit_set_t session_id_offsets_mem;
+    aeron_bit_set_t *session_id_offsets = &session_id_offsets_mem;
+    aeron_bit_set_alloc_init(
+        conductor->network_publications.length + 1, bits, STATIC_BIT_SET_U64_LEN, false, &session_id_offsets);
+
     bool is_session_id_in_use = false;
 
     for (size_t i = 0; i < conductor->network_publications.length; i++)
     {
         aeron_network_publication_t *pub_entry = conductor->network_publications.array[i].publication;
 
-        if (endpoint == pub_entry->endpoint &&
-            stream_id == pub_entry->stream_id &&
-            pub_entry->conductor_fields.state == AERON_NETWORK_PUBLICATION_STATE_ACTIVE)
+        if (AERON_NETWORK_PUBLICATION_STATE_ACTIVE == pub_entry->conductor_fields.state)
         {
-            if (NULL == publication && !is_exclusive && !pub_entry->is_exclusive)
+            if (endpoint == pub_entry->endpoint &&
+                stream_id == pub_entry->stream_id)
             {
-                publication = pub_entry;
+                if (NULL == publication && !is_exclusive && !pub_entry->is_exclusive)
+                {
+                    publication = pub_entry;
+                }
+
+                if (params->has_session_id && pub_entry->session_id == params->session_id)
+                {
+                    is_session_id_in_use = true;
+                }
             }
 
-            if (params->has_session_id && pub_entry->session_id == params->session_id)
-            {
-                is_session_id_in_use = true;
-            }
+            aeron_driver_conductor_track_session_id_offsets(conductor, session_id_offsets, pub_entry->session_id);
         }
-
-        session_id_offsets = aeron_driver_conductor_track_session_id_offset_bounds(
-            conductor,
-            session_id_offsets,
-            (int32_t) conductor->network_publications.length,
-            pub_entry->session_id);
     }
+
+    assert(conductor->network_publications.length < session_id_offsets->bit_count);
+    const int32_t speculated_session_id = aeron_driver_conductor_speculate_next_session_id(
+        conductor, session_id_offsets);
+    aeron_bit_set_free_bits_only(session_id_offsets);
 
     if (is_session_id_in_use && (is_exclusive || NULL == publication))
     {
@@ -979,9 +978,6 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
             return NULL;
         }
     }
-
-    const int32_t speculated_session_id = aeron_driver_conductor_speculate_next_session_id(
-        conductor, session_id_offsets);
 
     int ensure_capacity_result = 0;
     AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, client->publication_links, aeron_publication_link_t);

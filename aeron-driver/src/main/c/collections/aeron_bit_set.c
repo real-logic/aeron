@@ -18,67 +18,27 @@
 #include <errno.h>
 #include "aeron_bit_set.h"
 
-int aeron_bit_set_init(uint64_t* bits, size_t bit_count, bool initial_value)
-{
-    const size_t memory_size = ((bit_count + 63) / 64) * sizeof(uint64_t);
-    int c = initial_value ? 0xFF : 0;
-    memset(bits, c, memory_size);
-    return 0;
-}
+extern int aeron_bit_set_alloc(
+    size_t bit_count,
+    uint64_t* static_array,
+    size_t static_array_len,
+    aeron_bit_set_t** bit_set);
 
-int aeron_bit_set_get(uint64_t* bits, size_t bit_count, size_t bit_index, bool *value)
-{
-    if (bit_count <= bit_index)
-    {
-        return -EINVAL;
-    }
+extern int aeron_bit_set_alloc_init(
+    size_t bit_count,
+    uint64_t* static_array,
+    size_t static_array_len,
+    bool initial_value,
+    aeron_bit_set_t** bit_set);
 
-    const size_t entry = bit_index / 64;
-    const size_t offset = bit_index % 64;
+extern void aeron_bit_set_free(aeron_bit_set_t* bit_set);
 
-    *value = (0 != (bits[entry] & (UINT64_C(1) << offset)));
+extern void aeron_bit_set_free_bits_only(aeron_bit_set_t* bit_set);
 
-    return 0;
-}
+extern int aeron_bit_set_init(aeron_bit_set_t *bit_set, bool initial_value);
 
-int aeron_bit_set_set(uint64_t* bits, size_t bit_count, size_t bit_index, bool value)
-{
-    if (bit_count <= bit_index)
-    {
-        return -EINVAL;
-    }
+extern int aeron_bit_set_get(aeron_bit_set_t *bit_set, size_t bit_index, bool *value);
 
-    const size_t entry = bit_index / 64;
-    const size_t offset = bit_index % 64;
+extern int aeron_bit_set_set(aeron_bit_set_t *bit_set, size_t bit_index, bool value);
 
-    uint64_t mask = UINT64_C(1) << offset;
-
-    if (value)
-    {
-        bits[entry] |= mask;
-    }
-    else
-    {
-        bits[entry] &= ~mask;
-    }
-
-    return 0;
-}
-
-int aeron_bit_set_find_first(uint64_t* bits, size_t bit_count, bool value, size_t *bit_index)
-{
-    const uint64_t entry_empty_value = value ? 0 : UINT64_C(0xFFFFFFFFFFFFFFFF);
-    int num_entries = (int) ((bit_count + 63) / 64);
-
-    for (int i = 0; i < num_entries; i++)
-    {
-        if (entry_empty_value != bits[i])
-        {
-            uint64_t bits_to_search = value ? bits[i] : ~bits[i];
-            *bit_index = (i * 64 + aeron_number_of_trailing_zeroes_u64(bits_to_search));
-            return 0;
-        }
-    }
-
-    return -1;
-}
+extern int aeron_bit_set_find_first(aeron_bit_set_t *bit_set, bool value, size_t *bit_index);

@@ -315,6 +315,34 @@ bool aeron_client_has_reached_end_of_life(aeron_driver_conductor_t *conductor, a
     return client->reached_end_of_life;
 }
 
+int32_t aeron_driver_conductor_next_session_id(aeron_driver_conductor_t *conductor, int32_t session_id)
+{
+    conductor->next_session_id = session_id + 1;
+    return session_id;
+}
+
+int aeron_confirm_publication_match(
+    aeron_network_publication_t *publication,
+    const char* uri,
+    int32_t stream_id,
+    aeron_uri_publication_params_t *params)
+{
+    if (NULL != publication)
+    {
+        if (params->has_session_id && params->session_id != publication->session_id)
+        {
+            aeron_set_err(
+                EINVAL,
+                "Existing session-id [%d] doesn't match specified channel: %s, stream-id: %" PRId32,
+                publication->session_id, uri, stream_id);
+
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
 void aeron_client_delete(aeron_driver_conductor_t *conductor, aeron_client_t *client)
 {
     for (size_t i = 0; i < client->publication_links.length; i++)
@@ -726,6 +754,26 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
             }
         }
     }
+//    else if (params->has_session_id)
+//    {
+//        for (size_t i = 0; i < conductor->network_publications.length; i++)
+//        {
+//            aeron_network_publication_t *pub_entry = conductor->network_publications.array[i].publication;
+//
+//            if (endpoint == pub_entry->endpoint &&
+//                stream_id == pub_entry->stream_id &&
+//                pub_entry->conductor_fields.state == AERON_NETWORK_PUBLICATION_STATE_ACTIVE &&
+//                pub_entry->session_id == params->session_id)
+//            {
+//                aeron_set_err(
+//                    EINVAL,
+//                    "Specified session-id is already in use for channel: %s, stream-id: %" PRId32,
+//                    uri, stream_id);
+//
+//                return NULL;
+//            }
+//        }
+//    }
 
     int ensure_capacity_result = 0;
     AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, client->publication_links, aeron_publication_link_t);
@@ -739,7 +787,7 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
 
             if (ensure_capacity_result >= 0)
             {
-                int32_t session_id = conductor->next_session_id++;
+                int32_t session_id = params->has_session_id ? params->session_id : conductor->next_session_id++;
                 int32_t initial_term_id = params->has_position ? params->initial_term_id : aeron_randomised_int32();
                 aeron_position_t pub_pos_position;
                 aeron_position_t pub_lmt_position;
@@ -824,22 +872,62 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
     aeron_network_publication_t *publication = NULL;
     aeron_udp_channel_t *udp_channel = endpoint->conductor_fields.udp_channel;
 
-    if (!is_exclusive)
-    {
-        for (size_t i = 0; i < conductor->network_publications.length; i++)
-        {
-            aeron_network_publication_t *pub_entry = conductor->network_publications.array[i].publication;
+    int32_t min_session_id_offset = INT32_MAX;
+    int32_t max_session_id_offset = 0;
+    bool is_session_id_in_use = false;
 
-            if (endpoint == pub_entry->endpoint &&
-                stream_id == pub_entry->stream_id &&
-                !pub_entry->is_exclusive &&
-                pub_entry->conductor_fields.state == AERON_NETWORK_PUBLICATION_STATE_ACTIVE)
+    for (size_t i = 0; i < conductor->network_publications.length; i++)
+    {
+        aeron_network_publication_t *pub_entry = conductor->network_publications.array[i].publication;
+
+        if (endpoint == pub_entry->endpoint &&
+            stream_id == pub_entry->stream_id &&
+            pub_entry->conductor_fields.state == AERON_NETWORK_PUBLICATION_STATE_ACTIVE)
+        {
+            if (NULL == publication && !is_exclusive && !pub_entry->is_exclusive)
             {
                 publication = pub_entry;
-                break;
+            }
+
+            if (params->has_session_id && pub_entry->session_id == params->session_id)
+            {
+                is_session_id_in_use = true;
             }
         }
+
+        const int32_t publications_length = (int32_t) conductor->network_publications.length;
+        const int32_t session_id_offset = conductor->next_session_id - pub_entry->session_id;
+
+        min_session_id_offset =
+            (0 <= session_id_offset && session_id_offset < min_session_id_offset)
+                ? session_id_offset
+                : min_session_id_offset;
+        max_session_id_offset =
+            (session_id_offset < publications_length && max_session_id_offset < session_id_offset)
+                ? session_id_offset
+                : max_session_id_offset;
     }
+
+    if (is_session_id_in_use && (is_exclusive || NULL == publication))
+    {
+        aeron_set_err(
+            EINVAL,
+            "Specified session-id is already in exclusive use for channel: %s, stream-id: %" PRId32,
+            uri, stream_id);
+
+        return NULL;
+    }
+
+    if (!is_exclusive)
+    {
+        if (0 != aeron_confirm_publication_match(publication, uri, stream_id, params))
+        {
+            return NULL;
+        }
+    }
+
+    const int32_t next_session_id_offset = 0 < min_session_id_offset ? 0 : max_session_id_offset + 1;
+    const int32_t speculated_session_id = conductor->next_session_id + next_session_id_offset;
 
     int ensure_capacity_result = 0;
     AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, client->publication_links, aeron_publication_link_t);
@@ -853,7 +941,9 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
 
             if (ensure_capacity_result >= 0)
             {
-                int32_t session_id = conductor->next_session_id++;
+                int32_t session_id = params->has_session_id
+                    ? params->session_id
+                    : aeron_driver_conductor_next_session_id(conductor, speculated_session_id);
                 int32_t initial_term_id = params->has_position ? params->initial_term_id : aeron_randomised_int32();
 
                 aeron_position_t pub_pos_position;

@@ -55,6 +55,9 @@ using namespace aeron::concurrent::ringbuffer;
 using namespace aeron::concurrent;
 using namespace aeron;
 
+#define STR_HELPER(x) #x
+#define STR(x) STR_HELPER(x)
+
 #define CHANNEL_1 "aeron:udp?endpoint=localhost:40001"
 #define CHANNEL_2 "aeron:udp?endpoint=localhost:40002"
 #define CHANNEL_3 "aeron:udp?endpoint=localhost:40003"
@@ -66,6 +69,14 @@ using namespace aeron;
 #define STREAM_ID_2 (102)
 #define STREAM_ID_3 (103)
 #define STREAM_ID_4 (104)
+
+#define _SESSION_ID_1 1000
+#define _SESSION_ID_2 1001
+
+#define CHANNEL_1_WITH_SESSION_ID_1 "aeron:udp?endpoint=localhost:40001|session-id=" STR(_SESSION_ID_1)
+#define CHANNEL_1_WITH_SESSION_ID_2 "aeron:udp?endpoint=localhost:40001|session-id=" STR(_SESSION_ID_2)
+
+#define SESSION_ID_1 (_SESSION_ID_1)
 
 #define SESSION_ID (0x5E5510)
 #define INITIAL_TERM_ID (0x3456)

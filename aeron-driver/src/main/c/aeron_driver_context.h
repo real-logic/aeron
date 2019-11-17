@@ -112,6 +112,8 @@ typedef struct aeron_driver_context_stct
     size_t file_page_size;                                  /* aeron.file.page.size = 4KB */
     size_t nak_multicast_group_size;                        /* aeron.nak.multicast.group.size = 10 */
     uint8_t multicast_ttl;                                  /* aeron.socket.multicast.ttl = 0 */
+    int32_t publication_reserved_session_id_low;            /* aeron.publication.reserved.session.id.low = -1 */
+    int32_t publication_reserved_session_id_high;           /* aeron.publication.reserved.session.id.high = 10000 */
 
     aeron_mapped_file_t cnc_map;
     aeron_mapped_file_t loss_report;

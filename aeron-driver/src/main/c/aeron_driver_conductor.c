@@ -220,8 +220,8 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->time_of_last_timeout_check_ns = now_ns;
     conductor->time_of_last_to_driver_position_change_ns = now_ns;
     conductor->next_session_id = aeron_randomised_int32();
-    conductor->publication_reserved_session_id_low = -1;
-    conductor->publication_reserved_session_id_high = 10000;
+    conductor->publication_reserved_session_id_low = context->publication_reserved_session_id_low;
+    conductor->publication_reserved_session_id_high = context->publication_reserved_session_id_high;
     conductor->last_consumer_command_position = aeron_mpsc_rb_consumer_position(&conductor->to_driver_commands);
 
     conductor->context = context;

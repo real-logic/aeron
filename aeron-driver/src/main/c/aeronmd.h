@@ -627,6 +627,16 @@ int aeron_driver_context_set_udp_channel_transport_bindings(
 aeron_udp_channel_transport_bindings_t *aeron_driver_context_get_udp_channel_transport_bindings(
     aeron_driver_context_t *context);
 
+#define AERON_PUBLICATION_RESERVED_SESSION_ID_LOW_ENV_VAR "AERON_PUBLICATION_RESERVED_SESSION_ID_LOW"
+
+int aeron_driver_context_set_publication_reserved_session_id_low(aeron_driver_context_t *context, int32_t value);
+int32_t aeron_driver_context_get_publication_reserved_session_id_low(aeron_driver_context_t *context);
+
+#define AERON_PUBLICATION_RESERVED_SESSION_ID_HIGH_ENV_VAR "AERON_PUBLICATION_RESERVED_SESSION_ID_HIGH"
+
+int aeron_driver_context_set_publication_reserved_session_id_high(aeron_driver_context_t *context, int32_t value);
+int32_t aeron_driver_context_get_publication_reserved_session_id_high(aeron_driver_context_t *context);
+
 /**
  * Return full version and build string.
  *

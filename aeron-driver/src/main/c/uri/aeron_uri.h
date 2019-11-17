@@ -64,6 +64,7 @@ aeron_uri_params_t;
 typedef struct aeron_uri_publication_params_stct
 {
     bool has_position;
+    bool has_session_id;
     bool is_sparse;
     bool signal_eos;
     size_t mtu_length;
@@ -72,6 +73,7 @@ typedef struct aeron_uri_publication_params_stct
     int32_t initial_term_id;
     int32_t term_id;
     uint64_t linger_timeout_ns;
+    int32_t session_id;
 }
 aeron_uri_publication_params_t;
 
@@ -81,7 +83,9 @@ typedef struct aeron_uri_subscription_params_stct
     bool is_sparse;
     bool is_tether;
     bool is_rejoin;
+    bool has_session_id;
     aeron_inferable_boolean_t group;
+    int32_t session_id;
 }
 aeron_uri_subscription_params_t;
 

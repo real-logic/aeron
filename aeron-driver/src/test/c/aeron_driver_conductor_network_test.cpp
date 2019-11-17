@@ -1320,3 +1320,32 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddDestinationToManualMdcPublic
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
+
+TEST_F(DriverConductorNetworkTest, shouldNotAddDynamicSessionIdInReservedRange)
+{
+    m_conductor.manuallySetNextSessionId(m_conductor.m_conductor.publication_reserved_session_id_low);
+
+    int64_t client_id = nextCorrelationId();
+    int64_t pub_id = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id, CHANNEL_1, STREAM_ID_1, false), 0);
+
+    doWork();
+
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_PUBLICATION_READY);
+        const command::PublicationBuffersReadyFlyweight response(buffer, offset);
+
+        EXPECT_TRUE(
+            response.sessionId() < m_conductor.m_conductor.publication_reserved_session_id_low ||
+            m_conductor.m_conductor.publication_reserved_session_id_high < response.sessionId())
+                << "Session Id [" << response.sessionId() << "] should not be in the range: "
+                << m_conductor.m_conductor.publication_reserved_session_id_low
+                << " to "
+                << m_conductor.m_conductor.publication_reserved_session_id_high;
+
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
+}

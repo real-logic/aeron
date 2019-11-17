@@ -218,6 +218,11 @@ struct TestDriverConductor
         aeron_driver_receiver_on_close(&m_receiver);
     }
 
+    void manuallySetNextSessionId(int32_t nextSessionId)
+    {
+        m_conductor.next_session_id = nextSessionId;
+    }
+
     aeron_driver_conductor_t m_conductor;
     aeron_driver_sender_t m_sender;
     aeron_driver_receiver_t m_receiver;

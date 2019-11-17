@@ -220,6 +220,8 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->time_of_last_timeout_check_ns = now_ns;
     conductor->time_of_last_to_driver_position_change_ns = now_ns;
     conductor->next_session_id = aeron_randomised_int32();
+    conductor->publication_reserved_session_id_low = -1;
+    conductor->publication_reserved_session_id_high = 10000;
     conductor->last_consumer_command_position = aeron_mpsc_rb_consumer_position(&conductor->to_driver_commands);
 
     conductor->context = context;
@@ -315,7 +317,18 @@ bool aeron_client_has_reached_end_of_life(aeron_driver_conductor_t *conductor, a
     return client->reached_end_of_life;
 }
 
-int32_t aeron_driver_conductor_next_session_id(aeron_driver_conductor_t *conductor, int32_t session_id)
+int32_t aeron_driver_conductor_next_session_id(aeron_driver_conductor_t* conductor)
+{
+    const int32_t low = conductor->publication_reserved_session_id_low;
+    const int32_t high = conductor->publication_reserved_session_id_high;
+
+    return
+        low <= conductor->next_session_id && conductor->next_session_id <= high
+            ? high + 1
+            : conductor->next_session_id;
+}
+
+int32_t aeron_driver_conductor_update_next_session_id(aeron_driver_conductor_t* conductor, int32_t session_id)
 {
     conductor->next_session_id = session_id + 1;
     return session_id;
@@ -328,13 +341,13 @@ struct aeron_driver_conductor_bounds_stct
 };
 typedef struct aeron_driver_conductor_bounds_stct aeron_driver_conductor_bounds_t;
 
-static aeron_driver_conductor_bounds_t aeron_track_session_id_offset_bounds(
-    aeron_driver_conductor_t *conductor,
+static aeron_driver_conductor_bounds_t aeron_driver_conductor_track_session_id_offset_bounds(
+    aeron_driver_conductor_t* conductor,
     aeron_driver_conductor_bounds_t bounds,
     int32_t num_publications,
     int32_t publication_session_id)
 {
-    const int32_t session_id_offset = conductor->next_session_id - publication_session_id;
+    const int32_t session_id_offset = aeron_driver_conductor_next_session_id(conductor) - publication_session_id;
     aeron_driver_conductor_bounds_t new_bounds;
 
     new_bounds.min = (0 <= session_id_offset && session_id_offset < bounds.min)
@@ -348,11 +361,12 @@ static aeron_driver_conductor_bounds_t aeron_track_session_id_offset_bounds(
     return new_bounds;
 }
 
-static int aeron_speculate_next_session_id(
-    aeron_driver_conductor_bounds_t session_id_offsets, int32_t conductor_next_session_id)
+static int aeron_driver_conductor_speculate_next_session_id(
+    aeron_driver_conductor_t *conductor,
+    aeron_driver_conductor_bounds_t session_id_offsets)
 {
     const int32_t next_session_id_offset = 0 < session_id_offsets.min ? 0 : session_id_offsets.max + 1;
-    return conductor_next_session_id + next_session_id_offset;
+    return aeron_driver_conductor_next_session_id(conductor) + next_session_id_offset;
 }
 
 
@@ -792,7 +806,7 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
             }
         }
 
-        session_id_offsets = aeron_track_session_id_offset_bounds(
+        session_id_offsets = aeron_driver_conductor_track_session_id_offset_bounds(
             conductor,
             session_id_offsets,
             (int32_t) conductor->ipc_publications.length,
@@ -817,8 +831,8 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
         }
     }
 
-    const int32_t speculated_session_id = aeron_speculate_next_session_id(
-        session_id_offsets, conductor->next_session_id);
+    const int32_t speculated_session_id = aeron_driver_conductor_speculate_next_session_id(
+        conductor, session_id_offsets);
 
     int ensure_capacity_result = 0;
     AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, client->publication_links, aeron_publication_link_t);
@@ -834,7 +848,7 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
             {
                 int32_t session_id = params->has_session_id
                     ? params->session_id
-                    : aeron_driver_conductor_next_session_id(conductor, speculated_session_id);
+                    : aeron_driver_conductor_update_next_session_id(conductor, speculated_session_id);
                 int32_t initial_term_id = params->has_position ? params->initial_term_id : aeron_randomised_int32();
                 aeron_position_t pub_pos_position;
                 aeron_position_t pub_lmt_position;
@@ -941,7 +955,7 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
             }
         }
 
-        session_id_offsets = aeron_track_session_id_offset_bounds(
+        session_id_offsets = aeron_driver_conductor_track_session_id_offset_bounds(
             conductor,
             session_id_offsets,
             (int32_t) conductor->network_publications.length,
@@ -966,8 +980,8 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
         }
     }
 
-    const int32_t speculated_session_id = aeron_speculate_next_session_id(
-        session_id_offsets, conductor->next_session_id);
+    const int32_t speculated_session_id = aeron_driver_conductor_speculate_next_session_id(
+        conductor, session_id_offsets);
 
     int ensure_capacity_result = 0;
     AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, client->publication_links, aeron_publication_link_t);
@@ -983,7 +997,7 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
             {
                 int32_t session_id = params->has_session_id
                     ? params->session_id
-                    : aeron_driver_conductor_next_session_id(conductor, speculated_session_id);
+                    : aeron_driver_conductor_update_next_session_id(conductor, speculated_session_id);
                 int32_t initial_term_id = params->has_position ? params->initial_term_id : aeron_randomised_int32();
 
                 aeron_position_t pub_pos_position;

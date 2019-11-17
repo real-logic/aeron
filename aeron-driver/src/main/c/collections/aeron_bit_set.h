@@ -40,10 +40,30 @@ inline int aeron_bit_set_init(aeron_bit_set_t* bit_set, bool initial_value)
     return 0;
 }
 
-inline int aeron_bit_set_alloc(
+inline int aeron_bit_set_stack_alloc(
     size_t bit_count,
     uint64_t* static_array,
     size_t static_array_len,
+    aeron_bit_set_t* bit_set)
+{
+    (bit_set)->bit_count = bit_count;
+    (bit_set)->static_array = static_array;
+
+    const size_t u64_len = ((bit_count + 63) / 64);
+    if (NULL != static_array && u64_len <= static_array_len)
+    {
+        (bit_set)->bits = static_array;
+    }
+    else
+    {
+        (bit_set)->bits = (uint64_t*) malloc(sizeof(uint64_t) * u64_len);
+    }
+
+    return 0;
+}
+
+inline int aeron_bit_set_heap_alloc(
+    size_t bit_count,
     aeron_bit_set_t** bit_set)
 {
     if (NULL == bit_set)
@@ -51,41 +71,39 @@ inline int aeron_bit_set_alloc(
         return -EINVAL;
     }
 
-    if (NULL == *bit_set)
-    {
-        *bit_set = (aeron_bit_set_t*) malloc(sizeof(aeron_bit_set_t));
-    }
+    *bit_set = (aeron_bit_set_t*) malloc(sizeof(aeron_bit_set_t));
 
     if (NULL == *bit_set)
     {
         return -ENOMEM;
     }
 
-    (*bit_set)->bit_count = bit_count;
-    (*bit_set)->static_array = static_array;
-
-    const size_t u64_len = ((bit_count + 63) / 64);
-    if (NULL != static_array && u64_len <= static_array_len)
-    {
-        (*bit_set)->bits = static_array;
-    }
-    else
-    {
-        (*bit_set)->bits = (uint64_t*) malloc(sizeof(uint64_t) * u64_len);
-    }
-
-    return 0;
+    return aeron_bit_set_stack_alloc(bit_count, NULL, 0, *bit_set);
 }
 
-inline int aeron_bit_set_alloc_init(
+inline int aeron_bit_set_stack_init(
     size_t bit_count,
     uint64_t* static_array,
     size_t static_array_len,
     bool initial_value,
+    aeron_bit_set_t* bit_set)
+{
+    int result;
+    if (0 != (result = aeron_bit_set_stack_alloc(bit_count, static_array, static_array_len, bit_set)))
+    {
+        return result;
+    }
+
+    return aeron_bit_set_init(bit_set, initial_value);
+}
+
+inline int aeron_bit_set_heap_init(
+    size_t bit_count,
+    bool initial_value,
     aeron_bit_set_t** bit_set)
 {
     int result;
-    if (0 != (result = aeron_bit_set_alloc(bit_count, static_array, static_array_len, bit_set)))
+    if (0 != (result = aeron_bit_set_heap_alloc(bit_count, bit_set)))
     {
         return result;
     }
@@ -93,7 +111,7 @@ inline int aeron_bit_set_alloc_init(
     return aeron_bit_set_init(*bit_set, initial_value);
 }
 
-inline void aeron_bit_set_free_bits_only(aeron_bit_set_t* bit_set)
+inline void aeron_bit_set_stack_free(aeron_bit_set_t *bit_set)
 {
     if (bit_set->static_array != bit_set->bits)
     {
@@ -104,9 +122,9 @@ inline void aeron_bit_set_free_bits_only(aeron_bit_set_t* bit_set)
     bit_set->static_array = NULL;
 }
 
-inline void aeron_bit_set_free(aeron_bit_set_t* bit_set)
+inline void aeron_bit_set_heap_free(aeron_bit_set_t *bit_set)
 {
-    aeron_bit_set_free_bits_only(bit_set);
+    aeron_bit_set_stack_free(bit_set);
     free(bit_set);
 }
 

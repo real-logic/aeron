@@ -774,9 +774,8 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
     aeron_ipc_publication_t *publication = NULL;
 
     uint64_t bits[STATIC_BIT_SET_U64_LEN];
-    aeron_bit_set_t session_id_offsets_mem;
-    aeron_bit_set_t *session_id_offsets = &session_id_offsets_mem;
-    aeron_bit_set_alloc_init(
+    aeron_bit_set_t session_id_offsets;
+    aeron_bit_set_stack_init(
         conductor->network_publications.length + 1, bits, STATIC_BIT_SET_U64_LEN, false, &session_id_offsets);
 
     bool is_session_id_in_use = false;
@@ -798,14 +797,14 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
                 is_session_id_in_use = true;
             }
 
-            aeron_driver_conductor_track_session_id_offsets(conductor, session_id_offsets, pub_entry->session_id);
+            aeron_driver_conductor_track_session_id_offsets(conductor, &session_id_offsets, pub_entry->session_id);
         }
     }
 
-    assert(conductor->network_publications.length < session_id_offsets->bit_count);
+    assert(conductor->network_publications.length < session_id_offsets.bit_count);
     const int32_t speculated_session_id = aeron_driver_conductor_speculate_next_session_id(
-        conductor, session_id_offsets);
-    aeron_bit_set_free_bits_only(session_id_offsets);
+        conductor, &session_id_offsets);
+    aeron_bit_set_stack_free(&session_id_offsets);
 
     if (is_session_id_in_use && (is_exclusive || NULL == publication))
     {
@@ -925,9 +924,8 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
     aeron_udp_channel_t *udp_channel = endpoint->conductor_fields.udp_channel;
 
     uint64_t bits[STATIC_BIT_SET_U64_LEN];
-    aeron_bit_set_t session_id_offsets_mem;
-    aeron_bit_set_t *session_id_offsets = &session_id_offsets_mem;
-    aeron_bit_set_alloc_init(
+    aeron_bit_set_t session_id_offsets;
+    aeron_bit_set_stack_init(
         conductor->network_publications.length + 1, bits, STATIC_BIT_SET_U64_LEN, false, &session_id_offsets);
 
     bool is_session_id_in_use = false;
@@ -952,14 +950,14 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                 }
             }
 
-            aeron_driver_conductor_track_session_id_offsets(conductor, session_id_offsets, pub_entry->session_id);
+            aeron_driver_conductor_track_session_id_offsets(conductor, &session_id_offsets, pub_entry->session_id);
         }
     }
 
-    assert(conductor->network_publications.length < session_id_offsets->bit_count);
+    assert(conductor->network_publications.length < session_id_offsets.bit_count);
     const int32_t speculated_session_id = aeron_driver_conductor_speculate_next_session_id(
-        conductor, session_id_offsets);
-    aeron_bit_set_free_bits_only(session_id_offsets);
+        conductor, &session_id_offsets);
+    aeron_bit_set_stack_free(&session_id_offsets);
 
     if (is_session_id_in_use && (is_exclusive || NULL == publication))
     {

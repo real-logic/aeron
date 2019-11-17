@@ -163,6 +163,7 @@ SET(SOURCE
     uri/aeron_uri.c
     collections/aeron_int64_to_ptr_hash_map.c
     collections/aeron_str_to_ptr_hash_map.c
+    collections/aeron_bit_set.c
     reports/aeron_loss_reporter.c)
 
 SET(HEADERS
@@ -234,6 +235,7 @@ SET(HEADERS
     uri/aeron_uri.h
     collections/aeron_int64_to_ptr_hash_map.h
     collections/aeron_str_to_ptr_hash_map.h
+    collections/aeron_bit_set.h
     reports/aeron_loss_reporter.h)
 
 set(AGENT_SOURCE

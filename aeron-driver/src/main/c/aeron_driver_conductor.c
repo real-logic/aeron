@@ -322,22 +322,19 @@ int32_t aeron_driver_conductor_next_session_id(aeron_driver_conductor_t *conduct
 }
 
 int aeron_confirm_publication_match(
-    aeron_network_publication_t *publication,
     const char* uri,
     int32_t stream_id,
-    aeron_uri_publication_params_t *params)
+    aeron_uri_publication_params_t* params,
+    int32_t existing_session_id)
 {
-    if (NULL != publication)
+    if (params->has_session_id && params->session_id != existing_session_id)
     {
-        if (params->has_session_id && params->session_id != publication->session_id)
-        {
-            aeron_set_err(
-                EINVAL,
-                "Existing session-id [%d] doesn't match specified channel: %s, stream-id: %" PRId32,
-                publication->session_id, uri, stream_id);
+        aeron_set_err(
+            EINVAL,
+            "Existing session-id [%d] doesn't match specified channel: %s, stream-id: %" PRId32,
+            existing_session_id, uri, stream_id);
 
-            return -1;
-        }
+        return -1;
     }
 
     return 0;
@@ -734,46 +731,66 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
     int64_t registration_id,
     int32_t stream_id,
     size_t channel_length,
-    const char *channel,
+    const char *uri,
     bool is_exclusive)
 {
     aeron_ipc_publication_t *publication = NULL;
 
-    if (!is_exclusive)
-    {
-        for (size_t i = 0; i < conductor->ipc_publications.length; i++)
-        {
-            aeron_ipc_publication_t *pub_entry = conductor->ipc_publications.array[i].publication;
+    int32_t min_session_id_offset = INT32_MAX;
+    int32_t max_session_id_offset = 0;
+    bool is_session_id_in_use = false;
 
-            if (stream_id == pub_entry->stream_id &&
-                !pub_entry->is_exclusive &&
-                AERON_IPC_PUBLICATION_STATE_ACTIVE == pub_entry->conductor_fields.state)
+    for (size_t i = 0; i < conductor->ipc_publications.length; i++)
+    {
+        aeron_ipc_publication_t *pub_entry = conductor->ipc_publications.array[i].publication;
+
+        if (stream_id == pub_entry->stream_id &&
+            pub_entry->conductor_fields.state == AERON_IPC_PUBLICATION_STATE_ACTIVE)
+        {
+            if (NULL == publication && !is_exclusive && !pub_entry->is_exclusive)
             {
                 publication = pub_entry;
-                break;
+            }
+
+            if (params->has_session_id && pub_entry->session_id == params->session_id)
+            {
+                is_session_id_in_use = true;
             }
         }
+
+        const int32_t publications_length = (int32_t) conductor->ipc_publications.length;
+        const int32_t session_id_offset = conductor->next_session_id - pub_entry->session_id;
+
+        min_session_id_offset =
+            (0 <= session_id_offset && session_id_offset < min_session_id_offset)
+                ? session_id_offset
+                : min_session_id_offset;
+        max_session_id_offset =
+            (session_id_offset < publications_length && max_session_id_offset < session_id_offset)
+                ? session_id_offset
+                : max_session_id_offset;
     }
-//    else if (params->has_session_id)
-//    {
-//        for (size_t i = 0; i < conductor->network_publications.length; i++)
-//        {
-//            aeron_network_publication_t *pub_entry = conductor->network_publications.array[i].publication;
-//
-//            if (endpoint == pub_entry->endpoint &&
-//                stream_id == pub_entry->stream_id &&
-//                pub_entry->conductor_fields.state == AERON_NETWORK_PUBLICATION_STATE_ACTIVE &&
-//                pub_entry->session_id == params->session_id)
-//            {
-//                aeron_set_err(
-//                    EINVAL,
-//                    "Specified session-id is already in use for channel: %s, stream-id: %" PRId32,
-//                    uri, stream_id);
-//
-//                return NULL;
-//            }
-//        }
-//    }
+
+    if (is_session_id_in_use && (is_exclusive || NULL == publication))
+    {
+        aeron_set_err(
+            EINVAL,
+            "Specified session-id is already in exclusive use for channel: %s, stream-id: %" PRId32,
+            uri, stream_id);
+
+        return NULL;
+    }
+
+    if (!is_exclusive && NULL != publication)
+    {
+        if (0 != aeron_confirm_publication_match(uri, stream_id, params, publication->session_id))
+        {
+            return NULL;
+        }
+    }
+
+    const int32_t next_session_id_offset = 0 < min_session_id_offset ? 0 : max_session_id_offset + 1;
+    const int32_t speculated_session_id = conductor->next_session_id + next_session_id_offset;
 
     int ensure_capacity_result = 0;
     AERON_ARRAY_ENSURE_CAPACITY(ensure_capacity_result, client->publication_links, aeron_publication_link_t);
@@ -787,17 +804,19 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
 
             if (ensure_capacity_result >= 0)
             {
-                int32_t session_id = params->has_session_id ? params->session_id : conductor->next_session_id++;
+                int32_t session_id = params->has_session_id
+                    ? params->session_id
+                    : aeron_driver_conductor_next_session_id(conductor, speculated_session_id);
                 int32_t initial_term_id = params->has_position ? params->initial_term_id : aeron_randomised_int32();
                 aeron_position_t pub_pos_position;
                 aeron_position_t pub_lmt_position;
 
                 pub_pos_position.counter_id = aeron_counter_publisher_position_allocate(
-                    &conductor->counters_manager, registration_id, session_id, stream_id, channel_length, channel);
+                    &conductor->counters_manager, registration_id, session_id, stream_id, channel_length, uri);
                 pub_pos_position.value_addr = aeron_counter_addr(
                     &conductor->counters_manager, pub_pos_position.counter_id);
                 pub_lmt_position.counter_id = aeron_counter_publisher_limit_allocate(
-                    &conductor->counters_manager, registration_id, session_id, stream_id, channel_length, channel);
+                    &conductor->counters_manager, registration_id, session_id, stream_id, channel_length, uri);
                 pub_lmt_position.value_addr = aeron_counter_addr(
                     &conductor->counters_manager, pub_lmt_position.counter_id);
 
@@ -918,9 +937,9 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
         return NULL;
     }
 
-    if (!is_exclusive)
+    if (!is_exclusive && NULL != publication)
     {
-        if (0 != aeron_confirm_publication_match(publication, uri, stream_id, params))
+        if (0 != aeron_confirm_publication_match(uri, stream_id, params, publication->session_id))
         {
             return NULL;
         }

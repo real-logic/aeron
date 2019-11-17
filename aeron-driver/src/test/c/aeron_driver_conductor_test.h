@@ -76,6 +76,9 @@ using namespace aeron;
 #define CHANNEL_1_WITH_SESSION_ID_1 "aeron:udp?endpoint=localhost:40001|session-id=" STR(_SESSION_ID_1)
 #define CHANNEL_1_WITH_SESSION_ID_2 "aeron:udp?endpoint=localhost:40001|session-id=" STR(_SESSION_ID_2)
 
+#define IPC_CHANNEL_WITH_SESSION_ID_1 "aeron:ipc?session-id=" STR(_SESSION_ID_1)
+#define IPC_CHANNEL_WITH_SESSION_ID_2 "aeron:ipc?session-id=" STR(_SESSION_ID_2)
+
 #define SESSION_ID_1 (_SESSION_ID_1)
 
 #define SESSION_ID (0x5E5510)
@@ -270,6 +273,20 @@ public:
         command.correlationId(correlation_id);
         command.streamId(stream_id);
         command.channel(AERON_IPC_CHANNEL);
+
+        return writeCommand(msg_type_id, command.length());
+    }
+
+    int addIpcPublicationWithChannel(
+        int64_t client_id, int64_t correlation_id, const char* channel, int32_t stream_id, bool is_exclusive)
+    {
+        int32_t msg_type_id = is_exclusive ? AERON_COMMAND_ADD_EXCLUSIVE_PUBLICATION : AERON_COMMAND_ADD_PUBLICATION;
+        command::PublicationMessageFlyweight command(m_command, 0);
+
+        command.clientId(client_id);
+        command.correlationId(correlation_id);
+        command.streamId(stream_id);
+        command.channel(channel);
 
         return writeCommand(msg_type_id, command.length());
     }

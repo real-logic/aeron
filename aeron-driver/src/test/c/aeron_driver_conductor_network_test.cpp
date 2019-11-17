@@ -295,7 +295,6 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddMultipleExclusiveNetworkPubl
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 4u);
 }
 
-
 TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddSingleNetworkPublicationWithSpecifiedSessionId)
 {
     int64_t client_id = nextCorrelationId();

@@ -224,6 +224,14 @@ class ClientConductor implements Agent, DriverEventsListener
     public void onError(final long correlationId, final int codeValue, final ErrorCode errorCode, final String message)
     {
         driverException = new RegistrationException(correlationId, codeValue, errorCode, message);
+
+        final Object resource = resourceByRegIdMap.get(correlationId);
+        if (resource instanceof Subscription)
+        {
+            final Subscription subscription = (Subscription)resource;
+            subscription.internalClose();
+            resourceByRegIdMap.remove(correlationId);
+        }
     }
 
     public void onAsyncError(
@@ -530,7 +538,6 @@ class ClientConductor implements Agent, DriverEventsListener
                 unavailableImageHandler);
 
             resourceByRegIdMap.put(correlationId, subscription);
-
             awaitResponse(correlationId);
 
             return subscription;

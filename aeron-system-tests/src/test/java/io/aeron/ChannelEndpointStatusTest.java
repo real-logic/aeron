@@ -18,6 +18,7 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.exceptions.ChannelEndpointException;
+import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.status.ChannelEndpointStatus;
@@ -122,6 +123,12 @@ public class ChannelEndpointStatusTest
         driverA.close();
 
         IoUtil.delete(new File(ROOT_DIR), false);
+    }
+
+    @Test(timeout = 5000, expected = RegistrationException.class)
+    public void shouldErrorBadUri()
+    {
+        clientA.addSubscription("bad uri", STREAM_ID);
     }
 
     @Test(timeout = 5000)

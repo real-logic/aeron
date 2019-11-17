@@ -353,11 +353,18 @@ static void aeron_driver_conductor_track_session_id_offsets(
 
 static int aeron_driver_conductor_speculate_next_session_id(
     aeron_driver_conductor_t *conductor,
-    aeron_bit_set_t *session_id_offsets)
+    aeron_bit_set_t *session_id_offsets,
+    int32_t *session_id)
 {
-    size_t index;
-    assert(-1 < aeron_bit_set_find_first(session_id_offsets, false, &index));
-    return aeron_driver_conductor_next_session_id(conductor) + (int) index;
+    size_t index = 0;
+
+    if (0 > aeron_bit_set_find_first(session_id_offsets, false, &index))
+    {
+        return -1;
+    }
+
+    *session_id = aeron_driver_conductor_next_session_id(conductor) + (int) index;
+    return 0;
 }
 
 int aeron_confirm_publication_match(
@@ -374,7 +381,7 @@ int aeron_confirm_publication_match(
         return -1;
     }
 
-    if (params->mtu_length != logbuffer_metadata->mtu_length)
+    if (params->mtu_length != (size_t) logbuffer_metadata->mtu_length)
     {
         aeron_set_err(
             EINVAL,
@@ -384,7 +391,7 @@ int aeron_confirm_publication_match(
         return -1;
     }
 
-    if (params->term_length != logbuffer_metadata->term_length)
+    if (params->term_length != (size_t) logbuffer_metadata->term_length)
     {
         aeron_set_err(
             EINVAL,
@@ -797,6 +804,7 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
     aeron_bit_set_t session_id_offsets;
     aeron_bit_set_stack_init(
         conductor->network_publications.length + 1, bits, STATIC_BIT_SET_U64_LEN, false, &session_id_offsets);
+    assert(conductor->network_publications.length < session_id_offsets.bit_count);
 
     bool is_session_id_in_use = false;
 
@@ -821,10 +829,16 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
         }
     }
 
-    assert(conductor->network_publications.length < session_id_offsets.bit_count);
-    const int32_t speculated_session_id = aeron_driver_conductor_speculate_next_session_id(
-        conductor, &session_id_offsets);
+    int32_t speculated_session_id = 0;
+    int session_id_found = aeron_driver_conductor_speculate_next_session_id(
+            conductor, &session_id_offsets, &speculated_session_id);
     aeron_bit_set_stack_free(&session_id_offsets);
+
+    if (session_id_found < 0)
+    {
+        aeron_set_err(EINVAL, "(BUG) Unable to allocate session-id");
+        return NULL;
+    }
 
     if (is_session_id_in_use && (is_exclusive || NULL == publication))
     {
@@ -975,10 +989,16 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
         }
     }
 
-    assert(conductor->network_publications.length < session_id_offsets.bit_count);
-    const int32_t speculated_session_id = aeron_driver_conductor_speculate_next_session_id(
-        conductor, &session_id_offsets);
+    int32_t speculated_session_id = 0;
+    int session_id_found = aeron_driver_conductor_speculate_next_session_id(
+        conductor, &session_id_offsets, &speculated_session_id);
     aeron_bit_set_stack_free(&session_id_offsets);
+
+    if (session_id_found < 0)
+    {
+        aeron_set_err(EINVAL, "(BUG) Unable to allocate session-id");
+        return NULL;
+    }
 
     if (is_session_id_in_use && (is_exclusive || NULL == publication))
     {

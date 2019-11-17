@@ -1465,17 +1465,20 @@ TEST_F(DriverConductorNetworkTest, shouldNotAccidentallyBumpIntoExistingSessionI
     m_conductor.manuallySetNextSessionId(nextSessionId);
 
     int64_t client_id = nextCorrelationId();
-    int64_t pub_id = nextCorrelationId();
+    int64_t pub_id_1 = nextCorrelationId();
+    int64_t pub_id_2 = nextCorrelationId();
+    int64_t pub_id_3 = nextCorrelationId();
+    int64_t pub_id_4 = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id, CHANNEL_1_WITH_SESSION_ID_3, STREAM_ID_1, true), 0);
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id, CHANNEL_1_WITH_SESSION_ID_4, STREAM_ID_1, true), 0);
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id, CHANNEL_1_WITH_SESSION_ID_5, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, CHANNEL_1_WITH_SESSION_ID_3, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_2, CHANNEL_1_WITH_SESSION_ID_4, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_3, CHANNEL_1_WITH_SESSION_ID_5, STREAM_ID_1, true), 0);
 
     doWork();
 
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 3u);
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id, CHANNEL_1, STREAM_ID_1, true), 0);
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_4, CHANNEL_1, STREAM_ID_1, true), 0);
 
     doWork();
 
@@ -1484,6 +1487,7 @@ TEST_F(DriverConductorNetworkTest, shouldNotAccidentallyBumpIntoExistingSessionI
         ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY);
         const command::PublicationBuffersReadyFlyweight response(buffer, offset);
 
+        EXPECT_EQ(response.correlationId(), pub_id_4);
         EXPECT_NE(response.sessionId(), SESSION_ID_3);
         EXPECT_NE(response.sessionId(), SESSION_ID_4);
         EXPECT_NE(response.sessionId(), SESSION_ID_5);

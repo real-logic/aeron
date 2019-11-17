@@ -26,30 +26,30 @@ int aeron_bit_set_init(uint64_t* bits, size_t bit_count, bool initial_value)
     return 0;
 }
 
-int aeron_bit_set_get(uint64_t* bits, size_t bit_count, int bit_index, bool *value)
+int aeron_bit_set_get(uint64_t* bits, size_t bit_count, size_t bit_index, bool *value)
 {
-    if (bit_count <= bit_index || bit_index < 0)
+    if (bit_count <= bit_index)
     {
         return -EINVAL;
     }
 
-    const int entry = (unsigned) bit_index / 64;
-    const unsigned int offset = (unsigned) bit_index % 64;
+    const size_t entry = bit_index / 64;
+    const size_t offset = bit_index % 64;
 
     *value = (0 != (bits[entry] & (UINT64_C(1) << offset)));
 
     return 0;
 }
 
-int aeron_bit_set_set(uint64_t* bits, size_t bit_count, int bit_index, bool value)
+int aeron_bit_set_set(uint64_t* bits, size_t bit_count, size_t bit_index, bool value)
 {
-    if (bit_count <= bit_index || bit_index < 0)
+    if (bit_count <= bit_index)
     {
         return -EINVAL;
     }
 
-    const int entry = (unsigned) bit_index / 64;
-    const unsigned int offset = (unsigned) bit_index % 64;
+    const size_t entry = bit_index / 64;
+    const size_t offset = bit_index % 64;
 
     uint64_t mask = UINT64_C(1) << offset;
 
@@ -65,7 +65,7 @@ int aeron_bit_set_set(uint64_t* bits, size_t bit_count, int bit_index, bool valu
     return 0;
 }
 
-int aeron_bit_set_find_first(uint64_t* bits, size_t bit_count, bool value, int *bit_index)
+int aeron_bit_set_find_first(uint64_t* bits, size_t bit_count, bool value, size_t *bit_index)
 {
     const uint64_t entry_empty_value = value ? 0 : UINT64_C(0xFFFFFFFFFFFFFFFF);
     int num_entries = (int) ((bit_count + 63) / 64);

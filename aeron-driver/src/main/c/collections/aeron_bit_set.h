@@ -22,10 +22,9 @@
 #include <stdbool.h>
 #include "util/aeron_bitutil.h"
 
-size_t aeron_bit_set_byte_size_for_bit_count(size_t bit_count);
 int aeron_bit_set_init(uint64_t* bits, size_t bit_count, bool initial_value);
-int aeron_bit_set_get(uint64_t* bits, size_t bit_count, int bit_index, bool *value);
-int aeron_bit_set_set(uint64_t* bits, size_t bit_count, int bit_index, bool value);
-int aeron_bit_set_find_first(uint64_t* bits, size_t bit_count, bool value, int *bit_index);
+int aeron_bit_set_get(uint64_t* bits, size_t bit_count, size_t bit_index, bool *value);
+int aeron_bit_set_set(uint64_t* bits, size_t bit_count, size_t bit_index, bool value);
+int aeron_bit_set_find_first(uint64_t* bits, size_t bit_count, bool value, size_t *bit_index);
 
 #endif //AERON_AERON_BIT_SET_H

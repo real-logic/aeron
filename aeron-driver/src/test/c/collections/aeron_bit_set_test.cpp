@@ -37,13 +37,13 @@ TEST_F(BitSetTest, shouldSetAndGet)
 
     EXPECT_EQ(aeron_bit_set_init(bits, bit_count, false), 0);
 
-    for (int i = 0; i < bit_count; i++)
+    for (size_t i = 0; i < bit_count; i++)
     {
         EXPECT_EQ(aeron_bit_set_set(bits, bit_count, i, true), 0);
         EXPECT_EQ(aeron_bit_set_get(bits, bit_count, i, &result), 0);
         EXPECT_EQ(result, true);
 
-        for (int j = 0; j < bit_count; j++)
+        for (size_t j = 0; j < bit_count; j++)
         {
             if (j != i)
             {
@@ -56,7 +56,7 @@ TEST_F(BitSetTest, shouldSetAndGet)
         EXPECT_EQ(aeron_bit_set_get(bits, bit_count, i, &result), 0);
         EXPECT_EQ(result, false);
 
-        for (int j = 0; j < bit_count; j++)
+        for (size_t j = 0; j < bit_count; j++)
         {
             EXPECT_EQ(aeron_bit_set_get(bits, bit_count, j, &result), 0);
             EXPECT_EQ(result, false) << "Index: " << j;
@@ -65,13 +65,13 @@ TEST_F(BitSetTest, shouldSetAndGet)
 
     EXPECT_EQ(aeron_bit_set_init(bits, bit_count, true), 0);
 
-    for (int i = 0; i < bit_count; i++)
+    for (size_t i = 0; i < bit_count; i++)
     {
         EXPECT_EQ(aeron_bit_set_set(bits, bit_count, i, false), 0);
         EXPECT_EQ(aeron_bit_set_get(bits, bit_count, i, &result), 0);
         EXPECT_EQ(result, false);
 
-        for (int j = 0; j < bit_count; j++)
+        for (size_t j = 0; j < bit_count; j++)
         {
             if (j != i)
             {
@@ -84,7 +84,7 @@ TEST_F(BitSetTest, shouldSetAndGet)
         EXPECT_EQ(aeron_bit_set_get(bits, bit_count, i, &result), 0);
         EXPECT_EQ(result, true);
 
-        for (int j = 0; j < bit_count; j++)
+        for (size_t j = 0; j < bit_count; j++)
         {
             EXPECT_EQ(aeron_bit_set_get(bits, bit_count, j, &result), 0);
             EXPECT_EQ(result, true) << "Index: " << j;
@@ -96,10 +96,13 @@ TEST_F(BitSetTest, shouldFindFirstBit)
 {
     uint64_t bits[20];
     size_t bit_count = 20 * 64;
-    int result;
+    size_t result;
 
     EXPECT_EQ(aeron_bit_set_init(bits, bit_count, false), 0);
-    for (int i = 0; i < (int) bit_count; i++)
+
+    EXPECT_EQ(aeron_bit_set_find_first(bits, bit_count, true, &result), -1);
+
+    for (size_t i = 0; i < bit_count; i++)
     {
         EXPECT_EQ(aeron_bit_set_set(bits, bit_count, i, true), 0);
         EXPECT_EQ(aeron_bit_set_find_first(bits, bit_count, true, &result), 0);
@@ -108,7 +111,7 @@ TEST_F(BitSetTest, shouldFindFirstBit)
     }
 
     EXPECT_EQ(aeron_bit_set_init(bits, bit_count, true), 0);
-    for (int i = 0; i < (int) bit_count; i++)
+    for (size_t i = 0; i < bit_count; i++)
     {
         EXPECT_EQ(aeron_bit_set_set(bits, bit_count, i, false), 0);
         EXPECT_EQ(aeron_bit_set_find_first(bits, bit_count, false, &result), 0);

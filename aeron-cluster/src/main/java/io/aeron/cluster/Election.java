@@ -480,7 +480,7 @@ public class Election implements AutoCloseable
 
         candidateTermId = Math.max(ctx.clusterMarkFile().candidateTermId(), leadershipTermId);
 
-        if (clusterMembers.length == 1)
+        if (clusterMembers.length == 1 && thisMember == clusterMembers[0])
         {
             candidateTermId = Math.max(leadershipTermId + 1, candidateTermId + 1);
             leaderMember = thisMember;

@@ -37,7 +37,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Supplier;
 
-import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
+import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.*;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static org.agrona.SystemUtil.getSizeAsInt;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
@@ -282,6 +282,11 @@ public final class ClusteredServiceContainer implements AutoCloseable
          */
         public static final String DELEGATING_ERROR_HANDLER_PROP_NAME =
             "aeron.cluster.service.delegating.error.handler";
+
+        /**
+         * Counter type id for the clustered service error count.
+         */
+        public static final int CLUSTERED_SERVICE_ERROR_COUNT_TYPE_ID = 215;
 
         /**
          * The value {@link #SERVICE_ID_DEFAULT} or system property {@link #SERVICE_ID_PROP_NAME} if set.
@@ -642,7 +647,8 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
             if (null == errorCounter)
             {
-                errorCounter = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, "Cluster errors - service " + serviceId);
+                errorCounter =
+                    aeron.addCounter(CLUSTERED_SERVICE_ERROR_COUNT_TYPE_ID, "Cluster errors - service " + serviceId);
             }
 
             if (null == countedErrorHandler)

@@ -43,7 +43,6 @@ import java.util.function.Supplier;
 
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.cluster.ConsensusModule.Configuration.SERVICE_ID;
-import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static org.agrona.SystemUtil.getDurationInNanos;
 
@@ -55,17 +54,22 @@ public final class ClusterBackup implements AutoCloseable
     /**
      * The type id of the {@link Counter} used for the backup state.
      */
-    static final int BACKUP_STATE_TYPE_ID = 208;
+    public static final int BACKUP_STATE_TYPE_ID = 208;
 
     /**
      * The type id of the {@link Counter} used for the live log position counter.
      */
-    static final int LIVE_LOG_POSITION_TYPE_ID = 209;
+    public static final int LIVE_LOG_POSITION_TYPE_ID = 209;
 
     /**
      * The type id of the {@link Counter} used for the next query deadline counter.
      */
-    static final int QUERY_DEADLINE_TYPE_ID = 210;
+    public static final int QUERY_DEADLINE_TYPE_ID = 210;
+
+    /**
+     * The type id of the {@link Counter} used for keeping track of the number of errors that have occurred.
+     */
+    public static final int CLUSTER_BACKUP_ERROR_COUNT_TYPE_ID = 211;
 
     enum State
     {
@@ -430,7 +434,7 @@ public final class ClusterBackup implements AutoCloseable
 
                 if (null == errorCounter)
                 {
-                    errorCounter = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, "ClusterBackup errors");
+                    errorCounter = aeron.addCounter(CLUSTER_BACKUP_ERROR_COUNT_TYPE_ID, "ClusterBackup errors");
                 }
             }
 

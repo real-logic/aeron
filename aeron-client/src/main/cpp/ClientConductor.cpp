@@ -127,7 +127,14 @@ std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t regis
             }
 
             case RegistrationStatus::ERRORED_MEDIA_DRIVER:
-                throw RegistrationException(state.m_errorCode, state.m_errorMessage, SOURCEINFO);
+            {
+                const std::int32_t errorCode = state.m_errorCode;
+                const std::string errorMessage = state.m_errorMessage;
+
+                m_publicationByRegistrationId.erase(it);
+
+                throw RegistrationException(errorCode, errorMessage, SOURCEINFO);
+            }
         }
     }
 
@@ -209,7 +216,14 @@ std::shared_ptr<ExclusivePublication> ClientConductor::findExclusivePublication(
             }
 
             case RegistrationStatus::ERRORED_MEDIA_DRIVER:
-                throw RegistrationException(state.m_errorCode, state.m_errorMessage, SOURCEINFO);
+            {
+                const std::int32_t errorCode = state.m_errorCode;
+                const std::string errorMessage = state.m_errorMessage;
+
+                m_exclusivePublicationByRegistrationId.erase(it);
+
+                throw RegistrationException(errorCode, errorMessage, SOURCEINFO);
+            }
         }
     }
 
@@ -280,7 +294,12 @@ std::shared_ptr<Subscription> ClientConductor::findSubscription(std::int64_t reg
     }
     else if (!sub && RegistrationStatus::ERRORED_MEDIA_DRIVER == state.m_status)
     {
-        throw RegistrationException(state.m_errorCode, state.m_errorMessage, SOURCEINFO);
+        const std::int32_t errorCode = state.m_errorCode;
+        const std::string errorMessage = state.m_errorMessage;
+
+        m_subscriptionByRegistrationId.erase(it);
+
+        throw RegistrationException(errorCode, errorMessage, SOURCEINFO);
     }
 
     return sub;
@@ -370,7 +389,12 @@ std::shared_ptr<Counter> ClientConductor::findCounter(std::int64_t registrationI
     }
     else if (!counter && RegistrationStatus::ERRORED_MEDIA_DRIVER == state.m_status)
     {
-        throw RegistrationException(state.m_errorCode, state.m_errorMessage, SOURCEINFO);
+        const std::int32_t errorCode = state.m_errorCode;
+        const std::string errorMessage = state.m_errorMessage;
+
+        m_counterByRegistrationId.erase(it);
+
+        throw RegistrationException(errorCode, errorMessage, SOURCEINFO);
     }
 
     return counter;
@@ -492,8 +516,14 @@ bool ClientConductor::findDestinationResponse(std::int64_t correlationId)
         }
 
         case RegistrationStatus::ERRORED_MEDIA_DRIVER:
+        {
+            const std::int32_t errorCode = state.m_errorCode;
+            const std::string errorMessage = state.m_errorMessage;
+
             m_destinationStateByCorrelationId.erase(it);
-            throw RegistrationException(state.m_errorCode, state.m_errorMessage, SOURCEINFO);
+
+            throw RegistrationException(errorCode, errorMessage, SOURCEINFO);
+        }
     }
 
     return result;

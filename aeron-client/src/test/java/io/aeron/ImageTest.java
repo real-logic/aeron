@@ -444,8 +444,8 @@ public class ImageTest
         when(mockControlledFragmentHandler.onFragment(any(DirectBuffer.class), anyInt(), anyInt(), any(Header.class)))
             .thenReturn(Action.CONTINUE);
 
-        final int fragmentsRead =
-            image.boundedControlledPoll(mockControlledFragmentHandler, maxPosition, Integer.MAX_VALUE);
+        final int fragmentsRead = image.boundedControlledPoll(
+            mockControlledFragmentHandler, maxPosition, Integer.MAX_VALUE);
 
         assertThat(fragmentsRead, is(0));
 
@@ -457,8 +457,8 @@ public class ImageTest
     @Test
     public void shouldPollNoFragmentsToBoundedControlledFragmentHandlerWithInitialOffsetNotZero()
     {
-        final long initialPosition =
-            computePosition(INITIAL_TERM_ID, offsetForFrame(1), POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+        final long initialPosition = computePosition(
+            INITIAL_TERM_ID, offsetForFrame(1), POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
         final long maxPosition = initialPosition + ALIGNED_FRAME_LENGTH;
         position.setOrdered(initialPosition);
         final Image image = createImage();
@@ -469,8 +469,8 @@ public class ImageTest
         when(mockControlledFragmentHandler.onFragment(any(DirectBuffer.class), anyInt(), anyInt(), any(Header.class)))
             .thenReturn(Action.CONTINUE);
 
-        final int fragmentsRead =
-            image.boundedControlledPoll(mockControlledFragmentHandler, maxPosition, Integer.MAX_VALUE);
+        final int fragmentsRead = image.boundedControlledPoll(
+            mockControlledFragmentHandler, maxPosition, Integer.MAX_VALUE);
 
         assertThat(fragmentsRead, is(1));
 
@@ -493,8 +493,8 @@ public class ImageTest
         when(mockControlledFragmentHandler.onFragment(any(DirectBuffer.class), anyInt(), anyInt(), any(Header.class)))
             .thenReturn(Action.CONTINUE);
 
-        final int fragmentsRead =
-            image.boundedControlledPoll(mockControlledFragmentHandler, maxPosition, Integer.MAX_VALUE);
+        final int fragmentsRead = image.boundedControlledPoll(
+            mockControlledFragmentHandler, maxPosition, Integer.MAX_VALUE);
 
         assertThat(fragmentsRead, is(1));
 
@@ -505,11 +505,32 @@ public class ImageTest
     }
 
     @Test
+    public void shouldPollFragmentsToBoundedFragmentHandlerWithMaxPositionBeforeNextMessage()
+    {
+        final long initialPosition = computePosition(INITIAL_TERM_ID, 0, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+        final long maxPosition = initialPosition + ALIGNED_FRAME_LENGTH;
+        position.setOrdered(initialPosition);
+        final Image image = createImage();
+
+        insertDataFrame(INITIAL_TERM_ID, offsetForFrame(0));
+        insertDataFrame(INITIAL_TERM_ID, offsetForFrame(1));
+
+        final int fragmentsRead = image.boundedPoll(mockFragmentHandler, maxPosition, Integer.MAX_VALUE);
+
+        assertThat(fragmentsRead, is(1));
+
+        final InOrder inOrder = Mockito.inOrder(position, mockFragmentHandler);
+        inOrder.verify(mockFragmentHandler).onFragment(
+            any(UnsafeBuffer.class), eq(HEADER_LENGTH), eq(DATA.length), any(Header.class));
+        inOrder.verify(position).setOrdered(initialPosition + ALIGNED_FRAME_LENGTH);
+    }
+
+    @Test
     public void shouldPollFragmentsToBoundedControlledFragmentHandlerWithMaxPositionAfterEndOfTerm()
     {
         final int initialOffset = TERM_BUFFER_LENGTH - (ALIGNED_FRAME_LENGTH * 2);
-        final long initialPosition =
-            computePosition(INITIAL_TERM_ID, initialOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+        final long initialPosition = computePosition(
+            INITIAL_TERM_ID, initialOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
         final long maxPosition = initialPosition + TERM_BUFFER_LENGTH;
         position.setOrdered(initialPosition);
         final Image image = createImage();
@@ -520,8 +541,8 @@ public class ImageTest
         when(mockControlledFragmentHandler.onFragment(any(DirectBuffer.class), anyInt(), anyInt(), any(Header.class)))
             .thenReturn(Action.CONTINUE);
 
-        final int fragmentsRead =
-            image.boundedControlledPoll(mockControlledFragmentHandler, maxPosition, Integer.MAX_VALUE);
+        final int fragmentsRead = image.boundedControlledPoll(
+            mockControlledFragmentHandler, maxPosition, Integer.MAX_VALUE);
 
         assertThat(fragmentsRead, is(1));
 
@@ -535,8 +556,8 @@ public class ImageTest
     public void shouldPollFragmentsToBoundedControlledFragmentHandlerWithMaxPositionAboveIntMaxValue()
     {
         final int initialOffset = TERM_BUFFER_LENGTH - (ALIGNED_FRAME_LENGTH * 2);
-        final long initialPosition =
-            computePosition(INITIAL_TERM_ID, initialOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+        final long initialPosition = computePosition(
+            INITIAL_TERM_ID, initialOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
         final long maxPosition = (long)Integer.MAX_VALUE + 1000;
         position.setOrdered(initialPosition);
         final Image image = createImage();
@@ -547,13 +568,37 @@ public class ImageTest
         when(mockControlledFragmentHandler.onFragment(any(DirectBuffer.class), anyInt(), anyInt(), any(Header.class)))
             .thenReturn(Action.CONTINUE);
 
-        final int fragmentsRead =
-            image.boundedControlledPoll(mockControlledFragmentHandler, maxPosition, Integer.MAX_VALUE);
+        final int fragmentsRead = image.boundedControlledPoll(
+            mockControlledFragmentHandler, maxPosition, Integer.MAX_VALUE);
 
         assertThat(fragmentsRead, is(1));
 
         final InOrder inOrder = Mockito.inOrder(position, mockControlledFragmentHandler);
         inOrder.verify(mockControlledFragmentHandler).onFragment(
+            any(UnsafeBuffer.class), eq(initialOffset + HEADER_LENGTH), eq(DATA.length), any(Header.class));
+        inOrder.verify(position).setOrdered(TERM_BUFFER_LENGTH);
+    }
+
+    @Test
+    public void shouldPollFragmentsToBoundedFragmentHandlerWithMaxPositionAboveIntMaxValue()
+    {
+        final int initialOffset = TERM_BUFFER_LENGTH - (ALIGNED_FRAME_LENGTH * 2);
+        final long initialPosition = computePosition(
+            INITIAL_TERM_ID, initialOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+        final long maxPosition = (long)Integer.MAX_VALUE + 1000;
+        position.setOrdered(initialPosition);
+        final Image image = createImage();
+
+        insertDataFrame(INITIAL_TERM_ID, initialOffset);
+        insertPaddingFrame(INITIAL_TERM_ID, initialOffset + ALIGNED_FRAME_LENGTH);
+
+        final int fragmentsRead = image.boundedPoll(
+            mockFragmentHandler, maxPosition, Integer.MAX_VALUE);
+
+        assertThat(fragmentsRead, is(1));
+
+        final InOrder inOrder = Mockito.inOrder(position, mockFragmentHandler);
+        inOrder.verify(mockFragmentHandler).onFragment(
             any(UnsafeBuffer.class), eq(initialOffset + HEADER_LENGTH), eq(DATA.length), any(Header.class));
         inOrder.verify(position).setOrdered(TERM_BUFFER_LENGTH);
     }

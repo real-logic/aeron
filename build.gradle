@@ -598,6 +598,8 @@ project(':aeron-agent') {
         dependencies {
             exclude(project(':aeron-client'))
             exclude(project(':aeron-driver'))
+            exclude(project(':aeron-archive'))
+            exclude(project(':aeron-cluster'))
             exclude(dependency('org.agrona:agrona'))
         }
 

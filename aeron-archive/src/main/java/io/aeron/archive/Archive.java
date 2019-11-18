@@ -17,6 +17,7 @@ package io.aeron.archive;
 
 import io.aeron.Aeron;
 import io.aeron.CommonContext;
+import io.aeron.Counter;
 import io.aeron.Image;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
@@ -40,7 +41,6 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Supplier;
 
 import static io.aeron.archive.ArchiveThreadingMode.DEDICATED;
-import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
 import static java.lang.System.getProperty;
@@ -340,6 +340,12 @@ public class Archive implements AutoCloseable
          * Maximum block length of data read from disk in a single operation during a replay.
          */
         static final int MAX_BLOCK_LENGTH = 2 * 1024 * 1024;
+
+
+        /**
+         * The type id of the {@link Counter} used for keeping track of the number of errors that have occurred.
+         */
+        public static final int ARCHIVE_ERROR_COUNT_TYPE_ID = 101;
 
         /**
          * Get the directory name to be used for storing the archive.
@@ -645,7 +651,7 @@ public class Archive implements AutoCloseable
 
                 if (null == errorCounter)
                 {
-                    errorCounter = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, "Archive errors");
+                    errorCounter = aeron.addCounter(Configuration.ARCHIVE_ERROR_COUNT_TYPE_ID, "Archive errors");
                 }
             }
 

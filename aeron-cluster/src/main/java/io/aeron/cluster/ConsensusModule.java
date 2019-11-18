@@ -44,7 +44,6 @@ import java.util.function.Supplier;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.SNAPSHOT_CHANNEL_PROP_NAME;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.SNAPSHOT_STREAM_ID_PROP_NAME;
-import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static org.agrona.SystemUtil.*;
 import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
@@ -428,6 +427,21 @@ public class ConsensusModule implements AutoCloseable
          * Counter type id for the consensus module state.
          */
         public static final int CONSENSUS_MODULE_STATE_TYPE_ID = 200;
+
+        /**
+         * Counter type id for the consensus module error count.
+         */
+        public static final int CONSENSUS_MODULE_ERROR_COUNT_TYPE_ID = 212;
+
+        /**
+         * Counter type id for the number of cluster clients which have been timed out.
+         */
+        public static final int CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID = 213;
+
+        /**
+         * Counter type id for the number of invalid requests which the cluster has received.
+         */
+        public static final int CLUSTER_INVALID_REQUEST_COUNT_TYPE_ID = 214;
 
         /**
          * Counter type id for the cluster node role.
@@ -1147,7 +1161,7 @@ public class ConsensusModule implements AutoCloseable
 
                 if (null == errorCounter)
                 {
-                    errorCounter = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, "Cluster errors");
+                    errorCounter = aeron.addCounter(CONSENSUS_MODULE_ERROR_COUNT_TYPE_ID, "Cluster errors");
                 }
             }
 
@@ -1192,12 +1206,14 @@ public class ConsensusModule implements AutoCloseable
 
             if (null == invalidRequestCounter)
             {
-                invalidRequestCounter = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, "Invalid cluster request count");
+                invalidRequestCounter =
+                    aeron.addCounter(CLUSTER_INVALID_REQUEST_COUNT_TYPE_ID, "Invalid cluster request count");
             }
 
             if (null == timedOutClientCounter)
             {
-                timedOutClientCounter = aeron.addCounter(SYSTEM_COUNTER_TYPE_ID, "Timed out cluster client count");
+                timedOutClientCounter =
+                    aeron.addCounter(CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID, "Timed out cluster client count");
             }
 
             if (null == clusterNodeRole)

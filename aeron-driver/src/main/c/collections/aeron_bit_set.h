@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Real Logic Ltd.
+ * Copyright 2014-2019 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,71 +25,70 @@
 
 struct aeron_bit_set_stct
 {
-    size_t bit_count;
-    uint64_t* bits;
-    uint64_t* static_array;
+    size_t bit_set_length;
+    uint64_t *bits;
+    uint64_t *static_array;
 };
 
 typedef struct aeron_bit_set_stct aeron_bit_set_t;
 
-inline int aeron_bit_set_init(aeron_bit_set_t* bit_set, bool initial_value)
+inline int aeron_bit_set_init(aeron_bit_set_t *bit_set, bool initial_value)
 {
-    const size_t memory_size = ((bit_set->bit_count + 63) / 64) * sizeof(uint64_t);
+    const size_t memory_size = ((bit_set->bit_set_length + 63) / 64) * sizeof(uint64_t);
     int c = initial_value ? 0xFF : 0;
     memset(bit_set->bits, c, memory_size);
     return 0;
 }
 
 inline int aeron_bit_set_stack_alloc(
-    size_t bit_count,
-    uint64_t* static_array,
+    size_t bit_set_length,
+    uint64_t *static_array,
     size_t static_array_len,
-    aeron_bit_set_t* bit_set)
+    aeron_bit_set_t *bit_set)
 {
-    (bit_set)->bit_count = bit_count;
+    (bit_set)->bit_set_length = bit_set_length;
     (bit_set)->static_array = static_array;
 
-    const size_t u64_len = ((bit_count + 63) / 64);
+    const size_t u64_len = ((bit_set_length + 63) / 64);
     if (NULL != static_array && u64_len <= static_array_len)
     {
         (bit_set)->bits = static_array;
-    }
-    else
+    } else
     {
-        (bit_set)->bits = (uint64_t*) malloc(sizeof(uint64_t) * u64_len);
+        (bit_set)->bits = (uint64_t *) malloc(sizeof(uint64_t) * u64_len);
     }
 
     return 0;
 }
 
 inline int aeron_bit_set_heap_alloc(
-    size_t bit_count,
-    aeron_bit_set_t** bit_set)
+    size_t bit_set_length,
+    aeron_bit_set_t **bit_set)
 {
     if (NULL == bit_set)
     {
         return -EINVAL;
     }
 
-    *bit_set = (aeron_bit_set_t*) malloc(sizeof(aeron_bit_set_t));
+    *bit_set = (aeron_bit_set_t *) malloc(sizeof(aeron_bit_set_t));
 
     if (NULL == *bit_set)
     {
         return -ENOMEM;
     }
 
-    return aeron_bit_set_stack_alloc(bit_count, NULL, 0, *bit_set);
+    return aeron_bit_set_stack_alloc(bit_set_length, NULL, 0, *bit_set);
 }
 
 inline int aeron_bit_set_stack_init(
-    size_t bit_count,
-    uint64_t* static_array,
+    size_t bit_set_length,
+    uint64_t *static_array,
     size_t static_array_len,
     bool initial_value,
-    aeron_bit_set_t* bit_set)
+    aeron_bit_set_t *bit_set)
 {
     int result;
-    if (0 != (result = aeron_bit_set_stack_alloc(bit_count, static_array, static_array_len, bit_set)))
+    if (0 != (result = aeron_bit_set_stack_alloc(bit_set_length, static_array, static_array_len, bit_set)))
     {
         return result;
     }
@@ -98,12 +97,12 @@ inline int aeron_bit_set_stack_init(
 }
 
 inline int aeron_bit_set_heap_init(
-    size_t bit_count,
+    size_t bit_set_length,
     bool initial_value,
-    aeron_bit_set_t** bit_set)
+    aeron_bit_set_t **bit_set)
 {
     int result;
-    if (0 != (result = aeron_bit_set_heap_alloc(bit_count, bit_set)))
+    if (0 != (result = aeron_bit_set_heap_alloc(bit_set_length, bit_set)))
     {
         return result;
     }
@@ -128,9 +127,9 @@ inline void aeron_bit_set_heap_free(aeron_bit_set_t *bit_set)
     free(bit_set);
 }
 
-inline int aeron_bit_set_get(aeron_bit_set_t* bit_set, size_t bit_index, bool *value)
+inline int aeron_bit_set_get(aeron_bit_set_t *bit_set, size_t bit_index, bool *value)
 {
-    if (bit_set->bit_count <= bit_index)
+    if (bit_set->bit_set_length <= bit_index)
     {
         return -EINVAL;
     }
@@ -143,9 +142,9 @@ inline int aeron_bit_set_get(aeron_bit_set_t* bit_set, size_t bit_index, bool *v
     return 0;
 }
 
-inline int aeron_bit_set_set(aeron_bit_set_t* bit_set, size_t bit_index, bool value)
+inline int aeron_bit_set_set(aeron_bit_set_t *bit_set, size_t bit_index, bool value)
 {
-    if (bit_set->bit_count <= bit_index)
+    if (bit_set->bit_set_length <= bit_index)
     {
         return -EINVAL;
     }
@@ -158,8 +157,7 @@ inline int aeron_bit_set_set(aeron_bit_set_t* bit_set, size_t bit_index, bool va
     if (value)
     {
         bit_set->bits[entry] |= mask;
-    }
-    else
+    } else
     {
         bit_set->bits[entry] &= ~mask;
     }
@@ -167,10 +165,10 @@ inline int aeron_bit_set_set(aeron_bit_set_t* bit_set, size_t bit_index, bool va
     return 0;
 }
 
-inline int aeron_bit_set_find_first(aeron_bit_set_t* bit_set, bool value, size_t *bit_index)
+inline int aeron_bit_set_find_first(aeron_bit_set_t *bit_set, bool value, size_t *bit_index)
 {
     const uint64_t entry_empty_value = value ? 0 : UINT64_C(0xFFFFFFFFFFFFFFFF);
-    size_t num_entries = ((bit_set->bit_count + 63) / 64);
+    size_t num_entries = ((bit_set->bit_set_length + 63) / 64);
 
     for (size_t i = 0; i < num_entries; i++)
     {

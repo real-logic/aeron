@@ -328,9 +328,9 @@ int32_t aeron_driver_conductor_next_session_id(aeron_driver_conductor_t* conduct
     const int32_t high = conductor->publication_reserved_session_id_high;
 
     return
-        low <= conductor->next_session_id && conductor->next_session_id <= high
-            ? high + 1
-            : conductor->next_session_id;
+        low <= conductor->next_session_id && conductor->next_session_id <= high ?
+        high + 1 :
+        conductor->next_session_id;
 }
 
 int32_t aeron_driver_conductor_update_next_session_id(aeron_driver_conductor_t* conductor, int32_t session_id)
@@ -345,7 +345,7 @@ static void aeron_driver_conductor_track_session_id_offsets(
     int32_t publication_session_id)
 {
     const int32_t session_id_offset = publication_session_id - aeron_driver_conductor_next_session_id(conductor);
-    if (0 <= session_id_offset && (size_t) session_id_offset < session_id_offsets->bit_count)
+    if (0 <= session_id_offset && (size_t) session_id_offset < session_id_offsets->bit_set_length)
     {
         aeron_bit_set_set(session_id_offsets, (size_t) session_id_offset, true);
     }
@@ -368,15 +368,16 @@ static int aeron_driver_conductor_speculate_next_session_id(
 }
 
 int aeron_confirm_publication_match(
-    const char *uri, int32_t stream_id, aeron_uri_publication_params_t *params, int32_t existing_session_id,
-    aeron_logbuffer_metadata_t *logbuffer_metadata)
+    const aeron_uri_publication_params_t *params,
+    const int32_t existing_session_id,
+    const aeron_logbuffer_metadata_t *logbuffer_metadata)
 {
     if (params->has_session_id && params->session_id != existing_session_id)
     {
         aeron_set_err(
             EINVAL,
-            "Existing session-id [%d] doesn't match specified channel: %s, stream-id: %" PRId32,
-            existing_session_id, uri, stream_id);
+            "existing publication has different session id: existing=%" PRId32 " requested=%" PRId32,
+            existing_session_id, params->session_id);
 
         return -1;
     }
@@ -385,8 +386,8 @@ int aeron_confirm_publication_match(
     {
         aeron_set_err(
             EINVAL,
-            "Existing publication's mtu [%d] doesn't match specified mtu: %s, stream-id: %" PRId32,
-            logbuffer_metadata->mtu_length, uri, stream_id);
+            "existing publication has different MTU length: existing=%" PRId32 " requested=%d",
+            logbuffer_metadata->mtu_length, params->mtu_length);
 
         return -1;
     }
@@ -395,8 +396,8 @@ int aeron_confirm_publication_match(
     {
         aeron_set_err(
             EINVAL,
-            "Existing publication's term length [%d] doesn't match specified term length: %s, stream-id: %" PRId32,
-            logbuffer_metadata->term_length, uri, stream_id);
+            "existing publication has different term length: existing=%" PRId32 " requested=%d",
+            logbuffer_metadata->term_length, params->term_length);
 
         return -1;
     }
@@ -794,7 +795,7 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
     aeron_uri_publication_params_t *params,
     int64_t registration_id,
     int32_t stream_id,
-    size_t channel_length,
+    size_t uri_length,
     const char *uri,
     bool is_exclusive)
 {
@@ -804,7 +805,7 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
     aeron_bit_set_t session_id_offsets;
     aeron_bit_set_stack_init(
         conductor->network_publications.length + 1, bits, STATIC_BIT_SET_U64_LEN, false, &session_id_offsets);
-    assert(conductor->network_publications.length < session_id_offsets.bit_count);
+    assert(conductor->network_publications.length < session_id_offsets.bit_set_length);
 
     bool is_session_id_in_use = false;
 
@@ -852,8 +853,7 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
 
     if (!is_exclusive && NULL != publication)
     {
-        if (0 != aeron_confirm_publication_match(
-            uri, stream_id, params, publication->session_id, publication->log_meta_data))
+        if (0 != aeron_confirm_publication_match(params, publication->session_id, publication->log_meta_data))
         {
             return NULL;
         }
@@ -871,19 +871,20 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
 
             if (ensure_capacity_result >= 0)
             {
-                int32_t session_id = params->has_session_id
-                    ? params->session_id
-                    : aeron_driver_conductor_update_next_session_id(conductor, speculated_session_id);
+                int32_t session_id =
+                    params->has_session_id ?
+                    params->session_id :
+                    aeron_driver_conductor_update_next_session_id(conductor, speculated_session_id);
                 int32_t initial_term_id = params->has_position ? params->initial_term_id : aeron_randomised_int32();
                 aeron_position_t pub_pos_position;
                 aeron_position_t pub_lmt_position;
 
                 pub_pos_position.counter_id = aeron_counter_publisher_position_allocate(
-                    &conductor->counters_manager, registration_id, session_id, stream_id, channel_length, uri);
+                    &conductor->counters_manager, registration_id, session_id, stream_id, uri_length, uri);
                 pub_pos_position.value_addr = aeron_counter_addr(
                     &conductor->counters_manager, pub_pos_position.counter_id);
                 pub_lmt_position.counter_id = aeron_counter_publisher_limit_allocate(
-                    &conductor->counters_manager, registration_id, session_id, stream_id, channel_length, uri);
+                    &conductor->counters_manager, registration_id, session_id, stream_id, uri_length, uri);
                 pub_lmt_position.value_addr = aeron_counter_addr(
                     &conductor->counters_manager, pub_lmt_position.counter_id);
 
@@ -1012,8 +1013,7 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
 
     if (!is_exclusive && NULL != publication)
     {
-        if (0 != aeron_confirm_publication_match(
-            uri, stream_id, params, publication->session_id, publication->log_meta_data))
+        if (0 != aeron_confirm_publication_match(params, publication->session_id, publication->log_meta_data))
         {
             return NULL;
         }
@@ -1031,9 +1031,10 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
 
             if (ensure_capacity_result >= 0)
             {
-                int32_t session_id = params->has_session_id
-                    ? params->session_id
-                    : aeron_driver_conductor_update_next_session_id(conductor, speculated_session_id);
+                int32_t session_id =
+                    params->has_session_id ?
+                    params->session_id :
+                    aeron_driver_conductor_update_next_session_id(conductor, speculated_session_id);
                 int32_t initial_term_id = params->has_position ? params->initial_term_id : aeron_randomised_int32();
 
                 aeron_position_t pub_pos_position;

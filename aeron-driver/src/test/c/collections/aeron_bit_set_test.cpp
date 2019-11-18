@@ -32,13 +32,13 @@ public:
     {
         bool result;
 
-        for (size_t i = 0; i < bit_set->bit_count; i++)
+        for (size_t i = 0; i < bit_set->bit_set_length; i++)
         {
             EXPECT_EQ(aeron_bit_set_set(bit_set, i, true), 0);
             EXPECT_EQ(aeron_bit_set_get(bit_set, i, &result), 0);
             EXPECT_EQ(result, true);
 
-            for (size_t j = 0; j < bit_set->bit_count; j++)
+            for (size_t j = 0; j < bit_set->bit_set_length; j++)
             {
                 if (j != i)
                 {
@@ -51,7 +51,7 @@ public:
             EXPECT_EQ(aeron_bit_set_get(bit_set, i, &result), 0);
             EXPECT_EQ(result, false);
 
-            for (size_t j = 0; j < bit_set->bit_count; j++)
+            for (size_t j = 0; j < bit_set->bit_set_length; j++)
             {
                 EXPECT_EQ(aeron_bit_set_get(bit_set, j, &result), 0);
                 EXPECT_EQ(result, false) << "Index: " << j;
@@ -60,13 +60,13 @@ public:
 
         EXPECT_EQ(aeron_bit_set_init(bit_set, true), 0);
 
-        for (size_t i = 0; i < bit_set->bit_count; i++)
+        for (size_t i = 0; i < bit_set->bit_set_length; i++)
         {
             EXPECT_EQ(aeron_bit_set_set(bit_set, i, false), 0);
             EXPECT_EQ(aeron_bit_set_get(bit_set, i, &result), 0);
             EXPECT_EQ(result, false);
 
-            for (size_t j = 0; j < bit_set->bit_count; j++)
+            for (size_t j = 0; j < bit_set->bit_set_length; j++)
             {
                 if (j != i)
                 {
@@ -79,7 +79,7 @@ public:
             EXPECT_EQ(aeron_bit_set_get(bit_set, i, &result), 0);
             EXPECT_EQ(result, true);
 
-            for (size_t j = 0; j < bit_set->bit_count; j++)
+            for (size_t j = 0; j < bit_set->bit_set_length; j++)
             {
                 EXPECT_EQ(aeron_bit_set_get(bit_set, j, &result), 0);
                 EXPECT_EQ(result, true) << "Index: " << j;
@@ -94,9 +94,9 @@ TEST_F(BitSetTest, shouldSetAndGetStack)
 {
     uint64_t bits[STATIC_ARRAY_LEN];
     aeron_bit_set_t bit_set;
-    size_t bit_count = STATIC_ARRAY_LEN * 64;
+    size_t bit_set_length = STATIC_ARRAY_LEN * 64;
 
-    EXPECT_EQ(aeron_bit_set_stack_init(bit_count, bits, STATIC_ARRAY_LEN, false, &bit_set), 0);
+    EXPECT_EQ(aeron_bit_set_stack_init(bit_set_length, bits, STATIC_ARRAY_LEN, false, &bit_set), 0);
 
     assertGetAndSet(&bit_set);
 
@@ -106,9 +106,9 @@ TEST_F(BitSetTest, shouldSetAndGetStack)
 TEST_F(BitSetTest, shouldSetAndGetHeap)
 {
     aeron_bit_set_t* bit_set;
-    size_t bit_count = STATIC_ARRAY_LEN * 64;
+    size_t bit_set_length = STATIC_ARRAY_LEN * 64;
 
-    EXPECT_EQ(aeron_bit_set_heap_init(bit_count, false, &bit_set), 0);
+    EXPECT_EQ(aeron_bit_set_heap_init(bit_set_length, false, &bit_set), 0);
 
     assertGetAndSet(bit_set);
 
@@ -120,18 +120,18 @@ TEST_F(BitSetTest, shouldSetAndGet)
 {
     uint64_t bits[STATIC_ARRAY_LEN];
     aeron_bit_set_t bit_set;
-    size_t bit_count = STATIC_ARRAY_LEN * 64;
+    size_t bit_set_length = STATIC_ARRAY_LEN * 64;
     bool result;
 
-    EXPECT_EQ(aeron_bit_set_stack_init(bit_count, bits, STATIC_ARRAY_LEN, false, &bit_set), 0);
+    EXPECT_EQ(aeron_bit_set_stack_init(bit_set_length, bits, STATIC_ARRAY_LEN, false, &bit_set), 0);
 
-    for (size_t i = 0; i < bit_set.bit_count; i++)
+    for (size_t i = 0; i < bit_set.bit_set_length; i++)
     {
         EXPECT_EQ(aeron_bit_set_set(&bit_set, i, true), 0);
         EXPECT_EQ(aeron_bit_set_get(&bit_set, i, &result), 0);
         EXPECT_EQ(result, true);
 
-        for (size_t j = 0; j < bit_set.bit_count; j++)
+        for (size_t j = 0; j < bit_set.bit_set_length; j++)
         {
             if (j != i)
             {
@@ -144,7 +144,7 @@ TEST_F(BitSetTest, shouldSetAndGet)
         EXPECT_EQ(aeron_bit_set_get(&bit_set, i, &result), 0);
         EXPECT_EQ(result, false);
 
-        for (size_t j = 0; j < bit_set.bit_count; j++)
+        for (size_t j = 0; j < bit_set.bit_set_length; j++)
         {
             EXPECT_EQ(aeron_bit_set_get(&bit_set, j, &result), 0);
             EXPECT_EQ(result, false) << "Index: " << j;
@@ -153,13 +153,13 @@ TEST_F(BitSetTest, shouldSetAndGet)
 
     EXPECT_EQ(aeron_bit_set_init(&bit_set, true), 0);
 
-    for (size_t i = 0; i < bit_set.bit_count; i++)
+    for (size_t i = 0; i < bit_set.bit_set_length; i++)
     {
         EXPECT_EQ(aeron_bit_set_set(&bit_set, i, false), 0);
         EXPECT_EQ(aeron_bit_set_get(&bit_set, i, &result), 0);
         EXPECT_EQ(result, false);
 
-        for (size_t j = 0; j < bit_set.bit_count; j++)
+        for (size_t j = 0; j < bit_set.bit_set_length; j++)
         {
             if (j != i)
             {
@@ -172,7 +172,7 @@ TEST_F(BitSetTest, shouldSetAndGet)
         EXPECT_EQ(aeron_bit_set_get(&bit_set, i, &result), 0);
         EXPECT_EQ(result, true);
 
-        for (size_t j = 0; j < bit_set.bit_count; j++)
+        for (size_t j = 0; j < bit_set.bit_set_length; j++)
         {
             EXPECT_EQ(aeron_bit_set_get(&bit_set, j, &result), 0);
             EXPECT_EQ(result, true) << "Index: " << j;
@@ -184,14 +184,14 @@ TEST_F(BitSetTest, shouldFindFirstBit)
 {
     uint64_t bits[STATIC_ARRAY_LEN];
     aeron_bit_set_t bit_set;
-    size_t bit_count = STATIC_ARRAY_LEN * 64;
+    size_t bit_set_length = STATIC_ARRAY_LEN * 64;
     size_t result;
 
-    EXPECT_EQ(aeron_bit_set_stack_init(bit_count, bits, STATIC_ARRAY_LEN, false, &bit_set), 0);
+    EXPECT_EQ(aeron_bit_set_stack_init(bit_set_length, bits, STATIC_ARRAY_LEN, false, &bit_set), 0);
 
     EXPECT_EQ(aeron_bit_set_find_first(&bit_set, true, &result), -1);
 
-    for (size_t i = 0; i < bit_count; i++)
+    for (size_t i = 0; i < bit_set_length; i++)
     {
         EXPECT_EQ(aeron_bit_set_set(&bit_set, i, true), 0);
         EXPECT_EQ(aeron_bit_set_find_first(&bit_set, true, &result), 0);
@@ -200,7 +200,7 @@ TEST_F(BitSetTest, shouldFindFirstBit)
     }
 
     EXPECT_EQ(aeron_bit_set_init(&bit_set, true), 0);
-    for (size_t i = 0; i < bit_count; i++)
+    for (size_t i = 0; i < bit_set_length; i++)
     {
         EXPECT_EQ(aeron_bit_set_set(&bit_set, i, false), 0);
         EXPECT_EQ(aeron_bit_set_find_first(&bit_set, false, &result), 0);
@@ -213,16 +213,16 @@ TEST_F(BitSetTest, shouldHandleOutOfRangeRequests)
 {
     uint64_t bits[STATIC_ARRAY_LEN];
     aeron_bit_set_t bit_set;
-    size_t bit_count = STATIC_ARRAY_LEN * 64;
+    size_t bit_set_length = STATIC_ARRAY_LEN * 64;
     bool result;
 
-    EXPECT_EQ(aeron_bit_set_stack_init(bit_count, bits, STATIC_ARRAY_LEN, false, &bit_set), 0);
-    EXPECT_EQ(aeron_bit_set_set(&bit_set, bit_count, true), -EINVAL);
-    EXPECT_EQ(aeron_bit_set_set(&bit_set, bit_count + 1, true), -EINVAL);
+    EXPECT_EQ(aeron_bit_set_stack_init(bit_set_length, bits, STATIC_ARRAY_LEN, false, &bit_set), 0);
+    EXPECT_EQ(aeron_bit_set_set(&bit_set, bit_set_length, true), -EINVAL);
+    EXPECT_EQ(aeron_bit_set_set(&bit_set, bit_set_length + 1, true), -EINVAL);
     EXPECT_EQ(aeron_bit_set_set(&bit_set, -1, true), -EINVAL);
 
-    EXPECT_EQ(aeron_bit_set_get(&bit_set, bit_count, &result), -EINVAL);
-    EXPECT_EQ(aeron_bit_set_get(&bit_set, bit_count + 1, &result), -EINVAL);
+    EXPECT_EQ(aeron_bit_set_get(&bit_set, bit_set_length, &result), -EINVAL);
+    EXPECT_EQ(aeron_bit_set_get(&bit_set, bit_set_length + 1, &result), -EINVAL);
     EXPECT_EQ(aeron_bit_set_get(&bit_set, -1, &result), -EINVAL);
 }
 
@@ -230,17 +230,17 @@ TEST_F(BitSetTest, shouldHeapAllocateIfBitsRequiredIsTooLarge)
 {
     uint64_t bits[STATIC_ARRAY_LEN];
     aeron_bit_set_t bit_set;
-    size_t bit_count = STATIC_ARRAY_LEN * 64;
+    size_t bit_set_length = STATIC_ARRAY_LEN * 64;
 
-    EXPECT_EQ(aeron_bit_set_stack_init(bit_count, bits, STATIC_ARRAY_LEN, true, &bit_set), 0);
+    EXPECT_EQ(aeron_bit_set_stack_init(bit_set_length, bits, STATIC_ARRAY_LEN, true, &bit_set), 0);
     EXPECT_EQ(bit_set.bits, bit_set.static_array);
 
-    EXPECT_EQ(aeron_bit_set_stack_init(bit_count + 64, bits, STATIC_ARRAY_LEN, true, &bit_set), 0);
+    EXPECT_EQ(aeron_bit_set_stack_init(bit_set_length + 64, bits, STATIC_ARRAY_LEN, true, &bit_set), 0);
     EXPECT_NE(bit_set.bits, bit_set.static_array);
 
     aeron_bit_set_stack_free(&bit_set);
 
-    EXPECT_EQ(aeron_bit_set_stack_init(bit_count + 64, NULL, 0, true, &bit_set), 0);
+    EXPECT_EQ(aeron_bit_set_stack_init(bit_set_length + 64, NULL, 0, true, &bit_set), 0);
     EXPECT_NE(bit_set.bits, bit_set.static_array);
 
     aeron_bit_set_stack_free(&bit_set);

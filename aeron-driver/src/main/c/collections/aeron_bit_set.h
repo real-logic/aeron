@@ -176,7 +176,7 @@ inline int aeron_bit_set_find_first(aeron_bit_set_t *bit_set, bool value, size_t
         {
             uint64_t bits_to_search = value ? bit_set->bits[i] : ~bit_set->bits[i];
             *bit_index = (i * 64 + (size_t) aeron_number_of_trailing_zeroes_u64(bits_to_search));
-            return 0;
+            return *bit_index < bit_set->bit_set_length ? 0 : -1;
         }
     }
 

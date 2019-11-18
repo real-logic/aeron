@@ -246,3 +246,31 @@ TEST_F(BitSetTest, shouldHeapAllocateIfBitsRequiredIsTooLarge)
     aeron_bit_set_stack_free(&bit_set);
 }
 
+TEST_F(BitSetTest, shouldHandleNonBase2BitSetLength)
+{
+    uint64_t bits[2];
+    aeron_bit_set_t bit_set;
+    size_t bit_set_length = 10;
+    size_t bit_index = 0;
+
+    EXPECT_EQ(aeron_bit_set_stack_init(bit_set_length, bits, 2, true, &bit_set), 0);
+    EXPECT_EQ(bit_set.bits, bit_set.static_array);
+    EXPECT_EQ(aeron_bit_set_find_first(&bit_set, false, &bit_index), -1);
+
+    for (size_t i = 0; i < bit_set_length; i++)
+    {
+        aeron_bit_set_set(&bit_set, i, false);
+    }
+
+    EXPECT_EQ(aeron_bit_set_find_first(&bit_set, true, &bit_index), -1);
+
+//    EXPECT_EQ(aeron_bit_set_stack_init(bit_set_length + 64, bits, STATIC_ARRAY_LEN, true, &bit_set), 0);
+//    EXPECT_NE(bit_set.bits, bit_set.static_array);
+//
+//    aeron_bit_set_stack_free(&bit_set);
+//
+//    EXPECT_EQ(aeron_bit_set_stack_init(bit_set_length + 64, NULL, 0, true, &bit_set), 0);
+//    EXPECT_NE(bit_set.bits, bit_set.static_array);
+//
+//    aeron_bit_set_stack_free(&bit_set);
+}

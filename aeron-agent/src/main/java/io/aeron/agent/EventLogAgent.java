@@ -143,7 +143,7 @@ public class EventLogAgent
     private static void agent(
         final AgentBuilder.RedefinitionStrategy redefinitionStrategy, final Instrumentation instrumentation)
     {
-        if (null != EventLogAgent.instrumentation)
+        if (null != logTransformer)
         {
             throw new IllegalStateException("agent already instrumenting");
         }

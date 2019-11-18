@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <inttypes.h>
 #include "aeron_driver_conductor_test.h"
 
 class DriverConductorNetworkTest : public DriverConductorTest
@@ -1461,8 +1462,8 @@ TEST_F(DriverConductorNetworkTest, shouldNotAddDynamicSessionIdInReservedRange)
 
 TEST_F(DriverConductorNetworkTest, shouldNotAccidentallyBumpIntoExistingSessionId)
 {
-    int nextSessionId = SESSION_ID_3;
-    m_conductor.manuallySetNextSessionId(nextSessionId);
+    int next_session_id = SESSION_ID_3;
+    m_conductor.manuallySetNextSessionId(next_session_id);
 
     int64_t client_id = nextCorrelationId();
     int64_t pub_id_1 = nextCorrelationId();
@@ -1491,6 +1492,56 @@ TEST_F(DriverConductorNetworkTest, shouldNotAccidentallyBumpIntoExistingSessionI
         EXPECT_NE(response.sessionId(), SESSION_ID_3);
         EXPECT_NE(response.sessionId(), SESSION_ID_4);
         EXPECT_NE(response.sessionId(), SESSION_ID_5);
+    };
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
+}
+
+TEST_F(DriverConductorNetworkTest, shouldNotAccidentallyBumpIntoExistingSessionIdWithSessionIdWrapping)
+{
+    int32_t next_session_id = INT32_MAX - 1;
+    int32_t session_id_1 = next_session_id;
+    int32_t session_id_2 = session_id_1 + 1;
+    int32_t session_id_3 = session_id_2 + 1;
+    int32_t session_id_4 = session_id_3 + 1;
+
+    std::string channel1StreamId1(std::string(CHANNEL_1) + "|session-id=" + std::to_string(session_id_1));
+    std::string channel1StreamId2(std::string(CHANNEL_1) + "|session-id=" + std::to_string(session_id_2));
+    std::string channel1StreamId3(std::string(CHANNEL_1) + "|session-id=" + std::to_string(session_id_3));
+    std::string channel1StreamId4(std::string(CHANNEL_1) + "|session-id=" + std::to_string(session_id_4));
+
+    m_conductor.manuallySetNextSessionId(next_session_id);
+
+    int64_t client_id = nextCorrelationId();
+    int64_t pub_id_1 = nextCorrelationId();
+    int64_t pub_id_2 = nextCorrelationId();
+    int64_t pub_id_3 = nextCorrelationId();
+    int64_t pub_id_4 = nextCorrelationId();
+    int64_t pub_id_5 = nextCorrelationId();
+
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_1, channel1StreamId1.c_str(), STREAM_ID_1, true), 0);
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_2, channel1StreamId2.c_str(), STREAM_ID_1, true), 0);
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_3, channel1StreamId3.c_str(), STREAM_ID_1, true), 0);
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_4, channel1StreamId4.c_str(), STREAM_ID_1, true), 0);
+
+    doWork();
+
+    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 4u);
+
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id_5, CHANNEL_1, STREAM_ID_1, true), 0);
+
+    doWork();
+
+    auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_EXCLUSIVE_PUBLICATION_READY);
+        const command::PublicationBuffersReadyFlyweight response(buffer, offset);
+
+        EXPECT_EQ(response.correlationId(), pub_id_5);
+        EXPECT_NE(response.sessionId(), session_id_1);
+        EXPECT_NE(response.sessionId(), session_id_2);
+        EXPECT_NE(response.sessionId(), session_id_3);
+        EXPECT_NE(response.sessionId(), session_id_4);
     };
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);

@@ -123,7 +123,7 @@ public class EventLogAgent
                 .or(nameEndsWith("SenderProxy"))
                 .or(nameEndsWith("ReceiverProxy"))
                 .or(nameEndsWith("UdpChannelTransport"))
-                .or(nameEndsWith("ControlRequestAdapter"))
+                .or(nameEndsWith("ControlSessionDemuxer"))
                 .or(nameEndsWith("Election"))
                 .or(nameEndsWith("ConsensusModuleAgent"));
 

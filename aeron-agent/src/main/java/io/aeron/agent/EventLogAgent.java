@@ -51,9 +51,9 @@ public class EventLogAgent
 
     private static AgentRunner readerAgentRunner;
     private static Instrumentation instrumentation;
-    private static volatile ClassFileTransformer logTransformer;
+    private static ClassFileTransformer logTransformer;
 
-    static final AgentBuilder.Listener LISTENER = new AgentBuilder.Listener()
+    private static final AgentBuilder.Listener LISTENER = new AgentBuilder.Listener()
     {
         public void onDiscovery(
             final String typeName,
@@ -110,7 +110,7 @@ public class EventLogAgent
         agent(AgentBuilder.RedefinitionStrategy.RETRANSFORMATION, instrumentation);
     }
 
-    public static void removeTransformer()
+    public static synchronized void removeTransformer()
     {
         if (logTransformer != null)
         {
@@ -140,7 +140,7 @@ public class EventLogAgent
         }
     }
 
-    private static void agent(
+    private static synchronized void agent(
         final AgentBuilder.RedefinitionStrategy redefinitionStrategy, final Instrumentation instrumentation)
     {
         if (null != logTransformer)

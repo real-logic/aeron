@@ -1206,14 +1206,14 @@ public class ConsensusModule implements AutoCloseable
 
             if (null == invalidRequestCounter)
             {
-                invalidRequestCounter =
-                    aeron.addCounter(CLUSTER_INVALID_REQUEST_COUNT_TYPE_ID, "Invalid cluster request count");
+                invalidRequestCounter = aeron.addCounter(
+                    CLUSTER_INVALID_REQUEST_COUNT_TYPE_ID, "Invalid cluster request count");
             }
 
             if (null == timedOutClientCounter)
             {
-                timedOutClientCounter =
-                    aeron.addCounter(CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID, "Timed out cluster client count");
+                timedOutClientCounter = aeron.addCounter(
+                    CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID, "Timed out cluster client count");
             }
 
             if (null == clusterNodeRole)

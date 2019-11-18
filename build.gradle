@@ -780,7 +780,6 @@ project(':aeron-all') {
         compile project(':aeron-driver')
         compile project(':aeron-archive')
         compile project(':aeron-cluster')
-        compile project(':aeron-agent')
         compile project(':aeron-samples')
     }
 
@@ -791,7 +790,6 @@ project(':aeron-all') {
         source += project(':aeron-archive').sourceSets.generated.allJava
         source += project(':aeron-cluster').sourceSets.main.allJava
         source += project(':aeron-cluster').sourceSets.generated.allJava
-        source += project(':aeron-agent').sourceSets.main.allJava
         source += project(':aeron-samples').sourceSets.main.allJava
     }
 
@@ -850,7 +848,6 @@ project(':aeron-all') {
         archiveClassifier = 'sources'
         from project(':aeron-client').sourceSets.main.allSource
         from project(':aeron-driver').sourceSets.main.allSource
-        from project(':aeron-agent').sourceSets.main.allSource
         from project(':aeron-archive').sourceSets.main.allSource
         from project(':aeron-archive').sourceSets.generated.allSource
         from project(':aeron-cluster').sourceSets.main.allSource
@@ -865,7 +862,6 @@ project(':aeron-all') {
     shadowJar {
         archiveClassifier = ''
         relocate 'org.HdrHistogram', 'io.aeron.shadow.org.HdrHistogram'
-        relocate 'net.bytebuddy', 'io.aeron.shadow.net.bytebuddy'
     }
 
     artifacts {

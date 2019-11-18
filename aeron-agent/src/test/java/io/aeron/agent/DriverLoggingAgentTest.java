@@ -20,7 +20,6 @@ import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.FragmentHandler;
-import net.bytebuddy.agent.ByteBuddyAgent;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.IntHashSet;
 import org.agrona.collections.MutableInteger;
@@ -43,8 +42,8 @@ public class DriverLoggingAgentTest
     private static final String NETWORK_CHANNEL = "aeron:udp?endpoint=localhost:54325";
     private static final int STREAM_ID = 777;
 
-    static final IntHashSet MSG_ID_SET = new IntHashSet();
-    static final CountDownLatch LATCH = new CountDownLatch(1);
+    private static final IntHashSet MSG_ID_SET = new IntHashSet();
+    private static final CountDownLatch LATCH = new CountDownLatch(1);
 
     @BeforeClass
     public static void installAgent()
@@ -67,8 +66,6 @@ public class DriverLoggingAgentTest
 
         try (MediaDriver ignore = MediaDriver.launchEmbedded(driverCtx))
         {
-            EventLogAgent.agentmain("", ByteBuddyAgent.install());
-
             final Aeron.Context clientCtx = new Aeron.Context()
                 .aeronDirectoryName(driverCtx.aeronDirectoryName());
 

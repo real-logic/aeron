@@ -143,6 +143,11 @@ public class EventLogAgent
     private static void agent(
         final AgentBuilder.RedefinitionStrategy redefinitionStrategy, final Instrumentation instrumentation)
     {
+        if (null != EventLogAgent.instrumentation)
+        {
+            throw new IllegalStateException("agent already instrumenting");
+        }
+
         if (0 == DriverEventLogger.ENABLED_EVENT_CODES &&
             0 == ArchiveEventLogger.ENABLED_EVENT_CODES &&
             0 == ClusterEventLogger.ENABLED_EVENT_CODES)

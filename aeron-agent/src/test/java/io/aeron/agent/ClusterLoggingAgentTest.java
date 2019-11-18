@@ -150,8 +150,7 @@ public class ClusterLoggingAgentTest
                     LATCH.countDown();
                 }
             }
-
-            if (ClusterEventLogger.toEventCodeId(ClusterEventCode.STATE_CHANGE) == msgTypeId)
+            else if (ClusterEventLogger.toEventCodeId(ClusterEventCode.STATE_CHANGE) == msgTypeId)
             {
                 final String stateChange = buffer.getStringAscii(index + SIZE_OF_INT);
                 if (stateChange.contains("ACTIVE"))
@@ -159,8 +158,7 @@ public class ClusterLoggingAgentTest
                     LATCH.countDown();
                 }
             }
-
-            if (ClusterEventLogger.toEventCodeId(ClusterEventCode.ELECTION_STATE_CHANGE) == msgTypeId)
+            else if (ClusterEventLogger.toEventCodeId(ClusterEventCode.ELECTION_STATE_CHANGE) == msgTypeId)
             {
                 final String stateChange = buffer.getStringAscii(index + SIZE_OF_INT);
                 if (stateChange.contains("CLOSE"))

@@ -324,7 +324,7 @@ public class ClusterTool
                 }
                 else
                 {
-                    final EpochClock epochClock = new SystemEpochClock();
+                    final EpochClock epochClock = SystemEpochClock.INSTANCE;
                     nextBackupQueryDeadlineMs(markFile, epochClock.time() + delayMs);
                     out.format("%2$tF %1$tH:%1$tM:%1$tS setting next: %2$tF %2$tH:%2$tM:%2$tS%n",
                         new Date(),

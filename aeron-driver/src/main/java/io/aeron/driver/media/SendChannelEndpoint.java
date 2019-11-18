@@ -127,7 +127,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
                 "channel cannot be registered unless INITALIZING: status=" + status(currentStatus));
         }
 
-        statusIndicator.updateLabel(statusIndicator.label() + " " + bindAddressAndPort());
+        statusIndicator.appendToLabel(" " + bindAddressAndPort());
         statusIndicator.setOrdered(ChannelEndpointStatus.ACTIVE);
     }
 

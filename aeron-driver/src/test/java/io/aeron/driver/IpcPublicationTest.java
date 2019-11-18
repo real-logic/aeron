@@ -72,7 +72,7 @@ public class IpcPublicationTest
             .logFactory(new TestLogFactory())
             .clientProxy(mock(ClientProxy.class))
             .driverCommandQueue(mock(ManyToOneConcurrentArrayQueue.class))
-            .epochClock(new SystemEpochClock())
+            .epochClock(SystemEpochClock.INSTANCE)
             .cachedEpochClock(new CachedEpochClock())
             .cachedNanoClock(new CachedNanoClock())
             .countersManager(countersManager)

@@ -81,7 +81,7 @@ public class ArchiveProxy
         this(
             publication,
             YieldingIdleStrategy.INSTANCE,
-            new SystemNanoClock(),
+            SystemNanoClock.INSTANCE,
             MESSAGE_TIMEOUT_DEFAULT_NS,
             DEFAULT_RETRY_ATTEMPTS);
     }

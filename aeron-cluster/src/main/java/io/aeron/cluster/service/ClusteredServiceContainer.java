@@ -587,7 +587,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
             if (null == epochClock)
             {
-                epochClock = new SystemEpochClock();
+                epochClock = SystemEpochClock.INSTANCE;
             }
 
             if (null == clusterDir)

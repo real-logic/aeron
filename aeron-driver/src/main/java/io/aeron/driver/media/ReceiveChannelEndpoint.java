@@ -146,7 +146,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
 
         if (null == multiRcvDestination)
         {
-            statusIndicator.updateLabel(statusIndicator.label() + " " + bindAddressAndPort());
+            statusIndicator.appendToLabel(" " + bindAddressAndPort());
         }
 
         statusIndicator.setOrdered(ChannelEndpointStatus.ACTIVE);

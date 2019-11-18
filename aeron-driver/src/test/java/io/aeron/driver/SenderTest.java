@@ -176,11 +176,11 @@ public class SenderTest
     {
         sender.doWork();
         assertThat(receivedFrames.size(), is(1));
-        nanoClock.update(nanoClock.nanoTime() + (Configuration.PUBLICATION_SETUP_TIMEOUT_NS - 1));
+        nanoClock.advance(Configuration.PUBLICATION_SETUP_TIMEOUT_NS - 1);
         sender.doWork();
         assertThat(receivedFrames.size(), is(1));
 
-        nanoClock.update(nanoClock.nanoTime() + 10);
+        nanoClock.advance(10);
         sender.doWork();
         assertThat(receivedFrames.size(), is(2));
 
@@ -201,10 +201,10 @@ public class SenderTest
         sender.doWork();
         assertThat(receivedFrames.size(), is(1));
 
-        nanoClock.update(nanoClock.nanoTime() + (Configuration.PUBLICATION_SETUP_TIMEOUT_NS - 1));
+        nanoClock.advance(Configuration.PUBLICATION_SETUP_TIMEOUT_NS - 1);
         sender.doWork();
 
-        nanoClock.update(nanoClock.nanoTime() + 10);
+        nanoClock.advance(10);
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(2));
@@ -224,7 +224,7 @@ public class SenderTest
         assertThat(receivedFrames.size(), is(1));
         receivedFrames.remove();
 
-        nanoClock.update(nanoClock.nanoTime() + (Configuration.PUBLICATION_SETUP_TIMEOUT_NS + 10));
+        nanoClock.advance(Configuration.PUBLICATION_SETUP_TIMEOUT_NS + 10);
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(1));
@@ -259,7 +259,7 @@ public class SenderTest
         sender.doWork();
         assertThat(receivedFrames.size(), is(0)); // setup has been sent already, have to wait
 
-        nanoClock.update(nanoClock.nanoTime() + (Configuration.PUBLICATION_SETUP_TIMEOUT_NS + 10));
+        nanoClock.advance(Configuration.PUBLICATION_SETUP_TIMEOUT_NS + 10);
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(1));
@@ -432,11 +432,11 @@ public class SenderTest
         receivedFrames.remove();                   // skip setup & data frame
         receivedFrames.remove();
 
-        nanoClock.update(nanoClock.nanoTime() + (Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1));
+        nanoClock.advance(Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1);
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(0));  // should not send yet
-        nanoClock.update(nanoClock.nanoTime() + 10);
+        nanoClock.advance(10);
         sender.doWork();
 
         assertThat(receivedFrames.size(), greaterThanOrEqualTo(1));  // should send ticks
@@ -466,11 +466,11 @@ public class SenderTest
         receivedFrames.remove();
         receivedFrames.remove();                   // skip setup & data frame
 
-        nanoClock.update(nanoClock.nanoTime() + (Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1));
+        nanoClock.advance(Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1);
         sender.doWork();
         assertThat(receivedFrames.size(), is(0));  // should not send yet
 
-        nanoClock.update(nanoClock.nanoTime() + 10);
+        nanoClock.advance(10);
         sender.doWork();
         assertThat(receivedFrames.size(), greaterThanOrEqualTo(1));  // should send ticks
 
@@ -478,11 +478,11 @@ public class SenderTest
         assertThat(dataHeader.frameLength(), is(0));
         assertThat(dataHeader.termOffset(), is(offsetOfMessage(2)));
 
-        nanoClock.update(nanoClock.nanoTime() + (Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1));
+        nanoClock.advance(Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1);
         sender.doWork();
         assertThat(receivedFrames.size(), is(0));  // should not send yet
 
-        nanoClock.update(nanoClock.nanoTime() + 10);
+        nanoClock.advance(10);
         sender.doWork();
         assertThat(receivedFrames.size(), greaterThanOrEqualTo(1));  // should send ticks
 

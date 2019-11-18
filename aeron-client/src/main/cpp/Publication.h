@@ -17,9 +17,11 @@
 #ifndef AERON_PUBLICATION_H
 #define AERON_PUBLICATION_H
 
-#include <iostream>
 #include <array>
 #include <atomic>
+#include <memory>
+#include <string>
+
 #include <concurrent/AtomicBuffer.h>
 #include <concurrent/logbuffer/BufferClaim.h>
 #include <concurrent/logbuffer/TermAppender.h>

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <utility>
+
 #include "ExclusivePublication.h"
 #include "ClientConductor.h"
 

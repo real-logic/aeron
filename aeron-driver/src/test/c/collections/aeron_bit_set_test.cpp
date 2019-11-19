@@ -263,14 +263,4 @@ TEST_F(BitSetTest, shouldHandleNonBase2BitSetLength)
     }
 
     EXPECT_EQ(aeron_bit_set_find_first(&bit_set, true, &bit_index), -1);
-
-//    EXPECT_EQ(aeron_bit_set_stack_init(bit_set_length + 64, bits, STATIC_ARRAY_LEN, true, &bit_set), 0);
-//    EXPECT_NE(bit_set.bits, bit_set.static_array);
-//
-//    aeron_bit_set_stack_free(&bit_set);
-//
-//    EXPECT_EQ(aeron_bit_set_stack_init(bit_set_length + 64, NULL, 0, true, &bit_set), 0);
-//    EXPECT_NE(bit_set.bits, bit_set.static_array);
-//
-//    aeron_bit_set_stack_free(&bit_set);
 }

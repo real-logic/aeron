@@ -303,6 +303,11 @@ public class Election implements AutoCloseable
     void onRequestVote(
         final long logLeadershipTermId, final long logPosition, final long candidateTermId, final int candidateId)
     {
+        if (isPassiveMember())
+        {
+            return;
+        }
+
         if (candidateTermId <= leadershipTermId || candidateTermId <= this.candidateTermId)
         {
             placeVote(candidateTermId, candidateId, false);
@@ -513,7 +518,7 @@ public class Election implements AutoCloseable
             workCount += 1;
         }
 
-        if (ctx.appointedLeaderId() != NULL_VALUE && ctx.appointedLeaderId() != thisMember.id())
+        if (isPassiveMember() || (ctx.appointedLeaderId() != NULL_VALUE && ctx.appointedLeaderId() != thisMember.id()))
         {
             return workCount;
         }
@@ -991,6 +996,11 @@ public class Election implements AutoCloseable
             logReplay = null;
             shouldReplay = false;
         }
+    }
+
+    private boolean isPassiveMember()
+    {
+        return null == ClusterMember.findMember(clusterMembers, thisMember.id());
     }
 
     @SuppressWarnings("unused")

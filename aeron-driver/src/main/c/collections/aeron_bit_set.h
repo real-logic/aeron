@@ -53,7 +53,8 @@ inline int aeron_bit_set_stack_alloc(
     if (NULL != static_array && u64_len <= static_array_len)
     {
         (bit_set)->bits = static_array;
-    } else
+    }
+    else
     {
         (bit_set)->bits = (uint64_t *) malloc(sizeof(uint64_t) * u64_len);
     }
@@ -157,7 +158,8 @@ inline int aeron_bit_set_set(aeron_bit_set_t *bit_set, size_t bit_index, bool va
     if (value)
     {
         bit_set->bits[entry] |= mask;
-    } else
+    }
+    else
     {
         bit_set->bits[entry] &= ~mask;
     }
@@ -176,7 +178,7 @@ inline int aeron_bit_set_find_first(aeron_bit_set_t *bit_set, bool value, size_t
         {
             uint64_t bits_to_search = value ? bit_set->bits[i] : ~bit_set->bits[i];
             *bit_index = (i * 64 + (size_t) aeron_number_of_trailing_zeroes_u64(bits_to_search));
-            return *bit_index < bit_set->bit_set_length ? 0 : -1;
+            return (*bit_index < bit_set->bit_set_length) ? 0 : -1;
         }
     }
 

@@ -328,8 +328,7 @@ int32_t aeron_driver_conductor_next_session_id(aeron_driver_conductor_t* conduct
     const int32_t low = conductor->publication_reserved_session_id_low;
     const int32_t high = conductor->publication_reserved_session_id_high;
 
-    return
-        low <= conductor->next_session_id && conductor->next_session_id <= high ?
+    return (low <= conductor->next_session_id && conductor->next_session_id <= high) ?
         aeron_add_wrap_i32(high, 1) :
         conductor->next_session_id;
 }
@@ -345,8 +344,9 @@ static void aeron_driver_conductor_track_session_id_offsets(
     aeron_bit_set_t *session_id_offsets,
     int32_t publication_session_id)
 {
-    const int32_t session_id_offset = aeron_add_wrap_i32(
-        publication_session_id, -aeron_driver_conductor_next_session_id(conductor));
+    const int32_t next_session_id = aeron_driver_conductor_next_session_id(conductor);
+    const int32_t session_id_offset = aeron_add_wrap_i32(publication_session_id, -next_session_id);
+
     if (0 <= session_id_offset && (size_t) session_id_offset < session_id_offsets->bit_set_length)
     {
         aeron_bit_set_set(session_id_offsets, (size_t) session_id_offset, true);
@@ -847,8 +847,8 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
     {
         aeron_set_err(
             EINVAL,
-            "Specified session-id is already in exclusive use for channel: %s, stream-id: %" PRId32,
-            uri, stream_id);
+            "Specified session-id is already in exclusive use for channel: %.*s, stream-id: %" PRId32,
+            uri_length, uri, stream_id);
 
         return NULL;
     }
@@ -1007,8 +1007,8 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
     {
         aeron_set_err(
             EINVAL,
-            "Specified session-id is already in exclusive use for channel: %s, stream-id: %" PRId32,
-            uri, stream_id);
+            "Specified session-id is already in exclusive use for channel: %.*s, stream-id: %" PRId32,
+            uri_length, uri, stream_id);
 
         return NULL;
     }

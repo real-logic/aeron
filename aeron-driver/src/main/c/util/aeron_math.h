@@ -19,29 +19,13 @@
 
 #include <stdint.h>
 
-inline int32_t aeron_wrap_overflow_i32(int64_t sum)
-{
-    if (sum < INT32_MIN)
-    {
-        return (int32_t) (INT32_MAX - (INT32_MIN - (sum + 1)));
-    }
-    else if (sum > INT32_MAX)
-    {
-        return (int32_t) (INT32_MIN + ((sum - 1) - INT32_MAX));
-    }
-    else
-    {
-        return (int32_t) sum;
-    }
-}
-
 inline int32_t aeron_add_wrap_i32(int32_t a, int32_t b)
 {
     const int64_t a_widened = a;
     const int64_t b_widened = b;
     const int64_t sum = a_widened + b_widened;
 
-    return aeron_wrap_overflow_i32(sum);
+    return (int32_t) (sum & INT64_C(0xFFFFFFFF));
 }
 
 inline int32_t aeron_sub_wrap_i32(int32_t a, int32_t b)
@@ -50,7 +34,16 @@ inline int32_t aeron_sub_wrap_i32(int32_t a, int32_t b)
     const int64_t b_widened = b;
     const int64_t difference = a_widened - b_widened;
 
-    return aeron_wrap_overflow_i32(difference);
+    return (int32_t) (difference & INT64_C(0xFFFFFFFF));
+}
+
+inline int32_t aeron_mul_wrap_i32(int32_t a, int32_t b)
+{
+    const int64_t a_widened = a;
+    const int64_t b_widened = b;
+    const int64_t product = a_widened * b_widened;
+
+    return (int32_t) (product & INT64_C(0xFFFFFFFF));
 }
 
 #endif //AERON_MATH_H

@@ -254,6 +254,20 @@ public class DynamicMembershipTest
         }
     }
 
+    @Test(timeout = 10_000)
+    public void shouldJoinDynamicNodeToSingleStaticLeader() throws Exception
+    {
+        try (TestCluster cluster = TestCluster.startCluster(1, 1))
+        {
+            final TestNode initialLeader = cluster.awaitLeader();
+            cluster.startDynamicNode(1, true);
+
+            Thread.sleep(1000);
+
+            assertThat(numberOfMembers(initialLeader.clusterMembership()), is(2));
+        }
+    }
+
     private int numberOfMembers(final ClusterTool.ClusterMembership clusterMembership)
     {
         return clusterMembership.activeMembers.size();

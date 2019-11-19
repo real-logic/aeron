@@ -364,7 +364,7 @@ class DynamicJoin implements AutoCloseable
                 replayId,
                 leaderArchive.controlSessionId()))
             {
-                this.correlationId = replayId;
+                correlationId = replayId;
                 workCount++;
             }
         }
@@ -421,10 +421,10 @@ class DynamicJoin implements AutoCloseable
         return workCount;
     }
 
-    private void state(final State state)
+    private void state(final State newState)
     {
-        //System.out.println("dynamicJoin " + this.state + " -> " + state);
-        this.state = state;
+        //System.out.println("DynamicJoin: memberId=" + memberId + " " + state + " -> " + newState);
+        state = newState;
     }
 
     private static boolean pollForResponse(final AeronArchive archive, final long correlationId)

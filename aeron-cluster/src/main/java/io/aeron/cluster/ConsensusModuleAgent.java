@@ -1237,7 +1237,10 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         final int memberId,
         final String clusterMembers)
     {
-        this.leadershipTermId = leadershipTermId;
+        if (leadershipTermId != this.leadershipTermId)
+        {
+            return;
+        }
 
         if (ChangeType.JOIN == changeType)
         {
@@ -1278,8 +1281,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 if (hasCurrentLeaderSteppedDown)
                 {
                     commitPosition.proposeMaxOrdered(logPosition);
-                    final long now = clusterClock.time();
-                    enterElection(clusterTimeUnit.toNanos(now));
+                    enterElection(clusterTimeUnit.toNanos(clusterClock.time()));
                 }
             }
         }
@@ -1675,8 +1677,10 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             thisMember.id(dynamicJoin.memberId());
         }
 
+        dynamicJoin = null;
+
         election = new Election(
-            true,
+            false,
             leadershipTermId,
             recoveryPlan.appendedLogPosition,
             clusterMembers,
@@ -1686,8 +1690,6 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
             memberStatusPublisher,
             ctx,
             this);
-
-        dynamicJoin = null;
 
         return true;
     }

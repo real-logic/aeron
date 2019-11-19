@@ -1499,10 +1499,9 @@ TEST_F(DriverConductorNetworkTest, shouldNotAccidentallyBumpIntoExistingSessionI
 
 TEST_F(DriverConductorNetworkTest, shouldNotAccidentallyBumpIntoExistingSessionIdWithSessionIdWrapping)
 {
-    int32_t next_session_id = INT32_MAX - 1;
-    int32_t session_id_1 = next_session_id;
+    int32_t session_id_1 = INT32_MAX - 1;
     int32_t session_id_2 = session_id_1 + 1;
-    int32_t session_id_3 = session_id_2 + 1;
+    int32_t session_id_3 = INT32_MIN;
     int32_t session_id_4 = session_id_3 + 1;
 
     std::string channel1StreamId1(std::string(CHANNEL_1) + "|session-id=" + std::to_string(session_id_1));
@@ -1510,7 +1509,7 @@ TEST_F(DriverConductorNetworkTest, shouldNotAccidentallyBumpIntoExistingSessionI
     std::string channel1StreamId3(std::string(CHANNEL_1) + "|session-id=" + std::to_string(session_id_3));
     std::string channel1StreamId4(std::string(CHANNEL_1) + "|session-id=" + std::to_string(session_id_4));
 
-    m_conductor.manuallySetNextSessionId(next_session_id);
+    m_conductor.manuallySetNextSessionId(session_id_1);
 
     int64_t client_id = nextCorrelationId();
     int64_t pub_id_1 = nextCorrelationId();

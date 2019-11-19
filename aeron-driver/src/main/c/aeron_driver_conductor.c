@@ -22,6 +22,7 @@
 #include "media/aeron_receive_channel_endpoint.h"
 #include "util/aeron_netutil.h"
 #include "util/aeron_error.h"
+#include "util/aeron_math.h"
 #include "media/aeron_send_channel_endpoint.h"
 #include "util/aeron_arrayutil.h"
 #include "aeron_driver_conductor.h"
@@ -329,13 +330,13 @@ int32_t aeron_driver_conductor_next_session_id(aeron_driver_conductor_t* conduct
 
     return
         low <= conductor->next_session_id && conductor->next_session_id <= high ?
-        high + 1 :
+        aeron_add_wrap_i32(high, 1) :
         conductor->next_session_id;
 }
 
 int32_t aeron_driver_conductor_update_next_session_id(aeron_driver_conductor_t* conductor, int32_t session_id)
 {
-    conductor->next_session_id = session_id + 1;
+    conductor->next_session_id = aeron_add_wrap_i32(session_id, 1);
     return session_id;
 }
 
@@ -344,7 +345,8 @@ static void aeron_driver_conductor_track_session_id_offsets(
     aeron_bit_set_t *session_id_offsets,
     int32_t publication_session_id)
 {
-    const int32_t session_id_offset = publication_session_id - aeron_driver_conductor_next_session_id(conductor);
+    const int32_t session_id_offset = aeron_add_wrap_i32(
+        publication_session_id, -aeron_driver_conductor_next_session_id(conductor));
     if (0 <= session_id_offset && (size_t) session_id_offset < session_id_offsets->bit_set_length)
     {
         aeron_bit_set_set(session_id_offsets, (size_t) session_id_offset, true);
@@ -363,7 +365,7 @@ static int aeron_driver_conductor_speculate_next_session_id(
         return -1;
     }
 
-    *session_id = aeron_driver_conductor_next_session_id(conductor) + (int) index;
+    *session_id = aeron_add_wrap_i32(aeron_driver_conductor_next_session_id(conductor), (int32_t) index);
     return 0;
 }
 

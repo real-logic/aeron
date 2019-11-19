@@ -774,6 +774,39 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         }
     }
 
+    @SuppressWarnings("unused")
+    public void onAddMember(final long correlationId, final int memberId, final String memberEndpoints)
+    {
+        if (null == election && Cluster.Role.LEADER == role && ClusterMember.isNotDuplicateEndpoint(clusterMembers, memberEndpoints))
+        {
+            final ClusterMember member = ClusterMember.parseEndpoints(memberId, memberEndpoints);
+            final ClusterMember[] newMembers = ClusterMember.addMember(clusterMembers, member);
+            final long now = clusterClock.time();
+
+            if (logPublisher.appendMembershipChangeEvent(
+                this.leadershipTermId,
+                now,
+                thisMember.id(),
+                newMembers.length,
+                ChangeType.JOIN,
+                member.id(),
+                ClusterMember.encodeAsString(newMembers)) > 0)
+            {
+                timeOfLastLogUpdateNs = clusterTimeUnit.toNanos(now) - leaderHeartbeatIntervalNs;
+
+                final ChannelUri memberStatusUri = ChannelUri.parse(ctx.memberStatusChannel());
+                ClusterMember.addMemberStatusPublication(
+                    member, memberStatusUri, ctx.memberStatusStreamId(), aeron);
+
+                clusterMembers = newMembers;
+                clusterMemberByIdMap.put(memberId, member);
+                rankedPositions = new long[ClusterMember.quorumThreshold(clusterMembers.length)];
+
+                logPublisher.addPassiveFollower(member.logEndpoint());
+            }
+        }
+    }
+
     public void onClusterMembersQuery(final long correlationId, final boolean returnExtended)
     {
         if (returnExtended)

@@ -41,6 +41,7 @@ public final class ConsensusModuleProxy implements AutoCloseable
     private final CloseSessionEncoder closeSessionEncoder = new CloseSessionEncoder();
     private final ClusterMembersQueryEncoder clusterMembersQueryEncoder = new ClusterMembersQueryEncoder();
     private final RemoveMemberEncoder removeMemberEncoder = new RemoveMemberEncoder();
+    private final AddMemberEncoder addMemberEncoder = new AddMemberEncoder();
     private final Publication publication;
 
     public ConsensusModuleProxy(final Publication publication)
@@ -233,6 +234,37 @@ public final class ConsensusModuleProxy implements AutoCloseable
                     .memberId(memberId)
                     .isPassive(isPassive);
 
+                bufferClaim.commit();
+
+                return true;
+            }
+
+            checkResult(result);
+        }
+        while (--attempts > 0);
+
+        return false;
+    }
+
+    public boolean addMember(final long correlationId, final int memberId, final String memberEndpoints)
+    {
+        final int length =
+            MessageHeaderEncoder.ENCODED_LENGTH +
+            AddMemberEncoder.BLOCK_LENGTH +
+            AddMemberEncoder.memberEndpointsHeaderLength() +
+            memberEndpoints.length();
+
+        int attempts = SEND_ATTEMPTS;
+        do
+        {
+            final long result = publication.tryClaim(length, bufferClaim);
+            if (result > 0)
+            {
+                addMemberEncoder
+                    .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
+                    .correlationId(correlationId)
+                    .memberId(memberId)
+                    .memberEndpoints(memberEndpoints);
                 bufferClaim.commit();
 
                 return true;

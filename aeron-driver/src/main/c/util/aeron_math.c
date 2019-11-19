@@ -17,4 +17,6 @@
 #include <stdint.h>
 #include "aeron_math.h"
 
-extern inline int32_t aeron_add_wrap_i32(int32_t a, int32_t b);
+extern int32_t aeron_wrap_overflow_i32(int64_t sum);
+extern int32_t aeron_add_wrap_i32(int32_t a, int32_t b);
+extern int32_t aeron_sub_wrap_i32(int32_t a, int32_t b);

@@ -345,7 +345,7 @@ static void aeron_driver_conductor_track_session_id_offsets(
     int32_t publication_session_id)
 {
     const int32_t next_session_id = aeron_driver_conductor_next_session_id(conductor);
-    const int32_t session_id_offset = aeron_add_wrap_i32(publication_session_id, -next_session_id);
+    const int32_t session_id_offset = aeron_sub_wrap_i32(publication_session_id, next_session_id);
 
     if (0 <= session_id_offset && (size_t) session_id_offset < session_id_offsets->bit_set_length)
     {

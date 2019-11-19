@@ -29,13 +29,23 @@ public:
     }
 };
 
-TEST_F(MathTest, shouldApplyBasicWrapping)
+TEST_F(MathTest, shouldApplyBasicAdditionWrapping)
 {
     EXPECT_EQ(aeron_add_wrap_i32(INT32_MAX, 1), INT32_MIN);
     EXPECT_EQ(aeron_add_wrap_i32(INT32_MIN, -1), INT32_MAX);
+    EXPECT_EQ(aeron_add_wrap_i32(INT32_MIN, INT32_MIN), 0);
+    EXPECT_EQ(aeron_add_wrap_i32(INT32_MAX, INT32_MAX), -2);
+    EXPECT_EQ(aeron_add_wrap_i32(INT32_MAX, -INT32_MAX), 0);
 }
 
-TEST_F(MathTest, shouldWrapFromMaxToMinPositiveOverflow)
+TEST_F(MathTest, shouldApplyBasicSubtractionWrapping)
+{
+    EXPECT_EQ(aeron_sub_wrap_i32(INT32_MIN, 1), INT32_MAX);
+    EXPECT_EQ(aeron_sub_wrap_i32(INT32_MAX, -1), INT32_MIN);
+    EXPECT_EQ(aeron_sub_wrap_i32(INT32_MIN, INT32_MIN), 0);
+}
+
+TEST_F(MathTest, shouldWrapAdditionFromMaxToMinPositiveOverflow)
 {
     for (int i = 0; i < 10; i++)
     {
@@ -46,13 +56,35 @@ TEST_F(MathTest, shouldWrapFromMaxToMinPositiveOverflow)
     }
 }
 
-TEST_F(MathTest, shouldWrapFromMinToMaxNegativeOverflow)
+TEST_F(MathTest, shouldWrapAdditionFromMinToMaxNegativeOverflow)
 {
     for (int i = 0; i < 10; i++)
     {
         for (int j = 0; j < 10; j++)
         {
             EXPECT_EQ(aeron_add_wrap_i32(INT32_MIN + j, -(i + j + 1)), INT32_MAX - i);
+        }
+    }
+}
+
+TEST_F(MathTest, shouldWrapSubtractionFromMaxToMinPositiveOverflow)
+{
+    for (int i = 0; i < 10; i++)
+    {
+        for (int j = 0; j < 10; j++)
+        {
+            EXPECT_EQ(aeron_sub_wrap_i32(INT32_MAX - j, -(i + j + 1)), INT32_MIN + i);
+        }
+    }
+}
+
+TEST_F(MathTest, shouldWrapSubtractionFromMinToMaxNegativeOverflow)
+{
+    for (int i = 0; i < 10; i++)
+    {
+        for (int j = 0; j < 10; j++)
+        {
+            EXPECT_EQ(aeron_sub_wrap_i32(INT32_MIN + j, (i + j + 1)), INT32_MAX - i);
         }
     }
 }

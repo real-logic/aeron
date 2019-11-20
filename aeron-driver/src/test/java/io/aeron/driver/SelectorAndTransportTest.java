@@ -29,6 +29,7 @@ import org.agrona.BitUtil;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.UnsafeBuffer;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
@@ -285,6 +286,119 @@ public class SelectorAndTransportTest
 
         verify(mockStatusMessagesReceivedCounter, times(1)).incrementOrdered();
     }
+
+    @Test(timeout = 1000)
+    public void shouldUpdateAddressForNewIpAndHandleMessages() throws Exception
+    {
+        final MutableInteger controlMessagesReceived = new MutableInteger(0);
+
+        doAnswer(
+            (invocation) ->
+            {
+                controlMessagesReceived.value++;
+                return null;
+            })
+            .when(mockPublication).onStatusMessage(any(), any());
+
+
+        final UdpChannel udpChannelSpy = spy(SRC_DST);
+        final InetSocketAddress remoteAddress = spy(udpChannelSpy.remoteData());
+
+        // currently hostname resolved to 127.0.0.3
+        when(remoteAddress.getAddress()).thenReturn(InetAddress.getByAddress(new byte[]{127, 0, 0, 3}));
+        when(udpChannelSpy.remoteData()).thenReturn(remoteAddress);
+
+        // configured to send messages to 127.0.0.3
+        sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockSendStatusIndicator, context);
+        sendChannelEndpoint.registerForSend(mockPublication);
+        sendChannelEndpoint.openDatagramChannel(mockSendStatusIndicator);
+        sendChannelEndpoint.registerForRead(controlTransportPoller);
+
+        // listen 127.0.0.1
+        receiveChannelEndpoint = new ReceiveChannelEndpoint(
+                RCV_DST, mockDispatcher, mockReceiveStatusIndicator, context);
+        receiveChannelEndpoint.openDatagramChannel(mockReceiveStatusIndicator);
+        receiveChannelEndpoint.registerForRead(dataTransportPoller);
+
+        // should resolve hostname to 127.0.0.1 and update sendChannelEndpoint
+        sendChannelEndpoint.resolveHostnames();
+
+        statusMessage.wrap(buffer);
+        statusMessage
+                .streamId(STREAM_ID)
+                .sessionId(SESSION_ID)
+                .consumptionTermId(TERM_ID)
+                .receiverWindowLength(1000)
+                .consumptionTermOffset(0)
+                .version(HeaderFlyweight.CURRENT_VERSION)
+                .flags((short)0)
+                .headerType(HeaderFlyweight.HDR_TYPE_SM)
+                .frameLength(StatusMessageFlyweight.HEADER_LENGTH);
+        byteBuffer.position(0).limit(statusMessage.frameLength());
+
+        processLoop(dataTransportPoller, 5);
+        receiveChannelEndpoint.sendTo(byteBuffer, rcvRemoteAddress);
+
+        while (controlMessagesReceived.get() < 1)
+        {
+            processLoop(controlTransportPoller, 1);
+        }
+
+        verify(mockStatusMessagesReceivedCounter, times(1)).incrementOrdered();
+    }
+
+    @Test(timeout = 1000)
+    public void shouldNotUpdateAddressWithOldIp()
+    {
+        final MutableInteger controlMessagesReceived = new MutableInteger(0);
+
+        doAnswer(
+            (invocation) ->
+            {
+                controlMessagesReceived.value++;
+                return null;
+            })
+            .when(mockPublication).onStatusMessage(any(), any());
+
+        // configured to send messages to 127.0.0.3
+        sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockSendStatusIndicator, context);
+        sendChannelEndpoint.registerForSend(mockPublication);
+        sendChannelEndpoint.openDatagramChannel(mockSendStatusIndicator);
+        sendChannelEndpoint.registerForRead(controlTransportPoller);
+
+        // listen 127.0.0.1
+        receiveChannelEndpoint = new ReceiveChannelEndpoint(
+                RCV_DST, mockDispatcher, mockReceiveStatusIndicator, context);
+        receiveChannelEndpoint.openDatagramChannel(mockReceiveStatusIndicator);
+        receiveChannelEndpoint.registerForRead(dataTransportPoller);
+
+        // shouldn't update anything because hostname resolve to the same ip
+        sendChannelEndpoint.resolveHostnames();
+
+        statusMessage.wrap(buffer);
+        statusMessage
+                .streamId(STREAM_ID)
+                .sessionId(SESSION_ID)
+                .consumptionTermId(TERM_ID)
+                .receiverWindowLength(1000)
+                .consumptionTermOffset(0)
+                .version(HeaderFlyweight.CURRENT_VERSION)
+                .flags((short)0)
+                .headerType(HeaderFlyweight.HDR_TYPE_SM)
+                .frameLength(StatusMessageFlyweight.HEADER_LENGTH);
+        byteBuffer.position(0).limit(statusMessage.frameLength());
+
+        processLoop(dataTransportPoller, 5);
+        receiveChannelEndpoint.sendTo(byteBuffer, rcvRemoteAddress);
+
+        while (controlMessagesReceived.get() < 1)
+        {
+            processLoop(controlTransportPoller, 1);
+        }
+
+        verify(mockStatusMessagesReceivedCounter, times(1)).incrementOrdered();
+    }
+
 
     private void processLoop(final UdpTransportPoller transportPoller, final int iterations)
     {

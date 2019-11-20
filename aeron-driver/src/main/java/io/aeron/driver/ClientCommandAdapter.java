@@ -269,6 +269,16 @@ class ClientCommandAdapter implements MessageHandler
                     break;
                 }
 
+                case RESOLVE_HOSTNAMES:
+                {
+                    correlatedMsgFlyweight.wrap(buffer, index);
+
+                    correlatedMsgFlyweight.validateLength(msgTypeId, length);
+
+                    conductor.onResolveHostnames();
+                    break;
+                }
+
                 default:
                 {
                     final ControlProtocolException ex = new ControlProtocolException(

@@ -23,6 +23,7 @@ import java.net.InetSocketAddress;
 import java.net.PortUnreachableException;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
+import java.nio.channels.UnresolvedAddressException;
 
 import static io.aeron.driver.media.UdpChannelTransport.sendError;
 
@@ -37,6 +38,8 @@ abstract class MultiDestination
     abstract void addDestination(InetSocketAddress address);
 
     abstract void removeDestination(InetSocketAddress address);
+
+    abstract void resolveHostnames();
 
     static int send(
         final DatagramChannel datagramChannel,
@@ -56,7 +59,7 @@ abstract class MultiDestination
                 bytesSent = datagramChannel.send(buffer, destination);
             }
         }
-        catch (final PortUnreachableException ignore)
+        catch (final PortUnreachableException | UnresolvedAddressException ignore)
         {
         }
         catch (final IOException ex)
@@ -152,6 +155,10 @@ class DynamicMultiDestination extends MultiDestination
     }
 
     void removeDestination(final InetSocketAddress address)
+    {
+    }
+
+    void resolveHostnames()
     {
     }
 
@@ -264,6 +271,25 @@ class ManualMultiDestination extends MultiDestination
                 }
 
                 destinations = newElements;
+            }
+        }
+    }
+
+    void resolveHostnames()
+    {
+        for (int i = 0; i < destinations.length; i++)
+        {
+            final InetSocketAddress inetSocketAddress = destinations[i];
+            if (null != inetSocketAddress)
+            {
+                final InetSocketAddress resolvedAddress = new InetSocketAddress(
+                    inetSocketAddress.getHostString(),
+                    inetSocketAddress.getPort());
+
+                if (!resolvedAddress.isUnresolved())
+                {
+                    destinations[i] = resolvedAddress;
+                }
             }
         }
     }

@@ -92,6 +92,11 @@ public class ControlProtocolEvents
      */
     public static final int TERMINATE_DRIVER = 0x0E;
 
+    /**
+     * Request the driver to resolve hostnames.
+     */
+    public static final int RESOLVE_HOSTNAMES = 0x0F;
+
     // Media Driver to Clients
 
     /**

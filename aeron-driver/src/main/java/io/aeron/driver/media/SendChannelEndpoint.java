@@ -17,6 +17,7 @@ package io.aeron.driver.media;
 
 import io.aeron.ErrorCode;
 import io.aeron.driver.*;
+import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ControlProtocolException;
 import io.aeron.status.ChannelEndpointStatus;
 import io.aeron.protocol.NakFlyweight;
@@ -30,6 +31,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.PortUnreachableException;
 import java.nio.ByteBuffer;
+import java.nio.channels.UnresolvedAddressException;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.status.ChannelEndpointStatus.status;
@@ -195,7 +197,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
                         bytesSent = sendDatagramChannel.write(buffer);
                     }
                 }
-                catch (final PortUnreachableException ignore)
+                catch (final PortUnreachableException | UnresolvedAddressException ignore)
                 {
                 }
                 catch (final IOException ex)
@@ -210,6 +212,40 @@ public class SendChannelEndpoint extends UdpChannelTransport
         }
 
         return bytesSent;
+    }
+
+    public void resolveHostnames()
+    {
+        if (null != sendDatagramChannel)
+        {
+            if (null == multiDestination && null != connectAddress)
+            {
+                final InetSocketAddress resolvedAddress = new InetSocketAddress(
+                    connectAddress.getHostString(),
+                    connectAddress.getPort());
+
+                if (!resolvedAddress.isUnresolved() &&
+                    !connectAddress.getAddress().equals(resolvedAddress.getAddress()))
+                {
+                    try
+                    {
+                        sendDatagramChannel.disconnect().connect(resolvedAddress);
+                        connectAddress = resolvedAddress;
+                    }
+                    catch (final IOException e)
+                    {
+                        throw new AeronException(
+                                "failed to reconnect channel: " + connectAddress,
+                                e,
+                                AeronException.Category.WARN);
+                    }
+                }
+            }
+            else if (null != multiDestination)
+            {
+                multiDestination.resolveHostnames();
+            }
+        }
     }
 
     public void onStatusMessage(

@@ -18,6 +18,7 @@ package io.aeron.agent;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
@@ -33,6 +34,7 @@ public class DriverEventEncoder
 {
     private static final int LOG_HEADER_LENGTH = 16;
     private static final int SOCKET_ADDRESS_MAX_LENGTH = 24;
+    private static final byte[] EMPTY_BYTES = {};
 
     public static int encode(
         final MutableDirectBuffer encodingBuffer, final DirectBuffer buffer, final int offset, final int length)
@@ -127,7 +129,9 @@ public class DriverEventEncoder
         encodingBuffer.putInt(offset + relativeOffset, dstAddress.getPort(), LITTLE_ENDIAN);
         relativeOffset += SIZE_OF_INT;
 
-        final byte[] addressBytes = dstAddress.getAddress().getAddress();
+        final InetAddress address = dstAddress.getAddress();
+        final byte[] addressBytes = address == null ? EMPTY_BYTES : address.getAddress();
+
         encodingBuffer.putInt(offset + relativeOffset, addressBytes.length, LITTLE_ENDIAN);
         relativeOffset += SIZE_OF_INT;
 

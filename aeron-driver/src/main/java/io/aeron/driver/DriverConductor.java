@@ -938,6 +938,14 @@ public class DriverConductor implements Agent
         clientProxy.operationSucceeded(correlationId);
     }
 
+    void onResolveHostnames()
+    {
+        for (final SendChannelEndpoint sendChannelEndpoint : sendChannelEndpointByChannelMap.values())
+        {
+            sendChannelEndpoint.resolveHostnames();
+        }
+    }
+
     void onTerminateDriver(final DirectBuffer tokenBuffer, final int tokenOffset, final int tokenLength)
     {
         if (ctx.terminationValidator().allowTermination(ctx.aeronDirectory(), tokenBuffer, tokenOffset, tokenLength))

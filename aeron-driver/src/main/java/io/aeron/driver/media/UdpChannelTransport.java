@@ -49,7 +49,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
     protected SelectionKey selectionKey;
     protected final InetSocketAddress bindAddress;
     protected final InetSocketAddress endPointAddress;
-    protected final InetSocketAddress connectAddress;
+    protected InetSocketAddress connectAddress;
     protected DatagramChannel sendDatagramChannel;
     protected DatagramChannel receiveDatagramChannel;
     protected int multicastTtl = 0;

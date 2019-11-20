@@ -37,7 +37,7 @@ public class NativeTestMediaDriver implements TestMediaDriver
 
     public static NativeTestMediaDriver launch(MediaDriver.Context context)
     {
-        final String aeronmdPath = System.getProperty("aeron.test.system.aeronmd.path");
+        final String aeronmdPath = System.getProperty(TestMediaDriver.AERON_TEST_SYSTEM_AERONMD_PATH);
         final File f = new File(aeronmdPath);
 
         if (!f.exists())

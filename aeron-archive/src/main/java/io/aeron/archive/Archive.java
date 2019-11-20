@@ -22,10 +22,9 @@ import io.aeron.Image;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.exceptions.ConcurrentConcludeException;
-import org.agrona.BitUtil;
-import org.agrona.CloseHelper;
-import org.agrona.ErrorHandler;
-import org.agrona.IoUtil;
+import io.aeron.security.Authenticator;
+import io.aeron.security.AuthenticatorSupplier;
+import org.agrona.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.errors.DistinctErrorLog;
 import org.agrona.concurrent.errors.LoggingErrorHandler;
@@ -344,6 +343,17 @@ public class Archive implements AutoCloseable
         public static final String REPLICATION_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:8040";
 
         /**
+         * Name of class to use as a supplier of {@link Authenticator} for the archive.
+         */
+        public static final String AUTHENTICATOR_SUPPLIER_PROP_NAME = "aeron.archive.authenticator.supplier";
+
+        /**
+         * Name of the class to use as a supplier of {@link Authenticator} for the archive. Default is
+         * a non-authenticating option.
+         */
+        public static final String AUTHENTICATOR_SUPPLIER_DEFAULT = "io.aeron.security.DefaultAuthenticatorSupplier";
+
+        /**
          * The type id of the {@link Counter} used for keeping track of the number of errors that have occurred.
          */
         public static final int ARCHIVE_ERROR_COUNT_TYPE_ID = 101;
@@ -558,6 +568,31 @@ public class Archive implements AutoCloseable
         {
             return getSizeAsInt(ERROR_BUFFER_LENGTH_PROP_NAME, ERROR_BUFFER_LENGTH_DEFAULT);
         }
+
+        /**
+         * The value {@link #AUTHENTICATOR_SUPPLIER_DEFAULT} or system property
+         * {@link #AUTHENTICATOR_SUPPLIER_PROP_NAME} if set.
+         *
+         * @return {@link #AUTHENTICATOR_SUPPLIER_DEFAULT} or system property
+         * {@link #AUTHENTICATOR_SUPPLIER_PROP_NAME} if set.
+         */
+        public static AuthenticatorSupplier authenticatorSupplier()
+        {
+            final String supplierClassName = System.getProperty(
+                AUTHENTICATOR_SUPPLIER_PROP_NAME, AUTHENTICATOR_SUPPLIER_DEFAULT);
+
+            AuthenticatorSupplier supplier = null;
+            try
+            {
+                supplier = (AuthenticatorSupplier)Class.forName(supplierClassName).getConstructor().newInstance();
+            }
+            catch (final Exception ex)
+            {
+                LangUtil.rethrowUnchecked(ex);
+            }
+
+            return supplier;
+        }
     }
 
     /**
@@ -613,6 +648,7 @@ public class Archive implements AutoCloseable
         private Supplier<IdleStrategy> replayerIdleStrategySupplier;
         private Supplier<IdleStrategy> recorderIdleStrategySupplier;
         private EpochClock epochClock;
+        private AuthenticatorSupplier authenticatorSupplier;
 
         private int errorBufferLength = 0;
         private ErrorHandler errorHandler;
@@ -763,6 +799,11 @@ public class Archive implements AutoCloseable
             else if (segmentFileLength < TERM_MIN_LENGTH || segmentFileLength > TERM_MAX_LENGTH)
             {
                 throw new ArchiveException("segment file length not in valid range: " + segmentFileLength);
+            }
+
+            if (null == authenticatorSupplier)
+            {
+                authenticatorSupplier = Configuration.authenticatorSupplier();
             }
 
             if (null == catalog)
@@ -1734,6 +1775,28 @@ public class Archive implements AutoCloseable
         public long maxCatalogEntries()
         {
             return maxCatalogEntries;
+        }
+
+        /**
+         * Get the {@link AuthenticatorSupplier} that should be used for the Archive.
+         *
+         * @return the {@link AuthenticatorSupplier} to be used for the Archive.
+         */
+        public AuthenticatorSupplier authenticatorSupplier()
+        {
+            return authenticatorSupplier;
+        }
+
+        /**
+         * Set the {@link AuthenticatorSupplier} that will be used for the Archive.
+         *
+         * @param authenticatorSupplier {@link AuthenticatorSupplier} to use for the Archive.
+         * @return this for a fluent API.
+         */
+        public Context authenticatorSupplier(final AuthenticatorSupplier authenticatorSupplier)
+        {
+            this.authenticatorSupplier = authenticatorSupplier;
+            return this;
         }
 
         CountDownLatch abortLatch()

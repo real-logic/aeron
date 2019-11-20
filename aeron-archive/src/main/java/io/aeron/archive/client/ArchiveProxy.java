@@ -19,6 +19,8 @@ import io.aeron.ChannelUriStringBuilder;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.archive.codecs.*;
+import io.aeron.security.CredentialsSupplier;
+import io.aeron.security.NullCredentialsSupplier;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.*;
 
@@ -38,6 +40,7 @@ public class ArchiveProxy
     private final int retryAttempts;
     private final IdleStrategy retryIdleStrategy;
     private final NanoClock nanoClock;
+    private final CredentialsSupplier credentialsSupplier;
 
     private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(256);
     private final Publication publication;
@@ -83,30 +86,34 @@ public class ArchiveProxy
             YieldingIdleStrategy.INSTANCE,
             SystemNanoClock.INSTANCE,
             MESSAGE_TIMEOUT_DEFAULT_NS,
-            DEFAULT_RETRY_ATTEMPTS);
+            DEFAULT_RETRY_ATTEMPTS,
+            new NullCredentialsSupplier());
     }
 
     /**
      * Create a proxy with a {@link Publication} for sending control message requests.
      *
-     * @param publication       publication for sending control messages to an archive.
-     * @param retryIdleStrategy for what should happen between retry attempts at offering messages.
-     * @param nanoClock         to be used for calculating checking deadlines.
-     * @param connectTimeoutNs  for for connection requests.
-     * @param retryAttempts     for offering control messages before giving up.
+     * @param publication         publication for sending control messages to an archive.
+     * @param retryIdleStrategy   for what should happen between retry attempts at offering messages.
+     * @param nanoClock           to be used for calculating checking deadlines.
+     * @param connectTimeoutNs    for for connection requests.
+     * @param retryAttempts       for offering control messages before giving up.
+     * @param credentialsSupplier for the AuthConnectRequest
      */
     public ArchiveProxy(
         final Publication publication,
         final IdleStrategy retryIdleStrategy,
         final NanoClock nanoClock,
         final long connectTimeoutNs,
-        final int retryAttempts)
+        final int retryAttempts,
+        final CredentialsSupplier credentialsSupplier)
     {
         this.publication = publication;
         this.retryIdleStrategy = retryIdleStrategy;
         this.nanoClock = nanoClock;
         this.connectTimeoutNs = connectTimeoutNs;
         this.retryAttempts = retryAttempts;
+        this.credentialsSupplier = credentialsSupplier;
     }
 
     /**
@@ -129,13 +136,16 @@ public class ArchiveProxy
      */
     public boolean connect(final String responseChannel, final int responseStreamId, final long correlationId)
     {
-        final ConnectRequestEncoder connectRequestEncoder = new ConnectRequestEncoder();
+        final byte[] encodedCredentials = credentialsSupplier.encodedCredentials();
+
+        final AuthConnectRequestEncoder connectRequestEncoder = new AuthConnectRequestEncoder();
         connectRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .correlationId(correlationId)
             .responseStreamId(responseStreamId)
             .version(AeronArchive.Configuration.PROTOCOL_SEMANTIC_VERSION)
-            .responseChannel(responseChannel);
+            .responseChannel(responseChannel)
+            .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
 
         return offerWithTimeout(connectRequestEncoder.encodedLength(), null);
     }
@@ -151,13 +161,16 @@ public class ArchiveProxy
      */
     public boolean tryConnect(final String responseChannel, final int responseStreamId, final long correlationId)
     {
-        final ConnectRequestEncoder connectRequestEncoder = new ConnectRequestEncoder();
+        final byte[] encodedCredentials = credentialsSupplier.encodedCredentials();
+
+        final AuthConnectRequestEncoder connectRequestEncoder = new AuthConnectRequestEncoder();
         connectRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .correlationId(correlationId)
             .responseStreamId(responseStreamId)
             .version(AeronArchive.Configuration.PROTOCOL_SEMANTIC_VERSION)
-            .responseChannel(responseChannel);
+            .responseChannel(responseChannel)
+            .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
 
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + connectRequestEncoder.encodedLength();
 
@@ -179,13 +192,16 @@ public class ArchiveProxy
         final long correlationId,
         final AgentInvoker aeronClientInvoker)
     {
-        final ConnectRequestEncoder connectRequestEncoder = new ConnectRequestEncoder();
+        final byte[] encodedCredentials = credentialsSupplier.encodedCredentials();
+
+        final AuthConnectRequestEncoder connectRequestEncoder = new AuthConnectRequestEncoder();
         connectRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .correlationId(correlationId)
             .responseStreamId(responseStreamId)
             .version(AeronArchive.Configuration.PROTOCOL_SEMANTIC_VERSION)
-            .responseChannel(responseChannel);
+            .responseChannel(responseChannel)
+            .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
 
         return offerWithTimeout(connectRequestEncoder.encodedLength(), aeronClientInvoker);
     }

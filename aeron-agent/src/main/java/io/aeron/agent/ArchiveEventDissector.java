@@ -62,6 +62,7 @@ final class ArchiveEventDissector
         new AttachSegmentsRequestDecoder();
     private static final MigrateSegmentsRequestDecoder MIGRATE_SEGMENTS_REQUEST_DECODER =
         new MigrateSegmentsRequestDecoder();
+    private static final AuthConnectRequestDecoder AUTH_CONNECT_REQUEST_DECODER = new AuthConnectRequestDecoder();
 
     @SuppressWarnings("MethodLength")
     static void controlRequest(
@@ -308,6 +309,15 @@ final class ArchiveEventDissector
                 appendMigrateSegments(builder);
                 break;
 
+            case CMD_IN_AUTH_CONNECT:
+                AUTH_CONNECT_REQUEST_DECODER.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    HEADER_DECODER.blockLength(),
+                    HEADER_DECODER.version());
+                appendAuthConnect(builder);
+                break;
+
             default:
                 builder.append("ARCHIVE: COMMAND UNKNOWN: ").append(event);
         }
@@ -322,6 +332,19 @@ final class ArchiveEventDissector
             .append(", responseChannel=");
 
         CONNECT_REQUEST_DECODER.getResponseChannel(builder);
+    }
+
+    private static void appendAuthConnect(final StringBuilder builder)
+    {
+        builder.append("ARCHIVE: AUTH_CONNECT")
+            .append(", correlationId=").append(AUTH_CONNECT_REQUEST_DECODER.correlationId())
+            .append(", responseStreamId=").append(AUTH_CONNECT_REQUEST_DECODER.responseStreamId())
+            .append(", version=").append(AUTH_CONNECT_REQUEST_DECODER.version())
+            .append(", responseChannel=");
+
+        AUTH_CONNECT_REQUEST_DECODER.getResponseChannel(builder);
+
+        builder.append(", encodedCredentialsLength=").append(AUTH_CONNECT_REQUEST_DECODER.encodedCredentialsLength());
     }
 
     private static void appendCloseSession(final StringBuilder builder)

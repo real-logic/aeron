@@ -21,6 +21,8 @@ import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.exceptions.TimeoutException;
+import io.aeron.security.CredentialsSupplier;
+import io.aeron.security.NullCredentialsSupplier;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.LangUtil;
@@ -194,7 +196,12 @@ public class AeronArchive implements AutoCloseable
 
             publication = aeron.addExclusivePublication(ctx.controlRequestChannel(), ctx.controlRequestStreamId());
             final ArchiveProxy archiveProxy = new ArchiveProxy(
-                publication, ctx.idleStrategy(), aeron.context().nanoClock(), messageTimeoutNs, DEFAULT_RETRY_ATTEMPTS);
+                publication,
+                ctx.idleStrategy(),
+                aeron.context().nanoClock(),
+                messageTimeoutNs,
+                DEFAULT_RETRY_ATTEMPTS,
+                ctx.credentialsSupplier());
 
             asyncConnect = new AsyncConnect(ctx, controlResponsePoller, archiveProxy, deadlineNs);
             final IdleStrategy idleStrategy = ctx.idleStrategy();
@@ -266,7 +273,12 @@ public class AeronArchive implements AutoCloseable
 
             publication = aeron.addExclusivePublication(ctx.controlRequestChannel(), ctx.controlRequestStreamId());
             final ArchiveProxy archiveProxy = new ArchiveProxy(
-                publication, ctx.idleStrategy(), aeron.context().nanoClock(), messageTimeoutNs, DEFAULT_RETRY_ATTEMPTS);
+                publication,
+                ctx.idleStrategy(),
+                aeron.context().nanoClock(),
+                messageTimeoutNs,
+                DEFAULT_RETRY_ATTEMPTS,
+                ctx.credentialsSupplier());
 
             return new AsyncConnect(ctx, controlResponsePoller, archiveProxy, deadlineNs);
         }
@@ -2037,6 +2049,7 @@ public class AeronArchive implements AutoCloseable
         private String aeronDirectoryName = CommonContext.getAeronDirectoryName();
         private Aeron aeron;
         private ErrorHandler errorHandler;
+        private CredentialsSupplier credentialsSupplier;
         private boolean ownsAeronClient = false;
 
         /**
@@ -2079,6 +2092,11 @@ public class AeronArchive implements AutoCloseable
             {
                 idleStrategy = new BackoffIdleStrategy(
                     IDLE_MAX_SPINS, IDLE_MAX_YIELDS, IDLE_MIN_PARK_NS, IDLE_MAX_PARK_NS);
+            }
+
+            if (null == credentialsSupplier)
+            {
+                credentialsSupplier = new NullCredentialsSupplier();
             }
 
             if (null == lock)
@@ -2473,6 +2491,28 @@ public class AeronArchive implements AutoCloseable
         public ErrorHandler errorHandler()
         {
             return errorHandler;
+        }
+
+        /**
+         * Set the {@link CredentialsSupplier} to be used for authentication with the archive.
+         *
+         * @param credentialsSupplier to be used for authentication with the archive.
+         * @return this for fluent API.
+         */
+        public Context credentialsSupplier(final CredentialsSupplier credentialsSupplier)
+        {
+            this.credentialsSupplier = credentialsSupplier;
+            return this;
+        }
+
+        /**
+         * Get the {@link CredentialsSupplier} to be used for authentication with the archive.
+         *
+         * @return the {@link CredentialsSupplier} to be used for authentication with the archive.
+         */
+        public CredentialsSupplier credentialsSupplier()
+        {
+            return credentialsSupplier;
         }
 
         /**

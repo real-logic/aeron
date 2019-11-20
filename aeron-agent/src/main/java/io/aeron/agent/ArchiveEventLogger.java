@@ -150,6 +150,10 @@ public final class ArchiveEventLogger
             case MigrateSegmentsRequestDecoder.TEMPLATE_ID:
                 dispatchIfEnabled(buffer, offset, length, CMD_IN_MIGRATE_SEGMENTS);
                 break;
+
+            case AuthConnectRequestDecoder.TEMPLATE_ID:
+                dispatchIfEnabled(buffer, offset, length, CMD_IN_AUTH_CONNECT);
+                break;
         }
     }
 

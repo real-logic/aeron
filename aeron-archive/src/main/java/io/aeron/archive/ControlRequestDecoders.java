@@ -51,6 +51,8 @@ class ControlRequestDecoders
     final PurgeSegmentsRequestDecoder purgeSegmentsRequest = new PurgeSegmentsRequestDecoder();
     final AttachSegmentsRequestDecoder attachSegmentsRequest = new AttachSegmentsRequestDecoder();
     final MigrateSegmentsRequestDecoder migrateSegmentsRequest = new MigrateSegmentsRequestDecoder();
+    final AuthConnectRequestDecoder authConnectRequestDecoder = new AuthConnectRequestDecoder();
+    final ChallengeResponseDecoder challengeResponseDecoder = new ChallengeResponseDecoder();
 
     final ExpandableArrayBuffer tempBuffer = new ExpandableArrayBuffer();
 }

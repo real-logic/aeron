@@ -107,7 +107,7 @@ public class ArchiveLoggingAgentTest
 
         public void onMessage(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
         {
-            if (ArchiveEventLogger.toEventCodeId(ArchiveEventCode.CMD_IN_CONNECT) == msgTypeId)
+            if (ArchiveEventLogger.toEventCodeId(ArchiveEventCode.CMD_IN_AUTH_CONNECT) == msgTypeId)
             {
                 LATCH.countDown();
             }

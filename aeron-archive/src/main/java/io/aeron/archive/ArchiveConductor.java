@@ -24,6 +24,7 @@ import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.security.Authenticator;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
@@ -49,8 +50,8 @@ import java.util.concurrent.TimeUnit;
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.SPY_PREFIX;
 import static io.aeron.CommonContext.UDP_MEDIA;
-import static io.aeron.archive.Archive.*;
 import static io.aeron.archive.Archive.Configuration.MAX_BLOCK_LENGTH;
+import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
 import static io.aeron.archive.client.ArchiveException.*;
@@ -99,6 +100,7 @@ abstract class ArchiveConductor
     private final Catalog catalog;
     private final ArchiveMarkFile markFile;
     private final RecordingEventsProxy recordingEventsProxy;
+    private final Authenticator authenticator;
     private final long connectTimeoutMs;
     private long timeOfLastMarkFileUpdateMs;
     private long nextSessionId = ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE);
@@ -143,6 +145,7 @@ abstract class ArchiveConductor
         catalog = ctx.catalog();
         markFile = ctx.archiveMarkFile();
         cachedEpochClock.update(epochClock.time());
+        authenticator = ctx.authenticatorSupplier().get();
     }
 
     public void onStart()
@@ -292,6 +295,7 @@ abstract class ArchiveConductor
         final int streamId,
         final int version,
         final String channel,
+        final byte[] encodedCredentials,
         final ControlSessionDemuxer demuxer)
     {
         final ChannelUri channelUri = ChannelUri.parse(channel);
@@ -320,6 +324,8 @@ abstract class ArchiveConductor
             this,
             cachedEpochClock,
             controlResponseProxy);
+
+        authenticator.onConnectRequest(controlSession.sessionId(), encodedCredentials, cachedEpochClock.time());
 
         addSession(controlSession);
 

@@ -121,6 +121,41 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                     decoder.responseStreamId(),
                     decoder.version(),
                     decoder.responseChannel(),
+                    ArrayUtil.EMPTY_BYTE_ARRAY,
+                    this);
+                controlSessionByIdMap.put(session.sessionId(), session);
+                break;
+            }
+
+            case AuthConnectRequestDecoder.TEMPLATE_ID:
+            {
+                final AuthConnectRequestDecoder decoder = decoders.authConnectRequestDecoder;
+                decoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                final String responseChannel = decoder.responseChannel();
+                final int credentialsLength = decoder.encodedCredentialsLength();
+                final byte[] credentials;
+
+                if (credentialsLength > 0)
+                {
+                    credentials = new byte[credentialsLength];
+                    decoder.getEncodedCredentials(credentials, 0, credentialsLength);
+                }
+                else
+                {
+                    credentials = ArrayUtil.EMPTY_BYTE_ARRAY;
+                }
+
+                final ControlSession session = conductor.newControlSession(
+                    decoder.correlationId(),
+                    decoder.responseStreamId(),
+                    decoder.version(),
+                    responseChannel,
+                    credentials,
                     this);
                 controlSessionByIdMap.put(session.sessionId(), session);
                 break;

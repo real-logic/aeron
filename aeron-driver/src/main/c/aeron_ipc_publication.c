@@ -116,7 +116,6 @@ int aeron_ipc_publication_create(
         _pub->log_meta_data->active_term_count = 0;
     }
 
-    _pub->log_meta_data->active_term_count = 0;
     _pub->log_meta_data->initial_term_id = initial_term_id;
     _pub->log_meta_data->mtu_length = (int32_t)params->mtu_length;
     _pub->log_meta_data->term_length = (int32_t)params->term_length;

@@ -45,9 +45,12 @@ public class NativeTestMediaDriver implements TestMediaDriver
             throw new RuntimeException("Unable to find native media driver binary: " + f.getAbsolutePath());
         }
 
+        IoUtil.ensureDirectoryExists(
+            new File(context.aeronDirectoryName()).getParentFile(), "Aeron C Media Driver directory");
+
         final ProcessBuilder pb = new ProcessBuilder(f.getAbsolutePath())
-            .redirectOutput(new File("/dev/null"))
-            .redirectError(new File("/dev/null"));
+            .redirectOutput(new File("/tmp/out.txt"))
+            .redirectError(new File("/tmp/err.txt"));
 
         pb.environment().put("AERON_TERM_BUFFER_LENGTH", String.valueOf(context.publicationTermBufferLength()));
         pb.environment().put("AERON_THREADING_MODE", context.threadingMode().name());

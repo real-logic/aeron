@@ -736,6 +736,7 @@ project(':aeron-system-tests') {
 
     test {
         systemProperties('java.net.preferIPv4Stack': 'true')
+        systemProperties('aeron.test.system.aeronmd.path': System.getProperty('aeron.test.system.aeronmd.path'))
     }
 
     uploadArchives {

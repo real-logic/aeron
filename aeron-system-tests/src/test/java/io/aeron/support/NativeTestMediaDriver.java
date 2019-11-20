@@ -9,8 +9,6 @@ import java.util.concurrent.TimeUnit;
 
 public class NativeTestMediaDriver implements TestMediaDriver
 {
-    private static final String DEFAULT_AERONMD_LOCATION =
-        System.getProperty("user.dir") + "/../cppbuild/Release/binaries/aeronmd";
     private final Process aeronmdProcess;
     private final MediaDriver.Context context;
 
@@ -39,8 +37,8 @@ public class NativeTestMediaDriver implements TestMediaDriver
 
     public static NativeTestMediaDriver launch(MediaDriver.Context context)
     {
-        final String aeronmdPath = System.getProperty("aeron.test.system.aeronmd.path", DEFAULT_AERONMD_LOCATION);
-        File f = new File(aeronmdPath);
+        final String aeronmdPath = System.getProperty("aeron.test.system.aeronmd.path");
+        final File f = new File(aeronmdPath);
 
         if (!f.exists())
         {
@@ -48,16 +46,9 @@ public class NativeTestMediaDriver implements TestMediaDriver
         }
 
         final ProcessBuilder pb = new ProcessBuilder(f.getAbsolutePath())
-//            .inheritIO();
             .redirectOutput(new File("/dev/null"))
             .redirectError(new File("/dev/null"));
 
-//        final ProcessBuilder pb = new ProcessBuilder(f.getAbsolutePath())
-//            .inheritIO();
-//            .redirectOutput(new File("out.txt"))
-//            .redirectError(new File("err.txt"));
-
-        pb.environment().put("AERON_DIR_DELETE_ON_START", String.valueOf(context.dirDeleteOnShutdown()));
         pb.environment().put("AERON_TERM_BUFFER_LENGTH", String.valueOf(context.publicationTermBufferLength()));
         pb.environment().put("AERON_THREADING_MODE", context.threadingMode().name());
         pb.environment().put("AERON_DIR", context.aeronDirectoryName());

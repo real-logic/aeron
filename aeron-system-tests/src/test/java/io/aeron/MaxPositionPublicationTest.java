@@ -51,22 +51,24 @@ public class MaxPositionPublicationTest
     }
 
     @Test(timeout = 10_000)
-    @SuppressWarnings("unused")
-    public void shouldPublishFromIndependentExclusivePublications()
+    public void shouldPublishFromExclusivePublication()
     {
+        final int initialTermId = -777;
         final int termLength = 64 * 1024;
+        final long maxPosition = termLength * (Integer.MAX_VALUE + 1L);
+        final long lastMessagePosition = maxPosition - (MESSAGE_LENGTH + DataHeaderFlyweight.HEADER_LENGTH);
+
         final String channelUri = new ChannelUriStringBuilder()
-            .termLength(termLength)
-            .initialTermId(-777)
-            .termId(-777 + Integer.MAX_VALUE)
-            .termOffset(termLength - (MESSAGE_LENGTH + DataHeaderFlyweight.HEADER_LENGTH))
+            .initialPosition(lastMessagePosition, initialTermId, termLength)
             .media("ipc")
             .validate()
             .build();
 
-        try (Subscription subscription = aeron.addSubscription(channelUri, STREAM_ID);
+        try (Subscription ignore = aeron.addSubscription(channelUri, STREAM_ID);
             ExclusivePublication publication = aeron.addExclusivePublication(channelUri, STREAM_ID))
         {
+            assertEquals(lastMessagePosition, publication.position());
+
             long resultingPosition = publication.offer(srcBuffer, 0, MESSAGE_LENGTH);
             while (resultingPosition < 0)
             {
@@ -75,6 +77,7 @@ public class MaxPositionPublicationTest
                 resultingPosition = publication.offer(srcBuffer, 0, MESSAGE_LENGTH);
             }
 
+            assertEquals(maxPosition, publication.maxPossiblePosition());
             assertEquals(publication.maxPossiblePosition(), resultingPosition);
             assertEquals(MAX_POSITION_EXCEEDED, publication.offer(srcBuffer, 0, MESSAGE_LENGTH));
             assertEquals(MAX_POSITION_EXCEEDED, publication.offer(srcBuffer, 0, MESSAGE_LENGTH));

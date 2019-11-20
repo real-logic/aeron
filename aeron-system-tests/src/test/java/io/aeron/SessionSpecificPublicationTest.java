@@ -108,10 +108,6 @@ public class SessionSpecificPublicationTest
             {
                 fail("Exception should have been thrown due to duplicate session id");
             }
-            finally
-            {
-                verify(mockErrorHandler).onError(any(IllegalStateException.class));
-            }
         }
     }
 
@@ -124,10 +120,6 @@ public class SessionSpecificPublicationTest
             Publication ignored2 = aeron.addPublication(channelBuilder.mtu(MTU_2).build(), STREAM_ID))
         {
             fail("Exception should have been thrown due to non-matching mtu");
-        }
-        finally
-        {
-            verify(mockErrorHandler).onError(any(IllegalStateException.class));
         }
     }
 
@@ -144,10 +136,6 @@ public class SessionSpecificPublicationTest
         {
             fail("Exception should have been thrown due to non-matching term length");
         }
-        finally
-        {
-            verify(mockErrorHandler).onError(any(IllegalStateException.class));
-        }
     }
 
     @Test(expected = RegistrationException.class)
@@ -162,10 +150,6 @@ public class SessionSpecificPublicationTest
             Publication ignored2 = aeron.addPublication(channelTwo, STREAM_ID))
         {
             fail("Exception should have been thrown due using different session ids");
-        }
-        finally
-        {
-            verify(mockErrorHandler).onError(any(IllegalStateException.class));
         }
     }
 }

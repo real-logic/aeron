@@ -348,6 +348,19 @@ public class Archive implements AutoCloseable
         public static final int ARCHIVE_ERROR_COUNT_TYPE_ID = 101;
 
         /**
+         * The Default handler for Aeron runtime exceptions.
+         * <p>
+         * The error handler can be overridden by supplying an {@link Context} with a custom handler.
+         *
+         * @see Context#errorHandler(ErrorHandler)
+         */
+        public static final ErrorHandler DEFAULT_ERROR_HANDLER =
+            (throwable) ->
+            {
+                throwable.printStackTrace();
+            };
+
+        /**
          * Get the directory name to be used for storing the archive.
          *
          * @return the directory name to be used for storing the archive.
@@ -592,7 +605,7 @@ public class Archive implements AutoCloseable
         private Supplier<IdleStrategy> recorderIdleStrategySupplier;
         private EpochClock epochClock;
 
-        private ErrorHandler errorHandler;
+        private ErrorHandler errorHandler = Configuration.DEFAULT_ERROR_HANDLER;
         private AtomicCounter errorCounter;
         private CountedErrorHandler countedErrorHandler;
 
@@ -627,8 +640,6 @@ public class Archive implements AutoCloseable
             {
                 throw new ConcurrentConcludeException();
             }
-
-            Objects.requireNonNull(errorHandler, "Error handler must be supplied");
 
             if (null == epochClock)
             {

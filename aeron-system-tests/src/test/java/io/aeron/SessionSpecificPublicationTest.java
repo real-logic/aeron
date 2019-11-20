@@ -19,6 +19,9 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.support.JavaTestMediaDriver;
+import io.aeron.support.NativeTestMediaDriver;
+import io.aeron.support.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.junit.After;
@@ -28,6 +31,8 @@ import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static io.aeron.CommonContext.IPC_MEDIA;
 import static io.aeron.CommonContext.UDP_MEDIA;
@@ -67,19 +72,20 @@ public class SessionSpecificPublicationTest
     }
 
     private final ErrorHandler mockErrorHandler = mock(ErrorHandler.class);
-    private final MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()
+    private final MediaDriver.Context mediaDriverContext = new MediaDriver.Context()
         .errorHandler(mockErrorHandler)
         .dirDeleteOnShutdown(true)
         .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
-        .threadingMode(ThreadingMode.SHARED));
+        .threadingMode(ThreadingMode.SHARED);
 
+    private final TestMediaDriver testMediaDriver = TestMediaDriver.launch(mediaDriverContext);
     private final Aeron aeron = Aeron.connect();
 
     @After
     public void after()
     {
         CloseHelper.close(aeron);
-        CloseHelper.close(driver);
+        CloseHelper.close(testMediaDriver);
     }
 
     @Test(expected = RegistrationException.class)

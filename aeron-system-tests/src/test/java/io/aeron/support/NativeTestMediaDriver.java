@@ -52,9 +52,11 @@ public class NativeTestMediaDriver implements TestMediaDriver
         pb.environment().put("AERON_TERM_BUFFER_LENGTH", String.valueOf(context.publicationTermBufferLength()));
         pb.environment().put("AERON_THREADING_MODE", context.threadingMode().name());
         pb.environment().put("AERON_DIR", context.aeronDirectoryName());
+        pb.environment().put("AERON_TIMER_INTERVAL", String.valueOf(context.timerIntervalNs()));
 
         try
         {
+            System.out.println("Launching C driver: " + f.getAbsolutePath());
             return new NativeTestMediaDriver(pb.start(), context);
         }
         catch (IOException e)

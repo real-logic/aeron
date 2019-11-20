@@ -22,4 +22,10 @@ public class JavaTestMediaDriver implements TestMediaDriver
         MediaDriver mediaDriver = MediaDriver.launch(context);
         return new JavaTestMediaDriver(mediaDriver);
     }
+
+    @Override
+    public MediaDriver.Context context()
+    {
+        return mediaDriver.context();
+    }
 }

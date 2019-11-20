@@ -15,9 +15,15 @@
  */
 package io.aeron;
 
+import io.aeron.driver.MediaDriver;
+import io.aeron.driver.ThreadingMode;
+import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.support.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
@@ -25,11 +31,6 @@ import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
-import org.agrona.concurrent.UnsafeBuffer;
-import io.aeron.driver.MediaDriver;
-import io.aeron.driver.ThreadingMode;
-import io.aeron.logbuffer.FragmentHandler;
-import io.aeron.logbuffer.Header;
 
 import static io.aeron.logbuffer.FrameDescriptor.END_FRAG_FLAG;
 import static org.hamcrest.Matchers.is;
@@ -53,7 +54,7 @@ public class FragmentedMessageTest
 
     private final FragmentHandler mockFragmentHandler = mock(FragmentHandler.class);
 
-    private final MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()
+    private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
         .errorHandler(Throwable::printStackTrace)
         .dirDeleteOnShutdown(true)

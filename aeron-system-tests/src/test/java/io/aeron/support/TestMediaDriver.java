@@ -14,4 +14,6 @@ public interface TestMediaDriver extends AutoCloseable
             JavaTestMediaDriver.launch(context) :
             NativeTestMediaDriver.launch(context);
     }
+
+    MediaDriver.Context context();
 }

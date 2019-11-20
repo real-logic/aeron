@@ -67,4 +67,10 @@ public class NativeTestMediaDriver implements TestMediaDriver
             throw new RuntimeException(e);
         }
     }
+
+    @Override
+    public MediaDriver.Context context()
+    {
+        return context;
+    }
 }

@@ -17,6 +17,7 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.support.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.junit.After;
 import org.junit.Test;
@@ -44,7 +45,7 @@ public class ImageAvailabilityTest
 
     private static final int STREAM_ID = 1;
 
-    private final MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()
+    private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Throwable::printStackTrace)
         .dirDeleteOnShutdown(true)
         .dirDeleteOnStart(true)

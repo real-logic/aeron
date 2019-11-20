@@ -16,6 +16,7 @@
 package io.aeron.cluster.service;
 
 import io.aeron.Aeron;
+import io.aeron.CommonContext;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.codecs.mark.MarkFileHeaderDecoder;
@@ -25,8 +26,6 @@ import org.agrona.*;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.errors.ErrorConsumer;
-import org.agrona.concurrent.errors.ErrorLogReader;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -103,11 +102,10 @@ public class ClusterMarkFile implements AutoCloseable
         if (markFileExists)
         {
             final UnsafeBuffer existingErrorBuffer = new UnsafeBuffer(
-                this.buffer, headerDecoder.headerLength(), headerDecoder.errorBufferLength());
+                buffer, headerDecoder.headerLength(), headerDecoder.errorBufferLength());
 
             saveExistingErrors(file, existingErrorBuffer, System.err);
-
-            errorBuffer.setMemory(0, errorBufferLength, (byte)0);
+            existingErrorBuffer.setMemory(0, headerDecoder.errorBufferLength(), (byte)0);
         }
         else
         {
@@ -248,7 +246,7 @@ public class ClusterMarkFile implements AutoCloseable
         try
         {
             final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            final int observations = saveErrorLog(new PrintStream(baos, false, "UTF-8"), errorBuffer);
+            final int observations = CommonContext.printErrorLog(errorBuffer, new PrintStream(baos, false, "UTF-8"));
             if (observations > 0)
             {
                 final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSSZ");
@@ -270,24 +268,6 @@ public class ClusterMarkFile implements AutoCloseable
         {
             LangUtil.rethrowUnchecked(ex);
         }
-    }
-
-    public static int saveErrorLog(final PrintStream out, final AtomicBuffer errorBuffer)
-    {
-        final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
-        final ErrorConsumer errorConsumer = (count, firstTimestamp, lastTimestamp, ex) ->
-            out.format(
-            "***%n%d observations from %s to %s for:%n %s%n",
-            count,
-            dateFormat.format(new Date(firstTimestamp)),
-            dateFormat.format(new Date(lastTimestamp)),
-            ex);
-
-        final int distinctErrorCount = ErrorLogReader.read(errorBuffer, errorConsumer);
-
-        out.format("%n%d distinct errors observed.%n", distinctErrorCount);
-
-        return distinctErrorCount;
     }
 
     public static void checkHeaderLength(

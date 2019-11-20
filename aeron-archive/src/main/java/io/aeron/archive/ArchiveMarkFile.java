@@ -15,14 +15,22 @@
  */
 package io.aeron.archive;
 
+import io.aeron.CommonContext;
+import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.mark.MarkFileHeaderDecoder;
 import io.aeron.archive.codecs.mark.MarkFileHeaderEncoder;
 import io.aeron.archive.codecs.mark.VarAsciiEncodingEncoder;
 import org.agrona.*;
+import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 
@@ -32,33 +40,41 @@ import java.util.function.IntConsumer;
 public class ArchiveMarkFile implements AutoCloseable
 {
     public static final int MAJOR_VERSION = 2;
-    public static final int MINOR_VERSION = 0;
+    public static final int MINOR_VERSION = 1;
     public static final int PATCH_VERSION = 0;
     public static final int SEMANTIC_VERSION = SemanticVersion.compose(MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION);
 
-    public static final int ALIGNMENT = 1024;
+    public static final int HEADER_LENGTH = 8 * 1024;
     public static final String FILENAME = "archive-mark.dat";
 
     private final MarkFileHeaderDecoder headerDecoder = new MarkFileHeaderDecoder();
     private final MarkFileHeaderEncoder headerEncoder = new MarkFileHeaderEncoder();
     private final MarkFile markFile;
     private final UnsafeBuffer buffer;
+    private final UnsafeBuffer errorBuffer;
 
     public ArchiveMarkFile(final Archive.Context ctx)
     {
-        this(new File(ctx.archiveDir(), FILENAME), alignedTotalFileLength(ctx), ctx.epochClock(), 0);
+        this(
+            new File(ctx.archiveDir(), FILENAME),
+            alignedTotalFileLength(ctx),
+            ctx.errorBufferLength(),
+            ctx.epochClock(),
+            0);
 
         encode(ctx);
         updateActivityTimestamp(ctx.epochClock().time());
-        signalReady();
     }
 
     public ArchiveMarkFile(
         final File file,
         final int totalFileLength,
+        final int errorBufferLength,
         final EpochClock epochClock,
         final long timeoutMs)
     {
+        final boolean markFileExists = file.exists();
+
         markFile = new MarkFile(
             file,
             file.exists(),
@@ -79,8 +95,21 @@ public class ArchiveMarkFile implements AutoCloseable
 
         buffer = markFile.buffer();
 
+        errorBuffer = errorBufferLength > 0 ?
+            new UnsafeBuffer(buffer, HEADER_LENGTH, errorBufferLength) :
+            new UnsafeBuffer(buffer, 0, 0);
+
         headerEncoder.wrap(buffer, 0);
         headerDecoder.wrap(buffer, 0, MarkFileHeaderDecoder.BLOCK_LENGTH, MarkFileHeaderDecoder.SCHEMA_VERSION);
+
+        if (markFileExists && headerDecoder.errorBufferLength() > 0)
+        {
+            final UnsafeBuffer existingErrorBuffer = new UnsafeBuffer(
+                buffer, headerDecoder.headerLength(), headerDecoder.errorBufferLength());
+
+            saveExistingErrors(file, existingErrorBuffer, System.err);
+            existingErrorBuffer.setMemory(0, headerDecoder.errorBufferLength(), (byte)0);
+        }
 
         headerEncoder.pid(SystemUtil.getPid());
     }
@@ -127,9 +156,12 @@ public class ArchiveMarkFile implements AutoCloseable
             logger);
 
         buffer = markFile.buffer();
-
         headerEncoder.wrap(buffer, 0);
         headerDecoder.wrap(buffer, 0, MarkFileHeaderDecoder.BLOCK_LENGTH, MarkFileHeaderDecoder.SCHEMA_VERSION);
+
+        errorBuffer = headerDecoder.errorBufferLength() > 0 ?
+            new UnsafeBuffer(buffer, headerDecoder.headerLength(), headerDecoder.errorBufferLength()) :
+            new UnsafeBuffer(buffer, 0, 0);
     }
 
     public void close()
@@ -162,6 +194,16 @@ public class ArchiveMarkFile implements AutoCloseable
         return headerDecoder;
     }
 
+    public UnsafeBuffer buffer()
+    {
+        return buffer;
+    }
+
+    public UnsafeBuffer errorBuffer()
+    {
+        return errorBuffer;
+    }
+
     public void encode(final Archive.Context ctx)
     {
         headerEncoder
@@ -169,35 +211,59 @@ public class ArchiveMarkFile implements AutoCloseable
             .controlStreamId(ctx.controlStreamId())
             .localControlStreamId(ctx.localControlStreamId())
             .eventsStreamId(ctx.recordingEventsStreamId())
+            .headerLength(HEADER_LENGTH)
+            .errorBufferLength(ctx.errorBufferLength())
             .controlChannel(ctx.controlChannel())
             .localControlChannel(ctx.localControlChannel())
             .eventsChannel(ctx.recordingEventsChannel())
-            .aeronDirectory(ctx.aeron().context().aeronDirectoryName());
+            .aeronDirectory(ctx.aeronDirectoryName());
     }
 
     public static int alignedTotalFileLength(final Archive.Context ctx)
     {
-        return alignedTotalFileLength(
-            ALIGNMENT,
-            ctx.controlChannel(),
-            ctx.localControlChannel(),
-            ctx.recordingEventsChannel(),
-            ctx.aeron().context().aeronDirectoryName());
-    }
-
-    private static int alignedTotalFileLength(
-        final int alignment,
-        final String controlChannel,
-        final String localControlChannel,
-        final String eventsChannel,
-        final String aeronDirectory)
-    {
-        return BitUtil.align(
+        final int headerContentLength =
             MarkFileHeaderEncoder.BLOCK_LENGTH +
             (4 * VarAsciiEncodingEncoder.lengthEncodingLength()) +
-            controlChannel.length() +
-            localControlChannel.length() +
-            eventsChannel.length() +
-            aeronDirectory.length(), alignment);
+            ctx.controlChannel().length() +
+            ctx.localControlChannel().length() +
+            ctx.recordingEventsChannel().length() +
+            ctx.aeronDirectoryName().length();
+
+        if (headerContentLength > HEADER_LENGTH)
+        {
+            throw new ArchiveException(
+                "MarkFile length required " + headerContentLength + " greater than " + HEADER_LENGTH);
+        }
+
+        return HEADER_LENGTH + ctx.errorBufferLength();
+    }
+
+    public static void saveExistingErrors(final File markFile, final AtomicBuffer errorBuffer, final PrintStream logger)
+    {
+        try
+        {
+            final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            final int observations = CommonContext.printErrorLog(errorBuffer, new PrintStream(baos, false, "UTF-8"));
+            if (observations > 0)
+            {
+                final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSSZ");
+                final String errorLogFilename =
+                    markFile.getParent() + '-' + dateFormat.format(new Date()) + "-error.log";
+
+                if (null != logger)
+                {
+                    logger.println("WARNING: existing errors saved to: " + errorLogFilename);
+                }
+
+                try (FileOutputStream out = new FileOutputStream(errorLogFilename))
+                {
+                    baos.writeTo(out);
+                }
+            }
+        }
+        catch (final Exception ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
     }
 }

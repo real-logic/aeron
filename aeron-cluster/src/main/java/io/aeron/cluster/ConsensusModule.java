@@ -2764,6 +2764,7 @@ public class ConsensusModule implements AutoCloseable
          *
          * @param errorBufferLength in bytes to use.
          * @return this for a fluent API.
+         * @see Configuration#ERROR_BUFFER_LENGTH_PROP_NAME
          */
         public Context errorBufferLength(final int errorBufferLength)
         {
@@ -2775,6 +2776,7 @@ public class ConsensusModule implements AutoCloseable
          * The error buffer length in bytes.
          *
          * @return error buffer length in bytes.
+         * @see Configuration#ERROR_BUFFER_LENGTH_PROP_NAME
          */
         public int errorBufferLength()
         {

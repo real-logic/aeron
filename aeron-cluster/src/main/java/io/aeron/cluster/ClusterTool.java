@@ -17,6 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.Aeron;
 import io.aeron.CncFileDescriptor;
+import io.aeron.CommonContext;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.codecs.BooleanType;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
@@ -28,7 +29,6 @@ import org.agrona.SystemUtil;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.MutableBoolean;
 import org.agrona.collections.MutableLong;
-import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -37,6 +37,7 @@ import org.agrona.concurrent.status.CountersReader;
 import java.io.File;
 import java.io.PrintStream;
 import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -617,20 +618,19 @@ public class ClusterTool
     private static void printErrors(final PrintStream out, final ClusterMarkFile markFile)
     {
         out.println("Cluster component error log:");
-        ClusterMarkFile.saveErrorLog(out, markFile.errorBuffer());
+        CommonContext.printErrorLog(markFile.errorBuffer(), out);
 
         final String aeronDirectory = markFile.decoder().aeronDirectory();
+        out.println();
         out.println("Aeron driver error log (directory: " + aeronDirectory + "):");
         final File cncFile = new File(aeronDirectory, CncFileDescriptor.CNC_FILE);
 
-        final MappedByteBuffer cncByteBuffer = IoUtil.mapExistingFile(cncFile, "cnc");
+        final MappedByteBuffer cncByteBuffer = IoUtil.mapExistingFile(cncFile, FileChannel.MapMode.READ_ONLY, "cnc");
         final DirectBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
         final int cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
 
         CncFileDescriptor.checkVersion(cncVersion);
-
-        final AtomicBuffer buffer = CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer);
-        ClusterMarkFile.saveErrorLog(out, buffer);
+        CommonContext.printErrorLog(CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer), out);
     }
 
     private static void printHelp(final PrintStream out)

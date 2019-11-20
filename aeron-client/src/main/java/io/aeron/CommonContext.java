@@ -701,21 +701,7 @@ public class CommonContext implements Cloneable
 
         CncFileDescriptor.checkVersion(cncVersion);
 
-        int distinctErrorCount = 0;
-        final AtomicBuffer buffer = CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer);
-        if (ErrorLogReader.hasErrors(buffer))
-        {
-            final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
-            final ErrorConsumer errorConsumer = (count, firstTimestamp, lastTimestamp, ex) ->
-                formatError(out, dateFormat, count, firstTimestamp, lastTimestamp, ex);
-
-            distinctErrorCount = ErrorLogReader.read(buffer, errorConsumer);
-        }
-
-        out.println();
-        out.println(distinctErrorCount + " distinct errors observed.");
-
-        return distinctErrorCount;
+        return printErrorLog(CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer), out);
     }
 
     /**
@@ -725,19 +711,32 @@ public class CommonContext implements Cloneable
     {
     }
 
-    public static void formatError(
-        final PrintStream out,
-        final SimpleDateFormat dateFormat,
-        final int observationCount,
-        final long firstObservationTimestamp,
-        final long lastObservationTimestamp,
-        final String encodedException)
+    /**
+     * Print the contents of an error log to a {@link PrintStream} in human readable format.
+     *
+     * @param errorBuffer to read errors from.
+     * @param out         print the errors to.
+     * @return number of distinct errors observed.
+     */
+    public static int printErrorLog(final AtomicBuffer errorBuffer, final PrintStream out)
     {
-        out.format(
-            "***%n%d observations from %s to %s for:%n %s%n",
-            observationCount,
-            dateFormat.format(new Date(firstObservationTimestamp)),
-            dateFormat.format(new Date(lastObservationTimestamp)),
-            encodedException);
+        int distinctErrorCount = 0;
+
+        if (errorBuffer.capacity() > 0 && ErrorLogReader.hasErrors(errorBuffer))
+        {
+            final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
+            final ErrorConsumer errorConsumer = (count, firstTimestamp, lastTimestamp, ex) ->
+                out.format(
+                "***%n%d observations from %s to %s for:%n %s%n",
+                count,
+                dateFormat.format(new Date(firstTimestamp)),
+                dateFormat.format(new Date(lastTimestamp)),
+                ex);
+
+            distinctErrorCount = ErrorLogReader.read(errorBuffer, errorConsumer);
+            out.format("%n%d distinct errors observed.%n", distinctErrorCount);
+        }
+
+        return distinctErrorCount;
     }
 }

@@ -2,7 +2,7 @@
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
                    package="io.aeron.archive.codecs.mark"
                    id="100"
-                   version="0"
+                   version="1"
                    semanticVersion="5.2"
                    description="Codecs for Mark file of Aeron Archive."
                    byteOrder="littleEndian">
@@ -21,7 +21,8 @@
             <type name="length"      primitiveType="uint32" maxValue="1073741824"/>
             <type name="varData"     primitiveType="uint8" length="0" characterEncoding="US-ASCII"/>
         </composite>
-        <type name="time_t" primitiveType="int64" description="Epoch time in milliseconds since 1 Jan 1970 UTC."/>
+        <type name="time_t"   primitiveType="int64" description="Epoch time in milliseconds since 1 Jan 1970 UTC."/>
+        <type name="length_t" primitiveType="int32" presence="optional" nullValue="0" description="Length of a buffer"/>
     </types>
 
     <sbe:message name="MarkFileHeader"
@@ -35,10 +36,12 @@
         <field name="controlStreamId"      id="5"  type="int32"/>
         <field name="localControlStreamId" id="6"  type="int32"/>
         <field name="eventsStreamId"       id="7"  type="int32"/>
-        <data  name="controlChannel"       id="8"  type="varAsciiEncoding"/>
-        <data  name="localControlChannel"  id="9"  type="varAsciiEncoding"/>
-        <data  name="eventsChannel"        id="10" type="varAsciiEncoding"/>
-        <data  name="aeronDirectory"       id="11" type="varAsciiEncoding"/>
+        <field name="headerLength"         id="8"  type="length_t" sinceVersion="1"/>
+        <field name="errorBufferLength"    id="9"  type="length_t" sinceVersion="1"/>
+        <data  name="controlChannel"       id="10" type="varAsciiEncoding"/>
+        <data  name="localControlChannel"  id="11" type="varAsciiEncoding"/>
+        <data  name="eventsChannel"        id="12" type="varAsciiEncoding"/>
+        <data  name="aeronDirectory"       id="13" type="varAsciiEncoding"/>
     </sbe:message>
 
 </sbe:messageSchema>

@@ -16,6 +16,8 @@
 package io.aeron.archive;
 
 import io.aeron.Aeron;
+import io.aeron.CncFileDescriptor;
+import io.aeron.CommonContext;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorEncoder;
@@ -27,7 +29,9 @@ import org.agrona.*;
 import org.agrona.collections.ArrayUtil;
 
 import java.io.File;
+import java.io.PrintStream;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Date;
 import java.util.List;
@@ -98,6 +102,13 @@ public class CatalogTool
                 System.out.println("Dumping " + dataFragmentLimit + " fragments per recording");
                 catalog.forEach((he, headerDecoder, e, descriptorDecoder) ->
                     dump(catalog, dataFragmentLimit, headerDecoder, descriptorDecoder));
+            }
+        }
+        else if (args.length == 2 && args[1].equals("errors"))
+        {
+            try (ArchiveMarkFile markFile = openMarkFile(null))
+            {
+                printErrors(System.out, markFile);
             }
         }
         else if (args.length == 2 && args[1].equals("pid"))
@@ -470,12 +481,35 @@ public class CatalogTool
         return false;
     }
 
+    private static void printErrors(final PrintStream out, final ArchiveMarkFile markFile)
+    {
+        out.println("Archive error log:");
+        CommonContext.printErrorLog(markFile.errorBuffer(), out);
+
+        markFile.decoder().controlChannel();
+        markFile.decoder().localControlChannel();
+        markFile.decoder().eventsChannel();
+        final String aeronDirectory = markFile.decoder().aeronDirectory();
+
+        out.println();
+        out.println("Aeron driver error log (directory: " + aeronDirectory + "):");
+        final File cncFile = new File(aeronDirectory, CncFileDescriptor.CNC_FILE);
+
+        final MappedByteBuffer cncByteBuffer = IoUtil.mapExistingFile(cncFile, FileChannel.MapMode.READ_ONLY, "cnc");
+        final DirectBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
+        final int cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
+
+        CncFileDescriptor.checkVersion(cncVersion);
+        CommonContext.printErrorLog(CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer), out);
+    }
+
     private static void printHelp()
     {
         System.out.println("Usage: <archive-dir> <command>");
         System.out.println("  describe <optional recordingId>: prints out descriptor(s) in the catalog.");
         System.out.println("  dump <optional data fragment limit per recording>: prints descriptor(s)");
         System.out.println("     in the catalog and associated recorded data.");
+        System.out.println("  errors: prints errors for the archive and media driver.");
         System.out.println("  pid: prints just PID of archive.");
         System.out.println("  verify <optional recordingId>: verifies descriptor(s) in the catalog, checking");
         System.out.println("     recording files availability and contents. Faulty entries are marked as unusable.");

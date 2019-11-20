@@ -27,6 +27,8 @@ import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.*;
+import org.agrona.concurrent.errors.DistinctErrorLog;
+import org.agrona.concurrent.errors.LoggingErrorHandler;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.StatusIndicator;
 
@@ -164,6 +166,21 @@ public class Archive implements AutoCloseable
      */
     public static class Configuration
     {
+        /**
+         * Filename for the single instance of a {@link Catalog} contents for an archive.
+         */
+        static final String CATALOG_FILE_NAME = "archive.catalog";
+
+        /**
+         * Recording segment file suffix extension.
+         */
+        static final String RECORDING_SEGMENT_SUFFIX = ".rec";
+
+        /**
+         * Maximum block length of data read from disk in a single operation during a replay.
+         */
+        static final int MAX_BLOCK_LENGTH = 2 * 1024 * 1024;
+
         /**
          * Directory in which the archive stores it files such as the catalog and recordings.
          */
@@ -327,25 +344,19 @@ public class Archive implements AutoCloseable
         public static final String REPLICATION_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:8040";
 
         /**
-         * Filename for the single instance of a {@link Catalog} contents for an archive.
-         */
-        static final String CATALOG_FILE_NAME = "archive.catalog";
-
-        /**
-         * Recording segment file suffix extension.
-         */
-        static final String RECORDING_SEGMENT_SUFFIX = ".rec";
-
-        /**
-         * Maximum block length of data read from disk in a single operation during a replay.
-         */
-        static final int MAX_BLOCK_LENGTH = 2 * 1024 * 1024;
-
-
-        /**
          * The type id of the {@link Counter} used for keeping track of the number of errors that have occurred.
          */
         public static final int ARCHIVE_ERROR_COUNT_TYPE_ID = 101;
+
+        /**
+         * Size in bytes of the error buffer for the archive when not externally provided.
+         */
+        public static final String ERROR_BUFFER_LENGTH_PROP_NAME = "aeron.archive.error.buffer.length";
+
+        /**
+         * Size in bytes of the error buffer for the archive when not eternally provided.
+         */
+        public static final int ERROR_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
 
         /**
          * Get the directory name to be used for storing the archive.
@@ -536,6 +547,17 @@ public class Archive implements AutoCloseable
         {
             return System.getProperty(REPLICATION_CHANNEL_PROP_NAME, REPLICATION_CHANNEL_DEFAULT);
         }
+
+        /**
+         * Size in bytes of the error buffer in the mark file.
+         *
+         * @return length of error buffer in bytes.
+         * @see #ERROR_BUFFER_LENGTH_PROP_NAME
+         */
+        public static int errorBufferLength()
+        {
+            return getSizeAsInt(ERROR_BUFFER_LENGTH_PROP_NAME, ERROR_BUFFER_LENGTH_DEFAULT);
+        }
     }
 
     /**
@@ -592,6 +614,7 @@ public class Archive implements AutoCloseable
         private Supplier<IdleStrategy> recorderIdleStrategySupplier;
         private EpochClock epochClock;
 
+        private int errorBufferLength = 0;
         private ErrorHandler errorHandler;
         private AtomicCounter errorCounter;
         private CountedErrorHandler countedErrorHandler;
@@ -628,11 +651,42 @@ public class Archive implements AutoCloseable
                 throw new ConcurrentConcludeException();
             }
 
-            Objects.requireNonNull(errorHandler, "Error handler must be supplied");
+            if (null == archiveDir)
+            {
+                archiveDir = new File(archiveDirectoryName);
+            }
+
+            if (deleteArchiveOnStart && archiveDir.exists())
+            {
+                IoUtil.delete(archiveDir, false);
+            }
+
+            if (!archiveDir.exists() && !archiveDir.mkdirs())
+            {
+                throw new ArchiveException(
+                    "failed to create archive dir: " + archiveDir.getAbsolutePath());
+            }
+
+            archiveDirChannel = channelForDirectorySync(archiveDir, catalogFileSyncLevel);
 
             if (null == epochClock)
             {
                 epochClock = SystemEpochClock.INSTANCE;
+            }
+
+            if (null != aeron)
+            {
+                aeronDirectoryName = aeron.context().aeronDirectoryName();
+            }
+
+            if (null == markFile)
+            {
+                markFile = new ArchiveMarkFile(this);
+            }
+
+            if (null == errorHandler)
+            {
+                errorHandler = new LoggingErrorHandler(new DistinctErrorLog(markFile.errorBuffer(), epochClock));
             }
 
             if (null == aeron)
@@ -697,24 +751,6 @@ public class Archive implements AutoCloseable
                 }
             }
 
-            if (null == archiveDir)
-            {
-                archiveDir = new File(archiveDirectoryName);
-            }
-
-            if (deleteArchiveOnStart && archiveDir.exists())
-            {
-                IoUtil.delete(archiveDir, false);
-            }
-
-            if (!archiveDir.exists() && !archiveDir.mkdirs())
-            {
-                throw new ArchiveException(
-                    "failed to create archive dir: " + archiveDir.getAbsolutePath());
-            }
-
-            archiveDirChannel = channelForDirectorySync(archiveDir, catalogFileSyncLevel);
-
             if (!BitUtil.isPowerOfTwo(segmentFileLength))
             {
                 throw new ArchiveException("segment file length not a power of 2: " + segmentFileLength);
@@ -722,11 +758,6 @@ public class Archive implements AutoCloseable
             else if (segmentFileLength < TERM_MIN_LENGTH || segmentFileLength > TERM_MAX_LENGTH)
             {
                 throw new ArchiveException("segment file length not in valid range: " + segmentFileLength);
-            }
-
-            if (null == markFile)
-            {
-                markFile = new ArchiveMarkFile(this);
             }
 
             if (null == catalog)
@@ -745,6 +776,8 @@ public class Archive implements AutoCloseable
             int expectedCount = DEDICATED == threadingMode ? 2 : 0;
             expectedCount += aeron.conductorAgentInvoker() == null ? 1 : 0;
             abortLatch = new CountDownLatch(expectedCount);
+
+            markFile.signalReady();
         }
 
         /**
@@ -1456,6 +1489,30 @@ public class Archive implements AutoCloseable
         {
             this.threadFactory = threadFactory;
             return this;
+        }
+
+        /**
+         * Set the error buffer length in bytes to use.
+         *
+         * @param errorBufferLength in bytes to use.
+         * @return this for a fluent API.
+         * @see Configuration#ERROR_BUFFER_LENGTH_PROP_NAME
+         */
+        public Context errorBufferLength(final int errorBufferLength)
+        {
+            this.errorBufferLength = errorBufferLength;
+            return this;
+        }
+
+        /**
+         * The error buffer length in bytes.
+         *
+         * @return error buffer length in bytes.
+         * @see Configuration#ERROR_BUFFER_LENGTH_PROP_NAME
+         */
+        public int errorBufferLength()
+        {
+            return errorBufferLength;
         }
 
         /**

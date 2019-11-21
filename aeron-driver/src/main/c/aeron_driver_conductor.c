@@ -360,7 +360,7 @@ static int aeron_driver_conductor_speculate_next_session_id(
 {
     size_t index = 0;
 
-    if (0 > aeron_bit_set_find_first(session_id_offsets, false, &index))
+    if (aeron_bit_set_find_first(session_id_offsets, false, &index) < 0)
     {
         return -1;
     }
@@ -855,7 +855,7 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
 
     if (!is_exclusive && NULL != publication)
     {
-        if (0 != aeron_confirm_publication_match(params, publication->session_id, publication->log_meta_data))
+        if (aeron_confirm_publication_match(params, publication->session_id, publication->log_meta_data) < 0)
         {
             return NULL;
         }
@@ -873,11 +873,14 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
 
             if (ensure_capacity_result >= 0)
             {
-                int32_t session_id =
-                    params->has_session_id ?
-                    params->session_id :
+                if (!params->has_session_id)
+                {
                     aeron_driver_conductor_update_next_session_id(conductor, speculated_session_id);
+                }
+
+                int32_t session_id = params->has_session_id ? params->session_id : speculated_session_id;
                 int32_t initial_term_id = params->has_position ? params->initial_term_id : aeron_randomised_int32();
+
                 aeron_position_t pub_pos_position;
                 aeron_position_t pub_lmt_position;
 
@@ -1033,10 +1036,12 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
 
             if (ensure_capacity_result >= 0)
             {
-                int32_t session_id =
-                    params->has_session_id ?
-                    params->session_id :
+                if (!params->has_session_id)
+                {
                     aeron_driver_conductor_update_next_session_id(conductor, speculated_session_id);
+                }
+
+                int32_t session_id = params->has_session_id ? params->session_id : speculated_session_id;
                 int32_t initial_term_id = params->has_position ? params->initial_term_id : aeron_randomised_int32();
 
                 aeron_position_t pub_pos_position;

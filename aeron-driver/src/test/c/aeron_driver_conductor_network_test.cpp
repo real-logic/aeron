@@ -468,39 +468,19 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddSingleNetworkPublicationThat
 {
     int64_t client_id = nextCorrelationId();
     int64_t pub_id = nextCorrelationId();
-    char channel_with_session_id[1024];
+    int32_t next_session_id = SESSION_ID_1;
 
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id, CHANNEL_1, STREAM_ID_1, true), 0);
+    m_conductor.manuallySetNextSessionId(next_session_id);
+
+    ASSERT_EQ(addNetworkPublication(client_id, pub_id, CHANNEL_1_WITH_SESSION_ID_1, STREAM_ID_1, true), 0);
 
     doWork();
     EXPECT_EQ(aeron_driver_conductor_num_network_publications(&m_conductor.m_conductor), 1u);
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
 
-    aeron_send_channel_endpoint_t *endpoint = aeron_driver_conductor_find_send_channel_endpoint(
-        &m_conductor.m_conductor, CHANNEL_1_WITH_SESSION_ID_1);
-
-    ASSERT_NE(endpoint, (aeron_send_channel_endpoint_t *)NULL);
-
-    aeron_network_publication_t *publication = aeron_driver_conductor_find_network_publication(
-        &m_conductor.m_conductor, pub_id);
-
-    ASSERT_NE(publication, (aeron_network_publication_t *)NULL);
-
-    // This is best effort, based on the current algorithm of allocating the next session id as incrementing from
-    // an initial random value.  This is attempting specify a session id that would collide on the subsequent
-    // new publication.
-    int32_t existing_session_id = publication->session_id;
-    snprintf(channel_with_session_id, 1024, "%s|session_id=%d", CHANNEL_1, existing_session_id + 1);
-
-    ASSERT_EQ(addNetworkPublication(client_id, pub_id, channel_with_session_id, STREAM_ID_1, true), 0);
-
-    doWork();
-    EXPECT_EQ(aeron_driver_conductor_num_network_publications(&m_conductor.m_conductor), 2u);
-    EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
-
     ASSERT_EQ(addNetworkPublication(client_id, pub_id, CHANNEL_1, STREAM_ID_1, true), 0);
     doWork();
-    EXPECT_EQ(aeron_driver_conductor_num_network_publications(&m_conductor.m_conductor), 3u);
+    EXPECT_EQ(aeron_driver_conductor_num_network_publications(&m_conductor.m_conductor), 2u);
 
     auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
     {
@@ -509,8 +489,7 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToAddSingleNetworkPublicationThat
         const command::PublicationBuffersReadyFlyweight response(buffer, offset);
 
         EXPECT_EQ(response.streamId(), STREAM_ID_1);
-        EXPECT_NE(response.sessionId(), existing_session_id);
-        EXPECT_NE(response.sessionId(), existing_session_id + 1);
+        EXPECT_NE(response.sessionId(), next_session_id);
         EXPECT_EQ(response.correlationId(), pub_id);
         EXPECT_GT(response.logFileName().length(), 0u);
     };

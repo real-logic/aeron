@@ -737,7 +737,9 @@ int aeron_network_publication_update_pub_lmt(aeron_network_publication_t *public
     }
     else if (*publication->pub_lmt_position.value_addr > snd_pos)
     {
+        size_t term_length = publication->term_length_mask + 1;
         aeron_counter_set_ordered(publication->pub_lmt_position.value_addr, snd_pos);
+        aeron_network_publication_clean_buffer(publication, snd_pos - term_length);
         work_count = 1;
     }
 

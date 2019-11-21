@@ -224,14 +224,11 @@ int aeron_ipc_publication_update_pub_lmt(aeron_ipc_publication_t *publication)
 
         publication->conductor_fields.consumer_position = max_sub_pos;
     }
-    else
+    else if (*publication->pub_lmt_position.value_addr > max_sub_pos)
     {
-        int64_t position = aeron_counter_get_volatile(publication->pub_lmt_position.value_addr);
-        if (position > max_sub_pos)
-        {
-            aeron_counter_set_ordered(publication->pub_lmt_position.value_addr, max_sub_pos);
-            publication->conductor_fields.trip_limit = max_sub_pos;
-        }
+        aeron_counter_set_ordered(publication->pub_lmt_position.value_addr, max_sub_pos);
+        publication->conductor_fields.trip_limit = max_sub_pos;
+        aeron_ipc_publication_clean_buffer(publication, min_sub_pos);
     }
 
     return work_count;

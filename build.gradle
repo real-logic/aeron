@@ -43,7 +43,7 @@ def aeronGroup = 'io.aeron'
 def aeronVersion = file('version.txt').text.trim()
 
 def agronaVersion = '1.1.0'
-def sbeVersion = '1.14.1'
+def sbeVersion = '1.15.0'
 def byteBuddyVersion = '1.10.2'
 def hdrHistogramVersion = '2.1.11'
 def mockitoVersion = '3.1.0'

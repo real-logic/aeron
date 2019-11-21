@@ -23,6 +23,7 @@ import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorEncoder;
 import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorHeaderEncoder;
+import io.aeron.archive.codecs.mark.MarkFileHeaderDecoder;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
@@ -486,10 +487,11 @@ public class CatalogTool
         out.println("Archive error log:");
         CommonContext.printErrorLog(markFile.errorBuffer(), out);
 
-        markFile.decoder().controlChannel();
-        markFile.decoder().localControlChannel();
-        markFile.decoder().eventsChannel();
-        final String aeronDirectory = markFile.decoder().aeronDirectory();
+        final MarkFileHeaderDecoder decoder = markFile.decoder();
+        decoder.skipControlChannel();
+        decoder.skipLocalControlChannel();
+        decoder.skipEventsChannel();
+        final String aeronDirectory = decoder.aeronDirectory();
 
         out.println();
         out.println("Aeron driver error log (directory: " + aeronDirectory + "):");

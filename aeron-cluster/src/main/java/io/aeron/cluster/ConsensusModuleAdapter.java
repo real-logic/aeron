@@ -15,11 +15,12 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.FragmentAssembler;
+import io.aeron.ControlledFragmentAssembler;
 import io.aeron.Subscription;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
+import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
@@ -37,7 +38,7 @@ final class ConsensusModuleAdapter implements AutoCloseable
     private final CloseSessionDecoder closeSessionDecoder = new CloseSessionDecoder();
     private final ClusterMembersQueryDecoder clusterMembersQueryDecoder = new ClusterMembersQueryDecoder();
     private final RemoveMemberDecoder removeMemberDecoder = new RemoveMemberDecoder();
-    private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this::onFragment);
+    private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this::onFragment);
 
     ConsensusModuleAdapter(final Subscription subscription, final ConsensusModuleAgent consensusModuleAgent)
     {
@@ -52,11 +53,12 @@ final class ConsensusModuleAdapter implements AutoCloseable
 
     int poll()
     {
-        return subscription.poll(fragmentAssembler, FRAGMENT_LIMIT);
+        return subscription.controlledPoll(fragmentAssembler, FRAGMENT_LIMIT);
     }
 
     @SuppressWarnings({"unused", "MethodLength"})
-    private void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
+    private ControlledFragmentHandler.Action onFragment(
+        final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
 
@@ -65,6 +67,8 @@ final class ConsensusModuleAdapter implements AutoCloseable
         {
             throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
         }
+
+        ControlledFragmentHandler.Action action = ControlledFragmentHandler.Action.CONTINUE;
 
         final int templateId = messageHeaderDecoder.templateId();
         switch (templateId)
@@ -128,6 +132,8 @@ final class ConsensusModuleAdapter implements AutoCloseable
                     serviceAckDecoder.ackId(),
                     serviceAckDecoder.relevantId(),
                     serviceAckDecoder.serviceId());
+
+                action = ControlledFragmentHandler.Action.BREAK;
                 break;
 
             case ClusterMembersQueryDecoder.TEMPLATE_ID:
@@ -155,5 +161,7 @@ final class ConsensusModuleAdapter implements AutoCloseable
                     BooleanType.TRUE == removeMemberDecoder.isPassive());
                 break;
         }
+
+        return action;
     }
 }

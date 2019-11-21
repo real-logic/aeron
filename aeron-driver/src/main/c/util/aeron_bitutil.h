@@ -67,7 +67,6 @@ inline int aeron_number_of_trailing_zeroes(int32_t value)
 #endif
 }
 
-/* Taken from Hacker's Delight as ntz10 at http://www.hackersdelight.org/hdcodetxt/ntz.c.txt */
 inline int aeron_number_of_trailing_zeroes_u64(uint64_t value)
 {
 #if defined(__GNUC__)
@@ -80,7 +79,7 @@ inline int aeron_number_of_trailing_zeroes_u64(uint64_t value)
 #elif defined(_MSC_VER)
     unsigned long r;
 
-    if (_BitScanForward64(&r, (unsigned long)value))
+    if (_BitScanForward64(&r, (__int64)value))
         return r;
 
     return 64;

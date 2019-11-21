@@ -19,3 +19,4 @@
 
 extern int32_t aeron_add_wrap_i32(int32_t a, int32_t b);
 extern int32_t aeron_sub_wrap_i32(int32_t a, int32_t b);
+extern int32_t aeron_mul_wrap_i32(int32_t a, int32_t b);

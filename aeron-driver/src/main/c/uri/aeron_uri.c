@@ -396,7 +396,7 @@ int aeron_uri_get_int32(aeron_uri_params_t* uri_params, const char* key, int32_t
     int64_t value;
 
     value = strtoll(value_str, &end_ptr, 0);
-    if ((value == 0 && 0 != errno) || end_ptr == value_str)
+    if ((0 == value && 0 != errno) || end_ptr == value_str)
     {
         aeron_set_err(EINVAL, "could not parse %s in URI", key);
         return -1;

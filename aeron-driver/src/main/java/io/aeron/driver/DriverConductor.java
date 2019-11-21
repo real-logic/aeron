@@ -940,10 +940,31 @@ public class DriverConductor implements Agent
 
     void onResolveHostnames()
     {
-        for (final SendChannelEndpoint sendChannelEndpoint : sendChannelEndpointByChannelMap.values())
+        final Object2ObjectHashMap<String, SendChannelEndpoint> resolvedSendChannels =
+            resolveChannelsMap(sendChannelEndpointByChannelMap);
+
+        sendChannelEndpointByChannelMap.clear();
+        sendChannelEndpointByChannelMap.putAll(resolvedSendChannels);
+
+        final Object2ObjectHashMap<String, ReceiveChannelEndpoint> resolvedReceiveChannels =
+            resolveChannelsMap(receiveChannelEndpointByChannelMap);
+
+        receiveChannelEndpointByChannelMap.clear();
+        receiveChannelEndpointByChannelMap.putAll(resolvedReceiveChannels);
+    }
+
+    private static <T extends UdpChannelTransport> Object2ObjectHashMap<String, T> resolveChannelsMap(
+        final Object2ObjectHashMap<String, T> channels)
+    {
+        final Object2ObjectHashMap<String, T> resolvedChannels = new Object2ObjectHashMap<>();
+
+        for (final T channel : channels.values())
         {
-            sendChannelEndpoint.resolveHostnames();
+            channel.resolveHostnames();
+            resolvedChannels.put(channel.udpChannel().canonicalForm(), channel);
         }
+
+        return resolvedChannels;
     }
 
     void onTerminateDriver(final DirectBuffer tokenBuffer, final int tokenOffset, final int tokenLength)

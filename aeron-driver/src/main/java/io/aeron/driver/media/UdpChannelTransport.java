@@ -42,7 +42,7 @@ import static java.net.StandardSocketOptions.SO_SNDBUF;
 public abstract class UdpChannelTransport implements AutoCloseable
 {
     protected final MediaDriver.Context context;
-    protected final UdpChannel udpChannel;
+    protected UdpChannel udpChannel;
     protected final AtomicCounter invalidPackets;
     protected final DistinctErrorLog errorLog;
     protected UdpTransportPoller transportPoller;
@@ -162,6 +162,19 @@ public abstract class UdpChannelTransport implements AutoCloseable
                 "channel error - " + ex.getMessage() +
                 " (at " + ex.getStackTrace()[0].toString() + "): " +
                 udpChannel.originalUriString(), ex);
+        }
+    }
+
+    /**
+     * Resolve hostnames into IP and update inner state
+     */
+    public void resolveHostnames()
+    {
+        final UdpChannel resolvedUdpChannel = UdpChannel.parse(udpChannel.originalUriString());
+
+        if (!resolvedUdpChannel.remoteData().isUnresolved())
+        {
+            udpChannel = resolvedUdpChannel;
         }
     }
 

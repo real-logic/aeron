@@ -216,6 +216,8 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
     public void resolveHostnames()
     {
+        super.resolveHostnames();
+
         if (null != sendDatagramChannel)
         {
             if (null == multiDestination && null != connectAddress)

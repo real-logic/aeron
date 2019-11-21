@@ -13,13 +13,13 @@ public interface TestMediaDriver extends AutoCloseable
     {
         return (isEmpty(System.getProperty(AERON_TEST_SYSTEM_AERONMD_PATH))) ?
             JavaTestMediaDriver.launch(context) :
-            NativeTestMediaDriver.launch(context);
+            CTestMediaDriver.launch(context);
     }
 
     MediaDriver.Context context();
 
     default void notSupportedOnCMediaDriverYet()
     {
-        Assume.assumeFalse(this instanceof NativeTestMediaDriver);
+        Assume.assumeFalse(this instanceof CTestMediaDriver);
     }
 }

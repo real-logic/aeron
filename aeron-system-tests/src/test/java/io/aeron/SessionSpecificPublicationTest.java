@@ -19,8 +19,6 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.LogBufferDescriptor;
-import io.aeron.support.JavaTestMediaDriver;
-import io.aeron.support.NativeTestMediaDriver;
 import io.aeron.support.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
@@ -31,15 +29,11 @@ import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 import static io.aeron.CommonContext.IPC_MEDIA;
 import static io.aeron.CommonContext.UDP_MEDIA;
 import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 @RunWith(value = Parameterized.class)
 public class SessionSpecificPublicationTest

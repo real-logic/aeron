@@ -8,12 +8,12 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-public class NativeTestMediaDriver implements TestMediaDriver
+public class CTestMediaDriver implements TestMediaDriver
 {
     private final Process aeronmdProcess;
     private final MediaDriver.Context context;
 
-    private NativeTestMediaDriver(Process aeronmdProcess, MediaDriver.Context context)
+    private CTestMediaDriver(Process aeronmdProcess, MediaDriver.Context context)
     {
         this.aeronmdProcess = aeronmdProcess;
         this.context = context;
@@ -41,7 +41,7 @@ public class NativeTestMediaDriver implements TestMediaDriver
         CommonContext.requestDriverTermination(new File(context.aeronDirectoryName()), null, 0, 0);
     }
 
-    public static NativeTestMediaDriver launch(MediaDriver.Context context)
+    public static CTestMediaDriver launch(MediaDriver.Context context)
     {
         final String aeronmdPath = System.getProperty(TestMediaDriver.AERON_TEST_SYSTEM_AERONMD_PATH);
         final File f = new File(aeronmdPath);
@@ -67,7 +67,7 @@ public class NativeTestMediaDriver implements TestMediaDriver
         try
         {
             System.out.println("Launching C driver: " + f.getAbsolutePath());
-            return new NativeTestMediaDriver(pb.start(), context);
+            return new CTestMediaDriver(pb.start(), context);
         }
         catch (IOException e)
         {

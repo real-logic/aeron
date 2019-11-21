@@ -1,6 +1,7 @@
 package io.aeron.support;
 
 import io.aeron.driver.MediaDriver;
+import org.junit.Assume;
 
 import static org.agrona.Strings.isEmpty;
 
@@ -16,4 +17,9 @@ public interface TestMediaDriver extends AutoCloseable
     }
 
     MediaDriver.Context context();
+
+    default void notSupportedOnCMediaDriverYet()
+    {
+        Assume.assumeFalse(this instanceof NativeTestMediaDriver);
+    }
 }

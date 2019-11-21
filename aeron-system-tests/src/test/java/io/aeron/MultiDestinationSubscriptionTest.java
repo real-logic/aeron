@@ -21,6 +21,7 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.support.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
@@ -65,8 +66,8 @@ public class MultiDestinationSubscriptionTest
 
     private Aeron clientA;
     private Aeron clientB;
-    private MediaDriver driverA;
-    private MediaDriver driverB;
+    private TestMediaDriver driverA;
+    private TestMediaDriver driverB;
     private Publication publicationA;
     private Publication publicationB;
     private Subscription subscription;
@@ -88,8 +89,10 @@ public class MultiDestinationSubscriptionTest
             .aeronDirectoryName(baseDirA)
             .threadingMode(ThreadingMode.SHARED);
 
-        driverA = MediaDriver.launch(driverContextA);
+        driverA = TestMediaDriver.launch(driverContextA);
         clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverContextA.aeronDirectoryName()));
+
+        driverA.notSupportedOnCMediaDriverYet();
     }
 
     private void launchSecond()
@@ -102,8 +105,10 @@ public class MultiDestinationSubscriptionTest
             .aeronDirectoryName(baseDirB)
             .threadingMode(ThreadingMode.SHARED);
 
-        driverB = MediaDriver.launch(driverContextB);
+        driverB = TestMediaDriver.launch(driverContextB);
         clientB = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverContextB.aeronDirectoryName()));
+
+        driverB.notSupportedOnCMediaDriverYet();
     }
 
     @After

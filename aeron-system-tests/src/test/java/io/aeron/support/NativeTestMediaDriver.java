@@ -1,5 +1,6 @@
 package io.aeron.support;
 
+import io.aeron.CommonContext;
 import io.aeron.driver.MediaDriver;
 import org.agrona.IoUtil;
 
@@ -21,7 +22,7 @@ public class NativeTestMediaDriver implements TestMediaDriver
     @Override
     public void close() throws Exception
     {
-        aeronmdProcess.destroy();
+        terminateDriver();
         if (!aeronmdProcess.waitFor(10, TimeUnit.SECONDS))
         {
             aeronmdProcess.destroyForcibly();
@@ -33,6 +34,11 @@ public class NativeTestMediaDriver implements TestMediaDriver
             final File aeronDirectory = new File(context.aeronDirectoryName());
             IoUtil.delete(aeronDirectory, false);
         }
+    }
+
+    private void terminateDriver()
+    {
+        CommonContext.requestDriverTermination(new File(context.aeronDirectoryName()), null, 0, 0);
     }
 
     public static NativeTestMediaDriver launch(MediaDriver.Context context)
@@ -56,6 +62,7 @@ public class NativeTestMediaDriver implements TestMediaDriver
         pb.environment().put("AERON_THREADING_MODE", context.threadingMode().name());
         pb.environment().put("AERON_DIR", context.aeronDirectoryName());
         pb.environment().put("AERON_TIMER_INTERVAL", String.valueOf(context.timerIntervalNs()));
+        pb.environment().put("AERON_DRIVER_TERMINATION_VALIDATOR", "allow");
 
         try
         {

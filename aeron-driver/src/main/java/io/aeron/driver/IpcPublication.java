@@ -320,6 +320,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         {
             tripLimit = consumerPosition;
             publisherLimit.setOrdered(consumerPosition);
+            cleanBufferTo(consumerPosition);
         }
 
         return workCount;

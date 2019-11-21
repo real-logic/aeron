@@ -525,6 +525,7 @@ public class NetworkPublication
         else if (publisherLimit.get() > senderPosition)
         {
             publisherLimit.setOrdered(senderPosition);
+            cleanBufferTo(senderPosition - termBufferLength);
             workCount = 1;
         }
 

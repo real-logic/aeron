@@ -777,7 +777,8 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     @SuppressWarnings("unused")
     public void onAddMember(final long correlationId, final int memberId, final String memberEndpoints)
     {
-        if (null == election && Cluster.Role.LEADER == role && ClusterMember.isNotDuplicateEndpoint(clusterMembers, memberEndpoints))
+        if (null == election && Cluster.Role.LEADER == role &&
+            ClusterMember.isNotDuplicateEndpoint(clusterMembers, memberEndpoints))
         {
             final ClusterMember member = ClusterMember.parseEndpoints(memberId, memberEndpoints);
             final ClusterMember[] newMembers = ClusterMember.addMember(clusterMembers, member);

@@ -720,6 +720,7 @@ public class ClusterTool
         out.println(
             "  tombstone-latest-snapshot: Mark the latest snapshot as a tombstone so previous is loaded.");
         out.println(
-            "                 add-member: [memberId] [memberEndpoints] requests adding a member by its memberId and endpoints.");
+            "                 add-member: [memberId] [memberEndpoints] requests adding a member by its memberId and " +
+            "endpoints.");
     }
 }

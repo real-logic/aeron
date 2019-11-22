@@ -25,7 +25,7 @@ inline int32_t aeron_add_wrap_i32(int32_t a, int32_t b)
     const int64_t b_widened = b;
     const int64_t sum = a_widened + b_widened;
 
-    return (int32_t) (sum & INT64_C(0xFFFFFFFF));
+    return (int32_t)(sum & INT64_C(0xFFFFFFFF));
 }
 
 inline int32_t aeron_sub_wrap_i32(int32_t a, int32_t b)
@@ -34,7 +34,7 @@ inline int32_t aeron_sub_wrap_i32(int32_t a, int32_t b)
     const int64_t b_widened = b;
     const int64_t difference = a_widened - b_widened;
 
-    return (int32_t) (difference & INT64_C(0xFFFFFFFF));
+    return (int32_t)(difference & INT64_C(0xFFFFFFFF));
 }
 
 inline int32_t aeron_mul_wrap_i32(int32_t a, int32_t b)
@@ -43,7 +43,7 @@ inline int32_t aeron_mul_wrap_i32(int32_t a, int32_t b)
     const int64_t b_widened = b;
     const int64_t product = a_widened * b_widened;
 
-    return (int32_t) (product & INT64_C(0xFFFFFFFF));
+    return (int32_t)(product & INT64_C(0xFFFFFFFF));
 }
 
 #endif //AERON_MATH_H

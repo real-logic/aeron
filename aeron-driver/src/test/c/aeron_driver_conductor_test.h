@@ -148,6 +148,7 @@ static int test_malloc_map_raw_log(
     log->log_meta_data.length = AERON_LOGBUFFER_META_DATA_LENGTH;
 
     log->term_length = term_length;
+
     return 0;
 }
 
@@ -217,14 +218,16 @@ struct TestDriverConductor
 
         context.m_context->conductor_proxy = &m_conductor.conductor_proxy;
 
-        if (aeron_driver_sender_init(&m_sender, context.m_context, &m_conductor.system_counters, &m_conductor.error_log) < 0)
+        if (aeron_driver_sender_init(
+            &m_sender, context.m_context, &m_conductor.system_counters, &m_conductor.error_log) < 0)
         {
             throw std::runtime_error("could not init sender: " + std::string(aeron_errmsg()));
         }
 
         context.m_context->sender_proxy = &m_sender.sender_proxy;
 
-        if (aeron_driver_receiver_init(&m_receiver, context.m_context, &m_conductor.system_counters, &m_conductor.error_log) < 0)
+        if (aeron_driver_receiver_init(
+            &m_receiver, context.m_context, &m_conductor.system_counters, &m_conductor.error_log) < 0)
         {
             throw std::runtime_error("could not init receiver: " + std::string(aeron_errmsg()));
         }
@@ -268,7 +271,7 @@ public:
     {
     }
 
-    size_t readAllBroadcastsFromConductor(const handler_t& func)
+    size_t readAllBroadcastsFromConductor(const handler_t &func)
     {
         size_t num_received = 0;
 
@@ -304,7 +307,7 @@ public:
     }
 
     int addIpcPublicationWithChannel(
-        int64_t client_id, int64_t correlation_id, const char* channel, int32_t stream_id, bool is_exclusive)
+        int64_t client_id, int64_t correlation_id, const char *channel, int32_t stream_id, bool is_exclusive)
     {
         int32_t msg_type_id = is_exclusive ? AERON_COMMAND_ADD_EXCLUSIVE_PUBLICATION : AERON_COMMAND_ADD_PUBLICATION;
         command::PublicationMessageFlyweight command(m_command, 0);
@@ -405,7 +408,12 @@ public:
     }
 
     int addCounter(
-        int64_t client_id, int64_t correlation_id, int32_t type_id, const uint8_t *key, size_t key_length, std::string& label)
+        int64_t client_id,
+        int64_t correlation_id,
+        int32_t type_id,
+        const uint8_t *key,
+        size_t key_length,
+        std::string &label)
     {
         command::CounterMessageFlyweight command(m_command, 0);
 
@@ -430,7 +438,7 @@ public:
     }
 
     template<typename F>
-    bool findCounter(int32_t counter_id, F&& func)
+    bool findCounter(int32_t counter_id, F &&func)
     {
         aeron_driver_context_t *ctx = m_context.m_context;
         AtomicBuffer metadata(
@@ -513,7 +521,8 @@ public:
         cmd.session_id = SESSION_ID;
         cmd.stream_id = stream_id;
         cmd.term_offset = 0;
-        cmd.active_term_id = aeron_logbuffer_compute_term_id_from_position(position, position_bits_to_shift, INITIAL_TERM_ID);
+        cmd.active_term_id = aeron_logbuffer_compute_term_id_from_position(
+            position, position_bits_to_shift, INITIAL_TERM_ID);
         cmd.initial_term_id = INITIAL_TERM_ID;
         cmd.mtu_length = (int32_t)m_context.m_context->mtu_length;
         cmd.term_length = TERM_LENGTH;

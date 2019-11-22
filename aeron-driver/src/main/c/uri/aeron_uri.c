@@ -383,7 +383,7 @@ int aeron_uri_linger_timeout_param(aeron_uri_params_t *uri_params, aeron_uri_pub
     return 0;
 }
 
-int aeron_uri_get_int32(aeron_uri_params_t* uri_params, const char* key, int32_t* retval)
+int aeron_uri_get_int32(aeron_uri_params_t *uri_params, const char  *key, int32_t *retval)
 {
     const char *value_str;
     if ((value_str = aeron_uri_find_param_value(uri_params, key)) == NULL)
@@ -392,7 +392,7 @@ int aeron_uri_get_int32(aeron_uri_params_t* uri_params, const char* key, int32_t
         return 0;
     }
 
-    char* end_ptr;
+    char *end_ptr;
     int64_t value;
 
     value = strtoll(value_str, &end_ptr, 0);
@@ -404,8 +404,7 @@ int aeron_uri_get_int32(aeron_uri_params_t* uri_params, const char* key, int32_t
 
     if (value < INT32_MIN || value > INT32_MAX)
     {
-        aeron_set_err(
-            EINVAL, "Params %s=%" PRId64 " out of range", key, value);
+        aeron_set_err(EINVAL, "Params %s=%" PRId64 " out of range", key, value);
         return -1;
     }
 
@@ -414,17 +413,19 @@ int aeron_uri_get_int32(aeron_uri_params_t* uri_params, const char* key, int32_t
     return 1;
 }
 
-int aeron_uri_publication_session_id_param(aeron_uri_params_t* uri_params, aeron_uri_publication_params_t* params)
+int aeron_uri_publication_session_id_param(aeron_uri_params_t *uri_params, aeron_uri_publication_params_t *params)
 {
     int result = aeron_uri_get_int32(uri_params, AERON_URI_SESSION_ID_KEY, &params->session_id);
-    params->has_session_id = (1 == result);
+    params->has_session_id = 1 == result;
+
     return result < 0 ? -1 : 0;
 }
 
-int aeron_uri_subscription_session_id_param(aeron_uri_params_t* uri_params, aeron_uri_subscription_params_t* params)
+int aeron_uri_subscription_session_id_param(aeron_uri_params_t *uri_params, aeron_uri_subscription_params_t *params)
 {
     int result = aeron_uri_get_int32(uri_params, AERON_URI_SESSION_ID_KEY, &params->session_id);
-    params->has_session_id = (1 == result);
+    params->has_session_id = 1 == result;
+
     return result < 0 ? -1 : 0;
 }
 

@@ -62,9 +62,7 @@ inline int aeron_bit_set_stack_alloc(
     return 0;
 }
 
-inline int aeron_bit_set_heap_alloc(
-    size_t bit_set_length,
-    aeron_bit_set_t **bit_set)
+inline int aeron_bit_set_heap_alloc(size_t bit_set_length, aeron_bit_set_t **bit_set)
 {
     if (NULL == bit_set)
     {
@@ -177,13 +175,13 @@ inline int aeron_bit_set_find_first(aeron_bit_set_t *bit_set, bool value, size_t
         if (entry_empty_value != bit_set->bits[i])
         {
             uint64_t bits_to_search = value ? bit_set->bits[i] : ~bit_set->bits[i];
-            *bit_index = (i * 64 + (size_t) aeron_number_of_trailing_zeroes_u64(bits_to_search));
+            *bit_index = (i * 64 + (size_t)aeron_number_of_trailing_zeroes_u64(bits_to_search));
+
             return (*bit_index < bit_set->bit_set_length) ? 0 : -1;
         }
     }
 
     return -1;
 }
-
 
 #endif //AERON_AERON_BIT_SET_H

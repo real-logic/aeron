@@ -133,10 +133,14 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToAddMultipleIpcPublications)
     ASSERT_EQ(addIpcPublication(client_id, pub_id_4, STREAM_ID_4, false), 0);
     doWork();
 
-    aeron_ipc_publication_t *publication_1 = aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id_1);
-    aeron_ipc_publication_t *publication_2 = aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id_2);
-    aeron_ipc_publication_t *publication_3 = aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id_3);
-    aeron_ipc_publication_t *publication_4 = aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id_4);
+    aeron_ipc_publication_t *publication_1 = aeron_driver_conductor_find_ipc_publication(
+        &m_conductor.m_conductor, pub_id_1);
+    aeron_ipc_publication_t *publication_2 = aeron_driver_conductor_find_ipc_publication(
+        &m_conductor.m_conductor, pub_id_2);
+    aeron_ipc_publication_t *publication_3 = aeron_driver_conductor_find_ipc_publication(
+        &m_conductor.m_conductor, pub_id_3);
+    aeron_ipc_publication_t *publication_4 = aeron_driver_conductor_find_ipc_publication(
+        &m_conductor.m_conductor, pub_id_4);
 
     ASSERT_NE(publication_1, (aeron_ipc_publication_t *)NULL);
     ASSERT_NE(publication_2, (aeron_ipc_publication_t *)NULL);
@@ -162,7 +166,8 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToAddAndRemoveMultipleIpcPublications
     doWork();
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 4u);
 
-    aeron_ipc_publication_t *publication = aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id_1);
+    aeron_ipc_publication_t *publication = aeron_driver_conductor_find_ipc_publication(
+        &m_conductor.m_conductor, pub_id_1);
 
     ASSERT_NE(publication, (aeron_ipc_publication_t *)NULL);
     ASSERT_EQ(publication->conductor_fields.refcnt, 4);
@@ -200,10 +205,14 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToAddMultipleExclusiveIpcPublications
     ASSERT_EQ(addIpcPublication(client_id, pub_id_4, STREAM_ID_1, true), 0);
     doWork();
 
-    aeron_ipc_publication_t *publication_1 = aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id_1);
-    aeron_ipc_publication_t *publication_2 = aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id_2);
-    aeron_ipc_publication_t *publication_3 = aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id_3);
-    aeron_ipc_publication_t *publication_4 = aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id_4);
+    aeron_ipc_publication_t *publication_1 = aeron_driver_conductor_find_ipc_publication(
+        &m_conductor.m_conductor, pub_id_1);
+    aeron_ipc_publication_t *publication_2 = aeron_driver_conductor_find_ipc_publication(
+        &m_conductor.m_conductor, pub_id_2);
+    aeron_ipc_publication_t *publication_3 = aeron_driver_conductor_find_ipc_publication(
+        &m_conductor.m_conductor, pub_id_3);
+    aeron_ipc_publication_t *publication_4 = aeron_driver_conductor_find_ipc_publication(
+        &m_conductor.m_conductor, pub_id_4);
 
     ASSERT_NE(publication_1, (aeron_ipc_publication_t *)NULL);
     ASSERT_NE(publication_2, (aeron_ipc_publication_t *)NULL);
@@ -241,7 +250,8 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddSing
     ASSERT_EQ(addIpcPublication(client_id, pub_id, STREAM_ID_1, false), 0);
     doWork();
 
-    aeron_ipc_publication_t *publication = aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id);
+    aeron_ipc_publication_t *publication = aeron_driver_conductor_find_ipc_publication(
+        &m_conductor.m_conductor, pub_id);
     EXPECT_EQ(aeron_ipc_publication_num_subscribers(publication), 1u);
 
     size_t response_number = 0;
@@ -299,7 +309,8 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToAddSingleIpcPublicationThenAddSingl
     ASSERT_EQ(addIpcSubscription(client_id, sub_id, STREAM_ID_1, -1), 0);
     doWork();
 
-    aeron_ipc_publication_t *publication = aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id);
+    aeron_ipc_publication_t *publication = aeron_driver_conductor_find_ipc_publication(
+        &m_conductor.m_conductor, pub_id);
     EXPECT_EQ(aeron_ipc_publication_num_subscribers(publication), 1u);
 
     size_t response_number = 0;
@@ -358,7 +369,8 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToAddMultipleIpcSubscriptionWithSameS
     ASSERT_EQ(addIpcPublication(client_id, pub_id, STREAM_ID_1, false), 0);
     doWork();
 
-    aeron_ipc_publication_t *publication = aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id);
+    aeron_ipc_publication_t *publication = aeron_driver_conductor_find_ipc_publication(
+        &m_conductor.m_conductor, pub_id);
     EXPECT_EQ(aeron_ipc_publication_num_subscribers(publication), 2u);
 
     size_t response_number = 0;
@@ -401,7 +413,8 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToAddMultipleIpcSubscriptionWithSameS
 
             EXPECT_EQ(response.streamId(), STREAM_ID_1);
             EXPECT_EQ(response.sessionId(), session_id);
-            EXPECT_TRUE(response.subscriptionRegistrationId() == sub_id_1 || response.subscriptionRegistrationId() == sub_id_2);
+            EXPECT_TRUE(
+                response.subscriptionRegistrationId() == sub_id_1 || response.subscriptionRegistrationId() == sub_id_2);
 
             EXPECT_EQ(log_file_name, response.logFileName());
             EXPECT_EQ(AERON_IPC_CHANNEL, response.sourceIdentity());
@@ -413,7 +426,7 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToAddMultipleIpcSubscriptionWithSameS
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 5u);
 }
 
-TEST_F(DriverConductorIpcTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddMultipleExclusiveIpcPublicationsWithSameStreamId)
+TEST_F(DriverConductorIpcTest, shouldAddSingleIpcSubscriptionThenAddMultipleExclusiveIpcPublicationsWithSameStreamId)
 {
     int64_t client_id = nextCorrelationId();
     int64_t sub_id = nextCorrelationId();
@@ -425,9 +438,11 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToAddSingleIpcSubscriptionThenAddMult
     ASSERT_EQ(addIpcPublication(client_id, pub_id_2, STREAM_ID_1, true), 0);
     doWork();
 
-    aeron_ipc_publication_t *publication_1 = aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id_1);
+    aeron_ipc_publication_t *publication_1 = aeron_driver_conductor_find_ipc_publication(
+        &m_conductor.m_conductor, pub_id_1);
     EXPECT_EQ(aeron_ipc_publication_num_subscribers(publication_1), 1u);
-    aeron_ipc_publication_t *publication_2 = aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id_2);
+    aeron_ipc_publication_t *publication_2 = aeron_driver_conductor_find_ipc_publication(
+        &m_conductor.m_conductor, pub_id_2);
     EXPECT_EQ(aeron_ipc_publication_num_subscribers(publication_2), 1u);
 
     size_t response_number = 0;
@@ -512,7 +527,8 @@ TEST_F(DriverConductorIpcTest, shouldNotLinkSubscriptionOnAddPublicationAfterFir
     ASSERT_EQ(addIpcPublication(client_id, pub_id_2, STREAM_ID_1, false), 0);
     doWork();
 
-    aeron_ipc_publication_t *publication = aeron_driver_conductor_find_ipc_publication(&m_conductor.m_conductor, pub_id_1);
+    aeron_ipc_publication_t *publication = aeron_driver_conductor_find_ipc_publication(
+        &m_conductor.m_conductor, pub_id_1);
     EXPECT_EQ(aeron_ipc_publication_num_subscribers(publication), 1u);
     EXPECT_EQ(aeron_driver_conductor_num_active_ipc_subscriptions(&m_conductor.m_conductor, STREAM_ID_1), 1u);
 
@@ -826,6 +842,7 @@ TEST_F(DriverConductorIpcTest, shouldErrorOnDuplicateExclusivePublicationWithSam
 
     ASSERT_EQ(addIpcPublicationWithChannel(client_id, pub_id_2, IPC_CHANNEL_WITH_SESSION_ID_1, STREAM_ID_1, true), 0);
     doWork();
+
     auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
     {
         ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
@@ -852,6 +869,7 @@ TEST_F(DriverConductorIpcTest, shouldErrorOnDuplicateSharedPublicationWithDiffer
 
     ASSERT_EQ(addIpcPublicationWithChannel(client_id, pub_id_2, IPC_CHANNEL_WITH_SESSION_ID_2, STREAM_ID_1, false), 0);
     doWork();
+
     auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
     {
         ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
@@ -878,6 +896,7 @@ TEST_F(DriverConductorIpcTest, shouldErrorOnDuplicateSharedPublicationWithExclus
 
     ASSERT_EQ(addIpcPublicationWithChannel(client_id, pub_id_2, IPC_CHANNEL_WITH_SESSION_ID_1, STREAM_ID_1, false), 0);
     doWork();
+
     auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
     {
         ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
@@ -904,6 +923,7 @@ TEST_F(DriverConductorIpcTest, shouldErrorOnDuplicateExclusivePublicationWithSha
 
     ASSERT_EQ(addIpcPublicationWithChannel(client_id, pub_id_2, IPC_CHANNEL_WITH_SESSION_ID_1, STREAM_ID_1, true), 0);
     doWork();
+
     auto handler = [&](std::int32_t msgTypeId, AtomicBuffer& buffer, util::index_t offset, util::index_t length)
     {
         ASSERT_EQ(msgTypeId, AERON_RESPONSE_ON_ERROR);
@@ -934,11 +954,11 @@ TEST_F(DriverConductorIpcTest, shouldNotAddDynamicSessionIdInReservedRange)
 
         EXPECT_TRUE(
             response.sessionId() < m_conductor.m_conductor.publication_reserved_session_id_low ||
-                m_conductor.m_conductor.publication_reserved_session_id_high < response.sessionId())
-                        << "Session Id [" << response.sessionId() << "] should not be in the range: "
-                        << m_conductor.m_conductor.publication_reserved_session_id_low
-                        << " to "
-                        << m_conductor.m_conductor.publication_reserved_session_id_high;
+            m_conductor.m_conductor.publication_reserved_session_id_high < response.sessionId())
+                << "Session Id [" << response.sessionId() << "] should not be in the range: "
+                << m_conductor.m_conductor.publication_reserved_session_id_low
+                << " to "
+                << m_conductor.m_conductor.publication_reserved_session_id_high;
 
     };
 
@@ -1058,4 +1078,3 @@ TEST_F(DriverConductorIpcTest, shouldFailToAddSecondIpcPublicationWithSpecifiedS
 
     EXPECT_EQ(readAllBroadcastsFromConductor(handler), 1u);
 }
-

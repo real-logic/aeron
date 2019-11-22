@@ -87,7 +87,7 @@ inline int aeron_number_of_trailing_zeroes_u64(uint64_t value)
     int lower_tzc = aeron_number_of_trailing_zeroes((int32_t) (value & UINT64_C(0xFFFFFFFF)));
     int upper_tzc = aeron_number_of_trailing_zeroes((int32_t) ((value >> 32u) & UINT64_C(0xFFFFFFFF)));
 
-    return (lower_tzc == 32) ? upper_tzc + lower_tzc : lower_tzc;
+    return lower_tzc == 32 ? upper_tzc + lower_tzc : lower_tzc;
 #endif
 }
 

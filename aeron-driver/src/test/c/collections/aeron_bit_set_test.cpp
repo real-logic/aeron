@@ -105,7 +105,7 @@ TEST_F(BitSetTest, shouldSetAndGetStack)
 
 TEST_F(BitSetTest, shouldSetAndGetHeap)
 {
-    aeron_bit_set_t* bit_set;
+    aeron_bit_set_t *bit_set;
     size_t bit_set_length = STATIC_ARRAY_LEN * 64;
 
     EXPECT_EQ(aeron_bit_set_heap_init(bit_set_length, false, &bit_set), 0);

@@ -184,8 +184,8 @@ int32_t aeron_config_parse_int32(const char *name, const char *str, int32_t def,
             value = def;
         }
 
-        result = value > max ? max : (int32_t) value;
-        result = value < min ? min : (int32_t) result;
+        result = value > max ? max : (int32_t)value;
+        result = value < min ? min : (int32_t)result;
     }
 
     return result;
@@ -2054,9 +2054,8 @@ int aeron_driver_context_set_publication_reserved_session_id_low(aeron_driver_co
 
 int32_t aeron_driver_context_get_publication_reserved_session_id_low(aeron_driver_context_t *context)
 {
-    return NULL != context
-           ? context->publication_reserved_session_id_low
-           : AERON_PUBLICATION_RESERVED_SESSION_ID_LOW_DEFAULT;
+    return NULL != context ?
+        context->publication_reserved_session_id_low : AERON_PUBLICATION_RESERVED_SESSION_ID_LOW_DEFAULT;
 }
 
 int aeron_driver_context_set_publication_reserved_session_id_high(aeron_driver_context_t *context, int32_t value)
@@ -2069,9 +2068,8 @@ int aeron_driver_context_set_publication_reserved_session_id_high(aeron_driver_c
 
 int32_t aeron_driver_context_get_publication_reserved_session_id_high(aeron_driver_context_t *context)
 {
-    return NULL != context
-           ? context->publication_reserved_session_id_high
-           : AERON_PUBLICATION_RESERVED_SESSION_ID_HIGH_DEFAULT;
+    return NULL != context ?
+        context->publication_reserved_session_id_high : AERON_PUBLICATION_RESERVED_SESSION_ID_HIGH_DEFAULT;
 }
 
 

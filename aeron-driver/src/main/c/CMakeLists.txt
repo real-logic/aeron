@@ -124,6 +124,7 @@ SET(SOURCE
     util/aeron_fileutil.c
     util/aeron_arrayutil.c
     util/aeron_error.c
+    util/aeron_math.c
     util/aeron_netutil.c
     util/aeron_dlopen.c
     util/aeron_parse_util.c
@@ -163,6 +164,7 @@ SET(SOURCE
     uri/aeron_uri.c
     collections/aeron_int64_to_ptr_hash_map.c
     collections/aeron_str_to_ptr_hash_map.c
+    collections/aeron_bit_set.c
     reports/aeron_loss_reporter.c)
 
 SET(HEADERS
@@ -170,6 +172,7 @@ SET(HEADERS
     util/aeron_dlopen.h
     util/aeron_platform.h
     util/aeron_bitutil.h
+    util/aeron_math.h
     util/aeron_strutil.h
     util/aeron_fileutil.h
     util/aeron_arrayutil.h
@@ -234,6 +237,7 @@ SET(HEADERS
     uri/aeron_uri.h
     collections/aeron_int64_to_ptr_hash_map.h
     collections/aeron_str_to_ptr_hash_map.h
+    collections/aeron_bit_set.h
     reports/aeron_loss_reporter.h)
 
 set(AGENT_SOURCE

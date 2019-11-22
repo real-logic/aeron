@@ -15,11 +15,14 @@
  */
 
 #include <stdio.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <inttypes.h>
 #include <errno.h>
 #include "media/aeron_receive_channel_endpoint.h"
 #include "util/aeron_netutil.h"
 #include "util/aeron_error.h"
+#include "util/aeron_math.h"
 #include "media/aeron_send_channel_endpoint.h"
 #include "util/aeron_arrayutil.h"
 #include "aeron_driver_conductor.h"
@@ -27,7 +30,10 @@
 #include "aeron_driver_sender.h"
 #include "aeron_driver_receiver.h"
 #include "aeron_publication_image.h"
+#include "collections/aeron_bit_set.h"
 #include "concurrent/aeron_logbuffer_unblocker.h"
+
+#define STATIC_BIT_SET_U64_LEN (512)
 
 static void aeron_error_log_resource_linger(void *clientd, uint8_t *resource)
 {
@@ -220,6 +226,8 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->time_of_last_timeout_check_ns = now_ns;
     conductor->time_of_last_to_driver_position_change_ns = now_ns;
     conductor->next_session_id = aeron_randomised_int32();
+    conductor->publication_reserved_session_id_low = context->publication_reserved_session_id_low;
+    conductor->publication_reserved_session_id_high = context->publication_reserved_session_id_high;
     conductor->last_consumer_command_position = aeron_mpsc_rb_consumer_position(&conductor->to_driver_commands);
 
     conductor->context = context;
@@ -313,6 +321,90 @@ void aeron_client_on_time_event(
 bool aeron_client_has_reached_end_of_life(aeron_driver_conductor_t *conductor, aeron_client_t *client)
 {
     return client->reached_end_of_life;
+}
+
+int32_t aeron_driver_conductor_next_session_id(aeron_driver_conductor_t* conductor)
+{
+    const int32_t low = conductor->publication_reserved_session_id_low;
+    const int32_t high = conductor->publication_reserved_session_id_high;
+
+    return (low <= conductor->next_session_id && conductor->next_session_id <= high) ?
+        aeron_add_wrap_i32(high, 1) :
+        conductor->next_session_id;
+}
+
+int32_t aeron_driver_conductor_update_next_session_id(aeron_driver_conductor_t* conductor, int32_t session_id)
+{
+    conductor->next_session_id = aeron_add_wrap_i32(session_id, 1);
+    return session_id;
+}
+
+static void aeron_driver_conductor_track_session_id_offsets(
+    aeron_driver_conductor_t *conductor,
+    aeron_bit_set_t *session_id_offsets,
+    int32_t publication_session_id)
+{
+    const int32_t next_session_id = aeron_driver_conductor_next_session_id(conductor);
+    const int32_t session_id_offset = aeron_sub_wrap_i32(publication_session_id, next_session_id);
+
+    if (0 <= session_id_offset && (size_t) session_id_offset < session_id_offsets->bit_set_length)
+    {
+        aeron_bit_set_set(session_id_offsets, (size_t) session_id_offset, true);
+    }
+}
+
+static int aeron_driver_conductor_speculate_next_session_id(
+    aeron_driver_conductor_t *conductor,
+    aeron_bit_set_t *session_id_offsets,
+    int32_t *session_id)
+{
+    size_t index = 0;
+
+    if (aeron_bit_set_find_first(session_id_offsets, false, &index) < 0)
+    {
+        return -1;
+    }
+
+    *session_id = aeron_add_wrap_i32(aeron_driver_conductor_next_session_id(conductor), (int32_t) index);
+    return 0;
+}
+
+int aeron_confirm_publication_match(
+    const aeron_uri_publication_params_t *params,
+    const int32_t existing_session_id,
+    const aeron_logbuffer_metadata_t *logbuffer_metadata)
+{
+    if (params->has_session_id && params->session_id != existing_session_id)
+    {
+        aeron_set_err(
+            EINVAL,
+            "existing publication has different session id: existing=%" PRId32 " requested=%" PRId32,
+            existing_session_id, params->session_id);
+
+        return -1;
+    }
+
+    if (params->mtu_length != (size_t) logbuffer_metadata->mtu_length)
+    {
+        aeron_set_err(
+            EINVAL,
+            "existing publication has different MTU length: existing=%" PRId32 " requested=%d",
+            logbuffer_metadata->mtu_length, params->mtu_length);
+
+        return -1;
+    }
+
+    if (params->term_length != (size_t) logbuffer_metadata->term_length)
+    {
+        aeron_set_err(
+            EINVAL,
+            "existing publication has different term length: existing=%" PRId32 " requested=%d",
+            logbuffer_metadata->term_length, params->term_length);
+
+        return -1;
+    }
+
+    return 0;
 }
 
 void aeron_client_delete(aeron_driver_conductor_t *conductor, aeron_client_t *client)
@@ -705,25 +797,67 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
     aeron_uri_publication_params_t *params,
     int64_t registration_id,
     int32_t stream_id,
-    size_t channel_length,
-    const char *channel,
+    size_t uri_length,
+    const char *uri,
     bool is_exclusive)
 {
     aeron_ipc_publication_t *publication = NULL;
 
-    if (!is_exclusive)
-    {
-        for (size_t i = 0; i < conductor->ipc_publications.length; i++)
-        {
-            aeron_ipc_publication_t *pub_entry = conductor->ipc_publications.array[i].publication;
+    uint64_t bits[STATIC_BIT_SET_U64_LEN];
+    aeron_bit_set_t session_id_offsets;
+    aeron_bit_set_stack_init(
+        conductor->network_publications.length + 1, bits, STATIC_BIT_SET_U64_LEN, false, &session_id_offsets);
+    assert(conductor->network_publications.length < session_id_offsets.bit_set_length);
 
-            if (stream_id == pub_entry->stream_id &&
-                !pub_entry->is_exclusive &&
-                AERON_IPC_PUBLICATION_STATE_ACTIVE == pub_entry->conductor_fields.state)
+    bool is_session_id_in_use = false;
+
+    for (size_t i = 0; i < conductor->ipc_publications.length; i++)
+    {
+        aeron_ipc_publication_t *pub_entry = conductor->ipc_publications.array[i].publication;
+
+        if (stream_id == pub_entry->stream_id &&
+            pub_entry->conductor_fields.state == AERON_IPC_PUBLICATION_STATE_ACTIVE)
+        {
+            if (NULL == publication && !is_exclusive && !pub_entry->is_exclusive)
             {
                 publication = pub_entry;
-                break;
             }
+
+            if (params->has_session_id && pub_entry->session_id == params->session_id)
+            {
+                is_session_id_in_use = true;
+            }
+
+            aeron_driver_conductor_track_session_id_offsets(conductor, &session_id_offsets, pub_entry->session_id);
+        }
+    }
+
+    int32_t speculated_session_id = 0;
+    int session_id_found = aeron_driver_conductor_speculate_next_session_id(
+            conductor, &session_id_offsets, &speculated_session_id);
+    aeron_bit_set_stack_free(&session_id_offsets);
+
+    if (session_id_found < 0)
+    {
+        aeron_set_err(EINVAL, "(BUG) Unable to allocate session-id");
+        return NULL;
+    }
+
+    if (is_session_id_in_use && (is_exclusive || NULL == publication))
+    {
+        aeron_set_err(
+            EINVAL,
+            "Specified session-id is already in exclusive use for channel: %.*s, stream-id: %" PRId32,
+            uri_length, uri, stream_id);
+
+        return NULL;
+    }
+
+    if (!is_exclusive && NULL != publication)
+    {
+        if (aeron_confirm_publication_match(params, publication->session_id, publication->log_meta_data) < 0)
+        {
+            return NULL;
         }
     }
 
@@ -739,17 +873,23 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
 
             if (ensure_capacity_result >= 0)
             {
-                int32_t session_id = conductor->next_session_id++;
+                if (!params->has_session_id)
+                {
+                    aeron_driver_conductor_update_next_session_id(conductor, speculated_session_id);
+                }
+
+                int32_t session_id = params->has_session_id ? params->session_id : speculated_session_id;
                 int32_t initial_term_id = params->has_position ? params->initial_term_id : aeron_randomised_int32();
+
                 aeron_position_t pub_pos_position;
                 aeron_position_t pub_lmt_position;
 
                 pub_pos_position.counter_id = aeron_counter_publisher_position_allocate(
-                    &conductor->counters_manager, registration_id, session_id, stream_id, channel_length, channel);
+                    &conductor->counters_manager, registration_id, session_id, stream_id, uri_length, uri);
                 pub_pos_position.value_addr = aeron_counter_addr(
                     &conductor->counters_manager, pub_pos_position.counter_id);
                 pub_lmt_position.counter_id = aeron_counter_publisher_limit_allocate(
-                    &conductor->counters_manager, registration_id, session_id, stream_id, channel_length, channel);
+                    &conductor->counters_manager, registration_id, session_id, stream_id, uri_length, uri);
                 pub_lmt_position.value_addr = aeron_counter_addr(
                     &conductor->counters_manager, pub_lmt_position.counter_id);
 
@@ -824,20 +964,63 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
     aeron_network_publication_t *publication = NULL;
     aeron_udp_channel_t *udp_channel = endpoint->conductor_fields.udp_channel;
 
-    if (!is_exclusive)
-    {
-        for (size_t i = 0; i < conductor->network_publications.length; i++)
-        {
-            aeron_network_publication_t *pub_entry = conductor->network_publications.array[i].publication;
+    uint64_t bits[STATIC_BIT_SET_U64_LEN];
+    aeron_bit_set_t session_id_offsets;
+    aeron_bit_set_stack_init(
+        conductor->network_publications.length + 1, bits, STATIC_BIT_SET_U64_LEN, false, &session_id_offsets);
 
+    bool is_session_id_in_use = false;
+
+    for (size_t i = 0; i < conductor->network_publications.length; i++)
+    {
+        aeron_network_publication_t *pub_entry = conductor->network_publications.array[i].publication;
+
+        if (AERON_NETWORK_PUBLICATION_STATE_ACTIVE == pub_entry->conductor_fields.state)
+        {
             if (endpoint == pub_entry->endpoint &&
-                stream_id == pub_entry->stream_id &&
-                !pub_entry->is_exclusive &&
-                pub_entry->conductor_fields.state == AERON_NETWORK_PUBLICATION_STATE_ACTIVE)
+                stream_id == pub_entry->stream_id)
             {
-                publication = pub_entry;
-                break;
+                if (NULL == publication && !is_exclusive && !pub_entry->is_exclusive)
+                {
+                    publication = pub_entry;
+                }
+
+                if (params->has_session_id && pub_entry->session_id == params->session_id)
+                {
+                    is_session_id_in_use = true;
+                }
             }
+
+            aeron_driver_conductor_track_session_id_offsets(conductor, &session_id_offsets, pub_entry->session_id);
+        }
+    }
+
+    int32_t speculated_session_id = 0;
+    int session_id_found = aeron_driver_conductor_speculate_next_session_id(
+        conductor, &session_id_offsets, &speculated_session_id);
+    aeron_bit_set_stack_free(&session_id_offsets);
+
+    if (session_id_found < 0)
+    {
+        aeron_set_err(EINVAL, "(BUG) Unable to allocate session-id");
+        return NULL;
+    }
+
+    if (is_session_id_in_use && (is_exclusive || NULL == publication))
+    {
+        aeron_set_err(
+            EINVAL,
+            "Specified session-id is already in exclusive use for channel: %.*s, stream-id: %" PRId32,
+            uri_length, uri, stream_id);
+
+        return NULL;
+    }
+
+    if (!is_exclusive && NULL != publication)
+    {
+        if (0 != aeron_confirm_publication_match(params, publication->session_id, publication->log_meta_data))
+        {
+            return NULL;
         }
     }
 
@@ -853,7 +1036,12 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
 
             if (ensure_capacity_result >= 0)
             {
-                int32_t session_id = conductor->next_session_id++;
+                if (!params->has_session_id)
+                {
+                    aeron_driver_conductor_update_next_session_id(conductor, speculated_session_id);
+                }
+
+                int32_t session_id = params->has_session_id ? params->session_id : speculated_session_id;
                 int32_t initial_term_id = params->has_position ? params->initial_term_id : aeron_randomised_int32();
 
                 aeron_position_t pub_pos_position;

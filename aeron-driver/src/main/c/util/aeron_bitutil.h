@@ -67,6 +67,30 @@ inline int aeron_number_of_trailing_zeroes(int32_t value)
 #endif
 }
 
+inline int aeron_number_of_trailing_zeroes_u64(uint64_t value)
+{
+#if defined(__GNUC__)
+    if (0 == value)
+    {
+        return 64;
+    }
+
+    return __builtin_ctzll(value);
+#elif defined(_MSC_VER)
+    unsigned long r;
+
+    if (_BitScanForward64(&r, (__int64)value))
+        return r;
+
+    return 64;
+#else
+    int lower_tzc = aeron_number_of_trailing_zeroes((int32_t) (value & UINT64_C(0xFFFFFFFF)));
+    int upper_tzc = aeron_number_of_trailing_zeroes((int32_t) ((value >> 32u) & UINT64_C(0xFFFFFFFF)));
+
+    return (lower_tzc == 32) ? upper_tzc + lower_tzc : lower_tzc;
+#endif
+}
+
 inline int aeron_number_of_leading_zeroes(int32_t value)
 {
 #if defined(__GNUC__)

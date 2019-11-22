@@ -290,6 +290,32 @@ TEST_F(UriTest, shouldParsePublicationParamsForReplayIpcTermOffsetBeyondTermLeng
     EXPECT_EQ(aeron_uri_publication_params(&m_uri, &params, &m_conductor, true), -1);
 }
 
+TEST_F(UriTest, shouldParsePublicationSessionId)
+{
+    aeron_uri_publication_params_t params;
+
+    EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=224.10.9.8|session-id=1001", &m_uri), 0);
+    EXPECT_EQ(aeron_uri_publication_params(&m_uri, &params, &m_conductor, false), 0);
+    EXPECT_EQ(params.has_session_id, true);
+    EXPECT_EQ(params.session_id, 1001);
+}
+
+TEST_F(UriTest, shouldErrorParsingNonNumericSessionId)
+{
+    aeron_uri_publication_params_t params;
+
+    EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=224.10.9.8|session-id=foobar", &m_uri), 0);
+    EXPECT_EQ(aeron_uri_publication_params(&m_uri, &params, &m_conductor, false), -1);
+}
+
+TEST_F(UriTest, shouldErrorParsingOutOfRangeSessionId)
+{
+    aeron_uri_publication_params_t params;
+
+    EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=224.10.9.8|session-id=2147483648", &m_uri), 0);
+    EXPECT_EQ(aeron_uri_publication_params(&m_uri, &params, &m_conductor, false), -1);
+}
+
 TEST_F(UriTest, shouldParseSubscriptionParamReliable)
 {
     aeron_uri_subscription_params_t params;
@@ -306,6 +332,17 @@ TEST_F(UriTest, shouldParseSubscriptionParamReliableDefault)
     EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=224.10.9.8", &m_uri), 0);
     EXPECT_EQ(aeron_uri_subscription_params(&m_uri, &params, &m_conductor), 0);
     EXPECT_EQ(params.is_reliable, true);
+}
+
+
+TEST_F(UriTest, shouldParseSubscriptionSessionId)
+{
+    aeron_uri_subscription_params_t params;
+
+    EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=224.10.9.8|session-id=1001", &m_uri), 0);
+    EXPECT_EQ(aeron_uri_subscription_params(&m_uri, &params, &m_conductor), 0);
+    EXPECT_EQ(params.has_session_id, true);
+    EXPECT_EQ(params.session_id, 1001);
 }
 
 class UriResolverTest : public testing::Test

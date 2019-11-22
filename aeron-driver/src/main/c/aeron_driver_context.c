@@ -168,6 +168,29 @@ uint64_t aeron_config_parse_uint64(const char *name, const char *str, uint64_t d
     return result;
 }
 
+int32_t aeron_config_parse_int32(const char *name, const char *str, int32_t def, int32_t min, int32_t max)
+{
+    int32_t result = def;
+
+    if (NULL != str)
+    {
+        errno = 0;
+        char *end_ptr = NULL;
+        int64_t value = strtoll(str, NULL, 0);
+
+        if ((0 == value && 0 != errno) || end_ptr == str || value < INT32_MIN || INT32_MAX < value)
+        {
+            aeron_config_prop_warning(name, str);
+            value = def;
+        }
+
+        result = value > max ? max : (int32_t) value;
+        result = value < min ? min : (int32_t) result;
+    }
+
+    return result;
+}
+
 uint64_t aeron_config_parse_size64(const char *name, const char *str, uint64_t def, uint64_t min, uint64_t max)
 {
     uint64_t result = def;
@@ -332,6 +355,8 @@ static void aeron_driver_conductor_to_client_interceptor_null(
 #define AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_DEFAULT ("default")
 #define AERON_RECEIVER_GROUP_CONSIDERATION_DEFAULT (AERON_INFER)
 #define AERON_REJOIN_STREAM_DEFAULT (true)
+#define AERON_PUBLICATION_RESERVED_SESSION_ID_LOW_DEFAULT (-1)
+#define AERON_PUBLICATION_RESERVED_SESSION_ID_HIGH_DEFAULT (10000)
 
 int aeron_driver_context_init(aeron_driver_context_t **context)
 {
@@ -452,6 +477,8 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->nak_multicast_group_size = AERON_NAK_MULTICAST_GROUP_SIZE_DEFAULT;
     _context->nak_multicast_max_backoff_ns = AERON_NAK_MULTICAST_MAX_BACKOFF_NS_DEFAULT;
     _context->nak_unicast_delay_ns = AERON_NAK_UNICAST_DELAY_NS_DEFAULT;
+    _context->publication_reserved_session_id_low = AERON_PUBLICATION_RESERVED_SESSION_ID_LOW_DEFAULT;
+    _context->publication_reserved_session_id_high = AERON_PUBLICATION_RESERVED_SESSION_ID_HIGH_DEFAULT;
 
     char *value = NULL;
 
@@ -762,6 +789,20 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         _context->nak_unicast_delay_ns,
         1000,
         INT64_MAX);
+
+    _context->publication_reserved_session_id_low = aeron_config_parse_int32(
+        AERON_PUBLICATION_RESERVED_SESSION_ID_LOW_ENV_VAR,
+        getenv(AERON_PUBLICATION_RESERVED_SESSION_ID_LOW_ENV_VAR),
+        _context->publication_reserved_session_id_low,
+        INT32_MIN,
+        INT32_MAX);
+
+    _context->publication_reserved_session_id_high = aeron_config_parse_int32(
+        AERON_PUBLICATION_RESERVED_SESSION_ID_HIGH_ENV_VAR,
+        getenv(AERON_PUBLICATION_RESERVED_SESSION_ID_HIGH_ENV_VAR),
+        _context->publication_reserved_session_id_high,
+        INT32_MIN,
+        INT32_MAX);
 
     _context->to_driver_buffer = NULL;
     _context->to_clients_buffer = NULL;
@@ -2002,6 +2043,37 @@ int aeron_driver_context_set_rejoin_stream(aeron_driver_context_t *context, bool
     context->rejoin_stream = value;
     return 0;
 }
+
+int aeron_driver_context_set_publication_reserved_session_id_low(aeron_driver_context_t *context, int32_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->publication_reserved_session_id_low = value;
+    return 0;
+}
+
+int32_t aeron_driver_context_get_publication_reserved_session_id_low(aeron_driver_context_t *context)
+{
+    return NULL != context
+           ? context->publication_reserved_session_id_low
+           : AERON_PUBLICATION_RESERVED_SESSION_ID_LOW_DEFAULT;
+}
+
+int aeron_driver_context_set_publication_reserved_session_id_high(aeron_driver_context_t *context, int32_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->publication_reserved_session_id_high = value;
+    return 0;
+}
+
+int32_t aeron_driver_context_get_publication_reserved_session_id_high(aeron_driver_context_t *context)
+{
+    return NULL != context
+           ? context->publication_reserved_session_id_high
+           : AERON_PUBLICATION_RESERVED_SESSION_ID_HIGH_DEFAULT;
+}
+
 
 bool aeron_driver_context_get_rejoin_stream(aeron_driver_context_t *context)
 {

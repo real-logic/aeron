@@ -37,6 +37,7 @@ import org.agrona.collections.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
@@ -95,7 +96,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     private ClusterMember leaderMember;
     private ClusterMember thisMember;
     private long[] rankedPositions;
-    private final ServiceAck[] serviceAcks;
+    private final ArrayDeque<ServiceAck>[] serviceAckQueues;
     private final Counter clusterRoleCounter;
     private final ClusterMarkFile markFile;
     private final AgentInvoker aeronClientInvoker;
@@ -172,7 +173,7 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
         this.markFile = ctx.clusterMarkFile();
         this.recordingLog = ctx.recordingLog();
         this.tempBuffer = ctx.tempBuffer();
-        this.serviceAcks = ServiceAck.newArray(ctx.serviceCount());
+        this.serviceAckQueues = ServiceAck.newArray(ctx.serviceCount());
         this.highMemberId = ClusterMember.highMemberId(clusterMembers);
         this.logPublicationChannelTag = (int)aeron.nextCorrelationId();
         this.logSubscriptionChannelTag = (int)aeron.nextCorrelationId();
@@ -1011,10 +1012,9 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     void onServiceAck(
         final long logPosition, final long timestamp, final long ackId, final long relevantId, final int serviceId)
     {
-        validateServiceAck(logPosition, ackId, serviceId);
-        serviceAcks[serviceId].logPosition(logPosition).ackId(ackId).relevantId(relevantId);
+        serviceAckQueues[serviceId].offerLast(new ServiceAck(ackId, logPosition, relevantId));
 
-        if (ServiceAck.hasReachedPosition(logPosition, serviceAckId, serviceAcks))
+        if (ServiceAck.hasReachedPosition(logPosition, serviceAckId, serviceAckQueues))
         {
             switch (state)
             {
@@ -1801,9 +1801,10 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
     {
         consensusModuleAdapter.poll();
 
-        if (ServiceAck.hasReachedPosition(expectedAckPosition, serviceAckId, serviceAcks))
+        if (ServiceAck.hasReachedPosition(expectedAckPosition, serviceAckId, serviceAckQueues))
         {
             ++serviceAckId;
+            ServiceAck.removeHead(serviceAckQueues);
             recoveryStateCounter.close();
             if (ConsensusModule.State.SUSPENDED != state)
             {
@@ -2368,29 +2369,18 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
 
     private void awaitServiceAcks(final long logPosition)
     {
-        while (!ServiceAck.hasReachedPosition(logPosition, serviceAckId, serviceAcks))
+        while (!ServiceAck.hasReachedPosition(logPosition, serviceAckId, serviceAckQueues))
         {
             idle(consensusModuleAdapter.poll());
         }
 
         ++serviceAckId;
+        ServiceAck.removeHead(serviceAckQueues);
     }
 
     private long logPosition()
     {
         return null != logAdapter ? logAdapter.position() : logPublisher.position();
-    }
-
-    private void validateServiceAck(final long logPosition, final long ackId, final int serviceId)
-    {
-        if (logPosition != expectedAckPosition || ackId != serviceAckId)
-        {
-            throw new ClusterException("invalid service ACK" +
-                " state " + state +
-                ": serviceId=" + serviceId +
-                ", logPosition=" + logPosition + " expected " + expectedAckPosition +
-                ", ackId=" + ackId + " expected " + serviceAckId);
-        }
     }
 
     private void handleMemberRemovals(final long commitPosition)
@@ -2555,9 +2545,9 @@ class ConsensusModuleAgent implements Agent, MemberStatusListener
                 snapshotState(publication, logPosition, leadershipTermId);
                 awaitRecordingComplete(recordingId, publication.position(), counters, counterId);
 
-                for (int serviceId = serviceAcks.length - 1; serviceId >= 0; serviceId--)
+                for (int serviceId = serviceAckQueues.length - 1; serviceId >= 0; serviceId--)
                 {
-                    final long snapshotId = serviceAcks[serviceId].relevantId();
+                    final long snapshotId = serviceAckQueues[serviceId].pollFirst().relevantId();
                     recordingLog.appendSnapshot(
                         snapshotId, leadershipTermId, termBaseLogPosition, logPosition, timestamp, serviceId);
                 }

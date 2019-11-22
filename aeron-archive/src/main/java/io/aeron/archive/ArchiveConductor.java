@@ -101,6 +101,7 @@ abstract class ArchiveConductor
     private final ArchiveMarkFile markFile;
     private final RecordingEventsProxy recordingEventsProxy;
     private final Authenticator authenticator;
+    private final ControlSessionProxy controlSessionProxy;
     private final long connectTimeoutMs;
     private long timeOfLastMarkFileUpdateMs;
     private long nextSessionId = ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE);
@@ -146,6 +147,7 @@ abstract class ArchiveConductor
         markFile = ctx.archiveMarkFile();
         cachedEpochClock.update(epochClock.time());
         authenticator = ctx.authenticatorSupplier().get();
+        controlSessionProxy = new ControlSessionProxy(controlResponseProxy);
     }
 
     public void onStart()
@@ -323,7 +325,9 @@ abstract class ArchiveConductor
             aeron.addExclusivePublication(controlChannel, streamId),
             this,
             cachedEpochClock,
-            controlResponseProxy);
+            controlResponseProxy,
+            authenticator,
+            controlSessionProxy);
 
         authenticator.onConnectRequest(controlSession.sessionId(), encodedCredentials, cachedEpochClock.time());
 

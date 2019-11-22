@@ -161,6 +161,37 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                 break;
             }
 
+            case ChallengeResponseDecoder.TEMPLATE_ID:
+            {
+                final ChallengeResponseDecoder decoder = decoders.challengeResponseDecoder;
+                decoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                final int credentialsLength = decoder.encodedCredentialsLength();
+                final byte[] credentials;
+
+                if (credentialsLength > 0)
+                {
+                    credentials = new byte[credentialsLength];
+                    decoder.getEncodedCredentials(credentials, 0, credentialsLength);
+                }
+                else
+                {
+                    credentials = ArrayUtil.EMPTY_BYTE_ARRAY;
+                }
+
+                final long controlSessionId = decoder.controlSessionId();
+                final ControlSession session = controlSessionByIdMap.get(controlSessionId);
+                if (null != session)
+                {
+                    session.onChallengeResponse(decoder.correlationId(), credentials);
+                }
+                break;
+            }
+
             case CloseSessionRequestDecoder.TEMPLATE_ID:
             {
                 final CloseSessionRequestDecoder decoder = decoders.closeSessionRequest;

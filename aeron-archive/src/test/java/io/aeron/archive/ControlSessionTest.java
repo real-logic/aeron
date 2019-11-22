@@ -1,6 +1,7 @@
 package io.aeron.archive;
 
 import io.aeron.Publication;
+import io.aeron.security.Authenticator;
 import org.agrona.concurrent.EpochClock;
 import org.junit.Before;
 import org.junit.Test;
@@ -19,6 +20,8 @@ public class ControlSessionTest
     private final EpochClock mockEpochClock = mock(EpochClock.class);
     private final Publication mockControlPublication = mock(Publication.class);
     private final ControlResponseProxy mockProxy = mock(ControlResponseProxy.class);
+    private final ControlSessionProxy mockSessionProxy = mock(ControlSessionProxy.class);
+    private final Authenticator mockAuthenticator = mock(Authenticator.class);
     private ControlSession session;
 
     @Before
@@ -34,7 +37,9 @@ public class ControlSessionTest
             mockControlPublication,
             mockConductor,
             mockEpochClock,
-            mockProxy);
+            mockProxy,
+            mockAuthenticator,
+            mockSessionProxy);
     }
 
     @Test

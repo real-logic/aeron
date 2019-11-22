@@ -17,13 +17,24 @@ package io.aeron.archive;
 
 import io.aeron.security.SessionProxy;
 
+import static io.aeron.archive.codecs.ControlResponseCode.OK;
+
 public class ControlSessionProxy implements SessionProxy
 {
-    private final ControlSession controlSession;
+    private static final String SESSION_REJECTED_MSG = "authentication rejected";
 
-    ControlSessionProxy(final ControlSession controlSession)
+    private final ControlResponseProxy controlResponseProxy;
+    private ControlSession controlSession;
+
+    ControlSessionProxy(final ControlResponseProxy controlResponseProxy)
+    {
+        this.controlResponseProxy = controlResponseProxy;
+    }
+
+    ControlSessionProxy controlSession(final ControlSession controlSession)
     {
         this.controlSession = controlSession;
+        return this;
     }
 
     public long sessionId()
@@ -33,21 +44,38 @@ public class ControlSessionProxy implements SessionProxy
 
     public boolean challenge(final byte[] encodedChallenge)
     {
-//        if (sendChallenge())
-//        {
-//            controlSession.state(CHALLENGED);
-//        }
+        if (controlResponseProxy.sendChallenge(
+            controlSession.sessionId(),
+            controlSession.correlationId(),
+            encodedChallenge,
+            controlSession))
+        {
+            controlSession.challenged();
+            return true;
+        }
 
         return false;
     }
 
     public boolean authenticate(final byte[] encodedPrincipal)
     {
+        if (controlResponseProxy.sendResponse(
+            controlSession.sessionId(),
+            controlSession.correlationId(),
+            controlSession.sessionId(),
+            OK,
+            null,
+            controlSession))
+        {
+            controlSession.authenticate(encodedPrincipal);
+            return true;
+        }
+
         return false;
     }
 
     public void reject()
     {
-
+        controlSession.reject(SESSION_REJECTED_MSG);
     }
 }

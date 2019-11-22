@@ -21,6 +21,7 @@ import io.aeron.Subscription;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.codecs.SourceLocation;
+import io.aeron.security.Authenticator;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -28,6 +29,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import java.util.ArrayDeque;
 import java.util.function.BooleanSupplier;
 
+import static io.aeron.archive.client.ArchiveException.AUTHENTICATION_REJECTED;
 import static io.aeron.archive.client.ArchiveException.GENERIC;
 import static io.aeron.archive.codecs.ControlResponseCode.*;
 
@@ -41,7 +43,7 @@ class ControlSession implements Session
 
     enum State
     {
-        INIT, CONNECTED, ACTIVE, INACTIVE, CLOSED
+        INIT, CONNECTED, CHALLENGED, AUTHENTICATED, ACTIVE, INACTIVE, REJECTED, CLOSED
     }
 
     private final int majorVersion;
@@ -54,11 +56,14 @@ class ControlSession implements Session
     private final ArchiveConductor conductor;
     private final EpochClock epochClock;
     private final ControlResponseProxy controlResponseProxy;
+    private final Authenticator authenticator;
+    private final ControlSessionProxy controlSessionProxy;
     private final ArrayDeque<BooleanSupplier> queuedResponses = new ArrayDeque<>(8);
     private final ControlSessionDemuxer demuxer;
     private final Publication controlPublication;
     private final String invalidVersionMessage;
     private State state = State.INIT;
+    private String sessionRejectMsg;
 
     ControlSession(
         final int majorVersion,
@@ -70,7 +75,9 @@ class ControlSession implements Session
         final Publication controlPublication,
         final ArchiveConductor conductor,
         final EpochClock epochClock,
-        final ControlResponseProxy controlResponseProxy)
+        final ControlResponseProxy controlResponseProxy,
+        final Authenticator authenticator,
+        final ControlSessionProxy controlSessionProxy)
     {
         this.majorVersion = majorVersion;
         this.controlSessionId = controlSessionId;
@@ -82,6 +89,8 @@ class ControlSession implements Session
         this.conductor = conductor;
         this.epochClock = epochClock;
         this.controlResponseProxy = controlResponseProxy;
+        this.authenticator = authenticator;
+        this.controlSessionProxy = controlSessionProxy;
         this.activityDeadlineMs = epochClock.time() + connectTimeoutMs;
     }
 
@@ -93,6 +102,11 @@ class ControlSession implements Session
     public long sessionId()
     {
         return controlSessionId;
+    }
+
+    public long correlationId()
+    {
+        return correlationId;
     }
 
     public void abort()
@@ -124,19 +138,32 @@ class ControlSession implements Session
     public int doWork()
     {
         int workCount = 0;
+        final long nowMs = epochClock.time();
 
         switch (state)
         {
             case INIT:
-                workCount += waitForConnection();
+                workCount += waitForConnection(nowMs);
                 break;
 
             case CONNECTED:
-                workCount += sendConnectResponse();
+                workCount += sendConnectResponse(nowMs);
+                break;
+
+            case CHALLENGED:
+                workCount += waitForChallengeResponse(nowMs);
+                break;
+
+            case AUTHENTICATED:
+                workCount += waitForRequest(nowMs);
                 break;
 
             case ACTIVE:
-                workCount = sendQueuedResponses();
+                workCount += sendQueuedResponses(nowMs);
+                break;
+
+            case REJECTED:
+                workCount += sendReject(nowMs);
                 break;
         }
 
@@ -163,9 +190,18 @@ class ControlSession implements Session
         this.activeListing = activeListing;
     }
 
+    @SuppressWarnings("unused")
+    void onChallengeResponse(final long correlationId, final byte[] encodedCredentials)
+    {
+        if (State.CHALLENGED == state)
+        {
+            authenticator.onChallengeResponse(controlSessionId, encodedCredentials, epochClock.time());
+        }
+    }
+
     void onStopRecording(final long correlationId, final int streamId, final String channel)
     {
-        updateState();
+        attemptToGoActive();
         if (State.ACTIVE == state)
         {
             conductor.stopRecording(correlationId, streamId, channel, this);
@@ -174,7 +210,7 @@ class ControlSession implements Session
 
     void onStopRecordingSubscription(final long correlationId, final long subscriptionId)
     {
-        updateState();
+        attemptToGoActive();
         if (State.ACTIVE == state)
         {
             conductor.stopRecordingSubscription(correlationId, subscriptionId, this);
@@ -184,7 +220,7 @@ class ControlSession implements Session
     void onStartRecording(
         final long correlationId, final int streamId, final SourceLocation sourceLocation, final String channel)
     {
-        updateState();
+        attemptToGoActive();
         if (State.ACTIVE == state)
         {
             conductor.startRecording(correlationId, streamId, sourceLocation, channel, this);
@@ -198,7 +234,7 @@ class ControlSession implements Session
         final int streamId,
         final byte[] channelFragment)
     {
-        updateState();
+        attemptToGoActive();
         if (State.ACTIVE == state)
         {
             conductor.newListRecordingsForUriSession(
@@ -213,7 +249,7 @@ class ControlSession implements Session
 
     void onListRecordings(final long correlationId, final long fromRecordingId, final int recordCount)
     {
-        updateState();
+        attemptToGoActive();
         if (State.ACTIVE == state)
         {
             conductor.newListRecordingsSession(correlationId, fromRecordingId, recordCount, this);
@@ -222,7 +258,7 @@ class ControlSession implements Session
 
     void onListRecording(final long correlationId, final long recordingId)
     {
-        updateState();
+        attemptToGoActive();
         if (State.ACTIVE == state)
         {
             conductor.listRecording(correlationId, recordingId, this);
@@ -236,7 +272,7 @@ class ControlSession implements Session
         final int streamId,
         final byte[] channelFragment)
     {
-        updateState();
+        attemptToGoActive();
         if (State.ACTIVE == state)
         {
             conductor.findLastMatchingRecording(
@@ -257,7 +293,7 @@ class ControlSession implements Session
         final int replayStreamId,
         final String replayChannel)
     {
-        updateState();
+        attemptToGoActive();
         if (State.ACTIVE == state)
         {
             conductor.startReplay(
@@ -274,7 +310,7 @@ class ControlSession implements Session
         final int replayStreamId,
         final String replayChannel)
     {
-        updateState();
+        attemptToGoActive();
         if (State.ACTIVE == state)
         {
             conductor.startBoundedReplay(
@@ -291,7 +327,7 @@ class ControlSession implements Session
 
     void onStopReplay(final long correlationId, final long replaySessionId)
     {
-        updateState();
+        attemptToGoActive();
         if (State.ACTIVE == state)
         {
             conductor.stopReplay(correlationId, replaySessionId, this);
@@ -300,7 +336,7 @@ class ControlSession implements Session
 
     void onStopAllReplays(final long correlationId, final long recordingId)
     {
-        updateState();
+        attemptToGoActive();
         if (State.ACTIVE == state)
         {
             conductor.stopAllReplays(correlationId, recordingId, this);
@@ -314,7 +350,7 @@ class ControlSession implements Session
         final SourceLocation sourceLocation,
         final String channel)
     {
-        updateState();
+        attemptToGoActive();
         if (State.ACTIVE == state)
         {
             conductor.extendRecording(correlationId, recordingId, streamId, sourceLocation, channel, this);
@@ -323,7 +359,7 @@ class ControlSession implements Session
 
     void onGetRecordingPosition(final long correlationId, final long recordingId)
     {
-        updateState();
+        attemptToGoActive();
         if (State.ACTIVE == state)
         {
             conductor.getRecordingPosition(correlationId, recordingId, this);
@@ -332,7 +368,7 @@ class ControlSession implements Session
 
     void onTruncateRecording(final long correlationId, final long recordingId, final long position)
     {
-        updateState();
+        attemptToGoActive();
         if (State.ACTIVE == state)
         {
             conductor.truncateRecording(correlationId, recordingId, position, this);
@@ -341,7 +377,7 @@ class ControlSession implements Session
 
     void onGetStopPosition(final long correlationId, final long recordingId)
     {
-        updateState();
+        attemptToGoActive();
         if (State.ACTIVE == state)
         {
             conductor.getStopPosition(correlationId, recordingId, this);
@@ -356,7 +392,7 @@ class ControlSession implements Session
         final int streamId,
         final String channelFragment)
     {
-        updateState();
+        attemptToGoActive();
         if (State.ACTIVE == state)
         {
             conductor.listRecordingSubscriptions(
@@ -378,7 +414,7 @@ class ControlSession implements Session
         final String srcControlChannel,
         final String liveDestination)
     {
-        updateState();
+        attemptToGoActive();
         if (State.ACTIVE == state)
         {
             conductor.replicate(
@@ -394,7 +430,7 @@ class ControlSession implements Session
 
     void onStopReplication(final long correlationId, final long replicationId)
     {
-        updateState();
+        attemptToGoActive();
         if (State.ACTIVE == state)
         {
             conductor.stopReplication(correlationId, replicationId, this);
@@ -403,7 +439,7 @@ class ControlSession implements Session
 
     void onGetStartPosition(final long correlationId, final long recordingId)
     {
-        updateState();
+        attemptToGoActive();
         if (State.ACTIVE == state)
         {
             conductor.getStartPosition(correlationId, recordingId, this);
@@ -412,7 +448,7 @@ class ControlSession implements Session
 
     void onDetachSegments(final long correlationId, final long recordingId, final long newStartPosition)
     {
-        updateState();
+        attemptToGoActive();
         if (State.ACTIVE == state)
         {
             conductor.detachSegments(correlationId, recordingId, newStartPosition, this);
@@ -421,7 +457,7 @@ class ControlSession implements Session
 
     void onDeleteDetachedSegments(final long correlationId, final long recordingId)
     {
-        updateState();
+        attemptToGoActive();
         if (State.ACTIVE == state)
         {
             conductor.deleteDetachedSegments(correlationId, recordingId, this);
@@ -430,7 +466,7 @@ class ControlSession implements Session
 
     void onPurgeSegments(final long correlationId, final long recordingId, final long newStartPosition)
     {
-        updateState();
+        attemptToGoActive();
         if (State.ACTIVE == state)
         {
             conductor.purgeSegments(correlationId, recordingId, newStartPosition, this);
@@ -439,7 +475,7 @@ class ControlSession implements Session
 
     void onAttachSegments(final long correlationId, final long recordingId)
     {
-        updateState();
+        attemptToGoActive();
         if (State.ACTIVE == state)
         {
             conductor.attachSegments(correlationId, recordingId, this);
@@ -448,7 +484,7 @@ class ControlSession implements Session
 
     void onMigrateSegments(final long correlationId, final long srcRecordingId, final long dstRecordingId)
     {
-        updateState();
+        attemptToGoActive();
         if (State.ACTIVE == state)
         {
             conductor.migrateSegments(correlationId, srcRecordingId, dstRecordingId, this);
@@ -543,35 +579,21 @@ class ControlSession implements Session
         return controlPublication.maxPayloadLength();
     }
 
-    private int sendQueuedResponses()
+    void challenged()
     {
-        int workCount = 0;
-        if (!controlPublication.isConnected())
-        {
-            state(State.INACTIVE);
-        }
-        else
-        {
-            if (!queuedResponses.isEmpty())
-            {
-                if (queuedResponses.peekFirst().getAsBoolean())
-                {
-                    queuedResponses.pollFirst();
-                    activityDeadlineMs = Aeron.NULL_VALUE;
-                    workCount++;
-                }
-                else if (activityDeadlineMs == Aeron.NULL_VALUE)
-                {
-                    activityDeadlineMs = epochClock.time() + connectTimeoutMs;
-                }
-                else if (hasNoActivity(epochClock.time()))
-                {
-                    state(State.INACTIVE);
-                }
-            }
-        }
+        state(State.CHALLENGED);
+    }
 
-        return workCount;
+    void authenticate(final byte[] encodedPrincipal)
+    {
+        activityDeadlineMs = Aeron.NULL_VALUE;
+        state(State.AUTHENTICATED);
+    }
+
+    void reject(final String sessionRejectMsg)
+    {
+        state(State.REJECTED);
+        this.sessionRejectMsg = sessionRejectMsg;
     }
 
     private void queueResponse(
@@ -586,7 +608,7 @@ class ControlSession implements Session
             this));
     }
 
-    private int waitForConnection()
+    private int waitForConnection(final long nowMs)
     {
         int workCount = 0;
 
@@ -595,7 +617,7 @@ class ControlSession implements Session
             state(State.CONNECTED);
             workCount += 1;
         }
-        else if (hasNoActivity(epochClock.time()))
+        else if (hasNoActivity(nowMs))
         {
             state(State.INACTIVE);
             workCount += 1;
@@ -604,11 +626,10 @@ class ControlSession implements Session
         return workCount;
     }
 
-    private int sendConnectResponse()
+    private int sendConnectResponse(final long nowMs)
     {
         int workCount = 0;
 
-        final long nowMs = epochClock.time();
         if (hasNoActivity(nowMs))
         {
             state(State.INACTIVE);
@@ -629,7 +650,49 @@ class ControlSession implements Session
 
                 workCount += 1;
             }
-            else if (controlResponseProxy.sendResponse(
+            else
+            {
+                authenticator.onConnectedSession(controlSessionProxy.controlSession(this), nowMs);
+
+                workCount += 1;
+            }
+        }
+
+        return workCount;
+    }
+
+    private int waitForChallengeResponse(final long nowMs)
+    {
+        int workCount = 0;
+
+        if (hasNoActivity(nowMs))
+        {
+            state(State.INACTIVE);
+            workCount += 1;
+        }
+        else
+        {
+            authenticator.onChallengedSession(controlSessionProxy.controlSession(this), nowMs);
+
+            workCount += 1;
+        }
+
+        return workCount;
+    }
+
+    private int waitForRequest(final long nowMs)
+    {
+        int workCount = 0;
+
+        if (hasNoActivity(nowMs))
+        {
+            state(State.INACTIVE);
+            workCount += 1;
+        }
+        else if (nowMs > resendDeadlineMs)
+        {
+            resendDeadlineMs = nowMs + RESEND_INTERVAL_MS;
+            if (controlResponseProxy.sendResponse(
                 controlSessionId,
                 correlationId,
                 controlSessionId,
@@ -645,14 +708,72 @@ class ControlSession implements Session
         return workCount;
     }
 
+    private int sendQueuedResponses(final long nowMs)
+    {
+        int workCount = 0;
+
+        if (!controlPublication.isConnected())
+        {
+            state(State.INACTIVE);
+        }
+        else
+        {
+            if (!queuedResponses.isEmpty())
+            {
+                if (queuedResponses.peekFirst().getAsBoolean())
+                {
+                    queuedResponses.pollFirst();
+                    activityDeadlineMs = Aeron.NULL_VALUE;
+                    workCount++;
+                }
+                else if (activityDeadlineMs == Aeron.NULL_VALUE)
+                {
+                    activityDeadlineMs = nowMs + connectTimeoutMs;
+                }
+                else if (hasNoActivity(nowMs))
+                {
+                    state(State.INACTIVE);
+                }
+            }
+        }
+
+        return workCount;
+    }
+
+    private int sendReject(final long nowMs)
+    {
+        int workCount = 0;
+
+        if (hasNoActivity(nowMs))
+        {
+            state(State.INACTIVE);
+            workCount += 1;
+        }
+        else if (nowMs > resendDeadlineMs)
+        {
+            resendDeadlineMs = nowMs + RESEND_INTERVAL_MS;
+            controlResponseProxy.sendResponse(
+                controlSessionId,
+                correlationId,
+                AUTHENTICATION_REJECTED,
+                ERROR,
+                sessionRejectMsg,
+                this);
+
+            workCount += 1;
+        }
+
+        return workCount;
+    }
+
     private boolean hasNoActivity(final long nowMs)
     {
         return Aeron.NULL_VALUE != activityDeadlineMs & nowMs > activityDeadlineMs;
     }
 
-    private void updateState()
+    private void attemptToGoActive()
     {
-        if (State.CONNECTED == state && null == invalidVersionMessage)
+        if (State.AUTHENTICATED == state && null == invalidVersionMessage)
         {
             state(State.ACTIVE);
         }

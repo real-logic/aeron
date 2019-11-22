@@ -43,7 +43,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.stubbing.Answer;
 
-import java.lang.reflect.Method;
+import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -1701,67 +1701,85 @@ public class DriverConductorTest
     @Test
     public void shouldReusePublicationChannel() throws Exception
     {
-        final String hostname = "testHostname";
+        try
+        {
+            final String hostname = "";
 
-        forceHostnameSuccessResolution(hostname, InetAddress.getByAddress(new byte[]{127, 0, 0, 3}));
+            forceLoopbackResolution(InetAddress.getByAddress(new byte[]{127, 0, 0, 3}));
 
-        final String channel = "aeron:udp?endpoint=" + hostname + ":4000";
-        final UdpChannel initialUdpChannel = UdpChannel.parse(channel);
+            final String channel = "aeron:udp?endpoint=" + hostname + ":4000";
+            final UdpChannel initialUdpChannel = UdpChannel.parse(channel);
 
-        driverProxy.addExclusivePublication(channel, STREAM_ID_1);
-        driverProxy.addExclusivePublication(channel, STREAM_ID_2);
-        driverConductor.doWork();
+            driverProxy.addExclusivePublication(channel, STREAM_ID_1);
+            driverProxy.addExclusivePublication(channel, STREAM_ID_2);
+            driverConductor.doWork();
 
-        assertNotNull(driverConductor.senderChannelEndpoint(initialUdpChannel));
+            assertNotNull(driverConductor.senderChannelEndpoint(initialUdpChannel));
 
-        forceHostnameSuccessResolution(hostname, InetAddress.getByAddress(new byte[]{127, 0, 0, 1}));
+            forceLoopbackResolution(InetAddress.getByAddress(new byte[]{127, 0, 0, 1}));
 
-        final UdpChannel updatedUdpChannel = UdpChannel.parse(channel);
+            final UdpChannel updatedUdpChannel = UdpChannel.parse(channel);
 
-        driverProxy.resolveHostnames();
-        driverProxy.addExclusivePublication(channel, STREAM_ID_3);
-        driverConductor.doWork();
+            driverProxy.resolveHostnames();
+            driverProxy.addExclusivePublication(channel, STREAM_ID_3);
+            driverConductor.doWork();
 
-        assertNull(driverConductor.senderChannelEndpoint(initialUdpChannel));
-        assertNotNull(driverConductor.senderChannelEndpoint(updatedUdpChannel));
+            assertNull(driverConductor.senderChannelEndpoint(initialUdpChannel));
+            assertNotNull(driverConductor.senderChannelEndpoint(updatedUdpChannel));
+        }
+        finally
+        {
+            // return to normal state
+            forceLoopbackResolution(null);
+        }
     }
 
     @Test
     public void shouldReuseSubscriptionChannel() throws Exception
     {
-        final String hostname = "testHostname";
+        try
+        {
+            final String hostname = "";
 
-        forceHostnameSuccessResolution(hostname, InetAddress.getByAddress(new byte[]{127, 0, 0, 3}));
+            forceLoopbackResolution(InetAddress.getByAddress(new byte[]{127, 0, 0, 3}));
 
-        final String channel = "aeron:udp?endpoint=" + hostname + ":4000";
-        final UdpChannel initialUdpChannel = UdpChannel.parse(channel);
+            final String channel = "aeron:udp?endpoint=" + hostname + ":4000";
+            final UdpChannel initialUdpChannel = UdpChannel.parse(channel);
 
-        driverProxy.addSubscription(channel, STREAM_ID_1);
-        driverProxy.addSubscription(channel, STREAM_ID_2);
-        driverConductor.doWork();
+            driverProxy.addSubscription(channel, STREAM_ID_1);
+            driverProxy.addSubscription(channel, STREAM_ID_2);
+            driverConductor.doWork();
 
-        assertNotNull(driverConductor.receiverChannelEndpoint(initialUdpChannel));
+            assertNotNull(driverConductor.receiverChannelEndpoint(initialUdpChannel));
 
-        forceHostnameSuccessResolution(hostname, InetAddress.getByAddress(new byte[]{127, 0, 0, 1}));
+            forceLoopbackResolution(InetAddress.getByAddress(new byte[]{127, 0, 0, 1}));
 
-        final UdpChannel updatedUdpChannel = UdpChannel.parse(channel);
+            final UdpChannel updatedUdpChannel = UdpChannel.parse(channel);
 
-        driverProxy.resolveHostnames();
-        driverProxy.addSubscription(channel, STREAM_ID_3);
-        driverConductor.doWork();
+            driverProxy.resolveHostnames();
+            driverProxy.addSubscription(channel, STREAM_ID_3);
+            driverConductor.doWork();
 
-        assertNull(driverConductor.receiverChannelEndpoint(initialUdpChannel));
-        assertNotNull(driverConductor.receiverChannelEndpoint(updatedUdpChannel));
+            assertNull(driverConductor.receiverChannelEndpoint(initialUdpChannel));
+            assertNotNull(driverConductor.receiverChannelEndpoint(updatedUdpChannel));
+        }
+        finally
+        {
+            // return to normal state
+            forceLoopbackResolution(null);
+        }
     }
 
-    private static void forceHostnameSuccessResolution(final String testHostname, final InetAddress byAddress1)
+    private static void forceLoopbackResolution(final InetAddress address)
         throws Exception
     {
-        final Method cacheAddressesMethod = InetAddress.class.getDeclaredMethod(
-            "cacheAddresses", String.class, InetAddress[].class, boolean.class);
+        final Field implField = InetAddress.class.getDeclaredField("impl");
+        implField.setAccessible(true);
+        final Object field = implField.get(null);
 
-        cacheAddressesMethod.setAccessible(true);
-        cacheAddressesMethod.invoke(null, testHostname, new InetAddress[]{byAddress1}, true);
+        final Field loopbackAddressField = field.getClass().getDeclaredField("loopbackAddress");
+        loopbackAddressField.setAccessible(true);
+        loopbackAddressField.set(field, address);
     }
 
     private void doWorkUntil(final BooleanSupplier condition, final LongConsumer timeConsumer)

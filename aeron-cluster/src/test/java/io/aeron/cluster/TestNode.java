@@ -38,7 +38,6 @@ import org.agrona.concurrent.status.CountersReader;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.aeron.Aeron.NULL_VALUE;
 
@@ -275,13 +274,12 @@ class TestNode implements AutoCloseable
 
             if (null != snapshotImage)
             {
-                final AtomicInteger snapshotFragmentCount = new AtomicInteger();
-
+                final MutableInteger snapshotFragmentCount = new MutableInteger();
                 final FragmentHandler handler =
                     (buffer, offset, length, header) ->
                     {
                         messageCount = buffer.getInt(offset);
-                        snapshotFragmentCount.incrementAndGet();
+                        snapshotFragmentCount.value += 1;
                     };
 
                 while (true)
@@ -300,8 +298,7 @@ class TestNode implements AutoCloseable
                 {
                     throw new AgentTerminationException(
                         "Unexpected snapshot length: expected=" + SNAPSHOT_FRAGMENT_COUNT +
-                            " actual=" + snapshotFragmentCount
-                    );
+                        " actual=" + snapshotFragmentCount);
                 }
 
                 wasSnapshotLoaded = true;

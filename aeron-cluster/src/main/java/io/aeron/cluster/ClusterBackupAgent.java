@@ -25,10 +25,7 @@ import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.BackupResponseDecoder;
 import io.aeron.cluster.codecs.MessageHeaderDecoder;
-import io.aeron.cluster.codecs.SnapshotMarkerDecoder;
 import io.aeron.cluster.service.ClusterMarkFile;
-import io.aeron.cluster.service.ClusteredServiceContainer;
-import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
@@ -82,7 +79,6 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
     private AeronArchive clusterArchive;
 
     private Subscription snapshotRetrieveSubscription;
-    private Image snapshotRetrieveImage;
     private SnapshotReader snapshotReader;
 
     private final FragmentAssembler memberStatusFragmentAssembler = new FragmentAssembler(this::onFragment);
@@ -105,9 +101,9 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
     private int leaderCommitPositionCounterId = NULL_VALUE;
     private int clusterMembersStatusEndpointsCursor = NULL_VALUE;
     private int snapshotCursor = 0;
-    private int snapshotReplaySessionId = NULL_VALUE;
     private int liveLogReplaySessionId = NULL_VALUE;
     private int liveLogRecCounterId = NULL_COUNTER_ID;
+    private long snapshotStopPosition;
 
     ClusterBackupAgent(final ClusterBackup.Context ctx)
     {
@@ -522,13 +518,10 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
                         snapshot.timestamp,
                         snapshot.serviceId));
 
-                    CloseHelper.close(snapshotRetrieveSubscription);
                     backupArchive.stopRecording(snapshotRetrieveSubscriptionId);
-                    snapshotRetrieveSubscription = null;
-                    snapshotRetrieveImage = null;
                     snapshotReader = null;
                     correlationId = NULL_VALUE;
-                    snapshotReplaySessionId = NULL_VALUE;
+                    snapshotStopPosition = NULL_VALUE;
                     timeOfLastProgressMs = nowMs;
 
                     if (++snapshotCursor >= snapshotsToRetrieve.size())
@@ -537,23 +530,9 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
                         workCount++;
                     }
                 }
-                else if (null != snapshotRetrieveImage && snapshotRetrieveImage.isClosed())
-                {
-                    throw new ClusterException("retrieval of snapshot image ended unexpectedly");
-                }
             }
             else
             {
-                timeOfLastProgressMs = nowMs;
-                workCount++;
-            }
-        }
-        else if (null == snapshotRetrieveImage && null != snapshotRetrieveSubscription)
-        {
-            snapshotRetrieveImage = snapshotRetrieveSubscription.imageBySessionId(snapshotReplaySessionId);
-            if (null != snapshotRetrieveImage)
-            {
-                snapshotReader = new SnapshotReader(snapshotRetrieveImage, ctx.aeron().countersReader());
                 timeOfLastProgressMs = nowMs;
                 workCount++;
             }
@@ -564,29 +543,36 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
             final RecordingLog.Snapshot snapshot = snapshotsToRetrieve.get(snapshotCursor);
             final String transferChannel = "aeron:udp?endpoint=" + ctx.transferEndpoint();
 
-            if (clusterArchive.archiveProxy().replay(
-                snapshot.recordingId,
-                0,
-                NULL_LENGTH,
-                transferChannel,
-                ctx.replayStreamId(),
-                replayId,
-                clusterArchive.controlSessionId()))
+            snapshotStopPosition = clusterArchive.getStopPosition(snapshot.recordingId);
+
+            if (snapshotStopPosition != NULL_POSITION)
             {
-                correlationId = replayId;
-                timeOfLastProgressMs = nowMs;
-                workCount++;
+                if (clusterArchive.archiveProxy().replay(
+                    snapshot.recordingId,
+                    0,
+                    snapshotStopPosition,
+                    transferChannel,
+                    ctx.replayStreamId(),
+                    replayId,
+                    clusterArchive.controlSessionId()))
+                {
+                    correlationId = replayId;
+                    timeOfLastProgressMs = nowMs;
+                    workCount++;
+                }
             }
         }
         else if (pollForResponse(clusterArchive, correlationId))
         {
-            snapshotReplaySessionId = (int)clusterArchive.controlResponsePoller().relevantId();
+            final int snapshotReplaySessionId = (int)clusterArchive.controlResponsePoller().relevantId();
             final String replaySubscriptionChannel =
                 "aeron:udp?endpoint=" + ctx.transferEndpoint() + "|session-id=" + snapshotReplaySessionId;
 
-            snapshotRetrieveSubscription = ctx.aeron().addSubscription(replaySubscriptionChannel, ctx.replayStreamId());
             snapshotRetrieveSubscriptionId = backupArchive.startRecording(
                 replaySubscriptionChannel, ctx.replayStreamId(), SourceLocation.REMOTE);
+
+            snapshotReader =
+                new SnapshotReader(snapshotReplaySessionId, snapshotStopPosition, ctx.aeron().countersReader());
             timeOfLastProgressMs = nowMs;
             workCount++;
         }
@@ -817,97 +803,57 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
         return (NULL_COUNTER_ID == liveLogRecCounterId) && (nowMs > (timeOfLastProgressMs + backupProgressTimeoutMs));
     }
 
-    static class SnapshotReader implements ControlledFragmentHandler
+    static class SnapshotReader
     {
-        private static final int FRAGMENT_LIMIT = 10;
-
-        private boolean inSnapshot = false;
-        private boolean isDone = false;
-        private long endPosition = 0;
-        private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-        private final SnapshotMarkerDecoder snapshotMarkerDecoder = new SnapshotMarkerDecoder();
+        private long endPosition;
+        private final int sessionId;
         private final CountersReader countersReader;
-        private final Image image;
         private long recordingId = RecordingPos.NULL_RECORDING_ID;
         private long recordingPosition = NULL_POSITION;
         private int counterId;
 
-        SnapshotReader(final Image image, final CountersReader countersReader)
+        SnapshotReader(final int sessionId, final long stopPosition, final CountersReader countersReader)
         {
+            this.sessionId = sessionId;
+            this.endPosition = stopPosition;
             this.countersReader = countersReader;
-            this.image = image;
-            counterId = RecordingPos.findCounterIdBySession(countersReader, image.sessionId());
+            counterId = RecordingPos.findCounterIdBySession(countersReader, sessionId);
         }
 
         boolean isDone()
         {
-            return isDone && endPosition <= recordingPosition && image.isEndOfStream();
-        }
-
-        void pollRecordingPosition()
-        {
-            if (NULL_COUNTER_ID == counterId)
-            {
-                counterId = RecordingPos.findCounterIdBySession(countersReader, image.sessionId());
-            }
-            else if (RecordingPos.NULL_RECORDING_ID == recordingId)
-            {
-                recordingId = RecordingPos.getRecordingId(countersReader, counterId);
-            }
-            else
-            {
-                recordingPosition = countersReader.getCounterValue(counterId);
-            }
+            return recordingPosition == endPosition;
         }
 
         int poll()
         {
-            pollRecordingPosition();
+            int workCount = 0;
 
-            return image.controlledPoll(this, FRAGMENT_LIMIT);
-        }
-
-        public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
-        {
-            messageHeaderDecoder.wrap(buffer, offset);
-
-            if (messageHeaderDecoder.templateId() == SnapshotMarkerDecoder.TEMPLATE_ID)
+            if (NULL_COUNTER_ID == counterId)
             {
-                snapshotMarkerDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
+                counterId = RecordingPos.findCounterIdBySession(countersReader, sessionId);
 
-                final long typeId = snapshotMarkerDecoder.typeId();
-                if (typeId != ConsensusModule.Configuration.SNAPSHOT_TYPE_ID &&
-                    typeId != ClusteredServiceContainer.SNAPSHOT_TYPE_ID)
+                workCount += 1;
+            }
+            else if (RecordingPos.NULL_RECORDING_ID == recordingId)
+            {
+                recordingId = RecordingPos.getRecordingId(countersReader, counterId);
+
+                workCount += 1;
+            }
+            else
+            {
+                final long newRecordingPosition = countersReader.getCounterValue(counterId);
+
+                if (newRecordingPosition > recordingPosition)
                 {
-                    throw new ClusterException("unexpected snapshot type: " + typeId);
+                    workCount += 1;
                 }
 
-                switch (snapshotMarkerDecoder.mark())
-                {
-                    case BEGIN:
-                        if (inSnapshot)
-                        {
-                            throw new ClusterException("already in snapshot");
-                        }
-                        inSnapshot = true;
-                        return Action.CONTINUE;
-
-                    case END:
-                        if (!inSnapshot)
-                        {
-                            throw new ClusterException("missing begin snapshot");
-                        }
-                        isDone = true;
-                        endPosition = header.position();
-                        return Action.BREAK;
-                }
+                recordingPosition = newRecordingPosition;
             }
 
-            return ControlledFragmentHandler.Action.CONTINUE;
+            return workCount;
         }
     }
 }

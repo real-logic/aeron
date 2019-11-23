@@ -18,7 +18,6 @@ package io.aeron.archive;
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
-import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.security.Authenticator;
@@ -366,7 +365,6 @@ public class ArchiveAuthenticationTest
         {
             final CountersReader counters = aeron.countersReader();
             final int counterId = Common.awaitRecordingCounterId(counters, publication.sessionId());
-            final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
             offer(publication, messageCount, messagePrefix);
             consume(subscription, messageCount, messagePrefix);

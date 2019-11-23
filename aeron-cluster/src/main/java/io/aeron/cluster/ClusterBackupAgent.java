@@ -841,7 +841,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
 
         boolean isDone()
         {
-            return isDone && endPosition <= recordingPosition;
+            return isDone && endPosition <= recordingPosition && image.isEndOfStream();
         }
 
         void pollRecordingPosition()

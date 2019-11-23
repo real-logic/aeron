@@ -136,6 +136,66 @@ public class ArchiveAuthenticationTest
     }
 
     @Test(timeout = 10_000)
+    public void shouldBeAbleToRecordWithAuthenticateOnChallengeResponse()
+    {
+        final MutableLong authenticatorSessionId = new MutableLong(-1L);
+
+        final CredentialsSupplier credentialsSupplier = spy(new CredentialsSupplier()
+        {
+            public byte[] encodedCredentials()
+            {
+                return NULL_CREDENTIAL;
+            }
+
+            public byte[] onChallenge(final byte[] encodedChallenge)
+            {
+                assertThat(new String(encodedChallenge), is(CHALLENGE_STRING));
+                return encodedCredentials;
+            }
+        });
+
+        final Authenticator authenticator = spy(new Authenticator()
+        {
+            boolean challengeSuccessful = false;
+
+            public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
+            {
+                authenticatorSessionId.value = sessionId;
+                assertThat(encodedCredentials.length, is(0));
+            }
+
+            public void onChallengeResponse(final long sessionId, final byte[] encodedCredentials, final long nowMs)
+            {
+                assertThat(authenticatorSessionId.value, is(sessionId));
+                assertThat(new String(encodedCredentials), is(CREDENTIALS_STRING));
+                challengeSuccessful = true;
+            }
+
+            public void onConnectedSession(final SessionProxy sessionProxy, final long nowMs)
+            {
+                assertThat(authenticatorSessionId.value, is(sessionProxy.sessionId()));
+                sessionProxy.challenge(encodedChallenge);
+            }
+
+            public void onChallengedSession(final SessionProxy sessionProxy, final long nowMs)
+            {
+                if (challengeSuccessful)
+                {
+                    assertThat(authenticatorSessionId.value, is(sessionProxy.sessionId()));
+                    sessionProxy.authenticate(PRINCIPAL_STRING.getBytes());
+                }
+            }
+        });
+
+        launchArchivingMediaDriver(() -> authenticator);
+        connectClient(credentialsSupplier);
+
+        assertThat(authenticatorSessionId.value, is(aeronArchive.controlSessionId()));
+
+        createRecording();
+    }
+
+    @Test(timeout = 10_000)
     public void shouldNotBeAbleToConnectWithRejectOnConnectRequest()
     {
         final MutableLong authenticatorSessionId = new MutableLong(-1L);
@@ -176,6 +236,73 @@ public class ArchiveAuthenticationTest
             public void onChallengedSession(final SessionProxy sessionProxy, final long nowMs)
             {
                 fail();
+            }
+        });
+
+        launchArchivingMediaDriver(() -> authenticator);
+
+        try
+        {
+            connectClient(credentialsSupplier);
+        }
+        catch (final ArchiveException ex)
+        {
+            assertThat(ex.errorCode(), is(ArchiveException.AUTHENTICATION_REJECTED));
+            return;
+        }
+
+        fail("should have seen exception");
+    }
+
+    @Test(timeout = 10_000)
+    public void shouldNotBeAbleToConnectWithRejectOnChallengeResponse()
+    {
+        final MutableLong authenticatorSessionId = new MutableLong(-1L);
+
+        final CredentialsSupplier credentialsSupplier = spy(new CredentialsSupplier()
+        {
+            public byte[] encodedCredentials()
+            {
+                return NULL_CREDENTIAL;
+            }
+
+            public byte[] onChallenge(final byte[] encodedChallenge)
+            {
+                assertThat(new String(encodedChallenge), is(CHALLENGE_STRING));
+                return encodedCredentials;
+            }
+        });
+
+        final Authenticator authenticator = spy(new Authenticator()
+        {
+            boolean challengeRespondedTo = false;
+
+            public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
+            {
+                authenticatorSessionId.value = sessionId;
+                assertThat(encodedCredentials.length, is(0));
+            }
+
+            public void onChallengeResponse(final long sessionId, final byte[] encodedCredentials, final long nowMs)
+            {
+                assertThat(authenticatorSessionId.value, is(sessionId));
+                assertThat(new String(encodedCredentials), is(CREDENTIALS_STRING));
+                challengeRespondedTo = true;
+            }
+
+            public void onConnectedSession(final SessionProxy sessionProxy, final long nowMs)
+            {
+                assertThat(authenticatorSessionId.value, is(sessionProxy.sessionId()));
+                sessionProxy.challenge(encodedChallenge);
+            }
+
+            public void onChallengedSession(final SessionProxy sessionProxy, final long nowMs)
+            {
+                if (challengeRespondedTo)
+                {
+                    assertThat(authenticatorSessionId.value, is(sessionProxy.sessionId()));
+                    sessionProxy.reject();
+                }
             }
         });
 

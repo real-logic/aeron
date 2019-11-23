@@ -36,6 +36,7 @@ public class ControlResponsePoller implements ControlledFragmentHandler
 
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final ControlResponseDecoder controlResponseDecoder = new ControlResponseDecoder();
+    private final ChallengeDecoder challengeDecoder = new ChallengeDecoder();
 
     private final Subscription subscription;
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this);
@@ -46,6 +47,7 @@ public class ControlResponsePoller implements ControlledFragmentHandler
     private final int fragmentLimit;
     private ControlResponseCode code;
     private String errorMessage;
+    private byte[] encodedChallenge = null;
     private boolean isPollComplete = false;
 
     /**
@@ -93,6 +95,7 @@ public class ControlResponsePoller implements ControlledFragmentHandler
         relevantId = Aeron.NULL_VALUE;
         version = 0;
         errorMessage = null;
+        encodedChallenge = null;
         isPollComplete = false;
 
         return subscription.controlledPoll(fragmentAssembler, fragmentLimit);
@@ -168,6 +171,26 @@ public class ControlResponsePoller implements ControlledFragmentHandler
         return errorMessage;
     }
 
+    /**
+     * Was the last polling action received a challenge message?
+     *
+     * @return true if the last polling action received was a challenge message, false if not.
+     */
+    public boolean wasChallenged()
+    {
+        return null != encodedChallenge;
+    }
+
+    /**
+     * Get the encoded challenge of the last challenge.
+     *
+     * @return the encoded challenge of the last challenge.
+     */
+    public byte[] encodedChallenge()
+    {
+        return encodedChallenge;
+    }
+
     public ControlledFragmentAssembler.Action onFragment(
         final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
@@ -198,6 +221,29 @@ public class ControlResponsePoller implements ControlledFragmentHandler
             code = controlResponseDecoder.code();
             version = controlResponseDecoder.version();
             errorMessage = controlResponseDecoder.errorMessage();
+            isPollComplete = true;
+
+            return Action.BREAK;
+        }
+        else if (messageHeaderDecoder.templateId() == ChallengeDecoder.TEMPLATE_ID)
+        {
+            challengeDecoder.wrap(
+                buffer,
+                offset + MessageHeaderEncoder.ENCODED_LENGTH,
+                messageHeaderDecoder.blockLength(),
+                messageHeaderDecoder.version());
+
+            controlSessionId = challengeDecoder.controlSessionId();
+            correlationId = challengeDecoder.correlationId();
+            relevantId = Aeron.NULL_VALUE;
+            code = ControlResponseCode.NULL_VAL;
+            version = challengeDecoder.version();
+            errorMessage = "";
+
+            final int encodedChallengeLength = challengeDecoder.encodedChallengeLength();
+            encodedChallenge = new byte[encodedChallengeLength];
+            challengeDecoder.getEncodedChallenge(encodedChallenge, 0, encodedChallengeLength);
+
             isPollComplete = true;
 
             return Action.BREAK;

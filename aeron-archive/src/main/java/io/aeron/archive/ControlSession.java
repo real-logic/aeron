@@ -48,8 +48,8 @@ class ControlSession implements Session
 
     private final int majorVersion;
     private final long controlSessionId;
-    private final long correlationId;
     private final long connectTimeoutMs;
+    private long correlationId;
     private long resendDeadlineMs;
     private long activityDeadlineMs;
     private Session activeListing = null;
@@ -196,6 +196,7 @@ class ControlSession implements Session
         if (State.CHALLENGED == state)
         {
             authenticator.onChallengeResponse(controlSessionId, encodedCredentials, epochClock.time());
+            this.correlationId = correlationId;
         }
     }
 
@@ -789,6 +790,7 @@ class ControlSession implements Session
     {
         return "ControlSession{" +
             "controlSessionId=" + controlSessionId +
+            ", correlationId=" + correlationId +
             ", state=" + state +
             ", controlPublication=" + controlPublication +
             '}';

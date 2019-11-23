@@ -223,6 +223,30 @@ public class ArchiveProxy
     }
 
     /**
+     * Try send a ChallengeResponse to an archive on its control interface providing the credentials. Only one
+     * attempt will be made to offer the request.
+     *
+     * @param encodedCredentials to send.
+     * @param correlationId      for this response.
+     * @param controlSessionId   for this request.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean tryChallengeResponse(
+        final byte[] encodedCredentials, final long correlationId, final long controlSessionId)
+    {
+        final ChallengeResponseEncoder challengeResponseEncoder = new ChallengeResponseEncoder();
+        challengeResponseEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
+
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + challengeResponseEncoder.encodedLength();
+
+        return publication.offer(buffer, 0, length) > 0;
+    }
+
+    /**
      * Start recording streams for a given channel and stream id pairing.
      *
      * @param channel          to be recorded.

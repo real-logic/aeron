@@ -2540,6 +2540,8 @@ public class AeronArchive implements AutoCloseable
         private final NanoClock nanoClock;
         private final long deadlineNs;
         private long correlationId = Aeron.NULL_VALUE;
+        private long challengeControlSessionId = Aeron.NULL_VALUE;
+        private byte[] encodedCredentialsFromChallenge = null;
         private int step = 0;
 
         AsyncConnect(
@@ -2636,26 +2638,51 @@ public class AeronArchive implements AutoCloseable
                 step(4);
             }
 
+            if (6 == step)
+            {
+                if (!archiveProxy.tryChallengeResponse(
+                    encodedCredentialsFromChallenge, correlationId, challengeControlSessionId))
+                {
+                    return null;
+                }
+
+                step(7);
+            }
+
             controlResponsePoller.poll();
 
             if (controlResponsePoller.isPollComplete() && controlResponsePoller.correlationId() == correlationId)
             {
-                final ControlResponseCode code = controlResponsePoller.code();
-                if (code != ControlResponseCode.OK)
+                if (controlResponsePoller.wasChallenged())
                 {
-                    if (code == ControlResponseCode.ERROR)
+                    encodedCredentialsFromChallenge = ctx.credentialsSupplier().onChallenge(
+                        controlResponsePoller.encodedChallenge());
+
+                    correlationId = ctx.aeron().nextCorrelationId();
+                    challengeControlSessionId = controlResponsePoller.controlSessionId();
+
+                    step(6);
+                }
+                else
+                {
+                    final ControlResponseCode code = controlResponsePoller.code();
+                    if (code != ControlResponseCode.OK)
                     {
-                        throw new ArchiveException(
-                            "error: " + controlResponsePoller.errorMessage(), (int)controlResponsePoller.relevantId());
+                        if (code == ControlResponseCode.ERROR)
+                        {
+                            throw new ArchiveException(
+                                "error: " + controlResponsePoller.errorMessage(),
+                                (int)controlResponsePoller.relevantId());
+                        }
+
+                        throw new ArchiveException("unexpected response: code=" + code);
                     }
 
-                    throw new ArchiveException("unexpected response: code=" + code);
+                    aeronArchive = new AeronArchive(
+                        ctx, controlResponsePoller, archiveProxy, controlResponsePoller.controlSessionId());
+
+                    step(5);
                 }
-
-                aeronArchive = new AeronArchive(
-                    ctx, controlResponsePoller, archiveProxy, controlResponsePoller.controlSessionId());
-
-                step(5);
             }
 
             return aeronArchive;

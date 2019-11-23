@@ -444,7 +444,10 @@ class ClientConductor implements Agent, DriverEventsListener
 
     void handleError(final Throwable ex)
     {
-        ctx.errorHandler().onError(ex);
+        if (!isClosed)
+        {
+            ctx.errorHandler().onError(ex);
+        }
     }
 
     ConcurrentPublication addPublication(final String channel, final int streamId)

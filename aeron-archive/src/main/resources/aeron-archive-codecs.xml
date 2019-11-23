@@ -58,7 +58,7 @@
     ========================
 
     Control Protocol:
-        -> connect,
+        -> [connect | auth-connect],
            *[start-recording | stop-recording | stop-recording-subscription | replay | stop-replay | stop-all-replays |
              list-recordings | list-recordings-by-uri | list-recording | find-last-matching-recording |
              list-recording-subscriptions |
@@ -67,14 +67,14 @@
              detach-segments | delete-detached-segments | purge-segments | attach-segments | migrate-segments],
            close
                 \
-        <-       +control-response,
+        <-       +[control-response | challenge],
                  *[control-response | recording-descriptor | recording-subscription-descriptor | recording-transition]
 
     Recording Progress Events:
         <- recording-started, *recording-progress, recording-stopped
 
     1. Connect
-        - Connect to an archive providing response channel and stream id.
+        - Connect to an archive providing response channel, stream id, and optional credentials if authenticating.
         - Connection can be local or remote. Local can be optimised for IPC.
         - If successful a control session will be created with control responses provided.
         - If a response stream cannot be created within timeout then the session is automatically closed.

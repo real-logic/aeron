@@ -127,71 +127,6 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                 break;
             }
 
-            case AuthConnectRequestDecoder.TEMPLATE_ID:
-            {
-                final AuthConnectRequestDecoder decoder = decoders.authConnectRequestDecoder;
-                decoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    headerDecoder.blockLength(),
-                    headerDecoder.version());
-
-                final String responseChannel = decoder.responseChannel();
-                final int credentialsLength = decoder.encodedCredentialsLength();
-                final byte[] credentials;
-
-                if (credentialsLength > 0)
-                {
-                    credentials = new byte[credentialsLength];
-                    decoder.getEncodedCredentials(credentials, 0, credentialsLength);
-                }
-                else
-                {
-                    credentials = ArrayUtil.EMPTY_BYTE_ARRAY;
-                }
-
-                final ControlSession session = conductor.newControlSession(
-                    decoder.correlationId(),
-                    decoder.responseStreamId(),
-                    decoder.version(),
-                    responseChannel,
-                    credentials,
-                    this);
-                controlSessionByIdMap.put(session.sessionId(), session);
-                break;
-            }
-
-            case ChallengeResponseDecoder.TEMPLATE_ID:
-            {
-                final ChallengeResponseDecoder decoder = decoders.challengeResponseDecoder;
-                decoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    headerDecoder.blockLength(),
-                    headerDecoder.version());
-
-                final int credentialsLength = decoder.encodedCredentialsLength();
-                final byte[] credentials;
-
-                if (credentialsLength > 0)
-                {
-                    credentials = new byte[credentialsLength];
-                    decoder.getEncodedCredentials(credentials, 0, credentialsLength);
-                }
-                else
-                {
-                    credentials = ArrayUtil.EMPTY_BYTE_ARRAY;
-                }
-
-                final long controlSessionId = decoder.controlSessionId();
-                final ControlSession session = controlSessionByIdMap.get(controlSessionId);
-                if (null != session)
-                {
-                    session.onChallengeResponse(decoder.correlationId(), credentials);
-                }
-                break;
-            }
-
             case CloseSessionRequestDecoder.TEMPLATE_ID:
             {
                 final CloseSessionRequestDecoder decoder = decoders.closeSessionRequest;
@@ -722,6 +657,71 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                     correlationId,
                     decoder.srcRecordingId(),
                     decoder.dstRecordingId());
+                break;
+            }
+
+            case AuthConnectRequestDecoder.TEMPLATE_ID:
+            {
+                final AuthConnectRequestDecoder decoder = decoders.authConnectRequestDecoder;
+                decoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                final String responseChannel = decoder.responseChannel();
+                final int credentialsLength = decoder.encodedCredentialsLength();
+                final byte[] credentials;
+
+                if (credentialsLength > 0)
+                {
+                    credentials = new byte[credentialsLength];
+                    decoder.getEncodedCredentials(credentials, 0, credentialsLength);
+                }
+                else
+                {
+                    credentials = ArrayUtil.EMPTY_BYTE_ARRAY;
+                }
+
+                final ControlSession session = conductor.newControlSession(
+                    decoder.correlationId(),
+                    decoder.responseStreamId(),
+                    decoder.version(),
+                    responseChannel,
+                    credentials,
+                    this);
+                controlSessionByIdMap.put(session.sessionId(), session);
+                break;
+            }
+
+            case ChallengeResponseDecoder.TEMPLATE_ID:
+            {
+                final ChallengeResponseDecoder decoder = decoders.challengeResponseDecoder;
+                decoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                final long controlSessionId = decoder.controlSessionId();
+                final ControlSession session = controlSessionByIdMap.get(controlSessionId);
+                if (null != session)
+                {
+                    final int credentialsLength = decoder.encodedCredentialsLength();
+                    final byte[] credentials;
+
+                    if (credentialsLength > 0)
+                    {
+                        credentials = new byte[credentialsLength];
+                        decoder.getEncodedCredentials(credentials, 0, credentialsLength);
+                    }
+                    else
+                    {
+                        credentials = ArrayUtil.EMPTY_BYTE_ARRAY;
+                    }
+
+                    session.onChallengeResponse(decoder.correlationId(), credentials);
+                }
                 break;
             }
         }

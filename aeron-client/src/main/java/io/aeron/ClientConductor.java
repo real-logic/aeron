@@ -495,9 +495,8 @@ class ClientConductor implements Agent, DriverEventsListener
         clientLock.lock();
         try
         {
-            if (!publication.isClosed())
+            if (!publication.isClosed() && !isClosed)
             {
-                ensureActive();
                 ensureNotReentrant();
 
                 publication.internalClose();
@@ -556,9 +555,8 @@ class ClientConductor implements Agent, DriverEventsListener
         clientLock.lock();
         try
         {
-            if (!subscription.isClosed())
+            if (!subscription.isClosed() && !isClosed)
             {
-                ensureActive();
                 ensureNotReentrant();
 
                 subscription.internalClose();
@@ -714,6 +712,11 @@ class ClientConductor implements Agent, DriverEventsListener
         clientLock.lock();
         try
         {
+            if (isClosed)
+            {
+                return false;
+            }
+
             ensureActive();
 
             return asyncCommandIdSet.contains(correlationId);
@@ -806,8 +809,13 @@ class ClientConductor implements Agent, DriverEventsListener
         clientLock.lock();
         try
         {
-            ensureActive();
+            if (isClosed)
+            {
+                return false;
+            }
+
             ensureNotReentrant();
+
             return availableCounterHandlers.remove(handler);
         }
         finally
@@ -836,8 +844,13 @@ class ClientConductor implements Agent, DriverEventsListener
         clientLock.lock();
         try
         {
-            ensureActive();
+            if (isClosed)
+            {
+                return false;
+            }
+
             ensureNotReentrant();
+
             return unavailableCounterHandlers.remove(handler);
         }
         finally
@@ -866,8 +879,13 @@ class ClientConductor implements Agent, DriverEventsListener
         clientLock.lock();
         try
         {
-            ensureActive();
+            if (isClosed)
+            {
+                return false;
+            }
+
             ensureNotReentrant();
+
             return closeHandlers.remove(handler);
         }
         finally
@@ -881,7 +899,11 @@ class ClientConductor implements Agent, DriverEventsListener
         clientLock.lock();
         try
         {
-            ensureActive();
+            if (isClosed)
+            {
+                return;
+            }
+
             ensureNotReentrant();
 
             final long registrationId = counter.registrationId();

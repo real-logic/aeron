@@ -97,6 +97,11 @@ class RecordingSession implements Session
         CloseHelper.close(position);
     }
 
+    public void abortClose()
+    {
+        recordingWriter.close();
+    }
+
     public Counter recordingPosition()
     {
         return position;

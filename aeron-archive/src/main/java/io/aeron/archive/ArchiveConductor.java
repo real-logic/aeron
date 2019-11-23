@@ -231,10 +231,6 @@ abstract class ArchiveConductor
         {
             Thread.currentThread().interrupt();
         }
-        catch (final Exception ex)
-        {
-            errorHandler.onError(ex);
-        }
     }
 
     protected int preWork()
@@ -882,6 +878,8 @@ abstract class ArchiveConductor
     void closeRecordingSession(final RecordingSession session)
     {
         final long recordingId = session.sessionId();
+        recordingSessionByIdMap.remove(recordingId);
+
         if (!isAbort)
         {
             catalog.recordingStopped(recordingId, session.recordedPosition(), epochClock.time());
@@ -892,16 +890,24 @@ abstract class ArchiveConductor
                 session.image().subscription().registrationId(),
                 session.recordedPosition(),
                 RecordingSignal.STOP);
-        }
 
-        recordingSessionByIdMap.remove(recordingId);
-        closeSession(session);
+            closeSession(session);
+        }
+        else
+        {
+            session.abortClose();
+        }
     }
 
     void closeReplaySession(final ReplaySession session)
     {
         replaySessionByIdMap.remove(session.sessionId());
-        session.sendPendingError(controlResponseProxy);
+
+        if (!isAbort)
+        {
+            session.sendPendingError(controlResponseProxy);
+        }
+
         closeSession(session);
     }
 

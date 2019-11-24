@@ -388,7 +388,7 @@ int aeron_confirm_publication_match(
     {
         aeron_set_err(
             EINVAL,
-            "existing publication has different MTU length: existing=%" PRId32 " requested=%d",
+            "existing publication has different MTU length: existing=%" PRId32 " requested=%zu",
             logbuffer_metadata->mtu_length, params->mtu_length);
 
         return -1;
@@ -398,7 +398,7 @@ int aeron_confirm_publication_match(
     {
         aeron_set_err(
             EINVAL,
-            "existing publication has different term length: existing=%" PRId32 " requested=%d",
+            "existing publication has different term length: existing=%" PRId32 " requested=%zu",
             logbuffer_metadata->term_length, params->term_length);
 
         return -1;
@@ -848,7 +848,7 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
         aeron_set_err(
             EINVAL,
             "Specified session-id is already in exclusive use for channel: %.*s, stream-id: %" PRId32,
-            uri_length, uri, stream_id);
+            (int)uri_length, uri, stream_id);
 
         return NULL;
     }
@@ -1010,7 +1010,7 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
         aeron_set_err(
             EINVAL,
             "Specified session-id is already in exclusive use for channel: %.*s, stream-id: %" PRId32,
-            uri_length, uri, stream_id);
+            (int)uri_length, uri, stream_id);
 
         return NULL;
     }

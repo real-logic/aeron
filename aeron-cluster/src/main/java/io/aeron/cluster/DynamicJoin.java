@@ -472,7 +472,7 @@ class DynamicJoin implements AutoCloseable
 
         boolean isDone()
         {
-            return isDone && (endPosition <= recordingPosition);
+            return isDone && endPosition <= recordingPosition && image.isEndOfStream();
         }
 
         long recordingId()

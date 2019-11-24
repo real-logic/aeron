@@ -69,6 +69,22 @@ public:
     }
 
     /**
+     * Keep this archive session alive by notifying the archive.
+     *
+     * @param correlationId    for this request.
+     * @param controlSessionId for this request.
+     * @tparam IdleStrategy to use between Publication::offer attempts.
+     * @return true if successfully offered otherwise false.
+     */
+    template<typename IdleStrategy = aeron::concurrent::BackoffIdleStrategy>
+    bool keepAlive(std::int64_t correlationId, std::int64_t controlSessionId)
+    {
+        const util::index_t length = keepAlive(m_buffer, correlationId, controlSessionId);
+
+        return offer<IdleStrategy>(m_buffer, 0, length);
+    }
+
+    /**
      * Close this control session with the archive.
      *
      * @param controlSessionId with the archive.
@@ -893,6 +909,11 @@ private:
         AtomicBuffer& buffer,
         std::int64_t srcRecordingId,
         std::int64_t dstRecordingId,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId);
+
+    static util::index_t keepAlive(
+        AtomicBuffer& buffer,
         std::int64_t correlationId,
         std::int64_t controlSessionId);
 };

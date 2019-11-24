@@ -43,6 +43,7 @@ set(GENERATED_CODECS
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/PurgeSegmentsRequest.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/AttachSegmentsRequest.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/MigrateSegmentsRequest.h
+    ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/KeepAliveRequest.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/CatalogHeader.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/RecordingDescriptorHeader.h
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/RecordingDescriptor.h

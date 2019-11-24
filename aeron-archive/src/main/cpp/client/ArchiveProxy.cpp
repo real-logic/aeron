@@ -44,6 +44,7 @@
 #include "aeron_archive_client/PurgeSegmentsRequest.h"
 #include "aeron_archive_client/AttachSegmentsRequest.h"
 #include "aeron_archive_client/MigrateSegmentsRequest.h"
+#include "aeron_archive_client/KeepAliveRequest.h"
 
 using namespace aeron;
 using namespace aeron::concurrent;
@@ -537,6 +538,20 @@ util::index_t ArchiveProxy::migrateSegments(
         .correlationId(correlationId)
         .srcRecordingId(srcRecordingId)
         .dstRecordingId(dstRecordingId);
+
+    return messageAndHeaderLength(request);
+}
+
+util::index_t ArchiveProxy::keepAlive(
+    AtomicBuffer& buffer,
+    std::int64_t correlationId,
+    std::int64_t controlSessionId)
+{
+    KeepAliveRequest request;
+
+    wrapAndApplyHeader(request, buffer)
+        .controlSessionId(controlSessionId)
+        .correlationId(correlationId);
 
     return messageAndHeaderLength(request);
 }

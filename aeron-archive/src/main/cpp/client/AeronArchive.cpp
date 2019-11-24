@@ -97,10 +97,14 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
 
         if (m_controlResponsePoller->isPollComplete() && m_controlResponsePoller->correlationId() == m_correlationId)
         {
+            const std::int64_t sessionId = m_controlResponsePoller->controlSessionId();
+
             if (!m_controlResponsePoller->isCodeOk())
             {
                 if (m_controlResponsePoller->isCodeError())
                 {
+                    m_archiveProxy->closeSession(sessionId);
+
                     throw ArchiveException(
                         static_cast<std::int32_t>(m_controlResponsePoller->relevantId()),
                         "error: " + m_controlResponsePoller->errorMessage(),
@@ -111,7 +115,7 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
                     "unexpected response: code=" + std::to_string(m_controlResponsePoller->codeValue()), SOURCEINFO);
             }
 
-            const std::int64_t sessionId = m_controlResponsePoller->controlSessionId();
+            m_archiveProxy->keepAlive(m_controlResponsePoller->correlationId(), sessionId);
 
             std::unique_ptr<RecordingDescriptorPoller> recordingDescriptorPoller(
                 new RecordingDescriptorPoller(m_subscription, m_ctx->errorHandler(), sessionId));

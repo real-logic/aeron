@@ -215,13 +215,13 @@ public class ArchiveProxy
      */
     public boolean keepAlive(final long controlSessionId, final long correlationId)
     {
-        final SessionKeepAliveEncoder sessionKeepAliveEncoder = new SessionKeepAliveEncoder();
-        sessionKeepAliveEncoder
+        final KeepAliveRequestEncoder keepAliveRequestEncoder = new KeepAliveRequestEncoder();
+        keepAliveRequestEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .controlSessionId(controlSessionId)
             .correlationId(correlationId);
 
-        return offer(sessionKeepAliveEncoder.encodedLength());
+        return offer(keepAliveRequestEncoder.encodedLength());
     }
 
     /**

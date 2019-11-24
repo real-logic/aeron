@@ -725,9 +725,9 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                 break;
             }
 
-            case SessionKeepAliveDecoder.TEMPLATE_ID:
+            case KeepAliveRequestDecoder.TEMPLATE_ID:
             {
-                final SessionKeepAliveDecoder decoder = decoders.sessionKeepAlive;
+                final KeepAliveRequestDecoder decoder = decoders.keepAliveRequest;
                 decoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
@@ -737,8 +737,7 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                 final long correlationId = decoder.correlationId();
                 final long controlSessionId = decoder.controlSessionId();
                 final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
-                controlSession.onKeepAlive(
-                    correlationId);
+                controlSession.onKeepAlive(correlationId);
                 break;
             }
         }

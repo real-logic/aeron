@@ -590,7 +590,8 @@ class ControlSession implements Session
         state(State.CHALLENGED);
     }
 
-    void authenticate(@SuppressWarnings("unused") final byte[] encodedPrincipal)
+    @SuppressWarnings("unused")
+    void authenticate(final byte[] encodedPrincipal)
     {
         activityDeadlineMs = Aeron.NULL_VALUE;
         state(State.AUTHENTICATED);

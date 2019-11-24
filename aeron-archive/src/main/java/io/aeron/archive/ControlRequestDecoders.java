@@ -53,7 +53,7 @@ class ControlRequestDecoders
     final MigrateSegmentsRequestDecoder migrateSegmentsRequest = new MigrateSegmentsRequestDecoder();
     final AuthConnectRequestDecoder authConnectRequest = new AuthConnectRequestDecoder();
     final ChallengeResponseDecoder challengeResponse = new ChallengeResponseDecoder();
-    final SessionKeepAliveDecoder sessionKeepAlive = new SessionKeepAliveDecoder();
+    final KeepAliveRequestDecoder keepAliveRequest = new KeepAliveRequestDecoder();
 
     final ExpandableArrayBuffer tempBuffer = new ExpandableArrayBuffer();
 }

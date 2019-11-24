@@ -23,8 +23,7 @@ import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.security.Authenticator;
 import org.agrona.CloseHelper;
-import org.agrona.concurrent.EpochClock;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.*;
 
 import java.util.ArrayDeque;
 import java.util.function.BooleanSupplier;
@@ -54,7 +53,7 @@ class ControlSession implements Session
     private long activityDeadlineMs;
     private Session activeListing = null;
     private final ArchiveConductor conductor;
-    private final EpochClock epochClock;
+    private final CachedEpochClock cachedEpochClock;
     private final ControlResponseProxy controlResponseProxy;
     private final Authenticator authenticator;
     private final ControlSessionProxy controlSessionProxy;
@@ -74,7 +73,7 @@ class ControlSession implements Session
         final ControlSessionDemuxer demuxer,
         final Publication controlPublication,
         final ArchiveConductor conductor,
-        final EpochClock epochClock,
+        final CachedEpochClock cachedEpochClock,
         final ControlResponseProxy controlResponseProxy,
         final Authenticator authenticator,
         final ControlSessionProxy controlSessionProxy)
@@ -87,11 +86,11 @@ class ControlSession implements Session
         this.demuxer = demuxer;
         this.controlPublication = controlPublication;
         this.conductor = conductor;
-        this.epochClock = epochClock;
+        this.cachedEpochClock = cachedEpochClock;
         this.controlResponseProxy = controlResponseProxy;
         this.authenticator = authenticator;
         this.controlSessionProxy = controlSessionProxy;
-        this.activityDeadlineMs = epochClock.time() + connectTimeoutMs;
+        this.activityDeadlineMs = cachedEpochClock.time() + connectTimeoutMs;
     }
 
     public int majorVersion()
@@ -138,7 +137,7 @@ class ControlSession implements Session
     public int doWork()
     {
         int workCount = 0;
-        final long nowMs = epochClock.time();
+        final long nowMs = cachedEpochClock.time();
 
         switch (state)
         {
@@ -195,9 +194,15 @@ class ControlSession implements Session
     {
         if (State.CHALLENGED == state)
         {
-            authenticator.onChallengeResponse(controlSessionId, encodedCredentials, epochClock.time());
+            authenticator.onChallengeResponse(controlSessionId, encodedCredentials, cachedEpochClock.time());
             this.correlationId = correlationId;
         }
+    }
+
+    @SuppressWarnings("unused")
+    void onKeepAlive(final long correlationId)
+    {
+        attemptToGoActive();
     }
 
     void onStopRecording(final long correlationId, final int streamId, final String channel)
@@ -585,7 +590,7 @@ class ControlSession implements Session
         state(State.CHALLENGED);
     }
 
-    void authenticate(final byte[] encodedPrincipal)
+    void authenticate(@SuppressWarnings("unused") final byte[] encodedPrincipal)
     {
         activityDeadlineMs = Aeron.NULL_VALUE;
         state(State.AUTHENTICATED);

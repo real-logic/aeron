@@ -207,6 +207,24 @@ public class ArchiveProxy
     }
 
     /**
+     * Keep this archive session alive by notifying the archive.
+     *
+     * @param controlSessionId with the archive.
+     * @param correlationId    for this request.
+     * @return true if successfully offered otherwise false.
+     */
+    public boolean keepAlive(final long controlSessionId, final long correlationId)
+    {
+        final SessionKeepAliveEncoder sessionKeepAliveEncoder = new SessionKeepAliveEncoder();
+        sessionKeepAliveEncoder
+            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId);
+
+        return offer(sessionKeepAliveEncoder.encodedLength());
+    }
+
+    /**
      * Close this control session with the archive.
      *
      * @param controlSessionId with the archive.

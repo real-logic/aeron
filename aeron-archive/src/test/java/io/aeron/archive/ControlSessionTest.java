@@ -2,7 +2,7 @@ package io.aeron.archive;
 
 import io.aeron.Publication;
 import io.aeron.security.Authenticator;
-import org.agrona.concurrent.EpochClock;
+import org.agrona.concurrent.CachedEpochClock;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -17,11 +17,11 @@ public class ControlSessionTest
 
     private final ControlSessionDemuxer mockDemuxer = mock(ControlSessionDemuxer.class);
     private final ArchiveConductor mockConductor = mock(ArchiveConductor.class);
-    private final EpochClock mockEpochClock = mock(EpochClock.class);
     private final Publication mockControlPublication = mock(Publication.class);
     private final ControlResponseProxy mockProxy = mock(ControlResponseProxy.class);
     private final ControlSessionProxy mockSessionProxy = mock(ControlSessionProxy.class);
     private final Authenticator mockAuthenticator = mock(Authenticator.class);
+    private final CachedEpochClock cachedEpochClock = new CachedEpochClock();
     private ControlSession session;
 
     @Before
@@ -36,7 +36,7 @@ public class ControlSessionTest
             mockDemuxer,
             mockControlPublication,
             mockConductor,
-            mockEpochClock,
+            cachedEpochClock,
             mockProxy,
             mockAuthenticator,
             mockSessionProxy);
@@ -45,13 +45,12 @@ public class ControlSessionTest
     @Test
     public void shouldTimeoutIfConnectSentButPublicationNotConnected()
     {
-        when(mockEpochClock.time()).thenReturn(0L);
         when(mockControlPublication.isClosed()).thenReturn(false);
         when(mockControlPublication.isConnected()).thenReturn(false);
 
         session.doWork();
 
-        when(mockEpochClock.time()).thenReturn(CONNECT_TIMEOUT_MS + 1L);
+        cachedEpochClock.update(CONNECT_TIMEOUT_MS + 1L);
         session.doWork();
         assertTrue(session.isDone());
     }
@@ -59,7 +58,6 @@ public class ControlSessionTest
     @Test
     public void shouldTimeoutIfConnectSentButPublicationFailsToSend()
     {
-        when(mockEpochClock.time()).thenReturn(0L);
         when(mockControlPublication.isClosed()).thenReturn(false);
         when(mockControlPublication.isConnected()).thenReturn(true);
 
@@ -67,7 +65,7 @@ public class ControlSessionTest
         session.sendOkResponse(1L, mockProxy);
         session.doWork();
 
-        when(mockEpochClock.time()).thenReturn(CONNECT_TIMEOUT_MS + 1L);
+        cachedEpochClock.update(CONNECT_TIMEOUT_MS + 1L);
         session.doWork();
         assertTrue(session.isDone());
     }

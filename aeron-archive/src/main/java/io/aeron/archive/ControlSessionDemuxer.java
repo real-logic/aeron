@@ -662,7 +662,7 @@ class ControlSessionDemuxer implements Session, FragmentHandler
 
             case AuthConnectRequestDecoder.TEMPLATE_ID:
             {
-                final AuthConnectRequestDecoder decoder = decoders.authConnectRequestDecoder;
+                final AuthConnectRequestDecoder decoder = decoders.authConnectRequest;
                 decoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
@@ -696,7 +696,7 @@ class ControlSessionDemuxer implements Session, FragmentHandler
 
             case ChallengeResponseDecoder.TEMPLATE_ID:
             {
-                final ChallengeResponseDecoder decoder = decoders.challengeResponseDecoder;
+                final ChallengeResponseDecoder decoder = decoders.challengeResponse;
                 decoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
@@ -722,6 +722,23 @@ class ControlSessionDemuxer implements Session, FragmentHandler
 
                     session.onChallengeResponse(decoder.correlationId(), credentials);
                 }
+                break;
+            }
+
+            case SessionKeepAliveDecoder.TEMPLATE_ID:
+            {
+                final SessionKeepAliveDecoder decoder = decoders.sessionKeepAlive;
+                decoder.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    headerDecoder.blockLength(),
+                    headerDecoder.version());
+
+                final long correlationId = decoder.correlationId();
+                final long controlSessionId = decoder.controlSessionId();
+                final ControlSession controlSession = getControlSession(controlSessionId, correlationId);
+                controlSession.onKeepAlive(
+                    correlationId);
                 break;
             }
         }

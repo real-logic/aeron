@@ -2653,13 +2653,14 @@ public class AeronArchive implements AutoCloseable
 
             if (controlResponsePoller.isPollComplete() && controlResponsePoller.correlationId() == correlationId)
             {
+                final long controlSessionId = controlResponsePoller.controlSessionId();
                 if (controlResponsePoller.wasChallenged())
                 {
                     encodedCredentialsFromChallenge = ctx.credentialsSupplier().onChallenge(
                         controlResponsePoller.encodedChallenge());
 
                     correlationId = ctx.aeron().nextCorrelationId();
-                    challengeControlSessionId = controlResponsePoller.controlSessionId();
+                    challengeControlSessionId = controlSessionId;
 
                     step(6);
                 }
@@ -2670,6 +2671,8 @@ public class AeronArchive implements AutoCloseable
                     {
                         if (code == ControlResponseCode.ERROR)
                         {
+                            archiveProxy.closeSession(controlSessionId);
+
                             throw new ArchiveException(
                                 "error: " + controlResponsePoller.errorMessage(),
                                 (int)controlResponsePoller.relevantId());
@@ -2678,8 +2681,8 @@ public class AeronArchive implements AutoCloseable
                         throw new ArchiveException("unexpected response: code=" + code);
                     }
 
-                    aeronArchive = new AeronArchive(
-                        ctx, controlResponsePoller, archiveProxy, controlResponsePoller.controlSessionId());
+                    archiveProxy.keepAlive(controlSessionId, controlResponsePoller.correlationId());
+                    aeronArchive = new AeronArchive(ctx, controlResponsePoller, archiveProxy, controlSessionId);
 
                     step(5);
                 }

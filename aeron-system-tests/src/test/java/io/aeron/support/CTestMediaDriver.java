@@ -162,10 +162,10 @@ public final class CTestMediaDriver implements TestMediaDriver
         }
     }
 
-    private static String getFlowControlStrategyName(FlowControlSupplier multicastFlowControlSupplier)
+    private static String getFlowControlStrategyName(final FlowControlSupplier flowControlSupplier)
     {
-        return null == multicastFlowControlSupplier ?
-            null : C_DRIVER_FLOW_CONTROL_STRATEGY_NAME_BY_SUPPLIER_TYPE.get(multicastFlowControlSupplier.getClass());
+        return null == flowControlSupplier ?
+            null : C_DRIVER_FLOW_CONTROL_STRATEGY_NAME_BY_SUPPLIER_TYPE.get(flowControlSupplier.getClass());
     }
 
     @Override

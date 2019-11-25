@@ -18,7 +18,7 @@ public class MediaDriverTestWatcher extends TestWatcher implements DriverOutputC
         hasFailed = true;
     }
 
-    protected void finished(Description description)
+    protected void finished(final Description description)
     {
         if (hasFailed && !outputFilesByAeronDirectoryName.isEmpty())
         {
@@ -45,12 +45,12 @@ public class MediaDriverTestWatcher extends TestWatcher implements DriverOutputC
         outputFilesByAeronDirectoryName.put(aeronDirectoryName, new StdOutputFiles(stdoutFile, stderrFile));
     }
 
-    private static class StdOutputFiles
+    private static final class StdOutputFiles
     {
         private final File stderr;
         private final File stdout;
 
-        private StdOutputFiles(File stderr, File stdout)
+        private StdOutputFiles(final File stderr, final File stdout)
         {
             this.stderr = stderr;
             this.stdout = stdout;

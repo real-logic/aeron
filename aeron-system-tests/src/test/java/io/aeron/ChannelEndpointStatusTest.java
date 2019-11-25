@@ -124,14 +124,8 @@ public class ChannelEndpointStatusTest
     @After
     public void after()
     {
-        CloseHelper.quietClose(clientC);
-        CloseHelper.quietClose(clientB);
-        CloseHelper.quietClose(clientA);
-
-        driverB.close();
-        driverA.close();
-
-        IoUtil.delete(new File(ROOT_DIR), false);
+        CloseHelper.quietCloseAll(clientC, clientB, clientA, driverB, driverA);
+        IoUtil.delete(new File(ROOT_DIR), true);
     }
 
     @Test(timeout = 5000, expected = RegistrationException.class)

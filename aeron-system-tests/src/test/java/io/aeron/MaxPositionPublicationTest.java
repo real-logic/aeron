@@ -18,7 +18,7 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.protocol.DataHeaderFlyweight;
-import io.aeron.support.TestMediaDriver;
+import io.aeron.test.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;

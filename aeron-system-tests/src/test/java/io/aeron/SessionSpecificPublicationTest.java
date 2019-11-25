@@ -19,7 +19,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.LogBufferDescriptor;
-import io.aeron.support.TestMediaDriver;
+import io.aeron.test.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.junit.After;

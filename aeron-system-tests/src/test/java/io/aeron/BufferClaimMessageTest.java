@@ -20,7 +20,7 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.LogBufferDescriptor;
-import io.aeron.support.TestMediaDriver;
+import io.aeron.test.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableBoolean;
 import org.agrona.collections.MutableInteger;

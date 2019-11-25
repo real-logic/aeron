@@ -17,7 +17,7 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.exceptions.AeronException;
-import io.aeron.support.TestMediaDriver;
+import io.aeron.test.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.collections.MutableReference;

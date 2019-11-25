@@ -1,4 +1,19 @@
-package io.aeron.support;
+/*
+ * Copyright 2014-2019 Real Logic Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.aeron.test;
 
 import io.aeron.CommonContext;
 import io.aeron.driver.DefaultMulticastFlowControlSupplier;
@@ -34,14 +49,12 @@ public final class CTestMediaDriver implements TestMediaDriver
             DefaultUnicastFlowControlSupplier.class, "aeron_unicast_flow_control_strategy_supplier");
     }
 
-    private final Process aeronmdProcess;
+    private final Process aeronMediaDriverProcess;
     private final MediaDriver.Context context;
 
-    private CTestMediaDriver(
-        final Process aeronmdProcess,
-        final MediaDriver.Context context)
+    private CTestMediaDriver(final Process aeronMediaDriverProcess, final MediaDriver.Context context)
     {
-        this.aeronmdProcess = aeronmdProcess;
+        this.aeronMediaDriverProcess = aeronMediaDriverProcess;
         this.context = context;
     }
 
@@ -51,9 +64,9 @@ public final class CTestMediaDriver implements TestMediaDriver
         terminateDriver();
         try
         {
-            if (!aeronmdProcess.waitFor(10, TimeUnit.SECONDS))
+            if (!aeronMediaDriverProcess.waitFor(10, TimeUnit.SECONDS))
             {
-                aeronmdProcess.destroyForcibly();
+                aeronMediaDriverProcess.destroyForcibly();
                 throw new RuntimeException("Failed to shutdown cleaning, forcing close");
             }
         }
@@ -78,8 +91,8 @@ public final class CTestMediaDriver implements TestMediaDriver
         final MediaDriver.Context context,
         final DriverOutputConsumer driverOutputConsumer)
     {
-        final String aeronmdPath = System.getProperty(TestMediaDriver.AERON_TEST_SYSTEM_AERONMD_PATH);
-        final File f = new File(aeronmdPath);
+        final String aeronDirPath = System.getProperty(TestMediaDriver.AERON_TEST_SYSTEM_AERONMD_PATH);
+        final File f = new File(aeronDirPath);
 
         if (!f.exists())
         {
@@ -170,13 +183,11 @@ public final class CTestMediaDriver implements TestMediaDriver
             null : C_DRIVER_FLOW_CONTROL_STRATEGY_NAME_BY_SUPPLIER_TYPE.get(flowControlSupplier.getClass());
     }
 
-    @Override
     public MediaDriver.Context context()
     {
         return context;
     }
 
-    @Override
     public String aeronDirectoryName()
     {
         return context.aeronDirectoryName();

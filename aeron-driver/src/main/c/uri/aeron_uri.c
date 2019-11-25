@@ -384,7 +384,7 @@ int aeron_uri_linger_timeout_param(aeron_uri_params_t *uri_params, aeron_uri_pub
     return 0;
 }
 
-int aeron_uri_get_int32(aeron_uri_params_t *uri_params, const char  *key, int32_t *retval)
+int aeron_uri_get_int32(aeron_uri_params_t *uri_params, const char *key, int32_t *retval)
 {
     const char *value_str;
     if ((value_str = aeron_uri_find_param_value(uri_params, key)) == NULL)
@@ -491,8 +491,9 @@ int aeron_uri_publication_params(
 
             if (count < 3)
             {
-                aeron_set_err(EINVAL, "params must be used as a complete set: %s %s %s",
-                    AERON_URI_INITIAL_TERM_ID_KEY, AERON_URI_TERM_ID_KEY, AERON_URI_TERM_OFFSET_KEY);
+                aeron_set_err(
+                    EINVAL, "params must be used as a complete set: %s %s %s", AERON_URI_INITIAL_TERM_ID_KEY,
+                    AERON_URI_TERM_ID_KEY, AERON_URI_TERM_OFFSET_KEY);
                 return -1;
             }
 

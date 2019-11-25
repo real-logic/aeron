@@ -238,7 +238,6 @@ public class SpySimulatedConnectionTest
 
         while (fragmentsReadFromSpy < messagesToSend)
         {
-//            System.out.printf("Messages - toSend: %d, toRead: %d%n", messagesLeftToSend, fragmentsReadFromSpy);
             if (messagesLeftToSend > 0)
             {
                 if (publication.offer(buffer, 0, buffer.capacity()) >= 0L)

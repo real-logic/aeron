@@ -76,11 +76,11 @@ class RecordingWriter implements BlockHandler
         forceWrites = ctx.fileSyncLevel() > 0;
         forceMetadata = ctx.fileSyncLevel() > 1;
 
+        final int termLength = image.termBufferLength();
         final long joinPosition = image.joinPosition();
-        final long startTermBasePosition = startPosition - (startPosition & (image.termBufferLength() - 1));
-        segmentOffset = (int)(joinPosition - startTermBasePosition) & (segmentLength - 1);
-        segmentPosition = AeronArchive.segmentFileBasePosition(
-            startPosition, joinPosition, image.termBufferLength(), segmentLength);
+        final long startTermBasePosition = startPosition - (startPosition & (termLength - 1));
+        segmentOffset = (int)((joinPosition - startTermBasePosition) & (segmentLength - 1));
+        segmentPosition = AeronArchive.segmentFileBasePosition(startPosition, joinPosition, termLength, segmentLength);
     }
 
     public void onBlock(

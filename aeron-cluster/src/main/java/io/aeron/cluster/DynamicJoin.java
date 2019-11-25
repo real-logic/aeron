@@ -30,6 +30,7 @@ import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.Long2LongHashMap;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.util.ArrayList;
@@ -45,6 +46,7 @@ class DynamicJoin implements AutoCloseable
     {
         INIT,
         PASSIVE_FOLLOWER,
+        SNAPSHOT_LENGTH_RETRIEVE,
         SNAPSHOT_RETRIEVE,
         SNAPSHOT_LOAD,
         JOIN_CLUSTER,
@@ -61,6 +63,7 @@ class DynamicJoin implements AutoCloseable
     private final String memberStatusEndpoint;
     private final String transferEndpoint;
     private final ArrayList<RecordingLog.Snapshot> leaderSnapshots = new ArrayList<>(4);
+    private final Long2LongHashMap leaderSnapshotLengthMap = new Long2LongHashMap(NULL_LENGTH);
     private final long intervalNs;
 
     private ExclusivePublication memberStatusPublication;
@@ -139,6 +142,10 @@ class DynamicJoin implements AutoCloseable
 
             case PASSIVE_FOLLOWER:
                 workCount += passiveFollower(nowNs);
+                break;
+
+            case SNAPSHOT_LENGTH_RETRIEVE:
+                workCount += snapshotLengthRetrieve();
                 break;
 
             case SNAPSHOT_RETRIEVE:
@@ -240,7 +247,7 @@ class DynamicJoin implements AutoCloseable
                     .controlResponseStreamId(ctx.archiveContext().controlResponseStreamId());
 
                 leaderArchiveAsyncConnect = AeronArchive.asyncConnect(leaderArchiveCtx);
-                state(State.SNAPSHOT_RETRIEVE);
+                state(State.SNAPSHOT_LENGTH_RETRIEVE);
             }
         }
     }
@@ -297,6 +304,54 @@ class DynamicJoin implements AutoCloseable
         return 0;
     }
 
+    private int snapshotLengthRetrieve()
+    {
+        int workCount = 0;
+
+        if (null == leaderArchive)
+        {
+            leaderArchive = leaderArchiveAsyncConnect.poll();
+            return null == leaderArchive ? 0 : 1;
+        }
+
+        if (NULL_VALUE == correlationId)
+        {
+            final long stopPositionCorrelationId = ctx.aeron().nextCorrelationId();
+            final RecordingLog.Snapshot snapshot = leaderSnapshots.get(snapshotCursor);
+
+            if (leaderArchive.archiveProxy().getStopPosition(
+                snapshot.recordingId,
+                stopPositionCorrelationId,
+                leaderArchive.controlSessionId()))
+            {
+                correlationId = stopPositionCorrelationId;
+                workCount++;
+            }
+        }
+        else if (pollForResponse(leaderArchive, correlationId))
+        {
+            final long snapshotStopPosition = (int)leaderArchive.controlResponsePoller().relevantId();
+
+            correlationId = NULL_VALUE;
+
+            if (NULL_POSITION == snapshotStopPosition)
+            {
+                throw new ClusterException("snapshot stopPosition is NULL_POSITION");
+            }
+
+            leaderSnapshotLengthMap.put(snapshotCursor, snapshotStopPosition);
+            if (++snapshotCursor >= leaderSnapshots.size())
+            {
+                snapshotCursor = 0;
+                state(State.SNAPSHOT_RETRIEVE);
+            }
+
+            workCount++;
+        }
+
+        return workCount;
+    }
+
     private int snapshotRetrieve()
     {
         int workCount = 0;
@@ -345,7 +400,8 @@ class DynamicJoin implements AutoCloseable
             snapshotRetrieveImage = snapshotRetrieveSubscription.imageBySessionId(snapshotReplaySessionId);
             if (null != snapshotRetrieveImage)
             {
-                snapshotReader = new SnapshotReader(snapshotRetrieveImage, ctx.aeron().countersReader());
+                snapshotReader = new SnapshotReader(
+                    snapshotRetrieveImage, ctx.aeron().countersReader(), leaderSnapshotLengthMap.get(snapshotCursor));
                 workCount++;
             }
         }
@@ -452,9 +508,7 @@ class DynamicJoin implements AutoCloseable
     {
         private static final int FRAGMENT_LIMIT = 10;
 
-        private boolean inSnapshot = false;
-        private boolean isDone = false;
-        private long endPosition = 0;
+        private final long endPosition;
         private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
         private final SnapshotMarkerDecoder snapshotMarkerDecoder = new SnapshotMarkerDecoder();
         private final CountersReader countersReader;
@@ -462,17 +516,20 @@ class DynamicJoin implements AutoCloseable
         private long recordingId = RecordingPos.NULL_RECORDING_ID;
         private long recordingPosition = NULL_POSITION;
         private int counterId;
+        private boolean inSnapshot = false;
+        private boolean inHeader = false;
 
-        SnapshotReader(final Image image, final CountersReader countersReader)
+        SnapshotReader(final Image image, final CountersReader countersReader, final long endPosition)
         {
             this.countersReader = countersReader;
             this.image = image;
-            counterId = RecordingPos.findCounterIdBySession(countersReader, image.sessionId());
+            this.counterId = RecordingPos.findCounterIdBySession(countersReader, image.sessionId());
+            this.endPosition = endPosition;
         }
 
         boolean isDone()
         {
-            return isDone && endPosition <= recordingPosition && image.isEndOfStream();
+            return endPosition <= recordingPosition;
         }
 
         long recordingId()
@@ -505,41 +562,44 @@ class DynamicJoin implements AutoCloseable
 
         public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
         {
-            messageHeaderDecoder.wrap(buffer, offset);
-
-            if (messageHeaderDecoder.templateId() == SnapshotMarkerDecoder.TEMPLATE_ID)
+            if (inHeader)
             {
-                snapshotMarkerDecoder.wrap(
-                    buffer,
-                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
-                    messageHeaderDecoder.blockLength(),
-                    messageHeaderDecoder.version());
+                messageHeaderDecoder.wrap(buffer, offset);
 
-                final long typeId = snapshotMarkerDecoder.typeId();
-                if (typeId != ConsensusModule.Configuration.SNAPSHOT_TYPE_ID &&
-                    typeId != ClusteredServiceContainer.SNAPSHOT_TYPE_ID)
+                if (messageHeaderDecoder.templateId() == SnapshotMarkerDecoder.TEMPLATE_ID)
                 {
-                    throw new ClusterException("unexpected snapshot type: " + typeId);
-                }
+                    snapshotMarkerDecoder.wrap(
+                        buffer,
+                        offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                        messageHeaderDecoder.blockLength(),
+                        messageHeaderDecoder.version());
 
-                switch (snapshotMarkerDecoder.mark())
-                {
-                    case BEGIN:
-                        if (inSnapshot)
-                        {
-                            throw new ClusterException("already in snapshot");
-                        }
-                        inSnapshot = true;
-                        return Action.CONTINUE;
+                    final long typeId = snapshotMarkerDecoder.typeId();
+                    if (typeId != ConsensusModule.Configuration.SNAPSHOT_TYPE_ID &&
+                        typeId != ClusteredServiceContainer.SNAPSHOT_TYPE_ID)
+                    {
+                        throw new ClusterException("unexpected snapshot type: " + typeId);
+                    }
 
-                    case END:
-                        if (!inSnapshot)
-                        {
-                            throw new ClusterException("missing begin snapshot");
-                        }
-                        isDone = true;
-                        endPosition = header.position();
-                        return Action.BREAK;
+                    switch (snapshotMarkerDecoder.mark())
+                    {
+                        case BEGIN:
+                            if (inSnapshot)
+                            {
+                                throw new ClusterException("already in snapshot");
+                            }
+                            inSnapshot = true;
+                            inHeader = true;
+                            return Action.CONTINUE;
+
+                        case END:
+                            if (!inSnapshot)
+                            {
+                                throw new ClusterException("missing begin snapshot");
+                            }
+                            inHeader = false;
+                            return Action.CONTINUE;
+                    }
                 }
             }
 

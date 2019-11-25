@@ -19,6 +19,7 @@
 #include <string.h>
 #include "uri/aeron_uri.h"
 #include "util/aeron_arrayutil.h"
+#include "util/aeron_math.h"
 #include "util/aeron_parse_util.h"
 #include "aeron_driver_context.h"
 #include "aeron_driver_conductor.h"
@@ -383,7 +384,7 @@ int aeron_uri_linger_timeout_param(aeron_uri_params_t *uri_params, aeron_uri_pub
     return 0;
 }
 
-int aeron_uri_get_int32(aeron_uri_params_t *uri_params, const char  *key, int32_t *retval)
+int aeron_uri_get_int32(aeron_uri_params_t *uri_params, const char *key, int32_t *retval)
 {
     const char *value_str;
     if ((value_str = aeron_uri_find_param_value(uri_params, key)) == NULL)
@@ -395,6 +396,7 @@ int aeron_uri_get_int32(aeron_uri_params_t *uri_params, const char  *key, int32_
     char *end_ptr;
     int64_t value;
 
+    errno = 0;
     value = strtoll(value_str, &end_ptr, 0);
     if ((0 == value && 0 != errno) || end_ptr == value_str)
     {
@@ -475,11 +477,23 @@ int aeron_uri_publication_params(
     {
         int count = 0;
 
-        const char *initial_term_id_str = aeron_uri_find_param_value(uri_params, AERON_URI_INITIAL_TERM_ID_KEY);
-        count += initial_term_id_str ? 1 : 0;
+        int32_t initial_term_id;
+        int32_t term_id;
+        int parse_result;
 
-        const char *term_id_str = aeron_uri_find_param_value(uri_params, AERON_URI_TERM_ID_KEY);
-        count += term_id_str ? 1 : 0;
+        parse_result = aeron_uri_get_int32(uri_params, AERON_URI_INITIAL_TERM_ID_KEY, &initial_term_id);
+        if (parse_result < 0)
+        {
+            return -1;
+        }
+        count += parse_result > 0 ? 1 : 0;
+
+        parse_result = aeron_uri_get_int32(uri_params, AERON_URI_TERM_ID_KEY, &term_id);
+        if (parse_result < 0)
+        {
+            return -1;
+        }
+        count += parse_result > 0 ? 1 : 0;
 
         const char *term_offset_str = aeron_uri_find_param_value(uri_params, AERON_URI_TERM_OFFSET_KEY);
         count += term_offset_str ? 1 : 0;
@@ -490,26 +504,9 @@ int aeron_uri_publication_params(
 
             if (count < 3)
             {
-                aeron_set_err(EINVAL, "params must be used as a complete set: %s %s %s",
-                    AERON_URI_INITIAL_TERM_ID_KEY, AERON_URI_TERM_ID_KEY, AERON_URI_TERM_OFFSET_KEY);
-                return -1;
-            }
-
-            errno = 0;
-            end_ptr = NULL;
-            int64_t initial_term_id = strtoll(initial_term_id_str, &end_ptr, 0);
-            if ((initial_term_id  == 0 && 0 != errno) || end_ptr == initial_term_id_str)
-            {
-                aeron_set_err(EINVAL, "could not parse %s in URI", AERON_URI_INITIAL_TERM_ID_KEY);
-                return -1;
-            }
-
-            errno = 0;
-            end_ptr = NULL;
-            int64_t term_id = strtoll(term_id_str, &end_ptr, 0);
-            if ((term_id == 0 && 0 != errno) || end_ptr == term_id_str)
-            {
-                aeron_set_err(EINVAL, "could not parse %s in URI", AERON_URI_TERM_ID_KEY);
+                aeron_set_err(
+                    EINVAL, "params must be used as a complete set: %s %s %s", AERON_URI_INITIAL_TERM_ID_KEY,
+                    AERON_URI_TERM_ID_KEY, AERON_URI_TERM_OFFSET_KEY);
                 return -1;
             }
 
@@ -522,20 +519,7 @@ int aeron_uri_publication_params(
                 return -1;
             }
 
-            if (initial_term_id < INT32_MIN || initial_term_id > INT32_MAX)
-            {
-                aeron_set_err(
-                    EINVAL, "Params %s=%" PRId64 " out of range", AERON_URI_INITIAL_TERM_ID_KEY, initial_term_id);
-                return -1;
-            }
-
-            if (term_id < INT32_MIN || term_id > INT32_MAX)
-            {
-                aeron_set_err(EINVAL, "Params %s=%" PRId64 " out of range", AERON_URI_TERM_ID_KEY, term_id);
-                return -1;
-            }
-
-            if (((int32_t)term_id - (int32_t)initial_term_id) < 0)
+            if (aeron_sub_wrap_i32(term_id, initial_term_id) < 0)
             {
                 aeron_set_err(
                     EINVAL,
@@ -559,11 +543,7 @@ int aeron_uri_publication_params(
                 return -1;
             }
 
-            params->term_offset = term_offset;
-            params->initial_term_id = (int32_t)initial_term_id;
-            params->term_id = (int32_t)term_id;
-
-            if ((params->term_offset & (AERON_LOGBUFFER_FRAME_ALIGNMENT - 1u)) != 0)
+            if ((term_offset & (AERON_LOGBUFFER_FRAME_ALIGNMENT - 1u)) != 0)
             {
                 aeron_set_err(
                     EINVAL,
@@ -573,6 +553,9 @@ int aeron_uri_publication_params(
                 return -1;
             }
 
+            params->term_offset = term_offset;
+            params->initial_term_id = initial_term_id;
+            params->term_id = term_id;
             params->has_position = true;
         }
     }

@@ -154,6 +154,10 @@ public final class ArchiveEventLogger
             case AuthConnectRequestDecoder.TEMPLATE_ID:
                 dispatchIfEnabled(buffer, offset, length, CMD_IN_AUTH_CONNECT);
                 break;
+
+            case KeepAliveRequestDecoder.TEMPLATE_ID:
+                dispatchIfEnabled(buffer, offset, length, CMD_IN_KEEP_ALIVE);
+                break;
         }
     }
 

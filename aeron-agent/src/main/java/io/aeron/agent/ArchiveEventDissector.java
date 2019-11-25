@@ -63,6 +63,7 @@ final class ArchiveEventDissector
     private static final MigrateSegmentsRequestDecoder MIGRATE_SEGMENTS_REQUEST_DECODER =
         new MigrateSegmentsRequestDecoder();
     private static final AuthConnectRequestDecoder AUTH_CONNECT_REQUEST_DECODER = new AuthConnectRequestDecoder();
+    private static final KeepAliveRequestDecoder KEEP_ALIVE_REQUEST_DECODER = new KeepAliveRequestDecoder();
 
     @SuppressWarnings("MethodLength")
     static void controlRequest(
@@ -316,6 +317,15 @@ final class ArchiveEventDissector
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendAuthConnect(builder);
+                break;
+
+            case CMD_IN_KEEP_ALIVE:
+                KEEP_ALIVE_REQUEST_DECODER.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    HEADER_DECODER.blockLength(),
+                    HEADER_DECODER.version());
+                appendKeepAlive(builder);
                 break;
 
             default:
@@ -594,5 +604,12 @@ final class ArchiveEventDissector
             .append(", correlationId=").append(MIGRATE_SEGMENTS_REQUEST_DECODER.correlationId())
             .append(", srcRecordingId=").append(MIGRATE_SEGMENTS_REQUEST_DECODER.srcRecordingId())
             .append(", dstRecordingId=").append(MIGRATE_SEGMENTS_REQUEST_DECODER.dstRecordingId());
+    }
+
+    private static void appendKeepAlive(final StringBuilder builder)
+    {
+        builder.append("ARCHIVE: KEEP_ALIVE")
+            .append(", controlSessionId=").append(KEEP_ALIVE_REQUEST_DECODER.controlSessionId())
+            .append(", correlationId=").append(KEEP_ALIVE_REQUEST_DECODER.correlationId());
     }
 }

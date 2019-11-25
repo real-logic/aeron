@@ -37,7 +37,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertFalse;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 public class MultiDestinationCastTest
 {
@@ -78,6 +83,8 @@ public class MultiDestinationCastTest
 
     private void launch()
     {
+        TestMediaDriver.notSupportedOnCMediaDriverYet("Multi-destination-cast not available");
+
         final String baseDirA = ROOT_DIR + "A";
         final String baseDirB = ROOT_DIR + "B";
 
@@ -98,8 +105,6 @@ public class MultiDestinationCastTest
         driverB = TestMediaDriver.launch(driverBContext);
         clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverAContext.aeronDirectoryName()));
         clientB = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverBContext.aeronDirectoryName()));
-
-        driverA.notSupportedOnCMediaDriverYet();
     }
 
     @After

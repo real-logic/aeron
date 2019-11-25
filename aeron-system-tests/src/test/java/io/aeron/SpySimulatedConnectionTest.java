@@ -20,6 +20,7 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.support.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -57,7 +58,7 @@ public class SpySimulatedConnectionTest
     private final MediaDriver.Context driverContext = new MediaDriver.Context();
 
     private Aeron client;
-    private MediaDriver driver;
+    private TestMediaDriver driver;
     private Publication publication;
     private Subscription subscription;
     private Subscription spy;
@@ -77,7 +78,7 @@ public class SpySimulatedConnectionTest
             .dirDeleteOnShutdown(true)
             .threadingMode(ThreadingMode.SHARED);
 
-        driver = MediaDriver.launch(driverContext);
+        driver = TestMediaDriver.launch(driverContext);
         client = Aeron.connect();
     }
 

@@ -22,24 +22,30 @@ import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.status.ChannelEndpointStatus;
+import io.aeron.support.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.io.File;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.*;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.mockito.Mockito.*;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 public class ChannelEndpointStatusTest
 {
@@ -61,8 +67,8 @@ public class ChannelEndpointStatusTest
     private Aeron clientA;
     private Aeron clientB;
     private Aeron clientC;
-    private MediaDriver driverA;
-    private MediaDriver driverB;
+    private TestMediaDriver driverA;
+    private TestMediaDriver driverB;
 
     private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
 
@@ -76,6 +82,9 @@ public class ChannelEndpointStatusTest
     @Before
     public void before()
     {
+        TestMediaDriver.notSupportedOnCMediaDriverYet(
+            "Need an alternative way of getting the error counters for the C media driver");
+
         final String baseDirA = ROOT_DIR + "A";
         final String baseDirB = ROOT_DIR + "B";
 
@@ -93,8 +102,8 @@ public class ChannelEndpointStatusTest
             .errorHandler(countingErrorHandler)
             .threadingMode(THREADING_MODE);
 
-        driverA = MediaDriver.launch(driverAContext);
-        driverB = MediaDriver.launch(driverBContext);
+        driverA = TestMediaDriver.launch(driverAContext);
+        driverB = TestMediaDriver.launch(driverBContext);
 
         clientA = Aeron.connect(
             new Aeron.Context()

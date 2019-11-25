@@ -2,11 +2,11 @@ package io.aeron.support;
 
 import io.aeron.driver.MediaDriver;
 
-public class JavaTestMediaDriver implements TestMediaDriver
+public final class JavaTestMediaDriver implements TestMediaDriver
 {
     private MediaDriver mediaDriver;
 
-    private JavaTestMediaDriver(MediaDriver mediaDriver)
+    private JavaTestMediaDriver(final MediaDriver mediaDriver)
     {
         this.mediaDriver = mediaDriver;
     }
@@ -17,9 +17,9 @@ public class JavaTestMediaDriver implements TestMediaDriver
         mediaDriver.close();
     }
 
-    public static JavaTestMediaDriver launch(MediaDriver.Context context)
+    public static JavaTestMediaDriver launch(final MediaDriver.Context context)
     {
-        MediaDriver mediaDriver = MediaDriver.launch(context);
+        final MediaDriver mediaDriver = MediaDriver.launch(context);
         return new JavaTestMediaDriver(mediaDriver);
     }
 
@@ -27,5 +27,11 @@ public class JavaTestMediaDriver implements TestMediaDriver
     public MediaDriver.Context context()
     {
         return mediaDriver.context();
+    }
+
+    @Override
+    public String aeronDirectoryName()
+    {
+        return mediaDriver.aeronDirectoryName();
     }
 }

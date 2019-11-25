@@ -38,7 +38,12 @@ import java.util.concurrent.TimeUnit;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 public class MultiDestinationSubscriptionTest
 {
@@ -79,6 +84,8 @@ public class MultiDestinationSubscriptionTest
 
     private void launch()
     {
+        TestMediaDriver.notSupportedOnCMediaDriverYet("Multi-destination-cast not available");
+
         final String baseDirA = ROOT_DIR + "A";
 
         buffer.putInt(0, 1);
@@ -91,8 +98,6 @@ public class MultiDestinationSubscriptionTest
 
         driverA = TestMediaDriver.launch(driverContextA);
         clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverContextA.aeronDirectoryName()));
-
-        driverA.notSupportedOnCMediaDriverYet();
     }
 
     private void launchSecond()
@@ -107,8 +112,6 @@ public class MultiDestinationSubscriptionTest
 
         driverB = TestMediaDriver.launch(driverContextB);
         clientB = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverContextB.aeronDirectoryName()));
-
-        driverB.notSupportedOnCMediaDriverYet();
     }
 
     @After

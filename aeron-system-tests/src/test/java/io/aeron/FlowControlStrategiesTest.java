@@ -15,11 +15,16 @@
  */
 package io.aeron;
 
-import io.aeron.driver.*;
+import io.aeron.driver.MaxMulticastFlowControlSupplier;
+import io.aeron.driver.MediaDriver;
+import io.aeron.driver.MinMulticastFlowControlSupplier;
+import io.aeron.driver.PreferredMulticastFlowControl;
+import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.support.MediaDriverTestWatcher;
 import io.aeron.support.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
@@ -28,6 +33,7 @@ import org.agrona.SystemUtil;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -35,7 +41,13 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.atMost;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 public class FlowControlStrategiesTest
 {
@@ -65,6 +77,9 @@ public class FlowControlStrategiesTest
     private final FragmentHandler fragmentHandlerA = mock(FragmentHandler.class);
     private final FragmentHandler fragmentHandlerB = mock(FragmentHandler.class);
 
+    @Rule
+    public MediaDriverTestWatcher testWatcher = new MediaDriverTestWatcher();
+
     private void launch()
     {
         final String baseDirA = ROOT_DIR + "A";
@@ -84,8 +99,8 @@ public class FlowControlStrategiesTest
             .errorHandler(Throwable::printStackTrace)
             .threadingMode(ThreadingMode.SHARED);
 
-        driverA = TestMediaDriver.launch(driverAContext);
-        driverB = TestMediaDriver.launch(driverBContext);
+        driverA = TestMediaDriver.launch(driverAContext, testWatcher);
+        driverB = TestMediaDriver.launch(driverBContext, testWatcher);
         clientA = Aeron.connect(
             new Aeron.Context()
                 .errorHandler(Throwable::printStackTrace)
@@ -100,10 +115,7 @@ public class FlowControlStrategiesTest
     @After
     public void after()
     {
-        clientB.close();
-        clientA.close();
-        CloseHelper.quietCloseAll(driverB, driverA);
-
+        CloseHelper.quietCloseAll(clientB, clientA, driverB, driverA);
         IoUtil.delete(new File(ROOT_DIR), true);
     }
 
@@ -129,8 +141,7 @@ public class FlowControlStrategiesTest
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
 
         driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
-        driverAContext.multicastFlowControlSupplier(
-            (udpChannel, streamId, registrationId) -> new MaxMulticastFlowControl());
+        driverAContext.multicastFlowControlSupplier(new MaxMulticastFlowControlSupplier());
 
         launch();
 
@@ -203,8 +214,7 @@ public class FlowControlStrategiesTest
         int numFragmentsFromB = 0;
 
         driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
-        driverAContext.multicastFlowControlSupplier(
-            (udpChannel, streamId, registrationId) -> new MinMulticastFlowControl());
+        driverAContext.multicastFlowControlSupplier(new MinMulticastFlowControlSupplier());
 
         launch();
 
@@ -264,8 +274,7 @@ public class FlowControlStrategiesTest
         boolean isClosedB = false;
 
         driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
-        driverAContext.multicastFlowControlSupplier(
-            (udpChannel, streamId, registrationId) -> new MinMulticastFlowControl());
+        driverAContext.multicastFlowControlSupplier(new MinMulticastFlowControlSupplier());
 
         launch();
 
@@ -314,6 +323,8 @@ public class FlowControlStrategiesTest
     @Test(timeout = 20_000)
     public void shouldSlowToPreferredWithMulticastFlowControlStrategy()
     {
+        TestMediaDriver.notSupportedOnCMediaDriverYet("Preferred multicast flow control strategy not available");
+
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
         int numMessagesLeftToSend = numMessagesToSend;
         int numFragmentsFromB = 0;
@@ -384,6 +395,8 @@ public class FlowControlStrategiesTest
     @Test(timeout = 20_000)
     public void shouldRemoveDeadPreferredReceiverWithPreferredMulticastFlowControlStrategy()
     {
+        TestMediaDriver.notSupportedOnCMediaDriverYet("Preferred multicast flow control strategy not available");
+
         final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
         int numMessagesLeftToSend = numMessagesToSend;
         int numFragmentsReadFromA = 0, numFragmentsReadFromB = 0;

@@ -22,6 +22,7 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FrameDescriptor;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.BitUtil;
@@ -256,10 +257,10 @@ class ReplaySession implements Session, AutoCloseable
     {
         if (null == fileChannel)
         {
-            final int positionBitsToShift = publication.positionBitsToShift();
             final long startTermBasePosition = startPosition - (startPosition & (termLength - 1));
-            final int segmentOffset = (int)(replayPosition - startTermBasePosition) & (segmentLength - 1);
-            final int termId = ((int)(replayPosition >> positionBitsToShift) + publication.initialTermId());
+            final int segmentOffset = (int)((replayPosition - startTermBasePosition) & (segmentLength - 1));
+            final int termId = LogBufferDescriptor.computeTermIdFromPosition(
+                replayPosition, publication.positionBitsToShift(), publication.initialTermId());
 
             openRecordingSegment();
 
@@ -301,7 +302,7 @@ class ReplaySession implements Session, AutoCloseable
             return fragments;
         }
 
-        if (limitPosition != null && replayPosition >= stopPosition && noNewData(replayPosition, stopPosition))
+        if (null != limitPosition && replayPosition >= stopPosition && noNewData(replayPosition, stopPosition))
         {
             return fragments;
         }
@@ -317,17 +318,15 @@ class ReplaySession implements Session, AutoCloseable
         while (frameOffset < bytesRead)
         {
             final int frameLength = FrameDescriptor.frameLength(replayBuffer, frameOffset);
+            if (frameLength <= 0)
+            {
+                throw new IllegalStateException("unexpected end of recording reached at position " + replayPosition);
+            }
+
             final int frameType = FrameDescriptor.frameType(replayBuffer, frameOffset);
             final int alignedLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
-            final int dataOffset = frameOffset + DataHeaderFlyweight.HEADER_LENGTH;
             final int dataLength = frameLength - DataHeaderFlyweight.HEADER_LENGTH;
-
             long result = 0;
-
-            if (0 >= frameLength)
-            {
-                throw new IllegalStateException("unexpected end of recording reached");
-            }
 
             if (frameType == HeaderFlyweight.HDR_TYPE_DATA)
             {
@@ -342,7 +341,7 @@ class ReplaySession implements Session, AutoCloseable
                     bufferClaim
                         .flags(FrameDescriptor.frameFlags(replayBuffer, frameOffset))
                         .reservedValue(replayBuffer.getLong(frameOffset + RESERVED_VALUE_OFFSET, LITTLE_ENDIAN))
-                        .putBytes(replayBuffer, dataOffset, dataLength)
+                        .putBytes(replayBuffer, frameOffset + DataHeaderFlyweight.HEADER_LENGTH, dataLength)
                         .commit();
                 }
             }
@@ -366,7 +365,7 @@ class ReplaySession implements Session, AutoCloseable
             }
             else
             {
-                if (result == Publication.CLOSED || result == Publication.NOT_CONNECTED)
+                if (Publication.CLOSED == result || Publication.NOT_CONNECTED == result)
                 {
                     onError("stream closed before replay is complete");
                 }

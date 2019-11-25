@@ -586,7 +586,7 @@ public class LogBufferDescriptor
     public static int computeTermIdFromPosition(
         final long position, final int positionBitsToShift, final int initialTermId)
     {
-        return ((int)(position >>> positionBitsToShift) + initialTermId);
+        return (int)(position >>> positionBitsToShift) + initialTermId;
     }
 
     /**

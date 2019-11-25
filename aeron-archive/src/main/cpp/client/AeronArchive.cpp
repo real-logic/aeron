@@ -72,11 +72,19 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
 
     if (2 == m_step)
     {
+        auto encodedCredentials = m_ctx->credentialsSupplier().m_encodedCredentials();
+
         if (!m_archiveProxy->tryConnect(
-            m_ctx->controlResponseChannel(), m_ctx->controlResponseStreamId(), m_correlationId))
+            m_ctx->controlResponseChannel(),
+            m_ctx->controlResponseStreamId(),
+            encodedCredentials,
+            m_correlationId))
         {
+            m_ctx->credentialsSupplier().m_onFree(encodedCredentials);
             return std::shared_ptr<AeronArchive>();
         }
+
+        m_ctx->credentialsSupplier().m_onFree(encodedCredentials);
 
         m_step = 3;
     }

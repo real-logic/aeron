@@ -19,7 +19,7 @@
 #include "ArchiveProxy.h"
 #include "concurrent/YieldingIdleStrategy.h"
 #include "aeron_archive_client/BoundedReplayRequest.h"
-#include "aeron_archive_client/ConnectRequest.h"
+#include "aeron_archive_client/AuthConnectRequest.h"
 #include "aeron_archive_client/CloseSessionRequest.h"
 #include "aeron_archive_client/StartRecordingRequest.h"
 #include "aeron_archive_client/ExtendRecordingRequest.h"
@@ -66,15 +66,17 @@ util::index_t ArchiveProxy::connectRequest(
     AtomicBuffer& buffer,
     const std::string& responseChannel,
     std::int32_t responseStreamId,
+    std::pair<const char *, std::uint32_t> encodedCredentials,
     std::int64_t correlationId)
 {
-    ConnectRequest request;
+    AuthConnectRequest request;
 
     wrapAndApplyHeader(request, buffer)
         .correlationId(correlationId)
         .responseStreamId(responseStreamId)
         .version(Configuration::ARCHIVE_SEMANTIC_VERSION)
-        .putResponseChannel(responseChannel);
+        .putResponseChannel(responseChannel)
+        .putEncodedCredentials(encodedCredentials.first, encodedCredentials.second);
 
     return messageAndHeaderLength(request);
 }

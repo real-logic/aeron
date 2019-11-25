@@ -18,6 +18,7 @@
 #define AERON_ARCHIVE_ARCHIVE_PROXY_H
 
 #include <array>
+#include <utility>
 
 #include "Aeron.h"
 #include "concurrent/BackOffIdleStrategy.h"
@@ -58,12 +59,22 @@ public:
      *
      * @param responseChannel  for the control message responses.
      * @param responseStreamId for the control message responses.
+     * @param encodedCredentials for the connect request.
      * @param correlationId    for this request.
      * @return true if successfully offered otherwise false.
      */
-    bool tryConnect(const std::string& responseChannel, std::int32_t responseStreamId, std::int64_t correlationId)
+    bool tryConnect(
+        const std::string& responseChannel,
+        std::int32_t responseStreamId,
+        std::pair<const char *, std::uint32_t> encodedCredentials,
+        std::int64_t correlationId)
     {
-        const util::index_t length = connectRequest(m_buffer, responseChannel, responseStreamId, correlationId);
+        const util::index_t length = connectRequest(
+            m_buffer,
+            responseChannel,
+            responseStreamId,
+            encodedCredentials,
+            correlationId);
 
         return m_publication->offer(m_buffer, 0, length) > 0;
     }
@@ -730,6 +741,7 @@ private:
         AtomicBuffer& buffer,
         const std::string& responseChannel,
         std::int32_t responseStreamId,
+        std::pair<const char *, std::uint32_t> encodedCredentials,
         std::int64_t correlationId);
 
     static util::index_t closeSession(AtomicBuffer& buffer, std::int64_t controlSessionId);

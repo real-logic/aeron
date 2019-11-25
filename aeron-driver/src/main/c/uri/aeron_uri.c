@@ -19,6 +19,7 @@
 #include <string.h>
 #include "uri/aeron_uri.h"
 #include "util/aeron_arrayutil.h"
+#include "util/aeron_math.h"
 #include "util/aeron_parse_util.h"
 #include "aeron_driver_context.h"
 #include "aeron_driver_conductor.h"
@@ -535,7 +536,7 @@ int aeron_uri_publication_params(
                 return -1;
             }
 
-            if (((int32_t)term_id - (int32_t)initial_term_id) < 0)
+            if (aeron_sub_wrap_i32((int32_t)term_id, (int32_t)initial_term_id) < 0)
             {
                 aeron_set_err(
                     EINVAL,

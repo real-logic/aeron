@@ -543,11 +543,7 @@ int aeron_uri_publication_params(
                 return -1;
             }
 
-            params->term_offset = term_offset;
-            params->initial_term_id = initial_term_id;
-            params->term_id = term_id;
-
-            if ((params->term_offset & (AERON_LOGBUFFER_FRAME_ALIGNMENT - 1u)) != 0)
+            if ((term_offset & (AERON_LOGBUFFER_FRAME_ALIGNMENT - 1u)) != 0)
             {
                 aeron_set_err(
                     EINVAL,
@@ -557,6 +553,9 @@ int aeron_uri_publication_params(
                 return -1;
             }
 
+            params->term_offset = term_offset;
+            params->initial_term_id = initial_term_id;
+            params->term_id = term_id;
             params->has_position = true;
         }
     }

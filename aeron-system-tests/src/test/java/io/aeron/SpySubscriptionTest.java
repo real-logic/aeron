@@ -19,6 +19,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.support.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -52,7 +53,7 @@ public class SpySubscriptionTest
     private final MutableInteger fragmentCountSub = new MutableInteger();
     private final FragmentHandler fragmentHandlerSub = (buffer1, offset, length, header) -> fragmentCountSub.value++;
 
-    private final MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()
+    private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Throwable::printStackTrace)
         .dirDeleteOnShutdown(true)
         .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)

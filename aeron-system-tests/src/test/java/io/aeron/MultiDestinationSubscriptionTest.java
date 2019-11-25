@@ -21,6 +21,7 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.support.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
@@ -37,7 +38,12 @@ import java.util.concurrent.TimeUnit;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 public class MultiDestinationSubscriptionTest
 {
@@ -65,8 +71,8 @@ public class MultiDestinationSubscriptionTest
 
     private Aeron clientA;
     private Aeron clientB;
-    private MediaDriver driverA;
-    private MediaDriver driverB;
+    private TestMediaDriver driverA;
+    private TestMediaDriver driverB;
     private Publication publicationA;
     private Publication publicationB;
     private Subscription subscription;
@@ -78,6 +84,8 @@ public class MultiDestinationSubscriptionTest
 
     private void launch()
     {
+        TestMediaDriver.notSupportedOnCMediaDriverYet("Multi-destination-cast not available");
+
         final String baseDirA = ROOT_DIR + "A";
 
         buffer.putInt(0, 1);
@@ -88,7 +96,7 @@ public class MultiDestinationSubscriptionTest
             .aeronDirectoryName(baseDirA)
             .threadingMode(ThreadingMode.SHARED);
 
-        driverA = MediaDriver.launch(driverContextA);
+        driverA = TestMediaDriver.launch(driverContextA);
         clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverContextA.aeronDirectoryName()));
     }
 
@@ -102,7 +110,7 @@ public class MultiDestinationSubscriptionTest
             .aeronDirectoryName(baseDirB)
             .threadingMode(ThreadingMode.SHARED);
 
-        driverB = MediaDriver.launch(driverContextB);
+        driverB = TestMediaDriver.launch(driverContextB);
         clientB = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverContextB.aeronDirectoryName()));
     }
 

@@ -17,6 +17,7 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.support.TestMediaDriver;
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
@@ -51,7 +52,8 @@ public class TermBufferLengthTest
             .publicationTermBufferLength(TEST_TERM_LENGTH * 2)
             .ipcTermBufferLength(TEST_TERM_LENGTH * 2);
 
-        try (MediaDriver ignore = MediaDriver.launch(ctx);
+        try (
+            TestMediaDriver ignore = TestMediaDriver.launch(ctx);
             Aeron aeron = Aeron.connect();
             Publication publication = aeron.addPublication(channel, STREAM_ID))
         {

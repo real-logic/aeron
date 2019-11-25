@@ -21,6 +21,7 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.support.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
@@ -36,7 +37,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertFalse;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 public class MultiDestinationCastTest
 {
@@ -63,8 +69,8 @@ public class MultiDestinationCastTest
 
     private Aeron clientA;
     private Aeron clientB;
-    private MediaDriver driverA;
-    private MediaDriver driverB;
+    private TestMediaDriver driverA;
+    private TestMediaDriver driverB;
     private Publication publication;
     private Subscription subscriptionA;
     private Subscription subscriptionB;
@@ -77,6 +83,8 @@ public class MultiDestinationCastTest
 
     private void launch()
     {
+        TestMediaDriver.notSupportedOnCMediaDriverYet("Multi-destination-cast not available");
+
         final String baseDirA = ROOT_DIR + "A";
         final String baseDirB = ROOT_DIR + "B";
 
@@ -93,8 +101,8 @@ public class MultiDestinationCastTest
             .aeronDirectoryName(baseDirB)
             .threadingMode(ThreadingMode.SHARED);
 
-        driverA = MediaDriver.launch(driverAContext);
-        driverB = MediaDriver.launch(driverBContext);
+        driverA = TestMediaDriver.launch(driverAContext);
+        driverB = TestMediaDriver.launch(driverBContext);
         clientA = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverAContext.aeronDirectoryName()));
         clientB = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverBContext.aeronDirectoryName()));
     }

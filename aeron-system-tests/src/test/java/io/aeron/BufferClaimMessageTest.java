@@ -17,19 +17,20 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.logbuffer.BufferClaim;
+import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.support.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableBoolean;
 import org.agrona.collections.MutableInteger;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
-import io.aeron.logbuffer.BufferClaim;
-import io.aeron.logbuffer.FragmentHandler;
-import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 
@@ -49,7 +50,7 @@ public class BufferClaimMessageTest
     private static final int FRAGMENT_COUNT_LIMIT = 10;
     private static final int MESSAGE_LENGTH = 200;
 
-    private final MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()
+    private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Throwable::printStackTrace)
         .dirDeleteOnShutdown(true)
         .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)

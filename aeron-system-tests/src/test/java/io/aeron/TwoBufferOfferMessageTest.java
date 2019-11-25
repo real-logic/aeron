@@ -18,6 +18,7 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.support.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableReference;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -33,7 +34,7 @@ public class TwoBufferOfferMessageTest
     private static final int STREAM_ID = 1;
     private static final int FRAGMENT_COUNT_LIMIT = 10;
 
-    private final MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()
+    private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Throwable::printStackTrace)
         .dirDeleteOnShutdown(true)
         .threadingMode(ThreadingMode.SHARED));

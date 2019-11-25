@@ -18,6 +18,7 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.support.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
@@ -35,7 +36,7 @@ public class MaxPositionPublicationTest
 
     private final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
 
-    private final MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()
+    private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Throwable::printStackTrace)
         .dirDeleteOnStart(true)
         .dirDeleteOnShutdown(true)

@@ -34,6 +34,6 @@ TEST_F(BitutilTest, shouldCountTrailingZeros64Bit)
     for (uint64_t i = 0; i < 64; i++)
     {
         uint64_t value = UINT64_C(1) << i;
-        EXPECT_EQ(aeron_number_of_trailing_zeroes_u64(value), i);
+        EXPECT_EQ(aeron_number_of_trailing_zeroes_u64(value), static_cast<int>(i));
     }
 }

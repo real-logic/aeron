@@ -384,7 +384,7 @@ int aeron_confirm_publication_match(
         return -1;
     }
 
-    if (params->mtu_length != (size_t) logbuffer_metadata->mtu_length)
+    if (params->mtu_length != (size_t)logbuffer_metadata->mtu_length)
     {
         aeron_set_err(
             EINVAL,
@@ -394,7 +394,7 @@ int aeron_confirm_publication_match(
         return -1;
     }
 
-    if (params->term_length != (size_t) logbuffer_metadata->term_length)
+    if (params->term_length != (size_t)logbuffer_metadata->term_length)
     {
         aeron_set_err(
             EINVAL,

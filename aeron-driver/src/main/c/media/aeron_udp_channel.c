@@ -313,12 +313,12 @@ int aeron_udp_channel_parse(size_t uri_length, const char *uri, aeron_udp_channe
         }
 
         if (aeron_find_multicast_interface(
-            endpoint_addr.ss_family, _channel->uri.params.udp.interface, &interface_addr, &interface_index) < 0)
+                endpoint_addr.ss_family, _channel->uri.params.udp.interface_key, &interface_addr, &interface_index) < 0)
         {
             aeron_set_err(
-                -AERON_ERROR_CODE_INVALID_CHANNEL,
-                "could not find interface=(%s): %s",
-                _channel->uri.params.udp.interface, aeron_errmsg());
+                    -AERON_ERROR_CODE_INVALID_CHANNEL,
+                    "could not find interface=(%s): %s",
+                    _channel->uri.params.udp.interface_key, aeron_errmsg());
             goto error_cleanup;
         }
 
@@ -347,7 +347,7 @@ int aeron_udp_channel_parse(size_t uri_length, const char *uri, aeron_udp_channe
     else
     {
         if (aeron_find_unicast_interface(
-            endpoint_addr.ss_family, _channel->uri.params.udp.interface, &interface_addr, &interface_index) < 0)
+                endpoint_addr.ss_family, _channel->uri.params.udp.interface_key, &interface_addr, &interface_index) < 0)
         {
             goto error_cleanup;
         }

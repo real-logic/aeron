@@ -136,7 +136,7 @@ static int aeron_udp_uri_params_func(void *clientd, const char *key, const char 
     }
     else if (strcmp(key, AERON_UDP_CHANNEL_INTERFACE_KEY) == 0)
     {
-        params->interface = value;
+        params->interface_key = value;
     }
     else if (strcmp(key, AERON_UDP_CHANNEL_TTL_KEY) == 0)
     {
@@ -184,7 +184,7 @@ int aeron_udp_uri_parse(char *uri, aeron_udp_channel_params_t *params)
     params->additional_params.length = 0;
     params->additional_params.array = NULL;
     params->endpoint = NULL;
-    params->interface = NULL;
+    params->interface_key = NULL;
     params->ttl = NULL;
     params->control = NULL;
     params->channel_tag = NULL;

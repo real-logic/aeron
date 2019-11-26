@@ -119,7 +119,7 @@ TEST_F(UriTest, shouldParseWithMultipleParams)
     EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=224.10.9.8|port=4567|interface=192.168.0.3|ttl=16", &m_uri), 0);
     ASSERT_EQ(m_uri.type, AERON_URI_UDP);
     EXPECT_EQ(std::string(m_uri.params.udp.endpoint), "224.10.9.8");
-    EXPECT_EQ(std::string(m_uri.params.udp.interface), "192.168.0.3");
+    EXPECT_EQ(std::string(m_uri.params.udp.interface_key), "192.168.0.3");
     EXPECT_EQ(std::string(m_uri.params.udp.ttl), "16");
     EXPECT_EQ(m_uri.params.udp.additional_params.length, 1u);
     EXPECT_EQ(std::string(m_uri.params.udp.additional_params.array[0].key), "port");

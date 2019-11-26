@@ -17,7 +17,6 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
-import io.aeron.driver.reports.LossReport;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableInteger;
@@ -40,10 +39,12 @@ import io.aeron.logbuffer.Header;
 import org.agrona.BitUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
+import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.TimeUnit;
 
 
+import static io.aeron.test.LossReportTestUtil.verifyLossOccurredForStream;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
@@ -287,7 +288,7 @@ public class PubAndSubTest
 
     @Theory
     @Test(timeout = 20_000)
-    public void shouldReceivePublishedMessageOneForOneWithDataLoss(final String channel)
+    public void shouldReceivePublishedMessageOneForOneWithDataLoss(final String channel) throws IOException
     {
         if (IPC_URI.equals(channel))
         {
@@ -298,9 +299,6 @@ public class PubAndSubTest
         final int numMessagesInTermBuffer = 64;
         final int messageLength = (termBufferLength / numMessagesInTermBuffer) - HEADER_LENGTH;
         final int numMessagesToSend = 2 * numMessagesInTermBuffer;
-
-        final LossReport lossReport = mock(LossReport.class);
-        context.lossReport(lossReport);
 
         final LossGenerator dataLossGenerator =
             DebugChannelEndpointConfiguration.lossGeneratorSupplier(0.10, 0xcafebabeL);
@@ -348,12 +346,12 @@ public class PubAndSubTest
             eq(messageLength),
             any(Header.class));
 
-        verify(lossReport).createEntry(anyLong(), anyLong(), anyInt(), eq(STREAM_ID), anyString(), anyString());
+        verifyLossOccurredForStream(context.aeronDirectoryName(), STREAM_ID);
     }
 
     @Theory
     @Test(timeout = 20_000)
-    public void shouldReceivePublishedMessageBatchedWithDataLoss(final String channel)
+    public void shouldReceivePublishedMessageBatchedWithDataLoss(final String channel) throws IOException
     {
         if (IPC_URI.equals(channel))
         {
@@ -366,9 +364,6 @@ public class PubAndSubTest
         final int numMessagesToSend = 2 * numMessagesInTermBuffer;
         final int numBatches = 4;
         final int numMessagesPerBatch = numMessagesToSend / numBatches;
-
-        final LossReport lossReport = mock(LossReport.class);
-        context.lossReport(lossReport);
 
         final LossGenerator dataLossGenerator =
             DebugChannelEndpointConfiguration.lossGeneratorSupplier(0.10, 0xcafebabeL);
@@ -420,7 +415,7 @@ public class PubAndSubTest
             eq(messageLength),
             any(Header.class));
 
-        verify(lossReport).createEntry(anyLong(), anyLong(), anyInt(), eq(STREAM_ID), anyString(), anyString());
+        verifyLossOccurredForStream(context.aeronDirectoryName(), STREAM_ID);
     }
 
     @Theory

@@ -15,23 +15,56 @@
  */
 package io.aeron.driver;
 
-import io.aeron.*;
+import io.aeron.CncFileDescriptor;
+import io.aeron.CommonContext;
+import io.aeron.driver.buffer.FileStoreLogFactory;
 import io.aeron.driver.buffer.LogFactory;
 import io.aeron.driver.exceptions.ActiveDriverException;
-import io.aeron.driver.media.*;
-import io.aeron.driver.buffer.FileStoreLogFactory;
+import io.aeron.driver.media.ControlTransportPoller;
+import io.aeron.driver.media.DataTransportPoller;
+import io.aeron.driver.media.ReceiveChannelEndpoint;
+import io.aeron.driver.media.ReceiveChannelEndpointThreadLocals;
+import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.reports.LossReport;
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.LogBufferDescriptor;
-import org.agrona.*;
-import org.agrona.concurrent.*;
+import org.agrona.CloseHelper;
+import org.agrona.ErrorHandler;
+import org.agrona.IoUtil;
+import org.agrona.LangUtil;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.SemanticVersion;
+import org.agrona.SystemUtil;
+import org.agrona.concurrent.Agent;
+import org.agrona.concurrent.AgentInvoker;
+import org.agrona.concurrent.AgentRunner;
+import org.agrona.concurrent.CachedEpochClock;
+import org.agrona.concurrent.CachedNanoClock;
+import org.agrona.concurrent.CompositeAgent;
+import org.agrona.concurrent.EpochClock;
+import org.agrona.concurrent.HighResolutionTimer;
+import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
+import org.agrona.concurrent.NanoClock;
+import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
+import org.agrona.concurrent.ShutdownSignalBarrier;
+import org.agrona.concurrent.SystemEpochClock;
+import org.agrona.concurrent.SystemNanoClock;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.broadcast.BroadcastTransmitter;
 import org.agrona.concurrent.errors.DistinctErrorLog;
 import org.agrona.concurrent.errors.LoggingErrorHandler;
-import org.agrona.concurrent.ringbuffer.*;
-import org.agrona.concurrent.status.*;
+import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
+import org.agrona.concurrent.ringbuffer.RingBuffer;
+import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.status.ConcurrentCountersManager;
+import org.agrona.concurrent.status.CountersManager;
+import org.agrona.concurrent.status.StatusIndicator;
+import org.agrona.concurrent.status.UnsafeBufferStatusIndicator;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
 import java.nio.MappedByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -40,11 +73,25 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import static io.aeron.CncFileDescriptor.*;
-import static io.aeron.driver.Configuration.*;
+import static io.aeron.CncFileDescriptor.CNC_VERSION;
+import static io.aeron.CncFileDescriptor.createCountersMetaDataBuffer;
+import static io.aeron.CncFileDescriptor.createCountersValuesBuffer;
+import static io.aeron.CncFileDescriptor.createErrorLogBuffer;
+import static io.aeron.CncFileDescriptor.createToClientsBuffer;
+import static io.aeron.CncFileDescriptor.createToDriverBuffer;
+import static io.aeron.driver.Configuration.CMD_QUEUE_CAPACITY;
+import static io.aeron.driver.Configuration.validateInitialWindowLength;
+import static io.aeron.driver.Configuration.validateMtuLength;
+import static io.aeron.driver.Configuration.validatePageSize;
+import static io.aeron.driver.Configuration.validateSessionIdRange;
+import static io.aeron.driver.Configuration.validateSocketBufferLengths;
+import static io.aeron.driver.Configuration.validateUnblockTimeout;
 import static io.aeron.driver.reports.LossReportUtil.mapLossReport;
-import static io.aeron.driver.status.SystemCounterDescriptor.*;
+import static io.aeron.driver.status.SystemCounterDescriptor.CONDUCTOR_PROXY_FAILS;
 import static io.aeron.driver.status.SystemCounterDescriptor.CONTROLLABLE_IDLE_STRATEGY;
+import static io.aeron.driver.status.SystemCounterDescriptor.ERRORS;
+import static io.aeron.driver.status.SystemCounterDescriptor.RECEIVER_PROXY_FAILS;
+import static io.aeron.driver.status.SystemCounterDescriptor.SENDER_PROXY_FAILS;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.agrona.BitUtil.align;
 import static org.agrona.IoUtil.mapNewFile;
@@ -2441,23 +2488,9 @@ public final class MediaDriver implements AutoCloseable
          *
          * @return {@link LossReport} for identifying loss issues on specific connections.
          */
-        public LossReport lossReport()
+        LossReport lossReport()
         {
             return lossReport;
-        }
-
-        /**
-         * {@link LossReport}for identifying loss issues on specific connections.
-         * <p>
-         * The default should only be overridden for testing.
-         *
-         * @param lossReport for identifying loss issues on specific connections.
-         * @return this for a fluent API.
-         */
-        public Context lossReport(final LossReport lossReport)
-        {
-            this.lossReport = lossReport;
-            return this;
         }
 
         /**
@@ -2951,11 +2984,8 @@ public final class MediaDriver implements AutoCloseable
                     aeronDirectoryName(), filePageSize, performStorageChecks, lowStorageWarningThreshold, errorHandler);
             }
 
-            if (null == lossReport)
-            {
-                lossReportBuffer = mapLossReport(aeronDirectoryName(), align(lossReportBufferLength, filePageSize));
-                lossReport = new LossReport(new UnsafeBuffer(lossReportBuffer));
-            }
+            lossReportBuffer = mapLossReport(aeronDirectoryName(), align(lossReportBufferLength, filePageSize));
+            lossReport = new LossReport(new UnsafeBuffer(lossReportBuffer));
         }
 
         private void concludeCounters()

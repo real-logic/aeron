@@ -36,7 +36,19 @@ struct mmsghdr
 
 static aeron_udp_channel_transport_bindings_t* delegate = NULL;
 static aeron_udp_channel_transport_loss_params_t *params = NULL;
-static unsigned short receive_data_loss_xsubi[3];
+static unsigned short data_loss_xsubi[3];
+
+static bool aeron_udp_channel_transport_loss_should_drop_frame(
+    const struct mmsghdr *mmsg,
+    const double rate,
+    const unsigned int msg_type_mask)
+{
+    const aeron_frame_header_t *frame_header = (aeron_frame_header_t *)(mmsg->msg_hdr.msg_iov[0].iov_base);
+    const unsigned int msg_type_bit = 1U << (unsigned int)frame_header->type;
+    const bool msg_type_matches_mask = (msg_type_bit & msg_type_mask) != 0;
+
+    return 0.0 < rate && msg_type_matches_mask && (aeron_erand48(data_loss_xsubi) <= rate);
+}
 
 int aeron_udp_channel_transport_loss_init(
     aeron_udp_channel_transport_bindings_t *delegate_bindings,
@@ -45,9 +57,9 @@ int aeron_udp_channel_transport_loss_init(
     delegate = delegate_bindings;
     params = loss_params;
 
-    receive_data_loss_xsubi[2] = (unsigned short)(params->seed & 0xFFFF);
-    receive_data_loss_xsubi[1] = (unsigned short)((params->seed >> 16) & 0xFFFF);
-    receive_data_loss_xsubi[0] = (unsigned short)((params->seed >> 32) & 0xFFFF);
+    data_loss_xsubi[2] = (unsigned short)(params->seed & 0xFFFF);
+    data_loss_xsubi[1] = (unsigned short)((params->seed >> 16) & 0xFFFF);
+    data_loss_xsubi[0] = (unsigned short)((params->seed >> 32) & 0xFFFF);
 
     return 0;
 }
@@ -67,11 +79,7 @@ int aeron_udp_channel_transport_loss_recvmmsg(
 
     for (int i = messages_received; --i > -1;)
     {
-        aeron_frame_header_t *frame_header = (aeron_frame_header_t *)(msgvec[i].msg_hdr.msg_iov[0].iov_base);
-        unsigned int msg_type_bit = 1U << (unsigned int)frame_header->type;
-
-        if ((aeron_erand48(receive_data_loss_xsubi) <= params->rate) &&
-            ((msg_type_bit & params->recv_msg_type_mask) != 0))
+        if (aeron_udp_channel_transport_loss_should_drop_frame(&msgvec[i], params->rate, params->recv_msg_type_mask))
         {
             if (i != (messages_after_loss - 1))
             {

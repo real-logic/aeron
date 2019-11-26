@@ -406,19 +406,20 @@ class ReplaySession implements Session, AutoCloseable
 
     private boolean noNewData(final long replayPosition, final long oldStopPosition)
     {
+        final Counter limitPosition = this.limitPosition;
         final long currentLimitPosition = limitPosition.get();
         final boolean isCounterClosed = limitPosition.isClosed();
         final long newStopPosition = isCounterClosed ? catalog.stopPosition(recordingId) : currentLimitPosition;
 
         if (isCounterClosed)
         {
-            if (newStopPosition < replayLimit)
-            {
-                replayLimit = newStopPosition;
-            }
-            else if (NULL_POSITION == newStopPosition)
+            if (NULL_POSITION == newStopPosition)
             {
                 replayLimit = oldStopPosition;
+            }
+            else if (newStopPosition < replayLimit)
+            {
+                replayLimit = newStopPosition;
             }
         }
 

@@ -45,6 +45,7 @@
 #include "aeron_archive_client/AttachSegmentsRequest.h"
 #include "aeron_archive_client/MigrateSegmentsRequest.h"
 #include "aeron_archive_client/KeepAliveRequest.h"
+#include "aeron_archive_client/ChallengeResponse.h"
 
 using namespace aeron;
 using namespace aeron::concurrent;
@@ -556,4 +557,20 @@ util::index_t ArchiveProxy::keepAlive(
         .correlationId(correlationId);
 
     return messageAndHeaderLength(request);
+}
+
+util::index_t ArchiveProxy::challengeResponse(
+    AtomicBuffer& buffer,
+    std::pair<const char *, std::uint32_t> encodedCredentials,
+    std::int64_t correlationId,
+    std::int64_t controlSessionId)
+{
+    ChallengeResponse response;
+
+    wrapAndApplyHeader(response, buffer)
+        .controlSessionId(controlSessionId)
+        .correlationId(correlationId)
+        .putEncodedCredentials(encodedCredentials.first, encodedCredentials.second);
+
+    return messageAndHeaderLength(response);
 }

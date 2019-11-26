@@ -99,6 +99,21 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
         m_step = 4;
     }
 
+    if (6 == m_step && m_controlResponsePoller)
+    {
+        if (!m_archiveProxy->tryChallengeResponse(
+            m_encodedCredentialsFromChallenge, m_correlationId, m_challengeControlSessionId))
+        {
+            return std::shared_ptr<AeronArchive>();
+        }
+
+        m_ctx->credentialsSupplier().m_onFree(m_encodedCredentialsFromChallenge);
+        m_encodedCredentialsFromChallenge.first = nullptr;
+        m_encodedCredentialsFromChallenge.second = 0;
+
+        m_step = 7;
+    }
+
     if (m_controlResponsePoller)
     {
         m_controlResponsePoller->poll();
@@ -107,37 +122,51 @@ std::shared_ptr<AeronArchive> AeronArchive::AsyncConnect::poll()
         {
             const std::int64_t sessionId = m_controlResponsePoller->controlSessionId();
 
-            if (!m_controlResponsePoller->isCodeOk())
+            if (m_controlResponsePoller->wasChallenged())
             {
-                if (m_controlResponsePoller->isCodeError())
+                m_encodedCredentialsFromChallenge = m_ctx->credentialsSupplier().m_onChallenge(
+                    m_controlResponsePoller->encodedChallenge());
+
+                m_correlationId = m_aeron->nextCorrelationId();
+                m_challengeControlSessionId = sessionId;
+
+                m_step = 6;
+            }
+            else
+            {
+                if (!m_controlResponsePoller->isCodeOk())
                 {
-                    m_archiveProxy->closeSession(sessionId);
+                    if (m_controlResponsePoller->isCodeError())
+                    {
+                        m_archiveProxy->closeSession(sessionId);
+
+                        throw ArchiveException(
+                            static_cast<std::int32_t>(m_controlResponsePoller->relevantId()),
+                            "error: " + m_controlResponsePoller->errorMessage(),
+                            SOURCEINFO);
+                    }
 
                     throw ArchiveException(
-                        static_cast<std::int32_t>(m_controlResponsePoller->relevantId()),
-                        "error: " + m_controlResponsePoller->errorMessage(),
+                        "unexpected response: code=" + std::to_string(m_controlResponsePoller->codeValue()),
                         SOURCEINFO);
                 }
 
-                throw ArchiveException(
-                    "unexpected response: code=" + std::to_string(m_controlResponsePoller->codeValue()), SOURCEINFO);
+                m_archiveProxy->keepAlive(m_controlResponsePoller->correlationId(), sessionId);
+
+                std::unique_ptr<RecordingDescriptorPoller> recordingDescriptorPoller(
+                    new RecordingDescriptorPoller(m_subscription, m_ctx->errorHandler(), sessionId));
+                std::unique_ptr<RecordingSubscriptionDescriptorPoller> recordingSubscriptionDescriptorPoller(
+                    new RecordingSubscriptionDescriptorPoller(m_subscription, m_ctx->errorHandler(), sessionId));
+
+                return std::make_shared<AeronArchive>(
+                    std::move(m_ctx),
+                    std::move(m_archiveProxy),
+                    std::move(m_controlResponsePoller),
+                    std::move(recordingDescriptorPoller),
+                    std::move(recordingSubscriptionDescriptorPoller),
+                    m_aeron,
+                    sessionId);
             }
-
-            m_archiveProxy->keepAlive(m_controlResponsePoller->correlationId(), sessionId);
-
-            std::unique_ptr<RecordingDescriptorPoller> recordingDescriptorPoller(
-                new RecordingDescriptorPoller(m_subscription, m_ctx->errorHandler(), sessionId));
-            std::unique_ptr<RecordingSubscriptionDescriptorPoller> recordingSubscriptionDescriptorPoller(
-                new RecordingSubscriptionDescriptorPoller(m_subscription, m_ctx->errorHandler(), sessionId));
-
-            return std::make_shared<AeronArchive>(
-                std::move(m_ctx),
-                std::move(m_archiveProxy),
-                std::move(m_controlResponsePoller),
-                std::move(recordingDescriptorPoller),
-                std::move(recordingSubscriptionDescriptorPoller),
-                m_aeron,
-                sessionId);
         }
     }
 

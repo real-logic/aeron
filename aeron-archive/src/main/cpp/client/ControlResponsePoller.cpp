@@ -18,6 +18,7 @@
 #include "ArchiveException.h"
 #include "aeron_archive_client/MessageHeader.h"
 #include "aeron_archive_client/ControlResponse.h"
+#include "aeron_archive_client/Challenge.h"
 
 using namespace aeron;
 using namespace aeron::archive::client;
@@ -81,6 +82,37 @@ ControlledPollAction ControlResponsePoller::onFragment(
         m_errorMessage = response.getErrorMessageAsString();
 
         m_isControlResponse = true;
+        m_pollComplete = true;
+
+        return ControlledPollAction::BREAK;
+    }
+    else if (Challenge::sbeTemplateId() == msgHeader.templateId())
+    {
+        Challenge response(
+            buffer.sbeData() + offset + MessageHeader::encodedLength(),
+            static_cast<std::uint64_t>(length) - MessageHeader::encodedLength(),
+            msgHeader.blockLength(),
+            msgHeader.version());
+
+        m_controlSessionId = response.controlSessionId();
+        m_correlationId = response.correlationId();
+        m_relevantId = aeron::NULL_VALUE;
+        m_version = response.version();
+
+        m_codeValue = ControlResponseCode::NULL_VALUE;
+        m_isCodeError = false;
+        m_isCodeOk = false;
+        m_errorMessage = "";
+
+        const std::uint32_t encodedChallengeLength = response.encodedChallengeLength();
+        char *encodedBuffer = new char[encodedChallengeLength];
+        response.getEncodedChallenge(encodedBuffer, encodedChallengeLength);
+
+        m_encodedChallenge.first = encodedBuffer;
+        m_encodedChallenge.second = encodedChallengeLength;
+
+        m_isControlResponse = false;
+        m_wasChallenged = true;
         m_pollComplete = true;
 
         return ControlledPollAction::BREAK;

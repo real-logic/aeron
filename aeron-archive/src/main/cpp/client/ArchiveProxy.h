@@ -80,6 +80,29 @@ public:
     }
 
     /**
+     * Try send a challenge response to an archive on its control interface providing the response details.
+     * Only one attempt will be made to offer the response.
+     *
+     * @param encodedCredentials for the response.
+     * @param correlationId    for this response.
+     * @param controlSessionId for this response.
+     * @return true if successfully offered otherwise false.
+     */
+    bool tryChallengeResponse(
+        std::pair<const char *, std::uint32_t> encodedCredentials,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId)
+    {
+        const util::index_t length = challengeResponse(
+            m_buffer,
+            encodedCredentials,
+            correlationId,
+            controlSessionId);
+
+        return m_publication->offer(m_buffer, 0, length) > 0;
+    }
+
+    /**
      * Keep this archive session alive by notifying the archive.
      *
      * @param correlationId    for this request.
@@ -926,6 +949,12 @@ private:
 
     static util::index_t keepAlive(
         AtomicBuffer& buffer,
+        std::int64_t correlationId,
+        std::int64_t controlSessionId);
+
+    static util::index_t challengeResponse(
+        AtomicBuffer& buffer,
+        std::pair<const char *, std::uint32_t> encodedCredentials,
         std::int64_t correlationId,
         std::int64_t controlSessionId);
 };

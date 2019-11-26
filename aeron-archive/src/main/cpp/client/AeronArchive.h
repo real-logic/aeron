@@ -95,7 +95,9 @@ public:
         const std::int64_t m_subscriptionId;
         const std::int64_t m_publicationId;
         std::int64_t m_correlationId = aeron::NULL_VALUE;
+        std::int64_t m_challengeControlSessionId = aeron::NULL_VALUE;
         std::uint8_t m_step = 0;
+        std::pair<const char *, std::uint32_t> m_encodedCredentialsFromChallenge = { nullptr, 0};
     };
 
     /**

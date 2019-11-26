@@ -225,7 +225,9 @@ abstract class ArchiveConductor
             replayer.abort();
             recorder.abort();
             isAbort = true;
+
             ctx.abortLatch().await(AgentRunner.RETRY_CLOSE_TIMEOUT_MS * 2L, TimeUnit.MILLISECONDS);
+            ctx.errorCounter().close();
         }
         catch (final InterruptedException ignore)
         {

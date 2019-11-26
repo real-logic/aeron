@@ -1816,6 +1816,7 @@ public class Archive implements AutoCloseable
             CloseHelper.close(archiveDirChannel);
             archiveDirChannel = null;
 
+            CloseHelper.close(errorCounter);
             if (errorHandler instanceof AutoCloseable)
             {
                 CloseHelper.close((AutoCloseable)errorHandler);

@@ -19,6 +19,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.archive.Archive;
 import io.aeron.driver.status.SystemCounterDescriptor;
 import org.agrona.CloseHelper;
+import org.agrona.concurrent.status.AtomicCounter;
 
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 
@@ -88,10 +89,14 @@ public class ClusteredMediaDriver implements AutoCloseable
             driver = MediaDriver.launch(driverCtx
                 .spiesSimulateConnection(true));
 
+            final int errorCounterId = SystemCounterDescriptor.ERRORS.id();
+            final AtomicCounter errorCounter = null == archiveCtx.errorCounter() ?
+                new AtomicCounter(driverCtx.countersValuesBuffer(), errorCounterId) : archiveCtx.errorCounter();
+
             archive = Archive.launch(archiveCtx
                 .mediaDriverAgentInvoker(driver.sharedAgentInvoker())
                 .errorHandler(driverCtx.errorHandler())
-                .errorCounter(driverCtx.systemCounters().get(SystemCounterDescriptor.ERRORS)));
+                .errorCounter(errorCounter));
 
             consensusModule = ConsensusModule.launch(consensusModuleCtx);
 

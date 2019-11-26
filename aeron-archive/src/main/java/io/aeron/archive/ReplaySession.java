@@ -28,7 +28,7 @@ import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
-import org.agrona.concurrent.EpochClock;
+import org.agrona.concurrent.CachedEpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
@@ -90,7 +90,7 @@ class ReplaySession implements Session, AutoCloseable
     private final BufferClaim bufferClaim = new BufferClaim();
     private final ExclusivePublication publication;
     private final ControlSession controlSession;
-    private final EpochClock epochClock;
+    private final CachedEpochClock epochClock;
     private final File archiveDir;
     private final Catalog catalog;
     private final Counter limitPosition;
@@ -113,7 +113,7 @@ class ReplaySession implements Session, AutoCloseable
         final Catalog catalog,
         final File archiveDir,
         final File initialSegmentFile,
-        final EpochClock epochClock,
+        final CachedEpochClock epochClock,
         final ExclusivePublication publication,
         final RecordingSummary recordingSummary,
         final Counter replayLimitPosition)

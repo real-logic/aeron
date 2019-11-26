@@ -22,7 +22,7 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.logbuffer.*;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.IoUtil;
-import org.agrona.concurrent.EpochClock;
+import org.agrona.concurrent.CachedEpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
 import org.junit.Before;
@@ -30,6 +30,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.TimeUnit;
 
@@ -67,14 +68,14 @@ public class ReplaySessionTest
     private final ArchiveConductor mockArchiveConductor = mock(ArchiveConductor.class);
     private final Counter recordingPositionCounter = mock(Counter.class);
     private final UnsafeBuffer replayBuffer = new UnsafeBuffer(
-        allocateDirectAligned(Archive.Configuration.MAX_BLOCK_LENGTH, 128));
+        ByteBuffer.allocateDirect(Archive.Configuration.MAX_BLOCK_LENGTH));
 
     private int messageCounter = 0;
 
     private final RecordingSummary recordingSummary = new RecordingSummary();
     private final File archiveDir = TestUtil.makeTestDirectory();
     private final ControlResponseProxy proxy = mock(ControlResponseProxy.class);
-    private final EpochClock epochClock = mock(EpochClock.class);
+    private final CachedEpochClock epochClock = new CachedEpochClock();
     private final Catalog mockCatalog = mock(Catalog.class);
     private Archive.Context context;
     private long recordingPosition;
@@ -313,7 +314,7 @@ public class ReplaySessionTest
 
             replaySession.doWork();
 
-            when(epochClock.time()).thenReturn(CONNECT_TIMEOUT_MS + TIME + 1L);
+            epochClock.update(CONNECT_TIMEOUT_MS + TIME + 1L);
             replaySession.doWork();
             assertTrue(replaySession.isDone());
         }

@@ -26,7 +26,7 @@ import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.CloseHelper;
-import org.agrona.concurrent.EpochClock;
+import org.agrona.concurrent.CachedEpochClock;
 
 import java.util.concurrent.TimeUnit;
 
@@ -72,7 +72,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     private final String replicationChannel;
     private final String liveDestination;
     private String replayDestination;
-    private final EpochClock epochClock;
+    private final CachedEpochClock epochClock;
     private final ArchiveConductor conductor;
     private final ControlSession controlSession;
     private final ControlResponseProxy controlResponseProxy;
@@ -94,7 +94,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         final String replicationChannel,
         final RecordingSummary recordingSummary,
         final AeronArchive.Context context,
-        final EpochClock epochClock,
+        final CachedEpochClock epochClock,
         final Catalog catalog,
         final ControlResponseProxy controlResponseProxy,
         final ControlSession controlSession)

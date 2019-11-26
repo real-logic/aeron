@@ -17,20 +17,17 @@ package io.aeron;
 
 import io.aeron.driver.*;
 import io.aeron.driver.ext.*;
-import io.aeron.driver.reports.LossReport;
 import io.aeron.logbuffer.*;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.*;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static io.aeron.test.LossReportTestUtil.verifyLossOccuredForStream;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertThat;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 public class GapFillLossTest
 {
@@ -57,9 +54,6 @@ public class GapFillLossTest
             .dirDeleteOnStart(true)
             .dirDeleteOnShutdown(true)
             .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH);
-
-        final LossReport lossReport = mock(LossReport.class);
-        ctx.lossReport(lossReport);
 
         final LossGenerator dataLossGenerator =
             DebugChannelEndpointConfiguration.lossGeneratorSupplier(0.20, 0xcafebabeL);
@@ -99,7 +93,7 @@ public class GapFillLossTest
             subscriberThread.join();
 
             assertThat(subscriber.messageCount, lessThan(NUM_MESSAGES));
-            verify(lossReport).createEntry(anyLong(), anyLong(), anyInt(), eq(STREAM_ID), anyString(), anyString());
+            verifyLossOccuredForStream(ctx.aeronDirectoryName(), STREAM_ID);
         }
     }
 

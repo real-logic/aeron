@@ -523,7 +523,7 @@ int aeron_uri_publication_params(
             {
                 aeron_set_err(
                     EINVAL,
-                    "Param difference greater than 2^31 - 1: %s=%" PRId64 " %s=%" PRId64,
+                    "Param difference greater than 2^31 - 1: %s=%" PRId32 " %s=%" PRId32,
                     AERON_URI_INITIAL_TERM_ID_KEY,
                     initial_term_id,
                     AERON_URI_TERM_OFFSET_KEY,

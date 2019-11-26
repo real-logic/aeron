@@ -44,7 +44,7 @@ import java.nio.channels.FileChannel;
 import java.util.concurrent.TimeUnit;
 
 
-import static io.aeron.test.LossReportTestUtil.verifyLossOccuredForStream;
+import static io.aeron.test.LossReportTestUtil.verifyLossOccurredForStream;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
@@ -346,7 +346,7 @@ public class PubAndSubTest
             eq(messageLength),
             any(Header.class));
 
-        verifyLossOccuredForStream(context.aeronDirectoryName(), STREAM_ID);
+        verifyLossOccurredForStream(context.aeronDirectoryName(), STREAM_ID);
     }
 
     @Theory
@@ -415,7 +415,7 @@ public class PubAndSubTest
             eq(messageLength),
             any(Header.class));
 
-        verifyLossOccuredForStream(context.aeronDirectoryName(), STREAM_ID);
+        verifyLossOccurredForStream(context.aeronDirectoryName(), STREAM_ID);
     }
 
     @Theory

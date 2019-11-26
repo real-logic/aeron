@@ -19,7 +19,9 @@ import static org.mockito.Mockito.verify;
 
 public class LossReportTestUtil
 {
-    public static void verifyLossOccuredForStream(String aeronDirectoryName, int streamId) throws IOException
+    public static void verifyLossOccurredForStream(
+        final String aeronDirectoryName,
+        final int streamId) throws IOException
     {
         final File lossReportFile = LossReportUtil.file(aeronDirectoryName);
         assertTrue(lossReportFile.exists());

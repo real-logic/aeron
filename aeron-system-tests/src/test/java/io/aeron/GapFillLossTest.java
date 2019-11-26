@@ -25,7 +25,7 @@ import org.junit.Test;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static io.aeron.test.LossReportTestUtil.verifyLossOccuredForStream;
+import static io.aeron.test.LossReportTestUtil.verifyLossOccurredForStream;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertThat;
 
@@ -93,7 +93,7 @@ public class GapFillLossTest
             subscriberThread.join();
 
             assertThat(subscriber.messageCount, lessThan(NUM_MESSAGES));
-            verifyLossOccuredForStream(ctx.aeronDirectoryName(), STREAM_ID);
+            verifyLossOccurredForStream(ctx.aeronDirectoryName(), STREAM_ID);
         }
     }
 

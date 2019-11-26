@@ -60,3 +60,10 @@ cppbuild/Win32
 
 # JVM crash reports
 hs_err_pid*
+
+# Archive and Cluster data from system tests
+/aeron-archive/*.rec
+/aeron-archive/*.catalog
+/aeron-archive/*.dat
+/aeron-cluster/*.dat
+/aeron-cluster/recording.log

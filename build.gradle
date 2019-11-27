@@ -23,9 +23,9 @@ plugins {
     id 'java'
     id 'idea'
     id 'com.gradle.build-scan' version '3.1'
-    id 'io.freefair.javadoc-links' version '4.1.4' apply false
+    id 'io.freefair.javadoc-links' version '4.1.5' apply false
     id 'com.github.johnrengelman.shadow' version '5.2.0' apply false
-    id 'biz.aQute.bnd.builder' version '4.2.0' apply false
+    id 'biz.aQute.bnd.builder' version '4.3.1' apply false
     id "com.github.ben-manes.versions" version "0.27.0"
 }
 
@@ -44,9 +44,12 @@ def aeronVersion = file('version.txt').text.trim()
 
 def agronaVersion = '1.1.0'
 def sbeVersion = '1.15.0'
-def byteBuddyVersion = '1.10.2'
-def hdrHistogramVersion = '2.1.11'
+def checkstyleVersion = '8.26'
+def hamcrestVersion = '2.2'
+def junitVersion = '4.12'
 def mockitoVersion = '3.1.0'
+def byteBuddyVersion = '1.10.3'
+def hdrHistogramVersion = '2.1.11'
 
 group = aeronGroup
 version = aeronVersion
@@ -140,16 +143,16 @@ subprojects {
     jar.enabled = true
 
     dependencies {
-        checkstyle 'com.puppycrawl.tools:checkstyle:8.26'
+        checkstyle "com.puppycrawl.tools:checkstyle:${checkstyleVersion}"
 
         compile "org.agrona:agrona:${agronaVersion}"
 
-        testCompile 'org.hamcrest:hamcrest:2.2'
+        testCompile "org.hamcrest:hamcrest:${hamcrestVersion}"
         testCompile "org.mockito:mockito-core:${mockitoVersion}"
-        testCompile 'junit:junit:4.12'
+        testCompile "junit:junit:${junitVersion}"
     }
 
-    checkstyle.toolVersion = '8.26'
+    checkstyle.toolVersion = "${checkstyleVersion}"
 
     compileJava {
         if (JavaVersion.current().ordinal() >= JavaVersion.VERSION_1_9.ordinal()) {

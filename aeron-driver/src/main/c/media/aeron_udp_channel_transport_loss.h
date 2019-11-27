@@ -21,9 +21,10 @@
 
 typedef struct aeron_udp_channel_transport_loss_params_stct
 {
+    const char *delegate_bindings_name;
     double rate;
-    unsigned int recv_msg_type_mask;
-    unsigned int send_msg_type_mask;
+    unsigned long recv_msg_type_mask;
+    unsigned long send_msg_type_mask;
     unsigned long long seed;
 }
 aeron_udp_channel_transport_loss_params_t;
@@ -50,6 +51,10 @@ int aeron_udp_channel_transport_loss_sendmmsg(
 int aeron_udp_channel_transport_loss_sendmsg(
     aeron_udp_channel_transport_t *transport,
     struct msghdr *message);
+
+int aeron_udp_channel_transport_loss_parse_params(char* uri, aeron_udp_channel_transport_loss_params_t* params);
+
+int aeron_udp_channel_transport_loss_parse_callback(void *clientd, const char *key, const char *value);
 
 
 #endif //AERON_AERON_UDP_CHANNEL_TRANSPORT_LOSS_H

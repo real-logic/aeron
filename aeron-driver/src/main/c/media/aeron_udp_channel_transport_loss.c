@@ -25,6 +25,7 @@
 
 #include "concurrent/aeron_atomic.h"
 #include "protocol/aeron_udp_protocol.h"
+#include "util/aeron_error.h"
 #include "aeron_windows.h"
 #include "aeron_udp_channel_transport_loss.h"
 
@@ -109,9 +110,8 @@ int aeron_udp_channel_transport_loss_recvmmsg(
     loss_clientd.bytes_dropped = 0;
     loss_clientd.messages_dropped = 0;
 
-    // TODO: Do we actually need to change the contents of the msgvec??
-    // At the moment the aeron_driver_receiver doesn't use the msgvec.
-    // All of the data is pushed back through the recv_func.
+    // At the moment the aeron_driver_receiver doesn't use the msgvec, it just
+    // initialises it. All of the data is pushed back through the recv_func.
     const int messages_received = delegate->recvmmsg_func(
         transport, msgvec, vlen, bytes_rcved, aeron_udp_channel_transport_loss_recv_callback, &loss_clientd);
 
@@ -136,5 +136,71 @@ int aeron_udp_channel_transport_loss_sendmsg(
     struct msghdr *message)
 {
     return delegate->sendmsg_func(transport, message);
+}
+
+int aeron_udp_channel_transport_loss_parse_params(char* uri, aeron_udp_channel_transport_loss_params_t* params)
+{
+    return aeron_uri_parse_params(uri, aeron_udp_channel_transport_loss_parse_callback, (void *) params);
+}
+
+int aeron_udp_channel_transport_loss_parse_callback(void *clientd, const char *key, const char *value)
+{
+    aeron_udp_channel_transport_loss_params_t* loss_params = clientd;
+    int result = 0;
+
+    if (strncmp(key, "delegate", sizeof("delegate")) == 0)
+    {
+        loss_params->delegate_bindings_name = strdup(value);
+    }
+    else if (strncmp(key, "rate", sizeof("rate")) == 0)
+    {
+        errno = 0;
+        char *endptr;
+        loss_params->rate = strtod(value, &endptr);
+
+        if (errno != 0 || value == endptr)
+        {
+            aeron_set_err(EINVAL, "Could not parse loss %s from: %s:", key, value);
+            result = -1;
+        }
+    }
+    else if (strncmp(key, "recv-msg-mask", sizeof("recv-msg-mask")) == 0)
+    {
+        errno = 0;
+        char *endptr;
+        loss_params->recv_msg_type_mask = strtoul(value, &endptr, 16);
+
+        if (errno != 0 || value == endptr)
+        {
+            aeron_set_err(EINVAL, "Could not parse loss %s from: %s:", key, value);
+            result = -1;
+        }
+    }
+    else if (strncmp(key, "send-msg-mask", sizeof("send-msg-mask")) == 0)
+    {
+        errno = 0;
+        char *endptr;
+        loss_params->send_msg_type_mask = strtoul(value, &endptr, 16);
+
+        if (errno != 0 || value == endptr)
+        {
+            aeron_set_err(EINVAL, "Could not parse loss %s from: %s:", key, value);
+            result = -1;
+        }
+    }
+    else if (strncmp(key, "seed", sizeof("seed")) == 0)
+    {
+        errno = 0;
+        char *endptr;
+        loss_params->seed = strtoull(value, &endptr, 10);
+
+        if (errno != 0 || value == endptr)
+        {
+            aeron_set_err(EINVAL, "Could not parse loss %s from: %s:", key, value);
+            result = -1;
+        }
+    }
+
+    return result;
 }
 

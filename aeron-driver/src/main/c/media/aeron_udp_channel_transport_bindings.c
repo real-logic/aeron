@@ -25,7 +25,6 @@
 #include "util/aeron_error.h"
 #include "util/aeron_dlopen.h"
 
-#include "protocol/aeron_udp_protocol.h"
 #include "aeron_udp_channel_transport_bindings.h"
 #include "aeron_udp_channel_transport.h"
 #include "aeron_udp_channel_transport_loss.h"
@@ -77,21 +76,32 @@ aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_loa
     {
         return aeron_udp_channel_transport_bindings_load("aeron_udp_channel_transport_bindings_default");
     }
-    else if (strncmp(bindings_name, "loss", sizeof("loss")) == 0)
+    else if (strncmp(bindings_name, "loss?", (sizeof("loss?") - 1)) == 0)
     {
-        bindings = aeron_udp_channel_transport_bindings_load("aeron_udp_channel_transport_bindings_loss");
-        const aeron_udp_channel_transport_bindings_t *delegate_bindings =
-            aeron_udp_channel_transport_bindings_load("default");
         aeron_udp_channel_transport_loss_params_t* loss_params;
         aeron_alloc((void **)&loss_params, sizeof(aeron_udp_channel_transport_loss_params_t));
 
-        // TODO: Default until configuration is implemented.
-        loss_params->rate = 0.2;
-        loss_params->seed = 123123;
-        loss_params->recv_msg_type_mask = 1U << (unsigned int)AERON_HDR_TYPE_DATA;
-        loss_params->send_msg_type_mask = 0;
+        char *params_str = strdup(bindings_name + (sizeof("loss?") - 1));
+        if (aeron_udp_channel_transport_loss_parse_params(params_str, loss_params) < 0)
+        {
+            aeron_free(loss_params);
+        }
+        else
+        {
+            const char *delegate_bindings_name = NULL != loss_params->delegate_bindings_name ?
+                loss_params->delegate_bindings_name : "default";
 
-        aeron_udp_channel_transport_loss_init(delegate_bindings, loss_params);
+            const aeron_udp_channel_transport_bindings_t *delegate_bindings =
+                aeron_udp_channel_transport_bindings_load(delegate_bindings_name);
+
+            if (NULL != delegate_bindings)
+            {
+                aeron_udp_channel_transport_loss_init(delegate_bindings, loss_params);
+
+                bindings = aeron_udp_channel_transport_bindings_load("aeron_udp_channel_transport_bindings_loss");
+            }
+        }
+        aeron_free(params_str);
     }
     else
     {
@@ -99,7 +109,6 @@ aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_loa
         {
             aeron_set_err(EINVAL, "could not find UDP channel transport bindings %s: dlsym - %s",
                 bindings_name, aeron_dlerror());
-            return NULL;
         }
     }
 

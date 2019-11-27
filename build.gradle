@@ -611,6 +611,8 @@ project(':aeron-agent') {
     }
 
     shadowJar {
+        mustRunAfter jar
+
         dependencies {
             exclude(project(':aeron-client'))
             exclude(project(':aeron-driver'))
@@ -812,15 +814,6 @@ project(':aeron-all') {
         source += project(':aeron-samples').sourceSets.main.allJava
     }
 
-    shadowJar {
-        manifest.attributes(
-            'Implementation-Title': 'Aeron',
-            'Implementation-Version': "${aeronVersion}",
-            'Implementation-Vendor': 'Real Logic Limited',
-            'Automatic-Module-Name': 'io.aeron.all'
-        )
-    }
-
     uploadArchives {
         repositories {
             mavenDeployer {
@@ -880,6 +873,12 @@ project(':aeron-all') {
 
     shadowJar {
         mustRunAfter jar
+
+        manifest.attributes(
+            'Implementation-Title': 'Aeron',
+            'Implementation-Version': "${aeronVersion}",
+            'Implementation-Vendor': 'Real Logic Limited',
+            'Automatic-Module-Name': 'io.aeron.all')
 
         archiveClassifier = ''
         relocate 'org.HdrHistogram', 'io.aeron.shadow.org.HdrHistogram'

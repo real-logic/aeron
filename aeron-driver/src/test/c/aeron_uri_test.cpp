@@ -17,6 +17,7 @@
 #include <functional>
 
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 
 extern "C"
 {
@@ -297,7 +298,7 @@ TEST_F(UriTest, shouldErrorParsingTooLargeTermIdRange)
     EXPECT_EQ(AERON_URI_PARSE(
         "aeron:ipc?term-length=65536|init-term-id=-2147483648|term-id=0|term-offset=0", &m_uri), 0);
     EXPECT_EQ(aeron_uri_publication_params(&m_uri, &params, &m_conductor, true), -1);
-    EXPECT_NE(strstr(aeron_errmsg(), "Param difference greater than 2^31 - 1"), (const char *)NULL);
+    EXPECT_THAT(std::string(aeron_errmsg()), ::testing::StartsWith("Param difference greater than 2^31 - 1"));
 }
 
 TEST_F(UriTest, shouldParsePublicationSessionId)

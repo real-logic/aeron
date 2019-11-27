@@ -15,6 +15,7 @@
  */
 
 #include <gtest/gtest.h>
+#include <media/aeron_udp_channel_transport.h>
 
 extern "C"
 {
@@ -30,6 +31,15 @@ public:
     }
 };
 
+void test_recv_callback(
+    void *clientd,
+    void *transport_clientd,
+    uint8_t *buffer,
+    size_t length,
+    struct sockaddr_storage *addr)
+{
+}
+
 static int delegate_return_packets_recvmmsg(
     aeron_udp_channel_transport_t *transport,
     struct mmsghdr *msgvec,
@@ -38,13 +48,20 @@ static int delegate_return_packets_recvmmsg(
     aeron_udp_transport_recv_func_t recv_func,
     void *clientd)
 {
-    const int16_t *msg_type = static_cast<int16_t *>(clientd);
+    const int16_t *msg_type = static_cast<int16_t *>(transport->dispatch_clientd);
     for (size_t i = 0; i < vlen; i++)
     {
         iovec *iovec = msgvec[i].msg_hdr.msg_iov;
         aeron_frame_header_t *frame_header = static_cast<aeron_frame_header_t *>(iovec[0].iov_base);
         frame_header->type = *msg_type;
         msgvec[i].msg_len = static_cast<unsigned int>(iovec[0].iov_len);
+
+        recv_func(clientd, NULL, static_cast<uint8_t *>(iovec[0].iov_base), msgvec[i].msg_len, NULL);
+
+        if (NULL != bytes_rcved)
+        {
+            *bytes_rcved += msgvec[i].msg_len;
+        }
     }
 
     return static_cast<int>(vlen);
@@ -53,8 +70,11 @@ static int delegate_return_packets_recvmmsg(
 TEST_F(UdpChannelTransportLossTest, shouldDiscardAllPacketsWithRateOfOne)
 {
     uint16_t msg_type = AERON_HDR_TYPE_DATA;
+    aeron_udp_channel_transport_t transport;
     aeron_udp_channel_transport_bindings_t bindings;
     aeron_udp_channel_transport_loss_params_t params;
+    transport.dispatch_clientd = reinterpret_cast<void *>(&msg_type);
+
     struct mmsghdr msgvec[2];
     const size_t vlen = 2;
     uint8_t data_0[1024];
@@ -79,7 +99,7 @@ TEST_F(UdpChannelTransportLossTest, shouldDiscardAllPacketsWithRateOfOne)
     aeron_udp_channel_transport_loss_init(&bindings, &params);
 
     int messages_received = aeron_udp_channel_transport_loss_recvmmsg(
-        NULL, msgvec, vlen, NULL, NULL, reinterpret_cast<void *>(&msg_type));
+        &transport, msgvec, vlen, NULL, test_recv_callback, NULL);
 
     EXPECT_EQ(messages_received, 0);
 }
@@ -90,6 +110,9 @@ TEST_F(UdpChannelTransportLossTest, shouldNotDiscardAllPacketsWithRateOfOneWithD
     uint16_t data_msg_type = AERON_HDR_TYPE_SETUP;
     aeron_udp_channel_transport_bindings_t bindings;
     aeron_udp_channel_transport_loss_params_t params;
+    aeron_udp_channel_transport_t transport;
+    transport.dispatch_clientd = reinterpret_cast<void *>(&data_msg_type);
+
     struct mmsghdr msgvec[2];
     const size_t vlen = 2;
     uint8_t data_0[1024];
@@ -114,7 +137,7 @@ TEST_F(UdpChannelTransportLossTest, shouldNotDiscardAllPacketsWithRateOfOneWithD
     aeron_udp_channel_transport_loss_init(&bindings, &params);
 
     int messages_received = aeron_udp_channel_transport_loss_recvmmsg(
-        NULL, msgvec, vlen, NULL, NULL, reinterpret_cast<void *>(&data_msg_type));
+        &transport, msgvec, vlen, NULL, test_recv_callback, NULL);
 
     EXPECT_EQ(messages_received, 2);
 }
@@ -124,6 +147,9 @@ TEST_F(UdpChannelTransportLossTest, shouldNotDiscardAllPacketsWithRateOfZero)
     uint16_t loss_msg_type = AERON_HDR_TYPE_DATA;
     aeron_udp_channel_transport_bindings_t bindings;
     aeron_udp_channel_transport_loss_params_t params;
+    aeron_udp_channel_transport_t transport;
+    transport.dispatch_clientd = reinterpret_cast<void *>(&loss_msg_type);
+
     struct mmsghdr msgvec[2];
     const size_t vlen = 2;
     uint8_t data_0[1024];
@@ -148,7 +174,7 @@ TEST_F(UdpChannelTransportLossTest, shouldNotDiscardAllPacketsWithRateOfZero)
     aeron_udp_channel_transport_loss_init(&bindings, &params);
 
     int messages_received = aeron_udp_channel_transport_loss_recvmmsg(
-        NULL, msgvec, vlen, NULL, NULL, reinterpret_cast<void *>(&loss_msg_type));
+        &transport, msgvec, vlen, NULL, test_recv_callback, NULL);
 
     EXPECT_EQ(messages_received, 2);
 }
@@ -158,6 +184,9 @@ TEST_F(UdpChannelTransportLossTest, shouldDiscardRoughlyHalfTheMessages)
     uint16_t msg_type = AERON_HDR_TYPE_DATA;
     aeron_udp_channel_transport_bindings_t bindings;
     aeron_udp_channel_transport_loss_params_t params;
+    aeron_udp_channel_transport_t transport;
+    transport.dispatch_clientd = reinterpret_cast<void *>(&msg_type);
+    int64_t bytes_received = 0;
 
     const size_t vlen = 10;
     struct mmsghdr msgvec[vlen];
@@ -182,9 +211,11 @@ TEST_F(UdpChannelTransportLossTest, shouldDiscardRoughlyHalfTheMessages)
     aeron_udp_channel_transport_loss_init(&bindings, &params);
 
     int messages_received = aeron_udp_channel_transport_loss_recvmmsg(
-        NULL, msgvec, vlen, NULL, NULL, reinterpret_cast<void *>(&msg_type));
+        &transport, msgvec, vlen, &bytes_received, test_recv_callback, NULL);
 
-    EXPECT_NE(messages_received, 10);
-    EXPECT_NE(messages_received, 0);
+    EXPECT_LT(messages_received, static_cast<int>(vlen));
+    EXPECT_GT(messages_received, 0);
+    EXPECT_LT(bytes_received, static_cast<int64_t>(vlen * bytes_received));
+    EXPECT_GT(bytes_received, 0);
     EXPECT_EQ(messages_received, 6);
 }

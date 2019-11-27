@@ -31,8 +31,8 @@ aeron_udp_channel_transport_loss_params_t;
 
 
 int aeron_udp_channel_transport_loss_init(
-    aeron_udp_channel_transport_bindings_t *delegate_bindings,
-    aeron_udp_channel_transport_loss_params_t *params);
+    const aeron_udp_channel_transport_bindings_t *delegate_bindings,
+    const aeron_udp_channel_transport_loss_params_t *params);
 
 int aeron_udp_channel_transport_loss_recvmmsg(
     aeron_udp_channel_transport_t *transport,

@@ -21,11 +21,14 @@
 
 #include <errno.h>
 #include <string.h>
+#include "aeron_alloc.h"
 #include "util/aeron_error.h"
 #include "util/aeron_dlopen.h"
 
+#include "protocol/aeron_udp_protocol.h"
 #include "aeron_udp_channel_transport_bindings.h"
 #include "aeron_udp_channel_transport.h"
+#include "aeron_udp_channel_transport_loss.h"
 #include "aeron_udp_transport_poller.h"
 
 aeron_udp_channel_transport_bindings_t aeron_udp_channel_transport_bindings_default =
@@ -35,6 +38,22 @@ aeron_udp_channel_transport_bindings_t aeron_udp_channel_transport_bindings_defa
         aeron_udp_channel_transport_recvmmsg,
         aeron_udp_channel_transport_sendmmsg,
         aeron_udp_channel_transport_sendmsg,
+        aeron_udp_channel_transport_get_so_rcvbuf,
+        aeron_udp_channel_transport_bind_addr_and_port,
+        aeron_udp_transport_poller_init,
+        aeron_udp_transport_poller_close,
+        aeron_udp_transport_poller_add,
+        aeron_udp_transport_poller_remove,
+        aeron_udp_transport_poller_poll
+    };
+
+aeron_udp_channel_transport_bindings_t aeron_udp_channel_transport_bindings_loss =
+    {
+        aeron_udp_channel_transport_init,
+        aeron_udp_channel_transport_close,
+        aeron_udp_channel_transport_loss_recvmmsg,
+        aeron_udp_channel_transport_loss_sendmmsg,
+        aeron_udp_channel_transport_loss_sendmsg,
         aeron_udp_channel_transport_get_so_rcvbuf,
         aeron_udp_channel_transport_bind_addr_and_port,
         aeron_udp_transport_poller_init,
@@ -57,6 +76,22 @@ aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_loa
     if (strncmp(bindings_name, "default", sizeof("default")) == 0)
     {
         return aeron_udp_channel_transport_bindings_load("aeron_udp_channel_transport_bindings_default");
+    }
+    else if (strncmp(bindings_name, "loss", sizeof("loss")) == 0)
+    {
+        bindings = aeron_udp_channel_transport_bindings_load("aeron_udp_channel_transport_bindings_loss");
+        const aeron_udp_channel_transport_bindings_t *delegate_bindings =
+            aeron_udp_channel_transport_bindings_load("default");
+        aeron_udp_channel_transport_loss_params_t* loss_params;
+        aeron_alloc((void **)&loss_params, sizeof(aeron_udp_channel_transport_loss_params_t));
+
+        // TODO: Default until configuration is implemented.
+        loss_params->rate = 0.2;
+        loss_params->seed = 123123;
+        loss_params->recv_msg_type_mask = 1U << (unsigned int)AERON_HDR_TYPE_DATA;
+        loss_params->send_msg_type_mask = 0;
+
+        aeron_udp_channel_transport_loss_init(delegate_bindings, loss_params);
     }
     else
     {

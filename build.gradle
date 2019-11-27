@@ -230,6 +230,8 @@ subprojects {
 }
 
 project(':aeron-client') {
+    apply plugin: 'biz.aQute.bnd.builder'
+
     uploadArchives {
         repositories {
             mavenDeployer {
@@ -249,8 +251,6 @@ project(':aeron-client') {
             }
         }
     }
-
-    apply plugin: 'biz.aQute.bnd.builder'
 
     jar {
         bnd """
@@ -287,6 +287,7 @@ project(':aeron-client') {
 
 project(':aeron-driver') {
     apply plugin: 'application'
+    apply plugin: 'biz.aQute.bnd.builder'
 
     mainClassName = 'io.aeron.driver.MediaDriver'
 
@@ -314,8 +315,6 @@ project(':aeron-driver') {
             }
         }
     }
-
-    apply plugin: 'biz.aQute.bnd.builder'
 
     jar {
         bnd """
@@ -355,6 +354,8 @@ project(':aeron-driver') {
 }
 
 project(':aeron-archive') {
+    apply plugin: 'biz.aQute.bnd.builder'
+
     configurations{
         codecGeneration
     }
@@ -415,8 +416,6 @@ project(':aeron-archive') {
             'sbe.validation.stop.on.error': 'true')
         args = ['src/main/resources/aeron-archive-codecs.xml']
     }
-
-    apply plugin: 'biz.aQute.bnd.builder'
 
     jar {
         from("${buildDir}/classes/java/generated") {
@@ -479,6 +478,8 @@ project(':aeron-archive') {
 }
 
 project(':aeron-cluster') {
+    apply plugin: 'biz.aQute.bnd.builder'
+
     configurations{
         codecGeneration
     }
@@ -526,8 +527,6 @@ project(':aeron-cluster') {
             'sbe.validation.stop.on.error': 'true')
         args = [codecsFile, markCodecsFile]
     }
-
-    apply plugin: 'biz.aQute.bnd.builder'
 
     jar {
         from("${buildDir}/classes/java/generated") {

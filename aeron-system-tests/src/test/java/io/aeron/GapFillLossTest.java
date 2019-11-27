@@ -18,8 +18,11 @@ package io.aeron;
 import io.aeron.driver.*;
 import io.aeron.driver.ext.*;
 import io.aeron.logbuffer.*;
+import io.aeron.test.MediaDriverTestWatcher;
+import io.aeron.test.TestMediaDriver;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
@@ -42,7 +45,10 @@ public class GapFillLossTest
 
     private static final AtomicLong FINAL_POSITION = new AtomicLong(Long.MAX_VALUE);
 
-    @Test(timeout = 10_000)
+    @Rule
+    public MediaDriverTestWatcher watcher = new MediaDriverTestWatcher();
+
+    @Test//(timeout = 10_000)
     public void shouldGapFillWhenLossOccurs() throws Exception
     {
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MSG_LENGTH));
@@ -55,19 +61,15 @@ public class GapFillLossTest
             .dirDeleteOnShutdown(true)
             .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH);
 
-        final LossGenerator dataLossGenerator =
-            DebugChannelEndpointConfiguration.lossGeneratorSupplier(0.20, 0xcafebabeL);
         final LossGenerator noLossGenerator =
             DebugChannelEndpointConfiguration.lossGeneratorSupplier(0, 0);
 
         ctx.sendChannelEndpointSupplier((udpChannel, statusIndicator, context) -> new DebugSendChannelEndpoint(
             udpChannel, statusIndicator, context, noLossGenerator, noLossGenerator));
 
-        ctx.receiveChannelEndpointSupplier(
-            (udpChannel, dispatcher, statusIndicator, context) -> new DebugReceiveChannelEndpoint(
-            udpChannel, dispatcher, statusIndicator, context, dataLossGenerator, noLossGenerator));
+        TestMediaDriver.enableLossGenerationOnReceive(ctx, 0.20, 0xcafebabeL, true, false);
 
-        try (MediaDriver ignore = MediaDriver.launch(ctx);
+        try (TestMediaDriver ignore = TestMediaDriver.launch(ctx, watcher);
             Aeron aeron = Aeron.connect();
             Subscription subscription = aeron.addSubscription(UNRELIABLE_CHANNEL, STREAM_ID);
             Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
@@ -92,8 +94,8 @@ public class GapFillLossTest
             FINAL_POSITION.set(position);
             subscriberThread.join();
 
-            assertThat(subscriber.messageCount, lessThan(NUM_MESSAGES));
             verifyLossOccurredForStream(ctx.aeronDirectoryName(), STREAM_ID);
+            assertThat(subscriber.messageCount, lessThan(NUM_MESSAGES));
         }
     }
 

@@ -22,6 +22,7 @@ import io.aeron.driver.FlowControlSupplier;
 import io.aeron.driver.MaxMulticastFlowControlSupplier;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.MinMulticastFlowControlSupplier;
+import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.IoUtil;
 
 import java.io.File;
@@ -34,8 +35,10 @@ public final class CTestMediaDriver implements TestMediaDriver
 {
     private static final File NULL_FILE = System.getProperty("os.name").startsWith("Windows") ?
         new File("NUL") : new File("/dev/null");
-    private static final Map<Class, String> C_DRIVER_FLOW_CONTROL_STRATEGY_NAME_BY_SUPPLIER_TYPE =
+    private static final Map<Class<?>, String> C_DRIVER_FLOW_CONTROL_STRATEGY_NAME_BY_SUPPLIER_TYPE =
         new IdentityHashMap<>();
+    private static final ThreadLocal<Map<MediaDriver.Context, String>> TRANSPORT_BINDINGS_CONFIGURATION =
+        ThreadLocal.withInitial(IdentityHashMap::new);
 
     static
     {
@@ -122,6 +125,8 @@ public final class CTestMediaDriver implements TestMediaDriver
         pb.environment().put(
             "AERON_UNTETHERED_WINDOW_LIMIT_TIMEOUT", String.valueOf(context.untetheredWindowLimitTimeoutNs()));
         setFlowControlStrategy(pb.environment(), context);
+        final String transportBindings = TRANSPORT_BINDINGS_CONFIGURATION.get().getOrDefault(context, "default");
+        pb.environment().put("AERON_UDP_CHANNEL_TRANSPORT_BINDINGS", transportBindings);
 
         try
         {
@@ -191,5 +196,27 @@ public final class CTestMediaDriver implements TestMediaDriver
     public String aeronDirectoryName()
     {
         return context.aeronDirectoryName();
+    }
+
+    public static void enableLossGenerationOnReceive(
+        final MediaDriver.Context context,
+        final double rate,
+        final long seed,
+        final boolean loseDataMessages,
+        final boolean loseControlMessages)
+    {
+        int receiveMessageTypeMask = 0;
+        receiveMessageTypeMask |= loseDataMessages ? 1 << HeaderFlyweight.HDR_TYPE_DATA : 0;
+        receiveMessageTypeMask |= loseControlMessages ? 1 << HeaderFlyweight.HDR_TYPE_SM : 0;
+        receiveMessageTypeMask |= loseControlMessages ? 1 << HeaderFlyweight.HDR_TYPE_NAK : 0;
+        receiveMessageTypeMask |= loseControlMessages ? 1 << HeaderFlyweight.HDR_TYPE_RTTM : 0;
+
+        final String bindingBuilder = "loss?delegate=default" + "|rate=" + rate +
+            "|seed=" + seed +
+            "|send-msg-mask=0x0" +
+            "|recv-msg-mask=0x" + Integer.toHexString(receiveMessageTypeMask);
+
+        // This is a bit of an ugly hack to decorate the MediaDriver.Context with additional information.
+        TRANSPORT_BINDINGS_CONFIGURATION.get().put(context, bindingBuilder);
     }
 }

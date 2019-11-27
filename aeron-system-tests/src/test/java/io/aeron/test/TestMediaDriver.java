@@ -46,6 +46,24 @@ public interface TestMediaDriver extends AutoCloseable
             CTestMediaDriver.launch(context, driverOutputConsumer) : JavaTestMediaDriver.launch(context);
     }
 
+    static void enableLossGenerationOnReceive(
+        final MediaDriver.Context context,
+        final double rate,
+        final long seed,
+        final boolean loseDataMessages,
+        final boolean loseControlMessages)
+    {
+        if (shouldRunCMediaDriver())
+        {
+            CTestMediaDriver.enableLossGenerationOnReceive(context, rate, seed, loseDataMessages, loseControlMessages);
+        }
+        else
+        {
+            JavaTestMediaDriver.enableLossGenerationOnReceive(
+                context, rate, seed, loseDataMessages, loseControlMessages);
+        }
+    }
+
     MediaDriver.Context context();
 
     String aeronDirectoryName();

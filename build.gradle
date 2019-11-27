@@ -386,15 +386,21 @@ project(':aeron-archive') {
     }
 
     task generateCodecs(type: JavaExec) {
+        def codecsFile = 'src/main/resources/aeron-archive-codecs.xml'
+        def markCodecsFile = 'src/main/resources/aeron-archive-mark-codecs.xml'
+        def sbeFile = 'src/main/resources/fpl/sbe.xsd'
+
+        inputs.files(codecsFile, markCodecsFile, sbeFile)
+        outputs.dir generatedDir
+
         main = 'uk.co.real_logic.sbe.SbeTool'
         classpath = configurations.codecGeneration
         systemProperties(
             'sbe.output.dir': generatedDir,
             'sbe.target.language': 'Java',
-            'sbe.validation.xsd': 'src/main/resources/fpl/sbe.xsd',
+            'sbe.validation.xsd': sbeFile,
             'sbe.validation.stop.on.error': 'true')
-        args = ['src/main/resources/aeron-archive-codecs.xml',
-                'src/main/resources/aeron-archive-mark-codecs.xml']
+        args = [codecsFile, markCodecsFile]
     }
 
     def generatedCppDir = file(System.properties['codec.target.dir'] ?: "${rootDir}/cppbuild/Release/generated")
@@ -454,6 +460,8 @@ project(':aeron-archive') {
     }
 
     task sourcesJar(type: Jar) {
+        dependsOn generateCodecs
+
         archiveClassifier = 'sources'
         from sourceSets.main.allSource
         from sourceSets.generated.allSource
@@ -502,15 +510,21 @@ project(':aeron-cluster') {
     }
 
     task generateCodecs(type: JavaExec) {
+        def codecsFile = 'src/main/resources/aeron-cluster-codecs.xml'
+        def markCodecsFile = 'src/main/resources/aeron-cluster-mark-codecs.xml'
+        def sbeFile = 'src/main/resources/fpl/sbe.xsd'
+
+        inputs.files(codecsFile, markCodecsFile, sbeFile)
+        outputs.dir generatedDir
+
         main = 'uk.co.real_logic.sbe.SbeTool'
         classpath = configurations.codecGeneration
         systemProperties(
             'sbe.output.dir': generatedDir,
             'sbe.target.language': 'Java',
-            'sbe.validation.xsd': 'src/main/resources/fpl/sbe.xsd',
+            'sbe.validation.xsd': sbeFile,
             'sbe.validation.stop.on.error': 'true')
-        args = ['src/main/resources/aeron-cluster-codecs.xml',
-                'src/main/resources/aeron-cluster-mark-codecs.xml']
+        args = [codecsFile, markCodecsFile]
     }
 
     apply plugin: 'biz.aQute.bnd.builder'
@@ -557,6 +571,8 @@ project(':aeron-cluster') {
     }
 
     task sourcesJar(type: Jar) {
+        dependsOn generateCodecs
+
         archiveClassifier = 'sources'
         from sourceSets.main.allSource
         from sourceSets.generated.allSource
@@ -863,6 +879,8 @@ project(':aeron-all') {
     }
 
     shadowJar {
+        mustRunAfter jar
+
         archiveClassifier = ''
         relocate 'org.HdrHistogram', 'io.aeron.shadow.org.HdrHistogram'
     }

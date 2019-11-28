@@ -28,7 +28,6 @@ import org.agrona.collections.Object2ObjectHashMap;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -151,8 +150,6 @@ public final class CTestMediaDriver implements TestMediaDriver
             }
 
             pb.redirectOutput(stdoutFile).redirectError(stderrFile);
-
-            pb.environment().forEach((k,v) -> System.out.printf("%s -> %s%n", k, v));
 
             return new CTestMediaDriver(pb.start(), context);
         }

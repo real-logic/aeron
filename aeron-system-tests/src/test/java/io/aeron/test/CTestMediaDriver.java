@@ -24,12 +24,16 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.MinMulticastFlowControlSupplier;
 import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.IoUtil;
+import org.agrona.collections.Object2ObjectHashMap;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
+import static java.util.Collections.emptyMap;
 
 public final class CTestMediaDriver implements TestMediaDriver
 {
@@ -37,7 +41,7 @@ public final class CTestMediaDriver implements TestMediaDriver
         new File("NUL") : new File("/dev/null");
     private static final Map<Class<?>, String> C_DRIVER_FLOW_CONTROL_STRATEGY_NAME_BY_SUPPLIER_TYPE =
         new IdentityHashMap<>();
-    private static final ThreadLocal<Map<MediaDriver.Context, String>> TRANSPORT_BINDINGS_CONFIGURATION =
+    private static final ThreadLocal<Map<MediaDriver.Context, Map<String, String>>> TRANSPORT_BINDINGS_CONFIGURATION =
         ThreadLocal.withInitial(IdentityHashMap::new);
 
     static
@@ -124,9 +128,10 @@ public final class CTestMediaDriver implements TestMediaDriver
         pb.environment().put("AERON_UNTETHERED_RESTING_TIMEOUT", String.valueOf(context.untetheredRestingTimeoutNs()));
         pb.environment().put(
             "AERON_UNTETHERED_WINDOW_LIMIT_TIMEOUT", String.valueOf(context.untetheredWindowLimitTimeoutNs()));
+
         setFlowControlStrategy(pb.environment(), context);
-        final String transportBindings = TRANSPORT_BINDINGS_CONFIGURATION.get().getOrDefault(context, "default");
-        pb.environment().put("AERON_UDP_CHANNEL_TRANSPORT_BINDINGS", transportBindings);
+
+        TRANSPORT_BINDINGS_CONFIGURATION.get().getOrDefault(context, emptyMap()).forEach(pb.environment()::put);
 
         try
         {
@@ -146,6 +151,8 @@ public final class CTestMediaDriver implements TestMediaDriver
             }
 
             pb.redirectOutput(stdoutFile).redirectError(stderrFile);
+
+            pb.environment().forEach((k,v) -> System.out.printf("%s -> %s%n", k, v));
 
             return new CTestMediaDriver(pb.start(), context);
         }
@@ -211,12 +218,17 @@ public final class CTestMediaDriver implements TestMediaDriver
         receiveMessageTypeMask |= loseControlMessages ? 1 << HeaderFlyweight.HDR_TYPE_NAK : 0;
         receiveMessageTypeMask |= loseControlMessages ? 1 << HeaderFlyweight.HDR_TYPE_RTTM : 0;
 
-        final String bindingBuilder = "loss?delegate=default" + "|rate=" + rate +
+        final Object2ObjectHashMap<String, String> lossTransportEnv = new Object2ObjectHashMap<>();
+
+        final String interceptor = "loss";
+        final String lossArgs = "rate=" + rate +
             "|seed=" + seed +
-            "|send-msg-mask=0x0" +
             "|recv-msg-mask=0x" + Integer.toHexString(receiveMessageTypeMask);
 
+        lossTransportEnv.put("AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_INTERCEPTORS", interceptor);
+        lossTransportEnv.put("AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_LOSS_ARGS", lossArgs);
+
         // This is a bit of an ugly hack to decorate the MediaDriver.Context with additional information.
-        TRANSPORT_BINDINGS_CONFIGURATION.get().put(context, bindingBuilder);
+        TRANSPORT_BINDINGS_CONFIGURATION.get().put(context, lossTransportEnv);
     }
 }

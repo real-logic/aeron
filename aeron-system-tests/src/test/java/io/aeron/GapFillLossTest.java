@@ -48,7 +48,7 @@ public class GapFillLossTest
     @Rule
     public MediaDriverTestWatcher watcher = new MediaDriverTestWatcher();
 
-    @Test//(timeout = 10_000)
+    @Test(timeout = 10_000)
     public void shouldGapFillWhenLossOccurs() throws Exception
     {
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MSG_LENGTH));

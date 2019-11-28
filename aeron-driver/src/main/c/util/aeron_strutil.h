@@ -49,4 +49,13 @@ inline uint64_t aeron_fnv_64a_buf(uint8_t *buf, size_t len)
     return hval;
 }
 
+/*
+ * Splits a null terminated string using the delimiter specified, which is replaced with \0 characters.
+ * Each of the tokens is stored in reverse order in the tokens array.
+ *
+ * Returns the number of tokens found.  Or a value < 0 for an error:
+ * ERANGE: number of tokens is greater than max_tokens.
+ */
+int aeron_tokenise(char *input, const char delimiter, const int max_tokens, char **tokens);
+
 #endif //AERON_STRUTIL_H

@@ -62,7 +62,7 @@ aeron_udp_channel_transport_bindings_t aeron_udp_channel_transport_bindings_loss
         aeron_udp_transport_poller_poll
     };
 
-aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_load(const char *bindings_name)
+aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_load_media(const char *bindings_name)
 {
     aeron_udp_channel_transport_bindings_t *bindings = NULL;
 
@@ -74,14 +74,69 @@ aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_loa
 
     if (strncmp(bindings_name, "default", sizeof("default")) == 0)
     {
-        return aeron_udp_channel_transport_bindings_load("aeron_udp_channel_transport_bindings_default");
+        return aeron_udp_channel_transport_bindings_load("aeron_udp_channel_transport_bindings_default", "");
     }
-    else if (strncmp(bindings_name, "loss?", (sizeof("loss?") - 1)) == 0)
+    else
+    {
+        if ((bindings = (aeron_udp_channel_transport_bindings_t *)aeron_dlsym(RTLD_DEFAULT, bindings_name)) == NULL)
+        {
+            aeron_set_err(EINVAL, "could not find UDP channel transport bindings %s: dlsym - %s",
+                bindings_name, aeron_dlerror());
+        }
+    }
+
+    return bindings;
+}
+
+//aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_load_interceptors(
+//    aeron_udp_channel_transport_bindings_t * media_bindings, const char *interceptors)
+//{
+//    aeron_udp_channel_transport_bindings_t *bindings = NULL;
+//
+//    if (NULL == bindings_name)
+//    {
+//        aeron_set_err(EINVAL, "%s", "invalid UDP channel transport bindings name");
+//        return NULL;
+//    }
+//
+//    if (strncmp(bindings_name, "default", sizeof("default")) == 0)
+//    {
+//        return aeron_udp_channel_transport_bindings_load("aeron_udp_channel_transport_bindings_default", "");
+//    }
+//    else
+//    {
+//        if ((bindings = (aeron_udp_channel_transport_bindings_t *)aeron_dlsym(RTLD_DEFAULT, bindings_name)) == NULL)
+//        {
+//            aeron_set_err(EINVAL, "could not find UDP channel transport bindings %s: dlsym - %s",
+//                bindings_name, aeron_dlerror());
+//        }
+//    }
+//
+//    return bindings;
+//}
+
+aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_load(
+    const char *bindings_name,
+    const char *bindings_args)
+{
+    aeron_udp_channel_transport_bindings_t *bindings = NULL;
+
+    if (NULL == bindings_name)
+    {
+        aeron_set_err(EINVAL, "%s", "invalid UDP channel transport bindings name");
+        return NULL;
+    }
+
+    if (strncmp(bindings_name, "default", sizeof("default")) == 0)
+    {
+        return aeron_udp_channel_transport_bindings_load("aeron_udp_channel_transport_bindings_default", "");
+    }
+    else if (strncmp(bindings_name, "loss", sizeof("loss")) == 0)
     {
         aeron_udp_channel_transport_loss_params_t* loss_params;
         aeron_alloc((void **)&loss_params, sizeof(aeron_udp_channel_transport_loss_params_t));
 
-        char *params_str = strdup(bindings_name + (sizeof("loss?") - 1));
+        char *params_str = strdup(bindings_args);
         if (aeron_udp_channel_transport_loss_parse_params(params_str, loss_params) < 0)
         {
             aeron_free(loss_params);
@@ -92,13 +147,13 @@ aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_loa
                 loss_params->delegate_bindings_name : "default";
 
             const aeron_udp_channel_transport_bindings_t *delegate_bindings =
-                aeron_udp_channel_transport_bindings_load(delegate_bindings_name);
+                aeron_udp_channel_transport_bindings_load(delegate_bindings_name, bindings_args);
 
             if (NULL != delegate_bindings)
             {
                 aeron_udp_channel_transport_loss_init(delegate_bindings, loss_params);
 
-                bindings = aeron_udp_channel_transport_bindings_load("aeron_udp_channel_transport_bindings_loss");
+                bindings = aeron_udp_channel_transport_bindings_load("aeron_udp_channel_transport_bindings_loss", "");
             }
         }
         aeron_free(params_str);

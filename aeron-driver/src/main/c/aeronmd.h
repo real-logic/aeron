@@ -620,6 +620,8 @@ bool aeron_driver_context_get_rejoin_stream(aeron_driver_context_t *context);
  */
 #define AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_ENV_VAR "AERON_UDP_CHANNEL_TRANSPORT_BINDINGS"
 
+#define AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_ARGS_ENV_VAR "AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_ARGS"
+
 typedef struct aeron_udp_channel_transport_bindings_stct aeron_udp_channel_transport_bindings_t;
 
 int aeron_driver_context_set_udp_channel_transport_bindings(

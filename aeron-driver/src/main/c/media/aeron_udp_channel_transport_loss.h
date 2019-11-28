@@ -29,8 +29,6 @@ typedef struct aeron_udp_channel_transport_loss_params_stct
 }
 aeron_udp_channel_transport_loss_params_t;
 
-
-
 int aeron_udp_channel_transport_loss_init(
     const aeron_udp_channel_transport_bindings_t *delegate_bindings,
     const aeron_udp_channel_transport_loss_params_t *params);
@@ -55,6 +53,5 @@ int aeron_udp_channel_transport_loss_sendmsg(
 int aeron_udp_channel_transport_loss_parse_params(char* uri, aeron_udp_channel_transport_loss_params_t* params);
 
 int aeron_udp_channel_transport_loss_parse_callback(void *clientd, const char *key, const char *value);
-
 
 #endif //AERON_AERON_UDP_CHANNEL_TRANSPORT_LOSS_H

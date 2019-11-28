@@ -22,6 +22,14 @@ extern "C"
 #include <media/aeron_udp_channel_transport_loss.h>
 #include <uri/aeron_uri.h>
 #include <protocol/aeron_udp_protocol.h>
+
+#if !defined(HAVE_STRUCT_MMSGHDR)
+struct mmsghdr
+{
+    struct msghdr msg_hdr;
+    unsigned int msg_len;
+};
+#endif
 }
 
 class UdpChannelTransportLossTest : public testing::Test

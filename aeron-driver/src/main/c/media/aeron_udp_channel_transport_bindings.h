@@ -109,8 +109,10 @@ typedef struct aeron_udp_channel_transport_bindings_stct
 }
 aeron_udp_channel_transport_bindings_t;
 
-aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_load(
-    const char *bindings_name,
-    const char *bindings_args);
+aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_load_media(const char *bindings_name);
+aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_load_interceptors(
+    aeron_udp_channel_transport_bindings_t *media_bindings,
+    const char *interceptors);
+
 
 #endif //AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_H

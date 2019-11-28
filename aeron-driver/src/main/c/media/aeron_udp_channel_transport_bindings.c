@@ -21,9 +21,11 @@
 
 #include <errno.h>
 #include <string.h>
+#include <stdio.h>
 #include "aeron_alloc.h"
 #include "util/aeron_error.h"
 #include "util/aeron_dlopen.h"
+#include "util/aeron_strutil.h"
 
 #include "aeron_udp_channel_transport_bindings.h"
 #include "aeron_udp_channel_transport.h"
@@ -46,22 +48,6 @@ aeron_udp_channel_transport_bindings_t aeron_udp_channel_transport_bindings_defa
         aeron_udp_transport_poller_poll
     };
 
-aeron_udp_channel_transport_bindings_t aeron_udp_channel_transport_bindings_loss =
-    {
-        aeron_udp_channel_transport_init,
-        aeron_udp_channel_transport_close,
-        aeron_udp_channel_transport_loss_recvmmsg,
-        aeron_udp_channel_transport_loss_sendmmsg,
-        aeron_udp_channel_transport_loss_sendmsg,
-        aeron_udp_channel_transport_get_so_rcvbuf,
-        aeron_udp_channel_transport_bind_addr_and_port,
-        aeron_udp_transport_poller_init,
-        aeron_udp_transport_poller_close,
-        aeron_udp_transport_poller_add,
-        aeron_udp_transport_poller_remove,
-        aeron_udp_transport_poller_poll
-    };
-
 aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_load_media(const char *bindings_name)
 {
     aeron_udp_channel_transport_bindings_t *bindings = NULL;
@@ -74,98 +60,71 @@ aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_loa
 
     if (strncmp(bindings_name, "default", sizeof("default")) == 0)
     {
-        return aeron_udp_channel_transport_bindings_load("aeron_udp_channel_transport_bindings_default", "");
+        return aeron_udp_channel_transport_bindings_load_media("aeron_udp_channel_transport_bindings_default");
     }
     else
     {
         if ((bindings = (aeron_udp_channel_transport_bindings_t *)aeron_dlsym(RTLD_DEFAULT, bindings_name)) == NULL)
         {
-            aeron_set_err(EINVAL, "could not find UDP channel transport bindings %s: dlsym - %s",
-                bindings_name, aeron_dlerror());
+            aeron_set_err(
+                EINVAL, "could not find UDP channel transport bindings %s: dlsym - %s", bindings_name, aeron_dlerror());
         }
     }
 
     return bindings;
 }
 
-//aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_load_interceptors(
-//    aeron_udp_channel_transport_bindings_t * media_bindings, const char *interceptors)
-//{
-//    aeron_udp_channel_transport_bindings_t *bindings = NULL;
-//
-//    if (NULL == bindings_name)
-//    {
-//        aeron_set_err(EINVAL, "%s", "invalid UDP channel transport bindings name");
-//        return NULL;
-//    }
-//
-//    if (strncmp(bindings_name, "default", sizeof("default")) == 0)
-//    {
-//        return aeron_udp_channel_transport_bindings_load("aeron_udp_channel_transport_bindings_default", "");
-//    }
-//    else
-//    {
-//        if ((bindings = (aeron_udp_channel_transport_bindings_t *)aeron_dlsym(RTLD_DEFAULT, bindings_name)) == NULL)
-//        {
-//            aeron_set_err(EINVAL, "could not find UDP channel transport bindings %s: dlsym - %s",
-//                bindings_name, aeron_dlerror());
-//        }
-//    }
-//
-//    return bindings;
-//}
-
-aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_load(
-    const char *bindings_name,
-    const char *bindings_args)
+aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_load_interceptors(
+    aeron_udp_channel_transport_bindings_t *media_bindings,
+    const char *interceptors)
 {
-    aeron_udp_channel_transport_bindings_t *bindings = NULL;
+    const int max_interceptors = 10;
+    char *interceptor_names[10];
+    aeron_udp_channel_transport_bindings_t *current_bindings = NULL;
 
-    if (NULL == bindings_name)
+    char *interceptors_dup = strdup(interceptors);
+    const int num_interceptors = aeron_tokenise(interceptors_dup, ',', max_interceptors, interceptor_names);
+
+    if (-ERANGE == num_interceptors)
     {
-        aeron_set_err(EINVAL, "%s", "invalid UDP channel transport bindings name");
-        return NULL;
+        aeron_set_err(EINVAL, "Too many interceptors defined, limit %d: %s", max_interceptors, interceptors);
+        goto exit;
+    }
+    else if (num_interceptors < 0)
+    {
+        aeron_set_err(EINVAL, "Failed to parse interceptors: %s", interceptors != NULL ? interceptors : "(null)");
+        goto exit;
     }
 
-    if (strncmp(bindings_name, "default", sizeof("default")) == 0)
-    {
-        return aeron_udp_channel_transport_bindings_load("aeron_udp_channel_transport_bindings_default", "");
-    }
-    else if (strncmp(bindings_name, "loss", sizeof("loss")) == 0)
-    {
-        aeron_udp_channel_transport_loss_params_t* loss_params;
-        aeron_alloc((void **)&loss_params, sizeof(aeron_udp_channel_transport_loss_params_t));
+    current_bindings = media_bindings;
 
-        char *params_str = strdup(bindings_args);
-        if (aeron_udp_channel_transport_loss_parse_params(params_str, loss_params) < 0)
+    for (int i = 0; i < num_interceptors; i++)
+    {
+        const char *interceptor_name = interceptor_names[i];
+        if (strncmp(interceptor_name, "loss", sizeof("loss")) == 0)
         {
-            aeron_free(loss_params);
+            // TODO: Dynamically load this function.
+            current_bindings = aeron_udp_channel_transport_loss_set_delegate(current_bindings);
+
+            if (NULL == current_bindings)
+            {
+                aeron_set_err(EINVAL, "Failed to load loss transport bindings");
+                goto exit;
+            }
         }
         else
         {
-            const char *delegate_bindings_name = NULL != loss_params->delegate_bindings_name ?
-                loss_params->delegate_bindings_name : "default";
+            current_bindings = NULL;
 
-            const aeron_udp_channel_transport_bindings_t *delegate_bindings =
-                aeron_udp_channel_transport_bindings_load(delegate_bindings_name, bindings_args);
-
-            if (NULL != delegate_bindings)
-            {
-                aeron_udp_channel_transport_loss_init(delegate_bindings, loss_params);
-
-                bindings = aeron_udp_channel_transport_bindings_load("aeron_udp_channel_transport_bindings_loss", "");
-            }
-        }
-        aeron_free(params_str);
-    }
-    else
-    {
-        if ((bindings = (aeron_udp_channel_transport_bindings_t *)aeron_dlsym(RTLD_DEFAULT, bindings_name)) == NULL)
-        {
-            aeron_set_err(EINVAL, "could not find UDP channel transport bindings %s: dlsym - %s",
-                bindings_name, aeron_dlerror());
+            // TODO: Allow truly dynamic interceptors.  Need to have a function to set the delegate binding
+            // TODO: as part of the transport bindings struct.
+            aeron_set_err(EINVAL, "could not find UDP channel transport bindings interceptor: %s", interceptor_name);
+            goto exit;
         }
     }
 
-    return bindings;
+exit:
+    aeron_free(interceptors_dup);
+
+    return current_bindings;
 }

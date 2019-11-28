@@ -24,8 +24,10 @@
 #include <stdio.h>
 
 #include "concurrent/aeron_atomic.h"
+#include "concurrent/aeron_thread.h"
 #include "protocol/aeron_udp_protocol.h"
 #include "util/aeron_error.h"
+#include "aeron_alloc.h"
 #include "aeron_windows.h"
 #include "aeron_udp_channel_transport_loss.h"
 
@@ -37,8 +39,13 @@ struct mmsghdr
 };
 #endif
 
-static const aeron_udp_channel_transport_bindings_t* delegate = NULL;
-static const aeron_udp_channel_transport_loss_params_t *params = NULL;
+#define AERON_CONFIG_GETENV_OR_DEFAULT(e, d) ((NULL == getenv(e)) ? (d) : getenv(e))
+#define AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_LOSS_ARGS_ENV_VAR "AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_LOSS_ARGS"
+
+static AERON_INIT_ONCE env_is_initialized = AERON_INIT_ONCE_VALUE;
+
+static const aeron_udp_channel_transport_bindings_t* aeron_udp_channel_transport_loss_delegate = NULL;
+static const aeron_udp_channel_transport_loss_params_t *aeron_udp_channel_transport_loss_params = NULL;
 static unsigned short data_loss_xsubi[3];
 
 typedef struct aeron_udp_channel_transport_loss_clientd_stct
@@ -50,24 +57,83 @@ typedef struct aeron_udp_channel_transport_loss_clientd_stct
 }
 aeron_udp_channel_transport_loss_clientd_t;
 
-int aeron_udp_channel_transport_loss_init(
-    const aeron_udp_channel_transport_bindings_t *delegate_bindings,
-    const aeron_udp_channel_transport_loss_params_t *loss_params)
+aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_loss_set_delegate(
+    const aeron_udp_channel_transport_bindings_t *delegate_bindings)
 {
-    delegate = delegate_bindings;
-    params = loss_params;
+    aeron_udp_channel_transport_bindings_t *interceptor_bindings;
+    if (aeron_alloc((void **) &interceptor_bindings, sizeof(aeron_udp_channel_transport_bindings_t)) < 0)
+    {
+        return NULL;
+    }
 
-    data_loss_xsubi[2] = (unsigned short)(params->seed & 0xFFFF);
-    data_loss_xsubi[1] = (unsigned short)((params->seed >> 16) & 0xFFFF);
-    data_loss_xsubi[0] = (unsigned short)((params->seed >> 32) & 0xFFFF);
+    memcpy(interceptor_bindings, delegate_bindings, sizeof(aeron_udp_channel_transport_bindings_t));
+
+    interceptor_bindings->init_func = aeron_udp_channel_transport_loss_init;
+    interceptor_bindings->recvmmsg_func = aeron_udp_channel_transport_loss_recvmmsg;
+
+    aeron_udp_channel_transport_loss_delegate = delegate_bindings;
+
+    return interceptor_bindings;
+}
+
+int aeron_udp_channel_transport_loss_configure(const aeron_udp_channel_transport_loss_params_t *loss_params)
+{
+    aeron_udp_channel_transport_loss_params = loss_params;
+
+    data_loss_xsubi[2] = (unsigned short)(aeron_udp_channel_transport_loss_params->seed & 0xFFFF);
+    data_loss_xsubi[1] = (unsigned short)((aeron_udp_channel_transport_loss_params->seed >> 16) & 0xFFFF);
+    data_loss_xsubi[0] = (unsigned short)((aeron_udp_channel_transport_loss_params->seed >> 32) & 0xFFFF);
 
     return 0;
+}
+
+void aeron_udp_channel_transport_loss_load_env()
+{
+    aeron_udp_channel_transport_loss_params_t *params;
+    const char *args = AERON_CONFIG_GETENV_OR_DEFAULT(AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_LOSS_ARGS_ENV_VAR, "");
+    char *args_dup = strdup(args);
+
+    aeron_alloc((void **)&params, sizeof(aeron_udp_channel_transport_loss_params_t));
+
+    if (aeron_udp_channel_transport_loss_parse_params(args_dup, params) >= 0)
+    {
+        aeron_udp_channel_transport_loss_configure(params);
+    }
+    else
+    {
+        aeron_free(params);
+    }
+
+    aeron_free(args_dup);
+}
+
+int aeron_udp_channel_transport_loss_init(
+    aeron_udp_channel_transport_t *transport,
+    struct sockaddr_storage *bind_addr,
+    struct sockaddr_storage *multicast_if_addr,
+    unsigned int multicast_if_index,
+    uint8_t ttl,
+    size_t socket_rcvbuf,
+    size_t socket_sndbuf,
+    aeron_driver_context_t *context,
+    aeron_udp_channel_transport_affinity_t affinity)
+{
+    (void)aeron_thread_once(&env_is_initialized, aeron_udp_channel_transport_loss_load_env);
+
+    if (NULL == aeron_udp_channel_transport_loss_params)
+    {
+        return -1;
+    }
+
+    return aeron_udp_channel_transport_loss_delegate->init_func(
+        transport, bind_addr, multicast_if_addr, multicast_if_index, ttl, socket_rcvbuf, socket_sndbuf, context,
+        affinity);
 }
 
 static bool aeron_udp_channel_transport_loss_should_drop_frame(
     const uint8_t *buffer,
     const double rate,
-    const unsigned int msg_type_mask)
+    const unsigned long msg_type_mask)
 {
     const aeron_frame_header_t *frame_header = (aeron_frame_header_t *)buffer;
     const unsigned int msg_type_bit = 1U << (unsigned int)frame_header->type;
@@ -85,7 +151,9 @@ static void aeron_udp_channel_transport_loss_recv_callback(
 {
     aeron_udp_channel_transport_loss_clientd_t* loss_clientd = clientd;
 
-    if (aeron_udp_channel_transport_loss_should_drop_frame(buffer, params->rate, params->recv_msg_type_mask))
+    if (aeron_udp_channel_transport_loss_should_drop_frame(
+        buffer, aeron_udp_channel_transport_loss_params->rate,
+        aeron_udp_channel_transport_loss_params->recv_msg_type_mask))
     {
         loss_clientd->bytes_dropped += length;
         loss_clientd->messages_dropped++;
@@ -112,7 +180,9 @@ int aeron_udp_channel_transport_loss_recvmmsg(
 
     // At the moment the aeron_driver_receiver doesn't use the msgvec, it just
     // initialises it. All of the data is pushed back through the recv_func.
-    const int messages_received = delegate->recvmmsg_func(
+    // So all we need to do is prevent the upcall through that function and report
+    // the correct bytes received and messages received.
+    const int messages_received = aeron_udp_channel_transport_loss_delegate->recvmmsg_func(
         transport, msgvec, vlen, bytes_rcved, aeron_udp_channel_transport_loss_recv_callback, &loss_clientd);
 
     if (NULL != bytes_rcved)
@@ -121,21 +191,6 @@ int aeron_udp_channel_transport_loss_recvmmsg(
     }
 
     return messages_received - loss_clientd.messages_dropped;
-}
-
-int aeron_udp_channel_transport_loss_sendmmsg(
-    aeron_udp_channel_transport_t *transport,
-    struct mmsghdr *msgvec,
-    size_t vlen)
-{
-    return delegate->sendmmsg_func(transport, msgvec, vlen);
-}
-
-int aeron_udp_channel_transport_loss_sendmsg(
-    aeron_udp_channel_transport_t *transport,
-    struct msghdr *message)
-{
-    return delegate->sendmsg_func(transport, message);
 }
 
 int aeron_udp_channel_transport_loss_parse_params(char* uri, aeron_udp_channel_transport_loss_params_t* params)
@@ -148,39 +203,11 @@ int aeron_udp_channel_transport_loss_parse_callback(void *clientd, const char *k
     aeron_udp_channel_transport_loss_params_t* loss_params = clientd;
     int result = 0;
 
-    if (strncmp(key, "delegate", sizeof("delegate")) == 0)
-    {
-        loss_params->delegate_bindings_name = strdup(value);
-    }
-    else if (strncmp(key, "rate", sizeof("rate")) == 0)
+    if (strncmp(key, "rate", sizeof("rate")) == 0)
     {
         errno = 0;
         char *endptr;
         loss_params->rate = strtod(value, &endptr);
-
-        if (errno != 0 || value == endptr)
-        {
-            aeron_set_err(EINVAL, "Could not parse loss %s from: %s:", key, value);
-            result = -1;
-        }
-    }
-    else if (strncmp(key, "recv-msg-mask", sizeof("recv-msg-mask")) == 0)
-    {
-        errno = 0;
-        char *endptr;
-        loss_params->recv_msg_type_mask = strtoul(value, &endptr, 16);
-
-        if (errno != 0 || value == endptr)
-        {
-            aeron_set_err(EINVAL, "Could not parse loss %s from: %s:", key, value);
-            result = -1;
-        }
-    }
-    else if (strncmp(key, "send-msg-mask", sizeof("send-msg-mask")) == 0)
-    {
-        errno = 0;
-        char *endptr;
-        loss_params->send_msg_type_mask = strtoul(value, &endptr, 16);
 
         if (errno != 0 || value == endptr)
         {
@@ -193,6 +220,18 @@ int aeron_udp_channel_transport_loss_parse_callback(void *clientd, const char *k
         errno = 0;
         char *endptr;
         loss_params->seed = strtoull(value, &endptr, 10);
+
+        if (errno != 0 || value == endptr)
+        {
+            aeron_set_err(EINVAL, "Could not parse loss %s from: %s:", key, value);
+            result = -1;
+        }
+    }
+    else if (strncmp(key, "recv-msg-mask", sizeof("recv-msg-mask")) == 0)
+    {
+        errno = 0;
+        char *endptr;
+        loss_params->recv_msg_type_mask = strtoul(value, &endptr, 16);
 
         if (errno != 0 || value == endptr)
         {

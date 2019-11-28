@@ -618,9 +618,9 @@ bool aeron_driver_context_get_rejoin_stream(aeron_driver_context_t *context);
 /**
  * Bindings for UDP Channel Transports.
  */
-#define AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_ENV_VAR "AERON_UDP_CHANNEL_TRANSPORT_BINDINGS"
+#define AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA_ENV_VAR "AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA"
 
-#define AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_ARGS_ENV_VAR "AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_ARGS"
+#define AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_INTERCEPTORS_ENV_VAR "AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_INTERCEPTORS"
 
 typedef struct aeron_udp_channel_transport_bindings_stct aeron_udp_channel_transport_bindings_t;
 

@@ -92,12 +92,12 @@ TEST_F(UdpChannelTransportLossTest, shouldDiscardAllPacketsWithRateOfOne)
 
     params.rate = 1.0;
     params.recv_msg_type_mask = 1U << msg_type;
-    params.send_msg_type_mask = 0xFFFFF;
     params.seed = 0;
 
     bindings.recvmmsg_func = delegate_return_packets_recvmmsg;
 
-    aeron_udp_channel_transport_loss_init(&bindings, &params);
+    aeron_udp_channel_transport_loss_set_delegate(&bindings);
+    aeron_udp_channel_transport_loss_configure(&params);
 
     int messages_received = aeron_udp_channel_transport_loss_recvmmsg(
         &transport, msgvec, vlen, NULL, test_recv_callback, NULL);
@@ -130,12 +130,12 @@ TEST_F(UdpChannelTransportLossTest, shouldNotDiscardAllPacketsWithRateOfOneWithD
 
     params.rate = 1.0;
     params.recv_msg_type_mask = 1U << loss_msg_type;
-    params.send_msg_type_mask = 0xFFFFF;
     params.seed = 0;
 
     bindings.recvmmsg_func = delegate_return_packets_recvmmsg;
 
-    aeron_udp_channel_transport_loss_init(&bindings, &params);
+    aeron_udp_channel_transport_loss_set_delegate(&bindings);
+    aeron_udp_channel_transport_loss_configure(&params);
 
     int messages_received = aeron_udp_channel_transport_loss_recvmmsg(
         &transport, msgvec, vlen, NULL, test_recv_callback, NULL);
@@ -167,12 +167,12 @@ TEST_F(UdpChannelTransportLossTest, shouldNotDiscardAllPacketsWithRateOfZero)
 
     params.rate = 0.0;
     params.recv_msg_type_mask = 1U << loss_msg_type;
-    params.send_msg_type_mask = 0xFFFFF;
     params.seed = 0;
 
     bindings.recvmmsg_func = delegate_return_packets_recvmmsg;
 
-    aeron_udp_channel_transport_loss_init(&bindings, &params);
+    aeron_udp_channel_transport_loss_set_delegate(&bindings);
+    aeron_udp_channel_transport_loss_configure(&params);
 
     int messages_received = aeron_udp_channel_transport_loss_recvmmsg(
         &transport, msgvec, vlen, NULL, test_recv_callback, NULL);
@@ -204,12 +204,12 @@ TEST_F(UdpChannelTransportLossTest, shouldDiscardRoughlyHalfTheMessages)
 
     params.rate = 0.5;
     params.recv_msg_type_mask = 1U << msg_type;
-    params.send_msg_type_mask = 0xFFFFF;
     params.seed = 23764;
 
     bindings.recvmmsg_func = delegate_return_packets_recvmmsg;
 
-    aeron_udp_channel_transport_loss_init(&bindings, &params);
+    aeron_udp_channel_transport_loss_set_delegate(&bindings);
+    aeron_udp_channel_transport_loss_configure(&params);
 
     int messages_received = aeron_udp_channel_transport_loss_recvmmsg(
         &transport, msgvec, vlen, &bytes_received, test_recv_callback, NULL);
@@ -226,15 +226,13 @@ TEST_F(UdpChannelTransportLossTest, shouldParseAllParams)
     aeron_udp_channel_transport_loss_params_t params;
     memset(&params, 0, sizeof(params));
 
-    char *uri = strdup("delegate=default|rate=0.20|seed=10|recv-msg-mask=0xF|send-msg-mask=0xE");
+    char *uri = strdup("rate=0.20|seed=10|recv-msg-mask=0xF");
     int i = aeron_udp_channel_transport_loss_parse_params(uri, &params);
 
     EXPECT_EQ(i, 0);
-    EXPECT_EQ(std::string(params.delegate_bindings_name), "default");
     EXPECT_EQ(params.rate, 0.2);
     EXPECT_EQ(params.seed, 10ull);
     EXPECT_EQ(params.recv_msg_type_mask, 0xFul);
-    EXPECT_EQ(params.send_msg_type_mask, 0xEul);
 }
 
 TEST_F(UdpChannelTransportLossTest, shouldFailOnInvalidRate)
@@ -265,17 +263,6 @@ TEST_F(UdpChannelTransportLossTest, shouldFailOnInvalidRecvMsgMask)
     memset(&params, 0, sizeof(params));
 
     char *uri = strdup("recv-msg-mask=zzz");
-    int i = aeron_udp_channel_transport_loss_parse_params(uri, &params);
-
-    EXPECT_EQ(i, -1);
-}
-
-TEST_F(UdpChannelTransportLossTest, shouldFailOnInvalidSendMsgMask)
-{
-    aeron_udp_channel_transport_loss_params_t params;
-    memset(&params, 0, sizeof(params));
-
-    char *uri = strdup("send-msg-mask=zzz");
     int i = aeron_udp_channel_transport_loss_parse_params(uri, &params);
 
     EXPECT_EQ(i, -1);

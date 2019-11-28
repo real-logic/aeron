@@ -23,7 +23,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <memory.h>
-#include <asm/errno.h>
+#include <errno.h>
 #include "util/aeron_strutil.h"
 
 void aeron_format_date(char *str, size_t count, int64_t timestamp)

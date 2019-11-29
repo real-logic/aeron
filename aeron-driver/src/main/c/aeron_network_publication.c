@@ -593,7 +593,9 @@ void aeron_network_publication_on_nak(
         publication);
 }
 
-inline static void update_connected_status(aeron_network_publication_t *publication, bool expected_status)
+inline static void aeron_network_publication_update_connected_status(
+    aeron_network_publication_t *publication,
+    bool expected_status)
 {
     bool is_connected;
     AERON_GET_VOLATILE(is_connected, publication->is_connected);
@@ -616,7 +618,7 @@ void aeron_network_publication_on_status_message(
         AERON_PUT_ORDERED(publication->has_receivers, true);
     }
 
-    update_connected_status(publication, true);
+    aeron_network_publication_update_connected_status(publication, true);
 
     aeron_counter_set_ordered(
         publication->snd_lmt_position.value_addr,
@@ -912,7 +914,7 @@ void aeron_network_publication_on_time_event(
         has_receivers ||
         (publication->spies_simulate_connection && publication->conductor_fields.subscribable.length > 0);
 
-    update_connected_status(publication, current_connected_status);
+    aeron_network_publication_update_connected_status(publication, current_connected_status);
 
     int64_t producer_position = aeron_network_publication_producer_position(publication);
 

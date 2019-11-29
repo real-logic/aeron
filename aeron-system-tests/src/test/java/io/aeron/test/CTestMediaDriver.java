@@ -97,7 +97,7 @@ public final class CTestMediaDriver implements TestMediaDriver
         final MediaDriver.Context context,
         final DriverOutputConsumer driverOutputConsumer)
     {
-        final String aeronDirPath = System.getProperty(TestMediaDriver.AERON_TEST_SYSTEM_AERONMD_PATH);
+        final String aeronDirPath = System.getProperty(TestMediaDriver.AERONMD_PATH);
         final File f = new File(aeronDirPath);
 
         if (!f.exists())
@@ -129,8 +129,8 @@ public final class CTestMediaDriver implements TestMediaDriver
             "AERON_UNTETHERED_WINDOW_LIMIT_TIMEOUT", String.valueOf(context.untetheredWindowLimitTimeoutNs()));
 
         setFlowControlStrategy(pb.environment(), context);
-
         TRANSPORT_BINDINGS_CONFIGURATION.get().getOrDefault(context, emptyMap()).forEach(pb.environment()::put);
+        setLogging(pb.environment());
 
         try
         {
@@ -157,6 +157,25 @@ public final class CTestMediaDriver implements TestMediaDriver
         {
             throw new RuntimeException(e);
         }
+    }
+
+    private static void setLogging(final Map<String, String> environment)
+    {
+        final String driverAgentPath = System.getProperty(DRIVER_AGENT_PATH);
+        if (null == driverAgentPath)
+        {
+            return;
+        }
+
+        final File driverAgent = new File(driverAgentPath);
+        if (!driverAgent.exists())
+        {
+            throw new RuntimeException(
+                "Unable to find driver agent file at: " + DRIVER_AGENT_PATH + "=" + driverAgentPath);
+        }
+
+        environment.put("AERON_EVENT_LOG", "0xFFFF");
+        environment.put("LD_PRELOAD", driverAgent.getAbsolutePath());
     }
 
     private static void setFlowControlStrategy(final Map<String, String> environment, final MediaDriver.Context context)

@@ -17,12 +17,14 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.test.MediaDriverTestWatcher;
 import io.aeron.test.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableLong;
 import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
@@ -64,6 +66,9 @@ public class PubAndSubTest
     @DataPoint
     public static final String IPC_URI = "aeron:ipc";
 
+    @Rule
+    public MediaDriverTestWatcher watcher = new MediaDriverTestWatcher();
+
     private static final int STREAM_ID = 1;
     private static final ThreadingMode THREADING_MODE = ThreadingMode.SHARED;
 
@@ -88,7 +93,7 @@ public class PubAndSubTest
             .publicationConnectionTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500))
             .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100));
 
-        driver = TestMediaDriver.launch(context);
+        driver = TestMediaDriver.launch(context, watcher);
         subscribingClient = Aeron.connect();
         publishingClient = Aeron.connect();
         subscription = subscribingClient.addSubscription(channel, STREAM_ID);
@@ -802,12 +807,6 @@ public class PubAndSubTest
     @Test(timeout = 20_000)
     public void shouldNoticeDroppedSubscriber(final String channel) throws Exception
     {
-        if (TestMediaDriver.shouldRunCMediaDriver())
-        {
-            // Not sure why this is not being picked up, need to investigate...
-            return;
-        }
-
         launch(channel);
 
         while (!publication.isConnected())

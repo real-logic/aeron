@@ -78,22 +78,36 @@ aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_loa
     aeron_udp_channel_transport_bindings_t *media_bindings,
     const char *interceptors)
 {
-    const int max_interceptors = 10;
-    char *interceptor_names[10];
+    const int max_interceptors_length = 4096;
+    char interceptors_dup[max_interceptors_length];
+
+    const int max_interceptor_names = 10;
+    char *interceptor_names[max_interceptor_names];
+
     aeron_udp_channel_transport_bindings_t *current_bindings = NULL;
 
-    char *interceptors_dup = strdup(interceptors);
-    const int num_interceptors = aeron_tokenise(interceptors_dup, ',', max_interceptors, interceptor_names);
+    const size_t interceptors_length = strlen(interceptors);
+
+    if (interceptors_length >= (size_t)max_interceptors_length)
+    {
+        aeron_set_err(
+            EINVAL, "Interceptors list too long, must have: %d < %d", interceptors_length, max_interceptors_length);
+        return NULL;
+    }
+
+    strcpy(interceptors_dup, interceptors);
+
+    const int num_interceptors = aeron_tokenise(interceptors_dup, ',', max_interceptor_names, interceptor_names);
 
     if (-ERANGE == num_interceptors)
     {
-        aeron_set_err(EINVAL, "Too many interceptors defined, limit %d: %s", max_interceptors, interceptors);
-        goto exit;
+        aeron_set_err(EINVAL, "Too many interceptors defined, limit %d: %s", max_interceptor_names, interceptors);
+        return NULL;
     }
     else if (num_interceptors < 0)
     {
         aeron_set_err(EINVAL, "Failed to parse interceptors: %s", interceptors != NULL ? interceptors : "(null)");
-        goto exit;
+        return NULL;
     }
 
     current_bindings = media_bindings;
@@ -109,7 +123,7 @@ aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_loa
             if (NULL == current_bindings)
             {
                 aeron_set_err(EINVAL, "Failed to load loss transport bindings");
-                goto exit;
+                return NULL;
             }
         }
         else
@@ -119,12 +133,9 @@ aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_loa
             // TODO: Allow truly dynamic interceptors.  Need to have a function to set the delegate binding
             // TODO: as part of the transport bindings struct.
             aeron_set_err(EINVAL, "could not find UDP channel transport bindings interceptor: %s", interceptor_name);
-            goto exit;
+            return NULL;
         }
     }
-
-exit:
-    aeron_free(interceptors_dup);
 
     return current_bindings;
 }

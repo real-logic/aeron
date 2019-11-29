@@ -46,6 +46,7 @@
 #include "aeron_archive_client/MigrateSegmentsRequest.h"
 #include "aeron_archive_client/KeepAliveRequest.h"
 #include "aeron_archive_client/ChallengeResponse.h"
+#include "aeron_archive_client/TaggedReplicateRequest.h"
 
 using namespace aeron;
 using namespace aeron::concurrent;
@@ -436,6 +437,34 @@ util::index_t ArchiveProxy::replicate(
         .correlationId(correlationId)
         .srcRecordingId(srcRecordingId)
         .dstRecordingId(dstRecordingId)
+        .srcControlStreamId(srcControlStreamId)
+        .putSrcControlChannel(srcControlChannel)
+        .putLiveDestination(liveDestination);
+
+    return messageAndHeaderLength(request);
+}
+
+util::index_t ArchiveProxy::taggedReplicate(
+    AtomicBuffer& buffer,
+    std::int64_t srcRecordingId,
+    std::int64_t dstRecordingId,
+    std::int64_t channelTagId,
+    std::int64_t subscriptionTagId,
+    std::int32_t srcControlStreamId,
+    const std::string& srcControlChannel,
+    const std::string& liveDestination,
+    std::int64_t correlationId,
+    std::int64_t controlSessionId)
+{
+    TaggedReplicateRequest request;
+
+    wrapAndApplyHeader(request, buffer)
+        .controlSessionId(controlSessionId)
+        .correlationId(correlationId)
+        .srcRecordingId(srcRecordingId)
+        .dstRecordingId(dstRecordingId)
+        .channelTagId(channelTagId)
+        .subscriptionTagId(subscriptionTagId)
         .srcControlStreamId(srcControlStreamId)
         .putSrcControlChannel(srcControlChannel)
         .putLiveDestination(liveDestination);

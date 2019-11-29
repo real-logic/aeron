@@ -158,6 +158,10 @@ public final class ArchiveEventLogger
             case KeepAliveRequestDecoder.TEMPLATE_ID:
                 dispatchIfEnabled(buffer, offset, length, CMD_IN_KEEP_ALIVE);
                 break;
+
+            case TaggedReplicateRequestDecoder.TEMPLATE_ID:
+                dispatchIfEnabled(buffer, offset, length, CMD_IN_TAGGED_REPLICATE);
+                break;
         }
     }
 

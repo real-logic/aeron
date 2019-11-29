@@ -64,6 +64,8 @@ final class ArchiveEventDissector
         new MigrateSegmentsRequestDecoder();
     private static final AuthConnectRequestDecoder AUTH_CONNECT_REQUEST_DECODER = new AuthConnectRequestDecoder();
     private static final KeepAliveRequestDecoder KEEP_ALIVE_REQUEST_DECODER = new KeepAliveRequestDecoder();
+    private static final TaggedReplicateRequestDecoder TAGGED_REPLICATE_REQUEST_DECODER =
+        new TaggedReplicateRequestDecoder();
 
     @SuppressWarnings("MethodLength")
     static void controlRequest(
@@ -326,6 +328,15 @@ final class ArchiveEventDissector
                     HEADER_DECODER.blockLength(),
                     HEADER_DECODER.version());
                 appendKeepAlive(builder);
+                break;
+
+            case CMD_IN_TAGGED_REPLICATE:
+                TAGGED_REPLICATE_REQUEST_DECODER.wrap(
+                    buffer,
+                    offset + MessageHeaderDecoder.ENCODED_LENGTH,
+                    HEADER_DECODER.blockLength(),
+                    HEADER_DECODER.version());
+                appendTaggedReplicate(builder);
                 break;
 
             default:
@@ -611,5 +622,20 @@ final class ArchiveEventDissector
         builder.append("ARCHIVE: KEEP_ALIVE")
             .append(", controlSessionId=").append(KEEP_ALIVE_REQUEST_DECODER.controlSessionId())
             .append(", correlationId=").append(KEEP_ALIVE_REQUEST_DECODER.correlationId());
+    }
+
+    private static void appendTaggedReplicate(final StringBuilder builder)
+    {
+        builder.append("ARCHIVE: TAGGED_REPLICATE")
+            .append(", controlSessionId=").append(TAGGED_REPLICATE_REQUEST_DECODER.controlSessionId())
+            .append(", correlationId=").append(TAGGED_REPLICATE_REQUEST_DECODER.correlationId())
+            .append(", srcRecordingId=").append(TAGGED_REPLICATE_REQUEST_DECODER.srcRecordingId())
+            .append(", dstRecordingId=").append(TAGGED_REPLICATE_REQUEST_DECODER.dstRecordingId())
+            .append(", channelTagId=").append(TAGGED_REPLICATE_REQUEST_DECODER.channelTagId())
+            .append(", subscriptionTagId=").append(TAGGED_REPLICATE_REQUEST_DECODER.subscriptionTagId())
+            .append(", srcControlStreamId=").append(TAGGED_REPLICATE_REQUEST_DECODER.srcControlStreamId());
+
+        TAGGED_REPLICATE_REQUEST_DECODER.getSrcControlChannel(builder);
+        TAGGED_REPLICATE_REQUEST_DECODER.getLiveDestination(builder);
     }
 }

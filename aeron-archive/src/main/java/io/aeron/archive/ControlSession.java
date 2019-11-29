@@ -427,6 +427,8 @@ class ControlSession implements Session
                 correlationId,
                 srcRecordingId,
                 dstRecordingId,
+                Aeron.NULL_VALUE,
+                Aeron.NULL_VALUE,
                 srcControlStreamId,
                 srcControlChannel,
                 liveDestination,
@@ -494,6 +496,32 @@ class ControlSession implements Session
         if (State.ACTIVE == state)
         {
             conductor.migrateSegments(correlationId, srcRecordingId, dstRecordingId, this);
+        }
+    }
+
+    void onReplicateTagged(
+        final long correlationId,
+        final long srcRecordingId,
+        final long dstRecordingId,
+        final long channelTagId,
+        final long subscriptionTagId,
+        final int srcControlStreamId,
+        final String srcControlChannel,
+        final String liveDestination)
+    {
+        attemptToGoActive();
+        if (State.ACTIVE == state)
+        {
+            conductor.replicate(
+                correlationId,
+                srcRecordingId,
+                dstRecordingId,
+                channelTagId,
+                subscriptionTagId,
+                srcControlStreamId,
+                srcControlChannel,
+                liveDestination,
+                this);
         }
     }
 

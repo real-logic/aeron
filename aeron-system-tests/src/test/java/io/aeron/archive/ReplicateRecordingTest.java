@@ -414,6 +414,73 @@ public class ReplicateRecordingTest
         assertEquals(RecordingSignal.STOP, signalRef.get());
     }
 
+    @Test(timeout = 10_000L)
+    public void shouldReplicateLiveRecordingAndMergeWhileFollowingWithTaggedSubscription()
+    {
+        final String messagePrefix = "Message-Prefix-";
+        final int messageCount = 10;
+        final long srcRecordingId;
+        final long channelTagId = 333;
+        final long subscriptionTagId = 777;
+        final String taggedChannel = "aeron:udp?control-mode=manual|tags=" + channelTagId + "," + subscriptionTagId;
+
+        final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
+        final MutableReference<RecordingSignal> signalRef = new MutableReference<>();
+        final RecordingSignalAdapter adapter;
+
+        try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID);
+            Subscription taggedSubscription = dstAeron.addSubscription(taggedChannel, LIVE_STREAM_ID))
+        {
+            final CountersReader srcCounters = srcAeron.countersReader();
+            final int counterId = awaitRecordingCounterId(srcCounters, publication.sessionId());
+            srcRecordingId = RecordingPos.getRecordingId(srcCounters, counterId);
+
+            offer(publication, messageCount, messagePrefix);
+            awaitPosition(srcCounters, counterId, publication.position());
+
+            final MutableLong dstRecordingId = new MutableLong();
+            adapter = newRecordingSignalAdapter(signalRef, dstRecordingId);
+
+            dstAeronArchive.taggedReplicate(
+                srcRecordingId,
+                NULL_VALUE,
+                channelTagId,
+                subscriptionTagId,
+                SRC_CONTROL_STREAM_ID,
+                SRC_CONTROL_REQUEST_CHANNEL,
+                LIVE_CHANNEL);
+
+            consume(taggedSubscription, messageCount, messagePrefix);
+
+            offer(publication, messageCount, messagePrefix);
+            consume(taggedSubscription, messageCount, messagePrefix);
+
+            awaitSignal(signalRef, adapter);
+            assertEquals(RecordingSignal.REPLICATE, signalRef.get());
+
+            awaitSignal(signalRef, adapter);
+            assertEquals(RecordingSignal.EXTEND, signalRef.get());
+
+            awaitSignal(signalRef, adapter);
+            assertEquals(RecordingSignal.MERGE, signalRef.get());
+
+            final CountersReader dstCounters = dstAeron.countersReader();
+            final int dstCounterId = RecordingPos.findCounterIdByRecording(dstCounters, dstRecordingId.get());
+
+            offer(publication, messageCount, messagePrefix);
+            consume(taggedSubscription, messageCount, messagePrefix);
+            awaitPosition(dstCounters, dstCounterId, publication.position());
+
+            final Image image = taggedSubscription.imageBySessionId(publication.sessionId());
+            assertEquals(publication.position(), image.position());
+        }
+
+        srcAeronArchive.stopRecording(subscriptionId);
+
+        awaitSignal(signalRef, adapter);
+        assertEquals(RecordingSignal.STOP, signalRef.get());
+    }
+
     private RecordingSignalAdapter newRecordingSignalAdapter(
         final MutableReference<RecordingSignal> signalRef, final MutableLong recordingIdRef)
     {

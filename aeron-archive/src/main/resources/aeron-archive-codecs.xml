@@ -113,6 +113,7 @@
         - Replicated stream will likely not have the same recording id in destination archive.
         - Can follow a live recording up to the point it is stopped at the source.
         - Optionally Merge with a live stream after replay catch up to have multiple recordings of a live stream.
+        - The Subscription used for replication can have its tags provided so it can be followed externally.
 
     8. Recording Progress Events
         - Events indicating the asynchronous start, stop, and progress of all recordings.
@@ -480,6 +481,20 @@
                  description="Keep a archive control session alive by indicating the client is alive.">
         <field name="controlSessionId"     id="1" type="int64"/>
         <field name="correlationId"        id="2" type="int64"/>
+    </sbe:message>
+
+    <sbe:message name="TaggedReplicateRequest"
+                 id="62"
+                 description="Replicate a recording from another archive and set tags on subscription.">
+        <field name="controlSessionId"     id="1" type="int64"/>
+        <field name="correlationId"        id="2" type="int64"/>
+        <field name="srcRecordingId"       id="3" type="int64"/>
+        <field name="dstRecordingId"       id="4" type="int64"/>
+        <field name="channelTagId"         id="5" type="int64"/>
+        <field name="subscriptionTagId"    id="6" type="int64"/>
+        <field name="srcControlStreamId"   id="7" type="int32"/>
+        <data  name="srcControlChannel"    id="8" type="varAsciiEncoding"/>
+        <data  name="liveDestination"      id="9" type="varAsciiEncoding"/>
     </sbe:message>
 
 <!-- Archive Recording Progress Events -->

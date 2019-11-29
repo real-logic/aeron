@@ -63,6 +63,8 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     private final long actionTimeoutMs;
     private final long correlationId;
     private final long replicationId;
+    private final long channelTagId;
+    private final long subscriptionTagId;
     private final long srcRecordingId;
     private long dstRecordingId;
     private int replayStreamId;
@@ -89,6 +91,8 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         final long correlationId,
         final long srcRecordingId,
         final long dstRecordingId,
+        final long channelTagId,
+        final long subscriptionTagId,
         final long replicationId,
         final String liveDestination,
         final String replicationChannel,
@@ -113,6 +117,9 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         this.conductor = controlSession.archiveConductor();
         this.controlSession = controlSession;
         this.actionTimeoutMs = TimeUnit.NANOSECONDS.toMillis(context.messageTimeoutNs());
+
+        this.channelTagId = NULL_VALUE == channelTagId ? replicationId : channelTagId;
+        this.subscriptionTagId = NULL_VALUE == subscriptionTagId ? replicationId : subscriptionTagId;
 
         if (null != recordingSummary)
         {
@@ -433,7 +440,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         final String channel = builder
             .media(channelUri)
             .alias(channelUri)
-            .tags(replicationId + "," + replicationId)
+            .tags(channelTagId + "," + subscriptionTagId)
             .controlMode(CommonContext.MDC_CONTROL_MODE_MANUAL)
             .rejoin(false)
             .sessionId((int)srcReplaySessionId)

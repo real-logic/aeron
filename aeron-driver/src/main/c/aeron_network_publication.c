@@ -600,8 +600,8 @@ inline static void update_connected_status(aeron_network_publication_t *publicat
 
     if (is_connected != expected_status)
     {
-        AERON_PUT_ORDERED(publication->log_meta_data->is_connected, true);
-        AERON_PUT_ORDERED(publication->is_connected, true);
+        AERON_PUT_ORDERED(publication->log_meta_data->is_connected, expected_status);
+        AERON_PUT_ORDERED(publication->is_connected, expected_status);
     }
 }
 

@@ -28,9 +28,7 @@ import io.aeron.samples.SampleConfiguration;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableLong;
-import org.agrona.concurrent.BackoffIdleStrategy;
-import org.agrona.concurrent.IdleStrategy;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
 import org.agrona.console.ContinueBarrier;
 
@@ -148,14 +146,16 @@ public class EmbeddedReplayThroughput implements AutoCloseable
         {
             try
             {
+                final IdleStrategy idleStrategy = YieldingIdleStrategy.INSTANCE;
                 publicationSessionId = publication.sessionId();
 
+                idleStrategy.reset();
                 while (!subscription.isConnected())
                 {
-                    Thread.yield();
+                    idleStrategy.idle();
                 }
 
-                final Image image = subscription.imageAtIndex(0);
+                final Image image = subscription.imageBySessionId(publicationSessionId);
 
                 long i = 0;
                 while (i < NUMBER_OF_MESSAGES)
@@ -173,13 +173,10 @@ public class EmbeddedReplayThroughput implements AutoCloseable
                 final long position = publication.position();
                 while (image.position() < position)
                 {
-                    if (0 == image.poll(NOOP_FRAGMENT_HANDLER, 10))
-                    {
-                        Thread.yield();
-                    }
+                    idleStrategy.idle(image.poll(NOOP_FRAGMENT_HANDLER, 10));
                 }
 
-                awaitRecordingComplete(position);
+                awaitRecordingComplete(position, idleStrategy);
 
                 return position;
             }
@@ -190,14 +187,15 @@ public class EmbeddedReplayThroughput implements AutoCloseable
         }
     }
 
-    private void awaitRecordingComplete(final long position)
+    private void awaitRecordingComplete(final long position, final IdleStrategy idleStrategy)
     {
         final CountersReader counters = aeron.countersReader();
         final int counterId = RecordingPos.findCounterIdBySession(counters, publicationSessionId);
 
+        idleStrategy.reset();
         while (counters.getCounterValue(counterId) < position)
         {
-            Thread.yield();
+            idleStrategy.idle();
         }
     }
 
@@ -206,13 +204,14 @@ public class EmbeddedReplayThroughput implements AutoCloseable
         try (Subscription subscription = aeronArchive.replay(
             recordingId, 0L, recordingLength, REPLAY_URI, REPLAY_STREAM_ID))
         {
+            final IdleStrategy idleStrategy = new BackoffIdleStrategy(10, 10, 1000, 1000);
             while (!subscription.isConnected())
             {
-                Thread.yield();
+                idleStrategy.idle();
             }
 
             messageCount = 0;
-            final IdleStrategy idleStrategy = new BackoffIdleStrategy(10, 10, 1000, 1000);
+            final FragmentHandler fragmentHandler = this.fragmentHandler;
 
             while (messageCount < NUMBER_OF_MESSAGES)
             {

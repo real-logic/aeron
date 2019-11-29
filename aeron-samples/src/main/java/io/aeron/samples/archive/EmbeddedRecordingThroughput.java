@@ -25,7 +25,7 @@ import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.samples.SampleConfiguration;
 import org.agrona.CloseHelper;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
 import org.agrona.console.ContinueBarrier;
 
@@ -104,19 +104,23 @@ public class EmbeddedRecordingThroughput implements AutoCloseable
     {
         try (ExclusivePublication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID))
         {
+            final IdleStrategy idleStrategy = YieldingIdleStrategy.INSTANCE;
             while (!publication.isConnected())
             {
-                Thread.yield();
+                idleStrategy.idle();
             }
 
             final long startMs = System.currentTimeMillis();
+            final UnsafeBuffer buffer = this.buffer;
 
             for (long i = 0; i < NUMBER_OF_MESSAGES; i++)
             {
                 buffer.putLong(0, i);
+
+                idleStrategy.reset();
                 while (publication.offer(buffer, 0, MESSAGE_LENGTH) < 0)
                 {
-                    Thread.yield();
+                    idleStrategy.idle();
                 }
             }
 
@@ -124,9 +128,10 @@ public class EmbeddedRecordingThroughput implements AutoCloseable
             final CountersReader counters = aeron.countersReader();
             final int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
 
+            idleStrategy.reset();
             while (counters.getCounterValue(counterId) < stopPosition)
             {
-                Thread.yield();
+                idleStrategy.idle();
             }
 
             final long durationMs = System.currentTimeMillis() - startMs;

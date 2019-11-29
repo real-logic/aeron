@@ -21,8 +21,7 @@ import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.samples.SampleConfiguration;
 import org.agrona.BufferUtil;
-import org.agrona.concurrent.SigInt;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.util.concurrent.TimeUnit;
@@ -62,6 +61,7 @@ public class RecordedBasicPublisher
 
             try (Publication publication = archive.context().aeron().addPublication(CHANNEL, STREAM_ID))
             {
+                final IdleStrategy idleStrategy = YieldingIdleStrategy.INSTANCE;
                 // Wait for recording to have started before publishing.
                 final CountersReader counters = archive.context().aeron().countersReader();
                 int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
@@ -72,7 +72,7 @@ public class RecordedBasicPublisher
                         return;
                     }
 
-                    Thread.yield();
+                    idleStrategy.idle();
                     counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
                 }
 
@@ -99,6 +99,7 @@ public class RecordedBasicPublisher
                     Thread.sleep(TimeUnit.SECONDS.toMillis(1));
                 }
 
+                idleStrategy.reset();
                 while (counters.getCounterValue(counterId) < publication.position())
                 {
                     if (!RecordingPos.isActive(counters, counterId, recordingId))
@@ -106,7 +107,7 @@ public class RecordedBasicPublisher
                         throw new IllegalStateException("recording has stopped unexpectedly: " + recordingId);
                     }
 
-                    Thread.yield();
+                    idleStrategy.idle();
                 }
             }
             finally

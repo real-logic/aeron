@@ -69,7 +69,7 @@ public class ArchiveCreator
 
         System.out.println("Creating basic archive at " + archiveContext.archiveDir());
 
-        try (ArchivingMediaDriver archivingDriver = ArchivingMediaDriver.launch(driverContext, archiveContext);
+        try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(driverContext, archiveContext);
             Aeron aeron = Aeron.connect();
             AeronArchive aeronArchive = AeronArchive.connect(new AeronArchive.Context().aeron(aeron)))
         {
@@ -96,7 +96,7 @@ public class ArchiveCreator
         final Aeron aeron, final AeronArchive aeronArchive, final long startPosition, final long targetPosition)
     {
         final int initialTermId = 7;
-        final int portNumber = 3333 + recordingNumber++;
+        recordingNumber++;
         final ChannelUriStringBuilder uriBuilder = new ChannelUriStringBuilder()
             .media("udp")
             .endpoint("localhost:" + recordingNumber)
@@ -118,7 +118,7 @@ public class ArchiveCreator
                 " position " + publication.position() +
                 " to " + targetPosition);
 
-            offerToPosition(publication, MESSAGE_PREFIX, targetPosition);
+            offerToPosition(publication, targetPosition);
             awaitPosition(counters, counterId, publication.position());
 
             aeronArchive.stopRecording(publication);
@@ -138,25 +138,25 @@ public class ArchiveCreator
         int counterId;
         while (NULL_VALUE == (counterId = RecordingPos.findCounterIdBySession(counters, sessionId)))
         {
-            checkInterruptedStatus();
             Thread.yield();
+            checkInterruptedStatus();
         }
 
         return counterId;
     }
 
-    private static void offerToPosition(final Publication publication, final String prefix, final long minimumPosition)
+    private static void offerToPosition(final Publication publication, final long minimumPosition)
     {
         final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
 
         for (int i = 0; publication.position() < minimumPosition; i++)
         {
-            final int length = buffer.putStringWithoutLengthAscii(0, prefix + i);
+            final int length = buffer.putStringWithoutLengthAscii(0, MESSAGE_PREFIX + i);
 
             while (publication.offer(buffer, 0, length) <= 0)
             {
-                checkInterruptedStatus();
                 Thread.yield();
+                checkInterruptedStatus();
             }
         }
     }
@@ -170,8 +170,8 @@ public class ArchiveCreator
                 throw new IllegalStateException("count not active: " + counterId);
             }
 
-            checkInterruptedStatus();
             Thread.yield();
+            checkInterruptedStatus();
         }
     }
 }

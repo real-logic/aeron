@@ -54,7 +54,7 @@ class RecordingWriter implements BlockHandler
     private final FileChannel archiveDirChannel;
     private final File archiveDir;
 
-    private long segmentPosition;
+    private long segmentBasePosition;
     private int segmentOffset;
     private FileChannel recordingFileChannel;
 
@@ -80,7 +80,7 @@ class RecordingWriter implements BlockHandler
         final long joinPosition = image.joinPosition();
         final long startTermBasePosition = startPosition - (startPosition & (termLength - 1));
         segmentOffset = (int)((joinPosition - startTermBasePosition) & (segmentLength - 1));
-        segmentPosition = AeronArchive.segmentFileBasePosition(startPosition, joinPosition, termLength, segmentLength);
+        segmentBasePosition = AeronArchive.segmentFileBasePosition(startPosition, joinPosition, termLength, segmentLength);
     }
 
     public void onBlock(
@@ -152,7 +152,7 @@ class RecordingWriter implements BlockHandler
 
     private void openRecordingSegmentFile()
     {
-        final File file = new File(archiveDir, Archive.segmentFileName(recordingId, segmentPosition));
+        final File file = new File(archiveDir, Archive.segmentFileName(recordingId, segmentBasePosition));
 
         RandomAccessFile recordingFile = null;
         try
@@ -177,7 +177,7 @@ class RecordingWriter implements BlockHandler
     {
         CloseHelper.close(recordingFileChannel);
         segmentOffset = 0;
-        segmentPosition += segmentLength;
+        segmentBasePosition += segmentLength;
 
         openRecordingSegmentFile();
     }

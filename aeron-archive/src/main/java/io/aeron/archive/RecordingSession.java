@@ -184,18 +184,17 @@ class RecordingSession implements Session
         try
         {
             workCount = image.blockPoll(recordingWriter, blockLengthLimit);
-            if (workCount > 0)
+            if (recordingWriter.isClosed())
+            {
+                state = State.INACTIVE;
+            }
+            else if (workCount > 0)
             {
                 final long position = image.position();
                 this.position.setOrdered(position);
                 recordingEventsProxy.progress(recordingId, image.joinPosition(), position);
             }
             else if (image.isEndOfStream() || image.isClosed())
-            {
-                state = State.INACTIVE;
-            }
-
-            if (recordingWriter.isClosed())
             {
                 state = State.INACTIVE;
             }

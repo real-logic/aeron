@@ -25,6 +25,8 @@ import org.agrona.concurrent.status.CountersReader;
 import org.junit.After;
 import org.junit.Test;
 
+import java.time.Duration;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
@@ -78,7 +80,7 @@ public class CounterTest
         CloseHelper.close(driver);
     }
 
-    @Test(timeout = 2000)
+    @Test(timeout = 10_000)
     public void shouldBeAbleToAddCounter()
     {
         launch();
@@ -94,13 +96,13 @@ public class CounterTest
 
         assertFalse(counter.isClosed());
 
-        verify(availableCounterHandlerClientA, timeout(1000))
+        verify(availableCounterHandlerClientA, timeout(Duration.ofMillis(5000)))
             .onAvailableCounter(any(CountersReader.class), eq(counter.registrationId()), eq(counter.id()));
-        verify(availableCounterHandlerClientB, timeout(1000))
+        verify(availableCounterHandlerClientB, timeout(Duration.ofMillis(5000)))
             .onAvailableCounter(any(CountersReader.class), eq(counter.registrationId()), eq(counter.id()));
     }
 
-    @Test(timeout = 2000)
+    @Test(timeout = 10_000)
     public void shouldBeAbleToAddReadableCounterWithinHandler()
     {
         availableCounterHandlerClientB = this::createReadableCounter;
@@ -127,7 +129,7 @@ public class CounterTest
         assertThat(readableCounter.registrationId(), is(counter.registrationId()));
     }
 
-    @Test(timeout = 2000)
+    @Test(timeout = 10_000)
     public void shouldCloseReadableCounterOnUnavailableCounter()
     {
         availableCounterHandlerClientB = this::createReadableCounter;

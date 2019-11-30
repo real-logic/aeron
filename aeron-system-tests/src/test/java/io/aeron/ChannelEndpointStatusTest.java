@@ -34,6 +34,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.io.File;
+import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -178,7 +179,7 @@ public class ChannelEndpointStatusTest
         final Subscription subscriptionB = clientB.addSubscription(URI, STREAM_ID);
 
         final ArgumentCaptor<Throwable> captor = ArgumentCaptor.forClass(Throwable.class);
-        verify(errorHandlerClientB, timeout(5000)).onError(captor.capture());
+        verify(errorHandlerClientB, timeout(Duration.ofMillis(5000))).onError(captor.capture());
 
         assertThat(captor.getValue(), instanceOf(ChannelEndpointException.class));
 
@@ -208,7 +209,7 @@ public class ChannelEndpointStatusTest
         final Publication publicationB = clientB.addPublication(URI_WITH_INTERFACE_PORT, STREAM_ID);
 
         final ArgumentCaptor<Throwable> captor = ArgumentCaptor.forClass(Throwable.class);
-        verify(errorHandlerClientB, timeout(5000)).onError(captor.capture());
+        verify(errorHandlerClientB, timeout(Duration.ofMillis(5000))).onError(captor.capture());
 
         assertThat(captor.getValue(), instanceOf(ChannelEndpointException.class));
 
@@ -244,7 +245,7 @@ public class ChannelEndpointStatusTest
             SystemTest.checkInterruptedStatus();
         }
 
-        verify(errorHandlerClientC, timeout(5000)).onError(any(ChannelEndpointException.class));
+        verify(errorHandlerClientC, timeout(Duration.ofMillis(5000))).onError(any(ChannelEndpointException.class));
         assertThat(errorCounter.get(), greaterThan(0));
         assertThat(subscriptionC.channelStatus(), is(ChannelEndpointStatus.ERRORED));
         assertTrue(subscriptionC.isClosed());

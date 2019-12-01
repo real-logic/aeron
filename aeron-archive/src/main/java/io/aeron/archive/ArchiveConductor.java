@@ -226,8 +226,8 @@ abstract class ArchiveConductor
             recorder.abort();
             isAbort = true;
 
-            ctx.abortLatch().await(AgentRunner.RETRY_CLOSE_TIMEOUT_MS * 2L, TimeUnit.MILLISECONDS);
             ctx.errorCounter().close();
+            ctx.abortLatch().await(AgentRunner.RETRY_CLOSE_TIMEOUT_MS * 2L, TimeUnit.MILLISECONDS);
         }
         catch (final InterruptedException ignore)
         {
@@ -886,7 +886,7 @@ abstract class ArchiveConductor
         {
             catalog.recordingStopped(recordingId, session.recordedPosition(), epochClock.time());
 
-            session.controlSession().attemptSendSignal(
+            session.controlSession().attemptSignal(
                 session.correlationId(),
                 recordingId,
                 session.image().subscription().registrationId(),
@@ -1388,7 +1388,7 @@ abstract class ArchiveConductor
         recordingSessionByIdMap.put(recordingId, session);
         recorder.addSession(session);
 
-        controlSession.attemptSendSignal(
+        controlSession.attemptSignal(
             correlationId,
             recordingId,
             image.subscription().registrationId(),
@@ -1442,7 +1442,7 @@ abstract class ArchiveConductor
         catalog.extendRecording(recordingId, controlSession.sessionId(), correlationId, image.sessionId());
         recorder.addSession(session);
 
-        controlSession.attemptSendSignal(
+        controlSession.attemptSignal(
             correlationId,
             recordingId,
             image.subscription().registrationId(),

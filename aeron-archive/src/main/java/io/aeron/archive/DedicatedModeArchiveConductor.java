@@ -84,11 +84,11 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
 
         while (processCloseQueue() > 0 || !closeQueue.isEmpty())
         {
+            Thread.yield();
             if (Thread.currentThread().isInterrupted())
             {
                 break;
             }
-            Thread.yield();
         }
     }
 
@@ -149,15 +149,15 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
                 throw new AgentTerminationException();
             }
 
-            return drain();
+            return drainSessionsQueue();
         }
 
         protected void preSessionsClose()
         {
-            drain();
+            drainSessionsQueue();
         }
 
-        private int drain()
+        private int drainSessionsQueue()
         {
             int workCount = 0;
             RecordingSession session;
@@ -180,12 +180,12 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         {
             while (!closeQueue.offer(session))
             {
+                errorCounter.increment();
+                Thread.yield();
                 if (Thread.currentThread().isInterrupted())
                 {
                     break;
                 }
-                errorCounter.increment();
-                Thread.yield();
             }
         }
 
@@ -201,12 +201,12 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         {
             while (!sessionsQueue.offer(session))
             {
+                errorCounter.increment();
+                Thread.yield();
                 if (Thread.currentThread().isInterrupted())
                 {
                     break;
                 }
-                errorCounter.increment();
-                Thread.yield();
             }
         }
     }
@@ -250,15 +250,15 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
                 throw new AgentTerminationException();
             }
 
-            return drain();
+            return drainSessionQueue();
         }
 
         protected void preSessionsClose()
         {
-            drain();
+            drainSessionQueue();
         }
 
-        private int drain()
+        private int drainSessionQueue()
         {
             int workCount = 0;
             ReplaySession session;
@@ -276,12 +276,12 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         {
             while (!closeQueue.offer(session))
             {
+                errorCounter.increment();
+                Thread.yield();
                 if (Thread.currentThread().isInterrupted())
                 {
                     break;
                 }
-                errorCounter.increment();
-                Thread.yield();
             }
         }
 

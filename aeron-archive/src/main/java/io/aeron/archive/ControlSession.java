@@ -591,7 +591,7 @@ class ControlSession implements Session
         return proxy.sendSubscriptionDescriptor(controlSessionId, correlationId, subscription, this);
     }
 
-    void attemptSendSignal(
+    void attemptSignal(
         final long correlationId,
         final long recordingId,
         final long subscriptionId,

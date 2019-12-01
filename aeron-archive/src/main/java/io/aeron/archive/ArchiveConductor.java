@@ -718,6 +718,16 @@ abstract class ArchiveConductor
             return null;
         }
 
+        catalog.recordingSummary(recordingId, recordingSummary);
+        if (streamId != recordingSummary.streamId)
+        {
+            final String msg = "cannot extend recording " + recordingSummary.recordingId +
+                " streamId " + streamId +
+                " not equal to recording streamId " + recordingSummary.streamId;
+            controlSession.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
+            return null;
+        }
+
         if (recordingSessionByIdMap.containsKey(recordingId))
         {
             final String msg = "cannot extend active recording for " + recordingId;
@@ -1492,6 +1502,16 @@ abstract class ArchiveConductor
             final String msg = "cannot extend recording " + recordingSummary.recordingId +
                 " image joinPosition " + image.joinPosition() +
                 " not equal to recording stopPosition " + recordingSummary.stopPosition;
+
+            controlSession.attemptErrorResponse(correlationId, INVALID_EXTENSION, msg, controlResponseProxy);
+            throw new ArchiveException(msg);
+        }
+
+        if (image.initialTermId() != recordingSummary.initialTermId)
+        {
+            final String msg = "cannot extend recording " + recordingSummary.recordingId +
+                " image initialTermId " + image.initialTermId() +
+                " not equal to recording initialTermId " + recordingSummary.initialTermId;
 
             controlSession.attemptErrorResponse(correlationId, INVALID_EXTENSION, msg, controlResponseProxy);
             throw new ArchiveException(msg);

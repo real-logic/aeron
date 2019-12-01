@@ -37,6 +37,7 @@ import org.agrona.collections.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
 
+import java.net.InetAddress;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -1893,6 +1894,8 @@ class ConsensusModuleAgent implements Agent
             }
         }
 
+        checkClusterMembersAvailability();
+
         return workCount;
     }
 
@@ -2812,5 +2815,43 @@ class ConsensusModuleAgent implements Agent
             MessageHeaderDecoder.ENCODED_LENGTH + SessionMessageHeaderDecoder.clusterSessionIdEncodingOffset();
 
         return buffer.getLong(clusterSessionIdOffset, SessionMessageHeaderDecoder.BYTE_ORDER) <= logServiceSessionId;
+    }
+
+    private void checkClusterMembersAvailability()
+    {
+        for (final ClusterMember member : clusterMembers)
+        {
+            if (member != thisMember)
+            {
+                try
+                {
+                    if (!member.publication().isConnected() && member.resolvedAddress() != null)
+                    {
+                        final ChannelUri channelUri = ChannelUri.parse(ctx.memberStatusChannel());
+                        if (UDP_MEDIA.equals(channelUri.media()))
+                        {
+                            final String endpoint = member.memberFacingEndpoint();
+                            final String host = endpoint.substring(0, endpoint.indexOf(':'));
+                            final InetAddress address = InetAddress.getByName(host);
+                            if (!member.resolvedAddress().equals(address.getHostAddress()))
+                            {
+                                final Publication publication = member.publication();
+                                ClusterMember.addMemberStatusPublication(
+                                    member, channelUri, ctx.memberStatusStreamId(), aeron);
+                                CloseHelper.quietClose(publication);
+                                if (null == election && Cluster.Role.LEADER == role)
+                                {
+                                    logPublisher.removePassiveFollower(member.logEndpoint());
+                                    logPublisher.addPassiveFollower(member.logEndpoint());
+                                }
+                            }
+                        }
+                    }
+                }
+                catch (final Exception ignored)
+                {
+                }
+            }
+        }
     }
 }

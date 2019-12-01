@@ -23,6 +23,7 @@ import java.net.InetSocketAddress;
 import java.net.PortUnreachableException;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
+import java.nio.channels.UnresolvedAddressException;
 
 import static io.aeron.driver.media.UdpChannelTransport.sendError;
 
@@ -56,7 +57,7 @@ abstract class MultiDestination
                 bytesSent = datagramChannel.send(buffer, destination);
             }
         }
-        catch (final PortUnreachableException ignore)
+        catch (final PortUnreachableException | UnresolvedAddressException ignore)
         {
         }
         catch (final IOException ex)

@@ -23,8 +23,12 @@ import org.agrona.CloseHelper;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.Int2ObjectHashMap;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
+import static io.aeron.CommonContext.UDP_MEDIA;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 
 /**
@@ -54,6 +58,7 @@ public final class ClusterMember
     private final String archiveEndpoint;
     private final String endpointsDetail;
     private Publication publication;
+    private String resolvedAddress;
     private Boolean vote = null;
 
     /**
@@ -487,6 +492,7 @@ public final class ClusterMember
     {
         CloseHelper.close(publication);
         publication = null;
+        resolvedAddress = null;
     }
 
     /**
@@ -608,6 +614,7 @@ public final class ClusterMember
             {
                 channelUri.put(ENDPOINT_PARAM_NAME, member.memberFacingEndpoint());
                 member.publication = aeron.addExclusivePublication(channelUri.toString(), streamId);
+                setResolvedAddress(member, channelUri);
             }
         }
     }
@@ -638,6 +645,7 @@ public final class ClusterMember
     {
         channelUri.put(ENDPOINT_PARAM_NAME, member.memberFacingEndpoint());
         member.publication = aeron.addExclusivePublication(channelUri.toString(), streamId);
+        setResolvedAddress(member, channelUri);
     }
 
     /**
@@ -1163,6 +1171,33 @@ public final class ClusterMember
         }
 
         return builder.toString();
+    }
+
+    String resolvedAddress()
+    {
+        return resolvedAddress;
+    }
+
+    private static void setResolvedAddress(final ClusterMember member, final ChannelUri channelUri)
+    {
+        if (UDP_MEDIA.equals(channelUri.media()))
+        {
+            final String endpoint = member.memberFacingEndpoint;
+            try
+            {
+                final String host = endpoint.substring(0, endpoint.indexOf(':'));
+                final InetAddress address = InetAddress.getByName(host);
+                if (!address.isLoopbackAddress() && !host.equals(address.getHostAddress()))
+                {
+                    member.resolvedAddress = address.getHostAddress();
+                }
+            }
+            catch (final UnknownHostException e)
+            {
+                // let verify it in the future
+                member.resolvedAddress = endpoint;
+            }
+        }
     }
 
     public String toString()

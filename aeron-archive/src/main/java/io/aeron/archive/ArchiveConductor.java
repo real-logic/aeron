@@ -1502,7 +1502,6 @@ abstract class ArchiveConductor
             final String msg = "cannot extend recording " + recordingSummary.recordingId +
                 " image joinPosition " + image.joinPosition() +
                 " not equal to recording stopPosition " + recordingSummary.stopPosition;
-
             controlSession.attemptErrorResponse(correlationId, INVALID_EXTENSION, msg, controlResponseProxy);
             throw new ArchiveException(msg);
         }
@@ -1512,7 +1511,6 @@ abstract class ArchiveConductor
             final String msg = "cannot extend recording " + recordingSummary.recordingId +
                 " image initialTermId " + image.initialTermId() +
                 " not equal to recording initialTermId " + recordingSummary.initialTermId;
-
             controlSession.attemptErrorResponse(correlationId, INVALID_EXTENSION, msg, controlResponseProxy);
             throw new ArchiveException(msg);
         }
@@ -1522,7 +1520,6 @@ abstract class ArchiveConductor
             final String msg = "cannot extend recording " + recordingSummary.recordingId +
                 " image termBufferLength " + image.termBufferLength() +
                 " not equal to recording termBufferLength " + recordingSummary.termBufferLength;
-
             controlSession.attemptErrorResponse(correlationId, INVALID_EXTENSION, msg, controlResponseProxy);
             throw new ArchiveException(msg);
         }
@@ -1532,7 +1529,6 @@ abstract class ArchiveConductor
             final String msg = "cannot extend recording " + recordingSummary.recordingId +
                 " image mtuLength " + image.mtuLength() +
                 " not equal to recording mtuLength " + recordingSummary.mtuLength;
-
             controlSession.attemptErrorResponse(correlationId, INVALID_EXTENSION, msg, controlResponseProxy);
             throw new ArchiveException(msg);
         }

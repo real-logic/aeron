@@ -17,8 +17,10 @@ package io.aeron.driver;
 
 import io.aeron.CommonContext;
 import io.aeron.driver.buffer.RawLog;
+import io.aeron.driver.exceptions.InvalidChannelException;
 import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.status.SystemCounters;
+import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.logbuffer.LogBufferUnblocker;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -35,10 +37,10 @@ import org.agrona.concurrent.status.ReadablePosition;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.UnresolvedAddressException;
 import java.util.ArrayList;
 
-import static io.aeron.driver.Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS;
-import static io.aeron.driver.Configuration.PUBLICATION_SETUP_TIMEOUT_NS;
+import static io.aeron.driver.Configuration.*;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.logbuffer.TermScanner.*;
@@ -75,6 +77,7 @@ class NetworkPublicationSenderFields extends NetworkPublicationPadding2
     protected long timeOfLastSendOrHeartbeatNs;
     protected long timeOfLastSetupNs;
     protected long statusMessageDeadlineNs;
+    protected long resolveHostnamesDeadlineNs;
     protected boolean trackSenderLimits = false;
     protected boolean shouldSendSetupFrame = true;
 }
@@ -82,7 +85,7 @@ class NetworkPublicationSenderFields extends NetworkPublicationPadding2
 class NetworkPublicationPadding3 extends NetworkPublicationSenderFields
 {
     @SuppressWarnings("unused")
-    protected long p1, p2, p3, p4, p5, p6, p7;
+    protected long p1, p2, p3, p4, p5, p6;
 }
 
 /**
@@ -146,6 +149,7 @@ public class NetworkPublication
     private final AtomicCounter senderBpe;
     private final AtomicCounter shortSends;
     private final AtomicCounter unblockedPublications;
+    private final Runnable resolveRunnable;
 
     public NetworkPublication(
         final long registrationId,
@@ -171,6 +175,7 @@ public class NetworkPublication
         final long untetheredWindowLimitTimeoutNs,
         final long untetheredRestingTimeoutNs,
         final boolean spiesSimulateConnection,
+        final Runnable resolveRunnable,
         final boolean isExclusive)
     {
         this.registrationId = registrationId;
@@ -196,6 +201,7 @@ public class NetworkPublication
         this.spiesSimulateConnection = spiesSimulateConnection;
         this.isExclusive = isExclusive;
         this.signalEos = params.signalEos;
+        this.resolveRunnable = resolveRunnable;
 
         metaDataBuffer = rawLog.metaData();
         setupBuffer = threadLocals.setupBuffer();
@@ -317,6 +323,7 @@ public class NetworkPublication
         }
 
         updateHasReceivers(nowNs);
+        updateHostnames(nowNs);
         retransmitHandler.processTimeouts(nowNs, this);
 
         return bytesSent;
@@ -542,6 +549,23 @@ public class NetworkPublication
         if ((statusMessageDeadlineNs - timeNs < 0) && hasReceivers)
         {
             hasReceivers = false;
+        }
+    }
+
+    final void updateHostnames(final long timeNs)
+    {
+        if (statusMessageDeadlineNs - timeNs < 0 && resolveHostnamesDeadlineNs - timeNs < 0)
+        {
+            // TODO: create resolveHostnameTimeoutNs and property to enable/disable hostname resolution
+            resolveHostnamesDeadlineNs = timeNs + connectionTimeoutNs;
+            try
+            {
+                resolveRunnable.run();
+            }
+            catch (final InvalidChannelException | UnresolvedAddressException e)
+            {
+                throw new AeronException("Could not resolve hostname", e, AeronException.Category.WARN);
+            }
         }
     }
 

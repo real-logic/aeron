@@ -1720,7 +1720,7 @@ public class DriverConductorTest
 
             final UdpChannel updatedUdpChannel = UdpChannel.parse(channel);
 
-            driverProxy.resolveHostnames();
+            driverConductor.onResolveHostnames();
             driverProxy.addExclusivePublication(channel, STREAM_ID_3);
             driverConductor.doWork();
 
@@ -1756,7 +1756,7 @@ public class DriverConductorTest
 
             final UdpChannel updatedUdpChannel = UdpChannel.parse(channel);
 
-            driverProxy.resolveHostnames();
+            driverConductor.onResolveHostnames();
             driverProxy.addSubscription(channel, STREAM_ID_3);
             driverConductor.doWork();
 

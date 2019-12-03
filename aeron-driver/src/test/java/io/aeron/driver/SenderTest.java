@@ -160,6 +160,7 @@ public class SenderTest
             Configuration.untetheredWindowLimitTimeoutNs(),
             Configuration.untetheredRestingTimeoutNs(),
             false,
+            () -> {},
             false);
 
         senderCommandQueue.offer(() -> sender.onNewNetworkPublication(publication));

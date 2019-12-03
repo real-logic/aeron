@@ -40,7 +40,6 @@ public class DriverTool
     {
         boolean printPidOnly = false;
         boolean terminateDriver = false;
-        boolean resolveHostnames = false;
 
         if (0 != args.length)
         {
@@ -53,10 +52,6 @@ public class DriverTool
             else if (args[0].equals("terminate"))
             {
                 terminateDriver = true;
-            }
-            else if (args[0].equals("resolveHostnames"))
-            {
-                resolveHostnames = true;
             }
         }
 
@@ -80,15 +75,6 @@ public class DriverTool
             if (!driverProxy.terminateDriver(null, 0, 0))
             {
                 throw new AeronException("could not send termination request.");
-            }
-        }
-        else if (resolveHostnames)
-        {
-            final DriverProxy driverProxy = new DriverProxy(toDriver, toDriver.nextCorrelationId());
-
-            if (!driverProxy.resolveHostnames())
-            {
-                throw new AeronException("could not send resolve hostnames request.");
             }
         }
         else

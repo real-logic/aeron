@@ -300,10 +300,4 @@ public class DriverProxy
 
         return toDriverCommandBuffer.write(TERMINATE_DRIVER, buffer, 0, terminateDriver.length());
     }
-
-    public boolean resolveHostnames()
-    {
-        correlatedMessage.correlationId(Aeron.NULL_VALUE);
-        return toDriverCommandBuffer.write(RESOLVE_HOSTNAMES, buffer, 0, CorrelatedMessageFlyweight.LENGTH);
-    }
 }

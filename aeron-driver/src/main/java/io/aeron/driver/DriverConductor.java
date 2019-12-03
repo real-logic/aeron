@@ -1125,6 +1125,7 @@ public class DriverConductor implements Agent
             ctx.untetheredWindowLimitTimeoutNs(),
             ctx.untetheredRestingTimeoutNs(),
             ctx.spiesSimulateConnection(),
+            this::onResolveHostnames,
             isExclusive);
 
         channelEndpoint.incRef();

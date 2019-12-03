@@ -473,7 +473,7 @@ class ConsensusModuleAgent implements Agent
         }
         else if (candidateTermId > leadershipTermId)
         {
-            ctx.countedErrorHandler().onError(new ClusterException("unexpected vote request"));
+            ctx.countedErrorHandler().onError(new ClusterException("unexpected vote request", AeronException.Category.WARN));
             enterElection(clusterTimeUnit.toNanos(clusterClock.time()));
             election.onRequestVote(logLeadershipTermId, logPosition, candidateTermId, candidateId);
         }
@@ -509,7 +509,7 @@ class ConsensusModuleAgent implements Agent
         }
         else if (leadershipTermId > this.leadershipTermId)
         {
-            ctx.countedErrorHandler().onError(new ClusterException("unexpected new leadership term"));
+            ctx.countedErrorHandler().onError(new ClusterException("unexpected new leadership term", AeronException.Category.WARN));
             enterElection(clusterTimeUnit.toNanos(clusterClock.time()));
         }
     }
@@ -1915,7 +1915,7 @@ class ConsensusModuleAgent implements Agent
             {
                 ctx.countedErrorHandler().onError(new ClusterException(
                     "no leader connection: logPosition=" + logPosition() + " commitPosition=" + commitPosition.get() +
-                    " leadershipTermId=" + leadershipTermId + " leaderId=" + leaderMember.id()));
+                    " leadershipTermId=" + leadershipTermId + " leaderId=" + leaderMember.id(), AeronException.Category.WARN));
                 enterElection(nowNs);
                 return 1;
             }

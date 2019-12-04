@@ -60,6 +60,7 @@ public:
         m_isControlResponse = false;
         m_wasChallenged = false;
         delete [] m_encodedChallenge.first;
+        m_encodedChallenge.first = nullptr;
         m_encodedChallenge.second = 0;
 
         return m_subscription->controlledPoll(m_fragmentHandler, m_fragmentLimit);

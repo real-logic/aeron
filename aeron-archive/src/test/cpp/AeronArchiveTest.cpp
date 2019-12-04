@@ -92,6 +92,7 @@ public:
                 "-Daeron.term.buffer.sparse.file=true",
                 "-Daeron.driver.termination.validator=io.aeron.driver.DefaultAllowTerminationValidator",
                 "-Daeron.term.buffer.length=64k",
+                "-Daeron.archive.authenticator.supplier=io.aeron.samples.archive.TestAuthenticatorSupplier",
                 ("-Daeron.archive.dir=" + m_archiveDir).c_str(),
                 "-cp",
                 m_aeronAllJar.c_str(),
@@ -102,6 +103,19 @@ public:
                 ::exit(EXIT_FAILURE);
             }
         }
+
+        auto onEncodedCrdentials = []() -> std::pair<const char *, std::uint32_t>
+        {
+            std::string creds("admin:admin");
+
+            char *arr = new char[creds.length() + 1];
+            std::strcpy(arr, creds.data());
+            arr[creds.length()] = '\0';
+
+            return { arr, creds.length() };
+        };
+
+        m_context.credentialsSupplier(CredentialsSupplier(onEncodedCrdentials));
 
         m_stream << "ArchivingMediaDriver PID " << std::to_string(m_pid) << std::endl;
     }
@@ -221,6 +235,8 @@ protected:
 
     const int m_fragmentLimit = 10;
 
+    AeronArchive::Context_t m_context;
+
     pid_t m_pid = 0;
 
     std::ostringstream m_stream;
@@ -239,12 +255,12 @@ TEST_F(AeronArchiveTest, shouldSpinUpArchiveAndShutdown)
 
 TEST_F(AeronArchiveTest, shouldBeAbleToConnectToArchive)
 {
-    std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect();
+    std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
 }
 
 TEST_F(AeronArchiveTest, shouldBeAbleToConnectToArchiveViaAsync)
 {
-    std::shared_ptr<AeronArchive::AsyncConnect> asyncConnect = AeronArchive::asyncConnect();
+    std::shared_ptr<AeronArchive::AsyncConnect> asyncConnect = AeronArchive::asyncConnect(m_context);
     aeron::concurrent::YieldingIdleStrategy idle;
 
     std::shared_ptr<AeronArchive> aeronArchive = asyncConnect->poll();
@@ -263,7 +279,7 @@ TEST_F(AeronArchiveTest, shouldRecordPublicationAndFindRecording)
     std::int64_t recordingIdFromCounter = aeron::NULL_VALUE;
     std::int64_t stopPosition = aeron::NULL_VALUE;
 
-    std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect();
+    std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
 
     const std::int64_t subscriptionId = aeronArchive->startRecording(
         m_recordingChannel, m_recordingStreamId, AeronArchive::SourceLocation::LOCAL);
@@ -326,7 +342,7 @@ TEST_F(AeronArchiveTest, shouldRecordThenReplay)
     std::int64_t recordingIdFromCounter = aeron::NULL_VALUE;
     std::int64_t stopPosition = aeron::NULL_VALUE;
 
-    std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect();
+    std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
 
     const std::int64_t subscriptionId = aeronArchive->startRecording(
         m_recordingChannel, m_recordingStreamId, AeronArchive::SourceLocation::LOCAL);
@@ -383,7 +399,7 @@ TEST_F(AeronArchiveTest, shouldRecordThenReplayThenTruncate)
     std::int64_t recordingIdFromCounter = aeron::NULL_VALUE;
     std::int64_t stopPosition = aeron::NULL_VALUE;
 
-    std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect();
+    std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
 
     const std::int64_t subscriptionId = aeronArchive->startRecording(
         m_recordingChannel, m_recordingStreamId, AeronArchive::SourceLocation::LOCAL);
@@ -468,7 +484,7 @@ TEST_F(AeronArchiveTest, shouldRecordAndCancelReplayEarly)
     std::int64_t recordingId = aeron::NULL_VALUE;
     std::int64_t stopPosition = aeron::NULL_VALUE;
 
-    std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect();
+    std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
 
     {
         std::shared_ptr<Subscription> subscription = addSubscription(
@@ -515,7 +531,7 @@ TEST_F(AeronArchiveTest, shouldReplayRecordingFromLateJoinPosition)
     const std::string messagePrefix = "Message ";
     const std::size_t messageCount = 10;
 
-    std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect();
+    std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
 
     const std::int64_t subscriptionId = aeronArchive->startRecording(
         m_recordingChannel, m_recordingStreamId, AeronArchive::SourceLocation::LOCAL);
@@ -598,7 +614,7 @@ TEST_F(AeronArchiveTest, shouldListRegisteredRecordingSubscriptions)
     const std::string channelTwo = "aeron:udp?endpoint=localhost:5678";
     const std::string channelThree = "aeron:udp?endpoint=localhost:4321";
 
-    std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect();
+    std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
 
     const std::int64_t subIdOne = aeronArchive->startRecording(
         channelOne, expectedStreamId, AeronArchive::SourceLocation::LOCAL);
@@ -690,7 +706,7 @@ TEST_F(AeronArchiveTest, shouldMergeFromReplayToLive)
     const std::size_t totalMessageCount = initialMessageCount + subsequentMessageCount;
     aeron::concurrent::YieldingIdleStrategy idle;
 
-    std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect();
+    std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
 
     std::shared_ptr<Publication> publication = addPublication(
         *aeronArchive->context().aeron(), publicationChannel.build(), m_recordingStreamId);
@@ -768,4 +784,93 @@ TEST_F(AeronArchiveTest, shouldMergeFromReplayToLive)
     }
 
     aeronArchive->stopRecording(recordingSubscriptionId);
+}
+
+TEST_F(AeronArchiveTest, shouldExceptionForIncorrectInitialCredentials)
+{
+    auto onEncodedCrdentials = []() -> std::pair<const char *, std::uint32_t>
+    {
+        std::string creds("admin:NotAdmin");
+
+        char *arr = new char[creds.length() + 1];
+        std::strcpy(arr, creds.data());
+        arr[creds.length()] = '\0';
+
+        return { arr, creds.length() };
+    };
+
+    m_context.credentialsSupplier(CredentialsSupplier(onEncodedCrdentials));
+
+    ASSERT_THROW(
+        {
+            std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
+        },
+        ArchiveException);
+}
+
+TEST_F(AeronArchiveTest, shouldBeAbleToHandleBeingChallenged)
+{
+    auto onEncodedCrdentials = []() -> std::pair<const char *, std::uint32_t>
+    {
+        std::string creds("admin:adminC");
+
+        char *arr = new char[creds.length() + 1];
+        std::strcpy(arr, creds.data());
+        arr[creds.length()] = '\0';
+
+        return { arr, creds.length() };
+    };
+
+    auto onChallenge = [](std::pair<const char *, std::uint32_t> encodedChallenge) ->
+        std::pair<const char *, std::uint32_t>
+    {
+        std::string creds("admin:CSadmin");
+
+        char *arr = new char[creds.length() + 1];
+        std::strcpy(arr, creds.data());
+        arr[creds.length()] = '\0';
+
+        return { arr, creds.length() };
+    };
+
+    m_context.credentialsSupplier(CredentialsSupplier(onEncodedCrdentials, onChallenge));
+
+    ASSERT_NO_THROW(
+        {
+            std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
+        });
+}
+
+TEST_F(AeronArchiveTest, shouldExceptionForIncorrectChallengeCredentials)
+{
+    auto onEncodedCrdentials = []() -> std::pair<const char *, std::uint32_t>
+    {
+        std::string creds("admin:adminC");
+
+        char *arr = new char[creds.length() + 1];
+        std::strcpy(arr, creds.data());
+        arr[creds.length()] = '\0';
+
+        return { arr, creds.length() };
+    };
+
+    auto onChallenge = [](std::pair<const char *, std::uint32_t> encodedChallenge) ->
+        std::pair<const char *, std::uint32_t>
+    {
+        std::string creds("admin:adminNoCS");
+
+        char *arr = new char[creds.length() + 1];
+        std::strcpy(arr, creds.data());
+        arr[creds.length()] = '\0';
+
+        return { arr, creds.length() };
+    };
+
+    m_context.credentialsSupplier(CredentialsSupplier(onEncodedCrdentials, onChallenge));
+
+    ASSERT_THROW(
+        {
+            std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
+        },
+        ArchiveException);
 }

@@ -81,13 +81,13 @@ inline void defaultCredentialsOnFree(std::pair<const char *, std::uint32_t> cred
 /**
  * Structure to hold credential callbacks.
  */
-typedef struct CredentialsSupplierDefn
+struct CredentialsSupplier
 {
     credentials_encoded_credentials_supplier_t m_encodedCredentials = defaultCredentialsEncodedCredentials;
     credentials_challenge_supplier_t m_onChallenge = defaultCredentialsOnChallenge;
     credentials_free_t m_onFree = defaultCredentialsOnFree;
 
-    explicit CredentialsSupplierDefn(
+    explicit CredentialsSupplier(
         credentials_encoded_credentials_supplier_t encodedCredentials = defaultCredentialsEncodedCredentials,
         credentials_challenge_supplier_t onChallenge = defaultCredentialsOnChallenge,
         credentials_free_t onFree = defaultCredentialsOnFree) :
@@ -96,8 +96,7 @@ typedef struct CredentialsSupplierDefn
         m_onFree(std::move(onFree))
     {
     }
-}
-CredentialsSupplier;
+};
 
 namespace Configuration
 {
@@ -518,7 +517,9 @@ public:
      */
     inline this_t& credentialsSupplier(const CredentialsSupplier& supplier)
     {
-        m_credentialsSupplier = supplier;
+        m_credentialsSupplier.m_encodedCredentials = supplier.m_encodedCredentials;
+        m_credentialsSupplier.m_onChallenge = supplier.m_onChallenge;
+        m_credentialsSupplier.m_onFree = supplier.m_onFree;
         return *this;
     }
 

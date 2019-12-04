@@ -22,12 +22,12 @@ import static org.agrona.Strings.isEmpty;
 
 public interface TestMediaDriver extends AutoCloseable
 {
-    String AERONMD_PATH = "aeron.test.system.aeronmd.path";
-    String DRIVER_AGENT_PATH = "aeron.test.system.driver.agent.path";
+    String AERONMD_PATH_PROP_NAME = "aeron.test.system.aeronmd.path";
+    String DRIVER_AGENT_PATH_PROP_NAME = "aeron.test.system.driver.agent.path";
 
     static boolean shouldRunCMediaDriver()
     {
-        return !isEmpty(System.getProperty(AERONMD_PATH));
+        return !isEmpty(System.getProperty(AERONMD_PATH_PROP_NAME));
     }
 
     static void notSupportedOnCMediaDriverYet(String reason)

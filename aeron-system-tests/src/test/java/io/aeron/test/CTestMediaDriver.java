@@ -97,7 +97,7 @@ public final class CTestMediaDriver implements TestMediaDriver
         final MediaDriver.Context context,
         final DriverOutputConsumer driverOutputConsumer)
     {
-        final String aeronDirPath = System.getProperty(TestMediaDriver.AERONMD_PATH);
+        final String aeronDirPath = System.getProperty(TestMediaDriver.AERONMD_PATH_PROP_NAME);
         final File f = new File(aeronDirPath);
 
         if (!f.exists())
@@ -161,7 +161,7 @@ public final class CTestMediaDriver implements TestMediaDriver
 
     private static void setLogging(final Map<String, String> environment)
     {
-        final String driverAgentPath = System.getProperty(DRIVER_AGENT_PATH);
+        final String driverAgentPath = System.getProperty(DRIVER_AGENT_PATH_PROP_NAME);
         if (null == driverAgentPath)
         {
             return;
@@ -171,7 +171,7 @@ public final class CTestMediaDriver implements TestMediaDriver
         if (!driverAgent.exists())
         {
             throw new RuntimeException(
-                "Unable to find driver agent file at: " + DRIVER_AGENT_PATH + "=" + driverAgentPath);
+                "Unable to find driver agent file at: " + DRIVER_AGENT_PATH_PROP_NAME + "=" + driverAgentPath);
         }
 
         environment.put("AERON_EVENT_LOG", "0xFFFF");

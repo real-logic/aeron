@@ -28,9 +28,9 @@
 #include <iostream>
 #include <iosfwd>
 #include <vector>
+#include <cstring>
 
 #include <gtest/gtest.h>
-#include <string.h>
 #include <ChannelUriStringBuilder.h>
 
 #include "client/AeronArchive.h"

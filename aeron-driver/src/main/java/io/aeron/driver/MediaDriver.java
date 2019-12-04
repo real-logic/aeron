@@ -1236,7 +1236,7 @@ public final class MediaDriver implements AutoCloseable
          */
         public Context nakMulticastMaxBackoffNs(final long nakMulticastMaxBackoffNs)
         {
-            this.nakMulticastMaxBackoffNs = nakUnicastDelayNs;
+            this.nakMulticastMaxBackoffNs = nakMulticastMaxBackoffNs;
             return this;
         }
 

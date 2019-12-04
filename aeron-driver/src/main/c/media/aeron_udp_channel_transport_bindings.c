@@ -91,7 +91,7 @@ aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_loa
     if (interceptors_length >= (size_t)max_interceptors_length)
     {
         aeron_set_err(
-            EINVAL, "Interceptors list too long, must have: %d < %d", interceptors_length, max_interceptors_length);
+            EINVAL, "Interceptors list too long, must have: %zu < %d", interceptors_length, max_interceptors_length);
         return NULL;
     }
 

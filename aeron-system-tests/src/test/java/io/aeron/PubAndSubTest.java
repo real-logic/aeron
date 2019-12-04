@@ -17,11 +17,14 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.test.MediaDriverTestWatcher;
+import io.aeron.test.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableLong;
 import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
@@ -30,7 +33,6 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import io.aeron.driver.ext.DebugChannelEndpointConfiguration;
-import io.aeron.driver.ext.DebugReceiveChannelEndpoint;
 import io.aeron.driver.ext.DebugSendChannelEndpoint;
 import io.aeron.driver.ext.LossGenerator;
 import io.aeron.logbuffer.RawBlockHandler;
@@ -64,6 +66,9 @@ public class PubAndSubTest
     @DataPoint
     public static final String IPC_URI = "aeron:ipc";
 
+    @Rule
+    public MediaDriverTestWatcher watcher = new MediaDriverTestWatcher();
+
     private static final int STREAM_ID = 1;
     private static final ThreadingMode THREADING_MODE = ThreadingMode.SHARED;
 
@@ -71,7 +76,7 @@ public class PubAndSubTest
 
     private Aeron publishingClient;
     private Aeron subscribingClient;
-    private MediaDriver driver;
+    private TestMediaDriver driver;
     private Subscription subscription;
     private Publication publication;
 
@@ -88,7 +93,7 @@ public class PubAndSubTest
             .publicationConnectionTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500))
             .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100));
 
-        driver = MediaDriver.launch(context);
+        driver = TestMediaDriver.launch(context, watcher);
         subscribingClient = Aeron.connect();
         publishingClient = Aeron.connect();
         subscription = subscribingClient.addSubscription(channel, STREAM_ID);
@@ -300,8 +305,6 @@ public class PubAndSubTest
         final int messageLength = (termBufferLength / numMessagesInTermBuffer) - HEADER_LENGTH;
         final int numMessagesToSend = 2 * numMessagesInTermBuffer;
 
-        final LossGenerator dataLossGenerator =
-            DebugChannelEndpointConfiguration.lossGeneratorSupplier(0.10, 0xcafebabeL);
         final LossGenerator noLossGenerator =
             DebugChannelEndpointConfiguration.lossGeneratorSupplier(0, 0);
 
@@ -310,9 +313,7 @@ public class PubAndSubTest
         context.sendChannelEndpointSupplier((udpChannel, statusIndicator, context) -> new DebugSendChannelEndpoint(
             udpChannel, statusIndicator, context, noLossGenerator, noLossGenerator));
 
-        context.receiveChannelEndpointSupplier(
-            (udpChannel, dispatcher, statusIndicator, context) -> new DebugReceiveChannelEndpoint(
-            udpChannel, dispatcher, statusIndicator, context, dataLossGenerator, noLossGenerator));
+        TestMediaDriver.enableLossGenerationOnReceive(context, 0.1, 0xcafebabeL, true, false);
 
         launch(channel);
 
@@ -365,8 +366,6 @@ public class PubAndSubTest
         final int numBatches = 4;
         final int numMessagesPerBatch = numMessagesToSend / numBatches;
 
-        final LossGenerator dataLossGenerator =
-            DebugChannelEndpointConfiguration.lossGeneratorSupplier(0.10, 0xcafebabeL);
         final LossGenerator noLossGenerator =
             DebugChannelEndpointConfiguration.lossGeneratorSupplier(0, 0);
 
@@ -375,9 +374,7 @@ public class PubAndSubTest
         context.sendChannelEndpointSupplier((udpChannel, statusIndicator, context) -> new DebugSendChannelEndpoint(
             udpChannel, statusIndicator, context, noLossGenerator, noLossGenerator));
 
-        context.receiveChannelEndpointSupplier(
-            (udpChannel, dispatcher, statusIndicator, context) -> new DebugReceiveChannelEndpoint(
-            udpChannel, dispatcher, statusIndicator, context, dataLossGenerator, noLossGenerator));
+        TestMediaDriver.enableLossGenerationOnReceive(context, 0.1, 0xcafebabeL, true, false);
 
         launch(channel);
 
@@ -664,6 +661,12 @@ public class PubAndSubTest
     @Test(timeout = 20_000)
     public void shouldReceivePublishedMessageOneForOneWithReSubscription(final String channel)
     {
+        if (TestMediaDriver.shouldRunCMediaDriver())
+        {
+            // Immediate re-subscription currently doesn't work in the C media driver
+            return;
+        }
+
         final int termBufferLength = 64 * 1024;
         final int numMessagesInTermBuffer = 64;
         final int messageLength = (termBufferLength / numMessagesInTermBuffer) - HEADER_LENGTH;

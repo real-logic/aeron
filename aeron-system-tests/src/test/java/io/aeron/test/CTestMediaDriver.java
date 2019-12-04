@@ -22,7 +22,9 @@ import io.aeron.driver.FlowControlSupplier;
 import io.aeron.driver.MaxMulticastFlowControlSupplier;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.MinMulticastFlowControlSupplier;
+import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.IoUtil;
+import org.agrona.collections.Object2ObjectHashMap;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,12 +32,16 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import static java.util.Collections.emptyMap;
+
 public final class CTestMediaDriver implements TestMediaDriver
 {
     private static final File NULL_FILE = System.getProperty("os.name").startsWith("Windows") ?
         new File("NUL") : new File("/dev/null");
-    private static final Map<Class, String> C_DRIVER_FLOW_CONTROL_STRATEGY_NAME_BY_SUPPLIER_TYPE =
+    private static final Map<Class<?>, String> C_DRIVER_FLOW_CONTROL_STRATEGY_NAME_BY_SUPPLIER_TYPE =
         new IdentityHashMap<>();
+    private static final ThreadLocal<Map<MediaDriver.Context, Map<String, String>>> TRANSPORT_BINDINGS_CONFIGURATION =
+        ThreadLocal.withInitial(IdentityHashMap::new);
 
     static
     {
@@ -91,7 +97,7 @@ public final class CTestMediaDriver implements TestMediaDriver
         final MediaDriver.Context context,
         final DriverOutputConsumer driverOutputConsumer)
     {
-        final String aeronDirPath = System.getProperty(TestMediaDriver.AERON_TEST_SYSTEM_AERONMD_PATH);
+        final String aeronDirPath = System.getProperty(TestMediaDriver.AERONMD_PATH);
         final File f = new File(aeronDirPath);
 
         if (!f.exists())
@@ -121,7 +127,10 @@ public final class CTestMediaDriver implements TestMediaDriver
         pb.environment().put("AERON_UNTETHERED_RESTING_TIMEOUT", String.valueOf(context.untetheredRestingTimeoutNs()));
         pb.environment().put(
             "AERON_UNTETHERED_WINDOW_LIMIT_TIMEOUT", String.valueOf(context.untetheredWindowLimitTimeoutNs()));
+
         setFlowControlStrategy(pb.environment(), context);
+        TRANSPORT_BINDINGS_CONFIGURATION.get().getOrDefault(context, emptyMap()).forEach(pb.environment()::put);
+        setLogging(pb.environment());
 
         try
         {
@@ -148,6 +157,25 @@ public final class CTestMediaDriver implements TestMediaDriver
         {
             throw new RuntimeException(e);
         }
+    }
+
+    private static void setLogging(final Map<String, String> environment)
+    {
+        final String driverAgentPath = System.getProperty(DRIVER_AGENT_PATH);
+        if (null == driverAgentPath)
+        {
+            return;
+        }
+
+        final File driverAgent = new File(driverAgentPath);
+        if (!driverAgent.exists())
+        {
+            throw new RuntimeException(
+                "Unable to find driver agent file at: " + DRIVER_AGENT_PATH + "=" + driverAgentPath);
+        }
+
+        environment.put("AERON_EVENT_LOG", "0xFFFF");
+        environment.put("LD_PRELOAD", driverAgent.getAbsolutePath());
     }
 
     private static void setFlowControlStrategy(final Map<String, String> environment, final MediaDriver.Context context)
@@ -191,5 +219,32 @@ public final class CTestMediaDriver implements TestMediaDriver
     public String aeronDirectoryName()
     {
         return context.aeronDirectoryName();
+    }
+
+    public static void enableLossGenerationOnReceive(
+        final MediaDriver.Context context,
+        final double rate,
+        final long seed,
+        final boolean loseDataMessages,
+        final boolean loseControlMessages)
+    {
+        int receiveMessageTypeMask = 0;
+        receiveMessageTypeMask |= loseDataMessages ? 1 << HeaderFlyweight.HDR_TYPE_DATA : 0;
+        receiveMessageTypeMask |= loseControlMessages ? 1 << HeaderFlyweight.HDR_TYPE_SM : 0;
+        receiveMessageTypeMask |= loseControlMessages ? 1 << HeaderFlyweight.HDR_TYPE_NAK : 0;
+        receiveMessageTypeMask |= loseControlMessages ? 1 << HeaderFlyweight.HDR_TYPE_RTTM : 0;
+
+        final Object2ObjectHashMap<String, String> lossTransportEnv = new Object2ObjectHashMap<>();
+
+        final String interceptor = "loss";
+        final String lossArgs = "rate=" + rate +
+            "|seed=" + seed +
+            "|recv-msg-mask=0x" + Integer.toHexString(receiveMessageTypeMask);
+
+        lossTransportEnv.put("AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_INTERCEPTORS", interceptor);
+        lossTransportEnv.put("AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_LOSS_ARGS", lossArgs);
+
+        // This is a bit of an ugly hack to decorate the MediaDriver.Context with additional information.
+        TRANSPORT_BINDINGS_CONFIGURATION.get().put(context, lossTransportEnv);
     }
 }

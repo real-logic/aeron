@@ -352,7 +352,8 @@ static void aeron_driver_conductor_to_client_interceptor_null(
 #define AERON_NAK_MULTICAST_GROUP_SIZE_DEFAULT (10)
 #define AERON_NAK_MULTICAST_MAX_BACKOFF_NS_DEFAULT (60 * 1000 * 1000LL)
 #define AERON_NAK_UNICAST_DELAY_NS_DEFAULT (60 * 1000 * 1000LL)
-#define AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_DEFAULT ("default")
+#define AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA_DEFAULT ("default")
+#define AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_INTERCEPTORS_DEFAULT ("")
 #define AERON_RECEIVER_GROUP_CONSIDERATION_DEFAULT (AERON_INFER)
 #define AERON_REJOIN_STREAM_DEFAULT (true)
 #define AERON_PUBLICATION_RESERVED_SESSION_ID_LOW_DEFAULT (-1)
@@ -893,10 +894,19 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->termination_hook_func = NULL;
     _context->termination_hook_state = NULL;
 
-    if ((_context->udp_channel_transport_bindings = aeron_udp_channel_transport_bindings_load(
+    if ((_context->udp_channel_transport_bindings = aeron_udp_channel_transport_bindings_load_media(
         AERON_CONFIG_GETENV_OR_DEFAULT(
-            AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_ENV_VAR,
-            AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_DEFAULT))) == NULL)
+                AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA_ENV_VAR,
+                AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA_DEFAULT))) == NULL)
+    {
+        return -1;
+    }
+
+    if ((_context->udp_channel_transport_bindings = aeron_udp_channel_transport_bindings_load_interceptors(
+        _context->udp_channel_transport_bindings,
+        AERON_CONFIG_GETENV_OR_DEFAULT(
+            AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_INTERCEPTORS_ENV_VAR,
+            AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_INTERCEPTORS_DEFAULT))) == NULL)
     {
         return -1;
     }
@@ -2019,7 +2029,7 @@ aeron_udp_channel_transport_bindings_t *aeron_driver_context_get_udp_channel_tra
 {
     return NULL != context ?
         context->udp_channel_transport_bindings :
-        aeron_udp_channel_transport_bindings_load(AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_DEFAULT);
+        aeron_udp_channel_transport_bindings_load_media(AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA_DEFAULT);
 }
 
 int aeron_driver_context_set_receiver_group_consideration(

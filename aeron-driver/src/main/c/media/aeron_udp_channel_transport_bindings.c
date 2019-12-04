@@ -21,11 +21,15 @@
 
 #include <errno.h>
 #include <string.h>
+#include <stdio.h>
+#include "aeron_alloc.h"
 #include "util/aeron_error.h"
 #include "util/aeron_dlopen.h"
+#include "util/aeron_strutil.h"
 
 #include "aeron_udp_channel_transport_bindings.h"
 #include "aeron_udp_channel_transport.h"
+#include "aeron_udp_channel_transport_loss.h"
 #include "aeron_udp_transport_poller.h"
 
 aeron_udp_channel_transport_bindings_t aeron_udp_channel_transport_bindings_default =
@@ -44,7 +48,7 @@ aeron_udp_channel_transport_bindings_t aeron_udp_channel_transport_bindings_defa
         aeron_udp_transport_poller_poll
     };
 
-aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_load(const char *bindings_name)
+aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_load_media(const char *bindings_name)
 {
     aeron_udp_channel_transport_bindings_t *bindings = NULL;
 
@@ -56,17 +60,82 @@ aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_loa
 
     if (strncmp(bindings_name, "default", sizeof("default")) == 0)
     {
-        return aeron_udp_channel_transport_bindings_load("aeron_udp_channel_transport_bindings_default");
+        return aeron_udp_channel_transport_bindings_load_media("aeron_udp_channel_transport_bindings_default");
     }
     else
     {
         if ((bindings = (aeron_udp_channel_transport_bindings_t *)aeron_dlsym(RTLD_DEFAULT, bindings_name)) == NULL)
         {
-            aeron_set_err(EINVAL, "could not find UDP channel transport bindings %s: dlsym - %s",
-                bindings_name, aeron_dlerror());
-            return NULL;
+            aeron_set_err(
+                EINVAL, "could not find UDP channel transport bindings %s: dlsym - %s", bindings_name, aeron_dlerror());
         }
     }
 
     return bindings;
+}
+
+aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_load_interceptors(
+    aeron_udp_channel_transport_bindings_t *media_bindings,
+    const char *interceptors)
+{
+    const int max_interceptors_length = 4096;
+    char interceptors_dup[max_interceptors_length];
+
+    const int max_interceptor_names = 10;
+    char *interceptor_names[max_interceptor_names];
+
+    aeron_udp_channel_transport_bindings_t *current_bindings = NULL;
+
+    const size_t interceptors_length = strlen(interceptors);
+
+    if (interceptors_length >= (size_t)max_interceptors_length)
+    {
+        aeron_set_err(
+            EINVAL, "Interceptors list too long, must have: %d < %d", interceptors_length, max_interceptors_length);
+        return NULL;
+    }
+
+    strcpy(interceptors_dup, interceptors);
+
+    const int num_interceptors = aeron_tokenise(interceptors_dup, ',', max_interceptor_names, interceptor_names);
+
+    if (-ERANGE == num_interceptors)
+    {
+        aeron_set_err(EINVAL, "Too many interceptors defined, limit %d: %s", max_interceptor_names, interceptors);
+        return NULL;
+    }
+    else if (num_interceptors < 0)
+    {
+        aeron_set_err(EINVAL, "Failed to parse interceptors: %s", interceptors != NULL ? interceptors : "(null)");
+        return NULL;
+    }
+
+    current_bindings = media_bindings;
+
+    for (int i = 0; i < num_interceptors; i++)
+    {
+        const char *interceptor_name = interceptor_names[i];
+        if (strncmp(interceptor_name, "loss", sizeof("loss")) == 0)
+        {
+            // TODO: Dynamically load this function.
+            current_bindings = aeron_udp_channel_transport_loss_set_delegate(current_bindings);
+
+            if (NULL == current_bindings)
+            {
+                aeron_set_err(EINVAL, "Failed to load loss transport bindings");
+                return NULL;
+            }
+        }
+        else
+        {
+            current_bindings = NULL;
+
+            // TODO: Allow truly dynamic interceptors.  Need to have a function to set the delegate binding
+            // TODO: as part of the transport bindings struct.
+            aeron_set_err(EINVAL, "could not find UDP channel transport bindings interceptor: %s", interceptor_name);
+            return NULL;
+        }
+    }
+
+    return current_bindings;
 }

@@ -30,6 +30,7 @@
 #include <vector>
 
 #include <gtest/gtest.h>
+#include <string.h>
 #include <ChannelUriStringBuilder.h>
 
 #include "client/AeronArchive.h"
@@ -109,7 +110,7 @@ public:
             std::string creds("admin:admin");
 
             char *arr = new char[creds.length() + 1];
-            std::strcpy(arr, creds.data());
+            std::memcpy(arr, creds.data(), creds.length());
             arr[creds.length()] = '\0';
 
             return { arr, creds.length() };
@@ -793,7 +794,7 @@ TEST_F(AeronArchiveTest, shouldExceptionForIncorrectInitialCredentials)
         std::string creds("admin:NotAdmin");
 
         char *arr = new char[creds.length() + 1];
-        std::strcpy(arr, creds.data());
+        std::memcpy(arr, creds.data(), creds.length());
         arr[creds.length()] = '\0';
 
         return { arr, creds.length() };
@@ -815,7 +816,7 @@ TEST_F(AeronArchiveTest, shouldBeAbleToHandleBeingChallenged)
         std::string creds("admin:adminC");
 
         char *arr = new char[creds.length() + 1];
-        std::strcpy(arr, creds.data());
+        std::memcpy(arr, creds.data(), creds.length());
         arr[creds.length()] = '\0';
 
         return { arr, creds.length() };
@@ -827,7 +828,7 @@ TEST_F(AeronArchiveTest, shouldBeAbleToHandleBeingChallenged)
         std::string creds("admin:CSadmin");
 
         char *arr = new char[creds.length() + 1];
-        std::strcpy(arr, creds.data());
+        std::memcpy(arr, creds.data(), creds.length());
         arr[creds.length()] = '\0';
 
         return { arr, creds.length() };
@@ -848,7 +849,7 @@ TEST_F(AeronArchiveTest, shouldExceptionForIncorrectChallengeCredentials)
         std::string creds("admin:adminC");
 
         char *arr = new char[creds.length() + 1];
-        std::strcpy(arr, creds.data());
+        std::memcpy(arr, creds.data(), creds.length());
         arr[creds.length()] = '\0';
 
         return { arr, creds.length() };
@@ -860,7 +861,7 @@ TEST_F(AeronArchiveTest, shouldExceptionForIncorrectChallengeCredentials)
         std::string creds("admin:adminNoCS");
 
         char *arr = new char[creds.length() + 1];
-        std::strcpy(arr, creds.data());
+        std::memcpy(arr, creds.data(), creds.length());
         arr[creds.length()] = '\0';
 
         return { arr, creds.length() };

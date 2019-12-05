@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * This application only handles non-fragmented data. A DataHandler method is called
  * for every received message or message fragment.
  * For an example that implements reassembly of large, fragmented messages, see
- * {link@ MultipleSubscribersWithFragmentAssembly}.
+ * {@link MultipleSubscribersWithFragmentAssembly}.
  */
 public class BasicSubscriber
 {

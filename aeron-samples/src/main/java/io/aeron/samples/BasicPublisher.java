@@ -101,7 +101,7 @@ public class BasicPublisher
                     }
                     else
                     {
-                        System.out.println("Offer failed due to unknown reason");
+                        System.out.println("Offer failed due to unknown reason: " + result);
                     }
                 }
                 else

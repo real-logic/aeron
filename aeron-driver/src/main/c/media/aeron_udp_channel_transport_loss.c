@@ -57,7 +57,7 @@ typedef struct aeron_udp_channel_transport_loss_clientd_stct
 }
 aeron_udp_channel_transport_loss_clientd_t;
 
-aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_loss_set_delegate(
+aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_loss_load(
     const aeron_udp_channel_transport_bindings_t *delegate_bindings)
 {
     aeron_udp_channel_transport_bindings_t *interceptor_bindings;

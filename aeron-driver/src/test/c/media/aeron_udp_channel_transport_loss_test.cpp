@@ -104,7 +104,7 @@ TEST_F(UdpChannelTransportLossTest, shouldDiscardAllPacketsWithRateOfOne)
 
     bindings.recvmmsg_func = delegate_return_packets_recvmmsg;
 
-    aeron_udp_channel_transport_loss_set_delegate(&bindings);
+    aeron_udp_channel_transport_loss_load(&bindings);
     aeron_udp_channel_transport_loss_configure(&params);
 
     int messages_received = aeron_udp_channel_transport_loss_recvmmsg(
@@ -142,7 +142,7 @@ TEST_F(UdpChannelTransportLossTest, shouldNotDiscardAllPacketsWithRateOfOneWithD
 
     bindings.recvmmsg_func = delegate_return_packets_recvmmsg;
 
-    aeron_udp_channel_transport_loss_set_delegate(&bindings);
+    aeron_udp_channel_transport_loss_load(&bindings);
     aeron_udp_channel_transport_loss_configure(&params);
 
     int messages_received = aeron_udp_channel_transport_loss_recvmmsg(
@@ -179,7 +179,7 @@ TEST_F(UdpChannelTransportLossTest, shouldNotDiscardAllPacketsWithRateOfZero)
 
     bindings.recvmmsg_func = delegate_return_packets_recvmmsg;
 
-    aeron_udp_channel_transport_loss_set_delegate(&bindings);
+    aeron_udp_channel_transport_loss_load(&bindings);
     aeron_udp_channel_transport_loss_configure(&params);
 
     int messages_received = aeron_udp_channel_transport_loss_recvmmsg(
@@ -216,7 +216,7 @@ TEST_F(UdpChannelTransportLossTest, shouldDiscardRoughlyHalfTheMessages)
 
     bindings.recvmmsg_func = delegate_return_packets_recvmmsg;
 
-    aeron_udp_channel_transport_loss_set_delegate(&bindings);
+    aeron_udp_channel_transport_loss_load(&bindings);
     aeron_udp_channel_transport_loss_configure(&params);
 
     int messages_received = aeron_udp_channel_transport_loss_recvmmsg(

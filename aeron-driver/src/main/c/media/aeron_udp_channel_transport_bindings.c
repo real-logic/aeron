@@ -118,7 +118,7 @@ aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_loa
         if (strncmp(interceptor_name, "loss", sizeof("loss")) == 0)
         {
             // TODO: Dynamically load this function.
-            current_bindings = aeron_udp_channel_transport_loss_set_delegate(current_bindings);
+            current_bindings = aeron_udp_channel_transport_loss_load(current_bindings);
 
             if (NULL == current_bindings)
             {
@@ -128,8 +128,6 @@ aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_loa
         }
         else
         {
-            current_bindings = NULL;
-
             // TODO: Allow truly dynamic interceptors.  Need to have a function to set the delegate binding
             // TODO: as part of the transport bindings struct.
             aeron_set_err(EINVAL, "could not find UDP channel transport bindings interceptor: %s", interceptor_name);

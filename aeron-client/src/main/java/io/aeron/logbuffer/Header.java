@@ -29,7 +29,7 @@ import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
 /**
  * Represents the header of the data frame for accessing meta data fields.
  */
-public class Header
+public final class Header
 {
     private final int positionBitsToShift;
     private final int initialTermId;
@@ -77,10 +77,12 @@ public class Header
      *
      * @return the current position to which the image has advanced on reading this message.
      */
-    public final long position()
+    public long position()
     {
-        final int resultingOffset = BitUtil.align(termOffset() + frameLength(), FRAME_ALIGNMENT);
-        return computePosition(termId(), resultingOffset, positionBitsToShift, initialTermId);
+        final int frameLength = buffer.getInt(offset, LITTLE_ENDIAN);
+        final int resultingOffset = BitUtil.align(offset + frameLength, FRAME_ALIGNMENT);
+        final int termId = buffer.getInt(offset + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return computePosition(termId, resultingOffset, positionBitsToShift, initialTermId);
     }
 
     /**
@@ -88,7 +90,7 @@ public class Header
      *
      * @return the initial term id this stream started at.
      */
-    public final int initialTermId()
+    public int initialTermId()
     {
         return initialTermId;
     }
@@ -98,7 +100,7 @@ public class Header
      *
      * @param offset at which the header begins in the log.
      */
-    public final void offset(final int offset)
+    public void offset(final int offset)
     {
         this.offset = offset;
     }
@@ -108,7 +110,7 @@ public class Header
      *
      * @return offset at which the frame begins.
      */
-    public final int offset()
+    public int offset()
     {
         return offset;
     }
@@ -118,7 +120,7 @@ public class Header
      *
      * @return {@link org.agrona.DirectBuffer} containing the header.
      */
-    public final DirectBuffer buffer()
+    public DirectBuffer buffer()
     {
         return buffer;
     }
@@ -128,7 +130,7 @@ public class Header
      *
      * @param buffer {@link org.agrona.DirectBuffer} containing the header.
      */
-    public final void buffer(final DirectBuffer buffer)
+    public void buffer(final DirectBuffer buffer)
     {
         if (buffer != this.buffer)
         {
@@ -151,7 +153,7 @@ public class Header
      *
      * @return the session ID to which the frame belongs.
      */
-    public final int sessionId()
+    public int sessionId()
     {
         return buffer.getInt(offset + SESSION_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
@@ -161,7 +163,7 @@ public class Header
      *
      * @return the stream ID to which the frame belongs.
      */
-    public final int streamId()
+    public int streamId()
     {
         return buffer.getInt(offset + STREAM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
@@ -171,7 +173,7 @@ public class Header
      *
      * @return the term ID to which the frame belongs.
      */
-    public final int termId()
+    public int termId()
     {
         return buffer.getInt(offset + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
@@ -191,7 +193,7 @@ public class Header
      *
      * @return type of the the frame which should always be {@link DataHeaderFlyweight#HDR_TYPE_DATA}
      */
-    public final int type()
+    public int type()
     {
         return buffer.getShort(offset + TYPE_FIELD_OFFSET, LITTLE_ENDIAN) & 0xFFFF;
     }

@@ -241,6 +241,10 @@ subprojects {
 project(':aeron-client') {
     apply plugin: 'biz.aQute.bnd.builder'
 
+    dependencies {
+        testCompile "org.mockito:mockito-inline:${mockitoVersion}"
+    }
+
     uploadArchives {
         repositories {
             mavenDeployer {
@@ -469,7 +473,6 @@ project(':aeron-archive') {
 
     task sourcesJar(type: Jar) {
         dependsOn generateCodecs
-
         archiveClassifier = 'sources'
         from sourceSets.main.allSource
         from sourceSets.generated.allSource
@@ -580,7 +583,6 @@ project(':aeron-cluster') {
 
     task sourcesJar(type: Jar) {
         dependsOn generateCodecs
-
         archiveClassifier = 'sources'
         from sourceSets.main.allSource
         from sourceSets.generated.allSource

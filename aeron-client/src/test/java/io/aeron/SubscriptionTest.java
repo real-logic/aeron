@@ -15,10 +15,10 @@
  */
 package io.aeron;
 
+import io.aeron.logbuffer.LogBufferDescriptor;
 import org.junit.Before;
 import org.junit.Test;
 import io.aeron.logbuffer.FragmentHandler;
-import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -34,9 +34,9 @@ public class SubscriptionTest
 {
     private static final String CHANNEL = "aeron:udp?endpoint=localhost:40124";
     private static final int STREAM_ID_1 = 2;
+    private static final int INITIAL_TERM_ID = 7;
     private static final long SUBSCRIPTION_CORRELATION_ID = 100;
     private static final int READ_BUFFER_CAPACITY = 1024;
-    private static final byte FLAGS = FrameDescriptor.UNFRAGMENTED;
     private static final int FRAGMENT_COUNT_LIMIT = Integer.MAX_VALUE;
     private static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
 
@@ -44,8 +44,9 @@ public class SubscriptionTest
     private final ClientConductor conductor = mock(ClientConductor.class);
     private final FragmentHandler fragmentHandler = mock(FragmentHandler.class);
     private final Image imageOneMock = mock(Image.class);
-    private final Header header = mock(Header.class);
     private final Image imageTwoMock = mock(Image.class);
+    private final Header header = new Header(
+        INITIAL_TERM_ID, LogBufferDescriptor.positionBitsToShift(LogBufferDescriptor.TERM_MIN_LENGTH));
     private final AvailableImageHandler availableImageHandlerMock = mock(AvailableImageHandler.class);
     private final UnavailableImageHandler unavailableImageHandlerMock = mock(UnavailableImageHandler.class);
 
@@ -56,8 +57,6 @@ public class SubscriptionTest
     {
         when(imageOneMock.correlationId()).thenReturn(1L);
         when(imageTwoMock.correlationId()).thenReturn(2L);
-
-        when(header.flags()).thenReturn(FLAGS);
 
         subscription = new Subscription(
             conductor,

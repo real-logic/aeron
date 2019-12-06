@@ -15,13 +15,13 @@ matrix:
       language: java
       jdk: openjdk8
       os: linux
-      script: ./gradlew --scan
+      script: ./gradlew
 
     - name: "OpenJDK 11"
       language: java
       jdk: openjdk11
       os: linux
-      script: ./gradlew --scan
+      script: ./gradlew
 
     - env: COMPILER=clang++-5.0
       language: c++

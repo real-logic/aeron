@@ -71,6 +71,10 @@ aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_loss_load(
     interceptor_bindings->init_func = aeron_udp_channel_transport_loss_init;
     interceptor_bindings->recvmmsg_func = aeron_udp_channel_transport_loss_recvmmsg;
 
+    interceptor_bindings->meta_info.name = "loss";
+    interceptor_bindings->meta_info.type = "interceptor";
+    interceptor_bindings->meta_info.next_binding = delegate_bindings;
+
     aeron_udp_channel_transport_loss_delegate = delegate_bindings;
 
     return interceptor_bindings;

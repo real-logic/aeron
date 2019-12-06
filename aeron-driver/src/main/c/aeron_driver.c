@@ -691,6 +691,9 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
         (void *)context->termination_hook_func,
         aeron_dlinfo((const void *)context->termination_hook_func, buffer, sizeof(buffer)));
     fprintf(fpout, "\n    termination_hook_state=%p", context->termination_hook_state);
+    fprintf(fpout, "\n    udp_channel_transport_bindings=%p%s",
+        (void *)context->udp_channel_transport_bindings,
+        aeron_dlinfo((const void *)context->udp_channel_transport_bindings, buffer, sizeof(buffer)));
 
 #pragma GCC diagnostic pop
 

@@ -91,7 +91,6 @@ typedef int (*aeron_udp_transport_poller_poll_func_t)(
     aeron_udp_channel_transport_recvmmsg_func_t recvmmsg_func,
     void *clientd);
 
-
 typedef struct aeron_udp_channel_transport_bindings_stct
 {
     aeron_udp_channel_transport_init_func_t init_func;
@@ -114,5 +113,7 @@ aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_loa
     aeron_udp_channel_transport_bindings_t *media_bindings,
     const char *interceptors);
 
+typedef aeron_udp_channel_transport_bindings_t *(aeron_udp_channel_transport_interceptor_load_func_t)(
+    aeron_udp_channel_transport_bindings_t *delegate_bindings);
 
 #endif //AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_H

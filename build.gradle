@@ -30,8 +30,6 @@ plugins {
 
 defaultTasks 'clean', 'build', 'shadowJar', 'install'
 
-def env = System.getenv()
-
 def aeronGroup = 'io.aeron'
 def aeronVersion = file('version.txt').text.trim()
 

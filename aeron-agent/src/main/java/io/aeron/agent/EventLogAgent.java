@@ -53,53 +53,6 @@ public class EventLogAgent
     private static Instrumentation instrumentation;
     private static ClassFileTransformer logTransformer;
 
-    private static final AgentBuilder.Listener LISTENER = new AgentBuilder.Listener()
-    {
-        public void onDiscovery(
-            final String typeName,
-            final ClassLoader classLoader,
-            final JavaModule module,
-            final boolean loaded)
-        {
-        }
-
-        public void onTransformation(
-            final TypeDescription typeDescription,
-            final ClassLoader classLoader,
-            final JavaModule module,
-            final boolean loaded,
-            final DynamicType dynamicType)
-        {
-        }
-
-        public void onIgnored(
-            final TypeDescription typeDescription,
-            final ClassLoader classLoader,
-            final JavaModule module,
-            final boolean loaded)
-        {
-        }
-
-        public void onError(
-            final String typeName,
-            final ClassLoader classLoader,
-            final JavaModule module,
-            final boolean loaded,
-            final Throwable throwable)
-        {
-            System.err.println("ERROR " + typeName);
-            throwable.printStackTrace(System.out);
-        }
-
-        public void onComplete(
-            final String typeName,
-            final ClassLoader classLoader,
-            final JavaModule module,
-            final boolean loaded)
-        {
-        }
-    };
-
     public static void premain(final String agentArgs, final Instrumentation instrumentation)
     {
         agent(AgentBuilder.RedefinitionStrategy.DISABLED, instrumentation);
@@ -163,7 +116,7 @@ public class EventLogAgent
         AgentBuilder agentBuilder = new AgentBuilder.Default(new ByteBuddy()
             .with(TypeValidation.DISABLED))
             .disableClassFormatChanges()
-            .with(LISTENER)
+            .with(new AgentBuilderListener())
             .with(redefinitionStrategy);
 
         if (DriverEventLogger.ENABLED_EVENT_CODES != 0)
@@ -267,5 +220,52 @@ public class EventLogAgent
         {
             throw new RuntimeException(ex);
         }
+    }
+}
+
+class AgentBuilderListener implements AgentBuilder.Listener
+{
+    public void onDiscovery(
+        final String typeName,
+        final ClassLoader classLoader,
+        final JavaModule module,
+        final boolean loaded)
+    {
+    }
+
+    public void onTransformation(
+        final TypeDescription typeDescription,
+        final ClassLoader classLoader,
+        final JavaModule module,
+        final boolean loaded,
+        final DynamicType dynamicType)
+    {
+    }
+
+    public void onIgnored(
+        final TypeDescription typeDescription,
+        final ClassLoader classLoader,
+        final JavaModule module,
+        final boolean loaded)
+    {
+    }
+
+    public void onError(
+        final String typeName,
+        final ClassLoader classLoader,
+        final JavaModule module,
+        final boolean loaded,
+        final Throwable throwable)
+    {
+        System.err.println("ERROR " + typeName);
+        throwable.printStackTrace(System.err);
+    }
+
+    public void onComplete(
+        final String typeName,
+        final ClassLoader classLoader,
+        final JavaModule module,
+        final boolean loaded)
+    {
     }
 }

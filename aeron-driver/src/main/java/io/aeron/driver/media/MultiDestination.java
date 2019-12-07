@@ -51,8 +51,8 @@ abstract class MultiDestination
         {
             if (datagramChannel.isOpen())
             {
-                channelEndpoint.sendHook(buffer, destination);
                 buffer.position(position);
+                channelEndpoint.sendHook(buffer, destination);
                 bytesSent = datagramChannel.send(buffer, destination);
             }
         }

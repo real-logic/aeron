@@ -105,9 +105,9 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         {
             if (null != sendDatagramChannel)
             {
-                sendHook(buffer, remoteAddress);
                 if (sendDatagramChannel.isOpen())
                 {
+                    sendHook(buffer, remoteAddress);
                     bytesSent = sendDatagramChannel.send(buffer, remoteAddress);
                 }
             }

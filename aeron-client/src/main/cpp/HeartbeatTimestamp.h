@@ -66,8 +66,8 @@ inline static std::int32_t findCounterIdByRegistrationId(
             auto key = buffer.overlayStruct<HeartbeatTimestampKeyDefn>(
                 recordOffset + CountersReader::KEY_OFFSET);
 
-            if (buffer.getInt32(recordOffset + CountersReader::TYPE_ID_OFFSET) == counterTypeId &&
-                registrationId == key.registrationId)
+            if (registrationId == key.registrationId &&
+                buffer.getInt32(recordOffset + CountersReader::TYPE_ID_OFFSET) == counterTypeId)
             {
                 return i;
             }
@@ -94,8 +94,8 @@ inline static bool isActive(
     auto key = buffer.overlayStruct<HeartbeatTimestampKeyDefn>(recordOffset + CountersReader::KEY_OFFSET);
 
     return
-        buffer.getInt32(recordOffset + CountersReader::TYPE_ID_OFFSET) == counterTypeId &&
         registrationId == key.registrationId &&
+        buffer.getInt32(recordOffset + CountersReader::TYPE_ID_OFFSET) == counterTypeId &&
         countersReader.getCounterState(counterId) == CountersReader::RECORD_ALLOCATED;
 }
 

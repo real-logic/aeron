@@ -45,7 +45,13 @@ aeron_udp_channel_transport_bindings_t aeron_udp_channel_transport_bindings_defa
         aeron_udp_transport_poller_close,
         aeron_udp_transport_poller_add,
         aeron_udp_transport_poller_remove,
-        aeron_udp_transport_poller_poll
+        aeron_udp_transport_poller_poll,
+        {
+            "default",
+            "media",
+            NULL,
+            NULL
+        }
     };
 
 aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_load_media(const char *bindings_name)
@@ -69,9 +75,42 @@ aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_loa
             aeron_set_err(
                 EINVAL, "could not find UDP channel transport bindings %s: dlsym - %s", bindings_name, aeron_dlerror());
         }
+        bindings->meta_info.next_binding = NULL; // Make sure it is not some random data.
+        bindings->meta_info.source_symbol = bindings;
     }
 
     return bindings;
+}
+
+static aeron_udp_channel_transport_interceptor_load_func_t *aeron_udp_channel_transport_bindings_load_interceptor(
+    const char *interceptor_name)
+{
+    aeron_udp_channel_transport_interceptor_load_func_t *load_interceptor = NULL;
+
+    if (NULL == interceptor_name)
+    {
+        return NULL;
+    }
+
+    if (strncmp(interceptor_name, "loss", sizeof("loss")) == 0)
+    {
+        return aeron_udp_channel_transport_bindings_load_interceptor("aeron_udp_channel_transport_loss_load");
+    }
+    else
+    {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+        if ((load_interceptor = (aeron_udp_channel_transport_interceptor_load_func_t *)aeron_dlsym(
+            RTLD_DEFAULT, interceptor_name)) == NULL)
+        {
+            aeron_set_err(
+                EINVAL, "could not find UDP transport bindings interceptor %s: dlsym - %s", interceptor_name,
+                aeron_dlerror());
+        }
+#pragma GCC diagnostic pop
+    }
+
+    return load_interceptor;
 }
 
 aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_load_interceptors(
@@ -115,26 +154,21 @@ aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_loa
     for (int i = 0; i < num_interceptors; i++)
     {
         const char *interceptor_name = interceptor_names[i];
-        if (strncmp(interceptor_name, "loss", sizeof("loss")) == 0)
-        {
-            // TODO: Dynamically load this function.
-            current_bindings = aeron_udp_channel_transport_loss_set_delegate(current_bindings);
 
-            if (NULL == current_bindings)
-            {
-                aeron_set_err(EINVAL, "Failed to load loss transport bindings");
-                return NULL;
-            }
-        }
-        else
-        {
-            current_bindings = NULL;
+        aeron_udp_channel_transport_interceptor_load_func_t *interceptor_load_func =
+            aeron_udp_channel_transport_bindings_load_interceptor(interceptor_name);
 
-            // TODO: Allow truly dynamic interceptors.  Need to have a function to set the delegate binding
-            // TODO: as part of the transport bindings struct.
-            aeron_set_err(EINVAL, "could not find UDP channel transport bindings interceptor: %s", interceptor_name);
+        current_bindings = interceptor_load_func(current_bindings);
+        if (NULL == current_bindings)
+        {
+            aeron_set_err(EINVAL, "Failed to load UDP transport bindings interceptor: %s", interceptor_name);
             return NULL;
         }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+        current_bindings->meta_info.source_symbol = (const void*)interceptor_load_func;
+#pragma GCC diagnostic pop
     }
 
     return current_bindings;

@@ -692,6 +692,18 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
         aeron_dlinfo((const void *)context->termination_hook_func, buffer, sizeof(buffer)));
     fprintf(fpout, "\n    termination_hook_state=%p", context->termination_hook_state);
 
+    const aeron_udp_channel_transport_bindings_t *bindings = context->udp_channel_transport_bindings;
+    while (NULL != bindings)
+    {
+        fprintf(
+            fpout, "\n    udp_channel_transport_bindings.%s=%s,%p%s",
+            bindings->meta_info.type, bindings->meta_info.name,
+            bindings->meta_info.source_symbol, aeron_dlinfo(bindings->meta_info.source_symbol, buffer, sizeof(buffer)));
+
+        bindings = bindings->meta_info.next_binding;
+    }
+
+
 #pragma GCC diagnostic pop
 
     fprintf(fpout, "\n}\n");

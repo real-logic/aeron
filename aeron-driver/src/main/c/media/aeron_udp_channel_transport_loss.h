@@ -27,7 +27,7 @@ typedef struct aeron_udp_channel_transport_loss_params_stct
 }
 aeron_udp_channel_transport_loss_params_t;
 
-aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_loss_set_delegate(
+aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_loss_load(
     const aeron_udp_channel_transport_bindings_t *delegate_bindings);
 
 int aeron_udp_channel_transport_loss_configure(const aeron_udp_channel_transport_loss_params_t *loss_params);

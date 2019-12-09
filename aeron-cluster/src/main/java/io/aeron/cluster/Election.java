@@ -186,11 +186,6 @@ public class Election implements AutoCloseable
         return logPosition;
     }
 
-    void logSessionId(final int logSessionId)
-    {
-        this.logSessionId = logSessionId;
-    }
-
     int doWork(final long nowNs)
     {
         this.nowNs = nowNs;

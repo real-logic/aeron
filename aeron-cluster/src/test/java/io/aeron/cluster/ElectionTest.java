@@ -38,7 +38,8 @@ import static org.mockito.Mockito.*;
 @SuppressWarnings("MethodLength")
 public class ElectionTest
 {
-    public static final long RECORDING_ID = 1L;
+    private static final long RECORDING_ID = 1L;
+    private static final int LOG_SESSION_ID = 777;
     private final Aeron aeron = mock(Aeron.class);
     private final Counter electionStateCounter = mock(Counter.class);
     private final RecordingLog recordingLog = mock(RecordingLog.class);
@@ -59,7 +60,9 @@ public class ElectionTest
     {
         when(aeron.addCounter(anyInt(), anyString())).thenReturn(electionStateCounter);
         when(consensusModuleAgent.logRecordingId()).thenReturn(RECORDING_ID);
-        when(consensusModuleAgent.addNewLogPublication()).thenReturn(mock(Publication.class));
+        final Publication mockPublication = mock(Publication.class);
+        when(mockPublication.sessionId()).thenReturn(LOG_SESSION_ID);
+        when(consensusModuleAgent.addNewLogPublication()).thenReturn(mockPublication);
         when(clusterMarkFile.candidateTermId()).thenReturn((long)Aeron.NULL_VALUE);
     }
 
@@ -152,8 +155,7 @@ public class ElectionTest
 
         final long t6 = t5 + ctx.leaderHeartbeatIntervalNs();
         when(recordingLog.getTermTimestamp(candidateTermId)).thenReturn(t6);
-        final int logSessionId = -7;
-        election.logSessionId(logSessionId);
+
         election.doWork(t6);
         verify(memberStatusPublisher).newLeadershipTerm(
             clusterMembers[1].publication(),
@@ -162,7 +164,7 @@ public class ElectionTest
             logPosition,
             t6,
             candidateMember.id(),
-            logSessionId);
+            LOG_SESSION_ID);
         verify(memberStatusPublisher).newLeadershipTerm(
             clusterMembers[2].publication(),
             leadershipTermId,
@@ -170,7 +172,7 @@ public class ElectionTest
             logPosition,
             t6,
             candidateMember.id(),
-            logSessionId);
+            LOG_SESSION_ID);
         assertThat(election.state(), is(Election.State.LEADER_READY));
 
         when(consensusModuleAgent.electionComplete()).thenReturn(true);

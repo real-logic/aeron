@@ -154,7 +154,7 @@ public:
 
     inline bool containsKey(const std::string& key)
     {
-        return (m_params->find(key) != m_params->end());
+        return m_params->find(key) != m_params->end();
     }
 
     std::string toString()

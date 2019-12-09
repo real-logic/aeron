@@ -122,12 +122,14 @@ int ReplayMerge::replay(long long nowMs)
     if (aeron::NULL_VALUE == m_activeCorrelationId)
     {
         const std::int64_t correlationId = m_archive->context().aeron()->nextCorrelationId();
+        std::shared_ptr<ChannelUri> channelUri = ChannelUri::parse(m_replayChannel);
+        channelUri->put(LINGER_PARAM_NAME, "0");
 
         if (m_archive->archiveProxy().replay(
             m_recordingId,
             m_startPosition,
             std::numeric_limits<std::int64_t>::max(),
-            m_replayChannel,
+            channelUri->toString(),
             m_subscription->streamId(),
             correlationId,
             m_archive->controlSessionId()))

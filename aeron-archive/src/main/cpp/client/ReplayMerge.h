@@ -228,7 +228,7 @@ private:
 
     inline bool hasProgressStalled(long long nowMs)
     {
-        return (nowMs > (m_timeOfLastProgressMs + m_mergeProgressTimeoutMs));
+        return nowMs > (m_timeOfLastProgressMs + m_mergeProgressTimeoutMs);
     }
 
     void checkProgress(long long nowMs);

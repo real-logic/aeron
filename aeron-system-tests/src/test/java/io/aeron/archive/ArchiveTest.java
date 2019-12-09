@@ -285,7 +285,7 @@ public class ArchiveTest
 
         prePublicationActionsAndVerifications(archiveProxy, controlPublication, recordingEvents);
 
-        final Publication recordedPublication = client.addPublication(publishUri, PUBLISH_STREAM_ID);
+        final Publication recordedPublication = client.addExclusivePublication(publishUri, PUBLISH_STREAM_ID);
 
         final int sessionId = recordedPublication.sessionId();
         final int termBufferLength = recordedPublication.termBufferLength();

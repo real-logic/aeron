@@ -473,91 +473,95 @@ int aeron_uri_publication_params(
         return -1;
     }
 
-    if (is_exclusive)
+    int count = 0;
+
+    int32_t initial_term_id;
+    int32_t term_id;
+    int parse_result;
+
+    parse_result = aeron_uri_get_int32(uri_params, AERON_URI_INITIAL_TERM_ID_KEY, &initial_term_id);
+    if (parse_result < 0)
     {
-        int count = 0;
+        return -1;
+    }
+    count += parse_result > 0 ? 1 : 0;
 
-        int32_t initial_term_id;
-        int32_t term_id;
-        int parse_result;
+    parse_result = aeron_uri_get_int32(uri_params, AERON_URI_TERM_ID_KEY, &term_id);
+    if (parse_result < 0)
+    {
+        return -1;
+    }
+    count += parse_result > 0 ? 1 : 0;
 
-        parse_result = aeron_uri_get_int32(uri_params, AERON_URI_INITIAL_TERM_ID_KEY, &initial_term_id);
-        if (parse_result < 0)
+    const char *term_offset_str = aeron_uri_find_param_value(uri_params, AERON_URI_TERM_OFFSET_KEY);
+    count += term_offset_str ? 1 : 0;
+
+    if (count > 0)
+    {
+        char *end_ptr = NULL;
+
+        if (!is_exclusive)
         {
+            aeron_set_err(
+                EINVAL, "params: %s %s %s are not supported for concurrent publications",
+                AERON_URI_INITIAL_TERM_ID_KEY, AERON_URI_TERM_ID_KEY, AERON_URI_TERM_OFFSET_KEY);
             return -1;
         }
-        count += parse_result > 0 ? 1 : 0;
-
-        parse_result = aeron_uri_get_int32(uri_params, AERON_URI_TERM_ID_KEY, &term_id);
-        if (parse_result < 0)
+        if (count < 3)
         {
+            aeron_set_err(
+                EINVAL, "params must be used as a complete set: %s %s %s", AERON_URI_INITIAL_TERM_ID_KEY,
+                AERON_URI_TERM_ID_KEY, AERON_URI_TERM_OFFSET_KEY);
             return -1;
         }
-        count += parse_result > 0 ? 1 : 0;
 
-        const char *term_offset_str = aeron_uri_find_param_value(uri_params, AERON_URI_TERM_OFFSET_KEY);
-        count += term_offset_str ? 1 : 0;
-
-        if (count > 0)
+        errno = 0;
+        end_ptr = NULL;
+        uint64_t term_offset = strtoull(term_offset_str, &end_ptr, 0);
+        if ((term_offset == 0 && 0 != errno) || end_ptr == term_offset_str)
         {
-            char *end_ptr = NULL;
-
-            if (count < 3)
-            {
-                aeron_set_err(
-                    EINVAL, "params must be used as a complete set: %s %s %s", AERON_URI_INITIAL_TERM_ID_KEY,
-                    AERON_URI_TERM_ID_KEY, AERON_URI_TERM_OFFSET_KEY);
-                return -1;
-            }
-
-            errno = 0;
-            end_ptr = NULL;
-            uint64_t term_offset = strtoull(term_offset_str, &end_ptr, 0);
-            if ((term_offset == 0 && 0 != errno) || end_ptr == term_offset_str)
-            {
-                aeron_set_err(EINVAL, "could not parse %s in URI", AERON_URI_TERM_OFFSET_KEY);
-                return -1;
-            }
-
-            if (aeron_sub_wrap_i32(term_id, initial_term_id) < 0)
-            {
-                aeron_set_err(
-                    EINVAL,
-                    "Param difference greater than 2^31 - 1: %s=%" PRId32 " %s=%" PRId32,
-                    AERON_URI_INITIAL_TERM_ID_KEY,
-                    initial_term_id,
-                    AERON_URI_TERM_OFFSET_KEY,
-                    term_id);
-                return -1;
-            }
-
-            if (term_offset > params->term_length)
-            {
-                aeron_set_err(
-                    EINVAL,
-                    "Param %s=%" PRIu64 " > %s=%" PRIu64,
-                    AERON_URI_TERM_OFFSET_KEY,
-                    term_offset,
-                    AERON_URI_TERM_LENGTH_KEY,
-                    params->term_length);
-                return -1;
-            }
-
-            if ((term_offset & (AERON_LOGBUFFER_FRAME_ALIGNMENT - 1u)) != 0)
-            {
-                aeron_set_err(
-                    EINVAL,
-                    "Param %s=%" PRIu64 " must be multiple of FRAME_ALIGNMENT",
-                    AERON_URI_TERM_OFFSET_KEY,
-                    params->term_offset);
-                return -1;
-            }
-
-            params->term_offset = term_offset;
-            params->initial_term_id = initial_term_id;
-            params->term_id = term_id;
-            params->has_position = true;
+            aeron_set_err(EINVAL, "could not parse %s in URI", AERON_URI_TERM_OFFSET_KEY);
+            return -1;
         }
+
+        if (aeron_sub_wrap_i32(term_id, initial_term_id) < 0)
+        {
+            aeron_set_err(
+                EINVAL,
+                "Param difference greater than 2^31 - 1: %s=%" PRId32 " %s=%" PRId32,
+                AERON_URI_INITIAL_TERM_ID_KEY,
+                initial_term_id,
+                AERON_URI_TERM_OFFSET_KEY,
+                term_id);
+            return -1;
+        }
+
+        if (term_offset > params->term_length)
+        {
+            aeron_set_err(
+                EINVAL,
+                "Param %s=%" PRIu64 " > %s=%" PRIu64,
+                AERON_URI_TERM_OFFSET_KEY,
+                term_offset,
+                AERON_URI_TERM_LENGTH_KEY,
+                params->term_length);
+            return -1;
+        }
+
+        if ((term_offset & (AERON_LOGBUFFER_FRAME_ALIGNMENT - 1u)) != 0)
+        {
+            aeron_set_err(
+                EINVAL,
+                "Param %s=%" PRIu64 " must be multiple of FRAME_ALIGNMENT",
+                AERON_URI_TERM_OFFSET_KEY,
+                params->term_offset);
+            return -1;
+        }
+
+        params->term_offset = term_offset;
+        params->initial_term_id = initial_term_id;
+        params->term_id = term_id;
+        params->has_position = true;
     }
 
     const char *value_str;

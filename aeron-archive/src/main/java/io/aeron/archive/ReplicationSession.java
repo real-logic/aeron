@@ -397,11 +397,18 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         if (NULL_VALUE == activeCorrelationId)
         {
             final long correlationId = aeron.nextCorrelationId();
+            final ChannelUri channelUri = ChannelUri.parse(replicationChannel);
+            if (null != liveDestination)
+            {
+                channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(replaySessionId));
+                channelUri.put(CommonContext.LINGER_PARAM_NAME, "0");
+            }
+
             if (srcArchive.archiveProxy().replay(
                 srcRecordingId,
                 replayPosition,
                 Long.MAX_VALUE,
-                null == liveDestination ? replicationChannel : replicationChannel + "|session-id=" + replaySessionId,
+                channelUri.toString(),
                 replayStreamId,
                 correlationId,
                 srcArchive.controlSessionId()))
@@ -565,7 +572,8 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
                 if (shouldAddLiveDestination(position))
                 {
-                    recordingSubscription.asyncAddDestination(liveDestination);
+                    final String liveChannel = ChannelUri.addSessionId(liveDestination, replaySessionId);
+                    recordingSubscription.asyncAddDestination(liveChannel);
                     isLiveAdded = true;
                 }
                 else if (shouldStopReplay(position))

@@ -15,10 +15,7 @@
  */
 package io.aeron.archive.client;
 
-import io.aeron.Aeron;
-import io.aeron.ChannelUri;
-import io.aeron.Image;
-import io.aeron.Subscription;
+import io.aeron.*;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.FragmentHandler;
@@ -110,11 +107,14 @@ public class ReplayMerge implements AutoCloseable
                 subscriptionChannelUri.get(MDC_CONTROL_MODE_PARAM_NAME));
         }
 
+        final ChannelUri replayChannelUri = ChannelUri.parse(replayChannel);
+        replayChannelUri.put(CommonContext.LINGER_PARAM_NAME, "0");
+
         this.archive = archive;
         this.subscription = subscription;
         this.epochClock = epochClock;
         this.replayDestination = replayDestination;
-        this.replayChannel = replayChannel;
+        this.replayChannel = replayChannelUri.toString();
         this.liveDestination = liveDestination;
         this.recordingId = recordingId;
         this.startPosition = startPosition;

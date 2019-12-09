@@ -506,7 +506,7 @@ public class ReplayMerge implements AutoCloseable
 
     private boolean hasProgressStalled(final long nowMs)
     {
-        return (nowMs > (timeOfLastProgressMs + mergeProgressTimeoutMs));
+        return nowMs > (timeOfLastProgressMs + mergeProgressTimeoutMs);
     }
 
     private void checkProgress(final long nowMs)

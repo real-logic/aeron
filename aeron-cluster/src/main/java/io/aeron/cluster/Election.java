@@ -161,11 +161,6 @@ public class Election implements AutoCloseable
         CloseHelper.close(stateCounter);
     }
 
-    public State state()
-    {
-        return state;
-    }
-
     public ClusterMember leader()
     {
         return leaderMember;
@@ -174,11 +169,6 @@ public class Election implements AutoCloseable
     public long leadershipTermId()
     {
         return leadershipTermId;
-    }
-
-    public long candidateTermId()
-    {
-        return candidateTermId;
     }
 
     public long logPosition()

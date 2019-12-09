@@ -93,7 +93,7 @@ final class PublicationParams
             {
                 throw new IllegalArgumentException(
                     TERM_OFFSET_PARAM_NAME + "=" + params.termOffset + " > " +
-                        TERM_LENGTH_PARAM_NAME + "=" + params.termLength);
+                    TERM_LENGTH_PARAM_NAME + "=" + params.termLength);
             }
 
             if (params.termOffset < 0 || params.termOffset > LogBufferDescriptor.TERM_MAX_LENGTH)
@@ -113,7 +113,6 @@ final class PublicationParams
                 throw new IllegalStateException(
                     "difference greater than 2^31 - 1: " + INITIAL_TERM_ID_PARAM_NAME + "=" +
                     params.initialTermId + " when " + TERM_ID_PARAM_NAME + "=" + params.termId);
-
             }
 
             params.hasPosition = true;
@@ -196,7 +195,10 @@ final class PublicationParams
     }
 
     static void confirmMatch(
-        final ChannelUri channelUri, final PublicationParams params, final RawLog rawLog, final int existingSessionId)
+        final ChannelUri channelUri,
+        final PublicationParams params,
+        final RawLog rawLog,
+        final int existingSessionId)
     {
         final int mtuLength = LogBufferDescriptor.mtuLength(rawLog.metaData());
         if (channelUri.containsKey(MTU_LENGTH_PARAM_NAME) && mtuLength != params.mtuLength)

@@ -128,17 +128,11 @@ public class CatalogTool
         }
         else if (args.length == 2 && args[1].equals("verify"))
         {
-            try (Catalog catalog = openCatalog())
-            {
-                catalog.forEach(CatalogTool::verify);
-            }
+            verify(archiveDir);
         }
         else if (args.length == 3 && args[1].equals("verify"))
         {
-            try (Catalog catalog = openCatalog())
-            {
-                catalog.forEntry(Long.parseLong(args[2]), CatalogTool::verify);
-            }
+            verify(archiveDir, Long.parseLong(args[2]));
         }
         else if (args.length == 2 && args[1].equals("count-entries"))
         {
@@ -171,29 +165,78 @@ public class CatalogTool
 
             if (readContinueAnswer())
             {
-                try (ArchiveMarkFile markFile = openMarkFileReadWrite();
-                    Catalog catalog = openCatalogReadWrite())
+                try
                 {
-                    System.out.println(
-                        "MarkFile version=" + fullVersionString(markFile.decoder().version()));
-                    System.out.println(
-                        "Catalog version=" + fullVersionString(catalog.version()));
-                    System.out.println(
-                        "Latest version=" + fullVersionString(ArchiveMarkFile.SEMANTIC_VERSION));
-
-                    final List<ArchiveMigrationStep> steps = ArchiveMigrationPlanner.createPlan(
-                        markFile.decoder().version());
-
-                    for (final ArchiveMigrationStep step : steps)
-                    {
-                        System.out.println("Migration step " + step.toString());
-                        step.migrate(markFile, catalog, archiveDir);
-                    }
+                    migrate(archiveDir);
                 }
                 catch (final Exception ex)
                 {
                     ex.printStackTrace();
                 }
+            }
+        }
+    }
+
+    /**
+     * Verify descriptors in the catalog, checking recording files availability and contents.
+     * Faulty entries are marked as unusable
+     *
+     * @param archiveDirFile that contains Markfile, Catalog, and recordings.
+     */
+    public static void verify(final File archiveDirFile)
+    {
+        try (Catalog catalog = new Catalog(archiveDirFile, System::currentTimeMillis, true, null))
+        {
+            catalog.forEach(CatalogTool::verify);
+        }
+    }
+
+    /**
+     * Verify descriptor in the catalog according to recordingId, checking recording files availability and contents.
+     * Faulty entries are marked as unusable
+     *
+     * @param archiveDirFile that contains Markfile, Catalog, and recordings.
+     * @param recordingId to verify.
+     */
+    public static void verify(final File archiveDirFile, final long recordingId)
+    {
+        try (Catalog catalog = new Catalog(archiveDirFile, System::currentTimeMillis, true, null))
+        {
+            catalog.forEntry(recordingId, CatalogTool::verify);
+        }
+    }
+
+    /**
+     * Migrate previous archive MarkFile, Catalog, and recordings from previous version to latest version.
+     *
+     * @param archiveDirFile that contains MarkFile, Catalog and recordings.
+     */
+    public static void migrate(final File archiveDirFile)
+    {
+        try (ArchiveMarkFile markFile = new ArchiveMarkFile(
+            archiveDirFile,
+            ArchiveMarkFile.FILENAME,
+            System::currentTimeMillis,
+            TimeUnit.SECONDS.toMillis(5),
+            (version) -> {},
+            null);
+            Catalog catalog = new Catalog(
+                archiveDirFile, System::currentTimeMillis, true, (version) -> {}))
+        {
+            System.out.println(
+                "MarkFile version=" + fullVersionString(markFile.decoder().version()));
+            System.out.println(
+                "Catalog version=" + fullVersionString(catalog.version()));
+            System.out.println(
+                "Latest version=" + fullVersionString(ArchiveMarkFile.SEMANTIC_VERSION));
+
+            final List<ArchiveMigrationStep> steps = ArchiveMigrationPlanner.createPlan(
+                markFile.decoder().version());
+
+            for (final ArchiveMigrationStep step : steps)
+            {
+                System.out.println("Migration step " + step.toString());
+                step.migrate(markFile, catalog, archiveDir);
             }
         }
     }

@@ -218,7 +218,7 @@ public class IndexedReplicatedRecording implements AutoCloseable
                 subscriptionTagId,
                 SRC_CONTROL_STREAM_ID,
                 SRC_CONTROL_REQUEST_CHANNEL,
-                LIVE_CHANNEL);
+                sessionSpecificLiveChannel);
 
             sequencer.sendBurst();
             sequencer.sendBurst();

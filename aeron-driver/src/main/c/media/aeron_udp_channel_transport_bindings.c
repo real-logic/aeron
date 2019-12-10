@@ -117,10 +117,10 @@ aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_loa
     aeron_udp_channel_transport_bindings_t *media_bindings,
     const char *interceptors)
 {
-    const int max_interceptors_length = 4096;
+	#define max_interceptors_length 4096
     char interceptors_dup[max_interceptors_length];
 
-    const int max_interceptor_names = 10;
+	#define max_interceptor_names 10
     char *interceptor_names[max_interceptor_names];
 
     aeron_udp_channel_transport_bindings_t *current_bindings = NULL;

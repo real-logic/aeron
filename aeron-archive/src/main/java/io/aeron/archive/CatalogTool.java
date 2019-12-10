@@ -167,7 +167,7 @@ public class CatalogTool
             {
                 try
                 {
-                    migrate(archiveDir);
+                    migrate(System.out, archiveDir);
                 }
                 catch (final Exception ex)
                 {
@@ -209,9 +209,10 @@ public class CatalogTool
     /**
      * Migrate previous archive MarkFile, Catalog, and recordings from previous version to latest version.
      *
+     * @param stream to send standard output and error output
      * @param archiveDirFile that contains MarkFile, Catalog and recordings.
      */
-    public static void migrate(final File archiveDirFile)
+    public static void migrate(final PrintStream stream, final File archiveDirFile)
     {
         try (ArchiveMarkFile markFile = new ArchiveMarkFile(
             archiveDirFile,
@@ -223,11 +224,11 @@ public class CatalogTool
             Catalog catalog = new Catalog(
                 archiveDirFile, System::currentTimeMillis, true, (version) -> {}))
         {
-            System.out.println(
+            stream.println(
                 "MarkFile version=" + fullVersionString(markFile.decoder().version()));
-            System.out.println(
+            stream.println(
                 "Catalog version=" + fullVersionString(catalog.version()));
-            System.out.println(
+            stream.println(
                 "Latest version=" + fullVersionString(ArchiveMarkFile.SEMANTIC_VERSION));
 
             final List<ArchiveMigrationStep> steps = ArchiveMigrationPlanner.createPlan(
@@ -235,8 +236,8 @@ public class CatalogTool
 
             for (final ArchiveMigrationStep step : steps)
             {
-                System.out.println("Migration step " + step.toString());
-                step.migrate(markFile, catalog, archiveDir);
+                stream.println("Migration step " + step.toString());
+                step.migrate(stream, markFile, catalog, archiveDir);
             }
         }
     }
@@ -331,17 +332,6 @@ public class CatalogTool
     {
         return new ArchiveMarkFile(
             archiveDir, ArchiveMarkFile.FILENAME, System::currentTimeMillis, TimeUnit.SECONDS.toMillis(5), logger);
-    }
-
-    private static ArchiveMarkFile openMarkFileReadWrite()
-    {
-        return new ArchiveMarkFile(
-            archiveDir,
-            ArchiveMarkFile.FILENAME,
-            System::currentTimeMillis,
-            TimeUnit.SECONDS.toMillis(5),
-            (version) -> {},
-            null);
     }
 
     private static Catalog openCatalogReadOnly()

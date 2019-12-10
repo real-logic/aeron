@@ -27,6 +27,7 @@ import org.agrona.SemanticVersion;
 import org.agrona.collections.ArrayUtil;
 
 import java.io.File;
+import java.io.PrintStream;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -44,7 +45,11 @@ class ArchiveMigration_0_1 implements ArchiveMigrationStep
         return MINIMUM_VERSION;
     }
 
-    public void migrate(final ArchiveMarkFile markFile, final Catalog catalog, final File archiveDir)
+    public void migrate(
+        final PrintStream stream,
+        final ArchiveMarkFile markFile,
+        final Catalog catalog,
+        final File archiveDir)
     {
         final FileChannel migrationTimestampFile = MigrationUtils.createMigrationTimestampFile(
             archiveDir, markFile.decoder().version(), minimumVersion());
@@ -63,6 +68,7 @@ class ArchiveMigration_0_1 implements ArchiveMigrationStep
                 }
 
                 migrateRecording(
+                    stream,
                     archiveDir,
                     segmentFiles,
                     version0Prefix,
@@ -80,6 +86,7 @@ class ArchiveMigration_0_1 implements ArchiveMigrationStep
     }
 
     public void migrateRecording(
+        final PrintStream stream,
         final File archiveDir,
         final String[] segmentFiles,
         final String prefix,
@@ -100,7 +107,7 @@ class ArchiveMigration_0_1 implements ArchiveMigrationStep
             return;
         }
 
-        System.out.println(
+        stream.println(
             "(recordingId=" + recordingId + ") segmentBasePosition=" + segmentBasePosition + " " +
             "segmentLength=" + segmentLength + "(" + positionBitsToShift + ")");
 
@@ -119,7 +126,7 @@ class ArchiveMigration_0_1 implements ArchiveMigrationStep
                 }
                 catch (final Exception ex)
                 {
-                    System.err.println(
+                    stream.println(
                         "(recordingId=" + recordingId + ") ERR: malformed recording filename:" + filename);
                     throw ex;
                 }
@@ -130,7 +137,7 @@ class ArchiveMigration_0_1 implements ArchiveMigrationStep
                 final Path sourcePath = new File(archiveDir, filename).toPath();
                 final Path targetPath = sourcePath.resolveSibling(newFilename);
 
-                System.out.println("(recordingId=" + recordingId + ") renaming " + sourcePath + " -> " + targetPath);
+                stream.println("(recordingId=" + recordingId + ") renaming " + sourcePath + " -> " + targetPath);
 
                 try
                 {
@@ -139,7 +146,7 @@ class ArchiveMigration_0_1 implements ArchiveMigrationStep
                 }
                 catch (final Exception ex)
                 {
-                    System.err.println(
+                    stream.println(
                         "(recordingId=" + recordingId + ") ERR: could not rename filename: " +
                         sourcePath + " -> " + targetPath);
                     LangUtil.rethrowUnchecked(ex);
@@ -147,7 +154,7 @@ class ArchiveMigration_0_1 implements ArchiveMigrationStep
             }
         }
 
-        System.out.println("(recordingId=" + recordingId + ") OK");
+        stream.println("(recordingId=" + recordingId + ") OK");
     }
 
     public String toString()

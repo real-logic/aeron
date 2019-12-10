@@ -23,7 +23,7 @@ import java.nio.ByteBuffer;
  * Represents the collection of term and associated state buffers for the image between a publisher and subscriber
  * image for the replicated log.
  */
-public interface RawLog
+public interface RawLog extends AutoCloseable
 {
     /**
      * The length of each term in bytes.

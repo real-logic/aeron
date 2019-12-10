@@ -20,19 +20,23 @@ package io.aeron.driver.buffer;
  */
 public interface LogFactory extends AutoCloseable
 {
-    RawLog newPublication(
-        String channel,
-        int sessionId,
-        int streamId,
-        long correlationId,
-        int termBufferLength,
-        boolean useSparseFiles);
+    /**
+     * Create a new {@link RawLog} for a publication.
+     *
+     * @param correlationId    which is the original registration id for a publication.
+     * @param termBufferLength length of the buffer for each term.
+     * @param useSparseFiles   should the file be sparse so the pages are only allocated as required.
+     * @return the newly created {@link RawLog}
+     */
+    RawLog newPublication(long correlationId, int termBufferLength, boolean useSparseFiles);
 
-    RawLog newImage(
-        String channel,
-        int sessionId,
-        int streamId,
-        long correlationId,
-        int termBufferLength,
-        boolean useSparseFiles);
+    /**
+     * Create a new {@link RawLog} for an image of a publication.
+     *
+     * @param correlationId    assigned to uniquely identify an image on a driver.
+     * @param termBufferLength length of the buffer for each term.
+     * @param useSparseFiles   should the file be sparse so the pages are only allocated as required.
+     * @return the newly created {@link RawLog}
+     */
+    RawLog newImage(long correlationId, int termBufferLength, boolean useSparseFiles);
 }

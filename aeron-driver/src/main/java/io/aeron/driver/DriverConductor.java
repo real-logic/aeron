@@ -224,7 +224,6 @@ public class DriverConductor implements Agent
                 termBufferLength,
                 isOldestSubscriptionSparse(subscriberPositions),
                 senderMtuLength,
-                udpChannel,
                 registrationId);
 
             final CongestionControl congestionControl = ctx.congestionControlSupplier().newInstance(
@@ -1077,7 +1076,7 @@ public class DriverConductor implements Agent
             params,
             channelEndpoint,
             cachedNanoClock,
-            newNetworkPublicationLog(sessionId, streamId, initialTermId, udpChannel, registrationId, params),
+            newNetworkPublicationLog(sessionId, streamId, initialTermId, registrationId, params),
             Configuration.producerWindowLength(params.termLength, ctx.publicationTermWindowLength()),
             publisherPosition,
             publisherLimit,
@@ -1111,13 +1110,10 @@ public class DriverConductor implements Agent
         final int sessionId,
         final int streamId,
         final int initialTermId,
-        final UdpChannel udpChannel,
         final long registrationId,
         final PublicationParams params)
     {
-        final RawLog rawLog = logFactory.newPublication(
-            udpChannel.canonicalForm(), sessionId, streamId, registrationId, params.termLength, params.isSparse);
-
+        final RawLog rawLog = logFactory.newPublication(registrationId, params.termLength, params.isSparse);
         initPublicationMetadata(sessionId, streamId, initialTermId, registrationId, params, rawLog);
 
         return rawLog;
@@ -1130,9 +1126,7 @@ public class DriverConductor implements Agent
         final long registrationId,
         final PublicationParams params)
     {
-        final RawLog rawLog = logFactory.newPublication(
-            IPC_MEDIA, sessionId, streamId, registrationId, params.termLength, params.isSparse);
-
+        final RawLog rawLog = logFactory.newPublication(registrationId, params.termLength, params.isSparse);
         initPublicationMetadata(sessionId, streamId, initialTermId, registrationId, params, rawLog);
 
         return rawLog;
@@ -1198,12 +1192,9 @@ public class DriverConductor implements Agent
         final int termBufferLength,
         final boolean isSparse,
         final int senderMtuLength,
-        final UdpChannel udpChannel,
         final long correlationId)
     {
-        final RawLog rawLog = logFactory.newImage(
-            udpChannel.canonicalForm(), sessionId, streamId, correlationId, termBufferLength, isSparse);
-
+        final RawLog rawLog = logFactory.newImage(correlationId, termBufferLength, isSparse);
         final UnsafeBuffer logMetaData = rawLog.metaData();
 
         defaultDataHeader.sessionId(sessionId).streamId(streamId).termId(initialTermId);
@@ -1243,7 +1234,6 @@ public class DriverConductor implements Agent
             for (final SendChannelEndpoint endpoint : sendChannelEndpointByChannelMap.values())
             {
                 final UdpChannel endpointUdpChannel = endpoint.udpChannel();
-
                 if (endpointUdpChannel.matchesTag(udpChannel))
                 {
                     return endpoint;
@@ -1271,6 +1261,7 @@ public class DriverConductor implements Agent
             final boolean isReliable = params.isReliable;
             final boolean isRejoin = params.isRejoin;
             final ArrayList<SubscriptionLink> existingLinks = subscriptionLinks;
+
             for (int i = 0, size = existingLinks.size(); i < size; i++)
             {
                 final SubscriptionLink subscription = existingLinks.get(i);
@@ -1407,7 +1398,6 @@ public class DriverConductor implements Agent
         }
 
         ReceiveChannelEndpoint endpoint = receiveChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
-
         if (null != endpoint && endpoint.hasTag() && udpChannel.hasTag() && endpoint.tag() != udpChannel.tag())
         {
             endpoint = null;

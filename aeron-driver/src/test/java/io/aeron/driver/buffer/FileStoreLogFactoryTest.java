@@ -16,7 +16,6 @@
 package io.aeron.driver.buffer;
 
 import io.aeron.driver.Configuration;
-import io.aeron.driver.media.UdpChannel;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
@@ -34,9 +33,6 @@ import static org.mockito.Mockito.mock;
 
 public class FileStoreLogFactoryTest
 {
-    private static final String CHANNEL = "aeron:udp?endpoint=localhost:4321";
-    private static final int SESSION_ID = 100;
-    private static final int STREAM_ID = 101;
     private static final int CREATION_ID = 102;
     private static final File DATA_DIR = new File(SystemUtil.tmpDirName(), "dataDirName");
     private static final int TERM_BUFFER_LENGTH = Configuration.TERM_BUFFER_LENGTH_DEFAULT;
@@ -45,7 +41,7 @@ public class FileStoreLogFactoryTest
     private static final boolean PRE_ZERO_LOG = true;
     private static final boolean PERFORM_STORAGE_CHECKS = true;
     private FileStoreLogFactory fileStoreLogFactory;
-    private final UdpChannel udpChannel = UdpChannel.parse(CHANNEL);
+    private RawLog rawLog;
 
     @Before
     public void createDataDir()
@@ -59,6 +55,7 @@ public class FileStoreLogFactoryTest
     @After
     public void cleanupFiles()
     {
+        CloseHelper.close(rawLog);
         CloseHelper.close(fileStoreLogFactory);
         IoUtil.delete(DATA_DIR, false);
     }
@@ -66,9 +63,7 @@ public class FileStoreLogFactoryTest
     @Test
     public void shouldCreateCorrectLengthAndZeroedFilesForPublication()
     {
-        final String canonicalForm = udpChannel.canonicalForm();
-        final RawLog rawLog = fileStoreLogFactory.newPublication(
-            canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, TERM_BUFFER_LENGTH, PRE_ZERO_LOG);
+        rawLog = fileStoreLogFactory.newPublication(CREATION_ID, TERM_BUFFER_LENGTH, PRE_ZERO_LOG);
 
         assertThat(rawLog.termLength(), is(TERM_BUFFER_LENGTH));
 
@@ -87,17 +82,13 @@ public class FileStoreLogFactoryTest
         assertThat(metaData.capacity(), is(LogBufferDescriptor.LOG_META_DATA_LENGTH));
         assertThat(metaData.getByte(0), is((byte)0));
         assertThat(metaData.getByte(LogBufferDescriptor.LOG_META_DATA_LENGTH - 1), is((byte)0));
-
-        rawLog.close();
     }
 
     @Test
     public void shouldCreateCorrectLengthAndZeroedFilesForImage()
     {
-        final String canonicalForm = udpChannel.canonicalForm();
         final int imageTermBufferLength = TERM_BUFFER_LENGTH / 2;
-        final RawLog rawLog = fileStoreLogFactory.newImage(
-            canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, imageTermBufferLength, PRE_ZERO_LOG);
+        rawLog = fileStoreLogFactory.newImage(CREATION_ID, imageTermBufferLength, PRE_ZERO_LOG);
 
         assertThat(rawLog.termLength(), is(imageTermBufferLength));
 
@@ -116,7 +107,5 @@ public class FileStoreLogFactoryTest
         assertThat(metaData.capacity(), is(LogBufferDescriptor.LOG_META_DATA_LENGTH));
         assertThat(metaData.getByte(0), is((byte)0));
         assertThat(metaData.getByte(LogBufferDescriptor.LOG_META_DATA_LENGTH - 1), is((byte)0));
-
-        rawLog.close();
     }
 }

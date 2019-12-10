@@ -28,23 +28,12 @@ public class TestLogFactory implements LogFactory
     {
     }
 
-    public RawLog newPublication(
-        final String channel,
-        final int sessionId,
-        final int streamId,
-        final long correlationId,
-        final int termBufferLength,
-        final boolean useSparseFiles)
+    public RawLog newPublication(final long correlationId, final int termBufferLength, final boolean useSparseFiles)
     {
         return newLogBuffers(termBufferLength);
     }
 
-    public RawLog newImage(
-        final String channel,
-        final int sessionId, final int streamId,
-        final long correlationId,
-        final int termBufferLength,
-        final boolean useSparseFiles)
+    public RawLog newImage(final long correlationId, final int termBufferLength, final boolean useSparseFiles)
     {
         return newLogBuffers(termBufferLength);
     }

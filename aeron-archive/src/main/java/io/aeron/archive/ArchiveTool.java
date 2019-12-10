@@ -15,19 +15,17 @@
  */
 package io.aeron.archive;
 
-import io.aeron.Aeron;
 import io.aeron.CncFileDescriptor;
 import io.aeron.CommonContext;
-import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorEncoder;
 import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorHeaderEncoder;
 import io.aeron.archive.codecs.mark.MarkFileHeaderDecoder;
-import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
-import org.agrona.*;
-import org.agrona.collections.ArrayUtil;
+import org.agrona.DirectBuffer;
+import org.agrona.IoUtil;
+import org.agrona.PrintBufferUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.SystemEpochClock;
 
@@ -44,14 +42,17 @@ import java.util.function.Supplier;
 
 import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_SUFFIX;
 import static io.aeron.archive.Archive.segmentFileName;
-import static io.aeron.archive.Catalog.INVALID;
-import static io.aeron.archive.Catalog.VALID;
+import static io.aeron.archive.Catalog.*;
 import static io.aeron.archive.MigrationUtils.fullVersionString;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_DATA;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
+import static java.lang.Math.max;
 import static java.nio.file.StandardOpenOption.READ;
+import static org.agrona.AsciiEncoding.parseLongAscii;
+import static org.agrona.BitUtil.align;
+import static org.agrona.BufferUtil.allocateDirectAligned;
 
 /**
  * Tool for inspecting and performing administrative tasks on an {@link Archive} and its contents which is described in
@@ -78,7 +79,7 @@ public class ArchiveTool
     public static void describe(final PrintStream out, final File archiveDir)
     {
         try (Catalog catalog = openCatalogReadOnly(archiveDir, SystemEpochClock.INSTANCE);
-             ArchiveMarkFile markFile = openMarkFile(archiveDir, SystemEpochClock.INSTANCE, out::println))
+            ArchiveMarkFile markFile = openMarkFile(archiveDir, SystemEpochClock.INSTANCE, out::println))
         {
             printMarkInformation(markFile, out);
             out.println("Catalog Max Entries: " + catalog.maxEntries());
@@ -118,18 +119,22 @@ public class ArchiveTool
         }
     }
 
-    public static void dump(final PrintStream out, final File archiveDir, final long dataFragmentLimit, final Supplier<Boolean> continueOnFragmentLimit)
+    public static void dump(
+        final PrintStream out,
+        final File archiveDir,
+        final long dataFragmentLimit,
+        final Supplier<Boolean> continueOnFragmentLimit)
     {
         try (Catalog catalog = openCatalog(archiveDir, SystemEpochClock.INSTANCE);
-             ArchiveMarkFile markFile = openMarkFile(archiveDir, SystemEpochClock.INSTANCE, out::println))
+            ArchiveMarkFile markFile = openMarkFile(archiveDir, SystemEpochClock.INSTANCE, out::println))
         {
             printMarkInformation(markFile, out);
             out.println("Catalog Max Entries: " + catalog.maxEntries());
 
             out.println();
             out.println("Dumping " + dataFragmentLimit + " fragments per recording");
-            catalog.forEach((he, headerDecoder, e, descriptorDecoder) ->
-                                dump(out, archiveDir, catalog, dataFragmentLimit, headerDecoder, descriptorDecoder, continueOnFragmentLimit));
+            catalog.forEach((he, headerDecoder, e, descriptorDecoder) -> dump(out, archiveDir, catalog,
+                dataFragmentLimit, headerDecoder, descriptorDecoder, continueOnFragmentLimit));
         }
     }
 
@@ -142,18 +147,25 @@ public class ArchiveTool
      */
     public static void verify(final PrintStream out, final File archiveDir)
     {
-        try (Catalog catalog = openCatalog(archiveDir, SystemEpochClock.INSTANCE))
+        verify(out, archiveDir, SystemEpochClock.INSTANCE);
+    }
+
+    static void verify(final PrintStream out, final File archiveDir, final EpochClock epochClock)
+    {
+        try (Catalog catalog = openCatalog(archiveDir, epochClock))
         {
-            catalog.forEach(createVerifyEntryProcessor(out, archiveDir));
+            catalog.forEach(createVerifyEntryProcessor(out, archiveDir, epochClock));
         }
     }
 
-    private static Catalog.CatalogEntryProcessor createVerifyEntryProcessor(final PrintStream out, final File archiveDir)
+    private static CatalogEntryProcessor createVerifyEntryProcessor(
+        final PrintStream out, final File archiveDir, final EpochClock epochClock)
     {
-        final ByteBuffer tempBuffer = BufferUtil.allocateDirectAligned(4096, FRAME_ALIGNMENT);
+        final ByteBuffer tempBuffer = allocateDirectAligned(4096, FRAME_ALIGNMENT);
         final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight(tempBuffer);
-        return (headerEncoder, headerDecoder, encoder, decoder) ->
-                   verifyRecording(out, archiveDir, tempBuffer, headerFlyweight, headerEncoder, headerDecoder, encoder, decoder);
+        return (headerEncoder, headerDecoder, encoder, decoder) -> verifyRecording(out, archiveDir, tempBuffer,
+            headerFlyweight, epochClock,
+            headerEncoder, encoder, decoder);
     }
 
     /**
@@ -166,9 +178,15 @@ public class ArchiveTool
      */
     public static void verifyRecording(final PrintStream out, final File archiveDir, final long recordingId)
     {
-        try (Catalog catalog = openCatalog(archiveDir, SystemEpochClock.INSTANCE))
+        verifyRecording(out, archiveDir, recordingId, SystemEpochClock.INSTANCE);
+    }
+
+    static void verifyRecording(
+        final PrintStream out, final File archiveDir, final long recordingId, final EpochClock epochClock)
+    {
+        try (Catalog catalog = openCatalog(archiveDir, epochClock))
         {
-            catalog.forEntry(recordingId, createVerifyEntryProcessor(out, archiveDir));
+            catalog.forEntry(recordingId, createVerifyEntryProcessor(out, archiveDir, epochClock));
         }
     }
 
@@ -182,22 +200,18 @@ public class ArchiveTool
     {
         final EpochClock epochClock = SystemEpochClock.INSTANCE;
         try (ArchiveMarkFile markFile = openMarkFileReadWrite(archiveDir, epochClock);
-             Catalog catalog = openCatalogReadWrite(archiveDir, epochClock))
+            Catalog catalog = openCatalogReadWrite(archiveDir, epochClock))
         {
-            out.println(
-                "MarkFile version=" + fullVersionString(markFile.decoder().version()));
-            out.println(
-                "Catalog version=" + fullVersionString(catalog.version()));
-            out.println(
-                "Latest version=" + fullVersionString(ArchiveMarkFile.SEMANTIC_VERSION));
+            out.println("MarkFile version=" + fullVersionString(markFile.decoder().version()));
+            out.println("Catalog version=" + fullVersionString(catalog.version()));
+            out.println("Latest version=" + fullVersionString(ArchiveMarkFile.SEMANTIC_VERSION));
 
-            final List<ArchiveMigrationStep> steps = ArchiveMigrationPlanner.createPlan(
-                markFile.decoder().version());
+            final List<ArchiveMigrationStep> steps = ArchiveMigrationPlanner.createPlan(markFile.decoder().version());
 
             for (final ArchiveMigrationStep step : steps)
             {
                 out.println("Migration step " + step.toString());
-                step.migrate(markFile, catalog, archiveDir, out);
+                step.migrate(out, markFile, catalog, archiveDir);
             }
         }
         catch (final Exception ex)
@@ -206,18 +220,19 @@ public class ArchiveTool
         }
     }
 
-    private static ArchiveMarkFile openMarkFile(File archiveDir, final EpochClock epochClock, final Consumer<String> logger)
+    private static ArchiveMarkFile openMarkFile(
+        final File archiveDir, final EpochClock epochClock, final Consumer<String> logger)
     {
-        return new ArchiveMarkFile(
-            archiveDir, ArchiveMarkFile.FILENAME, epochClock, TimeUnit.SECONDS.toMillis(5), logger);
+        return new ArchiveMarkFile(archiveDir, ArchiveMarkFile.FILENAME, epochClock, TimeUnit.SECONDS.toMillis(5),
+            logger);
     }
 
-    private static Catalog openCatalogReadOnly(File archiveDir, final EpochClock epochClock)
+    static Catalog openCatalogReadOnly(final File archiveDir, final EpochClock epochClock)
     {
         return new Catalog(archiveDir, epochClock);
     }
 
-    private static Catalog openCatalog(File archiveDir, final EpochClock epochClock)
+    private static Catalog openCatalog(final File archiveDir, final EpochClock epochClock)
     {
         return new Catalog(archiveDir, epochClock, true, null);
     }
@@ -254,12 +269,9 @@ public class ArchiveTool
         final long stopPosition = descriptor.stopPosition();
         final long streamLength = stopPosition - descriptor.startPosition();
 
-        out.printf(
-            "%n%nRecording %d %n  channel: %s%n  streamId: %d%n  stream length: %d%n",
-            descriptor.recordingId(),
-            descriptor.strippedChannel(),
-            descriptor.streamId(),
-            AeronArchive.NULL_POSITION == stopPosition ? AeronArchive.NULL_POSITION : streamLength);
+        out.printf("%n%nRecording %d %n  channel: %s%n  streamId: %d%n  stream length: %d%n",
+            descriptor.recordingId(), descriptor.strippedChannel(), descriptor.streamId(),
+            NULL_POSITION == stopPosition ? NULL_POSITION : streamLength);
         out.println(header);
         out.println(descriptor);
 
@@ -271,9 +283,7 @@ public class ArchiveTool
 
         final RecordingReader reader = new RecordingReader(
             catalog.recordingSummary(descriptor.recordingId(), new RecordingSummary()),
-            archiveDir,
-            descriptor.startPosition(),
-            AeronArchive.NULL_POSITION);
+            archiveDir, descriptor.startPosition(), NULL_POSITION);
 
         boolean isContinue = true;
         long fragmentCount = dataFragmentLimit;
@@ -281,41 +291,36 @@ public class ArchiveTool
         {
             out.println();
             out.print("Frame at position [" + reader.replayPosition() + "] ");
-            reader.poll(
-                (buffer, offset, length, frameType, flags, reservedValue) ->
+            reader.poll((buffer, offset, length, frameType, flags, reservedValue) ->
+            {
+                out.println("data at offset [" + offset + "] with length = " + length);
+                if (HDR_TYPE_PAD == frameType)
                 {
-                    out.println("data at offset [" + offset + "] with length = " + length);
-                    if (HDR_TYPE_PAD == frameType)
+                    out.println("PADDING FRAME");
+                }
+                else if (HDR_TYPE_DATA == frameType)
+                {
+                    if ((flags & UNFRAGMENTED) != UNFRAGMENTED)
                     {
-                        out.println("PADDING FRAME");
+                        String suffix = (flags & BEGIN_FRAG_FLAG) == BEGIN_FRAG_FLAG ? "BEGIN_FRAGMENT" : "";
+                        suffix += (flags & END_FRAG_FLAG) == END_FRAG_FLAG ? "END_FRAGMENT" : "";
+                        out.println("Fragmented frame. " + suffix);
                     }
-                    else if (HDR_TYPE_DATA == frameType)
-                    {
-                        if ((flags & UNFRAGMENTED) != UNFRAGMENTED)
-                        {
-                            String suffix = (flags & BEGIN_FRAG_FLAG) == BEGIN_FRAG_FLAG ? "BEGIN_FRAGMENT" : "";
-                            suffix += (flags & END_FRAG_FLAG) == END_FRAG_FLAG ? "END_FRAGMENT" : "";
-                            out.println("Fragmented frame. " + suffix);
-                        }
-                        out.println(PrintBufferUtil.prettyHexDump(buffer, offset, length));
-                    }
-                    else
-                    {
-                        out.println("Unexpected frame type " + frameType);
-                    }
-                },
-                1);
+                    out.println(PrintBufferUtil.prettyHexDump(buffer, offset, length));
+                }
+                else
+                {
+                    out.println("Unexpected frame type " + frameType);
+                }
+            }, 1);
 
             if (--fragmentCount == 0)
             {
                 fragmentCount = dataFragmentLimit;
                 if (NULL_POSITION != stopPosition)
                 {
-                    out.printf(
-                        "%d bytes (from %d) remaining in recording %d%n",
-                        streamLength - reader.replayPosition(),
-                        streamLength,
-                        descriptor.recordingId());
+                    out.printf("%d bytes (from %d) remaining in recording %d%n",
+                        streamLength - reader.replayPosition(), streamLength, descriptor.recordingId());
                 }
                 isContinue = continueOnFragmentLimit.get();
             }
@@ -325,10 +330,8 @@ public class ArchiveTool
 
     private static void printMarkInformation(final ArchiveMarkFile markFile, final PrintStream out)
     {
-        out.format(
-            "%1$tH:%1$tM:%1$tS (start: %2tF %2$tH:%2$tM:%2$tS, activity: %3tF %3$tH:%3$tM:%3$tS)%n",
-            new Date(),
-            new Date(markFile.decoder().startTimestamp()),
+        out.format("%1$tH:%1$tM:%1$tS (start: %2tF %2$tH:%2$tM:%2$tS, activity: %3tF %3$tH:%3$tM:%3$tS)%n",
+            new Date(), new Date(markFile.decoder().startTimestamp()),
             new Date(markFile.activityTimestampVolatile()));
         out.println(markFile.decoder());
     }
@@ -338,8 +341,8 @@ public class ArchiveTool
         final File archiveDir,
         final ByteBuffer tempBuffer,
         final DataHeaderFlyweight headerFlyweight,
+        final EpochClock epochClock,
         final RecordingDescriptorHeaderEncoder headerEncoder,
-        final RecordingDescriptorHeaderDecoder headerDecoder,
         final RecordingDescriptorEncoder encoder,
         final RecordingDescriptorDecoder decoder)
     {
@@ -352,86 +355,90 @@ public class ArchiveTool
         final File maxSegmentFile;
 
         long stopPosition = decoder.stopPosition();
-        long maxSegmentPosition = Aeron.NULL_VALUE;
+        long maxSegmentPosition = NULL_POSITION;
 
-        if (NULL_POSITION == stopPosition)
+        final String prefix = recordingId + "-";
+        final String[] segmentFiles =
+            archiveDir.list((dir, name) -> name.startsWith(prefix) && name.endsWith(RECORDING_SEGMENT_SUFFIX));
+
+        if (null == segmentFiles || 0 == segmentFiles.length)
         {
-            final String prefix = recordingId + "-";
-            String[] segmentFiles = archiveDir.list(
-                (dir, name) -> name.startsWith(prefix) && name.endsWith(RECORDING_SEGMENT_SUFFIX));
-
-            if (null == segmentFiles)
-            {
-                segmentFiles = ArrayUtil.EMPTY_STRING_ARRAY;
-            }
-
+            maxSegmentFile = null;
+            stopSegmentOffset = -1;
+            encoder.stopPosition(startPosition);
+            encoder.stopTimestamp(epochClock.time());
+        }
+        else
+        {
             for (final String filename : segmentFiles)
             {
                 final int length = filename.length();
                 final int offset = prefix.length();
                 final int remaining = length - offset - RECORDING_SEGMENT_SUFFIX.length();
-
-                if (remaining > 0)
+                boolean malformed = false;
+                if (remaining <= 0)
+                {
+                    malformed = true;
+                }
+                else
                 {
                     try
                     {
-                        maxSegmentPosition = Math.max(
-                            AsciiEncoding.parseLongAscii(filename, offset, remaining),
-                            maxSegmentPosition);
+                        maxSegmentPosition = max(parseLongAscii(filename, offset, remaining), maxSegmentPosition);
                     }
                     catch (final Exception ignore)
                     {
-                        out.println(
-                            "(recordingId=" + recordingId + ") ERR: malformed recording filename:" + filename);
-                        headerEncoder.valid(INVALID);
-                        return;
+                        malformed = true;
                     }
+                }
+                if (malformed)
+                {
+                    out.println("(recordingId=" + recordingId + ") ERR: malformed recording filename: " + filename);
+                    headerEncoder.valid(INVALID);
+                    return;
                 }
             }
 
             if (maxSegmentPosition < 0)
             {
-                out.println(
-                    "(recordingId=" + recordingId + ") ERR: no recording segment files");
+                out.println("(recordingId=" + recordingId + ") ERR: no valid recording segment files found");
                 headerEncoder.valid(INVALID);
                 return;
             }
 
             maxSegmentFile = new File(archiveDir, segmentFileName(recordingId, maxSegmentPosition));
-            stopSegmentOffset = Catalog.recoverStopOffset(maxSegmentFile, segmentFileLength);
+            try
+            {
+                stopSegmentOffset = recoverStopOffset(maxSegmentFile, segmentFileLength);
+            }
+            catch (final Exception ignore)
+            {
+                out.println(
+                    "(recordingId=" + recordingId + ") ERR: failed to recover stop segment offset from filename: " +
+                    maxSegmentFile.getName());
+                headerEncoder.valid(INVALID);
+                return;
+            }
 
             final long recordingLength = maxSegmentPosition + stopSegmentOffset - startSegmentOffset;
-
-            stopPosition = startPosition + recordingLength;
-
-            encoder.stopPosition(stopPosition);
-            encoder.stopTimestamp(System.currentTimeMillis());
+            final long newStopPosition = startPosition + recordingLength;
+            if (newStopPosition != stopPosition)
+            {
+                stopPosition = newStopPosition;
+                encoder.stopPosition(stopPosition);
+                encoder.stopTimestamp(epochClock.time());
+            }
         }
-        else
+        if (maxSegmentFile != null)
         {
-            final long recordingLength = stopPosition - startPosition;
-            final long dataLength = startSegmentOffset + recordingLength;
-
-            stopSegmentOffset = dataLength & (segmentFileLength - 1);
-            maxSegmentPosition = stopPosition - (stopPosition & (segmentFileLength - 1));
-            maxSegmentFile = new File(archiveDir, segmentFileName(recordingId, maxSegmentPosition));
+            final long startOffset = ((stopPosition - startPosition) > segmentFileLength) ? 0L : startSegmentOffset;
+            if (verifyLastFile(tempBuffer, headerFlyweight, recordingId, maxSegmentFile, startOffset,
+                stopSegmentOffset, decoder, out))
+            {
+                headerEncoder.valid(INVALID);
+                return;
+            }
         }
-
-        if (!maxSegmentFile.exists())
-        {
-            out.println("(recordingId=" + recordingId + ") ERR: missing last recording file: " + maxSegmentFile);
-            headerEncoder.valid(INVALID);
-            return;
-        }
-
-        final long startOffset = ((stopPosition - startPosition) > segmentFileLength) ? 0L : startSegmentOffset;
-
-        if (verifyLastFile(tempBuffer, headerFlyweight, recordingId, maxSegmentFile, startOffset, stopSegmentOffset, decoder, out))
-        {
-            headerEncoder.valid(INVALID);
-            return;
-        }
-
         headerEncoder.valid(VALID);
         out.println("(recordingId=" + recordingId + ") OK");
     }
@@ -463,27 +470,30 @@ public class ArchiveTool
                 {
                     if (headerFlyweight.sessionId() != decoder.sessionId())
                     {
-                        out.println("(recordingId=" + recordingId + ") ERR: fragment sessionId=" +
-                                        headerFlyweight.sessionId() + " (expected=" + decoder.sessionId() + ")");
+                        out.println(
+                            "(recordingId=" + recordingId + ") ERR: fragment sessionId=" + headerFlyweight.sessionId() +
+                            " (expected=" + decoder.sessionId() + ")");
                         return true;
                     }
 
                     if (headerFlyweight.streamId() != decoder.streamId())
                     {
-                        out.println("(recordingId=" + recordingId + ") ERR: fragment sessionId=" +
-                                        headerFlyweight.streamId() + " (expected=" + decoder.streamId() + ")");
+                        out.println(
+                            "(recordingId=" + recordingId + ") ERR: fragment sessionId=" + headerFlyweight.streamId() +
+                            " (expected=" + decoder.streamId() + ")");
                         return true;
                     }
                 }
 
-                position += BitUtil.align(headerFlyweight.frameLength(), FrameDescriptor.FRAME_ALIGNMENT);
+                position += align(headerFlyweight.frameLength(), FRAME_ALIGNMENT);
             }
             while (headerFlyweight.frameLength() != 0);
 
             if (position != endSegmentOffset)
             {
-                out.println("(recordingId=" + recordingId + ") ERR: end segment offset=" +
-                                position + " (expected=" + endSegmentOffset + ")");
+                out.println(
+                    "(recordingId=" + recordingId + ") ERR: end segment offset=" + position + " (expected=" +
+                    endSegmentOffset + ")");
                 return true;
             }
         }

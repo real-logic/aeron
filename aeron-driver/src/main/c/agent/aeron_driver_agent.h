@@ -34,9 +34,6 @@
 
 #define AERON_MAP_RAW_LOG_OP_CLOSE (0x11)
 
-#define AERON_AGENT_RECEIVE_DATA_LOSS_RATE_ENV_VAR "AERON_DEBUG_RECEIVE_DATA_LOSS_RATE"
-#define AERON_AGENT_RECEIVE_DATA_LOSS_SEED_ENV_VAR "AERON_DEBUG_RECEIVE_DATA_LOSS_SEED"
-
 typedef struct aeron_driver_agent_cmd_log_header_stct
 {
     int64_t time_ms;

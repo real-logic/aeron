@@ -41,7 +41,7 @@ int aeron_udp_transport_poller_init(
         return -1;
     }
     poller->epoll_events = NULL;
-#elif defined(HAVE_POLL)
+#elif defined(HAVE_POLL) || defined(HAVE_WSAPOLL)
     poller->pollfds = NULL;
 #endif
 
@@ -55,7 +55,7 @@ int aeron_udp_transport_poller_close(aeron_udp_transport_poller_t *poller)
 #if defined(HAVE_EPOLL)
     close(poller->epoll_fd);
     aeron_free(poller->epoll_events);
-#elif defined(HAVE_POLL)
+#elif defined(HAVE_POLL) || defined(HAVE_WSAPOLL)
     aeron_free(poller->pollfds);
 #endif
     return 0;
@@ -97,7 +97,7 @@ int aeron_udp_transport_poller_add(aeron_udp_transport_poller_t *poller, aeron_u
         return -1;
     }
 
-#elif defined(HAVE_POLL)
+#elif defined(HAVE_POLL) || defined(HAVE_WSAPOLL)
     size_t new_capacity = poller->transports.capacity;
 
     if (new_capacity > old_capacity)
@@ -158,7 +158,7 @@ int aeron_udp_transport_poller_remove(aeron_udp_transport_poller_t *poller, aero
             return -1;
         }
 
-#elif defined(HAVE_POLL)
+#elif defined(HAVE_POLL) || defined(HAVE_WSAPOLL)
         aeron_array_fast_unordered_remove(
             (uint8_t *)poller->pollfds,
             sizeof(struct pollfd),
@@ -238,7 +238,7 @@ int aeron_udp_transport_poller_poll(
             }
         }
 
-#elif defined(HAVE_POLL)
+#elif defined(HAVE_POLL) || defined(HAVE_WSAPOLL)
         int result = poll(poller->pollfds, (nfds_t)poller->transports.length, 0);
 
         if (result < 0)

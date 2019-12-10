@@ -313,6 +313,11 @@ ssize_t sendmsg(aeron_fd_t fd, struct msghdr* msghdr, int flags)
     return size;
 }
 
+int poll(struct pollfd* fds, nfds_t nfds, int timeout)
+{
+    return WSAPoll(fds, nfds, timeout);
+}
+
 int aeron_socket(int domain, int type, int protocol)
 {
     aeron_net_init();

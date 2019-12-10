@@ -52,6 +52,7 @@ endif()
 
 if(MSVC AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
     set(AERON_LIB_WINSOCK_LIBS wsock32 ws2_32 Iphlpapi)	
+    set(WSAPOLL_PROTOTYPE_EXISTS True)
 endif()
 
 check_symbol_exists(uuid_generate "uuid/uuid.h" UUID_GENERATE_PROTOTYPE_EXISTS)
@@ -87,8 +88,12 @@ if(EPOLL_PROTOTYPE_EXISTS)
     add_definitions(-DHAVE_EPOLL)
 endif()
 
-if (NOT POLL_PROTOTYPE_EXISTS AND NOT EPOLL_PROTOTYPE_EXISTS)
-  message(FATAL_ERROR "Unsupported configuration: neither POLL nor EPOLL found" )
+if(WSAPOLL_PROTOTYPE_EXISTS)
+    add_definitions(-DHAVE_WSAPOLL)
+endif()
+
+if (NOT POLL_PROTOTYPE_EXISTS AND NOT EPOLL_PROTOTYPE_EXISTS AND NOT WSAPOLL_PROTOTYPE_EXISTS)
+  message(FATAL_ERROR "Unsupported configuration: neither POLL nor EPOLL nor WSAPoll found" )
 endif()
 
 if(STRUCT_MMSGHDR_TYPE_EXISTS)

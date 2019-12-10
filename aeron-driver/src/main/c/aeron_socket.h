@@ -87,6 +87,8 @@ void aeron_net_init();
     int getifaddrs(struct ifaddrs **__ifap);
     void freeifaddrs(struct ifaddrs *__ifa);
 
+    typedef unsigned long int nfds_t;
+
 
 #else
 #error Unsupported platform!

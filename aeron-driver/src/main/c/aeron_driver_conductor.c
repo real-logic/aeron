@@ -353,9 +353,7 @@ static void aeron_driver_conductor_track_session_id_offsets(
 }
 
 static int aeron_driver_conductor_speculate_next_session_id(
-    aeron_driver_conductor_t *conductor,
-    aeron_bit_set_t *session_id_offsets,
-    int32_t *session_id)
+    aeron_driver_conductor_t *conductor, aeron_bit_set_t *session_id_offsets, int32_t *session_id)
 {
     size_t index = 0;
 

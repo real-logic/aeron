@@ -47,14 +47,7 @@ int aeron_publication_image_create(
     aeron_system_counters_t *system_counters)
 {
     char path[AERON_MAX_PATH];
-    int path_length = aeron_publication_image_location(
-        path,
-        sizeof(path),
-        context->aeron_dir,
-        endpoint->conductor_fields.udp_channel->canonical_form,
-        session_id,
-        stream_id,
-        correlation_id);
+    int path_length = aeron_publication_image_location(path, sizeof(path), context->aeron_dir, correlation_id);
 
     aeron_publication_image_t *_image = NULL;
     const uint64_t usable_fs_space = context->usable_fs_space_func(context->aeron_dir);

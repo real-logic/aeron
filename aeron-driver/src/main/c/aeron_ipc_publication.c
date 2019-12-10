@@ -40,8 +40,7 @@ int aeron_ipc_publication_create(
     aeron_system_counters_t *system_counters)
 {
     char path[AERON_MAX_PATH];
-    int path_length = aeron_ipc_publication_location(
-        path, sizeof(path), context->aeron_dir, session_id, stream_id, registration_id);
+    int path_length = aeron_ipc_publication_location(path, sizeof(path), context->aeron_dir, registration_id);
     aeron_ipc_publication_t *_pub = NULL;
     const uint64_t usable_fs_space = context->usable_fs_space_func(context->aeron_dir);
     const uint64_t log_length = aeron_logbuffer_compute_log_length(params->term_length, context->file_page_size);

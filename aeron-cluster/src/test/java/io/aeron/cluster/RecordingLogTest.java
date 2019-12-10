@@ -59,7 +59,7 @@ public class RecordingLogTest
     @Test
     public void shouldAppendAndThenReloadLatestSnapshot()
     {
-        final RecordingLog.Entry entry = new RecordingLog.Entry(1, 3, 2, 777, 4, NULL_VALUE, ENTRY_TYPE_SNAPSHOT, 0);
+        final RecordingLog.Entry entry = new RecordingLog.Entry(1, 3, 2, 777, 4, SERVICE_ID, ENTRY_TYPE_SNAPSHOT, 0);
 
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
         {
@@ -67,9 +67,9 @@ public class RecordingLogTest
                 entry.recordingId,
                 entry.leadershipTermId,
                 entry.termBaseLogPosition,
-                777,
+                entry.logPosition,
                 entry.timestamp,
-                SERVICE_ID);
+                entry.serviceId);
         }
 
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
@@ -78,6 +78,38 @@ public class RecordingLogTest
 
             final RecordingLog.Entry snapshot = recordingLog.getLatestSnapshot(SERVICE_ID);
             assertEquals(entry.toString(), snapshot.toString());
+        }
+    }
+    @Test
+    public void shouldAppendAndThenReloadLatestServiceSnapshot()
+    {
+        final RecordingLog.Entry consensusModuleEntry = new RecordingLog.Entry(1, 3, 2, 777, 4, SERVICE_ID, ENTRY_TYPE_SNAPSHOT, 0);
+        final RecordingLog.Entry serviceEntry = new RecordingLog.Entry(3, consensusModuleEntry.leadershipTermId, consensusModuleEntry.termBaseLogPosition, consensusModuleEntry.logPosition, consensusModuleEntry.timestamp + 1, 0, ENTRY_TYPE_SNAPSHOT, 1);
+
+        try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
+        {
+            recordingLog.appendSnapshot(
+                serviceEntry.recordingId,
+                serviceEntry.leadershipTermId,
+                serviceEntry.termBaseLogPosition,
+                serviceEntry.logPosition,
+                serviceEntry.timestamp,
+                serviceEntry.serviceId);
+
+            recordingLog.appendSnapshot(
+                consensusModuleEntry.recordingId,
+                consensusModuleEntry.leadershipTermId,
+                consensusModuleEntry.termBaseLogPosition,
+                consensusModuleEntry.logPosition,
+                consensusModuleEntry.timestamp,
+                consensusModuleEntry.serviceId);
+        }
+
+        try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
+        {
+            assertThat(recordingLog.entries().size(), is(2));
+            assertEquals(serviceEntry.recordingId, recordingLog.getLatestSnapshot(serviceEntry.serviceId).recordingId);
+            assertEquals(consensusModuleEntry.recordingId, recordingLog.getLatestSnapshot(consensusModuleEntry.serviceId).recordingId);
         }
     }
 

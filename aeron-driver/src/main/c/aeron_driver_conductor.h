@@ -34,6 +34,7 @@
 #include "reports/aeron_loss_reporter.h"
 
 #define AERON_DRIVER_CONDUCTOR_LINGER_RESOURCE_TIMEOUT_NS (5 * 1000 * 1000 * 1000L)
+#define AERON_CLOCK_UPDATE_DURATION_NS (1 * 1000 * 1000L)
 
 typedef struct aeron_publication_link_stct
 {
@@ -270,6 +271,8 @@ typedef struct aeron_driver_conductor_stct
 
     aeron_clock_t *nano_clock;
     aeron_clock_t *epoch_clock;
+    aeron_clock_t *cached_nano_clock;
+    aeron_clock_t *cached_epoch_clock;
 
     int32_t next_session_id;
     int32_t publication_reserved_session_id_low;
@@ -277,6 +280,7 @@ typedef struct aeron_driver_conductor_stct
     int64_t time_of_last_timeout_check_ns;
     int64_t time_of_last_to_driver_position_change_ns;
     int64_t last_consumer_command_position;
+    int64_t clock_update_deadline_ns;
 
     uint8_t padding[AERON_CACHE_LINE_LENGTH];
 }

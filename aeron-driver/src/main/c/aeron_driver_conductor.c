@@ -77,6 +77,18 @@ static bool aeron_driver_conductor_has_clashing_subscription(
     return false;
 }
 
+void aeron_driver_conductor_update_clocks(aeron_driver_conductor_t *conductor, int64_t now_ns)
+{
+    if (conductor->clock_update_deadline_ns - now_ns < 0)
+    {
+        conductor->clock_update_deadline_ns = now_ns + AERON_CLOCK_UPDATE_DURATION_NS;
+        int64_t now_ms = aeron_clock_now(conductor->epoch_clock);
+
+        aeron_clock_update(conductor->cached_nano_clock, now_ns);
+        aeron_clock_update(conductor->cached_epoch_clock, now_ms);
+    }
+}
+
 int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_driver_context_t *context)
 {
     if (aeron_mpsc_rb_init(
@@ -223,6 +235,9 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
 
     conductor->nano_clock = &context->nano_clock;
     conductor->epoch_clock = &context->epoch_clock;
+    conductor->cached_nano_clock = &context->cached_nano_clock;
+    conductor->cached_epoch_clock = &context->cached_epoch_clock;
+    conductor->clock_update_deadline_ns = 0;
     conductor->time_of_last_timeout_check_ns = now_ns;
     conductor->time_of_last_to_driver_position_change_ns = now_ns;
     conductor->next_session_id = aeron_randomised_int32();
@@ -231,6 +246,8 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->last_consumer_command_position = aeron_mpsc_rb_consumer_position(&conductor->to_driver_commands);
 
     conductor->context = context;
+
+    aeron_driver_conductor_update_clocks(conductor, now_ns);
 
     return 0;
 }
@@ -1795,6 +1812,7 @@ int aeron_driver_conductor_do_work(void *clientd)
     aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
     int work_count = 0;
     int64_t now_ns = aeron_clock_now(conductor->nano_clock);
+    aeron_driver_conductor_update_clocks(conductor, now_ns);
 
     work_count += (int)aeron_mpsc_rb_read(
         &conductor->to_driver_commands, aeron_driver_conductor_on_command, conductor, 10);

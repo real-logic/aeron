@@ -125,6 +125,11 @@ int64_t aeron_clock_now(aeron_clock_t *clock)
     return clock->now(clock);
 }
 
+void aeron_clock_update(aeron_clock_t *clock, int64_t time)
+{
+    AERON_PUT_ORDERED(clock->cached_value, time);
+}
+
 int64_t aeron_nano_clock(aeron_clock_t *clock)
 {
     struct timespec ts;
@@ -168,6 +173,13 @@ int64_t aeron_epoch_clock(aeron_clock_t *clock)
 #endif
 
     return (ts.tv_sec * 1000) + (ts.tv_nsec / 1000000);
+}
+
+int64_t aeron_cached_clock(aeron_clock_t *clock)
+{
+    int64_t time;
+    AERON_GET_VOLATILE(time, clock->cached_value);
+    return time;
 }
 
 extern int aeron_number_of_trailing_zeroes(int32_t value);

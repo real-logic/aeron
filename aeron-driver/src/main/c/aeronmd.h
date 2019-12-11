@@ -766,6 +766,11 @@ void aeron_clock_init(aeron_clock_t *clock, aeron_clock_func_t now_func);
 int64_t aeron_clock_now(aeron_clock_t *clock);
 
 /**
+ * Update the cached clock to the specified value.  Uses ordered write semantics.
+ */
+void aeron_clock_update(aeron_clock_t *clock, int64_t time);
+
+/**
  * Return time in nanoseconds for machine. Is not wall clock time.
  *
  * @return nanoseconds since epoch for machine.
@@ -778,6 +783,13 @@ int64_t aeron_nano_clock(aeron_clock_t *clock);
  * @return milliseconds since epoch.
  */
 int64_t aeron_epoch_clock(aeron_clock_t *clock);
+
+/**
+ * Return time from the clock's cached value.
+ *
+ * @return cached time value
+ */
+int64_t aeron_cached_clock(aeron_clock_t *clock);
 
 /**
  * Function to return logging information.

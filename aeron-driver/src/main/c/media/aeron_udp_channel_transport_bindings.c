@@ -113,34 +113,32 @@ static aeron_udp_channel_transport_interceptor_load_func_t *aeron_udp_channel_tr
     return load_interceptor;
 }
 
+#define AERON_MAX_INTERCEPTORS_LEN (4094)
+#define AERON_MAX_INTERCEPTOR_NAMES (10)
+
 aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_bindings_load_interceptors(
     aeron_udp_channel_transport_bindings_t *media_bindings,
     const char *interceptors)
 {
-    const int max_interceptors_length = 4096;
-    char interceptors_dup[max_interceptors_length];
-
-    const int max_interceptor_names = 10;
-    char *interceptor_names[max_interceptor_names];
-
+    char interceptors_dup[AERON_MAX_INTERCEPTORS_LEN];
+    char *interceptor_names[AERON_MAX_INTERCEPTOR_NAMES];
     aeron_udp_channel_transport_bindings_t *current_bindings = NULL;
-
     const size_t interceptors_length = strlen(interceptors);
 
-    if (interceptors_length >= (size_t)max_interceptors_length)
+    if (interceptors_length >= (size_t)AERON_MAX_INTERCEPTORS_LEN)
     {
         aeron_set_err(
-            EINVAL, "Interceptors list too long, must have: %zu < %d", interceptors_length, max_interceptors_length);
+            EINVAL, "Interceptors list too long, must have: %zu < %d", interceptors_length, AERON_MAX_INTERCEPTORS_LEN);
         return NULL;
     }
 
     strcpy(interceptors_dup, interceptors);
 
-    const int num_interceptors = aeron_tokenise(interceptors_dup, ',', max_interceptor_names, interceptor_names);
+    const int num_interceptors = aeron_tokenise(interceptors_dup, ',', AERON_MAX_INTERCEPTOR_NAMES, interceptor_names);
 
     if (-ERANGE == num_interceptors)
     {
-        aeron_set_err(EINVAL, "Too many interceptors defined, limit %d: %s", max_interceptor_names, interceptors);
+        aeron_set_err(EINVAL, "Too many interceptors defined, limit %d: %s", AERON_MAX_INTERCEPTOR_NAMES, interceptors);
         return NULL;
     }
     else if (num_interceptors < 0)

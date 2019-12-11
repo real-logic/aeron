@@ -521,14 +521,15 @@ public class Aeron implements AutoCloseable
         public static final ErrorHandler DEFAULT_ERROR_HANDLER =
             (throwable) ->
             {
-                synchronized (System.err)
+                final PrintStream err = System.err;
+                synchronized (err)
                 {
-                    System.err.println(System.currentTimeMillis() + " Exception:");
-                    throwable.printStackTrace();
+                    err.println(System.currentTimeMillis() + " Exception:");
+                    throwable.printStackTrace(err);
                 }
                 if (throwable instanceof DriverTimeoutException)
                 {
-                    System.err.printf(
+                    err.printf(
                         "%n***%n*** timeout for the Media Driver - is it currently running? exiting%n***%n");
                     System.exit(-1);
                 }

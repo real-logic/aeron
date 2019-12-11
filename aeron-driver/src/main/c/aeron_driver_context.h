@@ -18,7 +18,7 @@
 #define AERON_DRIVER_CONTEXT_H
 
 #include "aeron_driver_common.h"
-#include "aeronmd.h"
+#include "util/aeron_clock.h"
 #include "util/aeron_bitutil.h"
 #include "util/aeron_fileutil.h"
 #include "concurrent/aeron_spsc_concurrent_array_queue.h"

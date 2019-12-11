@@ -21,7 +21,7 @@
 
 #include <stdlib.h>
 #include "aeron_loss_detector.h"
-#include "aeronmd.h"
+#include "util/aeron_clock.h"
 #include "aeron_windows.h"
 
 int aeron_loss_detector_init(

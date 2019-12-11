@@ -23,6 +23,7 @@
 #include <aeron_alloc.h>
 #include "aeronmd.h"
 #include "util/aeron_bitutil.h"
+#include "util/aeron_clock.h"
 #include "concurrent/aeron_thread.h"
 #include "concurrent/aeron_atomic.h"
 

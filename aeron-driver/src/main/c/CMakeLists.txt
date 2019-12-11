@@ -139,6 +139,7 @@ SET(SOURCE
     util/aeron_parse_util.c
     util/aeron_properties_util.c
     util/aeron_http_util.c
+    util/aeron_clock.c
     aeron_driver_context.c
     aeron_alloc.c
     aeron_driver.c
@@ -182,6 +183,7 @@ SET(HEADERS
     util/aeron_dlopen.h
     util/aeron_platform.h
     util/aeron_bitutil.h
+    util/aeron_clock.h
     util/aeron_math.h
     util/aeron_strutil.h
     util/aeron_fileutil.h

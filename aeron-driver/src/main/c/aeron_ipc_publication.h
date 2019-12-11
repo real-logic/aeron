@@ -39,7 +39,7 @@ typedef struct aeron_ipc_publication_stct
     aeron_logbuffer_metadata_t *log_meta_data;
     aeron_position_t pub_lmt_position;
     aeron_position_t pub_pos_position;
-    aeron_clock_func_t nano_clock;
+    aeron_clock_t *nano_clock;
 
     struct aeron_ipc_publication_conductor_fields_stct
     {

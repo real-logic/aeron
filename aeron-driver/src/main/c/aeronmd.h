@@ -739,23 +739,45 @@ int aeron_driver_close(aeron_driver_t *driver);
 int aeron_delete_directory(const char *dirname);
 
 /**
+ * Struct to hold clock state
+ */
+typedef struct aeron_clock_stct aeron_clock_t;
+
+/**
  * Clock function used by aeron.
  */
-typedef int64_t (*aeron_clock_func_t)();
+typedef int64_t (*aeron_clock_func_t)(aeron_clock_t *);
+
+typedef struct aeron_clock_stct
+{
+    aeron_clock_func_t now;
+    int64_t cached_value;
+}
+aeron_clock_t;
+
+/**
+ * Initialise the clock with the specified function.
+ */
+void aeron_clock_init(aeron_clock_t *clock, aeron_clock_func_t now_func);
+
+/**
+ * Get the current time from a clock
+ */
+int64_t aeron_clock_now(aeron_clock_t *clock);
 
 /**
  * Return time in nanoseconds for machine. Is not wall clock time.
  *
  * @return nanoseconds since epoch for machine.
  */
-int64_t aeron_nano_clock();
+int64_t aeron_nano_clock(aeron_clock_t *clock);
 
 /**
  * Return time in milliseconds since epoch. Is wall clock time.
  *
  * @return milliseconds since epoch.
  */
-int64_t aeron_epoch_clock();
+int64_t aeron_epoch_clock(aeron_clock_t *clock);
 
 /**
  * Function to return logging information.

@@ -113,7 +113,19 @@ void aeron_log_func_none(const char *str)
 {
 }
 
-int64_t aeron_nano_clock()
+void aeron_clock_init(aeron_clock_t *clock, aeron_clock_func_t now_func)
+{
+    clock->now = now_func;
+    clock->cached_value = 0;
+}
+
+
+int64_t aeron_clock_now(aeron_clock_t *clock)
+{
+    return clock->now(clock);
+}
+
+int64_t aeron_nano_clock(aeron_clock_t *clock)
 {
     struct timespec ts;
 #if defined(__CYGWIN__) || defined(__linux__)
@@ -136,7 +148,7 @@ int64_t aeron_nano_clock()
     return (ts.tv_sec * 1000000000) + ts.tv_nsec;
 }
 
-int64_t aeron_epoch_clock()
+int64_t aeron_epoch_clock(aeron_clock_t *clock)
 {
     struct timespec ts;
 #if defined(AERON_COMPILER_MSVC)
@@ -234,7 +246,7 @@ int aeron_report_existing_errors(aeron_mapped_file_t *cnc_map, const char *aeron
         char datestamp[AERON_MAX_PATH];
         FILE *saved_errors_file = NULL;
 
-        aeron_format_date(datestamp, sizeof(datestamp) - 1, aeron_epoch_clock());
+        aeron_format_date(datestamp, sizeof(datestamp) - 1, aeron_epoch_clock(NULL));
         snprintf(buffer, sizeof(buffer) - 1, "%s-%s-error.log", aeron_dir, datestamp);
 
         if ((saved_errors_file = fopen(buffer, "w")) != NULL)
@@ -298,7 +310,7 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_t *driver)
             log_func(buffer);
 
             if (aeron_is_driver_active_with_cnc(
-                &cnc_mmap, driver->context->driver_timeout_ms, aeron_epoch_clock(), log_func))
+                &cnc_mmap, driver->context->driver_timeout_ms, aeron_epoch_clock(NULL), log_func))
             {
                 aeron_unmap(&cnc_mmap);
                 return -1;
@@ -341,7 +353,7 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_t *driver)
     return 0;
 }
 
-void aeron_driver_fill_cnc_metadata(aeron_driver_context_t *context)
+void aeron_driver_fill_cnc_metadata(aeron_driver_context_t* context)
 {
     aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *)context->cnc_map.addr;
     metadata->to_driver_buffer_length = (int32_t)context->to_driver_buffer_length;
@@ -351,7 +363,7 @@ void aeron_driver_fill_cnc_metadata(aeron_driver_context_t *context)
     metadata->counter_values_buffer_length = (int32_t)context->counters_values_buffer_length;
     metadata->error_log_buffer_length = (int32_t)context->error_buffer_length;
     metadata->client_liveness_timeout = (int64_t)context->client_liveness_timeout_ns;
-    metadata->start_timestamp = context->epoch_clock();
+    metadata->start_timestamp = aeron_clock_now(&context->epoch_clock);
     metadata->pid = getpid();
 
     context->to_driver_buffer = aeron_cnc_to_driver_buffer(metadata);
@@ -628,11 +640,11 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
 #pragma GCC diagnostic ignored "-Wpedantic"
 
     fprintf(fpout, "\n    epoch_clock=%p%s",
-        (void *)context->epoch_clock,
-        aeron_dlinfo((const void *)context->epoch_clock, buffer, sizeof(buffer)));
+        (void *)context->epoch_clock.now,
+        aeron_dlinfo((const void *)context->epoch_clock.now, buffer, sizeof(buffer)));
     fprintf(fpout, "\n    nano_clock=%p%s",
-        (void *)context->nano_clock,
-        aeron_dlinfo((const void *)context->nano_clock, buffer, sizeof(buffer)));
+        (void *)context->nano_clock.now,
+        aeron_dlinfo((const void *)context->nano_clock.now, buffer, sizeof(buffer)));
     /* cachedEpochClock */
     /* cachedNanoClock */
     fprintf(fpout, "\n    threading_mode=%d", context->threading_mode);
@@ -839,7 +851,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
 
     _driver->context->receiver_proxy = &_driver->receiver.receiver_proxy;
 
-    aeron_mpsc_rb_consumer_heartbeat_time(&_driver->conductor.to_driver_commands, aeron_epoch_clock());
+    aeron_mpsc_rb_consumer_heartbeat_time(&_driver->conductor.to_driver_commands, aeron_epoch_clock(NULL));
     aeron_cnc_version_signal_cnc_ready((aeron_cnc_metadata_t *)context->cnc_map.addr, AERON_CNC_VERSION);
 
     if (aeron_feedback_delay_state_init(

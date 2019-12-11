@@ -305,11 +305,11 @@ int aeron_http_retrieve(aeron_http_response_t **response, const char *url, int64
     _response->content_length = 0;
     _response->parse_err = false;
 
-    const int64_t start_ns = aeron_nano_clock();
+    const int64_t start_ns = aeron_nano_clock(NULL);
 
     do
     {
-        const int64_t now_ns = aeron_nano_clock();
+        const int64_t now_ns = aeron_nano_clock(NULL);
 
         if (-1 != timeout_ns && now_ns > (start_ns + timeout_ns))
         {

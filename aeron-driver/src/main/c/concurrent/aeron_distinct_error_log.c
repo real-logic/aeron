@@ -33,7 +33,7 @@ int aeron_distinct_error_log_init(
     aeron_distinct_error_log_t *log,
     uint8_t *buffer,
     size_t buffer_size,
-    aeron_clock_func_t clock,
+    aeron_clock_t *clock,
     aeron_resource_linger_func_t linger,
     void *clientd)
 {
@@ -177,7 +177,7 @@ int aeron_distinct_error_log_record(
         return -1;
     }
 
-    timestamp = log->clock();
+    timestamp = aeron_clock_now(log->clock);
     aeron_distinct_error_log_observation_list_t *list = aeron_distinct_error_log_observation_list_load(log);
     size_t num_observations = list->num_observations;
     aeron_distinct_observation_t *observations = list->observations;

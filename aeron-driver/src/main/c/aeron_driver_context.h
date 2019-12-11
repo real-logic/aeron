@@ -124,8 +124,8 @@ typedef struct aeron_driver_context_stct
     uint8_t *counters_metadata_buffer;
     uint8_t *error_buffer;
 
-    aeron_clock_func_t nano_clock;
-    aeron_clock_func_t epoch_clock;
+    aeron_clock_t nano_clock;
+    aeron_clock_t epoch_clock;
 
     aeron_spsc_concurrent_array_queue_t sender_command_queue;
     aeron_spsc_concurrent_array_queue_t receiver_command_queue;
@@ -195,7 +195,7 @@ aeron_inferable_boolean_t aeron_config_parse_inferable_boolean(
 
 void aeron_driver_context_print_configuration(aeron_driver_context_t *context);
 
-void aeron_driver_fill_cnc_metadata(aeron_driver_context_t *context);
+void aeron_driver_fill_cnc_metadata(aeron_driver_context_t* context);
 
 int aeron_driver_context_validate_mtu_length(uint64_t mtu_length);
 

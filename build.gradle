@@ -227,6 +227,10 @@ subprojects {
         required { isReleasedVersion && gradle.taskGraph.hasTask("uploadArchives") }
         sign configurations.archives
     }
+
+    install {
+        repositories.mavenInstaller.pom.project(projectPom)
+    }
 }
 
 project(':aeron-client') {
@@ -874,14 +878,12 @@ project(':aeron-all') {
 
     shadowJar {
         mustRunAfter jar
-
+        archiveClassifier = ''
         manifest.attributes(
             'Implementation-Title': 'Aeron',
             'Implementation-Version': "${aeronVersion}",
             'Implementation-Vendor': 'Real Logic Limited',
             'Automatic-Module-Name': 'io.aeron.all')
-
-        archiveClassifier = ''
         relocate 'org.HdrHistogram', 'io.aeron.shadow.org.HdrHistogram'
     }
 
@@ -910,6 +912,6 @@ task uploadToMavenCentral {
 }
 
 wrapper {
-    gradleVersion = '5.6.3'
+    gradleVersion = '6.0.1'
     distributionType = 'ALL'
 }

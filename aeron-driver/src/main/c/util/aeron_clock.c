@@ -27,7 +27,7 @@ typedef struct aeron_clock_stct
     uint8_t pre_pad[(2 * AERON_CACHE_LINE_LENGTH)];
     aeron_clock_func_t now;
     int64_t cached_value;
-    uint8_t post_pad[(AERON_CACHE_LINE_LENGTH * 2) - (sizeof(now) + sizeof(cached_value))];
+    uint8_t post_pad[(2 * AERON_CACHE_LINE_LENGTH) - (sizeof(now) + sizeof(cached_value))];
 }
 aeron_clock_t;
 

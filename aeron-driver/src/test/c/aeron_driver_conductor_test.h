@@ -188,8 +188,8 @@ struct TestDriverContext
         m_context->term_buffer_sparse_file = true;
 
         /* control time */
-        m_context->nano_clock = aeron_clock_new(test_nano_clock);
-        m_context->epoch_clock = aeron_clock_new(test_epoch_clock);
+        aeron_clock_init(&m_context->nano_clock, test_nano_clock);
+        aeron_clock_init(&m_context->epoch_clock, test_epoch_clock);
 
         /* control files */
         m_context->usable_fs_space_func = test_uint64_max_usable_fs_space;

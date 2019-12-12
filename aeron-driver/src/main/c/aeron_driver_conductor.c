@@ -41,11 +41,6 @@ static void aeron_error_log_resource_linger(void *clientd, uint8_t *resource)
     aeron_driver_conductor_proxy_on_linger_buffer(conductor->context->conductor_proxy, resource);
 }
 
-static int64_t aeron_driver_conductor_null_epoch_clock()
-{
-    return 0;
-}
-
 static bool aeron_driver_conductor_has_clashing_subscription(
     aeron_driver_conductor_t *conductor,
     const aeron_receive_channel_endpoint_t *endpoint,
@@ -104,13 +99,13 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     }
 
     int64_t free_to_reuse_timeout_ms = 0;
-    aeron_clock_func_t clock_func = aeron_driver_conductor_null_epoch_clock;
+    aeron_clock_t *clock_func = context->null_clock;
 
     if (context->counter_free_to_reuse_ns > 0)
     {
         free_to_reuse_timeout_ms = context->counter_free_to_reuse_ns / (1000 * 1000L);
         free_to_reuse_timeout_ms = free_to_reuse_timeout_ms <= 0 ? 1 : free_to_reuse_timeout_ms;
-        clock_func = aeron_epoch_clock;
+        clock_func = context->epoch_clock;
     }
 
     if (aeron_counters_manager_init(

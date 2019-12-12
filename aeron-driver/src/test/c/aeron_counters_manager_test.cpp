@@ -28,12 +28,12 @@ extern "C"
 
 static int64_t ms_timestamp = 0;
 
-static int64_t test_epoch_clock()
+static int64_t test_epoch_clock(aeron_clock_t *clock)
 {
     return ms_timestamp;
 }
 
-static int64_t null_epoch_clock()
+static int64_t null_epoch_clock(aeron_clock_t *clock)
 {
     return 0;
 }
@@ -44,11 +44,15 @@ public:
     CountersManagerTest()
     {
         ms_timestamp = 0;
+        test_clock = aeron_clock_new(test_epoch_clock);
+        null_clock = aeron_clock_new(null_epoch_clock);
     }
 
     ~CountersManagerTest()
     {
         aeron_counters_manager_close(&m_manager);
+        free(test_clock);
+        free(null_clock);
     }
 
     virtual void SetUp()
@@ -65,7 +69,7 @@ public:
             m_metadata.size(),
             m_values.data(),
             m_values.size(),
-            null_epoch_clock,
+            null_clock,
             0);
     }
 
@@ -77,7 +81,7 @@ public:
             m_metadata.size(),
             m_values.data(),
             m_values.size(),
-            test_epoch_clock,
+            test_clock,
             FREE_TO_REUSE_TIMEOUT_MS);
     }
 
@@ -85,6 +89,8 @@ public:
     std::array<std::uint8_t, NUM_COUNTERS * AERON_COUNTERS_MANAGER_METADATA_LENGTH> m_metadata;
     std::array<std::uint8_t, NUM_COUNTERS * AERON_COUNTERS_MANAGER_VALUE_LENGTH> m_values;
     aeron_counters_manager_t m_manager;
+    aeron_clock_t *test_clock;
+    aeron_clock_t *null_clock;
 };
 
 void func_should_never_be_called(

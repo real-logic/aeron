@@ -19,7 +19,6 @@
 #include <aeron_alloc.h>
 #include <errno.h>
 #include "concurrent/aeron_counters_manager.h"
-#include "aeron_atomic.h"
 #include "util/aeron_error.h"
 
 int aeron_counters_manager_init(
@@ -28,7 +27,7 @@ int aeron_counters_manager_init(
     size_t metadata_length,
     uint8_t *values_buffer,
     size_t values_length,
-    aeron_counters_manager_clock_func_t clock_func,
+    aeron_clock_t *epoch_clock,
     int64_t free_to_reuse_timeout_ms)
 {
     int result = -1;
@@ -42,7 +41,7 @@ int aeron_counters_manager_init(
         manager->id_high_water_mark = -1;
         manager->free_list_index = -1;
         manager->free_list_length = 2;
-        manager->clock_func = clock_func;
+        manager->epoch_clock = epoch_clock;
         manager->free_to_reuse_timeout_ms = free_to_reuse_timeout_ms;
         result = aeron_alloc((void **)&manager->free_list, sizeof(int32_t) * manager->free_list_length);
     }
@@ -125,7 +124,7 @@ void aeron_counters_manager_remove_free_list_index(volatile aeron_counters_manag
 
 int32_t aeron_counters_manager_next_counter_id(volatile aeron_counters_manager_t *manager)
 {
-    int64_t now_ms = manager->clock_func();
+    int64_t now_ms = aeron_clock_now(manager->epoch_clock);
 
     for (int i = 0; i <= manager->free_list_index; i++)
     {
@@ -156,7 +155,7 @@ int aeron_counters_manager_free(volatile aeron_counters_manager_t *manager, int3
 
     AERON_PUT_ORDERED(metadata->state, AERON_COUNTER_RECORD_RECLAIMED);
     memset(metadata->key, 0, sizeof(metadata->key));
-    metadata->free_to_reuse_deadline = manager->clock_func() + manager->free_to_reuse_timeout_ms;
+    metadata->free_to_reuse_deadline = aeron_clock_now(manager->epoch_clock) + manager->free_to_reuse_timeout_ms;
 
     if ((manager->free_list_index + 1) >= (int32_t)manager->free_list_length)
     {

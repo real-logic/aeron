@@ -44,8 +44,8 @@ public:
     CountersManagerTest()
     {
         ms_timestamp = 0;
-        test_clock = aeron_clock_new(test_epoch_clock);
-        null_clock = aeron_clock_new(null_epoch_clock);
+        aeron_clock_init(&test_clock, test_epoch_clock);
+        aeron_clock_init(&null_clock, null_epoch_clock);
     }
 
     ~CountersManagerTest()

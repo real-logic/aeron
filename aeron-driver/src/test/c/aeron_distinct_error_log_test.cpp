@@ -35,7 +35,7 @@ public:
     {
         m_buffer.fill(0);
         clock_value = 7;
-        test_clock = aeron_clock_new(clock);
+        aeron_clock_init(&test_clock, clock);
     }
 
     ~DistinctErrorLogTest()

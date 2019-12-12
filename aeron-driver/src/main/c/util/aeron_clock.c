@@ -20,13 +20,14 @@
 #include "aeron_alloc.h"
 #include "concurrent/aeron_atomic.h"
 #include "aeron_clock.h"
+#include "aeron_bitutil.h"
 
 typedef struct aeron_clock_stct
 {
-    // TODO: Pad
+    uint8_t pre_pad[(2 * AERON_CACHE_LINE_LENGTH)];
     aeron_clock_func_t now;
     int64_t cached_value;
-    // TODO: Pad
+    uint8_t post_pad[(AERON_CACHE_LINE_LENGTH * 2) - (sizeof(now) + sizeof(cached_value))];
 }
 aeron_clock_t;
 

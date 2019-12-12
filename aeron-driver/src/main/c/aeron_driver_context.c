@@ -815,9 +815,10 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->epoch_clock = aeron_clock_new(aeron_epoch_clock);
     _context->cached_nano_clock = aeron_clock_new(aeron_cached_clock);
     _context->cached_epoch_clock = aeron_clock_new(aeron_cached_clock);
+    _context->null_clock = aeron_clock_new(aeron_null_clock);
 
     if (NULL == _context->nano_clock || NULL == _context->epoch_clock || NULL == _context->cached_nano_clock ||
-        NULL == _context->cached_epoch_clock)
+        NULL == _context->cached_epoch_clock || NULL == _context->null_clock)
     {
         return -1;
     }
@@ -972,6 +973,11 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
     aeron_free((void *)context->receiver_idle_strategy_init_args);
     aeron_free((void *)context->shared_idle_strategy_init_args);
     aeron_free((void *)context->shared_network_idle_strategy_init_args);
+    aeron_free((void *)context->nano_clock);
+    aeron_free((void *)context->epoch_clock);
+    aeron_free((void *)context->cached_nano_clock);
+    aeron_free((void *)context->cached_epoch_clock);
+    aeron_free((void *)context->null_clock);
     aeron_free(context);
 
     return 0;

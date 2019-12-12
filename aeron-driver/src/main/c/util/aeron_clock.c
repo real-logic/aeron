@@ -113,6 +113,11 @@ int64_t aeron_cached_clock(aeron_clock_t *clock)
     return time;
 }
 
+int64_t aeron_null_clock(aeron_clock_t *clock)
+{
+    return 0;
+}
+
 void *aeron_clock_now_func(aeron_clock_t *clock)
 {
 #pragma GCC diagnostic push

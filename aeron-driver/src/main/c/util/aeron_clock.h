@@ -73,6 +73,13 @@ int64_t aeron_epoch_clock(aeron_clock_t *clock);
 int64_t aeron_cached_clock(aeron_clock_t *clock);
 
 /**
+ * Always returns 0.
+ * @param clock
+ * @return 0
+ */
+int64_t aeron_null_clock(aeron_clock_t *clock);
+
+/**
  * Gets the point to the now function pointer, for logging.
  * @param clock
  * @return now function pointer

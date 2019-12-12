@@ -39,7 +39,7 @@ def checkstyleVersion = '8.27'
 def hamcrestVersion = '2.2'
 def junitVersion = '4.12'
 def mockitoVersion = '3.2.0'
-def byteBuddyVersion = '1.10.4'
+def byteBuddyVersion = '1.10.5'
 def hdrHistogramVersion = '2.1.11'
 
 group = aeronGroup

@@ -30,14 +30,6 @@ typedef struct aeron_clock_stct
 }
 aeron_clock_t;
 
-void aeron_clock_init(aeron_clock_t **clock, aeron_clock_func_t now_func)
-{
-    aeron_alloc((void **)clock, sizeof(aeron_clock_t));
-
-    (*clock)->now = now_func;
-    (*clock)->cached_value = 0;
-}
-
 aeron_clock_t *aeron_clock_new(aeron_clock_func_t now_func)
 {
     aeron_clock_t *clock;

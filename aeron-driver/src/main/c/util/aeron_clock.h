@@ -28,11 +28,6 @@ typedef struct aeron_clock_stct aeron_clock_t;
 typedef int64_t (*aeron_clock_func_t)(aeron_clock_t *);
 
 /**
- * Initialise the clock with the specified function.
- */
-void aeron_clock_init(aeron_clock_t **clock, aeron_clock_func_t now_func);
-
-/**
  * Allocate and initialise new clock with the specified now function.
  *
  * @param now_func to calculate the current time

@@ -27,19 +27,19 @@ typedef struct aeron_clock_stct aeron_clock_t;
  */
 typedef int64_t (*aeron_clock_func_t)(aeron_clock_t *);
 
-typedef struct aeron_clock_stct
-{
-    // TODO: Pad
-    aeron_clock_func_t now;
-    int64_t cached_value;
-    // TODO: Pad
-}
-aeron_clock_t;
-
 /**
  * Initialise the clock with the specified function.
  */
-void aeron_clock_init(aeron_clock_t *clock, aeron_clock_func_t now_func);
+void aeron_clock_init(aeron_clock_t **clock, aeron_clock_func_t now_func);
+
+/**
+ * Allocate and initialise new clock with the specified now function.
+ *
+ * @param now_func to calculate the current time
+ * @return allocated aeron_clock_t or NULL if no
+ * memory available.
+ */
+aeron_clock_t *aeron_clock_new(aeron_clock_func_t now_func);
 
 /**
  * Get the current time from a clock
@@ -71,5 +71,12 @@ int64_t aeron_epoch_clock(aeron_clock_t *clock);
  * @return cached time value
  */
 int64_t aeron_cached_clock(aeron_clock_t *clock);
+
+/**
+ * Gets the point to the now function pointer, for logging.
+ * @param clock
+ * @return now function pointer
+ */
+void *aeron_clock_now_func(aeron_clock_t *clock);
 
 #endif //AERON_AERON_CLOCK_H

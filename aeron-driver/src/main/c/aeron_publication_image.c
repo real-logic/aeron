@@ -53,7 +53,7 @@ int aeron_publication_image_create(
     const uint64_t usable_fs_space = context->usable_fs_space_func(context->aeron_dir);
     const uint64_t log_length = aeron_logbuffer_compute_log_length(
         (uint64_t)term_buffer_length, context->file_page_size);
-    int64_t now_ns = aeron_clock_now(&context->nano_clock);
+    int64_t now_ns = aeron_clock_now(context->nano_clock);
 
     *image = NULL;
 
@@ -119,8 +119,8 @@ int aeron_publication_image_create(
     _image->congestion_control = congestion_control;
     _image->loss_reporter = loss_reporter;
     _image->loss_reporter_offset = -1;
-    _image->nano_clock = &context->nano_clock;
-    _image->epoch_clock = &context->epoch_clock;
+    _image->nano_clock = context->nano_clock;
+    _image->epoch_clock = context->epoch_clock;
     _image->conductor_fields.subscribable.array = NULL;
     _image->conductor_fields.subscribable.length = 0;
     _image->conductor_fields.subscribable.capacity = 0;

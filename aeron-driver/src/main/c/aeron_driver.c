@@ -306,7 +306,7 @@ void aeron_driver_fill_cnc_metadata(aeron_driver_context_t* context)
     metadata->counter_values_buffer_length = (int32_t)context->counters_values_buffer_length;
     metadata->error_log_buffer_length = (int32_t)context->error_buffer_length;
     metadata->client_liveness_timeout = (int64_t)context->client_liveness_timeout_ns;
-    metadata->start_timestamp = aeron_clock_now(&context->epoch_clock);
+    metadata->start_timestamp = aeron_clock_now(context->epoch_clock);
     metadata->pid = getpid();
 
     context->to_driver_buffer = aeron_cnc_to_driver_buffer(metadata);
@@ -583,11 +583,11 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
 #pragma GCC diagnostic ignored "-Wpedantic"
 
     fprintf(fpout, "\n    epoch_clock=%p%s",
-        (void *)context->epoch_clock.now,
-        aeron_dlinfo((const void *)context->epoch_clock.now, buffer, sizeof(buffer)));
+        aeron_clock_now_func(context->epoch_clock),
+        aeron_dlinfo(aeron_clock_now_func(context->epoch_clock), buffer, sizeof(buffer)));
     fprintf(fpout, "\n    nano_clock=%p%s",
-        (void *)context->nano_clock.now,
-        aeron_dlinfo((const void *)context->nano_clock.now, buffer, sizeof(buffer)));
+        aeron_clock_now_func(context->epoch_clock),
+        aeron_dlinfo(aeron_clock_now_func(context->epoch_clock), buffer, sizeof(buffer)));
     /* cachedEpochClock */
     /* cachedNanoClock */
     fprintf(fpout, "\n    threading_mode=%d", context->threading_mode);

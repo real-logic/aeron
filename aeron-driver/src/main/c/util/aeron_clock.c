@@ -17,13 +17,38 @@
 #include <stdint.h>
 #include <time.h>
 
-#include "aeron_clock.h"
+#include "aeron_alloc.h"
 #include "concurrent/aeron_atomic.h"
+#include "aeron_clock.h"
 
-void aeron_clock_init(aeron_clock_t *clock, aeron_clock_func_t now_func)
+typedef struct aeron_clock_stct
 {
+    // TODO: Pad
+    aeron_clock_func_t now;
+    int64_t cached_value;
+    // TODO: Pad
+}
+aeron_clock_t;
+
+void aeron_clock_init(aeron_clock_t **clock, aeron_clock_func_t now_func)
+{
+    aeron_alloc((void **)clock, sizeof(aeron_clock_t));
+
+    (*clock)->now = now_func;
+    (*clock)->cached_value = 0;
+}
+
+aeron_clock_t *aeron_clock_new(aeron_clock_func_t now_func)
+{
+    aeron_clock_t *clock;
+    if (aeron_alloc((void **)&clock, sizeof(aeron_clock_t)) < 0)
+    {
+        return NULL;
+    }
+
     clock->now = now_func;
     clock->cached_value = 0;
+    return clock;
 }
 
 int64_t aeron_clock_now(aeron_clock_t *clock)
@@ -88,3 +113,10 @@ int64_t aeron_cached_clock(aeron_clock_t *clock)
     return time;
 }
 
+void *aeron_clock_now_func(aeron_clock_t *clock)
+{
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+    return (void *)clock->now;
+#pragma GCC diagnostic pop
+}

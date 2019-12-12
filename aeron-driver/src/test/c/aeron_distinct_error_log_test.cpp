@@ -35,12 +35,13 @@ public:
     {
         m_buffer.fill(0);
         clock_value = 7;
-        aeron_clock_init(&test_clock, clock);
+        test_clock = aeron_clock_new(clock);
     }
 
     ~DistinctErrorLogTest()
     {
         aeron_distinct_error_log_close(&m_log);
+        free(test_clock);
     }
 
     virtual void SetUp()
@@ -61,7 +62,7 @@ public:
 protected:
     AERON_DECL_ALIGNED(buffer_t m_buffer, 16);
     aeron_distinct_error_log_t m_log;
-    aeron_clock_t test_clock;
+    aeron_clock_t* test_clock;
 
     static int64_t clock_value;
 };
@@ -73,7 +74,7 @@ TEST_F(DistinctErrorLogTest, shouldFailToRecordWhenInsufficientSpace)
     AERON_DECL_ALIGNED(insufficient_buffer_t buffer, 16);
 
     ASSERT_EQ(
-        aeron_distinct_error_log_init(&m_log, buffer.data(), buffer.size(), &test_clock, linger_resource, NULL), 0);
+        aeron_distinct_error_log_init(&m_log, buffer.data(), buffer.size(), test_clock, linger_resource, NULL), 0);
 
     EXPECT_EQ(aeron_distinct_error_log_record(&m_log, 1, "description", "message"), -1);
 }
@@ -81,7 +82,7 @@ TEST_F(DistinctErrorLogTest, shouldFailToRecordWhenInsufficientSpace)
 TEST_F(DistinctErrorLogTest, shouldRecordFirstObservation)
 {
     ASSERT_EQ(
-        aeron_distinct_error_log_init(&m_log, m_buffer.data(), m_buffer.size(), &test_clock, linger_resource, NULL), 0);
+        aeron_distinct_error_log_init(&m_log, m_buffer.data(), m_buffer.size(), test_clock, linger_resource, NULL), 0);
 
     aeron_error_log_entry_t *entry = (aeron_error_log_entry_t *)(m_log.buffer);
 
@@ -97,7 +98,7 @@ TEST_F(DistinctErrorLogTest, shouldRecordFirstObservation)
 TEST_F(DistinctErrorLogTest, shouldSummariseObservations)
 {
     ASSERT_EQ(
-        aeron_distinct_error_log_init(&m_log, m_buffer.data(), m_buffer.size(), &test_clock, linger_resource, NULL), 0);
+        aeron_distinct_error_log_init(&m_log, m_buffer.data(), m_buffer.size(), test_clock, linger_resource, NULL), 0);
 
     aeron_error_log_entry_t *entry = (aeron_error_log_entry_t *)(m_log.buffer);
 
@@ -115,7 +116,7 @@ TEST_F(DistinctErrorLogTest, shouldSummariseObservations)
 TEST_F(DistinctErrorLogTest, shouldRecordTwoDistinctObservations)
 {
     ASSERT_EQ(
-        aeron_distinct_error_log_init(&m_log, m_buffer.data(), m_buffer.size(), &test_clock, linger_resource, NULL), 0);
+        aeron_distinct_error_log_init(&m_log, m_buffer.data(), m_buffer.size(), test_clock, linger_resource, NULL), 0);
 
     aeron_error_log_entry_t *entry = (aeron_error_log_entry_t *)(m_log.buffer);
 
@@ -153,7 +154,7 @@ static void error_log_reader_no_entries(
 TEST_F(DistinctErrorLogTest, shouldReadNoErrorsFromEmptyLog)
 {
     ASSERT_EQ(
-        aeron_distinct_error_log_init(&m_log, m_buffer.data(), m_buffer.size(), &test_clock, linger_resource, NULL), 0);
+        aeron_distinct_error_log_init(&m_log, m_buffer.data(), m_buffer.size(), test_clock, linger_resource, NULL), 0);
 
     EXPECT_EQ(aeron_error_log_read(
         m_buffer.data(), m_buffer.size(), error_log_reader_no_entries, NULL, 0), (size_t)0);
@@ -179,7 +180,7 @@ static void error_log_reader_first_observation(
 TEST_F(DistinctErrorLogTest, shouldReadFirstObservation)
 {
     ASSERT_EQ(
-        aeron_distinct_error_log_init(&m_log, m_buffer.data(), m_buffer.size(), &test_clock, linger_resource, NULL), 0);
+        aeron_distinct_error_log_init(&m_log, m_buffer.data(), m_buffer.size(), test_clock, linger_resource, NULL), 0);
 
     EXPECT_EQ(aeron_distinct_error_log_record(&m_log, 1, "description 1", "message"), 0);
 
@@ -207,7 +208,7 @@ static void error_log_reader_summarised_observation(
 TEST_F(DistinctErrorLogTest, shouldReadSummarisedObservation)
 {
     ASSERT_EQ(
-        aeron_distinct_error_log_init(&m_log, m_buffer.data(), m_buffer.size(), &test_clock, linger_resource, NULL), 0);
+        aeron_distinct_error_log_init(&m_log, m_buffer.data(), m_buffer.size(), test_clock, linger_resource, NULL), 0);
 
     EXPECT_EQ(aeron_distinct_error_log_record(&m_log, 1, "description 1", "message"), 0);
     clock_value++;
@@ -251,7 +252,7 @@ static void error_log_reader_two_observations(
 TEST_F(DistinctErrorLogTest, shouldReadTwoDistinctObservations)
 {
     ASSERT_EQ(
-        aeron_distinct_error_log_init(&m_log, m_buffer.data(), m_buffer.size(), &test_clock, linger_resource, NULL), 0);
+        aeron_distinct_error_log_init(&m_log, m_buffer.data(), m_buffer.size(), test_clock, linger_resource, NULL), 0);
 
     EXPECT_EQ(aeron_distinct_error_log_record(&m_log, 1, "description 1", "message"), 0);
     clock_value++;
@@ -281,7 +282,7 @@ static void error_log_reader_since_observation(
 TEST_F(DistinctErrorLogTest, shouldReadOneObservationSinceTimestamp)
 {
     ASSERT_EQ(
-        aeron_distinct_error_log_init(&m_log, m_buffer.data(), m_buffer.size(), &test_clock, linger_resource, NULL), 0);
+        aeron_distinct_error_log_init(&m_log, m_buffer.data(), m_buffer.size(), test_clock, linger_resource, NULL), 0);
 
     EXPECT_EQ(aeron_distinct_error_log_record(&m_log, 1, "description 1", "message"), 0);
     clock_value++;

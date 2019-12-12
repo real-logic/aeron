@@ -65,7 +65,7 @@ int aeron_network_publication_create(
     aeron_network_publication_t *_pub = NULL;
     const uint64_t usable_fs_space = context->usable_fs_space_func(context->aeron_dir);
     const uint64_t log_length = aeron_logbuffer_compute_log_length(params->term_length, context->file_page_size);
-    const int64_t now_ns = aeron_clock_now(&context->nano_clock);
+    const int64_t now_ns = aeron_clock_now(context->nano_clock);
 
     *publication = NULL;
 
@@ -161,7 +161,7 @@ int aeron_network_publication_create(
 
     _pub->endpoint = endpoint;
     _pub->flow_control = flow_control_strategy;
-    _pub->nano_clock = &context->nano_clock;
+    _pub->nano_clock = context->nano_clock;
     _pub->conductor_fields.subscribable.array = NULL;
     _pub->conductor_fields.subscribable.length = 0;
     _pub->conductor_fields.subscribable.capacity = 0;

@@ -134,7 +134,7 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
         &conductor->error_log,
         context->error_buffer,
         context->error_buffer_length,
-        &context->epoch_clock,
+        context->epoch_clock,
         aeron_error_log_resource_linger,
         conductor) < 0)
     {
@@ -231,12 +231,12 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     conductor->client_timeouts_counter = aeron_counter_addr(
         &conductor->counters_manager, AERON_SYSTEM_COUNTER_CLIENT_TIMEOUTS);
 
-    int64_t now_ns = aeron_clock_now(&context->nano_clock);
+    int64_t now_ns = aeron_clock_now(context->nano_clock);
 
-    conductor->nano_clock = &context->nano_clock;
-    conductor->epoch_clock = &context->epoch_clock;
-    conductor->cached_nano_clock = &context->cached_nano_clock;
-    conductor->cached_epoch_clock = &context->cached_epoch_clock;
+    conductor->nano_clock = context->nano_clock;
+    conductor->epoch_clock = context->epoch_clock;
+    conductor->cached_nano_clock = context->cached_nano_clock;
+    conductor->cached_epoch_clock = context->cached_epoch_clock;
     conductor->clock_update_deadline_ns = 0;
     conductor->time_of_last_timeout_check_ns = now_ns;
     conductor->time_of_last_to_driver_position_change_ns = now_ns;
@@ -2198,7 +2198,7 @@ int aeron_driver_conductor_on_add_network_publication(
         publication->log_file_name,
         publication->log_file_name_length);
 
-    int64_t now_ns = aeron_clock_now(&conductor->context->nano_clock);
+    int64_t now_ns = aeron_clock_now(conductor->context->nano_clock);
 
     for (size_t i = 0; i < conductor->spy_subscriptions.length; i++)
     {

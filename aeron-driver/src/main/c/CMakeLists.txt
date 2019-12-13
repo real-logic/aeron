@@ -87,6 +87,10 @@ if(EPOLL_PROTOTYPE_EXISTS)
     add_definitions(-DHAVE_EPOLL)
 endif()
 
+if (NOT POLL_PROTOTYPE_EXISTS AND NOT EPOLL_PROTOTYPE_EXISTS)
+  message(FATAL_ERROR "Unsupported configuration: neither POLL nor EPOLL found" )
+endif()
+
 if(STRUCT_MMSGHDR_TYPE_EXISTS)
     add_definitions(-DHAVE_STRUCT_MMSGHDR)
 endif()

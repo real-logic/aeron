@@ -30,6 +30,7 @@ import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.SystemEpochClock;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
@@ -38,19 +39,16 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
-import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_SUFFIX;
-import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.Catalog.*;
 import static io.aeron.archive.MigrationUtils.fullVersionString;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.logbuffer.FrameDescriptor.*;
+import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_DATA;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
-import static java.lang.Math.max;
+import static java.lang.Math.min;
 import static java.nio.file.StandardOpenOption.READ;
-import static org.agrona.AsciiEncoding.parseLongAscii;
 import static org.agrona.BitUtil.align;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 
@@ -60,6 +58,23 @@ import static org.agrona.BufferUtil.allocateDirectAligned;
  */
 public class ArchiveTool
 {
+    /**
+     * Allows user to confirm or reject an action.
+     *
+     * @param <T> type of the context data
+     */
+    @FunctionalInterface
+    interface ActionConfirmation<T>
+    {
+        /**
+         * Confirm or reject the action.
+         *
+         * @param context context data
+         * @return <tt>true</tt> confirms the action and <tt>false</tt> to reject the action
+         */
+        boolean confirm(T context);
+    }
+
     public static int maxEntries(final File archiveDir)
     {
         try (Catalog catalog = openCatalogReadOnly(archiveDir, SystemEpochClock.INSTANCE))
@@ -123,7 +138,7 @@ public class ArchiveTool
         final PrintStream out,
         final File archiveDir,
         final long dataFragmentLimit,
-        final Supplier<Boolean> continueOnFragmentLimit)
+        final ActionConfirmation<Long> continueOnFragmentLimit)
     {
         try (Catalog catalog = openCatalog(archiveDir, SystemEpochClock.INSTANCE);
             ArchiveMarkFile markFile = openMarkFile(archiveDir, SystemEpochClock.INSTANCE, out::println))
@@ -134,7 +149,7 @@ public class ArchiveTool
             out.println();
             out.println("Dumping " + dataFragmentLimit + " fragments per recording");
             catalog.forEach((he, headerDecoder, e, descriptorDecoder) -> dump(out, archiveDir, catalog,
-                dataFragmentLimit, headerDecoder, descriptorDecoder, continueOnFragmentLimit));
+                dataFragmentLimit, continueOnFragmentLimit, headerDecoder, descriptorDecoder));
         }
     }
 
@@ -142,51 +157,73 @@ public class ArchiveTool
      * Verify descriptors in the catalog, checking recording files availability and contents.
      * Faulty entries are marked as unusable
      *
-     * @param out        output stream to print results and errors to
-     * @param archiveDir that contains Markfile, Catalog, and recordings.
+     * @param out                        output stream to print results and errors to
+     * @param archiveDir                 that contains Markfile, Catalog, and recordings.
+     * @param truncateFileOnPageStraddle action to perform if last fragment in the max segment file straddles the page
+     *                                   boundary, i.e. if <tt>true</tt> the file will be truncated (last fragment
+     *                                   will be deleted), if <tt>false</tt> the fragment if considered complete.
      */
-    public static void verify(final PrintStream out, final File archiveDir)
+    public static void verify(
+        final PrintStream out, final File archiveDir, final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
-        verify(out, archiveDir, SystemEpochClock.INSTANCE);
+        verify(out, archiveDir, SystemEpochClock.INSTANCE, truncateFileOnPageStraddle);
     }
 
-    static void verify(final PrintStream out, final File archiveDir, final EpochClock epochClock)
+    static void verify(
+        final PrintStream out,
+        final File archiveDir,
+        final EpochClock epochClock,
+        final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
         try (Catalog catalog = openCatalog(archiveDir, epochClock))
         {
-            catalog.forEach(createVerifyEntryProcessor(out, archiveDir, epochClock));
+            catalog.forEach(createVerifyEntryProcessor(out, archiveDir, epochClock, truncateFileOnPageStraddle));
         }
     }
 
     private static CatalogEntryProcessor createVerifyEntryProcessor(
-        final PrintStream out, final File archiveDir, final EpochClock epochClock)
+        final PrintStream out,
+        final File archiveDir,
+        final EpochClock epochClock, final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
-        final ByteBuffer tempBuffer = allocateDirectAligned(4096, FRAME_ALIGNMENT);
+        final ByteBuffer tempBuffer = allocateDirectAligned(HEADER_LENGTH, FRAME_ALIGNMENT);
+        tempBuffer.order(RecordingDescriptorDecoder.BYTE_ORDER);
         final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight(tempBuffer);
-        return (headerEncoder, headerDecoder, encoder, decoder) -> verifyRecording(out, archiveDir, tempBuffer,
-            headerFlyweight, epochClock,
-            headerEncoder, encoder, decoder);
+        return (headerEncoder, headerDecoder, encoder, decoder) -> verifyRecording(out, archiveDir, epochClock,
+            truncateFileOnPageStraddle, headerEncoder, encoder, decoder, tempBuffer, headerFlyweight);
     }
 
     /**
      * Verify descriptor in the catalog according to recordingId, checking recording files availability and contents.
      * Faulty entries are marked as unusable
      *
-     * @param out         output stream to print results and errors to
-     * @param archiveDir  that contains Markfile, Catalog, and recordings.
-     * @param recordingId to verify.
+     * @param out                        output stream to print results and errors to
+     * @param archiveDir                 that contains Markfile, Catalog, and recordings.
+     * @param recordingId                to verify.
+     * @param truncateFileOnPageStraddle action to perform if last fragment in the max segment file straddles the page
+     *                                   boundary, i.e. if <tt>true</tt> the file will be truncated (last fragment
+     *                                   will be deleted), if <tt>false</tt> the fragment if considered complete.
      */
-    public static void verifyRecording(final PrintStream out, final File archiveDir, final long recordingId)
+    public static void verifyRecording(
+        final PrintStream out,
+        final File archiveDir,
+        final long recordingId,
+        final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
-        verifyRecording(out, archiveDir, recordingId, SystemEpochClock.INSTANCE);
+        verifyRecording(out, archiveDir, recordingId, SystemEpochClock.INSTANCE, truncateFileOnPageStraddle);
     }
 
     static void verifyRecording(
-        final PrintStream out, final File archiveDir, final long recordingId, final EpochClock epochClock)
+        final PrintStream out,
+        final File archiveDir,
+        final long recordingId,
+        final EpochClock epochClock,
+        final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
         try (Catalog catalog = openCatalog(archiveDir, epochClock))
         {
-            catalog.forEntry(recordingId, createVerifyEntryProcessor(out, archiveDir, epochClock));
+            catalog.forEntry(recordingId,
+                createVerifyEntryProcessor(out, archiveDir, epochClock, truncateFileOnPageStraddle));
         }
     }
 
@@ -262,9 +299,9 @@ public class ArchiveTool
         final File archiveDir,
         final Catalog catalog,
         final long dataFragmentLimit,
+        final ActionConfirmation<Long> continueOnFragmentLimit,
         final RecordingDescriptorHeaderDecoder header,
-        final RecordingDescriptorDecoder descriptor,
-        final Supplier<Boolean> continueOnFragmentLimit)
+        final RecordingDescriptorDecoder descriptor)
     {
         final long stopPosition = descriptor.stopPosition();
         final long streamLength = stopPosition - descriptor.startPosition();
@@ -322,7 +359,7 @@ public class ArchiveTool
                     out.printf("%d bytes (from %d) remaining in recording %d%n",
                         streamLength - reader.replayPosition(), streamLength, descriptor.recordingId());
                 }
-                isContinue = continueOnFragmentLimit.get();
+                isContinue = continueOnFragmentLimit.confirm(dataFragmentLimit);
             }
         }
         while (!reader.isDone() && isContinue);
@@ -339,167 +376,100 @@ public class ArchiveTool
     private static void verifyRecording(
         final PrintStream out,
         final File archiveDir,
-        final ByteBuffer tempBuffer,
-        final DataHeaderFlyweight headerFlyweight,
         final EpochClock epochClock,
+        final ActionConfirmation<File> truncateFileOnPageStraddle,
         final RecordingDescriptorHeaderEncoder headerEncoder,
         final RecordingDescriptorEncoder encoder,
-        final RecordingDescriptorDecoder decoder)
+        final RecordingDescriptorDecoder decoder,
+        final ByteBuffer tempBuffer,
+        final DataHeaderFlyweight headerFlyweight)
     {
         final long recordingId = decoder.recordingId();
         final int segmentFileLength = decoder.segmentFileLength();
         final int termBufferLength = decoder.termBufferLength();
         final long startPosition = decoder.startPosition();
-        final long startSegmentOffset = startPosition & (termBufferLength - 1);
-        final long stopSegmentOffset;
-        final File maxSegmentFile;
 
-        long stopPosition = decoder.stopPosition();
-        long maxSegmentPosition = NULL_POSITION;
-
-        final String prefix = recordingId + "-";
-        final String[] segmentFiles =
-            archiveDir.list((dir, name) -> name.startsWith(prefix) && name.endsWith(RECORDING_SEGMENT_SUFFIX));
-
-        if (null == segmentFiles || 0 == segmentFiles.length)
+        final String[] segmentFiles = listSegmentFiles(archiveDir, recordingId);
+        final String maxSegmentFile;
+        final long stopPosition;
+        try
         {
-            maxSegmentFile = null;
-            stopSegmentOffset = -1;
-            encoder.stopPosition(startPosition);
-            encoder.stopTimestamp(epochClock.time());
+            maxSegmentFile = findSegmentFileWithHighestPosition(segmentFiles);
+            stopPosition = computeStopPosition(archiveDir, maxSegmentFile, startPosition, termBufferLength,
+                segmentFileLength,
+                truncateFileOnPageStraddle::confirm);
         }
-        else
+        catch (final Exception ex)
         {
-            for (final String filename : segmentFiles)
-            {
-                final int length = filename.length();
-                final int offset = prefix.length();
-                final int remaining = length - offset - RECORDING_SEGMENT_SUFFIX.length();
-                boolean malformed = false;
-                if (remaining <= 0)
-                {
-                    malformed = true;
-                }
-                else
-                {
-                    try
-                    {
-                        maxSegmentPosition = max(parseLongAscii(filename, offset, remaining), maxSegmentPosition);
-                    }
-                    catch (final Exception ignore)
-                    {
-                        malformed = true;
-                    }
-                }
-                if (malformed)
-                {
-                    out.println("(recordingId=" + recordingId + ") ERR: malformed recording filename: " + filename);
-                    headerEncoder.valid(INVALID);
-                    return;
-                }
-            }
-
-            if (maxSegmentPosition < 0)
-            {
-                out.println("(recordingId=" + recordingId + ") ERR: no valid recording segment files found");
-                headerEncoder.valid(INVALID);
-                return;
-            }
-
-            maxSegmentFile = new File(archiveDir, segmentFileName(recordingId, maxSegmentPosition));
-            try
-            {
-                stopSegmentOffset = recoverStopOffset(maxSegmentFile, segmentFileLength);
-            }
-            catch (final Exception ignore)
-            {
-                out.println(
-                    "(recordingId=" + recordingId + ") ERR: failed to recover stop segment offset from filename: " +
-                    maxSegmentFile.getName());
-                headerEncoder.valid(INVALID);
-                return;
-            }
-
-            final long recordingLength = maxSegmentPosition + stopSegmentOffset - startSegmentOffset;
-            final long newStopPosition = startPosition + recordingLength;
-            if (newStopPosition != stopPosition)
-            {
-                stopPosition = newStopPosition;
-                encoder.stopPosition(stopPosition);
-                encoder.stopTimestamp(epochClock.time());
-            }
+            final String message = ex.getMessage();
+            out.println("(recordingId=" + recordingId + ") ERR: " + (null != message ? message : ex.toString()));
+            headerEncoder.valid(INVALID);
+            return;
         }
+
         if (maxSegmentFile != null)
         {
-            final long startOffset = ((stopPosition - startPosition) > segmentFileLength) ? 0L : startSegmentOffset;
-            if (verifyLastFile(tempBuffer, headerFlyweight, recordingId, maxSegmentFile, startOffset,
-                stopSegmentOffset, decoder, out))
+            final int streamId = decoder.streamId();
+            if (verifyFile(out, archiveDir, recordingId, maxSegmentFile, segmentFileLength, streamId, decoder,
+                tempBuffer, headerFlyweight))
             {
                 headerEncoder.valid(INVALID);
                 return;
             }
+        }
+        if (stopPosition != decoder.stopPosition())
+        {
+            encoder.stopPosition(stopPosition);
+            encoder.stopTimestamp(epochClock.time());
         }
         headerEncoder.valid(VALID);
         out.println("(recordingId=" + recordingId + ") OK");
     }
 
-    private static boolean verifyLastFile(
-        final ByteBuffer tempBuffer,
-        final DataHeaderFlyweight headerFlyweight,
+    private static boolean verifyFile(
+        final PrintStream out,
+        final File archiveDir,
         final long recordingId,
-        final File lastSegmentFile,
-        final long startOffset,
-        final long endSegmentOffset,
+        final String fileName,
+        final long segmentFileLength,
+        final int streamId,
         final RecordingDescriptorDecoder decoder,
-        final PrintStream out)
+        final ByteBuffer tempBuffer,
+        final DataHeaderFlyweight headerFlyweight)
     {
-        try (FileChannel lastFile = FileChannel.open(lastSegmentFile.toPath(), READ))
+        final File file = new File(archiveDir, fileName);
+        try (FileChannel channel = FileChannel.open(file.toPath(), READ))
         {
             tempBuffer.clear();
-            long position = startOffset;
+            final long maxSize = min(segmentFileLength, channel.size());
+            long position = 0;
             do
             {
-                tempBuffer.clear().limit(DataHeaderFlyweight.HEADER_LENGTH);
-                if (lastFile.read(tempBuffer, position) != DataHeaderFlyweight.HEADER_LENGTH)
+                tempBuffer.clear();
+                if (channel.read(tempBuffer, position) != HEADER_LENGTH)
                 {
                     out.println("(recordingId=" + recordingId + ") ERR: failed to read fragment header.");
                     return true;
                 }
 
-                if (headerFlyweight.frameLength() != 0)
+                if (headerFlyweight.frameLength() == 0)
                 {
-                    if (headerFlyweight.sessionId() != decoder.sessionId())
-                    {
-                        out.println(
-                            "(recordingId=" + recordingId + ") ERR: fragment sessionId=" + headerFlyweight.sessionId() +
-                            " (expected=" + decoder.sessionId() + ")");
-                        return true;
-                    }
-
-                    if (headerFlyweight.streamId() != decoder.streamId())
-                    {
-                        out.println(
-                            "(recordingId=" + recordingId + ") ERR: fragment sessionId=" + headerFlyweight.streamId() +
-                            " (expected=" + decoder.streamId() + ")");
-                        return true;
-                    }
+                    break;
+                }
+                if (headerFlyweight.streamId() != streamId)
+                {
+                    out.println("(recordingId=" + recordingId + ") ERR: fragment sessionId=" +
+                        headerFlyweight.streamId() + " (expected=" + decoder.streamId() + ")");
+                    return true;
                 }
 
                 position += align(headerFlyweight.frameLength(), FRAME_ALIGNMENT);
             }
-            while (headerFlyweight.frameLength() != 0);
-
-            if (position != endSegmentOffset)
-            {
-                out.println(
-                    "(recordingId=" + recordingId + ") ERR: end segment offset=" + position + " (expected=" +
-                    endSegmentOffset + ")");
-                return true;
-            }
+            while (position < maxSize);
         }
-        catch (final Exception ex)
+        catch (final IOException ex)
         {
-            out.println("(recordingId=" + recordingId + ") ERR: failed to verify file:" + lastSegmentFile);
+            out.println("(recordingId=" + recordingId + ") ERR: failed to verify file:" + file);
             ex.printStackTrace(out);
             return true;
         }

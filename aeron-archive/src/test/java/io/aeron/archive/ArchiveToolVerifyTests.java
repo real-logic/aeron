@@ -17,11 +17,9 @@ import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.Catalog.*;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
-import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
-import static org.agrona.BitUtil.align;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ArchiveToolVerifyTests
@@ -44,6 +42,11 @@ class ArchiveToolVerifyTests
     private long record8;
     private long record9;
     private long record10;
+    private long record11;
+    private long record12;
+    private long record13;
+    private long record14;
+    private long record15;
 
     @BeforeEach
     void setup() throws IOException
@@ -53,59 +56,89 @@ class ArchiveToolVerifyTests
         {
             record0 = catalog.addNewRecording(NULL_POSITION, NULL_POSITION, NULL_TIMESTAMP, NULL_TIMESTAMP, 0,
                 SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 1, 1, "emptyChannel", "emptyChannel?tag=X", "source1");
-            record1 = catalog.addNewRecording(11, NULL_POSITION, 10, NULL_TIMESTAMP, 0, SEGMENT_LENGTH, TERM_LENGTH,
-                MTU_LENGTH, 1, 1, "emptyChannel", "emptyChannel?tag=X", "source1");
-            record2 = catalog.addNewRecording(22, NULL_POSITION, 20, NULL_TIMESTAMP, 0, SEGMENT_LENGTH, TERM_LENGTH,
-                MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
-            record3 = catalog.addNewRecording(33, NULL_POSITION, 30, NULL_TIMESTAMP, 0, SEGMENT_LENGTH, TERM_LENGTH,
-                MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
-            record4 = catalog.addNewRecording(44, NULL_POSITION, 40, NULL_TIMESTAMP, 0, SEGMENT_LENGTH, TERM_LENGTH,
-                MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
-            record5 = catalog.addNewRecording(55, NULL_POSITION, 50, NULL_TIMESTAMP, 0, SEGMENT_LENGTH, TERM_LENGTH,
-                MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
-            record6 = catalog.addNewRecording(66, NULL_POSITION, 60, NULL_TIMESTAMP, 0, SEGMENT_LENGTH, TERM_LENGTH,
-                MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
-            record7 = catalog.addNewRecording(0, NULL_POSITION, 70, NULL_TIMESTAMP, 0, SEGMENT_LENGTH, TERM_LENGTH,
-                MTU_LENGTH, 3, 3, "validChannel", "validChannel?tag=Z", "source3");
-            record8 = catalog.addNewRecording(TERM_LENGTH, NULL_POSITION, 80, NULL_TIMESTAMP, 0, SEGMENT_LENGTH,
-                TERM_LENGTH, MTU_LENGTH, 3, 3, "validChannel", "validChannel?tag=Z", "source3");
-            record9 = catalog.addNewRecording(0, NULL_POSITION, 90, NULL_TIMESTAMP, 0, SEGMENT_LENGTH,
-                TERM_LENGTH, MTU_LENGTH, 3, 3, "validChannel", "validChannel?tag=Z", "source3");
-            record10 = catalog.addNewRecording(0, 1001, 100, NULL_TIMESTAMP, 0, SEGMENT_LENGTH,
-                TERM_LENGTH, MTU_LENGTH, 3, 3, "validChannel", "validChannel?tag=Z", "source3");
+            record1 = catalog.addNewRecording(11, NULL_POSITION, 10, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 1, 1, "emptyChannel", "emptyChannel?tag=X", "source1");
+            record2 = catalog.addNewRecording(22, NULL_POSITION, 20, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
+            record3 = catalog.addNewRecording(33, NULL_POSITION, 30, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
+            record4 = catalog.addNewRecording(44, NULL_POSITION, 40, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
+            record5 = catalog.addNewRecording(55, NULL_POSITION, 50, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
+            record6 = catalog.addNewRecording(66, NULL_POSITION, 60, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
+            record7 = catalog.addNewRecording(0, NULL_POSITION, 70, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 3, 3, "validChannel", "validChannel?tag=Z", "source3");
+            record8 = catalog.addNewRecording(TERM_LENGTH + 1024, NULL_POSITION, 80, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 3, 3, "validChannel", "validChannel?tag=Z", "source3");
+            record9 = catalog.addNewRecording(2048, NULL_POSITION, 90, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 3, 3, "validChannel", "validChannel?tag=Z", "source3");
+            record10 = catalog.addNewRecording(0, NULL_POSITION, 100, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 3, 3, "validChannel", "validChannel?tag=Z", "source3");
+            record11 = catalog.addNewRecording(0, NULL_POSITION, 110, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 3, 3, "validChannel", "validChannel?tag=Z", "source3");
+            record12 = catalog.addNewRecording(0, 0, 120, 999999, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 3, 3, "validChannel", "validChannel?tag=Z", "source3");
+            record13 = catalog.addNewRecording(1024 * 1024, SEGMENT_LENGTH * 128 + PAGE_SIZE * 3, 130, 888888, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 3, 3, "validChannel", "validChannel?tag=Z", "source3");
+            record14 = catalog.addNewRecording(0, 14, 140, 140, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 3, 3, "validChannel", "validChannel?tag=Z", "source3");
+            record15 = catalog.addNewRecording(PAGE_SIZE * 5 + 1024, 150, 150, 160, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 3, 3, "validChannel", "validChannel?tag=Z", "source3");
         }
         createFile(record2 + "-" + RECORDING_SEGMENT_SUFFIX); // ERR: no segment position
         createFile(record3 + "-" + "invalid_position" + RECORDING_SEGMENT_SUFFIX); // ERR: invalid position
         createFile(segmentFileName(record4, -111)); // ERR: negative position
         createFile(segmentFileName(record5, 0)); // ERR: empty file
         createDirectory(segmentFileName(record6, 0)); // ERR: directory
-        writeToSegmentFile(createFile(segmentFileName(record7, 555)), (bb, fl, ch) -> ch.write(bb));
-        writeToSegmentFile(createFile(segmentFileName(record8, 1000)), (bb, flyweight, ch) ->
-        {
-            flyweight.frameLength(123);
-            flyweight.sessionId(3);
-            flyweight.streamId(3);
-            ch.write(bb);
-            bb.clear();
-            flyweight.frameLength(0);
-            ch.write(bb, align(123, FRAME_ALIGNMENT));
-        });
-        writeToSegmentFile(createFile(segmentFileName(record9, 0)), (bb, flyweight, ch) ->
-        {
-            flyweight.frameLength(PAGE_SIZE - HEADER_LENGTH);
-            flyweight.sessionId(3);
-            flyweight.streamId(3);
-            ch.write(bb);
-            bb.clear();
-            flyweight.frameLength(128);
-            flyweight.sessionId(3);
-            flyweight.streamId(3);
-            ch.write(bb, PAGE_SIZE - HEADER_LENGTH);
-            bb.clear();
-            flyweight.frameLength(0);
-            ch.write(bb, PAGE_SIZE - HEADER_LENGTH + 128);
-        });
-        writeToSegmentFile(createFile(segmentFileName(record10, 1001)), (bb, fl, ch) -> ch.write(bb));
+        writeToSegmentFile(createFile(segmentFileName(record7, 0)), (bb, fl, ch) -> ch.write(bb));
+        writeToSegmentFile(createFile(segmentFileName(record8, 0)), (bb, fl, ch) -> ch.write(bb));
+        writeToSegmentFile(createFile(segmentFileName(record9, SEGMENT_LENGTH)),
+            (bb, flyweight, ch) ->
+            {
+                flyweight.frameLength(100);
+                flyweight.streamId(3);
+                ch.write(bb);
+            });
+        writeToSegmentFile(createFile(segmentFileName(record10, 0)),
+            (bb, flyweight, ch) ->
+            {
+                flyweight.frameLength(PAGE_SIZE - 64);
+                flyweight.streamId(3);
+                ch.write(bb);
+                bb.clear();
+                flyweight.frameLength(128);
+                flyweight.streamId(3);
+                ch.write(bb, PAGE_SIZE - 64);
+            });
+        writeToSegmentFile(createFile(segmentFileName(record11, 0)),
+            (bb, flyweight, ch) ->
+            {
+                flyweight.frameLength(PAGE_SIZE - 64);
+                flyweight.streamId(3);
+                ch.write(bb);
+                bb.clear();
+                flyweight.frameLength(128);
+                flyweight.streamId(3);
+                ch.write(bb, PAGE_SIZE - 64);
+            });
+        writeToSegmentFile(createFile(segmentFileName(record12, 0)), (bb, fl, ch) -> ch.write(bb));
+        writeToSegmentFile(createFile(segmentFileName(record13, SEGMENT_LENGTH * 128)),
+            (bb, flyweight, ch) ->
+            {
+                flyweight.frameLength(PAGE_SIZE * 3);
+                flyweight.streamId(3);
+                ch.write(bb);
+            });
+        writeToSegmentFile(createFile(segmentFileName(record14, 0)), (bb, fl, ch) -> ch.write(bb));
+        writeToSegmentFile(createFile(segmentFileName(record15, SEGMENT_LENGTH * 2)),
+            (bb, flyweight, ch) ->
+            {
+                flyweight.frameLength(1000);
+                flyweight.streamId(3);
+                ch.write(bb);
+            });
     }
 
     private File createFile(final String name) throws IOException
@@ -148,31 +181,42 @@ class ArchiveToolVerifyTests
     @Test
     void verifyAllRecordingsCheckLastFileOnly()
     {
-        ArchiveTool.verify(System.out, archiveDir, epochClock);
+        ArchiveTool.verify(System.out, archiveDir, epochClock, file -> file.getName().startsWith("" + record10));
 
         try (Catalog catalog = ArchiveTool.openCatalogReadOnly(archiveDir, epochClock))
         {
-            verifyRecording(catalog, record0, VALID, NULL_POSITION, NULL_POSITION, NULL_TIMESTAMP, 100, 0, 1, 1,
-                "emptyChannel", "source1");
-            verifyRecording(catalog, record1, VALID, 11, 11, 10, 200, 0, 1, 1, "emptyChannel", "source1");
-            verifyRecording(catalog, record2, INVALID, 22, NULL_POSITION, 20, NULL_TIMESTAMP, 0, 2, 2, "invalidChannel",
-                "source2");
-            verifyRecording(catalog, record3, INVALID, 33, NULL_POSITION, 30, NULL_TIMESTAMP, 0, 2, 2, "invalidChannel",
-                "source2");
-            verifyRecording(catalog, record4, INVALID, 44, NULL_POSITION, 40, NULL_TIMESTAMP, 0, 2, 2, "invalidChannel",
-                "source2");
-            verifyRecording(catalog, record5, INVALID, 55, NULL_POSITION, 50, NULL_TIMESTAMP, 0, 2, 2, "invalidChannel",
-                "source2");
-            verifyRecording(catalog, record6, INVALID, 66, NULL_POSITION, 60, NULL_TIMESTAMP, 0, 2, 2, "invalidChannel",
-                "source2");
-            verifyRecording(catalog, record7, VALID, 0, 555, 70, 300, 0, 3, 3, "validChannel",
-                "source3");
-            verifyRecording(catalog, record8, VALID, TERM_LENGTH, TERM_LENGTH + 1128, 80, 400, 0, 3, 3, "validChannel",
-                "source3");
-//            verifyRecording(catalog, record9, VALID, 0, PAGE_SIZE - HEADER_LENGTH, 90, 500, 0, 3, 3, "validChannel",
-//                "source3");
-            verifyRecording(catalog, record10, VALID, 0, 1001, 100, NULL_TIMESTAMP, 0, 3, 3, "validChannel",
-                "source3");
+            verifyRecording(catalog, record0, VALID, NULL_POSITION, NULL_POSITION, NULL_TIMESTAMP, NULL_TIMESTAMP, 0,
+                1, 1, "emptyChannel", "source1");
+            verifyRecording(catalog, record1, VALID, 11, 11, 10, 100, 0,
+                1, 1, "emptyChannel", "source1");
+            verifyRecording(catalog, record2, INVALID, 22, NULL_POSITION, 20, NULL_TIMESTAMP, 0,
+                2, 2, "invalidChannel", "source2");
+            verifyRecording(catalog, record3, INVALID, 33, NULL_POSITION, 30, NULL_TIMESTAMP, 0,
+                2, 2, "invalidChannel", "source2");
+            verifyRecording(catalog, record4, INVALID, 44, NULL_POSITION, 40, NULL_TIMESTAMP, 0,
+                2, 2, "invalidChannel", "source2");
+            verifyRecording(catalog, record5, INVALID, 55, NULL_POSITION, 50, NULL_TIMESTAMP, 0,
+                2, 2, "invalidChannel", "source2");
+            verifyRecording(catalog, record6, INVALID, 66, NULL_POSITION, 60, NULL_TIMESTAMP, 0,
+                2, 2, "invalidChannel", "source2");
+            verifyRecording(catalog, record7, VALID, 0, 0, 70, 200, 0,
+                3, 3, "validChannel", "source3");
+            verifyRecording(catalog, record8, VALID, TERM_LENGTH + 1024, -TERM_LENGTH, 80, 300, 0,
+                3, 3, "validChannel", "source3");
+            verifyRecording(catalog, record9, VALID, 2048, SEGMENT_LENGTH + 128, 90, 400, 0,
+                3, 3, "validChannel", "source3");
+            verifyRecording(catalog, record10, VALID, 0, PAGE_SIZE - 64, 100, 500, 0,
+                3, 3, "validChannel", "source3");
+            verifyRecording(catalog, record11, VALID, 0, PAGE_SIZE + 64, 110, 600, 0,
+                3, 3, "validChannel", "source3");
+            verifyRecording(catalog, record12, VALID, 0, 0, 120, 999999, 0,
+                3, 3, "validChannel", "source3");
+            verifyRecording(catalog, record13, VALID, 1024 * 1024, SEGMENT_LENGTH * 128 + PAGE_SIZE * 3, 130, 888888, 0,
+                3, 3, "validChannel", "source3");
+            verifyRecording(catalog, record14, VALID, 0, 0, 140, 700, 0,
+                3, 3, "validChannel", "source3");
+            verifyRecording(catalog, record15, VALID, PAGE_SIZE * 5 + 1024, SEGMENT_LENGTH * 2 + 1024, 150, 800, 0,
+                3, 3, "validChannel", "source3");
         }
     }
 

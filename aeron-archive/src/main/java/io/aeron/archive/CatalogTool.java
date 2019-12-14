@@ -52,7 +52,7 @@ public class CatalogTool
         else if (args.length >= 2 && args[1].equals("dump"))
         {
             ArchiveTool.dump(System.out, archiveDir,
-                args.length >= 3 ? Long.parseLong(args[2]) : Long.MAX_VALUE, CatalogTool::readContinueAnswer);
+                args.length >= 3 ? Long.parseLong(args[2]) : Long.MAX_VALUE, CatalogTool::continueOnFrameLimit);
         }
         else if (args.length == 2 && args[1].equals("errors"))
         {
@@ -64,11 +64,12 @@ public class CatalogTool
         }
         else if (args.length == 2 && args[1].equals("verify"))
         {
-            ArchiveTool.verify(System.out, archiveDir);
+            ArchiveTool.verify(System.out, archiveDir, CatalogTool::truncateFileOnPageStraddle);
         }
         else if (args.length == 3 && args[1].equals("verify"))
         {
-            ArchiveTool.verifyRecording(System.out, archiveDir, Long.parseLong(args[2]));
+            ArchiveTool.verifyRecording(System.out, archiveDir, Long.parseLong(args[2]),
+                CatalogTool::truncateFileOnPageStraddle);
         }
         else if (args.length == 2 && args[1].equals("count-entries"))
         {
@@ -85,19 +86,33 @@ public class CatalogTool
         else if (args.length == 2 && args[1].equals("migrate"))
         {
             System.out.print(
-                "WARNING: please ensure archive is not running and that backups have been taken of archive " +
-                "directory before attempting migration(s). ");
+                "WARNING: please ensure archive is not running and that backups have been taken of archive directory " +
+                "before attempting migration(s). ");
 
-            if (readContinueAnswer())
+            if (readContinueAnswer("Continue? (y/n)"))
             {
                 ArchiveTool.migrate(System.out, archiveDir);
             }
         }
     }
 
-    private static boolean readContinueAnswer()
+    private static boolean truncateFileOnPageStraddle(final File maxSegmentFile)
     {
-        System.out.printf("%nContinue? (y/n): ");
+        return readContinueAnswer(String.format("Last fragment in the segment file: %s straddles the page boundary,%n" +
+                                                "i.e. it is not possible to verify if it was written correctly.%n%n" +
+                                                "Please choose the corrective action: (y) - to truncate the file and " +
+                                                "(n) - to do nothing",
+            maxSegmentFile.getAbsolutePath()));
+    }
+
+    private static boolean continueOnFrameLimit(final Long frameLimit)
+    {
+        return readContinueAnswer(String.format("Specified frame limit %d reached. Continue? (y/n)", frameLimit));
+    }
+
+    private static boolean readContinueAnswer(final String msg)
+    {
+        System.out.printf("%n" + msg + ": ");
         final String answer = new Scanner(System.in).nextLine();
 
         return answer.isEmpty() || answer.equalsIgnoreCase("y") || answer.equalsIgnoreCase("yes");

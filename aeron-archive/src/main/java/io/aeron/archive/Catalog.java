@@ -29,6 +29,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
 import java.util.function.IntConsumer;
+import java.util.function.Predicate;
 
 import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_SUFFIX;
 import static io.aeron.archive.client.AeronArchive.*;
@@ -36,6 +37,8 @@ import static io.aeron.archive.codecs.RecordingDescriptorDecoder.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 import static java.nio.ByteOrder.nativeOrder;
 import static java.nio.file.StandardOpenOption.*;
 import static org.agrona.AsciiEncoding.parseLongAscii;
@@ -150,7 +153,7 @@ class Catalog implements AutoCloseable
                 catalogFileChannel = FileChannel.open(catalogFile.toPath(), CREATE, READ, WRITE, SPARSE);
                 if (catalogPreExists)
                 {
-                    catalogLength = Math.max(catalogFileChannel.size(), calculateCatalogLength(maxNumEntries));
+                    catalogLength = max(catalogFileChannel.size(), calculateCatalogLength(maxNumEntries));
                 }
                 else
                 {
@@ -531,9 +534,8 @@ class Catalog implements AutoCloseable
 
         final int limit = descriptorDecoder.limit();
         final int strippedChannelLength = descriptorDecoder.strippedChannelLength();
-        final int originalChannelOffset = limit +
-            RecordingDescriptorDecoder.strippedChannelHeaderLength() +
-            strippedChannelLength;
+        final int originalChannelOffset =
+            limit + RecordingDescriptorDecoder.strippedChannelHeaderLength() + strippedChannelLength;
 
         descriptorDecoder.limit(originalChannelOffset);
         final int channelLength = descriptorDecoder.originalChannelLength();
@@ -656,7 +658,7 @@ class Catalog implements AutoCloseable
 
     static long calculateCatalogLength(final long maxEntries)
     {
-        return Math.min((maxEntries * DEFAULT_RECORD_LENGTH) + DEFAULT_RECORD_LENGTH, Integer.MAX_VALUE);
+        return min((maxEntries * DEFAULT_RECORD_LENGTH) + DEFAULT_RECORD_LENGTH, Integer.MAX_VALUE);
     }
 
     static long calculateMaxEntries(final long catalogLength, final long recordLength)
@@ -712,14 +714,15 @@ class Catalog implements AutoCloseable
         if (VALID == headerDecoder.valid() && NULL_POSITION == decoder.stopPosition())
         {
             final String[] segmentFiles = listSegmentFiles(archiveDir, recordingId);
-            final String maxSegmentFile = findSegmentFileWithBiggestPosition(segmentFiles);
+            final String maxSegmentFile = findSegmentFileWithHighestPosition(segmentFiles);
             encoder.stopPosition(computeStopPosition(archiveDir, maxSegmentFile, decoder.startPosition(),
                 decoder.termBufferLength(), decoder.segmentFileLength(),
-                (segmentFile, ch, pos) ->
+                (segmentFile) ->
                 {
-                    throw new ArchiveException(String.format("Found potentially incomplete fragment in the file: " +
-                            "%s at position: %d.%nPlease run `ArchiveTool verify` for the corrective actions!",
-                        segmentFile.getAbsolutePath(), pos));
+                    throw new ArchiveException(String.format("Found potentially incomplete last fragment in the " +
+                            "file: %s.%nPlease run `ArchiveTool verify` to run the " +
+                            "corrective action!",
+                        segmentFile.getAbsolutePath()));
                 }));
             encoder.stopTimestamp(epochClock.time());
         }
@@ -748,7 +751,7 @@ class Catalog implements AutoCloseable
         return archiveDir.list((dir, name) -> name.startsWith(prefix));
     }
 
-    static String findSegmentFileWithBiggestPosition(final String[] segmentFiles)
+    static String findSegmentFileWithHighestPosition(final String[] segmentFiles)
     {
         if (null == segmentFiles || 0 == segmentFiles.length)
         {
@@ -776,40 +779,45 @@ class Catalog implements AutoCloseable
     {
         final int offset = filename.indexOf('-') + 1;
         final int remaining = filename.length() - offset - RECORDING_SEGMENT_SUFFIX.length();
-        return parseLongAscii(filename, offset, remaining);
+        if (0 == remaining)
+        {
+            throw new ArchiveException("No position encoded in the segment file name: " + filename);
+        }
+        try
+        {
+            return parseLongAscii(filename, offset, remaining);
+        }
+        catch (final RuntimeException ex)
+        {
+            throw new ArchiveException("Invalid segment file name: " + filename, ex, ArchiveException.GENERIC);
+        }
     }
 
     static long computeStopPosition(
         final File archiveDir,
-        final String maxFileName,
+        final String maxSegmentFile,
         final long startPosition,
         final int termBufferLength,
         final int segmentFileLength,
-        final OnFragmentPageStraddle onFragmentPageStraddle)
+        final Predicate<File> truncateFileOnPageStraddle)
     {
-        if (null == maxFileName)
+        if (null == maxSegmentFile)
         {
             return startPosition;
         }
         else
         {
-            final File maxSegmentFile = new File(archiveDir, maxFileName);
-            final long stopSegmentOffset = recoverStopOffset(maxSegmentFile, segmentFileLength, onFragmentPageStraddle);
-            return segmentFileBasePosition(startPosition, parseSegmentFilePosition(maxFileName), termBufferLength,
+            final File file = new File(archiveDir, maxSegmentFile);
+            final long stopSegmentOffset = recoverStopOffset(file, segmentFileLength, truncateFileOnPageStraddle);
+            return segmentFileBasePosition(startPosition, parseSegmentFilePosition(maxSegmentFile), termBufferLength,
                 segmentFileLength) + stopSegmentOffset;
         }
     }
 
-    @FunctionalInterface
-    interface OnFragmentPageStraddle
+    private static long recoverStopOffset(
+        final File segmentFile, final int segmentFileLength, final Predicate<File> truncateFileOnPageStraddle)
     {
-        void execute(File segmentFile, FileChannel segment, long lastFrameOffset) throws IOException;
-    }
-
-    static long recoverStopOffset(
-        final File segmentFile, final int segmentFileLength, final OnFragmentPageStraddle onFragmentPageStraddle)
-    {
-        try (FileChannel segment = FileChannel.open(segmentFile.toPath(), READ))
+        try (FileChannel segment = FileChannel.open(segmentFile.toPath(), READ, WRITE))
         {
             final ByteBuffer buffer = ByteBuffer.allocateDirect(HEADER_LENGTH);
             buffer.order(BYTE_ORDER);
@@ -817,7 +825,7 @@ class Catalog implements AutoCloseable
             long lastFragmentOffset = 0;
             long nextFragmentOffset = 0;
             long lastFrameLength = 0;
-            final long maxSize = Math.min(segmentFileLength, segment.size());
+            final long maxSize = min(segmentFileLength, segment.size());
             do
             {
                 buffer.clear();
@@ -838,9 +846,10 @@ class Catalog implements AutoCloseable
             }
             while (nextFragmentOffset < maxSize);
 
-            if (fragmentStraddlesPageBoundary(lastFragmentOffset, lastFrameLength))
+            if (fragmentStraddlesPageBoundary(lastFragmentOffset, lastFrameLength) &&
+                truncateFileOnPageStraddle.test(segmentFile))
             {
-                onFragmentPageStraddle.execute(segmentFile, segment, lastFragmentOffset);
+                segment.truncate(lastFragmentOffset);
                 return lastFragmentOffset;
             }
             else

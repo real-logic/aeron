@@ -76,7 +76,7 @@ public class ArchiveTool
          * Confirm or reject the action.
          *
          * @param context context data
-         * @return <tt>true</tt> confirms the action and <tt>false</tt> to reject the action
+         * @return {@code true} confirms the action and {@code false} to reject the action
          */
         boolean confirm(T context);
     }
@@ -165,10 +165,10 @@ public class ArchiveTool
      *
      * @param out                        output stream to print results and errors to
      * @param archiveDir                 that contains Markfile, Catalog, and recordings.
-     * @param validateAllSegmentFiles    when <tt>true</tt> then all of the segment files will be validated, otherwise
+     * @param validateAllSegmentFiles    when {@code true} then all of the segment files will be validated, otherwise
      *                                   only the last segment file will be validated.
      * @param truncateFileOnPageStraddle action to perform if last fragment in the max segment file straddles the page
-     *                                   boundary, i.e. if <tt>true</tt> the file will be truncated (last fragment
+     *                                   boundary, i.e. if {@code true} the file will be truncated (last fragment
      */
     public static void verify(
         final PrintStream out,
@@ -216,12 +216,12 @@ public class ArchiveTool
      * @param out                        output stream to print results and errors to
      * @param archiveDir                 that contains Markfile, Catalog, and recordings.
      * @param recordingId                to verify.
-     * @param validateAllSegmentFiles    when <tt>true</tt> then all of the segment files will be validated, otherwise
+     * @param validateAllSegmentFiles    when {@code true} then all of the segment files will be validated, otherwise
      *                                   only the last segment file will be validated.
      * @param truncateFileOnPageStraddle action to perform if last fragment in the max segment file straddles the page
-     *                                   boundary, i.e. if <tt>true</tt> the file will be truncated (last fragment
-     *                                   will be deleted), if <tt>false</tt> the fragment if considered complete.
-     * @throws AeronException if there is no recording with <tt>recordingId</tt> in the archive
+     *                                   boundary, i.e. if {@code true} the file will be truncated (last fragment
+     *                                   will be deleted), if {@code false} the fragment if considered complete.
+     * @throws AeronException if there is no recording with {@code recordingId} in the archive
      */
     public static void verifyRecording(
         final PrintStream out,

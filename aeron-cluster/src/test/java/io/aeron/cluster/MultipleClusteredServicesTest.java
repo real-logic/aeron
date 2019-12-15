@@ -4,7 +4,6 @@ import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.service.ClientSession;
-import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
@@ -17,12 +16,6 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.LockSupport;
-
-import static io.aeron.Aeron.NULL_VALUE;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
 
 public class MultipleClusteredServicesTest
 {
@@ -31,8 +24,13 @@ public class MultipleClusteredServicesTest
 
     private final class ServiceA extends TestNode.TestService
     {
-        @Override
-        public void onSessionMessage(ClientSession session, long timestamp, DirectBuffer buffer, int offset, int length, Header header)
+        public void onSessionMessage(
+            final ClientSession session,
+            final long timestamp,
+            final DirectBuffer buffer,
+            final int offset,
+            final int length,
+            final Header header)
         {
             serviceAMessageCount.incrementAndGet();
         }
@@ -40,8 +38,13 @@ public class MultipleClusteredServicesTest
 
     private final class ServiceB extends TestNode.TestService
     {
-        @Override
-        public void onSessionMessage(ClientSession session, long timestamp, DirectBuffer buffer, int offset, int length, Header header)
+        public void onSessionMessage(
+            final ClientSession session,
+            final long timestamp,
+            final DirectBuffer buffer,
+            final int offset,
+            final int length,
+            final Header header)
         {
             serviceBMessageCount.incrementAndGet();
         }
@@ -74,28 +77,21 @@ public class MultipleClusteredServicesTest
             final Aeron aeron = Aeron.connect(context.aeron);
             context.aeronArchiveContext.aeron(aeron).ownsAeronClient(false);
             clusteredServiceContainers.add(
-                ClusteredServiceContainer.launch(
-                    context.serviceContainerContext
-                        .aeron(aeron)
-                        .ownsAeronClient(true)
-                ));
+                ClusteredServiceContainer.launch(context.serviceContainerContext.aeron(aeron).ownsAeronClient(true)));
         });
 
         final String aeronDirName = CommonContext.getAeronDirectoryName();
 
-        MediaDriver clientMediaDriver = MediaDriver.launch(
-            new MediaDriver.Context()
-                .threadingMode(ThreadingMode.SHARED)
-                .dirDeleteOnStart(true)
-                .dirDeleteOnShutdown(true)
-                .aeronDirectoryName(aeronDirName));
+        final MediaDriver clientMediaDriver = MediaDriver.launch(new MediaDriver.Context()
+            .threadingMode(ThreadingMode.SHARED)
+            .dirDeleteOnStart(true)
+            .dirDeleteOnShutdown(true)
+            .aeronDirectoryName(aeronDirName));
 
-        AeronCluster client = AeronCluster.connect(
-            new AeronCluster.Context()
-                .egressListener((clusterSessionId, timestamp, buffer, offset, length, header) -> System.out.println("Egress: " + length))
-                .aeronDirectoryName(aeronDirName)
-                .ingressChannel("aeron:udp")
-                .clusterMemberEndpoints(TestCluster.clientMemberEndpoints(3)));
+        final AeronCluster client = AeronCluster.connect(new AeronCluster.Context()
+            .aeronDirectoryName(aeronDirName)
+            .ingressChannel("aeron:udp")
+            .clusterMemberEndpoints(TestCluster.clientMemberEndpoints(3)));
 
         try
         {

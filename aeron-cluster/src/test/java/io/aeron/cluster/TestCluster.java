@@ -877,7 +877,7 @@ public class TestCluster implements AutoCloseable
         final NodeContext nodeContext,
         final Supplier<? extends TestNode.TestService> serviceSupplier)
     {
-        int serviceIndex = 3 * nodeIndex + serviceId;
+        final int serviceIndex = 3 * nodeIndex + serviceId;
 
         final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + nodeIndex + "-" + serviceIndex;
         final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + nodeIndex + "-driver";

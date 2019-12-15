@@ -29,7 +29,7 @@ public class CatalogTool
     @SuppressWarnings("MethodLength")
     public static void main(final String[] args)
     {
-        if (args.length == 0 || args.length > 3)
+        if (args.length == 0 || args.length > 4)
         {
             printHelp();
             System.exit(-1);
@@ -83,7 +83,7 @@ public class CatalogTool
                         CatalogTool::truncateFileOnPageStraddle);
                 }
             }
-            else if (args.length == 4)
+            else
             {
                 verifyRecording(System.out, archiveDir, Long.parseLong(args[2]), verifyAllSegmentFiles(args[3]),
                     CatalogTool::truncateFileOnPageStraddle);

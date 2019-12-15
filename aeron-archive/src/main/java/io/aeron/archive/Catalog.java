@@ -700,7 +700,8 @@ class Catalog implements AutoCloseable
         }
         else
         {
-            forEach(((headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) -> nextRecordingId++));
+            forEach(((headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                nextRecordingId = descriptorDecoder.recordingId() + 1));
         }
     }
 

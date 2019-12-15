@@ -22,6 +22,7 @@ import io.aeron.archive.codecs.RecordingDescriptorEncoder;
 import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorHeaderEncoder;
 import io.aeron.archive.codecs.mark.MarkFileHeaderDecoder;
+import io.aeron.exceptions.AeronException;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
@@ -214,6 +215,7 @@ public class ArchiveTool
      * @param truncateFileOnPageStraddle action to perform if last fragment in the max segment file straddles the page
      *                                   boundary, i.e. if <tt>true</tt> the file will be truncated (last fragment
      *                                   will be deleted), if <tt>false</tt> the fragment if considered complete.
+     * @throws AeronException if there is no recording with <tt>recordingId</tt> in the archive
      */
     public static void verifyRecording(
         final PrintStream out,
@@ -236,8 +238,11 @@ public class ArchiveTool
     {
         try (Catalog catalog = openCatalog(archiveDir, epochClock))
         {
-            catalog.forEntry(recordingId, createVerifyEntryProcessor(out, archiveDir, validateAllSegmentFiles,
-                epochClock, truncateFileOnPageStraddle));
+            if (!catalog.forEntry(recordingId, createVerifyEntryProcessor(out, archiveDir, validateAllSegmentFiles,
+                epochClock, truncateFileOnPageStraddle)))
+            {
+                throw new AeronException("No recording found with recordinId: " + recordingId);
+            }
         }
     }
 

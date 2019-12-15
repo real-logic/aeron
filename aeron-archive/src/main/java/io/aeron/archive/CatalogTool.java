@@ -18,6 +18,8 @@ package io.aeron.archive;
 import java.io.File;
 import java.util.Scanner;
 
+import static io.aeron.archive.ArchiveTool.*;
+
 /**
  * Tool for inspecting and performing administrative tasks on an {@link Archive} and its contents which is described in
  * the {@link Catalog}.
@@ -43,65 +45,84 @@ public class CatalogTool
 
         if (args.length == 2 && args[1].equals("describe"))
         {
-            ArchiveTool.describe(System.out, archiveDir);
+            describe(System.out, archiveDir);
         }
         else if (args.length == 3 && args[1].equals("describe"))
         {
-            ArchiveTool.describeRecording(System.out, archiveDir, Long.parseLong(args[2]));
+            describeRecording(System.out, archiveDir, Long.parseLong(args[2]));
         }
         else if (args.length >= 2 && args[1].equals("dump"))
         {
-            ArchiveTool.dump(System.out, archiveDir,
-                args.length >= 3 ? Long.parseLong(args[2]) : Long.MAX_VALUE, CatalogTool::continueOnFrameLimit);
+            dump(System.out, archiveDir, args.length >= 3 ? Long.parseLong(args[2]) : Long.MAX_VALUE,
+                CatalogTool::continueOnFrameLimit);
         }
         else if (args.length == 2 && args[1].equals("errors"))
         {
-            ArchiveTool.printErrors(System.out, archiveDir);
+            printErrors(System.out, archiveDir);
         }
         else if (args.length == 2 && args[1].equals("pid"))
         {
-            System.out.println(ArchiveTool.pid(archiveDir));
+            System.out.println(pid(archiveDir));
         }
-        else if (args.length == 2 && args[1].equals("verify"))
+        else if (args.length >= 2 && args[1].equals("verify"))
         {
-            ArchiveTool.verify(System.out, archiveDir, CatalogTool::truncateFileOnPageStraddle);
-        }
-        else if (args.length == 3 && args[1].equals("verify"))
-        {
-            ArchiveTool.verifyRecording(System.out, archiveDir, Long.parseLong(args[2]),
-                CatalogTool::truncateFileOnPageStraddle);
+            if (args.length == 2)
+            {
+
+                verify(System.out, archiveDir, false, CatalogTool::truncateFileOnPageStraddle);
+            }
+            else if (args.length == 3)
+            {
+                if (verifyAllSegmentFiles(args[2]))
+                {
+                    verify(System.out, archiveDir, true, CatalogTool::truncateFileOnPageStraddle);
+                }
+                else
+                {
+                    verifyRecording(System.out, archiveDir, Long.parseLong(args[2]), false,
+                        CatalogTool::truncateFileOnPageStraddle);
+                }
+            }
+            else if (args.length == 4)
+            {
+                verifyRecording(System.out, archiveDir, Long.parseLong(args[2]), verifyAllSegmentFiles(args[3]),
+                    CatalogTool::truncateFileOnPageStraddle);
+            }
         }
         else if (args.length == 2 && args[1].equals("count-entries"))
         {
-            System.out.println(ArchiveTool.countEntries(archiveDir));
+            System.out.println(countEntries(archiveDir));
         }
         else if (args.length == 2 && args[1].equals("max-entries"))
         {
-            System.out.println(ArchiveTool.maxEntries(archiveDir));
+            System.out.println(maxEntries(archiveDir));
         }
         else if (args.length == 3 && args[1].equals("max-entries"))
         {
-            System.out.println(ArchiveTool.maxEntries(archiveDir, Long.parseLong(args[2])));
+            System.out.println(maxEntries(archiveDir, Long.parseLong(args[2])));
         }
         else if (args.length == 2 && args[1].equals("migrate"))
         {
-            System.out.print(
-                "WARNING: please ensure archive is not running and that backups have been taken of archive directory " +
-                "before attempting migration(s). ");
-
+            System.out.print("WARNING: please ensure archive is not running and that backups have been taken of " +
+                "archive directory before attempting migration(s).");
             if (readContinueAnswer("Continue? (y/n)"))
             {
-                ArchiveTool.migrate(System.out, archiveDir);
+                migrate(System.out, archiveDir);
             }
         }
+    }
+
+    private static boolean verifyAllSegmentFiles(final String arg)
+    {
+        return "-a".equals(arg);
     }
 
     private static boolean truncateFileOnPageStraddle(final File maxSegmentFile)
     {
         return readContinueAnswer(String.format("Last fragment in the segment file: %s straddles the page boundary,%n" +
-                                                "i.e. it is not possible to verify if it was written correctly.%n%n" +
-                                                "Please choose the corrective action: (y) - to truncate the file and " +
-                                                "(n) - to do nothing",
+                "i.e. it is not possible to verify if it was written correctly.%n%n" +
+                "Please choose the corrective action: (y) - to truncate the file and " +
+                "(n) - to do nothing",
             maxSegmentFile.getAbsolutePath()));
     }
 
@@ -126,8 +147,10 @@ public class CatalogTool
         System.out.println("     in the catalog and associated recorded data.");
         System.out.println("  errors: prints errors for the archive and media driver.");
         System.out.println("  pid: prints just PID of archive.");
-        System.out.println("  verify <optional recordingId>: verifies descriptor(s) in the catalog, checking");
-        System.out.println("     recording files availability and contents. Faulty entries are marked as unusable.");
+        System.out.println("  verify <optional recordingId> <optional '-a'>: verifies descriptor(s) in the catalog");
+        System.out.println("     checking recording files availability and contents. Only the last segment file is");
+        System.out.println("     checked unless flag 'all' is specified, i.e. meaning check all files.");
+        System.out.println("     Faulty entries are marked as unusable.");
         System.out.println("  count-entries: queries the number of recording entries in the catalog.");
         System.out.println("  max-entries <optional number of entries>: gets or increases the maximum number of");
         System.out.println("     recording entries the catalog can store.");

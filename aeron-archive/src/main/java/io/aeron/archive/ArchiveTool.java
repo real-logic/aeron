@@ -159,38 +159,47 @@ public class ArchiveTool
      *
      * @param out                        output stream to print results and errors to
      * @param archiveDir                 that contains Markfile, Catalog, and recordings.
+     * @param validateAllSegmentFiles    when <tt>true</tt> then all of the segment files will be validated, otherwise
+     *                                   only the last segment file will be validated.
      * @param truncateFileOnPageStraddle action to perform if last fragment in the max segment file straddles the page
      *                                   boundary, i.e. if <tt>true</tt> the file will be truncated (last fragment
-     *                                   will be deleted), if <tt>false</tt> the fragment if considered complete.
      */
     public static void verify(
-        final PrintStream out, final File archiveDir, final ActionConfirmation<File> truncateFileOnPageStraddle)
+        final PrintStream out,
+        final File archiveDir,
+        final boolean validateAllSegmentFiles,
+        final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
-        verify(out, archiveDir, SystemEpochClock.INSTANCE, truncateFileOnPageStraddle);
+        verify(out, archiveDir, validateAllSegmentFiles, SystemEpochClock.INSTANCE, truncateFileOnPageStraddle);
     }
 
     static void verify(
         final PrintStream out,
         final File archiveDir,
+        final boolean validateAllSegmentFiles,
         final EpochClock epochClock,
         final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
         try (Catalog catalog = openCatalog(archiveDir, epochClock))
         {
-            catalog.forEach(createVerifyEntryProcessor(out, archiveDir, epochClock, truncateFileOnPageStraddle));
+            catalog.forEach(createVerifyEntryProcessor(out, archiveDir, validateAllSegmentFiles, epochClock,
+                truncateFileOnPageStraddle));
         }
     }
 
     private static CatalogEntryProcessor createVerifyEntryProcessor(
         final PrintStream out,
         final File archiveDir,
-        final EpochClock epochClock, final ActionConfirmation<File> truncateFileOnPageStraddle)
+        final boolean validateAllSegmentFiles,
+        final EpochClock epochClock,
+        final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
         final ByteBuffer tempBuffer = allocateDirectAligned(HEADER_LENGTH, FRAME_ALIGNMENT);
         tempBuffer.order(RecordingDescriptorDecoder.BYTE_ORDER);
         final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight(tempBuffer);
-        return (headerEncoder, headerDecoder, encoder, decoder) -> verifyRecording(out, archiveDir, epochClock,
-            truncateFileOnPageStraddle, headerEncoder, encoder, decoder, tempBuffer, headerFlyweight);
+        return (headerEncoder, headerDecoder, encoder, decoder) ->
+            verifyRecording(out, archiveDir, validateAllSegmentFiles, epochClock, truncateFileOnPageStraddle,
+                tempBuffer, headerFlyweight, headerEncoder, encoder, decoder);
     }
 
     /**
@@ -200,6 +209,8 @@ public class ArchiveTool
      * @param out                        output stream to print results and errors to
      * @param archiveDir                 that contains Markfile, Catalog, and recordings.
      * @param recordingId                to verify.
+     * @param validateAllSegmentFiles    when <tt>true</tt> then all of the segment files will be validated, otherwise
+     *                                   only the last segment file will be validated.
      * @param truncateFileOnPageStraddle action to perform if last fragment in the max segment file straddles the page
      *                                   boundary, i.e. if <tt>true</tt> the file will be truncated (last fragment
      *                                   will be deleted), if <tt>false</tt> the fragment if considered complete.
@@ -208,22 +219,25 @@ public class ArchiveTool
         final PrintStream out,
         final File archiveDir,
         final long recordingId,
+        final boolean validateAllSegmentFiles,
         final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
-        verifyRecording(out, archiveDir, recordingId, SystemEpochClock.INSTANCE, truncateFileOnPageStraddle);
+        verifyRecording(out, archiveDir, recordingId, validateAllSegmentFiles, SystemEpochClock.INSTANCE,
+            truncateFileOnPageStraddle);
     }
 
     static void verifyRecording(
         final PrintStream out,
         final File archiveDir,
         final long recordingId,
+        final boolean validateAllSegmentFiles,
         final EpochClock epochClock,
         final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
         try (Catalog catalog = openCatalog(archiveDir, epochClock))
         {
-            catalog.forEntry(recordingId,
-                createVerifyEntryProcessor(out, archiveDir, epochClock, truncateFileOnPageStraddle));
+            catalog.forEntry(recordingId, createVerifyEntryProcessor(out, archiveDir, validateAllSegmentFiles,
+                epochClock, truncateFileOnPageStraddle));
         }
     }
 
@@ -376,13 +390,14 @@ public class ArchiveTool
     private static void verifyRecording(
         final PrintStream out,
         final File archiveDir,
+        final boolean validateAllSegmentFiles,
         final EpochClock epochClock,
         final ActionConfirmation<File> truncateFileOnPageStraddle,
+        final ByteBuffer tempBuffer,
+        final DataHeaderFlyweight headerFlyweight,
         final RecordingDescriptorHeaderEncoder headerEncoder,
         final RecordingDescriptorEncoder encoder,
-        final RecordingDescriptorDecoder decoder,
-        final ByteBuffer tempBuffer,
-        final DataHeaderFlyweight headerFlyweight)
+        final RecordingDescriptorDecoder decoder)
     {
         final long recordingId = decoder.recordingId();
         final int segmentFileLength = decoder.segmentFileLength();
@@ -410,8 +425,20 @@ public class ArchiveTool
         if (maxSegmentFile != null)
         {
             final int streamId = decoder.streamId();
-            if (verifyFile(out, archiveDir, recordingId, maxSegmentFile, segmentFileLength, streamId, decoder,
-                tempBuffer, headerFlyweight))
+            if (validateAllSegmentFiles)
+            {
+                for (final String filename : segmentFiles)
+                {
+                    if (validateSegmentFile(out, archiveDir, recordingId, filename, segmentFileLength, streamId,
+                        decoder, tempBuffer, headerFlyweight))
+                    {
+                        headerEncoder.valid(INVALID);
+                        return;
+                    }
+                }
+            }
+            else if (validateSegmentFile(out, archiveDir, recordingId, maxSegmentFile, segmentFileLength, streamId,
+                decoder, tempBuffer, headerFlyweight))
             {
                 headerEncoder.valid(INVALID);
                 return;
@@ -426,7 +453,7 @@ public class ArchiveTool
         out.println("(recordingId=" + recordingId + ") OK");
     }
 
-    private static boolean verifyFile(
+    private static boolean validateSegmentFile(
         final PrintStream out,
         final File archiveDir,
         final long recordingId,

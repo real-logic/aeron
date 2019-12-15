@@ -14,6 +14,8 @@ import java.nio.channels.FileChannel;
 
 import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_SUFFIX;
 import static io.aeron.archive.Archive.segmentFileName;
+import static io.aeron.archive.ArchiveTool.openCatalogReadOnly;
+import static io.aeron.archive.ArchiveTool.verify;
 import static io.aeron.archive.Catalog.*;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
@@ -119,7 +121,7 @@ class ArchiveToolVerifyTests
                 flyweight.streamId(3);
                 ch.write(bb);
                 bb.clear();
-                flyweight.frameLength(128);
+                flyweight.frameLength(256);
                 flyweight.streamId(3);
                 ch.write(bb, PAGE_SIZE - 64);
             });
@@ -132,6 +134,13 @@ class ArchiveToolVerifyTests
                 ch.write(bb);
             });
         writeToSegmentFile(createFile(segmentFileName(record14, 0)), (bb, fl, ch) -> ch.write(bb));
+        writeToSegmentFile(createFile(segmentFileName(record15, 0)),
+            (bb, flyweight, ch) ->
+            {
+                flyweight.frameLength(111);
+                flyweight.streamId(-1);
+                ch.write(bb);
+            });
         writeToSegmentFile(createFile(segmentFileName(record15, SEGMENT_LENGTH * 2)),
             (bb, flyweight, ch) ->
             {
@@ -179,11 +188,11 @@ class ArchiveToolVerifyTests
     }
 
     @Test
-    void verifyAllRecordingsCheckLastFileOnly()
+    void verifyCheckLastFile()
     {
-        ArchiveTool.verify(System.out, archiveDir, epochClock, file -> file.getName().startsWith("" + record10));
+        verify(System.out, archiveDir, false, epochClock, file -> file.getName().startsWith("" + record10));
 
-        try (Catalog catalog = ArchiveTool.openCatalogReadOnly(archiveDir, epochClock))
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             verifyRecording(catalog, record0, VALID, NULL_POSITION, NULL_POSITION, NULL_TIMESTAMP, NULL_TIMESTAMP, 0,
                 1, 1, "emptyChannel", "source1");
@@ -207,7 +216,7 @@ class ArchiveToolVerifyTests
                 3, 3, "validChannel", "source3");
             verifyRecording(catalog, record10, VALID, 0, PAGE_SIZE - 64, 100, 500, 0,
                 3, 3, "validChannel", "source3");
-            verifyRecording(catalog, record11, VALID, 0, PAGE_SIZE + 64, 110, 600, 0,
+            verifyRecording(catalog, record11, VALID, 0, PAGE_SIZE + 192, 110, 600, 0,
                 3, 3, "validChannel", "source3");
             verifyRecording(catalog, record12, VALID, 0, 0, 120, 999999, 0,
                 3, 3, "validChannel", "source3");
@@ -216,6 +225,48 @@ class ArchiveToolVerifyTests
             verifyRecording(catalog, record14, VALID, 0, 0, 140, 700, 0,
                 3, 3, "validChannel", "source3");
             verifyRecording(catalog, record15, VALID, PAGE_SIZE * 5 + 1024, SEGMENT_LENGTH * 2 + 1024, 150, 800, 0,
+                3, 3, "validChannel", "source3");
+        }
+    }
+
+    @Test
+    void verifyCheckAllFiles()
+    {
+        verify(System.out, archiveDir, true, epochClock, file -> false);
+
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            verifyRecording(catalog, record0, VALID, NULL_POSITION, NULL_POSITION, NULL_TIMESTAMP, NULL_TIMESTAMP, 0,
+                1, 1, "emptyChannel", "source1");
+            verifyRecording(catalog, record1, VALID, 11, 11, 10, 100, 0,
+                1, 1, "emptyChannel", "source1");
+            verifyRecording(catalog, record2, INVALID, 22, NULL_POSITION, 20, NULL_TIMESTAMP, 0,
+                2, 2, "invalidChannel", "source2");
+            verifyRecording(catalog, record3, INVALID, 33, NULL_POSITION, 30, NULL_TIMESTAMP, 0,
+                2, 2, "invalidChannel", "source2");
+            verifyRecording(catalog, record4, INVALID, 44, NULL_POSITION, 40, NULL_TIMESTAMP, 0,
+                2, 2, "invalidChannel", "source2");
+            verifyRecording(catalog, record5, INVALID, 55, NULL_POSITION, 50, NULL_TIMESTAMP, 0,
+                2, 2, "invalidChannel", "source2");
+            verifyRecording(catalog, record6, INVALID, 66, NULL_POSITION, 60, NULL_TIMESTAMP, 0,
+                2, 2, "invalidChannel", "source2");
+            verifyRecording(catalog, record7, VALID, 0, 0, 70, 200, 0,
+                3, 3, "validChannel", "source3");
+            verifyRecording(catalog, record8, VALID, TERM_LENGTH + 1024, -TERM_LENGTH, 80, 300, 0,
+                3, 3, "validChannel", "source3");
+            verifyRecording(catalog, record9, VALID, 2048, SEGMENT_LENGTH + 128, 90, 400, 0,
+                3, 3, "validChannel", "source3");
+            verifyRecording(catalog, record10, VALID, 0, PAGE_SIZE + 64, 100, 500, 0,
+                3, 3, "validChannel", "source3");
+            verifyRecording(catalog, record11, VALID, 0, PAGE_SIZE + 192, 110, 600, 0,
+                3, 3, "validChannel", "source3");
+            verifyRecording(catalog, record12, VALID, 0, 0, 120, 999999, 0,
+                3, 3, "validChannel", "source3");
+            verifyRecording(catalog, record13, VALID, 1024 * 1024, SEGMENT_LENGTH * 128 + PAGE_SIZE * 3, 130, 888888, 0,
+                3, 3, "validChannel", "source3");
+            verifyRecording(catalog, record14, VALID, 0, 0, 140, 700, 0,
+                3, 3, "validChannel", "source3");
+            verifyRecording(catalog, record15, INVALID, PAGE_SIZE * 5 + 1024, 150, 150, 160, 0,
                 3, 3, "validChannel", "source3");
         }
     }

@@ -59,6 +59,7 @@ class ArchiveToolVerifyTests
     private long record17;
     private long record18;
 
+    @SuppressWarnings("MethodLength")
     @BeforeEach
     void setup() throws IOException
     {
@@ -104,11 +105,6 @@ class ArchiveToolVerifyTests
             record18 = catalog.addNewRecording(8224, NULL_POSITION, 180, NULL_TIMESTAMP, 16,
                 SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
         }
-        createSegmentFiles();
-    }
-
-    private void createSegmentFiles() throws IOException
-    {
         createFile(record2 + "-" + RECORDING_SEGMENT_SUFFIX); // ERR: no segment position
         createFile(record3 + "-" + "invalid_position" + RECORDING_SEGMENT_SUFFIX); // ERR: invalid position
         createFile(segmentFileName(record4, -111)); // ERR: negative position

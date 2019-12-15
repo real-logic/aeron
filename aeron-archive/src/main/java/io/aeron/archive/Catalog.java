@@ -775,7 +775,7 @@ class Catalog implements AutoCloseable
         return maxFileName;
     }
 
-    private static long parseSegmentFilePosition(final String filename)
+    static long parseSegmentFilePosition(final String filename)
     {
         final int offset = filename.indexOf('-') + 1;
         final int remaining = filename.length() - offset - RECORDING_SEGMENT_SUFFIX.length();
@@ -783,14 +783,7 @@ class Catalog implements AutoCloseable
         {
             throw new ArchiveException("No position encoded in the segment file name: " + filename);
         }
-        try
-        {
-            return parseLongAscii(filename, offset, remaining);
-        }
-        catch (final RuntimeException ex)
-        {
-            throw new ArchiveException("Invalid segment file name: " + filename, ex, ArchiveException.GENERIC);
-        }
+        return parseLongAscii(filename, offset, remaining);
     }
 
     static long computeStopPosition(

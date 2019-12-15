@@ -29,6 +29,7 @@ import org.agrona.IoUtil;
 import org.agrona.PrintBufferUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.SystemEpochClock;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
 import java.io.IOException;
@@ -43,8 +44,12 @@ import java.util.function.Consumer;
 
 import static io.aeron.archive.Catalog.*;
 import static io.aeron.archive.MigrationUtils.fullVersionString;
+import static io.aeron.archive.ReplaySession.isInvalidHeader;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
 import static io.aeron.logbuffer.FrameDescriptor.*;
+import static io.aeron.logbuffer.LogBufferDescriptor.computeTermIdFromPosition;
+import static io.aeron.logbuffer.LogBufferDescriptor.positionBitsToShift;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_DATA;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
@@ -195,8 +200,9 @@ public class ArchiveTool
         final EpochClock epochClock,
         final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
-        final ByteBuffer tempBuffer = allocateDirectAligned(HEADER_LENGTH, FRAME_ALIGNMENT);
-        tempBuffer.order(RecordingDescriptorDecoder.BYTE_ORDER);
+        final ByteBuffer buffer = allocateDirectAligned(HEADER_LENGTH, FRAME_ALIGNMENT);
+        buffer.order(RecordingDescriptorDecoder.BYTE_ORDER);
+        final UnsafeBuffer tempBuffer = new UnsafeBuffer(buffer);
         final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight(tempBuffer);
         return (headerEncoder, headerDecoder, encoder, decoder) ->
             verifyRecording(out, archiveDir, validateAllSegmentFiles, epochClock, truncateFileOnPageStraddle,
@@ -398,7 +404,7 @@ public class ArchiveTool
         final boolean validateAllSegmentFiles,
         final EpochClock epochClock,
         final ActionConfirmation<File> truncateFileOnPageStraddle,
-        final ByteBuffer tempBuffer,
+        final UnsafeBuffer tempBuffer,
         final DataHeaderFlyweight headerFlyweight,
         final RecordingDescriptorHeaderEncoder headerEncoder,
         final RecordingDescriptorEncoder encoder,
@@ -416,8 +422,7 @@ public class ArchiveTool
         {
             maxSegmentFile = findSegmentFileWithHighestPosition(segmentFiles);
             stopPosition = computeStopPosition(archiveDir, maxSegmentFile, startPosition, termBufferLength,
-                segmentFileLength,
-                truncateFileOnPageStraddle::confirm);
+                segmentFileLength, truncateFileOnPageStraddle::confirm);
         }
         catch (final Exception ex)
         {
@@ -434,16 +439,16 @@ public class ArchiveTool
             {
                 for (final String filename : segmentFiles)
                 {
-                    if (validateSegmentFile(out, archiveDir, recordingId, filename, segmentFileLength, streamId,
-                        decoder, tempBuffer, headerFlyweight))
+                    if (validateSegmentFile(out, archiveDir, recordingId, filename, startPosition, termBufferLength,
+                        segmentFileLength, streamId, decoder.initialTermId(), tempBuffer, headerFlyweight))
                     {
                         headerEncoder.valid(INVALID);
                         return;
                     }
                 }
             }
-            else if (validateSegmentFile(out, archiveDir, recordingId, maxSegmentFile, segmentFileLength, streamId,
-                decoder, tempBuffer, headerFlyweight))
+            else if (validateSegmentFile(out, archiveDir, recordingId, maxSegmentFile, startPosition, termBufferLength,
+                segmentFileLength, streamId, decoder.initialTermId(), tempBuffer, headerFlyweight))
             {
                 headerEncoder.valid(INVALID);
                 return;
@@ -463,39 +468,48 @@ public class ArchiveTool
         final File archiveDir,
         final long recordingId,
         final String fileName,
-        final long segmentFileLength,
+        final long startPosition,
+        final int termBufferLength,
+        final int segmentFileLength,
         final int streamId,
-        final RecordingDescriptorDecoder decoder,
-        final ByteBuffer tempBuffer,
+        final int initialTermId,
+        final UnsafeBuffer tempBuffer,
         final DataHeaderFlyweight headerFlyweight)
     {
         final File file = new File(archiveDir, fileName);
         try (FileChannel channel = FileChannel.open(file.toPath(), READ))
         {
-            tempBuffer.clear();
             final long maxSize = min(segmentFileLength, channel.size());
-            long position = 0;
+            int position = 0;
+            long streamPosition = segmentFileBasePosition(startPosition, parseSegmentFilePosition(fileName),
+                termBufferLength, segmentFileLength);
             do
             {
-                tempBuffer.clear();
-                if (channel.read(tempBuffer, position) != HEADER_LENGTH)
+                tempBuffer.byteBuffer().clear();
+                if (HEADER_LENGTH != channel.read(tempBuffer.byteBuffer(), position))
                 {
                     out.println("(recordingId=" + recordingId + ") ERR: failed to read fragment header.");
                     return true;
                 }
-
-                if (headerFlyweight.frameLength() == 0)
+                if (0 == headerFlyweight.frameLength())
                 {
                     break;
                 }
-                if (headerFlyweight.streamId() != streamId)
+                final int termId = computeTermIdFromPosition(streamPosition, positionBitsToShift(termBufferLength),
+                    initialTermId);
+                final int termOffset = (int)(streamPosition & (termBufferLength - 1));
+                if (isInvalidHeader(tempBuffer, streamId, termId, termOffset))
                 {
-                    out.println("(recordingId=" + recordingId + ") ERR: fragment sessionId=" +
-                        headerFlyweight.streamId() + " (expected=" + decoder.streamId() + ")");
+                    out.println("(recordingId=" + recordingId + ") ERR: fragment " +
+                        "termOffset=" + headerFlyweight.termOffset() + " (expected=" + termOffset + "), " +
+                        "termId=" + headerFlyweight.termId() + " (expected=" + termId + "), " +
+                        "sessionId=" + headerFlyweight.streamId() + " (expected=" + streamId + ")"
+                    );
                     return true;
                 }
 
                 position += align(headerFlyweight.frameLength(), FRAME_ALIGNMENT);
+                streamPosition += position;
             }
             while (position < maxSize);
         }

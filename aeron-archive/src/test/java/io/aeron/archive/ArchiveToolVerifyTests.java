@@ -31,7 +31,7 @@ import static org.mockito.Mockito.times;
 
 class ArchiveToolVerifyTests
 {
-    private static final int TERM_LENGTH = 2 * PAGE_SIZE;
+    private static final int TERM_LENGTH = 16 * PAGE_SIZE;
     private static final int SEGMENT_LENGTH = 2 * TERM_LENGTH;
     private static final int MTU_LENGTH = 1024;
 
@@ -56,6 +56,8 @@ class ArchiveToolVerifyTests
     private long record14;
     private long record15;
     private long record16;
+    private long record17;
+    private long record18;
 
     @BeforeEach
     void setup() throws IOException
@@ -81,7 +83,7 @@ class ArchiveToolVerifyTests
                 SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 3, 3, "validChannel", "validChannel?tag=Z", "source3");
             record8 = catalog.addNewRecording(TERM_LENGTH + 1024, NULL_POSITION, 80, NULL_TIMESTAMP, 0,
                 SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 3, 3, "validChannel", "validChannel?tag=Z", "source3");
-            record9 = catalog.addNewRecording(2048, NULL_POSITION, 90, NULL_TIMESTAMP, 0,
+            record9 = catalog.addNewRecording(2048, NULL_POSITION, 90, NULL_TIMESTAMP, 5,
                 SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 3, 3, "validChannel", "validChannel?tag=Z", "source3");
             record10 = catalog.addNewRecording(0, NULL_POSITION, 100, NULL_TIMESTAMP, 0,
                 SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 3, 3, "validChannel", "validChannel?tag=Z", "source3");
@@ -96,6 +98,10 @@ class ArchiveToolVerifyTests
             record15 = catalog.addNewRecording(PAGE_SIZE * 5 + 1024, 150, 150, 160, 0,
                 SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 3, 3, "validChannel", "validChannel?tag=Z", "source3");
             record16 = catalog.addNewRecording(0, NULL_POSITION, 160, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
+            record17 = catalog.addNewRecording(212 * 1024 * 1024, NULL_POSITION, 170, NULL_TIMESTAMP, 13,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
+            record18 = catalog.addNewRecording(8224, NULL_POSITION, 180, NULL_TIMESTAMP, 16,
                 SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
         }
         createSegmentFiles();
@@ -113,9 +119,16 @@ class ArchiveToolVerifyTests
         writeToSegmentFile(createFile(segmentFileName(record9, SEGMENT_LENGTH)),
             (bb, flyweight, ch) ->
             {
-                flyweight.frameLength(100);
+                flyweight.frameLength(TERM_LENGTH + 100);
+                flyweight.termId(7);
                 flyweight.streamId(3);
                 ch.write(bb);
+                bb.clear();
+                flyweight.frameLength(256);
+                flyweight.termId(8);
+                flyweight.termOffset(128);
+                flyweight.streamId(3);
+                ch.write(bb, TERM_LENGTH + 128);
             });
         writeToSegmentFile(createFile(segmentFileName(record10, 0)),
             (bb, flyweight, ch) ->
@@ -125,6 +138,7 @@ class ArchiveToolVerifyTests
                 ch.write(bb);
                 bb.clear();
                 flyweight.frameLength(128);
+                flyweight.termOffset(PAGE_SIZE - 64);
                 flyweight.streamId(3);
                 ch.write(bb, PAGE_SIZE - 64);
             });
@@ -136,6 +150,7 @@ class ArchiveToolVerifyTests
                 ch.write(bb);
                 bb.clear();
                 flyweight.frameLength(256);
+                flyweight.termOffset(PAGE_SIZE - 64);
                 flyweight.streamId(3);
                 ch.write(bb, PAGE_SIZE - 64);
             });
@@ -144,6 +159,7 @@ class ArchiveToolVerifyTests
             (bb, flyweight, ch) ->
             {
                 flyweight.frameLength(PAGE_SIZE * 3);
+                flyweight.termId(256);
                 flyweight.streamId(3);
                 ch.write(bb);
             });
@@ -159,6 +175,7 @@ class ArchiveToolVerifyTests
             (bb, flyweight, ch) ->
             {
                 flyweight.frameLength(1000);
+                flyweight.termId(4);
                 flyweight.streamId(3);
                 ch.write(bb);
             });
@@ -167,6 +184,24 @@ class ArchiveToolVerifyTests
             {
                 flyweight.frameLength(64);
                 flyweight.streamId(101010);
+                ch.write(bb);
+            });
+        writeToSegmentFile(createFile(segmentFileName(record17, 0)),
+            (bb, flyweight, ch) ->
+            {
+                flyweight.frameLength(64);
+                flyweight.termOffset(101010);
+                flyweight.termId(13);
+                flyweight.streamId(2);
+                ch.write(bb);
+            });
+        writeToSegmentFile(createFile(segmentFileName(record18, SEGMENT_LENGTH * 5)),
+            (bb, flyweight, ch) ->
+            {
+                flyweight.frameLength(64);
+                flyweight.termOffset(0);
+                flyweight.termId(101010);
+                flyweight.streamId(2);
                 ch.write(bb);
             });
     }
@@ -233,7 +268,7 @@ class ArchiveToolVerifyTests
                 3, 3, "validChannel", "source3");
             assertRecording(catalog, record8, VALID, TERM_LENGTH + 1024, -TERM_LENGTH, 80, 300, 0,
                 3, 3, "validChannel", "source3");
-            assertRecording(catalog, record9, VALID, 2048, SEGMENT_LENGTH + 128, 90, 400, 0,
+            assertRecording(catalog, record9, VALID, 2048, SEGMENT_LENGTH + TERM_LENGTH + 384, 90, 400, 5,
                 3, 3, "validChannel", "source3");
             assertRecording(catalog, record10, VALID, 0, PAGE_SIZE - 64, 100, 500, 0,
                 3, 3, "validChannel", "source3");
@@ -249,8 +284,12 @@ class ArchiveToolVerifyTests
                 3, 3, "validChannel", "source3");
             assertRecording(catalog, record16, INVALID, 0, NULL_POSITION, 160, NULL_TIMESTAMP, 0,
                 2, 2, "invalidChannel", "source2");
+            assertRecording(catalog, record17, INVALID, 212 * 1024 * 1024, NULL_POSITION, 170, NULL_TIMESTAMP, 13,
+                2, 2, "invalidChannel", "source2");
+            assertRecording(catalog, record18, INVALID, 8224, NULL_POSITION, 180, NULL_TIMESTAMP, 16,
+                2, 2, "invalidChannel", "source2");
         }
-        Mockito.verify(out, times(17)).println(any(String.class));
+        Mockito.verify(out, times(19)).println(any(String.class));
     }
 
     @Test
@@ -278,7 +317,7 @@ class ArchiveToolVerifyTests
                 3, 3, "validChannel", "source3");
             assertRecording(catalog, record8, VALID, TERM_LENGTH + 1024, -TERM_LENGTH, 80, 300, 0,
                 3, 3, "validChannel", "source3");
-            assertRecording(catalog, record9, VALID, 2048, SEGMENT_LENGTH + 128, 90, 400, 0,
+            assertRecording(catalog, record9, VALID, 2048, SEGMENT_LENGTH + TERM_LENGTH + 384, 90, 400, 5,
                 3, 3, "validChannel", "source3");
             assertRecording(catalog, record10, VALID, 0, PAGE_SIZE + 64, 100, 500, 0,
                 3, 3, "validChannel", "source3");
@@ -294,8 +333,12 @@ class ArchiveToolVerifyTests
                 3, 3, "validChannel", "source3");
             assertRecording(catalog, record16, INVALID, 0, NULL_POSITION, 160, NULL_TIMESTAMP, 0,
                 2, 2, "invalidChannel", "source2");
+            assertRecording(catalog, record17, INVALID, 212 * 1024 * 1024, NULL_POSITION, 170, NULL_TIMESTAMP, 13,
+                2, 2, "invalidChannel", "source2");
+            assertRecording(catalog, record18, INVALID, 8224, NULL_POSITION, 180, NULL_TIMESTAMP, 16,
+                2, 2, "invalidChannel", "source2");
         }
-        Mockito.verify(out, times(17)).println(any(String.class));
+        Mockito.verify(out, times(19)).println(any(String.class));
     }
 
     @Test
@@ -385,6 +428,30 @@ class ArchiveToolVerifyTests
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             assertRecording(catalog, record16, INVALID, 0, NULL_POSITION, 160, NULL_TIMESTAMP, 0,
+                2, 2, "invalidChannel", "source2");
+        }
+    }
+
+    @Test
+    void verifyRecordingInvalidSegmentFileWrongTermOffset()
+    {
+        verifyRecording(out, archiveDir, record17, false, epochClock, file -> false);
+
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            assertRecording(catalog, record17, INVALID, 212 * 1024 * 1024, NULL_POSITION, 170, NULL_TIMESTAMP, 13,
+                2, 2, "invalidChannel", "source2");
+        }
+    }
+
+    @Test
+    void verifyRecordingInvalidSegmentFileWrongTermId()
+    {
+        verifyRecording(out, archiveDir, record18, false, epochClock, file -> false);
+
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            assertRecording(catalog, record18, INVALID, 8224, NULL_POSITION, 180, NULL_TIMESTAMP, 16,
                 2, 2, "invalidChannel", "source2");
         }
     }

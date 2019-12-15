@@ -53,8 +53,6 @@ public class TestCluster implements AutoCloseable
         "aeron:udp?term-length=64k|endpoint=localhost:8010";
     private static final String ARCHIVE_CONTROL_RESPONSE_CHANNEL =
         "aeron:udp?term-length=64k|endpoint=localhost:8020";
-    private static final String ARCHIVE_RECORDING_EVENTS_CHANNEL =
-        "aeron:udp?control-mode=dynamic|control=localhost:8030";
 
     private final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
     private final MutableInteger responseCount = new MutableInteger();
@@ -195,7 +193,6 @@ public class TestCluster implements AutoCloseable
             .controlRequestStreamId(100)
             .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, index))
             .controlResponseStreamId(110 + index)
-            .recordingEventsChannel(memberSpecificPort(ARCHIVE_RECORDING_EVENTS_CHANNEL, index))
             .aeronDirectoryName(baseDirName);
 
         context.mediaDriverContext
@@ -216,7 +213,7 @@ public class TestCluster implements AutoCloseable
             .localControlChannel("aeron:ipc?term-length=64k")
             .recordingEventsEnabled(false)
             .localControlStreamId(context.aeronArchiveContext.controlRequestStreamId())
-            .recordingEventsChannel(context.aeronArchiveContext.recordingEventsChannel())
+            .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
             .deleteArchiveOnStart(cleanStart);
 
@@ -261,7 +258,6 @@ public class TestCluster implements AutoCloseable
             .controlRequestStreamId(100)
             .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, index))
             .controlResponseStreamId(110 + index)
-            .recordingEventsChannel(memberSpecificPort(ARCHIVE_RECORDING_EVENTS_CHANNEL, index))
             .aeronDirectoryName(baseDirName);
 
         context.mediaDriverContext
@@ -282,7 +278,6 @@ public class TestCluster implements AutoCloseable
             .controlStreamId(context.aeronArchiveContext.controlRequestStreamId())
             .localControlChannel("aeron:ipc?term-length=64k")
             .localControlStreamId(context.aeronArchiveContext.controlRequestStreamId())
-            .recordingEventsChannel(context.aeronArchiveContext.recordingEventsChannel())
             .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
             .deleteArchiveOnStart(cleanStart);
@@ -324,7 +319,6 @@ public class TestCluster implements AutoCloseable
             .controlRequestStreamId(100)
             .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, index))
             .controlResponseStreamId(110 + index)
-            .recordingEventsChannel(memberSpecificPort(ARCHIVE_RECORDING_EVENTS_CHANNEL, index))
             .aeronDirectoryName(baseDirName);
 
         context.mediaDriverContext
@@ -345,14 +339,13 @@ public class TestCluster implements AutoCloseable
             .controlStreamId(context.aeronArchiveContext.controlRequestStreamId())
             .localControlChannel("aeron:ipc?term-length=64k")
             .localControlStreamId(context.aeronArchiveContext.controlRequestStreamId())
-            .recordingEventsChannel(context.aeronArchiveContext.recordingEventsChannel())
+            .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
             .deleteArchiveOnStart(cleanStart);
 
         final ChannelUri memberStatusChannelUri = ChannelUri.parse(context.clusterBackupContext.memberStatusChannel());
-        memberStatusChannelUri.put(
-            CommonContext.ENDPOINT_PARAM_NAME,
-            clusterBackupStatusEndpoint(staticMemberCount + dynamicMemberCount));
+        final String backupStatusEndpoint = clusterBackupStatusEndpoint(staticMemberCount + dynamicMemberCount);
+        memberStatusChannelUri.put(CommonContext.ENDPOINT_PARAM_NAME, backupStatusEndpoint);
 
         context.clusterBackupContext
             .errorHandler(TestUtil.errorHandler(index))
@@ -390,7 +383,6 @@ public class TestCluster implements AutoCloseable
             .controlRequestStreamId(100)
             .controlResponseChannel(memberSpecificPort(ARCHIVE_CONTROL_RESPONSE_CHANNEL, backupNodeIndex))
             .controlResponseStreamId(110 + backupNodeIndex)
-            .recordingEventsChannel(memberSpecificPort(ARCHIVE_RECORDING_EVENTS_CHANNEL, backupNodeIndex))
             .aeronDirectoryName(baseDirName);
 
         context.mediaDriverContext
@@ -410,7 +402,7 @@ public class TestCluster implements AutoCloseable
             .controlStreamId(context.aeronArchiveContext.controlRequestStreamId())
             .localControlChannel("aeron:ipc?term-length=64k")
             .localControlStreamId(context.aeronArchiveContext.controlRequestStreamId())
-            .recordingEventsChannel(context.aeronArchiveContext.recordingEventsChannel())
+            .recordingEventsEnabled(false)
             .threadingMode(ArchiveThreadingMode.SHARED)
             .deleteArchiveOnStart(false);
 
@@ -539,9 +531,9 @@ public class TestCluster implements AutoCloseable
     {
         while (client.offer(msgBuffer, 0, messageLength) < 0)
         {
+            Thread.yield();
             TestUtil.checkInterruptedStatus();
             client.pollEgress();
-            Thread.yield();
         }
 
         client.pollEgress();
@@ -554,8 +546,8 @@ public class TestCluster implements AutoCloseable
 
         while (responseCount.get() < messageCount)
         {
-            TestUtil.checkInterruptedStatus();
             Thread.yield();
+            TestUtil.checkInterruptedStatus();
             client.pollEgress();
 
             final long nowMs = epochClock.time();
@@ -571,8 +563,8 @@ public class TestCluster implements AutoCloseable
     {
         while (newLeaderEvent.get() < count)
         {
-            TestUtil.checkInterruptedStatus();
             Thread.yield();
+            TestUtil.checkInterruptedStatus();
             client.pollEgress();
         }
     }
@@ -581,8 +573,8 @@ public class TestCluster implements AutoCloseable
     {
         while (null != node.electionState())
         {
-            TestUtil.checkInterruptedStatus();
             Thread.yield();
+            TestUtil.checkInterruptedStatus();
         }
     }
 
@@ -590,8 +582,8 @@ public class TestCluster implements AutoCloseable
     {
         while (node.commitPosition() != logPosition)
         {
-            TestUtil.checkInterruptedStatus();
             Thread.yield();
+            TestUtil.checkInterruptedStatus();
         }
     }
 
@@ -624,8 +616,8 @@ public class TestCluster implements AutoCloseable
         TestNode leaderNode;
         while (null == (leaderNode = findLeader(skipIndex)))
         {
-            TestUtil.checkInterruptedStatus();
             Thread.sleep(1000);
+            TestUtil.checkInterruptedStatus();
         }
 
         return leaderNode;
@@ -657,8 +649,8 @@ public class TestCluster implements AutoCloseable
         {
             while (backupNode.state() != targetState)
             {
-                TestUtil.checkInterruptedStatus();
                 Thread.sleep(100);
+                TestUtil.checkInterruptedStatus();
             }
 
             return;
@@ -673,8 +665,8 @@ public class TestCluster implements AutoCloseable
         {
             while (backupNode.liveLogPosition() != position)
             {
-                TestUtil.checkInterruptedStatus();
                 Thread.sleep(100);
+                TestUtil.checkInterruptedStatus();
             }
 
             return;
@@ -714,8 +706,8 @@ public class TestCluster implements AutoCloseable
         final Counter snapshotCounter = node.consensusModule().context().snapshotCounter();
         while (snapshotCounter.get() != value)
         {
-            TestUtil.checkInterruptedStatus();
             Thread.yield();
+            TestUtil.checkInterruptedStatus();
         }
     }
 
@@ -723,8 +715,8 @@ public class TestCluster implements AutoCloseable
     {
         while (!node.hasMemberTerminated() || !node.hasServiceTerminated())
         {
-            TestUtil.checkInterruptedStatus();
             Thread.yield();
+            TestUtil.checkInterruptedStatus();
         }
     }
 
@@ -735,8 +727,8 @@ public class TestCluster implements AutoCloseable
 
         while (node.service().messageCount() < messageCount)
         {
-            TestUtil.checkInterruptedStatus();
             Thread.yield();
+            TestUtil.checkInterruptedStatus();
 
             final long nowMs = epochClock.time();
             if (nowMs > deadlineMs)
@@ -751,8 +743,8 @@ public class TestCluster implements AutoCloseable
     {
         while (!node.service().wasSnapshotLoaded())
         {
-            TestUtil.checkInterruptedStatus();
             Thread.yield();
+            TestUtil.checkInterruptedStatus();
         }
     }
 
@@ -762,8 +754,8 @@ public class TestCluster implements AutoCloseable
         assertNotNull(controlToggle);
         while (controlToggle.get() != ClusterControl.ToggleState.NEUTRAL.code())
         {
-            TestUtil.checkInterruptedStatus();
             Thread.yield();
+            TestUtil.checkInterruptedStatus();
         }
     }
 

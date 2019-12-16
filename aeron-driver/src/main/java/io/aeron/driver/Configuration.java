@@ -627,7 +627,7 @@ public class Configuration
     public static final String TERMINATION_VALIDATOR_PROP_NAME = "aeron.driver.termination.validator";
 
     /**
-     * Property name for default boolean value for if a stream is rejoinable. True to allow rejoin, false to not.
+     * Property name for default boolean value for if a stream can be rejoined. True to allow rejoin, false to not.
      */
     public static final String REJOIN_STREAM_PROP_NAME = "aeron.rejoin.stream";
 
@@ -643,7 +643,7 @@ public class Configuration
 
     public static boolean warnIfDirExists()
     {
-        return "true".equalsIgnoreCase(getProperty(DIR_WARN_IF_EXISTS_PROP_NAME, "true"));
+        return "true".equalsIgnoreCase(getProperty(DIR_WARN_IF_EXISTS_PROP_NAME, "false"));
     }
 
     public static boolean dirDeleteOnStart()

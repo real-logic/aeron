@@ -124,6 +124,7 @@ int ReplayMerge::replay(long long nowMs)
         const std::int64_t correlationId = m_archive->context().aeron()->nextCorrelationId();
         std::shared_ptr<ChannelUri> channelUri = ChannelUri::parse(m_replayChannel);
         channelUri->put(LINGER_PARAM_NAME, "0");
+        channelUri->put(EOS_PARAM_NAME, "false");
 
         if (m_archive->archiveProxy().replay(
             m_recordingId,

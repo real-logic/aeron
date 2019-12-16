@@ -857,6 +857,9 @@ class Catalog implements AutoCloseable
                 truncateFileOnPageStraddle.test(segmentFile))
             {
                 segment.truncate(lastFragmentOffset);
+                buffer.put(0, (byte)0).limit(1).position(0);
+                segment.write(buffer, segmentFileLength - 1);
+
                 return lastFragmentOffset;
             }
             else

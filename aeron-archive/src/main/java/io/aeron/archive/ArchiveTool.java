@@ -100,7 +100,7 @@ public class ArchiveTool
     public static void describe(final PrintStream out, final File archiveDir)
     {
         try (Catalog catalog = openCatalogReadOnly(archiveDir, SystemEpochClock.INSTANCE);
-            ArchiveMarkFile markFile = openMarkFile(archiveDir, SystemEpochClock.INSTANCE, out::println))
+            ArchiveMarkFile markFile = openMarkFile(archiveDir, out::println))
         {
             printMarkInformation(markFile, out);
             out.println("Catalog Max Entries: " + catalog.maxEntries());
@@ -126,7 +126,7 @@ public class ArchiveTool
 
     public static long pid(final File archiveDir)
     {
-        try (ArchiveMarkFile markFile = openMarkFile(archiveDir, SystemEpochClock.INSTANCE, null))
+        try (ArchiveMarkFile markFile = openMarkFile(archiveDir, null))
         {
             return markFile.decoder().pid();
         }
@@ -134,7 +134,7 @@ public class ArchiveTool
 
     public static void printErrors(final PrintStream out, final File archiveDir)
     {
-        try (ArchiveMarkFile markFile = openMarkFile(archiveDir, SystemEpochClock.INSTANCE, null))
+        try (ArchiveMarkFile markFile = openMarkFile(archiveDir, null))
         {
             printErrors(out, markFile);
         }
@@ -147,15 +147,21 @@ public class ArchiveTool
         final ActionConfirmation<Long> continueOnFragmentLimit)
     {
         try (Catalog catalog = openCatalog(archiveDir, SystemEpochClock.INSTANCE);
-            ArchiveMarkFile markFile = openMarkFile(archiveDir, SystemEpochClock.INSTANCE, out::println))
+            ArchiveMarkFile markFile = openMarkFile(archiveDir, out::println))
         {
             printMarkInformation(markFile, out);
             out.println("Catalog Max Entries: " + catalog.maxEntries());
 
             out.println();
             out.println("Dumping " + dataFragmentLimit + " fragments per recording");
-            catalog.forEach((he, headerDecoder, e, descriptorDecoder) -> dump(out, archiveDir, catalog,
-                dataFragmentLimit, continueOnFragmentLimit, headerDecoder, descriptorDecoder));
+            catalog.forEach((headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) -> dump(
+                out,
+                archiveDir,
+                catalog,
+                dataFragmentLimit,
+                continueOnFragmentLimit,
+                headerDecoder,
+                descriptorDecoder));
         }
     }
 
@@ -164,7 +170,7 @@ public class ArchiveTool
      * Faulty entries are marked as unusable
      *
      * @param out                        output stream to print results and errors to
-     * @param archiveDir                 that contains Markfile, Catalog, and recordings.
+     * @param archiveDir                 that contains {@link org.agrona.MarkFile}, {@link Catalog}, and recordings.
      * @param validateAllSegmentFiles    when {@code true} then all of the segment files will be validated, otherwise
      *                                   only the last segment file will be validated.
      * @param truncateFileOnPageStraddle action to perform if last fragment in the max segment file straddles the page
@@ -188,8 +194,8 @@ public class ArchiveTool
     {
         try (Catalog catalog = openCatalog(archiveDir, epochClock))
         {
-            catalog.forEach(createVerifyEntryProcessor(out, archiveDir, validateAllSegmentFiles, epochClock,
-                truncateFileOnPageStraddle));
+            catalog.forEach(createVerifyEntryProcessor(
+                out, archiveDir, validateAllSegmentFiles, epochClock, truncateFileOnPageStraddle));
         }
     }
 
@@ -204,17 +210,27 @@ public class ArchiveTool
         buffer.order(RecordingDescriptorDecoder.BYTE_ORDER);
         final UnsafeBuffer tempBuffer = new UnsafeBuffer(buffer);
         final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight(tempBuffer);
-        return (headerEncoder, headerDecoder, encoder, decoder) ->
-            verifyRecording(out, archiveDir, validateAllSegmentFiles, epochClock, truncateFileOnPageStraddle,
-                tempBuffer, headerFlyweight, headerEncoder, encoder, decoder);
+
+        return (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) -> verifyRecording(
+            out,
+            archiveDir,
+            validateAllSegmentFiles,
+            epochClock,
+            truncateFileOnPageStraddle,
+            tempBuffer,
+            headerFlyweight,
+            headerEncoder,
+            descriptorEncoder,
+            descriptorDecoder);
     }
 
     /**
      * Verify descriptor in the catalog according to recordingId, checking recording files availability and contents.
-     * Faulty entries are marked as unusable
+     *
+     * Faulty entries are marked as unusable.
      *
      * @param out                        output stream to print results and errors to
-     * @param archiveDir                 that contains Markfile, Catalog, and recordings.
+     * @param archiveDir                 that contains {@link org.agrona.MarkFile}, {@link Catalog}, and recordings.
      * @param recordingId                to verify.
      * @param validateAllSegmentFiles    when {@code true} then all of the segment files will be validated, otherwise
      *                                   only the last segment file will be validated.
@@ -230,7 +246,12 @@ public class ArchiveTool
         final boolean validateAllSegmentFiles,
         final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
-        verifyRecording(out, archiveDir, recordingId, validateAllSegmentFiles, SystemEpochClock.INSTANCE,
+        verifyRecording(
+            out,
+            archiveDir,
+            recordingId,
+            validateAllSegmentFiles,
+            SystemEpochClock.INSTANCE,
             truncateFileOnPageStraddle);
     }
 
@@ -244,10 +265,10 @@ public class ArchiveTool
     {
         try (Catalog catalog = openCatalog(archiveDir, epochClock))
         {
-            if (!catalog.forEntry(recordingId, createVerifyEntryProcessor(out, archiveDir, validateAllSegmentFiles,
-                epochClock, truncateFileOnPageStraddle)))
+            if (!catalog.forEntry(recordingId, createVerifyEntryProcessor(
+                out, archiveDir, validateAllSegmentFiles, epochClock, truncateFileOnPageStraddle)))
             {
-                throw new AeronException("No recording found with recordinId: " + recordingId);
+                throw new AeronException("No recording found with recordingId: " + recordingId);
             }
         }
     }
@@ -282,11 +303,10 @@ public class ArchiveTool
         }
     }
 
-    private static ArchiveMarkFile openMarkFile(
-        final File archiveDir, final EpochClock epochClock, final Consumer<String> logger)
+    private static ArchiveMarkFile openMarkFile(final File archiveDir, final Consumer<String> logger)
     {
-        return new ArchiveMarkFile(archiveDir, ArchiveMarkFile.FILENAME, epochClock, TimeUnit.SECONDS.toMillis(5),
-            logger);
+        return new ArchiveMarkFile(
+            archiveDir, ArchiveMarkFile.FILENAME, SystemEpochClock.INSTANCE, TimeUnit.SECONDS.toMillis(5), logger);
     }
 
     static Catalog openCatalogReadOnly(final File archiveDir, final EpochClock epochClock)
@@ -306,17 +326,13 @@ public class ArchiveTool
             ArchiveMarkFile.FILENAME,
             epochClock,
             TimeUnit.SECONDS.toMillis(5),
-            (version) ->
-            {
-            },
+            (version) -> {},
             null);
     }
 
     private static Catalog openCatalogReadWrite(final File archiveDir, final EpochClock epochClock)
     {
-        return new Catalog(archiveDir, epochClock, true, (version) ->
-        {
-        });
+        return new Catalog(archiveDir, epochClock, true, (version) -> {});
     }
 
     private static void dump(
@@ -345,7 +361,9 @@ public class ArchiveTool
 
         final RecordingReader reader = new RecordingReader(
             catalog.recordingSummary(descriptor.recordingId(), new RecordingSummary()),
-            archiveDir, descriptor.startPosition(), NULL_POSITION);
+            archiveDir,
+            descriptor.startPosition(),
+            NULL_POSITION);
 
         boolean isContinue = true;
         long fragmentCount = dataFragmentLimit;
@@ -353,28 +371,30 @@ public class ArchiveTool
         {
             out.println();
             out.print("Frame at position [" + reader.replayPosition() + "] ");
-            reader.poll((buffer, offset, length, frameType, flags, reservedValue) ->
-            {
-                out.println("data at offset [" + offset + "] with length = " + length);
-                if (HDR_TYPE_PAD == frameType)
+            reader.poll(
+                (buffer, offset, length, frameType, flags, reservedValue) ->
                 {
-                    out.println("PADDING FRAME");
-                }
-                else if (HDR_TYPE_DATA == frameType)
-                {
-                    if ((flags & UNFRAGMENTED) != UNFRAGMENTED)
+                    out.println("data at offset [" + offset + "] with length = " + length);
+                    if (HDR_TYPE_PAD == frameType)
                     {
-                        String suffix = (flags & BEGIN_FRAG_FLAG) == BEGIN_FRAG_FLAG ? "BEGIN_FRAGMENT" : "";
-                        suffix += (flags & END_FRAG_FLAG) == END_FRAG_FLAG ? "END_FRAGMENT" : "";
-                        out.println("Fragmented frame. " + suffix);
+                        out.println("PADDING FRAME");
                     }
-                    out.println(PrintBufferUtil.prettyHexDump(buffer, offset, length));
-                }
-                else
-                {
-                    out.println("Unexpected frame type " + frameType);
-                }
-            }, 1);
+                    else if (HDR_TYPE_DATA == frameType)
+                    {
+                        if ((flags & UNFRAGMENTED) != UNFRAGMENTED)
+                        {
+                            String suffix = (flags & BEGIN_FRAG_FLAG) == BEGIN_FRAG_FLAG ? "BEGIN_FRAGMENT" : "";
+                            suffix += (flags & END_FRAG_FLAG) == END_FRAG_FLAG ? "END_FRAGMENT" : "";
+                            out.println("Fragmented frame. " + suffix);
+                        }
+                        out.println(PrintBufferUtil.prettyHexDump(buffer, offset, length));
+                    }
+                    else
+                    {
+                        out.println("Unexpected frame type " + frameType);
+                    }
+                },
+                1);
 
             if (--fragmentCount == 0)
             {
@@ -421,8 +441,13 @@ public class ArchiveTool
         try
         {
             maxSegmentFile = findSegmentFileWithHighestPosition(segmentFiles);
-            stopPosition = computeStopPosition(archiveDir, maxSegmentFile, startPosition, termBufferLength,
-                segmentFileLength, truncateFileOnPageStraddle::confirm);
+            stopPosition = computeStopPosition(
+                archiveDir,
+                maxSegmentFile,
+                startPosition,
+                termBufferLength,
+                segmentFileLength,
+                truncateFileOnPageStraddle::confirm);
         }
         catch (final Exception ex)
         {
@@ -439,26 +464,48 @@ public class ArchiveTool
             {
                 for (final String filename : segmentFiles)
                 {
-                    if (validateSegmentFile(out, archiveDir, recordingId, filename, startPosition, termBufferLength,
-                        segmentFileLength, streamId, decoder.initialTermId(), tempBuffer, headerFlyweight))
+                    if (validateSegmentFile(
+                        out,
+                        archiveDir,
+                        recordingId,
+                        filename,
+                        startPosition,
+                        termBufferLength,
+                        segmentFileLength,
+                        streamId,
+                        decoder.initialTermId(),
+                        tempBuffer,
+                        headerFlyweight))
                     {
                         headerEncoder.valid(INVALID);
                         return;
                     }
                 }
             }
-            else if (validateSegmentFile(out, archiveDir, recordingId, maxSegmentFile, startPosition, termBufferLength,
-                segmentFileLength, streamId, decoder.initialTermId(), tempBuffer, headerFlyweight))
+            else if (validateSegmentFile(
+                out,
+                archiveDir,
+                recordingId,
+                maxSegmentFile,
+                startPosition,
+                termBufferLength,
+                segmentFileLength,
+                streamId,
+                decoder.initialTermId(),
+                tempBuffer,
+                headerFlyweight))
             {
                 headerEncoder.valid(INVALID);
                 return;
             }
         }
+
         if (stopPosition != decoder.stopPosition())
         {
             encoder.stopPosition(stopPosition);
             encoder.stopTimestamp(epochClock.time());
         }
+
         headerEncoder.valid(VALID);
         out.println("(recordingId=" + recordingId + ") OK");
     }
@@ -491,13 +538,16 @@ public class ArchiveTool
                     out.println("(recordingId=" + recordingId + ") ERR: failed to read fragment header.");
                     return true;
                 }
+
                 if (0 == headerFlyweight.frameLength())
                 {
                     break;
                 }
-                final int termId = computeTermIdFromPosition(streamPosition, positionBitsToShift(termBufferLength),
-                    initialTermId);
+
+                final int termId = computeTermIdFromPosition(
+                    streamPosition, positionBitsToShift(termBufferLength), initialTermId);
                 final int termOffset = (int)(streamPosition & (termBufferLength - 1));
+
                 if (isInvalidHeader(tempBuffer, streamId, termId, termOffset))
                 {
                     out.println("(recordingId=" + recordingId + ") ERR: fragment " +
@@ -545,5 +595,4 @@ public class ArchiveTool
         CncFileDescriptor.checkVersion(cncVersion);
         CommonContext.printErrorLog(CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer), out);
     }
-
 }

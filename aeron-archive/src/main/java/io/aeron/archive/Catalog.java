@@ -233,7 +233,7 @@ class Catalog implements AutoCloseable
             final long catalogLength;
 
             final StandardOpenOption[] openOptions =
-                writable ? new StandardOpenOption[]{READ, WRITE, SPARSE} : new StandardOpenOption[]{READ};
+                writable ? new StandardOpenOption[]{ READ, WRITE, SPARSE } : new StandardOpenOption[]{ READ };
             try (FileChannel channel = FileChannel.open(catalogFile.toPath(), openOptions))
             {
                 catalogLength = channel.size();
@@ -314,9 +314,7 @@ class Catalog implements AutoCloseable
     void updateVersion(final int version)
     {
         final UnsafeBuffer buffer = new UnsafeBuffer(catalogByteBuffer);
-        new CatalogHeaderEncoder()
-            .wrap(buffer, 0)
-            .version(version);
+        new CatalogHeaderEncoder().wrap(buffer, 0).version(version);
     }
 
     long addNewRecording(
@@ -436,7 +434,7 @@ class Catalog implements AutoCloseable
         return recordingId >= 0 && recordingId < nextRecordingId &&
             fieldAccessBuffer.getByte(
                 recordingDescriptorOffset(recordingId) +
-                    RecordingDescriptorHeaderDecoder.validEncodingOffset()) == VALID;
+                RecordingDescriptorHeaderDecoder.validEncodingOffset()) == VALID;
     }
 
     int forEach(final CatalogEntryProcessor consumer)
@@ -700,8 +698,8 @@ class Catalog implements AutoCloseable
         }
         else
         {
-            forEach(((headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
-                nextRecordingId = descriptorDecoder.recordingId() + 1));
+            forEach((headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                nextRecordingId = descriptorDecoder.recordingId() + 1);
         }
     }
 
@@ -716,8 +714,13 @@ class Catalog implements AutoCloseable
         {
             final String[] segmentFiles = listSegmentFiles(archiveDir, recordingId);
             final String maxSegmentFile = findSegmentFileWithHighestPosition(segmentFiles);
-            encoder.stopPosition(computeStopPosition(archiveDir, maxSegmentFile, decoder.startPosition(),
-                decoder.termBufferLength(), decoder.segmentFileLength(),
+
+            encoder.stopPosition(computeStopPosition(
+                archiveDir,
+                maxSegmentFile,
+                decoder.startPosition(),
+                decoder.termBufferLength(),
+                decoder.segmentFileLength(),
                 (segmentFile) ->
                 {
                     throw new ArchiveException(String.format("Found potentially incomplete last fragment in the " +
@@ -725,6 +728,7 @@ class Catalog implements AutoCloseable
                             "corrective action!",
                         segmentFile.getAbsolutePath()));
                 }));
+
             encoder.stopTimestamp(epochClock.time());
         }
 
@@ -758,21 +762,26 @@ class Catalog implements AutoCloseable
         {
             return null;
         }
+
         long maxSegmentPosition = NULL_POSITION;
         String maxFileName = null;
+
         for (final String filename : segmentFiles)
         {
             final long filePosition = parseSegmentFilePosition(filename);
+
             if (filePosition < 0)
             {
                 throw new ArchiveException("Negative position encoded in the file name: " + filename);
             }
+
             if (filePosition > maxSegmentPosition)
             {
                 maxSegmentPosition = filePosition;
                 maxFileName = filename;
             }
         }
+
         return maxFileName;
     }
 
@@ -780,10 +789,12 @@ class Catalog implements AutoCloseable
     {
         final int offset = filename.indexOf('-') + 1;
         final int remaining = filename.length() - offset - RECORDING_SEGMENT_SUFFIX.length();
+
         if (0 == remaining)
         {
             throw new ArchiveException("No position encoded in the segment file name: " + filename);
         }
+
         return parseLongAscii(filename, offset, remaining);
     }
 
@@ -820,6 +831,7 @@ class Catalog implements AutoCloseable
             long nextFragmentOffset = 0;
             long lastFrameLength = 0;
             final long maxSize = min(segmentFileLength, segment.size());
+
             do
             {
                 buffer.clear();
@@ -834,6 +846,7 @@ class Catalog implements AutoCloseable
                 {
                     break;
                 }
+
                 lastFrameLength = frameLength;
                 lastFragmentOffset = nextFragmentOffset;
                 nextFragmentOffset += align(frameLength, FRAME_ALIGNMENT);
@@ -854,7 +867,7 @@ class Catalog implements AutoCloseable
         catch (final IOException ex)
         {
             LangUtil.rethrowUnchecked(ex);
-            return -1; // unreachable
+            return Aeron.NULL_VALUE; // unreachable
         }
     }
 

@@ -179,24 +179,22 @@ class CatalogTest
 
         try (Catalog catalog = new Catalog(archiveDir, clock))
         {
-            assertTrue(catalog.forEntry(
-                newRecordingId,
+            final Catalog.CatalogEntryProcessor entryProcessor =
                 (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
-                {
-                    assertThat(descriptorDecoder.stopTimestamp(), is(NULL_TIMESTAMP));
-                }));
+                assertThat(descriptorDecoder.stopTimestamp(), is(NULL_TIMESTAMP));
+
+            assertTrue(catalog.forEntry(newRecordingId, entryProcessor));
         }
 
         currentTimeMs = 42L;
 
         try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock))
         {
-            assertTrue(catalog.forEntry(
-                newRecordingId,
+            final Catalog.CatalogEntryProcessor entryProcessor =
                 (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
-                {
-                    assertThat(descriptorDecoder.stopTimestamp(), is(42L));
-                }));
+                assertThat(descriptorDecoder.stopTimestamp(), is(42L));
+
+            assertTrue(catalog.forEntry(newRecordingId, entryProcessor));
         }
     }
 
@@ -233,8 +231,7 @@ class CatalogTest
                 {
                     assertThat(descriptorDecoder.stopTimestamp(), is(NULL_TIMESTAMP));
                     assertThat(descriptorDecoder.stopPosition(), is(NULL_POSITION));
-                }
-            ));
+                }));
         }
 
         currentTimeMs = 42L;
@@ -247,8 +244,7 @@ class CatalogTest
                 {
                     assertThat(descriptorDecoder.stopTimestamp(), is(42L));
                     assertThat(descriptorDecoder.stopPosition(), is(SEGMENT_LENGTH * 3 + 1024L + 128L));
-                }
-            ));
+                }));
         }
     }
 
@@ -268,12 +264,13 @@ class CatalogTest
             log.write(bb, PAGE_SIZE - 128);
         }
 
-        final ArchiveException exception = Assertions.assertThrows(ArchiveException.class, () ->
-        {
-            try (Catalog ignored = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock))
+        final ArchiveException exception = Assertions.assertThrows(
+            ArchiveException.class,
+            () ->
             {
-            }
-        });
+                final Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock);
+                catalog.close();
+            });
         assertThat(exception.getMessage(), containsString(segmentFile.getAbsolutePath()));
     }
 
@@ -325,8 +322,7 @@ class CatalogTest
                 {
                     assertThat(descriptorDecoder.stopTimestamp(), is(NULL_TIMESTAMP));
                     assertThat(descriptorDecoder.stopPosition(), is(NULL_POSITION));
-                }
-            ));
+                }));
         }
 
         currentTimeMs = 42L;
@@ -339,8 +335,7 @@ class CatalogTest
                 {
                     assertThat(descriptorDecoder.stopTimestamp(), is(42L));
                     assertThat(descriptorDecoder.stopPosition(), is((long)SEGMENT_LENGTH));
-                }
-            ));
+                }));
         }
     }
 
@@ -448,8 +443,7 @@ class CatalogTest
             Arguments.of(PAGE_SIZE * 3 + 111, PAGE_SIZE - 111, false),
             Arguments.of(0, PAGE_SIZE + 1, true),
             Arguments.of(PAGE_SIZE - 1, 2, true),
-            Arguments.of(PAGE_SIZE * 4 + 11, PAGE_SIZE - 10, true)
-        );
+            Arguments.of(PAGE_SIZE * 4 + 11, PAGE_SIZE - 10, true));
     }
 
     @ParameterizedTest(name = "fragmentCrossesPageBoundary({0}, {1}, {2})")

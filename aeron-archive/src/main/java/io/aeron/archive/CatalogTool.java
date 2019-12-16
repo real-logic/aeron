@@ -53,7 +53,10 @@ public class CatalogTool
         }
         else if (args.length >= 2 && args[1].equals("dump"))
         {
-            dump(System.out, archiveDir, args.length >= 3 ? Long.parseLong(args[2]) : Long.MAX_VALUE,
+            dump(
+                System.out,
+                archiveDir,
+                args.length >= 3 ? Long.parseLong(args[2]) : Long.MAX_VALUE,
                 CatalogTool::continueOnFrameLimit);
         }
         else if (args.length == 2 && args[1].equals("errors"))
@@ -79,13 +82,21 @@ public class CatalogTool
                 }
                 else
                 {
-                    verifyRecording(System.out, archiveDir, Long.parseLong(args[2]), false,
+                    verifyRecording(
+                        System.out,
+                        archiveDir,
+                        Long.parseLong(args[2]),
+                        false,
                         CatalogTool::truncateFileOnPageStraddle);
                 }
             }
             else
             {
-                verifyRecording(System.out, archiveDir, Long.parseLong(args[2]), verifyAllSegmentFiles(args[3]),
+                verifyRecording(
+                    System.out,
+                    archiveDir,
+                    Long.parseLong(args[2]),
+                    verifyAllSegmentFiles(args[3]),
                     CatalogTool::truncateFileOnPageStraddle);
             }
         }
@@ -105,6 +116,7 @@ public class CatalogTool
         {
             System.out.print("WARNING: please ensure archive is not running and that backups have been taken of " +
                 "archive directory before attempting migration(s).");
+
             if (readContinueAnswer("Continue? (y/n)"))
             {
                 migrate(System.out, archiveDir);

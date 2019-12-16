@@ -144,9 +144,8 @@ matrix:
 
     - env: COMPILER=clang++
       language: c++
-      jdk: openjdk8
       compiler: clang
-      os: osx
+      osx_image: xcode9.3
       script: cppbuild/cppbuild --build-archive-api
 
 before_cache:

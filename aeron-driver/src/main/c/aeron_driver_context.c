@@ -305,7 +305,7 @@ static void aeron_driver_conductor_to_client_interceptor_null(
 {
 }
 
-#define AERON_DIR_WARN_IF_EXISTS_DEFAULT true
+#define AERON_DIR_WARN_IF_EXISTS_DEFAULT false
 #define AERON_THREADING_MODE_DEFAULT AERON_THREADING_MODE_DEDICATED
 #define AERON_DIR_DELETE_ON_START_DEFAULT false
 #define AERON_DIR_DELETE_ON_SHUTDOWN_DEFAULT false

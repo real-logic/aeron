@@ -71,7 +71,7 @@ typedef struct aeron_driver_context_stct
     aeron_inferable_boolean_t receiver_group_consideration; /* aeron.receiver.group.consideration = INFER */
     bool dirs_delete_on_start;                              /* aeron.dir.delete.on.start = false */
     bool dirs_delete_on_shutdown;                           /* aeron.dir.delete.on.shutdown = false */
-    bool warn_if_dirs_exist;                                /* aeron.dir.warn.if.exists = true */
+    bool warn_if_dirs_exist;                                /* aeron.dir.warn.if.exists = false */
     bool term_buffer_sparse_file;                           /* aeron.term.buffer.sparse.file = false */
     bool perform_storage_checks;                            /* aeron.perform.storage.checks = true */
     bool spies_simulate_connection;                         /* aeron.spies.simulate.connection = false */

@@ -402,6 +402,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             {
                 channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(replaySessionId));
                 channelUri.put(CommonContext.LINGER_PARAM_NAME, "0");
+                channelUri.put(CommonContext.EOS_PARAM_NAME, "false");
             }
 
             if (srcArchive.archiveProxy().replay(

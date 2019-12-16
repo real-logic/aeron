@@ -109,6 +109,7 @@ public class ReplayMerge implements AutoCloseable
 
         final ChannelUri replayChannelUri = ChannelUri.parse(replayChannel);
         replayChannelUri.put(CommonContext.LINGER_PARAM_NAME, "0");
+        replayChannelUri.put(CommonContext.EOS_PARAM_NAME, "false");
 
         this.archive = archive;
         this.subscription = subscription;

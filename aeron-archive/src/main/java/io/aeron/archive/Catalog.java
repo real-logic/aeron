@@ -525,7 +525,7 @@ class Catalog implements AutoCloseable
         final RecordingDescriptorDecoder descriptorDecoder, final byte[] channelFragment)
     {
         final int fragmentLength = channelFragment.length;
-        if (fragmentLength == 0)
+        if (0 == fragmentLength)
         {
             return true;
         }
@@ -568,7 +568,6 @@ class Catalog implements AutoCloseable
 
         fieldAccessBuffer.putLong(offset + stopTimestampEncodingOffset(), timestampMs, BYTE_ORDER);
         fieldAccessBuffer.putLongVolatile(offset + stopPositionEncodingOffset(), stopPosition);
-
         forceWrites(catalogChannel, forceWrites, forceMetadata);
     }
 
@@ -576,8 +575,8 @@ class Catalog implements AutoCloseable
     {
         final int offset = recordingDescriptorOffset(recordingId) + RecordingDescriptorHeaderDecoder.BLOCK_LENGTH;
         final long stopPosition = nativeOrder() == BYTE_ORDER ? position : Long.reverseBytes(position);
-        fieldAccessBuffer.putLongVolatile(offset + stopPositionEncodingOffset(), stopPosition);
 
+        fieldAccessBuffer.putLongVolatile(offset + stopPositionEncodingOffset(), stopPosition);
         forceWrites(catalogChannel, forceWrites, forceMetadata);
     }
 
@@ -592,7 +591,6 @@ class Catalog implements AutoCloseable
         fieldAccessBuffer.putLong(offset + stopTimestampEncodingOffset(), NULL_TIMESTAMP, BYTE_ORDER);
         fieldAccessBuffer.putInt(offset + sessionIdEncodingOffset(), sessionId, BYTE_ORDER);
         fieldAccessBuffer.putLongVolatile(offset + stopPositionEncodingOffset(), stopPosition);
-
         forceWrites(catalogChannel, forceWrites, forceMetadata);
     }
 
@@ -614,6 +612,7 @@ class Catalog implements AutoCloseable
             startPositionEncodingOffset();
 
         fieldAccessBuffer.putLong(offset, position, BYTE_ORDER);
+        forceWrites(catalogChannel, forceWrites, forceMetadata);
     }
 
     long stopPosition(final long recordingId)

@@ -778,9 +778,9 @@ class ConsensusModuleAgent implements Agent
         }
     }
 
-    public void onClusterMembersQuery(final long correlationId, final boolean returnExtended)
+    public void onClusterMembersQuery(final long correlationId, final boolean isExtendedRequest)
     {
-        if (returnExtended)
+        if (isExtendedRequest)
         {
             serviceProxy.clusterMembersExtendedResponse(
                 correlationId, timeNs, leaderMember.id(), memberId, clusterMembers, passiveMembers);

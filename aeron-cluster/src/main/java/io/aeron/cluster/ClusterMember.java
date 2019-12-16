@@ -566,6 +566,11 @@ public final class ClusterMember
      */
     public static String encodeAsString(final ClusterMember[] clusterMembers)
     {
+        if (0 == clusterMembers.length)
+        {
+            return "";
+        }
+
         final StringBuilder builder = new StringBuilder();
 
         for (int i = 0, length = clusterMembers.length; i < length; i++)

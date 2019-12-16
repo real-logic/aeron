@@ -567,6 +567,7 @@ class ConsensusModuleAgent implements Agent
                     .endpoint(follower.transferEndpoint())
                     .isSessionIdTagged(true)
                     .sessionId(logPublicationTag)
+                    .linger(0L)
                     .eos(false)
                     .build();
 

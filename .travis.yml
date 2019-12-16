@@ -144,6 +144,7 @@ matrix:
 
     - env: COMPILER=clang++
       language: c++
+      jdk: openjdk8
       compiler: clang
       os: osx
       script: cppbuild/cppbuild --build-archive-api

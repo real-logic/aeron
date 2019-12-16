@@ -156,20 +156,6 @@ public class ClusterTool
         }
     }
 
-    /**
-     * Snapshot of the current membership of a cluster.
-     */
-    public static class ClusterMembership
-    {
-        long currentTimeNs = NULL_VALUE;
-        int leaderMemberId = NULL_VALUE;
-        int memberId = NULL_VALUE;
-        String activeMembersStr = null;
-        String passiveMembersStr = null;
-        List<ClusterMember> activeMembers = null;
-        List<ClusterMember> passiveMembers = null;
-    }
-
     public static void describe(final PrintStream out, final File clusterDir)
     {
         if (markFileExists(clusterDir) || TIMEOUT_MS > 0)
@@ -575,6 +561,17 @@ public class ClusterTool
             out.println(" tombstone latest snapshot: " + result);
             return result;
         }
+    }
+
+    static class ClusterMembership
+    {
+        long currentTimeNs = NULL_VALUE;
+        int leaderMemberId = NULL_VALUE;
+        int memberId = NULL_VALUE;
+        String activeMembersStr = null;
+        String passiveMembersStr = null;
+        List<ClusterMember> activeMembers = null;
+        List<ClusterMember> passiveMembers = null;
     }
 
     private static ClusterMarkFile openMarkFile(final File clusterDir, final Consumer<String> logger)

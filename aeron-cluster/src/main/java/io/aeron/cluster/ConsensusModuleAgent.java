@@ -1345,6 +1345,8 @@ class ConsensusModuleAgent implements Agent
 
         final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
+        channelUri.put(ALIAS_PARAM_NAME, "log");
+
         startLogRecording(channelUri.toString(), SourceLocation.LOCAL);
         createAppendPosition(logSessionId);
         awaitServicesReady(channelUri, logSessionId, logPosition);

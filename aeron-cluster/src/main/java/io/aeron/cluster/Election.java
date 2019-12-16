@@ -908,6 +908,7 @@ public class Election implements AutoCloseable
         channelUri.put(CommonContext.MDC_CONTROL_MODE_PARAM_NAME, CommonContext.MDC_CONTROL_MODE_MANUAL);
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(sessionId));
         channelUri.put(CommonContext.TAGS_PARAM_NAME, tags);
+        channelUri.put(CommonContext.ALIAS_PARAM_NAME, "log");
 
         return channelUri;
     }

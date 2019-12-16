@@ -22,6 +22,7 @@ import io.aeron.Image;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.exceptions.ConcurrentConcludeException;
+import io.aeron.exceptions.ConfigurationException;
 import io.aeron.security.Authenticator;
 import io.aeron.security.AuthenticatorSupplier;
 import org.agrona.*;
@@ -220,7 +221,7 @@ public class Archive implements AutoCloseable
         public static final int FILE_SYNC_LEVEL_DEFAULT = 0;
 
         /**
-         * The level at which catalog updates should be sync'ed to disk.
+         * The level at which catalog updates and directory should be sync'ed to disk.
          * <ul>
          * <li>0 - normal writes.</li>
          * <li>1 - sync file data.</li>
@@ -399,6 +400,7 @@ public class Archive implements AutoCloseable
          * </ul>
          *
          * @return level at which files should be sync'ed to disk.
+         * @see #FILE_SYNC_LEVEL_PROP_NAME
          */
         public static int fileSyncLevel()
         {
@@ -406,7 +408,7 @@ public class Archive implements AutoCloseable
         }
 
         /**
-         * The level at which the catalog file should be sync'ed to disk.
+         * The level at which the catalog file and directory should be sync'ed to disk.
          * <ul>
          * <li>0 - normal writes.</li>
          * <li>1 - sync file data.</li>
@@ -414,6 +416,7 @@ public class Archive implements AutoCloseable
          * </ul>
          *
          * @return level at which files should be sync'ed to disk.
+         * @see #CATALOG_FILE_SYNC_LEVEL_PROP_NAME
          */
         public static int catalogFileSyncLevel()
         {
@@ -685,6 +688,12 @@ public class Archive implements AutoCloseable
             if (0 != IS_CONCLUDED_UPDATER.getAndSet(this, 1))
             {
                 throw new ConcurrentConcludeException();
+            }
+
+            if (catalogFileSyncLevel < fileSyncLevel)
+            {
+                throw new ConfigurationException(
+                    "catalogFileSyncLevel " + catalogFileSyncLevel + " < fileSyncLevel " + fileSyncLevel);
             }
 
             if (null == archiveDir)
@@ -1370,6 +1379,8 @@ public class Archive implements AutoCloseable
          * </ul>
          *
          * @return the level to be applied for file write.
+         * @see #catalogFileSyncLevel()
+         * @see Configuration#FILE_SYNC_LEVEL_PROP_NAME
          */
         int fileSyncLevel()
         {
@@ -1386,6 +1397,8 @@ public class Archive implements AutoCloseable
          *
          * @param syncLevel to be applied for file writes.
          * @return this for a fluent API.
+         * @see #catalogFileSyncLevel()
+         * @see Configuration#FILE_SYNC_LEVEL_PROP_NAME
          */
         public Context fileSyncLevel(final int syncLevel)
         {
@@ -1402,6 +1415,8 @@ public class Archive implements AutoCloseable
          * </ul>
          *
          * @return the level to be applied for file write.
+         * @see #fileSyncLevel()
+         * @see Configuration#CATALOG_FILE_SYNC_LEVEL_PROP_NAME
          */
         int catalogFileSyncLevel()
         {
@@ -1418,6 +1433,8 @@ public class Archive implements AutoCloseable
          *
          * @param syncLevel to be applied for file writes.
          * @return this for a fluent API.
+         * @see #fileSyncLevel()
+         * @see Configuration#CATALOG_FILE_SYNC_LEVEL_PROP_NAME
          */
         public Context catalogFileSyncLevel(final int syncLevel)
         {

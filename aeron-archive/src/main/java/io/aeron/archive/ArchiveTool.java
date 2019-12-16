@@ -445,7 +445,6 @@ public class ArchiveTool
                 archiveDir,
                 maxSegmentFile,
                 startPosition,
-                termBufferLength,
                 segmentFileLength,
                 truncateFileOnPageStraddle::confirm);
         }

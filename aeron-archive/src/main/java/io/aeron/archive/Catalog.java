@@ -719,7 +719,6 @@ class Catalog implements AutoCloseable
                 archiveDir,
                 maxSegmentFile,
                 decoder.startPosition(),
-                decoder.termBufferLength(),
                 decoder.segmentFileLength(),
                 (segmentFile) ->
                 {
@@ -802,7 +801,6 @@ class Catalog implements AutoCloseable
         final File archiveDir,
         final String maxSegmentFile,
         final long startPosition,
-        final int termBufferLength,
         final int segmentFileLength,
         final Predicate<File> truncateFileOnPageStraddle)
     {
@@ -813,9 +811,10 @@ class Catalog implements AutoCloseable
         else
         {
             final File file = new File(archiveDir, maxSegmentFile);
-            final long stopSegmentOffset = recoverStopOffset(file, segmentFileLength, truncateFileOnPageStraddle);
-            return segmentFileBasePosition(startPosition, parseSegmentFilePosition(maxSegmentFile), termBufferLength,
-                segmentFileLength) + stopSegmentOffset;
+            final long segmentStopOffset = recoverStopOffset(file, segmentFileLength, truncateFileOnPageStraddle);
+            final long segmentFileBasePosition = parseSegmentFilePosition(maxSegmentFile);
+
+            return segmentFileBasePosition + segmentStopOffset;
         }
     }
 
@@ -830,7 +829,7 @@ class Catalog implements AutoCloseable
             long lastFragmentOffset = 0;
             long nextFragmentOffset = 0;
             long lastFrameLength = 0;
-            final long maxSize = min(segmentFileLength, segment.size());
+            final long maxLength = min(segmentFileLength, segment.size());
 
             do
             {
@@ -842,7 +841,7 @@ class Catalog implements AutoCloseable
                 }
 
                 final int frameLength = buffer.getInt(FRAME_LENGTH_FIELD_OFFSET);
-                if (frameLength == 0)
+                if (frameLength <= 0)
                 {
                     break;
                 }
@@ -851,7 +850,7 @@ class Catalog implements AutoCloseable
                 lastFragmentOffset = nextFragmentOffset;
                 nextFragmentOffset += align(frameLength, FRAME_ALIGNMENT);
             }
-            while (nextFragmentOffset < maxSize);
+            while (nextFragmentOffset < maxLength);
 
             if (fragmentStraddlesPageBoundary(lastFragmentOffset, lastFrameLength) &&
                 truncateFileOnPageStraddle.test(segmentFile))
@@ -876,6 +875,6 @@ class Catalog implements AutoCloseable
 
     static boolean fragmentStraddlesPageBoundary(final long fragmentOffset, final long fragmentLength)
     {
-        return fragmentOffset / PAGE_SIZE != (fragmentOffset + fragmentLength - 1) / PAGE_SIZE;
+        return fragmentOffset / PAGE_SIZE != (fragmentOffset + (fragmentLength - 1)) / PAGE_SIZE;
     }
 }

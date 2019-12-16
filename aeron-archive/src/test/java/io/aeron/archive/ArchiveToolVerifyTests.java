@@ -1,3 +1,18 @@
+/*
+ * Copyright 2014-2019 Real Logic Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.aeron.archive;
 
 import io.aeron.exceptions.AeronException;
@@ -35,10 +50,6 @@ class ArchiveToolVerifyTests
     private static final int SEGMENT_LENGTH = 2 * TERM_LENGTH;
     private static final int MTU_LENGTH = 1024;
 
-    private File archiveDir;
-    private long currentTimeMillis = 0;
-    private EpochClock epochClock = () -> currentTimeMillis += 100;
-    private PrintStream out = mock(PrintStream.class);
     private long record0;
     private long record1;
     private long record2;
@@ -58,12 +69,18 @@ class ArchiveToolVerifyTests
     private long record16;
     private long record17;
     private long record18;
+    private long currentTimeMillis = 0;
+
+    private final EpochClock epochClock = () -> currentTimeMillis += 100;
+    private final PrintStream out = mock(PrintStream.class);
+    private File archiveDir;
 
     @SuppressWarnings("MethodLength")
     @BeforeEach
-    void setup() throws IOException
+    void before() throws IOException
     {
         archiveDir = TestUtil.makeTestDirectory();
+
         try (Catalog catalog = new Catalog(archiveDir, null, 0, 128, epochClock))
         {
             record0 = catalog.addNewRecording(NULL_POSITION, NULL_POSITION, NULL_TIMESTAMP, NULL_TIMESTAMP, 0,
@@ -203,38 +220,8 @@ class ArchiveToolVerifyTests
             });
     }
 
-    private File createFile(final String name) throws IOException
-    {
-        final File file = new File(archiveDir, name);
-        assertTrue(file.createNewFile());
-        return file;
-    }
-
-    private void createDirectory(final String name)
-    {
-        final File file = new File(archiveDir, name);
-        assertTrue(file.mkdir());
-    }
-
-    @FunctionalInterface
-    private interface SegmentWriter
-    {
-        void write(ByteBuffer bb, DataHeaderFlyweight flyweight, FileChannel channel) throws IOException;
-    }
-
-    private void writeToSegmentFile(final File file, final SegmentWriter segmentWriter) throws IOException
-    {
-        final ByteBuffer bb = ByteBuffer.allocateDirect(HEADER_LENGTH);
-        final DataHeaderFlyweight flyweight = new DataHeaderFlyweight(bb);
-        try (FileChannel channel = FileChannel.open(file.toPath(), READ, WRITE))
-        {
-            bb.clear();
-            segmentWriter.write(bb, flyweight, channel);
-        }
-    }
-
     @AfterEach
-    void teardown()
+    void after()
     {
         IoUtil.delete(archiveDir, false);
     }
@@ -262,7 +249,7 @@ class ArchiveToolVerifyTests
                 2, 2, "invalidChannel", "source2");
             assertRecording(catalog, record7, VALID, 0, 0, 70, 200, 0,
                 3, 3, "validChannel", "source3");
-            assertRecording(catalog, record8, VALID, TERM_LENGTH + 1024, -TERM_LENGTH, 80, 300, 0,
+            assertRecording(catalog, record8, VALID, TERM_LENGTH + 1024, 0, 80, 300, 0,
                 3, 3, "validChannel", "source3");
             assertRecording(catalog, record9, VALID, 2048, SEGMENT_LENGTH + TERM_LENGTH + 384, 90, 400, 5,
                 3, 3, "validChannel", "source3");
@@ -285,6 +272,7 @@ class ArchiveToolVerifyTests
             assertRecording(catalog, record18, INVALID, 8224, NULL_POSITION, 180, NULL_TIMESTAMP, 16,
                 2, 2, "invalidChannel", "source2");
         }
+
         Mockito.verify(out, times(19)).println(any(String.class));
     }
 
@@ -311,7 +299,7 @@ class ArchiveToolVerifyTests
                 2, 2, "invalidChannel", "source2");
             assertRecording(catalog, record7, VALID, 0, 0, 70, 200, 0,
                 3, 3, "validChannel", "source3");
-            assertRecording(catalog, record8, VALID, TERM_LENGTH + 1024, -TERM_LENGTH, 80, 300, 0,
+            assertRecording(catalog, record8, VALID, TERM_LENGTH + 1024, 0, 80, 300, 0,
                 3, 3, "validChannel", "source3");
             assertRecording(catalog, record9, VALID, 2048, SEGMENT_LENGTH + TERM_LENGTH + 384, 90, 400, 5,
                 3, 3, "validChannel", "source3");
@@ -487,6 +475,36 @@ class ArchiveToolVerifyTests
         {
             assertRecording(catalog, record10, VALID, 0, PAGE_SIZE + 64, 100, 100, 0,
                 3, 3, "validChannel", "source3");
+        }
+    }
+
+    @FunctionalInterface
+    interface SegmentWriter
+    {
+        void write(ByteBuffer bb, DataHeaderFlyweight flyweight, FileChannel channel) throws IOException;
+    }
+
+    private File createFile(final String name) throws IOException
+    {
+        final File file = new File(archiveDir, name);
+        assertTrue(file.createNewFile());
+        return file;
+    }
+
+    private void createDirectory(final String name)
+    {
+        final File file = new File(archiveDir, name);
+        assertTrue(file.mkdir());
+    }
+
+    private void writeToSegmentFile(final File file, final SegmentWriter segmentWriter) throws IOException
+    {
+        final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(HEADER_LENGTH);
+        final DataHeaderFlyweight flyweight = new DataHeaderFlyweight(byteBuffer);
+        try (FileChannel channel = FileChannel.open(file.toPath(), READ, WRITE))
+        {
+            byteBuffer.clear();
+            segmentWriter.write(byteBuffer, flyweight, channel);
         }
     }
 

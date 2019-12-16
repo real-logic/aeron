@@ -25,8 +25,6 @@ import org.agrona.concurrent.status.CountersReader;
 import org.junit.After;
 import org.junit.Test;
 
-import java.time.Duration;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
@@ -96,9 +94,9 @@ public class CounterTest
 
         assertFalse(counter.isClosed());
 
-        verify(availableCounterHandlerClientA, timeout(Duration.ofMillis(5000)))
+        verify(availableCounterHandlerClientA, timeout(5000L))
             .onAvailableCounter(any(CountersReader.class), eq(counter.registrationId()), eq(counter.id()));
-        verify(availableCounterHandlerClientB, timeout(Duration.ofMillis(5000)))
+        verify(availableCounterHandlerClientB, timeout(5000L))
             .onAvailableCounter(any(CountersReader.class), eq(counter.registrationId()), eq(counter.id()));
     }
 

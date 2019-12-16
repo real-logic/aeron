@@ -24,8 +24,6 @@ import org.agrona.collections.MutableReference;
 import org.junit.After;
 import org.junit.Test;
 
-import java.time.Duration;
-
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.any;
@@ -62,7 +60,7 @@ public class ReentrantClientTest
             final Subscription sub = aeron.addSubscription(channel, 1, mockHandler, null);
             final Publication pub = aeron.addPublication(channel, 1);
 
-            verify(mockHandler, timeout(Duration.ofMillis(5000))).onAvailableImage(any(Image.class));
+            verify(mockHandler, timeout(5000L)).onAvailableImage(any(Image.class));
 
             pub.close();
             sub.close();

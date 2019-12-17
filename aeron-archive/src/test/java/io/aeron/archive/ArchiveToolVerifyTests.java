@@ -123,6 +123,12 @@ class ArchiveToolVerifyTests
                 SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
         }
 
+        writeToSegmentFile(createFile(record1 + "-0.dat"), (bb, fl, ch) ->
+        {
+            fl.frameLength(128);
+            fl.streamId(Integer.MAX_VALUE);
+            ch.write(bb);
+        });
         createFile(record2 + "-" + RECORDING_SEGMENT_SUFFIX); // ERR: no segment position
         createFile(record3 + "-" + "invalid_position" + RECORDING_SEGMENT_SUFFIX); // ERR: invalid position
         createFile(segmentFileName(record4, -111)); // ERR: negative position

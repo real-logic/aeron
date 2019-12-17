@@ -37,8 +37,7 @@ import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -81,6 +80,110 @@ public class ArchiveTool
         boolean confirm(T context);
     }
 
+    @SuppressWarnings("MethodLength")
+    public static void main(final String[] args)
+    {
+        if (args.length == 0 || args.length > 4)
+        {
+            printHelp();
+            System.exit(-1);
+        }
+
+        final File archiveDir = new File(args[0]);
+        if (!archiveDir.exists())
+        {
+            System.err.println("ERR: Archive folder not found: " + archiveDir.getAbsolutePath());
+            printHelp();
+            System.exit(-1);
+        }
+
+        if (args.length == 2 && args[1].equals("describe"))
+        {
+            describe(System.out, archiveDir);
+        }
+        else if (args.length == 3 && args[1].equals("describe"))
+        {
+            describeRecording(System.out, archiveDir, Long.parseLong(args[2]));
+        }
+        else if (args.length >= 2 && args[1].equals("dump"))
+        {
+            dump(
+                System.out,
+                archiveDir,
+                args.length >= 3 ? Long.parseLong(args[2]) : Long.MAX_VALUE,
+                ArchiveTool::continueOnFrameLimit);
+        }
+        else if (args.length == 2 && args[1].equals("errors"))
+        {
+            printErrors(System.out, archiveDir);
+        }
+        else if (args.length == 2 && args[1].equals("pid"))
+        {
+            System.out.println(pid(archiveDir));
+        }
+        else if (args.length >= 2 && args[1].equals("verify"))
+        {
+            if (args.length == 2)
+            {
+
+                verify(System.out, archiveDir, false, ArchiveTool::truncateFileOnPageStraddle);
+            }
+            else if (args.length == 3)
+            {
+                if (verifyAllSegmentFiles(args[2]))
+                {
+                    verify(System.out, archiveDir, true, ArchiveTool::truncateFileOnPageStraddle);
+                }
+                else
+                {
+                    verifyRecording(
+                        System.out,
+                        archiveDir,
+                        Long.parseLong(args[2]),
+                        false,
+                        ArchiveTool::truncateFileOnPageStraddle);
+                }
+            }
+            else
+            {
+                verifyRecording(
+                    System.out,
+                    archiveDir,
+                    Long.parseLong(args[2]),
+                    verifyAllSegmentFiles(args[3]),
+                    ArchiveTool::truncateFileOnPageStraddle);
+            }
+        }
+        else if (args.length == 2 && args[1].equals("count-entries"))
+        {
+            System.out.println(countEntries(archiveDir));
+        }
+        else if (args.length == 2 && args[1].equals("max-entries"))
+        {
+            System.out.println(maxEntries(archiveDir));
+        }
+        else if (args.length == 3 && args[1].equals("max-entries"))
+        {
+            System.out.println(maxEntries(archiveDir, Long.parseLong(args[2])));
+        }
+        else if (args.length == 2 && args[1].equals("migrate"))
+        {
+            System.out.print("WARNING: please ensure archive is not running and that a backup has been taken of " +
+                "archive directory before attempting migration(s).");
+
+            if (readContinueAnswer("Continue? (y/n)"))
+            {
+                migrate(System.out, archiveDir);
+            }
+        }
+    }
+
+    /**
+     * Get the maximum number of entries supported by a {@link Catalog}.
+     *
+     * @param archiveDir containing the {@link Catalog}.
+     * @return the maximum number of entries supported by a {@link Catalog}.
+     */
     public static int maxEntries(final File archiveDir)
     {
         try (Catalog catalog = openCatalogReadOnly(archiveDir, SystemEpochClock.INSTANCE))
@@ -89,6 +192,12 @@ public class ArchiveTool
         }
     }
 
+    /**
+     * Set the maximum number of entries supported by a {@link Catalog}.
+     * @param archiveDir    containing the {@link Catalog}.
+     * @param newMaxEntries value to set.
+     * @return the maximum number of entries supported by a {@link Catalog} after update.
+     */
     public static int maxEntries(final File archiveDir, final long newMaxEntries)
     {
         try (Catalog catalog = new Catalog(archiveDir, null, 0, newMaxEntries, SystemEpochClock.INSTANCE))
@@ -97,6 +206,12 @@ public class ArchiveTool
         }
     }
 
+    /**
+     * Describe the metadata for entries in the {@link Catalog}.
+     *
+     * @param out        to which the entries will be printed.
+     * @param archiveDir containing the {@link Catalog}.
+     */
     public static void describe(final PrintStream out, final File archiveDir)
     {
         try (Catalog catalog = openCatalogReadOnly(archiveDir, SystemEpochClock.INSTANCE);
@@ -108,6 +223,13 @@ public class ArchiveTool
         }
     }
 
+    /**
+     * Describe the metadata for a entry in the {@link Catalog} identified by recording id.
+     *
+     * @param out         to which the entry will be printed.
+     * @param archiveDir  containing the {@link Catalog}.
+     * @param recordingId to identify the entry.
+     */
     public static void describeRecording(final PrintStream out, final File archiveDir, final long recordingId)
     {
         try (Catalog catalog = openCatalogReadOnly(archiveDir, SystemEpochClock.INSTANCE))
@@ -116,6 +238,12 @@ public class ArchiveTool
         }
     }
 
+    /**
+     * Count the number of entries in the {@link Catalog}.
+     *
+     * @param archiveDir containing the {@link Catalog}.
+     * @return the number of entries in the {@link Catalog}.
+     */
     public static int countEntries(final File archiveDir)
     {
         try (Catalog catalog = openCatalogReadOnly(archiveDir, SystemEpochClock.INSTANCE))
@@ -124,6 +252,12 @@ public class ArchiveTool
         }
     }
 
+    /**
+     * Get the pid of the process for the {@link Archive}.
+     *
+     * @param archiveDir containing the {@link org.agrona.MarkFile}.
+     * @return the pid of the process for the {@link Archive}.
+     */
     public static long pid(final File archiveDir)
     {
         try (ArchiveMarkFile markFile = openMarkFile(archiveDir, null))
@@ -132,6 +266,12 @@ public class ArchiveTool
         }
     }
 
+    /**
+     * Print the errors in the {@link org.agrona.MarkFile}.
+     *
+     * @param out        stream to which the errors will be printed.
+     * @param archiveDir containing the {@link org.agrona.MarkFile}.
+     */
     public static void printErrors(final PrintStream out, final File archiveDir)
     {
         try (ArchiveMarkFile markFile = openMarkFile(archiveDir, null))
@@ -140,11 +280,20 @@ public class ArchiveTool
         }
     }
 
+    /**
+     * Dump the contents of an {@link Archive} so it can be inspected or debugged. Each recording will have its
+     * contents dumped up to fragmentCountLimit before requesting to continue.
+     *
+     * @param out                               to which the contents will be printed.
+     * @param archiveDir                        containing the {@link Archive}.
+     * @param fragmentCountLimit                limit of data fragments to print from each recording before continue.
+     * @param confirmActionOnFragmentCountLimit confirm continue to dump at limit.
+     */
     public static void dump(
         final PrintStream out,
         final File archiveDir,
-        final long dataFragmentLimit,
-        final ActionConfirmation<Long> continueOnFragmentLimit)
+        final long fragmentCountLimit,
+        final ActionConfirmation<Long> confirmActionOnFragmentCountLimit)
     {
         try (Catalog catalog = openCatalog(archiveDir, SystemEpochClock.INSTANCE);
             ArchiveMarkFile markFile = openMarkFile(archiveDir, out::println))
@@ -153,13 +302,13 @@ public class ArchiveTool
             out.println("Catalog Max Entries: " + catalog.maxEntries());
 
             out.println();
-            out.println("Dumping " + dataFragmentLimit + " fragments per recording");
+            out.println("Dumping up to " + fragmentCountLimit + " fragments per recording");
             catalog.forEach((headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) -> dump(
                 out,
                 archiveDir,
                 catalog,
-                dataFragmentLimit,
-                continueOnFragmentLimit,
+                fragmentCountLimit,
+                confirmActionOnFragmentCountLimit,
                 headerDecoder,
                 descriptorDecoder));
         }
@@ -183,45 +332,6 @@ public class ArchiveTool
         final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
         verify(out, archiveDir, validateAllSegmentFiles, SystemEpochClock.INSTANCE, truncateFileOnPageStraddle);
-    }
-
-    static void verify(
-        final PrintStream out,
-        final File archiveDir,
-        final boolean validateAllSegmentFiles,
-        final EpochClock epochClock,
-        final ActionConfirmation<File> truncateFileOnPageStraddle)
-    {
-        try (Catalog catalog = openCatalog(archiveDir, epochClock))
-        {
-            catalog.forEach(createVerifyEntryProcessor(
-                out, archiveDir, validateAllSegmentFiles, epochClock, truncateFileOnPageStraddle));
-        }
-    }
-
-    private static CatalogEntryProcessor createVerifyEntryProcessor(
-        final PrintStream out,
-        final File archiveDir,
-        final boolean validateAllSegmentFiles,
-        final EpochClock epochClock,
-        final ActionConfirmation<File> truncateFileOnPageStraddle)
-    {
-        final ByteBuffer buffer = allocateDirectAligned(HEADER_LENGTH, FRAME_ALIGNMENT);
-        buffer.order(RecordingDescriptorDecoder.BYTE_ORDER);
-        final UnsafeBuffer tempBuffer = new UnsafeBuffer(buffer);
-        final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight(tempBuffer);
-
-        return (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) -> verifyRecording(
-            out,
-            archiveDir,
-            validateAllSegmentFiles,
-            epochClock,
-            truncateFileOnPageStraddle,
-            tempBuffer,
-            headerFlyweight,
-            headerEncoder,
-            descriptorEncoder,
-            descriptorDecoder);
     }
 
     /**
@@ -255,28 +365,11 @@ public class ArchiveTool
             truncateFileOnPageStraddle);
     }
 
-    static void verifyRecording(
-        final PrintStream out,
-        final File archiveDir,
-        final long recordingId,
-        final boolean validateAllSegmentFiles,
-        final EpochClock epochClock,
-        final ActionConfirmation<File> truncateFileOnPageStraddle)
-    {
-        try (Catalog catalog = openCatalog(archiveDir, epochClock))
-        {
-            if (!catalog.forEntry(recordingId, createVerifyEntryProcessor(
-                out, archiveDir, validateAllSegmentFiles, epochClock, truncateFileOnPageStraddle)))
-            {
-                throw new AeronException("No recording found with recordingId: " + recordingId);
-            }
-        }
-    }
-
     /**
-     * Migrate previous archive MarkFile, Catalog, and recordings from previous version to latest version.
+     * Migrate previous archive {@link org.agrona.MarkFile}, {@link Catalog}, and recordings from previous version
+     * to latest version.
      *
-     * @param out        output stream to print results and errors to
+     * @param out        output stream to print results and errors to.
      * @param archiveDir that contains MarkFile, Catalog and recordings.
      */
     public static void migrate(final PrintStream out, final File archiveDir)
@@ -303,10 +396,36 @@ public class ArchiveTool
         }
     }
 
-    private static ArchiveMarkFile openMarkFile(final File archiveDir, final Consumer<String> logger)
+    static void verify(
+        final PrintStream out,
+        final File archiveDir,
+        final boolean validateAllSegmentFiles,
+        final EpochClock epochClock,
+        final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
-        return new ArchiveMarkFile(
-            archiveDir, ArchiveMarkFile.FILENAME, SystemEpochClock.INSTANCE, TimeUnit.SECONDS.toMillis(5), logger);
+        try (Catalog catalog = openCatalog(archiveDir, epochClock))
+        {
+            catalog.forEach(createVerifyEntryProcessor(
+                out, archiveDir, validateAllSegmentFiles, epochClock, truncateFileOnPageStraddle));
+        }
+    }
+
+    static void verifyRecording(
+        final PrintStream out,
+        final File archiveDir,
+        final long recordingId,
+        final boolean validateAllSegmentFiles,
+        final EpochClock epochClock,
+        final ActionConfirmation<File> truncateFileOnPageStraddle)
+    {
+        try (Catalog catalog = openCatalog(archiveDir, epochClock))
+        {
+            if (!catalog.forEntry(recordingId, createVerifyEntryProcessor(
+                out, archiveDir, validateAllSegmentFiles, epochClock, truncateFileOnPageStraddle)))
+            {
+                throw new AeronException("No recording found with recordingId: " + recordingId);
+            }
+        }
     }
 
     static Catalog openCatalogReadOnly(final File archiveDir, final EpochClock epochClock)
@@ -317,6 +436,64 @@ public class ArchiveTool
     private static Catalog openCatalog(final File archiveDir, final EpochClock epochClock)
     {
         return new Catalog(archiveDir, epochClock, true, null);
+    }
+
+    private static CatalogEntryProcessor createVerifyEntryProcessor(
+        final PrintStream out,
+        final File archiveDir,
+        final boolean validateAllSegmentFiles,
+        final EpochClock epochClock,
+        final ActionConfirmation<File> truncateFileOnPageStraddle)
+    {
+        final ByteBuffer buffer = allocateDirectAligned(HEADER_LENGTH, FRAME_ALIGNMENT);
+        buffer.order(RecordingDescriptorDecoder.BYTE_ORDER);
+        final UnsafeBuffer tempBuffer = new UnsafeBuffer(buffer);
+        final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight(tempBuffer);
+
+        return (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) -> verifyRecording(
+            out,
+            archiveDir,
+            validateAllSegmentFiles,
+            epochClock,
+            truncateFileOnPageStraddle,
+            tempBuffer,
+            headerFlyweight,
+            headerEncoder,
+            descriptorEncoder,
+            descriptorDecoder);
+    }
+
+    private static boolean verifyAllSegmentFiles(final String arg)
+    {
+        return "-a".equals(arg);
+    }
+
+    private static boolean truncateFileOnPageStraddle(final File maxSegmentFile)
+    {
+        return readContinueAnswer(String.format("Last fragment in the segment file: %s straddles the page boundary,%n" +
+                "i.e. it is not possible to verify if it was written correctly.%n%n" +
+                "Please choose the corrective action: (y) - to truncate the file and " +
+                "(n) - to do nothing",
+            maxSegmentFile.getAbsolutePath()));
+    }
+
+    private static boolean continueOnFrameLimit(final Long frameLimit)
+    {
+        return readContinueAnswer(String.format("Specified frame limit %d reached. Continue? (y/n)", frameLimit));
+    }
+
+    private static boolean readContinueAnswer(final String msg)
+    {
+        System.out.printf("%n" + msg + ": ");
+        final String answer = new Scanner(System.in).nextLine();
+
+        return answer.isEmpty() || answer.equalsIgnoreCase("y") || answer.equalsIgnoreCase("yes");
+    }
+
+    private static ArchiveMarkFile openMarkFile(final File archiveDir, final Consumer<String> logger)
+    {
+        return new ArchiveMarkFile(
+            archiveDir, ArchiveMarkFile.FILENAME, SystemEpochClock.INSTANCE, TimeUnit.SECONDS.toMillis(5), logger);
     }
 
     private static ArchiveMarkFile openMarkFileReadWrite(final File archiveDir, final EpochClock epochClock)
@@ -339,8 +516,8 @@ public class ArchiveTool
         final PrintStream out,
         final File archiveDir,
         final Catalog catalog,
-        final long dataFragmentLimit,
-        final ActionConfirmation<Long> continueOnFragmentLimit,
+        final long fragmentCountLimit,
+        final ActionConfirmation<Long> continueActionOnFragmentLimit,
         final RecordingDescriptorHeaderDecoder header,
         final RecordingDescriptorDecoder descriptor)
     {
@@ -348,7 +525,9 @@ public class ArchiveTool
         final long streamLength = stopPosition - descriptor.startPosition();
 
         out.printf("%n%nRecording %d %n  channel: %s%n  streamId: %d%n  stream length: %d%n",
-            descriptor.recordingId(), descriptor.strippedChannel(), descriptor.streamId(),
+            descriptor.recordingId(),
+            descriptor.strippedChannel(),
+            descriptor.streamId(),
             NULL_POSITION == stopPosition ? NULL_POSITION : streamLength);
         out.println(header);
         out.println(descriptor);
@@ -365,8 +544,8 @@ public class ArchiveTool
             descriptor.startPosition(),
             NULL_POSITION);
 
-        boolean isContinue = true;
-        long fragmentCount = dataFragmentLimit;
+        boolean isActive = true;
+        long fragmentCount = fragmentCountLimit;
         do
         {
             out.println();
@@ -398,16 +577,17 @@ public class ArchiveTool
 
             if (--fragmentCount == 0)
             {
-                fragmentCount = dataFragmentLimit;
+                fragmentCount = fragmentCountLimit;
                 if (NULL_POSITION != stopPosition)
                 {
                     out.printf("%d bytes (from %d) remaining in recording %d%n",
                         streamLength - reader.replayPosition(), streamLength, descriptor.recordingId());
                 }
-                isContinue = continueOnFragmentLimit.confirm(dataFragmentLimit);
+
+                isActive = continueActionOnFragmentLimit.confirm(fragmentCountLimit);
             }
         }
-        while (!reader.isDone() && isContinue);
+        while (!reader.isDone() && isActive);
     }
 
     private static void printMarkInformation(final ArchiveMarkFile markFile, final PrintStream out)
@@ -463,7 +643,7 @@ public class ArchiveTool
             {
                 for (final String filename : segmentFiles)
                 {
-                    if (validateSegmentFile(
+                    if (isInvalidSegmentFile(
                         out,
                         archiveDir,
                         recordingId,
@@ -481,7 +661,7 @@ public class ArchiveTool
                     }
                 }
             }
-            else if (validateSegmentFile(
+            else if (isInvalidSegmentFile(
                 out,
                 archiveDir,
                 recordingId,
@@ -509,7 +689,7 @@ public class ArchiveTool
         out.println("(recordingId=" + recordingId + ") OK");
     }
 
-    private static boolean validateSegmentFile(
+    private static boolean isInvalidSegmentFile(
         final PrintStream out,
         final File archiveDir,
         final long recordingId,
@@ -552,8 +732,8 @@ public class ArchiveTool
                     out.println("(recordingId=" + recordingId + ") ERR: fragment " +
                         "termOffset=" + headerFlyweight.termOffset() + " (expected=" + termOffset + "), " +
                         "termId=" + headerFlyweight.termId() + " (expected=" + termId + "), " +
-                        "sessionId=" + headerFlyweight.streamId() + " (expected=" + streamId + ")"
-                    );
+                        "sessionId=" + headerFlyweight.streamId() + " (expected=" + streamId + ")");
+
                     return true;
                 }
 
@@ -593,5 +773,24 @@ public class ArchiveTool
 
         CncFileDescriptor.checkVersion(cncVersion);
         CommonContext.printErrorLog(CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer), out);
+    }
+
+    private static void printHelp()
+    {
+        System.out.println("Usage: <archive-dir> <command>");
+        System.out.println("  describe <optional recordingId>: prints out descriptor(s) in the catalog.");
+        System.out.println("  dump <optional data fragment limit per recording>: prints descriptor(s)");
+        System.out.println("     in the catalog and associated recorded data.");
+        System.out.println("  errors: prints errors for the archive and media driver.");
+        System.out.println("  pid: prints just PID of archive.");
+        System.out.println("  verify <optional recordingId> <optional '-a'>: verifies descriptor(s) in the catalog");
+        System.out.println("     checking recording files availability and contents. Only the last segment file is");
+        System.out.println("     checked unless flag 'all' is specified, i.e. meaning check all files.");
+        System.out.println("     Faulty entries are marked as unusable.");
+        System.out.println("  count-entries: queries the number of recording entries in the catalog.");
+        System.out.println("  max-entries <optional number of entries>: gets or increases the maximum number of");
+        System.out.println("     recording entries the catalog can store.");
+        System.out.println("  migrate: migrate previous archive MarkFile, Catalog, and recordings from previous");
+        System.out.println("     to the latest version.");
     }
 }

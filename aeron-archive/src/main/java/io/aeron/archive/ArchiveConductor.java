@@ -721,9 +721,8 @@ abstract class ArchiveConductor
         catalog.recordingSummary(recordingId, recordingSummary);
         if (streamId != recordingSummary.streamId)
         {
-            final String msg = "cannot extend recording " + recordingSummary.recordingId +
-                " streamId " + streamId +
-                " not equal to recording streamId " + recordingSummary.streamId;
+            final String msg = "cannot extend recording  " + recordingSummary.recordingId +
+                " with streamId " + streamId + " != existing streamId " + recordingSummary.streamId;
             controlSession.sendErrorResponse(correlationId, UNKNOWN_RECORDING, msg, controlResponseProxy);
             return null;
         }

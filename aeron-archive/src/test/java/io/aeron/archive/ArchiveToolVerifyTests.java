@@ -287,7 +287,7 @@ class ArchiveToolVerifyTests
                 2, 2, "invalidChannel", "source2");
             assertRecording(catalog, record7, VALID, 0, 0, 70, 200, 0,
                 3, 3, "validChannel", "source3");
-            assertRecording(catalog, record8, VALID, TERM_LENGTH + 1024, 0, 80, 300, 0,
+            assertRecording(catalog, record8, VALID, TERM_LENGTH + 1024, TERM_LENGTH + 1024, 80, 300, 0,
                 3, 3, "validChannel", "source3");
             assertRecording(catalog, record9, VALID, 2048, SEGMENT_LENGTH + TERM_LENGTH + 384, 90, 400, 5,
                 3, 3, "validChannel", "source3");
@@ -337,7 +337,7 @@ class ArchiveToolVerifyTests
                 2, 2, "invalidChannel", "source2");
             assertRecording(catalog, record7, VALID, 0, 0, 70, 200, 0,
                 3, 3, "validChannel", "source3");
-            assertRecording(catalog, record8, VALID, TERM_LENGTH + 1024, 0, 80, 300, 0,
+            assertRecording(catalog, record8, VALID, TERM_LENGTH + 1024, TERM_LENGTH + 1024, 80, 300, 0,
                 3, 3, "validChannel", "source3");
             assertRecording(catalog, record9, VALID, 2048, SEGMENT_LENGTH + TERM_LENGTH + 384, 90, 400, 5,
                 3, 3, "validChannel", "source3");

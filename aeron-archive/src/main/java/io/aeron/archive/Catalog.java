@@ -751,7 +751,7 @@ class Catalog implements AutoCloseable
     static String[] listSegmentFiles(final File archiveDir, final long recordingId)
     {
         final String prefix = recordingId + "-";
-        return archiveDir.list((dir, name) -> name.startsWith(prefix));
+        return archiveDir.list((dir, name) -> name.startsWith(prefix) && name.endsWith(RECORDING_SEGMENT_SUFFIX));
     }
 
     static String findSegmentFileWithHighestPosition(final String[] segmentFiles)

@@ -123,106 +123,138 @@ class ArchiveToolVerifyTests
                 SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
         }
 
-        writeToSegmentFile(createFile(record1 + "-0.dat"), (bb, fl, ch) ->
-        {
-            fl.frameLength(128);
-            fl.streamId(Integer.MAX_VALUE);
-            ch.write(bb);
-        });
+        writeToSegmentFile(
+            createFile(record1 + "-0.dat"),
+            (byteBuffer, dataHeaderFlyweight, fileChannel) ->
+            {
+                dataHeaderFlyweight.frameLength(128);
+                dataHeaderFlyweight.streamId(Integer.MAX_VALUE);
+                fileChannel.write(byteBuffer);
+            });
+
         createFile(record2 + "-" + RECORDING_SEGMENT_SUFFIX); // ERR: no segment position
         createFile(record3 + "-" + "invalid_position" + RECORDING_SEGMENT_SUFFIX); // ERR: invalid position
         createFile(segmentFileName(record4, -111)); // ERR: negative position
         createFile(segmentFileName(record5, 0)); // ERR: empty file
         createDirectory(segmentFileName(record6, 0)); // ERR: directory
-        writeToSegmentFile(createFile(segmentFileName(record7, 0)), (bb, fl, ch) -> ch.write(bb));
-        writeToSegmentFile(createFile(segmentFileName(record8, 0)), (bb, fl, ch) -> ch.write(bb));
-        writeToSegmentFile(createFile(segmentFileName(record9, SEGMENT_LENGTH)),
-            (bb, flyweight, ch) ->
+
+        writeToSegmentFile(
+            createFile(segmentFileName(record7, 0)),
+            (byteBuffer, dataHeaderFlyweight, fileChannel) -> fileChannel.write(byteBuffer));
+
+        writeToSegmentFile(
+            createFile(segmentFileName(record8, 0)),
+            (byteBuffer, dataHeaderFlyweight, fileChannel) -> fileChannel.write(byteBuffer));
+
+        writeToSegmentFile(
+            createFile(segmentFileName(record9, SEGMENT_LENGTH)),
+            (byteBuffer, dataHeaderFlyweight, fileChannel) ->
             {
-                flyweight.frameLength(TERM_LENGTH + 100);
-                flyweight.termId(7);
-                flyweight.streamId(3);
-                ch.write(bb);
-                bb.clear();
-                flyweight.frameLength(256);
-                flyweight.termId(8);
-                flyweight.termOffset(128);
-                flyweight.streamId(3);
-                ch.write(bb, TERM_LENGTH + 128);
+                dataHeaderFlyweight.frameLength(TERM_LENGTH + 100);
+                dataHeaderFlyweight.termId(7);
+                dataHeaderFlyweight.streamId(3);
+                fileChannel.write(byteBuffer);
+                byteBuffer.clear();
+                dataHeaderFlyweight.frameLength(256);
+                dataHeaderFlyweight.termId(8);
+                dataHeaderFlyweight.termOffset(128);
+                dataHeaderFlyweight.streamId(3);
+                fileChannel.write(byteBuffer, TERM_LENGTH + 128);
             });
-        writeToSegmentFile(createFile(segmentFileName(record10, 0)),
-            (bb, flyweight, ch) ->
+
+        writeToSegmentFile(
+            createFile(segmentFileName(record10, 0)),
+            (byteBuffer, dataHeaderFlyweight, fileChannel) ->
             {
-                flyweight.frameLength(PAGE_SIZE - 64);
-                flyweight.streamId(3);
-                ch.write(bb);
-                bb.clear();
-                flyweight.frameLength(128);
-                flyweight.termOffset(PAGE_SIZE - 64);
-                flyweight.streamId(3);
-                ch.write(bb, PAGE_SIZE - 64);
+                dataHeaderFlyweight.frameLength(PAGE_SIZE - 64);
+                dataHeaderFlyweight.streamId(3);
+                fileChannel.write(byteBuffer);
+                byteBuffer.clear();
+                dataHeaderFlyweight.frameLength(128);
+                dataHeaderFlyweight.termOffset(PAGE_SIZE - 64);
+                dataHeaderFlyweight.streamId(3);
+                fileChannel.write(byteBuffer, PAGE_SIZE - 64);
             });
-        writeToSegmentFile(createFile(segmentFileName(record11, 0)),
-            (bb, flyweight, ch) ->
+
+        writeToSegmentFile(
+            createFile(segmentFileName(record11, 0)),
+            (byteBuffer, dataHeaderFlyweight, fileChannel) ->
             {
-                flyweight.frameLength(PAGE_SIZE - 64);
-                flyweight.streamId(3);
-                ch.write(bb);
-                bb.clear();
-                flyweight.frameLength(256);
-                flyweight.termOffset(PAGE_SIZE - 64);
-                flyweight.streamId(3);
-                ch.write(bb, PAGE_SIZE - 64);
+                dataHeaderFlyweight.frameLength(PAGE_SIZE - 64);
+                dataHeaderFlyweight.streamId(3);
+                fileChannel.write(byteBuffer);
+                byteBuffer.clear();
+                dataHeaderFlyweight.frameLength(256);
+                dataHeaderFlyweight.termOffset(PAGE_SIZE - 64);
+                dataHeaderFlyweight.streamId(3);
+                fileChannel.write(byteBuffer, PAGE_SIZE - 64);
             });
-        writeToSegmentFile(createFile(segmentFileName(record12, 0)), (bb, fl, ch) -> ch.write(bb));
+
+        writeToSegmentFile(
+            createFile(segmentFileName(record12, 0)),
+            (byteBuffer, dataHeaderFlyweight, fileChannel) -> fileChannel.write(byteBuffer));
+
         writeToSegmentFile(createFile(segmentFileName(record13, SEGMENT_LENGTH * 128)),
-            (bb, flyweight, ch) ->
+            (byteBuffer, dataHeaderFlyweight, fileChannel) ->
             {
-                flyweight.frameLength(PAGE_SIZE * 3);
-                flyweight.termId(256);
-                flyweight.streamId(3);
-                ch.write(bb);
+                dataHeaderFlyweight.frameLength(PAGE_SIZE * 3);
+                dataHeaderFlyweight.termId(256);
+                dataHeaderFlyweight.streamId(3);
+                fileChannel.write(byteBuffer);
             });
-        writeToSegmentFile(createFile(segmentFileName(record14, 0)), (bb, fl, ch) -> ch.write(bb));
-        writeToSegmentFile(createFile(segmentFileName(record15, 0)),
-            (bb, flyweight, ch) ->
+
+        writeToSegmentFile(
+            createFile(segmentFileName(record14, 0)),
+            (byteBuffer, dataHeaderFlyweight, fileChannel) -> fileChannel.write(byteBuffer));
+
+        writeToSegmentFile(
+            createFile(segmentFileName(record15, 0)),
+            (byteBuffer, dataHeaderFlyweight, fileChannel) ->
             {
-                flyweight.frameLength(111);
-                flyweight.streamId(-1);
-                ch.write(bb);
+                dataHeaderFlyweight.frameLength(111);
+                dataHeaderFlyweight.streamId(-1);
+                fileChannel.write(byteBuffer);
             });
-        writeToSegmentFile(createFile(segmentFileName(record15, SEGMENT_LENGTH * 2)),
-            (bb, flyweight, ch) ->
+
+        writeToSegmentFile(
+            createFile(segmentFileName(record15, SEGMENT_LENGTH * 2)),
+            (byteBuffer, dataHeaderFlyweight, fileChannel) ->
             {
-                flyweight.frameLength(1000);
-                flyweight.termId(4);
-                flyweight.streamId(3);
-                ch.write(bb);
+                dataHeaderFlyweight.frameLength(1000);
+                dataHeaderFlyweight.termId(4);
+                dataHeaderFlyweight.streamId(3);
+                fileChannel.write(byteBuffer);
             });
-        writeToSegmentFile(createFile(segmentFileName(record16, 0)),
-            (bb, flyweight, ch) ->
+
+        writeToSegmentFile(
+            createFile(segmentFileName(record16, 0)),
+            (byteBuffer, dataHeaderFlyweight, fileChannel) ->
             {
-                flyweight.frameLength(64);
-                flyweight.streamId(101010);
-                ch.write(bb);
+                dataHeaderFlyweight.frameLength(64);
+                dataHeaderFlyweight.streamId(101010);
+                fileChannel.write(byteBuffer);
             });
-        writeToSegmentFile(createFile(segmentFileName(record17, 0)),
-            (bb, flyweight, ch) ->
+
+        writeToSegmentFile(
+            createFile(segmentFileName(record17, 0)),
+            (byteBuffer, dataHeaderFlyweight, fileChannel) ->
             {
-                flyweight.frameLength(64);
-                flyweight.termOffset(101010);
-                flyweight.termId(13);
-                flyweight.streamId(2);
-                ch.write(bb);
+                dataHeaderFlyweight.frameLength(64);
+                dataHeaderFlyweight.termOffset(101010);
+                dataHeaderFlyweight.termId(13);
+                dataHeaderFlyweight.streamId(2);
+                fileChannel.write(byteBuffer);
             });
-        writeToSegmentFile(createFile(segmentFileName(record18, SEGMENT_LENGTH * 5)),
-            (bb, flyweight, ch) ->
+
+        writeToSegmentFile(
+            createFile(segmentFileName(record18, SEGMENT_LENGTH * 5)),
+            (byteBuffer, dataHeaderFlyweight, fileChannel) ->
             {
-                flyweight.frameLength(64);
-                flyweight.termOffset(0);
-                flyweight.termId(101010);
-                flyweight.streamId(2);
-                ch.write(bb);
+                dataHeaderFlyweight.frameLength(64);
+                dataHeaderFlyweight.termOffset(0);
+                dataHeaderFlyweight.termId(101010);
+                dataHeaderFlyweight.streamId(2);
+                fileChannel.write(byteBuffer);
             });
     }
 

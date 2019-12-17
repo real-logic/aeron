@@ -642,8 +642,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
                 final long replayId = ctx.aeron().nextCorrelationId();
                 final RecordingLog.Entry logEntry = recordingLog.findLastTerm();
                 final long startPosition = null == logEntry ?
-                    leaderLogEntry.termBaseLogPosition :
-                    backupArchive.getStopPosition(logEntry.recordingId);
+                    leaderLogEntry.termBaseLogPosition : backupArchive.getStopPosition(logEntry.recordingId);
 
                 final String transferChannel = "aeron:udp?endpoint=" + ctx.transferEndpoint();
 
@@ -653,7 +652,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
                     NULL_LENGTH,
                     leaderCommitPositionCounterId,
                     transferChannel,
-                    ctx.replayStreamId(),
+                    ctx.logStreamId(),
                     replayId,
                     clusterArchive.controlSessionId()))
                 {
@@ -691,12 +690,12 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
                 if (null == logEntry)
                 {
                     liveLogReplaySubscriptionId = backupArchive.startRecording(
-                        replaySubscriptionChannel, ctx.replayStreamId(), SourceLocation.REMOTE);
+                        replaySubscriptionChannel, ctx.logStreamId(), SourceLocation.REMOTE);
                 }
                 else
                 {
                     liveLogReplaySubscriptionId = backupArchive.extendRecording(
-                        logEntry.recordingId, replaySubscriptionChannel, ctx.replayStreamId(), SourceLocation.REMOTE);
+                        logEntry.recordingId, replaySubscriptionChannel, ctx.logStreamId(), SourceLocation.REMOTE);
                 }
             }
         }

@@ -326,6 +326,7 @@ public final class ClusterBackup implements AutoCloseable
         private String memberStatusChannel = Configuration.MEMBER_STATUS_CHANNEL_DEFAULT;
         private int memberStatusStreamId = ConsensusModule.Configuration.memberStatusStreamId();
         private int replayStreamId = ClusteredServiceContainer.Configuration.replayStreamId();
+        private int logStreamId = ConsensusModule.Configuration.logStreamId();
         private String transferEndpoint = Configuration.TRANSFER_ENDPOINT_DEFAULT;
 
         private long clusterBackupIntervalNs = Configuration.clusterBackupIntervalNs();
@@ -859,7 +860,7 @@ public final class ClusterBackup implements AutoCloseable
         }
 
         /**
-         * Set the stream id for the cluster log and snapshot replay channel.
+         * Set the stream id for the cluster snapshot replay channel.
          *
          * @param streamId for the cluster log replay channel.
          * @return this for a fluent API
@@ -872,14 +873,38 @@ public final class ClusterBackup implements AutoCloseable
         }
 
         /**
-         * Get the stream id for the cluster log and snapshot replay channel.
+         * Get the stream id for the cluster  snapshot replay channel.
          *
-         * @return the stream id for the cluster log replay channel.
+         * @return the stream id for the cluster snapshot replay channel.
          * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#REPLAY_STREAM_ID_PROP_NAME
          */
         public int replayStreamId()
         {
             return replayStreamId;
+        }
+
+        /**
+         * Set the stream id for the cluster log channel.
+         *
+         * @param streamId for the cluster log channel.
+         * @return this for a fluent API
+         * @see ConsensusModule.Configuration#LOG_STREAM_ID_PROP_NAME
+         */
+        public Context logStreamId(final int streamId)
+        {
+            logStreamId = streamId;
+            return this;
+        }
+
+        /**
+         * Get the stream id for the cluster log channel.
+         *
+         * @return the stream id for the cluster log channel.
+         * @see ConsensusModule.Configuration#LOG_STREAM_ID_PROP_NAME
+         */
+        public int logStreamId()
+        {
+            return logStreamId;
         }
 
         /**

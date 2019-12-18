@@ -25,10 +25,13 @@ import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FrameDescriptor;
+import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.CountersReader;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -39,6 +42,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.function.IntConsumer;
 
 import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
@@ -63,7 +67,7 @@ public class ArchiveTest
     @Test
     public void shouldCalculateCorrectSegmentFilePosition()
     {
-        final int termLength = 64 * 1024;
+        final int termLength = LogBufferDescriptor.TERM_MIN_LENGTH;
         final int segmentLength = termLength * 8;
 
         long startPosition = 0;
@@ -158,8 +162,8 @@ public class ArchiveTest
         }
     }
 
-    @Test
     @Ignore
+    @Test
     public void shouldRecoverRecordingWithNonZeroStartPosition()
     {
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
@@ -169,7 +173,7 @@ public class ArchiveTest
         final Archive.Context archiveCtx = new Archive.Context().threadingMode(ArchiveThreadingMode.SHARED);
 
         long resultingPosition;
-        final int initialPosition = 32 * 9;
+        final int initialPosition = DataHeaderFlyweight.HEADER_LENGTH * 9;
         final long recordingId;
 
         try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(driverCtx.clone(), archiveCtx.clone());
@@ -178,11 +182,12 @@ public class ArchiveTest
             final int termLength = 128 * 1024;
             final int initialTermId = 29;
 
-            final ChannelUriStringBuilder channelUriStringBuilder = new ChannelUriStringBuilder()
+            final String channel = new ChannelUriStringBuilder()
                 .media(CommonContext.IPC_MEDIA)
-                .initialPosition(initialPosition, initialTermId, termLength);
+                .initialPosition(initialPosition, initialTermId, termLength)
+                .build();
 
-            final Publication publication = archive.addRecordedExclusivePublication(channelUriStringBuilder.build(), 1);
+            final Publication publication = archive.addRecordedExclusivePublication(channel, 1);
             final DirectBuffer buffer = new UnsafeBuffer("Hello World".getBytes(StandardCharsets.US_ASCII));
 
             while ((resultingPosition = publication.offer(buffer)) <= 0)
@@ -193,15 +198,16 @@ public class ArchiveTest
             final Aeron aeron = archive.context().aeron();
 
             int counterId;
-            while (Aeron.NULL_VALUE ==
-                (counterId = RecordingPos.findCounterIdBySession(aeron.countersReader(), publication.sessionId())))
+            final int sessionId = publication.sessionId();
+            final CountersReader countersReader = aeron.countersReader();
+            while (Aeron.NULL_VALUE == (counterId = RecordingPos.findCounterIdBySession(countersReader, sessionId)))
             {
                 Thread.yield();
             }
 
-            recordingId = RecordingPos.getRecordingId(aeron.countersReader(), counterId);
+            recordingId = RecordingPos.getRecordingId(countersReader, counterId);
 
-            while (aeron.countersReader().getCounterValue(counterId) < resultingPosition)
+            while (countersReader.getCounterValue(counterId) < resultingPosition)
             {
                 Thread.yield();
             }
@@ -209,14 +215,16 @@ public class ArchiveTest
 
         try (Catalog catalog = openCatalog(archiveCtx))
         {
-            catalog.forEntry(recordingId, (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
-                descriptorEncoder.stopPosition(-1)
-            );
+            final Catalog.CatalogEntryProcessor catalogEntryProcessor =
+                (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                descriptorEncoder.stopPosition(Aeron.NULL_VALUE);
+
+            catalog.forEntry(recordingId, catalogEntryProcessor);
         }
 
         final Archive.Context archiveCtxClone = archiveCtx.clone();
         try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(driverCtx.clone(), archiveCtxClone);
-             AeronArchive archive = AeronArchive.connect())
+            AeronArchive archive = AeronArchive.connect())
         {
             assertEquals(initialPosition, archive.getStartPosition(recordingId));
             assertEquals(resultingPosition, archive.getStopPosition(recordingId));
@@ -229,9 +237,8 @@ public class ArchiveTest
 
     private static Catalog openCatalog(final Archive.Context archiveCtx)
     {
-        return new Catalog(new File(archiveCtx.archiveDirectoryName()), new SystemEpochClock(), true, version ->
-        {
-        });
+        final IntConsumer intConsumer = (version) -> {};
+        return new Catalog(new File(archiveCtx.archiveDirectoryName()), new SystemEpochClock(), true, intConsumer);
     }
 
     @Test(timeout = 10_000L)

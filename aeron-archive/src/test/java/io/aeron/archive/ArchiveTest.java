@@ -15,14 +15,25 @@
  */
 package io.aeron.archive;
 
+import io.aeron.Aeron;
+import io.aeron.ChannelUriStringBuilder;
+import io.aeron.CommonContext;
+import io.aeron.Publication;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.RecordingSubscriptionDescriptorConsumer;
+import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FrameDescriptor;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
+import org.agrona.concurrent.SystemEpochClock;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.Ignore;
 import org.junit.Test;
 
+import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -145,6 +156,82 @@ public class ArchiveTest
             executor.shutdownNow();
             archiveCtx.deleteArchiveDirectory();
         }
+    }
+
+    @Test
+    @Ignore
+    public void shouldRecoverRecordingWithNonZeroStartPosition()
+    {
+        final MediaDriver.Context driverCtx = new MediaDriver.Context()
+            .dirDeleteOnStart(true)
+            .dirDeleteOnShutdown(true)
+            .threadingMode(ThreadingMode.SHARED);
+        final Archive.Context archiveCtx = new Archive.Context().threadingMode(ArchiveThreadingMode.SHARED);
+
+        long resultingPosition;
+        final int initialPosition = 32 * 9;
+        final long recordingId;
+
+        try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(driverCtx.clone(), archiveCtx.clone());
+            AeronArchive archive = AeronArchive.connect())
+        {
+            final int termLength = 128 * 1024;
+            final int initialTermId = 29;
+
+            final ChannelUriStringBuilder channelUriStringBuilder = new ChannelUriStringBuilder()
+                .media(CommonContext.IPC_MEDIA)
+                .initialPosition(initialPosition, initialTermId, termLength);
+
+            final Publication publication = archive.addRecordedExclusivePublication(channelUriStringBuilder.build(), 1);
+            final DirectBuffer buffer = new UnsafeBuffer("Hello World".getBytes(StandardCharsets.US_ASCII));
+
+            while ((resultingPosition = publication.offer(buffer)) <= 0)
+            {
+                Thread.yield();
+            }
+
+            final Aeron aeron = archive.context().aeron();
+
+            int counterId;
+            while (Aeron.NULL_VALUE ==
+                (counterId = RecordingPos.findCounterIdBySession(aeron.countersReader(), publication.sessionId())))
+            {
+                Thread.yield();
+            }
+
+            recordingId = RecordingPos.getRecordingId(aeron.countersReader(), counterId);
+
+            while (aeron.countersReader().getCounterValue(counterId) < resultingPosition)
+            {
+                Thread.yield();
+            }
+        }
+
+        try (Catalog catalog = openCatalog(archiveCtx))
+        {
+            catalog.forEntry(recordingId, (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+                descriptorEncoder.stopPosition(-1)
+            );
+        }
+
+        final Archive.Context archiveCtxClone = archiveCtx.clone();
+        try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(driverCtx.clone(), archiveCtxClone);
+             AeronArchive archive = AeronArchive.connect())
+        {
+            assertEquals(initialPosition, archive.getStartPosition(recordingId));
+            assertEquals(resultingPosition, archive.getStopPosition(recordingId));
+        }
+        finally
+        {
+            archiveCtxClone.deleteArchiveDirectory();
+        }
+    }
+
+    private static Catalog openCatalog(final Archive.Context archiveCtx)
+    {
+        return new Catalog(new File(archiveCtx.archiveDirectoryName()), new SystemEpochClock(), true, version ->
+        {
+        });
     }
 
     @Test(timeout = 10_000L)

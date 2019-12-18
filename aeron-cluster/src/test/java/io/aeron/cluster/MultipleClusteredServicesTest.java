@@ -1,3 +1,18 @@
+/*
+ * Copyright 2014-2019 Real Logic Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.aeron.cluster;
 
 import io.aeron.Aeron;
@@ -19,10 +34,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class MultipleClusteredServicesTest
 {
-    private final AtomicInteger serviceAMessageCount = new AtomicInteger(0);
-    private final AtomicInteger serviceBMessageCount = new AtomicInteger(0);
+    final AtomicInteger serviceAMessageCount = new AtomicInteger(0);
+    final AtomicInteger serviceBMessageCount = new AtomicInteger(0);
 
-    private final class ServiceA extends TestNode.TestService
+    final class ServiceA extends TestNode.TestService
     {
         public void onSessionMessage(
             final ClientSession session,
@@ -36,7 +51,7 @@ public class MultipleClusteredServicesTest
         }
     }
 
-    private final class ServiceB extends TestNode.TestService
+    final class ServiceB extends TestNode.TestService
     {
         public void onSessionMessage(
             final ClientSession session,
@@ -69,16 +84,17 @@ public class MultipleClusteredServicesTest
         serviceContexts.add(TestCluster.serviceContext(2, 0, nodeContexts.get(2), ServiceA::new));
         serviceContexts.add(TestCluster.serviceContext(2, 1, nodeContexts.get(2), ServiceB::new));
 
-        nodeContexts.forEach(context -> clusteredMediaDrivers.add(ClusteredMediaDriver.launch(
+        nodeContexts.forEach((context) -> clusteredMediaDrivers.add(ClusteredMediaDriver.launch(
             context.mediaDriverContext, context.archiveContext, context.consensusModuleContext)));
 
-        serviceContexts.forEach(context ->
-        {
-            final Aeron aeron = Aeron.connect(context.aeron);
-            context.aeronArchiveContext.aeron(aeron).ownsAeronClient(false);
-            clusteredServiceContainers.add(
-                ClusteredServiceContainer.launch(context.serviceContainerContext.aeron(aeron).ownsAeronClient(true)));
-        });
+        serviceContexts.forEach(
+            (context) ->
+            {
+                final Aeron aeron = Aeron.connect(context.aeron);
+                context.aeronArchiveContext.aeron(aeron).ownsAeronClient(false);
+                context.serviceContainerContext.aeron(aeron).ownsAeronClient(true);
+                clusteredServiceContainers.add(ClusteredServiceContainer.launch(context.serviceContainerContext));
+            });
 
         final String aeronDirName = CommonContext.getAeronDirectoryName();
 

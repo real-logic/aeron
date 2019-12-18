@@ -23,6 +23,10 @@ extern "C"
 }
 #undef max
 
+#if defined(_MSC_VER)
+#define strdup _strdup
+#endif
+
 class StrUtilTest : public testing::Test
 {
 public:
@@ -42,7 +46,7 @@ TEST_F(StrUtilTest, shouldHandleSingleValue)
     EXPECT_EQ(num_tokens, 1);
     EXPECT_STREQ(tokens[0], "single_token");
 
-    aeron_free(input);
+    free(input);
 }
 
 TEST_F(StrUtilTest, shouldHandleMultipleValues)
@@ -58,7 +62,7 @@ TEST_F(StrUtilTest, shouldHandleMultipleValues)
     EXPECT_STREQ(tokens[1], "token_b");
     EXPECT_STREQ(tokens[2], "token_a");
 
-    aeron_free(input);
+    free(input);
 }
 
 TEST_F(StrUtilTest, shouldHandleMoreThanSpecifiedTokens)
@@ -73,7 +77,7 @@ TEST_F(StrUtilTest, shouldHandleMoreThanSpecifiedTokens)
     EXPECT_STREQ(tokens[0], "token_c");
     EXPECT_STREQ(tokens[1], "token_b");
 
-    aeron_free(input);
+    free(input);
 }
 
 TEST_F(StrUtilTest, shouldHandleConsequtiveDelimeters)
@@ -89,7 +93,7 @@ TEST_F(StrUtilTest, shouldHandleConsequtiveDelimeters)
     EXPECT_STREQ(tokens[1], "token_b");
     EXPECT_STREQ(tokens[2], "token_a");
 
-    aeron_free(input);
+    free(input);
 }
 
 TEST_F(StrUtilTest, shouldHandleMaxRangeWithConsequtiveDelimeters)
@@ -105,7 +109,7 @@ TEST_F(StrUtilTest, shouldHandleMaxRangeWithConsequtiveDelimeters)
     EXPECT_STREQ(tokens[1], "token_b");
     EXPECT_STREQ(tokens[2], "token_a");
 
-    aeron_free(input);
+    free(input);
 }
 
 

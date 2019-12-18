@@ -111,7 +111,9 @@ public class MultipleClusteredServicesTest
 
         try
         {
-            while (client.offer(new ExpandableArrayBuffer(100), 0, 100) < 0)
+            final DirectBuffer buffer = new ExpandableArrayBuffer(100);
+
+            while (client.offer(buffer, 0, 100) < 0)
             {
                 Thread.yield();
                 TestUtil.checkInterruptedStatus();

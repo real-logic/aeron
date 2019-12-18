@@ -370,6 +370,26 @@ public class Archive implements AutoCloseable
         public static final int ERROR_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
 
         /**
+         * Should the CRC be computed for each recorder fragment.
+         */
+        public static final String RECORDING_CRC_ENABLED_PROP_NAME = "aeron.archive.recording.crc.enabled";
+
+        /**
+         * Do not compute the CRC for each recorded fragment by default.
+         */
+        public static final boolean RECORDING_CRC_ENABLED_DEFAULT = false;
+
+        /**
+         * Should the CRC be validated during replay.
+         */
+        public static final String REPLAY_CRC_ENABLED_PROP_NAME = "aeron.archive.replay.crc.enabled";
+
+        /**
+         * Do not validate the CRC for each replayed fragment by default.
+         */
+        public static final boolean REPLAY_CRC_ENABLED_DEFAULT = false;
+
+        /**
          * Get the directory name to be used for storing the archive.
          *
          * @return the directory name to be used for storing the archive.
@@ -596,6 +616,30 @@ public class Archive implements AutoCloseable
 
             return supplier;
         }
+
+        /**
+         * Should the CRC be computed for each recorder fragment.
+         *
+         * @return {@code true} if the CRC computation should be enabled.
+         * @see Configuration#RECORDING_CRC_ENABLED_DEFAULT
+         */
+        public static boolean recordingCrcEnabled()
+        {
+            final String propValue = getProperty(RECORDING_CRC_ENABLED_PROP_NAME);
+            return null != propValue ? "true".equals(propValue) : RECORDING_CRC_ENABLED_DEFAULT;
+        }
+
+        /**
+         * Should the CRC be validated during replay.
+         *
+         * @return {@code true} if the CRC validation should be done during replay.
+         * @see Configuration#REPLAY_CRC_ENABLED_DEFAULT
+         */
+        public static boolean replayCrcEnabled()
+        {
+            final String propValue = getProperty(REPLAY_CRC_ENABLED_PROP_NAME);
+            return null != propValue ? "true".equals(propValue) : REPLAY_CRC_ENABLED_DEFAULT;
+        }
     }
 
     /**
@@ -661,6 +705,9 @@ public class Archive implements AutoCloseable
         private AgentInvoker mediaDriverAgentInvoker;
         private int maxConcurrentRecordings = Configuration.maxConcurrentRecordings();
         private int maxConcurrentReplays = Configuration.maxConcurrentReplays();
+
+        private boolean recordingCrcEnabled = Configuration.recordingCrcEnabled();
+        private boolean replayCrcEnabled = Configuration.replayCrcEnabled();
 
         /**
          * Perform a shallow copy of the object.
@@ -1255,6 +1302,54 @@ public class Archive implements AutoCloseable
         public long replayLingerTimeoutNs()
         {
             return replayLingerTimeoutNs;
+        }
+
+        /**
+         * Should the CRC be computed for each recorder fragment.
+         *
+         * @param recordingCrcEnabled {@code true} if the CRC computation should be enabled.
+         * @return this for a fluent API.
+         * @see Configuration#RECORDING_CRC_ENABLED_PROP_NAME
+         */
+        public Context recordingCrcEnabled(final boolean recordingCrcEnabled)
+        {
+            this.recordingCrcEnabled = recordingCrcEnabled;
+            return this;
+        }
+
+        /**
+         * Should the CRC be computed for each recorder fragment.
+         *
+         * @return {@code true} if the CRC computation should be enabled.
+         * @see Configuration#RECORDING_CRC_ENABLED_PROP_NAME
+         */
+        public boolean recordingCrcEnabled()
+        {
+            return recordingCrcEnabled;
+        }
+
+        /**
+         * Should the CRC be validated during replay.
+         *
+         * @param replayCrcEnabled {@code true} if the CRC validation should be done during replay.
+         * @return this for a fluent API.
+         * @see Configuration#REPLAY_CRC_ENABLED_PROP_NAME
+         */
+        public Context replayCrcEnabled(final boolean replayCrcEnabled)
+        {
+            this.replayCrcEnabled = replayCrcEnabled;
+            return this;
+        }
+
+        /**
+         * Should the CRC be validated during replay.
+         *
+         * @return {@code true} if the CRC validation should be done during replay.
+         * @see Configuration#REPLAY_CRC_ENABLED_PROP_NAME
+         */
+        public boolean replayCrcEnabled()
+        {
+            return replayCrcEnabled;
         }
 
         /**

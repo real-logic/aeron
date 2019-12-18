@@ -158,7 +158,7 @@ class ConsensusModuleSnapshotLoader implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                consensusModuleAgent.onReloadState(
+                consensusModuleAgent.onLoadConsensusModuleState(
                     consensusModuleDecoder.nextSessionId(),
                     consensusModuleDecoder.nextServiceSessionId(),
                     consensusModuleDecoder.logServiceSessionId(),
@@ -172,7 +172,7 @@ class ConsensusModuleSnapshotLoader implements ControlledFragmentHandler
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                consensusModuleAgent.onReloadClusterMembers(
+                consensusModuleAgent.onLoadClusterMembers(
                     clusterMembersDecoder.memberId(),
                     clusterMembersDecoder.highMemberId(),
                     clusterMembersDecoder.clusterMembers());

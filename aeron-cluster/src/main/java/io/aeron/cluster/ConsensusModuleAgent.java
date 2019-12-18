@@ -987,12 +987,10 @@ class ConsensusModuleAgent implements Agent
 
     void onServiceMessage(final long leadershipTermId, final DirectBuffer buffer, final int offset, final int length)
     {
-        if (leadershipTermId != this.leadershipTermId)
+        if (leadershipTermId == this.leadershipTermId)
         {
-            return;
+            enqueueServiceSessionMessage((MutableDirectBuffer)buffer, offset, length, nextServiceSessionId++);
         }
-
-        enqueueServiceSessionMessage((MutableDirectBuffer)buffer, offset, length, nextServiceSessionId++);
     }
 
     void onScheduleTimer(final long correlationId, final long deadline)
@@ -1131,39 +1129,14 @@ class ConsensusModuleAgent implements Agent
         }
     }
 
-    void onLoadSession(
-        final long clusterSessionId,
-        final long correlationId,
-        final long openedPosition,
-        final long timeOfLastActivity,
-        final CloseReason closeReason,
-        final int responseStreamId,
-        final String responseChannel)
-    {
-        sessionByIdMap.put(clusterSessionId, new ClusterSession(
-            clusterSessionId,
-            correlationId,
-            openedPosition,
-            timeOfLastActivity,
-            responseStreamId,
-            responseChannel,
-            closeReason));
-
-        if (clusterSessionId >= nextSessionId)
-        {
-            nextSessionId = clusterSessionId + 1;
-        }
-    }
-
-    void onLoadPendingMessage(final DirectBuffer buffer, final int offset, final int length)
-    {
-        pendingServiceMessages.append(buffer, offset, length);
-    }
-
     @SuppressWarnings("unused")
     void onReplaySessionClose(final long clusterSessionId, final long timestamp, final CloseReason closeReason)
     {
-        sessionByIdMap.remove(clusterSessionId).close(closeReason);
+        final ClusterSession clusterSession = sessionByIdMap.remove(clusterSessionId);
+        if (null != clusterSession)
+        {
+            clusterSession.close(closeReason);
+        }
     }
 
     @SuppressWarnings("unused")
@@ -1287,7 +1260,36 @@ class ConsensusModuleAgent implements Agent
         }
     }
 
-    void onReloadState(
+    void onLoadSession(
+        final long clusterSessionId,
+        final long correlationId,
+        final long openedPosition,
+        final long timeOfLastActivity,
+        final CloseReason closeReason,
+        final int responseStreamId,
+        final String responseChannel)
+    {
+        sessionByIdMap.put(clusterSessionId, new ClusterSession(
+            clusterSessionId,
+            correlationId,
+            openedPosition,
+            timeOfLastActivity,
+            responseStreamId,
+            responseChannel,
+            closeReason));
+
+        if (clusterSessionId >= nextSessionId)
+        {
+            nextSessionId = clusterSessionId + 1;
+        }
+    }
+
+    void onLoadPendingMessage(final DirectBuffer buffer, final int offset, final int length)
+    {
+        pendingServiceMessages.append(buffer, offset, length);
+    }
+
+    void onLoadConsensusModuleState(
         final long nextSessionId,
         final long nextServiceSessionId,
         final long logServiceSessionId,
@@ -1299,7 +1301,7 @@ class ConsensusModuleAgent implements Agent
         pendingServiceMessages.reset(pendingMessageCapacity);
     }
 
-    void onReloadClusterMembers(final int memberId, final int highMemberId, final String members)
+    void onLoadClusterMembers(final int memberId, final int highMemberId, final String members)
     {
         if (ctx.clusterMembersIgnoreSnapshot() || null != dynamicJoin)
         {

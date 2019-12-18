@@ -799,7 +799,7 @@ public class Image
             "correlationId=" + correlationId +
             ", sessionId=" + sessionId +
             ", isClosed=" + isClosed +
-            ", isEos=" + isEos +
+            ", isEos=" + isEndOfStream() +
             ", initialTermId=" + initialTermId +
             ", termLength=" + termBufferLength() +
             ", joinPosition=" + joinPosition +

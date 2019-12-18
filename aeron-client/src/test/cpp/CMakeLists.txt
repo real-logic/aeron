@@ -30,6 +30,10 @@ target_link_libraries(aeron_client_test aeron_client)
 target_compile_definitions(aeron_client_test PUBLIC "_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING")
 add_dependencies(aeron_client_test gmock)
 
+if(MSVC AND ${CMAKE_VERSION} VERSION_LESS "3.13.0")
+    target_compile_definitions(aeron_client_test PUBLIC "MSVC_FILE_IS_LOWER_CASE")
+endif()
+
 function(aeron_client_test name file)
     add_executable(${name} ${file})
     target_link_libraries(${name} aeron_client aeron_client_test ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT})

@@ -113,7 +113,7 @@ DWORD aeron_thread_join(aeron_thread_t thread, void **value_ptr)
 int aeron_thread_key_create(pthread_key_t *key, void(*destr_function) (void *))
 {
     DWORD dkey = TlsAlloc();
-    if (dkey != 0xFFFFFFFF)
+    if (dkey != TLS_OUT_OF_INDEXES)
     {
         *key = dkey;
         return 0;

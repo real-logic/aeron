@@ -44,9 +44,15 @@ void aeron_nano_sleep(uint64_t nanoseconds)
 #if defined(AERON_COMPILER_GCC)
 #elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
 
+static BOOL aeron_thread_once_callback(PINIT_ONCE init_once, void (*callback)(void), void** context)
+{
+    callback();
+    return TRUE;
+}
+
 void aeron_thread_once(AERON_INIT_ONCE* s_init_once, void* callback)
 {
-    InitOnceExecuteOnce(s_init_once, (PINIT_ONCE_FN)callback, NULL, NULL);
+    InitOnceExecuteOnce(s_init_once, aeron_thread_once_callback, callback, NULL);
 }
 
 void aeron_mutex_init(HANDLE* mutex, void* attr)

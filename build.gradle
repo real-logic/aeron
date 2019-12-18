@@ -110,6 +110,12 @@ def projectPom = {
             email = 'mikeb01@gmail.com'
             url = 'https://github.com/mikeb01'
         }
+        developer {
+            id = 'vyazelenko'
+            name = 'Dmitry Vyazelenko'
+            email = 'vyazelenko@yahoo.com'
+            url = 'https://github.com/vyazelenko'
+        }
     }
 }
 
@@ -199,7 +205,6 @@ subprojects {
             'aeron.sender.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
             'aeron.receiver.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
             'aeron.use.windows.high.res.timer': 'true',
-            'aeron.dir.warn.if.exists': 'false',
             'aeron.dir.delete.on.start': 'true',
             'aeron.dir.delete.on.shutdown': 'true',
             'aeron.term.buffer.sparse.file': 'true',

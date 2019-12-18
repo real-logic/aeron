@@ -921,7 +921,7 @@ class ClusteredServiceAgent implements Agent, Cluster
 
             if (Thread.currentThread().isInterrupted())
             {
-                throw new AgentTerminationException("unexpected interrupt");
+                throw new AgentTerminationException("unexpected interrupt - " + context().clusterDir());
             }
 
             if (null != aeronAgentInvoker)

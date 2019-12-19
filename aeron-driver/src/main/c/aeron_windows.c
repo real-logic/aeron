@@ -219,12 +219,12 @@ void aeron_srand48(UINT64 aeron_nano_clock)
 
 double aeron_drand48()
 {
-    return rand();
+    return rand() / (double)(RAND_MAX + 1);
 }
 
 double aeron_erand48(unsigned short xsubi[3])
 {
-    return rand();
+    return rand() / (double)(RAND_MAX + 1);
 }
 
 void localtime_r(const time_t *timep, struct tm *result)

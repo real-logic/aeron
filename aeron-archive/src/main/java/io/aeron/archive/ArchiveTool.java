@@ -131,7 +131,7 @@ public class ArchiveTool
             }
             else if (args.length == 3)
             {
-                if (verifyAllSegmentFiles(args[2]))
+                if (validateAllSegmentFiles(args[2]))
                 {
                     verify(System.out, archiveDir, true, ArchiveTool::truncateFileOnPageStraddle);
                 }
@@ -151,7 +151,7 @@ public class ArchiveTool
                     System.out,
                     archiveDir,
                     Long.parseLong(args[2]),
-                    verifyAllSegmentFiles(args[3]),
+                    validateAllSegmentFiles(args[3]),
                     ArchiveTool::truncateFileOnPageStraddle);
             }
         }
@@ -465,7 +465,7 @@ public class ArchiveTool
             descriptorDecoder);
     }
 
-    private static boolean verifyAllSegmentFiles(final String arg)
+    private static boolean validateAllSegmentFiles(final String arg)
     {
         return "-a".equals(arg);
     }
@@ -821,7 +821,7 @@ public class ArchiveTool
         System.out.println("  pid: prints just PID of archive.");
         System.out.println("  verify <optional recordingId> <optional '-a'>: verifies descriptor(s) in the catalog");
         System.out.println("     checking recording files availability and contents. Only the last segment file is");
-        System.out.println("     checked unless flag 'all' is specified, i.e. meaning check all segment files.");
+        System.out.println("     validated unless flag '-a' is specified, i.e. meaning validate all segment files.");
         System.out.println("     Faulty entries are marked as unusable.");
         System.out.println("  count-entries: queries the number of recording entries in the catalog.");
         System.out.println("  max-entries <optional number of entries>: gets or increases the maximum number of");

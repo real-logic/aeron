@@ -32,7 +32,6 @@ import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -47,8 +46,7 @@ import java.util.function.IntConsumer;
 import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
 
 public class ArchiveTest
 {
@@ -162,7 +160,6 @@ public class ArchiveTest
         }
     }
 
-    @Ignore
     @Test
     public void shouldRecoverRecordingWithNonZeroStartPosition()
     {
@@ -219,7 +216,7 @@ public class ArchiveTest
                 (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 descriptorEncoder.stopPosition(Aeron.NULL_VALUE);
 
-            catalog.forEntry(recordingId, catalogEntryProcessor);
+            assertTrue(catalog.forEntry(recordingId, catalogEntryProcessor));
         }
 
         final Archive.Context archiveCtxClone = archiveCtx.clone();

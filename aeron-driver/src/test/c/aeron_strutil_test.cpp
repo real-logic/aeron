@@ -35,21 +35,19 @@ TEST_F(StrUtilTest, shouldHandleSingleValue)
 {
     const int max_tokens = 10;
     char *tokens[max_tokens];
-    char *input = strdup("single_token");
+    char input[] = "single_token";
 
     int num_tokens = aeron_tokenise(input, ',', max_tokens, tokens);
 
     EXPECT_EQ(num_tokens, 1);
     EXPECT_STREQ(tokens[0], "single_token");
-
-    aeron_free(input);
 }
 
 TEST_F(StrUtilTest, shouldHandleMultipleValues)
 {
     const int max_tokens = 10;
     char *tokens[max_tokens];
-    char *input = strdup("token_a,token_b,token_c");
+    char input[] = "token_a,token_b,token_c";
 
     int num_tokens = aeron_tokenise(input, ',', max_tokens, tokens);
 
@@ -57,30 +55,26 @@ TEST_F(StrUtilTest, shouldHandleMultipleValues)
     EXPECT_STREQ(tokens[0], "token_c");
     EXPECT_STREQ(tokens[1], "token_b");
     EXPECT_STREQ(tokens[2], "token_a");
-
-    aeron_free(input);
 }
 
 TEST_F(StrUtilTest, shouldHandleMoreThanSpecifiedTokens)
 {
     const int max_tokens = 2;
     char *tokens[max_tokens];
-    char *input = strdup("token_a,token_b,token_c");
+    char input[] = "token_a,token_b,token_c";
 
     int num_tokens = aeron_tokenise(input, ',', max_tokens, tokens);
 
     EXPECT_EQ(num_tokens, -ERANGE);
     EXPECT_STREQ(tokens[0], "token_c");
     EXPECT_STREQ(tokens[1], "token_b");
-
-    aeron_free(input);
 }
 
 TEST_F(StrUtilTest, shouldHandleConsequtiveDelimeters)
 {
     const int max_tokens = 10;
     char *tokens[max_tokens];
-    char *input = strdup(",,token_a,,,,token_b,,token_c");
+    char input[] = ",,token_a,,,,token_b,,token_c";
 
     int num_tokens = aeron_tokenise(input, ',', max_tokens, tokens);
 
@@ -88,15 +82,13 @@ TEST_F(StrUtilTest, shouldHandleConsequtiveDelimeters)
     EXPECT_STREQ(tokens[0], "token_c");
     EXPECT_STREQ(tokens[1], "token_b");
     EXPECT_STREQ(tokens[2], "token_a");
-
-    aeron_free(input);
 }
 
 TEST_F(StrUtilTest, shouldHandleMaxRangeWithConsequtiveDelimeters)
 {
     const int max_tokens = 3;
     char *tokens[max_tokens];
-    char *input = strdup(",,token_a,,,,token_b,,token_c");
+    char input[] = ",,token_a,,,,token_b,,token_c";
 
     int num_tokens = aeron_tokenise(input, ',', max_tokens, tokens);
 
@@ -104,8 +96,6 @@ TEST_F(StrUtilTest, shouldHandleMaxRangeWithConsequtiveDelimeters)
     EXPECT_STREQ(tokens[0], "token_c");
     EXPECT_STREQ(tokens[1], "token_b");
     EXPECT_STREQ(tokens[2], "token_a");
-
-    aeron_free(input);
 }
 
 

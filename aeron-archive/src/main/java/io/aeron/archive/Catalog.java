@@ -813,8 +813,9 @@ class Catalog implements AutoCloseable
             final File file = new File(archiveDir, maxSegmentFile);
             final long segmentFileBasePosition = parseSegmentFilePosition(maxSegmentFile);
             final long offset = max(0, startPosition - segmentFileBasePosition);
-            final long segmentStopOffset = recoverStopOffset(file, offset, segmentFileLength,
-                truncateFileOnPageStraddle);
+            final long segmentStopOffset = recoverStopOffset(
+                file, offset, segmentFileLength, truncateFileOnPageStraddle);
+
             return max(segmentFileBasePosition + segmentStopOffset, startPosition);
         }
     }
@@ -833,7 +834,7 @@ class Catalog implements AutoCloseable
             long lastFragmentOffset = offset;
             long nextFragmentOffset = offset;
             long lastFrameLength = 0;
-            final long maxLength = min(segmentFileLength, segment.size());
+            final long offsetLimit = min(segmentFileLength, segment.size());
 
             do
             {
@@ -854,7 +855,7 @@ class Catalog implements AutoCloseable
                 lastFragmentOffset = nextFragmentOffset;
                 nextFragmentOffset += align(frameLength, FRAME_ALIGNMENT);
             }
-            while (nextFragmentOffset < maxLength);
+            while (nextFragmentOffset < offsetLimit);
 
             if (fragmentStraddlesPageBoundary(lastFragmentOffset, lastFrameLength) &&
                 truncateFileOnPageStraddle.test(segmentFile))

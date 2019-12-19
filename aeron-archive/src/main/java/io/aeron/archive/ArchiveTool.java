@@ -47,7 +47,6 @@ import static io.aeron.archive.Catalog.*;
 import static io.aeron.archive.MigrationUtils.fullVersionString;
 import static io.aeron.archive.ReplaySession.isInvalidHeader;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
-import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.computeTermIdFromPosition;
 import static io.aeron.logbuffer.LogBufferDescriptor.positionBitsToShift;
@@ -127,7 +126,6 @@ public class ArchiveTool
         {
             if (args.length == 2)
             {
-
                 verify(System.out, archiveDir, false, ArchiveTool::truncateFileOnPageStraddle);
             }
             else if (args.length == 3)
@@ -641,6 +639,7 @@ public class ArchiveTool
                     return;
                 }
             }
+
             computedStopPosition = computeStopPosition(
                 archiveDir,
                 maxSegmentFile,
@@ -668,7 +667,6 @@ public class ArchiveTool
                         archiveDir,
                         recordingId,
                         filename,
-                        startPosition,
                         termBufferLength,
                         segmentFileLength,
                         streamId,
@@ -686,7 +684,6 @@ public class ArchiveTool
                 archiveDir,
                 recordingId,
                 maxSegmentFile,
-                startPosition,
                 termBufferLength,
                 segmentFileLength,
                 streamId,
@@ -731,9 +728,8 @@ public class ArchiveTool
         final File archiveDir,
         final long recordingId,
         final String fileName,
-        final long startPosition,
-        final int termBufferLength,
-        final int segmentFileLength,
+        final int termLength,
+        final int segmentLength,
         final int streamId,
         final int initialTermId,
         final UnsafeBuffer tempBuffer,
@@ -742,14 +738,14 @@ public class ArchiveTool
         final File file = new File(archiveDir, fileName);
         try (FileChannel channel = FileChannel.open(file.toPath(), READ))
         {
-            final long maxSize = min(segmentFileLength, channel.size());
-            int position = 0;
-            long streamPosition = segmentFileBasePosition(startPosition, parseSegmentFilePosition(fileName),
-                termBufferLength, segmentFileLength);
+            final long offsetLimit = min(segmentLength, channel.size());
+            int fileOffset = 0;
+            long position = parseSegmentFilePosition(fileName);
+
             do
             {
                 tempBuffer.byteBuffer().clear();
-                if (HEADER_LENGTH != channel.read(tempBuffer.byteBuffer(), position))
+                if (HEADER_LENGTH != channel.read(tempBuffer.byteBuffer(), fileOffset))
                 {
                     out.println("(recordingId=" + recordingId + ") ERR: failed to read fragment header.");
                     return true;
@@ -760,9 +756,8 @@ public class ArchiveTool
                     break;
                 }
 
-                final int termId = computeTermIdFromPosition(
-                    streamPosition, positionBitsToShift(termBufferLength), initialTermId);
-                final int termOffset = (int)(streamPosition & (termBufferLength - 1));
+                final int termId = computeTermIdFromPosition(position, positionBitsToShift(termLength), initialTermId);
+                final int termOffset = (int)(position & (termLength - 1));
 
                 if (isInvalidHeader(tempBuffer, streamId, termId, termOffset))
                 {
@@ -774,10 +769,10 @@ public class ArchiveTool
                     return true;
                 }
 
-                position += align(headerFlyweight.frameLength(), FRAME_ALIGNMENT);
-                streamPosition += position;
+                fileOffset += align(headerFlyweight.frameLength(), FRAME_ALIGNMENT);
+                position += fileOffset;
             }
-            while (position < maxSize);
+            while (fileOffset < offsetLimit);
         }
         catch (final IOException ex)
         {
@@ -822,12 +817,11 @@ public class ArchiveTool
         System.out.println("  pid: prints just PID of archive.");
         System.out.println("  verify <optional recordingId> <optional '-a'>: verifies descriptor(s) in the catalog");
         System.out.println("     checking recording files availability and contents. Only the last segment file is");
-        System.out.println("     checked unless flag 'all' is specified, i.e. meaning check all files.");
+        System.out.println("     checked unless flag 'all' is specified, i.e. meaning check all segment files.");
         System.out.println("     Faulty entries are marked as unusable.");
         System.out.println("  count-entries: queries the number of recording entries in the catalog.");
         System.out.println("  max-entries <optional number of entries>: gets or increases the maximum number of");
         System.out.println("     recording entries the catalog can store.");
-        System.out.println("  migrate: migrate previous archive MarkFile, Catalog, and recordings from previous");
-        System.out.println("     to the latest version.");
+        System.out.println("  migrate: migrate archive MarkFile, Catalog, and recordings to the latest version.");
     }
 }

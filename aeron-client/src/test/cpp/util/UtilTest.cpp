@@ -115,13 +115,9 @@ TEST(utilTests, sourcedException)
 {
 #if defined(_MSC_VER)
     const std::string aeron_client_dir = " aeron-client\\";
-#else
-    const std::string aeron_client_dir = " aeron-client/";
-#endif
-
-#if defined(_MSC_VER) && defined(MSVC_FILE_IS_LOWER_CASE)
     const std::string testutils_h_filename = "testutils.h";
 #else
+    const std::string aeron_client_dir = " aeron-client/";
     const std::string testutils_h_filename = "TestUtils.h";
 #endif
 

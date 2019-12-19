@@ -69,6 +69,12 @@ class ArchiveToolVerifyTests
     private long record16;
     private long record17;
     private long record18;
+    private long record19;
+    private long record20;
+    private long record21;
+    private long record22;
+    private long record23;
+    private long record24;
     private long currentTimeMillis = 0;
 
     private final EpochClock epochClock = () -> currentTimeMillis += 100;
@@ -113,13 +119,26 @@ class ArchiveToolVerifyTests
                 SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 3, 3, "validChannel", "validChannel?tag=Z", "source3");
             record14 = catalog.addNewRecording(0, 14, 140, 140, 0,
                 SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 3, 3, "validChannel", "validChannel?tag=Z", "source3");
-            record15 = catalog.addNewRecording(PAGE_SIZE * 5 + 1024, 150, 150, 160, 0,
+            record15 = catalog.addNewRecording(PAGE_SIZE * 5 + 1024, PAGE_SIZE * 5 + 1024, 150, 160, 0,
                 SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 3, 3, "validChannel", "validChannel?tag=Z", "source3");
             record16 = catalog.addNewRecording(0, NULL_POSITION, 160, NULL_TIMESTAMP, 0,
                 SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
             record17 = catalog.addNewRecording(212 * 1024 * 1024, NULL_POSITION, 170, NULL_TIMESTAMP, 13,
                 SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
             record18 = catalog.addNewRecording(8224, NULL_POSITION, 180, NULL_TIMESTAMP, 16,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
+            record19 = catalog.addNewRecording(SEGMENT_LENGTH + 2048, NULL_POSITION, 190, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
+            record20 = catalog.addNewRecording(0, SEGMENT_LENGTH * 10, 200, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
+            record21 = catalog.addNewRecording(1000, 800, 210, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
+            record22 = catalog.addNewRecording(SEGMENT_LENGTH * 5, SEGMENT_LENGTH * 20, 220, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 1, 1, "emptyChannel", "emptyChannel?tag=X", "source1");
+            record23 = catalog
+                .addNewRecording(SEGMENT_LENGTH * 3 + 1024, SEGMENT_LENGTH * 3 + 2048, 230, NULL_TIMESTAMP, 0,
+                    SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 3, 3, "validChannel", "validChannel?tag=Z", "source3");
+            record24 = catalog.addNewRecording(-123, NULL_POSITION, 240, NULL_TIMESTAMP, 0,
                 SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
         }
 
@@ -144,7 +163,12 @@ class ArchiveToolVerifyTests
 
         writeToSegmentFile(
             createFile(segmentFileName(record8, 0)),
-            (byteBuffer, dataHeaderFlyweight, fileChannel) -> fileChannel.write(byteBuffer));
+            (byteBuffer, dataHeaderFlyweight, fileChannel) ->
+            {
+                dataHeaderFlyweight.frameLength(100);
+                dataHeaderFlyweight.streamId(3);
+                fileChannel.write(byteBuffer, TERM_LENGTH + 1024);
+            });
 
         writeToSegmentFile(
             createFile(segmentFileName(record9, SEGMENT_LENGTH)),
@@ -256,6 +280,27 @@ class ArchiveToolVerifyTests
                 dataHeaderFlyweight.streamId(2);
                 fileChannel.write(byteBuffer);
             });
+
+        writeToSegmentFile(
+            createFile(segmentFileName(record19, 0)),
+            (byteBuffer, dataHeaderFlyweight, fileChannel) -> fileChannel.write(byteBuffer));
+
+        writeToSegmentFile(
+            createFile(segmentFileName(record20, SEGMENT_LENGTH * 8)),
+            (byteBuffer, dataHeaderFlyweight, fileChannel) -> fileChannel.write(byteBuffer));
+
+        writeToSegmentFile(
+            createFile(segmentFileName(record23, SEGMENT_LENGTH * 3)),
+            (byteBuffer, dataHeaderFlyweight, fileChannel) ->
+            {
+                dataHeaderFlyweight.frameLength(PAGE_SIZE);
+                dataHeaderFlyweight.streamId(3);
+                fileChannel.write(byteBuffer, 1024);
+                byteBuffer.clear();
+                dataHeaderFlyweight.frameLength(256);
+                dataHeaderFlyweight.streamId(3);
+                fileChannel.write(byteBuffer, 1024 + PAGE_SIZE);
+            });
     }
 
     @AfterEach
@@ -271,47 +316,59 @@ class ArchiveToolVerifyTests
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, record0, VALID, NULL_POSITION, NULL_POSITION, NULL_TIMESTAMP, NULL_TIMESTAMP, 0,
-                1, 1, "emptyChannel", "source1");
+            assertRecording(catalog, record0, INVALID, NULL_POSITION, NULL_POSITION, NULL_TIMESTAMP, NULL_TIMESTAMP, 0,
+                1, "emptyChannel", "source1");
             assertRecording(catalog, record1, VALID, 11, 11, 10, 100, 0,
-                1, 1, "emptyChannel", "source1");
+                1, "emptyChannel", "source1");
             assertRecording(catalog, record2, INVALID, 22, NULL_POSITION, 20, NULL_TIMESTAMP, 0,
-                2, 2, "invalidChannel", "source2");
+                2, "invalidChannel", "source2");
             assertRecording(catalog, record3, INVALID, 33, NULL_POSITION, 30, NULL_TIMESTAMP, 0,
-                2, 2, "invalidChannel", "source2");
+                2, "invalidChannel", "source2");
             assertRecording(catalog, record4, INVALID, 44, NULL_POSITION, 40, NULL_TIMESTAMP, 0,
-                2, 2, "invalidChannel", "source2");
+                2, "invalidChannel", "source2");
             assertRecording(catalog, record5, INVALID, 55, NULL_POSITION, 50, NULL_TIMESTAMP, 0,
-                2, 2, "invalidChannel", "source2");
+                2, "invalidChannel", "source2");
             assertRecording(catalog, record6, INVALID, 66, NULL_POSITION, 60, NULL_TIMESTAMP, 0,
-                2, 2, "invalidChannel", "source2");
+                2, "invalidChannel", "source2");
             assertRecording(catalog, record7, VALID, 0, 0, 70, 200, 0,
-                3, 3, "validChannel", "source3");
-            assertRecording(catalog, record8, VALID, TERM_LENGTH + 1024, TERM_LENGTH + 1024, 80, 300, 0,
-                3, 3, "validChannel", "source3");
+                3, "validChannel", "source3");
+            assertRecording(catalog, record8, VALID, TERM_LENGTH + 1024, TERM_LENGTH + 1024 + 128, 80, 300, 0,
+                3, "validChannel", "source3");
             assertRecording(catalog, record9, VALID, 2048, SEGMENT_LENGTH + TERM_LENGTH + 384, 90, 400, 5,
-                3, 3, "validChannel", "source3");
+                3, "validChannel", "source3");
             assertRecording(catalog, record10, VALID, 0, PAGE_SIZE - 64, 100, 500, 0,
-                3, 3, "validChannel", "source3");
+                3, "validChannel", "source3");
             assertRecording(catalog, record11, VALID, 0, PAGE_SIZE + 192, 110, 600, 0,
-                3, 3, "validChannel", "source3");
+                3, "validChannel", "source3");
             assertRecording(catalog, record12, VALID, 0, 0, 120, 999999, 0,
-                3, 3, "validChannel", "source3");
+                3, "validChannel", "source3");
             assertRecording(catalog, record13, VALID, 1024 * 1024, SEGMENT_LENGTH * 128 + PAGE_SIZE * 3, 130, 888888, 0,
-                3, 3, "validChannel", "source3");
+                3, "validChannel", "source3");
             assertRecording(catalog, record14, VALID, 0, 0, 140, 700, 0,
-                3, 3, "validChannel", "source3");
+                3, "validChannel", "source3");
             assertRecording(catalog, record15, VALID, PAGE_SIZE * 5 + 1024, SEGMENT_LENGTH * 2 + 1024, 150, 800, 0,
-                3, 3, "validChannel", "source3");
+                3, "validChannel", "source3");
             assertRecording(catalog, record16, INVALID, 0, NULL_POSITION, 160, NULL_TIMESTAMP, 0,
-                2, 2, "invalidChannel", "source2");
+                2, "invalidChannel", "source2");
             assertRecording(catalog, record17, INVALID, 212 * 1024 * 1024, NULL_POSITION, 170, NULL_TIMESTAMP, 13,
-                2, 2, "invalidChannel", "source2");
+                2, "invalidChannel", "source2");
             assertRecording(catalog, record18, INVALID, 8224, NULL_POSITION, 180, NULL_TIMESTAMP, 16,
-                2, 2, "invalidChannel", "source2");
+                2, "invalidChannel", "source2");
+            assertRecording(catalog, record19, INVALID, SEGMENT_LENGTH + 2048, NULL_POSITION, 190, NULL_TIMESTAMP, 0,
+                2, "invalidChannel", "source2");
+            assertRecording(catalog, record20, INVALID, 0, SEGMENT_LENGTH * 10, 200, NULL_TIMESTAMP, 0,
+                2, "invalidChannel", "source2");
+            assertRecording(catalog, record21, INVALID, 1000, 800, 210, NULL_TIMESTAMP, 0,
+                2, "invalidChannel", "source2");
+            assertRecording(catalog, record22, VALID, SEGMENT_LENGTH * 5, SEGMENT_LENGTH * 5, 220, 900, 0,
+                1, "emptyChannel", "source1");
+            assertRecording(catalog, record23, VALID, SEGMENT_LENGTH * 3 + 1024,
+                SEGMENT_LENGTH * 3 + 1024 + PAGE_SIZE + 256, 230, 1000, 0, 3, "validChannel", "source3");
+            assertRecording(catalog, record24, INVALID, -123, NULL_POSITION, 240, NULL_TIMESTAMP, 0,
+                2, "invalidChannel", "source2");
         }
 
-        Mockito.verify(out, times(19)).println(any(String.class));
+        Mockito.verify(out, times(25)).println(any(String.class));
     }
 
     @Test
@@ -321,47 +378,59 @@ class ArchiveToolVerifyTests
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, record0, VALID, NULL_POSITION, NULL_POSITION, NULL_TIMESTAMP, NULL_TIMESTAMP, 0,
-                1, 1, "emptyChannel", "source1");
+            assertRecording(catalog, record0, INVALID, NULL_POSITION, NULL_POSITION, NULL_TIMESTAMP, NULL_TIMESTAMP, 0,
+                1, "emptyChannel", "source1");
             assertRecording(catalog, record1, VALID, 11, 11, 10, 100, 0,
-                1, 1, "emptyChannel", "source1");
+                1, "emptyChannel", "source1");
             assertRecording(catalog, record2, INVALID, 22, NULL_POSITION, 20, NULL_TIMESTAMP, 0,
-                2, 2, "invalidChannel", "source2");
+                2, "invalidChannel", "source2");
             assertRecording(catalog, record3, INVALID, 33, NULL_POSITION, 30, NULL_TIMESTAMP, 0,
-                2, 2, "invalidChannel", "source2");
+                2, "invalidChannel", "source2");
             assertRecording(catalog, record4, INVALID, 44, NULL_POSITION, 40, NULL_TIMESTAMP, 0,
-                2, 2, "invalidChannel", "source2");
+                2, "invalidChannel", "source2");
             assertRecording(catalog, record5, INVALID, 55, NULL_POSITION, 50, NULL_TIMESTAMP, 0,
-                2, 2, "invalidChannel", "source2");
+                2, "invalidChannel", "source2");
             assertRecording(catalog, record6, INVALID, 66, NULL_POSITION, 60, NULL_TIMESTAMP, 0,
-                2, 2, "invalidChannel", "source2");
+                2, "invalidChannel", "source2");
             assertRecording(catalog, record7, VALID, 0, 0, 70, 200, 0,
-                3, 3, "validChannel", "source3");
-            assertRecording(catalog, record8, VALID, TERM_LENGTH + 1024, TERM_LENGTH + 1024, 80, 300, 0,
-                3, 3, "validChannel", "source3");
+                3, "validChannel", "source3");
+            assertRecording(catalog, record8, VALID, TERM_LENGTH + 1024, TERM_LENGTH + 1024 + 128, 80, 300, 0,
+                3, "validChannel", "source3");
             assertRecording(catalog, record9, VALID, 2048, SEGMENT_LENGTH + TERM_LENGTH + 384, 90, 400, 5,
-                3, 3, "validChannel", "source3");
+                3, "validChannel", "source3");
             assertRecording(catalog, record10, VALID, 0, PAGE_SIZE + 64, 100, 500, 0,
-                3, 3, "validChannel", "source3");
+                3, "validChannel", "source3");
             assertRecording(catalog, record11, VALID, 0, PAGE_SIZE + 192, 110, 600, 0,
-                3, 3, "validChannel", "source3");
+                3, "validChannel", "source3");
             assertRecording(catalog, record12, VALID, 0, 0, 120, 999999, 0,
-                3, 3, "validChannel", "source3");
+                3, "validChannel", "source3");
             assertRecording(catalog, record13, VALID, 1024 * 1024, SEGMENT_LENGTH * 128 + PAGE_SIZE * 3, 130, 888888, 0,
-                3, 3, "validChannel", "source3");
+                3, "validChannel", "source3");
             assertRecording(catalog, record14, VALID, 0, 0, 140, 700, 0,
-                3, 3, "validChannel", "source3");
-            assertRecording(catalog, record15, INVALID, PAGE_SIZE * 5 + 1024, 150, 150, 160, 0,
-                3, 3, "validChannel", "source3");
+                3, "validChannel", "source3");
+            assertRecording(catalog, record15, INVALID, PAGE_SIZE * 5 + 1024, PAGE_SIZE * 5 + 1024, 150, 160, 0,
+                3, "validChannel", "source3");
             assertRecording(catalog, record16, INVALID, 0, NULL_POSITION, 160, NULL_TIMESTAMP, 0,
-                2, 2, "invalidChannel", "source2");
+                2, "invalidChannel", "source2");
             assertRecording(catalog, record17, INVALID, 212 * 1024 * 1024, NULL_POSITION, 170, NULL_TIMESTAMP, 13,
-                2, 2, "invalidChannel", "source2");
+                2, "invalidChannel", "source2");
             assertRecording(catalog, record18, INVALID, 8224, NULL_POSITION, 180, NULL_TIMESTAMP, 16,
-                2, 2, "invalidChannel", "source2");
+                2, "invalidChannel", "source2");
+            assertRecording(catalog, record19, INVALID, SEGMENT_LENGTH + 2048, NULL_POSITION, 190, NULL_TIMESTAMP, 0,
+                2, "invalidChannel", "source2");
+            assertRecording(catalog, record20, INVALID, 0, SEGMENT_LENGTH * 10, 200, NULL_TIMESTAMP, 0,
+                2, "invalidChannel", "source2");
+            assertRecording(catalog, record21, INVALID, 1000, 800, 210, NULL_TIMESTAMP, 0,
+                2, "invalidChannel", "source2");
+            assertRecording(catalog, record22, VALID, SEGMENT_LENGTH * 5, SEGMENT_LENGTH * 5, 220, 800, 0,
+                1, "emptyChannel", "source1");
+            assertRecording(catalog, record23, VALID, SEGMENT_LENGTH * 3 + 1024,
+                SEGMENT_LENGTH * 3 + 1024 + PAGE_SIZE + 256, 230, 900, 0, 3, "validChannel", "source3");
+            assertRecording(catalog, record24, INVALID, -123, NULL_POSITION, 240, NULL_TIMESTAMP, 0,
+                2, "invalidChannel", "source2");
         }
 
-        Mockito.verify(out, times(19)).println(any(String.class));
+        Mockito.verify(out, times(25)).println(any(String.class));
     }
 
     @Test
@@ -380,7 +449,7 @@ class ArchiveToolVerifyTests
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             assertRecording(catalog, record1, VALID, 11, 11, 10, 100, 0,
-                1, 1, "emptyChannel", "source1");
+                1, "emptyChannel", "source1");
         }
     }
 
@@ -392,7 +461,7 @@ class ArchiveToolVerifyTests
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             assertRecording(catalog, record2, INVALID, 22, NULL_POSITION, 20, NULL_TIMESTAMP, 0,
-                2, 2, "invalidChannel", "source2");
+                2, "invalidChannel", "source2");
         }
     }
 
@@ -404,7 +473,7 @@ class ArchiveToolVerifyTests
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             assertRecording(catalog, record3, INVALID, 33, NULL_POSITION, 30, NULL_TIMESTAMP, 0,
-                2, 2, "invalidChannel", "source2");
+                2, "invalidChannel", "source2");
         }
     }
 
@@ -416,7 +485,7 @@ class ArchiveToolVerifyTests
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             assertRecording(catalog, record4, INVALID, 44, NULL_POSITION, 40, NULL_TIMESTAMP, 0,
-                2, 2, "invalidChannel", "source2");
+                2, "invalidChannel", "source2");
         }
     }
 
@@ -428,7 +497,7 @@ class ArchiveToolVerifyTests
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             assertRecording(catalog, record5, INVALID, 55, NULL_POSITION, 50, NULL_TIMESTAMP, 0,
-                2, 2, "invalidChannel", "source2");
+                2, "invalidChannel", "source2");
         }
     }
 
@@ -440,7 +509,7 @@ class ArchiveToolVerifyTests
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             assertRecording(catalog, record6, INVALID, 66, NULL_POSITION, 60, NULL_TIMESTAMP, 0,
-                2, 2, "invalidChannel", "source2");
+                2, "invalidChannel", "source2");
         }
     }
 
@@ -452,7 +521,7 @@ class ArchiveToolVerifyTests
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             assertRecording(catalog, record16, INVALID, 0, NULL_POSITION, 160, NULL_TIMESTAMP, 0,
-                2, 2, "invalidChannel", "source2");
+                2, "invalidChannel", "source2");
         }
     }
 
@@ -464,7 +533,7 @@ class ArchiveToolVerifyTests
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             assertRecording(catalog, record17, INVALID, 212 * 1024 * 1024, NULL_POSITION, 170, NULL_TIMESTAMP, 13,
-                2, 2, "invalidChannel", "source2");
+                2, "invalidChannel", "source2");
         }
     }
 
@@ -476,7 +545,7 @@ class ArchiveToolVerifyTests
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             assertRecording(catalog, record18, INVALID, 8224, NULL_POSITION, 180, NULL_TIMESTAMP, 16,
-                2, 2, "invalidChannel", "source2");
+                2, "invalidChannel", "source2");
         }
     }
 
@@ -487,8 +556,8 @@ class ArchiveToolVerifyTests
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, record15, INVALID, PAGE_SIZE * 5 + 1024, 150, 150, 160, 0,
-                3, 3, "validChannel", "source3");
+            assertRecording(catalog, record15, INVALID, PAGE_SIZE * 5 + 1024, PAGE_SIZE * 5 + 1024, 150, 160, 0,
+                3, "validChannel", "source3");
         }
     }
 
@@ -500,7 +569,7 @@ class ArchiveToolVerifyTests
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             assertRecording(catalog, record10, VALID, 0, PAGE_SIZE - 64, 100, 100, 0,
-                3, 3, "validChannel", "source3");
+                3, "validChannel", "source3");
         }
     }
 
@@ -512,7 +581,115 @@ class ArchiveToolVerifyTests
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             assertRecording(catalog, record10, VALID, 0, PAGE_SIZE + 64, 100, 100, 0,
-                3, 3, "validChannel", "source3");
+                3, "validChannel", "source3");
+        }
+    }
+
+    @Test
+    void verifyRecordingInvalidStartPositionNull()
+    {
+        verifyRecording(out, archiveDir, record0, false, epochClock, (file) -> false);
+
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            assertRecording(catalog, record0, INVALID, NULL_POSITION, NULL_POSITION, NULL_TIMESTAMP, NULL_TIMESTAMP, 0,
+                1, "emptyChannel", "source1");
+        }
+    }
+
+    @Test
+    void verifyRecordingInvalidStartPositionNegative()
+    {
+        verifyRecording(out, archiveDir, record24, false, epochClock, (file) -> false);
+
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            assertRecording(catalog, record24, INVALID, -123, NULL_POSITION, 240, NULL_TIMESTAMP, 0,
+                2, "invalidChannel", "source2");
+        }
+    }
+
+    @Test
+    void verifyRecordingInvalidStartPositionBeyondMaxSegmentFile()
+    {
+        verifyRecording(out, archiveDir, record19, false, epochClock, (file) -> false);
+
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            assertRecording(catalog, record19, INVALID, SEGMENT_LENGTH + 2048, NULL_POSITION, 190, NULL_TIMESTAMP, 0,
+                2, "invalidChannel", "source2");
+        }
+    }
+
+    @Test
+    void verifyRecordingInvalidStopPositionBeyondMaxSegmentFile()
+    {
+        verifyRecording(out, archiveDir, record20, false, epochClock, (file) -> false);
+
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            assertRecording(catalog, record20, INVALID, 0, SEGMENT_LENGTH * 10, 200, NULL_TIMESTAMP, 0,
+                2, "invalidChannel", "source2");
+        }
+    }
+
+    @Test
+    void verifyRecordingInvalidStopPositionBeforeStartPosition()
+    {
+        verifyRecording(out, archiveDir, record21, false, epochClock, (file) -> false);
+
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            assertRecording(catalog, record21, INVALID, 1000, 800, 210, NULL_TIMESTAMP, 0,
+                2, "invalidChannel", "source2");
+        }
+    }
+
+    @Test
+    void verifyRecordingEmptyRecordingWithBothStartPositionAndStopPositionAssigned()
+    {
+        verifyRecording(out, archiveDir, record22, false, epochClock, (file) -> false);
+
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            assertRecording(catalog, record22, VALID, SEGMENT_LENGTH * 5, SEGMENT_LENGTH * 5, 220, 100, 0,
+                1, "emptyChannel", "source1");
+        }
+    }
+
+    @Test
+    void verifyRecordingNonEmptyRecordingWithNonZeroStartPosition()
+    {
+        verifyRecording(out, archiveDir, record8, false, epochClock, (file) -> false);
+
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            assertRecording(catalog, record8, VALID, TERM_LENGTH + 1024, TERM_LENGTH + 1024 + 128, 80, 100, 0,
+                3, "validChannel", "source3");
+        }
+    }
+
+    @Test
+    void verifyRecordingNonEmptyRecordingWithNonZeroStartPositionBeforeMaxSegmentFile()
+    {
+        verifyRecording(out, archiveDir, record9, false, epochClock, (file) -> false);
+
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            assertRecording(catalog, record9, VALID, 2048, SEGMENT_LENGTH + TERM_LENGTH + 384, 90, 100, 5,
+                3, "validChannel", "source3");
+        }
+    }
+
+    @Test
+    void verifyRecordingNonEmptyRecordingWithNonZeroStartPositionWithinMaxSegmentFile()
+    {
+        verifyRecording(out, archiveDir, record23, false, epochClock, (file) -> false);
+
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            assertRecording(catalog, record23, VALID, SEGMENT_LENGTH * 3 + 1024,
+                SEGMENT_LENGTH * 3 + 1024 + PAGE_SIZE + 256, 230, 100, 0, 3, "validChannel", "source3");
         }
     }
 
@@ -555,7 +732,6 @@ class ArchiveToolVerifyTests
         final long startTimestamp,
         final long stopTimeStamp,
         final int initialTermId,
-        final int sessionId,
         final int streamId,
         final String strippedChannel,
         final String sourceIdentity)
@@ -572,7 +748,6 @@ class ArchiveToolVerifyTests
                 assertEquals(initialTermId, descriptorDecoder.initialTermId());
                 assertEquals(MTU_LENGTH, descriptorDecoder.mtuLength());
                 assertEquals(SEGMENT_LENGTH, descriptorDecoder.segmentFileLength());
-                assertEquals(sessionId, descriptorDecoder.sessionId());
                 assertEquals(streamId, descriptorDecoder.streamId());
                 assertEquals(strippedChannel, descriptorDecoder.strippedChannel());
                 assertNotNull(descriptorDecoder.originalChannel());

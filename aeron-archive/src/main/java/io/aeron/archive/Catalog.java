@@ -32,7 +32,8 @@ import java.util.function.IntConsumer;
 import java.util.function.Predicate;
 
 import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_SUFFIX;
-import static io.aeron.archive.client.AeronArchive.*;
+import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
+import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
 import static io.aeron.archive.codecs.RecordingDescriptorDecoder.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET;
@@ -434,7 +435,7 @@ class Catalog implements AutoCloseable
         return recordingId >= 0 && recordingId < nextRecordingId &&
             fieldAccessBuffer.getByte(
                 recordingDescriptorOffset(recordingId) +
-                RecordingDescriptorHeaderDecoder.validEncodingOffset()) == VALID;
+                    RecordingDescriptorHeaderDecoder.validEncodingOffset()) == VALID;
     }
 
     int forEach(final CatalogEntryProcessor consumer)
@@ -810,22 +811,34 @@ class Catalog implements AutoCloseable
         else
         {
             final File file = new File(archiveDir, maxSegmentFile);
-            final long segmentStopOffset = recoverStopOffset(file, segmentFileLength, truncateFileOnPageStraddle);
             final long segmentFileBasePosition = parseSegmentFilePosition(maxSegmentFile);
+            final long offset = startWithinLastSegmentFile(startPosition, segmentFileLength, segmentFileBasePosition) ?
+                (startPosition - segmentFileBasePosition) : 0;
+            final long segmentStopOffset = recoverStopOffset(file, offset,
+                segmentFileLength, truncateFileOnPageStraddle);
             return max(segmentFileBasePosition + segmentStopOffset, startPosition);
         }
     }
 
+    private static boolean startWithinLastSegmentFile(
+        final long startPosition, final int segmentFileLength, final long segmentFilePosition)
+    {
+        return segmentFilePosition <= startPosition && startPosition <= (segmentFilePosition + segmentFileLength);
+    }
+
     private static long recoverStopOffset(
-        final File segmentFile, final int segmentFileLength, final Predicate<File> truncateFileOnPageStraddle)
+        final File segmentFile,
+        final long offset,
+        final int segmentFileLength,
+        final Predicate<File> truncateFileOnPageStraddle)
     {
         try (FileChannel segment = FileChannel.open(segmentFile.toPath(), READ, WRITE))
         {
             final ByteBuffer buffer = ByteBuffer.allocateDirect(HEADER_LENGTH);
             buffer.order(BYTE_ORDER);
 
-            long lastFragmentOffset = 0;
-            long nextFragmentOffset = 0;
+            long lastFragmentOffset = offset;
+            long nextFragmentOffset = offset;
             long lastFrameLength = 0;
             final long maxLength = min(segmentFileLength, segment.size());
 

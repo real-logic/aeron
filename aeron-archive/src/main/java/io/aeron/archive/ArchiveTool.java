@@ -37,7 +37,9 @@ import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -194,6 +196,7 @@ public class ArchiveTool
 
     /**
      * Set the maximum number of entries supported by a {@link Catalog}.
+     *
      * @param archiveDir    containing the {@link Catalog}.
      * @param newMaxEntries value to set.
      * @return the maximum number of entries supported by a {@link Catalog} after update.
@@ -336,7 +339,7 @@ public class ArchiveTool
 
     /**
      * Verify descriptor in the catalog according to recordingId, checking recording files availability and contents.
-     *
+     * <p>
      * Faulty entries are marked as unusable.
      *
      * @param out                        output stream to print results and errors to
@@ -611,17 +614,34 @@ public class ArchiveTool
         final RecordingDescriptorDecoder decoder)
     {
         final long recordingId = decoder.recordingId();
+        final long startPosition = decoder.startPosition();
+        final long stopPosition = decoder.stopPosition();
+        if (isPositionInvariantViolated(out, recordingId, startPosition, stopPosition))
+        {
+            headerEncoder.valid(INVALID);
+            return;
+        }
         final int segmentFileLength = decoder.segmentFileLength();
         final int termBufferLength = decoder.termBufferLength();
-        final long startPosition = decoder.startPosition();
 
         final String[] segmentFiles = listSegmentFiles(archiveDir, recordingId);
         final String maxSegmentFile;
-        final long stopPosition;
+        final long computedStopPosition;
         try
         {
             maxSegmentFile = findSegmentFileWithHighestPosition(segmentFiles);
-            stopPosition = computeStopPosition(
+            if (maxSegmentFile != null)
+            {
+                final long maxPosition = parseSegmentFilePosition(maxSegmentFile) + segmentFileLength;
+                if (startPosition > maxPosition || stopPosition > maxPosition)
+                {
+                    out.println("(recordingId=" + recordingId + ") ERR: Invariant violation: startPosition=" +
+                        startPosition + ", stopPosition=" + stopPosition + " exceed maxPosition=" + maxPosition);
+                    headerEncoder.valid(INVALID);
+                    return;
+                }
+            }
+            computedStopPosition = computeStopPosition(
                 archiveDir,
                 maxSegmentFile,
                 startPosition,
@@ -679,14 +699,31 @@ public class ArchiveTool
             }
         }
 
-        if (stopPosition != decoder.stopPosition())
+        if (computedStopPosition != stopPosition)
         {
-            encoder.stopPosition(stopPosition);
+            encoder.stopPosition(computedStopPosition);
             encoder.stopTimestamp(epochClock.time());
         }
 
         headerEncoder.valid(VALID);
         out.println("(recordingId=" + recordingId + ") OK");
+    }
+
+    private static boolean isPositionInvariantViolated(
+        final PrintStream out, final long recordingId, final long startPosition, final long stopPosition)
+    {
+        if (startPosition < 0)
+        {
+            out.println("(recordingId=" + recordingId + ") ERR: Negative startPosition=" + startPosition);
+            return true;
+        }
+        else if (stopPosition != NULL_POSITION && stopPosition < startPosition)
+        {
+            out.println("(recordingId=" + recordingId + ") ERR: Invariant violation stopPosition=" +
+                stopPosition + " is before startPosition=" + startPosition);
+            return true;
+        }
+        return false;
     }
 
     private static boolean isInvalidSegmentFile(
@@ -732,7 +769,7 @@ public class ArchiveTool
                     out.println("(recordingId=" + recordingId + ") ERR: fragment " +
                         "termOffset=" + headerFlyweight.termOffset() + " (expected=" + termOffset + "), " +
                         "termId=" + headerFlyweight.termId() + " (expected=" + termId + "), " +
-                        "sessionId=" + headerFlyweight.streamId() + " (expected=" + streamId + ")");
+                        "streamId=" + headerFlyweight.streamId() + " (expected=" + streamId + ")");
 
                     return true;
                 }

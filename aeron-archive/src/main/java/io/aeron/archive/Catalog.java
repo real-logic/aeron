@@ -812,18 +812,11 @@ class Catalog implements AutoCloseable
         {
             final File file = new File(archiveDir, maxSegmentFile);
             final long segmentFileBasePosition = parseSegmentFilePosition(maxSegmentFile);
-            final long offset = startWithinLastSegmentFile(startPosition, segmentFileLength, segmentFileBasePosition) ?
-                (startPosition - segmentFileBasePosition) : 0;
-            final long segmentStopOffset = recoverStopOffset(file, offset,
-                segmentFileLength, truncateFileOnPageStraddle);
+            final long offset = max(0, startPosition - segmentFileBasePosition);
+            final long segmentStopOffset = recoverStopOffset(file, offset, segmentFileLength,
+                truncateFileOnPageStraddle);
             return max(segmentFileBasePosition + segmentStopOffset, startPosition);
         }
-    }
-
-    private static boolean startWithinLastSegmentFile(
-        final long startPosition, final int segmentFileLength, final long segmentFilePosition)
-    {
-        return segmentFilePosition <= startPosition && startPosition <= (segmentFilePosition + segmentFileLength);
     }
 
     private static long recoverStopOffset(

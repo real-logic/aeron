@@ -53,6 +53,7 @@ import static io.aeron.logbuffer.LogBufferDescriptor.positionBitsToShift;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_DATA;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
+import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.nio.file.StandardOpenOption.READ;
 import static org.agrona.BitUtil.align;
@@ -667,6 +668,7 @@ public class ArchiveTool
                         archiveDir,
                         recordingId,
                         filename,
+                        startPosition,
                         termBufferLength,
                         segmentFileLength,
                         streamId,
@@ -684,6 +686,7 @@ public class ArchiveTool
                 archiveDir,
                 recordingId,
                 maxSegmentFile,
+                startPosition,
                 termBufferLength,
                 segmentFileLength,
                 streamId,
@@ -728,6 +731,7 @@ public class ArchiveTool
         final File archiveDir,
         final long recordingId,
         final String fileName,
+        final long startPosition,
         final int termLength,
         final int segmentLength,
         final int streamId,
@@ -739,8 +743,8 @@ public class ArchiveTool
         try (FileChannel channel = FileChannel.open(file.toPath(), READ))
         {
             final long offsetLimit = min(segmentLength, channel.size());
-            int fileOffset = 0;
             long position = parseSegmentFilePosition(fileName);
+            long fileOffset = max(0, startPosition - position);
 
             do
             {

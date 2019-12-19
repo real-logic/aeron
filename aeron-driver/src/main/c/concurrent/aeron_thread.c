@@ -44,15 +44,9 @@ void aeron_nano_sleep(uint64_t nanoseconds)
 #if defined(AERON_COMPILER_GCC)
 #elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
 
-static BOOL aeron_thread_once_callback(PINIT_ONCE init_once, void (*callback)(void), void** context)
-{
-    callback();
-    return TRUE;
-}
-
 void aeron_thread_once(AERON_INIT_ONCE* s_init_once, void* callback)
 {
-    InitOnceExecuteOnce(s_init_once, aeron_thread_once_callback, callback, NULL);
+    InitOnceExecuteOnce(s_init_once, (PINIT_ONCE_FN)callback, NULL, NULL);
 }
 
 void aeron_mutex_init(HANDLE* mutex, void* attr)
@@ -113,7 +107,7 @@ DWORD aeron_thread_join(aeron_thread_t thread, void **value_ptr)
 int aeron_thread_key_create(pthread_key_t *key, void(*destr_function) (void *))
 {
     DWORD dkey = TlsAlloc();
-    if (dkey != TLS_OUT_OF_INDEXES)
+    if (dkey != 0xFFFFFFFF)
     {
         *key = dkey;
         return 0;

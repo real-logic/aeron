@@ -29,7 +29,7 @@ static pthread_key_t error_key;
 
 static void initialize_per_thread_error()
 {
-    if (aeron_thread_key_create(&error_key, free))
+    if (aeron_thread_key_create(&error_key, free) < 0)
     {
         fprintf(stderr, "could not create per thread error key, exiting.\n");
         exit(EXIT_FAILURE);
@@ -77,7 +77,7 @@ void aeron_set_err(int errcode, const char *format, ...)
             exit(EXIT_FAILURE);
         }
 
-        if (aeron_thread_set_specific(error_key, error_state))
+        if (aeron_thread_set_specific(error_key, error_state) < 0)
         {
             fprintf(stderr, "could not associate per thread error key, exiting.\n");
             exit(EXIT_FAILURE);

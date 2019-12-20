@@ -180,8 +180,10 @@ TEST_F(TermAppenderTest, shouldAppendFrameTwiceToLog)
 TEST_F(TermAppenderTest, shouldPadLogWhenAppendingWithInsufficientRemainingCapacity)
 {
     const util::index_t msgLength = 120;
-    const util::index_t requiredFrameSize = util::BitUtil::align(msgLength + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
-    const util::index_t tailValue = TERM_BUFFER_CAPACITY - util::BitUtil::align(msgLength, FrameDescriptor::FRAME_ALIGNMENT);
+    const util::index_t requiredFrameSize =
+        util::BitUtil::align(msgLength + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
+    const util::index_t tailValue =
+        TERM_BUFFER_CAPACITY - util::BitUtil::align(msgLength, FrameDescriptor::FRAME_ALIGNMENT);
     const util::index_t frameLength = TERM_BUFFER_CAPACITY - tailValue;
     testing::Sequence sequence;
 
@@ -208,7 +210,8 @@ TEST_F(TermAppenderTest, shouldFragmentMessageOverTwoFrames)
 {
     const util::index_t msgLength = MAX_PAYLOAD_LENGTH + 1;
     const util::index_t frameLength = DataFrameHeader::LENGTH + 1;
-    const std::int64_t requiredCapacity = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT) + MAX_FRAME_LENGTH;
+    const std::int64_t requiredCapacity =
+        util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT) + MAX_FRAME_LENGTH;
     util::index_t tail = 0;
     testing::Sequence sequence;
 

@@ -62,13 +62,14 @@ TEST_F(TermGapScannerTest, shouldReportGapAtBeginningOfBuffer)
     EXPECT_CALL(m_termBuffer, getInt32Volatile(frameOffset))
         .WillOnce(testing::Return(DataFrameHeader::LENGTH));
 
-    auto f = [&] (std::int32_t termId, AtomicBuffer& buffer, std::int32_t offset, std::int32_t length)
-    {
-        EXPECT_EQ(TERM_ID, termId);
-        EXPECT_EQ(0, offset);
-        EXPECT_EQ(frameOffset, length);
-        called = true;
-    };
+    auto f =
+        [&](std::int32_t termId, AtomicBuffer& buffer, std::int32_t offset, std::int32_t length)
+        {
+            EXPECT_EQ(TERM_ID, termId);
+            EXPECT_EQ(0, offset);
+            EXPECT_EQ(frameOffset, length);
+            called = true;
+        };
 
     EXPECT_EQ(0, TermGapScanner::scanForGap(m_termBuffer, TERM_ID, 0, highWaterMark, f));
 
@@ -89,13 +90,14 @@ TEST_F(TermGapScannerTest, shouldReportSingleGapWhenBufferNotFull)
     EXPECT_CALL(m_termBuffer, getInt32Volatile(highWaterMark - FrameDescriptor::ALIGNED_HEADER_LENGTH))
         .WillRepeatedly(testing::Return(DataFrameHeader::LENGTH));
 
-    auto f = [&] (std::int32_t termId, AtomicBuffer& buffer, std::int32_t offset, std::int32_t length)
-    {
-        EXPECT_EQ(TERM_ID, termId);
-        EXPECT_EQ(tail, offset);
-        EXPECT_EQ(FrameDescriptor::ALIGNED_HEADER_LENGTH, length);
-        called = true;
-    };
+    auto f =
+        [&](std::int32_t termId, AtomicBuffer& buffer, std::int32_t offset, std::int32_t length)
+        {
+            EXPECT_EQ(TERM_ID, termId);
+            EXPECT_EQ(tail, offset);
+            EXPECT_EQ(FrameDescriptor::ALIGNED_HEADER_LENGTH, length);
+            called = true;
+        };
 
     EXPECT_EQ(tail, TermGapScanner::scanForGap(m_termBuffer, TERM_ID, 0, highWaterMark, f));
 
@@ -117,13 +119,14 @@ TEST_F(TermGapScannerTest, shouldReportSingleGapWhenBufferIsFull)
     EXPECT_CALL(m_termBuffer, getInt32Volatile(highWaterMark - FrameDescriptor::ALIGNED_HEADER_LENGTH))
         .WillRepeatedly(testing::Return(DataFrameHeader::LENGTH));
 
-    auto f = [&] (std::int32_t termId, AtomicBuffer& buffer, std::int32_t offset, std::int32_t length)
-    {
-        EXPECT_EQ(TERM_ID, termId);
-        EXPECT_EQ(tail, offset);
-        EXPECT_EQ(FrameDescriptor::ALIGNED_HEADER_LENGTH, length);
-        called = true;
-    };
+    auto f =
+        [&](std::int32_t termId, AtomicBuffer& buffer, std::int32_t offset, std::int32_t length)
+        {
+            EXPECT_EQ(TERM_ID, termId);
+            EXPECT_EQ(tail, offset);
+            EXPECT_EQ(FrameDescriptor::ALIGNED_HEADER_LENGTH, length);
+            called = true;
+        };
 
     EXPECT_EQ(tail, TermGapScanner::scanForGap(m_termBuffer, TERM_ID, tail, highWaterMark, f));
 
@@ -142,10 +145,11 @@ TEST_F(TermGapScannerTest, shouldReportNoGapWhenHwmIsInPadding)
     EXPECT_CALL(m_termBuffer, getInt32Volatile(tail + DataFrameHeader::LENGTH))
         .WillRepeatedly(testing::Return(0));
 
-    auto f = [&] (std::int32_t termId, AtomicBuffer& buffer, std::int32_t offset, std::int32_t length)
-    {
-        called = true;
-    };
+    auto f =
+        [&](std::int32_t termId, AtomicBuffer& buffer, std::int32_t offset, std::int32_t length)
+        {
+            called = true;
+        };
 
     EXPECT_EQ(LOG_BUFFER_CAPACITY, TermGapScanner::scanForGap(m_termBuffer, TERM_ID, tail, highWaterMark, f));
 

@@ -171,7 +171,8 @@ TEST_F(DistinctErrorLogTest, shouldRecordTwoDistinctObservations)
     EXPECT_CALL(m_mockBuffer, getAndAddInt32(offset + ErrorLogDescriptor::OBSERVATION_COUNT_OFFSET, testing::_))
         .Times(1)
         .InSequence(sequence);
-    EXPECT_CALL(m_mockBuffer, putInt64Ordered(offset + ErrorLogDescriptor::LAST_OBSERVATION_TIMESTAMP_OFFSET, testing::_))
+    EXPECT_CALL(
+        m_mockBuffer, putInt64Ordered(offset + ErrorLogDescriptor::LAST_OBSERVATION_TIMESTAMP_OFFSET, testing::_))
         .Times(1)
         .InSequence(sequence);
 
@@ -191,7 +192,8 @@ TEST_F(DistinctErrorLogTest, shouldRecordTwoDistinctObservations)
     EXPECT_CALL(m_mockBuffer, getAndAddInt32(offset + ErrorLogDescriptor::OBSERVATION_COUNT_OFFSET, testing::_))
         .Times(1)
         .InSequence(sequence);
-    EXPECT_CALL(m_mockBuffer, putInt64Ordered(offset + ErrorLogDescriptor::LAST_OBSERVATION_TIMESTAMP_OFFSET, testing::_))
+    EXPECT_CALL(
+        m_mockBuffer, putInt64Ordered(offset + ErrorLogDescriptor::LAST_OBSERVATION_TIMESTAMP_OFFSET, testing::_))
         .Times(1)
         .InSequence(sequence);
 

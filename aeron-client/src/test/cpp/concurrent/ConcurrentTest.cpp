@@ -27,7 +27,6 @@
 using namespace aeron::concurrent;
 using namespace aeron::util;
 
-
 typedef std::array<std::uint8_t, 1024> buffer_t;
 static AERON_DECL_ALIGNED(buffer_t testBuffer, 16);
 
@@ -119,11 +118,14 @@ TEST (atomicBufferTests, concurrentTest)
 
     for (int i = 0; i < 8; i++)
     {
-        threads.push_back(std::thread([&]()
-        {
-            for (size_t n = 0; n < incCount; n++)
-                ab.getAndAddInt64(0, 1);
-        }));
+        threads.push_back(
+            std::thread([&]()
+            {
+                for (size_t n = 0; n < incCount; n++)
+                {
+                    ab.getAndAddInt64(0, 1);
+                }
+            }));
     }
 
     for (std::thread& t: threads)
@@ -144,7 +146,7 @@ struct testStruct
 };
 #pragma pack(pop)
 
-TEST (atomicBufferTests, checkStructOveray)
+TEST (atomicBufferTests, checkStructOverlay)
 {
     testBuffer.fill(0xff);
     AtomicBuffer ab(&testBuffer[0], testBuffer.size());

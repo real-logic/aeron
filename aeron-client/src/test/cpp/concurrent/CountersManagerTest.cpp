@@ -99,11 +99,12 @@ TEST_F(CountersManagerTest, checkAlloc)
 
     ASSERT_NO_THROW(
     {
-        m_countersManager.forEach([&](std::int32_t counterId, std::int32_t, const AtomicBuffer&, const std::string &label)
-        {
-            ASSERT_EQ(label, allocated[counterId]);
-            allocated.erase(allocated.find(counterId));
-        });
+        m_countersManager.forEach(
+            [&](std::int32_t counterId, std::int32_t, const AtomicBuffer&, const std::string &label)
+            {
+                ASSERT_EQ(label, allocated[counterId]);
+                allocated.erase(allocated.find(counterId));
+            });
     });
 
     ASSERT_EQ(allocated.empty(), true);

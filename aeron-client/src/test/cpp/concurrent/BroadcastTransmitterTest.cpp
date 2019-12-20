@@ -125,7 +125,8 @@ TEST_F(BroadcastTransmitterTest, shouldTransmitIntoEmptyBuffer)
     EXPECT_CALL(m_mockBuffer, putInt32(RecordDescriptor::typeOffset(recordOffset), MSG_TYPE_ID))
         .Times(1)
         .InSequence(sequence);
-    EXPECT_CALL(m_mockBuffer, putBytes(RecordDescriptor::msgOffset(recordOffset), testing::Ref(srcBuffer), srcIndex, length))
+    EXPECT_CALL(
+        m_mockBuffer, putBytes(RecordDescriptor::msgOffset(recordOffset), testing::Ref(srcBuffer), srcIndex, length))
         .Times(1)
         .InSequence(sequence);
 
@@ -164,7 +165,8 @@ TEST_F(BroadcastTransmitterTest, shouldTransmitIntoUsedBuffer)
     EXPECT_CALL(m_mockBuffer, putInt32(RecordDescriptor::typeOffset(recordOffset), MSG_TYPE_ID))
         .Times(1)
         .InSequence(sequence);
-    EXPECT_CALL(m_mockBuffer, putBytes(RecordDescriptor::msgOffset(recordOffset), testing::Ref(srcBuffer), srcIndex, length))
+    EXPECT_CALL(
+        m_mockBuffer, putBytes(RecordDescriptor::msgOffset(recordOffset), testing::Ref(srcBuffer), srcIndex, length))
         .Times(1)
         .InSequence(sequence);
 
@@ -203,7 +205,8 @@ TEST_F(BroadcastTransmitterTest, shouldTransmitIntoEndOfBuffer)
     EXPECT_CALL(m_mockBuffer, putInt32(RecordDescriptor::typeOffset(recordOffset), MSG_TYPE_ID))
         .Times(1)
         .InSequence(sequence);
-    EXPECT_CALL(m_mockBuffer, putBytes(RecordDescriptor::msgOffset(recordOffset), testing::Ref(srcBuffer), srcIndex, length))
+    EXPECT_CALL(
+        m_mockBuffer, putBytes(RecordDescriptor::msgOffset(recordOffset), testing::Ref(srcBuffer), srcIndex, length))
         .Times(1)
         .InSequence(sequence);
 
@@ -241,7 +244,8 @@ TEST_F(BroadcastTransmitterTest, shouldApplyPaddingWhenInsufficientSpaceAtEndOfB
     EXPECT_CALL(m_mockBuffer, putInt32(RecordDescriptor::lengthOffset(recordOffset), toEndOfBuffer))
         .Times(1)
         .InSequence(sequence);
-    EXPECT_CALL(m_mockBuffer, putInt32(RecordDescriptor::typeOffset(recordOffset), RecordDescriptor::PADDING_MSG_TYPE_ID))
+    EXPECT_CALL(
+        m_mockBuffer, putInt32(RecordDescriptor::typeOffset(recordOffset), RecordDescriptor::PADDING_MSG_TYPE_ID))
         .Times(1)
         .InSequence(sequence);
 
@@ -254,7 +258,8 @@ TEST_F(BroadcastTransmitterTest, shouldApplyPaddingWhenInsufficientSpaceAtEndOfB
     EXPECT_CALL(m_mockBuffer, putInt32(RecordDescriptor::typeOffset(recordOffset), MSG_TYPE_ID))
         .Times(1)
         .InSequence(sequence);
-    EXPECT_CALL(m_mockBuffer, putBytes(RecordDescriptor::msgOffset(recordOffset), testing::Ref(srcBuffer), srcIndex, length))
+    EXPECT_CALL(
+        m_mockBuffer, putBytes(RecordDescriptor::msgOffset(recordOffset), testing::Ref(srcBuffer), srcIndex, length))
         .Times(1)
         .InSequence(sequence);
 

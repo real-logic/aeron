@@ -121,7 +121,8 @@ TEST_F(ManyToOneRingBufferTest, shouldRejectWriteWhenInsufficientSpace)
 {
     util::index_t length = 100;
     util::index_t head = 0;
-    util::index_t tail = head + (CAPACITY - util::BitUtil::align(length - RecordDescriptor::ALIGNMENT, RecordDescriptor::ALIGNMENT));
+    util::index_t tail =
+        head + (CAPACITY - util::BitUtil::align(length - RecordDescriptor::ALIGNMENT, RecordDescriptor::ALIGNMENT));
     util::index_t srcIndex = 0;
 
     m_ab.putInt64(HEAD_COUNTER_INDEX, head);
@@ -200,7 +201,8 @@ TEST_F(ManyToOneRingBufferTest, shouldReadNothingFromEmptyBuffer)
     m_ab.putInt64(TAIL_COUNTER_INDEX, tail);
 
     int timesCalled = 0;
-    const int messagesRead = m_ringBuffer.read([&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
+    const int messagesRead = m_ringBuffer.read(
+        [&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
         {
             timesCalled++;
         });
@@ -224,10 +226,11 @@ TEST_F(ManyToOneRingBufferTest, shouldReadSingleMessage)
     m_ab.putInt32(RecordDescriptor::lengthOffset(0), recordLength);
 
     int timesCalled = 0;
-    const int messagesRead = m_ringBuffer.read([&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
-    {
-        timesCalled++;
-    });
+    const int messagesRead = m_ringBuffer.read(
+        [&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
+        {
+            timesCalled++;
+        });
 
     EXPECT_EQ(messagesRead, 1);
     EXPECT_EQ(timesCalled, 1);
@@ -252,10 +255,11 @@ TEST_F(ManyToOneRingBufferTest, shouldNotReadSingleMessagePartWayThroughWriting)
     m_ab.putInt32(RecordDescriptor::lengthOffset(0), -recordLength);
 
     int timesCalled = 0;
-    const int messagesRead = m_ringBuffer.read([&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
-    {
-        timesCalled++;
-    });
+    const int messagesRead = m_ringBuffer.read(
+        [&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
+        {
+            timesCalled++;
+        });
 
     EXPECT_EQ(messagesRead, 0);
     EXPECT_EQ(timesCalled, 0);
@@ -280,10 +284,11 @@ TEST_F(ManyToOneRingBufferTest, shouldReadTwoMessages)
     m_ab.putInt32(RecordDescriptor::lengthOffset(0 + alignedRecordLength), recordLength);
 
     int timesCalled = 0;
-    const int messagesRead = m_ringBuffer.read([&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
-    {
-        timesCalled++;
-    });
+    const int messagesRead = m_ringBuffer.read(
+        [&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
+        {
+            timesCalled++;
+        });
 
     EXPECT_EQ(messagesRead, 2);
     EXPECT_EQ(timesCalled, 2);
@@ -291,7 +296,7 @@ TEST_F(ManyToOneRingBufferTest, shouldReadTwoMessages)
 
     for (int i = 0; i < RecordDescriptor::ALIGNMENT * 2; i += 4)
     {
-        EXPECT_EQ(m_ab.getInt32(i), 0) << "buffer has not been zeroed between indexes " << i << "-" << i+3;
+        EXPECT_EQ(m_ab.getInt32(i), 0) << "buffer has not been zeroed between indexes " << i << "-" << i + 3;
     }
 }
 
@@ -313,10 +318,12 @@ TEST_F(ManyToOneRingBufferTest, shouldLimitReadOfMessages)
     m_ab.putInt32(RecordDescriptor::lengthOffset(0 + alignedRecordLength), recordLength);
 
     int timesCalled = 0;
-    const int messagesRead = m_ringBuffer.read([&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
-    {
-        timesCalled++;
-    }, 1);
+    const int messagesRead = m_ringBuffer.read(
+        [&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
+        {
+            timesCalled++;
+        },
+        1);
 
     EXPECT_EQ(messagesRead, 1);
     EXPECT_EQ(timesCalled, 1);
@@ -324,7 +331,7 @@ TEST_F(ManyToOneRingBufferTest, shouldLimitReadOfMessages)
 
     for (int i = 0; i < RecordDescriptor::ALIGNMENT; i += 4)
     {
-        EXPECT_EQ(m_ab.getInt32(i), 0) << "buffer has not been zeroed between indexes " << i << "-" << i+3;
+        EXPECT_EQ(m_ab.getInt32(i), 0) << "buffer has not been zeroed between indexes " << i << "-" << i + 3;
     }
     EXPECT_EQ(m_ab.getInt32(RecordDescriptor::lengthOffset(alignedRecordLength)), recordLength);
 }
@@ -373,7 +380,7 @@ TEST_F(ManyToOneRingBufferTest, shouldCopeWithExceptionFromHandler)
 
     for (int i = 0; i < RecordDescriptor::ALIGNMENT * 2; i += 4)
     {
-        EXPECT_EQ(m_ab.getInt32(i), 0) << "buffer has not been zeroed between indexes " << i << "-" << i+3;
+        EXPECT_EQ(m_ab.getInt32(i), 0) << "buffer has not been zeroed between indexes " << i << "-" << i + 3;
     }
 }
 
@@ -486,7 +493,7 @@ TEST_F(ManyToOneRingBufferTest, shouldNotUnblockGapWithMessageRaceWhenScanForwar
 #define NUM_IDS_PER_THREAD (10 * 1000 * 1000)
 #define NUM_PUBLISHERS (2)
 
-TEST(ManyToOneRingBufferConcurrentTest, shouldProvideCcorrelationIds)
+TEST(ManyToOneRingBufferConcurrentTest, shouldProvideCorrelationIds)
 {
     AERON_DECL_ALIGNED(buffer_t mpscBuffer, 16);
     mpscBuffer.fill(0);

@@ -282,7 +282,7 @@ TEST_F(SpscRbTest, shouldReadSingleMessage)
 
     for (size_t i = 0; i < AERON_RB_ALIGNMENT; i += 4)
     {
-        EXPECT_EQ(*((int32_t *)(rb.buffer + i)), 0) << "buffer has not been zeroed between indexes " << i << "-" << i+3;
+        EXPECT_EQ(*((int32_t *)(rb.buffer + i)), 0) << "buffer has not been zeroed between " << i << "-" << i + 3;
     }
 }
 
@@ -343,7 +343,7 @@ TEST_F(SpscRbTest, shouldReadTwoMessages)
 
     for (size_t i = 0; i < AERON_RB_ALIGNMENT * 2; i += 4)
     {
-        EXPECT_EQ(*((int32_t *)(rb.buffer + i)), 0) << "buffer has not been zeroed between indexes " << i << "-" << i+3;
+        EXPECT_EQ(*((int32_t *)(rb.buffer + i)), 0) << "buffer has not been zeroed between " << i << "-" << i + 3;
     }
 }
 
@@ -379,7 +379,7 @@ TEST_F(SpscRbTest, shouldLimitReadOfMessages)
 
     for (size_t i = 0; i < AERON_RB_ALIGNMENT; i += 4)
     {
-        EXPECT_EQ(*((int32_t *)(rb.buffer + i)), 0) << "buffer has not been zeroed between indexes " << i << "-" << i+3;
+        EXPECT_EQ(*((int32_t *)(rb.buffer + i)), 0) << "buffer has not been zeroed between " << i << "-" << i + 3;
     }
 }
 
@@ -400,19 +400,20 @@ TEST(SpscRbConcurrentTest, shouldProvideCcorrelationIds)
 
     for (int i = 0; i < 2; i++)
     {
-        threads.push_back(std::thread([&]()
-        {
-            countDown--;
-            while (countDown > 0)
+        threads.push_back(std::thread(
+            [&]()
             {
-                std::this_thread::yield();
-            }
+                countDown--;
+                while (countDown > 0)
+                {
+                    std::this_thread::yield();
+                }
 
-            for (int m = 0; m < NUM_IDS_PER_THREAD; m++)
-            {
-                aeron_spsc_rb_next_correlation_id(&rb);
-            }
-        }));
+                for (int m = 0; m < NUM_IDS_PER_THREAD; m++)
+                {
+                    aeron_spsc_rb_next_correlation_id(&rb);
+                }
+            }));
     }
 
     for (std::thread &thr: threads)

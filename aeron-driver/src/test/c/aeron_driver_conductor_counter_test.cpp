@@ -215,7 +215,6 @@ TEST_F(DriverConductorCounterTest, shouldNotRemoveCounterOnClientKeepalive)
             clientKeepalive(client_id);
         });
 
-
     EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 1u);
 
     auto counter_func = [&](std::int32_t id, std::int32_t typeId, const AtomicBuffer& key, const std::string& label) {};

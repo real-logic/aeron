@@ -226,7 +226,7 @@ TEST_F(MpscRbTest, shouldReadSingleMessage)
 
     for (size_t i = 0; i < AERON_RB_ALIGNMENT; i += 4)
     {
-        EXPECT_EQ(*((int32_t *)(rb.buffer + i)), 0) << "buffer has not been zeroed between indexes " << i << "-" << i+3;
+        EXPECT_EQ(*((int32_t *)(rb.buffer + i)), 0) << "buffer has not been zeroed between " << i << "-" << i + 3;
     }
 }
 
@@ -287,7 +287,7 @@ TEST_F(MpscRbTest, shouldReadTwoMessages)
 
     for (size_t i = 0; i < AERON_RB_ALIGNMENT * 2; i += 4)
     {
-        EXPECT_EQ(*((int32_t *)(rb.buffer + i)), 0) << "buffer has not been zeroed between indexes " << i << "-" << i+3;
+        EXPECT_EQ(*((int32_t *)(rb.buffer + i)), 0) << "buffer has not been zeroed between " << i << "-" << i + 3;
     }
 }
 
@@ -323,7 +323,7 @@ TEST_F(MpscRbTest, shouldLimitReadOfMessages)
 
     for (size_t i = 0; i < AERON_RB_ALIGNMENT; i += 4)
     {
-        EXPECT_EQ(*((int32_t *)(rb.buffer + i)), 0) << "buffer has not been zeroed between indexes " << i << "-" << i+3;
+        EXPECT_EQ(*((int32_t *)(rb.buffer + i)), 0) << "buffer has not been zeroed between " << i << "-" << i + 3;
     }
 }
 
@@ -409,19 +409,20 @@ TEST(MpscRbConcurrentTest, shouldProvideCorrelationIds)
 
     for (int i = 0; i < NUM_PUBLISHERS; i++)
     {
-        threads.push_back(std::thread([&]()
-        {
-            countDown--;
-            while (countDown > 0)
+        threads.push_back(std::thread(
+            [&]()
             {
-                std::this_thread::yield();
-            }
+                countDown--;
+                while (countDown > 0)
+                {
+                    std::this_thread::yield();
+                }
 
-            for (int m = 0; m < NUM_IDS_PER_THREAD; m++)
-            {
-                aeron_mpsc_rb_next_correlation_id(&rb);
-            }
-        }));
+                for (int m = 0; m < NUM_IDS_PER_THREAD; m++)
+                {
+                    aeron_mpsc_rb_next_correlation_id(&rb);
+                }
+            }));
     }
 
     for (std::thread &thr: threads)
@@ -473,34 +474,33 @@ TEST(MpscRbConcurrentTest, shouldExchangeMessages)
 
     for (int i = 0; i < NUM_PUBLISHERS; i++)
     {
-        threads.push_back(
-            std::thread(
-                [&]()
-                {
-                    AERON_DECL_ALIGNED(buffer_t buffer, 16);
-                    buffer.fill(0);
-                    uint32_t id = publisherId.fetch_add(1);
+        threads.push_back(std::thread(
+            [&]()
+            {
+                AERON_DECL_ALIGNED(buffer_t buffer, 16);
+                buffer.fill(0);
+                uint32_t id = publisherId.fetch_add(1);
 
-                    countDown--;
-                    while (countDown > 0)
+                countDown--;
+                while (countDown > 0)
+                {
+                    std::this_thread::yield();
+                }
+
+                mpsc_concurrent_test_data_t *data = (mpsc_concurrent_test_data_t *)(buffer.data());
+
+                for (uint32_t m = 0; m < NUM_MESSAGES_PER_PUBLISHER; m++)
+                {
+                    data->id = id;
+                    data->num = m;
+
+                    while (AERON_RB_SUCCESS != aeron_mpsc_rb_write(
+                        &rb, MSG_TYPE_ID, buffer.data(), sizeof(mpsc_concurrent_test_data_t)))
                     {
                         std::this_thread::yield();
                     }
-
-                    mpsc_concurrent_test_data_t *data = (mpsc_concurrent_test_data_t *)(buffer.data());
-
-                    for (uint32_t m = 0; m < NUM_MESSAGES_PER_PUBLISHER; m++)
-                    {
-                        data->id = id;
-                        data->num = m;
-
-                        while (AERON_RB_SUCCESS != aeron_mpsc_rb_write(
-                            &rb, MSG_TYPE_ID, buffer.data(), sizeof(mpsc_concurrent_test_data_t)))
-                        {
-                            std::this_thread::yield();
-                        }
-                    }
-                }));
+                }
+            }));
     }
 
     while (msgCount < (NUM_MESSAGES_PER_PUBLISHER * NUM_PUBLISHERS))

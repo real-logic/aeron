@@ -16,44 +16,44 @@ include(CheckSymbolExists)
 include(CheckIncludeFile)
 include(CheckTypeSize)
 
-if("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
+if ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
     set(CMAKE_REQUIRED_DEFINITIONS "-D_GNU_SOURCE")
     add_definitions(-D_DEFAULT_SOURCE)
-endif()
+endif ()
 
-if(MSVC AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
+if (MSVC AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
     set(BUILD_SHARED_LIBS ON)
-endif()
+endif ()
 
 check_include_file("bsd/stdlib.h" BSDSTDLIB_H_EXISTS)
 check_include_file("uuid/uuid.h" UUID_H_EXISTS)
 find_library(LIBBSD_EXISTS NAMES bsd libbsd)
 find_library(LIBUUID_EXISTS NAMES uuid libuuid libuuid.dll)
 
-if(LIBBSD_EXISTS)
+if (LIBBSD_EXISTS)
     set(CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES} -lbsd")
-endif()
+endif ()
 
-if(LIBUUID_EXISTS)
+if (LIBUUID_EXISTS)
     set(CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES} -luuid")
-endif()
+endif ()
 
-if(NOT BSDSTDLIB_H_EXISTS)
+if (NOT BSDSTDLIB_H_EXISTS)
     check_symbol_exists(arc4random "stdlib.h" ARC4RANDOM_PROTOTYPE_EXISTS)
-else()
+else ()
     add_definitions(-DHAVE_BSDSTDLIB_H)
     check_symbol_exists(arc4random "bsd/stdlib.h" ARC4RANDOM_PROTOTYPE_EXISTS)
-endif()
+endif ()
 
-if(UUID_H_EXISTS)
+if (UUID_H_EXISTS)
     add_definitions(-DHAVE_UUID_H)
-endif()
+endif ()
 
-if(MSVC AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
-    set(AERON_LIB_WINSOCK_LIBS wsock32 ws2_32 Iphlpapi)	
+if (MSVC AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
+    set(AERON_LIB_WINSOCK_LIBS wsock32 ws2_32 Iphlpapi)
     set(WSAPOLL_PROTOTYPE_EXISTS True)
-endif()
+endif ()
 
 check_symbol_exists(uuid_generate "uuid/uuid.h" UUID_GENERATE_PROTOTYPE_EXISTS)
 
@@ -68,49 +68,49 @@ check_symbol_exists(recvmmsg "sys/socket.h" RECVMMSG_PROTOTYPE_EXISTS)
 check_symbol_exists(sendmmsg "sys/socket.h" SENDMMSG_PROTOTYPE_EXISTS)
 check_symbol_exists(fallocate "fcntl.h" FALLOCATE_PROTOTYPE_EXISTS)
 
-if(ARC4RANDOM_PROTOTYPE_EXISTS)
+if (ARC4RANDOM_PROTOTYPE_EXISTS)
     add_definitions(-DHAVE_ARC4RANDOM)
-else()
+else ()
     message(WARNING "Could not find arc4random. If on Linux, is libbsd installed?")
-endif()
+endif ()
 
-if(UUID_GENERATE_PROTOTYPE_EXISTS)
+if (UUID_GENERATE_PROTOTYPE_EXISTS)
     add_definitions(-DHAVE_UUID_GENERATE)
-else()
+else ()
     message(WARNING "Could not find uuid_generate. If on Linux, is libuuid installed?")
-endif()
+endif ()
 
-if(POLL_PROTOTYPE_EXISTS)
+if (POLL_PROTOTYPE_EXISTS)
     add_definitions(-DHAVE_POLL)
-endif()
+endif ()
 
-if(EPOLL_PROTOTYPE_EXISTS)
+if (EPOLL_PROTOTYPE_EXISTS)
     add_definitions(-DHAVE_EPOLL)
-endif()
+endif ()
 
-if(WSAPOLL_PROTOTYPE_EXISTS)
+if (WSAPOLL_PROTOTYPE_EXISTS)
     add_definitions(-DHAVE_WSAPOLL)
-endif()
+endif ()
 
 if (NOT POLL_PROTOTYPE_EXISTS AND NOT EPOLL_PROTOTYPE_EXISTS AND NOT WSAPOLL_PROTOTYPE_EXISTS)
-  message(FATAL_ERROR "Unsupported configuration: neither POLL nor EPOLL nor WSAPoll found" )
-endif()
+    message(FATAL_ERROR "Unsupported configuration: neither POLL nor EPOLL nor WSAPoll found")
+endif ()
 
-if(STRUCT_MMSGHDR_TYPE_EXISTS)
+if (STRUCT_MMSGHDR_TYPE_EXISTS)
     add_definitions(-DHAVE_STRUCT_MMSGHDR)
-endif()
+endif ()
 
-if(RECVMMSG_PROTOTYPE_EXISTS)
+if (RECVMMSG_PROTOTYPE_EXISTS)
     add_definitions(-DHAVE_RECVMMSG)
-endif()
+endif ()
 
-if(SENDMMSG_PROTOTYPE_EXISTS)
+if (SENDMMSG_PROTOTYPE_EXISTS)
     add_definitions(-DHAVE_SENDMMSG)
-endif()
+endif ()
 
-if(FALLOCATE_PROTOTYPE_EXISTS)
+if (FALLOCATE_PROTOTYPE_EXISTS)
     add_definitions(-DHAVE_FALLOCATE)
-endif()
+endif ()
 
 SET(SOURCE
     concurrent/aeron_spsc_rb.c
@@ -259,7 +259,7 @@ set(AGENT_SOURCE
     concurrent/aeron_logbuffer_descriptor.c
     util/aeron_fileutil.c
     util/aeron_dlopen.c
-    util/aeron_error.c    
+    util/aeron_error.c
     aeron_alloc.c
     aeron_windows.c)
 
@@ -277,42 +277,42 @@ set(AGENT_HEADERS
 add_library(aeron_driver_agent SHARED ${AGENT_SOURCE} ${AGENT_HEADERS})
 target_include_directories(aeron_driver_agent
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-)
+    )
 
 add_library(aeron_driver SHARED ${SOURCE} ${HEADERS})
 target_include_directories(aeron_driver
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-)
+    )
 
 add_library(aeron_driver_static STATIC ${SOURCE} ${HEADERS})
 target_include_directories(aeron_driver_static
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
-)
+    )
 
 add_executable(aeronmd aeronmd.c)
 target_include_directories(aeronmd
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
-)
+    )
 
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DDISABLE_BOUNDS_CHECKS")
 
-if("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
-    if(LIBBSD_EXISTS)
+if ("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
+    if (LIBBSD_EXISTS)
         set(AERON_LIB_BSD_LIBS bsd)
-    endif()
+    endif ()
 
-    if(LIBUUID_EXISTS)
+    if (LIBUUID_EXISTS)
         set(AERON_LIB_UUID_LIBS uuid)
-    endif()
+    endif ()
 
     set(AERON_LIB_M_LIBS m)
-endif()
+endif ()
 
-if(CYGWIN)
-    if(LIBUUID_EXISTS)
+if (CYGWIN)
+    if (LIBUUID_EXISTS)
         set(AERON_LIB_UUID_LIBS uuid)
-    endif()
-endif()
+    endif ()
+endif ()
 
 target_link_libraries(
     aeron_driver
@@ -341,7 +341,7 @@ target_link_libraries(
     ${AERON_LIB_M_LIBS}
     ${CMAKE_THREAD_LIBS_INIT}
     ${AERON_LIB_WINSOCK_LIBS})
-	
+
 target_compile_definitions(aeron_driver PRIVATE -DAERON_DRIVER)
 target_compile_definitions(aeron_driver_static PRIVATE -DAERON_DRIVER)
 
@@ -352,5 +352,5 @@ if (AERON_INSTALL_TARGETS)
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)
     install(TARGETS aeronmd DESTINATION bin)
-    install(DIRECTORY . DESTINATION  include/aeronmd FILES_MATCHING PATTERN "*.h")
-endif()
+    install(DIRECTORY . DESTINATION include/aeronmd FILES_MATCHING PATTERN "*.h")
+endif ()

@@ -102,7 +102,7 @@ target_include_directories(aeron_archive_client
 if (NOT WIN32)
     set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
     set(THREADS_PREFER_PTHREAD_FLAG TRUE)
-endif()
+endif ()
 
 target_link_libraries(aeron_archive_client
     PRIVATE aeron_client
@@ -110,5 +110,5 @@ target_link_libraries(aeron_archive_client
 
 if (AERON_INSTALL_TARGETS)
     install(TARGETS aeron_archive_client ARCHIVE DESTINATION lib)
-    install(DIRECTORY . DESTINATION  include FILES_MATCHING PATTERN "*.h")
-endif()
+    install(DIRECTORY . DESTINATION include FILES_MATCHING PATTERN "*.h")
+endif ()

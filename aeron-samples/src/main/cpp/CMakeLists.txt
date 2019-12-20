@@ -89,4 +89,4 @@ if (AERON_INSTALL_TARGETS)
     install(
         TARGETS AeronStat BasicPublisher TimeTests BasicSubscriber StreamingPublisher RateSubscriber Ping Pong Throughput ErrorStat LossStat DriverTool ExclusiveThroughput PingPong
         DESTINATION bin)
-endif()
+endif ()

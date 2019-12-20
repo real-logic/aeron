@@ -46,8 +46,6 @@ typedef struct aeron_send_channel_endpoint_stct
     }
     conductor_fields;
 
-    /* uint8_t conductor_fields_pad[(2 * AERON_CACHE_LINE_LENGTH) - sizeof(struct conductor_fields_stct)]; */
-
     bool has_sender_released;
     aeron_udp_channel_transport_t transport;
     aeron_counter_t channel_status;

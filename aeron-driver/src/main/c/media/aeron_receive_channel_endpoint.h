@@ -47,8 +47,6 @@ typedef struct aeron_receive_channel_endpoint_stct
     }
     conductor_fields;
 
-    /* uint8_t conductor_fields_pad[(2 * AERON_CACHE_LINE_LENGTH) - sizeof(struct conductor_fields_stct)]; */
-
     aeron_udp_channel_transport_t transport;
     aeron_data_packet_dispatcher_t dispatcher;
     aeron_int64_to_ptr_hash_map_t stream_id_to_refcnt_map;

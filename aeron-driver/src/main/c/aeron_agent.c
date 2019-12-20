@@ -97,7 +97,7 @@ void aeron_idle_strategy_noop_idle(void *state, int work_count)
 
 typedef struct aeron_idle_strategy_backoff_state_stct
 {
-    uint8_t pre_pad[AERON_CACHE_LINE_LENGTH * 2];
+    uint8_t pre_pad[AERON_CACHE_LINE_LENGTH];
     uint64_t max_spins;
     uint64_t max_yields;
     uint64_t min_park_period_ns;
@@ -106,7 +106,7 @@ typedef struct aeron_idle_strategy_backoff_state_stct
     uint64_t yields;
     uint64_t park_period_ns;
     uint8_t state;
-    uint8_t post_pad[AERON_CACHE_LINE_LENGTH * 2];
+    uint8_t post_pad[AERON_CACHE_LINE_LENGTH];
 }
 aeron_idle_strategy_backoff_state_t;
 
@@ -514,4 +514,3 @@ int aeron_agent_close(aeron_agent_runner_t *runner)
 
     return 0;
 }
-

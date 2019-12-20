@@ -23,20 +23,20 @@
 
 typedef struct aeron_mpsc_concurrent_array_queue_stct
 {
-    int8_t padding[(2 * AERON_CACHE_LINE_LENGTH)];
+    int8_t padding[AERON_CACHE_LINE_LENGTH];
     struct
     {
         uint64_t tail;
         uint64_t head_cache;
         uint64_t shared_head_cache;
-        int8_t padding[(2 * AERON_CACHE_LINE_LENGTH) - (3 * sizeof(uint64_t))];
+        int8_t padding[AERON_CACHE_LINE_LENGTH - (3 * sizeof(uint64_t))];
     }
     producer;
 
     struct
     {
         uint64_t head;
-        int8_t padding[(2 * AERON_CACHE_LINE_LENGTH) - (1 * sizeof(uint64_t))];
+        int8_t padding[AERON_CACHE_LINE_LENGTH - (1 * sizeof(uint64_t))];
     }
     consumer;
 

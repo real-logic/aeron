@@ -54,7 +54,7 @@ int aeron_driver_sender_init(
             (void **)&sender->recv_buffers.buffers[i],
             &offset,
             context->mtu_length,
-            AERON_CACHE_LINE_LENGTH * 2) < 0)
+            AERON_CACHE_LINE_LENGTH) < 0)
         {
             int errcode = errno;
 

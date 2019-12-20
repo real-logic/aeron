@@ -53,7 +53,7 @@ int aeron_driver_receiver_init(
             (void **)&receiver->recv_buffers.buffers[i],
             &offset,
             AERON_DRIVER_RECEIVER_MAX_UDP_PACKET_LENGTH,
-            AERON_CACHE_LINE_LENGTH * 2) < 0)
+            AERON_CACHE_LINE_LENGTH) < 0)
         {
             int errcode = errno;
 

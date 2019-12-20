@@ -17,6 +17,7 @@
 
 #if defined(AERON_COMPILER_MSVC)
 #include "aeron_windows.h"
+#include "util/aeron_error.h"
 
 #include <WinSock2.h>
 #include <Windows.h>
@@ -31,53 +32,23 @@
 #define __builtin_popcount __popcnt
 #define __builtin_popcountll __popcnt64
 
-static DWORD dwTlsIndex; // address of shared memory
-
-// DllMain() is the entry-point function for this DLL.
-
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
-    LPVOID lpvData;
-
     switch (fdwReason)
     {
         case DLL_PROCESS_ATTACH:
-            // Allocate a TLS index.
-            if ((dwTlsIndex = TlsAlloc()) == TLS_OUT_OF_INDEXES)
+            if (!aeron_error_dll_process_attach())
             {
                 return FALSE;
-            }
-
-            // No break: Initialize the index for first thread.
-
-        case DLL_THREAD_ATTACH:
-            // Initialize the TLS index for this thread.
-            lpvData = (LPVOID)LocalAlloc(LPTR, 256);
-            if (lpvData != NULL)
-            {
-                TlsSetValue(dwTlsIndex, lpvData);
             }
             break;
 
         case DLL_THREAD_DETACH:
-            // Release the allocated memory for this thread.
-            lpvData = TlsGetValue(dwTlsIndex);
-            if (lpvData != NULL)
-            {
-                LocalFree((HLOCAL)lpvData);
-            }
+            aeron_error_dll_thread_detach();
             break;
 
         case DLL_PROCESS_DETACH:
-            // Release the allocated memory for this thread.
-            lpvData = TlsGetValue(dwTlsIndex);
-            if (lpvData != NULL)
-            {
-                LocalFree((HLOCAL)lpvData);
-            }
-
-            // Release the TLS index.
-            TlsFree(dwTlsIndex);
+            aeron_error_dll_process_detach();
             break;
 
         default:

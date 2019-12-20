@@ -24,8 +24,18 @@
 #include "aeron_alloc.h"
 #include "command/aeron_control_protocol.h"
 
+#if defined(AERON_COMPILER_MSVC)
+#include <WinSock2.h>
+#include <windows.h>
+#endif
+
 static AERON_INIT_ONCE error_is_initialized = AERON_INIT_ONCE_VALUE;
+
+#if defined(AERON_COMPILER_MSVC)
+static pthread_key_t error_key = TLS_OUT_OF_INDEXES;
+#else
 static pthread_key_t error_key;
+#endif
 
 static void initialize_per_thread_error()
 {
@@ -36,9 +46,21 @@ static void initialize_per_thread_error()
     }
 }
 
+static void initialize_error()
+{
+#if defined(AERON_COMPILER_MSVC)
+    if (error_key != TLS_OUT_OF_INDEXES)
+    {
+        return;
+    }
+#endif
+
+    (void) aeron_thread_once(&error_is_initialized, initialize_per_thread_error);
+}
+
 int aeron_errcode()
 {
-    (void) aeron_thread_once(&error_is_initialized, initialize_per_thread_error);
+    initialize_error();
     aeron_per_thread_error_t *error_state = aeron_thread_get_specific(error_key);
     int result = 0;
 
@@ -52,7 +74,7 @@ int aeron_errcode()
 
 const char *aeron_errmsg()
 {
-    (void) aeron_thread_once(&error_is_initialized, initialize_per_thread_error);
+    initialize_error();
     aeron_per_thread_error_t *error_state = aeron_thread_get_specific(error_key);
     const char *result = "";
 
@@ -66,7 +88,7 @@ const char *aeron_errmsg()
 
 void aeron_set_err(int errcode, const char *format, ...)
 {
-    (void) aeron_thread_once(&error_is_initialized, initialize_per_thread_error);
+    initialize_error();
     aeron_per_thread_error_t *error_state = aeron_thread_get_specific(error_key);
 
     if (NULL == error_state)
@@ -130,9 +152,7 @@ const char *aeron_error_code_str(int errcode)
     }
 }
 
-#ifdef _MSC_VER
-#include <WinSock2.h>
-#include <windows.h>
+#if defined(AERON_COMPILER_MSVC)
 
 void aeron_set_windows_error()
 {
@@ -151,4 +171,45 @@ void aeron_set_windows_error()
     aeron_set_err(errorId, messageBuffer);
     free(messageBuffer);
 }
+
+bool aeron_error_dll_process_attach()
+{
+    if (error_key != TLS_OUT_OF_INDEXES)
+    {
+        return false;
+    }
+	
+    error_key = TlsAlloc();
+    return error_key != TLS_OUT_OF_INDEXES;
+}
+
+void aeron_error_dll_thread_detach()
+{
+    if (error_key == TLS_OUT_OF_INDEXES)
+    {
+        return;
+    }
+
+    aeron_per_thread_error_t* error_state = aeron_thread_get_specific(error_key);
+
+    if (NULL != error_state)
+    {
+        aeron_free(error_state);
+        aeron_thread_set_specific(error_key, NULL);
+    }
+}
+
+void aeron_error_dll_process_detach()
+{
+    if (error_key == TLS_OUT_OF_INDEXES)
+    {
+        return;
+    }
+	
+    aeron_error_dll_thread_detach();
+
+    aeron_thread_key_delete(error_key);
+    error_key = TLS_OUT_OF_INDEXES;
+}
+
 #endif

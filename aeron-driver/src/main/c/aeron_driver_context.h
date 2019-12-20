@@ -17,6 +17,7 @@
 #ifndef AERON_DRIVER_CONTEXT_H
 #define AERON_DRIVER_CONTEXT_H
 
+#include <concurrent/aeron_distinct_error_log.h>
 #include "aeron_driver_common.h"
 #include "aeronmd.h"
 #include "util/aeron_bitutil.h"
@@ -173,6 +174,7 @@ typedef struct aeron_driver_context_stct
     aeron_driver_receiver_proxy_t *receiver_proxy;
 
     aeron_counters_manager_t *counters_manager;
+    aeron_distinct_error_log_t *error_log;
 
     aeron_driver_conductor_to_driver_interceptor_func_t to_driver_interceptor_func;
     aeron_driver_conductor_to_client_interceptor_func_t to_client_interceptor_func;

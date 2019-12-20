@@ -821,6 +821,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
         goto error;
     }
 
+    context->counters_manager = &_driver->conductor.counters_manager;
     _driver->context->conductor_proxy = &_driver->conductor.conductor_proxy;
 
     if (aeron_driver_sender_init(

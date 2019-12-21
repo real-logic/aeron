@@ -15,7 +15,6 @@
  */
 package io.aeron.archive;
 
-import io.aeron.exceptions.AeronException;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.EpochClock;
@@ -36,7 +35,8 @@ import static io.aeron.archive.ArchiveTool.*;
 import static io.aeron.archive.Catalog.*;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
-import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
+import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
+import static io.aeron.protocol.DataHeaderFlyweight.*;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.junit.jupiter.api.Assertions.*;
@@ -46,38 +46,32 @@ import static org.mockito.Mockito.times;
 
 class ArchiveToolVerifyTests
 {
-    private static final int TERM_LENGTH = 16 * PAGE_SIZE;
-    private static final int SEGMENT_LENGTH = 2 * TERM_LENGTH;
+    private static final int TERM_LENGTH = 64 * 1024;
+    private static final int SEGMENT_LENGTH = 4 * TERM_LENGTH;
     private static final int MTU_LENGTH = 1024;
 
-    private long record0;
-    private long record1;
-    private long record2;
-    private long record3;
-    private long record4;
-    private long record5;
-    private long record6;
-    private long record7;
-    private long record8;
-    private long record9;
-    private long record10;
-    private long record11;
-    private long record12;
-    private long record13;
-    private long record14;
-    private long record15;
-    private long record16;
-    private long record17;
-    private long record18;
-    private long record19;
-    private long record20;
-    private long record21;
-    private long record22;
-    private long record23;
-    private long record24;
-    private long record25;
-    private long currentTimeMillis = 0;
+    private long invalidRecording0;
+    private long invalidRecording1;
+    private long invalidRecording2;
+    private long invalidRecording3;
+    private long invalidRecording4;
+    private long invalidRecording5;
+    private long invalidRecording6;
+    private long invalidRecording7;
+    private long invalidRecording8;
+    private long invalidRecording9;
+    private long invalidRecording10;
+    private long invalidRecording11;
+    private long invalidRecording12;
+    private long invalidRecording13;
+    private long validRecording0;
+    private long validRecording1;
+    private long validRecording2;
+    private long validRecording3;
+    private long validRecording4;
+    private long validRecording5;
 
+    private long currentTimeMillis = 0;
     private final EpochClock epochClock = () -> currentTimeMillis += 100;
     private final PrintStream out = mock(PrintStream.class);
     private File archiveDir;
@@ -90,236 +84,229 @@ class ArchiveToolVerifyTests
 
         try (Catalog catalog = new Catalog(archiveDir, null, 0, 128, epochClock))
         {
-            record0 = catalog.addNewRecording(NULL_POSITION, NULL_POSITION, NULL_TIMESTAMP, NULL_TIMESTAMP, 0,
-                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 1, 1, "emptyChannel", "emptyChannel?tag=X", "source1");
-            record1 = catalog.addNewRecording(11, NULL_POSITION, 10, NULL_TIMESTAMP, 0,
-                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 1, 1, "emptyChannel", "emptyChannel?tag=X", "source1");
-            record2 = catalog.addNewRecording(22, NULL_POSITION, 20, NULL_TIMESTAMP, 0,
-                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
-            record3 = catalog.addNewRecording(33, NULL_POSITION, 30, NULL_TIMESTAMP, 0,
-                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
-            record4 = catalog.addNewRecording(44, NULL_POSITION, 40, NULL_TIMESTAMP, 0,
-                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
-            record5 = catalog.addNewRecording(55, NULL_POSITION, 50, NULL_TIMESTAMP, 0,
-                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
-            record6 = catalog.addNewRecording(66, NULL_POSITION, 60, NULL_TIMESTAMP, 0,
-                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
-            record7 = catalog.addNewRecording(0, NULL_POSITION, 70, NULL_TIMESTAMP, 0,
-                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 3, 3, "validChannel", "validChannel?tag=Z", "source3");
-            record8 = catalog.addNewRecording(TERM_LENGTH + 1024, NULL_POSITION, 80, NULL_TIMESTAMP, 0,
-                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 3, 3, "validChannel", "validChannel?tag=Z", "source3");
-            record9 = catalog.addNewRecording(2048, NULL_POSITION, 90, NULL_TIMESTAMP, 5,
-                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 3, 3, "validChannel", "validChannel?tag=Z", "source3");
-            record10 = catalog.addNewRecording(0, NULL_POSITION, 100, NULL_TIMESTAMP, 0,
-                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 3, 3, "validChannel", "validChannel?tag=Z", "source3");
-            record11 = catalog.addNewRecording(0, NULL_POSITION, 110, NULL_TIMESTAMP, 0,
-                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 3, 3, "validChannel", "validChannel?tag=Z", "source3");
-            record12 = catalog.addNewRecording(0, 0, 120, 999999, 0,
-                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 3, 3, "validChannel", "validChannel?tag=Z", "source3");
-            record13 = catalog.addNewRecording(1024 * 1024, SEGMENT_LENGTH * 128 + PAGE_SIZE * 3, 130, 888888, 0,
-                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 3, 3, "validChannel", "validChannel?tag=Z", "source3");
-            record14 = catalog.addNewRecording(0, 14, 140, 140, 0,
-                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 3, 3, "validChannel", "validChannel?tag=Z", "source3");
-            record15 = catalog.addNewRecording(PAGE_SIZE * 5 + 1024, PAGE_SIZE * 5 + 1024, 150, 160, 0,
-                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 3, 3, "validChannel", "validChannel?tag=Z", "source3");
-            record16 = catalog.addNewRecording(0, NULL_POSITION, 160, NULL_TIMESTAMP, 0,
-                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
-            record17 = catalog.addNewRecording(212 * 1024 * 1024, NULL_POSITION, 170, NULL_TIMESTAMP, 13,
-                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
-            record18 = catalog.addNewRecording(8224, NULL_POSITION, 180, NULL_TIMESTAMP, 16,
-                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
-            record19 = catalog.addNewRecording(SEGMENT_LENGTH + 2048, NULL_POSITION, 190, NULL_TIMESTAMP, 0,
-                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
-            record20 = catalog.addNewRecording(0, SEGMENT_LENGTH * 10, 200, NULL_TIMESTAMP, 0,
-                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
-            record21 = catalog.addNewRecording(1000, 800, 210, NULL_TIMESTAMP, 0,
-                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
-            record22 = catalog.addNewRecording(SEGMENT_LENGTH * 5, SEGMENT_LENGTH * 20, 220, NULL_TIMESTAMP, 0,
-                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 1, 1, "emptyChannel", "emptyChannel?tag=X", "source1");
-            record23 = catalog
-                .addNewRecording(SEGMENT_LENGTH * 3 + 1024, SEGMENT_LENGTH * 3 + 2048, 230, NULL_TIMESTAMP, 0,
-                    SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 3, 3, "validChannel", "validChannel?tag=Z", "source3");
-            record24 = catalog.addNewRecording(-123, NULL_POSITION, 240, NULL_TIMESTAMP, 0,
-                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
-            record25 = catalog.addNewRecording(TERM_LENGTH + 1024, NULL_POSITION, 250, NULL_TIMESTAMP, 0,
-                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "invalidChannel", "invalidChannel?tag=Y", "source2");
+            invalidRecording0 = catalog.addNewRecording(NULL_POSITION, NULL_POSITION, 1, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 1, 1, "ch1", "ch1?tag=ERR", "src1");
+            invalidRecording1 = catalog.addNewRecording(FRAME_ALIGNMENT - 7, NULL_POSITION, 2, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 1, 1, "ch1", "ch1?tag=ERR", "src1");
+            invalidRecording2 = catalog.addNewRecording(1024, FRAME_ALIGNMENT * 2, 3, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 1, 1, "ch1", "ch1?tag=ERR", "src1");
+            invalidRecording3 = catalog.addNewRecording(0, FRAME_ALIGNMENT * 5 + 11, 4, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 1, 1, "ch1", "ch1?tag=ERR", "src1");
+            invalidRecording4 = catalog.addNewRecording(SEGMENT_LENGTH, NULL_POSITION, 5, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 1, 1, "ch1", "ch1?tag=ERR", "src1");
+            invalidRecording5 = catalog.addNewRecording(0, SEGMENT_LENGTH, 6, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 1, 1, "ch1", "ch1?tag=ERR", "src1");
+            invalidRecording6 = catalog.addNewRecording(0, NULL_POSITION, 7, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 1, 1, "ch1", "ch1?tag=ERR", "src1");
+            invalidRecording7 = catalog.addNewRecording(0, NULL_POSITION, 8, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 1, 1, "ch1", "ch1?tag=ERR", "src1");
+            invalidRecording8 = catalog.addNewRecording(0, NULL_POSITION, 9, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 1, 1, "ch1", "ch1?tag=ERR", "src1");
+            invalidRecording9 = catalog.addNewRecording(0, NULL_POSITION, 10, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 1, 1, "ch1", "ch1?tag=ERR", "src1");
+            invalidRecording10 = catalog.addNewRecording(128, NULL_POSITION, 11, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 1, 1, "ch1", "ch1?tag=ERR", "src1");
+            invalidRecording11 = catalog.addNewRecording(0, NULL_POSITION, 12, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 1, 1, "ch1", "ch1?tag=ERR", "src1");
+            invalidRecording12 = catalog.addNewRecording(0, NULL_POSITION, 13, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 1, 1, "ch1", "ch1?tag=ERR", "src1");
+            invalidRecording13 = catalog.addNewRecording(0, NULL_POSITION, 14, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 1, 1, "ch1", "ch1?tag=ERR", "src1");
+            validRecording0 = catalog.addNewRecording(0, NULL_POSITION, 15, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "ch2", "ch2?tag=OK", "src2");
+            validRecording1 = catalog.addNewRecording(1024, NULL_POSITION, 16, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "ch2", "ch2?tag=OK", "src2");
+            validRecording2 = catalog.addNewRecording(3 * TERM_LENGTH + 96, NULL_POSITION, 17, NULL_TIMESTAMP, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "ch2", "ch2?tag=OK", "src2");
+            validRecording3 = catalog
+                .addNewRecording(7 * TERM_LENGTH + 96, 7 * TERM_LENGTH + 128, 18, NULL_TIMESTAMP, 7,
+                    SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 999, 13, "ch2", "ch2?tag=OK", "src2");
+            validRecording4 = catalog
+                .addNewRecording(21 * TERM_LENGTH + (TERM_LENGTH - 64), 22 * TERM_LENGTH + 992, 19, 1, -25,
+                    SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, -999, 7, "ch2", "ch2?tag=OK", "src2");
+            validRecording5 = catalog.addNewRecording(0, 64 + PAGE_SIZE, 20, 777, 0,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, -1, 20, "ch2", "ch2?tag=OK", "src2");
         }
 
         writeToSegmentFile(
-            createFile(record1 + "-0.dat"),
+            createFile(segmentFileName(invalidRecording4, 0)),
+            (byteBuffer, dataHeaderFlyweight, fileChannel) -> fileChannel.write(byteBuffer));
+
+        writeToSegmentFile(
+            createFile(segmentFileName(invalidRecording5, 0)),
+            (byteBuffer, dataHeaderFlyweight, fileChannel) -> fileChannel.write(byteBuffer));
+
+        createFile(invalidRecording6 + "-" + RECORDING_SEGMENT_SUFFIX);
+
+        createFile(invalidRecording7 + "-this-will-not-parse" + RECORDING_SEGMENT_SUFFIX);
+
+        createFile(segmentFileName(invalidRecording8, -1024));
+
+        createDirectory(segmentFileName(invalidRecording9, 0));
+
+        writeToSegmentFile(
+            createFile(segmentFileName(invalidRecording10, 0)),
+            (byteBuffer, dataHeaderFlyweight, fileChannel) -> fileChannel.write(byteBuffer));
+
+        writeToSegmentFile(
+            createFile(segmentFileName(invalidRecording11, 0)),
             (byteBuffer, dataHeaderFlyweight, fileChannel) ->
             {
+                dataHeaderFlyweight.headerType(HDR_TYPE_DATA);
+                dataHeaderFlyweight.frameLength(64);
+                dataHeaderFlyweight.termId(-1);
+                fileChannel.write(byteBuffer);
+            });
+
+        writeToSegmentFile(
+            createFile(segmentFileName(invalidRecording12, 0)),
+            (byteBuffer, dataHeaderFlyweight, fileChannel) ->
+            {
+                dataHeaderFlyweight.headerType(HDR_TYPE_DATA);
+                dataHeaderFlyweight.frameLength(64);
+                dataHeaderFlyweight.termOffset(-1);
+                fileChannel.write(byteBuffer);
+            });
+
+        writeToSegmentFile(
+            createFile(segmentFileName(invalidRecording13, 0)),
+            (byteBuffer, dataHeaderFlyweight, fileChannel) ->
+            {
+                dataHeaderFlyweight.headerType(HDR_TYPE_DATA);
+                dataHeaderFlyweight.frameLength(64);
+                dataHeaderFlyweight.streamId(-1);
+                fileChannel.write(byteBuffer);
+            });
+
+        writeToSegmentFile(
+            createFile(segmentFileName(validRecording0, 0)),
+            (byteBuffer, dataHeaderFlyweight, fileChannel) ->
+            {
+                dataHeaderFlyweight.streamId(2);
+                dataHeaderFlyweight.headerType(HDR_TYPE_DATA);
+                for (int i = 0, termOffset = 0; i < TERM_LENGTH / MTU_LENGTH - 1; i++, termOffset += MTU_LENGTH)
+                {
+                    byteBuffer.clear();
+                    dataHeaderFlyweight.frameLength(MTU_LENGTH);
+                    dataHeaderFlyweight.termOffset(termOffset);
+                    fileChannel.write(byteBuffer, termOffset);
+                }
+                byteBuffer.clear();
+                dataHeaderFlyweight.frameLength(256);
+                dataHeaderFlyweight.termOffset(TERM_LENGTH - MTU_LENGTH);
+                fileChannel.write(byteBuffer, TERM_LENGTH - MTU_LENGTH);
+                byteBuffer.clear();
+                dataHeaderFlyweight.headerType(HDR_TYPE_PAD);
+                dataHeaderFlyweight.frameLength(MTU_LENGTH - 256);
+                dataHeaderFlyweight.termOffset(TERM_LENGTH - MTU_LENGTH + 256);
+                fileChannel.write(byteBuffer, TERM_LENGTH - MTU_LENGTH + 256);
+                byteBuffer.clear();
+                dataHeaderFlyweight.headerType(HDR_TYPE_DATA);
+                dataHeaderFlyweight.frameLength(64);
+                dataHeaderFlyweight.termOffset(0);
+                dataHeaderFlyweight.termId(1);
+                fileChannel.write(byteBuffer, TERM_LENGTH);
+            });
+
+        writeToSegmentFile(
+            createFile(segmentFileName(validRecording2, 3 * TERM_LENGTH)),
+            (byteBuffer, dataHeaderFlyweight, fileChannel) ->
+            {
+                dataHeaderFlyweight.headerType(HDR_TYPE_DATA);
+                dataHeaderFlyweight.frameLength(0);
+                fileChannel.write(byteBuffer, 96);
+            });
+
+        writeToSegmentFile(
+            createFile(segmentFileName(validRecording3, 7 * TERM_LENGTH)),
+            (byteBuffer, dataHeaderFlyweight, fileChannel) ->
+            {
+                dataHeaderFlyweight.headerType(HDR_TYPE_DATA);
+                dataHeaderFlyweight.frameLength(1024);
+                dataHeaderFlyweight.streamId(13);
+                dataHeaderFlyweight.termId(14);
+                dataHeaderFlyweight.termOffset(96);
+                fileChannel.write(byteBuffer, 96);
+                byteBuffer.clear();
+                dataHeaderFlyweight.frameLength(TERM_LENGTH);
+                dataHeaderFlyweight.termOffset(1120);
+                fileChannel.write(byteBuffer, 1120);
+                byteBuffer.clear();
                 dataHeaderFlyweight.frameLength(128);
+                dataHeaderFlyweight.termId(15);
+                dataHeaderFlyweight.termOffset(1120);
+                fileChannel.write(byteBuffer, 1120 + TERM_LENGTH);
+                byteBuffer.clear();
+                dataHeaderFlyweight.frameLength(256);
+                dataHeaderFlyweight.termId(15);
+                dataHeaderFlyweight.termOffset(1248);
+                fileChannel.write(byteBuffer, 1248 + TERM_LENGTH);
+                byteBuffer.clear();
+                dataHeaderFlyweight.frameLength(SEGMENT_LENGTH - (1504 + TERM_LENGTH));
+                dataHeaderFlyweight.termId(15);
+                dataHeaderFlyweight.termOffset(1504);
+                fileChannel.write(byteBuffer, 1504 + TERM_LENGTH);
+            });
+
+        writeToSegmentFile(
+            createFile(segmentFileName(validRecording3, 11 * TERM_LENGTH)),
+            (byteBuffer, dataHeaderFlyweight, fileChannel) ->
+            {
+                dataHeaderFlyweight.headerType(HDR_TYPE_DATA);
+                dataHeaderFlyweight.frameLength(MTU_LENGTH);
+                dataHeaderFlyweight.streamId(13);
+                dataHeaderFlyweight.termId(18);
+                dataHeaderFlyweight.termOffset(0);
+                fileChannel.write(byteBuffer);
+                byteBuffer.clear();
+                dataHeaderFlyweight.frameLength(128);
+                dataHeaderFlyweight.termId(18);
+                dataHeaderFlyweight.termOffset(MTU_LENGTH);
+                fileChannel.write(byteBuffer, MTU_LENGTH);
+            });
+
+        writeToSegmentFile(
+            createFile(segmentFileName(validRecording4, 0)),
+            (byteBuffer, dataHeaderFlyweight, fileChannel) ->
+            {
+                dataHeaderFlyweight.headerType(HDR_TYPE_DATA);
+                dataHeaderFlyweight.frameLength(64);
                 dataHeaderFlyweight.streamId(Integer.MAX_VALUE);
                 fileChannel.write(byteBuffer);
             });
 
-        createFile(record2 + "-" + RECORDING_SEGMENT_SUFFIX); // ERR: no segment position
-        createFile(record3 + "-" + "invalid_position" + RECORDING_SEGMENT_SUFFIX); // ERR: invalid position
-        createFile(segmentFileName(record4, -111)); // ERR: negative position
-        createFile(segmentFileName(record5, 0)); // ERR: empty file
-        createDirectory(segmentFileName(record6, 0)); // ERR: directory
-
         writeToSegmentFile(
-            createFile(segmentFileName(record7, 0)),
-            (byteBuffer, dataHeaderFlyweight, fileChannel) -> fileChannel.write(byteBuffer));
-
-        writeToSegmentFile(
-            createFile(segmentFileName(record8, 0)),
+            createFile(segmentFileName(validRecording4, 21 * TERM_LENGTH)),
             (byteBuffer, dataHeaderFlyweight, fileChannel) ->
             {
-                dataHeaderFlyweight.frameLength(TERM_LENGTH + 1024);
-                dataHeaderFlyweight.streamId(-1); // broken frame will not be checked due to startPosition
-                fileChannel.write(byteBuffer);
-                byteBuffer.clear();
-                dataHeaderFlyweight.frameLength(100);
-                dataHeaderFlyweight.streamId(3);
-                fileChannel.write(byteBuffer, TERM_LENGTH + 1024);
-            });
-
-        writeToSegmentFile(
-            createFile(segmentFileName(record9, SEGMENT_LENGTH)),
-            (byteBuffer, dataHeaderFlyweight, fileChannel) ->
-            {
-                dataHeaderFlyweight.frameLength(TERM_LENGTH + 100);
-                dataHeaderFlyweight.termId(7);
-                dataHeaderFlyweight.streamId(3);
-                fileChannel.write(byteBuffer);
-                byteBuffer.clear();
-                dataHeaderFlyweight.frameLength(256);
-                dataHeaderFlyweight.termId(8);
-                dataHeaderFlyweight.termOffset(128);
-                dataHeaderFlyweight.streamId(3);
-                fileChannel.write(byteBuffer, TERM_LENGTH + 128);
-            });
-
-        writeToSegmentFile(
-            createFile(segmentFileName(record10, 0)),
-            (byteBuffer, dataHeaderFlyweight, fileChannel) ->
-            {
-                dataHeaderFlyweight.frameLength(PAGE_SIZE - 64);
-                dataHeaderFlyweight.streamId(3);
-                fileChannel.write(byteBuffer);
-                byteBuffer.clear();
-                dataHeaderFlyweight.frameLength(128);
-                dataHeaderFlyweight.termOffset(PAGE_SIZE - 64);
-                dataHeaderFlyweight.streamId(3);
-                fileChannel.write(byteBuffer, PAGE_SIZE - 64);
-            });
-
-        writeToSegmentFile(
-            createFile(segmentFileName(record11, 0)),
-            (byteBuffer, dataHeaderFlyweight, fileChannel) ->
-            {
-                dataHeaderFlyweight.frameLength(PAGE_SIZE - 64);
-                dataHeaderFlyweight.streamId(3);
-                fileChannel.write(byteBuffer);
-                byteBuffer.clear();
-                dataHeaderFlyweight.frameLength(256);
-                dataHeaderFlyweight.termOffset(PAGE_SIZE - 64);
-                dataHeaderFlyweight.streamId(3);
-                fileChannel.write(byteBuffer, PAGE_SIZE - 64);
-            });
-
-        writeToSegmentFile(
-            createFile(segmentFileName(record12, 0)),
-            (byteBuffer, dataHeaderFlyweight, fileChannel) -> fileChannel.write(byteBuffer));
-
-        writeToSegmentFile(createFile(segmentFileName(record13, SEGMENT_LENGTH * 128)),
-            (byteBuffer, dataHeaderFlyweight, fileChannel) ->
-            {
-                dataHeaderFlyweight.frameLength(PAGE_SIZE * 3);
-                dataHeaderFlyweight.termId(256);
-                dataHeaderFlyweight.streamId(3);
-                fileChannel.write(byteBuffer);
-            });
-
-        writeToSegmentFile(
-            createFile(segmentFileName(record14, 0)),
-            (byteBuffer, dataHeaderFlyweight, fileChannel) -> fileChannel.write(byteBuffer));
-
-        writeToSegmentFile(
-            createFile(segmentFileName(record15, 0)),
-            (byteBuffer, dataHeaderFlyweight, fileChannel) ->
-            {
-                dataHeaderFlyweight.frameLength(111);
-                dataHeaderFlyweight.streamId(-1);
-                fileChannel.write(byteBuffer);
-            });
-
-        writeToSegmentFile(
-            createFile(segmentFileName(record15, SEGMENT_LENGTH * 2)),
-            (byteBuffer, dataHeaderFlyweight, fileChannel) ->
-            {
-                dataHeaderFlyweight.frameLength(1000);
-                dataHeaderFlyweight.termId(4);
-                dataHeaderFlyweight.streamId(3);
-                fileChannel.write(byteBuffer);
-            });
-
-        writeToSegmentFile(
-            createFile(segmentFileName(record16, 0)),
-            (byteBuffer, dataHeaderFlyweight, fileChannel) ->
-            {
+                dataHeaderFlyweight.headerType(HDR_TYPE_PAD);
                 dataHeaderFlyweight.frameLength(64);
-                dataHeaderFlyweight.streamId(101010);
-                fileChannel.write(byteBuffer);
-            });
-
-        writeToSegmentFile(
-            createFile(segmentFileName(record17, 0)),
-            (byteBuffer, dataHeaderFlyweight, fileChannel) ->
-            {
-                dataHeaderFlyweight.frameLength(64);
-                dataHeaderFlyweight.termOffset(101010);
-                dataHeaderFlyweight.termId(13);
-                dataHeaderFlyweight.streamId(2);
-                fileChannel.write(byteBuffer);
-            });
-
-        writeToSegmentFile(
-            createFile(segmentFileName(record18, SEGMENT_LENGTH * 5)),
-            (byteBuffer, dataHeaderFlyweight, fileChannel) ->
-            {
-                dataHeaderFlyweight.frameLength(64);
+                dataHeaderFlyweight.streamId(7);
+                dataHeaderFlyweight.termId(-4);
+                dataHeaderFlyweight.termOffset(TERM_LENGTH - 64);
+                fileChannel.write(byteBuffer, TERM_LENGTH - 64);
+                byteBuffer.clear();
+                dataHeaderFlyweight.frameLength(992);
+                dataHeaderFlyweight.termId(-3);
                 dataHeaderFlyweight.termOffset(0);
-                dataHeaderFlyweight.termId(101010);
-                dataHeaderFlyweight.streamId(2);
+                fileChannel.write(byteBuffer, TERM_LENGTH);
+            });
+
+        writeToSegmentFile(
+            createFile(segmentFileName(validRecording5, 0)),
+            (byteBuffer, dataHeaderFlyweight, fileChannel) ->
+            {
+                dataHeaderFlyweight.headerType(HDR_TYPE_DATA);
+                dataHeaderFlyweight.frameLength(64);
+                dataHeaderFlyweight.streamId(20);
                 fileChannel.write(byteBuffer);
-            });
-
-        writeToSegmentFile(
-            createFile(segmentFileName(record19, 0)),
-            (byteBuffer, dataHeaderFlyweight, fileChannel) -> fileChannel.write(byteBuffer));
-
-        writeToSegmentFile(
-            createFile(segmentFileName(record20, SEGMENT_LENGTH * 8)),
-            (byteBuffer, dataHeaderFlyweight, fileChannel) -> fileChannel.write(byteBuffer));
-
-        writeToSegmentFile(
-            createFile(segmentFileName(record23, SEGMENT_LENGTH * 3)),
-            (byteBuffer, dataHeaderFlyweight, fileChannel) ->
-            {
-                dataHeaderFlyweight.frameLength(PAGE_SIZE);
-                dataHeaderFlyweight.termId(6);
-                dataHeaderFlyweight.termOffset(0);
-                dataHeaderFlyweight.streamId(3);
-                fileChannel.write(byteBuffer, 1024);
-                byteBuffer.clear();
-                dataHeaderFlyweight.frameLength(256);
-                dataHeaderFlyweight.termOffset(1024 + PAGE_SIZE);
-                fileChannel.write(byteBuffer, 1024 + PAGE_SIZE);
-            });
-
-        writeToSegmentFile(
-            createFile(segmentFileName(record25, 0)),
-            (byteBuffer, dataHeaderFlyweight, fileChannel) ->
-            {
-                dataHeaderFlyweight.frameLength(100);
-                dataHeaderFlyweight.termOffset(-1);
-                dataHeaderFlyweight.termId(-1);
-                dataHeaderFlyweight.streamId(-1);
-                fileChannel.write(byteBuffer, TERM_LENGTH + 1024);
+                for (int i = 0; i < PAGE_SIZE / MTU_LENGTH; i++)
+                {
+                    byteBuffer.clear();
+                    dataHeaderFlyweight.frameLength(MTU_LENGTH);
+                    dataHeaderFlyweight.termOffset(64 + i * MTU_LENGTH);
+                    fileChannel.write(byteBuffer, dataHeaderFlyweight.termOffset());
+                }
             });
     }
 
@@ -330,415 +317,380 @@ class ArchiveToolVerifyTests
     }
 
     @Test
-    void verifyCheckLastFile()
+    void verifyRecordingShouldMarkRecordingAsInvalidIfStartPositionIsNegative()
     {
-        verify(out, archiveDir, false, epochClock, (file) -> file.getName().startsWith(Long.toString(record10)));
+        verifyRecording(out, archiveDir, invalidRecording0, false, epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, record0, INVALID, NULL_POSITION, NULL_POSITION, NULL_TIMESTAMP, NULL_TIMESTAMP, 0,
-                1, "emptyChannel", "source1");
-            assertRecording(catalog, record1, VALID, 11, 11, 10, 100, 0,
-                1, "emptyChannel", "source1");
-            assertRecording(catalog, record2, INVALID, 22, NULL_POSITION, 20, NULL_TIMESTAMP, 0,
-                2, "invalidChannel", "source2");
-            assertRecording(catalog, record3, INVALID, 33, NULL_POSITION, 30, NULL_TIMESTAMP, 0,
-                2, "invalidChannel", "source2");
-            assertRecording(catalog, record4, INVALID, 44, NULL_POSITION, 40, NULL_TIMESTAMP, 0,
-                2, "invalidChannel", "source2");
-            assertRecording(catalog, record5, INVALID, 55, NULL_POSITION, 50, NULL_TIMESTAMP, 0,
-                2, "invalidChannel", "source2");
-            assertRecording(catalog, record6, INVALID, 66, NULL_POSITION, 60, NULL_TIMESTAMP, 0,
-                2, "invalidChannel", "source2");
-            assertRecording(catalog, record7, VALID, 0, 0, 70, 200, 0,
-                3, "validChannel", "source3");
-            assertRecording(catalog, record8, VALID, TERM_LENGTH + 1024, TERM_LENGTH + 1024 + 128, 80, 300, 0,
-                3, "validChannel", "source3");
-            assertRecording(catalog, record9, VALID, 2048, SEGMENT_LENGTH + TERM_LENGTH + 384, 90, 400, 5,
-                3, "validChannel", "source3");
-            assertRecording(catalog, record10, VALID, 0, PAGE_SIZE - 64, 100, 500, 0,
-                3, "validChannel", "source3");
-            assertRecording(catalog, record11, VALID, 0, PAGE_SIZE + 192, 110, 600, 0,
-                3, "validChannel", "source3");
-            assertRecording(catalog, record12, VALID, 0, 0, 120, 999999, 0,
-                3, "validChannel", "source3");
-            assertRecording(catalog, record13, VALID, 1024 * 1024, SEGMENT_LENGTH * 128 + PAGE_SIZE * 3, 130, 888888, 0,
-                3, "validChannel", "source3");
-            assertRecording(catalog, record14, VALID, 0, 0, 140, 700, 0,
-                3, "validChannel", "source3");
-            assertRecording(catalog, record15, VALID, PAGE_SIZE * 5 + 1024, SEGMENT_LENGTH * 2 + 1024, 150, 800, 0,
-                3, "validChannel", "source3");
-            assertRecording(catalog, record16, INVALID, 0, NULL_POSITION, 160, NULL_TIMESTAMP, 0,
-                2, "invalidChannel", "source2");
-            assertRecording(catalog, record17, INVALID, 212 * 1024 * 1024, NULL_POSITION, 170, NULL_TIMESTAMP, 13,
-                2, "invalidChannel", "source2");
-            assertRecording(catalog, record18, INVALID, 8224, NULL_POSITION, 180, NULL_TIMESTAMP, 16,
-                2, "invalidChannel", "source2");
-            assertRecording(catalog, record19, INVALID, SEGMENT_LENGTH + 2048, NULL_POSITION, 190, NULL_TIMESTAMP, 0,
-                2, "invalidChannel", "source2");
-            assertRecording(catalog, record20, INVALID, 0, SEGMENT_LENGTH * 10, 200, NULL_TIMESTAMP, 0,
-                2, "invalidChannel", "source2");
-            assertRecording(catalog, record21, INVALID, 1000, 800, 210, NULL_TIMESTAMP, 0,
-                2, "invalidChannel", "source2");
-            assertRecording(catalog, record22, VALID, SEGMENT_LENGTH * 5, SEGMENT_LENGTH * 5, 220, 900, 0,
-                1, "emptyChannel", "source1");
-            assertRecording(catalog, record23, VALID, SEGMENT_LENGTH * 3 + 1024,
-                SEGMENT_LENGTH * 3 + 1024 + PAGE_SIZE + 256, 230, 1000, 0, 3, "validChannel", "source3");
-            assertRecording(catalog, record24, INVALID, -123, NULL_POSITION, 240, NULL_TIMESTAMP, 0,
-                2, "invalidChannel", "source2");
-            assertRecording(catalog, record25, INVALID, TERM_LENGTH + 1024, NULL_POSITION, 250, NULL_TIMESTAMP, 0,
-                2, "invalidChannel", "source2");
-        }
-
-        Mockito.verify(out, times(26)).println(any(String.class));
-    }
-
-    @Test
-    void verifyCheckAllFiles()
-    {
-        verify(out, archiveDir, true, epochClock, (file) -> false);
-
-        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
-        {
-            assertRecording(catalog, record0, INVALID, NULL_POSITION, NULL_POSITION, NULL_TIMESTAMP, NULL_TIMESTAMP, 0,
-                1, "emptyChannel", "source1");
-            assertRecording(catalog, record1, VALID, 11, 11, 10, 100, 0,
-                1, "emptyChannel", "source1");
-            assertRecording(catalog, record2, INVALID, 22, NULL_POSITION, 20, NULL_TIMESTAMP, 0,
-                2, "invalidChannel", "source2");
-            assertRecording(catalog, record3, INVALID, 33, NULL_POSITION, 30, NULL_TIMESTAMP, 0,
-                2, "invalidChannel", "source2");
-            assertRecording(catalog, record4, INVALID, 44, NULL_POSITION, 40, NULL_TIMESTAMP, 0,
-                2, "invalidChannel", "source2");
-            assertRecording(catalog, record5, INVALID, 55, NULL_POSITION, 50, NULL_TIMESTAMP, 0,
-                2, "invalidChannel", "source2");
-            assertRecording(catalog, record6, INVALID, 66, NULL_POSITION, 60, NULL_TIMESTAMP, 0,
-                2, "invalidChannel", "source2");
-            assertRecording(catalog, record7, VALID, 0, 0, 70, 200, 0,
-                3, "validChannel", "source3");
-            assertRecording(catalog, record8, VALID, TERM_LENGTH + 1024, TERM_LENGTH + 1024 + 128, 80, 300, 0,
-                3, "validChannel", "source3");
-            assertRecording(catalog, record9, VALID, 2048, SEGMENT_LENGTH + TERM_LENGTH + 384, 90, 400, 5,
-                3, "validChannel", "source3");
-            assertRecording(catalog, record10, VALID, 0, PAGE_SIZE + 64, 100, 500, 0,
-                3, "validChannel", "source3");
-            assertRecording(catalog, record11, VALID, 0, PAGE_SIZE + 192, 110, 600, 0,
-                3, "validChannel", "source3");
-            assertRecording(catalog, record12, VALID, 0, 0, 120, 999999, 0,
-                3, "validChannel", "source3");
-            assertRecording(catalog, record13, VALID, 1024 * 1024, SEGMENT_LENGTH * 128 + PAGE_SIZE * 3, 130, 888888, 0,
-                3, "validChannel", "source3");
-            assertRecording(catalog, record14, VALID, 0, 0, 140, 700, 0,
-                3, "validChannel", "source3");
-            assertRecording(catalog, record15, INVALID, PAGE_SIZE * 5 + 1024, PAGE_SIZE * 5 + 1024, 150, 160, 0,
-                3, "validChannel", "source3");
-            assertRecording(catalog, record16, INVALID, 0, NULL_POSITION, 160, NULL_TIMESTAMP, 0,
-                2, "invalidChannel", "source2");
-            assertRecording(catalog, record17, INVALID, 212 * 1024 * 1024, NULL_POSITION, 170, NULL_TIMESTAMP, 13,
-                2, "invalidChannel", "source2");
-            assertRecording(catalog, record18, INVALID, 8224, NULL_POSITION, 180, NULL_TIMESTAMP, 16,
-                2, "invalidChannel", "source2");
-            assertRecording(catalog, record19, INVALID, SEGMENT_LENGTH + 2048, NULL_POSITION, 190, NULL_TIMESTAMP, 0,
-                2, "invalidChannel", "source2");
-            assertRecording(catalog, record20, INVALID, 0, SEGMENT_LENGTH * 10, 200, NULL_TIMESTAMP, 0,
-                2, "invalidChannel", "source2");
-            assertRecording(catalog, record21, INVALID, 1000, 800, 210, NULL_TIMESTAMP, 0,
-                2, "invalidChannel", "source2");
-            assertRecording(catalog, record22, VALID, SEGMENT_LENGTH * 5, SEGMENT_LENGTH * 5, 220, 800, 0,
-                1, "emptyChannel", "source1");
-            assertRecording(catalog, record23, VALID, SEGMENT_LENGTH * 3 + 1024,
-                SEGMENT_LENGTH * 3 + 1024 + PAGE_SIZE + 256, 230, 900, 0, 3, "validChannel", "source3");
-            assertRecording(catalog, record24, INVALID, -123, NULL_POSITION, 240, NULL_TIMESTAMP, 0,
-                2, "invalidChannel", "source2");
-            assertRecording(catalog, record25, INVALID, TERM_LENGTH + 1024, NULL_POSITION, 250, NULL_TIMESTAMP, 0,
-                2, "invalidChannel", "source2");
-        }
-
-        Mockito.verify(out, times(26)).println(any(String.class));
-    }
-
-    @Test
-    void verifyRecordingThrowsAeronExceptionIfNoRecordingFoundWithGivenId()
-    {
-        assertThrows(
-            AeronException.class,
-            () -> verifyRecording(out, archiveDir, Long.MIN_VALUE, false, epochClock, (file) -> false));
-    }
-
-    @Test
-    void verifyRecordingEmptyRecording()
-    {
-        verifyRecording(out, archiveDir, record1, false, epochClock, (file) -> false);
-
-        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
-        {
-            assertRecording(catalog, record1, VALID, 11, 11, 10, 100, 0,
-                1, "emptyChannel", "source1");
+            assertRecording(catalog, invalidRecording0, INVALID, NULL_POSITION, NULL_POSITION, 1, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
         }
     }
 
     @Test
-    void verifyRecordingInvalidSegmentFileNameNoPositionInfo()
+    void verifyRecordingShouldMarkRecordingAsInvalidIfStartPositionIsNotFrameAligned()
     {
-        verifyRecording(out, archiveDir, record2, false, epochClock, (file) -> false);
+        verifyRecording(out, archiveDir, invalidRecording1, false, epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, record2, INVALID, 22, NULL_POSITION, 20, NULL_TIMESTAMP, 0,
-                2, "invalidChannel", "source2");
+            assertRecording(catalog, invalidRecording1, INVALID, FRAME_ALIGNMENT - 7, NULL_POSITION, 2, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
         }
     }
 
     @Test
-    void verifyRecordingInvalidSegmentFileNameInvalidPosition()
+    void verifyRecordingShouldMarkRecordingAsInvalidIfStopPositionIsBeforeStartPosition()
     {
-        verifyRecording(out, archiveDir, record3, false, epochClock, (file) -> false);
+        verifyRecording(out, archiveDir, invalidRecording2, false, epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, record3, INVALID, 33, NULL_POSITION, 30, NULL_TIMESTAMP, 0,
-                2, "invalidChannel", "source2");
+            assertRecording(catalog, invalidRecording2, INVALID, 1024, FRAME_ALIGNMENT * 2, 3, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
         }
     }
 
     @Test
-    void verifyRecordingInvalidSegmentFileNameNegativePosition()
+    void verifyRecordingShouldMarkRecordingAsInvalidIfStopPositionIsNotFrameAligned()
     {
-        verifyRecording(out, archiveDir, record4, false, epochClock, (file) -> false);
+        verifyRecording(out, archiveDir, invalidRecording3, false, epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, record4, INVALID, 44, NULL_POSITION, 40, NULL_TIMESTAMP, 0,
-                2, "invalidChannel", "source2");
+            assertRecording(catalog, invalidRecording3, INVALID, 0, FRAME_ALIGNMENT * 5 + 11, 4, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
         }
     }
 
     @Test
-    void verifyRecordingInvalidSegmentFileEmptyFile()
+    void verifyRecordingShouldMarkRecordingAsInvalidIfStartPositionIsOutOfRangeForTheMaxSegmentFile()
     {
-        verifyRecording(out, archiveDir, record5, false, epochClock, (file) -> false);
+        verifyRecording(out, archiveDir, invalidRecording4, false, epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, record5, INVALID, 55, NULL_POSITION, 50, NULL_TIMESTAMP, 0,
-                2, "invalidChannel", "source2");
+            assertRecording(catalog, invalidRecording4, INVALID, SEGMENT_LENGTH, NULL_POSITION, 5, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
         }
     }
 
     @Test
-    void verifyRecordingInvalidSegmentFileDirectory()
+    void verifyRecordingShouldMarkRecordingAsInvalidIfStopPositionIsOutOfRangeForTheMaxSegmentFile()
     {
-        verifyRecording(out, archiveDir, record6, false, epochClock, (file) -> false);
+        verifyRecording(out, archiveDir, invalidRecording5, false, epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, record6, INVALID, 66, NULL_POSITION, 60, NULL_TIMESTAMP, 0,
-                2, "invalidChannel", "source2");
+            assertRecording(catalog, invalidRecording5, INVALID, 0, SEGMENT_LENGTH, 6, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
         }
     }
 
     @Test
-    void verifyRecordingInvalidSegmentFileWrongStreamId()
+    void verifyRecordingShouldMarkRecordingAsInvalidIfSegmentFileNameContainsNoPositionInformation()
     {
-        verifyRecording(out, archiveDir, record16, false, epochClock, (file) -> false);
+        verifyRecording(out, archiveDir, invalidRecording6, false, epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, record16, INVALID, 0, NULL_POSITION, 160, NULL_TIMESTAMP, 0,
-                2, "invalidChannel", "source2");
+            assertRecording(catalog, invalidRecording6, INVALID, 0, NULL_POSITION, 7, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
         }
     }
 
     @Test
-    void verifyRecordingInvalidSegmentFileWrongTermOffset()
+    void verifyRecordingShouldMarkRecordingAsInvalidIfSegmentFileNameContainsNonIntegerPositionInformation()
     {
-        verifyRecording(out, archiveDir, record17, false, epochClock, (file) -> false);
+        verifyRecording(out, archiveDir, invalidRecording7, false, epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, record17, INVALID, 212 * 1024 * 1024, NULL_POSITION, 170, NULL_TIMESTAMP, 13,
-                2, "invalidChannel", "source2");
+            assertRecording(catalog, invalidRecording7, INVALID, 0, NULL_POSITION, 8, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
         }
     }
 
     @Test
-    void verifyRecordingInvalidSegmentFileWrongTermId()
+    void verifyRecordingShouldMarkRecordingAsInvalidIfSegmentFileNameContainsNegativePositionInformation()
     {
-        verifyRecording(out, archiveDir, record18, false, epochClock, (file) -> false);
+        verifyRecording(out, archiveDir, invalidRecording8, false, epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, record18, INVALID, 8224, NULL_POSITION, 180, NULL_TIMESTAMP, 16,
-                2, "invalidChannel", "source2");
+            assertRecording(catalog, invalidRecording8, INVALID, 0, NULL_POSITION, 9, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
         }
     }
 
     @Test
-    void verifyRecordingValidateAllFiles()
+    void verifyRecordingShouldMarkRecordingAsInvalidIfCannotReadFromSegmentFile()
     {
-        verifyRecording(out, archiveDir, record15, true, epochClock, (file) -> false);
+        verifyRecording(out, archiveDir, invalidRecording9, false, epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, record15, INVALID, PAGE_SIZE * 5 + 1024, PAGE_SIZE * 5 + 1024, 150, 160, 0,
-                3, "validChannel", "source3");
+            assertRecording(catalog, invalidRecording9, INVALID, 0, NULL_POSITION, 10, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
         }
     }
 
     @Test
-    void verifyRecordingValidateLastFiles()
+    void verifyRecordingShouldMarkRecordingAsInvalidIfCannotReadFrameFromSegmentFileAtGivenOffset()
     {
-        verifyRecording(out, archiveDir, record15, false, epochClock, (file) -> false);
+        verifyRecording(out, archiveDir, invalidRecording10, false, epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, record15, VALID, PAGE_SIZE * 5 + 1024, SEGMENT_LENGTH * 2 + 1024, 150, 100, 0,
-                3, "validChannel", "source3");
+            assertRecording(catalog, invalidRecording10, INVALID, 128, NULL_POSITION, 11, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
         }
     }
 
     @Test
-    void verifyRecordingTruncateFileOnPageStraddle()
+    void verifyRecordingShouldMarkRecordingAsInvalidIfSegmentFileContainsAFrameWithWrongTermId()
     {
-        verifyRecording(out, archiveDir, record10, false, epochClock, (file) -> true);
+        verifyRecording(out, archiveDir, invalidRecording11, false, epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, record10, VALID, 0, PAGE_SIZE - 64, 100, 100, 0,
-                3, "validChannel", "source3");
+            assertRecording(catalog, invalidRecording11, INVALID, 0, NULL_POSITION, 12, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
         }
     }
 
     @Test
-    void verifyRecordingDoNotTruncateFileOnPageStraddle()
+    void verifyRecordingShouldMarkRecordingAsInvalidIfSegmentFileContainsAFrameWithWrongTermOffset()
     {
-        verifyRecording(out, archiveDir, record10, false, epochClock, (file) -> false);
+        verifyRecording(out, archiveDir, invalidRecording12, false, epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, record10, VALID, 0, PAGE_SIZE + 64, 100, 100, 0,
-                3, "validChannel", "source3");
+            assertRecording(catalog, invalidRecording12, INVALID, 0, NULL_POSITION, 13, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
         }
     }
 
     @Test
-    void verifyRecordingInvalidStartPositionNull()
+    void verifyRecordingShouldMarkRecordingAsInvalidIfSegmentFileContainsAFrameWithWrongStreamId()
     {
-        verifyRecording(out, archiveDir, record0, false, epochClock, (file) -> false);
+        verifyRecording(out, archiveDir, invalidRecording13, false, epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, record0, INVALID, NULL_POSITION, NULL_POSITION, NULL_TIMESTAMP, NULL_TIMESTAMP, 0,
-                1, "emptyChannel", "source1");
+            assertRecording(catalog, invalidRecording13, INVALID, 0, NULL_POSITION, 14, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
         }
     }
 
     @Test
-    void verifyRecordingInvalidStartPositionNegative()
+    void verifyRecordingValidRecordingShouldComputeStopPositionFromZeroStartPosition()
     {
-        verifyRecording(out, archiveDir, record24, false, epochClock, (file) -> false);
+        verifyRecording(out, archiveDir, validRecording0, false, epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, record24, INVALID, -123, NULL_POSITION, 240, NULL_TIMESTAMP, 0,
-                2, "invalidChannel", "source2");
+            assertRecording(catalog, validRecording0, VALID, 0, TERM_LENGTH + 64, 15, 100, 0, 2, "ch2", "src2");
         }
     }
 
     @Test
-    void verifyRecordingInvalidStartPositionBeyondMaxSegmentFile()
+    void verifyRecordingValidRecordingShouldUseStartPositionIfNoSegmentFilesExist()
     {
-        verifyRecording(out, archiveDir, record19, false, epochClock, (file) -> false);
+        verifyRecording(out, archiveDir, validRecording1, false, epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, record19, INVALID, SEGMENT_LENGTH + 2048, NULL_POSITION, 190, NULL_TIMESTAMP, 0,
-                2, "invalidChannel", "source2");
+            assertRecording(catalog, validRecording1, VALID, 1024, 1024, 16, 100, 0, 2, "ch2", "src2");
         }
     }
 
     @Test
-    void verifyRecordingInvalidStopPositionBeyondMaxSegmentFile()
+    void verifyRecordingValidRecordingShouldUseStartPositionWhenNoDataInTheMaxSegmentFileAtAGivenOffset()
     {
-        verifyRecording(out, archiveDir, record20, false, epochClock, (file) -> false);
+        verifyRecording(out, archiveDir, validRecording2, false, epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, record20, INVALID, 0, SEGMENT_LENGTH * 10, 200, NULL_TIMESTAMP, 0,
-                2, "invalidChannel", "source2");
+            assertRecording(catalog, validRecording2, VALID, TERM_LENGTH * 3 + 96, TERM_LENGTH * 3 + 96, 17, 100,
+                0, 2, "ch2", "src2");
         }
     }
 
     @Test
-    void verifyRecordingInvalidStopPositionBeforeStartPosition()
+    void verifyRecordingValidRecordingShouldComputeStopPositionWhenStartingAtALaterSegment()
     {
-        verifyRecording(out, archiveDir, record21, false, epochClock, (file) -> false);
+        verifyRecording(out, archiveDir, validRecording3, false, epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, record21, INVALID, 1000, 800, 210, NULL_TIMESTAMP, 0,
-                2, "invalidChannel", "source2");
+            assertRecording(catalog, validRecording3, VALID, 7 * TERM_LENGTH + 96, 11 * TERM_LENGTH + MTU_LENGTH + 128,
+                18, 100, 7, 13, "ch2", "src2");
         }
     }
 
     @Test
-    void verifyRecordingEmptyRecordingWithBothStartPositionAndStopPositionAssigned()
+    void verifyRecordingValidRecordingShouldNotUpdateStopPositionIfAlreadyCorrect()
     {
-        verifyRecording(out, archiveDir, record22, false, epochClock, (file) -> false);
+        verifyRecording(out, archiveDir, validRecording4, false, epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, record22, VALID, SEGMENT_LENGTH * 5, SEGMENT_LENGTH * 5, 220, 100, 0,
-                1, "emptyChannel", "source1");
+            assertRecording(catalog, validRecording4, VALID, 21 * TERM_LENGTH + (TERM_LENGTH - 64),
+                22 * TERM_LENGTH + 992, 19, 1, -25, 7, "ch2", "src2");
         }
     }
 
     @Test
-    void verifyRecordingNonEmptyRecordingWithNonZeroStartPosition()
+    void verifyRecordingValidRecordingValidateAllSegmentFiles()
     {
-        verifyRecording(out, archiveDir, record8, false, epochClock, (file) -> false);
+        verifyRecording(out, archiveDir, validRecording3, true, epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, record8, VALID, TERM_LENGTH + 1024, TERM_LENGTH + 1024 + 128, 80, 100, 0,
-                3, "validChannel", "source3");
+            assertRecording(catalog, validRecording3, VALID, 7 * TERM_LENGTH + 96, 11 * TERM_LENGTH + MTU_LENGTH + 128,
+                18, 100, 7, 13, "ch2", "src2");
         }
     }
 
     @Test
-    void verifyRecordingNonEmptyRecordingWithNonZeroStartPositionBeforeMaxSegmentFile()
+    void verifyRecordingInvalidRecordingValidateAllSegmentFiles()
     {
-        verifyRecording(out, archiveDir, record9, false, epochClock, (file) -> false);
+        verifyRecording(out, archiveDir, validRecording4, true, epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, record9, VALID, 2048, SEGMENT_LENGTH + TERM_LENGTH + 384, 90, 100, 5,
-                3, "validChannel", "source3");
+            assertRecording(catalog, validRecording4, INVALID, 21 * TERM_LENGTH + (TERM_LENGTH - 64),
+                22 * TERM_LENGTH + 992, 19, 1, -25, 7, "ch2", "src2");
         }
     }
 
     @Test
-    void verifyRecordingNonEmptyRecordingWithNonZeroStartPositionWithinMaxSegmentFile()
+    void verifyRecordingValidRecordingTruncateSegmentFileOnPageStraddle()
     {
-        verifyRecording(out, archiveDir, record23, false, epochClock, (file) -> false);
+        verifyRecording(out, archiveDir, validRecording5, false, epochClock, (file) -> true);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, record23, VALID, SEGMENT_LENGTH * 3 + 1024,
-                SEGMENT_LENGTH * 3 + 1024 + PAGE_SIZE + 256, 230, 100, 0, 3, "validChannel", "source3");
+            assertRecording(catalog, validRecording5, VALID, 0, 64 + PAGE_SIZE - MTU_LENGTH, 20, 100,
+                0, 20, "ch2", "src2");
         }
     }
 
     @Test
-    void verifyRecordingInvalidSegmentFileWrongHeaderDefinitionNonZeroStartPosition()
+    void verifyRecordingValidRecordingDoNotTruncateSegmentFileOnPageStraddle()
     {
-        verifyRecording(out, archiveDir, record25, false, epochClock, (file) -> false);
+        verifyRecording(out, archiveDir, validRecording5, false, epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, record25, INVALID, TERM_LENGTH + 1024, NULL_POSITION, 250, NULL_TIMESTAMP, 0,
-                2, "invalidChannel", "source2");
+            assertRecording(catalog, validRecording5, VALID, 0, 64 + PAGE_SIZE, 20, 777,
+                0, 20, "ch2", "src2");
         }
+    }
+
+    @Test
+    void verifyValidateLastSegmentFileDoNotTruncateOnPageStraddle()
+    {
+        verify(out, archiveDir, false, epochClock, (file) -> false);
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            assertRecording(catalog, invalidRecording0, INVALID, NULL_POSITION, NULL_POSITION, 1, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording1, INVALID, FRAME_ALIGNMENT - 7, NULL_POSITION, 2, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording2, INVALID, 1024, FRAME_ALIGNMENT * 2, 3, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording3, INVALID, 0, FRAME_ALIGNMENT * 5 + 11, 4, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording4, INVALID, SEGMENT_LENGTH, NULL_POSITION, 5, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording5, INVALID, 0, SEGMENT_LENGTH, 6, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording6, INVALID, 0, NULL_POSITION, 7, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording7, INVALID, 0, NULL_POSITION, 8, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording8, INVALID, 0, NULL_POSITION, 9, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording9, INVALID, 0, NULL_POSITION, 10, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording10, INVALID, 128, NULL_POSITION, 11, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording11, INVALID, 0, NULL_POSITION, 12, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording12, INVALID, 0, NULL_POSITION, 13, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording13, INVALID, 0, NULL_POSITION, 14, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, validRecording0, VALID, 0, TERM_LENGTH + 64, 15, 100,
+                0, 2, "ch2", "src2");
+            assertRecording(catalog, validRecording1, VALID, 1024, 1024, 16, 200,
+                0, 2, "ch2", "src2");
+            assertRecording(catalog, validRecording2, VALID, TERM_LENGTH * 3 + 96, TERM_LENGTH * 3 + 96,
+                17, 300, 0, 2, "ch2", "src2");
+            assertRecording(catalog, validRecording3, VALID, 7 * TERM_LENGTH + 96,
+                11 * TERM_LENGTH + MTU_LENGTH + 128, 18, 400, 7, 13, "ch2", "src2");
+            assertRecording(catalog, validRecording4, VALID, 21 * TERM_LENGTH + (TERM_LENGTH - 64),
+                22 * TERM_LENGTH + 992, 19, 1, -25, 7, "ch2", "src2");
+            assertRecording(catalog, validRecording5, VALID, 0, 64 + PAGE_SIZE, 20, 777,
+                0, 20, "ch2", "src2");
+        }
+
+        Mockito.verify(out, times(20)).println(any(String.class));
+    }
+
+
+    @Test
+    void verifyValidateAllSegmentFilesTruncateOnPageStraddle()
+    {
+        verify(out, archiveDir, true, epochClock, (file) -> true);
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            assertRecording(catalog, invalidRecording0, INVALID, NULL_POSITION, NULL_POSITION, 1, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording1, INVALID, FRAME_ALIGNMENT - 7, NULL_POSITION, 2, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording2, INVALID, 1024, FRAME_ALIGNMENT * 2, 3, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording3, INVALID, 0, FRAME_ALIGNMENT * 5 + 11, 4, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording4, INVALID, SEGMENT_LENGTH, NULL_POSITION, 5, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording5, INVALID, 0, SEGMENT_LENGTH, 6, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording6, INVALID, 0, NULL_POSITION, 7, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording7, INVALID, 0, NULL_POSITION, 8, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording8, INVALID, 0, NULL_POSITION, 9, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording9, INVALID, 0, NULL_POSITION, 10, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording10, INVALID, 128, NULL_POSITION, 11, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording11, INVALID, 0, NULL_POSITION, 12, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording12, INVALID, 0, NULL_POSITION, 13, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, invalidRecording13, INVALID, 0, NULL_POSITION, 14, NULL_TIMESTAMP,
+                0, 1, "ch1", "src1");
+            assertRecording(catalog, validRecording0, VALID, 0, TERM_LENGTH + 64, 15, 100,
+                0, 2, "ch2", "src2");
+            assertRecording(catalog, validRecording1, VALID, 1024, 1024, 16, 200,
+                0, 2, "ch2", "src2");
+            assertRecording(catalog, validRecording2, VALID, TERM_LENGTH * 3 + 96, TERM_LENGTH * 3 + 96,
+                17, 300, 0, 2, "ch2", "src2");
+            assertRecording(catalog, validRecording3, VALID, 7 * TERM_LENGTH + 96,
+                11 * TERM_LENGTH + MTU_LENGTH + 128, 18, 400, 7, 13, "ch2", "src2");
+            assertRecording(catalog, validRecording4, INVALID, 21 * TERM_LENGTH + (TERM_LENGTH - 64),
+                22 * TERM_LENGTH + 992, 19, 1, -25, 7, "ch2", "src2");
+            assertRecording(catalog, validRecording5, VALID, 0, 64 + PAGE_SIZE - MTU_LENGTH, 20, 500,
+                0, 20, "ch2", "src2");
+        }
+
+        Mockito.verify(out, times(20)).println(any(String.class));
     }
 
     @FunctionalInterface

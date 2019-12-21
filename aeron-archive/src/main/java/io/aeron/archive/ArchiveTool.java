@@ -53,7 +53,6 @@ import static io.aeron.logbuffer.LogBufferDescriptor.positionBitsToShift;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_DATA;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
-import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.nio.file.StandardOpenOption.READ;
 import static org.agrona.BitUtil.align;
@@ -631,11 +630,12 @@ public class ArchiveTool
             maxSegmentFile = findSegmentFileWithHighestPosition(segmentFiles);
             if (maxSegmentFile != null)
             {
-                final long maxPosition = parseSegmentFilePosition(maxSegmentFile) + segmentFileLength;
+                final long maxPosition = parseSegmentFilePosition(maxSegmentFile) + segmentFileLength - 1;
                 if (startPosition > maxPosition || stopPosition > maxPosition)
                 {
                     out.println("(recordingId=" + recordingId + ") ERR: Invariant violation: startPosition=" +
-                        startPosition + ", stopPosition=" + stopPosition + " exceed maxPosition=" + maxPosition);
+                        startPosition + " and/or stopPosition=" + stopPosition + " exceed max file position=" +
+                        maxPosition);
                     headerEncoder.valid(INVALID);
                     return;
                 }
@@ -645,6 +645,7 @@ public class ArchiveTool
                 archiveDir,
                 maxSegmentFile,
                 startPosition,
+                termBufferLength,
                 segmentFileLength,
                 truncateFileOnPageStraddle::confirm);
         }
@@ -717,13 +718,31 @@ public class ArchiveTool
             out.println("(recordingId=" + recordingId + ") ERR: Negative startPosition=" + startPosition);
             return true;
         }
-        else if (stopPosition != NULL_POSITION && stopPosition < startPosition)
+        else if (isNotFrameAligned(startPosition))
         {
-            out.println("(recordingId=" + recordingId + ") ERR: Invariant violation stopPosition=" +
-                stopPosition + " is before startPosition=" + startPosition);
+            out.println("(recordingId=" + recordingId + ") ERR: Non-aligned startPosition=" + startPosition);
             return true;
         }
+        else if (stopPosition != NULL_POSITION)
+        {
+            if (stopPosition < startPosition)
+            {
+                out.println("(recordingId=" + recordingId + ") ERR: Invariant violation stopPosition=" +
+                    stopPosition + " is before startPosition=" + startPosition);
+                return true;
+            }
+            else if (isNotFrameAligned(stopPosition))
+            {
+                out.println("(recordingId=" + recordingId + ") ERR: Non-aligned stopPosition=" + stopPosition);
+                return true;
+            }
+        }
         return false;
+    }
+
+    private static boolean isNotFrameAligned(final long position)
+    {
+        return 0 != (position & (FRAME_ALIGNMENT - 1));
     }
 
     private static boolean isInvalidSegmentFile(
@@ -743,8 +762,13 @@ public class ArchiveTool
         try (FileChannel channel = FileChannel.open(file.toPath(), READ))
         {
             final long offsetLimit = min(segmentLength, channel.size());
-            long position = parseSegmentFilePosition(fileName);
-            long fileOffset = max(0, startPosition - position);
+            final long startTermOffset = startPosition & (termLength - 1);
+            final long startTermBasePosition = startPosition - startTermOffset;
+            final long segmentFileBasePosition = parseSegmentFilePosition(fileName);
+            long fileOffset = segmentFileBasePosition == startTermBasePosition ? startTermOffset : 0;
+            int termId = computeTermIdFromPosition(
+                segmentFileBasePosition, positionBitsToShift(termLength), initialTermId);
+            int termOffset = (int)fileOffset;
 
             do
             {
@@ -755,13 +779,11 @@ public class ArchiveTool
                     return true;
                 }
 
-                if (0 == headerFlyweight.frameLength())
+                final int frameLength = headerFlyweight.frameLength();
+                if (0 == frameLength)
                 {
                     break;
                 }
-
-                final int termId = computeTermIdFromPosition(position, positionBitsToShift(termLength), initialTermId);
-                final int termOffset = (int)(position & (termLength - 1));
 
                 if (isInvalidHeader(tempBuffer, streamId, termId, termOffset))
                 {
@@ -773,8 +795,14 @@ public class ArchiveTool
                     return true;
                 }
 
-                fileOffset += align(headerFlyweight.frameLength(), FRAME_ALIGNMENT);
-                position += fileOffset;
+                final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
+                fileOffset += alignedFrameLength;
+                termOffset += alignedFrameLength;
+                if (termOffset >= termLength)
+                {
+                    termOffset &= (termLength - 1);
+                    termId++;
+                }
             }
             while (fileOffset < offsetLimit);
         }

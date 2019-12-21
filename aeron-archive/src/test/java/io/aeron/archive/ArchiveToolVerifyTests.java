@@ -253,7 +253,7 @@ class ArchiveToolVerifyTests
             (byteBuffer, dataHeaderFlyweight, fileChannel) ->
             {
                 dataHeaderFlyweight.headerType(HDR_TYPE_DATA);
-                dataHeaderFlyweight.frameLength(MTU_LENGTH);
+                dataHeaderFlyweight.frameLength(180);
                 dataHeaderFlyweight.streamId(13);
                 dataHeaderFlyweight.termId(18);
                 dataHeaderFlyweight.termOffset(0);
@@ -261,8 +261,8 @@ class ArchiveToolVerifyTests
                 byteBuffer.clear();
                 dataHeaderFlyweight.frameLength(128);
                 dataHeaderFlyweight.termId(18);
-                dataHeaderFlyweight.termOffset(MTU_LENGTH);
-                fileChannel.write(byteBuffer, MTU_LENGTH);
+                dataHeaderFlyweight.termOffset(192);
+                fileChannel.write(byteBuffer, 192);
             });
 
         writeToSegmentFile(
@@ -525,7 +525,7 @@ class ArchiveToolVerifyTests
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, validRecording3, VALID, 7 * TERM_LENGTH + 96, 11 * TERM_LENGTH + MTU_LENGTH + 128,
+            assertRecording(catalog, validRecording3, VALID, 7 * TERM_LENGTH + 96, 11 * TERM_LENGTH + 320,
                 18, 100, 7, 13, "ch2", "src2");
         }
     }
@@ -549,7 +549,7 @@ class ArchiveToolVerifyTests
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
-            assertRecording(catalog, validRecording3, VALID, 7 * TERM_LENGTH + 96, 11 * TERM_LENGTH + MTU_LENGTH + 128,
+            assertRecording(catalog, validRecording3, VALID, 7 * TERM_LENGTH + 96, 11 * TERM_LENGTH + 320,
                 18, 100, 7, 13, "ch2", "src2");
         }
     }
@@ -631,7 +631,7 @@ class ArchiveToolVerifyTests
             assertRecording(catalog, validRecording2, VALID, TERM_LENGTH * 3 + 96, TERM_LENGTH * 3 + 96,
                 17, 300, 0, 2, "ch2", "src2");
             assertRecording(catalog, validRecording3, VALID, 7 * TERM_LENGTH + 96,
-                11 * TERM_LENGTH + MTU_LENGTH + 128, 18, 400, 7, 13, "ch2", "src2");
+                11 * TERM_LENGTH + 320, 18, 400, 7, 13, "ch2", "src2");
             assertRecording(catalog, validRecording4, VALID, 21 * TERM_LENGTH + (TERM_LENGTH - 64),
                 22 * TERM_LENGTH + 992, 19, 1, -25, 7, "ch2", "src2");
             assertRecording(catalog, validRecording5, VALID, 0, 64 + PAGE_SIZE, 20, 777,
@@ -640,7 +640,6 @@ class ArchiveToolVerifyTests
 
         Mockito.verify(out, times(20)).println(any(String.class));
     }
-
 
     @Test
     void verifyValidateAllSegmentFilesTruncateOnPageStraddle()
@@ -683,7 +682,7 @@ class ArchiveToolVerifyTests
             assertRecording(catalog, validRecording2, VALID, TERM_LENGTH * 3 + 96, TERM_LENGTH * 3 + 96,
                 17, 300, 0, 2, "ch2", "src2");
             assertRecording(catalog, validRecording3, VALID, 7 * TERM_LENGTH + 96,
-                11 * TERM_LENGTH + MTU_LENGTH + 128, 18, 400, 7, 13, "ch2", "src2");
+                11 * TERM_LENGTH + 320, 18, 400, 7, 13, "ch2", "src2");
             assertRecording(catalog, validRecording4, INVALID, 21 * TERM_LENGTH + (TERM_LENGTH - 64),
                 22 * TERM_LENGTH + 992, 19, 1, -25, 7, "ch2", "src2");
             assertRecording(catalog, validRecording5, VALID, 0, 64 + PAGE_SIZE - MTU_LENGTH, 20, 500,

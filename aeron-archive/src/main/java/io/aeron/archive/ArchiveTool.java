@@ -762,14 +762,12 @@ public class ArchiveTool
         try (FileChannel channel = FileChannel.open(file.toPath(), READ))
         {
             final long offsetLimit = min(segmentLength, channel.size());
+            final int positionBitsToShift = positionBitsToShift(termLength);
             final long startTermOffset = startPosition & (termLength - 1);
             final long startTermBasePosition = startPosition - startTermOffset;
             final long segmentFileBasePosition = parseSegmentFilePosition(fileName);
             long fileOffset = segmentFileBasePosition == startTermBasePosition ? startTermOffset : 0;
-            int termId = computeTermIdFromPosition(
-                segmentFileBasePosition, positionBitsToShift(termLength), initialTermId);
-            int termOffset = (int)fileOffset;
-
+            long position = segmentFileBasePosition + fileOffset;
             do
             {
                 tempBuffer.byteBuffer().clear();
@@ -785,6 +783,8 @@ public class ArchiveTool
                     break;
                 }
 
+                final int termId = computeTermIdFromPosition(position, positionBitsToShift, initialTermId);
+                final int termOffset = (int)(position & (termLength - 1));
                 if (isInvalidHeader(tempBuffer, streamId, termId, termOffset))
                 {
                     out.println("(recordingId=" + recordingId + ") ERR: fragment " +
@@ -797,12 +797,7 @@ public class ArchiveTool
 
                 final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
                 fileOffset += alignedFrameLength;
-                termOffset += alignedFrameLength;
-                if (termOffset >= termLength)
-                {
-                    termOffset &= (termLength - 1);
-                    termId++;
-                }
+                position += alignedFrameLength;
             }
             while (fileOffset < offsetLimit);
         }

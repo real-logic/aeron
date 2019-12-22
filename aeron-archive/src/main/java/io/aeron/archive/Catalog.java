@@ -769,10 +769,9 @@ class Catalog implements AutoCloseable
         for (final String filename : segmentFiles)
         {
             final long filePosition = parseSegmentFilePosition(filename);
-
             if (filePosition < 0)
             {
-                throw new ArchiveException("Negative position encoded in the file name: " + filename);
+                throw new ArchiveException("negative position encoded in the file name: " + filename);
             }
 
             if (filePosition > maxSegmentPosition)
@@ -787,15 +786,20 @@ class Catalog implements AutoCloseable
 
     static long parseSegmentFilePosition(final String filename)
     {
-        final int offset = filename.indexOf('-') + 1;
-        final int remaining = filename.length() - offset - RECORDING_SEGMENT_SUFFIX.length();
-
-        if (0 == remaining)
+        final int dashOffset = filename.indexOf('-');
+        if (-1 == dashOffset)
         {
-            throw new ArchiveException("No position encoded in the segment file name: " + filename);
+            throw new ArchiveException("invalid filename format: " + filename);
         }
 
-        return parseLongAscii(filename, offset, remaining);
+        final int positionOffset = dashOffset + 1;
+        final int positionLength = filename.length() - positionOffset - RECORDING_SEGMENT_SUFFIX.length();
+        if (0 >= positionLength)
+        {
+            throw new ArchiveException("no position encoded in the segment file: " + filename);
+        }
+
+        return parseLongAscii(filename, positionOffset, positionLength);
     }
 
     static long computeStopPosition(
@@ -803,7 +807,7 @@ class Catalog implements AutoCloseable
         final String maxSegmentFile,
         final long startPosition,
         final int termLength,
-        final int segmentFileLength,
+        final int segmentLength,
         final Predicate<File> truncateFileOnPageStraddle)
     {
         if (null == maxSegmentFile)
@@ -817,8 +821,8 @@ class Catalog implements AutoCloseable
             final long segmentFileBasePosition = parseSegmentFilePosition(maxSegmentFile);
             final long fileOffset = segmentFileBasePosition == startTermBasePosition ? startTermOffset : 0;
             final long segmentStopOffset = recoverStopOffset(
-                archiveDir, maxSegmentFile, fileOffset, segmentFileLength, truncateFileOnPageStraddle);
-            // Ensure that the computed stopPosition >= startPosition
+                archiveDir, maxSegmentFile, fileOffset, segmentLength, truncateFileOnPageStraddle);
+
             return max(segmentFileBasePosition + segmentStopOffset, startPosition);
         }
     }
@@ -879,7 +883,7 @@ class Catalog implements AutoCloseable
         catch (final IOException ex)
         {
             LangUtil.rethrowUnchecked(ex);
-            return Aeron.NULL_VALUE; // unreachable
+            return Aeron.NULL_VALUE;
         }
     }
 

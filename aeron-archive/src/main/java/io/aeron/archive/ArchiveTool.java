@@ -619,23 +619,24 @@ public class ArchiveTool
             headerEncoder.valid(INVALID);
             return;
         }
-        final int segmentFileLength = decoder.segmentFileLength();
-        final int termBufferLength = decoder.termBufferLength();
 
+        final int segmentLength = decoder.segmentFileLength();
+        final int termLength = decoder.termBufferLength();
         final String[] segmentFiles = listSegmentFiles(archiveDir, recordingId);
         final String maxSegmentFile;
         final long computedStopPosition;
+
         try
         {
             maxSegmentFile = findSegmentFileWithHighestPosition(segmentFiles);
             if (maxSegmentFile != null)
             {
-                final long maxPosition = parseSegmentFilePosition(maxSegmentFile) + segmentFileLength - 1;
-                if (startPosition > maxPosition || stopPosition > maxPosition)
+                final long maxSegmentPosition = parseSegmentFilePosition(maxSegmentFile) + (segmentLength - 1);
+                if (startPosition > maxSegmentPosition || stopPosition > maxSegmentPosition)
                 {
                     out.println("(recordingId=" + recordingId + ") ERR: Invariant violation: startPosition=" +
-                        startPosition + " and/or stopPosition=" + stopPosition + " exceed max file position=" +
-                        maxPosition);
+                        startPosition + " and/or stopPosition=" + stopPosition + " exceed max segment file position=" +
+                        maxSegmentPosition);
                     headerEncoder.valid(INVALID);
                     return;
                 }
@@ -645,8 +646,8 @@ public class ArchiveTool
                 archiveDir,
                 maxSegmentFile,
                 startPosition,
-                termBufferLength,
-                segmentFileLength,
+                termLength,
+                segmentLength,
                 truncateFileOnPageStraddle::confirm);
         }
         catch (final Exception ex)
@@ -670,8 +671,8 @@ public class ArchiveTool
                         recordingId,
                         filename,
                         startPosition,
-                        termBufferLength,
-                        segmentFileLength,
+                        termLength,
+                        segmentLength,
                         streamId,
                         decoder.initialTermId(),
                         tempBuffer,
@@ -688,8 +689,8 @@ public class ArchiveTool
                 recordingId,
                 maxSegmentFile,
                 startPosition,
-                termBufferLength,
-                segmentFileLength,
+                termLength,
+                segmentLength,
                 streamId,
                 decoder.initialTermId(),
                 tempBuffer,

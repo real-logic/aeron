@@ -15,6 +15,7 @@
  */
 package io.aeron.archive;
 
+import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.EpochClock;
@@ -46,8 +47,8 @@ import static org.mockito.Mockito.times;
 
 class ArchiveToolVerifyTests
 {
-    private static final int TERM_LENGTH = 64 * 1024;
-    private static final int SEGMENT_LENGTH = 4 * TERM_LENGTH;
+    private static final int TERM_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
+    private static final int SEGMENT_LENGTH = TERM_LENGTH * 4;
     private static final int MTU_LENGTH = 1024;
 
     private long invalidRecording0;
@@ -118,12 +119,12 @@ class ArchiveToolVerifyTests
                 SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "ch2", "ch2?tag=OK", "src2");
             validRecording2 = catalog.addNewRecording(3 * TERM_LENGTH + 96, NULL_POSITION, 17, NULL_TIMESTAMP, 0,
                 SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 2, 2, "ch2", "ch2?tag=OK", "src2");
-            validRecording3 = catalog
-                .addNewRecording(7 * TERM_LENGTH + 96, 7 * TERM_LENGTH + 128, 18, NULL_TIMESTAMP, 7,
-                    SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 999, 13, "ch2", "ch2?tag=OK", "src2");
-            validRecording4 = catalog
-                .addNewRecording(21 * TERM_LENGTH + (TERM_LENGTH - 64), 22 * TERM_LENGTH + 992, 19, 1, -25,
-                    SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, -999, 7, "ch2", "ch2?tag=OK", "src2");
+            validRecording3 = catalog.addNewRecording(
+                7 * TERM_LENGTH + 96, 7 * TERM_LENGTH + 128, 18, NULL_TIMESTAMP, 7,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 999, 13, "ch2", "ch2?tag=OK", "src2");
+            validRecording4 = catalog.addNewRecording(
+                21 * TERM_LENGTH + (TERM_LENGTH - 64), 22 * TERM_LENGTH + 992, 19, 1, -25,
+                SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, -999, 7, "ch2", "ch2?tag=OK", "src2");
             validRecording5 = catalog.addNewRecording(0, 64 + PAGE_SIZE, 20, 777, 0,
                 SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, -1, 20, "ch2", "ch2?tag=OK", "src2");
         }

@@ -22,6 +22,7 @@ import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,8 +32,7 @@ import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.FileChannel;
 
 import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
-import static io.aeron.logbuffer.FrameDescriptor.PADDING_FRAME_TYPE;
-import static io.aeron.logbuffer.FrameDescriptor.typeOffset;
+import static io.aeron.logbuffer.FrameDescriptor.*;
 
 /**
  * Responsible for writing out a recording into the file system. A recording has descriptor file and a set of data files
@@ -51,8 +51,10 @@ class RecordingWriter implements BlockHandler
     private final int segmentLength;
     private final boolean forceWrites;
     private final boolean forceMetadata;
+    private final boolean crcEnabled;
     private final FileChannel archiveDirChannel;
     private final File archiveDir;
+    private final FrameCRC crc;
 
     private long segmentBasePosition;
     private int segmentOffset;
@@ -76,11 +78,13 @@ class RecordingWriter implements BlockHandler
         forceWrites = ctx.fileSyncLevel() > 0;
         forceMetadata = ctx.fileSyncLevel() > 1;
 
+        crcEnabled = ctx.recordingCrcEnabled();
+        crc = crcEnabled ? new FrameCRC() : null;
+
         final int termLength = image.termBufferLength();
         final long joinPosition = image.joinPosition();
-        final long startTermBasePosition = startPosition - (startPosition & (termLength - 1));
-        segmentOffset = (int)((joinPosition - startTermBasePosition) & (segmentLength - 1));
         segmentBasePosition = segmentFileBasePosition(startPosition, joinPosition, termLength, segmentLength);
+        segmentOffset = (int)(joinPosition - segmentBasePosition);
     }
 
     public void onBlock(
@@ -92,6 +96,14 @@ class RecordingWriter implements BlockHandler
             final int dataLength = isPaddingFrame ? DataHeaderFlyweight.HEADER_LENGTH : length;
             final ByteBuffer byteBuffer = termBuffer.byteBuffer();
             byteBuffer.limit(termOffset + dataLength).position(termOffset);
+
+            if (!isPaddingFrame && crcEnabled)
+            {
+                // Cast to UnsafeBuffer is safe, because BlockHandler is internal API which is always invoked with an
+                // instance of UnsafeBuffer which is used for performance reasons (i.e. to avoid invokeinterface calls)
+                crc.forEach((UnsafeBuffer)termBuffer, termOffset, length,
+                    (buffer, frameOffset, frameLength, checksum) -> frameSessionId(buffer, frameOffset, checksum));
+            }
 
             do
             {

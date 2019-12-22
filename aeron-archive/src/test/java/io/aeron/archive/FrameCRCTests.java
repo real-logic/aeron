@@ -21,13 +21,13 @@ import static org.junit.jupiter.api.Assertions.*;
 class FrameCRCTests
 {
 
-    private FrameCRC frameCRC = new FrameCRC();
+    private FrameCRC crc = new FrameCRC();
 
     @Test
     void computeThrowsNullPointerExceptionIfTermBufferIsNull()
     {
         assertThrows(NullPointerException.class,
-            () -> frameCRC.compute(null, 0, 10, (buffer, offset, length, crc) -> {}));
+            () -> crc.forEach(null, 0, 10, (buffer, offset, length, checksum) -> {}));
     }
 
     @Test
@@ -37,7 +37,7 @@ class FrameCRCTests
         assertNull(termBuffer.byteBuffer());
 
         assertThrows(NullPointerException.class,
-            () -> frameCRC.compute(termBuffer, 0, 10, (buffer, offset, length, crc) -> {}));
+            () -> crc.forEach(termBuffer, 0, 10, (buffer, offset, length, checksum) -> {}));
     }
 
     @Test
@@ -46,7 +46,7 @@ class FrameCRCTests
         final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocate(0));
 
         assertThrows(IndexOutOfBoundsException.class,
-            () -> frameCRC.compute(termBuffer, -1, 10, (buffer, offset, length, crc) -> {}));
+            () -> crc.forEach(termBuffer, -1, 10, (buffer, offset, length, checksum) -> {}));
     }
 
     @Test
@@ -55,7 +55,7 @@ class FrameCRCTests
         final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocate(2));
         final AtomicInteger counter = new AtomicInteger();
 
-        frameCRC.compute(termBuffer, 5, 2, (buffer, offset, length, crc) -> counter.incrementAndGet());
+        crc.forEach(termBuffer, 5, 2, (buffer, offset, length, checksum) -> counter.incrementAndGet());
 
         assertEquals(0, counter.get());
     }
@@ -66,7 +66,7 @@ class FrameCRCTests
         final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocate(0));
         final AtomicInteger counter = new AtomicInteger();
 
-        frameCRC.compute(termBuffer, 4, 4, (buffer, offset, length, crc) -> counter.incrementAndGet());
+        crc.forEach(termBuffer, 4, 4, (buffer, offset, length, checksum) -> counter.incrementAndGet());
 
         assertEquals(0, counter.get());
     }
@@ -78,7 +78,8 @@ class FrameCRCTests
         termBuffer.putInt(FRAME_LENGTH_FIELD_OFFSET, 0);
         final AtomicInteger counter = new AtomicInteger();
 
-        frameCRC.compute(termBuffer, 0, HEADER_LENGTH, (buffer, offset, length, crc) -> counter.incrementAndGet());
+        crc.forEach(
+            termBuffer, 0, HEADER_LENGTH, (buffer, offset, length, checksum) -> counter.incrementAndGet());
 
         assertEquals(0, counter.get());
     }
@@ -91,7 +92,8 @@ class FrameCRCTests
         termBuffer.putInt(TYPE_FIELD_OFFSET, HDR_TYPE_SETUP);
         final AtomicInteger counter = new AtomicInteger();
 
-        frameCRC.compute(termBuffer, 0, HEADER_LENGTH, (buffer, offset, length, crc) -> counter.incrementAndGet());
+        crc.forEach(
+            termBuffer, 0, HEADER_LENGTH, (buffer, offset, length, checksum) -> counter.incrementAndGet());
 
         assertEquals(0, counter.get());
     }
@@ -105,15 +107,15 @@ class FrameCRCTests
         final byte[] payload = new byte[128 - HEADER_LENGTH];
         final Random r = new Random(1234);
         r.nextBytes(payload);
-        final int checksum = computeCrc(payload);
+        final int expectedChecksum = computeCrc(payload);
         termBuffer.putBytes(HEADER_LENGTH, payload);
         final AtomicInteger counter = new AtomicInteger();
 
-        frameCRC.compute(termBuffer, 0, 128,
-            (buffer, offset, length, crc) ->
+        crc.forEach(termBuffer, 0, 128,
+            (buffer, offset, length, checksum) ->
             {
                 counter.incrementAndGet();
-                assertEquals(checksum, crc);
+                assertEquals(expectedChecksum, checksum);
             });
 
         assertEquals(1, counter.get());
@@ -130,15 +132,15 @@ class FrameCRCTests
         final byte[] payload = new byte[230 - HEADER_LENGTH];
         final Random r = new Random(1234);
         r.nextBytes(payload);
-        final int checksum = computeCrc(copyOf(payload, align(230 - HEADER_LENGTH, FRAME_ALIGNMENT)));
+        final int expectedChecksum = computeCrc(copyOf(payload, align(230 - HEADER_LENGTH, FRAME_ALIGNMENT)));
         termBuffer.putBytes(HEADER_LENGTH, payload);
         final AtomicInteger counter = new AtomicInteger();
 
-        frameCRC.compute(termBuffer, 0, 256,
-            (buffer, offset, length, crc) ->
+        crc.forEach(termBuffer, 0, 256,
+            (buffer, offset, length, checksum) ->
             {
                 counter.incrementAndGet();
-                assertEquals(checksum, crc);
+                assertEquals(expectedChecksum, checksum);
             });
 
         assertEquals(1, counter.get());
@@ -156,7 +158,7 @@ class FrameCRCTests
         termBuffer.putInt(64 + TYPE_FIELD_OFFSET, HDR_TYPE_DATA);
         final AtomicInteger counter = new AtomicInteger();
 
-        frameCRC.compute(termBuffer, 0, 128, (buffer, offset, length, crc) -> counter.incrementAndGet());
+        crc.forEach(termBuffer, 0, 128, (buffer, offset, length, checksum) -> counter.incrementAndGet());
 
         assertEquals(1, counter.get());
         assertEquals(termBuffer.byteBuffer().position(), 0);
@@ -171,15 +173,15 @@ class FrameCRCTests
         termBuffer.putInt(TYPE_FIELD_OFFSET, HDR_TYPE_DATA);
         final byte[] payload = new byte[32];
         fill(payload, (byte)11);
-        final int checksum = computeCrc(payload);
+        final int expectedChecksum = computeCrc(payload);
         termBuffer.putBytes(HEADER_LENGTH, payload);
         final AtomicInteger counter = new AtomicInteger();
 
-        frameCRC.compute(termBuffer, 0, 64,
-            (buffer, offset, length, crc) ->
+        crc.forEach(termBuffer, 0, 64,
+            (buffer, offset, length, checksum) ->
             {
                 counter.incrementAndGet();
-                assertEquals(checksum, crc);
+                assertEquals(expectedChecksum, checksum);
             });
 
         assertEquals(1, counter.get());
@@ -195,29 +197,22 @@ class FrameCRCTests
         termBuffer.putInt(TYPE_FIELD_OFFSET, HDR_TYPE_DATA);
         final byte[] payload = new byte[32];
         fill(payload, (byte)3);
-        final int checksum = computeCrc(payload);
+        final int expectedChecksum = computeCrc(payload);
         termBuffer.putInt(64 + FRAME_LENGTH_FIELD_OFFSET, 64);
         termBuffer.putInt(64 + TYPE_FIELD_OFFSET, HDR_TYPE_DATA);
         termBuffer.putBytes(64 + HEADER_LENGTH, payload);
         final AtomicInteger counter = new AtomicInteger();
 
-        frameCRC.compute(termBuffer, 64, 128,
-            (buffer, offset, length, crc) ->
+        crc.forEach(termBuffer, 64, 128,
+            (buffer, offset, length, checksum) ->
             {
                 counter.incrementAndGet();
-                assertEquals(checksum, crc);
+                assertEquals(expectedChecksum, checksum);
             });
 
         assertEquals(1, counter.get());
         assertEquals(termBuffer.byteBuffer().position(), 0);
         assertEquals(termBuffer.byteBuffer().limit(), 128);
-    }
-
-    private int computeCrc(final byte[] payload)
-    {
-        final CRC32 crc32 = new CRC32();
-        crc32.update(payload);
-        return (int)crc32.getValue();
     }
 
     @Test
@@ -242,16 +237,23 @@ class FrameCRCTests
         final AtomicInteger counter = new AtomicInteger();
         final List<Integer> results = new ArrayList<>();
 
-        frameCRC.compute(termBuffer, 64, 224,
-            (buffer, offset, length, crc) ->
+        crc.forEach(termBuffer, 64, 224,
+            (buffer, offset, length, checksum) ->
             {
                 counter.incrementAndGet();
-                results.add(crc);
+                results.add(checksum);
             });
 
         assertEquals(2, counter.get());
         assertEquals(termBuffer.byteBuffer().position(), 0);
         assertEquals(termBuffer.byteBuffer().limit(), 256);
         assertEquals(asList(crc1, crc2), results);
+    }
+
+    private int computeCrc(final byte[] payload)
+    {
+        final CRC32 crc32 = new CRC32();
+        crc32.update(payload);
+        return (int)crc32.getValue();
     }
 }

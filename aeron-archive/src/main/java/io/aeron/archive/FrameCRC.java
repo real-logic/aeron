@@ -42,11 +42,11 @@ final class FrameCRC
          * @param frameOffset at which frame begins, including any headers.
          * @param frameLength of the frame in bytes, including any frame headers that is aligned up to
          *                    {@link io.aeron.logbuffer.FrameDescriptor#FRAME_ALIGNMENT}.
-         * @param crc         computed CRC for the frame excluding header but including alignment bytes, i.e. computed
+         * @param checksum    computed CRC for the frame excluding header but including alignment bytes, i.e. computed
          *                    using bytes in the ranger from {@code offset + DataHeaderFlyweight.HEADER_LENGTH} until
          *                    {@code length}.
          */
-        void consume(UnsafeBuffer buffer, int frameOffset, int frameLength, int crc);
+        void consume(UnsafeBuffer buffer, int frameOffset, int frameLength, int checksum);
     }
 
     /**
@@ -58,7 +58,7 @@ final class FrameCRC
      *                   {@link io.aeron.logbuffer.FrameDescriptor#FRAME_ALIGNMENT}.
      * @param consumer   consumer for the computed CRC.
      */
-    public void compute(final UnsafeBuffer termBuffer, final int offset, final int length, final Consumer consumer)
+    public void forEach(final UnsafeBuffer termBuffer, final int offset, final int length, final Consumer consumer)
     {
         final ByteBuffer buffer = termBuffer.byteBuffer();
         final int position = buffer.position();
@@ -75,16 +75,30 @@ final class FrameCRC
             final int frameType = frameType(termBuffer, frameOffset);
             if (HDR_TYPE_DATA == frameType)
             {
-                buffer.limit(frameOffset + alignedLength); // end of the frame plus alignment
-                buffer.position(frameOffset + HEADER_LENGTH); // skip the frame header
-                crc32.reset();
-                crc32.update(buffer);
-                final int checksum = (int)crc32.getValue();
+                final int checksum = checksum(buffer, frameOffset, alignedLength);
                 consumer.consume(termBuffer, frameOffset, alignedLength, checksum);
             }
             frameOffset += alignedLength;
         }
         // Restore original limit and position
         buffer.limit(limit).position(position);
+    }
+
+    /**
+     * Compute CRC over the frame's payload.
+     *
+     * @param buffer      containing the frame.
+     * @param frameOffset at which frame begins, including any headers.
+     * @param frameLength of the frame in bytes, including any frame headers that is aligned up to
+     *                    {@link io.aeron.logbuffer.FrameDescriptor#FRAME_ALIGNMENT}.
+     * @return computed CRC checksum
+     */
+    public int checksum(final ByteBuffer buffer, final int frameOffset, final int frameLength)
+    {
+        buffer.limit(frameOffset + frameLength); // end of the frame plus alignment
+        buffer.position(frameOffset + HEADER_LENGTH); // skip the frame header
+        crc32.reset();
+        crc32.update(buffer);
+        return (int)crc32.getValue();
     }
 }

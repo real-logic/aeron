@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.zip.CRC32;
 
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.client.ArchiveException.GENERIC;
@@ -245,9 +246,74 @@ class RecordingWriterTests
         assertArrayEquals(data2, fileBytes);
     }
 
+    @Test
+    void onBlockShouldComputeCrcForTheDataFrames() throws IOException
+    {
+        final Image image = mockImage(0L);
+        final Context ctx = new Context().archiveDir(archiveDir).recordingCrcEnabled(true);
+        final RecordingWriter recordingWriter = new RecordingWriter(
+            1, 0, SEGMENT_LENGTH, image, ctx, null);
+        recordingWriter.init();
+        final UnsafeBuffer termBuffer = new UnsafeBuffer(allocate(512));
+        final byte[] data = new byte[32];
+        fill(data, (byte)99);
+        frameType(termBuffer, 0, HDR_TYPE_DATA);
+        frameTermId(termBuffer, 0, 18);
+        frameLengthOrdered(termBuffer, 0, 64);
+        frameSessionId(termBuffer, 0, 5);
+        termBuffer.putBytes(HEADER_LENGTH, data);
+
+        recordingWriter.onBlock(termBuffer, 0, 64, -1, -1);
+
+        recordingWriter.close();
+        final File segmentFile = segmentFile(1, 0);
+        assertTrue(segmentFile.exists());
+        assertEquals(SEGMENT_LENGTH, segmentFile.length());
+        final UnsafeBuffer fileBuffer = new UnsafeBuffer();
+        fileBuffer.wrap(readAllBytes(segmentFile.toPath()));
+        assertEquals(HDR_TYPE_DATA, frameType(fileBuffer, 0));
+        assertEquals(18, frameTermId(fileBuffer, 0));
+        assertEquals(64, frameLength(fileBuffer, 0));
+        final CRC32 crc32 = new CRC32();
+        crc32.update(data);
+        final int crc = (int)crc32.getValue();
+        assertEquals(crc, frameSessionId(fileBuffer, 0));
+    }
+
+    @Test
+    void onBlockShouldNotComputeCrcForThePaddingFrames() throws IOException
+    {
+        final Image image = mockImage(0L);
+        final Context ctx = new Context().archiveDir(archiveDir).recordingCrcEnabled(true);
+        final RecordingWriter recordingWriter = new RecordingWriter(
+            1, 0, SEGMENT_LENGTH, image, ctx, null);
+        recordingWriter.init();
+        final UnsafeBuffer termBuffer = new UnsafeBuffer(allocate(512));
+        final byte[] data = new byte[32];
+        fill(data, (byte)99);
+        frameType(termBuffer, 0, HDR_TYPE_PAD);
+        frameTermId(termBuffer, 0, 18);
+        frameLengthOrdered(termBuffer, 0, 64);
+        frameSessionId(termBuffer, 0, 5);
+        termBuffer.putBytes(HEADER_LENGTH, data);
+
+        recordingWriter.onBlock(termBuffer, 0, 64, -1, -1);
+
+        recordingWriter.close();
+        final File segmentFile = segmentFile(1, 0);
+        assertTrue(segmentFile.exists());
+        assertEquals(SEGMENT_LENGTH, segmentFile.length());
+        final UnsafeBuffer fileBuffer = new UnsafeBuffer();
+        fileBuffer.wrap(readAllBytes(segmentFile.toPath()));
+        assertEquals(HDR_TYPE_PAD, frameType(fileBuffer, 0));
+        assertEquals(18, frameTermId(fileBuffer, 0));
+        assertEquals(64, frameLength(fileBuffer, 0));
+        assertEquals(5, frameSessionId(fileBuffer, 0));
+    }
+
     private Image mockImage(final long joinPosition)
     {
-        Image image = mock(Image.class);
+        final Image image = mock(Image.class);
         when(image.termBufferLength()).thenReturn(TERM_LENGTH);
         when(image.joinPosition()).thenReturn(joinPosition);
         return image;

@@ -33,7 +33,7 @@ class FrameCRCTests
     @Test
     void computeThrowsNullPointerExceptionIfTheUnderlyingByteBufferIsNull()
     {
-        UnsafeBuffer termBuffer = new UnsafeBuffer();
+        final UnsafeBuffer termBuffer = new UnsafeBuffer();
         assertNull(termBuffer.byteBuffer());
 
         assertThrows(NullPointerException.class,
@@ -43,7 +43,7 @@ class FrameCRCTests
     @Test
     void computeThrowsIndexOutOfBoundsExceptionIfOffsetIsNegative()
     {
-        UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocate(0));
+        final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocate(0));
 
         assertThrows(IndexOutOfBoundsException.class,
             () -> frameCRC.compute(termBuffer, -1, 10, (buffer, offset, length, crc) -> {}));
@@ -52,8 +52,8 @@ class FrameCRCTests
     @Test
     void computeIsANoOpIfOffsetIsGreaterThanTheLength()
     {
-        UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocate(2));
-        AtomicInteger counter = new AtomicInteger();
+        final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocate(2));
+        final AtomicInteger counter = new AtomicInteger();
 
         frameCRC.compute(termBuffer, 5, 2, (buffer, offset, length, crc) -> counter.incrementAndGet());
 
@@ -63,8 +63,8 @@ class FrameCRCTests
     @Test
     void computeIsANoOpIfBufferIsOffsetIsEqualToLength()
     {
-        UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocate(0));
-        AtomicInteger counter = new AtomicInteger();
+        final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocate(0));
+        final AtomicInteger counter = new AtomicInteger();
 
         frameCRC.compute(termBuffer, 4, 4, (buffer, offset, length, crc) -> counter.incrementAndGet());
 
@@ -74,9 +74,9 @@ class FrameCRCTests
     @Test
     void computeIsANoOpIfBufferStartsWithAnEmptyFrame()
     {
-        UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocate(HEADER_LENGTH));
+        final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocate(HEADER_LENGTH));
         termBuffer.putInt(FRAME_LENGTH_FIELD_OFFSET, 0);
-        AtomicInteger counter = new AtomicInteger();
+        final AtomicInteger counter = new AtomicInteger();
 
         frameCRC.compute(termBuffer, 0, HEADER_LENGTH, (buffer, offset, length, crc) -> counter.incrementAndGet());
 
@@ -86,10 +86,10 @@ class FrameCRCTests
     @Test
     void computeIsANoOpIfFrameIsNotADataFrame()
     {
-        UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocate(HEADER_LENGTH));
+        final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocate(HEADER_LENGTH));
         termBuffer.putInt(FRAME_LENGTH_FIELD_OFFSET, 64);
         termBuffer.putInt(TYPE_FIELD_OFFSET, HDR_TYPE_SETUP);
-        AtomicInteger counter = new AtomicInteger();
+        final AtomicInteger counter = new AtomicInteger();
 
         frameCRC.compute(termBuffer, 0, HEADER_LENGTH, (buffer, offset, length, crc) -> counter.incrementAndGet());
 
@@ -99,15 +99,15 @@ class FrameCRCTests
     @Test
     void computeCrcFromThePayloadAligned()
     {
-        UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocate(128));
+        final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocate(128));
         termBuffer.putInt(FRAME_LENGTH_FIELD_OFFSET, 128);
         termBuffer.putInt(TYPE_FIELD_OFFSET, HDR_TYPE_DATA);
         final byte[] payload = new byte[128 - HEADER_LENGTH];
-        Random r = new Random(1234);
+        final Random r = new Random(1234);
         r.nextBytes(payload);
         final int checksum = computeCrc(payload);
         termBuffer.putBytes(HEADER_LENGTH, payload);
-        AtomicInteger counter = new AtomicInteger();
+        final AtomicInteger counter = new AtomicInteger();
 
         frameCRC.compute(termBuffer, 0, 128,
             (buffer, offset, length, crc) ->
@@ -124,7 +124,7 @@ class FrameCRCTests
     @Test
     void computeCrcFromThePayloadUnaligned()
     {
-        UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocate(256));
+        final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocate(256));
         termBuffer.putInt(FRAME_LENGTH_FIELD_OFFSET, 230);
         termBuffer.putInt(TYPE_FIELD_OFFSET, HDR_TYPE_DATA);
         final byte[] payload = new byte[230 - HEADER_LENGTH];
@@ -132,7 +132,7 @@ class FrameCRCTests
         r.nextBytes(payload);
         final int checksum = computeCrc(copyOf(payload, align(230 - HEADER_LENGTH, FRAME_ALIGNMENT)));
         termBuffer.putBytes(HEADER_LENGTH, payload);
-        AtomicInteger counter = new AtomicInteger();
+        final AtomicInteger counter = new AtomicInteger();
 
         frameCRC.compute(termBuffer, 0, 256,
             (buffer, offset, length, crc) ->
@@ -149,12 +149,12 @@ class FrameCRCTests
     @Test
     void computeStopsOnAFirstEmptyFrame()
     {
-        UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocate(192));
+        final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocate(192));
         termBuffer.putInt(FRAME_LENGTH_FIELD_OFFSET, 64);
         termBuffer.putInt(TYPE_FIELD_OFFSET, HDR_TYPE_DATA);
         termBuffer.putInt(64 + FRAME_LENGTH_FIELD_OFFSET, 0);
         termBuffer.putInt(64 + TYPE_FIELD_OFFSET, HDR_TYPE_DATA);
-        AtomicInteger counter = new AtomicInteger();
+        final AtomicInteger counter = new AtomicInteger();
 
         frameCRC.compute(termBuffer, 0, 128, (buffer, offset, length, crc) -> counter.incrementAndGet());
 
@@ -166,14 +166,14 @@ class FrameCRCTests
     @Test
     void computeCrcDirectByteBuffer()
     {
-        UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(64));
+        final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(64));
         termBuffer.putInt(FRAME_LENGTH_FIELD_OFFSET, 64);
         termBuffer.putInt(TYPE_FIELD_OFFSET, HDR_TYPE_DATA);
         final byte[] payload = new byte[32];
         fill(payload, (byte)11);
         final int checksum = computeCrc(payload);
         termBuffer.putBytes(HEADER_LENGTH, payload);
-        AtomicInteger counter = new AtomicInteger();
+        final AtomicInteger counter = new AtomicInteger();
 
         frameCRC.compute(termBuffer, 0, 64,
             (buffer, offset, length, crc) ->
@@ -190,7 +190,7 @@ class FrameCRCTests
     @Test
     void computeCrcAtTheGivenOffset()
     {
-        UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(128));
+        final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(128));
         termBuffer.putInt(FRAME_LENGTH_FIELD_OFFSET, 64);
         termBuffer.putInt(TYPE_FIELD_OFFSET, HDR_TYPE_DATA);
         final byte[] payload = new byte[32];
@@ -199,7 +199,7 @@ class FrameCRCTests
         termBuffer.putInt(64 + FRAME_LENGTH_FIELD_OFFSET, 64);
         termBuffer.putInt(64 + TYPE_FIELD_OFFSET, HDR_TYPE_DATA);
         termBuffer.putBytes(64 + HEADER_LENGTH, payload);
-        AtomicInteger counter = new AtomicInteger();
+        final AtomicInteger counter = new AtomicInteger();
 
         frameCRC.compute(termBuffer, 64, 128,
             (buffer, offset, length, crc) ->
@@ -223,7 +223,7 @@ class FrameCRCTests
     @Test
     void computeCrcForEachDataFrameInTheRange()
     {
-        UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(256));
+        final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(256));
         termBuffer.putInt(FRAME_LENGTH_FIELD_OFFSET, 64);
         termBuffer.putInt(TYPE_FIELD_OFFSET, HDR_TYPE_DATA);
         final byte[] payload = new byte[32];
@@ -239,8 +239,8 @@ class FrameCRCTests
         fill(payload, (byte)7);
         final int crc2 = computeCrc(payload);
         termBuffer.putBytes(160 + HEADER_LENGTH, payload);
-        AtomicInteger counter = new AtomicInteger();
-        List<Integer> results = new ArrayList<>();
+        final AtomicInteger counter = new AtomicInteger();
+        final List<Integer> results = new ArrayList<>();
 
         frameCRC.compute(termBuffer, 64, 224,
             (buffer, offset, length, crc) ->

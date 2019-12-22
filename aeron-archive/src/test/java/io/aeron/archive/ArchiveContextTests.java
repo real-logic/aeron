@@ -28,7 +28,7 @@ public class ArchiveContextTests
     @Test
     void recordingCrcEnabledDefaultValue()
     {
-        Context context = new Context();
+        final Context context = new Context();
         assertFalse(context.recordingCrcEnabled());
     }
 
@@ -38,7 +38,7 @@ public class ArchiveContextTests
         System.setProperty(RECORDING_CRC_ENABLED_PROP_NAME, "wrong value");
         try
         {
-            Context context = new Context();
+            final Context context = new Context();
             assertFalse(context.recordingCrcEnabled());
         }
         finally
@@ -53,7 +53,7 @@ public class ArchiveContextTests
         System.setProperty(RECORDING_CRC_ENABLED_PROP_NAME, "true");
         try
         {
-            Context context = new Context();
+            final Context context = new Context();
             assertTrue(context.recordingCrcEnabled());
         }
         finally
@@ -65,7 +65,7 @@ public class ArchiveContextTests
     @Test
     void recordingCrcEnabled()
     {
-        Context context = new Context();
+        final Context context = new Context();
         context.recordingCrcEnabled(true);
         assertTrue(context.recordingCrcEnabled());
     }
@@ -73,7 +73,7 @@ public class ArchiveContextTests
     @Test
     void replayCrcEnabledDefaultValue()
     {
-        Context context = new Context();
+        final Context context = new Context();
         assertFalse(context.replayCrcEnabled());
     }
 
@@ -83,7 +83,7 @@ public class ArchiveContextTests
         System.setProperty(REPLAY_CRC_ENABLED_PROP_NAME, "wrong value");
         try
         {
-            Context context = new Context();
+            final Context context = new Context();
             assertFalse(context.replayCrcEnabled());
         }
         finally
@@ -98,7 +98,7 @@ public class ArchiveContextTests
         System.setProperty(REPLAY_CRC_ENABLED_PROP_NAME, "true");
         try
         {
-            Context context = new Context();
+            final Context context = new Context();
             assertTrue(context.replayCrcEnabled());
         }
         finally
@@ -110,7 +110,7 @@ public class ArchiveContextTests
     @Test
     void replayCrcEnabled()
     {
-        Context context = new Context();
+        final Context context = new Context();
         context.replayCrcEnabled(true);
         assertTrue(context.replayCrcEnabled());
     }

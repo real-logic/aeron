@@ -102,6 +102,11 @@ public class FrameDescriptor
     public static final int TERM_ID_OFFSET = DataHeaderFlyweight.TERM_ID_FIELD_OFFSET;
 
     /**
+     * Offset within a frame at which the session id field begins
+     */
+    public static final int SESSION_ID_OFFSET = DataHeaderFlyweight.SESSION_ID_FIELD_OFFSET;
+
+    /**
      * Padding frame type to indicate the message should be ignored.
      */
     public static final int PADDING_FRAME_TYPE = HeaderFlyweight.HDR_TYPE_PAD;
@@ -184,6 +189,17 @@ public class FrameDescriptor
     }
 
     /**
+     * The buffer offset at which the session id field begins.
+     *
+     * @param termOffset at which the frame begins.
+     * @return the offset at which the session id field begins.
+     */
+    public static int sessionIdOffset(final int termOffset)
+    {
+        return termOffset + SESSION_ID_OFFSET;
+    }
+
+    /**
      * Read the type of of the frame from header.
      *
      * @param buffer     containing the frame.
@@ -241,6 +257,30 @@ public class FrameDescriptor
     public static int frameLength(final UnsafeBuffer buffer, final int termOffset)
     {
         return buffer.getInt(termOffset, LITTLE_ENDIAN);
+    }
+
+    /**
+     * Get the term id of a frame from the header.
+     *
+     * @param buffer     containing the frame.
+     * @param termOffset at which a frame begins.
+     * @return the value for the term id field.
+     */
+    public static int frameTermId(final UnsafeBuffer buffer, final int termOffset)
+    {
+        return buffer.getInt(termIdOffset(termOffset), LITTLE_ENDIAN);
+    }
+
+    /**
+     * Get the session id of a frame from the header.
+     *
+     * @param buffer     containing the frame.
+     * @param termOffset at which a frame begins.
+     * @return the value for the session id field.
+     */
+    public static int frameSessionId(final UnsafeBuffer buffer, final int termOffset)
+    {
+        return buffer.getInt(sessionIdOffset(termOffset), LITTLE_ENDIAN);
     }
 
     /**
@@ -325,5 +365,17 @@ public class FrameDescriptor
     public static void frameTermId(final UnsafeBuffer buffer, final int termOffset, final int termId)
     {
         buffer.putInt(termIdOffset(termOffset), termId, LITTLE_ENDIAN);
+    }
+
+    /**
+     * Write the session id field for a frame.
+     *
+     * @param buffer     containing the frame.
+     * @param termOffset at which a frame begins.
+     * @param sessionId     value for the frame.
+     */
+    public static void frameSessionId(final UnsafeBuffer buffer, final int termOffset, final int sessionId)
+    {
+        buffer.putInt(sessionIdOffset(termOffset), sessionId, LITTLE_ENDIAN);
     }
 }

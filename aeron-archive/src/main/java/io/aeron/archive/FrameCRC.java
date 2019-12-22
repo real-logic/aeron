@@ -38,15 +38,15 @@ final class FrameCRC
         /**
          * Invoked for every frame when a crc is computed.
          *
-         * @param termBuffer containing the block of message fragments.
-         * @param offset     at which frame begins, including any headers.
-         * @param length     of the frame in bytes, including any frame headers that is aligned up to
-         *                   {@link io.aeron.logbuffer.FrameDescriptor#FRAME_ALIGNMENT}.
-         * @param crc        computed CRC for the frame excluding header but including alignment bytes, i.e. computed
-         *                   using bytes in the ranger from {@code offset + DataHeaderFlyweight.HEADER_LENGTH} until
-         *                   {@code length}.
+         * @param buffer      containing the block of message fragments.
+         * @param frameOffset at which frame begins, including any headers.
+         * @param frameLength of the frame in bytes, including any frame headers that is aligned up to
+         *                    {@link io.aeron.logbuffer.FrameDescriptor#FRAME_ALIGNMENT}.
+         * @param crc         computed CRC for the frame excluding header but including alignment bytes, i.e. computed
+         *                    using bytes in the ranger from {@code offset + DataHeaderFlyweight.HEADER_LENGTH} until
+         *                    {@code length}.
          */
-        void consume(UnsafeBuffer termBuffer, int offset, final int length, int crc);
+        void consume(UnsafeBuffer buffer, int frameOffset, int frameLength, int crc);
     }
 
     /**

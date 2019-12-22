@@ -32,8 +32,11 @@ void aeron_set_err(int errcode, const char *format, ...);
 
 const char *aeron_error_code_str(int errcode);
 
-#ifdef _MSC_VER
+#if defined(AERON_COMPILER_MSVC)
 void aeron_set_windows_error();
+bool aeron_error_dll_process_attach();
+void aeron_error_dll_thread_detach();
+void aeron_error_dll_process_detach();
 #endif
 
 #endif //AERON_ERROR_H

@@ -719,6 +719,7 @@ class Catalog implements AutoCloseable
                 archiveDir,
                 maxSegmentFile,
                 decoder.startPosition(),
+                decoder.termBufferLength(),
                 decoder.segmentFileLength(),
                 (segmentFile) ->
                 {
@@ -801,6 +802,7 @@ class Catalog implements AutoCloseable
         final File archiveDir,
         final String maxSegmentFile,
         final long startPosition,
+        final int termLength,
         final int segmentFileLength,
         final Predicate<File> truncateFileOnPageStraddle)
     {
@@ -810,23 +812,26 @@ class Catalog implements AutoCloseable
         }
         else
         {
-            final File file = new File(archiveDir, maxSegmentFile);
+            final long startTermOffset = startPosition & (termLength - 1);
+            final long startTermBasePosition = startPosition - startTermOffset;
             final long segmentFileBasePosition = parseSegmentFilePosition(maxSegmentFile);
-            final long offset = max(0, startPosition - segmentFileBasePosition);
+            final long fileOffset = segmentFileBasePosition == startTermBasePosition ? startTermOffset : 0;
             final long segmentStopOffset = recoverStopOffset(
-                file, offset, segmentFileLength, truncateFileOnPageStraddle);
-
+                archiveDir, maxSegmentFile, fileOffset, segmentFileLength, truncateFileOnPageStraddle);
+            // Ensure that the computed stopPosition >= startPosition
             return max(segmentFileBasePosition + segmentStopOffset, startPosition);
         }
     }
 
     private static long recoverStopOffset(
-        final File segmentFile,
+        final File archiveDir,
+        final String segmentFile,
         final long offset,
         final int segmentFileLength,
         final Predicate<File> truncateFileOnPageStraddle)
     {
-        try (FileChannel segment = FileChannel.open(segmentFile.toPath(), READ, WRITE))
+        final File file = new File(archiveDir, segmentFile);
+        try (FileChannel segment = FileChannel.open(file.toPath(), READ, WRITE))
         {
             final ByteBuffer buffer = ByteBuffer.allocateDirect(HEADER_LENGTH);
             buffer.order(BYTE_ORDER);
@@ -842,7 +847,7 @@ class Catalog implements AutoCloseable
                 if (HEADER_LENGTH != segment.read(buffer, nextFragmentOffset))
                 {
                     throw new ArchiveException("unexpected read failure from file: " +
-                        segmentFile.getAbsolutePath() + " at position:" + nextFragmentOffset);
+                        file.getAbsolutePath() + " at position:" + nextFragmentOffset);
                 }
 
                 final int frameLength = buffer.getInt(FRAME_LENGTH_FIELD_OFFSET);
@@ -858,7 +863,7 @@ class Catalog implements AutoCloseable
             while (nextFragmentOffset < offsetLimit);
 
             if (fragmentStraddlesPageBoundary(lastFragmentOffset, lastFrameLength) &&
-                truncateFileOnPageStraddle.test(segmentFile))
+                truncateFileOnPageStraddle.test(file))
             {
                 segment.truncate(lastFragmentOffset);
                 buffer.put(0, (byte)0).limit(1).position(0);

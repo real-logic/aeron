@@ -475,6 +475,7 @@ public class ConsensusModule implements AutoCloseable
 
         /**
          * The number of services in this cluster instance.
+         * @see ClusteredServiceContainer.Configuration#SERVICE_ID_PROP_NAME
          */
         public static final String SERVICE_COUNT_PROP_NAME = "aeron.cluster.service.count";
 
@@ -2008,6 +2009,7 @@ public class ConsensusModule implements AutoCloseable
          * @param serviceCount the number of clustered services in this cluster instance.
          * @return this for a fluent API
          * @see Configuration#SERVICE_COUNT_PROP_NAME
+         * @see ClusteredServiceContainer.Configuration#SERVICE_ID_PROP_NAME
          */
         public Context serviceCount(final int serviceCount)
         {
@@ -2020,6 +2022,7 @@ public class ConsensusModule implements AutoCloseable
          *
          * @return the number of clustered services in this cluster instance.
          * @see Configuration#SERVICE_COUNT_PROP_NAME
+         * @see ClusteredServiceContainer.Configuration#SERVICE_ID_PROP_NAME
          */
         public int serviceCount()
         {
@@ -2296,9 +2299,9 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Set the {@link ClusterClock} to be used for timestamping messages.
+         * Set the {@link ClusterClock} to be used for timestamping messages and timers.
          *
-         * @param clock {@link ClusterClock} to be used for timestamping message
+         * @param clock {@link ClusterClock} to be used for timestamping messages and timers.
          * @return this for a fluent API.
          */
         public Context clusterClock(final ClusterClock clock)
@@ -2308,9 +2311,9 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Get the {@link ClusterClock} to used for timestamping message
+         * Get the {@link ClusterClock} to used for timestamping messages and timers.
          *
-         * @return the {@link ClusterClock} to used for timestamping message
+         * @return the {@link ClusterClock} to used for timestamping messages and timers.
          */
         public ClusterClock clusterClock()
         {

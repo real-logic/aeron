@@ -1173,7 +1173,7 @@ class ConsensusModuleAgent implements Agent
         if (timeUnit != clusterTimeUnit)
         {
             ctx.errorHandler().onError(new ClusterException(
-                "incompatible units: " + clusterTimeUnit + " log=" + timeUnit));
+                "incompatible timestamp units: " + clusterTimeUnit + " log=" + timeUnit));
             state(ConsensusModule.State.CLOSED);
             ctx.terminationHook().run();
             return;

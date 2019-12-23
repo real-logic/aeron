@@ -33,7 +33,7 @@ defaultTasks 'clean', 'build', 'shadowJar', 'install'
 def aeronGroup = 'io.aeron'
 def aeronVersion = file('version.txt').text.trim()
 
-def agronaVersion = '1.1.0'
+def agronaVersion = '1.1.1-SNAPSHOT'
 def sbeVersion = '1.15.0'
 def checkstyleVersion = '8.27'
 def hamcrestVersion = '2.2'

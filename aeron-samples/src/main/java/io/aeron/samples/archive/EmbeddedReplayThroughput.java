@@ -33,6 +33,7 @@ import org.agrona.concurrent.status.CountersReader;
 import org.agrona.console.ContinueBarrier;
 
 import java.io.File;
+import java.util.concurrent.TimeUnit;
 
 import static io.aeron.archive.Archive.Configuration.ARCHIVE_DIR_DEFAULT;
 import static io.aeron.samples.archive.TestUtil.MEGABYTE;
@@ -80,11 +81,11 @@ public class EmbeddedReplayThroughput implements AutoCloseable
             do
             {
                 System.out.printf("Replaying %,d messages%n", NUMBER_OF_MESSAGES);
-                final long start = System.currentTimeMillis();
+                final long start = System.nanoTime();
 
                 test.replayRecording(recordingLength, recordingId);
 
-                final long durationMs = System.currentTimeMillis() - start;
+                final long durationMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
                 final double dataRate = (recordingLength * 1000.0d / durationMs) / MEGABYTE;
                 final double recordingMb = recordingLength / MEGABYTE;
                 final long msgRate = (NUMBER_OF_MESSAGES / durationMs) * 1000L;

@@ -29,7 +29,6 @@ import org.agrona.IoUtil;
 import org.agrona.PrintBufferUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.SystemEpochClock;
-import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,26 +36,28 @@ import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.Date;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
+import static io.aeron.archive.ArchiveTool.SegmentFileOption.*;
 import static io.aeron.archive.Catalog.*;
 import static io.aeron.archive.MigrationUtils.fullVersionString;
 import static io.aeron.archive.ReplaySession.isInvalidHeader;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.logbuffer.FrameDescriptor.*;
-import static io.aeron.logbuffer.LogBufferDescriptor.computeTermIdFromPosition;
-import static io.aeron.logbuffer.LogBufferDescriptor.positionBitsToShift;
+import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_DATA;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
 import static java.lang.Math.min;
 import static java.nio.file.StandardOpenOption.READ;
+import static java.util.Collections.emptySet;
+import static java.util.stream.Collectors.toMap;
 import static org.agrona.BitUtil.align;
 import static org.agrona.BufferUtil.allocateDirectAligned;
+import static org.agrona.Checksums.crc32;
 
 /**
  * Tool for inspecting and performing administrative tasks on an {@link Archive} and its contents which is described in
@@ -126,32 +127,27 @@ public class ArchiveTool
         {
             if (args.length == 2)
             {
-                verify(System.out, archiveDir, false, ArchiveTool::truncateFileOnPageStraddle);
+                verify(System.out, archiveDir, emptySet(), ArchiveTool::truncateFileOnPageStraddle);
             }
-            else if (args.length == 3)
+            else
             {
-                if (validateAllSegmentFiles(args[2]))
-                {
-                    verify(System.out, archiveDir, true, ArchiveTool::truncateFileOnPageStraddle);
-                }
-                else
+                if (!isValidOption(args, 2)) // starts with recordingId
                 {
                     verifyRecording(
                         System.out,
                         archiveDir,
                         Long.parseLong(args[2]),
-                        false,
+                        parseOptions(args, 3),
                         ArchiveTool::truncateFileOnPageStraddle);
                 }
-            }
-            else
-            {
-                verifyRecording(
-                    System.out,
-                    archiveDir,
-                    Long.parseLong(args[2]),
-                    validateAllSegmentFiles(args[3]),
-                    ArchiveTool::truncateFileOnPageStraddle);
+                else
+                {
+                    verify(
+                        System.out,
+                        archiveDir,
+                        parseOptions(args, 3),
+                        ArchiveTool::truncateFileOnPageStraddle);
+                }
             }
         }
         else if (args.length == 2 && args[1].equals("count-entries"))
@@ -316,23 +312,68 @@ public class ArchiveTool
     }
 
     /**
+     * Set of options for {@link #verify(PrintStream, File, Set, ActionConfirmation)} and
+     * {@link #verify(PrintStream, File, Set, ActionConfirmation)} methods.
+     */
+    public enum SegmentFileOption
+    {
+        /**
+         * Enables validation for all segment files of a given recording.
+         * By default only last segment file is validated.
+         */
+        VALIDATE_ALL("all"),
+        /**
+         * Perform CRC for each data frame within a segment file being validated.
+         */
+        PERFORM_CRC("crc");
+
+        private final String flag;
+
+        SegmentFileOption(final String flag)
+        {
+            this.flag = flag;
+        }
+
+        private static final Map<String, SegmentFileOption> BY_FLAG = Stream.of(values())
+            .collect(toMap(opt -> opt.flag, opt -> opt));
+
+        public static boolean isValidOption(final String[] args, final int index)
+        {
+            return null != BY_FLAG.get(args[index]);
+        }
+
+        public static Set<SegmentFileOption> parseOptions(final String[] args, final int index)
+        {
+            final EnumSet<SegmentFileOption> options = EnumSet.noneOf(SegmentFileOption.class);
+            for (int i = index; i < args.length; i++)
+            {
+                final SegmentFileOption option = BY_FLAG.get(args[index]);
+                if (null != option)
+                {
+                    options.add(option);
+                }
+            }
+            return options;
+        }
+    }
+
+    /**
      * Verify descriptors in the catalog, checking recording files availability and contents.
      * Faulty entries are marked as unusable
      *
      * @param out                        output stream to print results and errors to
      * @param archiveDir                 that contains {@link org.agrona.MarkFile}, {@link Catalog}, and recordings.
-     * @param validateAllSegmentFiles    when {@code true} then all of the segment files will be validated, otherwise
-     *                                   only the last segment file will be validated.
+     * @param options                    set of options that control verification behavior.
      * @param truncateFileOnPageStraddle action to perform if last fragment in the max segment file straddles the page
      *                                   boundary, i.e. if {@code true} the file will be truncated (last fragment
      */
     public static void verify(
         final PrintStream out,
         final File archiveDir,
-        final boolean validateAllSegmentFiles,
+        final Set<SegmentFileOption> options,
         final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
-        verify(out, archiveDir, validateAllSegmentFiles, SystemEpochClock.INSTANCE, truncateFileOnPageStraddle);
+        verify(out, archiveDir, options, SystemEpochClock.INSTANCE, truncateFileOnPageStraddle);
     }
 
     /**
@@ -343,8 +384,7 @@ public class ArchiveTool
      * @param out                        output stream to print results and errors to
      * @param archiveDir                 that contains {@link org.agrona.MarkFile}, {@link Catalog}, and recordings.
      * @param recordingId                to verify.
-     * @param validateAllSegmentFiles    when {@code true} then all of the segment files will be validated, otherwise
-     *                                   only the last segment file will be validated.
+     * @param options                    set of options that control verification behavior.
      * @param truncateFileOnPageStraddle action to perform if last fragment in the max segment file straddles the page
      *                                   boundary, i.e. if {@code true} the file will be truncated (last fragment
      *                                   will be deleted), if {@code false} the fragment if considered complete.
@@ -354,14 +394,14 @@ public class ArchiveTool
         final PrintStream out,
         final File archiveDir,
         final long recordingId,
-        final boolean validateAllSegmentFiles,
+        final Set<SegmentFileOption> options,
         final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
         verifyRecording(
             out,
             archiveDir,
             recordingId,
-            validateAllSegmentFiles,
+            options,
             SystemEpochClock.INSTANCE,
             truncateFileOnPageStraddle);
     }
@@ -400,14 +440,14 @@ public class ArchiveTool
     static void verify(
         final PrintStream out,
         final File archiveDir,
-        final boolean validateAllSegmentFiles,
+        final Set<SegmentFileOption> options,
         final EpochClock epochClock,
         final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
         try (Catalog catalog = openCatalog(archiveDir, epochClock))
         {
             catalog.forEach(createVerifyEntryProcessor(
-                out, archiveDir, validateAllSegmentFiles, epochClock, truncateFileOnPageStraddle));
+                out, archiveDir, options, epochClock, truncateFileOnPageStraddle));
         }
     }
 
@@ -415,16 +455,16 @@ public class ArchiveTool
         final PrintStream out,
         final File archiveDir,
         final long recordingId,
-        final boolean validateAllSegmentFiles,
+        final Set<SegmentFileOption> options,
         final EpochClock epochClock,
         final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
         try (Catalog catalog = openCatalog(archiveDir, epochClock))
         {
             if (!catalog.forEntry(recordingId, createVerifyEntryProcessor(
-                out, archiveDir, validateAllSegmentFiles, epochClock, truncateFileOnPageStraddle)))
+                out, archiveDir, options, epochClock, truncateFileOnPageStraddle)))
             {
-                throw new AeronException("No recording found with recordingId: " + recordingId);
+                throw new AeronException("no recording found with recordingId: " + recordingId);
             }
         }
     }
@@ -442,29 +482,24 @@ public class ArchiveTool
     private static CatalogEntryProcessor createVerifyEntryProcessor(
         final PrintStream out,
         final File archiveDir,
-        final boolean validateAllSegmentFiles,
+        final Set<SegmentFileOption> options,
         final EpochClock epochClock,
         final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
-        final ByteBuffer buffer = allocateDirectAligned(HEADER_LENGTH, FRAME_ALIGNMENT);
+        final ByteBuffer buffer = allocateDirectAligned(computeMaxMessageLength(TERM_MAX_LENGTH), FRAME_ALIGNMENT);
         buffer.order(RecordingDescriptorDecoder.BYTE_ORDER);
         final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight(buffer);
 
         return (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) -> verifyRecording(
             out,
             archiveDir,
-            validateAllSegmentFiles,
+            options,
             epochClock,
             truncateFileOnPageStraddle,
             headerFlyweight,
             headerEncoder,
             descriptorEncoder,
             descriptorDecoder);
-    }
-
-    private static boolean validateAllSegmentFiles(final String arg)
-    {
-        return "-a".equals(arg);
     }
 
     private static boolean truncateFileOnPageStraddle(final File maxSegmentFile)
@@ -597,10 +632,11 @@ public class ArchiveTool
         out.println(markFile.decoder());
     }
 
+    @SuppressWarnings("MethodLength")
     private static void verifyRecording(
         final PrintStream out,
         final File archiveDir,
-        final boolean validateAllSegmentFiles,
+        final Set<SegmentFileOption> options,
         final EpochClock epochClock,
         final ActionConfirmation<File> truncateFileOnPageStraddle,
         final DataHeaderFlyweight headerFlyweight,
@@ -658,7 +694,8 @@ public class ArchiveTool
         if (maxSegmentFile != null)
         {
             final int streamId = decoder.streamId();
-            if (validateAllSegmentFiles)
+            final boolean performCrc = options.contains(PERFORM_CRC);
+            if (options.contains(VALIDATE_ALL))
             {
                 for (final String filename : segmentFiles)
                 {
@@ -672,7 +709,9 @@ public class ArchiveTool
                         segmentLength,
                         streamId,
                         decoder.initialTermId(),
-                        headerFlyweight))
+                        performCrc,
+                        headerFlyweight
+                    ))
                     {
                         headerEncoder.valid(INVALID);
                         return;
@@ -689,7 +728,9 @@ public class ArchiveTool
                 segmentLength,
                 streamId,
                 decoder.initialTermId(),
-                headerFlyweight))
+                performCrc,
+                headerFlyweight
+            ))
             {
                 headerEncoder.valid(INVALID);
                 return;
@@ -751,6 +792,7 @@ public class ArchiveTool
         final int segmentLength,
         final int streamId,
         final int initialTermId,
+        final boolean performCrc,
         final DataHeaderFlyweight headerFlyweight)
     {
         final File file = new File(archiveDir, fileName);
@@ -761,14 +803,19 @@ public class ArchiveTool
             final long startTermOffset = startPosition & (termLength - 1);
             final long startTermBasePosition = startPosition - startTermOffset;
             final long segmentFileBasePosition = parseSegmentFilePosition(fileName);
+
+            final ByteBuffer byteBuffer = headerFlyweight.byteBuffer();
+            final long bufferAddress = headerFlyweight.addressOffset();
+
             long fileOffset = segmentFileBasePosition == startTermBasePosition ? startTermOffset : 0;
             long position = segmentFileBasePosition + fileOffset;
             do
             {
-                headerFlyweight.byteBuffer().clear();
-                if (HEADER_LENGTH != channel.read(headerFlyweight.byteBuffer(), fileOffset))
+                byteBuffer.clear().limit(HEADER_LENGTH);
+                if (HEADER_LENGTH != channel.read(byteBuffer, fileOffset))
                 {
-                    out.println("(recordingId=" + recordingId + ") ERR: failed to read fragment header.");
+                    out.println("(recordingId=" + recordingId + ", file=" + file +
+                        ") ERR: failed to read fragment header");
                     return true;
                 }
 
@@ -782,15 +829,36 @@ public class ArchiveTool
                 final int termOffset = (int)(position & (termLength - 1));
                 if (isInvalidHeader(headerFlyweight, streamId, termId, termOffset))
                 {
-                    out.println("(recordingId=" + recordingId + ") ERR: fragment " +
+                    out.println("(recordingId=" + recordingId + ", file=" + file + ") ERR: fragment " +
                         "termOffset=" + headerFlyweight.termOffset() + " (expected=" + termOffset + "), " +
                         "termId=" + headerFlyweight.termId() + " (expected=" + termId + "), " +
                         "streamId=" + headerFlyweight.streamId() + " (expected=" + streamId + ")");
+                    return true;
+                }
+                final int frameType = frameType(headerFlyweight, 0);
+                final int sessionId = frameSessionId(headerFlyweight, 0);
 
+                final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
+                final int dataLength = alignedFrameLength - HEADER_LENGTH;
+                byteBuffer.clear().limit(dataLength);
+                if (dataLength != channel.read(byteBuffer, fileOffset + HEADER_LENGTH))
+                {
+                    out.println("(recordingId=" + recordingId + ", file=" + file + ") ERR: failed to read " +
+                        dataLength + " byte(s) of data at offset " + (fileOffset + HEADER_LENGTH));
                     return true;
                 }
 
-                final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
+                if (performCrc && HDR_TYPE_DATA == frameType)
+                {
+                    final int checksum = crc32(0, bufferAddress, 0, dataLength);
+                    if (checksum != sessionId)
+                    {
+                        out.println("(recordingId=" + recordingId + ", file=" + file + ") ERR: CRC failed " +
+                            "recorder=" + sessionId + " (expected=" + checksum + ")");
+                        return true;
+                    }
+                }
+
                 fileOffset += alignedFrameLength;
                 position += alignedFrameLength;
             }
@@ -798,7 +866,7 @@ public class ArchiveTool
         }
         catch (final IOException ex)
         {
-            out.println("(recordingId=" + recordingId + ") ERR: failed to verify file:" + file);
+            out.println("(recordingId=" + recordingId + ", file=" + file + ") ERR: failed to verify file:" + file);
             ex.printStackTrace(out);
             return true;
         }
@@ -837,9 +905,11 @@ public class ArchiveTool
         System.out.println("     in the catalog and associated recorded data.");
         System.out.println("  errors: prints errors for the archive and media driver.");
         System.out.println("  pid: prints just PID of archive.");
-        System.out.println("  verify <optional recordingId> <optional '-a'>: verifies descriptor(s) in the catalog");
+        System.out.println("  verify <optional recordingId> <optional 'all'> <optional 'crc'>: verifies descriptor(s)" +
+            " in the catalog");
         System.out.println("     checking recording files availability and contents. Only the last segment file is");
-        System.out.println("     validated unless flag '-a' is specified, i.e. meaning validate all segment files.");
+        System.out.println("     validated unless flag 'all' is specified, i.e. meaning validate all segment files.");
+        System.out.println("     In order to perform CRC for each data frame specify the 'crc' flag.");
         System.out.println("     Faulty entries are marked as unusable.");
         System.out.println("  count-entries: queries the number of recording entries in the catalog.");
         System.out.println("  max-entries <optional number of entries>: gets or increases the maximum number of");

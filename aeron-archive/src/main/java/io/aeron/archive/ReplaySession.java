@@ -37,17 +37,16 @@ import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
 import java.util.EnumSet;
-import java.util.zip.CRC32;
 
 import static io.aeron.archive.Archive.Configuration.MAX_BLOCK_LENGTH;
 import static io.aeron.archive.Archive.segmentFileName;
-import static io.aeron.archive.Crc32Helper.crc32;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.DataHeaderFlyweight.RESERVED_VALUE_OFFSET;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.file.StandardOpenOption.READ;
+import static org.agrona.Checksums.crc32;
 
 /**
  * A replay session with a client which works through the required request response flow and streaming of recorded data.
@@ -90,7 +89,7 @@ class ReplaySession implements Session, AutoCloseable
     private final int segmentLength;
 
     private final boolean performCrc;
-    private final CRC32 crc32;
+    private final long replayBufferAddress;
 
     private final BufferClaim bufferClaim = new BufferClaim();
     private final ExclusivePublication publication;
@@ -137,12 +136,12 @@ class ReplaySession implements Session, AutoCloseable
         this.publication = publication;
         this.limitPosition = replayLimitPosition;
         this.replayBuffer = replayBuffer;
+        this.replayBufferAddress = replayBuffer.addressOffset();
         this.catalog = catalog;
         this.startPosition = recordingSummary.startPosition;
         this.stopPosition = null == limitPosition ? recordingSummary.stopPosition : limitPosition.get();
 
         this.performCrc = performCrc;
-        crc32 = performCrc ? new CRC32() : null;
 
         final long fromPosition = position == NULL_POSITION ? startPosition : position;
         final long maxLength = null == limitPosition ? stopPosition - fromPosition : Long.MAX_VALUE - fromPosition;
@@ -398,7 +397,7 @@ class ReplaySession implements Session, AutoCloseable
     private void performCrc(final int frameOffset, final int alignedLength)
     {
         final int checksum = crc32(
-            crc32, replayBuffer.byteBuffer(), frameOffset + HEADER_LENGTH, alignedLength - HEADER_LENGTH);
+            0, replayBufferAddress, frameOffset + HEADER_LENGTH, alignedLength - HEADER_LENGTH);
         final int recordedChecksum = frameSessionId(replayBuffer, frameOffset);
         if (checksum != recordedChecksum)
         {

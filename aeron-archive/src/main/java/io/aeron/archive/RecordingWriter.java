@@ -29,14 +29,13 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.FileChannel;
-import java.util.zip.CRC32;
 
-import static io.aeron.archive.Crc32Helper.crc32;
 import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_DATA;
 import static org.agrona.BitUtil.align;
+import static org.agrona.Checksums.crc32;
 
 /**
  * Responsible for writing out a recording into the file system. A recording has descriptor file and a set of data files
@@ -58,7 +57,6 @@ class RecordingWriter implements BlockHandler
     private final boolean crcEnabled;
     private final FileChannel archiveDirChannel;
     private final File archiveDir;
-    private final CRC32 crc32;
 
     private long segmentBasePosition;
     private int segmentOffset;
@@ -83,7 +81,6 @@ class RecordingWriter implements BlockHandler
         forceMetadata = ctx.fileSyncLevel() > 1;
 
         crcEnabled = ctx.recordingCrcEnabled();
-        crc32 = crcEnabled ? new CRC32() : null;
 
         final int termLength = image.termBufferLength();
         final long joinPosition = image.joinPosition();
@@ -143,9 +140,9 @@ class RecordingWriter implements BlockHandler
 
     private void computeCRC(final UnsafeBuffer termBuffer, final int termOffset, final int length)
     {
-        final ByteBuffer buffer = termBuffer.byteBuffer();
         int frameOffset = termOffset;
         final int endOffset = termOffset + length;
+        final long address = termBuffer.addressOffset();
         while (frameOffset < endOffset)
         {
             final int frameLength = frameLength(termBuffer, frameOffset);
@@ -157,8 +154,8 @@ class RecordingWriter implements BlockHandler
             final int frameType = frameType(termBuffer, frameOffset);
             if (HDR_TYPE_DATA == frameType)
             {
-                final int checksum =
-                    crc32(crc32, buffer, frameOffset + HEADER_LENGTH, alignedLength - HEADER_LENGTH);
+                final int checksum = crc32(
+                    0, address, frameOffset + HEADER_LENGTH, alignedLength - HEADER_LENGTH);
                 frameSessionId(termBuffer, frameOffset, checksum);
             }
             frameOffset += alignedLength;

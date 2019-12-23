@@ -30,6 +30,7 @@ import org.agrona.concurrent.status.CountersReader;
 import org.agrona.console.ContinueBarrier;
 
 import java.io.File;
+import java.util.concurrent.TimeUnit;
 
 import static io.aeron.archive.Archive.Configuration.ARCHIVE_DIR_DEFAULT;
 import static io.aeron.samples.archive.TestUtil.MEGABYTE;
@@ -116,7 +117,7 @@ public class EmbeddedRecordingThroughput implements AutoCloseable
                 idleStrategy.idle();
             }
 
-            final long startMs = System.currentTimeMillis();
+            final long start = System.nanoTime();
             final UnsafeBuffer buffer = this.buffer;
 
             for (long i = 0; i < NUMBER_OF_MESSAGES; i++)
@@ -140,7 +141,7 @@ public class EmbeddedRecordingThroughput implements AutoCloseable
                 idleStrategy.idle();
             }
 
-            final long durationMs = System.currentTimeMillis() - startMs;
+            final long durationMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
             final double dataRate = (stopPosition * 1000.0d / durationMs) / MEGABYTE;
             final double recordingMb = stopPosition / MEGABYTE;
             final long msgRate = (NUMBER_OF_MESSAGES / durationMs) * 1000L;

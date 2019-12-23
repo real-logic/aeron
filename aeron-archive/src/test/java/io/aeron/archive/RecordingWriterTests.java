@@ -20,10 +20,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.io.File;
 import java.io.IOException;
 import java.util.stream.Stream;
-import java.util.zip.CRC32;
 
 import static io.aeron.archive.Archive.segmentFileName;
-import static io.aeron.archive.Crc32Helper.crc32;
 import static io.aeron.archive.client.ArchiveException.GENERIC;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
@@ -34,6 +32,8 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.file.Files.delete;
 import static java.nio.file.Files.readAllBytes;
 import static java.util.Arrays.fill;
+import static org.agrona.BufferUtil.allocateDirectAligned;
+import static org.agrona.Checksums.crc32;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -264,7 +264,7 @@ class RecordingWriterTests
         final RecordingWriter recordingWriter = new RecordingWriter(
             1, 0, SEGMENT_LENGTH, image, ctx, null);
         recordingWriter.init();
-        final UnsafeBuffer termBuffer = new UnsafeBuffer(allocate(512));
+        final UnsafeBuffer termBuffer = new UnsafeBuffer(allocateDirectAligned(512, 64));
         frameType(termBuffer, 96, HDR_TYPE_DATA);
         frameTermId(termBuffer, 96, 96);
         frameLengthOrdered(termBuffer, 96, 64);
@@ -285,16 +285,15 @@ class RecordingWriterTests
         assertEquals(HDR_TYPE_DATA, frameType(fileBuffer, 0));
         assertEquals(96, frameTermId(fileBuffer, 0));
         assertEquals(64, frameLength(fileBuffer, 0));
-        final CRC32 state = new CRC32();
         assertEquals(
-            crc32(state, termBuffer.byteBuffer(), 96 + HEADER_LENGTH, 32),
+            crc32(0, termBuffer.addressOffset(), 96 + HEADER_LENGTH, 32),
             frameSessionId(fileBuffer, 0)
         );
         assertEquals(HDR_TYPE_DATA, frameType(fileBuffer, 64));
         assertEquals(160, frameTermId(fileBuffer, 64));
         assertEquals(288, frameLength(fileBuffer, 64));
         assertEquals(
-            crc32(state, termBuffer.byteBuffer(), 160 + HEADER_LENGTH, 256),
+            crc32(0, termBuffer.addressOffset(), 160 + HEADER_LENGTH, 256),
             frameSessionId(fileBuffer, 64)
         );
     }

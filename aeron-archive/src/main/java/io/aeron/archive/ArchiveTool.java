@@ -448,8 +448,7 @@ public class ArchiveTool
     {
         final ByteBuffer buffer = allocateDirectAligned(HEADER_LENGTH, FRAME_ALIGNMENT);
         buffer.order(RecordingDescriptorDecoder.BYTE_ORDER);
-        final UnsafeBuffer tempBuffer = new UnsafeBuffer(buffer);
-        final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight(tempBuffer);
+        final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight(buffer);
 
         return (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) -> verifyRecording(
             out,
@@ -457,7 +456,6 @@ public class ArchiveTool
             validateAllSegmentFiles,
             epochClock,
             truncateFileOnPageStraddle,
-            tempBuffer,
             headerFlyweight,
             headerEncoder,
             descriptorEncoder,
@@ -605,7 +603,6 @@ public class ArchiveTool
         final boolean validateAllSegmentFiles,
         final EpochClock epochClock,
         final ActionConfirmation<File> truncateFileOnPageStraddle,
-        final UnsafeBuffer tempBuffer,
         final DataHeaderFlyweight headerFlyweight,
         final RecordingDescriptorHeaderEncoder headerEncoder,
         final RecordingDescriptorEncoder encoder,
@@ -675,7 +672,6 @@ public class ArchiveTool
                         segmentLength,
                         streamId,
                         decoder.initialTermId(),
-                        tempBuffer,
                         headerFlyweight))
                     {
                         headerEncoder.valid(INVALID);
@@ -693,7 +689,6 @@ public class ArchiveTool
                 segmentLength,
                 streamId,
                 decoder.initialTermId(),
-                tempBuffer,
                 headerFlyweight))
             {
                 headerEncoder.valid(INVALID);
@@ -756,7 +751,6 @@ public class ArchiveTool
         final int segmentLength,
         final int streamId,
         final int initialTermId,
-        final UnsafeBuffer tempBuffer,
         final DataHeaderFlyweight headerFlyweight)
     {
         final File file = new File(archiveDir, fileName);
@@ -771,8 +765,8 @@ public class ArchiveTool
             long position = segmentFileBasePosition + fileOffset;
             do
             {
-                tempBuffer.byteBuffer().clear();
-                if (HEADER_LENGTH != channel.read(tempBuffer.byteBuffer(), fileOffset))
+                headerFlyweight.byteBuffer().clear();
+                if (HEADER_LENGTH != channel.read(headerFlyweight.byteBuffer(), fileOffset))
                 {
                     out.println("(recordingId=" + recordingId + ") ERR: failed to read fragment header.");
                     return true;
@@ -786,7 +780,7 @@ public class ArchiveTool
 
                 final int termId = computeTermIdFromPosition(position, positionBitsToShift, initialTermId);
                 final int termOffset = (int)(position & (termLength - 1));
-                if (isInvalidHeader(tempBuffer, streamId, termId, termOffset))
+                if (isInvalidHeader(headerFlyweight, streamId, termId, termOffset))
                 {
                     out.println("(recordingId=" + recordingId + ") ERR: fragment " +
                         "termOffset=" + headerFlyweight.termOffset() + " (expected=" + termOffset + "), " +

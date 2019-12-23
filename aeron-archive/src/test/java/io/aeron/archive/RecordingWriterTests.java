@@ -4,23 +4,33 @@ import io.aeron.Image;
 import io.aeron.archive.Archive.Context;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.protocol.NakFlyweight;
+import io.aeron.protocol.RttMeasurementFlyweight;
+import io.aeron.protocol.SetupFlyweight;
+import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.stream.Stream;
 import java.util.zip.CRC32;
 
 import static io.aeron.archive.Archive.segmentFileName;
+import static io.aeron.archive.Crc32Helper.crc32;
 import static io.aeron.archive.client.ArchiveException.GENERIC;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
-import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_DATA;
-import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
+import static io.aeron.protocol.DataHeaderFlyweight.SESSION_ID_FIELD_OFFSET;
+import static io.aeron.protocol.HeaderFlyweight.*;
 import static java.nio.ByteBuffer.allocate;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.file.Files.delete;
 import static java.nio.file.Files.readAllBytes;
 import static java.util.Arrays.fill;
@@ -255,15 +265,16 @@ class RecordingWriterTests
             1, 0, SEGMENT_LENGTH, image, ctx, null);
         recordingWriter.init();
         final UnsafeBuffer termBuffer = new UnsafeBuffer(allocate(512));
-        final byte[] data = new byte[32];
-        fill(data, (byte)99);
-        frameType(termBuffer, 0, HDR_TYPE_DATA);
-        frameTermId(termBuffer, 0, 18);
-        frameLengthOrdered(termBuffer, 0, 64);
-        frameSessionId(termBuffer, 0, 5);
-        termBuffer.putBytes(HEADER_LENGTH, data);
+        frameType(termBuffer, 96, HDR_TYPE_DATA);
+        frameTermId(termBuffer, 96, 96);
+        frameLengthOrdered(termBuffer, 96, 64);
+        termBuffer.setMemory(96 + HEADER_LENGTH, 32, (byte)96);
+        frameType(termBuffer, 160, HDR_TYPE_DATA);
+        frameTermId(termBuffer, 160, 160);
+        frameLengthOrdered(termBuffer, 160, 288);
+        termBuffer.setMemory(160 + HEADER_LENGTH, 256, (byte)160);
 
-        recordingWriter.onBlock(termBuffer, 0, 64, -1, -1);
+        recordingWriter.onBlock(termBuffer, 96, 352, -1, -1);
 
         recordingWriter.close();
         final File segmentFile = segmentFile(1, 0);
@@ -272,32 +283,58 @@ class RecordingWriterTests
         final UnsafeBuffer fileBuffer = new UnsafeBuffer();
         fileBuffer.wrap(readAllBytes(segmentFile.toPath()));
         assertEquals(HDR_TYPE_DATA, frameType(fileBuffer, 0));
-        assertEquals(18, frameTermId(fileBuffer, 0));
+        assertEquals(96, frameTermId(fileBuffer, 0));
         assertEquals(64, frameLength(fileBuffer, 0));
-        final CRC32 crc32 = new CRC32();
-        crc32.update(data);
-        final int crc = (int)crc32.getValue();
-        assertEquals(crc, frameSessionId(fileBuffer, 0));
+        final CRC32 state = new CRC32();
+        assertEquals(
+            crc32(state, termBuffer.byteBuffer(), 96 + HEADER_LENGTH, 32),
+            frameSessionId(fileBuffer, 0)
+        );
+        assertEquals(HDR_TYPE_DATA, frameType(fileBuffer, 64));
+        assertEquals(160, frameTermId(fileBuffer, 64));
+        assertEquals(288, frameLength(fileBuffer, 64));
+        assertEquals(
+            crc32(state, termBuffer.byteBuffer(), 160 + HEADER_LENGTH, 256),
+            frameSessionId(fileBuffer, 64)
+        );
     }
 
-    @Test
-    void onBlockShouldNotComputeCrcForThePaddingFrames() throws IOException
+    private static Stream<Arguments> nonDataFrames()
     {
+        return Stream.of(
+            Arguments.of(HDR_TYPE_PAD, HEADER_LENGTH, SESSION_ID_FIELD_OFFSET),
+            Arguments.of(HDR_TYPE_NAK, NakFlyweight.HEADER_LENGTH, 8),
+            Arguments.of(HDR_TYPE_SM, StatusMessageFlyweight.HEADER_LENGTH, 8),
+            Arguments.of(HDR_TYPE_ERR, HEADER_LENGTH, SESSION_ID_FIELD_OFFSET),
+            Arguments.of(HDR_TYPE_SETUP, SetupFlyweight.HEADER_LENGTH, 12),
+            Arguments.of(HDR_TYPE_RTTM, RttMeasurementFlyweight.HEADER_LENGTH, 8),
+            Arguments.of(HDR_TYPE_EXT, HEADER_LENGTH, SESSION_ID_FIELD_OFFSET)
+        );
+    }
+
+    @ParameterizedTest()
+    @MethodSource("nonDataFrames")
+    void onBlockShouldNotComputeCrcForNonDataFrame(
+        final int headerType, final int headerLength, final int sessionIdFieldOffset) throws IOException
+    {
+
         final Image image = mockImage(0L);
         final Context ctx = new Context().archiveDir(archiveDir).recordingCrcEnabled(true);
         final RecordingWriter recordingWriter = new RecordingWriter(
             1, 0, SEGMENT_LENGTH, image, ctx, null);
         recordingWriter.init();
         final UnsafeBuffer termBuffer = new UnsafeBuffer(allocate(512));
-        final byte[] data = new byte[32];
+        final int length = 128;
+        final byte[] data = new byte[length - headerLength];
         fill(data, (byte)99);
-        frameType(termBuffer, 0, HDR_TYPE_PAD);
+        frameType(termBuffer, 0, headerType);
         frameTermId(termBuffer, 0, 18);
-        frameLengthOrdered(termBuffer, 0, 64);
+        frameLengthOrdered(termBuffer, 0, length);
         frameSessionId(termBuffer, 0, 5);
-        termBuffer.putBytes(HEADER_LENGTH, data);
+        termBuffer.putInt(sessionIdFieldOffset, 5, LITTLE_ENDIAN);
+        termBuffer.putBytes(headerLength, data);
 
-        recordingWriter.onBlock(termBuffer, 0, 64, -1, -1);
+        recordingWriter.onBlock(termBuffer, 0, length, -1, -1);
 
         recordingWriter.close();
         final File segmentFile = segmentFile(1, 0);
@@ -305,10 +342,10 @@ class RecordingWriterTests
         assertEquals(SEGMENT_LENGTH, segmentFile.length());
         final UnsafeBuffer fileBuffer = new UnsafeBuffer();
         fileBuffer.wrap(readAllBytes(segmentFile.toPath()));
-        assertEquals(HDR_TYPE_PAD, frameType(fileBuffer, 0));
+        assertEquals(headerType, frameType(fileBuffer, 0));
         assertEquals(18, frameTermId(fileBuffer, 0));
-        assertEquals(64, frameLength(fileBuffer, 0));
-        assertEquals(5, frameSessionId(fileBuffer, 0));
+        assertEquals(length, frameLength(fileBuffer, 0));
+        assertEquals(5, fileBuffer.getInt(sessionIdFieldOffset, LITTLE_ENDIAN));
     }
 
     private Image mockImage(final long joinPosition)

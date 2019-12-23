@@ -18,7 +18,6 @@ package io.aeron.archive;
 import io.aeron.Image;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.logbuffer.BlockHandler;
-import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
@@ -30,9 +29,14 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.FileChannel;
+import java.util.zip.CRC32;
 
+import static io.aeron.archive.Crc32Helper.crc32;
 import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
 import static io.aeron.logbuffer.FrameDescriptor.*;
+import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
+import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_DATA;
+import static org.agrona.BitUtil.align;
 
 /**
  * Responsible for writing out a recording into the file system. A recording has descriptor file and a set of data files
@@ -54,7 +58,7 @@ class RecordingWriter implements BlockHandler
     private final boolean crcEnabled;
     private final FileChannel archiveDirChannel;
     private final File archiveDir;
-    private final FrameCRC crc;
+    private final CRC32 crc32;
 
     private long segmentBasePosition;
     private int segmentOffset;
@@ -79,7 +83,7 @@ class RecordingWriter implements BlockHandler
         forceMetadata = ctx.fileSyncLevel() > 1;
 
         crcEnabled = ctx.recordingCrcEnabled();
-        crc = crcEnabled ? new FrameCRC() : null;
+        crc32 = crcEnabled ? new CRC32() : null;
 
         final int termLength = image.termBufferLength();
         final long joinPosition = image.joinPosition();
@@ -93,7 +97,7 @@ class RecordingWriter implements BlockHandler
         try
         {
             final boolean isPaddingFrame = termBuffer.getShort(typeOffset(termOffset)) == PADDING_FRAME_TYPE;
-            final int dataLength = isPaddingFrame ? DataHeaderFlyweight.HEADER_LENGTH : length;
+            final int dataLength = isPaddingFrame ? HEADER_LENGTH : length;
             final ByteBuffer byteBuffer = termBuffer.byteBuffer();
             byteBuffer.limit(termOffset + dataLength).position(termOffset);
 
@@ -101,8 +105,7 @@ class RecordingWriter implements BlockHandler
             {
                 // Cast to UnsafeBuffer is safe, because BlockHandler is internal API which is always invoked with an
                 // instance of UnsafeBuffer which is used for performance reasons (i.e. to avoid invokeinterface calls)
-                crc.forEach((UnsafeBuffer)termBuffer, termOffset, length,
-                    (buffer, frameOffset, frameLength, checksum) -> frameSessionId(buffer, frameOffset, checksum));
+                computeCRC((UnsafeBuffer)termBuffer, termOffset, length);
             }
 
             do
@@ -135,6 +138,30 @@ class RecordingWriter implements BlockHandler
         {
             close();
             LangUtil.rethrowUnchecked(ex);
+        }
+    }
+
+    private void computeCRC(final UnsafeBuffer termBuffer, final int termOffset, final int length)
+    {
+        final ByteBuffer buffer = termBuffer.byteBuffer();
+        int frameOffset = termOffset;
+        final int endOffset = termOffset + length;
+        while (frameOffset < endOffset)
+        {
+            final int frameLength = frameLength(termBuffer, frameOffset);
+            if (frameLength == 0)
+            {
+                break;
+            }
+            final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
+            final int frameType = frameType(termBuffer, frameOffset);
+            if (HDR_TYPE_DATA == frameType)
+            {
+                final int checksum =
+                    crc32(crc32, buffer, frameOffset + HEADER_LENGTH, alignedLength - HEADER_LENGTH);
+                frameSessionId(termBuffer, frameOffset, checksum);
+            }
+            frameOffset += alignedLength;
         }
     }
 

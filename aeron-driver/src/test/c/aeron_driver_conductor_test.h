@@ -480,22 +480,23 @@ public:
         return aeron_driver_conductor_do_work(&m_conductor.m_conductor);
     }
 
-    void doWorkUntilTimeNs(int64_t end_ns, int64_t num_increments = 100, std::function<void()> func = [](){})
+    void doWorkForNs(int64_t duration_ns, int64_t num_increments = 100, std::function<void()> func = [](){})
     {
-        int64_t increment = (end_ns - ms_timestamp) / num_increments;
+        int64_t initial_ms = ms_timestamp;
+        int64_t increment_ns = duration_ns / num_increments;
 
-        if (increment <= 0)
+        if (increment_ns <= 0)
         {
             throw std::runtime_error("increment must be positive");
         }
 
         do
         {
-            ms_timestamp += increment;
+            ms_timestamp += (increment_ns / 1000000);
             func();
             doWork();
         }
-        while (ms_timestamp <= end_ns);
+        while (((ms_timestamp - initial_ms) * 1000000) <= duration_ns);
     }
 
     void fill_sockaddr_ipv4(struct sockaddr_storage *addr, const char *ip, unsigned short int port)

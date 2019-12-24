@@ -1798,7 +1798,7 @@ int aeron_driver_conductor_do_work(void *clientd)
     work_count += aeron_mpsc_concurrent_array_queue_drain(
         conductor->conductor_proxy.command_queue, aeron_driver_conductor_on_command_queue, conductor, 10);
 
-    if (now_ns > (conductor->time_of_last_timeout_check_ns + (int64_t)conductor->context->timer_interval_ns))
+    if (now_ns >= (conductor->time_of_last_timeout_check_ns + (int64_t)conductor->context->timer_interval_ns))
     {
         int64_t now_ms = conductor->epoch_clock();
 

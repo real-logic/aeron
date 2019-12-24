@@ -784,7 +784,7 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToTimeoutNetworkPublication)
     EXPECT_EQ(aeron_driver_conductor_num_network_publications(&m_conductor.m_conductor), 1u);
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
 
-    doWorkUntilTimeNs(
+    doWorkForNs(
         m_context.m_context->publication_linger_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2));
     EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 0u);
     EXPECT_EQ(aeron_driver_conductor_num_network_publications(&m_conductor.m_conductor), 0u);
@@ -815,7 +815,7 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToNotTimeoutNetworkPublicationOnK
     int64_t timeout =
         m_context.m_context->publication_linger_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2);
 
-    doWorkUntilTimeNs(
+    doWorkForNs(
         timeout,
         100,
         [&]()
@@ -838,7 +838,7 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToTimeoutNetworkSubscription)
     EXPECT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 1u);
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
 
-    doWorkUntilTimeNs(
+    doWorkForNs(
         m_context.m_context->publication_linger_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2));
     EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 0u);
     EXPECT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 0u);
@@ -869,7 +869,7 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToNotTimeoutNetworkSubscriptionOn
     int64_t timeout =
         m_context.m_context->publication_linger_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2);
 
-    doWorkUntilTimeNs(
+    doWorkForNs(
         timeout,
         100,
         [&]()
@@ -897,7 +897,7 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToTimeoutSendChannelEndpointWithC
     int64_t timeout =
         m_context.m_context->publication_linger_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2);
 
-    doWorkUntilTimeNs(
+    doWorkForNs(
         timeout,
         100,
         [&]()
@@ -925,7 +925,7 @@ TEST_F(DriverConductorNetworkTest, shouldBeAbleToTimeoutReceiveChannelEndpointWi
 
     int64_t timeout = m_context.m_context->client_liveness_timeout_ns;
 
-    doWorkUntilTimeNs(
+    doWorkForNs(
         timeout,
         100,
         [&]()
@@ -1054,9 +1054,10 @@ TEST_F(DriverConductorNetworkTest, shouldTimeoutImageAndSendUnavailableImageWhen
 
     int64_t image_correlation_id = image->conductor_fields.managed_resource.registration_id;
 
-    int64_t timeout = m_context.m_context->image_liveness_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2);
+    int64_t timeout = m_context.m_context->image_liveness_timeout_ns +
+        (m_context.m_context->client_liveness_timeout_ns * 2) + (m_context.m_context->timer_interval_ns * 3);
 
-    doWorkUntilTimeNs(
+    doWorkForNs(
         timeout,
         100,
         [&]()
@@ -1095,9 +1096,10 @@ TEST_F(DriverConductorNetworkTest, shouldRemoveSubscriptionAfterImageTimeout)
 
     createPublicationImage(endpoint, STREAM_ID_1, 1000);
 
-    int64_t timeout = m_context.m_context->image_liveness_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2);
+    int64_t timeout = m_context.m_context->image_liveness_timeout_ns +
+        (m_context.m_context->client_liveness_timeout_ns * 2) + (m_context.m_context->timer_interval_ns * 3);
 
-    doWorkUntilTimeNs(
+    doWorkForNs(
         timeout,
         100,
         [&]()
@@ -1252,7 +1254,7 @@ TEST_F(DriverConductorNetworkTest, shouldTimeoutImageAndSendUnavailableImageWhen
     int64_t image_correlation_id = aeron_publication_image_registration_id(image);
     int64_t timeout = m_context.m_context->image_liveness_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2);
 
-    doWorkUntilTimeNs(
+    doWorkForNs(
         timeout,
         100,
         [&]()
@@ -1338,7 +1340,7 @@ TEST_F(DriverConductorNetworkTest, shouldUseExistingChannelEndpointOnAddPublicat
     EXPECT_EQ(aeron_driver_conductor_num_network_publications(&m_conductor.m_conductor), 1u);
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 2u);
 
-    doWorkUntilTimeNs(
+    doWorkForNs(
         m_context.m_context->publication_linger_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2));
     EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 0u);
     EXPECT_EQ(aeron_driver_conductor_num_network_publications(&m_conductor.m_conductor), 0u);
@@ -1358,7 +1360,7 @@ TEST_F(DriverConductorNetworkTest, shouldUseExistingChannelEndpointOnAddPublicat
     EXPECT_EQ(aeron_driver_conductor_num_network_publications(&m_conductor.m_conductor), 2u);
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 2u);
 
-    doWorkUntilTimeNs(
+    doWorkForNs(
         m_context.m_context->publication_linger_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2));
     EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 0u);
     EXPECT_EQ(aeron_driver_conductor_num_network_publications(&m_conductor.m_conductor), 0u);
@@ -1378,7 +1380,7 @@ TEST_F(DriverConductorNetworkTest, shouldUseExistingChannelEndpointOnAddSubscrip
     EXPECT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 2u);
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 2u);
 
-    doWorkUntilTimeNs(
+    doWorkForNs(
         m_context.m_context->publication_linger_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2));
     EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 0u);
     EXPECT_EQ(aeron_driver_conductor_num_network_subscriptions(&m_conductor.m_conductor), 0u);

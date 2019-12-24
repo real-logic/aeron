@@ -470,7 +470,7 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToTimeoutSubscription)
     EXPECT_EQ(aeron_driver_conductor_num_spy_subscriptions(&m_conductor.m_conductor), 1u);
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
 
-    doWorkUntilTimeNs(
+    doWorkForNs(
         m_context.m_context->publication_linger_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2));
     EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 0u);
     EXPECT_EQ(aeron_driver_conductor_num_spy_subscriptions(&m_conductor.m_conductor), 0u);
@@ -499,7 +499,7 @@ TEST_F(DriverConductorSpyTest, shouldBeAbleToNotTimeoutSubscriptionOnKeepalive)
 
     int64_t timeout = m_context.m_context->publication_linger_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2);
 
-    doWorkUntilTimeNs(
+    doWorkForNs(
         timeout,
         100,
         [&]()

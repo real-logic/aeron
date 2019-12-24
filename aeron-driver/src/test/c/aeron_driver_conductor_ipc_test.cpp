@@ -596,7 +596,7 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToTimeoutIpcPublication)
     EXPECT_EQ(aeron_driver_conductor_num_ipc_publications(&m_conductor.m_conductor), 1u);
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
 
-    doWorkUntilTimeNs(
+    doWorkForNs(
         m_context.m_context->publication_linger_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2));
     EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 0u);
     EXPECT_EQ(aeron_driver_conductor_num_ipc_publications(&m_conductor.m_conductor), 0u);
@@ -626,7 +626,7 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToNotTimeoutIpcPublicationOnKeepalive
     int64_t timeout = m_context.m_context->publication_linger_timeout_ns +
         (m_context.m_context->client_liveness_timeout_ns * 2);
 
-    doWorkUntilTimeNs(
+    doWorkForNs(
         timeout,
         100,
         [&]()
@@ -648,7 +648,7 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToTimeoutIpcSubscription)
     EXPECT_EQ(aeron_driver_conductor_num_ipc_subscriptions(&m_conductor.m_conductor), 1u);
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 1u);
 
-    doWorkUntilTimeNs(
+    doWorkForNs(
         m_context.m_context->publication_linger_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2));
     EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 0u);
     EXPECT_EQ(aeron_driver_conductor_num_ipc_subscriptions(&m_conductor.m_conductor), 0u);
@@ -668,7 +668,7 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToTimeoutMultipleIpcSubscriptions)
     EXPECT_EQ(aeron_driver_conductor_num_ipc_subscriptions(&m_conductor.m_conductor), 3u);
     EXPECT_EQ(readAllBroadcastsFromConductor(null_handler), 3u);
 
-    doWorkUntilTimeNs(
+    doWorkForNs(
         m_context.m_context->publication_linger_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2));
     EXPECT_EQ(aeron_driver_conductor_num_clients(&m_conductor.m_conductor), 0u);
     EXPECT_EQ(aeron_driver_conductor_num_ipc_subscriptions(&m_conductor.m_conductor), 0u);
@@ -686,7 +686,7 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToNotTimeoutIpcSubscriptionOnKeepaliv
 
     int64_t timeout = m_context.m_context->publication_linger_timeout_ns + (m_context.m_context->client_liveness_timeout_ns * 2);
 
-    doWorkUntilTimeNs(
+    doWorkForNs(
         timeout,
         100,
         [&]()
@@ -714,7 +714,7 @@ TEST_F(DriverConductorIpcTest, shouldBeAbleToTimeoutIpcPublicationWithActiveIpcS
 
     int64_t timeout = m_context.m_context->publication_linger_timeout_ns * 2;
 
-    doWorkUntilTimeNs(
+    doWorkForNs(
         timeout,
         100,
         [&]()

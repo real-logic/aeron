@@ -439,8 +439,6 @@ public class ReplaySessionTest
             final ArchiveException exception = assertThrows(ArchiveException.class, replaySession::doWork);
             assertEquals(ArchiveException.GENERIC, exception.errorCode());
             assertThat(exception.getMessage(), Matchers.startsWith("CRC checksum mismatch at offset=0"));
-            assertEquals(ReplaySession.State.INACTIVE, replaySession.state());
-            assertEquals(exception.getMessage(), replaySession.errorMessage());
         }
     }
 

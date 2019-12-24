@@ -34,8 +34,8 @@ import java.util.EnumSet;
 import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_SUFFIX;
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.ArchiveTool.*;
-import static io.aeron.archive.ArchiveTool.SegmentFileOption.PERFORM_CRC;
-import static io.aeron.archive.ArchiveTool.SegmentFileOption.VALIDATE_ALL;
+import static io.aeron.archive.ArchiveTool.VerifyOption.APPLY_CRC;
+import static io.aeron.archive.ArchiveTool.VerifyOption.VALIDATE_ALL_SEGMENT_FILES;
 import static io.aeron.archive.Catalog.*;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
@@ -49,7 +49,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 
-class ArchiveToolVerifyTests
+class ArchiveToolTests
 {
     private static final int TERM_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int SEGMENT_LENGTH = TERM_LENGTH * 4;
@@ -645,7 +645,8 @@ class ArchiveToolVerifyTests
     @Test
     void verifyRecordingValidRecordingValidateAllSegmentFiles()
     {
-        verifyRecording(out, archiveDir, validRecording3, EnumSet.of(VALIDATE_ALL), epochClock, (file) -> false);
+        verifyRecording(out, archiveDir, validRecording3, EnumSet
+            .of(VALIDATE_ALL_SEGMENT_FILES), epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -657,7 +658,8 @@ class ArchiveToolVerifyTests
     @Test
     void verifyRecordingInvalidRecordingValidateAllSegmentFiles()
     {
-        verifyRecording(out, archiveDir, validRecording4, EnumSet.of(VALIDATE_ALL), epochClock, (file) -> false);
+        verifyRecording(out, archiveDir, validRecording4, EnumSet
+            .of(VALIDATE_ALL_SEGMENT_FILES), epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -692,7 +694,7 @@ class ArchiveToolVerifyTests
     @Test
     void verifyRecordingValidRecordingPerformCRC()
     {
-        verifyRecording(out, archiveDir, validRecording6, EnumSet.of(PERFORM_CRC), epochClock, (file) -> false);
+        verifyRecording(out, archiveDir, validRecording6, EnumSet.of(APPLY_CRC), epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -703,7 +705,7 @@ class ArchiveToolVerifyTests
     @Test
     void verifyRecordingInvalidRecordingPerformCRC()
     {
-        verifyRecording(out, archiveDir, validRecording3, EnumSet.of(PERFORM_CRC), epochClock, (file) -> false);
+        verifyRecording(out, archiveDir, validRecording3, EnumSet.of(APPLY_CRC), epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -716,6 +718,7 @@ class ArchiveToolVerifyTests
     void verifyNoOptionsDoNotTruncateFileOnPageStraddle()
     {
         verify(out, archiveDir, emptySet(), epochClock, (file) -> false);
+
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             assertRecording(catalog, invalidRecording0, INVALID, NULL_POSITION, NULL_POSITION, 1, NULL_TIMESTAMP,
@@ -768,7 +771,8 @@ class ArchiveToolVerifyTests
     @Test
     void verifyAllOptionsTruncateFileOnPageStraddle()
     {
-        verify(out, archiveDir, EnumSet.allOf(SegmentFileOption.class), epochClock, (file) -> true);
+        verify(out, archiveDir, EnumSet.allOf(VerifyOption.class), epochClock, (file) -> true);
+
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             assertRecording(catalog, invalidRecording0, INVALID, NULL_POSITION, NULL_POSITION, 1, NULL_TIMESTAMP,

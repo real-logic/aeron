@@ -41,7 +41,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import static io.aeron.archive.ArchiveTool.SegmentFileOption.*;
+import static io.aeron.archive.ArchiveTool.VerifyOption.*;
 import static io.aeron.archive.Catalog.*;
 import static io.aeron.archive.MigrationUtils.fullVersionString;
 import static io.aeron.archive.ReplaySession.isInvalidHeader;
@@ -85,7 +85,7 @@ public class ArchiveTool
     @SuppressWarnings("MethodLength")
     public static void main(final String[] args)
     {
-        if (args.length == 0 || args.length > 4)
+        if (args.length == 0 || args.length > 5)
         {
             printHelp();
             System.exit(-1);
@@ -315,26 +315,26 @@ public class ArchiveTool
      * Set of options for {@link #verify(PrintStream, File, Set, ActionConfirmation)} and
      * {@link #verify(PrintStream, File, Set, ActionConfirmation)} methods.
      */
-    public enum SegmentFileOption
+    public enum VerifyOption
     {
         /**
          * Enables validation for all segment files of a given recording.
          * By default only last segment file is validated.
          */
-        VALIDATE_ALL("all"),
+        VALIDATE_ALL_SEGMENT_FILES("all"),
         /**
          * Perform CRC for each data frame within a segment file being validated.
          */
-        PERFORM_CRC("crc");
+        APPLY_CRC("crc");
 
         private final String flag;
 
-        SegmentFileOption(final String flag)
+        VerifyOption(final String flag)
         {
             this.flag = flag;
         }
 
-        private static final Map<String, SegmentFileOption> BY_FLAG = Stream.of(values())
+        private static final Map<String, VerifyOption> BY_FLAG = Stream.of(values())
             .collect(toMap(opt -> opt.flag, opt -> opt));
 
         public static boolean isValidOption(final String[] args, final int index)
@@ -342,12 +342,12 @@ public class ArchiveTool
             return null != BY_FLAG.get(args[index]);
         }
 
-        public static Set<SegmentFileOption> parseOptions(final String[] args, final int index)
+        public static Set<VerifyOption> parseOptions(final String[] args, final int index)
         {
-            final EnumSet<SegmentFileOption> options = EnumSet.noneOf(SegmentFileOption.class);
+            final EnumSet<VerifyOption> options = EnumSet.noneOf(VerifyOption.class);
             for (int i = index; i < args.length; i++)
             {
-                final SegmentFileOption option = BY_FLAG.get(args[index]);
+                final VerifyOption option = BY_FLAG.get(args[index]);
                 if (null != option)
                 {
                     options.add(option);
@@ -370,7 +370,7 @@ public class ArchiveTool
     public static void verify(
         final PrintStream out,
         final File archiveDir,
-        final Set<SegmentFileOption> options,
+        final Set<VerifyOption> options,
         final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
         verify(out, archiveDir, options, SystemEpochClock.INSTANCE, truncateFileOnPageStraddle);
@@ -394,7 +394,7 @@ public class ArchiveTool
         final PrintStream out,
         final File archiveDir,
         final long recordingId,
-        final Set<SegmentFileOption> options,
+        final Set<VerifyOption> options,
         final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
         verifyRecording(
@@ -440,7 +440,7 @@ public class ArchiveTool
     static void verify(
         final PrintStream out,
         final File archiveDir,
-        final Set<SegmentFileOption> options,
+        final Set<VerifyOption> options,
         final EpochClock epochClock,
         final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
@@ -455,7 +455,7 @@ public class ArchiveTool
         final PrintStream out,
         final File archiveDir,
         final long recordingId,
-        final Set<SegmentFileOption> options,
+        final Set<VerifyOption> options,
         final EpochClock epochClock,
         final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
@@ -482,7 +482,7 @@ public class ArchiveTool
     private static CatalogEntryProcessor createVerifyEntryProcessor(
         final PrintStream out,
         final File archiveDir,
-        final Set<SegmentFileOption> options,
+        final Set<VerifyOption> options,
         final EpochClock epochClock,
         final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
@@ -636,7 +636,7 @@ public class ArchiveTool
     private static void verifyRecording(
         final PrintStream out,
         final File archiveDir,
-        final Set<SegmentFileOption> options,
+        final Set<VerifyOption> options,
         final EpochClock epochClock,
         final ActionConfirmation<File> truncateFileOnPageStraddle,
         final DataHeaderFlyweight headerFlyweight,
@@ -694,8 +694,8 @@ public class ArchiveTool
         if (maxSegmentFile != null)
         {
             final int streamId = decoder.streamId();
-            final boolean performCrc = options.contains(PERFORM_CRC);
-            if (options.contains(VALIDATE_ALL))
+            final boolean performCrc = options.contains(APPLY_CRC);
+            if (options.contains(VALIDATE_ALL_SEGMENT_FILES))
             {
                 for (final String filename : segmentFiles)
                 {
@@ -792,7 +792,7 @@ public class ArchiveTool
         final int segmentLength,
         final int streamId,
         final int initialTermId,
-        final boolean performCrc,
+        final boolean applyCrc,
         final DataHeaderFlyweight headerFlyweight)
     {
         final File file = new File(archiveDir, fileName);
@@ -848,7 +848,7 @@ public class ArchiveTool
                     return true;
                 }
 
-                if (performCrc && HDR_TYPE_DATA == frameType)
+                if (applyCrc && HDR_TYPE_DATA == frameType)
                 {
                     final int checksum = crc32(0, bufferAddress, 0, dataLength);
                     if (checksum != sessionId)

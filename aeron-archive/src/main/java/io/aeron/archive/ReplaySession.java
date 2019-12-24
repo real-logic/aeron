@@ -88,7 +88,7 @@ class ReplaySession implements Session, AutoCloseable
     private final int termLength;
     private final int segmentLength;
 
-    private final boolean performCrc;
+    private final boolean crcEnabled;
     private final long replayBufferAddress;
 
     private final BufferClaim bufferClaim = new BufferClaim();
@@ -111,7 +111,7 @@ class ReplaySession implements Session, AutoCloseable
         final long replaySessionId,
         final long connectTimeoutMs,
         final long correlationId,
-        final boolean performCrc,
+        final boolean crcEnabled,
         final ControlSession controlSession,
         final ControlResponseProxy controlResponseProxy,
         final UnsafeBuffer replayBuffer,
@@ -141,7 +141,7 @@ class ReplaySession implements Session, AutoCloseable
         this.startPosition = recordingSummary.startPosition;
         this.stopPosition = null == limitPosition ? recordingSummary.stopPosition : limitPosition.get();
 
-        this.performCrc = performCrc;
+        this.crcEnabled = crcEnabled;
 
         final long fromPosition = position == NULL_POSITION ? startPosition : position;
         final long maxLength = null == limitPosition ? stopPosition - fromPosition : Long.MAX_VALUE - fromPosition;
@@ -351,9 +351,9 @@ class ReplaySession implements Session, AutoCloseable
                 result = publication.tryClaim(dataLength, bufferClaim);
                 if (result > 0)
                 {
-                    if (performCrc)
+                    if (crcEnabled)
                     {
-                        performCrc(frameOffset, alignedLength);
+                        applyCrc(frameOffset, alignedLength);
                     }
                     bufferClaim
                         .flags(frameFlags(replayBuffer, frameOffset))
@@ -394,7 +394,7 @@ class ReplaySession implements Session, AutoCloseable
         return fragments;
     }
 
-    private void performCrc(final int frameOffset, final int alignedLength)
+    private void applyCrc(final int frameOffset, final int alignedLength)
     {
         final int checksum = crc32(
             0, replayBufferAddress, frameOffset + HEADER_LENGTH, alignedLength - HEADER_LENGTH);
@@ -403,7 +403,6 @@ class ReplaySession implements Session, AutoCloseable
         {
             final String message = "CRC checksum mismatch at offset=" + frameOffset + ": recorded checksum=" +
                 recordedChecksum + ", computed checksum=" + checksum;
-            onError(message);
             throw new ArchiveException(message);
         }
     }

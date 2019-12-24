@@ -515,7 +515,8 @@ private:
         {
             auto touch = m_preTouchMappedMemory && channel.find(std::string("sparse=true")) == std::string::npos;
             auto logBuffers = std::make_shared<LogBuffers>(logFilename.c_str(), touch);
-            m_logBuffersByRegistrationId.insert(std::pair<std::int64_t, LogBuffersDefn>(registrationId, logBuffers));
+            m_logBuffersByRegistrationId.insert(std::pair<std::int64_t, LogBuffersDefn>(
+                registrationId, LogBuffersDefn(logBuffers)));
 
             return logBuffers;
         }

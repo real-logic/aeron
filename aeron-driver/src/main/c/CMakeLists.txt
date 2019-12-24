@@ -132,6 +132,7 @@ SET(SOURCE
     util/aeron_strutil.c
     util/aeron_fileutil.c
     util/aeron_arrayutil.c
+    util/aeron_clock.c
     util/aeron_error.c
     util/aeron_math.c
     util/aeron_netutil.c
@@ -182,6 +183,7 @@ SET(HEADERS
     util/aeron_dlopen.h
     util/aeron_platform.h
     util/aeron_bitutil.h
+    util/aeron_clock.h
     util/aeron_math.h
     util/aeron_strutil.h
     util/aeron_fileutil.h

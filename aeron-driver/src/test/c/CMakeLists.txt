@@ -19,15 +19,20 @@ endif ()
 
 include_directories(${AERON_DRIVER_SOURCE_PATH})
 
-set(TEST_HEADERS aeron_driver_conductor_test.h EmbeddedMediaDriver.h)
+set(TEST_HEADERS aeron_driver_conductor_test.h EmbeddedMediaDriver.h aeron_stub_clock.h)
 
 set(CMAKE_EXTRA_INCLUDE_FILES sys/socket.h)
 check_type_size("struct mmsghdr" STRUCT_MMSGHDR_TYPE_EXISTS)
 set(CMAKE_EXTRA_INCLUDE_FILES)
 
+add_library(aeron_stub_clock SHARED aeron_stub_clock.c aeron_stub_clock.h)
+target_include_directories(aeron_stub_clock
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+
 function(aeron_driver_test name file)
     add_executable(${name} ${file} ${TEST_HEADERS})
-    target_link_libraries(${name} aeron_client aeron_driver ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT} ${AERON_LIB_WINSOCK_LIBS})
+    target_link_libraries(${name} ${ARGV2} aeron_client aeron_driver ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT} ${AERON_LIB_WINSOCK_LIBS})
     target_compile_definitions(${name} PUBLIC "_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING")
     if (STRUCT_MMSGHDR_TYPE_EXISTS)
         target_compile_definitions(${name} PUBLIC -DHAVE_STRUCT_MMSGHDR)
@@ -40,11 +45,11 @@ aeron_driver_test(spsc_rb_test aeron_spsc_rb_test.cpp)
 aeron_driver_test(mpsc_rb_test aeron_mpsc_rb_test.cpp)
 aeron_driver_test(broadcast_transmitter_test aeron_broadcast_transmitter_test.cpp)
 aeron_driver_test(counters_manager_test aeron_counters_manager_test.cpp)
-aeron_driver_test(distinct_error_log_test aeron_distinct_error_log_test.cpp)
-aeron_driver_test(driver_conductor_ipc_test aeron_driver_conductor_ipc_test.cpp)
-aeron_driver_test(driver_conductor_network_test aeron_driver_conductor_network_test.cpp)
-aeron_driver_test(driver_conductor_spy_test aeron_driver_conductor_spy_test.cpp)
-aeron_driver_test(driver_conductor_counter_test aeron_driver_conductor_counter_test.cpp)
+aeron_driver_test(distinct_error_log_test aeron_distinct_error_log_test.cpp aeron_stub_clock)
+aeron_driver_test(driver_conductor_ipc_test aeron_driver_conductor_ipc_test.cpp aeron_stub_clock)
+aeron_driver_test(driver_conductor_network_test aeron_driver_conductor_network_test.cpp aeron_stub_clock)
+aeron_driver_test(driver_conductor_spy_test aeron_driver_conductor_spy_test.cpp aeron_stub_clock)
+aeron_driver_test(driver_conductor_counter_test aeron_driver_conductor_counter_test.cpp aeron_stub_clock)
 aeron_driver_test(spsc_queue_test aeron_spsc_concurrent_array_queue_test.cpp)
 aeron_driver_test(mpsc_queue_test aeron_mpsc_concurrent_array_queue_test.cpp)
 aeron_driver_test(uri_test aeron_uri_test.cpp)
@@ -66,3 +71,5 @@ aeron_driver_test(driver_configuration_test aeron_driver_configuration_test.cpp)
 aeron_driver_test(system_test aeron_system_test.cpp)
 aeron_driver_test(udp_channel_transport_loss_test media/aeron_udp_channel_transport_loss_test.cpp)
 aeron_driver_test(strutil_test aeron_strutil_test.cpp)
+
+

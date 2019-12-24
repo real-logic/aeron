@@ -48,6 +48,7 @@
 #include "protocol/aeron_udp_protocol.h"
 #include "util/aeron_parse_util.h"
 #include "util/aeron_fileutil.h"
+#include "util/aeron_clock.h"
 #include "aeron_driver.h"
 #include "aeron_driver_context.h"
 #include "aeron_alloc.h"
@@ -813,9 +814,6 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->counters_metadata_buffer = NULL;
     _context->error_buffer = NULL;
 
-    _context->nano_clock = aeron_nano_clock;
-    _context->epoch_clock = aeron_epoch_clock;
-
     _context->conductor_idle_strategy_name = aeron_strndup("backoff", AERON_MAX_PATH);
     _context->shared_idle_strategy_name = aeron_strndup("backoff", AERON_MAX_PATH);
     _context->shared_network_idle_strategy_name = aeron_strndup("backoff", AERON_MAX_PATH);
@@ -1000,7 +998,7 @@ bool aeron_is_driver_active_with_cnc(
 
     while (0 == (cnc_version = aeron_cnc_version_volatile(metadata)))
     {
-        if (aeron_epoch_clock() > (now_ms + timeout_ms))
+        if (aeron_clock_epoch_time() > (now_ms + timeout_ms))
         {
             snprintf(buffer, sizeof(buffer) - 1, "ERROR: aeron cnc file version was 0 for timeout");
             return false;
@@ -1074,7 +1072,7 @@ bool aeron_is_driver_active(const char *dirname, int64_t timeout_ms, aeron_log_f
         snprintf(buffer, sizeof(buffer) - 1, "INFO: Aeron CnC file %s/%s exists", dirname, AERON_CNC_FILE);
         log_func(buffer);
 
-        result = aeron_is_driver_active_with_cnc(&cnc_map, timeout_ms, aeron_epoch_clock(), log_func);
+        result = aeron_is_driver_active_with_cnc(&cnc_map, timeout_ms, aeron_clock_epoch_time(), log_func);
 
         aeron_unmap(&cnc_map);
     }

@@ -29,9 +29,20 @@ public:
         m_key.fill(0);
     }
 
+    virtual void SetUp()
+    {
+        aeron_stub_clock_set_time_ms(0);
+    }
+
+    virtual void TearDown()
+    {
+        // Need this set up here as the aeron clock calls may happen before setup is called.
+        aeron_stub_clock_set_time_ms(0);
+    }
+
 protected:
     std::string m_label = COUNTER_LABEL;
-    std::array<uint8_t,COUNTER_KEY_LENGTH> m_key;
+    std::array<uint8_t, COUNTER_KEY_LENGTH> m_key;
     AtomicBuffer m_keyBuffer;
 };
 

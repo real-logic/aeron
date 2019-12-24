@@ -24,20 +24,20 @@
 #include <errno.h>
 #include "util/aeron_error.h"
 #include "util/aeron_strutil.h"
+#include "util/aeron_clock.h"
 #include "aeron_alloc.h"
 #include "aeron_distinct_error_log.h"
 #include "aeron_atomic.h"
 #include "aeron_driver_context.h"
 
 int aeron_distinct_error_log_init(
-    aeron_distinct_error_log_t *log,
-    uint8_t *buffer,
+    aeron_distinct_error_log_t* log,
+    uint8_t* buffer,
     size_t buffer_size,
-    aeron_clock_func_t clock,
     aeron_resource_linger_func_t linger,
-    void *clientd)
+    void* clientd)
 {
-    if (NULL == log || NULL == clock || NULL == linger)
+    if (NULL == log || NULL == linger)
     {
         aeron_set_err(EINVAL, "%s:%d: %s", __FILE__, __LINE__, strerror(EINVAL));
         return -1;
@@ -53,7 +53,6 @@ int aeron_distinct_error_log_init(
 
     log->buffer = buffer;
     log->buffer_capacity = buffer_size;
-    log->clock = clock;
     log->linger_resource = linger;
     log->linger_resource_clientd = clientd;
     log->next_offset = 0;
@@ -177,7 +176,7 @@ int aeron_distinct_error_log_record(
         return -1;
     }
 
-    timestamp = log->clock();
+    timestamp = aeron_clock_epoch_time();
     aeron_distinct_error_log_observation_list_t *list = aeron_distinct_error_log_observation_list_load(log);
     size_t num_observations = list->num_observations;
     aeron_distinct_observation_t *observations = list->observations;

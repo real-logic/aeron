@@ -268,9 +268,6 @@ typedef struct aeron_driver_conductor_stct
     int64_t *unblocked_commands_counter;
     int64_t *client_timeouts_counter;
 
-    aeron_clock_func_t nano_clock;
-    aeron_clock_func_t epoch_clock;
-
     int32_t next_session_id;
     int32_t publication_reserved_session_id_low;
     int32_t publication_reserved_session_id_high;

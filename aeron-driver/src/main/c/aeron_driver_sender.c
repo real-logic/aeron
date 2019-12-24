@@ -31,6 +31,7 @@ struct mmsghdr
 #endif
 
 #include "util/aeron_arrayutil.h"
+#include "util/aeron_clock.h"
 #include "media/aeron_send_channel_endpoint.h"
 #include "aeron_driver_sender.h"
 #include "aeron_driver_conductor_proxy.h"
@@ -118,7 +119,7 @@ int aeron_driver_sender_do_work(void *clientd)
     work_count += aeron_spsc_concurrent_array_queue_drain(
         sender->sender_proxy.command_queue, aeron_driver_sender_on_command, sender, 10);
 
-    int64_t now_ns = sender->context->nano_clock();
+    int64_t now_ns = aeron_clock_nano_time();
     int64_t bytes_received = 0;
     int bytes_sent = aeron_driver_sender_do_send(sender, now_ns);
     int poll_result;

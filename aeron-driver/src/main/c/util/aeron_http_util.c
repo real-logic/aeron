@@ -27,6 +27,7 @@
 #include "aeron_arrayutil.h"
 #include "concurrent/aeron_thread.h"
 #include "aeronmd.h"
+#include "util/aeron_clock.h"
 
 int aeron_http_parse_url(const char *url, aeron_http_parsed_url_t *parsed_url)
 {
@@ -305,11 +306,11 @@ int aeron_http_retrieve(aeron_http_response_t **response, const char *url, int64
     _response->content_length = 0;
     _response->parse_err = false;
 
-    const int64_t start_ns = aeron_nano_clock();
+    const int64_t start_ns = aeron_clock_nano_time();
 
     do
     {
-        const int64_t now_ns = aeron_nano_clock();
+        const int64_t now_ns = aeron_clock_nano_time();
 
         if (-1 != timeout_ns && now_ns > (start_ns + timeout_ns))
         {

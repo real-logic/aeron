@@ -22,6 +22,7 @@
 #include "protocol/aeron_udp_protocol.h"
 #include "util/aeron_netutil.h"
 #include "util/aeron_arrayutil.h"
+#include "util/aeron_clock.h"
 #include "media/aeron_udp_destination_tracker.h"
 
 #if !defined(HAVE_STRUCT_MMSGHDR)
@@ -33,12 +34,10 @@ struct mmsghdr
 #endif
 
 int aeron_udp_destination_tracker_init(
-    aeron_udp_destination_tracker_t *tracker,
-    aeron_udp_channel_transport_bindings_t *transport_bindings,
-    aeron_clock_func_t clock,
+    aeron_udp_destination_tracker_t* tracker,
+    aeron_udp_channel_transport_bindings_t* transport_bindings,
     int64_t timeout_ns)
 {
-    tracker->nano_clock = clock;
     tracker->transport_bindings = transport_bindings;
     tracker->destination_timeout_ns = timeout_ns;
     tracker->destinations.array = NULL;
@@ -65,7 +64,7 @@ int aeron_udp_destination_tracker_sendmmsg(
     aeron_udp_channel_transport_t *transport,
     struct mmsghdr *mmsghdr, size_t vlen)
 {
-    int64_t now_ns = tracker->nano_clock();
+    int64_t now_ns = aeron_clock_nano_time();
     int min_msgs_sent = (int)vlen;
 
     for (int last_index = (int)tracker->destinations.length - 1, i = last_index; i >= 0; i--)
@@ -103,7 +102,7 @@ int aeron_udp_destination_tracker_sendmmsg(
 int aeron_udp_destination_tracker_sendmsg(
     aeron_udp_destination_tracker_t *tracker, aeron_udp_channel_transport_t *transport, struct msghdr *msghdr)
 {
-    int64_t now_ns = tracker->nano_clock();
+    int64_t now_ns = aeron_clock_nano_time();
     int min_bytes_sent = (int)msghdr->msg_iov->iov_len;
 
     for (int last_index = (int)tracker->destinations.length - 1, i = last_index; i >= 0; i--)
@@ -164,7 +163,7 @@ int aeron_udp_destination_tracker_on_status_message(
     if (tracker->destination_timeout_ns > 0)
     {
         aeron_status_message_header_t *status_message_header = (aeron_status_message_header_t *)buffer;
-        const int64_t now_ns = tracker->nano_clock();
+        const int64_t now_ns = aeron_clock_nano_time();
         const int64_t receiver_id = status_message_header->receiver_id;
         bool is_existing = false;
 

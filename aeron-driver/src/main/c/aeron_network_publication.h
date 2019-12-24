@@ -71,7 +71,6 @@ typedef struct aeron_network_publication_stct
     aeron_logbuffer_metadata_t *log_meta_data;
     aeron_send_channel_endpoint_t *endpoint;
     aeron_flow_control_strategy_t *flow_control;
-    aeron_clock_func_t nano_clock;
 
     char *log_file_name;
     int64_t term_window_length;

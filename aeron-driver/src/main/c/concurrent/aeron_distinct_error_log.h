@@ -65,7 +65,6 @@ typedef struct aeron_distinct_error_log_stct
     aeron_distinct_error_log_observation_list_t *observation_list;
     size_t buffer_capacity;
     size_t next_offset;
-    aeron_clock_func_t clock;
     aeron_resource_linger_func_t linger_resource;
     void *linger_resource_clientd;
     AERON_MUTEX mutex;
@@ -73,12 +72,11 @@ typedef struct aeron_distinct_error_log_stct
 aeron_distinct_error_log_t;
 
 int aeron_distinct_error_log_init(
-    aeron_distinct_error_log_t *log,
-    uint8_t *buffer,
+    aeron_distinct_error_log_t* log,
+    uint8_t* buffer,
     size_t buffer_size,
-    aeron_clock_func_t clock,
     aeron_resource_linger_func_t linger,
-    void *clientd);
+    void* clientd);
 
 void aeron_distinct_error_log_close(aeron_distinct_error_log_t *log);
 

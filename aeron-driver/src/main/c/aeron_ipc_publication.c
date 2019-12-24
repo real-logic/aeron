@@ -22,6 +22,7 @@
 #include "aeron_ipc_publication.h"
 #include "util/aeron_fileutil.h"
 #include "aeron_alloc.h"
+#include "util/aeron_clock.h"
 #include "protocol/aeron_udp_protocol.h"
 #include "aeron_driver_conductor.h"
 #include "util/aeron_error.h"
@@ -44,7 +45,7 @@ int aeron_ipc_publication_create(
     aeron_ipc_publication_t *_pub = NULL;
     const uint64_t usable_fs_space = context->usable_fs_space_func(context->aeron_dir);
     const uint64_t log_length = aeron_logbuffer_compute_log_length(params->term_length, context->file_page_size);
-    const int64_t now_ns = context->nano_clock();
+    int64_t now_ns = aeron_clock_nano_time();
 
     *publication = NULL;
 
@@ -126,7 +127,6 @@ int aeron_ipc_publication_create(
     aeron_logbuffer_fill_default_header(
         _pub->mapped_raw_log.log_meta_data.addr, session_id, stream_id, initial_term_id);
 
-    _pub->nano_clock = context->nano_clock;
     _pub->conductor_fields.subscribable.array = NULL;
     _pub->conductor_fields.subscribable.length = 0;
     _pub->conductor_fields.subscribable.capacity = 0;

@@ -28,6 +28,7 @@
 
 extern "C"
 {
+#include "aeron_stub_clock.h"
 #include "aeron_driver_conductor.h"
 #include "util/aeron_error.h"
 #include "aeron_driver_sender.h"
@@ -114,18 +115,6 @@ using namespace aeron;
 #define CONTROL_IP_ADDR "127.0.0.1"
 #define CONTROL_UDP_PORT (43657)
 
-static int64_t ms_timestamp = 0;
-
-static int64_t test_nano_clock()
-{
-    return ms_timestamp * 1000 * 1000;
-}
-
-static int64_t test_epoch_clock()
-{
-    return ms_timestamp;
-}
-
 static int test_malloc_map_raw_log(
     aeron_mapped_raw_log_t *log, const char *path, bool use_sparse_file, uint64_t term_length, uint64_t page_size)
 {
@@ -167,8 +156,6 @@ struct TestDriverContext
 {
     TestDriverContext()
     {
-        ms_timestamp = 0; /* single threaded */
-
         if (aeron_driver_context_init(&m_context) < 0)
         {
             throw std::runtime_error("could not init context: " + std::string(aeron_errmsg()));
@@ -186,10 +173,6 @@ struct TestDriverContext
         m_context->term_buffer_length = TERM_LENGTH;
         m_context->ipc_term_buffer_length = TERM_LENGTH;
         m_context->term_buffer_sparse_file = true;
-
-        /* control time */
-        m_context->nano_clock = test_nano_clock;
-        m_context->epoch_clock = test_epoch_clock;
 
         /* control files */
         m_context->usable_fs_space_func = test_uint64_max_usable_fs_space;
@@ -482,7 +465,7 @@ public:
 
     void doWorkForNs(int64_t duration_ns, int64_t num_increments = 100, std::function<void()> func = [](){})
     {
-        int64_t initial_ms = ms_timestamp;
+        int64_t initial_ns = aeron_clock_nano_time();
         int64_t increment_ns = duration_ns / num_increments;
 
         if (increment_ns <= 0)
@@ -492,11 +475,11 @@ public:
 
         do
         {
-            ms_timestamp += (increment_ns / 1000000);
+            aeron_stub_clock_set_time_ns(aeron_clock_nano_time() + increment_ns);
             func();
             doWork();
         }
-        while (((ms_timestamp - initial_ms) * 1000000) <= duration_ns);
+        while (aeron_clock_nano_time() <= (initial_ns + duration_ns));
     }
 
     void fill_sockaddr_ipv4(struct sockaddr_storage *addr, const char *ip, unsigned short int port)

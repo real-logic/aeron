@@ -70,7 +70,6 @@ int aeron_send_channel_endpoint_create(
             aeron_udp_destination_tracker_init(
                 _endpoint->destination_tracker,
                 context->udp_channel_transport_bindings,
-                context->nano_clock,
                 destination_timeout_ns) < 0)
         {
             return -1;

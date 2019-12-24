@@ -4,31 +4,22 @@ import io.aeron.Image;
 import io.aeron.archive.Archive.Context;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.logbuffer.LogBufferDescriptor;
-import io.aeron.protocol.NakFlyweight;
-import io.aeron.protocol.RttMeasurementFlyweight;
-import io.aeron.protocol.SetupFlyweight;
-import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.stream.Stream;
 
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.client.ArchiveException.GENERIC;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
-import static io.aeron.protocol.DataHeaderFlyweight.SESSION_ID_FIELD_OFFSET;
-import static io.aeron.protocol.HeaderFlyweight.*;
+import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_DATA;
+import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
 import static java.nio.ByteBuffer.allocate;
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.file.Files.delete;
 import static java.nio.file.Files.readAllBytes;
 import static java.util.Arrays.fill;
@@ -298,23 +289,8 @@ class RecordingWriterTests
         );
     }
 
-    private static Stream<Arguments> nonDataFrames()
-    {
-        return Stream.of(
-            Arguments.of(HDR_TYPE_PAD, HEADER_LENGTH, SESSION_ID_FIELD_OFFSET),
-            Arguments.of(HDR_TYPE_NAK, NakFlyweight.HEADER_LENGTH, 8),
-            Arguments.of(HDR_TYPE_SM, StatusMessageFlyweight.HEADER_LENGTH, 8),
-            Arguments.of(HDR_TYPE_ERR, HEADER_LENGTH, SESSION_ID_FIELD_OFFSET),
-            Arguments.of(HDR_TYPE_SETUP, SetupFlyweight.HEADER_LENGTH, 12),
-            Arguments.of(HDR_TYPE_RTTM, RttMeasurementFlyweight.HEADER_LENGTH, 8),
-            Arguments.of(HDR_TYPE_EXT, HEADER_LENGTH, SESSION_ID_FIELD_OFFSET)
-        );
-    }
-
-    @ParameterizedTest()
-    @MethodSource("nonDataFrames")
-    void onBlockShouldNotComputeCrcForNonDataFrame(
-        final int headerType, final int headerLength, final int sessionIdFieldOffset) throws IOException
+    @Test
+    void onBlockShouldNotComputeCrcForThePaddingFrame() throws IOException
     {
 
         final Image image = mockImage(0L);
@@ -324,14 +300,13 @@ class RecordingWriterTests
         recordingWriter.init();
         final UnsafeBuffer termBuffer = new UnsafeBuffer(allocate(512));
         final int length = 128;
-        final byte[] data = new byte[length - headerLength];
+        final byte[] data = new byte[length - HEADER_LENGTH];
         fill(data, (byte)99);
-        frameType(termBuffer, 0, headerType);
+        frameType(termBuffer, 0, HDR_TYPE_PAD);
         frameTermId(termBuffer, 0, 18);
         frameLengthOrdered(termBuffer, 0, length);
         frameSessionId(termBuffer, 0, 5);
-        termBuffer.putInt(sessionIdFieldOffset, 5, LITTLE_ENDIAN);
-        termBuffer.putBytes(headerLength, data);
+        termBuffer.putBytes(HEADER_LENGTH, data);
 
         recordingWriter.onBlock(termBuffer, 0, length, -1, -1);
 
@@ -341,10 +316,10 @@ class RecordingWriterTests
         assertEquals(SEGMENT_LENGTH, segmentFile.length());
         final UnsafeBuffer fileBuffer = new UnsafeBuffer();
         fileBuffer.wrap(readAllBytes(segmentFile.toPath()));
-        assertEquals(headerType, frameType(fileBuffer, 0));
+        assertEquals(HDR_TYPE_PAD, frameType(fileBuffer, 0));
         assertEquals(18, frameTermId(fileBuffer, 0));
         assertEquals(length, frameLength(fileBuffer, 0));
-        assertEquals(5, fileBuffer.getInt(sessionIdFieldOffset, LITTLE_ENDIAN));
+        assertEquals(5, frameSessionId(fileBuffer, 0));
     }
 
     private Image mockImage(final long joinPosition)

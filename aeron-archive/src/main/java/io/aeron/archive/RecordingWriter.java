@@ -33,7 +33,6 @@ import java.nio.channels.FileChannel;
 import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
-import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_DATA;
 import static org.agrona.BitUtil.align;
 import static org.agrona.Checksums.crc32;
 
@@ -98,7 +97,7 @@ class RecordingWriter implements BlockHandler
             final ByteBuffer byteBuffer = termBuffer.byteBuffer();
             byteBuffer.limit(termOffset + dataLength).position(termOffset);
 
-            if (!isPaddingFrame && crcEnabled)
+            if (crcEnabled && !isPaddingFrame)
             {
                 // Cast to UnsafeBuffer is safe, because BlockHandler is internal API which is always invoked with an
                 // instance of UnsafeBuffer which is used for performance reasons (i.e. to avoid invokeinterface calls)
@@ -140,24 +139,15 @@ class RecordingWriter implements BlockHandler
 
     private void computeCRC(final UnsafeBuffer termBuffer, final int termOffset, final int length)
     {
-        int frameOffset = termOffset;
         final int endOffset = termOffset + length;
         final long address = termBuffer.addressOffset();
+        int frameOffset = termOffset;
         while (frameOffset < endOffset)
         {
-            final int frameLength = frameLength(termBuffer, frameOffset);
-            if (frameLength == 0)
-            {
-                break;
-            }
-            final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
-            final int frameType = frameType(termBuffer, frameOffset);
-            if (HDR_TYPE_DATA == frameType)
-            {
-                final int checksum = crc32(
-                    0, address, frameOffset + HEADER_LENGTH, alignedLength - HEADER_LENGTH);
-                frameSessionId(termBuffer, frameOffset, checksum);
-            }
+            final int alignedLength = align(frameLength(termBuffer, frameOffset), FRAME_ALIGNMENT);
+            final int checksum = crc32(
+                0, address, frameOffset + HEADER_LENGTH, alignedLength - HEADER_LENGTH);
+            frameSessionId(termBuffer, frameOffset, checksum);
             frameOffset += alignedLength;
         }
     }

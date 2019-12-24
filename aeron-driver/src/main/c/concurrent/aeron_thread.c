@@ -174,5 +174,3 @@ void proc_yield()
 #else
 #error Unsupported platform!
 #endif
-
-

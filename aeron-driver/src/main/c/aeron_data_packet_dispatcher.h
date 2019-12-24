@@ -130,7 +130,7 @@ inline int aeron_data_packet_dispatcher_remove_cool_down(
 
 inline bool aeron_data_packet_dispatcher_should_elicit_setup_message(aeron_data_packet_dispatcher_t *dispatcher)
 {
-    return (0 != dispatcher->session_by_stream_id_map.size);
+    return 0 != dispatcher->session_by_stream_id_map.size;
 }
 
 #endif //AERON_DATA_PACKET_DISPATCHER_H

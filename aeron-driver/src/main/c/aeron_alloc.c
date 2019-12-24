@@ -101,4 +101,3 @@ void aeron_free(void *ptr)
 {
     free(ptr);
 }
-

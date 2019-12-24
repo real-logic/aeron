@@ -116,5 +116,4 @@ void aeron_micro_sleep(size_t microseconds);
 #error Unsupported platform!
 #endif
 
-
 #endif //AERON_THREAD_H

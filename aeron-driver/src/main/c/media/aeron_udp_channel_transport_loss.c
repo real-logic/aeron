@@ -246,4 +246,3 @@ int aeron_udp_channel_transport_loss_parse_callback(void *clientd, const char *k
 
     return result;
 }
-

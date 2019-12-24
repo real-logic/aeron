@@ -14,8 +14,13 @@
  * limitations under the License.
  */
 
+#ifndef AERON_STUB_CLOCK_H
+#define AERON_STUB_CLOCK_H
+
 #include <util/aeron_clock.h>
 
 void aeron_stub_clock_set_time_ms(int64_t time_ms);
 void aeron_stub_clock_set_time_ns(int64_t time_ns);
 void aeron_stub_clock_increment_ms(int64_t offset_ms);
+
+#endif

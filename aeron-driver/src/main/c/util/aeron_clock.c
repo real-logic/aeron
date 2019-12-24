@@ -67,10 +67,10 @@ int64_t aeron_clock_nano_time()
 
 int64_t aeron_clock_cached_epoch_time(aeron_clock_cache_t *cache)
 {
-    return cache->cached_ms;
+    return cache->cached_epoch_time;
 }
 
 int64_t aeron_clock_cached_nano_time(aeron_clock_cache_t *cache)
 {
-    return cache->cached_ns;
+    return cache->cached_nano_time;
 }

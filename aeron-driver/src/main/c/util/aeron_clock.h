@@ -14,14 +14,18 @@
  * limitations under the License.
  */
 
+#ifndef AERON_CLOCK_H
+#define AERON_CLOCK_H
+
 #include <stdint.h>
+#include "util/aeron_bitutil.h"
 
 typedef struct aeron_clock_cache_stct
 {
-    // TODO: pad
-    int64_t cached_ms;
-    int64_t cached_ns;
-    // TODO: pad
+    uint8_t pre_pad[(2 * AERON_CACHE_LINE_LENGTH)];
+    int64_t cached_epoch_time;
+    int64_t cached_nano_time;
+    uint8_t post_pad[(2 * AERON_CACHE_LINE_LENGTH) - (2 * sizeof(int64_t))];
 }
 aeron_clock_cache_t;
 
@@ -29,3 +33,5 @@ int64_t aeron_clock_epoch_time();
 int64_t aeron_clock_nano_time();
 int64_t aeron_clock_cached_epoch_time(aeron_clock_cache_t *cache);
 int64_t aeron_clock_cached_nano_time(aeron_clock_cache_t *cache);
+
+#endif

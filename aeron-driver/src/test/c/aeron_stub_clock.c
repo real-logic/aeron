@@ -29,16 +29,6 @@ int64_t aeron_clock_nano_time()
     return ns_timestamp;
 }
 
-int64_t aeron_clock_cached_epoch_time(aeron_clock_cache_t *cache)
-{
-    return cache->cached_ms;
-}
-
-int64_t aeron_clock_cached_nano_time(aeron_clock_cache_t *cache)
-{
-    return cache->cached_ns;
-}
-
 void aeron_stub_clock_set_time_ms(int64_t time_ms)
 {
     ns_timestamp = time_ms * 1000000;

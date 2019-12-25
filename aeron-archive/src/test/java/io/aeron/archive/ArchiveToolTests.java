@@ -40,6 +40,8 @@ import static io.aeron.archive.Catalog.*;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
+import static io.aeron.logbuffer.LogBufferDescriptor.computeTermIdFromPosition;
+import static io.aeron.logbuffer.LogBufferDescriptor.positionBitsToShift;
 import static io.aeron.protocol.DataHeaderFlyweight.*;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
@@ -283,31 +285,43 @@ class ArchiveToolTests
             SEGMENT_LENGTH,
             (byteBuffer, dataHeaderFlyweight, fileChannel) ->
             {
+                int fileOffset = 96;
                 dataHeaderFlyweight.headerType(HDR_TYPE_DATA);
-                dataHeaderFlyweight.frameLength(1024);
+                dataHeaderFlyweight.frameLength(128);
                 dataHeaderFlyweight.streamId(13);
                 dataHeaderFlyweight.termId(14);
                 dataHeaderFlyweight.termOffset(96);
-                fileChannel.write(byteBuffer, 96);
+                dataHeaderFlyweight.setMemory(HEADER_LENGTH, 128 - HEADER_LENGTH, (byte)13);
+                fileChannel.write(byteBuffer, fileOffset);
+                fileOffset += 128;
+
+                final int segmentFileBasePosition = 7 * TERM_LENGTH;
+                final int positionBitsToShift = positionBitsToShift(TERM_LENGTH);
+                for (int i = 0; i < (SEGMENT_LENGTH / MTU_LENGTH) - 1; i++)
+                {
+                    byteBuffer.clear();
+                    final int termId =
+                        computeTermIdFromPosition(segmentFileBasePosition + fileOffset, positionBitsToShift, 7);
+                    dataHeaderFlyweight.frameLength(MTU_LENGTH);
+                    dataHeaderFlyweight.termId(termId);
+                    dataHeaderFlyweight.termOffset(fileOffset & (TERM_LENGTH - 1));
+                    dataHeaderFlyweight.setMemory(HEADER_LENGTH, MTU_LENGTH - HEADER_LENGTH, (byte)i);
+                    fileChannel.write(byteBuffer, fileOffset);
+                    fileOffset += MTU_LENGTH;
+                }
+
+                final int lastFrameLength = MTU_LENGTH - 224;
+                assertEquals(SEGMENT_LENGTH - lastFrameLength, fileOffset);
                 byteBuffer.clear();
-                dataHeaderFlyweight.frameLength(TERM_LENGTH);
-                dataHeaderFlyweight.termOffset(1120);
-                fileChannel.write(byteBuffer, 1120);
-                byteBuffer.clear();
-                dataHeaderFlyweight.frameLength(128);
-                dataHeaderFlyweight.termId(15);
-                dataHeaderFlyweight.termOffset(1120);
-                fileChannel.write(byteBuffer, 1120 + TERM_LENGTH);
-                byteBuffer.clear();
-                dataHeaderFlyweight.frameLength(256);
-                dataHeaderFlyweight.termId(15);
-                dataHeaderFlyweight.termOffset(1248);
-                fileChannel.write(byteBuffer, 1248 + TERM_LENGTH);
-                byteBuffer.clear();
-                dataHeaderFlyweight.frameLength(SEGMENT_LENGTH - (1504 + TERM_LENGTH));
-                dataHeaderFlyweight.termId(15);
-                dataHeaderFlyweight.termOffset(1504);
-                fileChannel.write(byteBuffer, 1504 + TERM_LENGTH);
+                dataHeaderFlyweight.frameLength(lastFrameLength);
+                dataHeaderFlyweight.termOffset(fileOffset & (TERM_LENGTH - 1));
+                for (int i = 0; i < lastFrameLength - HEADER_LENGTH; i++)
+                {
+                    dataHeaderFlyweight.setMemory(HEADER_LENGTH + i, 1, (byte)i);
+                }
+                dataHeaderFlyweight.setMemory(HEADER_LENGTH, 1, Byte.MIN_VALUE);
+                dataHeaderFlyweight.setMemory(lastFrameLength - 1, 1, Byte.MAX_VALUE);
+                fileChannel.write(byteBuffer, fileOffset);
             });
 
         writeToSegmentFile(
@@ -645,8 +659,8 @@ class ArchiveToolTests
     @Test
     void verifyRecordingValidRecordingValidateAllSegmentFiles()
     {
-        verifyRecording(out, archiveDir, validRecording3, EnumSet
-            .of(VALIDATE_ALL_SEGMENT_FILES), epochClock, (file) -> false);
+        verifyRecording(out, archiveDir, validRecording3, EnumSet.of(VALIDATE_ALL_SEGMENT_FILES), epochClock,
+            (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -658,8 +672,8 @@ class ArchiveToolTests
     @Test
     void verifyRecordingInvalidRecordingValidateAllSegmentFiles()
     {
-        verifyRecording(out, archiveDir, validRecording4, EnumSet
-            .of(VALIDATE_ALL_SEGMENT_FILES), epochClock, (file) -> false);
+        verifyRecording(out, archiveDir, validRecording4, EnumSet.of(VALIDATE_ALL_SEGMENT_FILES), epochClock,
+            (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -822,6 +836,92 @@ class ArchiveToolTests
         Mockito.verify(out, times(22)).println(any(String.class));
     }
 
+    @Test
+    void checksumRecordingLastSegmentFile()
+    {
+        checksumRecording(out, archiveDir, validRecording3, false, epochClock);
+
+        // Last segment file should contain valid CRC-32 checksums
+        verifyRecording(out, archiveDir, validRecording3, EnumSet.of(APPLY_CRC), epochClock, (file) -> false);
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            assertRecording(catalog, validRecording3, VALID, 7 * TERM_LENGTH + 96, 11 * TERM_LENGTH + 320,
+                18, 100, 7, 13, "ch2", "src2");
+        }
+
+        // Other segment files on the other hand have no valid CRC-32 checksums
+        verifyRecording(out, archiveDir, validRecording3, EnumSet.allOf(VerifyOption.class), epochClock,
+            (file) -> false);
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            assertRecording(catalog, validRecording3, INVALID, 7 * TERM_LENGTH + 96, 11 * TERM_LENGTH + 320,
+                18, 100, 7, 13, "ch2", "src2");
+        }
+    }
+
+    @Test
+    void checksumRecordingAllSegmentFiles()
+    {
+        checksumRecording(out, archiveDir, validRecording3, true, epochClock);
+
+        // All segment file should contain valid CRC-32 checksums
+        verifyRecording(out, archiveDir, validRecording3, EnumSet.allOf(VerifyOption.class), epochClock,
+            (file) -> false);
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            assertRecording(catalog, validRecording3, VALID, 7 * TERM_LENGTH + 96, 11 * TERM_LENGTH + 320,
+                18, 100, 7, 13, "ch2", "src2");
+        }
+    }
+
+    @Test
+    void checksumLastSegmentFile()
+    {
+        checksum(out, archiveDir, false, epochClock);
+
+        verify(out, archiveDir, EnumSet.allOf(VerifyOption.class), epochClock, (file) -> false);
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            assertRecording(catalog, validRecording0, VALID, 0, TERM_LENGTH + 64, 15, 100,
+                0, 2, "ch2", "src2");
+            assertRecording(catalog, validRecording1, VALID, 1024, 1024, 16, 200,
+                0, 2, "ch2", "src2");
+            assertRecording(catalog, validRecording2, VALID, TERM_LENGTH * 3 + 96, TERM_LENGTH * 3 + 96,
+                17, 300, 0, 2, "ch2", "src2");
+            assertRecording(catalog, validRecording3, INVALID, 7 * TERM_LENGTH + 96, 7 * TERM_LENGTH + 128,
+                18, NULL_TIMESTAMP, 7, 13, "ch2", "src2");
+            assertRecording(catalog, validRecording4, INVALID, 21 * TERM_LENGTH + (TERM_LENGTH - 64),
+                22 * TERM_LENGTH + 992, 19, 1, -25, 7, "ch2", "src2");
+            assertRecording(catalog, validRecording5, VALID, 0, 64 + PAGE_SIZE, 20, 777,
+                0, 20, "ch2", "src2");
+            assertRecording(catalog, validRecording6, VALID, 352, 960, 21, 400, 0, 6, "ch2", "src2");
+        }
+    }
+
+    @Test
+    void checksumAllSegmentFile()
+    {
+        checksum(out, archiveDir, true, epochClock);
+
+        verify(out, archiveDir, EnumSet.allOf(VerifyOption.class), epochClock, (file) -> false);
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            assertRecording(catalog, validRecording0, VALID, 0, TERM_LENGTH + 64, 15, 100,
+                0, 2, "ch2", "src2");
+            assertRecording(catalog, validRecording1, VALID, 1024, 1024, 16, 200,
+                0, 2, "ch2", "src2");
+            assertRecording(catalog, validRecording2, VALID, TERM_LENGTH * 3 + 96, TERM_LENGTH * 3 + 96,
+                17, 300, 0, 2, "ch2", "src2");
+            assertRecording(catalog, validRecording3, VALID, 7 * TERM_LENGTH + 96, 11 * TERM_LENGTH + 320,
+                18, 400, 7, 13, "ch2", "src2");
+            assertRecording(catalog, validRecording4, INVALID, 21 * TERM_LENGTH + (TERM_LENGTH - 64),
+                22 * TERM_LENGTH + 992, 19, 1, -25, 7, "ch2", "src2");
+            assertRecording(catalog, validRecording5, VALID, 0, 64 + PAGE_SIZE, 20, 777,
+                0, 20, "ch2", "src2");
+            assertRecording(catalog, validRecording6, VALID, 352, 960, 21, 500, 0, 6, "ch2", "src2");
+        }
+    }
+
     @FunctionalInterface
     interface SegmentWriter
     {
@@ -849,9 +949,16 @@ class ArchiveToolTests
         try (FileChannel channel = FileChannel.open(file.toPath(), READ, WRITE))
         {
             segmentWriter.write(byteBuffer, flyweight, channel);
-            channel.truncate(fileLength);
-            byteBuffer.put(0, (byte)0).limit(1).position(0);
-            channel.write(byteBuffer, fileLength - 1);
+            final long size = channel.size();
+            if (fileLength != size)
+            {
+                channel.truncate(fileLength);
+                if (size < fileLength)
+                {
+                    byteBuffer.put(0, (byte)0).limit(1).position(0);
+                    channel.write(byteBuffer, fileLength - 1);
+                }
+            }
         }
     }
 

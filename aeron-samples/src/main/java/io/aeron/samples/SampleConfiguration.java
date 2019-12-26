@@ -65,13 +65,13 @@ public class SampleConfiguration
     static
     {
         CHANNEL = System.getProperty(CHANNEL_PROP, "aeron:udp?endpoint=localhost:40123");
-        STREAM_ID = Integer.getInteger(STREAM_ID_PROP, 11);
+        STREAM_ID = Integer.getInteger(STREAM_ID_PROP, 15);
         PING_CHANNEL = System.getProperty(PING_CHANNEL_PROP, "aeron:udp?endpoint=localhost:40123");
         PONG_CHANNEL = System.getProperty(PONG_CHANNEL_PROP, "aeron:udp?endpoint=localhost:40124");
         IDLE_STRATEGY_NAME = System.getProperty(IDLE_STRATEGY_PROP, "org.agrona.concurrent.BusySpinIdleStrategy");
         LINGER_TIMEOUT_MS = Long.getLong(LINGER_TIMEOUT_MS_PROP, 0);
-        PING_STREAM_ID = Integer.getInteger(PING_STREAM_ID_PROP, 11);
-        PONG_STREAM_ID = Integer.getInteger(PONG_STREAM_ID_PROP, 12);
+        PING_STREAM_ID = Integer.getInteger(PING_STREAM_ID_PROP, 16);
+        PONG_STREAM_ID = Integer.getInteger(PONG_STREAM_ID_PROP, 17);
         FRAGMENT_COUNT_LIMIT = Integer.getInteger(FRAME_COUNT_LIMIT_PROP, 10);
         MESSAGE_LENGTH = Integer.getInteger(MESSAGE_LENGTH_PROP, 32);
         RANDOM_MESSAGE_LENGTH = Boolean.getBoolean(RANDOM_MESSAGE_LENGTH_PROP);

@@ -170,7 +170,13 @@ public class EmbeddedReplayThroughput implements AutoCloseable
                         workCount += 1;
                     }
 
-                    workCount += image.poll(NOOP_FRAGMENT_HANDLER, 10);
+                    final int fragments = image.poll(NOOP_FRAGMENT_HANDLER, 10);
+                    if (0 == fragments && image.isClosed())
+                    {
+                        throw new IllegalStateException("image closed unexpectedly");
+                    }
+
+                    workCount += fragments;
                     idleStrategy.idle(workCount);
                 }
 

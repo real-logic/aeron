@@ -358,8 +358,9 @@ public class PublicationImage
         }
         else if (null != lossReport)
         {
-            reportEntry = lossReport.createEntry(
-                length, cachedEpochClock.time(), sessionId, streamId, channel(), sourceAddress.toString());
+            final String source = Configuration.sourceIdentity(sourceAddress);
+            final long timeMs = cachedEpochClock.time();
+            reportEntry = lossReport.createEntry(length, timeMs, sessionId, streamId, channel(), source);
 
             if (null == reportEntry)
             {

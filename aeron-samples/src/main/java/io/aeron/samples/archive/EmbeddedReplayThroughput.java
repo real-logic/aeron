@@ -183,7 +183,12 @@ public class EmbeddedReplayThroughput implements AutoCloseable
                 final long position = publication.position();
                 while (image.position() < position)
                 {
-                    idleStrategy.idle(image.poll(NOOP_FRAGMENT_HANDLER, 10));
+                    final int fragments = image.poll(NOOP_FRAGMENT_HANDLER, 10);
+                    if (0 == fragments && image.isClosed())
+                    {
+                        throw new IllegalStateException("image closed unexpectedly");
+                    }
+                    idleStrategy.idle(fragments);
                 }
 
                 awaitRecordingComplete(position, idleStrategy);

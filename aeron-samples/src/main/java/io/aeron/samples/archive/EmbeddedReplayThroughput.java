@@ -146,11 +146,10 @@ public class EmbeddedReplayThroughput implements AutoCloseable
             publicationSessionId = publication.sessionId();
             final String channel = ChannelUri.addSessionId(CHANNEL, publicationSessionId);
             final long subscriptionId = aeronArchive.startRecording(channel, STREAM_ID, SourceLocation.LOCAL);
+            final IdleStrategy idleStrategy = YieldingIdleStrategy.INSTANCE;
 
             try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID))
             {
-                final IdleStrategy idleStrategy = YieldingIdleStrategy.INSTANCE;
-
                 idleStrategy.reset();
                 while (!subscription.isConnected())
                 {
@@ -162,14 +161,17 @@ public class EmbeddedReplayThroughput implements AutoCloseable
                 long i = 0;
                 while (i < NUMBER_OF_MESSAGES)
                 {
+                    int workCount = 0;
                     buffer.putLong(0, i);
 
                     if (publication.offer(buffer, 0, MESSAGE_LENGTH) > 0)
                     {
                         i++;
+                        workCount += 1;
                     }
 
-                    image.poll(NOOP_FRAGMENT_HANDLER, 10);
+                    workCount += image.poll(NOOP_FRAGMENT_HANDLER, 10);
+                    idleStrategy.idle(workCount);
                 }
 
                 final long position = publication.position();

@@ -20,9 +20,9 @@ import io.aeron.archive.Archive;
 import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.RecordingDescriptorConsumer;
+import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
-import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.samples.SampleConfiguration;
 import org.agrona.CloseHelper;
@@ -59,7 +59,7 @@ public class EmbeddedReplayThroughput implements AutoCloseable
     private final Aeron aeron;
     private final AeronArchive aeronArchive;
     private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(MESSAGE_LENGTH, CACHE_LINE_LENGTH));
-    private final FragmentHandler fragmentHandler = new FragmentAssembler(this::onMessage);
+    private final FragmentAssembler fragmentAssembler = new FragmentAssembler(this::onMessage);
     private long messageCount;
     private int publicationSessionId;
 
@@ -108,7 +108,8 @@ public class EmbeddedReplayThroughput implements AutoCloseable
             new MediaDriver.Context()
                 .dirDeleteOnStart(true),
             new Archive.Context()
-                .archiveDir(archiveDir));
+                .archiveDir(archiveDir)
+                .recordingEventsEnabled(false));
 
         aeron = Aeron.connect();
 
@@ -127,8 +128,7 @@ public class EmbeddedReplayThroughput implements AutoCloseable
         archivingMediaDriver.mediaDriver().context().deleteAeronDirectory();
     }
 
-    @SuppressWarnings("unused")
-    public void onMessage(final DirectBuffer buffer, final int offset, final int length, final Header header)
+    void onMessage(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         final long count = buffer.getLong(offset);
         if (count != messageCount)
@@ -141,13 +141,15 @@ public class EmbeddedReplayThroughput implements AutoCloseable
 
     private long makeRecording()
     {
-        try (ExclusivePublication publication = aeronArchive.addRecordedExclusivePublication(CHANNEL, STREAM_ID);
-            Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
+        try (Publication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID))
         {
-            try
+            publicationSessionId = publication.sessionId();
+            final String channel = ChannelUri.addSessionId(CHANNEL, publicationSessionId);
+            final long subscriptionId = aeronArchive.startRecording(channel, STREAM_ID, SourceLocation.LOCAL);
+
+            try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID))
             {
                 final IdleStrategy idleStrategy = YieldingIdleStrategy.INSTANCE;
-                publicationSessionId = publication.sessionId();
 
                 idleStrategy.reset();
                 while (!subscription.isConnected())
@@ -182,7 +184,7 @@ public class EmbeddedReplayThroughput implements AutoCloseable
             }
             finally
             {
-                aeronArchive.stopRecording(publication);
+                aeronArchive.stopRecording(subscriptionId);
             }
         }
     }
@@ -211,11 +213,12 @@ public class EmbeddedReplayThroughput implements AutoCloseable
             }
 
             messageCount = 0;
-            final FragmentHandler fragmentHandler = this.fragmentHandler;
+            final FragmentAssembler fragmentAssembler = this.fragmentAssembler;
+            fragmentAssembler.clear();
 
             while (messageCount < NUMBER_OF_MESSAGES)
             {
-                final int fragments = subscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT);
+                final int fragments = subscription.poll(fragmentAssembler, FRAGMENT_COUNT_LIMIT);
                 if (0 == fragments)
                 {
                     if (!subscription.isConnected())

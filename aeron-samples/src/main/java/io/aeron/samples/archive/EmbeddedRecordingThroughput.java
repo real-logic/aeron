@@ -59,11 +59,17 @@ public class EmbeddedRecordingThroughput implements AutoCloseable
         try (EmbeddedRecordingThroughput test = new EmbeddedRecordingThroughput())
         {
             test.startRecording();
+            long previousRecordingId = Aeron.NULL_VALUE;
 
             final ContinueBarrier barrier = new ContinueBarrier("Execute again?");
             do
             {
-                test.streamMessagesForRecording();
+                if (Aeron.NULL_VALUE != previousRecordingId)
+                {
+                    test.truncateRecording(previousRecordingId);
+                }
+
+                previousRecordingId = test.streamMessagesForRecording();
             }
             while (barrier.await());
         }
@@ -80,7 +86,7 @@ public class EmbeddedRecordingThroughput implements AutoCloseable
                 .spiesSimulateConnection(true)
                 .dirDeleteOnStart(true),
             new Archive.Context()
-                .deleteArchiveOnStart(true)
+                .recordingEventsEnabled(false)
                 .archiveDir(archiveDir));
 
         aeron = Aeron.connect();
@@ -100,7 +106,7 @@ public class EmbeddedRecordingThroughput implements AutoCloseable
         archivingMediaDriver.mediaDriver().context().deleteAeronDirectory();
     }
 
-    public void streamMessagesForRecording()
+    public long streamMessagesForRecording()
     {
         try (ExclusivePublication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID))
         {
@@ -142,11 +148,18 @@ public class EmbeddedRecordingThroughput implements AutoCloseable
             System.out.printf(
                 "Recorded %.02f MB @ %.02f MB/s - %,d msg/sec - %d byte payload + 32 byte header%n",
                 recordingMb, dataRate, msgRate, MESSAGE_LENGTH);
+
+            return RecordingPos.getRecordingId(counters, counterId);
         }
     }
 
     public void startRecording()
     {
         aeronArchive.startRecording(CHANNEL, STREAM_ID, SourceLocation.LOCAL);
+    }
+
+    public void truncateRecording(final long previousRecordingId)
+    {
+        aeronArchive.truncateRecording(previousRecordingId, 0L);
     }
 }

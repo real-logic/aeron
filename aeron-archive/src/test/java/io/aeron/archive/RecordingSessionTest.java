@@ -128,7 +128,8 @@ public class RecordingSessionTest
             mockPosition,
             ARCHIVE_CHANNEL,
             context,
-            CONTROL_SESSION);
+            CONTROL_SESSION,
+            null);
 
         assertEquals(RECORDING_ID, session.sessionId());
 

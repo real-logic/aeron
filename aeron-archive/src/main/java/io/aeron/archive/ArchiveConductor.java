@@ -82,10 +82,9 @@ abstract class ArchiveConductor
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
     private final ControlResponseProxy controlResponseProxy = new ControlResponseProxy();
     private final UnsafeBuffer counterMetadataBuffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
-    private final UnsafeBuffer dataBuffer = new UnsafeBuffer(
-        allocateDirectAligned(MAX_BLOCK_LENGTH, BitUtil.CACHE_LINE_LENGTH));
-    private final UnsafeBuffer replayBuffer = new UnsafeBuffer(
-        allocateDirectAligned(MAX_BLOCK_LENGTH, BitUtil.CACHE_LINE_LENGTH));
+    private final UnsafeBuffer dataBuffer = allocateBuffer();
+    private final UnsafeBuffer replayBuffer = allocateBuffer();
+    private final UnsafeBuffer recordingBuffer;
 
     private final Runnable aeronCloseHandler = this::abort;
     private final Aeron aeron;
@@ -148,6 +147,13 @@ abstract class ArchiveConductor
         cachedEpochClock.update(epochClock.time());
         authenticator = ctx.authenticatorSupplier().get();
         controlSessionProxy = new ControlSessionProxy(controlResponseProxy);
+
+        recordingBuffer = ctx.recordingCrcEnabled() ? allocateBuffer() : null;
+    }
+
+    private static UnsafeBuffer allocateBuffer()
+    {
+        return new UnsafeBuffer(allocateDirectAligned(MAX_BLOCK_LENGTH, BitUtil.CACHE_LINE_LENGTH));
     }
 
     public void onStart()
@@ -1394,7 +1400,8 @@ abstract class ArchiveConductor
             position,
             archiveDirChannel,
             ctx,
-            controlSession);
+            controlSession,
+            recordingBuffer);
 
         recordingSessionByIdMap.put(recordingId, session);
         recorder.addSession(session);
@@ -1447,7 +1454,8 @@ abstract class ArchiveConductor
             position,
             archiveDirChannel,
             ctx,
-            controlSession);
+            controlSession,
+            recordingBuffer);
 
         recordingSessionByIdMap.put(recordingId, session);
         catalog.extendRecording(recordingId, controlSession.sessionId(), correlationId, image.sessionId());

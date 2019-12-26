@@ -54,6 +54,7 @@ class RecordingWriter implements BlockHandler
     private final boolean forceWrites;
     private final boolean forceMetadata;
     private final boolean crcEnabled;
+    private final UnsafeBuffer recordingBuffer;
     private final FileChannel archiveDirChannel;
     private final File archiveDir;
 
@@ -69,7 +70,8 @@ class RecordingWriter implements BlockHandler
         final int segmentLength,
         final Image image,
         final Archive.Context ctx,
-        final FileChannel archiveDirChannel)
+        final FileChannel archiveDirChannel,
+        final UnsafeBuffer recordingBuffer)
     {
         this.recordingId = recordingId;
         this.archiveDirChannel = archiveDirChannel;
@@ -80,6 +82,7 @@ class RecordingWriter implements BlockHandler
         forceMetadata = ctx.fileSyncLevel() > 1;
 
         crcEnabled = ctx.recordingCrcEnabled();
+        this.recordingBuffer = recordingBuffer;
 
         final int termLength = image.termBufferLength();
         final long joinPosition = image.joinPosition();
@@ -94,14 +97,19 @@ class RecordingWriter implements BlockHandler
         {
             final boolean isPaddingFrame = termBuffer.getShort(typeOffset(termOffset)) == PADDING_FRAME_TYPE;
             final int dataLength = isPaddingFrame ? HEADER_LENGTH : length;
-            final ByteBuffer byteBuffer = termBuffer.byteBuffer();
-            byteBuffer.limit(termOffset + dataLength).position(termOffset);
+            ByteBuffer byteBuffer = termBuffer.byteBuffer();
 
             if (crcEnabled && !isPaddingFrame)
             {
-                // Cast to UnsafeBuffer is safe, because BlockHandler is internal API which is always invoked with an
-                // instance of UnsafeBuffer which is used for performance reasons (i.e. to avoid invokeinterface calls)
-                computeCRC((UnsafeBuffer)termBuffer, termOffset, length);
+                byteBuffer = recordingBuffer.byteBuffer();
+                byteBuffer.clear();
+                recordingBuffer.putBytes(0, termBuffer, termOffset, length);
+                byteBuffer.limit(length).position(0);
+                computeCRC(recordingBuffer, 0, length);
+            }
+            else
+            {
+                byteBuffer.limit(termOffset + dataLength).position(termOffset);
             }
 
             do

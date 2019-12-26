@@ -78,6 +78,8 @@ public class ReplaySessionTest
     private final Counter recordingPositionCounter = mock(Counter.class);
     private final UnsafeBuffer replayBuffer = new UnsafeBuffer(
         ByteBuffer.allocateDirect(Archive.Configuration.MAX_BLOCK_LENGTH));
+    private final UnsafeBuffer recordingBuffer = new UnsafeBuffer(
+        ByteBuffer.allocateDirect(Archive.Configuration.MAX_BLOCK_LENGTH));
 
     private int messageCounter = 0;
 
@@ -117,7 +119,7 @@ public class ReplaySessionTest
         recordingSummary.sessionId = SESSION_ID;
 
         final RecordingWriter writer = new RecordingWriter(
-            RECORDING_ID, START_POSITION, SEGMENT_LENGTH, mockImage, context, ARCHIVE_DIR_CHANNEL);
+            RECORDING_ID, START_POSITION, SEGMENT_LENGTH, mockImage, context, ARCHIVE_DIR_CHANNEL, null);
 
         writer.init();
 
@@ -341,7 +343,7 @@ public class ReplaySessionTest
         recordingPosition = START_POSITION;
 
         final RecordingWriter writer = new RecordingWriter(
-            recordingId, START_POSITION, SEGMENT_LENGTH, mockImage, context, ARCHIVE_DIR_CHANNEL);
+            recordingId, START_POSITION, SEGMENT_LENGTH, mockImage, context, ARCHIVE_DIR_CHANNEL, recordingBuffer);
 
         writer.init();
 
@@ -446,7 +448,7 @@ public class ReplaySessionTest
     public void shouldDoCrcForEachDataFrame() throws IOException
     {
         final RecordingWriter writer = new RecordingWriter(
-            RECORDING_ID, START_POSITION, SEGMENT_LENGTH, mockImage, context, ARCHIVE_DIR_CHANNEL);
+            RECORDING_ID, START_POSITION, SEGMENT_LENGTH, mockImage, context, ARCHIVE_DIR_CHANNEL, recordingBuffer);
 
         writer.init();
 

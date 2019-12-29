@@ -18,7 +18,7 @@
 #define AERON_UDP_DESTINATION_TRACKER_H
 
 #include "aeron_socket.h"
-#include "aeronmd.h"
+#include "util/aeron_clock.h"
 #include "aeron_udp_channel_transport.h"
 
 #define AERON_UDP_DESTINATION_TRACKER_DESTINATION_TIMEOUT_NS (5 * 1000 * 1000 * 1000L)

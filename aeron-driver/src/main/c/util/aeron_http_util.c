@@ -26,7 +26,7 @@
 #include "aeron_alloc.h"
 #include "aeron_arrayutil.h"
 #include "concurrent/aeron_thread.h"
-#include "aeronmd.h"
+#include "util/aeron_clock.h"
 
 int aeron_http_parse_url(const char *url, aeron_http_parsed_url_t *parsed_url)
 {

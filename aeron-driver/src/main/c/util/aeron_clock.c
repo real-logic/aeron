@@ -16,6 +16,8 @@
 
 #include <stdint.h>
 #include <time.h>
+#include "util/aeron_bitutil.h"
+#include "concurrent/aeron_atomic.h"
 
 int64_t aeron_nano_clock()
 {
@@ -60,5 +62,37 @@ int64_t aeron_epoch_clock()
 #endif
 
     return (ts.tv_sec * 1000) + (ts.tv_nsec / 1000000);
+}
+
+typedef struct aeron_clock_cache_stct
+{
+    uint8_t pre_pad[(2 * AERON_CACHE_LINE_LENGTH)];
+    int64_t cached_epoch_time;
+    int64_t cached_nano_time;
+    uint8_t post_pad[(2 * AERON_CACHE_LINE_LENGTH) - (2 * sizeof(int64_t))];
+}
+aeron_clock_cache_t;
+
+void aeron_clock_update_cached_time(aeron_clock_cache_t* cached_time, int64_t epoch_time, int64_t nano_time)
+{
+    // TODO: Maybe this can be optimised to a single ordered write.
+    AERON_PUT_ORDERED(cached_time->cached_epoch_time, epoch_time);
+    AERON_PUT_ORDERED(cached_time->cached_nano_time, nano_time);
+}
+
+int64_t aeron_clock_cached_epoch_time(aeron_clock_cache_t* cached_time)
+{
+    // TODO: May not need to be a volatile read, but may need to prevent a torn read
+    int64_t epoch_time;
+    AERON_GET_VOLATILE(epoch_time, cached_time->cached_epoch_time);
+    return epoch_time;
+}
+
+int64_t aeron_clock_cached_nano_time(aeron_clock_cache_t* cached_time)
+{
+    // TODO: May not need to be a volatile read, but may need to prevent a torn read
+    int64_t nano_time;
+    AERON_GET_VOLATILE(nano_time, cached_time->cached_nano_time);
+    return nano_time;
 }
 

@@ -270,6 +270,7 @@ typedef struct aeron_driver_conductor_stct
 
     aeron_clock_func_t nano_clock;
     aeron_clock_func_t epoch_clock;
+    int64_t clock_update_deadline_ns;
 
     int32_t next_session_id;
     int32_t publication_reserved_session_id_low;

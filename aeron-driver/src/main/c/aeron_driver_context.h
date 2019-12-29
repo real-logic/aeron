@@ -191,6 +191,8 @@ typedef struct aeron_driver_context_stct
 
     aeron_feedback_delay_generator_state_t unicast_delay_feedback_generator;
     aeron_feedback_delay_generator_state_t multicast_delay_feedback_generator;
+
+    aeron_clock_cache_t* cached_clock;
 }
 aeron_driver_context_t;
 

@@ -34,6 +34,7 @@
 #include "concurrent/aeron_logbuffer_unblocker.h"
 
 #define STATIC_BIT_SET_U64_LEN (512)
+#define AERON_DRIVER_CONDUCTOR_CLOCK_UPDATE_DURATION_NS (1000 * 1000)
 
 static void aeron_error_log_resource_linger(void *clientd, uint8_t *resource)
 {
@@ -1787,11 +1788,22 @@ void aeron_driver_conductor_on_check_for_blocked_driver_commands(aeron_driver_co
     }
 }
 
+void aeron_driver_conductor_update_clocks(aeron_driver_conductor_t *conductor, int64_t now_ns)
+{
+    if (conductor->clock_update_deadline_ns - now_ns < 0)
+    {
+        conductor->clock_update_deadline_ns = now_ns + AERON_DRIVER_CONDUCTOR_CLOCK_UPDATE_DURATION_NS;
+        int64_t now_ms = conductor->epoch_clock();
+        aeron_clock_update_cached_time(conductor->context->cached_clock, now_ms, now_ns);
+    }
+}
+
 int aeron_driver_conductor_do_work(void *clientd)
 {
     aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
     int work_count = 0;
     int64_t now_ns = conductor->nano_clock();
+    aeron_driver_conductor_update_clocks(conductor, now_ns);
 
     work_count += (int)aeron_mpsc_rb_read(
         &conductor->to_driver_commands, aeron_driver_conductor_on_command, conductor, 10);
@@ -1800,6 +1812,7 @@ int aeron_driver_conductor_do_work(void *clientd)
 
     if (now_ns >= (conductor->time_of_last_timeout_check_ns + (int64_t)conductor->context->timer_interval_ns))
     {
+        // TODO [Mike] This is should use the cached clock?
         int64_t now_ms = conductor->epoch_clock();
 
         aeron_mpsc_rb_consumer_heartbeat_time(&conductor->to_driver_commands, now_ms);

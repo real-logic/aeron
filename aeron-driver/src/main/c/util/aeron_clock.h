@@ -36,4 +36,12 @@ int64_t aeron_nano_clock();
  */
 int64_t aeron_epoch_clock();
 
+typedef struct aeron_clock_cache_stct aeron_clock_cache_t;
+
+void aeron_clock_update_cached_time(aeron_clock_cache_t* cached_time, int64_t epoch_time, int64_t nano_time);
+
+int64_t aeron_clock_cached_epoch_time(aeron_clock_cache_t* cached_time);
+
+int64_t aeron_clock_cached_nano_time(aeron_clock_cache_t* cached_time);
+
 #endif //AERON_AERON_CLOCK_H

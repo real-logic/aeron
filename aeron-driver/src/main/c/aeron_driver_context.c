@@ -815,6 +815,10 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
 
     _context->nano_clock = aeron_nano_clock;
     _context->epoch_clock = aeron_epoch_clock;
+    if (aeron_clock_cache_alloc(&_context->cached_clock) < 0)
+    {
+        return -1;
+    }
 
     _context->conductor_idle_strategy_name = aeron_strndup("backoff", AERON_MAX_PATH);
     _context->shared_idle_strategy_name = aeron_strndup("backoff", AERON_MAX_PATH);

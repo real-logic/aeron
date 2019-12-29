@@ -223,7 +223,7 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
     int64_t now_ns = context->nano_clock();
 
     conductor->nano_clock = context->nano_clock;
-    conductor->epoch_clock = context->epoch_clock;
+    conductor->clock_update_deadline_ns = 0;
     conductor->time_of_last_timeout_check_ns = now_ns;
     conductor->time_of_last_to_driver_position_change_ns = now_ns;
     conductor->next_session_id = aeron_randomised_int32();
@@ -281,7 +281,8 @@ aeron_client_t *aeron_driver_conductor_get_or_add_client(aeron_driver_conductor_
 
                 client->heartbeat_timestamp.counter_id = client_heartbeat.counter_id;
                 client->heartbeat_timestamp.value_addr = client_heartbeat.value_addr;
-                aeron_counter_set_ordered(client->heartbeat_timestamp.value_addr, conductor->context->epoch_clock());
+                const int64_t now_ms = aeron_clock_cached_epoch_time(conductor->context->cached_clock);
+                aeron_counter_set_ordered(client->heartbeat_timestamp.value_addr, now_ms);
 
                 client->client_liveness_timeout_ms = conductor->context->client_liveness_timeout_ns < 1000000 ?
                     1 : conductor->context->client_liveness_timeout_ns / 1000000;
@@ -929,7 +930,8 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
                     client->publication_links.length++;
 
                     conductor->ipc_publications.array[conductor->ipc_publications.length++].publication = publication;
-                    publication->conductor_fields.managed_resource.time_of_last_state_change = conductor->nano_clock();
+                    publication->conductor_fields.managed_resource.time_of_last_state_change =
+                        aeron_clock_cached_nano_time(conductor->context->cached_clock);
                 }
             }
         }
@@ -1139,7 +1141,8 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                     client->publication_links.length++;
 
                     conductor->network_publications.array[conductor->network_publications.length++].publication = publication;
-                    publication->conductor_fields.managed_resource.time_of_last_state_change = conductor->nano_clock();
+                    publication->conductor_fields.managed_resource.time_of_last_state_change =
+                        aeron_clock_cached_nano_time(conductor->context->cached_clock);
                 }
             }
         }
@@ -1790,10 +1793,10 @@ void aeron_driver_conductor_on_check_for_blocked_driver_commands(aeron_driver_co
 
 void aeron_driver_conductor_update_clocks(aeron_driver_conductor_t *conductor, int64_t now_ns)
 {
-    if (conductor->clock_update_deadline_ns - now_ns < 0)
+    if (conductor->clock_update_deadline_ns - now_ns <= 0)
     {
         conductor->clock_update_deadline_ns = now_ns + AERON_DRIVER_CONDUCTOR_CLOCK_UPDATE_DURATION_NS;
-        int64_t now_ms = conductor->epoch_clock();
+        int64_t now_ms = conductor->context->epoch_clock();
         aeron_clock_update_cached_time(conductor->context->cached_clock, now_ms, now_ns);
     }
 }
@@ -1802,7 +1805,7 @@ int aeron_driver_conductor_do_work(void *clientd)
 {
     aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
     int work_count = 0;
-    int64_t now_ns = conductor->nano_clock();
+    const int64_t now_ns = conductor->nano_clock();
     aeron_driver_conductor_update_clocks(conductor, now_ns);
 
     work_count += (int)aeron_mpsc_rb_read(
@@ -1812,8 +1815,7 @@ int aeron_driver_conductor_do_work(void *clientd)
 
     if (now_ns >= (conductor->time_of_last_timeout_check_ns + (int64_t)conductor->context->timer_interval_ns))
     {
-        // TODO [Mike] This is should use the cached clock?
-        int64_t now_ms = conductor->epoch_clock();
+        const int64_t now_ms = aeron_clock_cached_epoch_time(conductor->context->cached_clock);
 
         aeron_mpsc_rb_consumer_heartbeat_time(&conductor->to_driver_commands, now_ms);
         aeron_driver_conductor_on_check_managed_resources(conductor, now_ns, now_ms);
@@ -2090,7 +2092,7 @@ int aeron_driver_conductor_on_add_ipc_publication(
         publication->log_file_name,
         publication->log_file_name_length);
 
-    int64_t now_ns = conductor->context->nano_clock();
+    int64_t now_ns = aeron_clock_cached_nano_time(conductor->context->cached_clock);
 
     for (size_t i = 0; i < conductor->ipc_subscriptions.length; i++)
     {
@@ -2622,7 +2624,8 @@ int aeron_driver_conductor_on_client_keepalive(aeron_driver_conductor_t *conduct
     if ((index = aeron_driver_conductor_find_client(conductor, client_id)) >= 0)
     {
         aeron_client_t *client = &conductor->clients.array[index];
-        aeron_counter_set_ordered(client->heartbeat_timestamp.value_addr, conductor->epoch_clock());
+        int64_t now_ms = aeron_clock_cached_epoch_time(conductor->context->cached_clock);
+        aeron_counter_set_ordered(client->heartbeat_timestamp.value_addr, now_ms);
     }
 
     return 0;
@@ -3043,7 +3046,8 @@ void aeron_driver_conductor_on_linger_buffer(void *clientd, void *item)
 
         entry->buffer = command->item;
         entry->has_reached_end_of_life = false;
-        entry->timeout_ns = conductor->nano_clock() + AERON_DRIVER_CONDUCTOR_LINGER_RESOURCE_TIMEOUT_NS;
+        entry->timeout_ns = aeron_clock_cached_nano_time(conductor->context->cached_clock) +
+            AERON_DRIVER_CONDUCTOR_LINGER_RESOURCE_TIMEOUT_NS;
     }
 
     if (AERON_THREADING_MODE_IS_SHARED_OR_INVOKER(conductor->context->threading_mode))

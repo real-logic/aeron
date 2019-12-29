@@ -53,7 +53,7 @@ int aeron_publication_image_create(
     const uint64_t usable_fs_space = context->usable_fs_space_func(context->aeron_dir);
     const uint64_t log_length = aeron_logbuffer_compute_log_length(
         (uint64_t)term_buffer_length, context->file_page_size);
-    int64_t now_ns = context->nano_clock();
+    int64_t now_ns = aeron_clock_cached_nano_time(context->cached_clock);
 
     *image = NULL;
 
@@ -120,7 +120,7 @@ int aeron_publication_image_create(
     _image->loss_reporter = loss_reporter;
     _image->loss_reporter_offset = -1;
     _image->nano_clock = context->nano_clock;
-    _image->epoch_clock = context->epoch_clock;
+    _image->cached_clock = context->cached_clock;
     _image->conductor_fields.subscribable.array = NULL;
     _image->conductor_fields.subscribable.length = 0;
     _image->conductor_fields.subscribable.capacity = 0;
@@ -259,8 +259,9 @@ void aeron_publication_image_on_gap_detected(void *clientd, int32_t term_id, int
 
     if (image->loss_reporter_offset >= 0)
     {
+        const int64_t now_ms = aeron_clock_cached_epoch_time(image->cached_clock);
         aeron_loss_reporter_record_observation(
-            image->loss_reporter, image->loss_reporter_offset, (int64_t)length, image->epoch_clock());
+            image->loss_reporter, image->loss_reporter_offset, (int64_t)length, now_ms);
     }
     else if (NULL != image->loss_reporter)
     {
@@ -272,7 +273,7 @@ void aeron_publication_image_on_gap_detected(void *clientd, int32_t term_id, int
             image->loss_reporter_offset = aeron_loss_reporter_create_entry(
                 image->loss_reporter,
                 (int64_t)length,
-                image->epoch_clock(),
+                aeron_clock_cached_epoch_time(image->cached_clock),
                 image->session_id,
                 image->stream_id,
                 image->endpoint->conductor_fields.udp_channel->original_uri,
@@ -381,7 +382,7 @@ int aeron_publication_image_insert_packet(
             aeron_term_rebuilder_insert(term_buffer + term_offset, buffer, length);
         }
 
-        AERON_PUT_ORDERED(image->last_packet_timestamp_ns, image->nano_clock());
+        AERON_PUT_ORDERED(image->last_packet_timestamp_ns, aeron_clock_cached_nano_time(image->cached_clock));
         aeron_counter_propose_max_ordered(image->rcv_hwm_position.value_addr, proposed_position);
     }
 

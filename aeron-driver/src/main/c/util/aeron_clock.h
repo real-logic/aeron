@@ -44,4 +44,8 @@ int64_t aeron_clock_cached_epoch_time(aeron_clock_cache_t* cached_time);
 
 int64_t aeron_clock_cached_nano_time(aeron_clock_cache_t* cached_time);
 
+int aeron_clock_cache_alloc(aeron_clock_cache_t **cached_time);
+
+void aeron_clock_cache_free(aeron_clock_cache_t *cached_time);
+
 #endif //AERON_AERON_CLOCK_H

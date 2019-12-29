@@ -127,6 +127,7 @@ typedef struct aeron_driver_context_stct
 
     aeron_clock_func_t nano_clock;
     aeron_clock_func_t epoch_clock;
+    aeron_clock_cache_t* cached_clock;
 
     aeron_spsc_concurrent_array_queue_t sender_command_queue;
     aeron_spsc_concurrent_array_queue_t receiver_command_queue;
@@ -191,8 +192,6 @@ typedef struct aeron_driver_context_stct
 
     aeron_feedback_delay_generator_state_t unicast_delay_feedback_generator;
     aeron_feedback_delay_generator_state_t multicast_delay_feedback_generator;
-
-    aeron_clock_cache_t* cached_clock;
 }
 aeron_driver_context_t;
 

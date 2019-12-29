@@ -16,6 +16,7 @@
 
 #include <stdint.h>
 #include <time.h>
+#include "aeron_alloc.h"
 #include "util/aeron_bitutil.h"
 #include "concurrent/aeron_atomic.h"
 
@@ -82,7 +83,7 @@ void aeron_clock_update_cached_time(aeron_clock_cache_t* cached_time, int64_t ep
 
 int64_t aeron_clock_cached_epoch_time(aeron_clock_cache_t* cached_time)
 {
-    // TODO: May not need to be a volatile read, but may need to prevent a torn read
+    // TODO: May not need to be volatile, but may need to prevent a torn read
     int64_t epoch_time;
     AERON_GET_VOLATILE(epoch_time, cached_time->cached_epoch_time);
     return epoch_time;
@@ -90,9 +91,18 @@ int64_t aeron_clock_cached_epoch_time(aeron_clock_cache_t* cached_time)
 
 int64_t aeron_clock_cached_nano_time(aeron_clock_cache_t* cached_time)
 {
-    // TODO: May not need to be a volatile read, but may need to prevent a torn read
+    // TODO: May not need to be volatile, but may need to prevent a torn read
     int64_t nano_time;
     AERON_GET_VOLATILE(nano_time, cached_time->cached_nano_time);
     return nano_time;
 }
 
+int aeron_clock_cache_alloc(aeron_clock_cache_t **cached_time)
+{
+    return aeron_alloc((void **)cached_time, sizeof(aeron_clock_cache_t));
+}
+
+void aeron_clock_cache_free(aeron_clock_cache_t *cached_time)
+{
+    aeron_free((void *)cached_time);
+}

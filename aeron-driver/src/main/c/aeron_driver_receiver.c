@@ -139,7 +139,7 @@ int aeron_driver_receiver_do_work(void *clientd)
 
     aeron_counter_add_ordered(receiver->total_bytes_received_counter, bytes_received);
 
-    int64_t now_ns = receiver->context->nano_clock();
+    int64_t now_ns = aeron_clock_cached_nano_time(receiver->context->cached_clock);
 
     for (size_t i = 0, length = receiver->images.length; i < length; i++)
     {
@@ -406,7 +406,7 @@ int aeron_driver_receiver_add_pending_setup(
     entry->endpoint = endpoint;
     entry->session_id = session_id;
     entry->stream_id = stream_id;
-    entry->time_of_status_message_ns = receiver->context->nano_clock();
+    entry->time_of_status_message_ns = aeron_clock_cached_nano_time(receiver->context->cached_clock);
     entry->is_periodic = false;
     if (NULL != control_addr)
     {

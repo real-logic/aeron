@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "util/aeron_bitutil.h"
+#include "util/aeron_clock.h"
 #include "aeron_atomic.h"
 
 #pragma pack(push)
@@ -55,8 +56,6 @@ aeron_counter_metadata_descriptor_t;
 
 #define AERON_COUNTER_NOT_FREE_TO_REUSE (INT64_MAX)
 
-typedef int64_t (*aeron_counters_manager_clock_func_t)();
-
 typedef struct aeron_counters_manager_stct
 {
     uint8_t *values;
@@ -69,7 +68,7 @@ typedef struct aeron_counters_manager_stct
     int32_t free_list_index;
     size_t free_list_length;
 
-    aeron_counters_manager_clock_func_t clock_func;
+    aeron_clock_func_t clock_func;
     int64_t free_to_reuse_timeout_ms;
 }
 aeron_counters_manager_t;
@@ -82,7 +81,7 @@ int aeron_counters_manager_init(
     size_t metadata_length,
     uint8_t *values_buffer,
     size_t values_length,
-    aeron_counters_manager_clock_func_t clock_func,
+    aeron_clock_func_t clock_func,
     int64_t free_to_reuse_timeout_ms);
 
 void aeron_counters_manager_close(aeron_counters_manager_t *manager);

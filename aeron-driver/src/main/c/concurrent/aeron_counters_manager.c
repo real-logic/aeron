@@ -28,7 +28,7 @@ int aeron_counters_manager_init(
     size_t metadata_length,
     uint8_t *values_buffer,
     size_t values_length,
-    aeron_counters_manager_clock_func_t clock_func,
+    aeron_clock_func_t clock_func,
     int64_t free_to_reuse_timeout_ms)
 {
     int result = -1;

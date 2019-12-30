@@ -970,6 +970,7 @@ int aeron_driver_context_close(aeron_driver_context_t *context)
     aeron_free((void *)context->receiver_idle_strategy_init_args);
     aeron_free((void *)context->shared_idle_strategy_init_args);
     aeron_free((void *)context->shared_network_idle_strategy_init_args);
+    aeron_clock_cache_free(context->cached_clock);
     aeron_free(context);
 
     return 0;

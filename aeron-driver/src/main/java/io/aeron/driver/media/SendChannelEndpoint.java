@@ -279,7 +279,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
     public void validateAllowsManualControl()
     {
-        if (null == multiDestination || !multiDestination.isManualControlMode())
+        if (!(multiDestination instanceof ManualMultiDestination))
         {
             throw new ControlProtocolException(ErrorCode.INVALID_CHANNEL, "channel does not allow manual control");
         }

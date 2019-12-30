@@ -30,13 +30,17 @@ abstract class MultiDestination
 {
     abstract int send(DatagramChannel channel, ByteBuffer buffer, SendChannelEndpoint channelEndpoint, int bytesToSend);
 
-    abstract void onStatusMessage(StatusMessageFlyweight msg, InetSocketAddress address);
+    void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress address)
+    {
+    }
 
-    abstract boolean isManualControlMode();
+    void addDestination(final InetSocketAddress address)
+    {
+    }
 
-    abstract void addDestination(InetSocketAddress address);
-
-    abstract void removeDestination(InetSocketAddress address);
+    void removeDestination(final InetSocketAddress address)
+    {
+    }
 
     static int send(
         final DatagramChannel datagramChannel,
@@ -68,135 +72,11 @@ abstract class MultiDestination
     }
 }
 
-class DynamicMultiDestination extends MultiDestination
-{
-    private static final Destination[] EMPTY_DESTINATIONS = new Destination[0];
-
-    private final long destinationTimeoutNs;
-    private final CachedNanoClock nanoClock;
-    private Destination[] destinations = EMPTY_DESTINATIONS;
-
-    DynamicMultiDestination(final CachedNanoClock nanoClock, final long timeout)
-    {
-        this.nanoClock = nanoClock;
-        this.destinationTimeoutNs = timeout;
-    }
-
-    boolean isManualControlMode()
-    {
-        return false;
-    }
-
-    void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress address)
-    {
-        final long receiverId = msg.receiverId();
-        final long nowNs = nanoClock.nanoTime();
-        boolean isExisting = false;
-
-        for (final Destination destination : destinations)
-        {
-            if (receiverId == destination.receiverId && address.getPort() == destination.port)
-            {
-                destination.timeOfLastActivityNs = nowNs;
-                isExisting = true;
-                break;
-            }
-        }
-
-        if (!isExisting)
-        {
-            add(new Destination(nowNs, receiverId, address));
-        }
-    }
-
-    int send(
-        final DatagramChannel channel,
-        final ByteBuffer buffer,
-        final SendChannelEndpoint channelEndpoint,
-        final int bytesToSend)
-    {
-        final long nowNs = nanoClock.nanoTime();
-        final int position = buffer.position();
-        int minBytesSent = bytesToSend;
-        int removed = 0;
-
-        for (int lastIndex = destinations.length - 1, i = lastIndex; i >= 0; i--)
-        {
-            final Destination destination = destinations[i];
-            if ((destination.timeOfLastActivityNs + destinationTimeoutNs) - nowNs < 0)
-            {
-                if (i != lastIndex)
-                {
-                    destinations[i] = destinations[lastIndex--];
-                }
-                removed++;
-            }
-            else
-            {
-                minBytesSent = Math.min(
-                    minBytesSent, send(channel, buffer, channelEndpoint, bytesToSend, position, destination.address));
-            }
-        }
-
-        if (removed > 0)
-        {
-            truncateDestinations(removed);
-        }
-
-        return minBytesSent;
-    }
-
-
-    void addDestination(final InetSocketAddress address)
-    {
-    }
-
-    void removeDestination(final InetSocketAddress address)
-    {
-    }
-
-    private void add(final Destination destination)
-    {
-        final int length = destinations.length;
-        final Destination[] newElements = new Destination[length + 1];
-
-        System.arraycopy(destinations, 0, newElements, 0, length);
-        newElements[length] = destination;
-        destinations = newElements;
-    }
-
-    private void truncateDestinations(final int removed)
-    {
-        final int length = destinations.length;
-        final int newLength = length - removed;
-
-        if (0 == newLength)
-        {
-            destinations = EMPTY_DESTINATIONS;
-        }
-        else
-        {
-            final Destination[] newElements = new Destination[newLength];
-            System.arraycopy(destinations, 0, newElements, 0, newLength);
-            destinations = newElements;
-        }
-    }
-}
-
 class ManualMultiDestination extends MultiDestination
 {
     private static final InetSocketAddress[] EMPTY_DESTINATIONS = new InetSocketAddress[0];
 
     private InetSocketAddress[] destinations = EMPTY_DESTINATIONS;
-
-    boolean isManualControlMode()
-    {
-        return true;
-    }
-
-    void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress address)
-    {
-    }
 
     int send(
         final DatagramChannel channel,
@@ -265,6 +145,107 @@ class ManualMultiDestination extends MultiDestination
 
                 destinations = newElements;
             }
+        }
+    }
+}
+
+class DynamicMultiDestination extends MultiDestination
+{
+    private static final Destination[] EMPTY_DESTINATIONS = new Destination[0];
+
+    private final long destinationTimeoutNs;
+    private final CachedNanoClock nanoClock;
+    private Destination[] destinations = EMPTY_DESTINATIONS;
+
+    DynamicMultiDestination(final CachedNanoClock nanoClock, final long timeout)
+    {
+        this.nanoClock = nanoClock;
+        this.destinationTimeoutNs = timeout;
+    }
+
+    void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress address)
+    {
+        final long receiverId = msg.receiverId();
+        final long nowNs = nanoClock.nanoTime();
+        boolean isExisting = false;
+
+        for (final Destination destination : destinations)
+        {
+            if (receiverId == destination.receiverId && address.getPort() == destination.port)
+            {
+                destination.timeOfLastActivityNs = nowNs;
+                isExisting = true;
+                break;
+            }
+        }
+
+        if (!isExisting)
+        {
+            add(new Destination(nowNs, receiverId, address));
+        }
+    }
+
+    int send(
+        final DatagramChannel channel,
+        final ByteBuffer buffer,
+        final SendChannelEndpoint channelEndpoint,
+        final int bytesToSend)
+    {
+        final long nowNs = nanoClock.nanoTime();
+        final int position = buffer.position();
+        int minBytesSent = bytesToSend;
+        int removed = 0;
+
+        for (int lastIndex = destinations.length - 1, i = lastIndex; i >= 0; i--)
+        {
+            final Destination destination = destinations[i];
+            if ((destination.timeOfLastActivityNs + destinationTimeoutNs) - nowNs < 0)
+            {
+                if (i != lastIndex)
+                {
+                    destinations[i] = destinations[lastIndex--];
+                }
+                removed++;
+            }
+            else
+            {
+                minBytesSent = Math.min(
+                    minBytesSent, send(channel, buffer, channelEndpoint, bytesToSend, position, destination.address));
+            }
+        }
+
+        if (removed > 0)
+        {
+            truncateDestinations(removed);
+        }
+
+        return minBytesSent;
+    }
+
+    private void add(final Destination destination)
+    {
+        final int length = destinations.length;
+        final Destination[] newElements = new Destination[length + 1];
+
+        System.arraycopy(destinations, 0, newElements, 0, length);
+        newElements[length] = destination;
+        destinations = newElements;
+    }
+
+    private void truncateDestinations(final int removed)
+    {
+        final int length = destinations.length;
+        final int newLength = length - removed;
+
+        if (0 == newLength)
+        {
+            destinations = EMPTY_DESTINATIONS;
+        }
+        else
+        {
+            final Destination[] newElements = new Destination[newLength];
+            System.arraycopy(destinations, 0, newElements, 0, newLength);
+            destinations = newElements;
         }
     }
 }

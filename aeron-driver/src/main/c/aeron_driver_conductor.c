@@ -221,7 +221,6 @@ int aeron_driver_conductor_init(aeron_driver_conductor_t *conductor, aeron_drive
 
     int64_t now_ns = context->nano_clock();
 
-    conductor->nano_clock = context->nano_clock;
     conductor->clock_update_deadline_ns = 0;
     conductor->time_of_last_timeout_check_ns = now_ns;
     conductor->time_of_last_to_driver_position_change_ns = now_ns;
@@ -1804,7 +1803,7 @@ int aeron_driver_conductor_do_work(void *clientd)
 {
     aeron_driver_conductor_t *conductor = (aeron_driver_conductor_t *)clientd;
     int work_count = 0;
-    const int64_t now_ns = conductor->nano_clock();
+    const int64_t now_ns = conductor->context->nano_clock();
     aeron_driver_conductor_update_clocks(conductor, now_ns);
 
     work_count += (int)aeron_mpsc_rb_read(

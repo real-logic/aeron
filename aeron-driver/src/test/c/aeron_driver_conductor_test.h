@@ -114,16 +114,26 @@ using namespace aeron;
 #define CONTROL_IP_ADDR "127.0.0.1"
 #define CONTROL_UDP_PORT (43657)
 
-static int64_t ms_timestamp = 0;
+static int64_t nano_time = 0;
 
 static int64_t test_nano_clock()
 {
-    return ms_timestamp * 1000 * 1000;
+    return nano_time;
 }
 
 static int64_t test_epoch_clock()
 {
-    return ms_timestamp;
+    return nano_time / (1000 * 1000);
+}
+
+static void test_set_nano_time(int64_t timestamp_ns)
+{
+    nano_time = timestamp_ns;
+}
+
+static void test_increment_nano_time(int64_t delta_ns)
+{
+    nano_time += delta_ns;
 }
 
 static int test_malloc_map_raw_log(
@@ -167,7 +177,7 @@ struct TestDriverContext
 {
     TestDriverContext()
     {
-        ms_timestamp = 0; /* single threaded */
+        test_set_nano_time(0); /* single threaded */
 
         if (aeron_driver_context_init(&m_context) < 0)
         {
@@ -482,7 +492,7 @@ public:
 
     void doWorkForNs(int64_t duration_ns, int64_t num_increments = 100, std::function<void()> func = [](){})
     {
-        int64_t initial_ms = ms_timestamp;
+        int64_t initial_ns = test_nano_clock();
         int64_t increment_ns = duration_ns / num_increments;
 
         if (increment_ns <= 0)
@@ -492,11 +502,11 @@ public:
 
         do
         {
-            ms_timestamp += (increment_ns / 1000000);
+            test_increment_nano_time(increment_ns);
             func();
             doWork();
         }
-        while (((ms_timestamp - initial_ms) * 1000000) <= duration_ns);
+        while ((test_nano_clock() - initial_ns) <= duration_ns);
     }
 
     void fill_sockaddr_ipv4(struct sockaddr_storage *addr, const char *ip, unsigned short int port)

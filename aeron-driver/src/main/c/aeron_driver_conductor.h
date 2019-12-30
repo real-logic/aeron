@@ -34,6 +34,7 @@
 #include "reports/aeron_loss_reporter.h"
 
 #define AERON_DRIVER_CONDUCTOR_LINGER_RESOURCE_TIMEOUT_NS (5 * 1000 * 1000 * 1000L)
+#define AERON_DRIVER_CONDUCTOR_CLOCK_UPDATE_DURATION_NS (1000 * 1000)
 
 typedef struct aeron_publication_link_stct
 {

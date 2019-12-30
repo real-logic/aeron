@@ -34,7 +34,6 @@
 #include "concurrent/aeron_logbuffer_unblocker.h"
 
 #define STATIC_BIT_SET_U64_LEN (512)
-#define AERON_DRIVER_CONDUCTOR_CLOCK_UPDATE_DURATION_NS (1000 * 1000)
 
 static void aeron_error_log_resource_linger(void *clientd, uint8_t *resource)
 {

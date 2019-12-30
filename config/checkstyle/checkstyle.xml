@@ -173,8 +173,6 @@
             <property name="message" value="Trailing whitespace"/>
         </module>
 
-        <module name="JavadocMethod">
-            <property name="allowUndeclaredRTE" value="true"/>
-        </module>
+        <module name="JavadocMethod"/>
     </module>
 </module>

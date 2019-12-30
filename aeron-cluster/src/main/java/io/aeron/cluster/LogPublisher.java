@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
 import io.aeron.cluster.client.ClusterClock;
 import io.aeron.cluster.codecs.*;
@@ -49,14 +50,14 @@ class LogPublisher
     private final ExpandableArrayBuffer expandableArrayBuffer = new ExpandableArrayBuffer();
     private final BufferClaim bufferClaim = new BufferClaim();
 
-    private Publication publication;
+    private ExclusivePublication publication;
 
     LogPublisher()
     {
         sessionHeaderEncoder.wrapAndApplyHeader(sessionHeaderBuffer, 0, new MessageHeaderEncoder());
     }
 
-    void publication(final Publication publication)
+    void publication(final ExclusivePublication publication)
     {
         this.publication = publication;
     }

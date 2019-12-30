@@ -15,8 +15,8 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.ExclusivePublication;
 import io.aeron.Image;
-import io.aeron.Publication;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.service.ClientSession;
 import io.aeron.cluster.service.Cluster;
@@ -55,7 +55,7 @@ class StubClusteredService implements ClusteredService
     {
     }
 
-    public void onTakeSnapshot(final Publication snapshotPublication)
+    public void onTakeSnapshot(final ExclusivePublication snapshotPublication)
     {
     }
 

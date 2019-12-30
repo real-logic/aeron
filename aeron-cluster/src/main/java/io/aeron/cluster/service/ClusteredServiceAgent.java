@@ -817,7 +817,8 @@ class ClusteredServiceAgent implements Agent, Cluster
         final long recordingId;
 
         try (AeronArchive archive = AeronArchive.connect(archiveCtx.clone());
-            Publication publication = aeron.addExclusivePublication(ctx.snapshotChannel(), ctx.snapshotStreamId()))
+            ExclusivePublication publication = aeron.addExclusivePublication(
+                ctx.snapshotChannel(), ctx.snapshotStreamId()))
         {
             final String channel = ChannelUri.addSessionId(ctx.snapshotChannel(), publication.sessionId());
             final long subscriptionId = archive.startRecording(channel, ctx.snapshotStreamId(), LOCAL);
@@ -865,7 +866,8 @@ class ClusteredServiceAgent implements Agent, Cluster
         while (counters.getCounterValue(counterId) < position);
     }
 
-    private void snapshotState(final Publication publication, final long logPosition, final long leadershipTermId)
+    private void snapshotState(
+        final ExclusivePublication publication, final long logPosition, final long leadershipTermId)
     {
         final ServiceSnapshotTaker snapshotTaker = new ServiceSnapshotTaker(
             publication, idleStrategy, aeronAgentInvoker);

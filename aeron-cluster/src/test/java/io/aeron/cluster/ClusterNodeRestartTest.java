@@ -16,6 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.Counter;
+import io.aeron.ExclusivePublication;
 import io.aeron.Image;
 import io.aeron.Publication;
 import io.aeron.archive.Archive;
@@ -567,7 +568,7 @@ public class ClusterNodeRestartTest
                     }
                 }
 
-                public void onTakeSnapshot(final Publication snapshotPublication)
+                public void onTakeSnapshot(final ExclusivePublication snapshotPublication)
                 {
                     final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
 
@@ -636,7 +637,7 @@ public class ClusterNodeRestartTest
                     }
                 }
 
-                public void onTakeSnapshot(final Publication snapshotPublication)
+                public void onTakeSnapshot(final ExclusivePublication snapshotPublication)
                 {
                     final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
 

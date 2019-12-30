@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster.service;
 
+import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
 import io.aeron.cluster.client.ClusterClock;
 import io.aeron.cluster.codecs.MessageHeaderEncoder;
@@ -37,13 +38,13 @@ public class SnapshotTaker
         MessageHeaderEncoder.ENCODED_LENGTH + SnapshotMarkerEncoder.BLOCK_LENGTH;
     protected final BufferClaim bufferClaim = new BufferClaim();
     protected final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
-    protected final Publication publication;
+    protected final ExclusivePublication publication;
     protected final IdleStrategy idleStrategy;
     protected final AgentInvoker aeronAgentInvoker;
     private final SnapshotMarkerEncoder snapshotMarkerEncoder = new SnapshotMarkerEncoder();
 
     public SnapshotTaker(
-        final Publication publication, final IdleStrategy idleStrategy, final AgentInvoker aeronAgentInvoker)
+        final ExclusivePublication publication, final IdleStrategy idleStrategy, final AgentInvoker aeronAgentInvoker)
     {
         this.publication = publication;
         this.idleStrategy = idleStrategy;

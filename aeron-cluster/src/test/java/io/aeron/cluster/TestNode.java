@@ -15,8 +15,8 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.ExclusivePublication;
 import io.aeron.Image;
-import io.aeron.Publication;
 import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.service.ClientSession;
@@ -359,7 +359,7 @@ class TestNode implements AutoCloseable
             ++messageCount;
         }
 
-        public void onTakeSnapshot(final Publication snapshotPublication)
+        public void onTakeSnapshot(final ExclusivePublication snapshotPublication)
         {
             final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(SNAPSHOT_MSG_LENGTH);
 

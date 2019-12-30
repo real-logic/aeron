@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster.service;
 
+import io.aeron.ExclusivePublication;
 import io.aeron.Image;
 import io.aeron.Publication;
 import io.aeron.cluster.codecs.CloseReason;
@@ -92,7 +93,7 @@ public interface ClusteredService
      *
      * @param snapshotPublication to which the state should be recorded.
      */
-    void onTakeSnapshot(Publication snapshotPublication);
+    void onTakeSnapshot(ExclusivePublication snapshotPublication);
 
     /**
      * Notify that the cluster node has changed role.

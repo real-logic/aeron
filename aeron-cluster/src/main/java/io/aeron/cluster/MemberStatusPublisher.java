@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
 import io.aeron.cluster.codecs.*;
 import io.aeron.exceptions.AeronException;
@@ -47,7 +48,7 @@ class MemberStatusPublisher
     private final BackupResponseEncoder backupResponseEncoder = new BackupResponseEncoder();
 
     void canvassPosition(
-        final Publication publication,
+        final ExclusivePublication publication,
         final long logLeadershipTermId,
         final long logPosition,
         final int followerMemberId)
@@ -77,7 +78,7 @@ class MemberStatusPublisher
     }
 
     boolean requestVote(
-        final Publication publication,
+        final ExclusivePublication publication,
         final long logLeadershipTermId,
         final long logPosition,
         final long candidateTermId,
@@ -111,7 +112,7 @@ class MemberStatusPublisher
     }
 
     void placeVote(
-        final Publication publication,
+        final ExclusivePublication publication,
         final long candidateTermId,
         final long logLeadershipTermId,
         final long logPosition,
@@ -147,7 +148,7 @@ class MemberStatusPublisher
     }
 
     void newLeadershipTerm(
-        final Publication publication,
+        final ExclusivePublication publication,
         final long logLeadershipTermId,
         final long leadershipTermId,
         final long logPosition,
@@ -183,7 +184,10 @@ class MemberStatusPublisher
     }
 
     boolean appendedPosition(
-        final Publication publication, final long leadershipTermId, final long logPosition, final int followerMemberId)
+        final ExclusivePublication publication,
+        final long leadershipTermId,
+        final long logPosition,
+        final int followerMemberId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + AppendedPositionEncoder.BLOCK_LENGTH;
 
@@ -212,7 +216,10 @@ class MemberStatusPublisher
     }
 
     void commitPosition(
-        final Publication publication, final long leadershipTermId, final long logPosition, final int leaderMemberId)
+        final ExclusivePublication publication,
+        final long leadershipTermId,
+        final long logPosition,
+        final int leaderMemberId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + CommitPositionEncoder.BLOCK_LENGTH;
 
@@ -239,7 +246,10 @@ class MemberStatusPublisher
     }
 
     boolean catchupPosition(
-        final Publication publication, final long leadershipTermId, final long logPosition, final int followerMemberId)
+        final ExclusivePublication publication,
+        final long leadershipTermId,
+        final long logPosition,
+        final int followerMemberId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + CatchupPositionEncoder.BLOCK_LENGTH;
 
@@ -268,7 +278,10 @@ class MemberStatusPublisher
     }
 
     boolean stopCatchup(
-        final Publication publication, final long leadershipTermId, final long logPosition, final int followerMemberId)
+        final ExclusivePublication publication,
+        final long leadershipTermId,
+        final long logPosition,
+        final int followerMemberId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + StopCatchupEncoder.BLOCK_LENGTH;
 
@@ -296,7 +309,8 @@ class MemberStatusPublisher
         return false;
     }
 
-    boolean addPassiveMember(final Publication publication, final long correlationId, final String memberEndpoints)
+    boolean addPassiveMember(
+        final ExclusivePublication publication, final long correlationId, final String memberEndpoints)
     {
         final int length =
             MessageHeaderEncoder.ENCODED_LENGTH +
@@ -328,7 +342,7 @@ class MemberStatusPublisher
     }
 
     boolean clusterMemberChange(
-        final Publication publication,
+        final ExclusivePublication publication,
         final long correlationId,
         final int leaderMemberId,
         final String activeMembers,
@@ -367,7 +381,8 @@ class MemberStatusPublisher
         return false;
     }
 
-    boolean snapshotRecordingQuery(final Publication publication, final long correlationId, final int requestMemberId)
+    boolean snapshotRecordingQuery(
+        final ExclusivePublication publication, final long correlationId, final int requestMemberId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + SnapshotRecordingQueryEncoder.BLOCK_LENGTH;
 
@@ -395,7 +410,7 @@ class MemberStatusPublisher
     }
 
     void snapshotRecording(
-        final Publication publication,
+        final ExclusivePublication publication,
         final long correlationId,
         final RecordingLog.RecoveryPlan recoveryPlan,
         final String memberEndpoints)
@@ -436,7 +451,7 @@ class MemberStatusPublisher
         while (--attempts > 0);
     }
 
-    boolean joinCluster(final Publication publication, final long leadershipTermId, final int memberId)
+    boolean joinCluster(final ExclusivePublication publication, final long leadershipTermId, final int memberId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + JoinClusterEncoder.BLOCK_LENGTH;
 
@@ -463,7 +478,7 @@ class MemberStatusPublisher
         return false;
     }
 
-    boolean terminationPosition(final Publication publication, final long logPosition)
+    boolean terminationPosition(final ExclusivePublication publication, final long logPosition)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + TerminationPositionEncoder.BLOCK_LENGTH;
 
@@ -489,7 +504,7 @@ class MemberStatusPublisher
         return false;
     }
 
-    boolean terminationAck(final Publication publication, final long logPosition, final int memberId)
+    boolean terminationAck(final ExclusivePublication publication, final long logPosition, final int memberId)
     {
         final int length = MessageHeaderEncoder.ENCODED_LENGTH + TerminationAckEncoder.BLOCK_LENGTH;
 
@@ -517,7 +532,7 @@ class MemberStatusPublisher
     }
 
     boolean backupQuery(
-        final Publication publication,
+        final ExclusivePublication publication,
         final long correlationId,
         final int responseStreamId,
         final int version,

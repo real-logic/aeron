@@ -16,8 +16,8 @@
 package io.aeron.cluster;
 
 import io.aeron.CommonContext;
+import io.aeron.ExclusivePublication;
 import io.aeron.Image;
-import io.aeron.Publication;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.cluster.client.AeronCluster;
@@ -159,7 +159,7 @@ public class SingleNodeCluster implements AutoCloseable
             }
         }
 
-        public void onTakeSnapshot(final Publication snapshotPublication)
+        public void onTakeSnapshot(final ExclusivePublication snapshotPublication)
         {
             System.out.println("onTakeSnapshot messageCount=" + messageCount);
 

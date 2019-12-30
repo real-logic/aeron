@@ -1335,7 +1335,7 @@ class ConsensusModuleAgent implements Agent
     {
         closeExistingLog();
 
-        final Publication publication = createLogPublication(recoveryPlan, election.logPosition());
+        final ExclusivePublication publication = createLogPublication(recoveryPlan, election.logPosition());
         logPublisher.publication(publication);
 
         return publication;
@@ -1719,7 +1719,7 @@ class ConsensusModuleAgent implements Agent
         if (appendedPosition != lastAppendedPosition)
         {
             commitPosition.setOrdered(appendedPosition);
-            final Publication publication = election.leader().publication();
+            final ExclusivePublication publication = election.leader().publication();
             if (memberStatusPublisher.appendedPosition(publication, leadershipTermId, appendedPosition, memberId))
             {
                 lastAppendedPosition = appendedPosition;
@@ -2439,7 +2439,7 @@ class ConsensusModuleAgent implements Agent
                 {
                     if (member != thisMember)
                     {
-                        final Publication publication = member.publication();
+                        final ExclusivePublication publication = member.publication();
                         memberStatusPublisher.commitPosition(publication, leadershipTermId, commitPosition, memberId);
                     }
                 }
@@ -2468,7 +2468,7 @@ class ConsensusModuleAgent implements Agent
         }
         else
         {
-            final Publication publication = leaderMember.publication();
+            final ExclusivePublication publication = leaderMember.publication();
 
             if ((appendedPosition != lastAppendedPosition ||
                 nowNs >= (timeOfLastAppendPositionNs + leaderHeartbeatIntervalNs)) &&
@@ -2539,7 +2539,8 @@ class ConsensusModuleAgent implements Agent
 
     private void takeSnapshot(final long timestamp, final long logPosition)
     {
-        try (Publication publication = aeron.addExclusivePublication(ctx.snapshotChannel(), ctx.snapshotStreamId()))
+        try (ExclusivePublication publication = aeron.addExclusivePublication(
+            ctx.snapshotChannel(), ctx.snapshotStreamId()))
         {
             final String channel = ChannelUri.addSessionId(ctx.snapshotChannel(), publication.sessionId());
             final long subscriptionId = archive.startRecording(channel, ctx.snapshotStreamId(), LOCAL);
@@ -2604,7 +2605,8 @@ class ConsensusModuleAgent implements Agent
         return counterId;
     }
 
-    private void snapshotState(final Publication publication, final long logPosition, final long leadershipTermId)
+    private void snapshotState(
+        final ExclusivePublication publication, final long logPosition, final long leadershipTermId)
     {
         final ConsensusModuleSnapshotTaker snapshotTaker = new ConsensusModuleSnapshotTaker(
             publication, idleStrategy, aeronClientInvoker);
@@ -2629,7 +2631,7 @@ class ConsensusModuleAgent implements Agent
         snapshotTaker.markEnd(SNAPSHOT_TYPE_ID, logPosition, leadershipTermId, 0, clusterTimeUnit, ctx.appVersion());
     }
 
-    private Publication createLogPublication(final RecordingLog.RecoveryPlan plan, final long position)
+    private ExclusivePublication createLogPublication(final RecordingLog.RecoveryPlan plan, final long position)
     {
         final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
         logPublicationTag = (int)aeron.nextCorrelationId();
@@ -2650,7 +2652,8 @@ class ConsensusModuleAgent implements Agent
             channelUri.put(MTU_LENGTH_PARAM_NAME, Integer.toString(logMtuLength));
         }
 
-        final Publication publication = aeron.addExclusivePublication(channelUri.toString(), ctx.logStreamId());
+        final ExclusivePublication publication = aeron.addExclusivePublication(
+            channelUri.toString(), ctx.logStreamId());
 
         if (!channelUri.containsKey(ENDPOINT_PARAM_NAME) && UDP_MEDIA.equals(channelUri.media()))
         {

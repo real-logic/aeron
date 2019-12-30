@@ -831,7 +831,7 @@ public class Election implements AutoCloseable
 
     private int followerReady(final long nowNs)
     {
-        final Publication publication = leaderMember.publication();
+        final ExclusivePublication publication = leaderMember.publication();
 
         if (memberStatusPublisher.appendedPosition(publication, leadershipTermId, logPosition, thisMember.id()))
         {
@@ -874,7 +874,7 @@ public class Election implements AutoCloseable
     }
 
     private void publishNewLeadershipTerm(
-        final Publication publication, final long leadershipTermId, final long timestamp)
+        final ExclusivePublication publication, final long leadershipTermId, final long timestamp)
     {
         memberStatusPublisher.newLeadershipTerm(
             publication,

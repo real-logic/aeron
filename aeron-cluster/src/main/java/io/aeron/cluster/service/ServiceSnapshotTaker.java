@@ -15,7 +15,7 @@
  */
 package io.aeron.cluster.service;
 
-import io.aeron.Publication;
+import io.aeron.ExclusivePublication;
 import io.aeron.cluster.codecs.*;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.IdleStrategy;
@@ -25,7 +25,7 @@ class ServiceSnapshotTaker extends SnapshotTaker
     private final ClientSessionEncoder clientSessionEncoder = new ClientSessionEncoder();
 
     ServiceSnapshotTaker(
-        final Publication publication, final IdleStrategy idleStrategy, final AgentInvoker aeronClientInvoker)
+        final ExclusivePublication publication, final IdleStrategy idleStrategy, final AgentInvoker aeronClientInvoker)
     {
         super(publication, idleStrategy, aeronClientInvoker);
     }

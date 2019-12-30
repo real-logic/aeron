@@ -17,6 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.Aeron;
 import io.aeron.ChannelUri;
+import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
 import io.aeron.cluster.client.ClusterException;
 import org.agrona.CloseHelper;
@@ -53,7 +54,7 @@ public final class ClusterMember
     private final String transferEndpoint;
     private final String archiveEndpoint;
     private final String endpointsDetail;
-    private Publication publication;
+    private ExclusivePublication publication;
     private Boolean vote = null;
 
     /**
@@ -465,7 +466,7 @@ public final class ClusterMember
      *
      * @return {@link Publication} used for send status updates to the member.
      */
-    public Publication publication()
+    public ExclusivePublication publication()
     {
         return publication;
     }
@@ -475,7 +476,7 @@ public final class ClusterMember
      *
      * @param publication used for send status updates to the member.
      */
-    public void publication(final Publication publication)
+    public void publication(final ExclusivePublication publication)
     {
         this.publication = publication;
     }

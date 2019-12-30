@@ -15,7 +15,7 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.Publication;
+import io.aeron.ExclusivePublication;
 import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.service.SnapshotTaker;
 import org.agrona.ExpandableRingBuffer;
@@ -33,7 +33,7 @@ class ConsensusModuleSnapshotTaker extends SnapshotTaker implements ExpandableRi
     private final ClusterMembersEncoder clusterMembersEncoder = new ClusterMembersEncoder();
 
     ConsensusModuleSnapshotTaker(
-        final Publication publication, final IdleStrategy idleStrategy, final AgentInvoker aeronClientInvoker)
+        final ExclusivePublication publication, final IdleStrategy idleStrategy, final AgentInvoker aeronClientInvoker)
     {
         super(publication, idleStrategy, aeronClientInvoker);
     }

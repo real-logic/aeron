@@ -15,10 +15,7 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.Aeron;
-import io.aeron.Counter;
-import io.aeron.Publication;
-import io.aeron.Subscription;
+import io.aeron.*;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterMarkFile;
 import org.agrona.collections.Int2ObjectHashMap;
@@ -618,9 +615,9 @@ public class ElectionTest
             "1,clientEndpoint,memberEndpoint,logEndpoint,transferEndpoint,archiveEndpoint|" +
             "2,clientEndpoint,memberEndpoint,logEndpoint,transferEndpoint,archiveEndpoint|");
 
-        clusterMembers[0].publication(mock(Publication.class));
-        clusterMembers[1].publication(mock(Publication.class));
-        clusterMembers[2].publication(mock(Publication.class));
+        clusterMembers[0].publication(mock(ExclusivePublication.class));
+        clusterMembers[1].publication(mock(ExclusivePublication.class));
+        clusterMembers[2].publication(mock(ExclusivePublication.class));
 
         return clusterMembers;
     }

@@ -19,6 +19,8 @@ import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.Counter;
 import io.aeron.Image;
+import io.aeron.archive.checksum.Checksum;
+import io.aeron.archive.checksum.Checksums;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.exceptions.ConcurrentConcludeException;
@@ -188,6 +190,7 @@ public class Archive implements AutoCloseable
 
         /**
          * Default directory for the archive files.
+         *
          * @see #ARCHIVE_DIR_PROP_NAME
          */
         public static final String ARCHIVE_DIR_DEFAULT = "aeron-archive";
@@ -200,6 +203,7 @@ public class Archive implements AutoCloseable
 
         /**
          * Default segment file length which is multiple of terms.
+         *
          * @see #SEGMENT_FILE_LENGTH_PROP_NAME
          */
         public static final int SEGMENT_FILE_LENGTH_DEFAULT = 128 * 1024 * 1024;
@@ -216,6 +220,7 @@ public class Archive implements AutoCloseable
 
         /**
          * Default is to use normal file writes which may mean some data loss in the event of a power failure.
+         *
          * @see #FILE_SYNC_LEVEL_PROP_NAME
          */
         public static final int FILE_SYNC_LEVEL_DEFAULT = 0;
@@ -232,6 +237,7 @@ public class Archive implements AutoCloseable
 
         /**
          * Default is to use normal file writes which may mean some data loss in the event of a power failure.
+         *
          * @see #CATALOG_FILE_SYNC_LEVEL_PROP_NAME
          */
         public static final int CATALOG_FILE_SYNC_LEVEL_DEFAULT = FILE_SYNC_LEVEL_DEFAULT;
@@ -258,6 +264,7 @@ public class Archive implements AutoCloseable
 
         /**
          * Default {@link IdleStrategy} to be used for the archive {@link Agent}s when not busy.
+         *
          * @see #ARCHIVE_IDLE_STRATEGY_PROP_NAME
          */
         public static final String DEFAULT_IDLE_STRATEGY = "org.agrona.concurrent.BackoffIdleStrategy";
@@ -273,6 +280,7 @@ public class Archive implements AutoCloseable
         /**
          * Default maximum number of concurrent recordings. Unless on a very fast SSD and having sufficient memory
          * for the page cache then this number should be kept low, especially when sync'ing writes.
+         *
          * @see #MAX_CONCURRENT_RECORDINGS_PROP_NAME
          */
         public static final int MAX_CONCURRENT_RECORDINGS_DEFAULT = 20;
@@ -298,6 +306,7 @@ public class Archive implements AutoCloseable
 
         /**
          * Default limit for the entries in the {@link Catalog}
+         *
          * @see #MAX_CATALOG_ENTRIES_PROP_NAME
          */
         public static final long MAX_CATALOG_ENTRIES_DEFAULT = Catalog.DEFAULT_MAX_ENTRIES;
@@ -310,6 +319,7 @@ public class Archive implements AutoCloseable
         /**
          * Default timeout for connecting back to a client for a control session or replay. You may want to
          * increase this on higher latency networks.
+         *
          * @see #CONNECT_TIMEOUT_PROP_NAME
          */
         public static final long CONNECT_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
@@ -322,6 +332,7 @@ public class Archive implements AutoCloseable
         /**
          * Default for long to linger a replay connection which defaults to
          * {@link io.aeron.driver.Configuration#publicationLingerTimeoutNs()}.
+         *
          * @see #REPLAY_LINGER_TIMEOUT_PROP_NAME
          */
         public static final long REPLAY_LINGER_TIMEOUT_DEFAULT_NS =
@@ -339,6 +350,7 @@ public class Archive implements AutoCloseable
 
         /**
          * Channel for receiving replication streams replayed from another archive.
+         *
          * @see #REPLICATION_CHANNEL_PROP_NAME
          */
         public static final String REPLICATION_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:8040";
@@ -380,6 +392,12 @@ public class Archive implements AutoCloseable
         public static final boolean RECORDING_CRC_ENABLED_DEFAULT = false;
 
         /**
+         * Property that specifies fully qualified class name of the {@link io.aeron.archive.checksum.Checksum}
+         * to be used for CRC checksum computation during recording.
+         */
+        public static final String RECORDING_CRC_CHECKSUM_PROP_NAME = "aeron.archive.recording.crc.checksum";
+
+        /**
          * Should the CRC be validated during replay.
          */
         public static final String REPLAY_CRC_ENABLED_PROP_NAME = "aeron.archive.replay.crc.enabled";
@@ -388,6 +406,12 @@ public class Archive implements AutoCloseable
          * Do not validate the CRC for each replayed fragment by default.
          */
         public static final boolean REPLAY_CRC_ENABLED_DEFAULT = false;
+
+        /**
+         * Property that specifies fully qualified class name of the {@link io.aeron.archive.checksum.Checksum}
+         * to be used for CRC checksum validation during replay.
+         */
+        public static final String REPLAY_CRC_CHECKSUM_PROP_NAME = "aeron.archive.replay.crc.checksum";
 
         /**
          * Get the directory name to be used for storing the archive.
@@ -630,6 +654,18 @@ public class Archive implements AutoCloseable
         }
 
         /**
+         * Fully qualified class name of the {@link io.aeron.archive.checksum.Checksum} implementation to use during
+         * recording to compute CRC checksums.
+         *
+         * @return class that implements {@link io.aeron.archive.checksum.Checksum} interface
+         * @see Configuration#RECORDING_CRC_CHECKSUM_PROP_NAME
+         */
+        public static String recordingCrcChecksum()
+        {
+            return getProperty(RECORDING_CRC_CHECKSUM_PROP_NAME);
+        }
+
+        /**
          * Should the CRC be validated during replay.
          *
          * @return {@code true} if the CRC validation should be done during replay.
@@ -639,6 +675,18 @@ public class Archive implements AutoCloseable
         {
             final String propValue = getProperty(REPLAY_CRC_ENABLED_PROP_NAME);
             return null != propValue ? "true".equals(propValue) : REPLAY_CRC_ENABLED_DEFAULT;
+        }
+
+        /**
+         * Fully qualified class name of the {@link io.aeron.archive.checksum.Checksum} implementation to use during
+         * replay for the CRC.
+         *
+         * @return class that implements {@link io.aeron.archive.checksum.Checksum} interface
+         * @see Configuration#REPLAY_CRC_CHECKSUM_PROP_NAME
+         */
+        public static String replayCrcChecksum()
+        {
+            return getProperty(REPLAY_CRC_CHECKSUM_PROP_NAME);
         }
     }
 
@@ -707,7 +755,9 @@ public class Archive implements AutoCloseable
         private int maxConcurrentReplays = Configuration.maxConcurrentReplays();
 
         private boolean recordingCrcEnabled = Configuration.recordingCrcEnabled();
+        private Supplier<Checksum> recordingCrcChecksumSupplier;
         private boolean replayCrcEnabled = Configuration.replayCrcEnabled();
+        private Supplier<Checksum> replayCrcChecksumSupplier;
 
         /**
          * Perform a shallow copy of the object.
@@ -862,6 +912,10 @@ public class Archive implements AutoCloseable
                 authenticatorSupplier = Configuration.authenticatorSupplier();
             }
 
+            concludeRecordingChecksumSupplier();
+
+            concludeReplayChecksumSupplier();
+
             if (null == catalog)
             {
                 catalog = new Catalog(
@@ -880,6 +934,51 @@ public class Archive implements AutoCloseable
             abortLatch = new CountDownLatch(expectedCount);
 
             markFile.signalReady();
+        }
+
+        void concludeRecordingChecksumSupplier()
+        {
+            final String checksumClass = Configuration.recordingCrcChecksum();
+            if (!recordingCrcEnabled && (null != recordingCrcChecksumSupplier || !Strings.isEmpty(checksumClass)))
+            {
+                throw new ArchiveException(
+                    "Recording checksum supplier cannot be assigned without enabling the corresponding flag.");
+            }
+
+            if (null == recordingCrcChecksumSupplier && recordingCrcEnabled)
+            {
+                if (Strings.isEmpty(checksumClass))
+                {
+                    throw new ArchiveException(
+                        "Recording CRC flag is enabled but neither supplier nor checksum class was configured.");
+                }
+                recordingCrcChecksumSupplier = createDefaultChecksumSupplier(checksumClass);
+            }
+        }
+
+        void concludeReplayChecksumSupplier()
+        {
+            final String checksumClass = Configuration.replayCrcChecksum();
+            if (!replayCrcEnabled && (null != replayCrcChecksumSupplier || !Strings.isEmpty(checksumClass)))
+            {
+                throw new ArchiveException(
+                    "Replay checksum supplier cannot be assigned without enabling the corresponding flag.");
+            }
+            else if (null == replayCrcChecksumSupplier && replayCrcEnabled)
+            {
+                if (Strings.isEmpty(checksumClass))
+                {
+                    throw new ArchiveException(
+                        "Replay CRC flag is enabled but neither supplier nor checksum class was configured.");
+                }
+                replayCrcChecksumSupplier = createDefaultChecksumSupplier(checksumClass);
+            }
+
+        }
+
+        private Supplier<Checksum> createDefaultChecksumSupplier(final String className)
+        {
+            return () -> Checksums.newInstance(className);
         }
 
         /**
@@ -1329,6 +1428,29 @@ public class Archive implements AutoCloseable
         }
 
         /**
+         * Provides a {@link Checksum} supplier for CRC computation during recording.
+         *
+         * @param recordingCrcChecksumSupplier supplier for CRC checksums.
+         * @return this for a fluent API.
+         * @see Configuration#recordingCrcChecksum
+         */
+        public Context recordingCrcChecksumSupplier(final Supplier<Checksum> recordingCrcChecksumSupplier)
+        {
+            this.recordingCrcChecksumSupplier = recordingCrcChecksumSupplier;
+            return this;
+        }
+
+        /**
+         * Get a new {@link Checksum} for CRC checksum computation during recording.
+         *
+         * @return a (potentially) new {@link Checksum} for CRC checksum computation during recording.
+         */
+        public Checksum recordingCrcChecksum()
+        {
+            return recordingCrcChecksumSupplier.get();
+        }
+
+        /**
          * Should the CRC be validated during replay.
          *
          * @param replayCrcEnabled {@code true} if the CRC validation should be done during replay.
@@ -1350,6 +1472,29 @@ public class Archive implements AutoCloseable
         public boolean replayCrcEnabled()
         {
             return replayCrcEnabled;
+        }
+
+        /**
+         * Provides a {@link Checksum} supplier for CRC checksum computation during replay.
+         *
+         * @param replayCrcChecksumSupplier supplier for CRC checksums.
+         * @return this for a fluent API.
+         * @see Configuration#replayCrcChecksum
+         */
+        public Context replayCrcChecksumSupplier(final Supplier<Checksum> replayCrcChecksumSupplier)
+        {
+            this.replayCrcChecksumSupplier = replayCrcChecksumSupplier;
+            return this;
+        }
+
+        /**
+         * Get a new {@link Checksum} for CRC checksum computation during replay.
+         *
+         * @return a (potentially) new {@link Checksum} for CRC checksum computation during replay.
+         */
+        public Checksum replayCrcChecksum()
+        {
+            return replayCrcChecksumSupplier.get();
         }
 
         /**

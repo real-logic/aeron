@@ -16,6 +16,7 @@
 package io.aeron.archive.checksum;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.EnabledOnJre;
 import org.junit.jupiter.api.condition.JRE;
 
@@ -32,7 +33,7 @@ class ChecksumsTest
         assertSame(Crc32.INSTANCE, Checksums.crc32());
     }
 
-    @EnabledIfAtLeastOnJre(JRE.JAVA_9)
+    @EnabledForJreRange(min = JRE.JAVA_9)
     @Test
     void crc32c()
     {
@@ -52,7 +53,7 @@ class ChecksumsTest
         assertSame(Crc32.INSTANCE, Checksums.newInstance(Crc32.class.getName()));
     }
 
-    @EnabledIfAtLeastOnJre(JRE.JAVA_9)
+    @EnabledForJreRange(min = JRE.JAVA_9)
     @Test
     void newInstanceReturnsSameInstanceOfCrc32c()
     {

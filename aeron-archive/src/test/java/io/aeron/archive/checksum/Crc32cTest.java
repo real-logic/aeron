@@ -17,6 +17,7 @@ package io.aeron.archive.checksum;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
 
 import java.lang.reflect.Constructor;
@@ -31,7 +32,7 @@ import static org.agrona.BufferUtil.address;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@EnabledIfAtLeastOnJre(JRE.JAVA_9)
+@EnabledForJreRange(min = JRE.JAVA_9)
 class Crc32cTest
 {
 

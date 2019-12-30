@@ -16,6 +16,7 @@
 package io.aeron.archive;
 
 import io.aeron.Image;
+import io.aeron.archive.checksum.Checksum;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.logbuffer.BlockHandler;
 import org.agrona.CloseHelper;
@@ -34,7 +35,6 @@ import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static org.agrona.BitUtil.align;
-import static org.agrona.Checksums.crc32;
 
 /**
  * Responsible for writing out a recording into the file system. A recording has descriptor file and a set of data files
@@ -55,6 +55,7 @@ class RecordingWriter implements BlockHandler
     private final boolean forceMetadata;
     private final boolean crcEnabled;
     private final UnsafeBuffer recordingBuffer;
+    private final Checksum checksum;
     private final FileChannel archiveDirChannel;
     private final File archiveDir;
 
@@ -83,6 +84,7 @@ class RecordingWriter implements BlockHandler
 
         crcEnabled = ctx.recordingCrcEnabled();
         this.recordingBuffer = recordingBuffer;
+        this.checksum = crcEnabled ? ctx.recordingCrcChecksum() : null;
 
         final int termLength = image.termBufferLength();
         final long joinPosition = image.joinPosition();
@@ -153,9 +155,9 @@ class RecordingWriter implements BlockHandler
         while (frameOffset < endOffset)
         {
             final int alignedLength = align(frameLength(termBuffer, frameOffset), FRAME_ALIGNMENT);
-            final int checksum = crc32(
-                0, address, frameOffset + HEADER_LENGTH, alignedLength - HEADER_LENGTH);
-            frameSessionId(termBuffer, frameOffset, checksum);
+            final int computedChecksum = checksum.compute(
+                address, frameOffset + HEADER_LENGTH, alignedLength - HEADER_LENGTH);
+            frameSessionId(termBuffer, frameOffset, computedChecksum);
             frameOffset += alignedLength;
         }
     }

@@ -52,7 +52,7 @@ public final class Checksums
      * @throws NullPointerException     if {@code className == null}.
      * @throws IllegalStateException    if an attempt was made to acquire CRC-32C while running on JDK 8.
      * @throws IllegalArgumentException if an error occurs while creating a {@link Checksum} instance.
-     * @throws ClassCastException       if created instance does implement the {@link Checksum} interface.
+     * @throws ClassCastException       if created instance does not implement the {@link Checksum} interface.
      * @see #crc32c()
      */
     public static Checksum newInstance(final String className)

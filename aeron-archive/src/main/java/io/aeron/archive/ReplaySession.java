@@ -18,6 +18,7 @@ package io.aeron.archive;
 import io.aeron.Counter;
 import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
+import io.aeron.archive.checksum.Checksum;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.logbuffer.BufferClaim;
@@ -46,7 +47,6 @@ import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.DataHeaderFlyweight.RESERVED_VALUE_OFFSET;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.file.StandardOpenOption.READ;
-import static org.agrona.Checksums.crc32;
 
 /**
  * A replay session with a client which works through the required request response flow and streaming of recorded data.
@@ -89,6 +89,7 @@ class ReplaySession implements Session, AutoCloseable
     private final int segmentLength;
 
     private final boolean crcEnabled;
+    private final Checksum checksum;
     private final long replayBufferAddress;
 
     private final BufferClaim bufferClaim = new BufferClaim();
@@ -111,7 +112,7 @@ class ReplaySession implements Session, AutoCloseable
         final long replaySessionId,
         final long connectTimeoutMs,
         final long correlationId,
-        final boolean crcEnabled,
+        final Archive.Context ctx,
         final ControlSession controlSession,
         final ControlResponseProxy controlResponseProxy,
         final UnsafeBuffer replayBuffer,
@@ -141,7 +142,8 @@ class ReplaySession implements Session, AutoCloseable
         this.startPosition = recordingSummary.startPosition;
         this.stopPosition = null == limitPosition ? recordingSummary.stopPosition : limitPosition.get();
 
-        this.crcEnabled = crcEnabled;
+        crcEnabled = ctx.replayCrcEnabled();
+        checksum = crcEnabled ? ctx.replayCrcChecksum() : null;
 
         final long fromPosition = position == NULL_POSITION ? startPosition : position;
         final long maxLength = null == limitPosition ? stopPosition - fromPosition : Long.MAX_VALUE - fromPosition;
@@ -396,10 +398,10 @@ class ReplaySession implements Session, AutoCloseable
 
     private void applyCrc(final int frameOffset, final int alignedLength)
     {
-        final int checksum = crc32(
-            0, replayBufferAddress, frameOffset + HEADER_LENGTH, alignedLength - HEADER_LENGTH);
+        final int computedChecksum = checksum
+            .compute(replayBufferAddress, frameOffset + HEADER_LENGTH, alignedLength - HEADER_LENGTH);
         final int recordedChecksum = frameSessionId(replayBuffer, frameOffset);
-        if (checksum != recordedChecksum)
+        if (computedChecksum != recordedChecksum)
         {
             final String message = "CRC checksum mismatch at offset=" + frameOffset + ": recorded checksum=" +
                 recordedChecksum + ", computed checksum=" + checksum;
@@ -534,7 +536,7 @@ class ReplaySession implements Session, AutoCloseable
     {
         return
             DataHeaderFlyweight.termOffset(buffer, 0) != termOffset ||
-            DataHeaderFlyweight.termId(buffer, 0) != termId ||
-            DataHeaderFlyweight.streamId(buffer, 0) != streamId;
+                DataHeaderFlyweight.termId(buffer, 0) != termId ||
+                DataHeaderFlyweight.streamId(buffer, 0) != streamId;
     }
 }

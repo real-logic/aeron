@@ -17,6 +17,7 @@ package io.aeron.archive;
 
 import io.aeron.CncFileDescriptor;
 import io.aeron.CommonContext;
+import io.aeron.archive.checksum.Checksum;
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorEncoder;
 import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
@@ -41,10 +42,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import static io.aeron.archive.ArchiveTool.VerifyOption.*;
+import static io.aeron.archive.ArchiveTool.VerifyOption.APPLY_CRC;
+import static io.aeron.archive.ArchiveTool.VerifyOption.VALIDATE_ALL_SEGMENT_FILES;
 import static io.aeron.archive.Catalog.*;
 import static io.aeron.archive.MigrationUtils.fullVersionString;
 import static io.aeron.archive.ReplaySession.isInvalidHeader;
+import static io.aeron.archive.checksum.Checksums.newInstance;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
@@ -62,7 +65,6 @@ import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BitUtil.align;
 import static org.agrona.BufferUtil.NATIVE_BYTE_ORDER;
 import static org.agrona.BufferUtil.allocateDirectAligned;
-import static org.agrona.Checksums.crc32;
 import static org.agrona.concurrent.SystemEpochClock.INSTANCE;
 
 /**
@@ -91,7 +93,7 @@ public class ArchiveTool
     @SuppressWarnings("MethodLength")
     public static void main(final String[] args)
     {
-        if (args.length == 0 || args.length > 5)
+        if (args.length == 0 || args.length > 6)
         {
             printHelp();
             System.exit(-1);
@@ -133,45 +135,110 @@ public class ArchiveTool
         {
             if (args.length == 2)
             {
-                verify(System.out, archiveDir, emptySet(), ArchiveTool::truncateFileOnPageStraddle);
+                verify(
+                    System.out,
+                    archiveDir,
+                    emptySet(),
+                    null,
+                    ArchiveTool::truncateFileOnPageStraddle);
             }
-            else
+            else if (args.length == 3)
             {
-                if (!isValidOption(args, 2)) // starts with recordingId
+                if (VALIDATE_ALL_SEGMENT_FILES == VerifyOption.byFlag(args[2]))
+                {
+                    verify(
+                        System.out,
+                        archiveDir,
+                        EnumSet.of(VALIDATE_ALL_SEGMENT_FILES),
+                        null,
+                        ArchiveTool::truncateFileOnPageStraddle);
+                }
+                else
                 {
                     verifyRecording(
                         System.out,
                         archiveDir,
                         Long.parseLong(args[2]),
-                        parseOptions(args, 3),
+                        emptySet(),
+                        null,
                         ArchiveTool::truncateFileOnPageStraddle);
                 }
-                else
+            }
+            else if (args.length == 4)
+            {
+                if (APPLY_CRC == VerifyOption.byFlag(args[2]))
                 {
                     verify(
                         System.out,
                         archiveDir,
-                        parseOptions(args, 3),
+                        EnumSet.of(APPLY_CRC),
+                        args[3],
                         ArchiveTool::truncateFileOnPageStraddle);
-                }
-            }
-        }
-        else if (args.length >= 2 && args[1].equals("checksum"))
-        {
-            if (args.length == 2)
-            {
-                checksum(System.out, archiveDir, false);
-            }
-            else
-            {
-                if ("-a".equals(args[2]))
-                {
-                    checksum(System.out, archiveDir, true);
                 }
                 else
                 {
-                    final boolean allFiles = args.length > 3 && "-a".equals(args[3]);
-                    checksumRecording(System.out, archiveDir, Long.parseLong(args[2]), allFiles);
+                    verifyRecording(
+                        System.out,
+                        archiveDir,
+                        Long.parseLong(args[2]),
+                        EnumSet.of(VALIDATE_ALL_SEGMENT_FILES),
+                        null,
+                        ArchiveTool::truncateFileOnPageStraddle);
+                }
+            }
+            else if (args.length == 5)
+            {
+                if (VALIDATE_ALL_SEGMENT_FILES == VerifyOption.byFlag(args[2]))
+                {
+                    verify(
+                        System.out,
+                        archiveDir,
+                        EnumSet.allOf(VerifyOption.class),
+                        args[4],
+                        ArchiveTool::truncateFileOnPageStraddle);
+                }
+                else
+                {
+                    verifyRecording(
+                        System.out,
+                        archiveDir,
+                        Long.parseLong(args[2]),
+                        EnumSet.of(APPLY_CRC),
+                        args[4],
+                        ArchiveTool::truncateFileOnPageStraddle);
+                }
+            }
+            else
+            {
+                verifyRecording(
+                    System.out,
+                    archiveDir,
+                    Long.parseLong(args[2]),
+                    EnumSet.allOf(VerifyOption.class),
+                    args[4],
+                    ArchiveTool::truncateFileOnPageStraddle);
+            }
+        }
+        else if (args.length >= 3 && args[1].equals("checksum"))
+        {
+            if (args.length == 3)
+            {
+                checksum(System.out, archiveDir, false, args[2]);
+            }
+            else
+            {
+                if ("-a".equals(args[3]))
+                {
+                    checksum(System.out, archiveDir, true, args[2]);
+                }
+                else
+                {
+                    checksumRecording(
+                        System.out,
+                        archiveDir,
+                        Long.parseLong(args[3]),
+                        args.length > 4 && "-a".equals(args[4]),
+                        args[2]);
                 }
             }
         }
@@ -337,8 +404,8 @@ public class ArchiveTool
     }
 
     /**
-     * Set of options for {@link #verify(PrintStream, File, Set, ActionConfirmation)} and
-     * {@link #verify(PrintStream, File, Set, ActionConfirmation)} methods.
+     * Set of options for {@link #verify(PrintStream, File, Set, String, ActionConfirmation)} and
+     * {@link #verifyRecording(PrintStream, File, long, Set, String, ActionConfirmation)} methods.
      */
     public enum VerifyOption
     {
@@ -350,7 +417,7 @@ public class ArchiveTool
         /**
          * Perform CRC for each data frame within a segment file being validated.
          */
-        APPLY_CRC("-crc32");
+        APPLY_CRC("-crc");
 
         private final String flag;
 
@@ -362,23 +429,9 @@ public class ArchiveTool
         private static final Map<String, VerifyOption> BY_FLAG = Stream.of(values())
             .collect(toMap(opt -> opt.flag, opt -> opt));
 
-        public static boolean isValidOption(final String[] args, final int index)
+        public static VerifyOption byFlag(final String flag)
         {
-            return null != BY_FLAG.get(args[index]);
-        }
-
-        public static Set<VerifyOption> parseOptions(final String[] args, final int index)
-        {
-            final EnumSet<VerifyOption> options = EnumSet.noneOf(VerifyOption.class);
-            for (int i = index; i < args.length; i++)
-            {
-                final VerifyOption option = BY_FLAG.get(args[index]);
-                if (null != option)
-                {
-                    options.add(option);
-                }
-            }
-            return options;
+            return BY_FLAG.get(flag);
         }
     }
 
@@ -391,14 +444,16 @@ public class ArchiveTool
      * @param options                    set of options that control verification behavior.
      * @param truncateFileOnPageStraddle action to perform if last fragment in the max segment file straddles the page
      *                                   boundary, i.e. if {@code true} the file will be truncated (last fragment
+     * @param checksumClassName          fully qualified class name of the {@link Checksum} implementation.
      */
     public static void verify(
         final PrintStream out,
         final File archiveDir,
         final Set<VerifyOption> options,
+        final String checksumClassName,
         final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
-        verify(out, archiveDir, options, INSTANCE, truncateFileOnPageStraddle);
+        verify(out, archiveDir, options, newInstance(checksumClassName), INSTANCE, truncateFileOnPageStraddle);
     }
 
     /**
@@ -413,6 +468,7 @@ public class ArchiveTool
      * @param truncateFileOnPageStraddle action to perform if last fragment in the max segment file straddles the page
      *                                   boundary, i.e. if {@code true} the file will be truncated (last fragment
      *                                   will be deleted), if {@code false} the fragment if considered complete.
+     * @param checksumClassName          fully qualified class name of the {@link Checksum} implementation.
      * @throws AeronException if there is no recording with {@code recordingId} in the archive
      */
     public static void verifyRecording(
@@ -420,6 +476,7 @@ public class ArchiveTool
         final File archiveDir,
         final long recordingId,
         final Set<VerifyOption> options,
+        final String checksumClassName,
         final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
         verifyRecording(
@@ -427,6 +484,7 @@ public class ArchiveTool
             archiveDir,
             recordingId,
             options,
+            newInstance(checksumClassName),
             INSTANCE,
             truncateFileOnPageStraddle);
     }
@@ -434,28 +492,35 @@ public class ArchiveTool
     /**
      * Compute and persist CRC-32 checksums for every fragment of a segment file for all recordings in the catalog.
      *
-     * @param out        stream to print results and errors to.
-     * @param archiveDir that contains {@link org.agrona.MarkFile}, {@link Catalog}, and recordings.
-     * @param allFiles   should compute checksums for all segment file or only for the last one.
+     * @param out               stream to print results and errors to.
+     * @param archiveDir        that contains {@link org.agrona.MarkFile}, {@link Catalog}, and recordings.
+     * @param allFiles          should compute checksums for all segment file or only for the last one.
+     * @param checksumClassName fully qualified class name of the {@link Checksum} implementation.
      */
-    public static void checksum(final PrintStream out, final File archiveDir, final boolean allFiles)
+    public static void checksum(
+        final PrintStream out, final File archiveDir, final boolean allFiles, final String checksumClassName)
     {
-        checksum(out, archiveDir, allFiles, INSTANCE);
+        checksum(out, archiveDir, allFiles, newInstance(checksumClassName), INSTANCE);
     }
 
     /**
      * Compute and persist CRC-32 checksums for every fragment of a segment file(s) for a given recording.
      *
-     * @param out         stream to print results and errors to.
-     * @param archiveDir  that contains {@link org.agrona.MarkFile}, {@link Catalog}, and recordings.
-     * @param recordingId to compute checksums for.
-     * @param allFiles    should compute checksums for all segment file or only for the last one.
+     * @param out               stream to print results and errors to.
+     * @param archiveDir        that contains {@link org.agrona.MarkFile}, {@link Catalog}, and recordings.
+     * @param recordingId       to compute checksums for.
+     * @param allFiles          should compute checksums for all segment file or only for the last one.
+     * @param checksumClassName fully qualified class name of the {@link Checksum} implementation.
      * @throws AeronException if there is no recording with {@code recordingId} in the archive
      */
     public static void checksumRecording(
-        final PrintStream out, final File archiveDir, final long recordingId, final boolean allFiles)
+        final PrintStream out,
+        final File archiveDir,
+        final long recordingId,
+        final boolean allFiles,
+        final String checksumClassName)
     {
-        checksumRecording(out, archiveDir, recordingId, allFiles, INSTANCE);
+        checksumRecording(out, archiveDir, recordingId, allFiles, newInstance(checksumClassName), INSTANCE);
     }
 
     /**
@@ -493,13 +558,14 @@ public class ArchiveTool
         final PrintStream out,
         final File archiveDir,
         final Set<VerifyOption> options,
+        final Checksum checksum,
         final EpochClock epochClock,
         final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
         try (Catalog catalog = openCatalog(archiveDir, epochClock))
         {
             catalog.forEach(createVerifyEntryProcessor(
-                out, archiveDir, options, epochClock, truncateFileOnPageStraddle));
+                out, archiveDir, options, checksum, epochClock, truncateFileOnPageStraddle));
         }
     }
 
@@ -508,13 +574,14 @@ public class ArchiveTool
         final File archiveDir,
         final long recordingId,
         final Set<VerifyOption> options,
+        final Checksum checksum,
         final EpochClock epochClock,
         final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
         try (Catalog catalog = openCatalog(archiveDir, epochClock))
         {
             if (!catalog.forEntry(recordingId,
-                createVerifyEntryProcessor(out, archiveDir, options, epochClock, truncateFileOnPageStraddle)))
+                createVerifyEntryProcessor(out, archiveDir, options, checksum, epochClock, truncateFileOnPageStraddle)))
             {
                 throw new AeronException("no recording found with recordingId: " + recordingId);
             }
@@ -535,6 +602,7 @@ public class ArchiveTool
         final PrintStream out,
         final File archiveDir,
         final Set<VerifyOption> options,
+        final Checksum checksum,
         final EpochClock epochClock,
         final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
@@ -546,6 +614,7 @@ public class ArchiveTool
             out,
             archiveDir,
             options,
+            checksum,
             epochClock,
             truncateFileOnPageStraddle,
             headerFlyweight,
@@ -689,6 +758,7 @@ public class ArchiveTool
         final PrintStream out,
         final File archiveDir,
         final Set<VerifyOption> options,
+        final Checksum checksum,
         final EpochClock epochClock,
         final ActionConfirmation<File> truncateFileOnPageStraddle,
         final DataHeaderFlyweight headerFlyweight,
@@ -762,6 +832,7 @@ public class ArchiveTool
                         streamId,
                         decoder.initialTermId(),
                         applyCrc,
+                        checksum,
                         headerFlyweight
                     ))
                     {
@@ -781,6 +852,7 @@ public class ArchiveTool
                 streamId,
                 decoder.initialTermId(),
                 applyCrc,
+                checksum,
                 headerFlyweight
             ))
             {
@@ -845,6 +917,7 @@ public class ArchiveTool
         final int streamId,
         final int initialTermId,
         final boolean applyCrc,
+        final Checksum checksum,
         final DataHeaderFlyweight headerFlyweight)
     {
         final File file = new File(archiveDir, fileName);
@@ -902,8 +975,8 @@ public class ArchiveTool
 
                 if (applyCrc && HDR_TYPE_DATA == frameType)
                 {
-                    final int checksum = crc32(0, bufferAddress, 0, dataLength);
-                    if (checksum != sessionId)
+                    final int checksumResult = checksum.compute(bufferAddress, 0, dataLength);
+                    if (checksumResult != sessionId)
                     {
                         out.println("(recordingId=" + recordingId + ", file=" + file + ") ERR: CRC failed " +
                             "recorded=" + sessionId + " (expected=" + checksum + ")");
@@ -954,12 +1027,13 @@ public class ArchiveTool
         final File archiveDir,
         final long recordingId,
         final boolean allFiles,
+        final Checksum checksum,
         final EpochClock epochClock)
     {
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             if (!catalog.forEntry(recordingId, (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
-                checksum(out, archiveDir, allFiles, descriptorDecoder)))
+                checksum(out, archiveDir, allFiles, checksum, descriptorDecoder)))
             {
                 throw new AeronException("no recording found with recordingId: " + recordingId);
             }
@@ -970,6 +1044,7 @@ public class ArchiveTool
         final PrintStream out,
         final File archiveDir,
         final boolean allFiles,
+        final Checksum checksum,
         final RecordingDescriptorDecoder descriptorDecoder)
     {
         final long recordingId = descriptorDecoder.recordingId();
@@ -984,19 +1059,20 @@ public class ArchiveTool
         {
             for (final String fileName : segmentFiles)
             {
-                checksumFile(out, archiveDir, recordingId, fileName, startPosition, termLength);
+                checksumFile(out, archiveDir, checksum, recordingId, fileName, startPosition, termLength);
             }
         }
         else
         {
             final String lastFile = findSegmentFileWithHighestPosition(segmentFiles);
-            checksumFile(out, archiveDir, recordingId, lastFile, startPosition, termLength);
+            checksumFile(out, archiveDir, checksum, recordingId, lastFile, startPosition, termLength);
         }
     }
 
     private static void checksumFile(
         final PrintStream out,
         final File archiveDir,
+        final Checksum checksum,
         final long recordingId,
         final String fileName,
         final long startPosition,
@@ -1041,13 +1117,13 @@ public class ArchiveTool
                             dataLength + " byte(s) of data at offset " + (fileOffset + HEADER_LENGTH));
                         return;
                     }
-                    int checksum = crc32(0, bufferAddress, 0, dataLength);
+                    int checksumResult = checksum.compute(bufferAddress, 0, dataLength);
                     if (NATIVE_BYTE_ORDER != LITTLE_ENDIAN)
                     {
-                        checksum = Integer.reverseBytes(checksum);
+                        checksumResult = Integer.reverseBytes(checksumResult);
                     }
                     buffer.clear();
-                    buffer.putInt(checksum).flip();
+                    buffer.putInt(checksumResult).flip();
                     channel.write(buffer, fileOffset + SESSION_ID_FIELD_OFFSET);
                 }
                 fileOffset += alignedLength;
@@ -1062,7 +1138,11 @@ public class ArchiveTool
     }
 
     static void checksum(
-        final PrintStream out, final File archiveDir, final boolean allFiles, final EpochClock epochClock)
+        final PrintStream out,
+        final File archiveDir,
+        final boolean allFiles,
+        final Checksum checksum,
+        final EpochClock epochClock)
     {
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -1070,7 +1150,7 @@ public class ArchiveTool
             {
                 try
                 {
-                    checksum(out, archiveDir, allFiles, descriptorDecoder);
+                    checksum(out, archiveDir, allFiles, checksum, descriptorDecoder);
                 }
                 catch (final Exception ex)
                 {
@@ -1090,12 +1170,15 @@ public class ArchiveTool
         System.out.println("     in the catalog and associated recorded data.");
         System.out.println("  errors: prints errors for the archive and media driver.");
         System.out.println("  pid: prints just PID of archive.");
-        System.out.println("  verify [recordingId] [-a] [-crc32]: verifies descriptor(s) in the catalog");
+        System.out.println("  verify [recordingId] [-a] [-crc checksumClass]: verifies descriptor(s) in the catalog");
         System.out.println("     checking recording files availability and contents. Only the last segment file is");
         System.out.println("     validated unless flag '-a' is specified, i.e. meaning validate all segment files.");
-        System.out.println("     In order to perform CRC for each data frame specify the '-crc32' flag.");
+        System.out.println("     In order to perform CRC for each data frame specify the '-crc' flag together with");
+        System.out.println("     the Checksum implementation class name (e.g. io.aeron.archive.checksum.Crc32).");
         System.out.println("     Faulty entries are marked as unusable.");
-        System.out.println("  checksum [recordingId] [-a]: computes CRC-32 checksums for fragments in a segment file.");
+        System.out.println("  checksum checksumClass [recordingId] [-a]: computes and persists CRC checksums.");
+        System.out.println("     The checksums are computed using the specified Checksum implementation ");
+        System.out.println("     (e.g. io.aeron.archive.checksum.Crc32).");
         System.out.println("     Only the last segment file of each recording is processed by default,");
         System.out.println("     unless flag '-a' is specified in which case all of the segment files are processed.");
         System.out.println("  count-entries: queries the number of recording entries in the catalog.");

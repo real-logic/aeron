@@ -2190,7 +2190,7 @@ int aeron_driver_conductor_on_add_network_publication(
         publication->log_file_name,
         publication->log_file_name_length);
 
-    int64_t now_ns = conductor->context->nano_clock();
+    int64_t now_ns = aeron_clock_cached_nano_time(conductor->context->cached_clock);
 
     for (size_t i = 0; i < conductor->spy_subscriptions.length; i++)
     {
@@ -2310,7 +2310,7 @@ int aeron_driver_conductor_on_add_ipc_subscription(
     aeron_driver_conductor_on_subscription_ready(
         conductor, command->correlated.correlation_id, AERON_CHANNEL_STATUS_INDICATOR_NOT_ALLOCATED);
 
-    int64_t now_ns = conductor->context->nano_clock();
+    int64_t now_ns = aeron_clock_cached_nano_time(conductor->context->cached_clock);
 
     for (size_t i = 0; i < conductor->ipc_publications.length; i++)
     {
@@ -2395,7 +2395,7 @@ int aeron_driver_conductor_on_add_spy_subscription(
     aeron_driver_conductor_on_subscription_ready(
         conductor, command->correlated.correlation_id, AERON_CHANNEL_STATUS_INDICATOR_NOT_ALLOCATED);
 
-    int64_t now_ns = conductor->context->nano_clock();
+    int64_t now_ns = aeron_clock_cached_nano_time(conductor->context->cached_clock);
 
     for (size_t i = 0, length = conductor->network_publications.length; i < length; i++)
     {
@@ -2493,7 +2493,7 @@ int aeron_driver_conductor_on_add_network_subscription(
         aeron_driver_conductor_on_subscription_ready(
             conductor, command->correlated.correlation_id, endpoint->channel_status.counter_id);
 
-        int64_t now_ns = conductor->context->nano_clock();
+        int64_t now_ns = aeron_clock_cached_nano_time(conductor->context->cached_clock);
 
         for (size_t i = 0, length = conductor->publication_images.length; i < length; i++)
         {
@@ -2993,7 +2993,7 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
     }
 
     conductor->publication_images.array[conductor->publication_images.length++].image = image;
-    int64_t now_ns = conductor->context->nano_clock();
+    int64_t now_ns = aeron_clock_cached_nano_time(conductor->context->cached_clock);
 
     for (size_t i = 0, length = conductor->network_subscriptions.length; i < length; i++)
     {

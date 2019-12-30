@@ -65,7 +65,7 @@ int aeron_network_publication_create(
     aeron_network_publication_t *_pub = NULL;
     const uint64_t usable_fs_space = context->usable_fs_space_func(context->aeron_dir);
     const uint64_t log_length = aeron_logbuffer_compute_log_length(params->term_length, context->file_page_size);
-    const int64_t now_ns = context->nano_clock();
+    int64_t now_ns = aeron_clock_cached_nano_time(context->cached_clock);
 
     *publication = NULL;
 

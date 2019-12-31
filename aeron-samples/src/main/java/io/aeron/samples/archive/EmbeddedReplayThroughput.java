@@ -81,11 +81,11 @@ public class EmbeddedReplayThroughput implements AutoCloseable
             do
             {
                 System.out.printf("Replaying %,d messages%n", NUMBER_OF_MESSAGES);
-                final long start = System.nanoTime();
+                final long startNs = System.nanoTime();
 
                 test.replayRecording(recordingLength, recordingId);
 
-                final long durationMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+                final long durationMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNs);
                 final double dataRate = (recordingLength * 1000.0d / durationMs) / MEGABYTE;
                 final double recordingMb = recordingLength / MEGABYTE;
                 final long msgRate = (NUMBER_OF_MESSAGES / durationMs) * 1000L;

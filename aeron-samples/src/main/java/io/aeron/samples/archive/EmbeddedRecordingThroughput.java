@@ -117,7 +117,7 @@ public class EmbeddedRecordingThroughput implements AutoCloseable
                 idleStrategy.idle();
             }
 
-            final long start = System.nanoTime();
+            final long startNs = System.nanoTime();
             final UnsafeBuffer buffer = this.buffer;
 
             for (long i = 0; i < NUMBER_OF_MESSAGES; i++)
@@ -141,7 +141,7 @@ public class EmbeddedRecordingThroughput implements AutoCloseable
                 idleStrategy.idle();
             }
 
-            final long durationMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+            final long durationMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNs);
             final double dataRate = (stopPosition * 1000.0d / durationMs) / MEGABYTE;
             final double recordingMb = stopPosition / MEGABYTE;
             final long msgRate = (NUMBER_OF_MESSAGES / durationMs) * 1000L;

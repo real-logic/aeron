@@ -536,7 +536,7 @@ class ReplaySession implements Session, AutoCloseable
     {
         return
             DataHeaderFlyweight.termOffset(buffer, 0) != termOffset ||
-                DataHeaderFlyweight.termId(buffer, 0) != termId ||
-                DataHeaderFlyweight.streamId(buffer, 0) != streamId;
+            DataHeaderFlyweight.termId(buffer, 0) != termId ||
+            DataHeaderFlyweight.streamId(buffer, 0) != streamId;
     }
 }

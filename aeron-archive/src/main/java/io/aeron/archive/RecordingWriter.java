@@ -107,7 +107,7 @@ class RecordingWriter implements BlockHandler
                 byteBuffer.clear();
                 recordingBuffer.putBytes(0, termBuffer, termOffset, length);
                 byteBuffer.limit(length).position(0);
-                computeCRC(recordingBuffer, 0, length);
+                computeCrc(recordingBuffer, 0, length);
             }
             else
             {
@@ -147,7 +147,7 @@ class RecordingWriter implements BlockHandler
         }
     }
 
-    private void computeCRC(final UnsafeBuffer termBuffer, final int termOffset, final int length)
+    private void computeCrc(final UnsafeBuffer termBuffer, final int termOffset, final int length)
     {
         final int endOffset = termOffset + length;
         final long address = termBuffer.addressOffset();

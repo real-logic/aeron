@@ -18,7 +18,7 @@ package io.aeron.archive;
 import io.aeron.Counter;
 import io.aeron.ExclusivePublication;
 import io.aeron.Image;
-import io.aeron.archive.checksum.Checksums;
+import io.aeron.archive.checksum.Checksum;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.logbuffer.BufferClaim;
@@ -122,7 +122,7 @@ public class ReplaySessionTest
         recordingSummary.sessionId = SESSION_ID;
 
         final RecordingWriter writer = new RecordingWriter(
-            RECORDING_ID, START_POSITION, SEGMENT_LENGTH, mockImage, context, ARCHIVE_DIR_CHANNEL, null);
+            RECORDING_ID, START_POSITION, SEGMENT_LENGTH, mockImage, context, ARCHIVE_DIR_CHANNEL, null, null);
 
         writer.init();
 
@@ -216,10 +216,10 @@ public class ReplaySessionTest
             RECORDING_POSITION,
             FRAME_LENGTH,
             correlationId,
-            new Archive.Context(),
             mockReplayPub,
             mockControlSession,
-            recordingPositionCounter))
+            recordingPositionCounter,
+            null))
         {
             when(mockReplayPub.isClosed()).thenReturn(false);
             when(mockReplayPub.isConnected()).thenReturn(false);
@@ -252,11 +252,10 @@ public class ReplaySessionTest
             RECORDING_POSITION + 1,
             FRAME_LENGTH,
             correlationId,
-            new Archive.Context(),
             mockReplayPub,
             mockControlSession,
-            recordingPositionCounter
-        );
+            recordingPositionCounter,
+            null);
 
         replaySession.doWork();
         assertEquals(ReplaySession.State.DONE, replaySession.state());
@@ -276,9 +275,9 @@ public class ReplaySessionTest
             RECORDING_POSITION,
             length,
             correlationId,
-            new Archive.Context(),
             mockReplayPub,
             mockControlSession,
+            null,
             null))
         {
             when(mockReplayPub.isClosed()).thenReturn(false);
@@ -317,10 +316,10 @@ public class ReplaySessionTest
             RECORDING_POSITION,
             length,
             correlationId,
-            new Archive.Context(),
             mockReplayPub,
             mockControlSession,
-            recordingPositionCounter))
+            recordingPositionCounter,
+            null))
         {
             when(mockReplayPub.isClosed()).thenReturn(false);
             when(mockReplayPub.isConnected()).thenReturn(false);
@@ -352,8 +351,8 @@ public class ReplaySessionTest
             mockImage,
             context,
             ARCHIVE_DIR_CHANNEL,
-            recordingBuffer
-        );
+            recordingBuffer,
+            null);
 
         writer.init();
 
@@ -373,10 +372,10 @@ public class ReplaySessionTest
             RECORDING_POSITION,
             length,
             correlationId,
-            new Archive.Context(),
             mockReplayPub,
             mockControlSession,
-            recordingPositionCounter))
+            recordingPositionCounter,
+            null))
         {
             when(mockReplayPub.isClosed()).thenReturn(false);
             when(mockReplayPub.isConnected()).thenReturn(false);
@@ -424,14 +423,15 @@ public class ReplaySessionTest
         final long length = 4 * FRAME_LENGTH;
         final long correlationId = 1L;
 
+        final Checksum checksum = crc32();
         try (ReplaySession replaySession = replaySession(
             RECORDING_POSITION + 2 * FRAME_LENGTH,
             length,
             correlationId,
-            new Archive.Context().replayCrcEnabled(true).replayCrcChecksumSupplier(Checksums::crc32),
             mockReplayPub,
             mockControlSession,
-            null))
+            null,
+            checksum))
         {
             when(mockReplayPub.isClosed()).thenReturn(false);
             when(mockReplayPub.isConnected()).thenReturn(false);
@@ -451,6 +451,7 @@ public class ReplaySessionTest
     @Test
     public void shouldDoCrcForEachDataFrame() throws IOException
     {
+        final Checksum checksum = crc32();
         final RecordingWriter writer = new RecordingWriter(
             RECORDING_ID,
             START_POSITION,
@@ -458,8 +459,8 @@ public class ReplaySessionTest
             mockImage,
             context,
             ARCHIVE_DIR_CHANNEL,
-            recordingBuffer
-        );
+            recordingBuffer,
+            checksum);
 
         writer.init();
 
@@ -482,10 +483,10 @@ public class ReplaySessionTest
             RECORDING_POSITION,
             length,
             correlationId,
-            new Archive.Context().replayCrcEnabled(true).replayCrcChecksumSupplier(Checksums::crc32),
             mockReplayPub,
             mockControlSession,
-            null))
+            null,
+            checksum))
         {
             when(mockReplayPub.isClosed()).thenReturn(false);
             when(mockReplayPub.isConnected()).thenReturn(false);
@@ -574,10 +575,10 @@ public class ReplaySessionTest
         final long position,
         final long length,
         final long correlationId,
-        final Archive.Context ctx,
         final ExclusivePublication replay,
         final ControlSession controlSession,
-        final Counter recordingPositionCounter)
+        final Counter recordingPositionCounter,
+        final Checksum checksum)
     {
         return new ReplaySession(
             position,
@@ -585,7 +586,6 @@ public class ReplaySessionTest
             REPLAY_ID,
             CONNECT_TIMEOUT_MS,
             correlationId,
-            ctx,
             controlSession,
             proxy,
             replayBuffer,
@@ -595,7 +595,9 @@ public class ReplaySessionTest
             epochClock,
             replay,
             recordingSummary,
-            recordingPositionCounter);
+            recordingPositionCounter,
+            checksum
+        );
     }
 
     static void validateFrame(final UnsafeBuffer buffer, final int offset, final int message, final byte flags)

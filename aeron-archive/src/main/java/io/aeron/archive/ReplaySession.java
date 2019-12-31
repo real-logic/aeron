@@ -88,7 +88,6 @@ class ReplaySession implements Session, AutoCloseable
     private final int termLength;
     private final int segmentLength;
 
-    private final boolean crcEnabled;
     private final Checksum checksum;
     private final long replayBufferAddress;
 
@@ -112,7 +111,6 @@ class ReplaySession implements Session, AutoCloseable
         final long replaySessionId,
         final long connectTimeoutMs,
         final long correlationId,
-        final Archive.Context ctx,
         final ControlSession controlSession,
         final ControlResponseProxy controlResponseProxy,
         final UnsafeBuffer replayBuffer,
@@ -122,7 +120,8 @@ class ReplaySession implements Session, AutoCloseable
         final CachedEpochClock epochClock,
         final ExclusivePublication publication,
         final RecordingSummary recordingSummary,
-        final Counter replayLimitPosition)
+        final Counter replayLimitPosition,
+        final Checksum checksum)
     {
         this.controlSession = controlSession;
         this.sessionId = replaySessionId;
@@ -142,8 +141,7 @@ class ReplaySession implements Session, AutoCloseable
         this.startPosition = recordingSummary.startPosition;
         this.stopPosition = null == limitPosition ? recordingSummary.stopPosition : limitPosition.get();
 
-        crcEnabled = ctx.replayCrcEnabled();
-        checksum = crcEnabled ? ctx.replayCrcChecksum() : null;
+        this.checksum = checksum;
 
         final long fromPosition = position == NULL_POSITION ? startPosition : position;
         final long maxLength = null == limitPosition ? stopPosition - fromPosition : Long.MAX_VALUE - fromPosition;
@@ -350,9 +348,10 @@ class ReplaySession implements Session, AutoCloseable
                     break;
                 }
 
-                if (crcEnabled)
+                final Checksum checksum = this.checksum;
+                if (null != checksum)
                 {
-                    applyCrc(frameOffset, alignedLength);
+                    applyCrc(checksum, frameOffset, alignedLength);
                 }
 
                 result = publication.tryClaim(dataLength, bufferClaim);
@@ -397,7 +396,7 @@ class ReplaySession implements Session, AutoCloseable
         return fragments;
     }
 
-    private void applyCrc(final int frameOffset, final int alignedLength)
+    private void applyCrc(final Checksum checksum, final int frameOffset, final int alignedLength)
     {
         final int computedChecksum = checksum
             .compute(replayBufferAddress, frameOffset + HEADER_LENGTH, alignedLength - HEADER_LENGTH);

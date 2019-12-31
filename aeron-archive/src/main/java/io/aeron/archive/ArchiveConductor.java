@@ -148,7 +148,7 @@ abstract class ArchiveConductor
         authenticator = ctx.authenticatorSupplier().get();
         controlSessionProxy = new ControlSessionProxy(controlResponseProxy);
 
-        recordingBuffer = ctx.recordingCrcEnabled() ? allocateBuffer() : null;
+        recordingBuffer = null != ctx.recordChecksumSupplier() ? allocateBuffer() : null;
     }
 
     private static UnsafeBuffer allocateBuffer()
@@ -589,7 +589,6 @@ abstract class ArchiveConductor
             replaySessionId,
             connectTimeoutMs,
             correlationId,
-            ctx,
             controlSession,
             controlResponseProxy,
             replayBuffer,
@@ -599,7 +598,9 @@ abstract class ArchiveConductor
             cachedEpochClock,
             replayPublication,
             recordingSummary,
-            null == recordingSession ? null : recordingSession.recordingPosition());
+            null == recordingSession ? null : recordingSession.recordingPosition(),
+            ctx.replayChecksum()
+        );
 
         replaySessionByIdMap.put(replaySessionId, replaySession);
         replayer.addSession(replaySession);
@@ -660,7 +661,6 @@ abstract class ArchiveConductor
             replaySessionId,
             connectTimeoutMs,
             correlationId,
-            ctx,
             controlSession,
             controlResponseProxy,
             replayBuffer,
@@ -670,7 +670,9 @@ abstract class ArchiveConductor
             cachedEpochClock,
             replayPublication,
             recordingSummary,
-            limitCounter);
+            limitCounter,
+            ctx.replayChecksum()
+        );
 
         replaySessionByIdMap.put(replaySessionId, replaySession);
         replayer.addSession(replaySession);
@@ -1401,7 +1403,8 @@ abstract class ArchiveConductor
             archiveDirChannel,
             ctx,
             controlSession,
-            recordingBuffer);
+            recordingBuffer,
+            ctx.recordChecksum());
 
         recordingSessionByIdMap.put(recordingId, session);
         recorder.addSession(session);
@@ -1455,7 +1458,8 @@ abstract class ArchiveConductor
             archiveDirChannel,
             ctx,
             controlSession,
-            recordingBuffer);
+            recordingBuffer,
+            ctx.recordChecksum());
 
         recordingSessionByIdMap.put(recordingId, session);
         catalog.extendRecording(recordingId, controlSession.sessionId(), correlationId, image.sessionId());

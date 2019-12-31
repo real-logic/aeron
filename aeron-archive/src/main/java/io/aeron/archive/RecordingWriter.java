@@ -53,7 +53,6 @@ class RecordingWriter implements BlockHandler
     private final int segmentLength;
     private final boolean forceWrites;
     private final boolean forceMetadata;
-    private final boolean crcEnabled;
     private final UnsafeBuffer recordingBuffer;
     private final Checksum checksum;
     private final FileChannel archiveDirChannel;
@@ -72,7 +71,8 @@ class RecordingWriter implements BlockHandler
         final Image image,
         final Archive.Context ctx,
         final FileChannel archiveDirChannel,
-        final UnsafeBuffer recordingBuffer)
+        final UnsafeBuffer recordingBuffer,
+        final Checksum checksum)
     {
         this.recordingId = recordingId;
         this.archiveDirChannel = archiveDirChannel;
@@ -82,9 +82,8 @@ class RecordingWriter implements BlockHandler
         forceWrites = ctx.fileSyncLevel() > 0;
         forceMetadata = ctx.fileSyncLevel() > 1;
 
-        crcEnabled = ctx.recordingCrcEnabled();
         this.recordingBuffer = recordingBuffer;
-        this.checksum = crcEnabled ? ctx.recordingCrcChecksum() : null;
+        this.checksum = checksum;
 
         final int termLength = image.termBufferLength();
         final long joinPosition = image.joinPosition();
@@ -101,13 +100,14 @@ class RecordingWriter implements BlockHandler
             final int dataLength = isPaddingFrame ? HEADER_LENGTH : length;
             ByteBuffer byteBuffer = termBuffer.byteBuffer();
 
-            if (crcEnabled && !isPaddingFrame)
+            final Checksum checksum = this.checksum;
+            if (null != checksum && !isPaddingFrame)
             {
                 byteBuffer = recordingBuffer.byteBuffer();
                 byteBuffer.clear();
                 recordingBuffer.putBytes(0, termBuffer, termOffset, length);
                 byteBuffer.limit(length).position(0);
-                computeCrc(recordingBuffer, 0, length);
+                computeCrc(checksum, recordingBuffer, 0, length);
             }
             else
             {
@@ -147,7 +147,8 @@ class RecordingWriter implements BlockHandler
         }
     }
 
-    private void computeCrc(final UnsafeBuffer termBuffer, final int termOffset, final int length)
+    private void computeCrc(
+        final Checksum checksum, final UnsafeBuffer termBuffer, final int termOffset, final int length)
     {
         final int endOffset = termOffset + length;
         final long address = termBuffer.addressOffset();

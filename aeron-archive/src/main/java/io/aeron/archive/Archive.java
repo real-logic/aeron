@@ -382,36 +382,16 @@ public class Archive implements AutoCloseable
         public static final int ERROR_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
 
         /**
-         * Should the CRC be computed for each recorder fragment.
-         */
-        public static final String RECORDING_CRC_ENABLED_PROP_NAME = "aeron.archive.recording.crc.enabled";
-
-        /**
-         * Do not compute the CRC for each recorded fragment by default.
-         */
-        public static final boolean RECORDING_CRC_ENABLED_DEFAULT = false;
-
-        /**
          * Property that specifies fully qualified class name of the {@link io.aeron.archive.checksum.Checksum}
          * to be used for CRC checksum computation during recording.
          */
-        public static final String RECORDING_CRC_CHECKSUM_PROP_NAME = "aeron.archive.recording.crc.checksum";
-
-        /**
-         * Should the CRC be validated during replay.
-         */
-        public static final String REPLAY_CRC_ENABLED_PROP_NAME = "aeron.archive.replay.crc.enabled";
-
-        /**
-         * Do not validate the CRC for each replayed fragment by default.
-         */
-        public static final boolean REPLAY_CRC_ENABLED_DEFAULT = false;
+        public static final String RECORD_CHECKSUM_PROP_NAME = "aeron.archive.record.checksum";
 
         /**
          * Property that specifies fully qualified class name of the {@link io.aeron.archive.checksum.Checksum}
          * to be used for CRC checksum validation during replay.
          */
-        public static final String REPLAY_CRC_CHECKSUM_PROP_NAME = "aeron.archive.replay.crc.checksum";
+        public static final String REPLAY_CHECKSUM_PROP_NAME = "aeron.archive.replay.checksum";
 
         /**
          * Get the directory name to be used for storing the archive.
@@ -642,51 +622,27 @@ public class Archive implements AutoCloseable
         }
 
         /**
-         * Should the CRC be computed for each recorder fragment.
+         * Fully qualified class name of the {@link io.aeron.archive.checksum.Checksum} implementation to use during
+         * recording to compute CRC checksums. Non-empty value means that CRC is enabled for recording.
          *
-         * @return {@code true} if the CRC computation should be enabled.
-         * @see Configuration#RECORDING_CRC_ENABLED_DEFAULT
+         * @return class that implements {@link io.aeron.archive.checksum.Checksum} interface
+         * @see Configuration#RECORD_CHECKSUM_PROP_NAME
          */
-        public static boolean recordingCrcEnabled()
+        public static String recordChecksum()
         {
-            final String propValue = getProperty(RECORDING_CRC_ENABLED_PROP_NAME);
-            return null != propValue ? "true".equals(propValue) : RECORDING_CRC_ENABLED_DEFAULT;
+            return getProperty(RECORD_CHECKSUM_PROP_NAME);
         }
 
         /**
          * Fully qualified class name of the {@link io.aeron.archive.checksum.Checksum} implementation to use during
-         * recording to compute CRC checksums.
+         * replay for the CRC. Non-empty value means that CRC is enabled for replay.
          *
          * @return class that implements {@link io.aeron.archive.checksum.Checksum} interface
-         * @see Configuration#RECORDING_CRC_CHECKSUM_PROP_NAME
+         * @see Configuration#REPLAY_CHECKSUM_PROP_NAME
          */
-        public static String recordingCrcChecksum()
+        public static String replayChecksum()
         {
-            return getProperty(RECORDING_CRC_CHECKSUM_PROP_NAME);
-        }
-
-        /**
-         * Should the CRC be validated during replay.
-         *
-         * @return {@code true} if the CRC validation should be done during replay.
-         * @see Configuration#REPLAY_CRC_ENABLED_DEFAULT
-         */
-        public static boolean replayCrcEnabled()
-        {
-            final String propValue = getProperty(REPLAY_CRC_ENABLED_PROP_NAME);
-            return null != propValue ? "true".equals(propValue) : REPLAY_CRC_ENABLED_DEFAULT;
-        }
-
-        /**
-         * Fully qualified class name of the {@link io.aeron.archive.checksum.Checksum} implementation to use during
-         * replay for the CRC.
-         *
-         * @return class that implements {@link io.aeron.archive.checksum.Checksum} interface
-         * @see Configuration#REPLAY_CRC_CHECKSUM_PROP_NAME
-         */
-        public static String replayCrcChecksum()
-        {
-            return getProperty(REPLAY_CRC_CHECKSUM_PROP_NAME);
+            return getProperty(REPLAY_CHECKSUM_PROP_NAME);
         }
     }
 
@@ -754,10 +710,8 @@ public class Archive implements AutoCloseable
         private int maxConcurrentRecordings = Configuration.maxConcurrentRecordings();
         private int maxConcurrentReplays = Configuration.maxConcurrentReplays();
 
-        private boolean recordingCrcEnabled = Configuration.recordingCrcEnabled();
-        private Supplier<Checksum> recordingCrcChecksumSupplier;
-        private boolean replayCrcEnabled = Configuration.replayCrcEnabled();
-        private Supplier<Checksum> replayCrcChecksumSupplier;
+        private Supplier<Checksum> recordChecksumSupplier;
+        private Supplier<Checksum> replayChecksumSupplier;
 
         /**
          * Perform a shallow copy of the object.
@@ -912,7 +866,7 @@ public class Archive implements AutoCloseable
                 authenticatorSupplier = Configuration.authenticatorSupplier();
             }
 
-            concludeRecordingChecksumSupplier();
+            concludeRecordChecksumSupplier();
 
             concludeReplayChecksumSupplier();
 
@@ -936,49 +890,22 @@ public class Archive implements AutoCloseable
             markFile.signalReady();
         }
 
-        void concludeRecordingChecksumSupplier()
+        void concludeRecordChecksumSupplier()
         {
-            final String checksumClass = Configuration.recordingCrcChecksum();
-            if (!recordingCrcEnabled && (null != recordingCrcChecksumSupplier || !Strings.isEmpty(checksumClass)))
+            final String checksumClass = Configuration.recordChecksum();
+            if (null == recordChecksumSupplier && !Strings.isEmpty(checksumClass))
             {
-                throw new ArchiveException(
-                    "Recording checksum supplier cannot be assigned without enabling the corresponding flag.");
-            }
-
-            if (null == recordingCrcChecksumSupplier && recordingCrcEnabled)
-            {
-                if (Strings.isEmpty(checksumClass))
-                {
-                    throw new ArchiveException(
-                        "Recording CRC flag is enabled but neither supplier nor checksum class was configured.");
-                }
-                recordingCrcChecksumSupplier = createDefaultChecksumSupplier(checksumClass);
+                recordChecksumSupplier = () -> Checksums.newInstance(checksumClass);
             }
         }
 
         void concludeReplayChecksumSupplier()
         {
-            final String checksumClass = Configuration.replayCrcChecksum();
-            if (!replayCrcEnabled && (null != replayCrcChecksumSupplier || !Strings.isEmpty(checksumClass)))
+            final String checksumClass = Configuration.replayChecksum();
+            if (null == replayChecksumSupplier && !Strings.isEmpty(checksumClass))
             {
-                throw new ArchiveException(
-                    "Replay checksum supplier cannot be assigned without enabling the corresponding flag.");
+                replayChecksumSupplier = () -> Checksums.newInstance(checksumClass);
             }
-            else if (null == replayCrcChecksumSupplier && replayCrcEnabled)
-            {
-                if (Strings.isEmpty(checksumClass))
-                {
-                    throw new ArchiveException(
-                        "Replay CRC flag is enabled but neither supplier nor checksum class was configured.");
-                }
-                replayCrcChecksumSupplier = createDefaultChecksumSupplier(checksumClass);
-            }
-
-        }
-
-        private Supplier<Checksum> createDefaultChecksumSupplier(final String className)
-        {
-            return () -> Checksums.newInstance(className);
         }
 
         /**
@@ -1404,97 +1331,77 @@ public class Archive implements AutoCloseable
         }
 
         /**
-         * Should the CRC be computed for each recorder fragment.
+         * Provides an explicit {@link Checksum} supplier for CRC computation during recording. If explicit supplier is
+         * not configured then the default will be created is {@link Configuration#recordChecksum()} property is set.
          *
-         * @param recordingCrcEnabled {@code true} if the CRC computation should be enabled.
+         * @param recordChecksumSupplier supplier for CRC checksums.
          * @return this for a fluent API.
-         * @see Configuration#RECORDING_CRC_ENABLED_PROP_NAME
+         * @see Configuration#recordChecksum
          */
-        public Context recordingCrcEnabled(final boolean recordingCrcEnabled)
+        public Context recordChecksumSupplier(final Supplier<Checksum> recordChecksumSupplier)
         {
-            this.recordingCrcEnabled = recordingCrcEnabled;
+            this.recordChecksumSupplier = recordChecksumSupplier;
             return this;
         }
 
         /**
-         * Should the CRC be computed for each recorder fragment.
+         * Get the supplier of the {@link Checksum} instances to be used in the recording.
          *
-         * @return {@code true} if the CRC computation should be enabled.
-         * @see Configuration#RECORDING_CRC_ENABLED_PROP_NAME
+         * @return {@link Checksum} supplier for the recording.
          */
-        public boolean recordingCrcEnabled()
+        Supplier<Checksum> recordChecksumSupplier()
         {
-            return recordingCrcEnabled;
-        }
-
-        /**
-         * Provides a {@link Checksum} supplier for CRC computation during recording.
-         *
-         * @param recordingCrcChecksumSupplier supplier for CRC checksums.
-         * @return this for a fluent API.
-         * @see Configuration#recordingCrcChecksum
-         */
-        public Context recordingCrcChecksumSupplier(final Supplier<Checksum> recordingCrcChecksumSupplier)
-        {
-            this.recordingCrcChecksumSupplier = recordingCrcChecksumSupplier;
-            return this;
+            return recordChecksumSupplier;
         }
 
         /**
          * Get a new {@link Checksum} for CRC checksum computation during recording.
          *
-         * @return a (potentially) new {@link Checksum} for CRC checksum computation during recording.
+         * @return a (potentially) new {@link Checksum} instance for CRC checksum computation during recording or
+         * {@code null} if no {@link Checksum} supplier was configured.
+         * @see #recordChecksumSupplier(Supplier)
          */
-        public Checksum recordingCrcChecksum()
+        public Checksum recordChecksum()
         {
-            return recordingCrcChecksumSupplier.get();
+            final Supplier<Checksum> supplier = this.recordChecksumSupplier;
+            return null != supplier ? supplier.get() : null;
         }
 
         /**
-         * Should the CRC be validated during replay.
+         * Provides an explicit {@link Checksum} supplier for CRC computation during replay. If explicit supplier is
+         * not configured then the default will be created is {@link Configuration#replayChecksum()} property is set.
          *
-         * @param replayCrcEnabled {@code true} if the CRC validation should be done during replay.
+         * @param replayChecksumSupplier supplier for CRC checksums.
          * @return this for a fluent API.
-         * @see Configuration#REPLAY_CRC_ENABLED_PROP_NAME
+         * @see Configuration#replayChecksum
          */
-        public Context replayCrcEnabled(final boolean replayCrcEnabled)
+        public Context replayChecksumSupplier(final Supplier<Checksum> replayChecksumSupplier)
         {
-            this.replayCrcEnabled = replayCrcEnabled;
+            this.replayChecksumSupplier = replayChecksumSupplier;
             return this;
         }
 
         /**
-         * Should the CRC be validated during replay.
+         * Get the supplier of the {@link Checksum} instances to be used in the replay.
          *
-         * @return {@code true} if the CRC validation should be done during replay.
-         * @see Configuration#REPLAY_CRC_ENABLED_PROP_NAME
+         * @return {@link Checksum} supplier for the replay.
          */
-        public boolean replayCrcEnabled()
+        Supplier<Checksum> replayChecksumSupplier()
         {
-            return replayCrcEnabled;
-        }
-
-        /**
-         * Provides a {@link Checksum} supplier for CRC checksum computation during replay.
-         *
-         * @param replayCrcChecksumSupplier supplier for CRC checksums.
-         * @return this for a fluent API.
-         * @see Configuration#replayCrcChecksum
-         */
-        public Context replayCrcChecksumSupplier(final Supplier<Checksum> replayCrcChecksumSupplier)
-        {
-            this.replayCrcChecksumSupplier = replayCrcChecksumSupplier;
-            return this;
+            return replayChecksumSupplier;
         }
 
         /**
          * Get a new {@link Checksum} for CRC checksum computation during replay.
          *
-         * @return a (potentially) new {@link Checksum} for CRC checksum computation during replay.
+         * @return a (potentially) new {@link Checksum} instance for CRC checksum computation during replay or
+         * {@code null} if no {@link Checksum} supplier was configured.
+         * @see #replayChecksumSupplier(Supplier)
          */
-        public Checksum replayCrcChecksum()
+        public Checksum replayChecksum()
         {
-            return replayCrcChecksumSupplier.get();
+            final Supplier<Checksum> supplier = this.replayChecksumSupplier;
+            return null != supplier ? supplier.get() : null;
         }
 
         /**

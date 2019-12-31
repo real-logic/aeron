@@ -129,6 +129,7 @@ public class RecordingSessionTest
             ARCHIVE_CHANNEL,
             context,
             CONTROL_SESSION,
+            null,
             null);
 
         assertEquals(RECORDING_ID, session.sessionId());

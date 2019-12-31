@@ -3,7 +3,6 @@ package io.aeron.archive;
 import io.aeron.Image;
 import io.aeron.archive.Archive.Context;
 import io.aeron.archive.checksum.Checksum;
-import io.aeron.archive.checksum.Checksums;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.IoUtil;
@@ -16,6 +15,7 @@ import java.io.File;
 import java.io.IOException;
 
 import static io.aeron.archive.Archive.segmentFileName;
+import static io.aeron.archive.checksum.Checksums.crc32;
 import static io.aeron.archive.client.ArchiveException.GENERIC;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
@@ -54,7 +54,7 @@ class RecordingWriterTests
     {
         final Image image = mockImage(0L);
         final RecordingWriter recordingWriter = new RecordingWriter(
-            1, 0, SEGMENT_LENGTH, image, new Context().archiveDir(archiveDir), null, null);
+            1, 0, SEGMENT_LENGTH, image, new Context().archiveDir(archiveDir), null, null, null);
         final File segmentFile = segmentFile(1, 0);
         assertFalse(segmentFile.exists());
 
@@ -76,7 +76,7 @@ class RecordingWriterTests
         assertTrue(notADirectory.createNewFile());
         final Image image = mockImage(0L);
         final RecordingWriter recordingWriter = new RecordingWriter(
-            1, 0, SEGMENT_LENGTH, image, new Context().archiveDir(notADirectory), null, null);
+            1, 0, SEGMENT_LENGTH, image, new Context().archiveDir(notADirectory), null, null, null);
 
         assertThrows(IOException.class, recordingWriter::init);
         assertTrue(recordingWriter.isClosed());
@@ -87,7 +87,7 @@ class RecordingWriterTests
     {
         final Image image = mockImage(0L);
         final RecordingWriter recordingWriter = new RecordingWriter(
-            1, 0, SEGMENT_LENGTH, image, new Context().archiveDir(archiveDir), null, null);
+            1, 0, SEGMENT_LENGTH, image, new Context().archiveDir(archiveDir), null, null, null);
         recordingWriter.init();
         assertFalse(recordingWriter.isClosed());
 
@@ -104,7 +104,7 @@ class RecordingWriterTests
     {
         final Image image = mockImage(0L);
         final RecordingWriter recordingWriter = new RecordingWriter(
-            1, 0, SEGMENT_LENGTH, image, new Context().archiveDir(archiveDir), null, null);
+            1, 0, SEGMENT_LENGTH, image, new Context().archiveDir(archiveDir), null, null, null);
 
         assertThrows(NullPointerException.class, () ->
             recordingWriter.onBlock(new UnsafeBuffer(allocate(32)), 0, 10, 5, 8));
@@ -116,7 +116,7 @@ class RecordingWriterTests
     {
         final Image image = mockImage(0L);
         final RecordingWriter recordingWriter = new RecordingWriter(
-            1, 0, SEGMENT_LENGTH, image, new Context().archiveDir(archiveDir), null, null);
+            1, 0, SEGMENT_LENGTH, image, new Context().archiveDir(archiveDir), null, null, null);
         recordingWriter.init();
 
         assertFalse(Thread.interrupted());
@@ -140,7 +140,7 @@ class RecordingWriterTests
     {
         final Image image = mockImage(0L);
         final RecordingWriter recordingWriter = new RecordingWriter(
-            1, 0, SEGMENT_LENGTH, image, new Context().archiveDir(archiveDir), null, null);
+            1, 0, SEGMENT_LENGTH, image, new Context().archiveDir(archiveDir), null, null, null);
         recordingWriter.init();
         final UnsafeBuffer termBuffer = new UnsafeBuffer(allocate(128));
         frameType(termBuffer, 0, HDR_TYPE_DATA);
@@ -172,7 +172,7 @@ class RecordingWriterTests
         final long startPosition = 7 * TERM_LENGTH + segmentOffset;
         final Image image = mockImage(startPosition);
         final RecordingWriter recordingWriter = new RecordingWriter(
-            5, startPosition, SEGMENT_LENGTH, image, new Context().archiveDir(archiveDir), null, null);
+            5, startPosition, SEGMENT_LENGTH, image, new Context().archiveDir(archiveDir), null, null, null);
         recordingWriter.init();
         final UnsafeBuffer termBuffer = new UnsafeBuffer(allocate(1024));
         frameType(termBuffer, 0, HDR_TYPE_PAD);
@@ -206,7 +206,7 @@ class RecordingWriterTests
     {
         final Image image = mockImage(0L);
         final RecordingWriter recordingWriter = new RecordingWriter(
-            13, 0, SEGMENT_LENGTH, image, new Context().archiveDir(archiveDir), null, null);
+            13, 0, SEGMENT_LENGTH, image, new Context().archiveDir(archiveDir), null, null, null);
         recordingWriter.init();
         final byte[] data1 = new byte[992];
         fill(data1, (byte)13);
@@ -252,11 +252,9 @@ class RecordingWriterTests
     void onBlockThrowNullPointerExceptionIfRecordingBufferIsNullButCrcIsEnabled() throws IOException
     {
         final Image image = mockImage(0L);
-        final Context ctx = new Context().archiveDir(archiveDir)
-            .recordingCrcEnabled(true)
-            .recordingCrcChecksumSupplier(Checksums::crc32);
+        final Context ctx = new Context().archiveDir(archiveDir);
         final RecordingWriter recordingWriter = new RecordingWriter(
-            1, 0, SEGMENT_LENGTH, image, ctx, null, null);
+            1, 0, SEGMENT_LENGTH, image, ctx, null, null, crc32());
         final UnsafeBuffer termBuffer = new UnsafeBuffer(allocateDirectAligned(512, 64));
         frameType(termBuffer, 0, HDR_TYPE_DATA);
         frameLengthOrdered(termBuffer, 0, 1024);
@@ -276,13 +274,11 @@ class RecordingWriterTests
     void onBlockShouldComputeCrcUsingTheRecordingBuffer() throws IOException
     {
         final Image image = mockImage(0L);
-        final Context ctx = new Context().archiveDir(archiveDir)
-            .recordingCrcEnabled(true)
-            .recordingCrcChecksumSupplier(Checksums::crc32);
+        final Context ctx = new Context().archiveDir(archiveDir);
         final UnsafeBuffer recordingBuffer = new UnsafeBuffer(allocateDirectAligned(512, 64));
-        final Checksum checksum = Checksums.crc32();
+        final Checksum checksum = crc32();
         final RecordingWriter recordingWriter = new RecordingWriter(
-            1, 0, SEGMENT_LENGTH, image, ctx, null, recordingBuffer);
+            1, 0, SEGMENT_LENGTH, image, ctx, null, recordingBuffer, checksum);
         recordingWriter.init();
         final UnsafeBuffer termBuffer = new UnsafeBuffer(allocateDirectAligned(512, 64));
         frameType(termBuffer, 96, HDR_TYPE_DATA);
@@ -328,11 +324,9 @@ class RecordingWriterTests
     {
 
         final Image image = mockImage(0L);
-        final Context ctx = new Context().archiveDir(archiveDir)
-            .recordingCrcEnabled(true)
-            .recordingCrcChecksumSupplier(Checksums::crc32);
+        final Context ctx = new Context().archiveDir(archiveDir);
         final RecordingWriter recordingWriter = new RecordingWriter(
-            1, 0, SEGMENT_LENGTH, image, ctx, null, null);
+            1, 0, SEGMENT_LENGTH, image, ctx, null, null, crc32());
         recordingWriter.init();
         final UnsafeBuffer termBuffer = new UnsafeBuffer(allocate(512));
         final int length = 128;

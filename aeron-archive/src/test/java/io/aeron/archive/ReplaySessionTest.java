@@ -441,16 +441,10 @@ public class ReplaySessionTest
 
             when(mockReplayPub.isConnected()).thenReturn(true);
 
-            replaySession.doWork();
-            assertEquals(ReplaySession.State.REPLAY, replaySession.state());
-            verify(mockControlSession).sendOkResponse(eq(correlationId), anyLong(), eq(proxy));
-
-            final UnsafeBuffer termBuffer = new UnsafeBuffer(allocateDirectAligned(4096, 64));
-            mockPublication(mockReplayPub, termBuffer);
-
             final ArchiveException exception = assertThrows(ArchiveException.class, replaySession::doWork);
             assertEquals(ArchiveException.GENERIC, exception.errorCode());
             assertThat(exception.getMessage(), Matchers.startsWith("CRC checksum mismatch at offset=0"));
+            verify(mockReplayPub, never()).tryClaim(anyInt(), any(BufferClaim.class));
         }
     }
 

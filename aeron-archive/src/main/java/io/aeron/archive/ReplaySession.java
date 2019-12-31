@@ -350,13 +350,14 @@ class ReplaySession implements Session, AutoCloseable
                     break;
                 }
 
+                if (crcEnabled)
+                {
+                    applyCrc(frameOffset, alignedLength);
+                }
+
                 result = publication.tryClaim(dataLength, bufferClaim);
                 if (result > 0)
                 {
-                    if (crcEnabled)
-                    {
-                        applyCrc(frameOffset, alignedLength);
-                    }
                     bufferClaim
                         .flags(frameFlags(replayBuffer, frameOffset))
                         .reservedValue(replayBuffer.getLong(frameOffset + RESERVED_VALUE_OFFSET, LITTLE_ENDIAN))
@@ -404,7 +405,7 @@ class ReplaySession implements Session, AutoCloseable
         if (computedChecksum != recordedChecksum)
         {
             final String message = "CRC checksum mismatch at offset=" + frameOffset + ": recorded checksum=" +
-                recordedChecksum + ", computed checksum=" + checksum;
+                recordedChecksum + ", computed checksum=" + computedChecksum;
             throw new ArchiveException(message);
         }
     }

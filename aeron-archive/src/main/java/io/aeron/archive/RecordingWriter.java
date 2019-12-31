@@ -16,12 +16,13 @@
 package io.aeron.archive;
 
 import io.aeron.Image;
+import io.aeron.archive.checksum.Checksum;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.logbuffer.BlockHandler;
-import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,8 +32,9 @@ import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.FileChannel;
 
 import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
-import static io.aeron.logbuffer.FrameDescriptor.PADDING_FRAME_TYPE;
-import static io.aeron.logbuffer.FrameDescriptor.typeOffset;
+import static io.aeron.logbuffer.FrameDescriptor.*;
+import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
+import static org.agrona.BitUtil.align;
 
 /**
  * Responsible for writing out a recording into the file system. A recording has descriptor file and a set of data files
@@ -51,6 +53,8 @@ class RecordingWriter implements BlockHandler
     private final int segmentLength;
     private final boolean forceWrites;
     private final boolean forceMetadata;
+    private final UnsafeBuffer recordingBuffer;
+    private final Checksum checksum;
     private final FileChannel archiveDirChannel;
     private final File archiveDir;
 
@@ -66,7 +70,9 @@ class RecordingWriter implements BlockHandler
         final int segmentLength,
         final Image image,
         final Archive.Context ctx,
-        final FileChannel archiveDirChannel)
+        final FileChannel archiveDirChannel,
+        final UnsafeBuffer recordingBuffer,
+        final Checksum checksum)
     {
         this.recordingId = recordingId;
         this.archiveDirChannel = archiveDirChannel;
@@ -76,11 +82,13 @@ class RecordingWriter implements BlockHandler
         forceWrites = ctx.fileSyncLevel() > 0;
         forceMetadata = ctx.fileSyncLevel() > 1;
 
+        this.recordingBuffer = recordingBuffer;
+        this.checksum = checksum;
+
         final int termLength = image.termBufferLength();
         final long joinPosition = image.joinPosition();
-        final long startTermBasePosition = startPosition - (startPosition & (termLength - 1));
-        segmentOffset = (int)((joinPosition - startTermBasePosition) & (segmentLength - 1));
         segmentBasePosition = segmentFileBasePosition(startPosition, joinPosition, termLength, segmentLength);
+        segmentOffset = (int)(joinPosition - segmentBasePosition);
     }
 
     public void onBlock(
@@ -89,9 +97,22 @@ class RecordingWriter implements BlockHandler
         try
         {
             final boolean isPaddingFrame = termBuffer.getShort(typeOffset(termOffset)) == PADDING_FRAME_TYPE;
-            final int dataLength = isPaddingFrame ? DataHeaderFlyweight.HEADER_LENGTH : length;
-            final ByteBuffer byteBuffer = termBuffer.byteBuffer();
-            byteBuffer.limit(termOffset + dataLength).position(termOffset);
+            final int dataLength = isPaddingFrame ? HEADER_LENGTH : length;
+            ByteBuffer byteBuffer = termBuffer.byteBuffer();
+
+            final Checksum checksum = this.checksum;
+            if (null != checksum && !isPaddingFrame)
+            {
+                byteBuffer = recordingBuffer.byteBuffer();
+                byteBuffer.clear();
+                recordingBuffer.putBytes(0, termBuffer, termOffset, length);
+                byteBuffer.limit(length).position(0);
+                computeCrc(checksum, recordingBuffer, 0, length);
+            }
+            else
+            {
+                byteBuffer.limit(termOffset + dataLength).position(termOffset);
+            }
 
             do
             {
@@ -123,6 +144,22 @@ class RecordingWriter implements BlockHandler
         {
             close();
             LangUtil.rethrowUnchecked(ex);
+        }
+    }
+
+    private void computeCrc(
+        final Checksum checksum, final UnsafeBuffer termBuffer, final int termOffset, final int length)
+    {
+        final int endOffset = termOffset + length;
+        final long address = termBuffer.addressOffset();
+        int frameOffset = termOffset;
+        while (frameOffset < endOffset)
+        {
+            final int alignedLength = align(frameLength(termBuffer, frameOffset), FRAME_ALIGNMENT);
+            final int computedChecksum = checksum.compute(
+                address, frameOffset + HEADER_LENGTH, alignedLength - HEADER_LENGTH);
+            frameSessionId(termBuffer, frameOffset, computedChecksum);
+            frameOffset += alignedLength;
         }
     }
 

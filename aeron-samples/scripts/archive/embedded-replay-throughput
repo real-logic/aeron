@@ -33,4 +33,5 @@ ${JAVA_HOME}/bin/java \
     -Daeron.socket.so_sndbuf=2m \
     -Daeron.socket.so_rcvbuf=2m \
     -Daeron.rcv.initial.window.length=2m \
+    -Daeron.sample.channel=aeron:ipc \
     ${JVM_OPTS} io.aeron.samples.archive.EmbeddedReplayThroughput "$@"

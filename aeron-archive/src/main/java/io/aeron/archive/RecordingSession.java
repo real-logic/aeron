@@ -17,8 +17,10 @@ package io.aeron.archive;
 
 import io.aeron.Counter;
 import io.aeron.Image;
+import io.aeron.archive.checksum.Checksum;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.IOException;
 import java.nio.channels.FileChannel;
@@ -57,7 +59,9 @@ class RecordingSession implements Session
         final Counter position,
         final FileChannel archiveDirChannel,
         final Archive.Context ctx,
-        final ControlSession controlSession)
+        final ControlSession controlSession,
+        final UnsafeBuffer recordingBuffer,
+        final Checksum checksum)
     {
         this.correlationId = correlationId;
         this.recordingId = recordingId;
@@ -68,7 +72,8 @@ class RecordingSession implements Session
         this.controlSession = controlSession;
 
         blockLengthLimit = Math.min(image.termBufferLength(), Archive.Configuration.MAX_BLOCK_LENGTH);
-        recordingWriter = new RecordingWriter(recordingId, startPosition, segmentLength, image, ctx, archiveDirChannel);
+        recordingWriter = new RecordingWriter(
+            recordingId, startPosition, segmentLength, image, ctx, archiveDirChannel, recordingBuffer, checksum);
     }
 
     public long correlationId()

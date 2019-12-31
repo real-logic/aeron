@@ -19,6 +19,8 @@ import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.Counter;
 import io.aeron.Image;
+import io.aeron.archive.checksum.Checksum;
+import io.aeron.archive.checksum.Checksums;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.exceptions.ConcurrentConcludeException;
@@ -188,6 +190,7 @@ public class Archive implements AutoCloseable
 
         /**
          * Default directory for the archive files.
+         *
          * @see #ARCHIVE_DIR_PROP_NAME
          */
         public static final String ARCHIVE_DIR_DEFAULT = "aeron-archive";
@@ -200,6 +203,7 @@ public class Archive implements AutoCloseable
 
         /**
          * Default segment file length which is multiple of terms.
+         *
          * @see #SEGMENT_FILE_LENGTH_PROP_NAME
          */
         public static final int SEGMENT_FILE_LENGTH_DEFAULT = 128 * 1024 * 1024;
@@ -216,6 +220,7 @@ public class Archive implements AutoCloseable
 
         /**
          * Default is to use normal file writes which may mean some data loss in the event of a power failure.
+         *
          * @see #FILE_SYNC_LEVEL_PROP_NAME
          */
         public static final int FILE_SYNC_LEVEL_DEFAULT = 0;
@@ -232,6 +237,7 @@ public class Archive implements AutoCloseable
 
         /**
          * Default is to use normal file writes which may mean some data loss in the event of a power failure.
+         *
          * @see #CATALOG_FILE_SYNC_LEVEL_PROP_NAME
          */
         public static final int CATALOG_FILE_SYNC_LEVEL_DEFAULT = FILE_SYNC_LEVEL_DEFAULT;
@@ -258,6 +264,7 @@ public class Archive implements AutoCloseable
 
         /**
          * Default {@link IdleStrategy} to be used for the archive {@link Agent}s when not busy.
+         *
          * @see #ARCHIVE_IDLE_STRATEGY_PROP_NAME
          */
         public static final String DEFAULT_IDLE_STRATEGY = "org.agrona.concurrent.BackoffIdleStrategy";
@@ -273,6 +280,7 @@ public class Archive implements AutoCloseable
         /**
          * Default maximum number of concurrent recordings. Unless on a very fast SSD and having sufficient memory
          * for the page cache then this number should be kept low, especially when sync'ing writes.
+         *
          * @see #MAX_CONCURRENT_RECORDINGS_PROP_NAME
          */
         public static final int MAX_CONCURRENT_RECORDINGS_DEFAULT = 20;
@@ -298,6 +306,7 @@ public class Archive implements AutoCloseable
 
         /**
          * Default limit for the entries in the {@link Catalog}
+         *
          * @see #MAX_CATALOG_ENTRIES_PROP_NAME
          */
         public static final long MAX_CATALOG_ENTRIES_DEFAULT = Catalog.DEFAULT_MAX_ENTRIES;
@@ -310,6 +319,7 @@ public class Archive implements AutoCloseable
         /**
          * Default timeout for connecting back to a client for a control session or replay. You may want to
          * increase this on higher latency networks.
+         *
          * @see #CONNECT_TIMEOUT_PROP_NAME
          */
         public static final long CONNECT_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
@@ -322,6 +332,7 @@ public class Archive implements AutoCloseable
         /**
          * Default for long to linger a replay connection which defaults to
          * {@link io.aeron.driver.Configuration#publicationLingerTimeoutNs()}.
+         *
          * @see #REPLAY_LINGER_TIMEOUT_PROP_NAME
          */
         public static final long REPLAY_LINGER_TIMEOUT_DEFAULT_NS =
@@ -339,6 +350,7 @@ public class Archive implements AutoCloseable
 
         /**
          * Channel for receiving replication streams replayed from another archive.
+         *
          * @see #REPLICATION_CHANNEL_PROP_NAME
          */
         public static final String REPLICATION_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:8040";
@@ -368,6 +380,18 @@ public class Archive implements AutoCloseable
          * Size in bytes of the error buffer for the archive when not eternally provided.
          */
         public static final int ERROR_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
+
+        /**
+         * Property that specifies fully qualified class name of the {@link io.aeron.archive.checksum.Checksum}
+         * to be used for CRC checksum computation during recording.
+         */
+        public static final String RECORD_CHECKSUM_PROP_NAME = "aeron.archive.record.checksum";
+
+        /**
+         * Property that specifies fully qualified class name of the {@link io.aeron.archive.checksum.Checksum}
+         * to be used for CRC checksum validation during replay.
+         */
+        public static final String REPLAY_CHECKSUM_PROP_NAME = "aeron.archive.replay.checksum";
 
         /**
          * Get the directory name to be used for storing the archive.
@@ -596,6 +620,30 @@ public class Archive implements AutoCloseable
 
             return supplier;
         }
+
+        /**
+         * Fully qualified class name of the {@link io.aeron.archive.checksum.Checksum} implementation to use during
+         * recording to compute CRC checksums. Non-empty value means that CRC is enabled for recording.
+         *
+         * @return class that implements {@link io.aeron.archive.checksum.Checksum} interface
+         * @see Configuration#RECORD_CHECKSUM_PROP_NAME
+         */
+        public static String recordChecksum()
+        {
+            return getProperty(RECORD_CHECKSUM_PROP_NAME);
+        }
+
+        /**
+         * Fully qualified class name of the {@link io.aeron.archive.checksum.Checksum} implementation to use during
+         * replay for the CRC. Non-empty value means that CRC is enabled for replay.
+         *
+         * @return class that implements {@link io.aeron.archive.checksum.Checksum} interface
+         * @see Configuration#REPLAY_CHECKSUM_PROP_NAME
+         */
+        public static String replayChecksum()
+        {
+            return getProperty(REPLAY_CHECKSUM_PROP_NAME);
+        }
     }
 
     /**
@@ -661,6 +709,9 @@ public class Archive implements AutoCloseable
         private AgentInvoker mediaDriverAgentInvoker;
         private int maxConcurrentRecordings = Configuration.maxConcurrentRecordings();
         private int maxConcurrentReplays = Configuration.maxConcurrentReplays();
+
+        private Supplier<Checksum> recordChecksumSupplier;
+        private Supplier<Checksum> replayChecksumSupplier;
 
         /**
          * Perform a shallow copy of the object.
@@ -815,6 +866,10 @@ public class Archive implements AutoCloseable
                 authenticatorSupplier = Configuration.authenticatorSupplier();
             }
 
+            concludeRecordChecksumSupplier();
+
+            concludeReplayChecksumSupplier();
+
             if (null == catalog)
             {
                 catalog = new Catalog(
@@ -833,6 +888,24 @@ public class Archive implements AutoCloseable
             abortLatch = new CountDownLatch(expectedCount);
 
             markFile.signalReady();
+        }
+
+        void concludeRecordChecksumSupplier()
+        {
+            final String checksumClass = Configuration.recordChecksum();
+            if (null == recordChecksumSupplier && !Strings.isEmpty(checksumClass))
+            {
+                recordChecksumSupplier = () -> Checksums.newInstance(checksumClass);
+            }
+        }
+
+        void concludeReplayChecksumSupplier()
+        {
+            final String checksumClass = Configuration.replayChecksum();
+            if (null == replayChecksumSupplier && !Strings.isEmpty(checksumClass))
+            {
+                replayChecksumSupplier = () -> Checksums.newInstance(checksumClass);
+            }
         }
 
         /**
@@ -1255,6 +1328,80 @@ public class Archive implements AutoCloseable
         public long replayLingerTimeoutNs()
         {
             return replayLingerTimeoutNs;
+        }
+
+        /**
+         * Provides an explicit {@link Checksum} supplier for CRC computation during recording. If explicit supplier is
+         * not configured then the default will be created is {@link Configuration#recordChecksum()} property is set.
+         *
+         * @param recordChecksumSupplier supplier for CRC checksums.
+         * @return this for a fluent API.
+         * @see Configuration#recordChecksum
+         */
+        public Context recordChecksumSupplier(final Supplier<Checksum> recordChecksumSupplier)
+        {
+            this.recordChecksumSupplier = recordChecksumSupplier;
+            return this;
+        }
+
+        /**
+         * Get the supplier of the {@link Checksum} instances to be used in the recording.
+         *
+         * @return {@link Checksum} supplier for the recording.
+         */
+        Supplier<Checksum> recordChecksumSupplier()
+        {
+            return recordChecksumSupplier;
+        }
+
+        /**
+         * Get a new {@link Checksum} for CRC checksum computation during recording.
+         *
+         * @return a (potentially) new {@link Checksum} instance for CRC checksum computation during recording or
+         * {@code null} if no {@link Checksum} supplier was configured.
+         * @see #recordChecksumSupplier(Supplier)
+         */
+        public Checksum recordChecksum()
+        {
+            final Supplier<Checksum> supplier = this.recordChecksumSupplier;
+            return null != supplier ? supplier.get() : null;
+        }
+
+        /**
+         * Provides an explicit {@link Checksum} supplier for CRC computation during replay. If explicit supplier is
+         * not configured then the default will be created is {@link Configuration#replayChecksum()} property is set.
+         *
+         * @param replayChecksumSupplier supplier for CRC checksums.
+         * @return this for a fluent API.
+         * @see Configuration#replayChecksum
+         */
+        public Context replayChecksumSupplier(final Supplier<Checksum> replayChecksumSupplier)
+        {
+            this.replayChecksumSupplier = replayChecksumSupplier;
+            return this;
+        }
+
+        /**
+         * Get the supplier of the {@link Checksum} instances to be used in the replay.
+         *
+         * @return {@link Checksum} supplier for the replay.
+         */
+        Supplier<Checksum> replayChecksumSupplier()
+        {
+            return replayChecksumSupplier;
+        }
+
+        /**
+         * Get a new {@link Checksum} for CRC checksum computation during replay.
+         *
+         * @return a (potentially) new {@link Checksum} instance for CRC checksum computation during replay or
+         * {@code null} if no {@link Checksum} supplier was configured.
+         * @see #replayChecksumSupplier(Supplier)
+         */
+        public Checksum replayChecksum()
+        {
+            final Supplier<Checksum> supplier = this.replayChecksumSupplier;
+            return null != supplier ? supplier.get() : null;
         }
 
         /**

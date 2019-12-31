@@ -18,10 +18,10 @@ package io.aeron.archive;
 import io.aeron.Counter;
 import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
+import io.aeron.archive.checksum.Checksum;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.logbuffer.BufferClaim;
-import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.HeaderFlyweight;
@@ -42,7 +42,8 @@ import java.util.EnumSet;
 import static io.aeron.archive.Archive.Configuration.MAX_BLOCK_LENGTH;
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
-import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
+import static io.aeron.logbuffer.FrameDescriptor.*;
+import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.DataHeaderFlyweight.RESERVED_VALUE_OFFSET;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.file.StandardOpenOption.READ;
@@ -87,6 +88,9 @@ class ReplaySession implements Session, AutoCloseable
     private final int termLength;
     private final int segmentLength;
 
+    private final Checksum checksum;
+    private final long replayBufferAddress;
+
     private final BufferClaim bufferClaim = new BufferClaim();
     private final ExclusivePublication publication;
     private final ControlSession controlSession;
@@ -116,7 +120,8 @@ class ReplaySession implements Session, AutoCloseable
         final CachedEpochClock epochClock,
         final ExclusivePublication publication,
         final RecordingSummary recordingSummary,
-        final Counter replayLimitPosition)
+        final Counter replayLimitPosition,
+        final Checksum checksum)
     {
         this.controlSession = controlSession;
         this.sessionId = replaySessionId;
@@ -131,9 +136,12 @@ class ReplaySession implements Session, AutoCloseable
         this.publication = publication;
         this.limitPosition = replayLimitPosition;
         this.replayBuffer = replayBuffer;
+        this.replayBufferAddress = replayBuffer.addressOffset();
         this.catalog = catalog;
         this.startPosition = recordingSummary.startPosition;
         this.stopPosition = null == limitPosition ? recordingSummary.stopPosition : limitPosition.get();
+
+        this.checksum = checksum;
 
         final long fromPosition = position == NULL_POSITION ? startPosition : position;
         final long maxLength = null == limitPosition ? stopPosition - fromPosition : Long.MAX_VALUE - fromPosition;
@@ -245,6 +253,11 @@ class ReplaySession implements Session, AutoCloseable
         return limitPosition;
     }
 
+    String errorMessage()
+    {
+        return errorMessage;
+    }
+
     void sendPendingError(final ControlResponseProxy controlResponseProxy)
     {
         if (null != errorMessage && !controlSession.isDone())
@@ -317,13 +330,13 @@ class ReplaySession implements Session, AutoCloseable
 
         while (frameOffset < bytesRead)
         {
-            final int frameLength = FrameDescriptor.frameLength(replayBuffer, frameOffset);
+            final int frameLength = frameLength(replayBuffer, frameOffset);
             if (frameLength <= 0)
             {
                 throw new IllegalStateException("unexpected end of recording reached at position " + replayPosition);
             }
 
-            final int frameType = FrameDescriptor.frameType(replayBuffer, frameOffset);
+            final int frameType = frameType(replayBuffer, frameOffset);
             final int alignedLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
             final int dataLength = frameLength - DataHeaderFlyweight.HEADER_LENGTH;
             long result = 0;
@@ -335,11 +348,17 @@ class ReplaySession implements Session, AutoCloseable
                     break;
                 }
 
+                final Checksum checksum = this.checksum;
+                if (null != checksum)
+                {
+                    applyCrc(checksum, frameOffset, alignedLength);
+                }
+
                 result = publication.tryClaim(dataLength, bufferClaim);
                 if (result > 0)
                 {
                     bufferClaim
-                        .flags(FrameDescriptor.frameFlags(replayBuffer, frameOffset))
+                        .flags(frameFlags(replayBuffer, frameOffset))
                         .reservedValue(replayBuffer.getLong(frameOffset + RESERVED_VALUE_OFFSET, LITTLE_ENDIAN))
                         .putBytes(replayBuffer, frameOffset + DataHeaderFlyweight.HEADER_LENGTH, dataLength)
                         .commit();
@@ -375,6 +394,19 @@ class ReplaySession implements Session, AutoCloseable
         }
 
         return fragments;
+    }
+
+    private void applyCrc(final Checksum checksum, final int frameOffset, final int alignedLength)
+    {
+        final int computedChecksum = checksum
+            .compute(replayBufferAddress, frameOffset + HEADER_LENGTH, alignedLength - HEADER_LENGTH);
+        final int recordedChecksum = frameSessionId(replayBuffer, frameOffset);
+        if (computedChecksum != recordedChecksum)
+        {
+            final String message = "CRC checksum mismatch at offset=" + frameOffset + ": recorded checksum=" +
+                recordedChecksum + ", computed checksum=" + computedChecksum;
+            throw new ArchiveException(message);
+        }
     }
 
     private int readRecording(final long availableReplay) throws IOException

@@ -1272,7 +1272,7 @@ public final class MediaDriver implements AutoCloseable
          */
         public long clientLivenessTimeoutNs()
         {
-            return clientLivenessTimeoutNs;
+            return CommonContext.checkDebugTimeout(clientLivenessTimeoutNs, TimeUnit.NANOSECONDS);
         }
 
         /**

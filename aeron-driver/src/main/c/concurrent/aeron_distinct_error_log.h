@@ -21,6 +21,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <aeron_alloc.h>
+#include "aeronmd.h"
 #include "util/aeron_clock.h"
 #include "util/aeron_bitutil.h"
 #include "concurrent/aeron_thread.h"

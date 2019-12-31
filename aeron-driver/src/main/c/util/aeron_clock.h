@@ -18,25 +18,6 @@
 #define AERON_AERON_CLOCK_H
 
 /**
- * Clock function used by aeron.
- */
-typedef int64_t (*aeron_clock_func_t)();
-
-/**
- * Return time in nanoseconds for machine. Is not wall clock time.
- *
- * @return nanoseconds since epoch for machine.
- */
-int64_t aeron_nano_clock();
-
-/**
- * Return time in milliseconds since epoch. Is wall clock time.
- *
- * @return milliseconds since epoch.
- */
-int64_t aeron_epoch_clock();
-
-/**
  * Opaque reference to a cached clock instance.
  */
 typedef struct aeron_clock_cache_stct aeron_clock_cache_t;

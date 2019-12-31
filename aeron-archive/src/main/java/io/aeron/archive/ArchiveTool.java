@@ -833,8 +833,7 @@ public class ArchiveTool
                         decoder.initialTermId(),
                         applyCrc,
                         checksum,
-                        headerFlyweight
-                    ))
+                        headerFlyweight))
                     {
                         headerEncoder.valid(INVALID);
                         return;
@@ -853,8 +852,7 @@ public class ArchiveTool
                 decoder.initialTermId(),
                 applyCrc,
                 checksum,
-                headerFlyweight
-            ))
+                headerFlyweight))
             {
                 headerEncoder.valid(INVALID);
                 return;
@@ -1053,23 +1051,24 @@ public class ArchiveTool
         {
             return;
         }
+
         final long startPosition = descriptorDecoder.startPosition();
         final int termLength = descriptorDecoder.termBufferLength();
         if (allFiles)
         {
             for (final String fileName : segmentFiles)
             {
-                checksumFile(out, archiveDir, checksum, recordingId, fileName, startPosition, termLength);
+                checksumSegmentFile(out, archiveDir, checksum, recordingId, fileName, startPosition, termLength);
             }
         }
         else
         {
             final String lastFile = findSegmentFileWithHighestPosition(segmentFiles);
-            checksumFile(out, archiveDir, checksum, recordingId, lastFile, startPosition, termLength);
+            checksumSegmentFile(out, archiveDir, checksum, recordingId, lastFile, startPosition, termLength);
         }
     }
 
-    private static void checksumFile(
+    private static void checksumSegmentFile(
         final PrintStream out,
         final File archiveDir,
         final Checksum checksum,
@@ -1082,6 +1081,7 @@ public class ArchiveTool
         final long startTermOffset = startPosition & (termLength - 1);
         final long startTermBasePosition = startPosition - startTermOffset;
         final long segmentFileBasePosition = parseSegmentFilePosition(fileName);
+
         try (FileChannel channel = FileChannel.open(file.toPath(), READ, WRITE))
         {
             final ByteBuffer buffer = allocateDirectAligned(computeMaxMessageLength(termLength), CACHE_LINE_LENGTH);
@@ -1090,6 +1090,7 @@ public class ArchiveTool
             final long bufferAddress = headerFlyweight.addressOffset();
             final long size = channel.size();
             long fileOffset = segmentFileBasePosition == startTermBasePosition ? startTermOffset : 0;
+
             while (fileOffset < size)
             {
                 buffer.clear().limit(HEADER_LENGTH);
@@ -1105,6 +1106,7 @@ public class ArchiveTool
                 {
                     break;
                 }
+
                 final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
                 final int frameType = frameType(headerFlyweight, 0);
                 if (HDR_TYPE_DATA == frameType)
@@ -1117,11 +1119,13 @@ public class ArchiveTool
                             dataLength + " byte(s) of data at offset " + (fileOffset + HEADER_LENGTH));
                         return;
                     }
+
                     int checksumResult = checksum.compute(bufferAddress, 0, dataLength);
                     if (NATIVE_BYTE_ORDER != LITTLE_ENDIAN)
                     {
                         checksumResult = Integer.reverseBytes(checksumResult);
                     }
+
                     buffer.clear();
                     buffer.putInt(checksumResult).flip();
                     channel.write(buffer, fileOffset + SESSION_ID_FIELD_OFFSET);
@@ -1133,7 +1137,6 @@ public class ArchiveTool
         {
             out.println("(recordingId=" + recordingId + ", file=" + file + ") ERR: failed to checksum");
             ex.printStackTrace(out);
-            return;
         }
     }
 

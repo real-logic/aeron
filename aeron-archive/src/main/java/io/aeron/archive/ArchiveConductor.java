@@ -599,8 +599,7 @@ abstract class ArchiveConductor
             replayPublication,
             recordingSummary,
             null == recordingSession ? null : recordingSession.recordingPosition(),
-            ctx.replayChecksum()
-        );
+            ctx.replayChecksum());
 
         replaySessionByIdMap.put(replaySessionId, replaySession);
         replayer.addSession(replaySession);
@@ -671,8 +670,7 @@ abstract class ArchiveConductor
             replayPublication,
             recordingSummary,
             limitCounter,
-            ctx.replayChecksum()
-        );
+            ctx.replayChecksum());
 
         replaySessionByIdMap.put(replaySessionId, replaySession);
         replayer.addSession(replaySession);

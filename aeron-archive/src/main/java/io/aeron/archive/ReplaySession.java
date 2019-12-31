@@ -88,8 +88,8 @@ class ReplaySession implements Session, AutoCloseable
     private final int termLength;
     private final int segmentLength;
 
-    private final Checksum checksum;
     private final long replayBufferAddress;
+    private final Checksum checksum;
 
     private final BufferClaim bufferClaim = new BufferClaim();
     private final ExclusivePublication publication;
@@ -138,10 +138,10 @@ class ReplaySession implements Session, AutoCloseable
         this.replayBuffer = replayBuffer;
         this.replayBufferAddress = replayBuffer.addressOffset();
         this.catalog = catalog;
+        this.checksum = checksum;
         this.startPosition = recordingSummary.startPosition;
         this.stopPosition = null == limitPosition ? recordingSummary.stopPosition : limitPosition.get();
 
-        this.checksum = checksum;
 
         final long fromPosition = position == NULL_POSITION ? startPosition : position;
         final long maxLength = null == limitPosition ? stopPosition - fromPosition : Long.MAX_VALUE - fromPosition;
@@ -253,11 +253,6 @@ class ReplaySession implements Session, AutoCloseable
         return limitPosition;
     }
 
-    String errorMessage()
-    {
-        return errorMessage;
-    }
-
     void sendPendingError(final ControlResponseProxy controlResponseProxy)
     {
         if (null != errorMessage && !controlSession.isDone())
@@ -351,7 +346,7 @@ class ReplaySession implements Session, AutoCloseable
                 final Checksum checksum = this.checksum;
                 if (null != checksum)
                 {
-                    applyCrc(checksum, frameOffset, alignedLength);
+                    verifyChecksum(checksum, frameOffset, alignedLength);
                 }
 
                 result = publication.tryClaim(dataLength, bufferClaim);
@@ -396,10 +391,10 @@ class ReplaySession implements Session, AutoCloseable
         return fragments;
     }
 
-    private void applyCrc(final Checksum checksum, final int frameOffset, final int alignedLength)
+    private void verifyChecksum(final Checksum checksum, final int frameOffset, final int alignedLength)
     {
-        final int computedChecksum = checksum
-            .compute(replayBufferAddress, frameOffset + HEADER_LENGTH, alignedLength - HEADER_LENGTH);
+        final int computedChecksum = checksum.compute(
+            replayBufferAddress, frameOffset + HEADER_LENGTH, alignedLength - HEADER_LENGTH);
         final int recordedChecksum = frameSessionId(replayBuffer, frameOffset);
         if (computedChecksum != recordedChecksum)
         {

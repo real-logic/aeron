@@ -35,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @EnabledForJreRange(min = JRE.JAVA_9)
 class Crc32cTest
 {
-
     private Constructor<?> constructor;
     private Method method;
 
@@ -54,6 +53,7 @@ class Crc32cTest
         final int offset = 7;
         final ByteBuffer buffer = allocateDirectAligned(1024 + offset, CACHE_LINE_LENGTH);
         final long address = address(buffer);
+
         for (int i = 1; i <= 1024; i++)
         {
             final int length = i;
@@ -68,5 +68,4 @@ class Crc32cTest
             assertEquals(checksum, INSTANCE.compute(address, offset, length), () -> "Failed on length: " + length);
         }
     }
-
 }

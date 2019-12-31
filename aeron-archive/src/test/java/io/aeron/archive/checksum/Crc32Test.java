@@ -29,7 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class Crc32Test
 {
-
     @Test
     void compute()
     {

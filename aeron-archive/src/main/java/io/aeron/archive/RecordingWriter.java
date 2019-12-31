@@ -100,14 +100,13 @@ class RecordingWriter implements BlockHandler
             final int dataLength = isPaddingFrame ? HEADER_LENGTH : length;
             ByteBuffer byteBuffer = termBuffer.byteBuffer();
 
-            final Checksum checksum = this.checksum;
             if (null != checksum && !isPaddingFrame)
             {
                 byteBuffer = recordingBuffer.byteBuffer();
                 byteBuffer.clear();
                 recordingBuffer.putBytes(0, termBuffer, termOffset, length);
                 byteBuffer.limit(length).position(0);
-                computeCrc(checksum, recordingBuffer, 0, length);
+                computeChecksum(checksum, recordingBuffer, length);
             }
             else
             {
@@ -147,22 +146,6 @@ class RecordingWriter implements BlockHandler
         }
     }
 
-    private void computeCrc(
-        final Checksum checksum, final UnsafeBuffer termBuffer, final int termOffset, final int length)
-    {
-        final int endOffset = termOffset + length;
-        final long address = termBuffer.addressOffset();
-        int frameOffset = termOffset;
-        while (frameOffset < endOffset)
-        {
-            final int alignedLength = align(frameLength(termBuffer, frameOffset), FRAME_ALIGNMENT);
-            final int computedChecksum = checksum.compute(
-                address, frameOffset + HEADER_LENGTH, alignedLength - HEADER_LENGTH);
-            frameSessionId(termBuffer, frameOffset, computedChecksum);
-            frameOffset += alignedLength;
-        }
-    }
-
     void close()
     {
         if (!isClosed)
@@ -185,6 +168,21 @@ class RecordingWriter implements BlockHandler
     boolean isClosed()
     {
         return isClosed;
+    }
+
+    private void computeChecksum(final Checksum checksum, final UnsafeBuffer termBuffer, final int length)
+    {
+        final long address = termBuffer.addressOffset();
+        int frameOffset = 0;
+
+        while (frameOffset < length)
+        {
+            final int alignedLength = align(frameLength(termBuffer, frameOffset), FRAME_ALIGNMENT);
+            final int computedChecksum = checksum.compute(
+                address, frameOffset + HEADER_LENGTH, alignedLength - HEADER_LENGTH);
+            frameSessionId(termBuffer, frameOffset, computedChecksum);
+            frameOffset += alignedLength;
+        }
     }
 
     private void openRecordingSegmentFile()

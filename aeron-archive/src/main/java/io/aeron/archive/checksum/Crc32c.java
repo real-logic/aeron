@@ -40,26 +40,27 @@ final class Crc32c implements Checksum
         try
         {
             final Class<?> klass = Class.forName("java.util.zip.CRC32C");
-            final Method method = klass
-                .getDeclaredMethod("updateDirectByteBuffer", int.class, long.class, int.class, int.class);
+            final Method method = klass.getDeclaredMethod(
+                "updateDirectByteBuffer", int.class, long.class, int.class, int.class);
             method.setAccessible(true);
             final Lookup lookup = lookup();
             methodHandle = lookup.unreflect(method);
-            final MethodHandle bitwiseComplement = lookup
-                .findStatic(Crc32c.class, "bitwiseComplement", methodType(int.class, int.class));
+            final MethodHandle bitwiseComplement = lookup.findStatic(
+                Crc32c.class, "bitwiseComplement", methodType(int.class, int.class));
             // Always invoke with the 0xFFFFFFFF as first argument, i.e. empty CRC value
             methodHandle = insertArguments(methodHandle, 0, 0xFFFFFFFF);
             // Always compute bitwise complete on the result value
             methodHandle = filterReturnValue(methodHandle, bitwiseComplement);
         }
-        catch (final ClassNotFoundException e)
+        catch (final ClassNotFoundException ex)
         {
             // Expected case when executed on JDK 8
         }
-        catch (final NoSuchMethodException | IllegalAccessException e)
+        catch (final NoSuchMethodException | IllegalAccessException ex)
         {
-            throw new Error("Failed to acquire method handle", e);
+            throw new Error("Failed to acquire method handle", ex);
         }
+
         UPDATE_DIRECT_BYTE_BUFFER = methodHandle;
         INSTANCE = null != methodHandle ? new Crc32c() : null;
     }
@@ -82,7 +83,7 @@ final class Crc32c implements Checksum
         catch (final Throwable throwable)
         {
             LangUtil.rethrowUnchecked(throwable);
-            return -1; // Make compiler happy
+            return -1;
         }
     }
 }

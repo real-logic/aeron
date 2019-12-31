@@ -2078,7 +2078,6 @@ public class AeronArchive implements AutoCloseable
             final String propValue = System.getProperty(RECORDING_EVENTS_ENABLED_PROP_NAME);
             return null != propValue ? "true".equals(propValue) : RECORDING_EVENTS_ENABLED_DEFAULT;
         }
-
     }
 
     /**

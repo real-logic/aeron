@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ChecksumsTest
 {
-
     @Test
     void crc32()
     {
@@ -76,16 +75,16 @@ class ChecksumsTest
     @Test
     void newInstanceThrowsIllegalArgumentExceptionIfClassIsNotFound()
     {
-        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-            () -> Checksums.newInstance("a.b.c.MissingClass"));
+        final IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class, () -> Checksums.newInstance("a.b.c.MissingClass"));
         assertEquals(ClassNotFoundException.class, exception.getCause().getClass());
     }
 
     @Test
     void newInstanceThrowsIllegalArgumentExceptionIfInstanceCannotBeCreated()
     {
-        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-            () -> Checksums.newInstance(TimeUnit.class.getName()));
+        final IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class, () -> Checksums.newInstance(TimeUnit.class.getName()));
         assertEquals(NoSuchMethodException.class, exception.getCause().getClass());
     }
 
@@ -105,7 +104,7 @@ class ChecksumsTest
         assertNotSame(instance1, instance2);
     }
 
-    public static class TestChecksum implements Checksum
+    static class TestChecksum implements Checksum
     {
         public int compute(final long address, final int offset, final int length)
         {

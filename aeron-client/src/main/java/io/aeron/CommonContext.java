@@ -523,16 +523,15 @@ public class CommonContext implements Cloneable
             final StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
             final String methodName = stackTrace[2].getMethodName();
             final String className = stackTrace[2].getClassName();
-
-            String message =
+            final String message =
                 "Using debug timeout [" + debugTimeout + "] for " + className + "::" + methodName + " replacing [" +
-                    timeout + "]";
+                timeout + "]";
 
             System.out.println(message);
 
             return debugTimeout;
         }
-        catch (NumberFormatException e)
+        catch (final NumberFormatException e)
         {
             return timeout;
         }

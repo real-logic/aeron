@@ -18,7 +18,7 @@
 #define AERON_UDP_DESTINATION_TRACKER_H
 
 #include "aeron_socket.h"
-#include "aeronmd.h"
+#include "util/aeron_clock.h"
 #include "aeron_udp_channel_transport.h"
 
 #define AERON_UDP_DESTINATION_TRACKER_DESTINATION_TIMEOUT_NS (5 * 1000 * 1000 * 1000L)
@@ -43,7 +43,7 @@ typedef struct aeron_udp_destination_tracker_stct
     destinations;
 
     bool is_manual_control_mode;
-    aeron_clock_func_t nano_clock;
+    aeron_clock_cache_t *cached_clock;
     int64_t destination_timeout_ns;
     aeron_udp_channel_transport_bindings_t *transport_bindings;
 }
@@ -52,7 +52,7 @@ aeron_udp_destination_tracker_t;
 int aeron_udp_destination_tracker_init(
     aeron_udp_destination_tracker_t *tracker,
     aeron_udp_channel_transport_bindings_t *transport_bindings,
-    aeron_clock_func_t clock,
+    aeron_clock_cache_t *cached_clock,
     int64_t timeout_ns);
 int aeron_udp_destination_tracker_close(aeron_udp_destination_tracker_t *tracker);
 

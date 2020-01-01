@@ -343,10 +343,9 @@ class ReplaySession implements Session, AutoCloseable
                     break;
                 }
 
-                final Checksum checksum = this.checksum;
                 if (null != checksum)
                 {
-                    verifyChecksum(checksum, frameOffset, alignedLength);
+                    verifyChecksum(frameOffset, alignedLength);
                 }
 
                 result = publication.tryClaim(dataLength, bufferClaim);
@@ -391,7 +390,7 @@ class ReplaySession implements Session, AutoCloseable
         return fragments;
     }
 
-    private void verifyChecksum(final Checksum checksum, final int frameOffset, final int alignedLength)
+    private void verifyChecksum(final int frameOffset, final int alignedLength)
     {
         final int computedChecksum = checksum.compute(
             replayBufferAddress, frameOffset + HEADER_LENGTH, alignedLength - HEADER_LENGTH);

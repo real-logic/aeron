@@ -1,3 +1,18 @@
+/*
+ * Copyright 2014-2019 Real Logic Ltd.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.aeron.archive;
 
 import io.aeron.Image;
@@ -74,6 +89,7 @@ class RecordingWriterTests
     {
         final File notADirectory = new File(archiveDir, "dummy.txt");
         assertTrue(notADirectory.createNewFile());
+
         final Image image = mockImage(0L);
         final RecordingWriter recordingWriter = new RecordingWriter(
             1, 0, SEGMENT_LENGTH, image, new Context().archiveDir(notADirectory), null, null, null);
@@ -92,8 +108,8 @@ class RecordingWriterTests
         assertFalse(recordingWriter.isClosed());
 
         recordingWriter.close();
-
         assertTrue(recordingWriter.isClosed());
+
         final File segmentFile = segmentFile(1, 0);
         assertTrue(segmentFile.exists());
         delete(segmentFile.toPath()); // can delete since the underlying FileChannel was already closed
@@ -106,8 +122,9 @@ class RecordingWriterTests
         final RecordingWriter recordingWriter = new RecordingWriter(
             1, 0, SEGMENT_LENGTH, image, new Context().archiveDir(archiveDir), null, null, null);
 
-        assertThrows(NullPointerException.class, () ->
-            recordingWriter.onBlock(new UnsafeBuffer(allocate(32)), 0, 10, 5, 8));
+        assertThrows(
+            NullPointerException.class,
+            () -> recordingWriter.onBlock(new UnsafeBuffer(allocate(32)), 0, 10, 5, 8));
         assertTrue(recordingWriter.isClosed());
     }
 
@@ -123,8 +140,9 @@ class RecordingWriterTests
         try
         {
             Thread.currentThread().interrupt();
-            final ArchiveException exception = assertThrows(ArchiveException.class, () ->
-                recordingWriter.onBlock(new UnsafeBuffer(allocate(32)), 0, 10, 5, 8));
+            final ArchiveException exception = assertThrows(
+                ArchiveException.class,
+                () -> recordingWriter.onBlock(new UnsafeBuffer(allocate(32)), 0, 10, 5, 8));
             assertEquals(GENERIC, exception.errorCode());
             assertEquals("file closed by interrupt, recording aborted", exception.getMessage());
             assertTrue(recordingWriter.isClosed());
@@ -155,11 +173,13 @@ class RecordingWriterTests
         final File segmentFile = segmentFile(1, 0);
         assertTrue(segmentFile.exists());
         assertEquals(SEGMENT_LENGTH, segmentFile.length());
+
         final UnsafeBuffer fileBuffer = new UnsafeBuffer();
         fileBuffer.wrap(readAllBytes(segmentFile.toPath()));
         assertEquals(HDR_TYPE_DATA, frameType(fileBuffer, 0));
         assertEquals(128, frameLength(fileBuffer, 0));
         assertEquals(0, frameSessionId(fileBuffer, 0));
+
         final byte[] fileBytes = new byte[96];
         fileBuffer.getBytes(HEADER_LENGTH, fileBytes, 0, 96);
         assertArrayEquals(data, fileBytes);
@@ -178,6 +198,7 @@ class RecordingWriterTests
         frameType(termBuffer, 0, HDR_TYPE_PAD);
         frameLengthOrdered(termBuffer, 0, 1024);
         frameSessionId(termBuffer, 0, 111);
+
         final byte[] data = new byte[992];
         fill(data, (byte)-1);
         termBuffer.putBytes(HEADER_LENGTH, data);
@@ -188,14 +209,17 @@ class RecordingWriterTests
         final File segmentFile = segmentFile(5, startPosition);
         assertTrue(segmentFile.exists());
         assertEquals(SEGMENT_LENGTH, segmentFile.length());
+
         final UnsafeBuffer fileBuffer = new UnsafeBuffer();
         fileBuffer.wrap(readAllBytes(segmentFile.toPath()));
+
         final byte[] preamble = new byte[segmentOffset];
         fileBuffer.getBytes(0, preamble, 0, segmentOffset);
         assertArrayEquals(new byte[segmentOffset], preamble);
         assertEquals(HDR_TYPE_PAD, frameType(fileBuffer, segmentOffset));
         assertEquals(1024, frameLength(fileBuffer, segmentOffset));
         assertEquals(111, frameSessionId(fileBuffer, segmentOffset));
+
         final byte[] fileBytes = new byte[992];
         fileBuffer.getBytes(segmentOffset + HEADER_LENGTH, fileBytes, 0, 992);
         assertArrayEquals(new byte[992], fileBytes);
@@ -208,16 +232,20 @@ class RecordingWriterTests
         final RecordingWriter recordingWriter = new RecordingWriter(
             13, 0, SEGMENT_LENGTH, image, new Context().archiveDir(archiveDir), null, null, null);
         recordingWriter.init();
+
         final byte[] data1 = new byte[992];
         fill(data1, (byte)13);
+
         final UnsafeBuffer termBuffer = new UnsafeBuffer(allocate(TERM_LENGTH));
         frameType(termBuffer, 0, HDR_TYPE_DATA);
         frameLengthOrdered(termBuffer, 0, 1024);
         termBuffer.putBytes(HEADER_LENGTH, data1);
+
         for (int i = 0; i < SEGMENT_LENGTH / 1024; i++)
         {
             recordingWriter.onBlock(termBuffer, 0, 1024, -1, -1);
         }
+
         frameType(termBuffer, 0, HDR_TYPE_DATA);
         frameLengthOrdered(termBuffer, 0, 192);
         final byte[] data2 = new byte[160];
@@ -225,18 +253,21 @@ class RecordingWriterTests
         termBuffer.putBytes(HEADER_LENGTH, data2);
 
         recordingWriter.onBlock(termBuffer, 0, 192, -1, -1);
-
         recordingWriter.close();
+
         final File segmentFile1 = segmentFile(13, 0);
         assertTrue(segmentFile1.exists());
         assertEquals(SEGMENT_LENGTH, segmentFile1.length());
+
         final UnsafeBuffer fileBuffer = new UnsafeBuffer();
         fileBuffer.wrap(readAllBytes(segmentFile1.toPath()));
         assertEquals(HDR_TYPE_DATA, frameType(fileBuffer, 0));
         assertEquals(1024, frameLength(fileBuffer, 0));
+
         byte[] fileBytes = new byte[992];
         fileBuffer.getBytes(HEADER_LENGTH, fileBytes, 0, 992);
         assertArrayEquals(data1, fileBytes);
+
         final File segmentFile2 = segmentFile(13, SEGMENT_LENGTH);
         assertTrue(segmentFile2.exists());
         assertEquals(SEGMENT_LENGTH, segmentFile2.length());
@@ -258,10 +289,13 @@ class RecordingWriterTests
         final UnsafeBuffer termBuffer = new UnsafeBuffer(allocateDirectAligned(512, 64));
         frameType(termBuffer, 0, HDR_TYPE_DATA);
         frameLengthOrdered(termBuffer, 0, 1024);
+
         recordingWriter.init();
+
         try
         {
-            assertThrows(NullPointerException.class,
+            assertThrows(
+                NullPointerException.class,
                 () -> recordingWriter.onBlock(termBuffer, 0, 1024, -1, -1));
         }
         finally
@@ -279,7 +313,9 @@ class RecordingWriterTests
         final Checksum checksum = crc32();
         final RecordingWriter recordingWriter = new RecordingWriter(
             1, 0, SEGMENT_LENGTH, image, ctx, null, recordingBuffer, checksum);
+
         recordingWriter.init();
+
         final UnsafeBuffer termBuffer = new UnsafeBuffer(allocateDirectAligned(512, 64));
         frameType(termBuffer, 96, HDR_TYPE_DATA);
         frameTermId(termBuffer, 96, 96);
@@ -293,11 +329,12 @@ class RecordingWriterTests
         termBuffer.setMemory(160 + HEADER_LENGTH, 256, (byte)160);
 
         recordingWriter.onBlock(termBuffer, 96, 352, -1, -1);
-
         recordingWriter.close();
+
         final File segmentFile = segmentFile(1, 0);
         assertTrue(segmentFile.exists());
         assertEquals(SEGMENT_LENGTH, segmentFile.length());
+
         final UnsafeBuffer fileBuffer = new UnsafeBuffer();
         fileBuffer.wrap(readAllBytes(segmentFile.toPath()));
         assertEquals(HDR_TYPE_DATA, frameType(fileBuffer, 0));
@@ -305,15 +342,13 @@ class RecordingWriterTests
         assertEquals(64, frameLength(fileBuffer, 0));
         assertEquals(
             checksum.compute(termBuffer.addressOffset(), 96 + HEADER_LENGTH, 32),
-            frameSessionId(fileBuffer, 0)
-        );
+            frameSessionId(fileBuffer, 0));
         assertEquals(HDR_TYPE_DATA, frameType(fileBuffer, 64));
         assertEquals(160, frameTermId(fileBuffer, 64));
         assertEquals(288, frameLength(fileBuffer, 64));
         assertEquals(
             checksum.compute(termBuffer.addressOffset(), 160 + HEADER_LENGTH, 256),
-            frameSessionId(fileBuffer, 64)
-        );
+            frameSessionId(fileBuffer, 64));
         // Ensure that the source buffer was not modified
         assertEquals(96, frameSessionId(termBuffer, 96));
         assertEquals(160, frameSessionId(termBuffer, 160));
@@ -322,15 +357,18 @@ class RecordingWriterTests
     @Test
     void onBlockShouldNotComputeCrcForThePaddingFrame() throws IOException
     {
-
         final Image image = mockImage(0L);
         final Context ctx = new Context().archiveDir(archiveDir);
+        final UnsafeBuffer recordingBuffer = new UnsafeBuffer(allocateDirectAligned(512, 64));
         final RecordingWriter recordingWriter = new RecordingWriter(
-            1, 0, SEGMENT_LENGTH, image, ctx, null, null, crc32());
+            1, 0, SEGMENT_LENGTH, image, ctx, null, recordingBuffer, crc32());
+
         recordingWriter.init();
+
         final UnsafeBuffer termBuffer = new UnsafeBuffer(allocate(512));
         final int length = 128;
         final byte[] data = new byte[length - HEADER_LENGTH];
+
         fill(data, (byte)99);
         frameType(termBuffer, 0, HDR_TYPE_PAD);
         frameTermId(termBuffer, 0, 18);
@@ -339,17 +377,18 @@ class RecordingWriterTests
         termBuffer.putBytes(HEADER_LENGTH, data);
 
         recordingWriter.onBlock(termBuffer, 0, length, -1, -1);
-
         recordingWriter.close();
+
         final File segmentFile = segmentFile(1, 0);
         assertTrue(segmentFile.exists());
         assertEquals(SEGMENT_LENGTH, segmentFile.length());
+
         final UnsafeBuffer fileBuffer = new UnsafeBuffer();
         fileBuffer.wrap(readAllBytes(segmentFile.toPath()));
         assertEquals(HDR_TYPE_PAD, frameType(fileBuffer, 0));
         assertEquals(18, frameTermId(fileBuffer, 0));
         assertEquals(length, frameLength(fileBuffer, 0));
-        assertEquals(5, frameSessionId(fileBuffer, 0));
+        assertEquals(2038034505, frameSessionId(fileBuffer, 0));
     }
 
     private Image mockImage(final long joinPosition)

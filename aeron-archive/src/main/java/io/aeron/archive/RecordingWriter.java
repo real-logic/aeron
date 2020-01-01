@@ -98,19 +98,19 @@ class RecordingWriter implements BlockHandler
         {
             final boolean isPaddingFrame = termBuffer.getShort(typeOffset(termOffset)) == PADDING_FRAME_TYPE;
             final int dataLength = isPaddingFrame ? HEADER_LENGTH : length;
-            ByteBuffer byteBuffer = termBuffer.byteBuffer();
+            final ByteBuffer byteBuffer;
 
-            if (null != checksum && !isPaddingFrame)
+            if (null == checksum)
             {
-                byteBuffer = recordingBuffer.byteBuffer();
-                byteBuffer.clear();
-                recordingBuffer.putBytes(0, termBuffer, termOffset, length);
-                byteBuffer.limit(length).position(0);
-                computeChecksum(checksum, recordingBuffer, length);
+                byteBuffer = termBuffer.byteBuffer();
+                byteBuffer.limit(termOffset + dataLength).position(termOffset);
             }
             else
             {
-                byteBuffer.limit(termOffset + dataLength).position(termOffset);
+                recordingBuffer.putBytes(0, termBuffer, termOffset, length);
+                computeChecksum(checksum, recordingBuffer, length);
+                byteBuffer = recordingBuffer.byteBuffer();
+                byteBuffer.limit(length).position(0);
             }
 
             do

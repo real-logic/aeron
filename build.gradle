@@ -155,7 +155,6 @@ subprojects {
         testImplementation "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
         testImplementation "org.junit.jupiter:junit-jupiter-params:${junitVersion}"
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
-        // Compatibility with JUnit 4
         testCompileOnly "junit:junit:4.12"
         testRuntimeOnly "org.junit.vintage:junit-vintage-engine:${junitVersion}"
     }
@@ -189,6 +188,7 @@ subprojects {
             jvmArgs('--add-opens', 'java.base/java.lang.reflect=ALL-UNNAMED')
             jvmArgs('--add-opens', 'java.base/java.net=ALL-UNNAMED')
             jvmArgs('--add-opens', 'java.base/sun.nio.ch=ALL-UNNAMED')
+            jvmArgs('--add-opens', 'java.base/java.util.zip=ALL-UNNAMED')
             jvmArgs('--add-exports', 'jdk.unsupported/sun.misc=ALL-UNNAMED')
         }
 
@@ -397,8 +397,6 @@ project(':aeron-archive') {
         dependsOn 'generateCodecs'
         if (JavaVersion.current().ordinal() >= JavaVersion.VERSION_1_9.ordinal()) {
             options.compilerArgs.addAll(['--add-exports', 'java.base/java.lang.reflect=ALL-UNNAMED'])
-            options.compilerArgs.addAll(['--add-exports', 'java.base/java.net=ALL-UNNAMED'])
-            options.compilerArgs.addAll(['--add-exports', 'java.base/sun.nio.ch=ALL-UNNAMED'])
             options.compilerArgs.addAll(['--add-exports', 'jdk.unsupported/sun.misc=ALL-UNNAMED'])
         }
         options.encoding = 'UTF-8'
@@ -520,8 +518,6 @@ project(':aeron-cluster') {
         dependsOn 'generateCodecs'
         if (JavaVersion.current().ordinal() >= JavaVersion.VERSION_1_9.ordinal()) {
             options.compilerArgs.addAll(['--add-exports', 'java.base/java.lang.reflect=ALL-UNNAMED'])
-            options.compilerArgs.addAll(['--add-exports', 'java.base/java.net=ALL-UNNAMED'])
-            options.compilerArgs.addAll(['--add-exports', 'java.base/sun.nio.ch=ALL-UNNAMED'])
             options.compilerArgs.addAll(['--add-exports', 'jdk.unsupported/sun.misc=ALL-UNNAMED'])
         }
         options.encoding = 'UTF-8'

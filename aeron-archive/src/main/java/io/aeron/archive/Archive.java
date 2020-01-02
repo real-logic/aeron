@@ -383,13 +383,13 @@ public class Archive implements AutoCloseable
 
         /**
          * Property that specifies fully qualified class name of the {@link io.aeron.archive.checksum.Checksum}
-         * to be used for CRC checksum computation during recording.
+         * to be used for checksum computation during recording.
          */
         public static final String RECORD_CHECKSUM_PROP_NAME = "aeron.archive.record.checksum";
 
         /**
          * Property that specifies fully qualified class name of the {@link io.aeron.archive.checksum.Checksum}
-         * to be used for CRC checksum validation during replay.
+         * to be used for checksum validation during replay.
          */
         public static final String REPLAY_CHECKSUM_PROP_NAME = "aeron.archive.replay.checksum";
 
@@ -623,7 +623,7 @@ public class Archive implements AutoCloseable
 
         /**
          * Fully qualified class name of the {@link io.aeron.archive.checksum.Checksum} implementation to use during
-         * recording to compute CRC checksums. Non-empty value means that CRC is enabled for recording.
+         * recording to compute checksums. Non-empty value means that checksum is enabled for recording.
          *
          * @return class that implements {@link io.aeron.archive.checksum.Checksum} interface
          * @see Configuration#RECORD_CHECKSUM_PROP_NAME
@@ -635,7 +635,7 @@ public class Archive implements AutoCloseable
 
         /**
          * Fully qualified class name of the {@link io.aeron.archive.checksum.Checksum} implementation to use during
-         * replay for the CRC. Non-empty value means that CRC is enabled for replay.
+         * replay for the checksum. Non-empty value means that checksum is enabled for replay.
          *
          * @return class that implements {@link io.aeron.archive.checksum.Checksum} interface
          * @see Configuration#REPLAY_CHECKSUM_PROP_NAME
@@ -867,7 +867,6 @@ public class Archive implements AutoCloseable
             }
 
             concludeRecordChecksumSupplier();
-
             concludeReplayChecksumSupplier();
 
             if (null == catalog)
@@ -888,24 +887,6 @@ public class Archive implements AutoCloseable
             abortLatch = new CountDownLatch(expectedCount);
 
             markFile.signalReady();
-        }
-
-        void concludeRecordChecksumSupplier()
-        {
-            final String checksumClass = Configuration.recordChecksum();
-            if (null == recordChecksumSupplier && !Strings.isEmpty(checksumClass))
-            {
-                recordChecksumSupplier = () -> Checksums.newInstance(checksumClass);
-            }
-        }
-
-        void concludeReplayChecksumSupplier()
-        {
-            final String checksumClass = Configuration.replayChecksum();
-            if (null == replayChecksumSupplier && !Strings.isEmpty(checksumClass))
-            {
-                replayChecksumSupplier = () -> Checksums.newInstance(checksumClass);
-            }
         }
 
         /**
@@ -1331,10 +1312,11 @@ public class Archive implements AutoCloseable
         }
 
         /**
-         * Provides an explicit {@link Checksum} supplier for CRC computation during recording. If explicit supplier is
-         * not configured then the default will be created is {@link Configuration#recordChecksum()} property is set.
+         * Provides an explicit {@link Checksum} supplier for checksum computation during recording. If explicit
+         * supplier is not configured then the default will be created if {@link Configuration#recordChecksum()}
+         * property is set.
          *
-         * @param recordChecksumSupplier supplier for CRC checksums.
+         * @param recordChecksumSupplier supplier for checksums.
          * @return this for a fluent API.
          * @see Configuration#recordChecksum
          */
@@ -1345,7 +1327,7 @@ public class Archive implements AutoCloseable
         }
 
         /**
-         * Get the supplier of the {@link Checksum} instances to be used in the recording.
+         * Get the supplier of the {@link Checksum} instances to be used in recording.
          *
          * @return {@link Checksum} supplier for the recording.
          */
@@ -1355,9 +1337,9 @@ public class Archive implements AutoCloseable
         }
 
         /**
-         * Get a new {@link Checksum} for CRC checksum computation during recording.
+         * Get a new {@link Checksum} for checksum computation during recording.
          *
-         * @return a (potentially) new {@link Checksum} instance for CRC checksum computation during recording or
+         * @return a (potentially) new {@link Checksum} instance for checksum computation during recording or
          * {@code null} if no {@link Checksum} supplier was configured.
          * @see #recordChecksumSupplier(Supplier)
          */
@@ -1368,10 +1350,10 @@ public class Archive implements AutoCloseable
         }
 
         /**
-         * Provides an explicit {@link Checksum} supplier for CRC computation during replay. If explicit supplier is
-         * not configured then the default will be created is {@link Configuration#replayChecksum()} property is set.
+         * Provides an explicit {@link Checksum} supplier for checksum computation during replay. If explicit supplier
+         * is not configured then the default will be created if {@link Configuration#replayChecksum()} property is set.
          *
-         * @param replayChecksumSupplier supplier for CRC checksums.
+         * @param replayChecksumSupplier supplier for checksums.
          * @return this for a fluent API.
          * @see Configuration#replayChecksum
          */
@@ -1392,9 +1374,9 @@ public class Archive implements AutoCloseable
         }
 
         /**
-         * Get a new {@link Checksum} for CRC checksum computation during replay.
+         * Get a new {@link Checksum} for checksum computation during replay.
          *
-         * @return a (potentially) new {@link Checksum} instance for CRC checksum computation during replay or
+         * @return a (potentially) new {@link Checksum} instance for checksum computation during replay or
          * {@code null} if no {@link Checksum} supplier was configured.
          * @see #replayChecksumSupplier(Supplier)
          */
@@ -1966,6 +1948,24 @@ public class Archive implements AutoCloseable
         CountDownLatch abortLatch()
         {
             return abortLatch;
+        }
+
+        void concludeRecordChecksumSupplier()
+        {
+            final String checksumClass = Configuration.recordChecksum();
+            if (null == recordChecksumSupplier && !Strings.isEmpty(checksumClass))
+            {
+                recordChecksumSupplier = () -> Checksums.newInstance(checksumClass);
+            }
+        }
+
+        void concludeReplayChecksumSupplier()
+        {
+            final String checksumClass = Configuration.replayChecksum();
+            if (null == replayChecksumSupplier && !Strings.isEmpty(checksumClass))
+            {
+                replayChecksumSupplier = () -> Checksums.newInstance(checksumClass);
+            }
         }
 
         /**

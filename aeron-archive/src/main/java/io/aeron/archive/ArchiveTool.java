@@ -23,6 +23,7 @@ import io.aeron.archive.codecs.RecordingDescriptorEncoder;
 import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorHeaderEncoder;
 import io.aeron.archive.codecs.mark.MarkFileHeaderDecoder;
+import io.aeron.driver.Configuration;
 import io.aeron.exceptions.AeronException;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.HeaderFlyweight;
@@ -42,8 +43,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import static io.aeron.archive.ArchiveTool.VerifyOption.APPLY_CRC;
-import static io.aeron.archive.ArchiveTool.VerifyOption.VALIDATE_ALL_SEGMENT_FILES;
+import static io.aeron.archive.ArchiveTool.VerifyOption.APPLY_CHECKSUM;
+import static io.aeron.archive.ArchiveTool.VerifyOption.VERIFY_ALL_SEGMENT_FILES;
 import static io.aeron.archive.Catalog.*;
 import static io.aeron.archive.MigrationUtils.fullVersionString;
 import static io.aeron.archive.ReplaySession.isInvalidHeader;
@@ -64,19 +65,18 @@ import static java.util.stream.Collectors.toMap;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BitUtil.align;
 import static org.agrona.BufferUtil.NATIVE_BYTE_ORDER;
-import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.concurrent.SystemEpochClock.INSTANCE;
 
 /**
- * Tool for inspecting and performing administrative tasks on an {@link Archive} and its contents which is described in
- * the {@link Catalog}.
+ * Tool for inspecting and performing administrative tasks on an {@link Archive} and its contents which is described
+ * in a {@link Catalog}.
  */
 public class ArchiveTool
 {
     /**
      * Allows user to confirm or reject an action.
      *
-     * @param <T> type of the context data
+     * @param <T> type of the context data.
      */
     @FunctionalInterface
     interface ActionConfirmation<T>
@@ -84,8 +84,8 @@ public class ArchiveTool
         /**
          * Confirm or reject the action.
          *
-         * @param context context data
-         * @return {@code true} confirms the action and {@code false} to reject the action
+         * @param context context data.
+         * @return {@code true} confirms the action and {@code false} to reject the action.
          */
         boolean confirm(T context);
     }
@@ -144,12 +144,12 @@ public class ArchiveTool
             }
             else if (args.length == 3)
             {
-                if (VALIDATE_ALL_SEGMENT_FILES == VerifyOption.byFlag(args[2]))
+                if (VERIFY_ALL_SEGMENT_FILES == VerifyOption.byFlag(args[2]))
                 {
                     verify(
                         System.out,
                         archiveDir,
-                        EnumSet.of(VALIDATE_ALL_SEGMENT_FILES),
+                        EnumSet.of(VERIFY_ALL_SEGMENT_FILES),
                         null,
                         ArchiveTool::truncateFileOnPageStraddle);
                 }
@@ -166,12 +166,12 @@ public class ArchiveTool
             }
             else if (args.length == 4)
             {
-                if (APPLY_CRC == VerifyOption.byFlag(args[2]))
+                if (APPLY_CHECKSUM == VerifyOption.byFlag(args[2]))
                 {
                     verify(
                         System.out,
                         archiveDir,
-                        EnumSet.of(APPLY_CRC),
+                        EnumSet.of(APPLY_CHECKSUM),
                         args[3],
                         ArchiveTool::truncateFileOnPageStraddle);
                 }
@@ -181,14 +181,14 @@ public class ArchiveTool
                         System.out,
                         archiveDir,
                         Long.parseLong(args[2]),
-                        EnumSet.of(VALIDATE_ALL_SEGMENT_FILES),
+                        EnumSet.of(VERIFY_ALL_SEGMENT_FILES),
                         null,
                         ArchiveTool::truncateFileOnPageStraddle);
                 }
             }
             else if (args.length == 5)
             {
-                if (VALIDATE_ALL_SEGMENT_FILES == VerifyOption.byFlag(args[2]))
+                if (VERIFY_ALL_SEGMENT_FILES == VerifyOption.byFlag(args[2]))
                 {
                     verify(
                         System.out,
@@ -203,7 +203,7 @@ public class ArchiveTool
                         System.out,
                         archiveDir,
                         Long.parseLong(args[2]),
-                        EnumSet.of(APPLY_CRC),
+                        EnumSet.of(APPLY_CHECKSUM),
                         args[4],
                         ArchiveTool::truncateFileOnPageStraddle);
                 }
@@ -410,14 +410,14 @@ public class ArchiveTool
     public enum VerifyOption
     {
         /**
-         * Enables validation for all segment files of a given recording.
-         * By default only last segment file is validated.
+         * Enables verification for all segment files of a given recording.
+         * By default only last segment file is verify.
          */
-        VALIDATE_ALL_SEGMENT_FILES("-a"),
+        VERIFY_ALL_SEGMENT_FILES("-a"),
         /**
-         * Perform CRC for each data frame within a segment file being validated.
+         * Perform checksum for each data frame within a segment file being verify.
          */
-        APPLY_CRC("-crc");
+        APPLY_CHECKSUM("-checksum");
 
         private final String flag;
 
@@ -427,7 +427,7 @@ public class ArchiveTool
         }
 
         private static final Map<String, VerifyOption> BY_FLAG = Stream.of(values())
-            .collect(toMap(opt -> opt.flag, opt -> opt));
+            .collect(toMap((opt) -> opt.flag, (opt) -> opt));
 
         public static VerifyOption byFlag(final String flag)
         {
@@ -437,13 +437,15 @@ public class ArchiveTool
 
     /**
      * Verify descriptors in the catalog, checking recording files availability and contents.
-     * Faulty entries are marked as unusable
+     * <p>
+     * Faulty entries are marked as unusable.
      *
      * @param out                        stream to print results and errors to.
      * @param archiveDir                 that contains {@link org.agrona.MarkFile}, {@link Catalog}, and recordings.
      * @param options                    set of options that control verification behavior.
      * @param truncateFileOnPageStraddle action to perform if last fragment in the max segment file straddles the page
      *                                   boundary, i.e. if {@code true} the file will be truncated (last fragment
+     *                                   will be deleted), if {@code false} the fragment if considered complete.
      * @param checksumClassName          fully qualified class name of the {@link Checksum} implementation.
      */
     public static void verify(
@@ -606,7 +608,8 @@ public class ArchiveTool
         final EpochClock epochClock,
         final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
-        final ByteBuffer buffer = allocateDirectAligned(computeMaxMessageLength(TERM_MAX_LENGTH), FRAME_ALIGNMENT);
+        final ByteBuffer buffer = ByteBuffer.allocateDirect(
+            align(Configuration.MAX_UDP_PAYLOAD_LENGTH, CACHE_LINE_LENGTH));
         buffer.order(LITTLE_ENDIAN);
         final DataHeaderFlyweight headerFlyweight = new DataHeaderFlyweight(buffer);
 
@@ -816,8 +819,8 @@ public class ArchiveTool
         if (maxSegmentFile != null)
         {
             final int streamId = decoder.streamId();
-            final boolean applyCrc = options.contains(APPLY_CRC);
-            if (options.contains(VALIDATE_ALL_SEGMENT_FILES))
+            final boolean applyChecksum = options.contains(APPLY_CHECKSUM);
+            if (options.contains(VERIFY_ALL_SEGMENT_FILES))
             {
                 for (final String filename : segmentFiles)
                 {
@@ -831,7 +834,7 @@ public class ArchiveTool
                         segmentLength,
                         streamId,
                         decoder.initialTermId(),
-                        applyCrc,
+                        applyChecksum,
                         checksum,
                         headerFlyweight))
                     {
@@ -850,7 +853,7 @@ public class ArchiveTool
                 segmentLength,
                 streamId,
                 decoder.initialTermId(),
-                applyCrc,
+                applyChecksum,
                 checksum,
                 headerFlyweight))
             {
@@ -914,7 +917,7 @@ public class ArchiveTool
         final int segmentLength,
         final int streamId,
         final int initialTermId,
-        final boolean applyCrc,
+        final boolean applyChecksum,
         final Checksum checksum,
         final DataHeaderFlyweight headerFlyweight)
     {
@@ -971,13 +974,13 @@ public class ArchiveTool
                     return true;
                 }
 
-                if (applyCrc && HDR_TYPE_DATA == frameType)
+                if (applyChecksum && HDR_TYPE_DATA == frameType)
                 {
-                    final int checksumResult = checksum.compute(bufferAddress, 0, dataLength);
-                    if (checksumResult != sessionId)
+                    final int computedChecksum = checksum.compute(bufferAddress, 0, dataLength);
+                    if (computedChecksum != sessionId)
                     {
-                        out.println("(recordingId=" + recordingId + ", file=" + file + ") ERR: CRC failed " +
-                            "recorded=" + sessionId + " (expected=" + checksum + ")");
+                        out.println("(recordingId=" + recordingId + ", file=" + file + ") ERR: checksum failed " +
+                            "recorded=" + sessionId + " (expected=" + computedChecksum + ")");
                         return true;
                     }
                 }
@@ -1084,7 +1087,8 @@ public class ArchiveTool
 
         try (FileChannel channel = FileChannel.open(file.toPath(), READ, WRITE))
         {
-            final ByteBuffer buffer = allocateDirectAligned(computeMaxMessageLength(termLength), CACHE_LINE_LENGTH);
+            final ByteBuffer buffer = ByteBuffer.allocateDirect(
+                align(Configuration.MAX_UDP_PAYLOAD_LENGTH, CACHE_LINE_LENGTH));
             buffer.order(LITTLE_ENDIAN);
             final HeaderFlyweight headerFlyweight = new HeaderFlyweight(buffer);
             final long bufferAddress = headerFlyweight.addressOffset();
@@ -1130,6 +1134,21 @@ public class ArchiveTool
                     buffer.putInt(checksumResult).flip();
                     channel.write(buffer, fileOffset + SESSION_ID_FIELD_OFFSET);
                 }
+                else if (HDR_TYPE_PAD == frameType)
+                {
+                    buffer.clear().limit(HEADER_LENGTH);
+
+                    int checksumResult = checksum.compute(bufferAddress, 0, HEADER_LENGTH);
+                    if (NATIVE_BYTE_ORDER != LITTLE_ENDIAN)
+                    {
+                        checksumResult = Integer.reverseBytes(checksumResult);
+                    }
+
+                    buffer.clear();
+                    buffer.putInt(checksumResult).flip();
+                    channel.write(buffer, fileOffset + SESSION_ID_FIELD_OFFSET);
+                }
+
                 fileOffset += alignedLength;
             }
         }
@@ -1157,8 +1176,8 @@ public class ArchiveTool
                 }
                 catch (final Exception ex)
                 {
-                    out.println("(recordingId=" + descriptorDecoder.recordingId() +
-                        ") ERR: failed to compute checksums");
+                    out.println(
+                        "(recordingId=" + descriptorDecoder.recordingId() + ") ERR: failed to compute checksums");
                     out.println(ex);
                 }
             });
@@ -1173,14 +1192,14 @@ public class ArchiveTool
         System.out.println("     in the catalog and associated recorded data.");
         System.out.println("  errors: prints errors for the archive and media driver.");
         System.out.println("  pid: prints just PID of archive.");
-        System.out.println("  verify [recordingId] [-a] [-crc checksumClass]: verifies descriptor(s) in the catalog");
+        System.out.println("  verify [recordingId] [-a] [-checksum className]: verifies descriptor(s) in the catalog");
         System.out.println("     checking recording files availability and contents. Only the last segment file is");
-        System.out.println("     validated unless flag '-a' is specified, i.e. meaning validate all segment files.");
-        System.out.println("     In order to perform CRC for each data frame specify the '-crc' flag together with");
+        System.out.println("     verified unless flag '-a' is specified, i.e. meaning verify all segment files.");
+        System.out.println("     To perform checksum for each data frame specify the '-checksum' flag together with");
         System.out.println("     the Checksum implementation class name (e.g. io.aeron.archive.checksum.Crc32).");
         System.out.println("     Faulty entries are marked as unusable.");
-        System.out.println("  checksum checksumClass [recordingId] [-a]: computes and persists CRC checksums.");
-        System.out.println("     The checksums are computed using the specified Checksum implementation ");
+        System.out.println("  checksum className [recordingId] [-a]: computes and persists checksums.");
+        System.out.println("     checksums are computed using the specified Checksum implementation ");
         System.out.println("     (e.g. io.aeron.archive.checksum.Crc32).");
         System.out.println("     Only the last segment file of each recording is processed by default,");
         System.out.println("     unless flag '-a' is specified in which case all of the segment files are processed.");

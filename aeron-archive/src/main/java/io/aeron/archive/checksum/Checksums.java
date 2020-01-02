@@ -41,6 +41,7 @@ public final class Checksums
         {
             throw new IllegalStateException("CRC-32C is not available on the current JDK!");
         }
+
         return Crc32c.INSTANCE;
     }
 
@@ -74,9 +75,9 @@ public final class Checksums
                 final Object instance = klass.getDeclaredConstructor().newInstance();
                 return (Checksum)instance;
             }
-            catch (final ReflectiveOperationException e)
+            catch (final ReflectiveOperationException ex)
             {
-                throw new IllegalArgumentException("Failed to create Checksum instance for class: " + className, e);
+                throw new IllegalArgumentException("Failed to create Checksum instance for class: " + className, ex);
             }
         }
     }

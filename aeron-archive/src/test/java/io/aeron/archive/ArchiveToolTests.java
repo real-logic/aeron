@@ -34,8 +34,8 @@ import java.util.EnumSet;
 import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_SUFFIX;
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.ArchiveTool.*;
-import static io.aeron.archive.ArchiveTool.VerifyOption.APPLY_CRC;
-import static io.aeron.archive.ArchiveTool.VerifyOption.VALIDATE_ALL_SEGMENT_FILES;
+import static io.aeron.archive.ArchiveTool.VerifyOption.APPLY_CHECKSUM;
+import static io.aeron.archive.ArchiveTool.VerifyOption.VERIFY_ALL_SEGMENT_FILES;
 import static io.aeron.archive.Catalog.*;
 import static io.aeron.archive.checksum.Checksums.crc32;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
@@ -247,6 +247,7 @@ class ArchiveToolTests
                     dataHeaderFlyweight.termOffset(termOffset);
                     fileChannel.write(byteBuffer, termOffset);
                 }
+
                 byteBuffer.clear().limit(256);
                 dataHeaderFlyweight.headerType(HDR_TYPE_DATA);
                 dataHeaderFlyweight.streamId(2);
@@ -301,8 +302,8 @@ class ArchiveToolTests
                 for (int i = 0; i < (SEGMENT_LENGTH / MTU_LENGTH) - 1; i++)
                 {
                     byteBuffer.clear();
-                    final int termId =
-                        computeTermIdFromPosition(segmentFileBasePosition + fileOffset, positionBitsToShift, 7);
+                    final int termId = computeTermIdFromPosition(
+                        segmentFileBasePosition + fileOffset, positionBitsToShift, 7);
                     dataHeaderFlyweight.frameLength(MTU_LENGTH);
                     dataHeaderFlyweight.termId(termId);
                     dataHeaderFlyweight.termOffset(fileOffset & (TERM_LENGTH - 1));
@@ -660,8 +661,8 @@ class ArchiveToolTests
     @Test
     void verifyRecordingValidRecordingValidateAllSegmentFiles()
     {
-        verifyRecording(out, archiveDir, validRecording3, EnumSet.of(VALIDATE_ALL_SEGMENT_FILES), null, epochClock,
-            (file) -> false);
+        verifyRecording(
+            out, archiveDir, validRecording3, EnumSet.of(VERIFY_ALL_SEGMENT_FILES), null, epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -673,8 +674,8 @@ class ArchiveToolTests
     @Test
     void verifyRecordingInvalidRecordingValidateAllSegmentFiles()
     {
-        verifyRecording(out, archiveDir, validRecording4, EnumSet.of(VALIDATE_ALL_SEGMENT_FILES), null, epochClock,
-            (file) -> false);
+        verifyRecording(
+            out, archiveDir, validRecording4, EnumSet.of(VERIFY_ALL_SEGMENT_FILES), null, epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -709,7 +710,8 @@ class ArchiveToolTests
     @Test
     void verifyRecordingValidRecordingPerformCRC()
     {
-        verifyRecording(out, archiveDir, validRecording6, EnumSet.of(APPLY_CRC), crc32(), epochClock, (file) -> false);
+        verifyRecording(
+            out, archiveDir, validRecording6, EnumSet.of(APPLY_CHECKSUM), crc32(), epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -720,7 +722,8 @@ class ArchiveToolTests
     @Test
     void verifyRecordingInvalidRecordingPerformCRC()
     {
-        verifyRecording(out, archiveDir, validRecording3, EnumSet.of(APPLY_CRC), crc32(), epochClock, (file) -> false);
+        verifyRecording(
+            out, archiveDir, validRecording3, EnumSet.of(APPLY_CHECKSUM), crc32(), epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -842,17 +845,16 @@ class ArchiveToolTests
     {
         checksumRecording(out, archiveDir, validRecording3, false, crc32(), epochClock);
 
-        // Last segment file should contain valid CRC-32 checksums
-        verifyRecording(out, archiveDir, validRecording3, EnumSet.of(APPLY_CRC), crc32(), epochClock, (file) -> false);
+        verifyRecording(
+            out, archiveDir, validRecording3, EnumSet.of(APPLY_CHECKSUM), crc32(), epochClock, (file) -> false);
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             assertRecording(catalog, validRecording3, VALID, 7 * TERM_LENGTH + 96, 11 * TERM_LENGTH + 320,
                 18, 100, 7, 13, "ch2", "src2");
         }
 
-        // Other segment files on the other hand have no valid CRC-32 checksums
-        verifyRecording(out, archiveDir, validRecording3, EnumSet.allOf(VerifyOption.class), crc32(), epochClock,
-            (file) -> false);
+        verifyRecording(
+            out, archiveDir, validRecording3, EnumSet.allOf(VerifyOption.class), crc32(), epochClock, (file) -> false);
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             assertRecording(catalog, validRecording3, INVALID, 7 * TERM_LENGTH + 96, 11 * TERM_LENGTH + 320,
@@ -865,9 +867,8 @@ class ArchiveToolTests
     {
         checksumRecording(out, archiveDir, validRecording3, true, crc32(), epochClock);
 
-        // All segment file should contain valid CRC-32 checksums
-        verifyRecording(out, archiveDir, validRecording3, EnumSet.allOf(VerifyOption.class), crc32(), epochClock,
-            (file) -> false);
+        verifyRecording(
+            out, archiveDir, validRecording3, EnumSet.allOf(VerifyOption.class), crc32(), epochClock, (file) -> false);
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             assertRecording(catalog, validRecording3, VALID, 7 * TERM_LENGTH + 96, 11 * TERM_LENGTH + 320,

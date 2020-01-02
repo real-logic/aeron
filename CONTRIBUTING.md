@@ -16,7 +16,7 @@ If you are adding a new file it should have the following header:
 
 ```
 /*
- * Copyright 2014-2019 Real Logic Limited.
+ * Copyright 2014-2020 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.

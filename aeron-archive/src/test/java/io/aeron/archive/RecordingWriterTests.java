@@ -280,7 +280,7 @@ class RecordingWriterTests
     }
 
     @Test
-    void onBlockThrowNullPointerExceptionIfRecordingBufferIsNullButCrcIsEnabled() throws IOException
+    void onBlockThrowNullPointerExceptionIfChecksumBufferIsNullButCrcIsEnabled() throws IOException
     {
         final Image image = mockImage(0L);
         final Context ctx = new Context().archiveDir(archiveDir);
@@ -305,14 +305,14 @@ class RecordingWriterTests
     }
 
     @Test
-    void onBlockShouldComputeCrcUsingTheRecordingBuffer() throws IOException
+    void onBlockShouldComputeCrcUsingTheChecksumBuffer() throws IOException
     {
         final Image image = mockImage(0L);
         final Context ctx = new Context().archiveDir(archiveDir);
-        final UnsafeBuffer recordingBuffer = new UnsafeBuffer(allocateDirectAligned(512, 64));
+        final UnsafeBuffer checksumBuffer = new UnsafeBuffer(allocateDirectAligned(512, 64));
         final Checksum checksum = crc32();
         final RecordingWriter recordingWriter = new RecordingWriter(
-            1, 0, SEGMENT_LENGTH, image, ctx, null, recordingBuffer, checksum);
+            1, 0, SEGMENT_LENGTH, image, ctx, null, checksumBuffer, checksum);
 
         recordingWriter.init();
 
@@ -359,9 +359,9 @@ class RecordingWriterTests
     {
         final Image image = mockImage(0L);
         final Context ctx = new Context().archiveDir(archiveDir);
-        final UnsafeBuffer recordingBuffer = new UnsafeBuffer(allocateDirectAligned(512, 64));
+        final UnsafeBuffer checksumBuffer = new UnsafeBuffer(allocateDirectAligned(512, 64));
         final RecordingWriter recordingWriter = new RecordingWriter(
-            1, 0, SEGMENT_LENGTH, image, ctx, null, recordingBuffer, crc32());
+            1, 0, SEGMENT_LENGTH, image, ctx, null, checksumBuffer, crc32());
 
         recordingWriter.init();
 

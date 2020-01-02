@@ -84,7 +84,7 @@ abstract class ArchiveConductor
     private final UnsafeBuffer counterMetadataBuffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
     private final UnsafeBuffer dataBuffer = allocateBuffer();
     private final UnsafeBuffer replayBuffer = allocateBuffer();
-    private final UnsafeBuffer recordingBuffer;
+    private final UnsafeBuffer checksumBuffer;
 
     private final Runnable aeronCloseHandler = this::abort;
     private final Aeron aeron;
@@ -148,7 +148,7 @@ abstract class ArchiveConductor
         authenticator = ctx.authenticatorSupplier().get();
         controlSessionProxy = new ControlSessionProxy(controlResponseProxy);
 
-        recordingBuffer = null != ctx.recordChecksumSupplier() ? allocateBuffer() : null;
+        checksumBuffer = null != ctx.recordChecksum() ? allocateBuffer() : null;
     }
 
     private static UnsafeBuffer allocateBuffer()
@@ -1401,7 +1401,7 @@ abstract class ArchiveConductor
             archiveDirChannel,
             ctx,
             controlSession,
-            recordingBuffer,
+            checksumBuffer,
             ctx.recordChecksum());
 
         recordingSessionByIdMap.put(recordingId, session);
@@ -1456,7 +1456,7 @@ abstract class ArchiveConductor
             archiveDirChannel,
             ctx,
             controlSession,
-            recordingBuffer,
+            checksumBuffer,
             ctx.recordChecksum());
 
         recordingSessionByIdMap.put(recordingId, session);

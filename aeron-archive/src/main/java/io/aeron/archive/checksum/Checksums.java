@@ -17,6 +17,9 @@ package io.aeron.archive.checksum;
 
 import java.util.Objects;
 
+/**
+ * Factory and common methods for working with {@link Checksum} instances.
+ */
 public final class Checksums
 {
     /**
@@ -58,7 +61,8 @@ public final class Checksums
      */
     public static Checksum newInstance(final String className)
     {
-        Objects.requireNonNull(className, "Class name is required!");
+        Objects.requireNonNull(className, "className is required!");
+
         if (Crc32.class.getName().equals(className))
         {
             return crc32();
@@ -77,7 +81,7 @@ public final class Checksums
             }
             catch (final ReflectiveOperationException ex)
             {
-                throw new IllegalArgumentException("Failed to create Checksum instance for class: " + className, ex);
+                throw new IllegalArgumentException("failed to create Checksum instance for class: " + className, ex);
             }
         }
     }

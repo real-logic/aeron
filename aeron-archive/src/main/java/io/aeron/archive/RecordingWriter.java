@@ -53,7 +53,7 @@ class RecordingWriter implements BlockHandler
     private final int segmentLength;
     private final boolean forceWrites;
     private final boolean forceMetadata;
-    private final UnsafeBuffer recordingBuffer;
+    private final UnsafeBuffer checksumBuffer;
     private final Checksum checksum;
     private final FileChannel archiveDirChannel;
     private final File archiveDir;
@@ -71,7 +71,7 @@ class RecordingWriter implements BlockHandler
         final Image image,
         final Archive.Context ctx,
         final FileChannel archiveDirChannel,
-        final UnsafeBuffer recordingBuffer,
+        final UnsafeBuffer checksumBuffer,
         final Checksum checksum)
     {
         this.recordingId = recordingId;
@@ -82,7 +82,7 @@ class RecordingWriter implements BlockHandler
         forceWrites = ctx.fileSyncLevel() > 0;
         forceMetadata = ctx.fileSyncLevel() > 1;
 
-        this.recordingBuffer = recordingBuffer;
+        this.checksumBuffer = checksumBuffer;
         this.checksum = checksum;
 
         final int termLength = image.termBufferLength();
@@ -107,9 +107,9 @@ class RecordingWriter implements BlockHandler
             }
             else
             {
-                recordingBuffer.putBytes(0, termBuffer, termOffset, length);
-                computeChecksum(checksum, recordingBuffer, length);
-                byteBuffer = recordingBuffer.byteBuffer();
+                checksumBuffer.putBytes(0, termBuffer, termOffset, length);
+                computeChecksum(checksum, checksumBuffer, length);
+                byteBuffer = checksumBuffer.byteBuffer();
                 byteBuffer.limit(length).position(0);
             }
 

@@ -60,7 +60,7 @@ class RecordingSession implements Session
         final FileChannel archiveDirChannel,
         final Archive.Context ctx,
         final ControlSession controlSession,
-        final UnsafeBuffer recordingBuffer,
+        final UnsafeBuffer checksumBuffer,
         final Checksum checksum)
     {
         this.correlationId = correlationId;
@@ -73,7 +73,7 @@ class RecordingSession implements Session
 
         blockLengthLimit = Math.min(image.termBufferLength(), Archive.Configuration.MAX_BLOCK_LENGTH);
         recordingWriter = new RecordingWriter(
-            recordingId, startPosition, segmentLength, image, ctx, archiveDirChannel, recordingBuffer, checksum);
+            recordingId, startPosition, segmentLength, image, ctx, archiveDirChannel, checksumBuffer, checksum);
     }
 
     public long correlationId()

@@ -710,8 +710,8 @@ public class Archive implements AutoCloseable
         private int maxConcurrentRecordings = Configuration.maxConcurrentRecordings();
         private int maxConcurrentReplays = Configuration.maxConcurrentReplays();
 
-        private Supplier<Checksum> recordChecksumSupplier;
-        private Supplier<Checksum> replayChecksumSupplier;
+        private Checksum recordChecksum;
+        private Checksum replayChecksum;
 
         /**
          * Perform a shallow copy of the object.
@@ -1312,78 +1312,53 @@ public class Archive implements AutoCloseable
         }
 
         /**
-         * Provides an explicit {@link Checksum} supplier for checksum computation during recording. If explicit
-         * supplier is not configured then the default will be created if {@link Configuration#recordChecksum()}
-         * property is set.
+         * Provides an explicit {@link Checksum} for checksum computation during recording.
          *
-         * @param recordChecksumSupplier supplier for checksums.
+         * @param recordChecksum to be used for recordings.
          * @return this for a fluent API.
-         * @see Configuration#recordChecksum
+         * @see Configuration#RECORD_CHECKSUM_PROP_NAME
          */
-        public Context recordChecksumSupplier(final Supplier<Checksum> recordChecksumSupplier)
+        public Context recordChecksum(final Checksum recordChecksum)
         {
-            this.recordChecksumSupplier = recordChecksumSupplier;
+            this.recordChecksum = recordChecksum;
             return this;
         }
 
         /**
-         * Get the supplier of the {@link Checksum} instances to be used in recording.
+         * Get the {@link Checksum} for checksum computation during recording.
          *
-         * @return {@link Checksum} supplier for the recording.
-         */
-        Supplier<Checksum> recordChecksumSupplier()
-        {
-            return recordChecksumSupplier;
-        }
-
-        /**
-         * Get a new {@link Checksum} for checksum computation during recording.
-         *
-         * @return a (potentially) new {@link Checksum} instance for checksum computation during recording or
-         * {@code null} if no {@link Checksum} supplier was configured.
-         * @see #recordChecksumSupplier(Supplier)
+         * @return the {@link Checksum} instance for checksum computation during recording or
+         * {@code null} if no {@link Checksum} was configured.
+         * @see Configuration#RECORD_CHECKSUM_PROP_NAME
          */
         public Checksum recordChecksum()
         {
-            final Supplier<Checksum> supplier = this.recordChecksumSupplier;
-            return null != supplier ? supplier.get() : null;
+            return recordChecksum;
         }
 
         /**
-         * Provides an explicit {@link Checksum} supplier for checksum computation during replay. If explicit supplier
-         * is not configured then the default will be created if {@link Configuration#replayChecksum()} property is set.
+         * The {@link Checksum} for checksum computation during replay.
          *
-         * @param replayChecksumSupplier supplier for checksums.
+         * @param replayChecksum to be used for replays.
          * @return this for a fluent API.
-         * @see Configuration#replayChecksum
+         * @see Configuration#REPLAY_CHECKSUM_PROP_NAME
          */
-        public Context replayChecksumSupplier(final Supplier<Checksum> replayChecksumSupplier)
+        public Context replayChecksumSupplier(final Checksum replayChecksum)
         {
-            this.replayChecksumSupplier = replayChecksumSupplier;
+            this.replayChecksum = replayChecksum;
             return this;
         }
 
         /**
-         * Get the supplier of the {@link Checksum} instances to be used in the replay.
+         * Get the {@link Checksum} for checksum computation during replay.
          *
-         * @return {@link Checksum} supplier for the replay.
-         */
-        Supplier<Checksum> replayChecksumSupplier()
-        {
-            return replayChecksumSupplier;
-        }
-
-        /**
-         * Get a new {@link Checksum} for checksum computation during replay.
-         *
-         * @return a (potentially) new {@link Checksum} instance for checksum computation during replay or
-         * {@code null} if no {@link Checksum} supplier was configured.
-         * @see #replayChecksumSupplier(Supplier)
+         * @return the {@link Checksum} instance for checksum computation during replay or
+         * {@code null} if no replay {@link Checksum} was configured.
+         * @see Configuration#REPLAY_CHECKSUM_PROP_NAME
          */
         public Checksum replayChecksum()
         {
-            final Supplier<Checksum> supplier = this.replayChecksumSupplier;
-            return null != supplier ? supplier.get() : null;
+            return replayChecksum;
         }
 
         /**
@@ -1952,19 +1927,25 @@ public class Archive implements AutoCloseable
 
         void concludeRecordChecksumSupplier()
         {
-            final String checksumClass = Configuration.recordChecksum();
-            if (null == recordChecksumSupplier && !Strings.isEmpty(checksumClass))
+            if (null == recordChecksum)
             {
-                recordChecksumSupplier = () -> Checksums.newInstance(checksumClass);
+                final String checksumClass = Configuration.recordChecksum();
+                if (!Strings.isEmpty(checksumClass))
+                {
+                    recordChecksum = Checksums.newInstance(checksumClass);
+                }
             }
         }
 
         void concludeReplayChecksumSupplier()
         {
-            final String checksumClass = Configuration.replayChecksum();
-            if (null == replayChecksumSupplier && !Strings.isEmpty(checksumClass))
+            if (null == replayChecksum)
             {
-                replayChecksumSupplier = () -> Checksums.newInstance(checksumClass);
+                final String checksumClass = Configuration.replayChecksum();
+                if (!Strings.isEmpty(checksumClass))
+                {
+                    replayChecksum = Checksums.newInstance(checksumClass);
+                }
             }
         }
 

@@ -17,6 +17,8 @@ package io.aeron.archive.checksum;
 
 /**
  * An interface representing API to compute a data checksum.
+ * <p>
+ * <b>Note:</b> Instances should be threadsafe and stateless.
  */
 public interface Checksum
 {

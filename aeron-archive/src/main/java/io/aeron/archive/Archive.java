@@ -866,8 +866,8 @@ public class Archive implements AutoCloseable
                 authenticatorSupplier = Configuration.authenticatorSupplier();
             }
 
-            concludeRecordChecksumSupplier();
-            concludeReplayChecksumSupplier();
+            concludeRecordChecksum();
+            concludeReplayChecksum();
 
             if (null == catalog)
             {
@@ -1925,7 +1925,7 @@ public class Archive implements AutoCloseable
             return abortLatch;
         }
 
-        void concludeRecordChecksumSupplier()
+        void concludeRecordChecksum()
         {
             if (null == recordChecksum)
             {
@@ -1937,7 +1937,7 @@ public class Archive implements AutoCloseable
             }
         }
 
-        void concludeReplayChecksumSupplier()
+        void concludeReplayChecksum()
         {
             if (null == replayChecksum)
             {

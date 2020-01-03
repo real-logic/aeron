@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        version: ['4.8', '4.9', '5', '6', '7', '8', '9' ]
+        version: [ '6', '7', '8', '9' ]
     env:
       CC: gcc-${{ matrix.version }}
       CXX: g++-${{ matrix.version }}
@@ -57,12 +57,7 @@ jobs:
           key: ${{ runner.os }}-gradle-wrapper
       - name: Install compiler
         run: |
-          sudo add-apt-repository "deb http://dk.archive.ubuntu.com/ubuntu/ xenial main"
-          sudo add-apt-repository "deb http://dk.archive.ubuntu.com/ubuntu/ xenial universe"
-
-          sudo apt-get update
-
-          sudo apt-get install -y g++-${{ matrix.version }}
+         sudo apt-get install -y g++-${{ matrix.version }}
       - name: Build
         run: cppbuild/cppbuild --build-archive-api
 
@@ -71,7 +66,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        version: ['5.0', '6.0', '7', '8', '9' ]
+        version: [ '5.0', '6.0', '7', '8', '9' ]
     env:
       CC: clang-${{ matrix.version }}
       CXX: clang++-${{ matrix.version }}

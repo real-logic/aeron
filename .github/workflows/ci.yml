@@ -1,5 +1,11 @@
 name: Continuous Integration
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
 
 env:
   GRADLE_OPTS: "-Dorg.gradle.daemon=false"

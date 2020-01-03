@@ -369,14 +369,16 @@ class RecordingWriterTests
         final int length = 128;
         final byte[] data = new byte[length - HEADER_LENGTH];
 
+        final int sessionId = 5;
+        final int termId = 18;
         fill(data, (byte)99);
         frameType(termBuffer, 0, HDR_TYPE_PAD);
-        frameTermId(termBuffer, 0, 18);
+        frameTermId(termBuffer, 0, termId);
         frameLengthOrdered(termBuffer, 0, length);
-        frameSessionId(termBuffer, 0, 5);
+        frameSessionId(termBuffer, 0, sessionId);
         termBuffer.putBytes(HEADER_LENGTH, data);
 
-        recordingWriter.onBlock(termBuffer, 0, length, -1, -1);
+        recordingWriter.onBlock(termBuffer, 0, HEADER_LENGTH, -1, -1);
         recordingWriter.close();
 
         final File segmentFile = segmentFile(1, 0);
@@ -386,9 +388,9 @@ class RecordingWriterTests
         final UnsafeBuffer fileBuffer = new UnsafeBuffer();
         fileBuffer.wrap(readAllBytes(segmentFile.toPath()));
         assertEquals(HDR_TYPE_PAD, frameType(fileBuffer, 0));
-        assertEquals(18, frameTermId(fileBuffer, 0));
+        assertEquals(termId, frameTermId(fileBuffer, 0));
         assertEquals(length, frameLength(fileBuffer, 0));
-        assertEquals(2038034505, frameSessionId(fileBuffer, 0));
+        assertEquals(sessionId, frameSessionId(fileBuffer, 0));
     }
 
     private Image mockImage(final long joinPosition)

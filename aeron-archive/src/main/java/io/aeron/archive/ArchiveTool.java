@@ -1112,8 +1112,7 @@ public class ArchiveTool
                 }
 
                 final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
-                final int frameType = frameType(headerFlyweight, 0);
-                if (HDR_TYPE_DATA == frameType)
+                if (HDR_TYPE_DATA == frameType(headerFlyweight, 0))
                 {
                     final int dataLength = alignedLength - HEADER_LENGTH;
                     buffer.clear().limit(dataLength);
@@ -1125,20 +1124,6 @@ public class ArchiveTool
                     }
 
                     int checksumResult = checksum.compute(bufferAddress, 0, dataLength);
-                    if (NATIVE_BYTE_ORDER != LITTLE_ENDIAN)
-                    {
-                        checksumResult = Integer.reverseBytes(checksumResult);
-                    }
-
-                    buffer.clear();
-                    buffer.putInt(checksumResult).flip();
-                    channel.write(buffer, fileOffset + SESSION_ID_FIELD_OFFSET);
-                }
-                else if (HDR_TYPE_PAD == frameType)
-                {
-                    buffer.clear().limit(HEADER_LENGTH);
-
-                    int checksumResult = checksum.compute(bufferAddress, 0, HEADER_LENGTH);
                     if (NATIVE_BYTE_ORDER != LITTLE_ENDIAN)
                     {
                         checksumResult = Integer.reverseBytes(checksumResult);

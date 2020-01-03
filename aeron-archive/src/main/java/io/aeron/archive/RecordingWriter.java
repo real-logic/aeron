@@ -107,10 +107,13 @@ class RecordingWriter implements BlockHandler
             }
             else
             {
-                checksumBuffer.putBytes(0, termBuffer, termOffset, length);
-                computeChecksum(checksum, checksumBuffer, length);
+                checksumBuffer.putBytes(0, termBuffer, termOffset, dataLength);
+                if (!isPaddingFrame)
+                {
+                    computeChecksum(checksum, checksumBuffer, dataLength);
+                }
                 byteBuffer = checksumBuffer.byteBuffer();
-                byteBuffer.limit(length).position(0);
+                byteBuffer.limit(dataLength).position(0);
             }
 
             do
@@ -170,17 +173,17 @@ class RecordingWriter implements BlockHandler
         return isClosed;
     }
 
-    private void computeChecksum(final Checksum checksum, final UnsafeBuffer termBuffer, final int length)
+    private void computeChecksum(final Checksum checksum, final UnsafeBuffer buffer, final int length)
     {
-        final long address = termBuffer.addressOffset();
+        final long address = buffer.addressOffset();
         int frameOffset = 0;
 
         while (frameOffset < length)
         {
-            final int alignedLength = align(frameLength(termBuffer, frameOffset), FRAME_ALIGNMENT);
+            final int alignedLength = align(frameLength(buffer, frameOffset), FRAME_ALIGNMENT);
             final int computedChecksum = checksum.compute(
                 address, frameOffset + HEADER_LENGTH, alignedLength - HEADER_LENGTH);
-            frameSessionId(termBuffer, frameOffset, computedChecksum);
+            frameSessionId(buffer, frameOffset, computedChecksum);
             frameOffset += alignedLength;
         }
     }

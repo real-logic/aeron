@@ -1,6 +1,9 @@
 name: Continuous Integration
 on: [push, pull_request]
 
+env:
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+
 jobs:
   java-build:
     name: Java ${{ matrix.java }} (${{ matrix.os }})
@@ -29,7 +32,7 @@ jobs:
         with:
           java-version: ${{ matrix.java }}
       - name: Build with Gradle
-        run: ./gradlew --no-daemon
+        run: ./gradlew
 
   cpp-gcc-build:
     name: C++ GCC ${{ matrix.version }}

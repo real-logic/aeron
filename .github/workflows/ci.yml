@@ -3,11 +3,12 @@ on: [push, pull_request]
 
 jobs:
   java-build:
-    name: Java ${{ matrix.java }}
-    runs-on: ubuntu-latest
+    name: Java ${{ matrix.java }} (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         java: [ '8', '11' ]
+        os: ['ubuntu-latest', 'windows-latest']
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -15,9 +16,9 @@ jobs:
         uses: actions/cache@v1
         with:
           path: ~/.gradle/caches
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          key: ${{ runner.os }}-gradle-caches-${{ hashFiles('**/*.gradle') }}
           restore-keys: |
-            ${{ runner.os }}-gradle-
+            ${{ runner.os }}-gradle-caches-
       - name: Cache Gradle wrappers
         uses: actions/cache@v1
         with:
@@ -35,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        version: ['4', '5', '6', '7', '8', '9' ]
+        version: [ '6', '7', '8', '9' ]
     env:
       CC: gcc-${{ matrix.version }}
       CXX: g++-${{ matrix.version }}
@@ -46,9 +47,9 @@ jobs:
         uses: actions/cache@v1
         with:
           path: ~/.gradle/caches
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          key: ${{ runner.os }}-gradle-caches-${{ hashFiles('**/*.gradle') }}
           restore-keys: |
-            ${{ runner.os }}-gradle-
+            ${{ runner.os }}-gradle-caches-
       - name: Cache Gradle wrappers
         uses: actions/cache@v1
         with:
@@ -56,7 +57,7 @@ jobs:
           key: ${{ runner.os }}-gradle-wrapper
       - name: Install compiler
         run: |
-          sudo apt-get install -y g++-${{ matrix.version }}
+         sudo apt-get install -y g++-${{ matrix.version }}
       - name: Build
         run: cppbuild/cppbuild --build-archive-api
 
@@ -65,7 +66,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        version: ['5.0', '6.0', '7', '8', '9' ]
+        version: [ '6.0', '7', '8', '9' ]
     env:
       CC: clang-${{ matrix.version }}
       CXX: clang++-${{ matrix.version }}
@@ -76,9 +77,9 @@ jobs:
         uses: actions/cache@v1
         with:
           path: ~/.gradle/caches
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          key: ${{ runner.os }}-gradle-caches-${{ hashFiles('**/*.gradle') }}
           restore-keys: |
-            ${{ runner.os }}-gradle-
+            ${{ runner.os }}-gradle-caches-
       - name: Cache Gradle wrappers
         uses: actions/cache@v1
         with:
@@ -110,9 +111,9 @@ jobs:
         uses: actions/cache@v1
         with:
           path: ~/.gradle/caches
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          key: ${{ runner.os }}-gradle-caches-${{ hashFiles('**/*.gradle') }}
           restore-keys: |
-            ${{ runner.os }}-gradle-
+            ${{ runner.os }}-gradle-caches-
       - name: Cache Gradle wrappers
         uses: actions/cache@v1
         with:

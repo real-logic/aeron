@@ -100,7 +100,7 @@ class RecordingWriter implements BlockHandler
             final int dataLength = isPaddingFrame ? HEADER_LENGTH : length;
             final ByteBuffer byteBuffer;
 
-            if (null == checksum)
+            if (null == checksum || isPaddingFrame)
             {
                 byteBuffer = termBuffer.byteBuffer();
                 byteBuffer.limit(termOffset + dataLength).position(termOffset);
@@ -108,10 +108,7 @@ class RecordingWriter implements BlockHandler
             else
             {
                 checksumBuffer.putBytes(0, termBuffer, termOffset, dataLength);
-                if (!isPaddingFrame)
-                {
-                    computeChecksum(checksum, checksumBuffer, dataLength);
-                }
+                computeChecksum(checksum, checksumBuffer, dataLength);
                 byteBuffer = checksumBuffer.byteBuffer();
                 byteBuffer.limit(dataLength).position(0);
             }

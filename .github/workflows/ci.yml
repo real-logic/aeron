@@ -56,6 +56,11 @@ jobs:
           key: ${{ runner.os }}-gradle-wrapper
       - name: Install compiler
         run: |
+          sudo add-apt-repository "deb http://dk.archive.ubuntu.com/ubuntu/ xenial main"
+          sudo add-apt-repository "deb http://dk.archive.ubuntu.com/ubuntu/ xenial universe"
+
+          sudo apt-get update
+
           sudo apt-get install -y g++-${{ matrix.version }}
       - name: Build
         run: cppbuild/cppbuild --build-archive-api

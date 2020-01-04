@@ -18,8 +18,7 @@ package io.aeron.cluster;
 import io.aeron.cluster.service.Cluster;
 import org.junit.Test;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SingleNodeTest
 {
@@ -30,8 +29,8 @@ public class SingleNodeTest
         {
             final TestNode leader = cluster.awaitLeader();
 
-            assertThat(leader.index(), is(0));
-            assertThat(leader.role(), is(Cluster.Role.LEADER));
+            assertEquals(0, leader.index());
+            assertEquals(Cluster.Role.LEADER, leader.role());
         }
     }
 
@@ -42,8 +41,8 @@ public class SingleNodeTest
         {
             final TestNode leader = cluster.awaitLeader();
 
-            assertThat(leader.index(), is(0));
-            assertThat(leader.role(), is(Cluster.Role.LEADER));
+            assertEquals(0, leader.index());
+            assertEquals(Cluster.Role.LEADER, leader.role());
 
             cluster.connectClient();
             cluster.sendMessages(10);

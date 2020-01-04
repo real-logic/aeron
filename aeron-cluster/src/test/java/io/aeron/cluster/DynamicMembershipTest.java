@@ -20,9 +20,8 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import static io.aeron.Aeron.NULL_VALUE;
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsNot.not;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 @Ignore
 public class DynamicMembershipTest
@@ -33,12 +32,11 @@ public class DynamicMembershipTest
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
             final TestNode leader = cluster.awaitLeader();
-
             final ClusterTool.ClusterMembership clusterMembership = leader.clusterMembership();
 
-            assertThat(clusterMembership.leaderMemberId, is(leader.index()));
-            assertThat(clusterMembership.passiveMembersStr, is(""));
-            assertThat(clusterMembership.activeMembersStr, is(cluster.staticClusterMembers()));
+            assertEquals(leader.index(), clusterMembership.leaderMemberId);
+            assertEquals("", clusterMembership.passiveMembersStr);
+            assertEquals(cluster.staticClusterMembers(), clusterMembership.activeMembersStr);
         }
     }
 
@@ -52,13 +50,13 @@ public class DynamicMembershipTest
 
             Thread.sleep(1000);
 
-            assertThat(dynamicMember.role(), is(Cluster.Role.FOLLOWER));
+            assertEquals(Cluster.Role.FOLLOWER, dynamicMember.role());
 
             final ClusterTool.ClusterMembership clusterMembership = leader.clusterMembership();
 
-            assertThat(clusterMembership.leaderMemberId, is(leader.index()));
-            assertThat(clusterMembership.passiveMembersStr, is(""));
-            assertThat(numberOfMembers(clusterMembership), is(4));
+            assertEquals(leader.index(), clusterMembership.leaderMemberId);
+            assertEquals("", clusterMembership.passiveMembersStr);
+            assertEquals(4, numberOfMembers(clusterMembership));
         }
     }
 
@@ -72,7 +70,7 @@ public class DynamicMembershipTest
 
             Thread.sleep(1000);
 
-            assertThat(dynamicMember.role(), is(Cluster.Role.FOLLOWER));
+            assertEquals(Cluster.Role.FOLLOWER, dynamicMember.role());
 
             cluster.connectClient();
             final int messageCount = 10;
@@ -118,7 +116,7 @@ public class DynamicMembershipTest
 
             Thread.sleep(1000);
 
-            assertThat(dynamicMember.role(), is(Cluster.Role.FOLLOWER));
+            assertEquals(Cluster.Role.FOLLOWER, dynamicMember.role());
 
             cluster.awaitSnapshotLoadedForService(dynamicMember);
         }
@@ -145,10 +143,10 @@ public class DynamicMembershipTest
 
             Thread.sleep(1000);
 
-            assertThat(dynamicMember.role(), is(Cluster.Role.FOLLOWER));
+            assertEquals(Cluster.Role.FOLLOWER, dynamicMember.role());
 
             cluster.awaitSnapshotLoadedForService(dynamicMember);
-            assertThat(dynamicMember.service().messageCount(), is(messageCount));
+            assertEquals(messageCount, dynamicMember.service().messageCount());
         }
     }
 
@@ -175,10 +173,10 @@ public class DynamicMembershipTest
 
             Thread.sleep(1000);
 
-            assertThat(dynamicMember.role(), is(Cluster.Role.FOLLOWER));
+            assertEquals(Cluster.Role.FOLLOWER, dynamicMember.role());
 
             cluster.awaitSnapshotLoadedForService(dynamicMember);
-            assertThat(dynamicMember.service().messageCount(), is(preSnapshotMessageCount));
+            assertEquals(preSnapshotMessageCount, dynamicMember.service().messageCount());
 
             cluster.sendMessages(postSnapshotMessageCount);
             cluster.awaitResponses(totalMessageCount);
@@ -202,8 +200,8 @@ public class DynamicMembershipTest
 
             final ClusterTool.ClusterMembership clusterMembership = leader.clusterMembership();
 
-            assertThat(clusterMembership.leaderMemberId, is(leader.index()));
-            assertThat(numberOfMembers(clusterMembership), is(2));
+            assertEquals(leader.index(), clusterMembership.leaderMemberId);
+            assertEquals(2, numberOfMembers(clusterMembership));
         }
     }
 
@@ -223,9 +221,9 @@ public class DynamicMembershipTest
             final TestNode newLeader = cluster.awaitLeader(initialLeader.index());
             final ClusterTool.ClusterMembership clusterMembership = newLeader.clusterMembership();
 
-            assertThat(clusterMembership.leaderMemberId, is(newLeader.index()));
-            assertThat(clusterMembership.leaderMemberId, not(initialLeader.index()));
-            assertThat(numberOfMembers(clusterMembership), is(2));
+            assertEquals(newLeader.index(), clusterMembership.leaderMemberId);
+            assertNotEquals(initialLeader.index(), clusterMembership.leaderMemberId);
+            assertEquals(2, numberOfMembers(clusterMembership));
         }
     }
 
@@ -248,9 +246,9 @@ public class DynamicMembershipTest
             final TestNode newLeader = cluster.awaitLeader(initialLeader.index());
             final ClusterTool.ClusterMembership clusterMembership = newLeader.clusterMembership();
 
-            assertThat(clusterMembership.leaderMemberId, is(newLeader.index()));
-            assertThat(clusterMembership.leaderMemberId, not(initialLeader.index()));
-            assertThat(numberOfMembers(clusterMembership), is(3));
+            assertEquals(newLeader.index(), clusterMembership.leaderMemberId);
+            assertNotEquals(initialLeader.index(), clusterMembership.leaderMemberId);
+            assertEquals(3, numberOfMembers(clusterMembership));
         }
     }
 
@@ -264,7 +262,7 @@ public class DynamicMembershipTest
 
             Thread.sleep(1000);
 
-            assertThat(numberOfMembers(initialLeader.clusterMembership()), is(2));
+            assertEquals(2, numberOfMembers(initialLeader.clusterMembership()));
         }
     }
 

@@ -18,9 +18,9 @@ package io.aeron.cluster;
 import io.aeron.cluster.service.Cluster;
 import org.junit.Test;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 
 public class AppointedLeaderTest
 {
@@ -32,8 +32,8 @@ public class AppointedLeaderTest
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(LEADER_ID))
         {
             final TestNode leader = cluster.awaitLeader();
-            assertThat(leader.index(), is(LEADER_ID));
-            assertThat(leader.role(), is(Cluster.Role.LEADER));
+            assertEquals(LEADER_ID, leader.index());
+            assertEquals(Cluster.Role.LEADER, leader.role());
 
             cluster.connectClient();
             assertTrue(cluster.client().sendKeepAlive());
@@ -46,8 +46,8 @@ public class AppointedLeaderTest
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(LEADER_ID))
         {
             final TestNode leader = cluster.awaitLeader();
-            assertThat(leader.index(), is(LEADER_ID));
-            assertThat(leader.role(), is(Cluster.Role.LEADER));
+            assertEquals(LEADER_ID, leader.index());
+            assertEquals(Cluster.Role.LEADER, leader.role());
 
             cluster.connectClient();
 

@@ -56,8 +56,7 @@ import java.util.stream.Stream;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.cluster.RecordingLog.RECORDING_LOG_FILE_NAME;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Ignore
 public class StartFromTruncatedRecordingLogTest
@@ -163,8 +162,8 @@ public class StartFromTruncatedRecordingLogTest
         int leaderMemberId;
         while (NULL_VALUE == (leaderMemberId = findLeaderId(NULL_VALUE)))
         {
-            TestUtil.checkInterruptedStatus();
             Thread.sleep(1000);
+            TestUtil.checkInterruptedStatus();
         }
 
         final int followerMemberIdA = (leaderMemberId + 1) >= MEMBER_COUNT ? 0 : (leaderMemberId + 1);
@@ -204,8 +203,8 @@ public class StartFromTruncatedRecordingLogTest
         int leaderMemberId;
         while (NULL_VALUE == (leaderMemberId = findLeaderId(NULL_VALUE)))
         {
-            TestUtil.checkInterruptedStatus();
             Thread.sleep(1000);
+            TestUtil.checkInterruptedStatus();
         }
 
         final int followerMemberIdA = (leaderMemberId + 1) >= MEMBER_COUNT ? 0 : (leaderMemberId + 1);
@@ -213,8 +212,8 @@ public class StartFromTruncatedRecordingLogTest
 
         Thread.sleep(1000);
 
-        assertThat(roleOf(followerMemberIdA), is(Cluster.Role.FOLLOWER));
-        assertThat(roleOf(followerMemberIdB), is(Cluster.Role.FOLLOWER));
+        assertEquals(Cluster.Role.FOLLOWER, roleOf(followerMemberIdA));
+        assertEquals(Cluster.Role.FOLLOWER, roleOf(followerMemberIdB));
 
         startClient();
 
@@ -419,9 +418,9 @@ public class StartFromTruncatedRecordingLogTest
         {
             while (client.offer(msgBuffer, 0, MSG.length()) < 0)
             {
+                Thread.yield();
                 TestUtil.checkInterruptedStatus();
                 client.pollEgress();
-                Thread.yield();
             }
 
             client.pollEgress();
@@ -432,8 +431,8 @@ public class StartFromTruncatedRecordingLogTest
     {
         while (responseCount.get() < messageCount)
         {
-            TestUtil.checkInterruptedStatus();
             Thread.yield();
+            TestUtil.checkInterruptedStatus();
             client.pollEgress();
         }
 
@@ -441,8 +440,8 @@ public class StartFromTruncatedRecordingLogTest
         {
             while (echoServices[i].messageCount() < messageCount)
             {
-                TestUtil.checkInterruptedStatus();
                 Thread.yield();
+                TestUtil.checkInterruptedStatus();
             }
         }
     }
@@ -563,8 +562,9 @@ public class StartFromTruncatedRecordingLogTest
         final AtomicCounter controlToggle = getControlToggle(index);
         assertNotNull(controlToggle);
 
-        assertTrue(String.valueOf(ClusterControl.ToggleState.get(controlToggle)),
-            ClusterControl.ToggleState.SHUTDOWN.toggle(controlToggle));
+        assertTrue(
+            ClusterControl.ToggleState.SHUTDOWN.toggle(controlToggle),
+            String.valueOf(ClusterControl.ToggleState.get(controlToggle)));
     }
 
     private AtomicCounter getControlToggle(final int index)
@@ -580,8 +580,8 @@ public class StartFromTruncatedRecordingLogTest
         final AtomicCounter controlToggle = getControlToggle(index);
         while (ClusterControl.ToggleState.get(controlToggle) != ClusterControl.ToggleState.NEUTRAL)
         {
-            TestUtil.checkInterruptedStatus();
             Thread.yield();
+            TestUtil.checkInterruptedStatus();
         }
     }
 
@@ -592,8 +592,8 @@ public class StartFromTruncatedRecordingLogTest
 
         while (snapshotCounter.get() != value)
         {
-            TestUtil.checkInterruptedStatus();
             Thread.yield();
+            TestUtil.checkInterruptedStatus();
         }
     }
 }

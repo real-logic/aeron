@@ -18,8 +18,7 @@ package io.aeron.cluster;
 import io.aeron.cluster.service.Cluster;
 import org.junit.Test;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MultiNodeTest
 {
@@ -32,10 +31,10 @@ public class MultiNodeTest
         {
             final TestNode leader = cluster.awaitLeader();
 
-            assertThat(leader.index(), is(appointedLeaderIndex));
-            assertThat(leader.role(), is(Cluster.Role.LEADER));
-            assertThat(cluster.node(0).role(), is(Cluster.Role.FOLLOWER));
-            assertThat(cluster.node(2).role(), is(Cluster.Role.FOLLOWER));
+            assertEquals(appointedLeaderIndex, leader.index());
+            assertEquals(Cluster.Role.LEADER, leader.role());
+            assertEquals(Cluster.Role.FOLLOWER, cluster.node(0).role());
+            assertEquals(Cluster.Role.FOLLOWER, cluster.node(2).role());
         }
     }
 
@@ -48,8 +47,8 @@ public class MultiNodeTest
         {
             TestNode leader = cluster.awaitLeader();
 
-            assertThat(leader.index(), is(appointedLeaderIndex));
-            assertThat(leader.role(), is(Cluster.Role.LEADER));
+            assertEquals(appointedLeaderIndex, leader.index());
+            assertEquals(Cluster.Role.LEADER, leader.role());
 
             cluster.connectClient();
             final int messageCount = 10;
@@ -76,8 +75,8 @@ public class MultiNodeTest
         {
             TestNode leader = cluster.awaitLeader();
 
-            assertThat(leader.index(), is(appointedLeaderIndex));
-            assertThat(leader.role(), is(Cluster.Role.LEADER));
+            assertEquals(appointedLeaderIndex, leader.index());
+            assertEquals(Cluster.Role.LEADER, leader.role());
 
             cluster.connectClient();
             final int preCatchupMessageCount = 5;

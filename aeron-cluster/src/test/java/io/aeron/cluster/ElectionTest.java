@@ -29,8 +29,7 @@ import java.util.concurrent.TimeUnit;
 
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 @SuppressWarnings("MethodLength")
@@ -144,9 +143,9 @@ public class ElectionTest
         verify(recordingLog).appendTerm(RECORDING_ID, candidateTermId, logPosition, NANOSECONDS.toMillis(t5));
         verify(electionStateCounter).setOrdered(Election.State.LEADER_READY.code());
 
-        assertThat(clusterMembers[1].logPosition(), is(NULL_POSITION));
-        assertThat(clusterMembers[2].logPosition(), is(NULL_POSITION));
-        assertThat(election.leadershipTermId(), is(candidateTermId));
+        assertEquals(NULL_POSITION, clusterMembers[1].logPosition());
+        assertEquals(NULL_POSITION, clusterMembers[2].logPosition());
+        assertEquals(candidateTermId, election.leadershipTermId());
 
         final long t6 = t5 + ctx.leaderHeartbeatIntervalNs();
         when(recordingLog.getTermTimestamp(candidateTermId)).thenReturn(t6);
@@ -446,7 +445,7 @@ public class ElectionTest
         final long t4 = t3 + ctx.electionTimeoutNs();
         election.doWork(t4);
         inOrder.verify(electionStateCounter).setOrdered(Election.State.CANVASS.code());
-        assertThat(election.leadershipTermId(), is(leadershipTermId));
+        assertEquals(leadershipTermId, election.leadershipTermId());
     }
 
     @Test
@@ -511,7 +510,7 @@ public class ElectionTest
         final long t11 = t10 + 1;
         election.doWork(t11);
         election.doWork(t11);
-        assertThat(election.leadershipTermId(), is(candidateTermId));
+        assertEquals(candidateTermId, election.leadershipTermId());
         inOrder.verify(electionStateCounter).setOrdered(Election.State.LEADER_READY.code());
     }
 
@@ -540,7 +539,7 @@ public class ElectionTest
         final long t3 = t2 + ctx.electionTimeoutNs();
         election.doWork(t3);
         inOrder.verify(electionStateCounter).setOrdered(Election.State.CANVASS.code());
-        assertThat(election.leadershipTermId(), is(leadershipTermId));
+        assertEquals(leadershipTermId, election.leadershipTermId());
     }
 
     @Test

@@ -37,9 +37,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static io.aeron.security.NullCredentialsSupplier.NULL_CREDENTIAL;
 import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.spy;
 
 public class AuthenticationTest
@@ -99,7 +98,7 @@ public class AuthenticationTest
                 public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
                 {
                     authenticatorSessionId.value = sessionId;
-                    assertThat(encodedCredentials.length, is(0));
+                    assertEquals(0, encodedCredentials.length);
                 }
 
                 public void onChallengeResponse(final long sessionId, final byte[] encodedCredentials, final long nowMs)
@@ -109,7 +108,7 @@ public class AuthenticationTest
 
                 public void onConnectedSession(final SessionProxy sessionProxy, final long nowMs)
                 {
-                    assertThat(authenticatorSessionId.value, is(sessionProxy.sessionId()));
+                    assertEquals(sessionProxy.sessionId(), authenticatorSessionId.value);
                     sessionProxy.authenticate(null);
                 }
 
@@ -126,13 +125,13 @@ public class AuthenticationTest
         sendCountedMessageIntoCluster(0);
         while (serviceMsgCounter.get() == 0)
         {
-            TestUtil.checkInterruptedStatus();
             Thread.yield();
+            TestUtil.checkInterruptedStatus();
         }
 
-        assertThat(authenticatorSessionId.value, is(aeronCluster.clusterSessionId()));
-        assertThat(serviceSessionId.value, is(aeronCluster.clusterSessionId()));
-        assertThat(encodedPrincipal.get().length, is(0));
+        assertEquals(aeronCluster.clusterSessionId(), authenticatorSessionId.value);
+        assertEquals(aeronCluster.clusterSessionId(), serviceSessionId.value);
+        assertEquals(0, encodedPrincipal.get().length);
     }
 
     @Test(timeout = 10_000)
@@ -162,7 +161,7 @@ public class AuthenticationTest
                 public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
                 {
                     authenticatorSessionId.value = sessionId;
-                    assertThat(new String(encodedCredentials), is(CREDENTIALS_STRING));
+                    assertEquals(CREDENTIALS_STRING, new String(encodedCredentials));
                 }
 
                 public void onChallengeResponse(final long sessionId, final byte[] encodedCredentials, final long nowMs)
@@ -172,7 +171,7 @@ public class AuthenticationTest
 
                 public void onConnectedSession(final SessionProxy sessionProxy, final long nowMs)
                 {
-                    assertThat(authenticatorSessionId.value, is(sessionProxy.sessionId()));
+                    assertEquals(sessionProxy.sessionId(), authenticatorSessionId.value);
                     sessionProxy.authenticate(PRINCIPAL_STRING.getBytes());
                 }
 
@@ -189,13 +188,13 @@ public class AuthenticationTest
         sendCountedMessageIntoCluster(0);
         while (serviceMsgCounter.get() == 0)
         {
-            TestUtil.checkInterruptedStatus();
             Thread.yield();
+            TestUtil.checkInterruptedStatus();
         }
 
-        assertThat(authenticatorSessionId.value, is(aeronCluster.clusterSessionId()));
-        assertThat(serviceSessionId.value, is(aeronCluster.clusterSessionId()));
-        assertThat(new String(encodedPrincipal.get()), is(PRINCIPAL_STRING));
+        assertEquals(aeronCluster.clusterSessionId(), authenticatorSessionId.value);
+        assertEquals(aeronCluster.clusterSessionId(), serviceSessionId.value);
+        assertEquals(PRINCIPAL_STRING, new String(encodedPrincipal.get()));
     }
 
     @Test(timeout = 10_000)
@@ -215,7 +214,7 @@ public class AuthenticationTest
 
                 public byte[] onChallenge(final byte[] encodedChallenge)
                 {
-                    assertThat(new String(encodedChallenge), is(CHALLENGE_STRING));
+                    assertEquals(CHALLENGE_STRING, new String(encodedChallenge));
                     return encodedCredentials;
                 }
             });
@@ -227,19 +226,19 @@ public class AuthenticationTest
                 public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
                 {
                     authenticatorSessionId.value = sessionId;
-                    assertThat(encodedCredentials.length, is(0));
+                    assertEquals(0, encodedCredentials.length);
                 }
 
                 public void onChallengeResponse(final long sessionId, final byte[] encodedCredentials, final long nowMs)
                 {
-                    assertThat(authenticatorSessionId.value, is(sessionId));
-                    assertThat(new String(encodedCredentials), is(CREDENTIALS_STRING));
+                    assertEquals(sessionId, authenticatorSessionId.value);
+                    assertEquals(CREDENTIALS_STRING, new String(encodedCredentials));
                     challengeSuccessful = true;
                 }
 
                 public void onConnectedSession(final SessionProxy sessionProxy, final long nowMs)
                 {
-                    assertThat(authenticatorSessionId.value, is(sessionProxy.sessionId()));
+                    assertEquals(sessionProxy.sessionId(), authenticatorSessionId.value);
                     sessionProxy.challenge(encodedChallenge);
                 }
 
@@ -247,7 +246,7 @@ public class AuthenticationTest
                 {
                     if (challengeSuccessful)
                     {
-                        assertThat(authenticatorSessionId.value, is(sessionProxy.sessionId()));
+                        assertEquals(sessionProxy.sessionId(), authenticatorSessionId.value);
                         sessionProxy.authenticate(PRINCIPAL_STRING.getBytes());
                     }
                 }
@@ -260,13 +259,13 @@ public class AuthenticationTest
         sendCountedMessageIntoCluster(0);
         while (serviceMsgCounter.get() == 0)
         {
-            TestUtil.checkInterruptedStatus();
             Thread.yield();
+            TestUtil.checkInterruptedStatus();
         }
 
-        assertThat(authenticatorSessionId.value, is(aeronCluster.clusterSessionId()));
-        assertThat(serviceSessionId.value, is(aeronCluster.clusterSessionId()));
-        assertThat(new String(encodedPrincipal.get()), is(PRINCIPAL_STRING));
+        assertEquals(aeronCluster.clusterSessionId(), authenticatorSessionId.value);
+        assertEquals(aeronCluster.clusterSessionId(), serviceSessionId.value);
+        assertEquals(PRINCIPAL_STRING, new String(encodedPrincipal.get()));
     }
 
     @Test(timeout = 10_000)
@@ -286,7 +285,7 @@ public class AuthenticationTest
 
                 public byte[] onChallenge(final byte[] encodedChallenge)
                 {
-                    assertThat(new String(encodedChallenge), is(CHALLENGE_STRING));
+                    assertEquals(CHALLENGE_STRING, new String(encodedChallenge));
                     return encodedCredentials;
                 }
             });
@@ -296,7 +295,7 @@ public class AuthenticationTest
                 public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
                 {
                     authenticatorSessionId.value = sessionId;
-                    assertThat(encodedCredentials.length, is(0));
+                    assertEquals(0, encodedCredentials.length);
                 }
 
                 public void onChallengeResponse(final long sessionId, final byte[] encodedCredentials, final long nowMs)
@@ -306,7 +305,7 @@ public class AuthenticationTest
 
                 public void onConnectedSession(final SessionProxy sessionProxy, final long nowMs)
                 {
-                    assertThat(authenticatorSessionId.value, is(sessionProxy.sessionId()));
+                    assertEquals(sessionProxy.sessionId(), authenticatorSessionId.value);
                     sessionProxy.reject();
                 }
 
@@ -325,7 +324,7 @@ public class AuthenticationTest
         }
         catch (final AuthenticationException ex)
         {
-            assertThat(serviceSessionId.value, is(-1L));
+            assertEquals(-1L, serviceSessionId.value);
             return;
         }
 
@@ -349,7 +348,7 @@ public class AuthenticationTest
 
                 public byte[] onChallenge(final byte[] encodedChallenge)
                 {
-                    assertThat(new String(encodedChallenge), is(CHALLENGE_STRING));
+                    assertEquals(CHALLENGE_STRING, new String(encodedChallenge));
                     return encodedCredentials;
                 }
             });
@@ -361,19 +360,19 @@ public class AuthenticationTest
                 public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
                 {
                     authenticatorSessionId.value = sessionId;
-                    assertThat(encodedCredentials.length, is(0));
+                    assertEquals(0, encodedCredentials.length);
                 }
 
                 public void onChallengeResponse(final long sessionId, final byte[] encodedCredentials, final long nowMs)
                 {
-                    assertThat(authenticatorSessionId.value, is(sessionId));
-                    assertThat(new String(encodedCredentials), is(CREDENTIALS_STRING));
+                    assertEquals(sessionId, authenticatorSessionId.value);
+                    assertEquals(CREDENTIALS_STRING, new String(encodedCredentials));
                     challengeRespondedTo = true;
                 }
 
                 public void onConnectedSession(final SessionProxy sessionProxy, final long nowMs)
                 {
-                    assertThat(authenticatorSessionId.value, is(sessionProxy.sessionId()));
+                    assertEquals(sessionProxy.sessionId(), authenticatorSessionId.value);
                     sessionProxy.challenge(encodedChallenge);
                 }
 
@@ -381,7 +380,7 @@ public class AuthenticationTest
                 {
                     if (challengeRespondedTo)
                     {
-                        assertThat(authenticatorSessionId.value, is(sessionProxy.sessionId()));
+                        assertEquals(sessionProxy.sessionId(), authenticatorSessionId.value);
                         sessionProxy.reject();
                     }
                 }
@@ -396,7 +395,7 @@ public class AuthenticationTest
         }
         catch (final AuthenticationException ex)
         {
-            assertThat(serviceSessionId.value, is(-1L));
+            assertEquals(-1L, serviceSessionId.value);
             return;
         }
 
@@ -409,8 +408,8 @@ public class AuthenticationTest
 
         while (aeronCluster.offer(msgBuffer, 0, SIZE_OF_INT) < 0)
         {
-            TestUtil.checkInterruptedStatus();
             Thread.yield();
+            TestUtil.checkInterruptedStatus();
         }
     }
 
@@ -435,7 +434,7 @@ public class AuthenticationTest
                     final int length,
                     final Header header)
                 {
-                    assertThat(buffer.getInt(offset), is(counterValue));
+                    assertEquals(counterValue, buffer.getInt(offset));
                     msgCounter.getAndIncrement();
                     counterValue++;
                 }

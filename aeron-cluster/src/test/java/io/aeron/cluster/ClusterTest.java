@@ -28,8 +28,7 @@ import java.util.concurrent.locks.LockSupport;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.cluster.service.CommitPos.COMMIT_POSITION_TYPE_ID;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Ignore
 public class ClusterTest
@@ -50,7 +49,7 @@ public class ClusterTest
             follower = cluster.startStaticNode(follower.index(), false);
             Thread.sleep(1_000);
 
-            assertThat(follower.role(), is(Cluster.Role.FOLLOWER));
+            assertEquals(Cluster.Role.FOLLOWER, follower.role());
         }
     }
 
@@ -62,9 +61,7 @@ public class ClusterTest
             final TestNode leader = cluster.awaitLeader();
 
             cluster.connectClient();
-
             cluster.stopNode(leader);
-
             cluster.awaitLeadershipEvent(1);
         }
     }
@@ -92,7 +89,7 @@ public class ClusterTest
             cluster.startStaticNode(2, false);
 
             cluster.awaitLeader();
-            assertThat(cluster.followers().size(), is(2));
+            assertEquals(2, cluster.followers().size());
 
             cluster.awaitSnapshotLoadedForService(cluster.node(0));
             cluster.awaitSnapshotLoadedForService(cluster.node(1));
@@ -131,7 +128,7 @@ public class ClusterTest
             cluster.startStaticNode(2, false);
 
             cluster.awaitLeader();
-            assertThat(cluster.followers().size(), is(2));
+            assertEquals(2, cluster.followers().size());
 
             cluster.awaitSnapshotLoadedForService(cluster.node(0));
             cluster.awaitSnapshotLoadedForService(cluster.node(1));
@@ -170,7 +167,7 @@ public class ClusterTest
             cluster.startStaticNode(2, false);
 
             cluster.awaitLeader();
-            assertThat(cluster.followers().size(), is(2));
+            assertEquals(2, cluster.followers().size());
 
             assertFalse(cluster.node(0).service().wasSnapshotLoaded());
             assertFalse(cluster.node(1).service().wasSnapshotLoaded());
@@ -184,10 +181,9 @@ public class ClusterTest
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
             final TestNode leader = cluster.awaitLeader();
-
             final List<TestNode> followers = cluster.followers();
 
-            assertThat(followers.size(), is(2));
+            assertEquals(2, followers.size());
             final TestNode followerA = followers.get(0);
             final TestNode followerB = followers.get(1);
 
@@ -228,7 +224,7 @@ public class ClusterTest
             cluster.awaitMessageCountForService(cluster.node(1), preFailureMessageCount);
             cluster.awaitMessageCountForService(cluster.node(2), preFailureMessageCount);
 
-            assertThat(cluster.client().leaderMemberId(), is(originalLeader.index()));
+            assertEquals(originalLeader.index(), cluster.client().leaderMemberId());
 
             cluster.stopNode(originalLeader);
 
@@ -236,7 +232,7 @@ public class ClusterTest
 
             cluster.sendMessages(postFailureMessageCount);
             cluster.awaitResponses(preFailureMessageCount + postFailureMessageCount);
-            assertThat(cluster.client().leaderMemberId(), is(newLeader.index()));
+            assertEquals(newLeader.index(), cluster.client().leaderMemberId());
 
             final TestNode follower = cluster.followers().get(0);
 
@@ -259,8 +255,8 @@ public class ClusterTest
 
             Thread.sleep(5_000);
 
-            assertThat(follower.role(), is(Cluster.Role.FOLLOWER));
-            assertThat(follower.electionState(), is((Election.State)null));
+            assertEquals(Cluster.Role.FOLLOWER, follower.role());
+            assertNull(follower.electionState());
         }
     }
 
@@ -281,7 +277,7 @@ public class ClusterTest
                 Thread.sleep(1000);
             }
 
-            assertThat(follower.role(), is(Cluster.Role.FOLLOWER));
+            assertEquals(Cluster.Role.FOLLOWER, follower.role());
 
             cluster.connectClient();
 
@@ -305,8 +301,8 @@ public class ClusterTest
 
             Thread.sleep(5_000);
 
-            assertThat(follower.role(), is(Cluster.Role.FOLLOWER));
-            assertThat(follower.electionState(), is((Election.State)null));
+            assertEquals(Cluster.Role.FOLLOWER, follower.role());
+            assertNull(follower.electionState());
 
             cluster.connectClient();
 
@@ -339,7 +335,7 @@ public class ClusterTest
 
             Thread.sleep(1_000);
 
-            assertThat(follower.role(), is(Cluster.Role.FOLLOWER));
+            assertEquals(Cluster.Role.FOLLOWER, follower.role());
 
             cluster.connectClient();
 
@@ -376,10 +372,10 @@ public class ClusterTest
             followerB = cluster.startStaticNode(followerB.index(), false);
 
             cluster.awaitSnapshotCounter(followerB, 1);
-            assertThat(followerB.role(), is(Cluster.Role.FOLLOWER));
+            assertEquals(Cluster.Role.FOLLOWER, followerB.role());
 
             cluster.awaitMessageCountForService(followerB, messageCount);
-            assertThat(followerB.errors(), is(0L));
+            assertEquals(0L, followerB.errors());
         }
     }
 
@@ -431,8 +427,8 @@ public class ClusterTest
 
             Thread.sleep(1_000);
 
-            assertThat(followerA.role(), is(Cluster.Role.FOLLOWER));
-            assertThat(followerB.role(), is(Cluster.Role.FOLLOWER));
+            assertEquals(Cluster.Role.FOLLOWER, followerA.role());
+            assertEquals(Cluster.Role.FOLLOWER, followerB.role());
 
             cluster.connectClient();
             final int messageCount = 10;
@@ -458,8 +454,8 @@ public class ClusterTest
 
             cluster.awaitLeader(leader.index());
 
-            assertThat(countersOfType(followerA.countersReader(), COMMIT_POSITION_TYPE_ID), is(1));
-            assertThat(countersOfType(followerB.countersReader(), COMMIT_POSITION_TYPE_ID), is(1));
+            assertEquals(1, countersOfType(followerA.countersReader(), COMMIT_POSITION_TYPE_ID));
+            assertEquals(1, countersOfType(followerB.countersReader(), COMMIT_POSITION_TYPE_ID));
         }
     }
 
@@ -474,9 +470,9 @@ public class ClusterTest
             final TestNode followerA = followers.get(0);
             final TestNode followerB = followers.get(1);
 
-            assertThat(leader.service().roleChangedTo(), is(Cluster.Role.LEADER));
-            assertThat(followerA.service().roleChangedTo(), is((Cluster.Role)null));
-            assertThat(followerB.service().roleChangedTo(), is((Cluster.Role)null));
+            assertEquals(Cluster.Role.LEADER, leader.service().roleChangedTo());
+            assertNull(followerA.service().roleChangedTo());
+            assertNull(followerB.service().roleChangedTo());
 
             cluster.stopNode(leader);
 
@@ -484,8 +480,8 @@ public class ClusterTest
             followers = cluster.followers();
             final TestNode follower = followers.get(0);
 
-            assertThat(leader.service().roleChangedTo(), is(Cluster.Role.LEADER));
-            assertThat(follower.service().roleChangedTo(), is((Cluster.Role)null));
+            assertEquals(Cluster.Role.LEADER, leader.service().roleChangedTo());
+            assertNull(follower.service().roleChangedTo());
         }
     }
 
@@ -500,18 +496,18 @@ public class ClusterTest
             final TestNode followerA = followers.get(0);
             final TestNode followerB = followers.get(1);
 
-            assertThat(leader.service().roleChangedTo(), is(Cluster.Role.LEADER));
+            assertEquals(Cluster.Role.LEADER, leader.service().roleChangedTo());
 
             cluster.stopNode(followerA);
             cluster.stopNode(followerB);
 
             while (leader.service().roleChangedTo() == Cluster.Role.LEADER)
             {
-                TestUtil.checkInterruptedStatus();
                 Thread.yield();
+                TestUtil.checkInterruptedStatus();
             }
 
-            assertThat(leader.service().roleChangedTo(), is(Cluster.Role.FOLLOWER));
+            assertEquals(Cluster.Role.FOLLOWER, leader.service().roleChangedTo());
         }
     }
 
@@ -542,10 +538,10 @@ public class ClusterTest
                 messageThread.join();
             }
 
-            assertThat(leader.errors(), is(0L));
-            assertThat(followerA.errors(), is(0L));
-            assertThat(followerB.errors(), is(0L));
-            assertThat(followerB.electionState(), is((Election.State)null));
+            assertEquals(0L, leader.errors());
+            assertEquals(0L, followerA.errors());
+            assertEquals(0L, followerB.errors());
+            assertNull(followerB.electionState());
         }
     }
 
@@ -611,7 +607,7 @@ public class ClusterTest
 
             final TestNode newLeader = cluster.awaitLeader();
 
-            assertNotEquals(newLeader.index(), is(2));
+            assertNotEquals(2, newLeader.index());
 
             assertTrue(cluster.node(0).service().wasSnapshotLoaded());
             assertTrue(cluster.node(1).service().wasSnapshotLoaded());
@@ -671,12 +667,12 @@ public class ClusterTest
 
             cluster.awaitLeader();
 
-            assertThat(oldLeader.errors(), is(0L));
-            assertThat(oldFollower1.errors(), is(0L));
-            assertThat(oldFollower2.errors(), is(0L));
+            assertEquals(0L, oldLeader.errors());
+            assertEquals(0L, oldFollower1.errors());
+            assertEquals(0L, oldFollower2.errors());
 
-            assertThat(oldFollower1.electionState(), is((Election.State)null));
-            assertThat(oldFollower2.electionState(), is((Election.State)null));
+            assertNull(oldFollower1.electionState());
+            assertNull(oldFollower2.electionState());
         }
     }
 
@@ -813,8 +809,8 @@ public class ClusterTest
 
             Thread.sleep(1_000);
 
-            assertThat(follower.role(), is(Cluster.Role.FOLLOWER));
-            assertThat(follower.electionState(), is((Election.State)null));
+            assertEquals(Cluster.Role.FOLLOWER, follower.role());
+            assertNull(follower.electionState());
         }
     }
 

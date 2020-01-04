@@ -48,8 +48,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -187,7 +186,7 @@ public class ClusterNodeRestartTest
             TestUtil.checkInterruptedStatus();
         }
 
-        assertThat(serviceState.get(), is("0"));
+        assertEquals("0", serviceState.get());
     }
 
     @Test(timeout = 10_000)
@@ -232,7 +231,7 @@ public class ClusterNodeRestartTest
             TestUtil.checkInterruptedStatus();
         }
 
-        assertThat(serviceState.get(), is("3"));
+        assertEquals("3", serviceState.get());
     }
 
     @Test(timeout = 10_000)
@@ -285,7 +284,7 @@ public class ClusterNodeRestartTest
             TestUtil.checkInterruptedStatus();
         }
 
-        assertThat(serviceState.get(), is("4"));
+        assertEquals("4", serviceState.get());
     }
 
     @Test(timeout = 10_000)
@@ -311,7 +310,7 @@ public class ClusterNodeRestartTest
             }
         }
 
-        assertThat(snapshotCount.get(), is(3L));
+        assertEquals(3L, snapshotCount.get());
     }
 
     @Test(timeout = 10_000)
@@ -365,7 +364,7 @@ public class ClusterNodeRestartTest
             TestUtil.checkInterruptedStatus();
         }
 
-        assertThat(serviceState.get(), is("5"));
+        assertEquals("5", serviceState.get());
     }
 
     @Test(timeout = 10_000)
@@ -452,7 +451,7 @@ public class ClusterNodeRestartTest
             TestUtil.checkInterruptedStatus();
         }
 
-        assertThat(serviceState.get(), is("4"));
+        assertEquals("4", serviceState.get());
 
         connectClient();
         sendCountedMessageIntoCluster(4);
@@ -470,7 +469,7 @@ public class ClusterNodeRestartTest
         launchService(serviceMsgCounter);
 
         connectClient();
-        assertThat(serviceState.get(), is("5"));
+        assertEquals("5", serviceState.get());
     }
 
     private void sendCountedMessageIntoCluster(final int value)
@@ -553,7 +552,7 @@ public class ClusterNodeRestartTest
                     final Header header)
                 {
                     final int sentValue = buffer.getInt(offset + MESSAGE_VALUE_OFFSET);
-                    assertThat(sentValue, is(counterValue));
+                    assertEquals(counterValue, sentValue);
 
                     counterValue++;
                     serviceState.set(Integer.toString(counterValue));

@@ -39,10 +39,9 @@ import static io.aeron.cluster.ClusterControl.ToggleState.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static io.aeron.cluster.ConsensusModuleAgent.SLOW_TICK_INTERVAL_NS;
 import static io.aeron.cluster.client.AeronCluster.Configuration.PROTOCOL_SEMANTIC_VERSION;
-import static java.lang.Boolean.TRUE;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
+import static java.lang.Boolean.TRUE;
 
 public class ConsensusModuleAgentTest
 {
@@ -224,25 +223,25 @@ public class ConsensusModuleAgentTest
         final ConsensusModuleAgent agent = new ConsensusModuleAgent(ctx);
         agent.appendedPositionCounter(mock(ReadableCounter.class));
 
-        assertThat((int)stateValue.get(), is(ConsensusModule.State.INIT.code()));
+        assertEquals(ConsensusModule.State.INIT.code(), stateValue.get());
 
         agent.state(ConsensusModule.State.ACTIVE);
         agent.role(Cluster.Role.LEADER);
-        assertThat((int)stateValue.get(), is(ConsensusModule.State.ACTIVE.code()));
+        assertEquals(ConsensusModule.State.ACTIVE.code(), stateValue.get());
 
         controlValue.value = SUSPEND.code();
         clock.update(SLOW_TICK_INTERVAL_MS, TimeUnit.MILLISECONDS);
         agent.doWork();
 
-        assertThat((int)stateValue.get(), is(ConsensusModule.State.SUSPENDED.code()));
-        assertThat((int)controlValue.get(), is(NEUTRAL.code()));
+        assertEquals(ConsensusModule.State.SUSPENDED.code(), stateValue.get());
+        assertEquals(NEUTRAL.code(), controlValue.get());
 
         controlValue.value = RESUME.code();
         clock.update(SLOW_TICK_INTERVAL_MS * 2, TimeUnit.MILLISECONDS);
         agent.doWork();
 
-        assertThat((int)stateValue.get(), is(ConsensusModule.State.ACTIVE.code()));
-        assertThat((int)controlValue.get(), is(NEUTRAL.code()));
+        assertEquals(ConsensusModule.State.ACTIVE.code(), stateValue.get());
+        assertEquals(NEUTRAL.code(), controlValue.get());
 
         final InOrder inOrder = Mockito.inOrder(mockLogPublisher);
         inOrder.verify(mockLogPublisher).appendClusterAction(anyLong(), anyLong(), eq(ClusterAction.SUSPEND));

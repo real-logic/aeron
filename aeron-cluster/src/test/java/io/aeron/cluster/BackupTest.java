@@ -19,8 +19,9 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import static io.aeron.Aeron.NULL_VALUE;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Ignore
 public class BackupTest

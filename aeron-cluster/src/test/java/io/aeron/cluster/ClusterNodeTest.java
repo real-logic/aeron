@@ -15,10 +15,6 @@
  */
 package io.aeron.cluster;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
@@ -38,6 +34,9 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.Header;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ClusterNodeTest
 {
@@ -102,7 +101,7 @@ public class ClusterNodeTest
 
         final EgressListener listener = (clusterSessionId, timestamp, buffer, offset, length, header) ->
         {
-            assertThat(buffer.getStringWithoutLengthAscii(offset, length), is(msg));
+            assertEquals(msg, buffer.getStringWithoutLengthAscii(offset, length));
             messageCount.value += 1;
         };
 
@@ -111,17 +110,17 @@ public class ClusterNodeTest
 
         while (aeronCluster.offer(msgBuffer, 0, msg.length()) < 0)
         {
-            TestUtil.checkInterruptedStatus();
             Thread.yield();
+            TestUtil.checkInterruptedStatus();
         }
 
         while (messageCount.get() == 0)
         {
             if (aeronCluster.pollEgress() <= 0)
             {
-                TestUtil.checkInterruptedStatus();
                 Thread.yield();
             }
+            TestUtil.checkInterruptedStatus();
         }
     }
 
@@ -136,7 +135,7 @@ public class ClusterNodeTest
 
         final EgressListener listener = (clusterSessionId, timestamp, buffer, offset, length, header) ->
         {
-            assertThat(buffer.getStringWithoutLengthAscii(offset, length), is(msg));
+            assertEquals(msg, buffer.getStringWithoutLengthAscii(offset, length));
             messageCount.value += 1;
         };
 
@@ -159,16 +158,16 @@ public class ClusterNodeTest
 
         while (aeronCluster.offer(msgBuffer, 0, msg.length()) < 0)
         {
-            TestUtil.checkInterruptedStatus();
             Thread.yield();
+            TestUtil.checkInterruptedStatus();
         }
 
         while (messageCount.get() == 0)
         {
             if (aeronCluster.pollEgress() <= 0)
             {
-                TestUtil.checkInterruptedStatus();
                 Thread.yield();
+                TestUtil.checkInterruptedStatus();
             }
         }
     }
@@ -184,7 +183,8 @@ public class ClusterNodeTest
 
         final EgressListener listener = (clusterSessionId, timestamp, buffer, offset, length, header) ->
         {
-            assertThat(buffer.getStringWithoutLengthAscii(offset, length), is(msg + "-scheduled"));
+            final String expected = msg + "-scheduled";
+            assertEquals(expected, buffer.getStringWithoutLengthAscii(offset, length));
             messageCount.value += 1;
         };
 
@@ -193,16 +193,16 @@ public class ClusterNodeTest
 
         while (aeronCluster.offer(msgBuffer, 0, msg.length()) < 0)
         {
-            TestUtil.checkInterruptedStatus();
             Thread.yield();
+            TestUtil.checkInterruptedStatus();
         }
 
         while (messageCount.get() == 0)
         {
             if (aeronCluster.pollEgress() <= 0)
             {
-                TestUtil.checkInterruptedStatus();
                 Thread.yield();
+                TestUtil.checkInterruptedStatus();
             }
         }
     }
@@ -218,7 +218,7 @@ public class ClusterNodeTest
 
         final EgressListener listener = (clusterSessionId, timestamp, buffer, offset, length, header) ->
         {
-            assertThat(buffer.getStringWithoutLengthAscii(offset, length), is(msg));
+            assertEquals(msg, buffer.getStringWithoutLengthAscii(offset, length));
             messageCount.value += 1;
         };
 
@@ -227,16 +227,16 @@ public class ClusterNodeTest
 
         while (aeronCluster.offer(msgBuffer, 0, msg.length()) < 0)
         {
-            TestUtil.checkInterruptedStatus();
             Thread.yield();
+            TestUtil.checkInterruptedStatus();
         }
 
         while (messageCount.get() == 0)
         {
             if (aeronCluster.pollEgress() <= 0)
             {
-                TestUtil.checkInterruptedStatus();
                 Thread.yield();
+                TestUtil.checkInterruptedStatus();
             }
         }
     }

@@ -29,11 +29,7 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.cluster.ConsensusModule.Configuration.SERVICE_ID;
 import static io.aeron.cluster.RecordingLog.ENTRY_TYPE_SNAPSHOT;
 import static io.aeron.cluster.RecordingLog.ENTRY_TYPE_TERM;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
 public class RecordingLogTest
@@ -52,7 +48,7 @@ public class RecordingLogTest
     {
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
         {
-            assertThat(recordingLog.entries().size(), is(0));
+            assertEquals(0, recordingLog.entries().size());
         }
     }
 
@@ -74,7 +70,7 @@ public class RecordingLogTest
 
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
         {
-            assertThat(recordingLog.entries().size(), is(1));
+            assertEquals(1, recordingLog.entries().size());
 
             final RecordingLog.Entry snapshot = recordingLog.getLatestSnapshot(SERVICE_ID);
             assertEquals(entry.toString(), snapshot.toString());
@@ -95,15 +91,15 @@ public class RecordingLogTest
 
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
         {
-            assertThat(recordingLog.entries().size(), is(3));
+            assertEquals(3, recordingLog.entries().size());
 
             final AeronArchive mockArchive = mock(AeronArchive.class);
             final RecordingLog.RecoveryPlan recoveryPlan = recordingLog.createRecoveryPlan(mockArchive, serviceCount);
-            assertThat(recoveryPlan.snapshots.size(), is(2));
-            assertThat(recoveryPlan.snapshots.get(0).serviceId, is(SERVICE_ID));
-            assertThat(recoveryPlan.snapshots.get(0).recordingId, is(2L));
-            assertThat(recoveryPlan.snapshots.get(1).serviceId, is(0));
-            assertThat(recoveryPlan.snapshots.get(1).recordingId, is(1L));
+            assertEquals(2, recoveryPlan.snapshots.size());
+            assertEquals(SERVICE_ID, recoveryPlan.snapshots.get(0).serviceId);
+            assertEquals(2L, recoveryPlan.snapshots.get(0).recordingId);
+            assertEquals(0, recoveryPlan.snapshots.get(1).serviceId);
+            assertEquals(1L, recoveryPlan.snapshots.get(1).recordingId);
         }
     }
 
@@ -124,7 +120,7 @@ public class RecordingLogTest
 
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
         {
-            assertThat(recordingLog.entries().size(), is(1));
+            assertEquals(1, recordingLog.entries().size());
 
             final RecordingLog.Entry actualEntry = recordingLog.entries().get(0);
             assertEquals(newPosition, actualEntry.logPosition);
@@ -147,13 +143,13 @@ public class RecordingLogTest
                 entryTwo.recordingId, entryTwo.leadershipTermId, entryTwo.termBaseLogPosition, entryTwo.timestamp);
 
             recordingLog.tombstoneEntry(entryTwo.leadershipTermId, recordingLog.nextEntryIndex() - 1);
-            assertThat(recordingLog.entries().size(), is(1));
+            assertEquals(1, recordingLog.entries().size());
         }
 
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
         {
-            assertThat(recordingLog.entries().size(), is(1));
-            assertThat(recordingLog.nextEntryIndex(), is(2));
+            assertEquals(1, recordingLog.entries().size());
+            assertEquals(2, recordingLog.nextEntryIndex());
         }
     }
 
@@ -173,11 +169,11 @@ public class RecordingLogTest
 
         RecordingLog.addSnapshots(snapshots, entries, 3, entries.size() - 1);
 
-        assertThat(snapshots.size(), is(4));
-        assertThat(snapshots.get(0).serviceId, is(ConsensusModule.Configuration.SERVICE_ID));
-        assertThat(snapshots.get(1).serviceId, is(0));
-        assertThat(snapshots.get(2).serviceId, is(1));
-        assertThat(snapshots.get(3).serviceId, is(2));
+        assertEquals(4, snapshots.size());
+        assertEquals(ConsensusModule.Configuration.SERVICE_ID, snapshots.get(0).serviceId);
+        assertEquals(0, snapshots.get(1).serviceId);
+        assertEquals(1, snapshots.get(2).serviceId);
+        assertEquals(2, snapshots.get(3).serviceId);
     }
 
     @Test
@@ -214,22 +210,22 @@ public class RecordingLogTest
             recordingLog.appendTerm(recordingId, leadershipTermId, logPosition, timestamp);
 
             assertTrue(recordingLog.tombstoneLatestSnapshot());
-            assertThat(recordingLog.entries().size(), is(4));
+            assertEquals(4, recordingLog.entries().size());
         }
 
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
         {
-            assertThat(recordingLog.entries().size(), is(4));
+            assertEquals(4, recordingLog.entries().size());
             assertEquals(2L, recordingLog.getLatestSnapshot(0).recordingId);
             assertEquals(3L, recordingLog.getLatestSnapshot(SERVICE_ID).recordingId);
 
             assertTrue(recordingLog.tombstoneLatestSnapshot());
-            assertThat(recordingLog.entries().size(), is(2));
+            assertEquals(2, recordingLog.entries().size());
         }
 
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
         {
-            assertThat(recordingLog.entries().size(), is(2));
+            assertEquals(2, recordingLog.entries().size());
             assertFalse(recordingLog.tombstoneLatestSnapshot());
             assertEquals(leadershipTermId, recordingLog.getTermEntry(leadershipTermId).leadershipTermId);
         }

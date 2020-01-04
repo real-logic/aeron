@@ -166,4 +166,4 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Build
-        run: cppbuild/cppbuild --build-archive-api
+        run: cppbuild/cppbuildp-vs.cmd --build-archive-api

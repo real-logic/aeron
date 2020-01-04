@@ -44,10 +44,10 @@ pushd %ZLIB_BUILD_DIR%
 pushd zlib-1.2.11
 md build
 pushd build
-cmake -G "Visual Studio 16 2019 Win64" -DCMAKE_INSTALL_PREFIX=%ZLIB_INSTALL_DIR% ..
+cmake -G "Visual Studio 16 2019" -DCMAKE_INSTALL_PREFIX=%ZLIB_INSTALL_DIR% ..
 cmake --build . --target install
 
 pushd %BUILD_DIR%
-cmake -G "Visual Studio 16 2019 Win64" %EXTRA_CMAKE_ARGS% %SOURCE_DIR%
+cmake -G "Visual Studio 16 2019" %EXTRA_CMAKE_ARGS% %SOURCE_DIR%
 cmake --build . --config Release
 ctest -C Release

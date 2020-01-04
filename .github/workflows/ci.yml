@@ -157,7 +157,7 @@ jobs:
         run: cppbuild/cppbuild --build-archive-api
 
   cpp-msvc-build:
-    name: C++ MSVC
+    name: C++ MSVC (Windows)
     runs-on: windows-latest
     env:
       CC: cl

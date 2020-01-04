@@ -25,10 +25,9 @@ import org.agrona.concurrent.ringbuffer.RingBuffer;
 
 import java.nio.ByteBuffer;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 import static io.aeron.command.ControlProtocolEvents.*;
 import static org.agrona.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DriverProxyTest
 {
@@ -57,8 +56,8 @@ public class DriverProxyTest
                 final RemoveMessageFlyweight message = new RemoveMessageFlyweight();
                 message.wrap(buffer, index);
 
-                assertThat(msgTypeId, is(REMOVE_PUBLICATION));
-                assertThat(message.registrationId(), is(CORRELATION_ID));
+                assertEquals(REMOVE_PUBLICATION, msgTypeId);
+                assertEquals(CORRELATION_ID, message.registrationId());
             }
         );
     }
@@ -73,9 +72,9 @@ public class DriverProxyTest
                 final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
                 publicationMessage.wrap(buffer, index);
 
-                assertThat(msgTypeId, is(expectedMsgTypeId));
-                assertThat(publicationMessage.channel(), is(CHANNEL));
-                assertThat(publicationMessage.streamId(), is(STREAM_ID));
+                assertEquals(expectedMsgTypeId, msgTypeId);
+                assertEquals(CHANNEL, publicationMessage.channel());
+                assertEquals(STREAM_ID, publicationMessage.streamId());
             }
         );
     }
@@ -91,8 +90,8 @@ public class DriverProxyTest
                 final RemoveMessageFlyweight removeMessage = new RemoveMessageFlyweight();
                 removeMessage.wrap(buffer, index);
 
-                assertThat(msgTypeId, is(REMOVE_SUBSCRIPTION));
-                assertThat(removeMessage.registrationId(), is(CORRELATION_ID));
+                assertEquals(REMOVE_SUBSCRIPTION, msgTypeId);
+                assertEquals(CORRELATION_ID, removeMessage.registrationId());
             }
         );
     }
@@ -100,6 +99,6 @@ public class DriverProxyTest
     private void assertReadsOneMessage(final MessageHandler handler)
     {
         final int messageCount = conductorBuffer.read(handler);
-        assertThat(messageCount, is(1));
+        assertEquals(1, messageCount);
     }
 }

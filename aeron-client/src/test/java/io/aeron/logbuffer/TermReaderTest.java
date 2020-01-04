@@ -25,8 +25,7 @@ import org.mockito.InOrder;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_DATA;
 import static org.agrona.BitUtil.align;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 public class TermReaderTest
@@ -47,7 +46,6 @@ public class TermReaderTest
         when(termBuffer.capacity()).thenReturn(TERM_BUFFER_CAPACITY);
     }
 
-
     @Test
     public void shouldReadFirstMessage()
     {
@@ -61,7 +59,7 @@ public class TermReaderTest
 
         final int readOutcome = TermReader.read(
             termBuffer, termOffset, handler, Integer.MAX_VALUE, header, errorHandler, 0, subscriberPosition);
-        assertThat(readOutcome, is(1));
+        assertEquals(1, readOutcome);
 
         final InOrder inOrder = inOrder(termBuffer, handler, subscriberPosition);
         inOrder.verify(termBuffer).getIntVolatile(0);
@@ -76,7 +74,7 @@ public class TermReaderTest
 
         final int readOutcome = TermReader.read(
             termBuffer, termOffset, handler, Integer.MAX_VALUE, header, errorHandler, 0, subscriberPosition);
-        assertThat(readOutcome, is(0));
+        assertEquals(0, readOutcome);
         verify(subscriberPosition, never()).setOrdered(anyLong());
 
         verify(termBuffer).getIntVolatile(0);
@@ -96,8 +94,7 @@ public class TermReaderTest
 
         final int readOutcome = TermReader.read(
             termBuffer, termOffset, handler, 1, header, errorHandler, 0, subscriberPosition);
-        assertThat(readOutcome, is(1));
-
+        assertEquals(1, readOutcome);
 
         final InOrder inOrder = inOrder(termBuffer, handler, subscriberPosition);
         inOrder.verify(termBuffer).getIntVolatile(0);
@@ -120,8 +117,7 @@ public class TermReaderTest
 
         final int readOutcome = TermReader.read(
             termBuffer, termOffset, handler, Integer.MAX_VALUE, header, errorHandler, 0, subscriberPosition);
-        assertThat(readOutcome, is(2));
-
+        assertEquals(2, readOutcome);
 
         final InOrder inOrder = inOrder(termBuffer, handler, subscriberPosition);
         inOrder.verify(termBuffer).getIntVolatile(0);
@@ -147,7 +143,7 @@ public class TermReaderTest
 
         final int readOutcome = TermReader.read(
             termBuffer, frameOffset, handler, Integer.MAX_VALUE, header, errorHandler, 0, subscriberPosition);
-        assertThat(readOutcome, is(1));
+        assertEquals(1, readOutcome);
 
         final InOrder inOrder = inOrder(termBuffer, handler, subscriberPosition);
         inOrder.verify(termBuffer).getIntVolatile(frameOffset);
@@ -169,7 +165,7 @@ public class TermReaderTest
 
         final int readOutcome = TermReader.read(
             termBuffer, frameOffset, handler, Integer.MAX_VALUE, header, errorHandler, 0, subscriberPosition);
-        assertThat(readOutcome, is(0));
+        assertEquals(0, readOutcome);
 
         final InOrder inOrder = inOrder(termBuffer, subscriberPosition);
         inOrder.verify(termBuffer).getIntVolatile(frameOffset);

@@ -27,8 +27,7 @@ import java.nio.ByteBuffer;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static java.nio.ByteBuffer.allocateDirect;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 public class PublicationTest
@@ -97,7 +96,7 @@ public class PublicationTest
     public void shouldEnsureThePublicationIsOpenBeforeReadingPosition()
     {
         publication.close();
-        assertThat(publication.position(), is(Publication.CLOSED));
+        assertEquals(Publication.CLOSED, publication.position());
 
         verify(conductor).releasePublication(publication);
     }
@@ -107,7 +106,7 @@ public class PublicationTest
     {
         publication.close();
         assertTrue(publication.isClosed());
-        assertThat(publication.offer(atomicSendBuffer), is(Publication.CLOSED));
+        assertEquals(Publication.CLOSED, publication.offer(atomicSendBuffer));
     }
 
     @Test
@@ -115,7 +114,7 @@ public class PublicationTest
     {
         publication.close();
         final BufferClaim bufferClaim = new BufferClaim();
-        assertThat(publication.tryClaim(SEND_BUFFER_CAPACITY, bufferClaim), is(Publication.CLOSED));
+        assertEquals(Publication.CLOSED, publication.tryClaim(SEND_BUFFER_CAPACITY, bufferClaim));
     }
 
     @Test
@@ -136,13 +135,13 @@ public class PublicationTest
     @Test
     public void shouldReportInitialPosition()
     {
-        assertThat(publication.position(), is(0L));
+        assertEquals(0L, publication.position());
     }
 
     @Test
     public void shouldReportMaxMessageLength()
     {
-        assertThat(publication.maxMessageLength(), is(FrameDescriptor.computeMaxMessageLength(TERM_MIN_LENGTH)));
+        assertEquals(FrameDescriptor.computeMaxMessageLength(TERM_MIN_LENGTH), publication.maxMessageLength());
     }
 
     @Test

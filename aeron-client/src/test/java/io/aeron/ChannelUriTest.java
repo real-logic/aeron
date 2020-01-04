@@ -17,10 +17,7 @@ package io.aeron;
 
 import org.junit.Test;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ChannelUriTest
 {
@@ -71,8 +68,8 @@ public class ChannelUriTest
     public void shouldAllowReturnDefaultIfParamNotSpecified()
     {
         final ChannelUri uri = ChannelUri.parse("aeron:udp?endpoint=224.10.9.8");
-        assertThat(uri.get("interface"), is(nullValue()));
-        assertThat(uri.get("interface", "192.168.0.0"), is("192.168.0.0"));
+        assertNull(uri.get("interface"));
+        assertEquals("192.168.0.0", uri.get("interface", "192.168.0.0"));
     }
 
     @Test
@@ -82,7 +79,7 @@ public class ChannelUriTest
         final ChannelUri uri = ChannelUri.parse(uriString);
 
         final String result = uri.toString();
-        assertThat(result, is(uriString));
+        assertEquals(uriString, result);
     }
 
     @Test
@@ -94,7 +91,7 @@ public class ChannelUriTest
         final String uriString = builder.build();
         final ChannelUri uri = ChannelUri.parse(uriString);
 
-        assertThat(uri.toString(), is(uriString));
+        assertEquals(uriString, uri.toString());
     }
 
     @Test
@@ -107,7 +104,7 @@ public class ChannelUriTest
         final String uriString = builder.build();
         final ChannelUri uri = ChannelUri.parse(uriString);
 
-        assertThat(uri.toString(), is(uriString));
+        assertEquals(uriString, uri.toString());
     }
 
     private void assertParseWithParams(final String uriStr, final String... params)
@@ -121,7 +118,7 @@ public class ChannelUriTest
 
         for (int i = 0; i < params.length; i += 2)
         {
-            assertThat(uri.get(params[i]), is(params[i + 1]));
+            assertEquals(params[i + 1], uri.get(params[i]));
         }
     }
 
@@ -133,9 +130,9 @@ public class ChannelUriTest
     private void assertParseWithMediaAndPrefix(final String uriStr, final String prefix, final String media)
     {
         final ChannelUri uri = ChannelUri.parse(uriStr);
-        assertThat(uri.scheme(), is("aeron"));
-        assertThat(uri.prefix(), is(prefix));
-        assertThat(uri.media(), is(media));
+        assertEquals("aeron", uri.scheme());
+        assertEquals(prefix, uri.prefix());
+        assertEquals(media, uri.media());
     }
 
     private static void assertInvalid(final String string)

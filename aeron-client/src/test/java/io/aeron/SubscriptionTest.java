@@ -25,9 +25,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 public class SubscriptionTest
@@ -86,7 +85,7 @@ public class SubscriptionTest
     @Test
     public void shouldReadNothingWhenNoImages()
     {
-        assertThat(subscription.poll(fragmentHandler, 1), is(0));
+        assertEquals(0, subscription.poll(fragmentHandler, 1));
     }
 
     @Test
@@ -94,7 +93,7 @@ public class SubscriptionTest
     {
         subscription.addImage(imageOneMock);
 
-        assertThat(subscription.poll(fragmentHandler, 1), is(0));
+        assertEquals(0, subscription.poll(fragmentHandler, 1));
     }
 
     @Test
@@ -111,7 +110,7 @@ public class SubscriptionTest
                 return 1;
             });
 
-        assertThat(subscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT), is(1));
+        assertEquals(1, subscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT));
         verify(fragmentHandler).onFragment(
             eq(atomicReadBuffer),
             eq(HEADER_LENGTH),
@@ -143,6 +142,6 @@ public class SubscriptionTest
                 return 1;
             });
 
-        assertThat(subscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT), is(2));
+        assertEquals(2, subscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT));
     }
 }

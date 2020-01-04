@@ -15,17 +15,17 @@
  */
 package io.aeron;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 import org.junit.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public final class BufferBuilderUtilTest
 {
     @Test
     public void shouldFindMaxCapacityWhenRequested()
     {
-        assertThat(BufferBuilderUtil.findSuitableCapacity(0, BufferBuilderUtil.MAX_CAPACITY),
-            is(BufferBuilderUtil.MAX_CAPACITY));
+        assertEquals(
+            BufferBuilderUtil.MAX_CAPACITY,
+            BufferBuilderUtil.findSuitableCapacity(0, BufferBuilderUtil.MAX_CAPACITY));
     }
 }

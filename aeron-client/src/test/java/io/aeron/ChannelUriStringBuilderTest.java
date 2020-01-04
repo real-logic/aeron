@@ -17,8 +17,7 @@ package io.aeron;
 
 import org.junit.Test;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ChannelUriStringBuilderTest
 {
@@ -53,7 +52,7 @@ public class ChannelUriStringBuilderTest
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
             .media("ipc");
 
-        assertThat(builder.build(), is("aeron:ipc"));
+        assertEquals("aeron:ipc", builder.build());
     }
 
     @Test
@@ -63,7 +62,7 @@ public class ChannelUriStringBuilderTest
             .media("udp")
             .endpoint("localhost:9999");
 
-        assertThat(builder.build(), is("aeron:udp?endpoint=localhost:9999"));
+        assertEquals("aeron:udp?endpoint=localhost:9999", builder.build());
     }
 
     @Test
@@ -74,7 +73,7 @@ public class ChannelUriStringBuilderTest
             .media("udp")
             .endpoint("localhost:9999");
 
-        assertThat(builder.build(), is("aeron-spy:aeron:udp?endpoint=localhost:9999"));
+        assertEquals("aeron-spy:aeron:udp?endpoint=localhost:9999", builder.build());
     }
 
     @Test
@@ -86,7 +85,7 @@ public class ChannelUriStringBuilderTest
             .ttl(9)
             .termLength(1024 * 128);
 
-        assertThat(builder.build(), is("aeron:udp?endpoint=localhost:9999|term-length=131072|ttl=9"));
+        assertEquals("aeron:udp?endpoint=localhost:9999|term-length=131072|ttl=9", builder.build());
     }
 
     @Test
@@ -100,8 +99,8 @@ public class ChannelUriStringBuilderTest
             .termId(999)
             .termOffset(64);
 
-        assertThat(
-            builder.build(),
-            is("aeron:udp?endpoint=address:9999|term-length=131072|init-term-id=777|term-id=999|term-offset=64"));
+        assertEquals(
+            "aeron:udp?endpoint=address:9999|term-length=131072|init-term-id=777|term-id=999|term-offset=64",
+            builder.build());
     }
 }

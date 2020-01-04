@@ -22,8 +22,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static org.agrona.BitUtil.align;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 public class TermGapScannerTest
@@ -49,7 +48,7 @@ public class TermGapScannerTest
 
         when(termBuffer.getIntVolatile(frameOffset)).thenReturn(HEADER_LENGTH);
 
-        assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, 0, highWaterMark, gapHandler), is(0));
+        assertEquals(0, TermGapScanner.scanForGap(termBuffer, TERM_ID, 0, highWaterMark, gapHandler));
 
         verify(gapHandler).onGap(TERM_ID, 0, frameOffset);
     }
@@ -65,7 +64,7 @@ public class TermGapScannerTest
         when(termBuffer.getIntVolatile(highWaterMark - align(HEADER_LENGTH, FRAME_ALIGNMENT)))
             .thenReturn(HEADER_LENGTH);
 
-        assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(tail));
+        assertEquals(tail, TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler));
 
         verify(gapHandler).onGap(TERM_ID, tail, align(HEADER_LENGTH, FRAME_ALIGNMENT));
     }
@@ -81,7 +80,7 @@ public class TermGapScannerTest
         when(termBuffer.getIntVolatile(highWaterMark - align(HEADER_LENGTH, FRAME_ALIGNMENT)))
             .thenReturn(HEADER_LENGTH);
 
-        assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(tail));
+        assertEquals(tail, TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler));
 
         verify(gapHandler).onGap(TERM_ID, tail, align(HEADER_LENGTH, FRAME_ALIGNMENT));
     }
@@ -96,8 +95,8 @@ public class TermGapScannerTest
         when(termBuffer.getIntVolatile(tail)).thenReturn(paddingLength);
         when(termBuffer.getIntVolatile(tail + HEADER_LENGTH)).thenReturn(0);
 
-        assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler),
-            is(LOG_BUFFER_CAPACITY));
+        assertEquals(
+            LOG_BUFFER_CAPACITY, TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler));
 
         verifyNoInteractions(gapHandler);
     }

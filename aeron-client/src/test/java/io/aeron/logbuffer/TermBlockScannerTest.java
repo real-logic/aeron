@@ -23,8 +23,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import static io.aeron.logbuffer.FrameDescriptor.typeOffset;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_DATA;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
@@ -47,7 +46,7 @@ public class TermBlockScannerTest
         final int limit = termBuffer.capacity();
 
         final int newOffset = TermBlockScanner.scan(termBuffer, offset, limit);
-        assertThat(newOffset, is(offset));
+        assertEquals(offset, newOffset);
     }
 
     @Test
@@ -62,7 +61,7 @@ public class TermBlockScannerTest
         when(termBuffer.getShort(typeOffset(offset))).thenReturn((short)HDR_TYPE_DATA);
 
         final int newOffset = TermBlockScanner.scan(termBuffer, offset, limit);
-        assertThat(newOffset, is(alignedMessageLength));
+        assertEquals(alignedMessageLength, newOffset);
     }
 
     @Test
@@ -79,7 +78,7 @@ public class TermBlockScannerTest
         when(termBuffer.getShort(typeOffset(alignedMessageLength))).thenReturn((short)HDR_TYPE_DATA);
 
         final int newOffset = TermBlockScanner.scan(termBuffer, offset, limit);
-        assertThat(newOffset, is(alignedMessageLength * 2));
+        assertEquals(alignedMessageLength * 2, newOffset);
     }
 
     @Test
@@ -99,7 +98,7 @@ public class TermBlockScannerTest
         when(termBuffer.getShort(typeOffset(alignedMessageLength * 2))).thenReturn((short)HDR_TYPE_DATA);
 
         final int newOffset = TermBlockScanner.scan(termBuffer, offset, limit);
-        assertThat(newOffset, is(limit));
+        assertEquals(limit, newOffset);
     }
 
     @Test
@@ -118,7 +117,7 @@ public class TermBlockScannerTest
         when(termBuffer.getShort(typeOffset(alignedMessageLength * 2))).thenReturn((short)HDR_TYPE_DATA);
 
         final int newOffset = TermBlockScanner.scan(termBuffer, offset, limit);
-        assertThat(newOffset, is(alignedMessageLength * 2));
+        assertEquals(alignedMessageLength * 2, newOffset);
     }
 
     @Test
@@ -133,7 +132,7 @@ public class TermBlockScannerTest
         when(termBuffer.getShort(typeOffset(offset))).thenReturn((short)HDR_TYPE_DATA);
 
         final int newOffset = TermBlockScanner.scan(termBuffer, offset, limit);
-        assertThat(newOffset, is(offset));
+        assertEquals(offset, newOffset);
     }
 
     @Test
@@ -147,7 +146,7 @@ public class TermBlockScannerTest
         when(termBuffer.getShort(typeOffset(offset))).thenReturn((short)HDR_TYPE_DATA);
 
         final int newOffset = TermBlockScanner.scan(termBuffer, offset, alignedMessageLength);
-        assertThat(newOffset, is(alignedMessageLength));
+        assertEquals(alignedMessageLength, newOffset);
     }
 
     @Test
@@ -164,9 +163,9 @@ public class TermBlockScannerTest
         when(termBuffer.getShort(typeOffset(alignedMessageLength))).thenReturn((short)HDR_TYPE_PAD);
 
         final int firstOffset = TermBlockScanner.scan(termBuffer, offset, limit);
-        assertThat(firstOffset, is(alignedMessageLength));
+        assertEquals(alignedMessageLength, firstOffset);
 
         final int secondOffset = TermBlockScanner.scan(termBuffer, firstOffset, limit);
-        assertThat(secondOffset, is(alignedMessageLength * 2));
+        assertEquals(alignedMessageLength * 2, secondOffset);
     }
 }

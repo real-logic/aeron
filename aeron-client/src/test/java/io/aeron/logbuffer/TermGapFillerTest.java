@@ -26,8 +26,7 @@ import static io.aeron.logbuffer.FrameDescriptor.PADDING_FRAME_TYPE;
 import static io.aeron.logbuffer.FrameDescriptor.UNFRAGMENTED;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TermGapFillerTest
 {
@@ -55,12 +54,13 @@ public class TermGapFillerTest
 
         assertTrue(TermGapFiller.tryFillGap(metaDataBuffer, termBuffer, TERM_ID, gapOffset, gapLength));
 
-        assertThat(dataFlyweight.frameLength(), is(gapLength));
-        assertThat(dataFlyweight.termOffset(), is(gapOffset));
-        assertThat(dataFlyweight.sessionId(), is(SESSION_ID));
-        assertThat(dataFlyweight.termId(), is(TERM_ID));
-        assertThat(dataFlyweight.headerType(), is(PADDING_FRAME_TYPE));
-        assertThat((byte)(dataFlyweight.flags()), is(UNFRAGMENTED));
+        assertEquals(gapLength, dataFlyweight.frameLength());
+        assertEquals(gapLength, dataFlyweight.frameLength());
+        assertEquals(gapOffset, dataFlyweight.termOffset());
+        assertEquals(SESSION_ID, dataFlyweight.sessionId());
+        assertEquals(TERM_ID, dataFlyweight.termId());
+        assertEquals(PADDING_FRAME_TYPE, dataFlyweight.headerType());
+        assertEquals(UNFRAGMENTED, (byte)(dataFlyweight.flags()));
     }
 
     @Test
@@ -91,12 +91,12 @@ public class TermGapFillerTest
         assertTrue(TermGapFiller.tryFillGap(metaDataBuffer, termBuffer, TERM_ID, gapOffset, gapLength));
 
         dataFlyweight.wrap(termBuffer, gapOffset, termBuffer.capacity() - gapOffset);
-        assertThat(dataFlyweight.frameLength(), is(gapLength));
-        assertThat(dataFlyweight.termOffset(), is(gapOffset));
-        assertThat(dataFlyweight.sessionId(), is(SESSION_ID));
-        assertThat(dataFlyweight.termId(), is(TERM_ID));
-        assertThat(dataFlyweight.headerType(), is(PADDING_FRAME_TYPE));
-        assertThat((byte)(dataFlyweight.flags()), is(UNFRAGMENTED));
+        assertEquals(gapLength, dataFlyweight.frameLength());
+        assertEquals(gapOffset, dataFlyweight.termOffset());
+        assertEquals(SESSION_ID, dataFlyweight.sessionId());
+        assertEquals(TERM_ID, dataFlyweight.termId());
+        assertEquals(PADDING_FRAME_TYPE, dataFlyweight.headerType());
+        assertEquals(UNFRAGMENTED, (byte)(dataFlyweight.flags()));
     }
 
     @Test
@@ -128,12 +128,12 @@ public class TermGapFillerTest
         assertTrue(TermGapFiller.tryFillGap(metaDataBuffer, termBuffer, TERM_ID, gapOffset, gapLength));
 
         dataFlyweight.wrap(termBuffer, gapOffset, termBuffer.capacity() - gapOffset);
-        assertThat(dataFlyweight.frameLength(), is(gapLength));
-        assertThat(dataFlyweight.termOffset(), is(gapOffset));
-        assertThat(dataFlyweight.sessionId(), is(SESSION_ID));
-        assertThat(dataFlyweight.termId(), is(TERM_ID));
-        assertThat(dataFlyweight.headerType(), is(PADDING_FRAME_TYPE));
-        assertThat((byte)(dataFlyweight.flags()), is(UNFRAGMENTED));
+        assertEquals(gapLength, dataFlyweight.frameLength());
+        assertEquals(gapOffset, dataFlyweight.termOffset());
+        assertEquals(SESSION_ID, dataFlyweight.sessionId());
+        assertEquals(TERM_ID, dataFlyweight.termId());
+        assertEquals(PADDING_FRAME_TYPE, dataFlyweight.headerType());
+        assertEquals(UNFRAGMENTED, (byte)(dataFlyweight.flags()));
     }
 
     @Test
@@ -153,11 +153,11 @@ public class TermGapFillerTest
         assertTrue(TermGapFiller.tryFillGap(metaDataBuffer, termBuffer, TERM_ID, gapOffset, gapLength));
 
         dataFlyweight.wrap(termBuffer, gapOffset, termBuffer.capacity() - gapOffset);
-        assertThat(dataFlyweight.frameLength(), is(gapLength));
-        assertThat(dataFlyweight.termOffset(), is(gapOffset));
-        assertThat(dataFlyweight.sessionId(), is(SESSION_ID));
-        assertThat(dataFlyweight.termId(), is(TERM_ID));
-        assertThat(dataFlyweight.headerType(), is(PADDING_FRAME_TYPE));
-        assertThat((byte)(dataFlyweight.flags()), is(UNFRAGMENTED));
+        assertEquals(gapLength, dataFlyweight.frameLength());
+        assertEquals(gapOffset, dataFlyweight.termOffset());
+        assertEquals(SESSION_ID, dataFlyweight.sessionId());
+        assertEquals(TERM_ID, dataFlyweight.termId());
+        assertEquals(PADDING_FRAME_TYPE, dataFlyweight.headerType());
+        assertEquals(UNFRAGMENTED, (byte)(dataFlyweight.flags()));
     }
 }

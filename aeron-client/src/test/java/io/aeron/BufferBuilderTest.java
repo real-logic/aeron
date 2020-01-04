@@ -22,12 +22,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import static io.aeron.BufferBuilderUtil.MIN_ALLOCATED_CAPACITY;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThan;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class BufferBuilderTest
 {
@@ -36,26 +36,26 @@ public class BufferBuilderTest
     @Test
     public void shouldInitialiseToDefaultValues()
     {
-        assertThat(bufferBuilder.capacity(), is(0));
-        assertThat(bufferBuilder.buffer().capacity(), is(0));
-        assertThat(bufferBuilder.limit(), is(0));
+        assertEquals(0, bufferBuilder.capacity());
+        assertEquals(0, bufferBuilder.buffer().capacity());
+        assertEquals(0, bufferBuilder.limit());
     }
 
     @Test
     public void shouldGrowDirectBuffer()
     {
         final BufferBuilder builder = new BufferBuilder(0, true);
-        assertThat(builder.capacity(), is(0));
-        assertThat(builder.buffer().capacity(), is(0));
-        assertThat(builder.limit(), is(0));
+        assertEquals(0, builder.capacity());
+        assertEquals(0, builder.buffer().capacity());
+        assertEquals(0, builder.limit());
 
         final int appendedLength = 10;
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[appendedLength]);
         builder.append(srcBuffer, 0, srcBuffer.capacity());
 
-        assertThat(builder.capacity(), is(MIN_ALLOCATED_CAPACITY));
-        assertThat(builder.buffer().capacity(), is(MIN_ALLOCATED_CAPACITY));
-        assertThat(builder.limit(), is(appendedLength));
+        assertEquals(MIN_ALLOCATED_CAPACITY, builder.capacity());
+        assertEquals(MIN_ALLOCATED_CAPACITY, builder.buffer().capacity());
+        assertEquals(appendedLength, builder.limit());
     }
 
     @Test
@@ -65,7 +65,7 @@ public class BufferBuilderTest
 
         bufferBuilder.append(srcBuffer, 0, 0);
 
-        assertThat(bufferBuilder.limit(), is(0));
+        assertEquals(0, bufferBuilder.limit());
     }
 
     @Test
@@ -76,7 +76,7 @@ public class BufferBuilderTest
 
         bufferBuilder.append(srcBuffer, 0, srcBuffer.capacity());
 
-        assertThat(bufferBuilder.limit(), is(srcCapacity));
+        assertEquals(srcCapacity, bufferBuilder.limit());
         assertThat(bufferBuilder.capacity(), greaterThanOrEqualTo(srcCapacity));
     }
 
@@ -87,11 +87,11 @@ public class BufferBuilderTest
 
         bufferBuilder.append(srcBuffer, 0, srcBuffer.capacity());
 
-        assertThat(bufferBuilder.limit(), is(srcBuffer.capacity()));
+        assertEquals(srcBuffer.capacity(), bufferBuilder.limit());
 
         bufferBuilder.reset();
 
-        assertThat(bufferBuilder.limit(), is(0));
+        assertEquals(0, bufferBuilder.limit());
     }
 
     @Test
@@ -106,8 +106,8 @@ public class BufferBuilderTest
         final byte[] temp = new byte[bytes.length];
         bufferBuilder.buffer().getBytes(0, temp, 0, bytes.length);
 
-        assertThat(bufferBuilder.limit(), is(bytes.length));
-        assertThat(bufferBuilder.capacity(), is(MIN_ALLOCATED_CAPACITY));
+        assertEquals(bytes.length, bufferBuilder.limit());
+        assertEquals(MIN_ALLOCATED_CAPACITY, bufferBuilder.capacity());
         assertArrayEquals(temp, bytes);
     }
 
@@ -124,8 +124,8 @@ public class BufferBuilderTest
         final byte[] temp = new byte[bytes.length];
         bufferBuilder.buffer().getBytes(0, temp, 0, bytes.length);
 
-        assertThat(bufferBuilder.limit(), is(bytes.length));
-        assertThat(bufferBuilder.capacity(), is(MIN_ALLOCATED_CAPACITY));
+        assertEquals(bytes.length, bufferBuilder.limit());
+        assertEquals(MIN_ALLOCATED_CAPACITY, bufferBuilder.capacity());
         assertArrayEquals(temp, bytes);
     }
 
@@ -144,8 +144,8 @@ public class BufferBuilderTest
         final byte[] temp = new byte[bufferLength];
         bufferBuilder.buffer().getBytes(0, temp, 0, bufferLength);
 
-        assertThat(bufferBuilder.limit(), is(bufferLength));
-        assertThat(bufferBuilder.capacity(), is(bufferLength));
+        assertEquals(bufferLength, bufferBuilder.limit());
+        assertEquals(bufferLength, bufferBuilder.capacity());
         assertArrayEquals(temp, buffer);
     }
 
@@ -164,7 +164,7 @@ public class BufferBuilderTest
         final byte[] temp = new byte[buffer.length];
         bufferBuilder.buffer().getBytes(0, temp, 0, buffer.length);
 
-        assertThat(bufferBuilder.limit(), is(buffer.length));
+        assertEquals(buffer.length, bufferBuilder.limit());
         assertThat(bufferBuilder.capacity(), greaterThan(bufferLength));
         assertArrayEquals(temp, buffer);
     }
@@ -187,7 +187,7 @@ public class BufferBuilderTest
         final byte[] temp = new byte[buffer.length];
         bufferBuilder.buffer().getBytes(0, temp, 0, secondLength + firstLength);
 
-        assertThat(bufferBuilder.limit(), is(firstLength + secondLength));
+        assertEquals(firstLength + secondLength, bufferBuilder.limit());
         assertThat(bufferBuilder.capacity(), greaterThanOrEqualTo(firstLength + secondLength));
         assertArrayEquals(temp, buffer);
     }
@@ -208,7 +208,7 @@ public class BufferBuilderTest
         }
 
         final int expectedLimit = buffer.length * bufferCount;
-        assertThat(bufferBuilder.limit(), is(expectedLimit));
+        assertEquals(expectedLimit, bufferBuilder.limit());
         final int expandedCapacity = bufferBuilder.capacity();
         assertThat(expandedCapacity, greaterThan(expectedLimit));
 
@@ -220,7 +220,7 @@ public class BufferBuilderTest
 
         bufferBuilder.compact();
 
-        assertThat(bufferBuilder.limit(), is(buffer.length * 3));
+        assertEquals(buffer.length * 3, bufferBuilder.limit());
         assertThat(bufferBuilder.capacity(), lessThan(expandedCapacity));
     }
 }

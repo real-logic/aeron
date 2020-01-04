@@ -26,8 +26,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteOrder;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 public class FragmentAssemblerTest
@@ -86,12 +85,12 @@ public class FragmentAssemblerTest
         final UnsafeBuffer capturedBuffer = bufferArg.getValue();
         for (int i = 0; i < srcBuffer.capacity(); i++)
         {
-            assertThat("same at i=" + i, capturedBuffer.getByte(i), is(srcBuffer.getByte(i)));
+            assertEquals(srcBuffer.getByte(i), capturedBuffer.getByte(i), "same at i=" + i);
         }
 
         final Header capturedHeader = headerArg.getValue();
-        assertThat(capturedHeader.sessionId(), is(SESSION_ID));
-        assertThat(capturedHeader.flags(), is(FrameDescriptor.END_FRAG_FLAG));
+        assertEquals(SESSION_ID, capturedHeader.sessionId());
+        assertEquals(FrameDescriptor.END_FRAG_FLAG, capturedHeader.flags());
     }
 
     @Test
@@ -126,12 +125,12 @@ public class FragmentAssemblerTest
         final UnsafeBuffer capturedBuffer = bufferArg.getValue();
         for (int i = 0; i < srcBuffer.capacity(); i++)
         {
-            assertThat("same at i=" + i, capturedBuffer.getByte(i), is(srcBuffer.getByte(i)));
+            assertEquals(srcBuffer.getByte(i), capturedBuffer.getByte(i), "same at i=" + i);
         }
 
         final Header capturedHeader = headerArg.getValue();
-        assertThat(capturedHeader.sessionId(), is(SESSION_ID));
-        assertThat(capturedHeader.flags(), is(FrameDescriptor.END_FRAG_FLAG));
+        assertEquals(SESSION_ID, capturedHeader.sessionId());
+        assertEquals(FrameDescriptor.END_FRAG_FLAG, capturedHeader.flags());
     }
 
     @Test

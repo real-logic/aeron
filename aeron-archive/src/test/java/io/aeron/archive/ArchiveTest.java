@@ -45,7 +45,6 @@ import java.util.function.IntConsumer;
 
 import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
-import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
 
 public class ArchiveTest
@@ -59,7 +58,7 @@ public class ArchiveTest
 
         final String actual = Archive.segmentFileName(recordingId, segmentPosition);
 
-        assertThat(actual, is(expected));
+        assertEquals(expected, actual);
     }
 
     @Test
@@ -70,43 +69,37 @@ public class ArchiveTest
 
         long startPosition = 0;
         long position = 0;
-        assertThat(segmentFileBasePosition(startPosition, position, termLength, segmentLength), is(0L));
+        assertEquals(0L, segmentFileBasePosition(startPosition, position, termLength, segmentLength));
 
         startPosition = 0;
         position = termLength * 2;
-        assertThat(segmentFileBasePosition(startPosition, position, termLength, segmentLength), is(0L));
+        assertEquals(0L, segmentFileBasePosition(startPosition, position, termLength, segmentLength));
 
         startPosition = 0;
         position = segmentLength;
-        assertThat(
-            segmentFileBasePosition(startPosition, position, termLength, segmentLength),
-            is((long)segmentLength));
+        assertEquals(segmentLength, segmentFileBasePosition(startPosition, position, termLength, segmentLength));
 
         startPosition = termLength;
         position = termLength;
-        assertThat(segmentFileBasePosition(startPosition, position, termLength, segmentLength), is(startPosition));
+        assertEquals(startPosition, segmentFileBasePosition(startPosition, position, termLength, segmentLength));
 
         startPosition = termLength * 4;
         position = termLength * 4;
-        assertThat(segmentFileBasePosition(startPosition, position, termLength, segmentLength), is(startPosition));
+        assertEquals(startPosition, segmentFileBasePosition(startPosition, position, termLength, segmentLength));
 
         startPosition = termLength;
         position = termLength + segmentLength;
-        assertThat(
-            segmentFileBasePosition(startPosition, position, termLength, segmentLength),
-            is((long)(termLength + segmentLength)));
+        assertEquals(
+            termLength + segmentLength, segmentFileBasePosition(startPosition, position, termLength, segmentLength));
 
         startPosition = termLength;
         position = termLength + segmentLength - FrameDescriptor.FRAME_ALIGNMENT;
-        assertThat(
-            segmentFileBasePosition(startPosition, position, termLength, segmentLength),
-            is((long)termLength));
+        assertEquals(termLength, segmentFileBasePosition(startPosition, position, termLength, segmentLength));
 
         startPosition = termLength + FrameDescriptor.FRAME_ALIGNMENT;
         position = termLength + segmentLength;
-        assertThat(
-            segmentFileBasePosition(startPosition, position, termLength, segmentLength),
-            is((long)(termLength + segmentLength)));
+        assertEquals(
+            termLength + segmentLength, segmentFileBasePosition(startPosition, position, termLength, segmentLength));
     }
 
     @Test
@@ -151,7 +144,7 @@ public class ArchiveTest
                 archiveClient.close();
             }
 
-            assertThat(latch.getCount(), is(0L));
+            assertEquals(0L, latch.getCount());
         }
         finally
         {

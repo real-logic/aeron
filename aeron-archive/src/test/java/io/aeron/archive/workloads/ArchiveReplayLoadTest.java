@@ -49,8 +49,7 @@ import java.util.concurrent.TimeUnit;
 import static io.aeron.archive.TestUtil.*;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BufferUtil.allocateDirectAligned;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Ignore
 public class ArchiveReplayLoadTest
@@ -264,8 +263,8 @@ public class ArchiveReplayLoadTest
                 }
             }
 
-            assertThat(fragmentCount, is(MESSAGE_COUNT));
-            assertThat(remaining, is(0L));
+            assertEquals(MESSAGE_COUNT, fragmentCount);
+            assertEquals(0L, remaining);
         }
     }
 

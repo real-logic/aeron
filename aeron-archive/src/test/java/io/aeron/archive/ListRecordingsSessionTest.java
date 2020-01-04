@@ -14,8 +14,7 @@ import org.mockito.stubbing.Answer;
 
 import java.io.File;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.*;
 
 public class ListRecordingsSessionTest
@@ -171,7 +170,7 @@ public class ListRecordingsSessionTest
                 RecordingDescriptorDecoder.SCHEMA_VERSION);
 
             final int i = counter.intValue();
-            assertThat(recordingDescriptorDecoder.recordingId(), is(recordingIds[i]));
+            assertEquals(recordingIds[i], recordingDescriptorDecoder.recordingId());
             counter.set(i + 1);
 
             return buffer.getInt(0);

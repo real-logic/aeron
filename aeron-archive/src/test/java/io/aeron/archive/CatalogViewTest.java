@@ -21,13 +21,11 @@ import org.agrona.IoUtil;
 import org.agrona.concurrent.EpochClock;
 import org.junit.*;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-
 
 import io.aeron.Aeron;
 import io.aeron.archive.client.RecordingDescriptorConsumer;
@@ -73,7 +71,7 @@ public class CatalogViewTest
     public void shouldListAllRecordingsInCatalog()
     {
         final int count = CatalogView.listRecordings(archiveDir, mockRecordingDescriptorConsumer);
-        assertThat(count, is(3));
+        assertEquals(3, count);
 
         verify(mockRecordingDescriptorConsumer).onRecordingDescriptor(
             Aeron.NULL_VALUE, Aeron.NULL_VALUE, recordingOneId, 4L, Aeron.NULL_VALUE, 10L,

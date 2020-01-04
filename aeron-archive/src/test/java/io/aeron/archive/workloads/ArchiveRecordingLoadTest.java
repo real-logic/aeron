@@ -44,9 +44,8 @@ import java.util.function.BooleanSupplier;
 import static io.aeron.archive.TestUtil.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.computeTermIdFromPosition;
 import static org.agrona.BufferUtil.allocateDirectAligned;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Ignore
 public class ArchiveRecordingLoadTest
@@ -162,7 +161,7 @@ public class ArchiveRecordingLoadTest
                 }
 
                 printScore(System.currentTimeMillis() - start);
-                assertThat(expectedRecordingLength, is(recordedLength));
+                assertEquals(recordedLength, expectedRecordingLength);
 
                 aeronArchive.stopRecording(PUBLISH_URI, PUBLISH_STREAM_ID);
                 Thread.sleep(100);
@@ -277,7 +276,7 @@ public class ArchiveRecordingLoadTest
         final int lastTermId = computeTermIdFromPosition(position, positionBitsToShift, initialTermId);
         expectedRecordingLength = ((lastTermId - startTermId) * (long)termLength) + (lastTermOffset - startTermOffset);
 
-        assertThat(position - startPosition, is(expectedRecordingLength));
+        assertEquals(expectedRecordingLength, position - startPosition);
     }
 
     private void offer(final ExclusivePublication publication, final UnsafeBuffer buffer, final int length)

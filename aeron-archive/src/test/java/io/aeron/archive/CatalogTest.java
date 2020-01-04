@@ -45,10 +45,10 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.nio.file.StandardOpenOption.*;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 class CatalogTest
 {
@@ -181,7 +181,7 @@ class CatalogTest
         {
             final Catalog.CatalogEntryProcessor entryProcessor =
                 (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
-                assertThat(descriptorDecoder.stopTimestamp(), is(NULL_TIMESTAMP));
+                assertEquals(NULL_TIMESTAMP, descriptorDecoder.stopTimestamp());
 
             assertTrue(catalog.forEntry(newRecordingId, entryProcessor));
         }
@@ -192,7 +192,7 @@ class CatalogTest
         {
             final Catalog.CatalogEntryProcessor entryProcessor =
                 (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
-                assertThat(descriptorDecoder.stopTimestamp(), is(42L));
+                assertEquals(42L, descriptorDecoder.stopTimestamp());
 
             assertTrue(catalog.forEntry(newRecordingId, entryProcessor));
         }
@@ -229,8 +229,8 @@ class CatalogTest
                 newRecordingId,
                 (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 {
-                    assertThat(descriptorDecoder.stopTimestamp(), is(NULL_TIMESTAMP));
-                    assertThat(descriptorDecoder.stopPosition(), is(NULL_POSITION));
+                    assertEquals(NULL_TIMESTAMP, descriptorDecoder.stopTimestamp());
+                    assertEquals(NULL_POSITION, descriptorDecoder.stopPosition());
                 }));
         }
 
@@ -242,8 +242,8 @@ class CatalogTest
                 newRecordingId,
                 (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
                 {
-                    assertThat(descriptorDecoder.stopTimestamp(), is(42L));
-                    assertThat(descriptorDecoder.stopPosition(), is(SEGMENT_LENGTH * 3 + 1024L + 128L));
+                    assertEquals(42L, descriptorDecoder.stopTimestamp());
+                    assertEquals(SEGMENT_LENGTH * 3 + 1024L + 128L, descriptorDecoder.stopPosition());
                 }));
         }
     }

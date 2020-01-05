@@ -58,5 +58,5 @@ if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 cmake --build . --config Release
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
-ctest -C Release
+ctest -C Release --output-on-failure
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%

@@ -56,7 +56,7 @@ set(GENERATED_CODECS
     ${ARCHIVE_CODEC_TARGET_DIR}/aeron_archive_client/RecordingTransition.h)
 
 add_custom_command(OUTPUT ${GENERATED_CODECS}
-    COMMAND ./gradlew -Dcodec.target.dir=${ARCHIVE_CODEC_TARGET_DIR} :aeron-archive:generateCppCodecs
+    COMMAND ./gradlew --info -Dcodec.target.dir=${ARCHIVE_CODEC_TARGET_DIR} :aeron-archive:generateCppCodecs
     DEPENDS ${CODEC_SCHEMA} aeron-all-jar
     WORKING_DIRECTORY ${ARCHIVE_CODEC_WORKING_DIR}
     COMMENT "Generating C++ Archive codecs")

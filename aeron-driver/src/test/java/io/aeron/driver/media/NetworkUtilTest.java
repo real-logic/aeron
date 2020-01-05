@@ -22,11 +22,11 @@ import java.util.*;
 
 import static java.lang.Short.parseShort;
 import static java.net.InetAddress.getByName;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.*;
 import static io.aeron.driver.media.NetworkUtil.filterBySubnet;
 import static io.aeron.driver.media.NetworkUtil.isMatchWithPrefix;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -92,8 +92,8 @@ public class NetworkUtilTest
 
         final NetworkInterface[] filteredBySubnet = filterBySubnet(stub, getByName("192.168.0.0"), 24);
 
-        assertThat(filteredBySubnet.length, is(1));
-        assertThat(filteredBySubnet[0], is(ifc1));
+        assertEquals(1, filteredBySubnet.length);
+        assertEquals(ifc1, filteredBySubnet[0]);
     }
 
     @Test
@@ -106,7 +106,7 @@ public class NetworkUtilTest
 
         final NetworkInterface[] filteredBySubnet = filterBySubnet(stub, getByName("192.169.0.0"), 24);
 
-        assertThat(filteredBySubnet.length, is(0));
+        assertEquals(0, filteredBySubnet.length);
     }
 
     @Test
@@ -121,7 +121,7 @@ public class NetworkUtilTest
 
         final NetworkInterface[] filteredBySubnet = filterBySubnet(stub, getByName("192.0.0.0"), 8);
 
-        assertThat(filteredBySubnet.length, is(3));
+        assertEquals(3, filteredBySubnet.length);
         assertThat(filteredBySubnet[0], sameInstance(ifc2));
         assertThat(filteredBySubnet[1], sameInstance(ifc3));
         assertThat(filteredBySubnet[2], sameInstance(ifc1));
@@ -137,8 +137,8 @@ public class NetworkUtilTest
 
         final NetworkInterface[] filteredBySubnet = filterBySubnet(stub, getByName("fe80:0:0:0001:0002:0:0:0"), 80);
 
-        assertThat(filteredBySubnet.length, is(1));
-        assertThat(filteredBySubnet[0], is(ifc1));
+        assertEquals(1, filteredBySubnet.length);
+        assertEquals(ifc1, filteredBySubnet[0]);
     }
 
     @Test
@@ -151,7 +151,7 @@ public class NetworkUtilTest
 
         final NetworkInterface[] filteredBySubnet = filterBySubnet(stub, getByName("fe80:0:0:0004:0:0:0:0"), 64);
 
-        assertThat(filteredBySubnet.length, is(0));
+        assertEquals(0, filteredBySubnet.length);
     }
 
     @Test
@@ -166,7 +166,7 @@ public class NetworkUtilTest
 
         final NetworkInterface[] filteredBySubnet = filterBySubnet(stub, getByName("fe80:0:0:0:0:0:0:0"), 16);
 
-        assertThat(filteredBySubnet.length, is(3));
+        assertEquals(3, filteredBySubnet.length);
         assertThat(filteredBySubnet[0], sameInstance(ifc3));
         assertThat(filteredBySubnet[1], sameInstance(ifc2));
         assertThat(filteredBySubnet[2], sameInstance(ifc1));

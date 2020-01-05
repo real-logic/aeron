@@ -27,8 +27,7 @@ import org.junit.*;
 import java.io.*;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
 public class FileStoreLogFactoryTest
@@ -65,23 +64,23 @@ public class FileStoreLogFactoryTest
     {
         rawLog = fileStoreLogFactory.newPublication(CREATION_ID, TERM_BUFFER_LENGTH, PRE_ZERO_LOG);
 
-        assertThat(rawLog.termLength(), is(TERM_BUFFER_LENGTH));
+        assertEquals(TERM_BUFFER_LENGTH, rawLog.termLength());
 
         final UnsafeBuffer[] termBuffers = rawLog.termBuffers();
-        assertThat(termBuffers.length, is(PARTITION_COUNT));
+        assertEquals(PARTITION_COUNT, termBuffers.length);
 
         for (final UnsafeBuffer termBuffer : termBuffers)
         {
-            assertThat(termBuffer.capacity(), is(TERM_BUFFER_LENGTH));
-            assertThat(termBuffer.getByte(0), is((byte)0));
-            assertThat(termBuffer.getByte(TERM_BUFFER_LENGTH - 1), is((byte)0));
+            assertEquals(TERM_BUFFER_LENGTH, termBuffer.capacity());
+            assertEquals(0, termBuffer.getByte(0));
+            assertEquals(0, termBuffer.getByte(TERM_BUFFER_LENGTH - 1));
         }
 
         final UnsafeBuffer metaData = rawLog.metaData();
 
-        assertThat(metaData.capacity(), is(LogBufferDescriptor.LOG_META_DATA_LENGTH));
-        assertThat(metaData.getByte(0), is((byte)0));
-        assertThat(metaData.getByte(LogBufferDescriptor.LOG_META_DATA_LENGTH - 1), is((byte)0));
+        assertEquals(LogBufferDescriptor.LOG_META_DATA_LENGTH, metaData.capacity());
+        assertEquals(0, metaData.getByte(0));
+        assertEquals(0, metaData.getByte(LogBufferDescriptor.LOG_META_DATA_LENGTH - 1));
     }
 
     @Test
@@ -90,22 +89,22 @@ public class FileStoreLogFactoryTest
         final int imageTermBufferLength = TERM_BUFFER_LENGTH / 2;
         rawLog = fileStoreLogFactory.newImage(CREATION_ID, imageTermBufferLength, PRE_ZERO_LOG);
 
-        assertThat(rawLog.termLength(), is(imageTermBufferLength));
+        assertEquals(imageTermBufferLength, rawLog.termLength());
 
         final UnsafeBuffer[] termBuffers = rawLog.termBuffers();
-        assertThat(termBuffers.length, is(PARTITION_COUNT));
+        assertEquals(PARTITION_COUNT, termBuffers.length);
 
         for (final UnsafeBuffer termBuffer : termBuffers)
         {
-            assertThat(termBuffer.capacity(), is(imageTermBufferLength));
-            assertThat(termBuffer.getByte(0), is((byte)0));
-            assertThat(termBuffer.getByte(imageTermBufferLength - 1), is((byte)0));
+            assertEquals(imageTermBufferLength, termBuffer.capacity());
+            assertEquals(0, termBuffer.getByte(0));
+            assertEquals(0, termBuffer.getByte(imageTermBufferLength - 1));
         }
 
         final UnsafeBuffer metaData = rawLog.metaData();
 
-        assertThat(metaData.capacity(), is(LogBufferDescriptor.LOG_META_DATA_LENGTH));
-        assertThat(metaData.getByte(0), is((byte)0));
-        assertThat(metaData.getByte(LogBufferDescriptor.LOG_META_DATA_LENGTH - 1), is((byte)0));
+        assertEquals(LogBufferDescriptor.LOG_META_DATA_LENGTH, metaData.capacity());
+        assertEquals(0, metaData.getByte(0));
+        assertEquals(0, metaData.getByte(LogBufferDescriptor.LOG_META_DATA_LENGTH - 1));
     }
 }

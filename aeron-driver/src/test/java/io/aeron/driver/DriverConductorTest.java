@@ -54,9 +54,11 @@ import static io.aeron.ErrorCode.*;
 import static io.aeron.driver.Configuration.*;
 import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
 import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 public class DriverConductorTest
@@ -189,7 +191,7 @@ public class DriverConductorTest
             (ex) ->
             {
                 assertThat(ex, instanceOf(InvalidChannelException.class));
-                assertThat(ex.getMessage(), Matchers.containsString(expectedMessage));
+                assertThat(ex.getMessage(), containsString(expectedMessage));
                 return true;
             }));
     }
@@ -207,7 +209,7 @@ public class DriverConductorTest
         verify(senderProxy, times(1)).newNetworkPublication(captor.capture());
 
         final NetworkPublication publication = captor.getValue();
-        assertThat(publication.streamId(), is(STREAM_ID_1));
+        assertEquals(STREAM_ID_1, publication.streamId());
 
         verify(mockClientProxy).onPublicationReady(
             anyLong(), anyLong(), eq(STREAM_ID_1), anyInt(), any(), anyInt(), anyInt(), eq(false));
@@ -237,12 +239,12 @@ public class DriverConductorTest
         verify(senderProxy, times(1)).newNetworkPublication(captor.capture());
 
         final NetworkPublication publication = captor.getValue();
-        assertThat(publication.streamId(), is(STREAM_ID_1));
-        assertThat(publication.mtuLength(), is(mtu));
+        assertEquals(STREAM_ID_1, publication.streamId());
+        assertEquals(mtu, publication.mtuLength());
 
         final long expectedPosition = termLength * (termId - initialTermId) + termOffset;
-        assertThat(publication.producerPosition(), is(expectedPosition));
-        assertThat(publication.consumerPosition(), is(expectedPosition));
+        assertEquals(expectedPosition, publication.producerPosition());
+        assertEquals(expectedPosition, publication.consumerPosition());
 
         verify(mockClientProxy).onPublicationReady(
             anyLong(), anyLong(), eq(STREAM_ID_1), anyInt(), any(), anyInt(), anyInt(), eq(true));
@@ -271,11 +273,11 @@ public class DriverConductorTest
 
         final long registrationId = captor.getValue();
         final IpcPublication publication = driverConductor.getIpcPublication(registrationId);
-        assertThat(publication.streamId(), is(STREAM_ID_1));
+        assertEquals(STREAM_ID_1, publication.streamId());
 
         final long expectedPosition = termLength * (termId - initialTermId) + termOffset;
-        assertThat(publication.producerPosition(), is(expectedPosition));
-        assertThat(publication.consumerPosition(), is(expectedPosition));
+        assertEquals(expectedPosition, publication.producerPosition());
+        assertEquals(expectedPosition, publication.consumerPosition());
     }
 
     @Test
@@ -361,7 +363,7 @@ public class DriverConductorTest
         final ReceiveChannelEndpoint channelEndpoint = driverConductor.receiverChannelEndpoint(udpChannel);
 
         assertNotNull(channelEndpoint);
-        assertThat(channelEndpoint.streamCount(), is(3));
+        assertEquals(3, channelEndpoint.streamCount());
 
         driverProxy.removeSubscription(id1);
         driverProxy.removeSubscription(id2);
@@ -369,7 +371,7 @@ public class DriverConductorTest
         driverConductor.doWork();
 
         assertNotNull(driverConductor.receiverChannelEndpoint(udpChannel));
-        assertThat(channelEndpoint.streamCount(), is(1));
+        assertEquals(1, channelEndpoint.streamCount());
     }
 
     @Test
@@ -386,7 +388,7 @@ public class DriverConductorTest
         final ReceiveChannelEndpoint channelEndpoint = driverConductor.receiverChannelEndpoint(udpChannel);
 
         assertNotNull(channelEndpoint);
-        assertThat(channelEndpoint.streamCount(), is(3));
+        assertEquals(3, channelEndpoint.streamCount());
 
         driverProxy.removeSubscription(id2);
         driverProxy.removeSubscription(id3);
@@ -394,7 +396,7 @@ public class DriverConductorTest
         driverConductor.doWork();
 
         assertNotNull(driverConductor.receiverChannelEndpoint(udpChannel));
-        assertThat(channelEndpoint.streamCount(), is(1));
+        assertEquals(1, channelEndpoint.streamCount());
 
         driverProxy.removeSubscription(id1);
 
@@ -435,7 +437,7 @@ public class DriverConductorTest
         final ArgumentCaptor<NetworkPublication> argumentCaptor = ArgumentCaptor.forClass(NetworkPublication.class);
         verify(senderProxy).newNetworkPublication(argumentCaptor.capture());
 
-        assertThat(argumentCaptor.getValue().mtuLength(), is(mtuLength));
+        assertEquals(mtuLength, argumentCaptor.getValue().mtuLength());
     }
 
     @Test
@@ -547,7 +549,7 @@ public class DriverConductorTest
         publication.onStatusMessage(msg, new InetSocketAddress("localhost", 4059));
         appender.appendUnfragmentedMessage(headerWriter, srcBuffer, 0, 256, null, termId);
 
-        assertThat(publication.state(), is(NetworkPublication.State.ACTIVE));
+        assertEquals(NetworkPublication.State.ACTIVE, publication.state());
 
         doWorkUntil(
             () -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2,
@@ -568,7 +570,7 @@ public class DriverConductorTest
 
         currentTimeNs += timerIntervalNs() + PUBLICATION_LINGER_TIMEOUT_NS;
         driverConductor.doWork();
-        assertThat(publication.state(), is(NetworkPublication.State.CLOSING));
+        assertEquals(NetworkPublication.State.CLOSING, publication.state());
 
         verify(senderProxy).removeNetworkPublication(eq(publication));
         assertNull(driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_4000)));
@@ -650,8 +652,8 @@ public class DriverConductorTest
         verify(receiverProxy).newPublicationImage(eq(receiveChannelEndpoint), captor.capture());
 
         final PublicationImage publicationImage = captor.getValue();
-        assertThat(publicationImage.sessionId(), is(SESSION_ID));
-        assertThat(publicationImage.streamId(), is(STREAM_ID_1));
+        assertEquals(SESSION_ID, publicationImage.sessionId());
+        assertEquals(STREAM_ID_1, publicationImage.streamId());
 
         verify(mockClientProxy).onAvailableImage(
             anyLong(), eq(STREAM_ID_1), eq(SESSION_ID), anyLong(), anyInt(), anyString(), anyString());
@@ -1355,7 +1357,7 @@ public class DriverConductorTest
         final ArgumentCaptor<NetworkPublication> argumentCaptor = ArgumentCaptor.forClass(NetworkPublication.class);
         verify(senderProxy).newNetworkPublication(argumentCaptor.capture());
 
-        assertThat(argumentCaptor.getValue().sessionId(), is(sessionId));
+        assertEquals(sessionId, argumentCaptor.getValue().sessionId());
     }
 
     @Test
@@ -1370,7 +1372,7 @@ public class DriverConductorTest
         final ArgumentCaptor<NetworkPublication> argumentCaptor = ArgumentCaptor.forClass(NetworkPublication.class);
         verify(senderProxy).newNetworkPublication(argumentCaptor.capture());
 
-        assertThat(argumentCaptor.getValue().sessionId(), is(sessionId));
+        assertEquals(sessionId, argumentCaptor.getValue().sessionId());
     }
 
     @Test

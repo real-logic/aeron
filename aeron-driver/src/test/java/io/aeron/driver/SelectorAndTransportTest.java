@@ -32,8 +32,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 public class SelectorAndTransportTest
@@ -173,7 +172,7 @@ public class SelectorAndTransportTest
             processLoop(dataTransportPoller, 1);
         }
 
-        assertThat(dataHeadersReceived.get(), is(1));
+        assertEquals(1, dataHeadersReceived.get());
     }
 
     @Test(timeout = 1000)
@@ -236,7 +235,7 @@ public class SelectorAndTransportTest
             processLoop(dataTransportPoller, 1);
         }
 
-        assertThat(dataHeadersReceived.get(), is(1));
+        assertEquals(1, dataHeadersReceived.get());
     }
 
     @Test(timeout = 1000)

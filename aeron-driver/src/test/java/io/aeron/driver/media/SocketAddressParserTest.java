@@ -22,9 +22,9 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SocketAddressParserTest
 {
@@ -100,14 +100,14 @@ public class SocketAddressParserTest
     private void assertCorrectParse(final String host, final int port) throws UnknownHostException
     {
         final InetSocketAddress address = SocketAddressParser.parse(host + ":" + port);
-        assertThat(address.getAddress(), is(InetAddress.getByName(host)));
-        assertThat(address.getPort(), is(port));
+        assertEquals(InetAddress.getByName(host), address.getAddress());
+        assertEquals(port, address.getPort());
     }
 
     private void assertCorrectParseIpV6(final String host, final int port) throws UnknownHostException
     {
         final InetSocketAddress address = SocketAddressParser.parse("[" + host + "]:" + port);
-        assertThat(address.getAddress(), is(InetAddress.getByName(host)));
-        assertThat(address.getPort(), is(port));
+        assertEquals(InetAddress.getByName(host), address.getAddress());
+        assertEquals(port, address.getPort());
     }
 }

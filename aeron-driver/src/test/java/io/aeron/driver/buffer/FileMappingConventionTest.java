@@ -20,7 +20,7 @@ import io.aeron.driver.media.UdpChannel;
 
 import java.io.File;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FileMappingConventionTest
 {
@@ -41,7 +41,7 @@ public class FileMappingConventionTest
     private void assertIsValidFile(final String channelDir)
     {
         final File file = new File(channelDir);
-        assertTrue("Can't create file", file.mkdir());
-        assertTrue("Failed to clean up", file.delete());
+        assertTrue(file.mkdir(), "Can't create file");
+        assertTrue(file.delete(), "Failed to clean up");
     }
 }

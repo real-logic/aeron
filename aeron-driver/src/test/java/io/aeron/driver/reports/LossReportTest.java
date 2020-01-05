@@ -24,8 +24,8 @@ import java.nio.ByteBuffer;
 
 import static io.aeron.driver.reports.LossReport.*;
 import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.*;
 
 public class LossReportTest
@@ -75,8 +75,8 @@ public class LossReportTest
         final long latestTimestamp = 10;
         entry.recordObservation(additionBytesLost, latestTimestamp);
 
-        assertThat(unsafeBuffer.getLong(LAST_OBSERVATION_OFFSET), is(latestTimestamp));
-        assertThat(unsafeBuffer.getLong(TOTAL_BYTES_LOST_OFFSET), is(initialBytesLost + additionBytesLost));
-        assertThat(unsafeBuffer.getLong(OBSERVATION_COUNT_OFFSET), is(2L));
+        assertEquals(latestTimestamp, unsafeBuffer.getLong(LAST_OBSERVATION_OFFSET));
+        assertEquals(initialBytesLost + additionBytesLost, unsafeBuffer.getLong(TOTAL_BYTES_LOST_OFFSET));
+        assertEquals(2L, unsafeBuffer.getLong(OBSERVATION_COUNT_OFFSET));
     }
 }

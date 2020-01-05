@@ -26,8 +26,7 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 public class MultiSubscriberTest
@@ -67,8 +66,8 @@ public class MultiSubscriberTest
             final byte[] expectedBytes = "Hello, World! here is a small message".getBytes();
             final UnsafeBuffer srcBuffer = new UnsafeBuffer(expectedBytes);
 
-            assertThat(subscriptionOne.poll(adapterOne, FRAGMENT_COUNT_LIMIT), is(0));
-            assertThat(subscriptionTwo.poll(adapterTwo, FRAGMENT_COUNT_LIMIT), is(0));
+            assertEquals(0, subscriptionOne.poll(adapterOne, FRAGMENT_COUNT_LIMIT));
+            assertEquals(0, subscriptionTwo.poll(adapterTwo, FRAGMENT_COUNT_LIMIT));
 
             while (!subscriptionOne.isConnected() || !subscriptionTwo.isConnected())
             {
@@ -112,7 +111,7 @@ public class MultiSubscriberTest
         for (int i = 0; i < srcBuffer.capacity(); i++)
         {
             final int index = offset + i;
-            assertThat("same at " + index, capturedBuffer.getByte(index), is(srcBuffer.getByte(i)));
+            assertEquals(srcBuffer.getByte(i), capturedBuffer.getByte(index), "same at " + index);
         }
     }
 }

@@ -28,7 +28,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;

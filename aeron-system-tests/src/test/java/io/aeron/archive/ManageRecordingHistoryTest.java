@@ -32,8 +32,7 @@ import java.io.File;
 
 import static io.aeron.archive.Common.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ManageRecordingHistoryTest
 {
@@ -109,8 +108,8 @@ public class ManageRecordingHistoryTest
                 startPosition, SEGMENT_LENGTH * 2L, TERM_LENGTH, SEGMENT_LENGTH);
 
             final long count = aeronArchive.purgeSegments(recordingId, segmentFileBasePosition);
-            assertThat(count, is(2L));
-            assertThat(aeronArchive.getStartPosition(recordingId), is(segmentFileBasePosition));
+            assertEquals(2L, count);
+            assertEquals(segmentFileBasePosition, aeronArchive.getStartPosition(recordingId));
 
             aeronArchive.stopRecording(publication);
         }
@@ -127,7 +126,7 @@ public class ManageRecordingHistoryTest
 
         try (Publication publication = aeronArchive.addRecordedExclusivePublication(uriBuilder.build(), STREAM_ID))
         {
-            assertThat(publication.position(), is(startPosition));
+            assertEquals(startPosition, publication.position());
 
             final CountersReader counters = aeron.countersReader();
             final int counterId = Common.awaitRecordingCounterId(counters, publication.sessionId());
@@ -140,8 +139,8 @@ public class ManageRecordingHistoryTest
                 startPosition, startPosition + (SEGMENT_LENGTH * 2L), TERM_LENGTH, SEGMENT_LENGTH);
 
             final long purgeSegments = aeronArchive.purgeSegments(recordingId, segmentFileBasePosition);
-            assertThat(purgeSegments, is(2L));
-            assertThat(aeronArchive.getStartPosition(recordingId), is(segmentFileBasePosition));
+            assertEquals(2L, purgeSegments);
+            assertEquals(segmentFileBasePosition, aeronArchive.getStartPosition(recordingId));
 
             aeronArchive.stopRecording(publication);
         }
@@ -168,11 +167,11 @@ public class ManageRecordingHistoryTest
                 startPosition, SEGMENT_LENGTH * 2L, TERM_LENGTH, SEGMENT_LENGTH);
 
             aeronArchive.detachSegments(recordingId, segmentFileBasePosition);
-            assertThat(aeronArchive.getStartPosition(recordingId), is(segmentFileBasePosition));
+            assertEquals(segmentFileBasePosition, aeronArchive.getStartPosition(recordingId));
 
             final long attachSegments = aeronArchive.attachSegments(recordingId);
-            assertThat(attachSegments, is(2L));
-            assertThat(aeronArchive.getStartPosition(recordingId), is(startPosition));
+            assertEquals(2L, attachSegments);
+            assertEquals(startPosition, aeronArchive.getStartPosition(recordingId));
         }
     }
 
@@ -187,7 +186,7 @@ public class ManageRecordingHistoryTest
 
         try (Publication publication = aeronArchive.addRecordedExclusivePublication(uriBuilder.build(), STREAM_ID))
         {
-            assertThat(publication.position(), is(startPosition));
+            assertEquals(startPosition, publication.position());
 
             final CountersReader counters = aeron.countersReader();
             final int counterId = Common.awaitRecordingCounterId(counters, publication.sessionId());
@@ -201,11 +200,11 @@ public class ManageRecordingHistoryTest
                 startPosition, startPosition + (SEGMENT_LENGTH * 2L), TERM_LENGTH, SEGMENT_LENGTH);
 
             aeronArchive.detachSegments(recordingId, segmentFileBasePosition);
-            assertThat(aeronArchive.getStartPosition(recordingId), is(segmentFileBasePosition));
+            assertEquals(segmentFileBasePosition, aeronArchive.getStartPosition(recordingId));
 
             final long attachSegments = aeronArchive.attachSegments(recordingId);
-            assertThat(attachSegments, is(2L));
-            assertThat(aeronArchive.getStartPosition(recordingId), is(startPosition));
+            assertEquals(2L, attachSegments);
+            assertEquals(startPosition, aeronArchive.getStartPosition(recordingId));
         }
     }
 
@@ -230,8 +229,8 @@ public class ManageRecordingHistoryTest
                 startPosition, SEGMENT_LENGTH * 2L, TERM_LENGTH, SEGMENT_LENGTH);
 
             final long count = aeronArchive.purgeSegments(dstRecordingId, segmentFileBasePosition);
-            assertThat(count, is(2L));
-            assertThat(aeronArchive.getStartPosition(dstRecordingId), is(segmentFileBasePosition));
+            assertEquals(2L, count);
+            assertEquals(segmentFileBasePosition, aeronArchive.getStartPosition(dstRecordingId));
 
             final long srcRecordingId;
             final String migrateChannel = uriBuilder
@@ -251,8 +250,8 @@ public class ManageRecordingHistoryTest
 
             aeronArchive.truncateRecording(srcRecordingId, segmentFileBasePosition);
             final long migratedSegments = aeronArchive.migrateSegments(srcRecordingId, dstRecordingId);
-            assertThat(migratedSegments, is(2L));
-            assertThat(aeronArchive.getStartPosition(dstRecordingId), is(startPosition));
+            assertEquals(2L, migratedSegments);
+            assertEquals(startPosition, aeronArchive.getStartPosition(dstRecordingId));
         }
     }
 
@@ -279,8 +278,8 @@ public class ManageRecordingHistoryTest
                 startPosition, startPosition + (SEGMENT_LENGTH * 2L), TERM_LENGTH, SEGMENT_LENGTH);
 
             final long purgedSegments = aeronArchive.purgeSegments(dstRecordingId, segmentFileBasePosition);
-            assertThat(purgedSegments, is(2L));
-            assertThat(aeronArchive.getStartPosition(dstRecordingId), is(segmentFileBasePosition));
+            assertEquals(2L, purgedSegments);
+            assertEquals(segmentFileBasePosition, aeronArchive.getStartPosition(dstRecordingId));
 
             final long srcRecordingId;
             final String migrateChannel = uriBuilder
@@ -300,9 +299,9 @@ public class ManageRecordingHistoryTest
 
             aeronArchive.truncateRecording(srcRecordingId, segmentFileBasePosition);
             final long migratedSegments = aeronArchive.migrateSegments(srcRecordingId, dstRecordingId);
-            assertThat(migratedSegments, is(2L));
-            assertThat(aeronArchive.getStartPosition(dstRecordingId), is(startPosition));
-            assertThat(aeronArchive.getStopPosition(srcRecordingId), is(startPosition));
+            assertEquals(2L, migratedSegments);
+            assertEquals(startPosition, aeronArchive.getStartPosition(dstRecordingId));
+            assertEquals(startPosition, aeronArchive.getStopPosition(srcRecordingId));
         }
     }
 }

@@ -32,7 +32,7 @@ import java.util.Collection;
 
 import static io.aeron.CommonContext.IPC_MEDIA;
 import static io.aeron.CommonContext.UDP_MEDIA;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
 @RunWith(value = Parameterized.class)

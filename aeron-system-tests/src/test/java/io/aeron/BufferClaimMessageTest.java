@@ -34,8 +34,7 @@ import org.junit.runner.RunWith;
 
 import java.nio.ByteBuffer;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @RunWith(Theories.class)
 public class BufferClaimMessageTest
@@ -105,7 +104,7 @@ public class BufferClaimMessageTest
             }
             while (numFragments < expectedNumberOfFragments);
 
-            assertThat(fragmentCount.value, is(expectedNumberOfFragments));
+            assertEquals(expectedNumberOfFragments, fragmentCount.value);
         }
     }
 
@@ -134,8 +133,8 @@ public class BufferClaimMessageTest
                 final int fragments = subscription.poll(
                     (buffer, offset, length, header) ->
                     {
-                        assertThat(length, is(MESSAGE_LENGTH));
-                        assertThat(header.reservedValue(), is(reservedValue));
+                        assertEquals(MESSAGE_LENGTH, length);
+                        assertEquals(reservedValue, header.reservedValue());
 
                         done.value = true;
                     },

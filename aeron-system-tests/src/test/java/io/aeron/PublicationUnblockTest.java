@@ -33,8 +33,7 @@ import org.junit.runner.RunWith;
 
 import java.util.concurrent.TimeUnit;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @RunWith(Theories.class)
 public class PublicationUnblockTest
@@ -125,8 +124,8 @@ public class PublicationUnblockTest
             }
             while (numFragments < expectedFragments);
 
-            assertThat(numFragments, is(expectedFragments));
-            assertThat(fragmentCount.value, is(expectedFragments));
+            assertEquals(expectedFragments, numFragments);
+            assertEquals(expectedFragments, fragmentCount.value);
         }
     }
 }

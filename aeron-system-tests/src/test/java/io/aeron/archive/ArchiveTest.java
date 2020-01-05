@@ -49,8 +49,7 @@ import static io.aeron.archive.TestUtil.awaitConnectedReply;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static org.agrona.BufferUtil.allocateDirectAligned;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @RunWith(value = Parameterized.class)
 public class ArchiveTest
@@ -211,8 +210,8 @@ public class ArchiveTest
         final int maxPayloadLength = recordedPublication.maxPayloadLength();
         final long startPosition = recordedPublication.position();
 
-        assertThat(startPosition, is(requestedStartPosition));
-        assertThat(recordedPublication.initialTermId(), is(requestedInitialTermId));
+        assertEquals(requestedStartPosition, startPosition);
+        assertEquals(requestedInitialTermId, recordedPublication.initialTermId());
         preSendChecks(archiveProxy, recordingEvents, sessionId, termBufferLength, startPosition);
 
         final int messageCount = prepAndSendMessages(recordingEvents, recordedPublication);
@@ -250,8 +249,8 @@ public class ArchiveTest
         final int maxPayloadLength = recordedPublication.maxPayloadLength();
         final long startPosition = recordedPublication.position();
 
-        assertThat(startPosition, is(requestedStartPosition));
-        assertThat(recordedPublication.initialTermId(), is(requestedInitialTermId));
+        assertEquals(requestedStartPosition, startPosition);
+        assertEquals(requestedInitialTermId, recordedPublication.initialTermId());
         preSendChecks(archiveProxy, recordingEvents, sessionId, termBufferLength, startPosition);
 
         final int messageCount = MESSAGE_COUNT;
@@ -326,9 +325,9 @@ public class ArchiveTest
                     final String sourceIdentity)
                 {
                     recordingId = recordingId0;
-                    assertThat(streamId0, is(PUBLISH_STREAM_ID));
-                    assertThat(sessionId0, is(sessionId));
-                    assertThat(startPosition0, is(startPosition));
+                    assertEquals(PUBLISH_STREAM_ID, streamId0);
+                    assertEquals(sessionId, sessionId0);
+                    assertEquals(startPosition, startPosition0);
                     recordingStarted.set(true);
                 }
             },
@@ -372,7 +371,7 @@ public class ArchiveTest
             {
                 public void onStop(final long id, final long startPosition, final long stopPosition)
                 {
-                    assertThat(id, is(recordingId));
+                    assertEquals(recordingId, id);
                     recordingStopped.set(true);
                 }
             },
@@ -458,11 +457,11 @@ public class ArchiveTest
                     final String originalChannel,
                     final String sourceIdentity)
                 {
-                    assertThat(correlationId, is(requestRecordingsCorrelationId));
-                    assertThat(recordingId, is(ArchiveTest.this.recordingId));
-                    assertThat(termBufferLength, is(publicationTermBufferLength));
-                    assertThat(streamId, is(PUBLISH_STREAM_ID));
-                    assertThat(originalChannel, is(publishUri));
+                    assertEquals(requestRecordingsCorrelationId, correlationId);
+                    assertEquals(ArchiveTest.this.recordingId, recordingId);
+                    assertEquals(publicationTermBufferLength, termBufferLength);
+                    assertEquals(PUBLISH_STREAM_ID, streamId);
+                    assertEquals(publishUri, originalChannel);
 
                     isDone.set(true);
                 }
@@ -591,10 +590,10 @@ public class ArchiveTest
             TestUtil.await(replay::isConnected);
 
             final Image image = replay.images().get(0);
-            assertThat(image.initialTermId(), is(initialTermId));
-            assertThat(image.mtuLength(), is(maxPayloadLength + HEADER_LENGTH));
-            assertThat(image.termBufferLength(), is(termBufferLength));
-            assertThat(image.position(), is(startPosition));
+            assertEquals(initialTermId, image.initialTermId());
+            assertEquals(maxPayloadLength + HEADER_LENGTH, image.mtuLength());
+            assertEquals(termBufferLength, image.termBufferLength());
+            assertEquals(startPosition, image.position());
 
             this.messageCount = 0;
             remaining = totalDataLength;
@@ -609,8 +608,8 @@ public class ArchiveTest
                 }
             }
 
-            assertThat(this.messageCount, is(messageCount));
-            assertThat(remaining, is(0L));
+            assertEquals(messageCount, this.messageCount);
+            assertEquals(0L, remaining);
         }
     }
 
@@ -640,8 +639,8 @@ public class ArchiveTest
             }
         }
 
-        assertThat(remaining, is(0L));
-        assertThat(this.messageCount, is(messageCount));
+        assertEquals(0L, remaining);
+        assertEquals(messageCount, this.messageCount);
     }
 
     private void validateRecordingFragment(
@@ -660,8 +659,8 @@ public class ArchiveTest
                 fail("Message length=" + length + " expected=" + expectedLength + " messageCount=" + messageCount);
             }
 
-            assertThat(buffer.getInt(offset), is(messageCount));
-            assertThat(buffer.getByte(offset + 4), is((byte)'z'));
+            assertEquals(messageCount, buffer.getInt(offset));
+            assertEquals((byte)'z', buffer.getByte(offset + 4));
 
             remaining -= BitUtil.align(messageLengths[messageCount], FrameDescriptor.FRAME_ALIGNMENT);
             messageCount++;
@@ -671,9 +670,9 @@ public class ArchiveTest
     @SuppressWarnings("unused")
     private void validateFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
-        assertThat(length, is(messageLengths[messageCount] - HEADER_LENGTH));
-        assertThat(buffer.getInt(offset), is(messageCount));
-        assertThat(buffer.getByte(offset + 4), is((byte)'z'));
+        assertEquals(messageLengths[messageCount] - HEADER_LENGTH, length);
+        assertEquals(messageCount, buffer.getInt(offset));
+        assertEquals((byte)'z', buffer.getByte(offset + 4));
 
         remaining -= BitUtil.align(messageLengths[messageCount], FrameDescriptor.FRAME_ALIGNMENT);
         messageCount++;
@@ -686,7 +685,7 @@ public class ArchiveTest
             {
                 public void onProgress(final long recordingId0, final long startPosition, final long position)
                 {
-                    assertThat(recordingId0, is(recordingId));
+                    assertEquals(recordingId, recordingId0);
                     recorded = position - startPosition;
                 }
             },
@@ -761,10 +760,10 @@ public class ArchiveTest
                     TestUtil.await(replay::isConnected);
 
                     final Image image = replay.images().get(0);
-                    assertThat(image.initialTermId(), is(initialTermId));
-                    assertThat(image.mtuLength(), is(maxPayloadLength + HEADER_LENGTH));
-                    assertThat(image.termBufferLength(), is(termBufferLength));
-                    assertThat(image.position(), is(startPosition));
+                    assertEquals(initialTermId, image.initialTermId());
+                    assertEquals(maxPayloadLength + HEADER_LENGTH, image.mtuLength());
+                    assertEquals(termBufferLength, image.termBufferLength());
+                    assertEquals(startPosition, image.position());
 
                     this.messageCount = 0;
                     remaining = totalDataLength;

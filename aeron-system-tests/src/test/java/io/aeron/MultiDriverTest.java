@@ -32,9 +32,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MultiDriverTest
 {
@@ -188,8 +186,8 @@ public class MultiDriverTest
                 TimeUnit.MILLISECONDS.toNanos(500));
         }
 
-        assertThat(fragmentCountA.value, is(numMessagesToSendPreJoin + numMessagesToSendPostJoin));
-        assertThat(fragmentCountB.value, is(numMessagesToSendPostJoin));
+        assertEquals(numMessagesToSendPreJoin + numMessagesToSendPostJoin, fragmentCountA.value);
+        assertEquals(numMessagesToSendPostJoin, fragmentCountB.value);
     }
 
     @Test(timeout = 10_000)
@@ -245,7 +243,7 @@ public class MultiDriverTest
                 TimeUnit.MILLISECONDS.toNanos(500));
         }
 
-        assertThat(fragmentCountA.value, is(numMessagesToSendPreJoin + numMessagesToSendPostJoin));
-        assertThat(fragmentCountB.value, is(numMessagesToSendPostJoin));
+        assertEquals(numMessagesToSendPreJoin + numMessagesToSendPostJoin, fragmentCountA.value);
+        assertEquals(numMessagesToSendPostJoin, fragmentCountB.value);
     }
 }

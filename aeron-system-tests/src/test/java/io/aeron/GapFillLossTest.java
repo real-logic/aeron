@@ -29,8 +29,8 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static io.aeron.test.LossReportTestUtil.verifyLossOccurredForStream;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
-import static org.junit.Assert.assertThat;
 
 public class GapFillLossTest
 {

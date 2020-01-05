@@ -31,8 +31,7 @@ import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 
 import static io.aeron.SystemTest.spyForChannel;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @RunWith(Theories.class)
 public class SpySubscriptionTest
@@ -104,8 +103,8 @@ public class SpySubscriptionTest
             }
             while (numSpyFragments < expectedMessageCount || numFragments < expectedMessageCount);
 
-            assertThat(fragmentCountSpy.value, is(expectedMessageCount));
-            assertThat(fragmentCountSub.value, is(expectedMessageCount));
+            assertEquals(expectedMessageCount, fragmentCountSpy.value);
+            assertEquals(expectedMessageCount, fragmentCountSub.value);
         }
     }
 }

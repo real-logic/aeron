@@ -24,8 +24,7 @@ import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @RunWith(Theories.class)
 public class TermBufferLengthTest
@@ -56,7 +55,7 @@ public class TermBufferLengthTest
             Aeron aeron = Aeron.connect();
             Publication publication = aeron.addPublication(channel, STREAM_ID))
         {
-            assertThat(publication.termBufferLength(), is(TEST_TERM_LENGTH));
+            assertEquals(TEST_TERM_LENGTH, publication.termBufferLength());
         }
     }
 }

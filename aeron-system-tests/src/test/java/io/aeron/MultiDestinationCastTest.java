@@ -255,8 +255,8 @@ public class MultiDestinationCastTest
 
         while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
 
         for (int i = 0; i < numMessagesToSend; i++)

@@ -33,9 +33,7 @@ import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.Common.*;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class BasicArchiveTest
 {
@@ -117,7 +115,7 @@ public class BasicArchiveTest
             final int counterId = awaitRecordingCounterId(counters, sessionId);
             recordingIdFromCounter = RecordingPos.getRecordingId(counters, counterId);
 
-            assertThat(RecordingPos.getSourceIdentity(counters, counterId), is(CommonContext.IPC_CHANNEL));
+            assertEquals(CommonContext.IPC_CHANNEL, RecordingPos.getSourceIdentity(counters, counterId));
 
             offer(publication, messageCount, messagePrefix);
             consume(subscription, messageCount, messagePrefix);
@@ -126,9 +124,9 @@ public class BasicArchiveTest
             awaitPosition(counters, counterId, stopPosition);
 
             final long joinPosition = subscription.imageBySessionId(sessionId).joinPosition();
-            assertThat(aeronArchive.getStartPosition(recordingIdFromCounter), is(joinPosition));
-            assertThat(aeronArchive.getRecordingPosition(recordingIdFromCounter), is(stopPosition));
-            assertThat(aeronArchive.getStopPosition(recordingIdFromCounter), is((long)NULL_VALUE));
+            assertEquals(joinPosition, aeronArchive.getStartPosition(recordingIdFromCounter));
+            assertEquals(stopPosition, aeronArchive.getRecordingPosition(recordingIdFromCounter));
+            assertEquals(NULL_VALUE, aeronArchive.getStopPosition(recordingIdFromCounter));
         }
 
         aeronArchive.stopRecording(subscriptionId);
@@ -137,7 +135,7 @@ public class BasicArchiveTest
             0, "endpoint=localhost:3333", RECORDED_STREAM_ID, sessionId);
 
         assertEquals(recordingIdFromCounter, recordingId);
-        assertThat(aeronArchive.getStopPosition(recordingIdFromCounter), is(stopPosition));
+        assertEquals(stopPosition, aeronArchive.getStopPosition(recordingIdFromCounter));
 
         final long position = 0L;
         final long length = stopPosition - position;
@@ -194,7 +192,7 @@ public class BasicArchiveTest
             stopPosition = publication.position();
             awaitPosition(counters, counterId, stopPosition);
 
-            assertThat(aeronArchive.getRecordingPosition(recordingId), is(stopPosition));
+            assertEquals(stopPosition, aeronArchive.getRecordingPosition(recordingId));
 
             aeronArchive.stopRecording(publication);
             while (NULL_POSITION != aeronArchive.getRecordingPosition(recordingId))

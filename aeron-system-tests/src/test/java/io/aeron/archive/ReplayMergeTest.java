@@ -36,8 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.aeron.archive.Common.*;
 import static io.aeron.archive.codecs.SourceLocation.REMOTE;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ReplayMergeTest
 {
@@ -207,7 +206,7 @@ public class ReplayMergeTest
                 assertTrue(replayMerge.isMerged());
                 assertTrue(replayMerge.isLiveAdded());
                 assertFalse(replayMerge.hasFailed());
-                assertThat(received.get(), is(totalMessageCount));
+                assertEquals(totalMessageCount, received.get());
             }
             finally
             {

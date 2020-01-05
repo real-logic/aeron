@@ -30,8 +30,7 @@ import org.junit.runner.RunWith;
 
 import java.nio.ByteBuffer;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @RunWith(Theories.class)
 public class ExclusivePublicationTest
@@ -94,7 +93,7 @@ public class ExclusivePublicationTest
                 final int fragmentsRead = subscription.poll(
                     (buffer, offset, length, header) ->
                     {
-                        assertThat(length, is(MESSAGE_LENGTH));
+                        assertEquals(MESSAGE_LENGTH, length);
                         messageCount.value++;
                     },
                     FRAGMENT_COUNT_LIMIT);
@@ -109,7 +108,7 @@ public class ExclusivePublicationTest
             }
             while (totalFragmentsRead < expectedNumberOfFragments);
 
-            assertThat(messageCount.value, is(expectedNumberOfFragments));
+            assertEquals(expectedNumberOfFragments, messageCount.value);
         }
     }
 

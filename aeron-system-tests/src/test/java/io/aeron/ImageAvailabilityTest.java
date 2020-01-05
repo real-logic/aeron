@@ -29,7 +29,7 @@ import org.junit.runner.RunWith;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 @RunWith(Theories.class)
 public class ImageAvailabilityTest
@@ -80,9 +80,9 @@ public class ImageAvailabilityTest
         {
             while (!subOne.isConnected() || !subTwo.isConnected() || !publication.isConnected())
             {
-                aeron.conductorAgentInvoker().invoke();
                 Thread.yield();
                 SystemTest.checkInterruptedStatus();
+                aeron.conductorAgentInvoker().invoke();
             }
 
             final Image image = subOne.imageAtIndex(0);
@@ -100,9 +100,9 @@ public class ImageAvailabilityTest
 
             while (subOne.isConnected() || subTwo.isConnected())
             {
-                aeron.conductorAgentInvoker().invoke();
                 Thread.yield();
                 SystemTest.checkInterruptedStatus();
+                aeron.conductorAgentInvoker().invoke();
             }
 
             assertTrue(image.isClosed());
@@ -156,9 +156,9 @@ public class ImageAvailabilityTest
 
             while (subOne.isConnected() || subTwo.isConnected())
             {
-                aeron.conductorAgentInvoker().invoke();
                 Thread.yield();
                 SystemTest.checkInterruptedStatus();
+                aeron.conductorAgentInvoker().invoke();
             }
 
             assertTrue(image.isClosed());

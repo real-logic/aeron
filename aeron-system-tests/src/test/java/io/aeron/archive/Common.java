@@ -30,9 +30,7 @@ import org.agrona.collections.MutableReference;
 import org.agrona.concurrent.status.CountersReader;
 
 import static io.aeron.Aeron.NULL_VALUE;
-import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 
 class Common
 {
@@ -108,7 +106,7 @@ class Common
             }
         }
 
-        assertThat(received.get(), is(count));
+        assertEquals(count, received.get());
     }
 
     static void awaitPosition(final CountersReader counters, final int counterId, final long position)

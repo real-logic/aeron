@@ -170,6 +170,7 @@ public class StopStartSecondSubscriberTest
             while (running.get() && publication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
             {
                 Thread.yield();
+                SystemTest.checkInterruptedStatus();
             }
         }
     }

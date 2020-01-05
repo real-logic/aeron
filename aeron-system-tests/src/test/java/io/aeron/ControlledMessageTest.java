@@ -27,8 +27,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
 import org.junit.Test;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ControlledMessageTest
 {
@@ -92,7 +91,7 @@ public class ControlledMessageTest
 
             for (int i = 0; i < srcBuffer.capacity(); i++)
             {
-                assertThat("same at i=" + i, collectedBuffer.getByte(i), is(srcBuffer.getByte(i)));
+                assertEquals(srcBuffer.getByte(i), collectedBuffer.getByte(i), "same at i=" + i);
             }
         }
     }

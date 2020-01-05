@@ -39,9 +39,7 @@ import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.CommonContext.*;
 import static io.aeron.archive.Common.*;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ReplicateRecordingTest
 {

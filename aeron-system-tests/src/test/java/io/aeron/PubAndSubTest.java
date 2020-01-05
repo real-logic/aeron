@@ -45,14 +45,14 @@ import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.util.concurrent.TimeUnit;
 
-
 import static io.aeron.test.LossReportTestUtil.verifyLossOccurredForStream;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static org.agrona.BitUtil.SIZE_OF_INT;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @RunWith(Theories.class)
 public class PubAndSubTest
@@ -144,7 +144,7 @@ public class PubAndSubTest
             anyInt(),
             anyInt());
 
-        assertTrue("File Channel is closed", channelArgumentCaptor.getValue().isOpen());
+        assertTrue(channelArgumentCaptor.getValue().isOpen(), "File Channel is closed");
     }
 
     @Theory

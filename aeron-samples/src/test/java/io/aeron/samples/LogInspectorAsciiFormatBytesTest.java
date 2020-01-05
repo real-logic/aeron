@@ -16,7 +16,6 @@
 package io.aeron.samples;
 
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -25,6 +24,8 @@ import org.junit.runners.Parameterized.Parameters;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.util.Arrays;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @RunWith(Parameterized.class)
 public class LogInspectorAsciiFormatBytesTest
@@ -78,6 +79,6 @@ public class LogInspectorAsciiFormatBytesTest
         System.setProperty(LogInspector.AERON_LOG_DATA_FORMAT_PROP_NAME, "ascii");
         final char[] formattedBytes = LogInspector.formatBytes(new UnsafeBuffer(new byte[]{ buffer }), 0, 1);
 
-        Assert.assertEquals(expected, formattedBytes[0]);
+        assertEquals(expected, formattedBytes[0]);
     }
 }

@@ -33,8 +33,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 
 import static io.aeron.logbuffer.FrameDescriptor.END_FRAG_FLAG;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 @RunWith(Theories.class)
@@ -116,10 +115,10 @@ public class FragmentedMessageTest
             final DirectBuffer capturedBuffer = bufferArg.getValue();
             for (int i = 0; i < srcBuffer.capacity(); i++)
             {
-                assertThat("same at i=" + i, capturedBuffer.getByte(i), is(srcBuffer.getByte(i)));
+                assertEquals(srcBuffer.getByte(i), capturedBuffer.getByte(i), "same at i=" + i);
             }
 
-            assertThat(headerArg.getValue().flags(), is(END_FRAG_FLAG));
+            assertEquals(END_FRAG_FLAG, headerArg.getValue().flags());
         }
     }
 }

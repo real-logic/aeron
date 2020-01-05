@@ -40,7 +40,7 @@ import java.io.File;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.atMost;
@@ -130,8 +130,8 @@ public class FlowControlStrategiesTest
 
         while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
     }
 
@@ -238,8 +238,8 @@ public class FlowControlStrategiesTest
                 }
             }
 
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
 
             // A keeps up
             numFragmentsFromA += subscriptionA.poll(fragmentHandlerA, 10);
@@ -342,8 +342,8 @@ public class FlowControlStrategiesTest
 
         while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
         {
-            SystemTest.checkInterruptedStatus();
             Thread.yield();
+            SystemTest.checkInterruptedStatus();
         }
 
         for (long i = 0; numFragmentsFromB < numMessagesToSend; i++)

@@ -43,9 +43,7 @@ import java.util.Collections;
 import static io.aeron.archive.Common.*;
 import static io.aeron.archive.codecs.RecordingSignal.*;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -244,7 +242,7 @@ public class ExtendRecordingTest
             }
         }
 
-        assertThat(received.get(), is(startIndex + count));
+        assertEquals(startIndex + count, received.get());
     }
 
     private void closeDownAndCleanMediaDriver()

@@ -35,9 +35,8 @@ import java.io.File;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.eq;
@@ -434,8 +433,8 @@ public class MultiDestinationSubscriptionTest
             pollForFragment(subscription, fragmentHandler, fragmentsRead);
         }
 
-        assertThat(subscription.imageCount(), is(1));
-        assertThat(subscription.imageAtIndex(0).activeTransportCount(), is(2));
+        assertEquals(1, subscription.imageCount());
+        assertEquals(2, subscription.imageAtIndex(0).activeTransportCount());
         verifyFragments(fragmentHandler, numMessagesToSend);
     }
 
@@ -499,7 +498,7 @@ public class MultiDestinationSubscriptionTest
                 SystemTest.checkInterruptedStatus();
             }
 
-            assertThat(subscription.poll(fragmentHandler, 10), is(0));
+            assertEquals(0, subscription.poll(fragmentHandler, 10));
         }
 
         for (int i = 0; i < numMessagesToSendForB; i++)
@@ -519,11 +518,11 @@ public class MultiDestinationSubscriptionTest
                 SystemTest.checkInterruptedStatus();
             }
 
-            assertThat(subscription.poll(fragmentHandler, 10), is(0));
+            assertEquals(0, subscription.poll(fragmentHandler, 10));
         }
 
-        assertThat(subscription.imageCount(), is(1));
-        assertThat(subscription.imageAtIndex(0).activeTransportCount(), is(2));
+        assertEquals(1, subscription.imageCount());
+        assertEquals(2, subscription.imageAtIndex(0).activeTransportCount());
         verifyFragments(fragmentHandler, numMessagesToSend);
     }
 

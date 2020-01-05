@@ -36,9 +36,8 @@ import java.io.File;
 import static io.aeron.archive.Common.*;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static io.aeron.security.NullCredentialsSupplier.NULL_CREDENTIAL;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.spy;
 
 public class ArchiveAuthenticationTest
@@ -106,7 +105,7 @@ public class ArchiveAuthenticationTest
             public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
             {
                 authenticatorSessionId.value = sessionId;
-                assertThat(new String(encodedCredentials), is(CREDENTIALS_STRING));
+                assertEquals(CREDENTIALS_STRING, new String(encodedCredentials));
             }
 
             public void onChallengeResponse(final long sessionId, final byte[] encodedCredentials, final long nowMs)
@@ -116,7 +115,7 @@ public class ArchiveAuthenticationTest
 
             public void onConnectedSession(final SessionProxy sessionProxy, final long nowMs)
             {
-                assertThat(authenticatorSessionId.value, is(sessionProxy.sessionId()));
+                assertEquals(sessionProxy.sessionId(), authenticatorSessionId.value);
                 sessionProxy.authenticate(PRINCIPAL_STRING.getBytes());
             }
 
@@ -129,7 +128,7 @@ public class ArchiveAuthenticationTest
         launchArchivingMediaDriver(() -> authenticator);
         connectClient(credentialsSupplier);
 
-        assertThat(authenticatorSessionId.value, is(aeronArchive.controlSessionId()));
+        assertEquals(aeronArchive.controlSessionId(), authenticatorSessionId.value);
 
         createRecording();
     }
@@ -148,7 +147,7 @@ public class ArchiveAuthenticationTest
 
             public byte[] onChallenge(final byte[] encodedChallenge)
             {
-                assertThat(new String(encodedChallenge), is(CHALLENGE_STRING));
+                assertEquals(CHALLENGE_STRING, new String(encodedChallenge));
                 return encodedCredentials;
             }
         });
@@ -160,19 +159,19 @@ public class ArchiveAuthenticationTest
             public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
             {
                 authenticatorSessionId.value = sessionId;
-                assertThat(encodedCredentials.length, is(0));
+                assertEquals(0, encodedCredentials.length);
             }
 
             public void onChallengeResponse(final long sessionId, final byte[] encodedCredentials, final long nowMs)
             {
-                assertThat(authenticatorSessionId.value, is(sessionId));
-                assertThat(new String(encodedCredentials), is(CREDENTIALS_STRING));
+                assertEquals(sessionId, authenticatorSessionId.value);
+                assertEquals(CREDENTIALS_STRING, new String(encodedCredentials));
                 challengeSuccessful = true;
             }
 
             public void onConnectedSession(final SessionProxy sessionProxy, final long nowMs)
             {
-                assertThat(authenticatorSessionId.value, is(sessionProxy.sessionId()));
+                assertEquals(sessionProxy.sessionId(), authenticatorSessionId.value);
                 sessionProxy.challenge(encodedChallenge);
             }
 
@@ -180,7 +179,7 @@ public class ArchiveAuthenticationTest
             {
                 if (challengeSuccessful)
                 {
-                    assertThat(authenticatorSessionId.value, is(sessionProxy.sessionId()));
+                    assertEquals(sessionProxy.sessionId(), authenticatorSessionId.value);
                     sessionProxy.authenticate(PRINCIPAL_STRING.getBytes());
                 }
             }
@@ -189,7 +188,7 @@ public class ArchiveAuthenticationTest
         launchArchivingMediaDriver(() -> authenticator);
         connectClient(credentialsSupplier);
 
-        assertThat(authenticatorSessionId.value, is(aeronArchive.controlSessionId()));
+        assertEquals(aeronArchive.controlSessionId(), authenticatorSessionId.value);
 
         createRecording();
     }
@@ -208,7 +207,7 @@ public class ArchiveAuthenticationTest
 
             public byte[] onChallenge(final byte[] encodedChallenge)
             {
-                assertThat(new String(encodedChallenge), is(CHALLENGE_STRING));
+                assertEquals(CHALLENGE_STRING, new String(encodedChallenge));
                 return encodedCredentials;
             }
         });
@@ -218,7 +217,7 @@ public class ArchiveAuthenticationTest
             public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
             {
                 authenticatorSessionId.value = sessionId;
-                assertThat(encodedCredentials.length, is(0));
+                assertEquals(0, encodedCredentials.length);
             }
 
             public void onChallengeResponse(final long sessionId, final byte[] encodedCredentials, final long nowMs)
@@ -228,7 +227,7 @@ public class ArchiveAuthenticationTest
 
             public void onConnectedSession(final SessionProxy sessionProxy, final long nowMs)
             {
-                assertThat(authenticatorSessionId.value, is(sessionProxy.sessionId()));
+                assertEquals(sessionProxy.sessionId(), authenticatorSessionId.value);
                 sessionProxy.reject();
             }
 
@@ -246,7 +245,7 @@ public class ArchiveAuthenticationTest
         }
         catch (final ArchiveException ex)
         {
-            assertThat(ex.errorCode(), is(ArchiveException.AUTHENTICATION_REJECTED));
+            assertEquals(ArchiveException.AUTHENTICATION_REJECTED, ex.errorCode());
             return;
         }
 
@@ -267,7 +266,7 @@ public class ArchiveAuthenticationTest
 
             public byte[] onChallenge(final byte[] encodedChallenge)
             {
-                assertThat(new String(encodedChallenge), is(CHALLENGE_STRING));
+                assertEquals(CHALLENGE_STRING, new String(encodedChallenge));
                 return encodedCredentials;
             }
         });
@@ -279,19 +278,19 @@ public class ArchiveAuthenticationTest
             public void onConnectRequest(final long sessionId, final byte[] encodedCredentials, final long nowMs)
             {
                 authenticatorSessionId.value = sessionId;
-                assertThat(encodedCredentials.length, is(0));
+                assertEquals(0, encodedCredentials.length);
             }
 
             public void onChallengeResponse(final long sessionId, final byte[] encodedCredentials, final long nowMs)
             {
-                assertThat(authenticatorSessionId.value, is(sessionId));
-                assertThat(new String(encodedCredentials), is(CREDENTIALS_STRING));
+                assertEquals(sessionId, authenticatorSessionId.value);
+                assertEquals(CREDENTIALS_STRING, new String(encodedCredentials));
                 challengeRespondedTo = true;
             }
 
             public void onConnectedSession(final SessionProxy sessionProxy, final long nowMs)
             {
-                assertThat(authenticatorSessionId.value, is(sessionProxy.sessionId()));
+                assertEquals(sessionProxy.sessionId(), authenticatorSessionId.value);
                 sessionProxy.challenge(encodedChallenge);
             }
 
@@ -299,7 +298,7 @@ public class ArchiveAuthenticationTest
             {
                 if (challengeRespondedTo)
                 {
-                    assertThat(authenticatorSessionId.value, is(sessionProxy.sessionId()));
+                    assertEquals(sessionProxy.sessionId(), authenticatorSessionId.value);
                     sessionProxy.reject();
                 }
             }
@@ -313,7 +312,7 @@ public class ArchiveAuthenticationTest
         }
         catch (final ArchiveException ex)
         {
-            assertThat(ex.errorCode(), is(ArchiveException.AUTHENTICATION_REJECTED));
+            assertEquals(ArchiveException.AUTHENTICATION_REJECTED, ex.errorCode());
             return;
         }
 

@@ -36,9 +36,8 @@ import org.junit.runner.RunWith;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.SystemTest.spyForChannel;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 
 @RunWith(Theories.class)
@@ -162,7 +161,7 @@ public class SpySimulatedConnectionTest
                 TimeUnit.MILLISECONDS.toNanos(500));
         }
 
-        assertThat(fragmentCountSpy.value, is(messagesToSend));
+        assertEquals(messagesToSend, fragmentCountSpy.value);
     }
 
     @Theory
@@ -209,8 +208,8 @@ public class SpySimulatedConnectionTest
             }
         }
 
-        assertThat(fragmentCountSpy.value, is(messagesToSend));
-        assertThat(fragmentCountSub.value, is(messagesToSend));
+        assertEquals(messagesToSend, fragmentCountSpy.value);
+        assertEquals(messagesToSend, fragmentCountSub.value);
     }
 
     @Theory
@@ -264,7 +263,7 @@ public class SpySimulatedConnectionTest
             }
         }
 
-        assertThat(fragmentCountSpy.value, is(messagesToSend));
+        assertEquals(messagesToSend, fragmentCountSpy.value);
     }
 
     private void waitUntilFullConnectivity()

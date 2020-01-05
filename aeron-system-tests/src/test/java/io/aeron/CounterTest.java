@@ -25,9 +25,8 @@ import org.agrona.concurrent.status.CountersReader;
 import org.junit.After;
 import org.junit.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.*;
 
 public class CounterTest
@@ -122,9 +121,9 @@ public class CounterTest
             SystemTest.sleep(1);
         }
 
-        assertThat(readableCounter.state(), is(CountersReader.RECORD_ALLOCATED));
-        assertThat(readableCounter.counterId(), is(counter.id()));
-        assertThat(readableCounter.registrationId(), is(counter.registrationId()));
+        assertEquals(CountersReader.RECORD_ALLOCATED, readableCounter.state());
+        assertEquals(counter.id(), readableCounter.counterId());
+        assertEquals(counter.registrationId(), readableCounter.registrationId());
     }
 
     @Test(timeout = 10_000)
@@ -151,7 +150,7 @@ public class CounterTest
         }
 
         assertFalse(readableCounter.isClosed());
-        assertThat(readableCounter.state(), is(CountersReader.RECORD_ALLOCATED));
+        assertEquals(CountersReader.RECORD_ALLOCATED, readableCounter.state());
 
         counter.close();
 
@@ -171,8 +170,8 @@ public class CounterTest
     private void unavailableCounterHandler(
         @SuppressWarnings("unused") final CountersReader countersReader, final long registrationId, final int counterId)
     {
-        assertThat(registrationId, is(readableCounter.registrationId()));
-        assertThat(counterId, is(readableCounter.counterId()));
+        assertEquals(readableCounter.registrationId(), registrationId);
+        assertEquals(readableCounter.counterId(), counterId);
 
         readableCounter.close();
     }

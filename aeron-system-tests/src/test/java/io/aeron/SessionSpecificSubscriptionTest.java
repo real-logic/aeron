@@ -28,9 +28,8 @@ import org.junit.Test;
 import java.nio.ByteBuffer;
 
 import static io.aeron.CommonContext.UDP_MEDIA;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 
 public class SessionSpecificSubscriptionTest
@@ -54,9 +53,9 @@ public class SessionSpecificSubscriptionTest
         .endpoint(ENDPOINT).media(UDP_MEDIA).sessionId(SESSION_ID_2).build();
 
     private final FragmentHandler handlerSessionIdOne =
-        (buffer, offset, length, header) -> assertThat(header.sessionId(), is(SESSION_ID_1));
+        (buffer, offset, length, header) -> assertEquals(SESSION_ID_1, header.sessionId());
     private final FragmentHandler handlerSessionIdTwo =
-        (buffer, offset, length, header) -> assertThat(header.sessionId(), is(SESSION_ID_2));
+        (buffer, offset, length, header) -> assertEquals(SESSION_ID_2, header.sessionId());
 
     private final MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Throwable::printStackTrace)
@@ -136,7 +135,7 @@ public class SessionSpecificSubscriptionTest
                 SystemTest.checkInterruptedStatus();
             }
 
-            assertThat(subscription.imageCount(), is(1));
+            assertEquals(1, subscription.imageCount());
 
             for (int i = 0; i < EXPECTED_NUMBER_OF_MESSAGES; i++)
             {

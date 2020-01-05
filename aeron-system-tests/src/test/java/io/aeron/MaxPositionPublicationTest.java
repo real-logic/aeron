@@ -27,7 +27,7 @@ import org.junit.Test;
 import java.nio.ByteBuffer;
 
 import static io.aeron.Publication.MAX_POSITION_EXCEEDED;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MaxPositionPublicationTest
 {

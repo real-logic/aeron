@@ -234,10 +234,7 @@ inline int aeron_udp_channel_outgoing_interceptor_sendmsg(
     aeron_udp_channel_transport_t *transport,
     struct msghdr *message)
 {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
     aeron_udp_channel_outgoing_interceptor_t *interceptor = data_paths->outgoing_interceptors;
-#pragma GCC diagnostic pop
 
     /* use first interceptor and pass in delegate */
     return interceptor->outgoing_msg_func(
@@ -251,10 +248,8 @@ inline int aeron_udp_channel_outgoing_interceptor_mmsg_to_transport(
     struct mmsghdr *msgvec,
     size_t vlen)
 {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-    aeron_udp_channel_transport_sendmmsg_func_t func = (aeron_udp_channel_transport_sendmmsg_func_t)interceptor_state;
-#pragma GCC diagnostic pop
+    aeron_udp_channel_transport_sendmmsg_func_t func =
+        ((aeron_udp_channel_transport_bindings_t *)interceptor_state)->sendmmsg_func;
 
     return func(NULL, transport, msgvec, vlen);
 }
@@ -265,10 +260,8 @@ inline int aeron_udp_channel_outgoing_interceptor_msg_to_transport(
     aeron_udp_channel_transport_t *transport,
     struct msghdr *message)
 {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wpedantic"
-    aeron_udp_channel_transport_sendmsg_func_t func = (aeron_udp_channel_transport_sendmsg_func_t)interceptor_state;
-#pragma GCC diagnostic pop
+    aeron_udp_channel_transport_sendmsg_func_t func =
+        ((aeron_udp_channel_transport_bindings_t *)interceptor_state)->sendmsg_func;
 
     return func(NULL, transport, message);
 }

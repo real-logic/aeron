@@ -240,7 +240,7 @@ int aeron_udp_channel_data_paths_init(
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
-        outgoing_transport_interceptor->interceptor_state = (void *)media_bindings->sendmmsg_func;
+        outgoing_transport_interceptor->interceptor_state = media_bindings;
 #pragma GCC diagnostic pop
 
         /* last interecptor calls sendmmsg_func/sendmsg_func from transport bindings */

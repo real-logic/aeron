@@ -56,6 +56,7 @@
 #include "aeron_agent.h"
 #include "concurrent/aeron_counters_manager.h"
 #include "aeron_termination_validator.h"
+#include "agent/aeron_driver_agent.h"
 
 #if defined(__clang__)
     #pragma clang diagnostic push
@@ -923,6 +924,14 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     {
         if ((_context->udp_channel_incoming_interceptor_bindings = aeron_udp_channel_interceptor_bindings_load(
             NULL, value)) == NULL)
+        {
+            return -1;
+        }
+    }
+
+    if (getenv(AERON_AGENT_MASK_ENV_VAR))
+    {
+        if (aeron_driver_agent_context_init(_context) < 0)
         {
             return -1;
         }

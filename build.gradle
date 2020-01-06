@@ -209,6 +209,8 @@ subprojects {
             'aeron.dir.delete.on.shutdown': 'true',
             'aeron.term.buffer.sparse.file': 'true',
             'aeron.perform.storage.checks': 'false')
+
+        reports.html.enabled = false // Disable individual test reports
     }
 
     javadoc {
@@ -917,6 +919,12 @@ task uploadToMavenCentral {
         'aeron-agent:uploadArchives',
         'aeron-agent:uploadShadow',
         'aeron-cluster:uploadArchives'
+}
+
+task testReport(type: TestReport) {
+    destinationDir = file("$buildDir/reports/allTests")
+    // Include the results from the `test` task in all subprojects
+    reportOn subprojects*.test
 }
 
 wrapper {

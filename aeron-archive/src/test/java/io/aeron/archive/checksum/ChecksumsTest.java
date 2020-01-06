@@ -18,11 +18,12 @@ package io.aeron.archive.checksum;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.EnabledOnJre;
-import org.junit.jupiter.api.condition.JRE;
 
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.condition.JRE.JAVA_8;
+import static org.junit.jupiter.api.condition.JRE.JAVA_9;
 
 class ChecksumsTest
 {
@@ -32,14 +33,14 @@ class ChecksumsTest
         assertSame(Crc32.INSTANCE, Checksums.crc32());
     }
 
-    @EnabledForJreRange(min = JRE.JAVA_9)
+    @EnabledForJreRange(min = JAVA_9)
     @Test
     void crc32c()
     {
         assertSame(Crc32c.INSTANCE, Checksums.crc32c());
     }
 
-    @EnabledOnJre(JRE.JAVA_8)
+    @EnabledOnJre(JAVA_8)
     @Test
     void crc32cThrowsIllegalStateExceptionIfCalledOnJdk8()
     {
@@ -52,14 +53,14 @@ class ChecksumsTest
         assertSame(Crc32.INSTANCE, Checksums.newInstance(Crc32.class.getName()));
     }
 
-    @EnabledForJreRange(min = JRE.JAVA_9)
+    @EnabledForJreRange(min = JAVA_9)
     @Test
     void newInstanceReturnsSameInstanceOfCrc32c()
     {
         assertSame(Crc32c.INSTANCE, Checksums.newInstance(Crc32c.class.getName()));
     }
 
-    @EnabledOnJre(JRE.JAVA_8)
+    @EnabledOnJre(JAVA_8)
     @Test
     void newInstanceThrowsIllegalStateExceptionIfCalledWithCrc32cOnJdk8()
     {

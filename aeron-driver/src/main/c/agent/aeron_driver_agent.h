@@ -21,6 +21,7 @@
 #include "command/aeron_control_protocol.h"
 
 #define AERON_AGENT_MASK_ENV_VAR "AERON_EVENT_LOG"
+#define AERON_EVENT_LOG_FILENAME_ENV_VAR "AERON_EVENT_LOG_FILENAME"
 #define RING_BUFFER_LENGTH (2 * 1024 * 1024)
 #define MAX_CMD_LENGTH (512)
 #define MAX_FRAME_LENGTH (512)

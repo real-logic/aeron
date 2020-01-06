@@ -53,6 +53,7 @@ static AERON_INIT_ONCE agent_is_initialized = AERON_INIT_ONCE_VALUE;
 static aeron_mpsc_rb_t logging_mpsc_rb;
 static uint8_t *rb_buffer = NULL;
 static uint64_t mask = 0;
+static FILE *logfp = NULL;
 static aeron_thread_t log_reader_thread;
 
 int64_t aeron_agent_epoch_clock()
@@ -104,6 +105,7 @@ static void *aeron_driver_agent_log_reader(void *arg)
 static void initialize_agent_logging()
 {
     char *mask_str = getenv(AERON_AGENT_MASK_ENV_VAR);
+    char *log_filename = getenv(AERON_EVENT_LOG_FILENAME_ENV_VAR);
 
     if (mask_str)
     {
@@ -113,6 +115,20 @@ static void initialize_agent_logging()
     if (mask != 0)
     {
         size_t rb_length = RING_BUFFER_LENGTH + AERON_RB_TRAILER_LENGTH;
+
+        logfp = stdout;
+        if (log_filename)
+        {
+            if ((logfp = fopen(log_filename, "a")) == NULL)
+            {
+                int errcode = errno;
+
+                fprintf(stderr, "could not fopen log file %s (%d, %s). exiting.\n",
+                    log_filename, errcode, strerror(errcode));
+                exit(EXIT_FAILURE);
+            }
+        }
+
         if ((rb_buffer = (uint8_t *) malloc(rb_length)) == NULL)
         {
             fprintf(stderr, "could not allocate ring buffer buffer. exiting.\n");
@@ -132,7 +148,7 @@ static void initialize_agent_logging()
             exit(EXIT_FAILURE);
         }
 
-        printf("%s\n", dissect_log_start(aeron_agent_epoch_clock()));
+        fprintf(logfp, "%s\n", dissect_log_start(aeron_agent_epoch_clock()));
     }
 }
 
@@ -852,7 +868,8 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
         {
             aeron_driver_agent_cmd_log_header_t *hdr = (aeron_driver_agent_cmd_log_header_t *)message;
 
-            printf(
+            fprintf(
+                logfp,
                 "[%s] %s %s\n",
                 dissect_timestamp(hdr->time_ms),
                 dissect_msg_type_id(msg_type_id),
@@ -867,7 +884,8 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
         {
             aeron_driver_agent_cmd_log_header_t *hdr = (aeron_driver_agent_cmd_log_header_t *)message;
 
-            printf(
+            fprintf(
+                logfp,
                 "[%s] %s %s\n",
                 dissect_timestamp(hdr->time_ms),
                 dissect_msg_type_id(msg_type_id),
@@ -888,7 +906,8 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
             const char *frame =
                 (const char *)message + sizeof(aeron_driver_agent_frame_log_header_t) + hdr->sockaddr_len;
 
-            printf(
+            fprintf(
+                logfp,
                 "[%s] [%d:%d] %s %s: %s\n",
                 dissect_timestamp(hdr->time_ms),
                 hdr->result,
@@ -904,7 +923,8 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
             aeron_driver_agent_map_raw_log_op_header_t *hdr = (aeron_driver_agent_map_raw_log_op_header_t *)message;
             const char *pathname = (const char *)message + sizeof(aeron_driver_agent_map_raw_log_op_header_t);
 
-            printf(
+            fprintf(
+                logfp,
                 "[%s] MAP_RAW_LOG %p, \"%*s\" = %d\n",
                 dissect_timestamp(hdr->time_ms),
                 (void *)hdr->map_raw_log.addr,
@@ -918,7 +938,8 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
         {
             aeron_driver_agent_map_raw_log_op_header_t *hdr = (aeron_driver_agent_map_raw_log_op_header_t *)message;
 
-            printf(
+            fprintf(
+                logfp,
                 "[%s] MAP_RAW_LOG_CLOSE %p = %d\n",
                 dissect_timestamp(hdr->time_ms),
                 (void *)hdr->map_raw_log_close.addr,

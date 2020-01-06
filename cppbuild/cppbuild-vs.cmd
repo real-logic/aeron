@@ -14,7 +14,7 @@ for %%o in (%*) do (
     set PROCESSED=0
 
     if "%%o"=="--help" (
-	    echo cppbuild.cmd [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--build-aeron-driver]
+	    echo cppbuild-vs.cmd [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--build-aeron-driver]
 		exit /b
 	)
 

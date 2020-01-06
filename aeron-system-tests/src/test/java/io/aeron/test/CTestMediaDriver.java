@@ -241,7 +241,7 @@ public final class CTestMediaDriver implements TestMediaDriver
             "|seed=" + seed +
             "|recv-msg-mask=0x" + Integer.toHexString(receiveMessageTypeMask);
 
-        lossTransportEnv.put("AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_INTERCEPTORS", interceptor);
+        lossTransportEnv.put("AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS", interceptor);
         lossTransportEnv.put("AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_LOSS_ARGS", lossArgs);
 
         // This is a bit of an ugly hack to decorate the MediaDriver.Context with additional information.

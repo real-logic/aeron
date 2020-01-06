@@ -4,7 +4,7 @@ setlocal
 set SOURCE_DIR=%CD%
 set BUILD_DIR=%CD%\cppbuild\Release
 
-cppbuild/vs-helper.cmd
+call cppbuild/vs-helper.cmd
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 if EXIST %BUILD_DIR% rd /S /Q %BUILD_DIR%

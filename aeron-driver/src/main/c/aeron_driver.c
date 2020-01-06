@@ -658,6 +658,33 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
         bindings = bindings->meta_info.next_binding;
     }
 
+    const aeron_udp_channel_interceptor_bindings_t *interceptor_bindings;
+
+    interceptor_bindings = context->udp_channel_outgoing_interceptor_bindings;
+    while (NULL != interceptor_bindings)
+    {
+        fprintf(
+            fpout, "\n    udp_channel_outgoing_interceptor_bindings.%s=%s,%p%s",
+            interceptor_bindings->meta_info.type,
+            interceptor_bindings->meta_info.name,
+            interceptor_bindings->meta_info.source_symbol,
+            aeron_dlinfo(interceptor_bindings->meta_info.source_symbol, buffer, sizeof(buffer)));
+
+        interceptor_bindings = interceptor_bindings->meta_info.next_interceptor_bindings;
+    }
+
+    interceptor_bindings = context->udp_channel_incoming_interceptor_bindings;
+    while (NULL != interceptor_bindings)
+    {
+        fprintf(
+            fpout, "\n    udp_channel_incoming_interceptor_bindings.%s=%s,%p%s",
+            interceptor_bindings->meta_info.type,
+            interceptor_bindings->meta_info.name,
+            interceptor_bindings->meta_info.source_symbol,
+            aeron_dlinfo(interceptor_bindings->meta_info.source_symbol, buffer, sizeof(buffer)));
+
+        interceptor_bindings = interceptor_bindings->meta_info.next_interceptor_bindings;
+    }
 
 #pragma GCC diagnostic pop
 

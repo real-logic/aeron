@@ -620,13 +620,26 @@ bool aeron_driver_context_get_rejoin_stream(aeron_driver_context_t *context);
  */
 #define AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA_ENV_VAR "AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA"
 
-#define AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_INTERCEPTORS_ENV_VAR "AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_INTERCEPTORS"
-
 typedef struct aeron_udp_channel_transport_bindings_stct aeron_udp_channel_transport_bindings_t;
 
 int aeron_driver_context_set_udp_channel_transport_bindings(
     aeron_driver_context_t *context, aeron_udp_channel_transport_bindings_t *value);
 aeron_udp_channel_transport_bindings_t *aeron_driver_context_get_udp_channel_transport_bindings(
+    aeron_driver_context_t *context);
+
+#define AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS_ENV_VAR "AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS"
+#define AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS_ENV_VAR "AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS"
+
+typedef struct aeron_udp_channel_interceptor_bindings_stct aeron_udp_channel_interceptor_bindings_t;
+
+int aeron_driver_context_set_udp_channel_outgoing_interceptors(
+    aeron_driver_context_t *context, aeron_udp_channel_interceptor_bindings_t *value);
+aeron_udp_channel_interceptor_bindings_t *aeron_driver_context_get_udp_channel_outgoing_interceptors(
+    aeron_driver_context_t *context);
+
+int aeron_driver_context_set_udp_channel_incoming_interceptors(
+    aeron_driver_context_t *context, aeron_udp_channel_interceptor_bindings_t *value);
+aeron_udp_channel_interceptor_bindings_t *aeron_driver_context_get_udp_channel_incoming_interceptors(
     aeron_driver_context_t *context);
 
 #define AERON_PUBLICATION_RESERVED_SESSION_ID_LOW_ENV_VAR "AERON_PUBLICATION_RESERVED_SESSION_ID_LOW"

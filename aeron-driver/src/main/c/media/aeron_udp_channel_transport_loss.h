@@ -19,40 +19,30 @@
 
 #include "aeron_udp_channel_transport_bindings.h"
 
-typedef struct aeron_udp_channel_transport_loss_params_stct
+typedef struct aeron_udp_channel_interceptor_loss_params_stct
 {
     double rate;
     unsigned long recv_msg_type_mask;
     unsigned long long seed;
 }
-aeron_udp_channel_transport_loss_params_t;
+aeron_udp_channel_interceptor_loss_params_t;
 
-aeron_udp_channel_transport_bindings_t *aeron_udp_channel_transport_loss_load(
-    const aeron_udp_channel_transport_bindings_t *delegate_bindings);
+aeron_udp_channel_interceptor_bindings_t *aeron_udp_channel_interceptor_loss_load(
+    const aeron_udp_channel_interceptor_bindings_t *delegate_bindings);
 
-int aeron_udp_channel_transport_loss_configure(const aeron_udp_channel_transport_loss_params_t *loss_params);
+void aeron_udp_channel_interceptor_loss_incoming(
+    void *interceptor_state,
+    aeron_udp_channel_incoming_interceptor_t *delegate,
+    void *receiver_clientd,
+    void *endpoint_clientd,
+    uint8_t *buffer,
+    size_t length,
+    struct sockaddr_storage *addr);
 
-int aeron_udp_channel_transport_loss_init(
-    aeron_udp_channel_transport_t *transport,
-    struct sockaddr_storage *bind_addr,
-    struct sockaddr_storage *multicast_if_addr,
-    unsigned int multicast_if_index,
-    uint8_t ttl,
-    size_t socket_rcvbuf,
-    size_t socket_sndbuf,
-    aeron_driver_context_t *context,
-    aeron_udp_channel_transport_affinity_t affinity);
+int aeron_udp_channel_interceptor_loss_configure(const aeron_udp_channel_interceptor_loss_params_t *loss_params);
 
-int aeron_udp_channel_transport_loss_recvmmsg(
-    aeron_udp_channel_transport_t *transport,
-    struct mmsghdr *msgvec,
-    size_t vlen,
-    int64_t *bytes_rcved,
-    aeron_udp_transport_recv_func_t recv_func,
-    void *clientd);
+int aeron_udp_channel_interceptor_loss_parse_params(char* uri, aeron_udp_channel_interceptor_loss_params_t* params);
 
-int aeron_udp_channel_transport_loss_parse_params(char* uri, aeron_udp_channel_transport_loss_params_t* params);
-
-int aeron_udp_channel_transport_loss_parse_callback(void *clientd, const char *key, const char *value);
+int aeron_udp_channel_interceptor_loss_parse_callback(void *clientd, const char *key, const char *value);
 
 #endif //AERON_AERON_UDP_CHANNEL_TRANSPORT_LOSS_H

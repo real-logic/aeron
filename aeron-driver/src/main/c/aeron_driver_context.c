@@ -383,6 +383,8 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->receiver_proxy = NULL;
     _context->counters_manager = NULL;
     _context->error_log = NULL;
+    _context->udp_channel_outgoing_interceptor_bindings = NULL;
+    _context->udp_channel_incoming_interceptor_bindings = NULL;
 
     if (aeron_alloc((void **)&_context->aeron_dir, AERON_MAX_PATH) < 0)
     {
@@ -908,13 +910,22 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         return -1;
     }
 
-    if ((_context->udp_channel_transport_bindings = aeron_udp_channel_transport_bindings_load_interceptors(
-        _context->udp_channel_transport_bindings,
-        AERON_CONFIG_GETENV_OR_DEFAULT(
-            AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_INTERCEPTORS_ENV_VAR,
-            AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_INTERCEPTORS_DEFAULT))) == NULL)
+    if ((value = getenv(AERON_UDP_CHANNEL_OUTGOING_INTERCEPTORS_ENV_VAR)))
     {
-        return -1;
+        if ((_context->udp_channel_outgoing_interceptor_bindings = aeron_udp_channel_interceptor_bindings_load(
+            NULL, value)) == NULL)
+        {
+            return -1;
+        }
+    }
+
+    if ((value = getenv(AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS_ENV_VAR)))
+    {
+        if ((_context->udp_channel_incoming_interceptor_bindings = aeron_udp_channel_interceptor_bindings_load(
+            NULL, value)) == NULL)
+        {
+            return -1;
+        }
     }
 
 #ifdef HAVE_UUID_GENERATE
@@ -2037,6 +2048,36 @@ aeron_udp_channel_transport_bindings_t *aeron_driver_context_get_udp_channel_tra
     return NULL != context ?
         context->udp_channel_transport_bindings :
         aeron_udp_channel_transport_bindings_load_media(AERON_UDP_CHANNEL_TRANSPORT_BINDINGS_MEDIA_DEFAULT);
+}
+
+int aeron_driver_context_set_udp_channel_outgoing_interceptors(
+    aeron_driver_context_t *context, aeron_udp_channel_interceptor_bindings_t *value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->udp_channel_outgoing_interceptor_bindings = value;
+    return 0;
+}
+
+aeron_udp_channel_interceptor_bindings_t *aeron_driver_context_get_udp_channel_outgoing_interceptors(
+    aeron_driver_context_t *context)
+{
+    return NULL != context ? context->udp_channel_outgoing_interceptor_bindings : NULL;
+}
+
+int aeron_driver_context_set_udp_channel_incoming_interceptors(
+    aeron_driver_context_t *context, aeron_udp_channel_interceptor_bindings_t *value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->udp_channel_incoming_interceptor_bindings = value;
+    return 0;
+}
+
+aeron_udp_channel_interceptor_bindings_t *aeron_driver_context_get_udp_channel_incoming_interceptors(
+    aeron_driver_context_t *context)
+{
+    return NULL != context ? context->udp_channel_incoming_interceptor_bindings : NULL;
 }
 
 int aeron_driver_context_set_receiver_group_consideration(

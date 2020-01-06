@@ -53,6 +53,7 @@ typedef struct aeron_receive_channel_endpoint_stct
     aeron_counter_t channel_status;
     aeron_driver_receiver_proxy_t *receiver_proxy;
     aeron_udp_channel_transport_bindings_t *transport_bindings;
+    aeron_udp_channel_data_paths_t *data_paths;
     int64_t receiver_id;
     size_t so_rcvbuf;
     bool has_receiver_released;
@@ -103,7 +104,12 @@ int aeron_receive_channel_endpoint_send_rttm(
     bool is_reply);
 
 void aeron_receive_channel_endpoint_dispatch(
-    void *receiver_clientd, void *endpoint_clientd, uint8_t *buffer, size_t length, struct sockaddr_storage *addr);
+    aeron_udp_channel_data_paths_t *data_paths,
+    void *receiver_clientd,
+    void *endpoint_clientd,
+    uint8_t *buffer,
+    size_t length,
+    struct sockaddr_storage *addr);
 
 int aeron_receive_channel_endpoint_on_data(
     aeron_receive_channel_endpoint_t *endpoint, uint8_t *buffer, size_t length, struct sockaddr_storage *addr);

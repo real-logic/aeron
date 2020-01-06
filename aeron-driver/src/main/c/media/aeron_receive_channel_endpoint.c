@@ -65,6 +65,8 @@ int aeron_receive_channel_endpoint_create(
     _endpoint->transport.fd = -1;
     _endpoint->channel_status.counter_id = -1;
     _endpoint->transport_bindings = context->udp_channel_transport_bindings;
+    _endpoint->data_paths = &context->receiver_proxy->receiver->data_paths;
+    _endpoint->transport.data_paths = _endpoint->data_paths;
 
     if (context->udp_channel_transport_bindings->init_func(
         &_endpoint->transport,
@@ -133,7 +135,7 @@ int aeron_receive_channel_endpoint_delete(
 
 int aeron_receive_channel_endpoint_sendmsg(aeron_receive_channel_endpoint_t *endpoint, struct msghdr *msghdr)
 {
-    return endpoint->transport_bindings->sendmsg_func(&endpoint->transport, msghdr);
+    return endpoint->data_paths->sendmsg_func(endpoint->data_paths, &endpoint->transport, msghdr);
 }
 
 int aeron_receive_channel_endpoint_send_sm(
@@ -277,7 +279,12 @@ int aeron_receive_channel_endpoint_send_rttm(
 }
 
 void aeron_receive_channel_endpoint_dispatch(
-    void *receiver_clientd, void *endpoint_clientd, uint8_t *buffer, size_t length, struct sockaddr_storage *addr)
+    aeron_udp_channel_data_paths_t *data_paths,
+    void *receiver_clientd,
+    void *endpoint_clientd,
+    uint8_t *buffer,
+    size_t length,
+    struct sockaddr_storage *addr)
 {
     aeron_driver_receiver_t *receiver = (aeron_driver_receiver_t *)receiver_clientd;
     aeron_frame_header_t *frame_header = (aeron_frame_header_t *)buffer;

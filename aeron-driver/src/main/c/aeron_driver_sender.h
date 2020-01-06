@@ -54,6 +54,8 @@ typedef struct aeron_driver_sender_stct
     }
     recv_buffers;
 
+    aeron_udp_channel_data_paths_t data_paths;
+
     int64_t *total_bytes_sent_counter;
     int64_t *errors_counter;
     int64_t *invalid_frames_counter;

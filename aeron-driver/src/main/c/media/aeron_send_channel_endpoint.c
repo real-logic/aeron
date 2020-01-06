@@ -52,6 +52,8 @@ int aeron_send_channel_endpoint_create(
     }
 
     _endpoint->destination_tracker = NULL;
+    _endpoint->data_paths = &context->sender_proxy->sender->data_paths;
+
     if (channel->has_explicit_control)
     {
         const char *control_mode = channel->uri.params.udp.control_mode;
@@ -69,7 +71,7 @@ int aeron_send_channel_endpoint_create(
         if (aeron_alloc((void **)&_endpoint->destination_tracker, sizeof(aeron_udp_destination_tracker_t)) < 0 ||
             aeron_udp_destination_tracker_init(
                 _endpoint->destination_tracker,
-                context->udp_channel_transport_bindings,
+                _endpoint->data_paths,
                 context->cached_clock,
                 destination_timeout_ns) < 0)
         {
@@ -87,6 +89,8 @@ int aeron_send_channel_endpoint_create(
     _endpoint->transport.fd = -1;
     _endpoint->channel_status.counter_id = -1;
     _endpoint->transport_bindings = context->udp_channel_transport_bindings;
+    _endpoint->data_paths = &context->sender_proxy->sender->data_paths;
+    _endpoint->transport.data_paths = _endpoint->data_paths;
 
     if (context->udp_channel_transport_bindings->init_func(
         &_endpoint->transport,
@@ -176,7 +180,7 @@ int aeron_send_channel_sendmmsg(aeron_send_channel_endpoint_t *endpoint, struct 
             mmsghdr[i].msg_hdr.msg_namelen = AERON_ADDR_LEN(&endpoint->conductor_fields.udp_channel->remote_data);
         }
 
-        result = endpoint->transport_bindings->sendmmsg_func(&endpoint->transport, mmsghdr, vlen);
+        result = endpoint->data_paths->sendmmsg_func(endpoint->data_paths, &endpoint->transport, mmsghdr, vlen);
     }
     else
     {
@@ -196,7 +200,7 @@ int aeron_send_channel_sendmsg(aeron_send_channel_endpoint_t *endpoint, struct m
         msghdr->msg_name = &endpoint->conductor_fields.udp_channel->remote_data;
         msghdr->msg_namelen = AERON_ADDR_LEN(&endpoint->conductor_fields.udp_channel->remote_data);
 
-        result = endpoint->transport_bindings->sendmsg_func(&endpoint->transport, msghdr);
+        result = endpoint->data_paths->sendmsg_func(endpoint->data_paths, &endpoint->transport, msghdr);
     }
     else
     {
@@ -230,7 +234,12 @@ int aeron_send_channel_endpoint_remove_publication(
 }
 
 void aeron_send_channel_endpoint_dispatch(
-    void *sender_clientd, void *endpoint_clientd, uint8_t *buffer, size_t length, struct sockaddr_storage *addr)
+    aeron_udp_channel_data_paths_t *data_paths,
+    void *sender_clientd,
+    void *endpoint_clientd,
+    uint8_t *buffer,
+    size_t length,
+    struct sockaddr_storage *addr)
 {
     aeron_driver_sender_t *sender = (aeron_driver_sender_t *)sender_clientd;
     aeron_frame_header_t *frame_header = (aeron_frame_header_t *)buffer;

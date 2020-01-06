@@ -53,6 +53,7 @@ typedef struct aeron_send_channel_endpoint_stct
     aeron_driver_sender_proxy_t *sender_proxy;
     aeron_int64_to_ptr_hash_map_t publication_dispatch_map;
     aeron_udp_channel_transport_bindings_t *transport_bindings;
+    aeron_udp_channel_data_paths_t *data_paths;
 }
 aeron_send_channel_endpoint_t;
 
@@ -77,7 +78,12 @@ int aeron_send_channel_endpoint_remove_publication(
     aeron_send_channel_endpoint_t *endpoint, aeron_network_publication_t *publication);
 
 void aeron_send_channel_endpoint_dispatch(
-    void *sender_clientd, void *endpoint_clientd, uint8_t *buffer, size_t length, struct sockaddr_storage *addr);
+    aeron_udp_channel_data_paths_t *data_paths,
+    void *sender_clientd,
+    void *endpoint_clientd,
+    uint8_t *buffer,
+    size_t length,
+    struct sockaddr_storage *addr);
 
 void aeron_send_channel_endpoint_on_nak(
     aeron_send_channel_endpoint_t *endpoint, uint8_t *buffer, size_t length, struct sockaddr_storage *addr);

@@ -286,6 +286,7 @@ int aeron_udp_channel_transport_recvmmsg(
         for (size_t i = 0, length = result; i < length; i++)
         {
             recv_func(
+                transport->data_paths,
                 clientd,
                 transport->dispatch_clientd,
                 msgvec[i].msg_hdr.msg_iov[0].iov_base,
@@ -322,6 +323,7 @@ int aeron_udp_channel_transport_recvmmsg(
 
         msgvec[i].msg_len = (unsigned int)result;
         recv_func(
+            transport->data_paths,
             clientd,
             transport->dispatch_clientd,
             msgvec[i].msg_hdr.msg_iov[0].iov_base,
@@ -336,6 +338,7 @@ int aeron_udp_channel_transport_recvmmsg(
 }
 
 int aeron_udp_channel_transport_sendmmsg(
+    aeron_udp_channel_data_paths_t *data_paths,
     aeron_udp_channel_transport_t *transport,
     struct mmsghdr *msgvec,
     size_t vlen)
@@ -376,6 +379,7 @@ int aeron_udp_channel_transport_sendmmsg(
 }
 
 int aeron_udp_channel_transport_sendmsg(
+    aeron_udp_channel_data_paths_t *data_paths,
     aeron_udp_channel_transport_t *transport,
     struct msghdr *message)
 {

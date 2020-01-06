@@ -65,6 +65,17 @@ int aeron_driver_receiver_init(
         receiver->recv_buffers.iov[i].iov_len = AERON_DRIVER_RECEIVER_MAX_UDP_PACKET_LENGTH;
     }
 
+    if (aeron_udp_channel_data_paths_init(
+        &receiver->data_paths,
+        context->udp_channel_outgoing_interceptor_bindings,
+        context->udp_channel_incoming_interceptor_bindings,
+        context->udp_channel_transport_bindings,
+        aeron_receive_channel_endpoint_dispatch,
+        AERON_UDP_CHANNEL_TRANSPORT_AFFINITY_RECEIVER) < 0)
+    {
+        return -1;
+    }
+
     receiver->images.array = NULL;
     receiver->images.length = 0;
     receiver->images.capacity = 0;
@@ -225,6 +236,7 @@ void aeron_driver_receiver_on_close(void *clientd)
 
     aeron_free(receiver->images.array);
     aeron_free(receiver->pending_setups.array);
+    aeron_udp_channel_data_paths_delete(&receiver->data_paths);
 
     receiver->context->udp_channel_transport_bindings->poller_close_func(&receiver->poller);
 }

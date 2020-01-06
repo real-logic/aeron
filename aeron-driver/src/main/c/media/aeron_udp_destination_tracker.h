@@ -45,13 +45,13 @@ typedef struct aeron_udp_destination_tracker_stct
     bool is_manual_control_mode;
     aeron_clock_cache_t *cached_clock;
     int64_t destination_timeout_ns;
-    aeron_udp_channel_transport_bindings_t *transport_bindings;
+    aeron_udp_channel_data_paths_t *data_paths;
 }
 aeron_udp_destination_tracker_t;
 
 int aeron_udp_destination_tracker_init(
     aeron_udp_destination_tracker_t *tracker,
-    aeron_udp_channel_transport_bindings_t *transport_bindings,
+    aeron_udp_channel_data_paths_t *data_paths,
     aeron_clock_cache_t *cached_clock,
     int64_t timeout_ns);
 int aeron_udp_destination_tracker_close(aeron_udp_destination_tracker_t *tracker);

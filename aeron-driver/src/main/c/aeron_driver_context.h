@@ -18,6 +18,7 @@
 #define AERON_DRIVER_CONTEXT_H
 
 #include <concurrent/aeron_distinct_error_log.h>
+#include <media/aeron_udp_channel_transport_bindings.h>
 #include "aeron_driver_common.h"
 #include "aeronmd.h"
 #include "util/aeron_bitutil.h"
@@ -187,6 +188,8 @@ typedef struct aeron_driver_context_stct
     void *termination_hook_state;
 
     aeron_udp_channel_transport_bindings_t *udp_channel_transport_bindings;
+    aeron_udp_channel_interceptor_bindings_t *udp_channel_outgoing_interceptor_bindings;
+    aeron_udp_channel_interceptor_bindings_t *udp_channel_incoming_interceptor_bindings;
 
     int64_t receiver_id;
 

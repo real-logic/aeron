@@ -34,12 +34,12 @@ struct mmsghdr
 
 int aeron_udp_destination_tracker_init(
     aeron_udp_destination_tracker_t *tracker,
-    aeron_udp_channel_transport_bindings_t *transport_bindings,
+    aeron_udp_channel_data_paths_t *data_paths,
     aeron_clock_cache_t *cached_clock,
     int64_t timeout_ns)
 {
     tracker->cached_clock = cached_clock;
-    tracker->transport_bindings = transport_bindings;
+    tracker->data_paths = data_paths;
     tracker->destination_timeout_ns = timeout_ns;
     tracker->destinations.array = NULL;
     tracker->destinations.length = 0;
@@ -91,7 +91,8 @@ int aeron_udp_destination_tracker_sendmmsg(
                 mmsghdr[j].msg_len = 0;
             }
 
-            const int sendmmsg_result = tracker->transport_bindings->sendmmsg_func(transport, mmsghdr, vlen);
+            const int sendmmsg_result = tracker->data_paths->sendmmsg_func(
+                tracker->data_paths, transport, mmsghdr, vlen);
 
             min_msgs_sent = sendmmsg_result < min_msgs_sent ? sendmmsg_result : min_msgs_sent;
         }
@@ -125,7 +126,7 @@ int aeron_udp_destination_tracker_sendmsg(
             msghdr->msg_name = &entry->addr;
             msghdr->msg_namelen = AERON_ADDR_LEN(&entry->addr);
 
-            const int sendmsg_result = tracker->transport_bindings->sendmsg_func(transport, msghdr);
+            const int sendmsg_result = tracker->data_paths->sendmsg_func(tracker->data_paths, transport, msghdr);
 
             min_bytes_sent = sendmsg_result < min_bytes_sent ? sendmsg_result : min_bytes_sent;
         }

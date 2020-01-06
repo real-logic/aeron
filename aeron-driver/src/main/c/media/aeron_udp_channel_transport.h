@@ -25,6 +25,7 @@
 typedef struct aeron_udp_channel_transport_stct
 {
     aeron_fd_t fd;
+    aeron_udp_channel_data_paths_t *data_paths;
     void *dispatch_clientd;
     void *bindings_clientd;
 }
@@ -45,8 +46,6 @@ int aeron_udp_channel_transport_init(
 
 int aeron_udp_channel_transport_close(aeron_udp_channel_transport_t *transport);
 
-typedef void (*aeron_udp_transport_recv_func_t)(void *, void *, uint8_t *, size_t, struct sockaddr_storage *);
-
 int aeron_udp_channel_transport_recvmmsg(
     aeron_udp_channel_transport_t *transport,
     struct mmsghdr *msgvec,
@@ -56,11 +55,13 @@ int aeron_udp_channel_transport_recvmmsg(
     void *clientd);
 
 int aeron_udp_channel_transport_sendmmsg(
+    aeron_udp_channel_data_paths_t *data_paths,
     aeron_udp_channel_transport_t *transport,
     struct mmsghdr *msgvec,
     size_t vlen);
 
 int aeron_udp_channel_transport_sendmsg(
+    aeron_udp_channel_data_paths_t *data_paths,
     aeron_udp_channel_transport_t *transport,
     struct msghdr *message);
 

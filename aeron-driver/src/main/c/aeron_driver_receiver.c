@@ -137,7 +137,7 @@ int aeron_driver_receiver_do_work(void *clientd)
         mmsghdr,
         AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS,
         &bytes_received,
-        aeron_receive_channel_endpoint_dispatch,
+        receiver->data_paths.recv_func,
         receiver->recvmmsg_func,
         receiver);
 

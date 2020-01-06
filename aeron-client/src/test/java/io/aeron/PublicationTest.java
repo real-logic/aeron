@@ -20,8 +20,8 @@ import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.ReadablePosition;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
 
@@ -52,7 +52,7 @@ public class PublicationTest
     private final ReadablePosition publicationLimit = mock(ReadablePosition.class);
     private ConcurrentPublication publication;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         when(publicationLimit.getVolatile()).thenReturn(2L * SEND_BUFFER_CAPACITY);

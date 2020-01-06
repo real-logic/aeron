@@ -23,9 +23,9 @@ import io.aeron.driver.ThreadingMode;
 import org.agrona.CloseHelper;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.status.CountersReader;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
@@ -33,7 +33,9 @@ import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.Common.*;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
+import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 public class BasicArchiveTest
 {
@@ -54,7 +56,7 @@ public class BasicArchiveTest
     private Aeron aeron;
     private AeronArchive aeronArchive;
 
-    @Before
+    @BeforeEach
     public void before()
     {
         final String aeronDirectoryName = CommonContext.generateRandomDirName();
@@ -85,7 +87,7 @@ public class BasicArchiveTest
                 .aeron(aeron));
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         CloseHelper.close(aeronArchive);
@@ -95,155 +97,164 @@ public class BasicArchiveTest
         archivingMediaDriver.archive().context().deleteArchiveDirectory();
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldRecordThenReplayThenTruncate()
     {
-        final String messagePrefix = "Message-Prefix-";
-        final int messageCount = 10;
-        final long stopPosition;
-
-        final long subscriptionId = aeronArchive.startRecording(RECORDED_CHANNEL, RECORDED_STREAM_ID, LOCAL);
-        final long recordingIdFromCounter;
-        final int sessionId;
-
-        try (Subscription subscription = aeron.addSubscription(RECORDED_CHANNEL, RECORDED_STREAM_ID);
-            Publication publication = aeron.addPublication(RECORDED_CHANNEL, RECORDED_STREAM_ID))
+        assertTimeout(ofSeconds(10), () ->
         {
-            sessionId = publication.sessionId();
+            final String messagePrefix = "Message-Prefix-";
+            final int messageCount = 10;
+            final long stopPosition;
 
-            final CountersReader counters = aeron.countersReader();
-            final int counterId = awaitRecordingCounterId(counters, sessionId);
-            recordingIdFromCounter = RecordingPos.getRecordingId(counters, counterId);
+            final long subscriptionId = aeronArchive.startRecording(RECORDED_CHANNEL, RECORDED_STREAM_ID, LOCAL);
+            final long recordingIdFromCounter;
+            final int sessionId;
 
-            assertEquals(CommonContext.IPC_CHANNEL, RecordingPos.getSourceIdentity(counters, counterId));
-
-            offer(publication, messageCount, messagePrefix);
-            consume(subscription, messageCount, messagePrefix);
-
-            stopPosition = publication.position();
-            awaitPosition(counters, counterId, stopPosition);
-
-            final long joinPosition = subscription.imageBySessionId(sessionId).joinPosition();
-            assertEquals(joinPosition, aeronArchive.getStartPosition(recordingIdFromCounter));
-            assertEquals(stopPosition, aeronArchive.getRecordingPosition(recordingIdFromCounter));
-            assertEquals(NULL_VALUE, aeronArchive.getStopPosition(recordingIdFromCounter));
-        }
-
-        aeronArchive.stopRecording(subscriptionId);
-
-        final long recordingId = aeronArchive.findLastMatchingRecording(
-            0, "endpoint=localhost:3333", RECORDED_STREAM_ID, sessionId);
-
-        assertEquals(recordingIdFromCounter, recordingId);
-        assertEquals(stopPosition, aeronArchive.getStopPosition(recordingIdFromCounter));
-
-        final long position = 0L;
-        final long length = stopPosition - position;
-
-        try (Subscription subscription = aeronArchive.replay(
-            recordingId, position, length, REPLAY_CHANNEL, REPLAY_STREAM_ID))
-        {
-            consume(subscription, messageCount, messagePrefix);
-            assertEquals(stopPosition, subscription.imageAtIndex(0).position());
-        }
-
-        aeronArchive.truncateRecording(recordingId, position);
-
-        final int count = aeronArchive.listRecording(
-            recordingId,
-            (controlSessionId,
-            correlationId,
-            recordingId1,
-            startTimestamp,
-            stopTimestamp,
-            startPosition,
-            newStopPosition,
-            initialTermId,
-            segmentFileLength,
-            termBufferLength,
-            mtuLength,
-            sessionId1,
-            streamId,
-            strippedChannel,
-            originalChannel,
-            sourceIdentity) -> assertEquals(startPosition, newStopPosition));
-
-        assertEquals(1, count);
-    }
-
-    @Test(timeout = 10_000)
-    public void shouldRecordReplayAndCancelReplayEarly()
-    {
-        final String messagePrefix = "Message-Prefix-";
-        final long stopPosition;
-        final int messageCount = 10;
-        final long recordingId;
-
-        try (Subscription subscription = aeron.addSubscription(RECORDED_CHANNEL, RECORDED_STREAM_ID);
-            Publication publication = aeronArchive.addRecordedPublication(RECORDED_CHANNEL, RECORDED_STREAM_ID))
-        {
-            final CountersReader counters = aeron.countersReader();
-            final int counterId = Common.awaitRecordingCounterId(counters, publication.sessionId());
-            recordingId = RecordingPos.getRecordingId(counters, counterId);
-
-            offer(publication, messageCount, messagePrefix);
-            consume(subscription, messageCount, messagePrefix);
-
-            stopPosition = publication.position();
-            awaitPosition(counters, counterId, stopPosition);
-
-            assertEquals(stopPosition, aeronArchive.getRecordingPosition(recordingId));
-
-            aeronArchive.stopRecording(publication);
-            while (NULL_POSITION != aeronArchive.getRecordingPosition(recordingId))
+            try (Subscription subscription = aeron.addSubscription(RECORDED_CHANNEL, RECORDED_STREAM_ID);
+                Publication publication = aeron.addPublication(RECORDED_CHANNEL, RECORDED_STREAM_ID))
             {
-                Thread.yield();
-                SystemTest.checkInterruptedStatus();
-            }
-        }
+                sessionId = publication.sessionId();
 
-        final long position = 0L;
-        final long length = stopPosition - position;
+                final CountersReader counters = aeron.countersReader();
+                final int counterId = awaitRecordingCounterId(counters, sessionId);
+                recordingIdFromCounter = RecordingPos.getRecordingId(counters, counterId);
 
-        final long replaySessionId = aeronArchive.startReplay(
-            recordingId, position, length, REPLAY_CHANNEL, REPLAY_STREAM_ID);
+                assertEquals(CommonContext.IPC_CHANNEL, RecordingPos.getSourceIdentity(counters, counterId));
 
-        aeronArchive.stopReplay(replaySessionId);
-    }
-
-    @Test(timeout = 10_000)
-    public void shouldReplayRecordingFromLateJoinPosition()
-    {
-        final String messagePrefix = "Message-Prefix-";
-        final int messageCount = 10;
-
-        final long subscriptionId = aeronArchive.startRecording(RECORDED_CHANNEL, RECORDED_STREAM_ID, LOCAL);
-
-        try (Subscription subscription = aeron.addSubscription(RECORDED_CHANNEL, RECORDED_STREAM_ID);
-            Publication publication = aeron.addPublication(RECORDED_CHANNEL, RECORDED_STREAM_ID))
-        {
-            final CountersReader counters = aeron.countersReader();
-            final int counterId = Common.awaitRecordingCounterId(counters, publication.sessionId());
-            final long recordingId = RecordingPos.getRecordingId(counters, counterId);
-
-            offer(publication, messageCount, messagePrefix);
-            consume(subscription, messageCount, messagePrefix);
-
-            final long currentPosition = publication.position();
-            awaitPosition(counters, counterId, currentPosition);
-
-            try (Subscription replaySubscription = aeronArchive.replay(
-                recordingId, currentPosition, AeronArchive.NULL_LENGTH, REPLAY_CHANNEL, REPLAY_STREAM_ID))
-            {
                 offer(publication, messageCount, messagePrefix);
                 consume(subscription, messageCount, messagePrefix);
-                consume(replaySubscription, messageCount, messagePrefix);
 
-                final long endPosition = publication.position();
-                assertEquals(endPosition, replaySubscription.imageAtIndex(0).position());
+                stopPosition = publication.position();
+                awaitPosition(counters, counterId, stopPosition);
+
+                final long joinPosition = subscription.imageBySessionId(sessionId).joinPosition();
+                assertEquals(joinPosition, aeronArchive.getStartPosition(recordingIdFromCounter));
+                assertEquals(stopPosition, aeronArchive.getRecordingPosition(recordingIdFromCounter));
+                assertEquals(NULL_VALUE, aeronArchive.getStopPosition(recordingIdFromCounter));
             }
-        }
 
-        aeronArchive.stopRecording(subscriptionId);
+            aeronArchive.stopRecording(subscriptionId);
+
+            final long recordingId = aeronArchive.findLastMatchingRecording(
+                0, "endpoint=localhost:3333", RECORDED_STREAM_ID, sessionId);
+
+            assertEquals(recordingIdFromCounter, recordingId);
+            assertEquals(stopPosition, aeronArchive.getStopPosition(recordingIdFromCounter));
+
+            final long position = 0L;
+            final long length = stopPosition - position;
+
+            try (Subscription subscription = aeronArchive.replay(
+                recordingId, position, length, REPLAY_CHANNEL, REPLAY_STREAM_ID))
+            {
+                consume(subscription, messageCount, messagePrefix);
+                assertEquals(stopPosition, subscription.imageAtIndex(0).position());
+            }
+
+            aeronArchive.truncateRecording(recordingId, position);
+
+            final int count = aeronArchive.listRecording(
+                recordingId,
+                (controlSessionId,
+                correlationId,
+                recordingId1,
+                startTimestamp,
+                stopTimestamp,
+                startPosition,
+                newStopPosition,
+                initialTermId,
+                segmentFileLength,
+                termBufferLength,
+                mtuLength,
+                sessionId1,
+                streamId,
+                strippedChannel,
+                originalChannel,
+                sourceIdentity) -> assertEquals(startPosition, newStopPosition));
+
+            assertEquals(1, count);
+        });
+    }
+
+    @Test
+    public void shouldRecordReplayAndCancelReplayEarly()
+    {
+        assertTimeout(ofSeconds(10), () ->
+        {
+            final String messagePrefix = "Message-Prefix-";
+            final long stopPosition;
+            final int messageCount = 10;
+            final long recordingId;
+
+            try (Subscription subscription = aeron.addSubscription(RECORDED_CHANNEL, RECORDED_STREAM_ID);
+                Publication publication = aeronArchive.addRecordedPublication(RECORDED_CHANNEL, RECORDED_STREAM_ID))
+            {
+                final CountersReader counters = aeron.countersReader();
+                final int counterId = Common.awaitRecordingCounterId(counters, publication.sessionId());
+                recordingId = RecordingPos.getRecordingId(counters, counterId);
+
+                offer(publication, messageCount, messagePrefix);
+                consume(subscription, messageCount, messagePrefix);
+
+                stopPosition = publication.position();
+                awaitPosition(counters, counterId, stopPosition);
+
+                assertEquals(stopPosition, aeronArchive.getRecordingPosition(recordingId));
+
+                aeronArchive.stopRecording(publication);
+                while (NULL_POSITION != aeronArchive.getRecordingPosition(recordingId))
+                {
+                    Thread.yield();
+                    SystemTest.checkInterruptedStatus();
+                }
+            }
+
+            final long position = 0L;
+            final long length = stopPosition - position;
+
+            final long replaySessionId = aeronArchive.startReplay(
+                recordingId, position, length, REPLAY_CHANNEL, REPLAY_STREAM_ID);
+
+            aeronArchive.stopReplay(replaySessionId);
+        });
+    }
+
+    @Test
+    public void shouldReplayRecordingFromLateJoinPosition()
+    {
+        assertTimeout(ofSeconds(10), () ->
+        {
+            final String messagePrefix = "Message-Prefix-";
+            final int messageCount = 10;
+
+            final long subscriptionId = aeronArchive.startRecording(RECORDED_CHANNEL, RECORDED_STREAM_ID, LOCAL);
+
+            try (Subscription subscription = aeron.addSubscription(RECORDED_CHANNEL, RECORDED_STREAM_ID);
+                Publication publication = aeron.addPublication(RECORDED_CHANNEL, RECORDED_STREAM_ID))
+            {
+                final CountersReader counters = aeron.countersReader();
+                final int counterId = Common.awaitRecordingCounterId(counters, publication.sessionId());
+                final long recordingId = RecordingPos.getRecordingId(counters, counterId);
+
+                offer(publication, messageCount, messagePrefix);
+                consume(subscription, messageCount, messagePrefix);
+
+                final long currentPosition = publication.position();
+                awaitPosition(counters, counterId, currentPosition);
+
+                try (Subscription replaySubscription = aeronArchive.replay(
+                    recordingId, currentPosition, AeronArchive.NULL_LENGTH, REPLAY_CHANNEL, REPLAY_STREAM_ID))
+                {
+                    offer(publication, messageCount, messagePrefix);
+                    consume(subscription, messageCount, messagePrefix);
+                    consume(replaySubscription, messageCount, messagePrefix);
+
+                    final long endPosition = publication.position();
+                    assertEquals(endPosition, replaySubscription.imageAtIndex(0).position());
+                }
+            }
+
+            aeronArchive.stopRecording(subscriptionId);
+        });
     }
 }

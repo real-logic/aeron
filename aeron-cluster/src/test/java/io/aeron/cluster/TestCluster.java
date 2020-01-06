@@ -45,8 +45,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static io.aeron.Aeron.NULL_VALUE;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestCluster implements AutoCloseable
 {

@@ -27,8 +27,8 @@ import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.status.AtomicCounter;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
@@ -72,7 +72,7 @@ public class ConsensusModuleAgentTest
         .logPublisher(mockLogPublisher)
         .egressPublisher(mockEgressPublisher);
 
-    @Before
+    @BeforeEach
     public void before()
     {
         when(mockAeron.conductorAgentInvoker()).thenReturn(mock(AgentInvoker.class));

@@ -27,15 +27,16 @@ import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.status.CountersReader;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.aeron.archive.Common.*;
 import static io.aeron.archive.codecs.SourceLocation.REMOTE;
+import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ReplayMergeTest
@@ -91,7 +92,7 @@ public class ReplayMergeTest
     private Aeron aeron;
     private AeronArchive aeronArchive;
 
-    @Before
+    @BeforeEach
     public void before()
     {
         final File archiveDir = new File(SystemUtil.tmpDirName(), "archive");
@@ -125,7 +126,7 @@ public class ReplayMergeTest
                 .aeron(aeron));
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         if (received.get() != MIN_MESSAGES_PER_TERM * 6)
@@ -140,79 +141,82 @@ public class ReplayMergeTest
         archivingMediaDriver.archive().context().deleteArchiveDirectory();
     }
 
-    @Test(timeout = 20_000)
+    @Test
     public void shouldMergeFromReplayToLive()
     {
-        final int initialMessageCount = MIN_MESSAGES_PER_TERM * 3;
-        final int subsequentMessageCount = MIN_MESSAGES_PER_TERM * 3;
-        final int totalMessageCount = initialMessageCount + subsequentMessageCount;
-
-        final FragmentHandler fragmentHandler = new FragmentAssembler(
-            (buffer, offset, length, header) ->
-            {
-                final String expected = MESSAGE_PREFIX + received.get();
-                final String actual = buffer.getStringWithoutLengthAscii(offset, length);
-
-                assertEquals(expected, actual);
-
-                received.incrementAndGet();
-            });
-
-        try (Publication publication = aeron.addPublication(publicationChannel.build(), STREAM_ID))
+        assertTimeout(ofSeconds(20), () ->
         {
-            final int sessionId = publication.sessionId();
-            final String recordingChannel = this.recordingChannel.sessionId(sessionId).build();
-            final String subscriptionChannel = this.subscriptionChannel.sessionId(sessionId).build();
+            final int initialMessageCount = MIN_MESSAGES_PER_TERM * 3;
+            final int subsequentMessageCount = MIN_MESSAGES_PER_TERM * 3;
+            final int totalMessageCount = initialMessageCount + subsequentMessageCount;
 
-            aeronArchive.startRecording(recordingChannel, STREAM_ID, REMOTE);
-
-            final CountersReader counters = aeron.countersReader();
-            final int counterId = awaitRecordingCounterId(counters, publication.sessionId());
-            final long recordingId = RecordingPos.getRecordingId(counters, counterId);
-
-            offerMessages(publication, 0, initialMessageCount, MESSAGE_PREFIX);
-            awaitPosition(counters, counterId, publication.position());
-
-            try (Subscription subscription = aeron.addSubscription(subscriptionChannel, STREAM_ID);
-                ReplayMerge replayMerge = new ReplayMerge(
-                    subscription,
-                    aeronArchive,
-                    replayChannel.build(),
-                    replayDestination.build(),
-                    liveDestination.build(),
-                    recordingId,
-                    0))
-            {
-                for (int i = initialMessageCount; i < totalMessageCount; i++)
+            final FragmentHandler fragmentHandler = new FragmentAssembler(
+                (buffer, offset, length, header) ->
                 {
-                    offer(publication, i, MESSAGE_PREFIX);
+                    final String expected = MESSAGE_PREFIX + received.get();
+                    final String actual = buffer.getStringWithoutLengthAscii(offset, length);
 
-                    if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
-                    {
-                        Thread.yield();
-                        SystemTest.checkInterruptedStatus();
-                    }
-                }
+                    assertEquals(expected, actual);
 
-                while (received.get() < totalMessageCount || !replayMerge.isMerged())
-                {
-                    if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
-                    {
-                        Thread.yield();
-                        SystemTest.checkInterruptedStatus();
-                    }
-                }
+                    received.incrementAndGet();
+                });
 
-                assertTrue(replayMerge.isMerged());
-                assertTrue(replayMerge.isLiveAdded());
-                assertFalse(replayMerge.hasFailed());
-                assertEquals(totalMessageCount, received.get());
-            }
-            finally
+            try (Publication publication = aeron.addPublication(publicationChannel.build(), STREAM_ID))
             {
-                aeronArchive.stopRecording(recordingChannel, STREAM_ID);
+                final int sessionId = publication.sessionId();
+                final String recordingChannel = this.recordingChannel.sessionId(sessionId).build();
+                final String subscriptionChannel = this.subscriptionChannel.sessionId(sessionId).build();
+
+                aeronArchive.startRecording(recordingChannel, STREAM_ID, REMOTE);
+
+                final CountersReader counters = aeron.countersReader();
+                final int counterId = awaitRecordingCounterId(counters, publication.sessionId());
+                final long recordingId = RecordingPos.getRecordingId(counters, counterId);
+
+                offerMessages(publication, 0, initialMessageCount, MESSAGE_PREFIX);
+                awaitPosition(counters, counterId, publication.position());
+
+                try (Subscription subscription = aeron.addSubscription(subscriptionChannel, STREAM_ID);
+                    ReplayMerge replayMerge = new ReplayMerge(
+                        subscription,
+                        aeronArchive,
+                        replayChannel.build(),
+                        replayDestination.build(),
+                        liveDestination.build(),
+                        recordingId,
+                        0))
+                {
+                    for (int i = initialMessageCount; i < totalMessageCount; i++)
+                    {
+                        offer(publication, i, MESSAGE_PREFIX);
+
+                        if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
+                        {
+                            Thread.yield();
+                            SystemTest.checkInterruptedStatus();
+                        }
+                    }
+
+                    while (received.get() < totalMessageCount || !replayMerge.isMerged())
+                    {
+                        if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
+                        {
+                            Thread.yield();
+                            SystemTest.checkInterruptedStatus();
+                        }
+                    }
+
+                    assertTrue(replayMerge.isMerged());
+                    assertTrue(replayMerge.isLiveAdded());
+                    assertFalse(replayMerge.hasFailed());
+                    assertEquals(totalMessageCount, received.get());
+                }
+                finally
+                {
+                    aeronArchive.stopRecording(recordingChannel, STREAM_ID);
+                }
             }
-        }
+        });
     }
 
     private void offer(final Publication publication, final int index, final String prefix)

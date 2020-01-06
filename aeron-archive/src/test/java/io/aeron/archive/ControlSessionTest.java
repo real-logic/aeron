@@ -3,12 +3,12 @@ package io.aeron.archive;
 import io.aeron.Publication;
 import io.aeron.security.Authenticator;
 import org.agrona.concurrent.CachedEpochClock;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 public class ControlSessionTest
@@ -24,7 +24,7 @@ public class ControlSessionTest
     private final CachedEpochClock cachedEpochClock = new CachedEpochClock();
     private ControlSession session;
 
-    @Before
+    @BeforeEach
     public void before()
     {
         session = new ControlSession(

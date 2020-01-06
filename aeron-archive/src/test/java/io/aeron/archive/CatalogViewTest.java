@@ -15,20 +15,19 @@
  */
 package io.aeron.archive;
 
-import java.io.File;
-
+import io.aeron.Aeron;
+import io.aeron.archive.client.RecordingDescriptorConsumer;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.EpochClock;
-import org.junit.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.io.File;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-
-import io.aeron.Aeron;
-import io.aeron.archive.client.RecordingDescriptorConsumer;
+import static org.mockito.Mockito.*;
 
 public class CatalogViewTest
 {
@@ -47,21 +46,21 @@ public class CatalogViewTest
     private long recordingThreeId;
     private RecordingDescriptorConsumer mockRecordingDescriptorConsumer = mock(RecordingDescriptorConsumer.class);
 
-    @Before
+    @BeforeEach
     public void before()
     {
         try (Catalog catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock))
         {
             recordingOneId = catalog.addNewRecording(
-                    10L, 4L, 0, SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 7, 1, "channelG", "channelG?tag=f", "sourceA");
+                10L, 4L, 0, SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 7, 1, "channelG", "channelG?tag=f", "sourceA");
             recordingTwoId = catalog.addNewRecording(
-                    11L, 5L, 0, SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 8, 2, "channelH", "channelH?tag=f", "sourceV");
+                11L, 5L, 0, SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 8, 2, "channelH", "channelH?tag=f", "sourceV");
             recordingThreeId = catalog.addNewRecording(
-                    12L, 6L, 0, SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 9, 3, "channelK", "channelK?tag=f", "sourceB");
+                12L, 6L, 0, SEGMENT_LENGTH, TERM_LENGTH, MTU_LENGTH, 9, 3, "channelK", "channelK?tag=f", "sourceB");
         }
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         IoUtil.delete(archiveDir, false);

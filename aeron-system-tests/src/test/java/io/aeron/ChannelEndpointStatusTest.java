@@ -28,24 +28,21 @@ import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.io.File;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static java.time.Duration.ofSeconds;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 public class ChannelEndpointStatusTest
 {
@@ -79,7 +76,7 @@ public class ChannelEndpointStatusTest
     private final AtomicInteger errorCounter = new AtomicInteger();
     private final ErrorHandler countingErrorHandler = (ex) -> errorCounter.getAndIncrement();
 
-    @Before
+    @BeforeEach
     public void before()
     {
         TestMediaDriver.notSupportedOnCMediaDriverYet(
@@ -121,45 +118,52 @@ public class ChannelEndpointStatusTest
                 .errorHandler(errorHandlerClientC));
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         CloseHelper.quietCloseAll(clientC, clientB, clientA, driverB, driverA);
         IoUtil.delete(new File(ROOT_DIR), true);
     }
 
-    @Test(timeout = 5000, expected = RegistrationException.class)
+    @Test
     public void shouldErrorBadUri()
     {
-        clientA.addSubscription("bad uri", STREAM_ID);
+        assertTimeout(ofSeconds(5), () ->
+            assertThrows(RegistrationException.class, () -> clientA.addSubscription("bad uri", STREAM_ID)));
     }
 
-    @Test(timeout = 5000)
+    @Test
     public void shouldBeAbleToQueryChannelStatusForSubscription()
     {
-        final Subscription subscription = clientA.addSubscription(URI, STREAM_ID);
-
-        while (subscription.channelStatus() == ChannelEndpointStatus.INITIALIZING)
+        assertTimeout(ofSeconds(5), () ->
         {
-            Thread.yield();
-            SystemTest.checkInterruptedStatus();
-        }
+            final Subscription subscription = clientA.addSubscription(URI, STREAM_ID);
 
-        assertThat(subscription.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
+            while (subscription.channelStatus() == ChannelEndpointStatus.INITIALIZING)
+            {
+                Thread.yield();
+                SystemTest.checkInterruptedStatus();
+            }
+
+            assertThat(subscription.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
+        });
     }
 
-    @Test(timeout = 5000)
+    @Test
     public void shouldBeAbleToQueryChannelStatusForPublication()
     {
-        final Publication publication = clientA.addPublication(URI, STREAM_ID);
-
-        while (publication.channelStatus() == ChannelEndpointStatus.INITIALIZING)
+        assertTimeout(ofSeconds(5), () ->
         {
-            Thread.yield();
-            SystemTest.checkInterruptedStatus();
-        }
+            final Publication publication = clientA.addPublication(URI, STREAM_ID);
 
-        assertThat(publication.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
+            while (publication.channelStatus() == ChannelEndpointStatus.INITIALIZING)
+            {
+                Thread.yield();
+                SystemTest.checkInterruptedStatus();
+            }
+
+            assertThat(publication.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
+        });
     }
 
     @Test

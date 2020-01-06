@@ -24,10 +24,12 @@ import io.aeron.test.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
+import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 public class ControlledMessageTest
 {
@@ -44,56 +46,59 @@ public class ControlledMessageTest
 
     private final Aeron aeron = Aeron.connect();
 
-    @After
+    @AfterEach
     public void after()
     {
         CloseHelper.close(aeron);
         CloseHelper.close(driver);
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldReceivePublishedMessage()
     {
-        try (Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID);
-            Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
+        assertTimeout(ofSeconds(10), () ->
         {
-            final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[PAYLOAD_LENGTH * 4]);
-
-            for (int i = 0; i < 4; i++)
+            try (Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID);
+                Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
             {
-                srcBuffer.setMemory(i * PAYLOAD_LENGTH, PAYLOAD_LENGTH, (byte)(65 + i));
-            }
+                final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[PAYLOAD_LENGTH * 4]);
 
-            for (int i = 0; i < 4; i++)
-            {
-                while (publication.offer(srcBuffer, i * PAYLOAD_LENGTH, PAYLOAD_LENGTH) < 0L)
+                for (int i = 0; i < 4; i++)
                 {
-                    Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    srcBuffer.setMemory(i * PAYLOAD_LENGTH, PAYLOAD_LENGTH, (byte)(65 + i));
+                }
+
+                for (int i = 0; i < 4; i++)
+                {
+                    while (publication.offer(srcBuffer, i * PAYLOAD_LENGTH, PAYLOAD_LENGTH) < 0L)
+                    {
+                        Thread.yield();
+                        SystemTest.checkInterruptedStatus();
+                    }
+                }
+
+                final FragmentCollector fragmentCollector = new FragmentCollector();
+                int numFragments = 0;
+                do
+                {
+                    final int fragments = subscription.controlledPoll(fragmentCollector, FRAGMENT_COUNT_LIMIT);
+                    if (0 == fragments)
+                    {
+                        Thread.yield();
+                        SystemTest.checkInterruptedStatus();
+                    }
+                    numFragments += fragments;
+                }
+                while (numFragments < 4);
+
+                final UnsafeBuffer collectedBuffer = fragmentCollector.collectedBuffer();
+
+                for (int i = 0; i < srcBuffer.capacity(); i++)
+                {
+                    assertEquals(srcBuffer.getByte(i), collectedBuffer.getByte(i), "same at i=" + i);
                 }
             }
-
-            final FragmentCollector fragmentCollector = new FragmentCollector();
-            int numFragments = 0;
-            do
-            {
-                final int fragments = subscription.controlledPoll(fragmentCollector, FRAGMENT_COUNT_LIMIT);
-                if (0 == fragments)
-                {
-                    Thread.yield();
-                    SystemTest.checkInterruptedStatus();
-                }
-                numFragments += fragments;
-            }
-            while (numFragments < 4);
-
-            final UnsafeBuffer collectedBuffer = fragmentCollector.collectedBuffer();
-
-            for (int i = 0; i < srcBuffer.capacity(); i++)
-            {
-                assertEquals(srcBuffer.getByte(i), collectedBuffer.getByte(i), "same at i=" + i);
-            }
-        }
+        });
     }
 
     static class FragmentCollector implements ControlledFragmentHandler

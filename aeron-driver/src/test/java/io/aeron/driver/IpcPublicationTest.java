@@ -18,8 +18,8 @@ package io.aeron.driver;
 import io.aeron.driver.buffer.TestLogFactory;
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.LogBufferDescriptor;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import io.aeron.CommonContext;
 import io.aeron.DriverProxy;
 import org.agrona.concurrent.*;
@@ -55,7 +55,7 @@ public class IpcPublicationTest
     private final NanoClock nanoClock = () -> currentTime;
 
     @SuppressWarnings("unchecked")
-    @Before
+    @BeforeEach
     public void setUp()
     {
         final RingBuffer toDriverCommands = new ManyToOneRingBuffer(new UnsafeBuffer(

@@ -1,7 +1,7 @@
 package io.aeron.driver;
 
 import io.aeron.driver.MediaDriver.Context;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.aeron.driver.Configuration.NAK_MAX_BACKOFF_DEFAULT_NS;
 import static io.aeron.driver.Configuration.NAK_MULTICAST_MAX_BACKOFF_PROP_NAME;

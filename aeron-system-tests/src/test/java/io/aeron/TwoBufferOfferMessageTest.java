@@ -22,10 +22,12 @@ import io.aeron.test.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableReference;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
+import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 public class TwoBufferOfferMessageTest
 {
@@ -41,81 +43,87 @@ public class TwoBufferOfferMessageTest
 
     private final Aeron aeron = Aeron.connect();
 
-    @After
+    @AfterEach
     public void after()
     {
         CloseHelper.close(aeron);
         CloseHelper.close(driver);
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldTransferUnfragmentedTwoPartMessage()
     {
-        final UnsafeBuffer expectedBuffer = new UnsafeBuffer(new byte[256]);
-        final UnsafeBuffer bufferOne = new UnsafeBuffer(expectedBuffer, 0, 32);
-        final UnsafeBuffer bufferTwo = new UnsafeBuffer(expectedBuffer, 32, expectedBuffer.capacity() - 32);
-
-        bufferOne.setMemory(0, bufferOne.capacity(), (byte)'a');
-        bufferTwo.setMemory(0, bufferTwo.capacity(), (byte)'b');
-        final String expectedMessage = expectedBuffer.getStringWithoutLengthAscii(0, expectedBuffer.capacity());
-
-        final MutableReference<String> receivedMessage = new MutableReference<>();
-        final FragmentHandler fragmentHandler = (buffer, offset, length, header) ->
-            receivedMessage.set(buffer.getStringWithoutLengthAscii(offset, length));
-
-        try (Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
+        assertTimeout(ofSeconds(10), () ->
         {
-            try (Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
+            final UnsafeBuffer expectedBuffer = new UnsafeBuffer(new byte[256]);
+            final UnsafeBuffer bufferOne = new UnsafeBuffer(expectedBuffer, 0, 32);
+            final UnsafeBuffer bufferTwo = new UnsafeBuffer(expectedBuffer, 32, expectedBuffer.capacity() - 32);
+
+            bufferOne.setMemory(0, bufferOne.capacity(), (byte)'a');
+            bufferTwo.setMemory(0, bufferTwo.capacity(), (byte)'b');
+            final String expectedMessage = expectedBuffer.getStringWithoutLengthAscii(0, expectedBuffer.capacity());
+
+            final MutableReference<String> receivedMessage = new MutableReference<>();
+            final FragmentHandler fragmentHandler = (buffer, offset, length, header) ->
+                receivedMessage.set(buffer.getStringWithoutLengthAscii(offset, length));
+
+            try (Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
             {
-                publishMessage(bufferOne, bufferTwo, publication);
-                pollForMessage(subscription, receivedMessage, fragmentHandler);
+                try (Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
+                {
+                    publishMessage(bufferOne, bufferTwo, publication);
+                    pollForMessage(subscription, receivedMessage, fragmentHandler);
 
-                assertEquals(expectedMessage, receivedMessage.get());
+                    assertEquals(expectedMessage, receivedMessage.get());
+                }
+
+                try (Publication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID))
+                {
+                    publishMessage(bufferOne, bufferTwo, publication);
+                    pollForMessage(subscription, receivedMessage, fragmentHandler);
+
+                    assertEquals(expectedMessage, receivedMessage.get());
+                }
             }
-
-            try (Publication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID))
-            {
-                publishMessage(bufferOne, bufferTwo, publication);
-                pollForMessage(subscription, receivedMessage, fragmentHandler);
-
-                assertEquals(expectedMessage, receivedMessage.get());
-            }
-        }
+        });
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldTransferFragmentedTwoPartMessage()
     {
-        final UnsafeBuffer expectedBuffer = new UnsafeBuffer(new byte[32 + driver.context().mtuLength()]);
-        final UnsafeBuffer bufferOne = new UnsafeBuffer(expectedBuffer, 0, 32);
-        final UnsafeBuffer bufferTwo = new UnsafeBuffer(expectedBuffer, 32, expectedBuffer.capacity() - 32);
-
-        bufferOne.setMemory(0, bufferOne.capacity(), (byte)'a');
-        bufferTwo.setMemory(0, bufferTwo.capacity(), (byte)'b');
-        final String expectedMessage = expectedBuffer.getStringWithoutLengthAscii(0, expectedBuffer.capacity());
-
-        final MutableReference<String> receivedMessage = new MutableReference<>();
-        final FragmentHandler fragmentHandler = new FragmentAssembler((buffer, offset, length, header) ->
-            receivedMessage.set(buffer.getStringWithoutLengthAscii(offset, length)));
-
-        try (Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
+        assertTimeout(ofSeconds(10), () ->
         {
-            try (Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
+            final UnsafeBuffer expectedBuffer = new UnsafeBuffer(new byte[32 + driver.context().mtuLength()]);
+            final UnsafeBuffer bufferOne = new UnsafeBuffer(expectedBuffer, 0, 32);
+            final UnsafeBuffer bufferTwo = new UnsafeBuffer(expectedBuffer, 32, expectedBuffer.capacity() - 32);
+
+            bufferOne.setMemory(0, bufferOne.capacity(), (byte)'a');
+            bufferTwo.setMemory(0, bufferTwo.capacity(), (byte)'b');
+            final String expectedMessage = expectedBuffer.getStringWithoutLengthAscii(0, expectedBuffer.capacity());
+
+            final MutableReference<String> receivedMessage = new MutableReference<>();
+            final FragmentHandler fragmentHandler = new FragmentAssembler((buffer, offset, length, header) ->
+                receivedMessage.set(buffer.getStringWithoutLengthAscii(offset, length)));
+
+            try (Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
             {
-                publishMessage(bufferOne, bufferTwo, publication);
-                pollForMessage(subscription, receivedMessage, fragmentHandler);
+                try (Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
+                {
+                    publishMessage(bufferOne, bufferTwo, publication);
+                    pollForMessage(subscription, receivedMessage, fragmentHandler);
 
-                assertEquals(expectedMessage, receivedMessage.get());
+                    assertEquals(expectedMessage, receivedMessage.get());
+                }
+
+                try (Publication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID))
+                {
+                    publishMessage(bufferOne, bufferTwo, publication);
+                    pollForMessage(subscription, receivedMessage, fragmentHandler);
+
+                    assertEquals(expectedMessage, receivedMessage.get());
+                }
             }
-
-            try (Publication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID))
-            {
-                publishMessage(bufferOne, bufferTwo, publication);
-                pollForMessage(subscription, receivedMessage, fragmentHandler);
-
-                assertEquals(expectedMessage, receivedMessage.get());
-            }
-        }
+        });
     }
 
     private static void publishMessage(

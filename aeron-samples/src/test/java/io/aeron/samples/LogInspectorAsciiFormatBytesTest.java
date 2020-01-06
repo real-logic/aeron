@@ -15,52 +15,40 @@
  */
 package io.aeron.samples;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.Arrays;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
-@RunWith(Parameterized.class)
 public class LogInspectorAsciiFormatBytesTest
 {
     private String originalDataFormatProperty;
 
-    private final byte buffer;
-    private final char expected;
-
-    public LogInspectorAsciiFormatBytesTest(final int buffer, final int expected)
+    private static Stream<Arguments> data()
     {
-        this.buffer = (byte)buffer;
-        this.expected = (char)expected;
+        return Stream.of(
+            arguments((byte)0x17, (char)0x17),
+            arguments((byte)0, (char)0),
+            arguments((byte)-1, (char)0),
+            arguments(Byte.MAX_VALUE, (char)Byte.MAX_VALUE),
+            arguments(Byte.MIN_VALUE, (char)0)
+        );
     }
 
-    @Parameters(name = "{index}: ascii format[{0}]={1}")
-    public static Iterable<Object[]> data()
-    {
-        return Arrays.asList(new Object[][]
-            {
-                { 0x17, 0x17 },
-                { 0, 0 },
-                { -1, 0 },
-                { Byte.MAX_VALUE, Byte.MAX_VALUE },
-                { Byte.MIN_VALUE, 0 },
-            });
-    }
-
-    @Before
+    @BeforeEach
     public void before()
     {
         originalDataFormatProperty = System.getProperty(LogInspector.AERON_LOG_DATA_FORMAT_PROP_NAME);
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         if (null == originalDataFormatProperty)
@@ -73,8 +61,9 @@ public class LogInspectorAsciiFormatBytesTest
         }
     }
 
-    @Test
-    public void shouldFormatBytesToAscii()
+    @ParameterizedTest
+    @MethodSource("data")
+    public void shouldFormatBytesToAscii(final byte buffer, final char expected)
     {
         System.setProperty(LogInspector.AERON_LOG_DATA_FORMAT_PROP_NAME, "ascii");
         final char[] formattedBytes = LogInspector.formatBytes(new UnsafeBuffer(new byte[]{ buffer }), 0, 1);

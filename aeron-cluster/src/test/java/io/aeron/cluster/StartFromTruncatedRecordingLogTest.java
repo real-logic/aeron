@@ -39,7 +39,10 @@ import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
-import org.junit.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -56,9 +59,10 @@ import java.util.stream.Stream;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.cluster.RecordingLog.RECORDING_LOG_FILE_NAME;
+import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.*;
 
-@Ignore
+@Disabled
 public class StartFromTruncatedRecordingLogTest
 {
     private static final long MAX_CATALOG_ENTRIES = 1024;
@@ -91,7 +95,7 @@ public class StartFromTruncatedRecordingLogTest
         (clusterSessionId, timestamp, buffer, offset, length, header) -> responseCount.value++;
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
 
-    @Before
+    @BeforeEach
     public void before()
     {
         for (int i = 0; i < MEMBER_COUNT; i++)
@@ -100,7 +104,7 @@ public class StartFromTruncatedRecordingLogTest
         }
     }
 
-    @After
+    @AfterEach
     public void after() throws InterruptedException
     {
         executor.shutdownNow();
@@ -141,20 +145,23 @@ public class StartFromTruncatedRecordingLogTest
         }
     }
 
-    @Test(timeout = 45_000)
+    @Test
     public void shouldBeAbleToStartClusterFromTruncatedRecordingLog() throws Exception
     {
-        stopAndStartClusterWithTruncationOfRecordingLog();
-        assertClusterIsFunctioningCorrectly();
+        assertTimeout(ofSeconds(10), () ->
+        {
+            stopAndStartClusterWithTruncationOfRecordingLog();
+            assertClusterIsFunctioningCorrectly();
 
-        stopAndStartClusterWithTruncationOfRecordingLog();
-        assertClusterIsFunctioningCorrectly();
+            stopAndStartClusterWithTruncationOfRecordingLog();
+            assertClusterIsFunctioningCorrectly();
 
-        stopAndStartClusterWithTruncationOfRecordingLog();
-        assertClusterIsFunctioningCorrectly();
+            stopAndStartClusterWithTruncationOfRecordingLog();
+            assertClusterIsFunctioningCorrectly();
 
-        stopAndStartClusterWithTruncationOfRecordingLog();
-        assertClusterIsFunctioningCorrectly();
+            stopAndStartClusterWithTruncationOfRecordingLog();
+            assertClusterIsFunctioningCorrectly();
+        });
     }
 
     private void stopAndStartClusterWithTruncationOfRecordingLog() throws InterruptedException, IOException
@@ -295,13 +302,13 @@ public class StartFromTruncatedRecordingLogTest
             }
             catch (final IOException e)
             {
-                Assert.fail("Failed to delete file: " + file);
+                fail("Failed to delete file: " + file);
             }
         }
 
         if (file.exists())
         {
-            Assert.fail("Failed to delete file: " + file);
+            fail("Failed to delete file: " + file);
         }
     }
 

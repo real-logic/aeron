@@ -31,46 +31,35 @@ import org.agrona.*;
 import org.agrona.collections.MutableBoolean;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.YieldingIdleStrategy;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.extension.TestWatcher;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.stream.Stream;
 
 import static io.aeron.archive.TestUtil.awaitConnectedReply;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
+import static java.time.Duration.ofSeconds;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
-@RunWith(value = Parameterized.class)
 public class ArchiveTest
 {
-    @Parameterized.Parameter
-    public ThreadingMode threadingMode;
-
-    @Parameterized.Parameter(value = 1)
-    public ArchiveThreadingMode archiveThreadingMode;
-    private long controlSessionId;
-
-    @Parameterized.Parameters(name = "threading modes: driver={0} archive={1}")
-    public static Collection<Object[]> data()
+    private static Stream<Arguments> threadingModes()
     {
-        return Arrays.asList(
-            new Object[][]
-            {
-                { ThreadingMode.INVOKER, ArchiveThreadingMode.SHARED },
-                { ThreadingMode.SHARED, ArchiveThreadingMode.SHARED },
-                { ThreadingMode.DEDICATED, ArchiveThreadingMode.DEDICATED },
-            });
+        return Stream.of(
+            arguments(ThreadingMode.INVOKER, ArchiveThreadingMode.SHARED),
+            arguments(ThreadingMode.SHARED, ArchiveThreadingMode.SHARED),
+            arguments(ThreadingMode.DEDICATED, ArchiveThreadingMode.DEDICATED)
+        );
     }
 
     private static final long MAX_CATALOG_ENTRIES = 1024;
@@ -87,9 +76,10 @@ public class ArchiveTest
     private final Random rnd = new Random();
     private final long seed = System.nanoTime();
 
-    @Rule
-    public final TestWatcher testWatcher = TestUtil.newWatcher(this.getClass(), seed);
+    @RegisterExtension
+    final TestWatcher testWatcher = TestUtil.newWatcher(seed);
 
+    private long controlSessionId;
     private String publishUri;
     private Aeron client;
     private Archive archive;
@@ -113,8 +103,7 @@ public class ArchiveTest
     private Thread replayConsumer = null;
     private Thread progressTracker = null;
 
-    @Before
-    public void before()
+    private void before(final ThreadingMode threadingMode, final ArchiveThreadingMode archiveThreadingMode)
     {
         rnd.setSeed(seed);
         requestedInitialTermId = rnd.nextInt(1234);
@@ -166,7 +155,7 @@ public class ArchiveTest
         recorded = 0;
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         if (null != replayConsumer)
@@ -186,123 +175,141 @@ public class ArchiveTest
         archive.context().deleteArchiveDirectory();
     }
 
-    @Test(timeout = 10_000)
-    public void recordAndReplayExclusivePublication()
+    @ParameterizedTest
+    @MethodSource("threadingModes")
+    public void recordAndReplayExclusivePublication(
+        final ThreadingMode threadingMode, final ArchiveThreadingMode archiveThreadingMode)
     {
-        final String controlChannel = archive.context().localControlChannel();
-        final int controlStreamId = archive.context().localControlStreamId();
+        before(threadingMode, archiveThreadingMode);
+        assertTimeout(ofSeconds(10), () ->
+        {
+            final String controlChannel = archive.context().localControlChannel();
+            final int controlStreamId = archive.context().localControlStreamId();
 
-        final String recordingChannel = archive.context().recordingEventsChannel();
-        final int recordingStreamId = archive.context().recordingEventsStreamId();
+            final String recordingChannel = archive.context().recordingEventsChannel();
+            final int recordingStreamId = archive.context().recordingEventsStreamId();
 
-        final Publication controlPublication = client.addPublication(controlChannel, controlStreamId);
-        final Subscription recordingEvents = client.addSubscription(recordingChannel, recordingStreamId);
-        final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
+            final Publication controlPublication = client.addPublication(controlChannel, controlStreamId);
+            final Subscription recordingEvents = client.addSubscription(recordingChannel, recordingStreamId);
+            final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
-        prePublicationActionsAndVerifications(archiveProxy, controlPublication, recordingEvents);
+            prePublicationActionsAndVerifications(archiveProxy, controlPublication, recordingEvents);
 
-        final ExclusivePublication recordedPublication =
-            client.addExclusivePublication(publishUri, PUBLISH_STREAM_ID);
+            final ExclusivePublication recordedPublication =
+                client.addExclusivePublication(publishUri, PUBLISH_STREAM_ID);
 
-        final int sessionId = recordedPublication.sessionId();
-        final int termBufferLength = recordedPublication.termBufferLength();
-        final int initialTermId = recordedPublication.initialTermId();
-        final int maxPayloadLength = recordedPublication.maxPayloadLength();
-        final long startPosition = recordedPublication.position();
+            final int sessionId = recordedPublication.sessionId();
+            final int termBufferLength = recordedPublication.termBufferLength();
+            final int initialTermId = recordedPublication.initialTermId();
+            final int maxPayloadLength = recordedPublication.maxPayloadLength();
+            final long startPosition = recordedPublication.position();
 
-        assertEquals(requestedStartPosition, startPosition);
-        assertEquals(requestedInitialTermId, recordedPublication.initialTermId());
-        preSendChecks(archiveProxy, recordingEvents, sessionId, termBufferLength, startPosition);
+            assertEquals(requestedStartPosition, startPosition);
+            assertEquals(requestedInitialTermId, recordedPublication.initialTermId());
+            preSendChecks(archiveProxy, recordingEvents, sessionId, termBufferLength, startPosition);
 
-        final int messageCount = prepAndSendMessages(recordingEvents, recordedPublication);
+            final int messageCount = prepAndSendMessages(recordingEvents, recordedPublication);
 
-        postPublicationValidations(
-            archiveProxy,
-            recordingEvents,
-            termBufferLength,
-            initialTermId,
-            maxPayloadLength,
-            messageCount);
+            postPublicationValidations(
+                archiveProxy,
+                recordingEvents,
+                termBufferLength,
+                initialTermId,
+                maxPayloadLength,
+                messageCount);
+        });
     }
 
-    @Test(timeout = 10_000)
-    public void replayExclusivePublicationWhileRecording()
+    @ParameterizedTest
+    @MethodSource("threadingModes")
+    public void replayExclusivePublicationWhileRecording(
+        final ThreadingMode threadingMode, final ArchiveThreadingMode archiveThreadingMode)
     {
-        final String controlChannel = archive.context().localControlChannel();
-        final int controlStreamId = archive.context().localControlStreamId();
+        before(threadingMode, archiveThreadingMode);
+        assertTimeout(ofSeconds(10), () ->
+        {
+            final String controlChannel = archive.context().localControlChannel();
+            final int controlStreamId = archive.context().localControlStreamId();
 
-        final String recordingChannel = archive.context().recordingEventsChannel();
-        final int recordingStreamId = archive.context().recordingEventsStreamId();
+            final String recordingChannel = archive.context().recordingEventsChannel();
+            final int recordingStreamId = archive.context().recordingEventsStreamId();
 
-        final Publication controlPublication = client.addPublication(controlChannel, controlStreamId);
-        final Subscription recordingEvents = client.addSubscription(recordingChannel, recordingStreamId);
-        final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
+            final Publication controlPublication = client.addPublication(controlChannel, controlStreamId);
+            final Subscription recordingEvents = client.addSubscription(recordingChannel, recordingStreamId);
+            final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
-        prePublicationActionsAndVerifications(archiveProxy, controlPublication, recordingEvents);
+            prePublicationActionsAndVerifications(archiveProxy, controlPublication, recordingEvents);
 
-        final ExclusivePublication recordedPublication =
-            client.addExclusivePublication(publishUri, PUBLISH_STREAM_ID);
+            final ExclusivePublication recordedPublication =
+                client.addExclusivePublication(publishUri, PUBLISH_STREAM_ID);
 
-        final int sessionId = recordedPublication.sessionId();
-        final int termBufferLength = recordedPublication.termBufferLength();
-        final int initialTermId = recordedPublication.initialTermId();
-        final int maxPayloadLength = recordedPublication.maxPayloadLength();
-        final long startPosition = recordedPublication.position();
+            final int sessionId = recordedPublication.sessionId();
+            final int termBufferLength = recordedPublication.termBufferLength();
+            final int initialTermId = recordedPublication.initialTermId();
+            final int maxPayloadLength = recordedPublication.maxPayloadLength();
+            final long startPosition = recordedPublication.position();
 
-        assertEquals(requestedStartPosition, startPosition);
-        assertEquals(requestedInitialTermId, recordedPublication.initialTermId());
-        preSendChecks(archiveProxy, recordingEvents, sessionId, termBufferLength, startPosition);
+            assertEquals(requestedStartPosition, startPosition);
+            assertEquals(requestedInitialTermId, recordedPublication.initialTermId());
+            preSendChecks(archiveProxy, recordingEvents, sessionId, termBufferLength, startPosition);
 
-        final int messageCount = MESSAGE_COUNT;
-        final CountDownLatch streamConsumed = new CountDownLatch(2);
+            final int messageCount = MESSAGE_COUNT;
+            final CountDownLatch streamConsumed = new CountDownLatch(2);
 
-        prepMessagesAndListener(recordingEvents, messageCount, streamConsumed);
-        replayConsumer = validateActiveRecordingReplay(
-            archiveProxy,
-            termBufferLength,
-            initialTermId,
-            maxPayloadLength,
-            messageCount,
-            streamConsumed);
+            prepMessagesAndListener(recordingEvents, messageCount, streamConsumed);
+            replayConsumer = validateActiveRecordingReplay(
+                archiveProxy,
+                termBufferLength,
+                initialTermId,
+                maxPayloadLength,
+                messageCount,
+                streamConsumed);
 
-        publishDataToBeRecorded(recordedPublication, messageCount);
-        await(streamConsumed);
+            publishDataToBeRecorded(recordedPublication, messageCount);
+            await(streamConsumed);
+        });
     }
 
-    @Test(timeout = 10_000)
-    public void recordAndReplayRegularPublication()
+    @ParameterizedTest
+    @MethodSource("threadingModes")
+    public void recordAndReplayRegularPublication(
+        final ThreadingMode threadingMode, final ArchiveThreadingMode archiveThreadingMode)
     {
-        final String controlChannel = archive.context().localControlChannel();
-        final int controlStreamId = archive.context().localControlStreamId();
+        before(threadingMode, archiveThreadingMode);
+        assertTimeout(ofSeconds(10), () ->
+        {
+            final String controlChannel = archive.context().localControlChannel();
+            final int controlStreamId = archive.context().localControlStreamId();
 
-        final String recordingChannel = archive.context().recordingEventsChannel();
-        final int recordingStreamId = archive.context().recordingEventsStreamId();
+            final String recordingChannel = archive.context().recordingEventsChannel();
+            final int recordingStreamId = archive.context().recordingEventsStreamId();
 
-        final Publication controlPublication = client.addPublication(controlChannel, controlStreamId);
-        final Subscription recordingEvents = client.addSubscription(recordingChannel, recordingStreamId);
-        final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
+            final Publication controlPublication = client.addPublication(controlChannel, controlStreamId);
+            final Subscription recordingEvents = client.addSubscription(recordingChannel, recordingStreamId);
+            final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
-        prePublicationActionsAndVerifications(archiveProxy, controlPublication, recordingEvents);
+            prePublicationActionsAndVerifications(archiveProxy, controlPublication, recordingEvents);
 
-        final Publication recordedPublication = client.addExclusivePublication(publishUri, PUBLISH_STREAM_ID);
+            final Publication recordedPublication = client.addExclusivePublication(publishUri, PUBLISH_STREAM_ID);
 
-        final int sessionId = recordedPublication.sessionId();
-        final int termBufferLength = recordedPublication.termBufferLength();
-        final int initialTermId = recordedPublication.initialTermId();
-        final int maxPayloadLength = recordedPublication.maxPayloadLength();
-        final long startPosition = recordedPublication.position();
+            final int sessionId = recordedPublication.sessionId();
+            final int termBufferLength = recordedPublication.termBufferLength();
+            final int initialTermId = recordedPublication.initialTermId();
+            final int maxPayloadLength = recordedPublication.maxPayloadLength();
+            final long startPosition = recordedPublication.position();
 
-        preSendChecks(archiveProxy, recordingEvents, sessionId, termBufferLength, startPosition);
+            preSendChecks(archiveProxy, recordingEvents, sessionId, termBufferLength, startPosition);
 
-        final int messageCount = prepAndSendMessages(recordingEvents, recordedPublication);
+            final int messageCount = prepAndSendMessages(recordingEvents, recordedPublication);
 
-        postPublicationValidations(
-            archiveProxy,
-            recordingEvents,
-            termBufferLength,
-            initialTermId,
-            maxPayloadLength,
-            messageCount);
+            postPublicationValidations(
+                archiveProxy,
+                recordingEvents,
+                termBufferLength,
+                initialTermId,
+                maxPayloadLength,
+                messageCount);
+        });
     }
 
     private void preSendChecks(

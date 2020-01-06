@@ -15,12 +15,12 @@
  */
 package io.aeron;
 
-import org.agrona.*;
-import org.agrona.collections.MutableInteger;
-import org.junit.After;
-import org.junit.Test;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.FragmentHandler;
+import org.agrona.*;
+import org.agrona.collections.MutableInteger;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -28,8 +28,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static java.time.Duration.ofSeconds;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Test that a second subscriber can be stopped and started again while data is being published.
@@ -83,7 +83,7 @@ public class StopStartSecondSubscriberTest
         publicationTwo = publisherTwo.addPublication(channelTwo, streamTwo);
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         CloseHelper.close(subscriberOne);
@@ -95,72 +95,90 @@ public class StopStartSecondSubscriberTest
         CloseHelper.close(driverTwo);
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldSpinUpAndShutdown()
     {
-        launch(CHANNEL1, STREAM_ID1, CHANNEL2, STREAM_ID2);
+        assertTimeout(ofSeconds(10), () ->
+        {
+            launch(CHANNEL1, STREAM_ID1, CHANNEL2, STREAM_ID2);
+        });
     }
 
-    @Test(timeout = 10000)
+    @Test
     public void shouldReceivePublishedMessage()
     {
-        launch(CHANNEL1, STREAM_ID1, CHANNEL2, STREAM_ID2);
-
-        buffer.putInt(0, 1);
-
-        final int messagesPerPublication = 1;
-
-        while (publicationOne.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
+        assertTimeout(ofSeconds(10), () ->
         {
-            Thread.yield();
-            SystemTest.checkInterruptedStatus();
-        }
+            launch(CHANNEL1, STREAM_ID1, CHANNEL2, STREAM_ID2);
 
-        while (publicationTwo.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
-        {
-            Thread.yield();
-            SystemTest.checkInterruptedStatus();
-        }
+            buffer.putInt(0, 1);
 
-        final MutableInteger fragmentsRead1 = new MutableInteger();
-        final MutableInteger fragmentsRead2 = new MutableInteger();
-        SystemTest.executeUntil(
-            () -> fragmentsRead1.get() >= messagesPerPublication && fragmentsRead2.get() >= messagesPerPublication,
-            (i) ->
+            final int messagesPerPublication = 1;
+
+            while (publicationOne.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
             {
-                fragmentsRead1.value += subscriptionOne.poll(fragmentHandlerOne, 10);
-                fragmentsRead2.value += subscriptionTwo.poll(fragmentHandlerTwo, 10);
                 Thread.yield();
-            },
-            Integer.MAX_VALUE,
-            TimeUnit.MILLISECONDS.toNanos(9900));
+                SystemTest.checkInterruptedStatus();
+            }
 
-        assertEquals(messagesPerPublication, subOneCount.get());
-        assertEquals(messagesPerPublication, subTwoCount.get());
+            while (publicationTwo.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
+            {
+                Thread.yield();
+                SystemTest.checkInterruptedStatus();
+            }
+
+            final MutableInteger fragmentsRead1 = new MutableInteger();
+            final MutableInteger fragmentsRead2 = new MutableInteger();
+            SystemTest.executeUntil(
+                () -> fragmentsRead1.get() >= messagesPerPublication && fragmentsRead2.get() >= messagesPerPublication,
+                (i) ->
+                {
+                    fragmentsRead1.value += subscriptionOne.poll(fragmentHandlerOne, 10);
+                    fragmentsRead2.value += subscriptionTwo.poll(fragmentHandlerTwo, 10);
+                    Thread.yield();
+                },
+                Integer.MAX_VALUE,
+                TimeUnit.MILLISECONDS.toNanos(9900));
+
+            assertEquals(messagesPerPublication, subOneCount.get());
+            assertEquals(messagesPerPublication, subTwoCount.get());
+        });
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldReceiveMessagesAfterStopStartOnSameChannelSameStream()
     {
-        shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL1, STREAM_ID1);
+        assertTimeout(ofSeconds(10), () ->
+        {
+            shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL1, STREAM_ID1);
+        });
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldReceiveMessagesAfterStopStartOnSameChannelDifferentStreams()
     {
-        shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL1, STREAM_ID2);
+        assertTimeout(ofSeconds(10), () ->
+        {
+            shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL1, STREAM_ID2);
+        });
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldReceiveMessagesAfterStopStartOnDifferentChannelsSameStream()
     {
-        shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL2, STREAM_ID1);
+        assertTimeout(ofSeconds(10), () ->
+        {
+            shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL2, STREAM_ID1);
+        });
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldReceiveMessagesAfterStopStartOnDifferentChannelsDifferentStreams()
     {
-        shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL2, STREAM_ID2);
+        assertTimeout(ofSeconds(10), () ->
+        {
+            shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL2, STREAM_ID2);
+        });
     }
 
     private void doPublisherWork(final Publication publication, final AtomicBoolean running)
@@ -232,12 +250,12 @@ public class StopStartSecondSubscriberTest
 
         running.set(false);
 
-        assertTrue("Expecting subscriberOne to receive messages the entire time",
-            subOneCount.get() >= numMessages * 2);
-        assertTrue("Expecting subscriberTwo to receive messages before being stopped and started",
-            subTwoCount.get() >= numMessages);
-        assertTrue("Expecting subscriberTwo to receive messages after being stopped and started",
-            subscriber2AfterRestartCount.get() >= numMessages);
+        assertTrue(subOneCount.get() >= numMessages * 2,
+            "Expecting subscriberOne to receive messages the entire time");
+        assertTrue(subTwoCount.get() >= numMessages,
+            "Expecting subscriberTwo to receive messages before being stopped and started");
+        assertTrue(subscriber2AfterRestartCount.get() >= numMessages,
+            "Expecting subscriberTwo to receive messages after being stopped and started");
 
         executor.shutdown();
 

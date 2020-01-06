@@ -18,31 +18,24 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.test.TestMediaDriver;
-import org.junit.Test;
-import org.junit.experimental.theories.DataPoint;
-import org.junit.experimental.theories.Theories;
-import org.junit.experimental.theories.Theory;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@RunWith(Theories.class)
 public class TermBufferLengthTest
 {
     public static final int TEST_TERM_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH * 2;
 
-    @DataPoint
-    public static final String UNICAST_TEST_CHANNEL =
-        "aeron:udp?endpoint=localhost:54325|" + CommonContext.TERM_LENGTH_PARAM_NAME + "=" + TEST_TERM_LENGTH;
-
-    @DataPoint
-    public static final String IPC_TEST_CHANNEL =
-        "aeron:ipc?" + CommonContext.TERM_LENGTH_PARAM_NAME + "=" + TEST_TERM_LENGTH;
-
     public static final int STREAM_ID = 1;
 
-    @Theory
-    @Test
+    @ParameterizedTest
+    @ValueSource(strings =
+        {
+        "aeron:udp?endpoint=localhost:54325|" + CommonContext.TERM_LENGTH_PARAM_NAME + "=" + TEST_TERM_LENGTH,
+        "aeron:ipc?" + CommonContext.TERM_LENGTH_PARAM_NAME + "=" + TEST_TERM_LENGTH
+        }
+    )
     public void shouldHaveCorrectTermBufferLength(final String channel)
     {
         final MediaDriver.Context ctx = new MediaDriver.Context()

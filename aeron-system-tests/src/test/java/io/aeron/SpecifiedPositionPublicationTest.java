@@ -21,13 +21,14 @@ import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.test.TestMediaDriver;
 import org.agrona.ErrorHandler;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
 public class SpecifiedPositionPublicationTest
 {
-    @Test(expected = RegistrationException.class)
+    @Test
     public void shouldRejectSpecifiedPositionForConcurrentPublications()
     {
         final ErrorHandler mockErrorHandler = mock(ErrorHandler.class);
@@ -45,7 +46,7 @@ public class SpecifiedPositionPublicationTest
                 .initialPosition(1024, -873648623, 65536)
                 .build();
 
-            aeron.addPublication(channel, 101);
+            assertThrows(RegistrationException.class, () -> aeron.addPublication(channel, 101));
         }
     }
 }

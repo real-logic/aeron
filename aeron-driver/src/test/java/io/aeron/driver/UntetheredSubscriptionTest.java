@@ -22,8 +22,8 @@ import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.concurrent.status.AtomicLongPosition;
 import org.agrona.concurrent.status.Position;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
@@ -45,7 +45,7 @@ public class UntetheredSubscriptionTest
     private final AtomicLongPosition publisherLimit = new AtomicLongPosition();
     private IpcPublication ipcPublication;
 
-    @Before
+    @BeforeEach
     public void before()
     {
         ipcPublication = new IpcPublication(

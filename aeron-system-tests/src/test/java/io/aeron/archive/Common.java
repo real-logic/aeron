@@ -30,7 +30,7 @@ import org.agrona.collections.MutableReference;
 import org.agrona.concurrent.status.CountersReader;
 
 import static io.aeron.Aeron.NULL_VALUE;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class Common
 {

@@ -1,27 +1,28 @@
 package io.aeron.agent;
 
-import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
-import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
-
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
-
-import java.io.File;
-import java.nio.file.Paths;
-import java.util.concurrent.CountDownLatch;
-
 import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.MessageHandler;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.io.File;
+import java.nio.file.Paths;
+import java.util.concurrent.CountDownLatch;
+
+import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
+import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
+import static java.time.Duration.ofSeconds;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 public class ArchiveLoggingAgentTest
 {
@@ -31,14 +32,14 @@ public class ArchiveLoggingAgentTest
     private ArchivingMediaDriver archivingMediaDriver;
     private AeronArchive aeronArchive;
 
-    @Before
+    @BeforeEach
     public void before()
     {
         System.setProperty(EventLogAgent.READER_CLASSNAME_PROP_NAME, StubEventLogReaderAgent.class.getName());
         Common.beforeAgent();
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         Common.afterAfter();
@@ -52,45 +53,48 @@ public class ArchiveLoggingAgentTest
         }
     }
 
-    @Test(timeout = 10_000L)
+    @Test
     public void shouldLogMessages() throws Exception
     {
-        testDirName = Paths.get(IoUtil.tmpDirName(), "archive-test").toString();
-        final File testDir = new File(testDirName);
-        if (testDir.exists())
+        assertTimeout(ofSeconds(10), () ->
         {
-            IoUtil.delete(testDir, false);
-        }
+            testDirName = Paths.get(IoUtil.tmpDirName(), "archive-test").toString();
+            final File testDir = new File(testDirName);
+            if (testDir.exists())
+            {
+                IoUtil.delete(testDir, false);
+            }
 
-        final String aeronDirectoryName = Paths.get(testDirName, "media").toString();
+            final String aeronDirectoryName = Paths.get(testDirName, "media").toString();
 
-        final MediaDriver.Context mediaDriverCtx = new MediaDriver.Context()
-            .errorHandler(Throwable::printStackTrace)
-            .aeronDirectoryName(aeronDirectoryName)
-            .threadingMode(ThreadingMode.SHARED);
+            final MediaDriver.Context mediaDriverCtx = new MediaDriver.Context()
+                .errorHandler(Throwable::printStackTrace)
+                .aeronDirectoryName(aeronDirectoryName)
+                .threadingMode(ThreadingMode.SHARED);
 
-        final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context()
-            .aeronDirectoryName(aeronDirectoryName)
-            .controlRequestChannel("aeron:udp?term-length=64k|endpoint=localhost:8010")
-            .controlRequestStreamId(100)
-            .controlResponseChannel("aeron:udp?term-length=64k|endpoint=localhost:8020")
-            .controlResponseStreamId(101)
-            .recordingEventsChannel("aeron:udp?control-mode=dynamic|control=localhost:8030");
+            final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context()
+                .aeronDirectoryName(aeronDirectoryName)
+                .controlRequestChannel("aeron:udp?term-length=64k|endpoint=localhost:8010")
+                .controlRequestStreamId(100)
+                .controlResponseChannel("aeron:udp?term-length=64k|endpoint=localhost:8020")
+                .controlResponseStreamId(101)
+                .recordingEventsChannel("aeron:udp?control-mode=dynamic|control=localhost:8030");
 
-        final Archive.Context archiveCtx = new Archive.Context()
-            .aeronDirectoryName(aeronDirectoryName)
-            .errorHandler(Throwable::printStackTrace)
-            .archiveDir(new File(testDirName, "archive"))
-            .controlChannel(aeronArchiveContext.controlRequestChannel())
-            .controlStreamId(aeronArchiveContext.controlRequestStreamId())
-            .localControlStreamId(aeronArchiveContext.controlRequestStreamId())
-            .recordingEventsChannel(aeronArchiveContext.recordingEventsChannel())
-            .threadingMode(ArchiveThreadingMode.SHARED);
+            final Archive.Context archiveCtx = new Archive.Context()
+                .aeronDirectoryName(aeronDirectoryName)
+                .errorHandler(Throwable::printStackTrace)
+                .archiveDir(new File(testDirName, "archive"))
+                .controlChannel(aeronArchiveContext.controlRequestChannel())
+                .controlStreamId(aeronArchiveContext.controlRequestStreamId())
+                .localControlStreamId(aeronArchiveContext.controlRequestStreamId())
+                .recordingEventsChannel(aeronArchiveContext.recordingEventsChannel())
+                .threadingMode(ArchiveThreadingMode.SHARED);
 
-        archivingMediaDriver = ArchivingMediaDriver.launch(mediaDriverCtx, archiveCtx);
-        aeronArchive = AeronArchive.connect(aeronArchiveContext);
+            archivingMediaDriver = ArchivingMediaDriver.launch(mediaDriverCtx, archiveCtx);
+            aeronArchive = AeronArchive.connect(aeronArchiveContext);
 
-        LATCH.await();
+            LATCH.await();
+        });
     }
 
     static class StubEventLogReaderAgent implements Agent, MessageHandler

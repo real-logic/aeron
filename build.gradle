@@ -155,8 +155,6 @@ subprojects {
         testImplementation "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
         testImplementation "org.junit.jupiter:junit-jupiter-params:${junitVersion}"
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
-        testCompileOnly "junit:junit:4.13"
-        testRuntimeOnly "org.junit.vintage:junit-vintage-engine:${junitVersion}"
     }
 
     checkstyle.toolVersion = "${checkstyleVersion}"

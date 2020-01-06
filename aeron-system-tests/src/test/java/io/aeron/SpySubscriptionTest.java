@@ -23,24 +23,27 @@ import io.aeron.test.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.After;
-import org.junit.Test;
-import org.junit.experimental.theories.DataPoint;
-import org.junit.experimental.theories.Theories;
-import org.junit.experimental.theories.Theory;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.util.List;
 
 import static io.aeron.SystemTest.spyForChannel;
+import static java.time.Duration.ofSeconds;
+import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 
-@RunWith(Theories.class)
 public class SpySubscriptionTest
 {
-    @DataPoint
-    public static final String UNICAST_CHANNEL = "aeron:udp?endpoint=localhost:54325";
-
-    @DataPoint
-    public static final String MULTICAST_CHANNEL = "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost";
+    private static List<String> channels()
+    {
+        return asList(
+            "aeron:udp?endpoint=localhost:54325",
+            "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost"
+        );
+    }
 
     private static final int STREAM_ID = 1;
     private static final int FRAGMENT_COUNT_LIMIT = 10;
@@ -60,51 +63,54 @@ public class SpySubscriptionTest
 
     private final Aeron aeron = Aeron.connect();
 
-    @After
+    @AfterEach
     public void after()
     {
         CloseHelper.close(aeron);
         CloseHelper.close(driver);
     }
 
-    @Theory
-    @Test(timeout = 10_000)
+    @ParameterizedTest
+    @MethodSource("channels")
     public void shouldReceivePublishedMessage(final String channel)
     {
-        try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
-            Subscription spy = aeron.addSubscription(spyForChannel(channel), STREAM_ID);
-            Publication publication = aeron.addPublication(channel, STREAM_ID))
+        assertTimeout(ofSeconds(10), () ->
         {
-            final int expectedMessageCount = 4;
-            final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[PAYLOAD_LENGTH * expectedMessageCount]);
-
-            for (int i = 0; i < expectedMessageCount; i++)
+            try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
+                Subscription spy = aeron.addSubscription(spyForChannel(channel), STREAM_ID);
+                Publication publication = aeron.addPublication(channel, STREAM_ID))
             {
-                srcBuffer.setMemory(i * PAYLOAD_LENGTH, PAYLOAD_LENGTH, (byte)(65 + i));
-            }
+                final int expectedMessageCount = 4;
+                final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[PAYLOAD_LENGTH * expectedMessageCount]);
 
-            for (int i = 0; i < expectedMessageCount; i++)
-            {
-                while (publication.offer(srcBuffer, i * PAYLOAD_LENGTH, PAYLOAD_LENGTH) < 0L)
+                for (int i = 0; i < expectedMessageCount; i++)
                 {
-                    Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    srcBuffer.setMemory(i * PAYLOAD_LENGTH, PAYLOAD_LENGTH, (byte)(65 + i));
                 }
+
+                for (int i = 0; i < expectedMessageCount; i++)
+                {
+                    while (publication.offer(srcBuffer, i * PAYLOAD_LENGTH, PAYLOAD_LENGTH) < 0L)
+                    {
+                        Thread.yield();
+                        SystemTest.checkInterruptedStatus();
+                    }
+                }
+
+                int numFragments = 0;
+                int numSpyFragments = 0;
+                do
+                {
+                    SystemTest.checkInterruptedStatus();
+
+                    numFragments += subscription.poll(fragmentHandlerSub, FRAGMENT_COUNT_LIMIT);
+                    numSpyFragments += spy.poll(fragmentHandlerSpy, FRAGMENT_COUNT_LIMIT);
+                }
+                while (numSpyFragments < expectedMessageCount || numFragments < expectedMessageCount);
+
+                assertEquals(expectedMessageCount, fragmentCountSpy.value);
+                assertEquals(expectedMessageCount, fragmentCountSub.value);
             }
-
-            int numFragments = 0;
-            int numSpyFragments = 0;
-            do
-            {
-                SystemTest.checkInterruptedStatus();
-
-                numFragments += subscription.poll(fragmentHandlerSub, FRAGMENT_COUNT_LIMIT);
-                numSpyFragments += spy.poll(fragmentHandlerSpy, FRAGMENT_COUNT_LIMIT);
-            }
-            while (numSpyFragments < expectedMessageCount || numFragments < expectedMessageCount);
-
-            assertEquals(expectedMessageCount, fragmentCountSpy.value);
-            assertEquals(expectedMessageCount, fragmentCountSub.value);
-        }
+        });
     }
 }

@@ -21,8 +21,8 @@ import io.aeron.test.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.collections.MutableReference;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -38,7 +38,7 @@ public class ReentrantClientTest
         .dirDeleteOnShutdown(true)
         .dirDeleteOnStart(true));
 
-    @After
+    @AfterEach
     public void after()
     {
         CloseHelper.close(mediaDriver);

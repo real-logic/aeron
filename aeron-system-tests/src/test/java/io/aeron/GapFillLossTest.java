@@ -15,22 +15,29 @@
  */
 package io.aeron;
 
-import io.aeron.driver.*;
-import io.aeron.driver.ext.*;
-import io.aeron.logbuffer.*;
+import io.aeron.driver.MediaDriver;
+import io.aeron.driver.ThreadingMode;
+import io.aeron.driver.ext.DebugChannelEndpointConfiguration;
+import io.aeron.driver.ext.DebugSendChannelEndpoint;
+import io.aeron.driver.ext.LossGenerator;
+import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.logbuffer.Header;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.test.MediaDriverTestWatcher;
 import io.aeron.test.TestMediaDriver;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static io.aeron.test.LossReportTestUtil.verifyLossOccurredForStream;
+import static java.time.Duration.ofSeconds;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 public class GapFillLossTest
 {
@@ -45,58 +52,61 @@ public class GapFillLossTest
 
     private static final AtomicLong FINAL_POSITION = new AtomicLong(Long.MAX_VALUE);
 
-    @Rule
-    public MediaDriverTestWatcher watcher = new MediaDriverTestWatcher();
+    @RegisterExtension
+    MediaDriverTestWatcher watcher = new MediaDriverTestWatcher();
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldGapFillWhenLossOccurs() throws Exception
     {
-        final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MSG_LENGTH));
-        srcBuffer.setMemory(0, MSG_LENGTH, (byte)7);
-
-        final MediaDriver.Context ctx = new MediaDriver.Context()
-            .errorHandler(Throwable::printStackTrace)
-            .threadingMode(ThreadingMode.SHARED)
-            .dirDeleteOnStart(true)
-            .dirDeleteOnShutdown(true)
-            .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH);
-
-        final LossGenerator noLossGenerator =
-            DebugChannelEndpointConfiguration.lossGeneratorSupplier(0, 0);
-
-        ctx.sendChannelEndpointSupplier((udpChannel, statusIndicator, context) -> new DebugSendChannelEndpoint(
-            udpChannel, statusIndicator, context, noLossGenerator, noLossGenerator));
-
-        TestMediaDriver.enableLossGenerationOnReceive(ctx, 0.20, 0xcafebabeL, true, false);
-
-        try (TestMediaDriver ignore = TestMediaDriver.launch(ctx, watcher);
-            Aeron aeron = Aeron.connect();
-            Subscription subscription = aeron.addSubscription(UNRELIABLE_CHANNEL, STREAM_ID);
-            Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
+        assertTimeout(ofSeconds(10), () ->
         {
-            final Subscriber subscriber = new Subscriber(subscription);
-            final Thread subscriberThread = new Thread(subscriber);
-            subscriberThread.setDaemon(true);
-            subscriberThread.start();
+            final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MSG_LENGTH));
+            srcBuffer.setMemory(0, MSG_LENGTH, (byte)7);
 
-            long position = 0;
-            for (int i = 0; i < NUM_MESSAGES; i++)
+            final MediaDriver.Context ctx = new MediaDriver.Context()
+                .errorHandler(Throwable::printStackTrace)
+                .threadingMode(ThreadingMode.SHARED)
+                .dirDeleteOnStart(true)
+                .dirDeleteOnShutdown(true)
+                .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH);
+
+            final LossGenerator noLossGenerator =
+                DebugChannelEndpointConfiguration.lossGeneratorSupplier(0, 0);
+
+            ctx.sendChannelEndpointSupplier((udpChannel, statusIndicator, context) -> new DebugSendChannelEndpoint(
+                udpChannel, statusIndicator, context, noLossGenerator, noLossGenerator));
+
+            TestMediaDriver.enableLossGenerationOnReceive(ctx, 0.20, 0xcafebabeL, true, false);
+
+            try (TestMediaDriver ignore = TestMediaDriver.launch(ctx, watcher);
+                Aeron aeron = Aeron.connect();
+                Subscription subscription = aeron.addSubscription(UNRELIABLE_CHANNEL, STREAM_ID);
+                Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
             {
-                srcBuffer.putLong(0, i);
+                final Subscriber subscriber = new Subscriber(subscription);
+                final Thread subscriberThread = new Thread(subscriber);
+                subscriberThread.setDaemon(true);
+                subscriberThread.start();
 
-                while ((position = publication.offer(srcBuffer)) < 0L)
+                long position = 0;
+                for (int i = 0; i < NUM_MESSAGES; i++)
                 {
-                    Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    srcBuffer.putLong(0, i);
+
+                    while ((position = publication.offer(srcBuffer)) < 0L)
+                    {
+                        Thread.yield();
+                        SystemTest.checkInterruptedStatus();
+                    }
                 }
+
+                FINAL_POSITION.set(position);
+                subscriberThread.join();
+
+                verifyLossOccurredForStream(ctx.aeronDirectoryName(), STREAM_ID);
+                assertThat(subscriber.messageCount, lessThan(NUM_MESSAGES));
             }
-
-            FINAL_POSITION.set(position);
-            subscriberThread.join();
-
-            verifyLossOccurredForStream(ctx.aeronDirectoryName(), STREAM_ID);
-            assertThat(subscriber.messageCount, lessThan(NUM_MESSAGES));
-        }
+        });
     }
 
     static class Subscriber implements Runnable, FragmentHandler

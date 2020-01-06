@@ -24,25 +24,27 @@ import io.aeron.test.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.After;
-import org.junit.Test;
-import org.junit.experimental.theories.DataPoint;
-import org.junit.experimental.theories.Theories;
-import org.junit.experimental.theories.Theory;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static java.time.Duration.ofSeconds;
+import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 
-@RunWith(Theories.class)
 public class PublicationUnblockTest
 {
-    @DataPoint
-    public static final String NETWORK_CHANNEL = "aeron:udp?endpoint=localhost:54325";
-
-    @DataPoint
-    public static final String IPC_CHANNEL = "aeron:ipc";
+    private static List<String> channels()
+    {
+        return asList(
+            "aeron:udp?endpoint=localhost:54325",
+            "aeron:ipc"
+        );
+    }
 
     private static final int STREAM_ID = 1;
     private static final int FRAGMENT_COUNT_LIMIT = 10;
@@ -59,73 +61,76 @@ public class PublicationUnblockTest
     private final Aeron aeron = Aeron.connect(new Aeron.Context()
         .keepAliveIntervalNs(TimeUnit.MILLISECONDS.toNanos(100)));
 
-    @After
+    @AfterEach
     public void after()
     {
         CloseHelper.close(aeron);
         CloseHelper.close(driver);
     }
 
-    @Theory
-    @Test(timeout = 10_000)
+    @ParameterizedTest
+    @MethodSource("channels")
     public void shouldUnblockNonCommittedMessage(final String channel)
     {
-        final MutableInteger fragmentCount = new MutableInteger();
-        final FragmentHandler fragmentHandler = (buffer, offset, length, header) -> fragmentCount.value++;
-
-        try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
-            Publication publicationOne = aeron.addPublication(channel, STREAM_ID);
-            Publication publicationTwo = aeron.addPublication(channel, STREAM_ID))
+        assertTimeout(ofSeconds(10), () ->
         {
-            final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[driver.context().mtuLength()]);
-            final int length = 128;
-            srcBuffer.setMemory(0, length, (byte)66);
-            final BufferClaim bufferClaim = new BufferClaim();
+            final MutableInteger fragmentCount = new MutableInteger();
+            final FragmentHandler fragmentHandler = (buffer, offset, length, header) -> fragmentCount.value++;
 
-            while (publicationOne.tryClaim(length, bufferClaim) < 0L)
+            try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
+                Publication publicationOne = aeron.addPublication(channel, STREAM_ID);
+                Publication publicationTwo = aeron.addPublication(channel, STREAM_ID))
             {
-                Thread.yield();
-                SystemTest.checkInterruptedStatus();
-            }
+                final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[driver.context().mtuLength()]);
+                final int length = 128;
+                srcBuffer.setMemory(0, length, (byte)66);
+                final BufferClaim bufferClaim = new BufferClaim();
 
-            bufferClaim.buffer().setMemory(bufferClaim.offset(), length, (byte)65);
-            bufferClaim.commit();
-
-            while (publicationTwo.offer(srcBuffer, 0, length) < 0L)
-            {
-                Thread.yield();
-                SystemTest.checkInterruptedStatus();
-            }
-
-            while (publicationOne.tryClaim(length, bufferClaim) < 0L)
-            {
-                Thread.yield();
-                SystemTest.checkInterruptedStatus();
-            }
-
-            while (publicationTwo.offer(srcBuffer, 0, length) < 0L)
-            {
-                Thread.yield();
-                SystemTest.checkInterruptedStatus();
-            }
-
-            final int expectedFragments = 3;
-            int numFragments = 0;
-            do
-            {
-                final int fragments = subscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT);
-                if (fragments == 0)
+                while (publicationOne.tryClaim(length, bufferClaim) < 0L)
                 {
                     Thread.yield();
                     SystemTest.checkInterruptedStatus();
                 }
 
-                numFragments += fragments;
-            }
-            while (numFragments < expectedFragments);
+                bufferClaim.buffer().setMemory(bufferClaim.offset(), length, (byte)65);
+                bufferClaim.commit();
 
-            assertEquals(expectedFragments, numFragments);
-            assertEquals(expectedFragments, fragmentCount.value);
-        }
+                while (publicationTwo.offer(srcBuffer, 0, length) < 0L)
+                {
+                    Thread.yield();
+                    SystemTest.checkInterruptedStatus();
+                }
+
+                while (publicationOne.tryClaim(length, bufferClaim) < 0L)
+                {
+                    Thread.yield();
+                    SystemTest.checkInterruptedStatus();
+                }
+
+                while (publicationTwo.offer(srcBuffer, 0, length) < 0L)
+                {
+                    Thread.yield();
+                    SystemTest.checkInterruptedStatus();
+                }
+
+                final int expectedFragments = 3;
+                int numFragments = 0;
+                do
+                {
+                    final int fragments = subscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT);
+                    if (fragments == 0)
+                    {
+                        Thread.yield();
+                        SystemTest.checkInterruptedStatus();
+                    }
+
+                    numFragments += fragments;
+                }
+                while (numFragments < expectedFragments);
+
+                assertEquals(expectedFragments, numFragments);
+                assertEquals(expectedFragments, fragmentCount.value);
+            }
+        });
     }
 }

@@ -19,7 +19,8 @@ import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.Position;
-import org.junit.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import static io.aeron.logbuffer.FrameDescriptor.*;
@@ -40,7 +41,7 @@ public class TermReaderTest
     private final FragmentHandler handler = mock(FragmentHandler.class);
     private final Position subscriberPosition = mock(Position.class);
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         when(termBuffer.capacity()).thenReturn(TERM_BUFFER_CAPACITY);

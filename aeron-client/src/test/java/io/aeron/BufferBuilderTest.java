@@ -15,7 +15,7 @@
  */
 package io.aeron;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.charset.StandardCharsets;

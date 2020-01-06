@@ -17,7 +17,7 @@ package io.aeron.archive;
 
 import io.aeron.archive.client.RecordingEventsListener;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class FailRecordingEventsListener implements RecordingEventsListener
 {

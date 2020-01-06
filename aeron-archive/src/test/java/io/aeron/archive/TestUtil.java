@@ -22,8 +22,8 @@ import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.TimeoutException;
 import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.TestWatcher;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;
@@ -175,14 +175,15 @@ public class TestUtil
         }
     }
 
-    public static TestWatcher newWatcher(final Class clazz, final long seed)
+    public static TestWatcher newWatcher(final long seed)
     {
         return new TestWatcher()
         {
-            protected void failed(final Throwable t, final Description description)
+            public void testFailed(final ExtensionContext context, final Throwable cause)
             {
-                System.err.println(clazz.getName() + " failed with random seed: " + seed);
+                System.err.println(context.getDisplayName() + " failed with random seed: " + seed);
             }
+
         };
     }
 }

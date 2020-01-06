@@ -27,9 +27,9 @@ import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.nio.channels.FileChannel;
@@ -38,7 +38,7 @@ import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static java.nio.file.StandardOpenOption.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 public class RecordingSessionTest
@@ -71,7 +71,7 @@ public class RecordingSessionTest
     private Archive.Context context;
     private long positionLong;
 
-    @Before
+    @BeforeEach
     public void before() throws Exception
     {
         when(mockPosition.getWeak()).then((invocation) -> positionLong);
@@ -105,7 +105,7 @@ public class RecordingSessionTest
             .epochClock(epochClock);
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         IoUtil.unmap(mockLogBufferMapped.byteBuffer());
@@ -155,7 +155,7 @@ public class RecordingSessionTest
                 return RECORDED_BLOCK_LENGTH;
             });
 
-        assertNotEquals("Expect some work", 0, session.doWork());
+        assertNotEquals(0, session.doWork(), "Expect some work");
 
         final File segmentFile = new File(archiveDir, segmentFileName(RECORDING_ID, 0));
         assertTrue(segmentFile.exists());
@@ -187,7 +187,7 @@ public class RecordingSessionTest
         }
 
         when(image.blockPoll(any(), anyInt())).thenReturn(0);
-        assertEquals("Expect no work", 0, session.doWork());
+        assertEquals(0, session.doWork(), "Expect no work");
 
         when(image.isClosed()).thenReturn(true);
         session.doWork();

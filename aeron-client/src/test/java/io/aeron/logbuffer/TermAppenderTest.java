@@ -19,23 +19,21 @@ import io.aeron.DirectBufferVector;
 import io.aeron.ReservedValueSupplier;
 import io.aeron.exceptions.AeronException;
 import org.agrona.BitUtil;
-import org.junit.Test;
-import org.mockito.InOrder;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 
-import static io.aeron.logbuffer.LogBufferDescriptor.TERM_TAIL_COUNTERS_OFFSET;
-import static io.aeron.logbuffer.LogBufferDescriptor.packTail;
-import static io.aeron.logbuffer.LogBufferDescriptor.rawTailVolatile;
+import static io.aeron.logbuffer.FrameDescriptor.*;
+import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.logbuffer.TermAppender.FAILED;
-import static io.aeron.protocol.DataHeaderFlyweight.RESERVED_VALUE_OFFSET;
-import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
+import static io.aeron.protocol.DataHeaderFlyweight.*;
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.align;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
-import static io.aeron.logbuffer.FrameDescriptor.*;
-import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
-import static org.agrona.BitUtil.*;
 
 public class TermAppenderTest
 {
@@ -337,7 +335,7 @@ public class TermAppenderTest
         inOrder.verify(termBuffer, times(1)).putIntOrdered(tail, frameTwoLength);
     }
 
-    @Test(expected = AeronException.class)
+    @Test
     public void shouldDetectInvalidTerm()
     {
         final int length = 128;
@@ -346,6 +344,7 @@ public class TermAppenderTest
 
         logMetaDataBuffer.putLong(TERM_TAIL_COUNTER_OFFSET, packTail(TERM_ID + 1, 0));
 
-        termAppender.appendUnfragmentedMessage(headerWriter, buffer, srcOffset, length, RVS, TERM_ID);
+        assertThrows(AeronException.class, () ->
+            termAppender.appendUnfragmentedMessage(headerWriter, buffer, srcOffset, length, RVS, TERM_ID));
     }
 }

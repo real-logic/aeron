@@ -24,29 +24,30 @@ import io.aeron.test.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.After;
-import org.junit.Test;
-import org.junit.experimental.theories.DataPoint;
-import org.junit.experimental.theories.Theories;
-import org.junit.experimental.theories.Theory;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 
+import java.util.List;
+
 import static io.aeron.logbuffer.FrameDescriptor.END_FRAG_FLAG;
+import static java.time.Duration.ofSeconds;
+import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 import static org.mockito.Mockito.*;
 
-@RunWith(Theories.class)
 public class FragmentedMessageTest
 {
-    @DataPoint
-    public static final String IPC_CHANNEL = CommonContext.IPC_CHANNEL;
-
-    @DataPoint
-    public static final String UNICAST_CHANNEL = "aeron:udp?endpoint=localhost:54325";
-
-    @DataPoint
-    public static final String MULTICAST_CHANNEL = "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost";
+    private static List<String> channels()
+    {
+        return asList(
+            CommonContext.IPC_CHANNEL,
+            "aeron:udp?endpoint=localhost:54325",
+            "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost"
+        );
+    }
 
     private static final int STREAM_ID = 1;
     private static final int FRAGMENT_COUNT_LIMIT = 10;
@@ -61,64 +62,67 @@ public class FragmentedMessageTest
 
     private final Aeron aeron = Aeron.connect();
 
-    @After
+    @AfterEach
     public void after()
     {
         CloseHelper.close(aeron);
         CloseHelper.close(driver);
     }
 
-    @Theory
-    @Test(timeout = 10_000)
+    @ParameterizedTest
+    @MethodSource("channels")
     public void shouldReceivePublishedMessage(final String channel)
     {
-        final FragmentAssembler assembler = new FragmentAssembler(mockFragmentHandler);
-
-        try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
-            Publication publication = aeron.addPublication(channel, STREAM_ID))
+        assertTimeout(ofSeconds(10), () ->
         {
-            final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[driver.context().mtuLength() * 4]);
-            final int offset = 0;
-            final int length = srcBuffer.capacity() / 4;
+            final FragmentAssembler assembler = new FragmentAssembler(mockFragmentHandler);
 
-            for (int i = 0; i < 4; i++)
+            try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
+                Publication publication = aeron.addPublication(channel, STREAM_ID))
             {
-                srcBuffer.setMemory(i * length, length, (byte)(65 + i));
-            }
+                final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[driver.context().mtuLength() * 4]);
+                final int offset = 0;
+                final int length = srcBuffer.capacity() / 4;
 
-            while (publication.offer(srcBuffer, offset, srcBuffer.capacity()) < 0L)
-            {
-                Thread.yield();
-                SystemTest.checkInterruptedStatus();
-            }
+                for (int i = 0; i < 4; i++)
+                {
+                    srcBuffer.setMemory(i * length, length, (byte)(65 + i));
+                }
 
-            final int expectedFragmentsBecauseOfHeader = 5;
-            int numFragments = 0;
-            do
-            {
-                final int fragments = subscription.poll(assembler, FRAGMENT_COUNT_LIMIT);
-                if (0 == fragments)
+                while (publication.offer(srcBuffer, offset, srcBuffer.capacity()) < 0L)
                 {
                     Thread.yield();
                     SystemTest.checkInterruptedStatus();
                 }
-                numFragments += fragments;
+
+                final int expectedFragmentsBecauseOfHeader = 5;
+                int numFragments = 0;
+                do
+                {
+                    final int fragments = subscription.poll(assembler, FRAGMENT_COUNT_LIMIT);
+                    if (0 == fragments)
+                    {
+                        Thread.yield();
+                        SystemTest.checkInterruptedStatus();
+                    }
+                    numFragments += fragments;
+                }
+                while (numFragments < expectedFragmentsBecauseOfHeader);
+
+                final ArgumentCaptor<DirectBuffer> bufferArg = ArgumentCaptor.forClass(DirectBuffer.class);
+                final ArgumentCaptor<Header> headerArg = ArgumentCaptor.forClass(Header.class);
+
+                verify(mockFragmentHandler, times(1)).onFragment(
+                    bufferArg.capture(), eq(offset), eq(srcBuffer.capacity()), headerArg.capture());
+
+                final DirectBuffer capturedBuffer = bufferArg.getValue();
+                for (int i = 0; i < srcBuffer.capacity(); i++)
+                {
+                    assertEquals(srcBuffer.getByte(i), capturedBuffer.getByte(i), "same at i=" + i);
+                }
+
+                assertEquals(END_FRAG_FLAG, headerArg.getValue().flags());
             }
-            while (numFragments < expectedFragmentsBecauseOfHeader);
-
-            final ArgumentCaptor<DirectBuffer> bufferArg = ArgumentCaptor.forClass(DirectBuffer.class);
-            final ArgumentCaptor<Header> headerArg = ArgumentCaptor.forClass(Header.class);
-
-            verify(mockFragmentHandler, times(1)).onFragment(
-                bufferArg.capture(), eq(offset), eq(srcBuffer.capacity()), headerArg.capture());
-
-            final DirectBuffer capturedBuffer = bufferArg.getValue();
-            for (int i = 0; i < srcBuffer.capacity(); i++)
-            {
-                assertEquals(srcBuffer.getByte(i), capturedBuffer.getByte(i), "same at i=" + i);
-            }
-
-            assertEquals(END_FRAG_FLAG, headerArg.getValue().flags());
-        }
+        });
     }
 }

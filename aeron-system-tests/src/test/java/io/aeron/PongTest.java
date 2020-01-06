@@ -27,10 +27,10 @@ import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 
@@ -59,7 +59,7 @@ public class PongTest
     private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
     private final FragmentHandler pongHandler = mock(FragmentHandler.class);
 
-    @Before
+    @BeforeEach
     public void before()
     {
         driver = TestMediaDriver.launch(
@@ -79,7 +79,7 @@ public class PongTest
         pongPublication = pongClient.addPublication(PONG_URI, PONG_STREAM_ID);
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         CloseHelper.close(pongClient);
@@ -129,7 +129,7 @@ public class PongTest
             any(Header.class));
     }
 
-    @Ignore
+    @Disabled
     @Test
     public void playPingPongWithRestart() throws Exception
     {

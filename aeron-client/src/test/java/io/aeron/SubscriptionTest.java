@@ -16,8 +16,8 @@
 package io.aeron;
 
 import io.aeron.logbuffer.LogBufferDescriptor;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -51,7 +51,7 @@ public class SubscriptionTest
 
     private Subscription subscription;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         when(imageOneMock.correlationId()).thenReturn(1L);

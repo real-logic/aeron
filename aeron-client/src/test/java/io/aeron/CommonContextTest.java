@@ -16,16 +16,18 @@
 package io.aeron;
 
 import io.aeron.exceptions.ConcurrentConcludeException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class CommonContextTest
 {
-    @Test(expected = ConcurrentConcludeException.class)
+    @Test
     public void shouldNotAllowConcludeMoreThanOnce()
     {
         final CommonContext ctx = new CommonContext();
+        ctx.conclude();
 
-        ctx.conclude();
-        ctx.conclude();
+        assertThrows(ConcurrentConcludeException.class, ctx::conclude);
     }
 }

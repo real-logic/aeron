@@ -15,7 +15,7 @@
  */
 package io.aeron.cluster;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.aeron.cluster.ClusterMember.quorumPosition;
 import static io.aeron.cluster.ClusterMember.quorumThreshold;

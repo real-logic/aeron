@@ -16,7 +16,7 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class StartStopSystemTest
 {

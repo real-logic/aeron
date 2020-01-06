@@ -15,7 +15,7 @@
  */
 package io.aeron.driver.media;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.Inet6Address;
 import java.net.InetAddress;
@@ -25,6 +25,7 @@ import java.net.UnknownHostException;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class SocketAddressParserTest
 {
@@ -40,46 +41,46 @@ public class SocketAddressParserTest
         assertCorrectParse("localhost", 55);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldRejectOnInvalidPort()
     {
-        SocketAddressParser.parse("192.168.1.20:aa");
+        assertThrows(IllegalArgumentException.class, () -> SocketAddressParser.parse("192.168.1.20:aa"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldRejectOnInvalidPort2()
     {
-        SocketAddressParser.parse("192.168.1.20::123");
+        assertThrows(IllegalArgumentException.class, () -> SocketAddressParser.parse("192.168.1.20::123"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldRejectOnMissingPort()
     {
-        SocketAddressParser.parse("192.168.1.20");
+        assertThrows(IllegalArgumentException.class, () -> SocketAddressParser.parse("192.168.1.20"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldRejectOnEmptyPort()
     {
-        SocketAddressParser.parse("192.168.1.20:");
+        assertThrows(IllegalArgumentException.class, () -> SocketAddressParser.parse("192.168.1.20:"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldRejectOnEmptyIpV6Port()
     {
-        SocketAddressParser.parse("[::1]:");
+        assertThrows(IllegalArgumentException.class, () -> SocketAddressParser.parse("[::1]:"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldRejectOnInvalidIpV6()
     {
-        SocketAddressParser.parse("[FG07::789:1:0:0:3]:111");
+        assertThrows(IllegalArgumentException.class, () -> SocketAddressParser.parse("[FG07::789:1:0:0:3]:111"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldRejectOnInvalidIpV6Scope()
     {
-        SocketAddressParser.parse("[FC07::789:1:0:0:3%^]:111");
+        assertThrows(IllegalArgumentException.class, () -> SocketAddressParser.parse("[FC07::789:1:0:0:3%^]:111"));
     }
 
     @Test

@@ -18,8 +18,8 @@ package io.aeron.cluster;
 import io.aeron.archive.client.AeronArchive;
 import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -37,7 +37,7 @@ public class RecordingLogTest
     private static final File TEMP_DIR = new File(SystemUtil.tmpDirName());
     private boolean ignoreMissingRecordingFile = false;
 
-    @After
+    @AfterEach
     public void after()
     {
         IoUtil.delete(new File(TEMP_DIR, RecordingLog.RECORDING_LOG_FILE_NAME), ignoreMissingRecordingFile);

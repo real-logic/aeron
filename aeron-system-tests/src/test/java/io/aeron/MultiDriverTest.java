@@ -16,23 +16,25 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
-import io.aeron.logbuffer.LogBufferDescriptor;
-import org.agrona.SystemUtil;
-import org.agrona.collections.MutableInteger;
-import org.junit.After;
-import org.junit.Test;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.IoUtil;
+import org.agrona.SystemUtil;
+import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 public class MultiDriverTest
 {
@@ -88,7 +90,7 @@ public class MultiDriverTest
         clientB = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverBContext.aeronDirectoryName()));
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         publication.close();
@@ -103,147 +105,158 @@ public class MultiDriverTest
         IoUtil.delete(new File(ROOT_DIR), true);
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldSpinUpAndShutdown()
     {
-        launch();
-
-        subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
-        subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
-        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
-
-        while (!subscriptionA.isConnected() && !subscriptionB.isConnected())
+        assertTimeout(ofSeconds(10), () ->
         {
-            Thread.yield();
-            SystemTest.checkInterruptedStatus();
-        }
+            launch();
+
+            subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
+            subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
+            publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
+
+            while (!subscriptionA.isConnected() && !subscriptionB.isConnected())
+            {
+                Thread.yield();
+                SystemTest.checkInterruptedStatus();
+            }
+        });
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldJoinExistingStreamWithLockStepSendingReceiving() throws Exception
     {
-        final int numMessagesToSendPreJoin = NUM_MESSAGES_PER_TERM / 2;
-        final int numMessagesToSendPostJoin = NUM_MESSAGES_PER_TERM;
-
-        launch();
-
-        subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
-        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
-
-        for (int i = 0; i < numMessagesToSendPreJoin; i++)
+        assertTimeout(ofSeconds(10), () ->
         {
-            while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
+            final int numMessagesToSendPreJoin = NUM_MESSAGES_PER_TERM / 2;
+            final int numMessagesToSendPostJoin = NUM_MESSAGES_PER_TERM;
+
+            launch();
+
+            subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
+            publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
+
+            for (int i = 0; i < numMessagesToSendPreJoin; i++)
             {
-                Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
+                {
+                    Thread.yield();
+                    SystemTest.checkInterruptedStatus();
+                }
+
+                final MutableInteger fragmentsRead = new MutableInteger();
+                SystemTest.executeUntil(
+                    () -> fragmentsRead.get() > 0,
+                    (j) ->
+                    {
+                        fragmentsRead.value += subscriptionA.poll(fragmentHandlerA, 10);
+                        Thread.yield();
+                    },
+                    Integer.MAX_VALUE,
+                    TimeUnit.MILLISECONDS.toNanos(500));
             }
 
-            final MutableInteger fragmentsRead = new MutableInteger();
-            SystemTest.executeUntil(
-                () -> fragmentsRead.get() > 0,
-                (j) ->
-                {
-                    fragmentsRead.value += subscriptionA.poll(fragmentHandlerA, 10);
-                    Thread.yield();
-                },
-                Integer.MAX_VALUE,
-                TimeUnit.MILLISECONDS.toNanos(500));
-        }
+            final CountDownLatch newImageLatch = new CountDownLatch(1);
+            subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID, (image) -> newImageLatch
+                .countDown(), null);
 
-        final CountDownLatch newImageLatch = new CountDownLatch(1);
-        subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID, (image) -> newImageLatch.countDown(), null);
+            newImageLatch.await();
 
-        newImageLatch.await();
-
-        for (int i = 0; i < numMessagesToSendPostJoin; i++)
-        {
-            while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
+            for (int i = 0; i < numMessagesToSendPostJoin; i++)
             {
-                SystemTest.checkInterruptedStatus();
-                Thread.yield();
+                while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
+                {
+                    SystemTest.checkInterruptedStatus();
+                    Thread.yield();
+                }
+
+                final MutableInteger fragmentsRead = new MutableInteger();
+                SystemTest.executeUntil(
+                    () -> fragmentsRead.get() > 0,
+                    (j) ->
+                    {
+                        fragmentsRead.value += subscriptionA.poll(fragmentHandlerA, 10);
+                        Thread.yield();
+                    },
+                    Integer.MAX_VALUE,
+                    TimeUnit.MILLISECONDS.toNanos(500));
+
+                fragmentsRead.set(0);
+                SystemTest.executeUntil(
+                    () -> fragmentsRead.get() > 0,
+                    (j) ->
+                    {
+                        fragmentsRead.value += subscriptionB.poll(fragmentHandlerB, 10);
+                        Thread.yield();
+                    },
+                    Integer.MAX_VALUE,
+                    TimeUnit.MILLISECONDS.toNanos(500));
             }
 
-            final MutableInteger fragmentsRead = new MutableInteger();
-            SystemTest.executeUntil(
-                () -> fragmentsRead.get() > 0,
-                (j) ->
-                {
-                    fragmentsRead.value += subscriptionA.poll(fragmentHandlerA, 10);
-                    Thread.yield();
-                },
-                Integer.MAX_VALUE,
-                TimeUnit.MILLISECONDS.toNanos(500));
-
-            fragmentsRead.set(0);
-            SystemTest.executeUntil(
-                () -> fragmentsRead.get() > 0,
-                (j) ->
-                {
-                    fragmentsRead.value += subscriptionB.poll(fragmentHandlerB, 10);
-                    Thread.yield();
-                },
-                Integer.MAX_VALUE,
-                TimeUnit.MILLISECONDS.toNanos(500));
-        }
-
-        assertEquals(numMessagesToSendPreJoin + numMessagesToSendPostJoin, fragmentCountA.value);
-        assertEquals(numMessagesToSendPostJoin, fragmentCountB.value);
+            assertEquals(numMessagesToSendPreJoin + numMessagesToSendPostJoin, fragmentCountA.value);
+            assertEquals(numMessagesToSendPostJoin, fragmentCountB.value);
+        });
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldJoinExistingIdleStreamWithLockStepSendingReceiving() throws Exception
     {
-        final int numMessagesToSendPreJoin = 0;
-        final int numMessagesToSendPostJoin = NUM_MESSAGES_PER_TERM;
-
-        launch();
-
-        subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
-        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
-
-        while (!publication.isConnected() && !subscriptionA.isConnected())
+        assertTimeout(ofSeconds(10), () ->
         {
-            Thread.yield();
-            SystemTest.checkInterruptedStatus();
-        }
+            final int numMessagesToSendPreJoin = 0;
+            final int numMessagesToSendPostJoin = NUM_MESSAGES_PER_TERM;
 
-        final CountDownLatch newImageLatch = new CountDownLatch(1);
-        subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID, (image) -> newImageLatch.countDown(), null);
+            launch();
 
-        newImageLatch.await();
+            subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
+            publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
 
-        for (int i = 0; i < numMessagesToSendPostJoin; i++)
-        {
-            while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
+            while (!publication.isConnected() && !subscriptionA.isConnected())
             {
                 Thread.yield();
                 SystemTest.checkInterruptedStatus();
             }
 
-            final MutableInteger fragmentsRead = new MutableInteger();
-            SystemTest.executeUntil(
-                () -> fragmentsRead.get() > 0,
-                (j) ->
-                {
-                    fragmentsRead.value += subscriptionA.poll(fragmentHandlerA, 10);
-                    Thread.yield();
-                },
-                Integer.MAX_VALUE,
-                TimeUnit.MILLISECONDS.toNanos(500));
+            final CountDownLatch newImageLatch = new CountDownLatch(1);
+            subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID, (image) -> newImageLatch
+                .countDown(), null);
 
-            fragmentsRead.set(0);
-            SystemTest.executeUntil(
-                () -> fragmentsRead.get() > 0,
-                (j) ->
-                {
-                    fragmentsRead.value += subscriptionB.poll(fragmentHandlerB, 10);
-                    Thread.yield();
-                },
-                Integer.MAX_VALUE,
-                TimeUnit.MILLISECONDS.toNanos(500));
-        }
+            newImageLatch.await();
 
-        assertEquals(numMessagesToSendPreJoin + numMessagesToSendPostJoin, fragmentCountA.value);
-        assertEquals(numMessagesToSendPostJoin, fragmentCountB.value);
+            for (int i = 0; i < numMessagesToSendPostJoin; i++)
+            {
+                while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
+                {
+                    Thread.yield();
+                    SystemTest.checkInterruptedStatus();
+                }
+
+                final MutableInteger fragmentsRead = new MutableInteger();
+                SystemTest.executeUntil(
+                    () -> fragmentsRead.get() > 0,
+                    (j) ->
+                    {
+                        fragmentsRead.value += subscriptionA.poll(fragmentHandlerA, 10);
+                        Thread.yield();
+                    },
+                    Integer.MAX_VALUE,
+                    TimeUnit.MILLISECONDS.toNanos(500));
+
+                fragmentsRead.set(0);
+                SystemTest.executeUntil(
+                    () -> fragmentsRead.get() > 0,
+                    (j) ->
+                    {
+                        fragmentsRead.value += subscriptionB.poll(fragmentHandlerB, 10);
+                        Thread.yield();
+                    },
+                    Integer.MAX_VALUE,
+                    TimeUnit.MILLISECONDS.toNanos(500));
+            }
+
+            assertEquals(numMessagesToSendPreJoin + numMessagesToSendPostJoin, fragmentCountA.value);
+            assertEquals(numMessagesToSendPostJoin, fragmentCountB.value);
+        });
     }
 }

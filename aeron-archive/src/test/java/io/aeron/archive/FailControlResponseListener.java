@@ -18,7 +18,7 @@ package io.aeron.archive;
 import io.aeron.archive.client.ControlResponseListener;
 import io.aeron.archive.codecs.ControlResponseCode;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class FailControlResponseListener implements ControlResponseListener
 {

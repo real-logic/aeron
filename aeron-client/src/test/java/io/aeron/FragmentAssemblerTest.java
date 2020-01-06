@@ -15,8 +15,8 @@
  */
 package io.aeron;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.FrameDescriptor;
@@ -39,7 +39,7 @@ public class FragmentAssemblerTest
     private final Header header = spy(new Header(INITIAL_TERM_ID, LogBufferDescriptor.TERM_MIN_LENGTH));
     private final FragmentAssembler adapter = new FragmentAssembler(delegateFragmentHandler);
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         header.buffer(termBuffer);

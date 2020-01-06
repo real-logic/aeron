@@ -17,12 +17,17 @@ package io.aeron;
 
 import io.aeron.logbuffer.*;
 import io.aeron.logbuffer.ControlledFragmentHandler.Action;
-import io.aeron.protocol.*;
-import org.agrona.*;
+import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.protocol.HeaderFlyweight;
+import org.agrona.DirectBuffer;
+import org.agrona.ErrorHandler;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.*;
-import org.junit.*;
-import org.mockito.*;
+import org.agrona.concurrent.status.AtomicLongPosition;
+import org.agrona.concurrent.status.Position;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
+import org.mockito.Mockito;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
@@ -30,7 +35,8 @@ import static java.nio.ByteBuffer.allocateDirect;
 import static org.agrona.BitUtil.align;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 public class ImageTest
@@ -66,7 +72,7 @@ public class ImageTest
 
     private final UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         dataHeader.wrap(rcvBuffer);
@@ -108,7 +114,7 @@ public class ImageTest
         assertThat(image.position(), is((long)TERM_BUFFER_LENGTH));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void shouldNotAdvancePastEndOfTerm()
     {
         final Image image = createImage();
@@ -117,7 +123,7 @@ public class ImageTest
         position.setOrdered(expectedPosition);
         assertThat(image.position(), is(expectedPosition));
 
-        image.position(TERM_BUFFER_LENGTH + 32);
+        assertThrows(IllegalArgumentException.class, () -> image.position(TERM_BUFFER_LENGTH + 32));
     }
 
     @Test

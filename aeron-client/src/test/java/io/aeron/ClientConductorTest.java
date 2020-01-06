@@ -26,8 +26,8 @@ import org.agrona.ErrorHandler;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.broadcast.CopyBroadcastReceiver;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -38,12 +38,12 @@ import static io.aeron.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
 import static java.lang.Boolean.TRUE;
 import static java.nio.ByteBuffer.allocateDirect;
+import static java.time.Duration.ofSeconds;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 public class ClientConductorTest
@@ -106,7 +106,7 @@ public class ClientConductorTest
     private final Aeron mockAeron = mock(Aeron.class);
     private boolean suppressPrintError = false;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         final Aeron.Context ctx = new Aeron.Context()
@@ -216,10 +216,11 @@ public class ClientConductorTest
         verify(logBuffersFactory).map(SESSION_ID_1 + "-log");
     }
 
-    @Test(expected = DriverTimeoutException.class, timeout = 5_000)
+    @Test
     public void addPublicationShouldTimeoutWithoutReadyMessage()
     {
-        conductor.addPublication(CHANNEL, STREAM_ID_1);
+        assertTimeout(ofSeconds(5),
+            () -> assertThrows(DriverTimeoutException.class, () -> conductor.addPublication(CHANNEL, STREAM_ID_1)));
     }
 
     @Test
@@ -263,7 +264,7 @@ public class ClientConductorTest
         assertThat(firstPublication, not(sameInstance(secondPublication)));
     }
 
-    @Test(expected = RegistrationException.class)
+    @Test
     public void shouldFailToClosePublicationOnMediaDriverError()
     {
         whenReceiveBroadcastOnMessage(
@@ -282,10 +283,10 @@ public class ClientConductorTest
                 return errorResponse.length();
             });
 
-        publication.close();
+        assertThrows(RegistrationException.class, publication::close);
     }
 
-    @Test(expected = RegistrationException.class)
+    @Test
     public void shouldFailToAddPublicationOnMediaDriverError()
     {
         whenReceiveBroadcastOnMessage(
@@ -299,7 +300,7 @@ public class ClientConductorTest
                 return errorResponse.length();
             });
 
-        conductor.addPublication(CHANNEL, STREAM_ID_1);
+        assertThrows(RegistrationException.class, () -> conductor.addPublication(CHANNEL, STREAM_ID_1));
     }
 
     @Test
@@ -414,13 +415,14 @@ public class ClientConductorTest
         verify(driverProxy).removeSubscription(CORRELATION_ID);
     }
 
-    @Test(expected = DriverTimeoutException.class, timeout = 5_000)
+    @Test
     public void addSubscriptionShouldTimeoutWithoutOperationSuccessful()
     {
-        conductor.addSubscription(CHANNEL, STREAM_ID_1);
+        assertTimeout(ofSeconds(5),
+            () -> assertThrows(DriverTimeoutException.class, () -> conductor.addSubscription(CHANNEL, STREAM_ID_1)));
     }
 
-    @Test(expected = RegistrationException.class)
+    @Test
     public void shouldFailToAddSubscriptionOnMediaDriverError()
     {
         whenReceiveBroadcastOnMessage(
@@ -434,7 +436,7 @@ public class ClientConductorTest
                 return errorResponse.length();
             });
 
-        conductor.addSubscription(CHANNEL, STREAM_ID_1);
+        assertThrows(RegistrationException.class, () -> conductor.addSubscription(CHANNEL, STREAM_ID_1));
     }
 
     @Test

@@ -15,35 +15,32 @@
  */
 package io.aeron;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ChannelUriStringBuilderTest
 {
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void shouldValidateMedia()
     {
-        new ChannelUriStringBuilder()
-            .validate();
+        assertThrows(IllegalStateException.class,
+            () -> new ChannelUriStringBuilder().validate());
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void shouldValidateEndpointOrControl()
     {
-        new ChannelUriStringBuilder()
-            .media("udp")
-            .validate();
+        assertThrows(IllegalStateException.class,
+            () -> new ChannelUriStringBuilder().media("udp").validate());
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void shouldValidateInitialPosition()
     {
-        new ChannelUriStringBuilder()
-            .media("udp")
-            .endpoint("address:port")
-            .termId(999)
-            .validate();
+        assertThrows(IllegalStateException.class,
+            () -> new ChannelUriStringBuilder().media("udp").endpoint("address:port").termId(999).validate());
     }
 
     @Test

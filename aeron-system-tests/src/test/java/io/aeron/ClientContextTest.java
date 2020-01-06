@@ -17,13 +17,13 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.exceptions.ConcurrentConcludeException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ClientContextTest
 {
-    @Test(expected = ConcurrentConcludeException.class)
+    @Test
     public void shouldPreventCreatingMultipleClientsWithTheSameContext()
     {
         try (MediaDriver mediaDriver = MediaDriver.launchEmbedded())
@@ -33,8 +33,7 @@ public class ClientContextTest
 
             try (Aeron ignore = Aeron.connect(ctx))
             {
-                Aeron.connect(ctx);
-                fail("Expected " + ConcurrentConcludeException.class);
+                assertThrows(ConcurrentConcludeException.class, () -> Aeron.connect(ctx));
             }
         }
     }

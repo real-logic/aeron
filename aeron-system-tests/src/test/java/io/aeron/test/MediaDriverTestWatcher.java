@@ -17,42 +17,34 @@ package io.aeron.test;
 
 import org.agrona.IoUtil;
 import org.agrona.collections.Object2ObjectHashMap;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.TestWatcher;
 
 import java.io.File;
 import java.util.Map;
 
-public class MediaDriverTestWatcher extends TestWatcher implements DriverOutputConsumer
+public class MediaDriverTestWatcher implements TestWatcher, DriverOutputConsumer
 {
-    private boolean hasFailed = false;
     private final Map<String, StdOutputFiles> outputFilesByAeronDirectoryName = new Object2ObjectHashMap<>();
 
-    protected void failed(final Throwable e, final Description description)
+    public void testFailed(final ExtensionContext context, final Throwable cause)
     {
-        hasFailed = true;
+        System.out.println("C Media Driver tests failed");
+        outputFilesByAeronDirectoryName.forEach((aeronDirectoryName, files) ->
+        {
+            System.out.println("Media Driver: " + aeronDirectoryName);
+            System.out.println("  stdout: " + files.stdout + ", stderr: " + files.stderr);
+        });
     }
 
-    protected void finished(final Description description)
+    public void testSuccessful(final ExtensionContext context)
     {
-        if (hasFailed && !outputFilesByAeronDirectoryName.isEmpty())
-        {
-            System.out.println("C Media Driver tests failed");
-            outputFilesByAeronDirectoryName.forEach((aeronDirectoryName, files) ->
+        outputFilesByAeronDirectoryName.forEach(
+            (aeronDirectoryName, files) ->
             {
-                System.out.println("Media Driver: " + aeronDirectoryName);
-                System.out.println("  stdout: " + files.stdout + ", stderr: " + files.stderr);
+                IoUtil.delete(files.stdout, false);
+                IoUtil.delete(files.stderr, false);
             });
-        }
-        else
-        {
-            outputFilesByAeronDirectoryName.forEach(
-                (aeronDirectoryName, files) ->
-                {
-                    IoUtil.delete(files.stdout, false);
-                    IoUtil.delete(files.stderr, false);
-                });
-        }
     }
 
     public void outputFiles(final String aeronDirectoryName, final File stdoutFile, final File stderrFile)

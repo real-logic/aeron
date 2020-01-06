@@ -20,7 +20,7 @@ import org.agrona.LangUtil;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntConsumer;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class SystemTest
 {

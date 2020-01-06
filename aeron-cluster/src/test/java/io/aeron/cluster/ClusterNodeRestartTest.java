@@ -35,10 +35,10 @@ import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.io.PrintStream;
 import java.util.concurrent.TimeUnit;
@@ -46,6 +46,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static java.time.Duration.ofSeconds;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.junit.jupiter.api.Assertions.*;
@@ -70,7 +71,7 @@ public class ClusterNodeRestartTest
     private final AtomicLong snapshotCount = new AtomicLong();
     private final Counter mockSnapshotCounter = mock(Counter.class);
 
-    @Before
+    @BeforeEach
     public void before()
     {
         when(mockSnapshotCounter.incrementOrdered()).thenAnswer((inv) -> snapshotCount.getAndIncrement());
@@ -78,7 +79,7 @@ public class ClusterNodeRestartTest
         launchClusteredMediaDriver(true);
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         CloseHelper.close(aeronCluster);
@@ -92,384 +93,411 @@ public class ClusterNodeRestartTest
         }
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldRestartServiceWithReplay()
     {
-        final AtomicLong serviceMsgCounter = new AtomicLong(0);
-        final AtomicLong restartServiceMsgCounter = new AtomicLong(0);
-
-        launchService(serviceMsgCounter);
-        connectClient();
-
-        sendCountedMessageIntoCluster(0);
-
-        while (serviceMsgCounter.get() == 0)
+        assertTimeout(ofSeconds(10), () ->
         {
-            Thread.yield();
-            TestUtil.checkInterruptedStatus();
-        }
+            final AtomicLong serviceMsgCounter = new AtomicLong(0);
+            final AtomicLong restartServiceMsgCounter = new AtomicLong(0);
 
-        forceCloseForRestart();
+            launchService(serviceMsgCounter);
+            connectClient();
 
-        launchClusteredMediaDriver(false);
-        launchService(restartServiceMsgCounter);
-        connectClient();
+            sendCountedMessageIntoCluster(0);
 
-        while (restartServiceMsgCounter.get() == 0)
-        {
-            Thread.yield();
-            TestUtil.checkInterruptedStatus();
-        }
+            while (serviceMsgCounter.get() == 0)
+            {
+                Thread.yield();
+                TestUtil.checkInterruptedStatus();
+            }
+
+            forceCloseForRestart();
+
+            launchClusteredMediaDriver(false);
+            launchService(restartServiceMsgCounter);
+            connectClient();
+
+            while (restartServiceMsgCounter.get() == 0)
+            {
+                Thread.yield();
+                TestUtil.checkInterruptedStatus();
+            }
+        });
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldRestartServiceWithReplayAndContinue()
     {
-        final AtomicLong serviceMsgCounter = new AtomicLong(0);
-        final AtomicLong restartServiceMsgCounter = new AtomicLong(0);
-
-        launchService(serviceMsgCounter);
-        connectClient();
-
-        sendCountedMessageIntoCluster(0);
-
-        while (serviceMsgCounter.get() == 0)
+        assertTimeout(ofSeconds(10), () ->
         {
-            Thread.yield();
-            TestUtil.checkInterruptedStatus();
-        }
+            final AtomicLong serviceMsgCounter = new AtomicLong(0);
+            final AtomicLong restartServiceMsgCounter = new AtomicLong(0);
 
-        forceCloseForRestart();
+            launchService(serviceMsgCounter);
+            connectClient();
 
-        launchClusteredMediaDriver(false);
-        launchService(restartServiceMsgCounter);
-        connectClient();
+            sendCountedMessageIntoCluster(0);
 
-        sendCountedMessageIntoCluster(1);
+            while (serviceMsgCounter.get() == 0)
+            {
+                Thread.yield();
+                TestUtil.checkInterruptedStatus();
+            }
 
-        while (restartServiceMsgCounter.get() == 1)
-        {
-            Thread.yield();
-            TestUtil.checkInterruptedStatus();
-        }
+            forceCloseForRestart();
+
+            launchClusteredMediaDriver(false);
+            launchService(restartServiceMsgCounter);
+            connectClient();
+
+            sendCountedMessageIntoCluster(1);
+
+            while (restartServiceMsgCounter.get() == 1)
+            {
+                Thread.yield();
+                TestUtil.checkInterruptedStatus();
+            }
+        });
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldRestartServiceFromEmptySnapshot() throws Exception
     {
-        final AtomicLong serviceMsgCounter = new AtomicLong(0);
-
-        launchService(serviceMsgCounter);
-        connectClient();
-
-        final CountersReader counters = container.context().aeron().countersReader();
-        final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters);
-        assertNotNull(controlToggle);
-        assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
-
-        while (snapshotCount.get() == 0)
+        assertTimeout(ofSeconds(10), () ->
         {
-            Thread.sleep(1);
-            TestUtil.checkInterruptedStatus();
-        }
+            final AtomicLong serviceMsgCounter = new AtomicLong(0);
 
-        forceCloseForRestart();
+            launchService(serviceMsgCounter);
+            connectClient();
 
-        serviceState.set(null);
-        launchClusteredMediaDriver(false);
-        launchService(serviceMsgCounter);
-        connectClient();
-
-        while (null == serviceState.get())
-        {
-            Thread.yield();
-            TestUtil.checkInterruptedStatus();
-        }
-
-        assertEquals("0", serviceState.get());
-    }
-
-    @Test(timeout = 10_000)
-    public void shouldRestartServiceFromSnapshot() throws Exception
-    {
-        final AtomicLong serviceMsgCounter = new AtomicLong(0);
-
-        launchService(serviceMsgCounter);
-        connectClient();
-
-        sendCountedMessageIntoCluster(0);
-        sendCountedMessageIntoCluster(1);
-        sendCountedMessageIntoCluster(2);
-
-        while (serviceMsgCounter.get() != 3)
-        {
-            Thread.yield();
-            TestUtil.checkInterruptedStatus();
-        }
-
-        final CountersReader counters = aeronCluster.context().aeron().countersReader();
-        final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters);
-        assertNotNull(controlToggle);
-        assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
-
-        while (snapshotCount.get() == 0)
-        {
-            Thread.sleep(1);
-            TestUtil.checkInterruptedStatus();
-        }
-
-        forceCloseForRestart();
-
-        serviceState.set(null);
-        launchClusteredMediaDriver(false);
-        launchService(serviceMsgCounter);
-        connectClient();
-
-        while (null == serviceState.get())
-        {
-            Thread.yield();
-            TestUtil.checkInterruptedStatus();
-        }
-
-        assertEquals("3", serviceState.get());
-    }
-
-    @Test(timeout = 10_000)
-    public void shouldRestartServiceFromSnapshotWithFurtherLog() throws Exception
-    {
-        final AtomicLong serviceMsgCounter = new AtomicLong(0);
-
-        launchService(serviceMsgCounter);
-        connectClient();
-
-        sendCountedMessageIntoCluster(0);
-        sendCountedMessageIntoCluster(1);
-        sendCountedMessageIntoCluster(2);
-
-        while (serviceMsgCounter.get() != 3)
-        {
-            Thread.yield();
-            TestUtil.checkInterruptedStatus();
-        }
-
-        final CountersReader counters = aeronCluster.context().aeron().countersReader();
-        final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters);
-        assertNotNull(controlToggle);
-        assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
-
-        while (snapshotCount.get() == 0)
-        {
-            Thread.sleep(1);
-            TestUtil.checkInterruptedStatus();
-        }
-
-        sendCountedMessageIntoCluster(3);
-
-        while (serviceMsgCounter.get() != 4)
-        {
-            Thread.yield();
-            TestUtil.checkInterruptedStatus();
-        }
-
-        forceCloseForRestart();
-
-        serviceMsgCounter.set(0);
-        launchClusteredMediaDriver(false);
-        launchService(serviceMsgCounter);
-        connectClient();
-
-        while (serviceMsgCounter.get() != 1)
-        {
-            Thread.yield();
-            TestUtil.checkInterruptedStatus();
-        }
-
-        assertEquals("4", serviceState.get());
-    }
-
-    @Test(timeout = 10_000)
-    public void shouldTakeMultipleSnapshots() throws Exception
-    {
-        final AtomicLong serviceMsgCounter = new AtomicLong(0);
-
-        launchService(serviceMsgCounter);
-        connectClient();
-
-        final CountersReader counters = aeronCluster.context().aeron().countersReader();
-        final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters);
-        assertNotNull(controlToggle);
-
-        for (int i = 0; i < 3; i++)
-        {
+            final CountersReader counters = container.context().aeron().countersReader();
+            final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters);
+            assertNotNull(controlToggle);
             assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
 
-            while (controlToggle.get() != ClusterControl.ToggleState.NEUTRAL.code())
+            while (snapshotCount.get() == 0)
             {
                 Thread.sleep(1);
                 TestUtil.checkInterruptedStatus();
             }
-        }
 
-        assertEquals(3L, snapshotCount.get());
+            forceCloseForRestart();
+
+            serviceState.set(null);
+            launchClusteredMediaDriver(false);
+            launchService(serviceMsgCounter);
+            connectClient();
+
+            while (null == serviceState.get())
+            {
+                Thread.yield();
+                TestUtil.checkInterruptedStatus();
+            }
+
+            assertEquals("0", serviceState.get());
+        });
     }
 
-    @Test(timeout = 10_000)
+    @Test
+    public void shouldRestartServiceFromSnapshot() throws Exception
+    {
+        assertTimeout(ofSeconds(10), () ->
+        {
+            final AtomicLong serviceMsgCounter = new AtomicLong(0);
+
+            launchService(serviceMsgCounter);
+            connectClient();
+
+            sendCountedMessageIntoCluster(0);
+            sendCountedMessageIntoCluster(1);
+            sendCountedMessageIntoCluster(2);
+
+            while (serviceMsgCounter.get() != 3)
+            {
+                Thread.yield();
+                TestUtil.checkInterruptedStatus();
+            }
+
+            final CountersReader counters = aeronCluster.context().aeron().countersReader();
+            final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters);
+            assertNotNull(controlToggle);
+            assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
+
+            while (snapshotCount.get() == 0)
+            {
+                Thread.sleep(1);
+                TestUtil.checkInterruptedStatus();
+            }
+
+            forceCloseForRestart();
+
+            serviceState.set(null);
+            launchClusteredMediaDriver(false);
+            launchService(serviceMsgCounter);
+            connectClient();
+
+            while (null == serviceState.get())
+            {
+                Thread.yield();
+                TestUtil.checkInterruptedStatus();
+            }
+
+            assertEquals("3", serviceState.get());
+        });
+    }
+
+    @Test
+    public void shouldRestartServiceFromSnapshotWithFurtherLog() throws Exception
+    {
+        assertTimeout(ofSeconds(10), () ->
+        {
+            final AtomicLong serviceMsgCounter = new AtomicLong(0);
+
+            launchService(serviceMsgCounter);
+            connectClient();
+
+            sendCountedMessageIntoCluster(0);
+            sendCountedMessageIntoCluster(1);
+            sendCountedMessageIntoCluster(2);
+
+            while (serviceMsgCounter.get() != 3)
+            {
+                Thread.yield();
+                TestUtil.checkInterruptedStatus();
+            }
+
+            final CountersReader counters = aeronCluster.context().aeron().countersReader();
+            final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters);
+            assertNotNull(controlToggle);
+            assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
+
+            while (snapshotCount.get() == 0)
+            {
+                Thread.sleep(1);
+                TestUtil.checkInterruptedStatus();
+            }
+
+            sendCountedMessageIntoCluster(3);
+
+            while (serviceMsgCounter.get() != 4)
+            {
+                Thread.yield();
+                TestUtil.checkInterruptedStatus();
+            }
+
+            forceCloseForRestart();
+
+            serviceMsgCounter.set(0);
+            launchClusteredMediaDriver(false);
+            launchService(serviceMsgCounter);
+            connectClient();
+
+            while (serviceMsgCounter.get() != 1)
+            {
+                Thread.yield();
+                TestUtil.checkInterruptedStatus();
+            }
+
+            assertEquals("4", serviceState.get());
+        });
+    }
+
+    @Test
+    public void shouldTakeMultipleSnapshots() throws Exception
+    {
+        assertTimeout(ofSeconds(10), () ->
+        {
+            final AtomicLong serviceMsgCounter = new AtomicLong(0);
+
+            launchService(serviceMsgCounter);
+            connectClient();
+
+            final CountersReader counters = aeronCluster.context().aeron().countersReader();
+            final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters);
+            assertNotNull(controlToggle);
+
+            for (int i = 0; i < 3; i++)
+            {
+                assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
+
+                while (controlToggle.get() != ClusterControl.ToggleState.NEUTRAL.code())
+                {
+                    Thread.sleep(1);
+                    TestUtil.checkInterruptedStatus();
+                }
+            }
+
+            assertEquals(3L, snapshotCount.get());
+        });
+    }
+
+    @Test
     public void shouldRestartServiceWithTimerFromSnapshotWithFurtherLog() throws Exception
     {
-        final AtomicLong serviceMsgCounter = new AtomicLong(0);
-
-        launchService(serviceMsgCounter);
-        connectClient();
-
-        sendCountedMessageIntoCluster(0);
-        sendCountedMessageIntoCluster(1);
-        sendCountedMessageIntoCluster(2);
-        sendTimerMessageIntoCluster(3, 1, TimeUnit.HOURS.toMillis(10));
-
-        while (serviceMsgCounter.get() != 4)
+        assertTimeout(ofSeconds(10), () ->
         {
-            Thread.yield();
-            TestUtil.checkInterruptedStatus();
-        }
+            final AtomicLong serviceMsgCounter = new AtomicLong(0);
 
-        final CountersReader counters = aeronCluster.context().aeron().countersReader();
-        final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters);
-        assertNotNull(controlToggle);
-        assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
+            launchService(serviceMsgCounter);
+            connectClient();
 
-        while (snapshotCount.get() == 0)
-        {
-            Thread.sleep(1);
-            TestUtil.checkInterruptedStatus();
-        }
+            sendCountedMessageIntoCluster(0);
+            sendCountedMessageIntoCluster(1);
+            sendCountedMessageIntoCluster(2);
+            sendTimerMessageIntoCluster(3, 1, TimeUnit.HOURS.toMillis(10));
 
-        sendCountedMessageIntoCluster(4);
+            while (serviceMsgCounter.get() != 4)
+            {
+                Thread.yield();
+                TestUtil.checkInterruptedStatus();
+            }
 
-        while (serviceMsgCounter.get() != 5)
-        {
-            Thread.yield();
-            TestUtil.checkInterruptedStatus();
-        }
+            final CountersReader counters = aeronCluster.context().aeron().countersReader();
+            final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters);
+            assertNotNull(controlToggle);
+            assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
 
-        forceCloseForRestart();
+            while (snapshotCount.get() == 0)
+            {
+                Thread.sleep(1);
+                TestUtil.checkInterruptedStatus();
+            }
 
-        serviceMsgCounter.set(0);
-        launchClusteredMediaDriver(false);
-        launchService(serviceMsgCounter);
-        connectClient();
+            sendCountedMessageIntoCluster(4);
 
-        while (serviceMsgCounter.get() != 1)
-        {
-            Thread.yield();
-            TestUtil.checkInterruptedStatus();
-        }
+            while (serviceMsgCounter.get() != 5)
+            {
+                Thread.yield();
+                TestUtil.checkInterruptedStatus();
+            }
 
-        assertEquals("5", serviceState.get());
+            forceCloseForRestart();
+
+            serviceMsgCounter.set(0);
+            launchClusteredMediaDriver(false);
+            launchService(serviceMsgCounter);
+            connectClient();
+
+            while (serviceMsgCounter.get() != 1)
+            {
+                Thread.yield();
+                TestUtil.checkInterruptedStatus();
+            }
+
+            assertEquals("5", serviceState.get());
+        });
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldTriggerRescheduledTimerAfterReplay()
     {
-        final AtomicInteger triggeredTimersCounter = new AtomicInteger();
-
-        launchReschedulingService(triggeredTimersCounter);
-        connectClient();
-
-        sendCountedMessageIntoCluster(0);
-
-        while (triggeredTimersCounter.get() < 2)
+        assertTimeout(ofSeconds(10), () ->
         {
-            Thread.yield();
-            TestUtil.checkInterruptedStatus();
-        }
+            final AtomicInteger triggeredTimersCounter = new AtomicInteger();
 
-        forceCloseForRestart();
+            launchReschedulingService(triggeredTimersCounter);
+            connectClient();
 
-        final int triggeredSinceStart = triggeredTimersCounter.getAndSet(0);
+            sendCountedMessageIntoCluster(0);
 
-        launchClusteredMediaDriver(false);
-        launchReschedulingService(triggeredTimersCounter);
+            while (triggeredTimersCounter.get() < 2)
+            {
+                Thread.yield();
+                TestUtil.checkInterruptedStatus();
+            }
 
-        while (triggeredTimersCounter.get() <= triggeredSinceStart)
-        {
-            Thread.yield();
-            TestUtil.checkInterruptedStatus();
-        }
+            forceCloseForRestart();
+
+            final int triggeredSinceStart = triggeredTimersCounter.getAndSet(0);
+
+            launchClusteredMediaDriver(false);
+            launchReschedulingService(triggeredTimersCounter);
+
+            while (triggeredTimersCounter.get() <= triggeredSinceStart)
+            {
+                Thread.yield();
+                TestUtil.checkInterruptedStatus();
+            }
+        });
     }
 
-    @Ignore
-    @Test(timeout = 10_000)
+    @Disabled
+    @Test
     public void shouldRestartServiceTwiceWithTombstoneSnapshotAndFurtherLog() throws Exception
     {
-        final AtomicLong serviceMsgCounter = new AtomicLong(0);
-
-        launchService(serviceMsgCounter);
-        connectClient();
-
-        sendCountedMessageIntoCluster(0);
-        sendCountedMessageIntoCluster(1);
-        sendCountedMessageIntoCluster(2);
-
-        while (serviceMsgCounter.get() != 3)
+        assertTimeout(ofSeconds(10), () ->
         {
-            Thread.yield();
-            TestUtil.checkInterruptedStatus();
-        }
+            final AtomicLong serviceMsgCounter = new AtomicLong(0);
 
-        final CountersReader counters = container.context().aeron().countersReader();
-        final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters);
-        assertNotNull(controlToggle);
-        assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
+            launchService(serviceMsgCounter);
+            connectClient();
 
-        while (snapshotCount.get() == 0)
-        {
-            Thread.sleep(1);
-            TestUtil.checkInterruptedStatus();
-        }
+            sendCountedMessageIntoCluster(0);
+            sendCountedMessageIntoCluster(1);
+            sendCountedMessageIntoCluster(2);
 
-        sendCountedMessageIntoCluster(3);
+            while (serviceMsgCounter.get() != 3)
+            {
+                Thread.yield();
+                TestUtil.checkInterruptedStatus();
+            }
 
-        while (serviceMsgCounter.get() != 4)
-        {
-            Thread.yield();
-            TestUtil.checkInterruptedStatus();
-        }
+            final CountersReader counters = container.context().aeron().countersReader();
+            final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters);
+            assertNotNull(controlToggle);
+            assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
 
-        forceCloseForRestart();
+            while (snapshotCount.get() == 0)
+            {
+                Thread.sleep(1);
+                TestUtil.checkInterruptedStatus();
+            }
 
-        final PrintStream mockOut = mock(PrintStream.class);
-        assertTrue(ClusterTool.tombstoneLatestSnapshot(
-            mockOut, clusteredMediaDriver.consensusModule().context().clusterDir()));
+            sendCountedMessageIntoCluster(3);
 
-        serviceMsgCounter.set(0);
-        launchClusteredMediaDriver(false);
-        launchService(serviceMsgCounter);
+            while (serviceMsgCounter.get() != 4)
+            {
+                Thread.yield();
+                TestUtil.checkInterruptedStatus();
+            }
 
-        while (serviceMsgCounter.get() != 4)
-        {
-            Thread.yield();
-            TestUtil.checkInterruptedStatus();
-        }
+            forceCloseForRestart();
 
-        assertEquals("4", serviceState.get());
+            final PrintStream mockOut = mock(PrintStream.class);
+            assertTrue(ClusterTool.tombstoneLatestSnapshot(
+                mockOut, clusteredMediaDriver.consensusModule().context().clusterDir()));
 
-        connectClient();
-        sendCountedMessageIntoCluster(4);
+            serviceMsgCounter.set(0);
+            launchClusteredMediaDriver(false);
+            launchService(serviceMsgCounter);
 
-        while (serviceMsgCounter.get() != 5)
-        {
-            Thread.yield();
-            TestUtil.checkInterruptedStatus();
-        }
+            while (serviceMsgCounter.get() != 4)
+            {
+                Thread.yield();
+                TestUtil.checkInterruptedStatus();
+            }
 
-        forceCloseForRestart();
+            assertEquals("4", serviceState.get());
 
-        serviceMsgCounter.set(0);
-        launchClusteredMediaDriver(false);
-        launchService(serviceMsgCounter);
+            connectClient();
+            sendCountedMessageIntoCluster(4);
 
-        connectClient();
-        assertEquals("5", serviceState.get());
+            while (serviceMsgCounter.get() != 5)
+            {
+                Thread.yield();
+                TestUtil.checkInterruptedStatus();
+            }
+
+            forceCloseForRestart();
+
+            serviceMsgCounter.set(0);
+            launchClusteredMediaDriver(false);
+            launchService(serviceMsgCounter);
+
+            connectClient();
+            assertEquals("5", serviceState.get());
+        });
     }
 
     private void sendCountedMessageIntoCluster(final int value)
@@ -507,82 +535,82 @@ public class ClusterNodeRestartTest
     private void launchService(final AtomicLong msgCounter)
     {
         final ClusteredService service = new StubClusteredService()
+        {
+            private int nextCorrelationId = 0;
+            private int counterValue = 0;
+
+            public void onStart(final Cluster cluster, final Image snapshotImage)
             {
-                private int nextCorrelationId = 0;
-                private int counterValue = 0;
+                super.onStart(cluster, snapshotImage);
 
-                public void onStart(final Cluster cluster, final Image snapshotImage)
+                if (null != snapshotImage)
                 {
-                    super.onStart(cluster, snapshotImage);
-
-                    if (null != snapshotImage)
+                    final FragmentHandler fragmentHandler = (buffer, offset, length, header) ->
                     {
-                        final FragmentHandler fragmentHandler = (buffer, offset, length, header) ->
+                        nextCorrelationId = buffer.getInt(offset);
+                        offset += SIZE_OF_INT;
+
+                        counterValue = buffer.getInt(offset);
+                        offset += SIZE_OF_INT;
+
+                        final String s = buffer.getStringAscii(offset);
+
+                        serviceState.set(s);
+                    };
+
+                    while (true)
+                    {
+                        final int fragments = snapshotImage.poll(fragmentHandler, 1);
+                        if (fragments == 1)
                         {
-                            nextCorrelationId = buffer.getInt(offset);
-                            offset += SIZE_OF_INT;
-
-                            counterValue = buffer.getInt(offset);
-                            offset += SIZE_OF_INT;
-
-                            final String s = buffer.getStringAscii(offset);
-
-                            serviceState.set(s);
-                        };
-
-                        while (true)
-                        {
-                            final int fragments = snapshotImage.poll(fragmentHandler, 1);
-                            if (fragments == 1)
-                            {
-                                break;
-                            }
-
-                            cluster.idle();
+                            break;
                         }
+
+                        cluster.idle();
                     }
                 }
+            }
 
-                public void onSessionMessage(
-                    final ClientSession session,
-                    final long timestamp,
-                    final DirectBuffer buffer,
-                    final int offset,
-                    final int length,
-                    final Header header)
+            public void onSessionMessage(
+                final ClientSession session,
+                final long timestamp,
+                final DirectBuffer buffer,
+                final int offset,
+                final int length,
+                final Header header)
+            {
+                final int sentValue = buffer.getInt(offset + MESSAGE_VALUE_OFFSET);
+                assertEquals(counterValue, sentValue);
+
+                counterValue++;
+                serviceState.set(Integer.toString(counterValue));
+                msgCounter.getAndIncrement();
+
+                if (TIMER_MESSAGE_LENGTH == length)
                 {
-                    final int sentValue = buffer.getInt(offset + MESSAGE_VALUE_OFFSET);
-                    assertEquals(counterValue, sentValue);
+                    final long correlationId = serviceCorrelationId(nextCorrelationId++);
+                    final long deadlineMs = timestamp + buffer.getLong(offset + TIMER_MESSAGE_DELAY_OFFSET);
 
-                    counterValue++;
-                    serviceState.set(Integer.toString(counterValue));
-                    msgCounter.getAndIncrement();
-
-                    if (TIMER_MESSAGE_LENGTH == length)
-                    {
-                        final long correlationId = serviceCorrelationId(nextCorrelationId++);
-                        final long deadlineMs = timestamp + buffer.getLong(offset + TIMER_MESSAGE_DELAY_OFFSET);
-
-                        assertTrue(cluster.scheduleTimer(correlationId, deadlineMs));
-                    }
+                    assertTrue(cluster.scheduleTimer(correlationId, deadlineMs));
                 }
+            }
 
-                public void onTakeSnapshot(final ExclusivePublication snapshotPublication)
-                {
-                    final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
+            public void onTakeSnapshot(final ExclusivePublication snapshotPublication)
+            {
+                final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
 
-                    int length = 0;
-                    buffer.putInt(length, nextCorrelationId);
-                    length += SIZE_OF_INT;
+                int length = 0;
+                buffer.putInt(length, nextCorrelationId);
+                length += SIZE_OF_INT;
 
-                    buffer.putInt(length, counterValue);
-                    length += SIZE_OF_INT;
+                buffer.putInt(length, counterValue);
+                length += SIZE_OF_INT;
 
-                    length += buffer.putStringAscii(length, Integer.toString(counterValue));
+                length += buffer.putStringAscii(length, Integer.toString(counterValue));
 
-                    snapshotPublication.offer(buffer, 0, length);
-                }
-            };
+                snapshotPublication.offer(buffer, 0, length);
+            }
+        };
 
         container = null;
 
@@ -596,63 +624,63 @@ public class ClusterNodeRestartTest
     private void launchReschedulingService(final AtomicInteger triggeredTimersCounter)
     {
         final ClusteredService service = new StubClusteredService()
+        {
+            public void onSessionMessage(
+                final ClientSession session,
+                final long timestamp,
+                final DirectBuffer buffer,
+                final int offset,
+                final int length,
+                final Header header)
             {
-                public void onSessionMessage(
-                    final ClientSession session,
-                    final long timestamp,
-                    final DirectBuffer buffer,
-                    final int offset,
-                    final int length,
-                    final Header header)
-                {
-                    scheduleNext(serviceCorrelationId(7), timestamp + 100);
-                }
+                scheduleNext(serviceCorrelationId(7), timestamp + 100);
+            }
 
-                public void onTimerEvent(final long correlationId, final long timestamp)
-                {
-                    triggeredTimersCounter.getAndIncrement();
-                    scheduleNext(correlationId, timestamp + 100);
-                }
+            public void onTimerEvent(final long correlationId, final long timestamp)
+            {
+                triggeredTimersCounter.getAndIncrement();
+                scheduleNext(correlationId, timestamp + 100);
+            }
 
-                public void onStart(final Cluster cluster, final Image snapshotImage)
-                {
-                    super.onStart(cluster, snapshotImage);
+            public void onStart(final Cluster cluster, final Image snapshotImage)
+            {
+                super.onStart(cluster, snapshotImage);
 
-                    if (null != snapshotImage)
+                if (null != snapshotImage)
+                {
+                    final FragmentHandler fragmentHandler =
+                        (buffer, offset, length, header) -> triggeredTimersCounter.set(buffer.getInt(offset));
+
+                    while (true)
                     {
-                        final FragmentHandler fragmentHandler =
-                            (buffer, offset, length, header) -> triggeredTimersCounter.set(buffer.getInt(offset));
-
-                        while (true)
+                        final int fragments = snapshotImage.poll(fragmentHandler, 1);
+                        if (fragments == 1)
                         {
-                            final int fragments = snapshotImage.poll(fragmentHandler, 1);
-                            if (fragments == 1)
-                            {
-                                break;
-                            }
-
-                            cluster.idle();
+                            break;
                         }
-                    }
-                }
 
-                public void onTakeSnapshot(final ExclusivePublication snapshotPublication)
-                {
-                    final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
-
-                    buffer.putInt(0, triggeredTimersCounter.get());
-
-                    snapshotPublication.offer(buffer, 0, SIZE_OF_INT);
-                }
-
-                private void scheduleNext(final long correlationId, final long deadlineMs)
-                {
-                    while (!cluster.scheduleTimer(correlationId, deadlineMs))
-                    {
                         cluster.idle();
                     }
                 }
-            };
+            }
+
+            public void onTakeSnapshot(final ExclusivePublication snapshotPublication)
+            {
+                final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
+
+                buffer.putInt(0, triggeredTimersCounter.get());
+
+                snapshotPublication.offer(buffer, 0, SIZE_OF_INT);
+            }
+
+            private void scheduleNext(final long correlationId, final long deadlineMs)
+            {
+                while (!cluster.scheduleTimer(correlationId, deadlineMs))
+                {
+                    cluster.idle();
+                }
+            }
+        };
 
         container = null;
 

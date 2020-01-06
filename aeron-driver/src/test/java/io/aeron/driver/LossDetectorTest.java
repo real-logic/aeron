@@ -16,7 +16,7 @@
 package io.aeron.driver;
 
 import io.aeron.logbuffer.LogBufferDescriptor;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.TermRebuilder;

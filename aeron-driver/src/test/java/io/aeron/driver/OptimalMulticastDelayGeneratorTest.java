@@ -15,7 +15,7 @@
  */
 package io.aeron.driver;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 

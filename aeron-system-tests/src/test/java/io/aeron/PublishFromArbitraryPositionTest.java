@@ -24,36 +24,29 @@ import io.aeron.test.TestMediaDriver;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.extension.TestWatcher;
 
 import java.nio.ByteBuffer;
 import java.util.Random;
 
+import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 import static org.mockito.Mockito.mock;
 
 public class PublishFromArbitraryPositionTest
 {
-    @Rule
-    public TestWatcher testWatcher = new TestWatcher()
-    {
-        protected void failed(final Throwable t, final Description description)
-        {
-            System.err.println(PublishFromArbitraryPositionTest.class.getName() + " failed with random seed: " + seed);
-        }
-    };
-
     private static final int STREAM_ID = 7;
     private static final int FRAGMENT_COUNT_LIMIT = 10;
     private static final int MAX_MESSAGE_LENGTH = 1024 - DataHeaderFlyweight.HEADER_LENGTH;
 
     private final FragmentHandler mockFragmentHandler = mock(FragmentHandler.class);
     private final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MAX_MESSAGE_LENGTH));
-    private long seed;
+    private final long seed = System.nanoTime();
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Throwable::printStackTrace)
@@ -62,77 +55,88 @@ public class PublishFromArbitraryPositionTest
 
     private final Aeron aeron = Aeron.connect();
 
-    @After
+    @RegisterExtension
+    TestWatcher testWatcher = new TestWatcher()
+    {
+        public void testFailed(final ExtensionContext context, final Throwable cause)
+        {
+            System.err.println(context.getDisplayName() + " failed with random seed: " + seed);
+        }
+    };
+
+    @AfterEach
     public void after()
     {
         CloseHelper.close(aeron);
         CloseHelper.close(driver);
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldPublishFromArbitraryJoinPosition() throws Exception
     {
-        final Random rnd = new Random();
-        seed = System.nanoTime();
-        rnd.setSeed(seed);
-
-        final int termLength = 1 << (16 + rnd.nextInt(10)); // 64k to 64M
-        final int mtu = 1 << (10 + rnd.nextInt(3)); // 1024 to 8096
-        final int initialTermId = rnd.nextInt(1234);
-        final int termOffset = BitUtil.align(rnd.nextInt(termLength), FrameDescriptor.FRAME_ALIGNMENT);
-        final int termId = initialTermId + rnd.nextInt(1000);
-        final String channelUri = new ChannelUriStringBuilder()
-            .endpoint("localhost:54325")
-            .termLength(termLength)
-            .initialTermId(initialTermId)
-            .termId(termId)
-            .termOffset(termOffset)
-            .mtu(mtu)
-            .media("udp")
-            .build();
-
-        final int expectedNumberOfFragments = 10 + rnd.nextInt(10000);
-
-        try (Subscription subscription = aeron.addSubscription(channelUri, STREAM_ID);
-            ExclusivePublication publication = aeron.addExclusivePublication(channelUri, STREAM_ID))
+        assertTimeout(ofSeconds(10), () ->
         {
-            while (!publication.isConnected())
-            {
-                Thread.yield();
-                SystemTest.checkInterruptedStatus();
-            }
+            final Random rnd = new Random();
+            rnd.setSeed(seed);
 
-            final Thread t = new Thread(
-                () ->
+            final int termLength = 1 << (16 + rnd.nextInt(10)); // 64k to 64M
+            final int mtu = 1 << (10 + rnd.nextInt(3)); // 1024 to 8096
+            final int initialTermId = rnd.nextInt(1234);
+            final int termOffset = BitUtil.align(rnd.nextInt(termLength), FrameDescriptor.FRAME_ALIGNMENT);
+            final int termId = initialTermId + rnd.nextInt(1000);
+            final String channelUri = new ChannelUriStringBuilder()
+                .endpoint("localhost:54325")
+                .termLength(termLength)
+                .initialTermId(initialTermId)
+                .termId(termId)
+                .termOffset(termOffset)
+                .mtu(mtu)
+                .media("udp")
+                .build();
+
+            final int expectedNumberOfFragments = 10 + rnd.nextInt(10000);
+
+            try (Subscription subscription = aeron.addSubscription(channelUri, STREAM_ID);
+                ExclusivePublication publication = aeron.addExclusivePublication(channelUri, STREAM_ID))
+            {
+                while (!publication.isConnected())
                 {
-                    int totalFragmentsRead = 0;
-                    do
+                    Thread.yield();
+                    SystemTest.checkInterruptedStatus();
+                }
+
+                final Thread t = new Thread(
+                    () ->
                     {
-                        int fragmentsRead = subscription.poll(mockFragmentHandler, FRAGMENT_COUNT_LIMIT);
-                        while (0 == fragmentsRead)
+                        int totalFragmentsRead = 0;
+                        do
                         {
-                            Thread.yield();
-                            fragmentsRead = subscription.poll(mockFragmentHandler, FRAGMENT_COUNT_LIMIT);
+                            int fragmentsRead = subscription.poll(mockFragmentHandler, FRAGMENT_COUNT_LIMIT);
+                            while (0 == fragmentsRead)
+                            {
+                                Thread.yield();
+                                fragmentsRead = subscription.poll(mockFragmentHandler, FRAGMENT_COUNT_LIMIT);
+                            }
+
+                            totalFragmentsRead += fragmentsRead;
                         }
+                        while (totalFragmentsRead < expectedNumberOfFragments);
 
-                        totalFragmentsRead += fragmentsRead;
-                    }
-                    while (totalFragmentsRead < expectedNumberOfFragments);
+                        assertEquals(expectedNumberOfFragments, totalFragmentsRead);
+                    });
 
-                    assertEquals(expectedNumberOfFragments, totalFragmentsRead);
-                });
+                t.setDaemon(true);
+                t.setName("image-consumer");
+                t.start();
 
-            t.setDaemon(true);
-            t.setName("image-consumer");
-            t.start();
+                for (int i = 0; i < expectedNumberOfFragments; i++)
+                {
+                    publishMessage(srcBuffer, publication, rnd);
+                }
 
-            for (int i = 0; i < expectedNumberOfFragments; i++)
-            {
-                publishMessage(srcBuffer, publication, rnd);
+                t.join();
             }
-
-            t.join();
-        }
+        });
     }
 
     private static void publishMessage(

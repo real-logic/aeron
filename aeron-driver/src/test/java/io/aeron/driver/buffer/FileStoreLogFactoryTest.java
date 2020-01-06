@@ -22,9 +22,11 @@ import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import java.io.*;
+import java.io.File;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,7 +44,7 @@ public class FileStoreLogFactoryTest
     private FileStoreLogFactory fileStoreLogFactory;
     private RawLog rawLog;
 
-    @Before
+    @BeforeEach
     public void createDataDir()
     {
         IoUtil.ensureDirectoryExists(DATA_DIR, "data");
@@ -51,7 +53,7 @@ public class FileStoreLogFactoryTest
             absolutePath, PAGE_SIZE, PERFORM_STORAGE_CHECKS, LOW_STORAGE_THRESHOLD, mock(ErrorHandler.class));
     }
 
-    @After
+    @AfterEach
     public void cleanupFiles()
     {
         CloseHelper.close(rawLog);

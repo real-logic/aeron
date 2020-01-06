@@ -32,7 +32,7 @@ import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -45,7 +45,8 @@ import java.util.function.IntConsumer;
 
 import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
-import static org.junit.Assert.*;
+import static java.time.Duration.ofSeconds;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ArchiveTest
 {
@@ -231,62 +232,65 @@ public class ArchiveTest
         return new Catalog(new File(archiveCtx.archiveDirectoryName()), new SystemEpochClock(), true, intConsumer);
     }
 
-    @Test(timeout = 10_000L)
+    @Test
     public void shouldListRegisteredRecordingSubscriptions()
     {
-        final int expectedStreamId = 7;
-        final String channelOne = "aeron:ipc";
-        final String channelTwo = "aeron:udp?endpoint=localhost:5678";
-        final String channelThree = "aeron:udp?endpoint=localhost:4321";
-
-        final ArrayList<SubscriptionDescriptor> descriptors = new ArrayList<>();
-        @SuppressWarnings("Indentation") final RecordingSubscriptionDescriptorConsumer consumer =
-            (controlSessionId, correlationId, subscriptionId, streamId, strippedChannel) ->
-                descriptors.add(new SubscriptionDescriptor(
-                    controlSessionId, correlationId, subscriptionId, streamId, strippedChannel));
-
-        final MediaDriver.Context driverCtx = new MediaDriver.Context()
-            .dirDeleteOnStart(true)
-            .dirDeleteOnShutdown(true)
-            .threadingMode(ThreadingMode.SHARED);
-        final Archive.Context archiveCtx = new Archive.Context().threadingMode(ArchiveThreadingMode.SHARED);
-
-        try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(driverCtx, archiveCtx);
-            AeronArchive archive = AeronArchive.connect())
+        assertTimeout(ofSeconds(10), () ->
         {
-            final long subIdOne = archive.startRecording(channelOne, expectedStreamId, LOCAL);
-            final long subIdTwo = archive.startRecording(channelTwo, expectedStreamId + 1, LOCAL);
-            final long subOdThree = archive.startRecording(channelThree, expectedStreamId + 2, LOCAL);
+            final int expectedStreamId = 7;
+            final String channelOne = "aeron:ipc";
+            final String channelTwo = "aeron:udp?endpoint=localhost:5678";
+            final String channelThree = "aeron:udp?endpoint=localhost:4321";
 
-            final int countOne = archive.listRecordingSubscriptions(
-                0, 5, "ipc", expectedStreamId, true, consumer);
+            final ArrayList<SubscriptionDescriptor> descriptors = new ArrayList<>();
+            @SuppressWarnings("Indentation") final RecordingSubscriptionDescriptorConsumer consumer =
+                (controlSessionId, correlationId, subscriptionId, streamId, strippedChannel) ->
+                    descriptors.add(new SubscriptionDescriptor(
+                        controlSessionId, correlationId, subscriptionId, streamId, strippedChannel));
 
-            assertEquals(1, descriptors.size());
-            assertEquals(1, countOne);
+            final MediaDriver.Context driverCtx = new MediaDriver.Context()
+                .dirDeleteOnStart(true)
+                .dirDeleteOnShutdown(true)
+                .threadingMode(ThreadingMode.SHARED);
+            final Archive.Context archiveCtx = new Archive.Context().threadingMode(ArchiveThreadingMode.SHARED);
 
-            descriptors.clear();
-            final int countTwo = archive.listRecordingSubscriptions(
-                0, 5, "", expectedStreamId, false, consumer);
+            try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(driverCtx, archiveCtx);
+                AeronArchive archive = AeronArchive.connect())
+            {
+                final long subIdOne = archive.startRecording(channelOne, expectedStreamId, LOCAL);
+                final long subIdTwo = archive.startRecording(channelTwo, expectedStreamId + 1, LOCAL);
+                final long subOdThree = archive.startRecording(channelThree, expectedStreamId + 2, LOCAL);
 
-            assertEquals(3, descriptors.size());
-            assertEquals(3, countTwo);
+                final int countOne = archive.listRecordingSubscriptions(
+                    0, 5, "ipc", expectedStreamId, true, consumer);
 
-            archive.stopRecording(subIdTwo);
+                assertEquals(1, descriptors.size());
+                assertEquals(1, countOne);
 
-            descriptors.clear();
-            final int countThree = archive.listRecordingSubscriptions(
-                0, 5, "", expectedStreamId, false, consumer);
+                descriptors.clear();
+                final int countTwo = archive.listRecordingSubscriptions(
+                    0, 5, "", expectedStreamId, false, consumer);
 
-            assertEquals(2, descriptors.size());
-            assertEquals(2, countThree);
+                assertEquals(3, descriptors.size());
+                assertEquals(3, countTwo);
 
-            assertEquals(1L, descriptors.stream().filter((sd) -> sd.subscriptionId == subIdOne).count());
-            assertEquals(1L, descriptors.stream().filter((sd) -> sd.subscriptionId == subOdThree).count());
-        }
-        finally
-        {
-            archiveCtx.deleteArchiveDirectory();
-        }
+                archive.stopRecording(subIdTwo);
+
+                descriptors.clear();
+                final int countThree = archive.listRecordingSubscriptions(
+                    0, 5, "", expectedStreamId, false, consumer);
+
+                assertEquals(2, descriptors.size());
+                assertEquals(2, countThree);
+
+                assertEquals(1L, descriptors.stream().filter((sd) -> sd.subscriptionId == subIdOne).count());
+                assertEquals(1L, descriptors.stream().filter((sd) -> sd.subscriptionId == subOdThree).count());
+            }
+            finally
+            {
+                archiveCtx.deleteArchiveDirectory();
+            }
+        });
     }
 
     static final class SubscriptionDescriptor

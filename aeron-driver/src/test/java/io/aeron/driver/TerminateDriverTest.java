@@ -16,68 +16,74 @@
 package io.aeron.driver;
 
 import io.aeron.CommonContext;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static java.time.Duration.ofSeconds;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 public class TerminateDriverTest
 {
     private final TerminationValidator mockTerminationValidator = mock(TerminationValidator.class);
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldCallTerminationHookUponValidRequest()
     {
-        final AtomicBoolean hasTerminated = new AtomicBoolean(false);
-        final MediaDriver.Context ctx = new MediaDriver.Context()
-            .dirDeleteOnStart(true)
-            .dirDeleteOnShutdown(true)
-            .terminationHook(() -> hasTerminated.lazySet(true))
-            .terminationValidator(mockTerminationValidator);
-
-        when(mockTerminationValidator.allowTermination(any(), any(), anyInt(), anyInt())).thenReturn(true);
-
-        try (MediaDriver ignore = MediaDriver.launch(ctx))
+        assertTimeout(ofSeconds(10), () ->
         {
-            assertTrue(CommonContext.requestDriverTermination(ctx.aeronDirectory(), null, 0, 0));
+            final AtomicBoolean hasTerminated = new AtomicBoolean(false);
+            final MediaDriver.Context ctx = new MediaDriver.Context()
+                .dirDeleteOnStart(true)
+                .dirDeleteOnShutdown(true)
+                .terminationHook(() -> hasTerminated.lazySet(true))
+                .terminationValidator(mockTerminationValidator);
 
-            while (!hasTerminated.get())
+            when(mockTerminationValidator.allowTermination(any(), any(), anyInt(), anyInt())).thenReturn(true);
+
+            try (MediaDriver ignore = MediaDriver.launch(ctx))
             {
-                Thread.yield();
-            }
-        }
+                assertTrue(CommonContext.requestDriverTermination(ctx.aeronDirectory(), null, 0, 0));
 
-        verify(mockTerminationValidator).allowTermination(any(), any(), anyInt(), anyInt());
+                while (!hasTerminated.get())
+                {
+                    Thread.yield();
+                }
+            }
+
+            verify(mockTerminationValidator).allowTermination(any(), any(), anyInt(), anyInt());
+        });
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldNotCallTerminationHookUponInvalidRequest()
     {
-        final AtomicBoolean hasTerminated = new AtomicBoolean(false);
-        final AtomicBoolean hasCalledTerminationValidator = new AtomicBoolean(false);
-        final MediaDriver.Context ctx = new MediaDriver.Context()
-            .dirDeleteOnStart(true)
-            .dirDeleteOnShutdown(true)
-            .terminationHook(() -> hasTerminated.lazySet(true))
-            .terminationValidator((dir, buffer, offset, length) ->
-            {
-                hasCalledTerminationValidator.lazySet(true);
-                return false;
-            });
-
-        try (MediaDriver ignore = MediaDriver.launch(ctx))
+        assertTimeout(ofSeconds(10), () ->
         {
-            assertTrue(CommonContext.requestDriverTermination(ctx.aeronDirectory(), null, 0, 0));
+            final AtomicBoolean hasTerminated = new AtomicBoolean(false);
+            final AtomicBoolean hasCalledTerminationValidator = new AtomicBoolean(false);
+            final MediaDriver.Context ctx = new MediaDriver.Context()
+                .dirDeleteOnStart(true)
+                .dirDeleteOnShutdown(true)
+                .terminationHook(() -> hasTerminated.lazySet(true))
+                .terminationValidator((dir, buffer, offset, length) ->
+                {
+                    hasCalledTerminationValidator.lazySet(true);
+                    return false;
+                });
 
-            while (!hasCalledTerminationValidator.get())
+            try (MediaDriver ignore = MediaDriver.launch(ctx))
             {
-                Thread.yield();
-            }
-        }
+                assertTrue(CommonContext.requestDriverTermination(ctx.aeronDirectory(), null, 0, 0));
 
-        assertFalse(hasTerminated.get());
+                while (!hasCalledTerminationValidator.get())
+                {
+                    Thread.yield();
+                }
+            }
+
+            assertFalse(hasTerminated.get());
+        });
     }
 }

@@ -15,8 +15,8 @@
  */
 package io.aeron.logbuffer;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.agrona.BitUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -33,7 +33,7 @@ public class TermBlockScannerTest
 {
     private final UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
 
-    @Before
+    @BeforeEach
     public void before()
     {
         when(termBuffer.capacity()).thenReturn(LogBufferDescriptor.TERM_MIN_LENGTH);

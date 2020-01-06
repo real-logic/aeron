@@ -15,8 +15,8 @@
  */
 package io.aeron.logbuffer;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -40,7 +40,7 @@ public class TermUnblockerTest
     private final UnsafeBuffer mockTermBuffer = mock(UnsafeBuffer.class);
     private final UnsafeBuffer mockLogMetaDataBuffer = mock(UnsafeBuffer.class);
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         when(mockTermBuffer.capacity()).thenReturn(TERM_BUFFER_CAPACITY);

@@ -15,11 +15,6 @@
  */
 package io.aeron.agent;
 
-import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
-import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.mockito.Mockito.mock;
-
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.client.AeronArchive;
@@ -30,17 +25,25 @@ import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.ThreadingMode;
-
-import java.io.File;
-import java.nio.file.Paths;
-import java.util.concurrent.CountDownLatch;
-
 import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.MessageHandler;
-import org.junit.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.io.File;
+import java.nio.file.Paths;
+import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
+
+import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
+import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.mockito.Mockito.mock;
 
 public class ClusterLoggingAgentTest
 {
@@ -50,14 +53,14 @@ public class ClusterLoggingAgentTest
     private ClusteredMediaDriver clusteredMediaDriver;
     private ClusteredServiceContainer clusteredServiceContainer;
 
-    @Before
+    @BeforeEach
     public void before()
     {
         System.setProperty(EventLogAgent.READER_CLASSNAME_PROP_NAME, StubEventLogReaderAgent.class.getName());
         Common.beforeAgent();
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         Common.afterAfter();
@@ -71,61 +74,64 @@ public class ClusterLoggingAgentTest
         }
     }
 
-    @Test(timeout = 10_000L)
+    @Test
     public void shouldLogMessages() throws Exception
     {
-        testDirName = Paths.get(IoUtil.tmpDirName(), "cluster-test").toString();
-        final File testDir = new File(testDirName);
-        if (testDir.exists())
+        assertTimeout(Duration.ofSeconds(10), () ->
         {
-            IoUtil.delete(testDir, false);
-        }
+            testDirName = Paths.get(IoUtil.tmpDirName(), "cluster-test").toString();
+            final File testDir = new File(testDirName);
+            if (testDir.exists())
+            {
+                IoUtil.delete(testDir, false);
+            }
 
-        final String aeronDirectoryName = Paths.get(testDirName, "media").toString();
+            final String aeronDirectoryName = Paths.get(testDirName, "media").toString();
 
-        final MediaDriver.Context mediaDriverCtx = new Context()
-            .errorHandler(Throwable::printStackTrace)
-            .aeronDirectoryName(aeronDirectoryName)
-            .threadingMode(ThreadingMode.SHARED);
+            final MediaDriver.Context mediaDriverCtx = new Context()
+                .errorHandler(Throwable::printStackTrace)
+                .aeronDirectoryName(aeronDirectoryName)
+                .threadingMode(ThreadingMode.SHARED);
 
-        final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context()
-            .aeronDirectoryName(aeronDirectoryName)
-            .controlRequestChannel("aeron:udp?term-length=64k|endpoint=localhost:8010")
-            .controlRequestStreamId(100)
-            .controlResponseChannel("aeron:udp?term-length=64k|endpoint=localhost:8020")
-            .controlResponseStreamId(101)
-            .recordingEventsChannel("aeron:udp?control-mode=dynamic|control=localhost:8030");
+            final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context()
+                .aeronDirectoryName(aeronDirectoryName)
+                .controlRequestChannel("aeron:udp?term-length=64k|endpoint=localhost:8010")
+                .controlRequestStreamId(100)
+                .controlResponseChannel("aeron:udp?term-length=64k|endpoint=localhost:8020")
+                .controlResponseStreamId(101)
+                .recordingEventsChannel("aeron:udp?control-mode=dynamic|control=localhost:8030");
 
-        final Archive.Context archiveCtx = new Archive.Context()
-            .aeronDirectoryName(aeronDirectoryName)
-            .errorHandler(Throwable::printStackTrace)
-            .archiveDir(new File(testDirName, "archive"))
-            .controlChannel(aeronArchiveContext.controlRequestChannel())
-            .controlStreamId(aeronArchiveContext.controlRequestStreamId())
-            .localControlStreamId(aeronArchiveContext.controlRequestStreamId())
-            .recordingEventsChannel(aeronArchiveContext.recordingEventsChannel())
-            .threadingMode(ArchiveThreadingMode.SHARED);
+            final Archive.Context archiveCtx = new Archive.Context()
+                .aeronDirectoryName(aeronDirectoryName)
+                .errorHandler(Throwable::printStackTrace)
+                .archiveDir(new File(testDirName, "archive"))
+                .controlChannel(aeronArchiveContext.controlRequestChannel())
+                .controlStreamId(aeronArchiveContext.controlRequestStreamId())
+                .localControlStreamId(aeronArchiveContext.controlRequestStreamId())
+                .recordingEventsChannel(aeronArchiveContext.recordingEventsChannel())
+                .threadingMode(ArchiveThreadingMode.SHARED);
 
-        final ConsensusModule.Context consensusModuleCtx = new ConsensusModule.Context()
-            .aeronDirectoryName(aeronDirectoryName)
-            .errorHandler(Throwable::printStackTrace)
-            .clusterDir(new File(testDirName, "consensus-module"))
-            .archiveContext(aeronArchiveContext.clone())
-            .clusterMemberId(0)
-            .clusterMembers("0,localhost:20110,localhost:20220,localhost:20330,localhost:20440,localhost:8010")
-            .logChannel("aeron:udp?term-length=256k|control-mode=manual|control=localhost:20550");
+            final ConsensusModule.Context consensusModuleCtx = new ConsensusModule.Context()
+                .aeronDirectoryName(aeronDirectoryName)
+                .errorHandler(Throwable::printStackTrace)
+                .clusterDir(new File(testDirName, "consensus-module"))
+                .archiveContext(aeronArchiveContext.clone())
+                .clusterMemberId(0)
+                .clusterMembers("0,localhost:20110,localhost:20220,localhost:20330,localhost:20440,localhost:8010")
+                .logChannel("aeron:udp?term-length=256k|control-mode=manual|control=localhost:20550");
 
-        final ClusteredServiceContainer.Context clusteredServiceCtx = new ClusteredServiceContainer.Context()
-            .aeronDirectoryName(aeronDirectoryName)
-            .errorHandler(Throwable::printStackTrace)
-            .archiveContext(aeronArchiveContext.clone())
-            .clusterDir(new File(testDirName, "service"))
-            .clusteredService(mock(ClusteredService.class));
+            final ClusteredServiceContainer.Context clusteredServiceCtx = new ClusteredServiceContainer.Context()
+                .aeronDirectoryName(aeronDirectoryName)
+                .errorHandler(Throwable::printStackTrace)
+                .archiveContext(aeronArchiveContext.clone())
+                .clusterDir(new File(testDirName, "service"))
+                .clusteredService(mock(ClusteredService.class));
 
-        clusteredMediaDriver = ClusteredMediaDriver.launch(mediaDriverCtx, archiveCtx, consensusModuleCtx);
-        clusteredServiceContainer = ClusteredServiceContainer.launch(clusteredServiceCtx);
+            clusteredMediaDriver = ClusteredMediaDriver.launch(mediaDriverCtx, archiveCtx, consensusModuleCtx);
+            clusteredServiceContainer = ClusteredServiceContainer.launch(clusteredServiceCtx);
 
-        LATCH.await();
+            LATCH.await();
+        });
     }
 
     static class StubEventLogReaderAgent implements Agent, MessageHandler

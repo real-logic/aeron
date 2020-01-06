@@ -36,9 +36,9 @@ import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
 import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.stubbing.Answer;
@@ -121,7 +121,7 @@ public class DriverConductorTest
         return null;
     };
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         currentTimeNs = 0;
@@ -170,7 +170,7 @@ public class DriverConductorTest
         doAnswer(closeChannelEndpointAnswer).when(receiverProxy).closeReceiveChannelEndpoint(any());
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         driverConductor.closeChannelEndpoints();

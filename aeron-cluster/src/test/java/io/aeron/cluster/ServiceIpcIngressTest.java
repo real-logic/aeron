@@ -15,31 +15,36 @@
  */
 package io.aeron.cluster;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static io.aeron.Aeron.NULL_VALUE;
+import static java.time.Duration.ofSeconds;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 public class ServiceIpcIngressTest
 {
-    @Test(timeout = 10_000L)
+    @Test
     public void shouldEchoIpcMessages() throws Exception
     {
-        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+        assertTimeout(ofSeconds(10), () ->
         {
-            cluster.awaitLeader();
-            cluster.connectClient();
-
-            final int messageCount = 10;
-            for (int i = 0; i < messageCount; i++)
+            try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
-                cluster.msgBuffer().putStringWithoutLengthAscii(0, TestMessages.ECHO_IPC_INGRESS);
-                cluster.sendMessage(TestMessages.ECHO_IPC_INGRESS.length());
-            }
+                cluster.awaitLeader();
+                cluster.connectClient();
 
-            cluster.awaitResponses(messageCount);
-            cluster.awaitMessageCountForService(cluster.node(0), messageCount);
-            cluster.awaitMessageCountForService(cluster.node(1), messageCount);
-            cluster.awaitMessageCountForService(cluster.node(2), messageCount);
-        }
+                final int messageCount = 10;
+                for (int i = 0; i < messageCount; i++)
+                {
+                    cluster.msgBuffer().putStringWithoutLengthAscii(0, TestMessages.ECHO_IPC_INGRESS);
+                    cluster.sendMessage(TestMessages.ECHO_IPC_INGRESS.length());
+                }
+
+                cluster.awaitResponses(messageCount);
+                cluster.awaitMessageCountForService(cluster.node(0), messageCount);
+                cluster.awaitMessageCountForService(cluster.node(1), messageCount);
+                cluster.awaitMessageCountForService(cluster.node(2), messageCount);
+            }
+        });
     }
 }

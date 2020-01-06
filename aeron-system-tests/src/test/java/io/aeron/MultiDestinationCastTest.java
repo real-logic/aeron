@@ -28,21 +28,18 @@ import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertFalse;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static java.time.Duration.ofSeconds;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.mockito.Mockito.*;
 
 public class MultiDestinationCastTest
 {
@@ -107,7 +104,7 @@ public class MultiDestinationCastTest
         clientB = Aeron.connect(new Aeron.Context().aeronDirectoryName(driverBContext.aeronDirectoryName()));
     }
 
-    @After
+    @AfterEach
     public void closeEverything()
     {
         CloseHelper.close(clientB);
@@ -118,283 +115,304 @@ public class MultiDestinationCastTest
         IoUtil.delete(new File(ROOT_DIR), true);
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldSpinUpAndShutdownWithDynamic()
     {
-        launch();
-
-        publication = clientA.addPublication(PUB_MDC_DYNAMIC_URI, STREAM_ID);
-        subscriptionA = clientA.addSubscription(SUB1_MDC_DYNAMIC_URI, STREAM_ID);
-        subscriptionB = clientB.addSubscription(SUB2_MDC_DYNAMIC_URI, STREAM_ID);
-        subscriptionC = clientA.addSubscription(SUB3_MDC_DYNAMIC_URI, STREAM_ID);
-
-        while (subscriptionA.hasNoImages() || subscriptionB.hasNoImages() || subscriptionC.hasNoImages())
+        assertTimeout(ofSeconds(10), () ->
         {
-            Thread.yield();
-            SystemTest.checkInterruptedStatus();
-        }
+            launch();
+
+            publication = clientA.addPublication(PUB_MDC_DYNAMIC_URI, STREAM_ID);
+            subscriptionA = clientA.addSubscription(SUB1_MDC_DYNAMIC_URI, STREAM_ID);
+            subscriptionB = clientB.addSubscription(SUB2_MDC_DYNAMIC_URI, STREAM_ID);
+            subscriptionC = clientA.addSubscription(SUB3_MDC_DYNAMIC_URI, STREAM_ID);
+
+            while (subscriptionA.hasNoImages() || subscriptionB.hasNoImages() || subscriptionC.hasNoImages())
+            {
+                Thread.yield();
+                SystemTest.checkInterruptedStatus();
+            }
+        });
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldSpinUpAndShutdownWithManual()
     {
-        launch();
-
-        subscriptionA = clientA.addSubscription(SUB1_MDC_MANUAL_URI, STREAM_ID);
-        subscriptionB = clientB.addSubscription(SUB2_MDC_MANUAL_URI, STREAM_ID);
-        subscriptionC = clientA.addSubscription(SUB3_MDC_MANUAL_URI, STREAM_ID);
-
-        publication = clientA.addPublication(PUB_MDC_MANUAL_URI, STREAM_ID);
-        publication.addDestination(SUB1_MDC_MANUAL_URI);
-        final long correlationId = publication.asyncAddDestination(SUB2_MDC_MANUAL_URI);
-
-        while (subscriptionA.hasNoImages() || subscriptionB.hasNoImages() || subscriptionC.hasNoImages())
+        assertTimeout(ofSeconds(10), () ->
         {
-            Thread.yield();
-            SystemTest.checkInterruptedStatus();
-        }
+            launch();
 
-        assertFalse(clientA.isCommandActive(correlationId));
+            subscriptionA = clientA.addSubscription(SUB1_MDC_MANUAL_URI, STREAM_ID);
+            subscriptionB = clientB.addSubscription(SUB2_MDC_MANUAL_URI, STREAM_ID);
+            subscriptionC = clientA.addSubscription(SUB3_MDC_MANUAL_URI, STREAM_ID);
+
+            publication = clientA.addPublication(PUB_MDC_MANUAL_URI, STREAM_ID);
+            publication.addDestination(SUB1_MDC_MANUAL_URI);
+            final long correlationId = publication.asyncAddDestination(SUB2_MDC_MANUAL_URI);
+
+            while (subscriptionA.hasNoImages() || subscriptionB.hasNoImages() || subscriptionC.hasNoImages())
+            {
+                Thread.yield();
+                SystemTest.checkInterruptedStatus();
+            }
+
+            assertFalse(clientA.isCommandActive(correlationId));
+        });
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldSendToTwoPortsWithDynamic()
     {
-        final int numMessagesToSend = MESSAGES_PER_TERM * 3;
-
-        launch();
-
-        subscriptionA = clientA.addSubscription(SUB1_MDC_DYNAMIC_URI, STREAM_ID);
-        subscriptionB = clientB.addSubscription(SUB2_MDC_DYNAMIC_URI, STREAM_ID);
-        subscriptionC = clientA.addSubscription(SUB3_MDC_DYNAMIC_URI, STREAM_ID);
-        publication = clientA.addPublication(PUB_MDC_DYNAMIC_URI, STREAM_ID);
-
-        while (subscriptionA.hasNoImages() || subscriptionB.hasNoImages() || subscriptionC.hasNoImages())
+        assertTimeout(ofSeconds(10), () ->
         {
-            Thread.yield();
-            SystemTest.checkInterruptedStatus();
-        }
+            final int numMessagesToSend = MESSAGES_PER_TERM * 3;
 
-        for (int i = 0; i < numMessagesToSend; i++)
-        {
-            while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
+            launch();
+
+            subscriptionA = clientA.addSubscription(SUB1_MDC_DYNAMIC_URI, STREAM_ID);
+            subscriptionB = clientB.addSubscription(SUB2_MDC_DYNAMIC_URI, STREAM_ID);
+            subscriptionC = clientA.addSubscription(SUB3_MDC_DYNAMIC_URI, STREAM_ID);
+            publication = clientA.addPublication(PUB_MDC_DYNAMIC_URI, STREAM_ID);
+
+            while (subscriptionA.hasNoImages() || subscriptionB.hasNoImages() || subscriptionC.hasNoImages())
             {
                 Thread.yield();
                 SystemTest.checkInterruptedStatus();
             }
 
-            final MutableInteger fragmentsRead = new MutableInteger();
-            pollForFragment(subscriptionA, fragmentHandlerA, fragmentsRead);
+            for (int i = 0; i < numMessagesToSend; i++)
+            {
+                while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
+                {
+                    Thread.yield();
+                    SystemTest.checkInterruptedStatus();
+                }
 
-            fragmentsRead.set(0);
-            pollForFragment(subscriptionB, fragmentHandlerB, fragmentsRead);
+                final MutableInteger fragmentsRead = new MutableInteger();
+                pollForFragment(subscriptionA, fragmentHandlerA, fragmentsRead);
 
-            fragmentsRead.set(0);
-            pollForFragment(subscriptionC, fragmentHandlerC, fragmentsRead);
-        }
+                fragmentsRead.set(0);
+                pollForFragment(subscriptionB, fragmentHandlerB, fragmentsRead);
 
-        verifyFragments(fragmentHandlerA, numMessagesToSend);
-        verifyFragments(fragmentHandlerB, numMessagesToSend);
-        verifyFragments(fragmentHandlerC, numMessagesToSend);
+                fragmentsRead.set(0);
+                pollForFragment(subscriptionC, fragmentHandlerC, fragmentsRead);
+            }
+
+            verifyFragments(fragmentHandlerA, numMessagesToSend);
+            verifyFragments(fragmentHandlerB, numMessagesToSend);
+            verifyFragments(fragmentHandlerC, numMessagesToSend);
+        });
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldSendToTwoPortsWithDynamicSingleDriver()
     {
-        final int numMessagesToSend = MESSAGES_PER_TERM * 3;
-
-        launch();
-
-        subscriptionA = clientA.addSubscription(SUB1_MDC_DYNAMIC_URI, STREAM_ID);
-        subscriptionB = clientA.addSubscription(SUB2_MDC_DYNAMIC_URI, STREAM_ID);
-        subscriptionC = clientA.addSubscription(SUB3_MDC_DYNAMIC_URI, STREAM_ID);
-        publication = clientA.addPublication(PUB_MDC_DYNAMIC_URI, STREAM_ID);
-
-        while (!subscriptionA.isConnected() || !subscriptionB.isConnected() || !subscriptionC.isConnected())
+        assertTimeout(ofSeconds(10), () ->
         {
-            Thread.yield();
-            SystemTest.checkInterruptedStatus();
-        }
+            final int numMessagesToSend = MESSAGES_PER_TERM * 3;
 
-        for (int i = 0; i < numMessagesToSend; i++)
-        {
-            while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
+            launch();
+
+            subscriptionA = clientA.addSubscription(SUB1_MDC_DYNAMIC_URI, STREAM_ID);
+            subscriptionB = clientA.addSubscription(SUB2_MDC_DYNAMIC_URI, STREAM_ID);
+            subscriptionC = clientA.addSubscription(SUB3_MDC_DYNAMIC_URI, STREAM_ID);
+            publication = clientA.addPublication(PUB_MDC_DYNAMIC_URI, STREAM_ID);
+
+            while (!subscriptionA.isConnected() || !subscriptionB.isConnected() || !subscriptionC.isConnected())
             {
                 Thread.yield();
                 SystemTest.checkInterruptedStatus();
             }
 
-            final MutableInteger fragmentsRead = new MutableInteger();
-            pollForFragment(subscriptionA, fragmentHandlerA, fragmentsRead);
+            for (int i = 0; i < numMessagesToSend; i++)
+            {
+                while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
+                {
+                    Thread.yield();
+                    SystemTest.checkInterruptedStatus();
+                }
 
-            fragmentsRead.set(0);
-            pollForFragment(subscriptionB, fragmentHandlerB, fragmentsRead);
+                final MutableInteger fragmentsRead = new MutableInteger();
+                pollForFragment(subscriptionA, fragmentHandlerA, fragmentsRead);
 
-            fragmentsRead.set(0);
-            pollForFragment(subscriptionC, fragmentHandlerC, fragmentsRead);
-        }
+                fragmentsRead.set(0);
+                pollForFragment(subscriptionB, fragmentHandlerB, fragmentsRead);
 
-        verifyFragments(fragmentHandlerA, numMessagesToSend);
-        verifyFragments(fragmentHandlerB, numMessagesToSend);
-        verifyFragments(fragmentHandlerC, numMessagesToSend);
+                fragmentsRead.set(0);
+                pollForFragment(subscriptionC, fragmentHandlerC, fragmentsRead);
+            }
+
+            verifyFragments(fragmentHandlerA, numMessagesToSend);
+            verifyFragments(fragmentHandlerB, numMessagesToSend);
+            verifyFragments(fragmentHandlerC, numMessagesToSend);
+        });
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldSendToTwoPortsWithManualSingleDriver()
     {
-        final int numMessagesToSend = MESSAGES_PER_TERM * 3;
-
-        launch();
-
-        subscriptionA = clientA.addSubscription(SUB1_MDC_MANUAL_URI, STREAM_ID);
-        subscriptionB = clientA.addSubscription(SUB2_MDC_MANUAL_URI, STREAM_ID);
-
-        publication = clientA.addPublication(PUB_MDC_MANUAL_URI, STREAM_ID);
-        publication.addDestination(SUB1_MDC_MANUAL_URI);
-        publication.addDestination(SUB2_MDC_MANUAL_URI);
-
-        while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
+        assertTimeout(ofSeconds(10), () ->
         {
-            Thread.yield();
-            SystemTest.checkInterruptedStatus();
-        }
+            final int numMessagesToSend = MESSAGES_PER_TERM * 3;
 
-        for (int i = 0; i < numMessagesToSend; i++)
-        {
-            while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
+            launch();
+
+            subscriptionA = clientA.addSubscription(SUB1_MDC_MANUAL_URI, STREAM_ID);
+            subscriptionB = clientA.addSubscription(SUB2_MDC_MANUAL_URI, STREAM_ID);
+
+            publication = clientA.addPublication(PUB_MDC_MANUAL_URI, STREAM_ID);
+            publication.addDestination(SUB1_MDC_MANUAL_URI);
+            publication.addDestination(SUB2_MDC_MANUAL_URI);
+
+            while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
             {
                 Thread.yield();
                 SystemTest.checkInterruptedStatus();
             }
 
-            final MutableInteger fragmentsRead = new MutableInteger();
+            for (int i = 0; i < numMessagesToSend; i++)
+            {
+                while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
+                {
+                    Thread.yield();
+                    SystemTest.checkInterruptedStatus();
+                }
 
-            pollForFragment(subscriptionA, fragmentHandlerA, fragmentsRead);
+                final MutableInteger fragmentsRead = new MutableInteger();
 
-            fragmentsRead.set(0);
-            pollForFragment(subscriptionB, fragmentHandlerB, fragmentsRead);
-        }
+                pollForFragment(subscriptionA, fragmentHandlerA, fragmentsRead);
 
-        verifyFragments(fragmentHandlerA, numMessagesToSend);
-        verifyFragments(fragmentHandlerB, numMessagesToSend);
+                fragmentsRead.set(0);
+                pollForFragment(subscriptionB, fragmentHandlerB, fragmentsRead);
+            }
+
+            verifyFragments(fragmentHandlerA, numMessagesToSend);
+            verifyFragments(fragmentHandlerB, numMessagesToSend);
+        });
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldManuallyRemovePortDuringActiveStream() throws Exception
     {
-        final int numMessagesToSend = MESSAGES_PER_TERM * 3;
-        final int numMessageForSub2 = 10;
-        final CountDownLatch unavailableImage = new CountDownLatch(1);
-
-        driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
-
-        launch();
-
-        subscriptionA = clientA.addSubscription(SUB1_MDC_MANUAL_URI, STREAM_ID);
-        subscriptionB = clientB.addSubscription(
-            SUB2_MDC_MANUAL_URI, STREAM_ID, null, (image) -> unavailableImage.countDown());
-
-        publication = clientA.addPublication(PUB_MDC_MANUAL_URI, STREAM_ID);
-        publication.addDestination(SUB1_MDC_MANUAL_URI);
-        publication.addDestination(SUB2_MDC_MANUAL_URI);
-
-        while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
+        assertTimeout(ofSeconds(10), () ->
         {
-            Thread.yield();
-            SystemTest.checkInterruptedStatus();
-        }
+            final int numMessagesToSend = MESSAGES_PER_TERM * 3;
+            final int numMessageForSub2 = 10;
+            final CountDownLatch unavailableImage = new CountDownLatch(1);
 
-        for (int i = 0; i < numMessagesToSend; i++)
-        {
-            while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
+            driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
+
+            launch();
+
+            subscriptionA = clientA.addSubscription(SUB1_MDC_MANUAL_URI, STREAM_ID);
+            subscriptionB = clientB.addSubscription(
+                SUB2_MDC_MANUAL_URI, STREAM_ID, null, (image) -> unavailableImage.countDown());
+
+            publication = clientA.addPublication(PUB_MDC_MANUAL_URI, STREAM_ID);
+            publication.addDestination(SUB1_MDC_MANUAL_URI);
+            publication.addDestination(SUB2_MDC_MANUAL_URI);
+
+            while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
             {
                 Thread.yield();
                 SystemTest.checkInterruptedStatus();
             }
 
-            final MutableInteger fragmentsRead = new MutableInteger();
-
-            pollForFragment(subscriptionA, fragmentHandlerA, fragmentsRead);
-
-            fragmentsRead.set(0);
-
-            if (i < numMessageForSub2)
+            for (int i = 0; i < numMessagesToSend; i++)
             {
-                pollForFragment(subscriptionB, fragmentHandlerB, fragmentsRead);
-            }
-            else
-            {
-                fragmentsRead.value += subscriptionB.poll(fragmentHandlerB, 10);
-                Thread.yield();
+                while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
+                {
+                    Thread.yield();
+                    SystemTest.checkInterruptedStatus();
+                }
+
+                final MutableInteger fragmentsRead = new MutableInteger();
+
+                pollForFragment(subscriptionA, fragmentHandlerA, fragmentsRead);
+
+                fragmentsRead.set(0);
+
+                if (i < numMessageForSub2)
+                {
+                    pollForFragment(subscriptionB, fragmentHandlerB, fragmentsRead);
+                }
+                else
+                {
+                    fragmentsRead.value += subscriptionB.poll(fragmentHandlerB, 10);
+                    Thread.yield();
+                }
+
+                if (i == numMessageForSub2 - 1)
+                {
+                    publication.removeDestination(SUB2_MDC_MANUAL_URI);
+                }
             }
 
-            if (i == numMessageForSub2 - 1)
-            {
-                publication.removeDestination(SUB2_MDC_MANUAL_URI);
-            }
-        }
+            unavailableImage.await();
 
-        unavailableImage.await();
-
-        verifyFragments(fragmentHandlerA, numMessagesToSend);
-        verifyFragments(fragmentHandlerB, numMessageForSub2);
+            verifyFragments(fragmentHandlerA, numMessagesToSend);
+            verifyFragments(fragmentHandlerB, numMessageForSub2);
+        });
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldManuallyAddPortDuringActiveStream() throws Exception
     {
-        final int numMessagesToSend = MESSAGES_PER_TERM * 3;
-        final int numMessageForSub2 = 10;
-        final CountDownLatch availableImage = new CountDownLatch(1);
-
-        launch();
-
-        subscriptionA = clientA.addSubscription(SUB1_MDC_MANUAL_URI, STREAM_ID);
-        subscriptionB = clientB.addSubscription(
-            SUB2_MDC_MANUAL_URI, STREAM_ID, (image) -> availableImage.countDown(), null);
-
-        publication = clientA.addPublication(PUB_MDC_MANUAL_URI, STREAM_ID);
-        publication.addDestination(SUB1_MDC_MANUAL_URI);
-
-        while (!subscriptionA.isConnected())
+        assertTimeout(ofSeconds(10), () ->
         {
-            Thread.yield();
-            SystemTest.checkInterruptedStatus();
-        }
+            final int numMessagesToSend = MESSAGES_PER_TERM * 3;
+            final int numMessageForSub2 = 10;
+            final CountDownLatch availableImage = new CountDownLatch(1);
 
-        for (int i = 0; i < numMessagesToSend; i++)
-        {
-            while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
+            launch();
+
+            subscriptionA = clientA.addSubscription(SUB1_MDC_MANUAL_URI, STREAM_ID);
+            subscriptionB = clientB.addSubscription(
+                SUB2_MDC_MANUAL_URI, STREAM_ID, (image) -> availableImage.countDown(), null);
+
+            publication = clientA.addPublication(PUB_MDC_MANUAL_URI, STREAM_ID);
+            publication.addDestination(SUB1_MDC_MANUAL_URI);
+
+            while (!subscriptionA.isConnected())
             {
                 Thread.yield();
                 SystemTest.checkInterruptedStatus();
             }
 
-            final MutableInteger fragmentsRead = new MutableInteger();
-
-            pollForFragment(subscriptionA, fragmentHandlerA, fragmentsRead);
-
-            fragmentsRead.set(0);
-
-            if (i > (numMessagesToSend - numMessageForSub2))
+            for (int i = 0; i < numMessagesToSend; i++)
             {
-                pollForFragment(subscriptionB, fragmentHandlerB, fragmentsRead);
-            }
-            else
-            {
-                fragmentsRead.value += subscriptionB.poll(fragmentHandlerB, 10);
-                Thread.yield();
+                while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
+                {
+                    Thread.yield();
+                    SystemTest.checkInterruptedStatus();
+                }
+
+                final MutableInteger fragmentsRead = new MutableInteger();
+
+                pollForFragment(subscriptionA, fragmentHandlerA, fragmentsRead);
+
+                fragmentsRead.set(0);
+
+                if (i > (numMessagesToSend - numMessageForSub2))
+                {
+                    pollForFragment(subscriptionB, fragmentHandlerB, fragmentsRead);
+                }
+                else
+                {
+                    fragmentsRead.value += subscriptionB.poll(fragmentHandlerB, 10);
+                    Thread.yield();
+                }
+
+                if (i == (numMessagesToSend - numMessageForSub2 - 1))
+                {
+                    publication.addDestination(SUB2_MDC_MANUAL_URI);
+                    availableImage.await();
+                }
             }
 
-            if (i == (numMessagesToSend - numMessageForSub2 - 1))
-            {
-                publication.addDestination(SUB2_MDC_MANUAL_URI);
-                availableImage.await();
-            }
-        }
-
-        verifyFragments(fragmentHandlerA, numMessagesToSend);
-        verifyFragments(fragmentHandlerB, numMessageForSub2);
+            verifyFragments(fragmentHandlerA, numMessagesToSend);
+            verifyFragments(fragmentHandlerB, numMessageForSub2);
+        });
     }
 
     private void pollForFragment(

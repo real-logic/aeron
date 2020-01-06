@@ -15,7 +15,7 @@
  */
 package io.aeron;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import io.aeron.command.PublicationMessageFlyweight;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.HeaderFlyweight;

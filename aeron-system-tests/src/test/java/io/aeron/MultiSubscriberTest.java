@@ -17,16 +17,18 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
-import org.agrona.CloseHelper;
-import org.agrona.DirectBuffer;
-import org.junit.After;
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
+import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
+import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 import static org.mockito.Mockito.*;
 
 public class MultiSubscriberTest
@@ -43,59 +45,62 @@ public class MultiSubscriberTest
 
     private final Aeron aeron = Aeron.connect();
 
-    @After
+    @AfterEach
     public void after()
     {
         CloseHelper.close(aeron);
         CloseHelper.close(driver);
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldReceiveMessageOnSeparateSubscriptions()
     {
-        final FragmentHandler mockFragmentHandlerOne = mock(FragmentHandler.class);
-        final FragmentHandler mockFragmentHandlerTwo = mock(FragmentHandler.class);
-
-        final FragmentAssembler adapterOne = new FragmentAssembler(mockFragmentHandlerOne);
-        final FragmentAssembler adapterTwo = new FragmentAssembler(mockFragmentHandlerTwo);
-
-        try (Subscription subscriptionOne = aeron.addSubscription(CHANNEL_1, STREAM_ID);
-            Subscription subscriptionTwo = aeron.addSubscription(CHANNEL_2, STREAM_ID);
-            Publication publication = aeron.addPublication(CHANNEL_1, STREAM_ID))
+        assertTimeout(ofSeconds(10), () ->
         {
-            final byte[] expectedBytes = "Hello, World! here is a small message".getBytes();
-            final UnsafeBuffer srcBuffer = new UnsafeBuffer(expectedBytes);
+            final FragmentHandler mockFragmentHandlerOne = mock(FragmentHandler.class);
+            final FragmentHandler mockFragmentHandlerTwo = mock(FragmentHandler.class);
 
-            assertEquals(0, subscriptionOne.poll(adapterOne, FRAGMENT_COUNT_LIMIT));
-            assertEquals(0, subscriptionTwo.poll(adapterTwo, FRAGMENT_COUNT_LIMIT));
+            final FragmentAssembler adapterOne = new FragmentAssembler(mockFragmentHandlerOne);
+            final FragmentAssembler adapterTwo = new FragmentAssembler(mockFragmentHandlerTwo);
 
-            while (!subscriptionOne.isConnected() || !subscriptionTwo.isConnected())
+            try (Subscription subscriptionOne = aeron.addSubscription(CHANNEL_1, STREAM_ID);
+                Subscription subscriptionTwo = aeron.addSubscription(CHANNEL_2, STREAM_ID);
+                Publication publication = aeron.addPublication(CHANNEL_1, STREAM_ID))
             {
-                Thread.yield();
-                SystemTest.checkInterruptedStatus();
-            }
+                final byte[] expectedBytes = "Hello, World! here is a small message".getBytes();
+                final UnsafeBuffer srcBuffer = new UnsafeBuffer(expectedBytes);
 
-            while (publication.offer(srcBuffer) < 0L)
-            {
-                Thread.yield();
-                SystemTest.checkInterruptedStatus();
-            }
+                assertEquals(0, subscriptionOne.poll(adapterOne, FRAGMENT_COUNT_LIMIT));
+                assertEquals(0, subscriptionTwo.poll(adapterTwo, FRAGMENT_COUNT_LIMIT));
 
-            while (subscriptionOne.poll(adapterOne, FRAGMENT_COUNT_LIMIT) == 0)
-            {
-                Thread.yield();
-                SystemTest.checkInterruptedStatus();
-            }
+                while (!subscriptionOne.isConnected() || !subscriptionTwo.isConnected())
+                {
+                    Thread.yield();
+                    SystemTest.checkInterruptedStatus();
+                }
 
-            while (subscriptionTwo.poll(adapterTwo, FRAGMENT_COUNT_LIMIT) == 0)
-            {
-                Thread.yield();
-                SystemTest.checkInterruptedStatus();
-            }
+                while (publication.offer(srcBuffer) < 0L)
+                {
+                    Thread.yield();
+                    SystemTest.checkInterruptedStatus();
+                }
 
-            verifyData(srcBuffer, mockFragmentHandlerOne);
-            verifyData(srcBuffer, mockFragmentHandlerTwo);
-        }
+                while (subscriptionOne.poll(adapterOne, FRAGMENT_COUNT_LIMIT) == 0)
+                {
+                    Thread.yield();
+                    SystemTest.checkInterruptedStatus();
+                }
+
+                while (subscriptionTwo.poll(adapterTwo, FRAGMENT_COUNT_LIMIT) == 0)
+                {
+                    Thread.yield();
+                    SystemTest.checkInterruptedStatus();
+                }
+
+                verifyData(srcBuffer, mockFragmentHandlerOne);
+                verifyData(srcBuffer, mockFragmentHandlerTwo);
+            }
+        });
     }
 
     private void verifyData(final UnsafeBuffer srcBuffer, final FragmentHandler mockFragmentHandler)

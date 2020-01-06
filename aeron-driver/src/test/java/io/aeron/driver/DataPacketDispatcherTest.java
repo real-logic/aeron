@@ -16,8 +16,8 @@
 package io.aeron.driver;
 
 import io.aeron.driver.media.ReceiveChannelEndpoint;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -51,7 +51,7 @@ public class DataPacketDispatcherTest
     private final PublicationImage mockImage = mock(PublicationImage.class);
     private final ReceiveChannelEndpoint mockChannelEndpoint = mock(ReceiveChannelEndpoint.class);
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         when(mockHeader.sessionId()).thenReturn(SESSION_ID);

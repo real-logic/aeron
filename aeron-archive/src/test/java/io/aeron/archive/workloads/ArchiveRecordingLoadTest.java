@@ -15,7 +15,10 @@
  */
 package io.aeron.archive.workloads;
 
-import io.aeron.*;
+import io.aeron.Aeron;
+import io.aeron.ChannelUriStringBuilder;
+import io.aeron.ExclusivePublication;
+import io.aeron.Subscription;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.FailRecordingEventsListener;
@@ -32,8 +35,12 @@ import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.*;
-import org.junit.rules.TestWatcher;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.extension.TestWatcher;
 
 import java.io.File;
 import java.util.Random;
@@ -41,13 +48,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 
-import static io.aeron.archive.TestUtil.*;
+import static io.aeron.archive.TestUtil.await;
+import static io.aeron.archive.TestUtil.printf;
 import static io.aeron.logbuffer.LogBufferDescriptor.computeTermIdFromPosition;
 import static org.agrona.BufferUtil.allocateDirectAligned;
-import static org.junit.Assert.fail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
-@Ignore
+@Disabled
 public class ArchiveRecordingLoadTest
 {
     private static final String CONTROL_RESPONSE_URI = "aeron:udp?endpoint=localhost:54327";
@@ -68,8 +76,8 @@ public class ArchiveRecordingLoadTest
     private final Random rnd = new Random();
     private final long seed = System.nanoTime();
 
-    @Rule
-    public final TestWatcher testWatcher = TestUtil.newWatcher(this.getClass(), seed);
+    @RegisterExtension
+    final TestWatcher testWatcher = TestUtil.newWatcher(seed);
 
     private Aeron aeron;
     private Archive archive;
@@ -85,7 +93,7 @@ public class ArchiveRecordingLoadTest
     private BooleanSupplier recordingStarted;
     private BooleanSupplier recordingEnded;
 
-    @Before
+    @BeforeEach
     public void before()
     {
         rnd.setSeed(seed);
@@ -116,7 +124,7 @@ public class ArchiveRecordingLoadTest
                 .ownsAeronClient(true));
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         CloseHelper.close(aeronArchive);

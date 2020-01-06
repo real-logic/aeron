@@ -21,13 +21,15 @@ import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.test.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
 
 import static io.aeron.Publication.MAX_POSITION_EXCEEDED;
+import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 public class MaxPositionPublicationTest
 {
@@ -44,51 +46,54 @@ public class MaxPositionPublicationTest
 
     private final Aeron aeron = Aeron.connect();
 
-    @After
+    @AfterEach
     public void after()
     {
         CloseHelper.close(aeron);
         CloseHelper.close(driver);
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldPublishFromExclusivePublication()
     {
-        final int initialTermId = -777;
-        final int termLength = 64 * 1024;
-        final long maxPosition = termLength * (Integer.MAX_VALUE + 1L);
-        final long lastMessagePosition = maxPosition - (MESSAGE_LENGTH + DataHeaderFlyweight.HEADER_LENGTH);
-
-        final String channelUri = new ChannelUriStringBuilder()
-            .initialPosition(lastMessagePosition, initialTermId, termLength)
-            .media("ipc")
-            .validate()
-            .build();
-
-        try (Subscription subscription = aeron.addSubscription(channelUri, STREAM_ID);
-            ExclusivePublication publication = aeron.addExclusivePublication(channelUri, STREAM_ID))
+        assertTimeout(ofSeconds(10), () ->
         {
-            while (!subscription.isConnected())
+            final int initialTermId = -777;
+            final int termLength = 64 * 1024;
+            final long maxPosition = termLength * (Integer.MAX_VALUE + 1L);
+            final long lastMessagePosition = maxPosition - (MESSAGE_LENGTH + DataHeaderFlyweight.HEADER_LENGTH);
+
+            final String channelUri = new ChannelUriStringBuilder()
+                .initialPosition(lastMessagePosition, initialTermId, termLength)
+                .media("ipc")
+                .validate()
+                .build();
+
+            try (Subscription subscription = aeron.addSubscription(channelUri, STREAM_ID);
+                ExclusivePublication publication = aeron.addExclusivePublication(channelUri, STREAM_ID))
             {
-                Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                while (!subscription.isConnected())
+                {
+                    Thread.yield();
+                    SystemTest.checkInterruptedStatus();
+                }
+
+                assertEquals(lastMessagePosition, publication.position());
+                assertEquals(lastMessagePosition, subscription.imageAtIndex(0).joinPosition());
+
+                long resultingPosition = publication.offer(srcBuffer, 0, MESSAGE_LENGTH);
+                while (resultingPosition < 0)
+                {
+                    Thread.yield();
+                    SystemTest.checkInterruptedStatus();
+                    resultingPosition = publication.offer(srcBuffer, 0, MESSAGE_LENGTH);
+                }
+
+                assertEquals(maxPosition, publication.maxPossiblePosition());
+                assertEquals(publication.maxPossiblePosition(), resultingPosition);
+                assertEquals(MAX_POSITION_EXCEEDED, publication.offer(srcBuffer, 0, MESSAGE_LENGTH));
+                assertEquals(MAX_POSITION_EXCEEDED, publication.offer(srcBuffer, 0, MESSAGE_LENGTH));
             }
-
-            assertEquals(lastMessagePosition, publication.position());
-            assertEquals(lastMessagePosition, subscription.imageAtIndex(0).joinPosition());
-
-            long resultingPosition = publication.offer(srcBuffer, 0, MESSAGE_LENGTH);
-            while (resultingPosition < 0)
-            {
-                Thread.yield();
-                SystemTest.checkInterruptedStatus();
-                resultingPosition = publication.offer(srcBuffer, 0, MESSAGE_LENGTH);
-            }
-
-            assertEquals(maxPosition, publication.maxPossiblePosition());
-            assertEquals(publication.maxPossiblePosition(), resultingPosition);
-            assertEquals(MAX_POSITION_EXCEEDED, publication.offer(srcBuffer, 0, MESSAGE_LENGTH));
-            assertEquals(MAX_POSITION_EXCEEDED, publication.offer(srcBuffer, 0, MESSAGE_LENGTH));
-        }
+        });
     }
 }

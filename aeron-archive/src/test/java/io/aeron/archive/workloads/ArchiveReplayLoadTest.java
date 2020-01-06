@@ -24,7 +24,9 @@ import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.TestUtil;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.RecordingEventsPoller;
-import io.aeron.archive.codecs.*;
+import io.aeron.archive.codecs.RecordingProgressDecoder;
+import io.aeron.archive.codecs.RecordingStartedDecoder;
+import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.driver.Configuration;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
@@ -38,20 +40,26 @@ import org.agrona.SystemUtil;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.*;
-import org.junit.rules.TestWatcher;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.extension.TestWatcher;
 
 import java.io.File;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static io.aeron.archive.TestUtil.*;
+import static io.aeron.archive.TestUtil.await;
+import static io.aeron.archive.TestUtil.printf;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static java.time.Duration.ofSeconds;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.junit.jupiter.api.Assertions.*;
 
-@Ignore
+@Disabled
 public class ArchiveReplayLoadTest
 {
     private static final String CONTROL_RESPONSE_URI = "aeron:udp?endpoint=localhost:54327";
@@ -82,8 +90,8 @@ public class ArchiveReplayLoadTest
     private final Random rnd = new Random();
     private final long seed = System.nanoTime();
 
-    @Rule
-    public final TestWatcher testWatcher = TestUtil.newWatcher(this.getClass(), seed);
+    @RegisterExtension
+    final TestWatcher testWatcher = TestUtil.newWatcher(seed);
 
     private Aeron aeron;
     private Archive archive;
@@ -100,7 +108,7 @@ public class ArchiveReplayLoadTest
     private int fragmentCount;
     private final FragmentHandler validatingFragmentHandler = this::validateFragment;
 
-    @Before
+    @BeforeEach
     public void before()
     {
         rnd.setSeed(seed);
@@ -131,7 +139,7 @@ public class ArchiveReplayLoadTest
                 .ownsAeronClient(true));
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         CloseHelper.close(aeronArchive);
@@ -142,43 +150,46 @@ public class ArchiveReplayLoadTest
         driver.context().deleteAeronDirectory();
     }
 
-    @Test(timeout = TEST_DURATION_SEC * 2000)
+    @Test
     public void replay() throws InterruptedException
     {
-        final String channel = archive.context().recordingEventsChannel();
-        final int streamId = archive.context().recordingEventsStreamId();
-
-        try (Publication publication = aeron.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
-            Subscription recordingEvents = aeron.addSubscription(channel, streamId))
+        assertTimeout(ofSeconds(TEST_DURATION_SEC * 2000), () ->
         {
-            await(recordingEvents::isConnected);
-            aeronArchive.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, SourceLocation.LOCAL);
+            final String channel = archive.context().recordingEventsChannel();
+            final int streamId = archive.context().recordingEventsStreamId();
 
-            await(publication::isConnected);
+            try (Publication publication = aeron.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
+                Subscription recordingEvents = aeron.addSubscription(channel, streamId))
+            {
+                await(recordingEvents::isConnected);
+                aeronArchive.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, SourceLocation.LOCAL);
 
-            final CountDownLatch recordingStopped = prepAndSendMessages(recordingEvents, publication);
+                await(publication::isConnected);
 
-            assertNull(trackerError);
+                final CountDownLatch recordingStopped = prepAndSendMessages(recordingEvents, publication);
 
-            recordingStopped.await();
-            aeronArchive.stopRecording(PUBLISH_URI, PUBLISH_STREAM_ID);
+                assertNull(trackerError);
 
-            assertNull(trackerError);
-            assertNotEquals(-1L, recordingId);
-            assertEquals(expectedRecordingLength, recordedLength);
-        }
+                recordingStopped.await();
+                aeronArchive.stopRecording(PUBLISH_URI, PUBLISH_STREAM_ID);
 
-        final long deadlineMs = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(TEST_DURATION_SEC);
-        int i = 0;
+                assertNull(trackerError);
+                assertNotEquals(-1L, recordingId);
+                assertEquals(expectedRecordingLength, recordedLength);
+            }
 
-        while (System.currentTimeMillis() < deadlineMs)
-        {
-            final long start = System.currentTimeMillis();
-            replay(i);
+            final long deadlineMs = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(TEST_DURATION_SEC);
+            int i = 0;
 
-            printScore(++i, System.currentTimeMillis() - start);
-            Thread.sleep(100);
-        }
+            while (System.currentTimeMillis() < deadlineMs)
+            {
+                final long start = System.currentTimeMillis();
+                replay(i);
+
+                printScore(++i, System.currentTimeMillis() - start);
+                Thread.sleep(100);
+            }
+        });
     }
 
     private void printScore(final int i, final long time)

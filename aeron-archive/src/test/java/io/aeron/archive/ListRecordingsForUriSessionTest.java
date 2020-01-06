@@ -7,9 +7,9 @@ import org.agrona.IoUtil;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 
 import java.io.File;
@@ -34,7 +34,7 @@ public class ListRecordingsForUriSessionTest
     private final ControlResponseProxy controlResponseProxy = mock(ControlResponseProxy.class);
     private final ControlSession controlSession = mock(ControlSession.class);
 
-    @Before
+    @BeforeEach
     public void before()
     {
         catalog = new Catalog(archiveDir, null, 0, MAX_ENTRIES, clock);
@@ -50,7 +50,7 @@ public class ListRecordingsForUriSessionTest
             0L, 0L, 0, SEGMENT_FILE_SIZE, 4096, 1024, 8, 1, "localhost", "localhost?tag=f", "sourceB");
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         CloseHelper.close(catalog);

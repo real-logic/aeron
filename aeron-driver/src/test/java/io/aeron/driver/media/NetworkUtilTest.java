@@ -15,7 +15,7 @@
  */
 package io.aeron.driver.media;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.*;
 import java.util.*;

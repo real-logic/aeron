@@ -35,9 +35,9 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.AtomicLongPosition;
 import org.agrona.concurrent.status.Position;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 
 import java.net.InetSocketAddress;
@@ -105,7 +105,7 @@ public class SenderTest
             return length;
         };
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         final SendChannelEndpoint mockSendChannelEndpoint = mock(SendChannelEndpoint.class);
@@ -165,7 +165,7 @@ public class SenderTest
         senderCommandQueue.offer(() -> sender.onNewNetworkPublication(publication));
     }
 
-    @After
+    @AfterEach
     public void tearDown()
     {
         sender.onClose();

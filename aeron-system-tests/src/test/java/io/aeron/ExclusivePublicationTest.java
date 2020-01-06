@@ -21,28 +21,28 @@ import io.aeron.test.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.After;
-import org.junit.Test;
-import org.junit.experimental.theories.DataPoint;
-import org.junit.experimental.theories.Theories;
-import org.junit.experimental.theories.Theory;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.nio.ByteBuffer;
+import java.util.List;
 
+import static java.time.Duration.ofSeconds;
+import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 
-@RunWith(Theories.class)
 public class ExclusivePublicationTest
 {
-    @DataPoint
-    public static final String MULTICAST_CHANNEL = "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost";
-
-    @DataPoint
-    public static final String UNICAST_CHANNEL = "aeron:udp?endpoint=localhost:54325";
-
-    @DataPoint
-    public static final String IPC_CHANNEL = CommonContext.IPC_CHANNEL;
+    private static List<String> channels()
+    {
+        return asList(
+            "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost",
+            "aeron:udp?endpoint=localhost:54325",
+            CommonContext.IPC_CHANNEL
+        );
+    }
 
     private static final int STREAM_ID = 7;
     private static final int FRAGMENT_COUNT_LIMIT = 10;
@@ -57,59 +57,62 @@ public class ExclusivePublicationTest
 
     private final Aeron aeron = Aeron.connect();
 
-    @After
+    @AfterEach
     public void after()
     {
         CloseHelper.close(aeron);
         CloseHelper.close(driver);
     }
 
-    @Theory
-    @Test(timeout = 10_000)
+    @ParameterizedTest
+    @MethodSource("channels")
     public void shouldPublishFromIndependentExclusivePublications(final String channel)
     {
-        try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
-            ExclusivePublication publicationOne = aeron.addExclusivePublication(channel, STREAM_ID);
-            ExclusivePublication publicationTwo = aeron.addExclusivePublication(channel, STREAM_ID))
+        assertTimeout(ofSeconds(10), () ->
         {
-            while (subscription.imageCount() < 2)
+            try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
+                ExclusivePublication publicationOne = aeron.addExclusivePublication(channel, STREAM_ID);
+                ExclusivePublication publicationTwo = aeron.addExclusivePublication(channel, STREAM_ID))
             {
-                Thread.yield();
-                SystemTest.checkInterruptedStatus();
-            }
-
-            final int expectedNumberOfFragments = 778;
-
-            for (int i = 0; i < expectedNumberOfFragments; i += 2)
-            {
-                publishMessage(srcBuffer, publicationOne);
-                publishMessage(srcBuffer, publicationTwo);
-            }
-
-            final MutableInteger messageCount = new MutableInteger();
-            int totalFragmentsRead = 0;
-            do
-            {
-                final int fragmentsRead = subscription.poll(
-                    (buffer, offset, length, header) ->
-                    {
-                        assertEquals(MESSAGE_LENGTH, length);
-                        messageCount.value++;
-                    },
-                    FRAGMENT_COUNT_LIMIT);
-
-                if (0 == fragmentsRead)
+                while (subscription.imageCount() < 2)
                 {
                     Thread.yield();
                     SystemTest.checkInterruptedStatus();
                 }
 
-                totalFragmentsRead += fragmentsRead;
-            }
-            while (totalFragmentsRead < expectedNumberOfFragments);
+                final int expectedNumberOfFragments = 778;
 
-            assertEquals(expectedNumberOfFragments, messageCount.value);
-        }
+                for (int i = 0; i < expectedNumberOfFragments; i += 2)
+                {
+                    publishMessage(srcBuffer, publicationOne);
+                    publishMessage(srcBuffer, publicationTwo);
+                }
+
+                final MutableInteger messageCount = new MutableInteger();
+                int totalFragmentsRead = 0;
+                do
+                {
+                    final int fragmentsRead = subscription.poll(
+                        (buffer, offset, length, header) ->
+                        {
+                            assertEquals(MESSAGE_LENGTH, length);
+                            messageCount.value++;
+                        },
+                        FRAGMENT_COUNT_LIMIT);
+
+                    if (0 == fragmentsRead)
+                    {
+                        Thread.yield();
+                        SystemTest.checkInterruptedStatus();
+                    }
+
+                    totalFragmentsRead += fragmentsRead;
+                }
+                while (totalFragmentsRead < expectedNumberOfFragments);
+
+                assertEquals(expectedNumberOfFragments, messageCount.value);
+            }
+        });
     }
 
     private static void publishMessage(final UnsafeBuffer srcBuffer, final ExclusivePublication publication)

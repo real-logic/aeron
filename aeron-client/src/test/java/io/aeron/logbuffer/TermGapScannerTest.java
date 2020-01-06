@@ -15,8 +15,8 @@
  */
 package io.aeron.logbuffer;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -34,7 +34,7 @@ public class TermGapScannerTest
     private final UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
     private final TermGapScanner.GapHandler gapHandler = mock(TermGapScanner.GapHandler.class);
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         when(termBuffer.capacity()).thenReturn(LOG_BUFFER_CAPACITY);

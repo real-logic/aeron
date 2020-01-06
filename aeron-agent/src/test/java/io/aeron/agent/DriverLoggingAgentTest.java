@@ -26,16 +26,16 @@ import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.MessageHandler;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;
 
 import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
-import static junit.framework.TestCase.assertSame;
-import static junit.framework.TestCase.assertTrue;
+import static java.time.Duration.ofSeconds;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class DriverLoggingAgentTest
 {
@@ -45,60 +45,63 @@ public class DriverLoggingAgentTest
     private static final IntHashSet MSG_ID_SET = new IntHashSet();
     private static final CountDownLatch LATCH = new CountDownLatch(1);
 
-    @BeforeClass
+    @BeforeAll
     public static void installAgent()
     {
         System.setProperty(EventLogAgent.READER_CLASSNAME_PROP_NAME, StubEventLogReaderAgent.class.getName());
         Common.beforeAgent();
     }
 
-    @AfterClass
+    @AfterAll
     public static void removeAgent()
     {
         Common.afterAfter();
     }
 
-    @Test(timeout = 10_000L)
+    @Test
     public void shouldLogMessages() throws Exception
     {
-        final MediaDriver.Context driverCtx = new MediaDriver.Context()
-            .errorHandler(Throwable::printStackTrace);
-
-        try (MediaDriver ignore = MediaDriver.launchEmbedded(driverCtx))
+        assertTimeout(ofSeconds(10), () ->
         {
-            final Aeron.Context clientCtx = new Aeron.Context()
-                .aeronDirectoryName(driverCtx.aeronDirectoryName());
+            final MediaDriver.Context driverCtx = new MediaDriver.Context()
+                .errorHandler(Throwable::printStackTrace);
 
-            try (Aeron aeron = Aeron.connect(clientCtx);
-                Subscription subscription = aeron.addSubscription(NETWORK_CHANNEL, STREAM_ID);
-                Publication publication = aeron.addPublication(NETWORK_CHANNEL, STREAM_ID))
+            try (MediaDriver ignore = MediaDriver.launchEmbedded(driverCtx))
             {
-                final UnsafeBuffer offerBuffer = new UnsafeBuffer(new byte[32]);
-                while (publication.offer(offerBuffer) < 0)
+                final Aeron.Context clientCtx = new Aeron.Context()
+                    .aeronDirectoryName(driverCtx.aeronDirectoryName());
+
+                try (Aeron aeron = Aeron.connect(clientCtx);
+                    Subscription subscription = aeron.addSubscription(NETWORK_CHANNEL, STREAM_ID);
+                    Publication publication = aeron.addPublication(NETWORK_CHANNEL, STREAM_ID))
                 {
-                    Thread.yield();
+                    final UnsafeBuffer offerBuffer = new UnsafeBuffer(new byte[32]);
+                    while (publication.offer(offerBuffer) < 0)
+                    {
+                        Thread.yield();
+                    }
+
+                    final MutableInteger counter = new MutableInteger();
+                    final FragmentHandler handler = (buffer, offset, length, header) -> counter.value++;
+
+                    while (0 == subscription.poll(handler, 1))
+                    {
+                        Thread.yield();
+                    }
+
+                    assertSame(counter.get(), 1);
                 }
 
-                final MutableInteger counter = new MutableInteger();
-                final FragmentHandler handler = (buffer, offset, length, header) -> counter.value++;
-
-                while (0 == subscription.poll(handler, 1))
-                {
-                    Thread.yield();
-                }
-
-                assertSame(counter.get(), 1);
+                LATCH.await();
             }
 
-            LATCH.await();
-        }
-
-        assertTrue(MSG_ID_SET.contains(DriverEventCode.CMD_IN_ADD_PUBLICATION.id()));
-        assertTrue(MSG_ID_SET.contains(DriverEventCode.CMD_IN_ADD_SUBSCRIPTION.id()));
-        assertTrue(MSG_ID_SET.contains(DriverEventCode.FRAME_IN.id()));
-        assertTrue(MSG_ID_SET.contains(DriverEventCode.FRAME_OUT.id()));
-        assertTrue(MSG_ID_SET.contains(DriverEventCode.CMD_OUT_AVAILABLE_IMAGE.id()));
-        assertTrue(MSG_ID_SET.contains(DriverEventCode.CMD_IN_CLIENT_CLOSE.id()));
+            assertTrue(MSG_ID_SET.contains(DriverEventCode.CMD_IN_ADD_PUBLICATION.id()));
+            assertTrue(MSG_ID_SET.contains(DriverEventCode.CMD_IN_ADD_SUBSCRIPTION.id()));
+            assertTrue(MSG_ID_SET.contains(DriverEventCode.FRAME_IN.id()));
+            assertTrue(MSG_ID_SET.contains(DriverEventCode.FRAME_OUT.id()));
+            assertTrue(MSG_ID_SET.contains(DriverEventCode.CMD_OUT_AVAILABLE_IMAGE.id()));
+            assertTrue(MSG_ID_SET.contains(DriverEventCode.CMD_IN_CLIENT_CLOSE.id()));
+        });
     }
 
     static class StubEventLogReaderAgent implements Agent, MessageHandler

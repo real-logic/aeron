@@ -22,14 +22,14 @@ import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
 
 import static io.aeron.CommonContext.UDP_MEDIA;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static java.time.Duration.ofSeconds;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
 public class SessionSpecificSubscriptionTest
@@ -65,60 +65,63 @@ public class SessionSpecificSubscriptionTest
 
     private final Aeron aeron = Aeron.connect();
 
-    @After
+    @AfterEach
     public void after()
     {
         CloseHelper.close(aeron);
         CloseHelper.close(driver);
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldSubscribeToSpecificSessionIdsAndWildcard()
     {
-        try (Subscription subscriptionOne = aeron.addSubscription(channelUriWithSessionIdOne, STREAM_ID);
-            Subscription subscriptionTwo = aeron.addSubscription(channelUriWithSessionIdTwo, STREAM_ID);
-            Subscription subscriptionWildcard = aeron.addSubscription(channelUriWithoutSessionId, STREAM_ID);
-            Publication publicationOne = aeron.addExclusivePublication(channelUriWithSessionIdOne, STREAM_ID);
-            Publication publicationTwo = aeron.addExclusivePublication(channelUriWithSessionIdTwo, STREAM_ID))
+        assertTimeout(ofSeconds(10), () ->
         {
-            while (subscriptionOne.imageCount() != 1 ||
-                subscriptionTwo.imageCount() != 1 ||
-                subscriptionWildcard.imageCount() != 2)
+            try (Subscription subscriptionOne = aeron.addSubscription(channelUriWithSessionIdOne, STREAM_ID);
+                Subscription subscriptionTwo = aeron.addSubscription(channelUriWithSessionIdTwo, STREAM_ID);
+                Subscription subscriptionWildcard = aeron.addSubscription(channelUriWithoutSessionId, STREAM_ID);
+                Publication publicationOne = aeron.addExclusivePublication(channelUriWithSessionIdOne, STREAM_ID);
+                Publication publicationTwo = aeron.addExclusivePublication(channelUriWithSessionIdTwo, STREAM_ID))
             {
-                Thread.yield();
-                SystemTest.checkInterruptedStatus();
-            }
+                while (subscriptionOne.imageCount() != 1 ||
+                    subscriptionTwo.imageCount() != 1 ||
+                    subscriptionWildcard.imageCount() != 2)
+                {
+                    Thread.yield();
+                    SystemTest.checkInterruptedStatus();
+                }
 
-            for (int i = 0; i < EXPECTED_NUMBER_OF_MESSAGES; i++)
-            {
-                publishMessage(srcBuffer, publicationOne);
-                publishMessage(srcBuffer, publicationTwo);
-            }
+                for (int i = 0; i < EXPECTED_NUMBER_OF_MESSAGES; i++)
+                {
+                    publishMessage(srcBuffer, publicationOne);
+                    publishMessage(srcBuffer, publicationTwo);
+                }
 
-            int numFragments = 0;
-            do
-            {
-                SystemTest.checkInterruptedStatus();
-                numFragments += subscriptionOne.poll(handlerSessionIdOne, FRAGMENT_COUNT_LIMIT);
-            }
-            while (numFragments < EXPECTED_NUMBER_OF_MESSAGES);
+                int numFragments = 0;
+                do
+                {
+                    SystemTest.checkInterruptedStatus();
+                    numFragments += subscriptionOne.poll(handlerSessionIdOne, FRAGMENT_COUNT_LIMIT);
+                }
+                while (numFragments < EXPECTED_NUMBER_OF_MESSAGES);
 
-            numFragments = 0;
-            do
-            {
-                SystemTest.checkInterruptedStatus();
-                numFragments += subscriptionTwo.poll(handlerSessionIdTwo, FRAGMENT_COUNT_LIMIT);
-            }
-            while (numFragments < EXPECTED_NUMBER_OF_MESSAGES);
+                numFragments = 0;
+                do
+                {
+                    SystemTest.checkInterruptedStatus();
+                    numFragments += subscriptionTwo.poll(handlerSessionIdTwo, FRAGMENT_COUNT_LIMIT);
+                }
+                while (numFragments < EXPECTED_NUMBER_OF_MESSAGES);
 
-            numFragments = 0;
-            do
-            {
-                SystemTest.checkInterruptedStatus();
-                numFragments += subscriptionWildcard.poll(mockFragmentHandler, FRAGMENT_COUNT_LIMIT);
+                numFragments = 0;
+                do
+                {
+                    SystemTest.checkInterruptedStatus();
+                    numFragments += subscriptionWildcard.poll(mockFragmentHandler, FRAGMENT_COUNT_LIMIT);
+                }
+                while (numFragments < (EXPECTED_NUMBER_OF_MESSAGES * 2));
             }
-            while (numFragments < (EXPECTED_NUMBER_OF_MESSAGES * 2));
-        }
+        });
     }
 
     @Test

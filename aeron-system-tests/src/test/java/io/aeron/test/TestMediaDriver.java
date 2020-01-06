@@ -16,9 +16,9 @@
 package io.aeron.test;
 
 import io.aeron.driver.MediaDriver;
-import org.junit.Assume;
 
 import static org.agrona.Strings.isEmpty;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 public interface TestMediaDriver extends AutoCloseable
 {
@@ -32,7 +32,7 @@ public interface TestMediaDriver extends AutoCloseable
 
     static void notSupportedOnCMediaDriverYet(String reason)
     {
-        Assume.assumeFalse("Functionality not support by C Media Driver: " + reason, shouldRunCMediaDriver());
+        assumeFalse(shouldRunCMediaDriver(), () -> "Functionality not support by C Media Driver: " + reason);
     }
 
     static TestMediaDriver launch(MediaDriver.Context context)

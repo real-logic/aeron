@@ -19,8 +19,8 @@ import io.aeron.*;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterMarkFile;
 import org.agrona.collections.Int2ObjectHashMap;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
@@ -52,7 +52,7 @@ public class ElectionTest
         .random(new Random())
         .clusterMarkFile(clusterMarkFile);
 
-    @Before
+    @BeforeEach
     public void before()
     {
         when(aeron.addCounter(anyInt(), anyString())).thenReturn(electionStateCounter);

@@ -31,17 +31,17 @@ import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static java.time.Duration.ofSeconds;
 import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -57,7 +57,7 @@ public class ClusterTimerTest
     private final AtomicLong snapshotCount = new AtomicLong();
     private final Counter mockSnapshotCounter = mock(Counter.class);
 
-    @Before
+    @BeforeEach
     public void before()
     {
         when(mockSnapshotCounter.incrementOrdered()).thenAnswer((inv) -> snapshotCount.getAndIncrement());
@@ -65,7 +65,7 @@ public class ClusterTimerTest
         launchClusteredMediaDriver(true);
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         CloseHelper.close(aeronCluster);
@@ -79,105 +79,111 @@ public class ClusterTimerTest
         }
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldRestartServiceWithTimerFromSnapshotWithFurtherLog()
     {
-        final AtomicInteger triggeredTimersCounter = new AtomicInteger();
-
-        launchReschedulingService(triggeredTimersCounter);
-        connectClient();
-
-        while (triggeredTimersCounter.get() < 2)
+        assertTimeout(ofSeconds(10), () ->
         {
-            TestUtil.checkInterruptedStatus();
-            Thread.yield();
-        }
+            final AtomicInteger triggeredTimersCounter = new AtomicInteger();
 
-        final CountersReader counters = aeronCluster.context().aeron().countersReader();
-        final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters);
-        assertNotNull(controlToggle);
-        assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
+            launchReschedulingService(triggeredTimersCounter);
+            connectClient();
 
-        while (snapshotCount.get() == 0)
-        {
-            TestUtil.checkInterruptedStatus();
-            Thread.yield();
-        }
+            while (triggeredTimersCounter.get() < 2)
+            {
+                TestUtil.checkInterruptedStatus();
+                Thread.yield();
+            }
 
-        while (triggeredTimersCounter.get() < 4)
-        {
-            TestUtil.checkInterruptedStatus();
-            Thread.yield();
-        }
+            final CountersReader counters = aeronCluster.context().aeron().countersReader();
+            final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters);
+            assertNotNull(controlToggle);
+            assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
 
-        forceCloseForRestart();
-        triggeredTimersCounter.set(0);
+            while (snapshotCount.get() == 0)
+            {
+                TestUtil.checkInterruptedStatus();
+                Thread.yield();
+            }
 
-        launchClusteredMediaDriver(false);
-        launchReschedulingService(triggeredTimersCounter);
-        connectClient();
+            while (triggeredTimersCounter.get() < 4)
+            {
+                TestUtil.checkInterruptedStatus();
+                Thread.yield();
+            }
 
-        while (triggeredTimersCounter.get() < (2 + 4))
-        {
-            TestUtil.checkInterruptedStatus();
-            Thread.yield();
-        }
+            forceCloseForRestart();
+            triggeredTimersCounter.set(0);
 
-        forceCloseForRestart();
-        final int triggeredSinceStart = triggeredTimersCounter.getAndSet(0);
+            launchClusteredMediaDriver(false);
+            launchReschedulingService(triggeredTimersCounter);
+            connectClient();
 
-        triggeredTimersCounter.set(0);
+            while (triggeredTimersCounter.get() < (2 + 4))
+            {
+                TestUtil.checkInterruptedStatus();
+                Thread.yield();
+            }
 
-        launchClusteredMediaDriver(false);
-        launchReschedulingService(triggeredTimersCounter);
-        connectClient();
+            forceCloseForRestart();
+            final int triggeredSinceStart = triggeredTimersCounter.getAndSet(0);
 
-        while (triggeredTimersCounter.get() < (triggeredSinceStart + 4))
-        {
-            TestUtil.checkInterruptedStatus();
-            Thread.yield();
-        }
+            triggeredTimersCounter.set(0);
+
+            launchClusteredMediaDriver(false);
+            launchReschedulingService(triggeredTimersCounter);
+            connectClient();
+
+            while (triggeredTimersCounter.get() < (triggeredSinceStart + 4))
+            {
+                TestUtil.checkInterruptedStatus();
+                Thread.yield();
+            }
+        });
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldTriggerRescheduledTimerAfterReplay()
     {
-        final AtomicInteger triggeredTimersCounter = new AtomicInteger();
-
-        launchReschedulingService(triggeredTimersCounter);
-        connectClient();
-
-        while (triggeredTimersCounter.get() < 2)
+        assertTimeout(ofSeconds(10), () ->
         {
-            TestUtil.checkInterruptedStatus();
-            Thread.yield();
-        }
+            final AtomicInteger triggeredTimersCounter = new AtomicInteger();
 
-        forceCloseForRestart();
+            launchReschedulingService(triggeredTimersCounter);
+            connectClient();
 
-        int triggeredSinceStart = triggeredTimersCounter.getAndSet(0);
+            while (triggeredTimersCounter.get() < 2)
+            {
+                TestUtil.checkInterruptedStatus();
+                Thread.yield();
+            }
 
-        launchClusteredMediaDriver(false);
-        launchReschedulingService(triggeredTimersCounter);
+            forceCloseForRestart();
 
-        while (triggeredTimersCounter.get() <= (triggeredSinceStart + 2))
-        {
-            TestUtil.checkInterruptedStatus();
-            Thread.yield();
-        }
+            int triggeredSinceStart = triggeredTimersCounter.getAndSet(0);
 
-        forceCloseForRestart();
+            launchClusteredMediaDriver(false);
+            launchReschedulingService(triggeredTimersCounter);
 
-        triggeredSinceStart = triggeredTimersCounter.getAndSet(0);
+            while (triggeredTimersCounter.get() <= (triggeredSinceStart + 2))
+            {
+                TestUtil.checkInterruptedStatus();
+                Thread.yield();
+            }
 
-        launchClusteredMediaDriver(false);
-        launchReschedulingService(triggeredTimersCounter);
+            forceCloseForRestart();
 
-        while (triggeredTimersCounter.get() <= (triggeredSinceStart + 4))
-        {
-            TestUtil.checkInterruptedStatus();
-            Thread.yield();
-        }
+            triggeredSinceStart = triggeredTimersCounter.getAndSet(0);
+
+            launchClusteredMediaDriver(false);
+            launchReschedulingService(triggeredTimersCounter);
+
+            while (triggeredTimersCounter.get() <= (triggeredSinceStart + 4))
+            {
+                TestUtil.checkInterruptedStatus();
+                Thread.yield();
+            }
+        });
     }
 
     private void launchReschedulingService(final AtomicInteger triggeredTimersCounter)

@@ -15,16 +15,27 @@
  */
 package io.aeron.driver;
 
-import io.aeron.driver.buffer.*;
+import io.aeron.driver.buffer.RawLog;
+import io.aeron.driver.buffer.TestLogFactory;
 import io.aeron.driver.media.*;
 import io.aeron.driver.reports.LossReport;
 import io.aeron.driver.status.SystemCounters;
-import io.aeron.logbuffer.*;
-import io.aeron.protocol.*;
+import io.aeron.logbuffer.FrameDescriptor;
+import io.aeron.logbuffer.Header;
+import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.logbuffer.TermReader;
+import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.protocol.HeaderFlyweight;
+import io.aeron.protocol.SetupFlyweight;
+import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.*;
-import org.agrona.concurrent.status.*;
-import org.junit.*;
+import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.status.AtomicLongPosition;
+import org.agrona.concurrent.status.Position;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -32,10 +43,12 @@ import java.nio.channels.DatagramChannel;
 import java.util.ArrayList;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
+import static java.time.Duration.ofSeconds;
 import static org.agrona.BitUtil.align;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 import static org.mockito.Mockito.*;
 
 public class ReceiverTest
@@ -100,7 +113,7 @@ public class ReceiverTest
     private ReceiveChannelEndpoint receiveChannelEndpoint;
     private final CongestionControl congestionControl = mock(CongestionControl.class);
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception
     {
         final SubscriptionLink subscriptionLink = mock(SubscriptionLink.class);
@@ -159,7 +172,7 @@ public class ReceiverTest
             context);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception
     {
         receiveChannelEndpoint.close();
@@ -167,74 +180,78 @@ public class ReceiverTest
         receiver.onClose();
     }
 
-    @Test(timeout = 10000)
+    @Test
     public void shouldCreateRcvTermAndSendSmOnSetup() throws Exception
     {
-        receiverProxy.registerReceiveChannelEndpoint(receiveChannelEndpoint);
-        receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
-
-        receiver.doWork();
-
-        fillSetupFrame(setupHeader);
-        receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, SetupFlyweight.HEADER_LENGTH, senderAddress, 0);
-
-        final PublicationImage image = new PublicationImage(
-            CORRELATION_ID,
-            IMAGE_LIVENESS_TIMEOUT_NS,
-            UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS,
-            UNTETHERED_RESTING_TIMEOUT_NS,
-            receiveChannelEndpoint,
-            0,
-            senderAddress,
-            SESSION_ID,
-            STREAM_ID,
-            INITIAL_TERM_ID,
-            ACTIVE_TERM_ID,
-            INITIAL_TERM_OFFSET,
-            rawLog,
-            mockFeedbackDelayGenerator,
-            POSITIONS,
-            mockHighestReceivedPosition,
-            mockRebuildPosition,
-            nanoClock,
-            nanoClock,
-            epochClock,
-            mockSystemCounters,
-            SOURCE_ADDRESS,
-            congestionControl,
-            lossReport);
-
-        final int messagesRead = toConductorQueue.drain((e) ->
+        assertTimeout(ofSeconds(10), () ->
         {
-            // pass in new term buffer from conductor, which should trigger SM
-            receiverProxy.newPublicationImage(receiveChannelEndpoint, image);
+            receiverProxy.registerReceiveChannelEndpoint(receiveChannelEndpoint);
+            receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
+
+            receiver.doWork();
+
+            fillSetupFrame(setupHeader);
+            receiveChannelEndpoint
+                .onSetupMessage(setupHeader, setupBuffer, SetupFlyweight.HEADER_LENGTH, senderAddress, 0);
+
+            final PublicationImage image = new PublicationImage(
+                CORRELATION_ID,
+                IMAGE_LIVENESS_TIMEOUT_NS,
+                UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS,
+                UNTETHERED_RESTING_TIMEOUT_NS,
+                receiveChannelEndpoint,
+                0,
+                senderAddress,
+                SESSION_ID,
+                STREAM_ID,
+                INITIAL_TERM_ID,
+                ACTIVE_TERM_ID,
+                INITIAL_TERM_OFFSET,
+                rawLog,
+                mockFeedbackDelayGenerator,
+                POSITIONS,
+                mockHighestReceivedPosition,
+                mockRebuildPosition,
+                nanoClock,
+                nanoClock,
+                epochClock,
+                mockSystemCounters,
+                SOURCE_ADDRESS,
+                congestionControl,
+                lossReport);
+
+            final int messagesRead = toConductorQueue.drain((e) ->
+            {
+                // pass in new term buffer from conductor, which should trigger SM
+                receiverProxy.newPublicationImage(receiveChannelEndpoint, image);
+            });
+
+            assertThat(messagesRead, is(1));
+
+            receiver.doWork();
+
+            image.trackRebuild(nanoClock.nanoTime() + (2 * STATUS_MESSAGE_TIMEOUT), STATUS_MESSAGE_TIMEOUT);
+            image.sendPendingStatusMessage();
+
+            final ByteBuffer rcvBuffer = ByteBuffer.allocateDirect(256);
+            InetSocketAddress rcvAddress;
+
+            do
+            {
+                rcvAddress = (InetSocketAddress)senderChannel.receive(rcvBuffer);
+            }
+            while (null == rcvAddress);
+
+            statusHeader.wrap(new UnsafeBuffer(rcvBuffer));
+
+            assertNotNull(rcvAddress);
+            assertThat(rcvAddress.getPort(), is(UDP_CHANNEL.remoteData().getPort()));
+            assertThat(statusHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_SM));
+            assertThat(statusHeader.streamId(), is(STREAM_ID));
+            assertThat(statusHeader.sessionId(), is(SESSION_ID));
+            assertThat(statusHeader.consumptionTermId(), is(ACTIVE_TERM_ID));
+            assertThat(statusHeader.frameLength(), is(StatusMessageFlyweight.HEADER_LENGTH));
         });
-
-        assertThat(messagesRead, is(1));
-
-        receiver.doWork();
-
-        image.trackRebuild(nanoClock.nanoTime() + (2 * STATUS_MESSAGE_TIMEOUT), STATUS_MESSAGE_TIMEOUT);
-        image.sendPendingStatusMessage();
-
-        final ByteBuffer rcvBuffer = ByteBuffer.allocateDirect(256);
-        InetSocketAddress rcvAddress;
-
-        do
-        {
-            rcvAddress = (InetSocketAddress)senderChannel.receive(rcvBuffer);
-        }
-        while (null == rcvAddress);
-
-        statusHeader.wrap(new UnsafeBuffer(rcvBuffer));
-
-        assertNotNull(rcvAddress);
-        assertThat(rcvAddress.getPort(), is(UDP_CHANNEL.remoteData().getPort()));
-        assertThat(statusHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_SM));
-        assertThat(statusHeader.streamId(), is(STREAM_ID));
-        assertThat(statusHeader.sessionId(), is(SESSION_ID));
-        assertThat(statusHeader.consumptionTermId(), is(ACTIVE_TERM_ID));
-        assertThat(statusHeader.frameLength(), is(StatusMessageFlyweight.HEADER_LENGTH));
     }
 
     @Test

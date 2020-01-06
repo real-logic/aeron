@@ -30,9 +30,9 @@ import org.agrona.ExpandableArrayBuffer;
 import org.agrona.SystemUtil;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.status.CountersReader;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
@@ -43,7 +43,9 @@ import java.util.Collections;
 import static io.aeron.archive.Common.*;
 import static io.aeron.archive.codecs.RecordingSignal.*;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
+import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -81,110 +83,114 @@ public class ExtendRecordingTest
     private final ControlEventListener controlEventListener =
         (controlSessionId, correlationId, relevantId, code, errorMessage) -> errors.add(errorMessage);
 
-    @Before
+    @BeforeEach
     public void before()
     {
         launchAeronAndArchive();
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         closeDownAndCleanMediaDriver();
         archivingMediaDriver.archive().context().deleteArchiveDirectory();
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldExtendRecordingAndReplay()
     {
-        final long controlSessionId = aeronArchive.controlSessionId();
-        final RecordingSignalAdapter recordingSignalAdapter;
-        final int messageCount = 10;
-        final long subscriptionIdOne;
-        final long subscriptionIdTwo;
-        final long stopOne;
-        final long stopTwo;
-        final long recordingId;
-        final int initialTermId;
-
-        try (Publication publication = aeron.addPublication(RECORDED_CHANNEL, RECORDED_STREAM_ID);
-            Subscription subscription = aeron.addSubscription(RECORDED_CHANNEL, RECORDED_STREAM_ID))
+        assertTimeout(ofSeconds(10), () ->
         {
-            initialTermId = publication.initialTermId();
-            recordingSignalAdapter = new RecordingSignalAdapter(
-                controlSessionId,
-                controlEventListener,
-                recordingSignalConsumer,
-                aeronArchive.controlResponsePoller().subscription(),
-                FRAGMENT_LIMIT);
+            final long controlSessionId = aeronArchive.controlSessionId();
+            final RecordingSignalAdapter recordingSignalAdapter;
+            final int messageCount = 10;
+            final long subscriptionIdOne;
+            final long subscriptionIdTwo;
+            final long stopOne;
+            final long stopTwo;
+            final long recordingId;
+            final int initialTermId;
 
-            subscriptionIdOne = aeronArchive.startRecording(RECORDED_CHANNEL, RECORDED_STREAM_ID, LOCAL);
-            pollForSignal(recordingSignalAdapter);
-
-            try
+            try (Publication publication = aeron.addPublication(RECORDED_CHANNEL, RECORDED_STREAM_ID);
+                Subscription subscription = aeron.addSubscription(RECORDED_CHANNEL, RECORDED_STREAM_ID))
             {
-                offer(publication, 0, messageCount, MESSAGE_PREFIX);
+                initialTermId = publication.initialTermId();
+                recordingSignalAdapter = new RecordingSignalAdapter(
+                    controlSessionId,
+                    controlEventListener,
+                    recordingSignalConsumer,
+                    aeronArchive.controlResponsePoller().subscription(),
+                    FRAGMENT_LIMIT);
 
-                final CountersReader counters = aeron.countersReader();
-                final int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
-                recordingId = RecordingPos.getRecordingId(counters, counterId);
-
-                consume(subscription, 0, messageCount, MESSAGE_PREFIX);
-
-                stopOne = publication.position();
-                awaitPosition(counters, counterId, stopOne);
-            }
-            finally
-            {
-                aeronArchive.stopRecording(subscriptionIdOne);
+                subscriptionIdOne = aeronArchive.startRecording(RECORDED_CHANNEL, RECORDED_STREAM_ID, LOCAL);
                 pollForSignal(recordingSignalAdapter);
+
+                try
+                {
+                    offer(publication, 0, messageCount, MESSAGE_PREFIX);
+
+                    final CountersReader counters = aeron.countersReader();
+                    final int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
+                    recordingId = RecordingPos.getRecordingId(counters, counterId);
+
+                    consume(subscription, 0, messageCount, MESSAGE_PREFIX);
+
+                    stopOne = publication.position();
+                    awaitPosition(counters, counterId, stopOne);
+                }
+                finally
+                {
+                    aeronArchive.stopRecording(subscriptionIdOne);
+                    pollForSignal(recordingSignalAdapter);
+                }
             }
-        }
 
-        final String publicationExtendChannel = new ChannelUriStringBuilder()
-            .media("udp")
-            .endpoint("localhost:3333")
-            .initialPosition(stopOne, initialTermId, TERM_LENGTH)
-            .mtu(MTU_LENGTH)
-            .build();
+            final String publicationExtendChannel = new ChannelUriStringBuilder()
+                .media("udp")
+                .endpoint("localhost:3333")
+                .initialPosition(stopOne, initialTermId, TERM_LENGTH)
+                .mtu(MTU_LENGTH)
+                .build();
 
-        try (Publication publication = aeron.addExclusivePublication(publicationExtendChannel, RECORDED_STREAM_ID);
-            Subscription subscription = aeron.addSubscription(EXTEND_CHANNEL, RECORDED_STREAM_ID))
-        {
-            subscriptionIdTwo = aeronArchive.extendRecording(recordingId, EXTEND_CHANNEL, RECORDED_STREAM_ID, LOCAL);
-            pollForSignal(recordingSignalAdapter);
-
-            try
+            try (Publication publication = aeron.addExclusivePublication(publicationExtendChannel, RECORDED_STREAM_ID);
+                Subscription subscription = aeron.addSubscription(EXTEND_CHANNEL, RECORDED_STREAM_ID))
             {
-                offer(publication, messageCount, messageCount, MESSAGE_PREFIX);
-
-                final CountersReader counters = aeron.countersReader();
-                final int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
-
-                consume(subscription, messageCount, messageCount, MESSAGE_PREFIX);
-
-                stopTwo = publication.position();
-                awaitPosition(counters, counterId, stopTwo);
-            }
-            finally
-            {
-                aeronArchive.stopRecording(subscriptionIdTwo);
+                subscriptionIdTwo = aeronArchive
+                    .extendRecording(recordingId, EXTEND_CHANNEL, RECORDED_STREAM_ID, LOCAL);
                 pollForSignal(recordingSignalAdapter);
+
+                try
+                {
+                    offer(publication, messageCount, messageCount, MESSAGE_PREFIX);
+
+                    final CountersReader counters = aeron.countersReader();
+                    final int counterId = RecordingPos.findCounterIdBySession(counters, publication.sessionId());
+
+                    consume(subscription, messageCount, messageCount, MESSAGE_PREFIX);
+
+                    stopTwo = publication.position();
+                    awaitPosition(counters, counterId, stopTwo);
+                }
+                finally
+                {
+                    aeronArchive.stopRecording(subscriptionIdTwo);
+                    pollForSignal(recordingSignalAdapter);
+                }
             }
-        }
 
-        replay(messageCount, stopTwo, recordingId);
-        assertEquals(Collections.EMPTY_LIST, errors);
+            replay(messageCount, stopTwo, recordingId);
+            assertEquals(Collections.EMPTY_LIST, errors);
 
-        final InOrder inOrder = Mockito.inOrder(recordingSignalConsumer);
-        inOrder.verify(recordingSignalConsumer).onSignal(
-            eq(controlSessionId), anyLong(), eq(recordingId), eq(subscriptionIdOne), eq(0L), eq(START));
-        inOrder.verify(recordingSignalConsumer).onSignal(
-            eq(controlSessionId), anyLong(), eq(recordingId), eq(subscriptionIdOne), eq(stopOne), eq(STOP));
-        inOrder.verify(recordingSignalConsumer).onSignal(
-            eq(controlSessionId), anyLong(), eq(recordingId), eq(subscriptionIdTwo), eq(stopOne), eq(EXTEND));
-        inOrder.verify(recordingSignalConsumer).onSignal(
-            eq(controlSessionId), anyLong(), eq(recordingId), eq(subscriptionIdTwo), eq(stopTwo), eq(STOP));
+            final InOrder inOrder = Mockito.inOrder(recordingSignalConsumer);
+            inOrder.verify(recordingSignalConsumer).onSignal(
+                eq(controlSessionId), anyLong(), eq(recordingId), eq(subscriptionIdOne), eq(0L), eq(START));
+            inOrder.verify(recordingSignalConsumer).onSignal(
+                eq(controlSessionId), anyLong(), eq(recordingId), eq(subscriptionIdOne), eq(stopOne), eq(STOP));
+            inOrder.verify(recordingSignalConsumer).onSignal(
+                eq(controlSessionId), anyLong(), eq(recordingId), eq(subscriptionIdTwo), eq(stopOne), eq(EXTEND));
+            inOrder.verify(recordingSignalConsumer).onSignal(
+                eq(controlSessionId), anyLong(), eq(recordingId), eq(subscriptionIdTwo), eq(stopTwo), eq(STOP));
+        });
     }
 
     private void replay(final int messageCount, final long secondStopPosition, final long recordingId)

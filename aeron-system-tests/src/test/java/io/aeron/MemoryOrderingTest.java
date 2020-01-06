@@ -25,11 +25,13 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.YieldingIdleStrategy;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
 
+import static java.time.Duration.ofSeconds;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class MemoryOrderingTest
@@ -53,111 +55,117 @@ public class MemoryOrderingTest
 
     private final Aeron aeron = Aeron.connect();
 
-    @After
+    @AfterEach
     public void after()
     {
         CloseHelper.close(aeron);
         CloseHelper.close(driver);
     }
 
-    @Test(timeout = 20_000)
+    @Test
     public void shouldReceiveMessagesInOrderWithFirstLongWordIntact() throws Exception
     {
-        final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
-        srcBuffer.setMemory(0, MESSAGE_LENGTH, (byte)7);
-
-        try (Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID);
-            Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
+        assertTimeout(ofSeconds(20), () ->
         {
-            final IdleStrategy idleStrategy = YieldingIdleStrategy.INSTANCE;
-            final Thread subscriberThread = new Thread(new Subscriber(subscription));
-            subscriberThread.setDaemon(true);
-            subscriberThread.start();
+            final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
+            srcBuffer.setMemory(0, MESSAGE_LENGTH, (byte)7);
 
-            for (int i = 0; i < NUM_MESSAGES; i++)
+            try (Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID);
+                Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
             {
-                if (null != failedMessage)
-                {
-                    fail(failedMessage);
-                }
+                final IdleStrategy idleStrategy = YieldingIdleStrategy.INSTANCE;
+                final Thread subscriberThread = new Thread(new Subscriber(subscription));
+                subscriberThread.setDaemon(true);
+                subscriberThread.start();
 
-                srcBuffer.putLong(0, i);
-
-                while (publication.offer(srcBuffer) < 0L)
+                for (int i = 0; i < NUM_MESSAGES; i++)
                 {
                     if (null != failedMessage)
                     {
                         fail(failedMessage);
                     }
 
-                    idleStrategy.idle();
-                    SystemTest.checkInterruptedStatus();
-                }
+                    srcBuffer.putLong(0, i);
 
-                if (i % BURST_LENGTH == 0)
-                {
-                    final long timeoutNs = System.nanoTime() + INTER_BURST_DURATION_NS;
-                    long nowNs;
-                    do
+                    while (publication.offer(srcBuffer) < 0L)
                     {
-                        nowNs = System.nanoTime();
-                    }
-                    while ((timeoutNs - nowNs) > 0);
-                }
-            }
+                        if (null != failedMessage)
+                        {
+                            fail(failedMessage);
+                        }
 
-            subscriberThread.join();
-        }
+                        idleStrategy.idle();
+                        SystemTest.checkInterruptedStatus();
+                    }
+
+                    if (i % BURST_LENGTH == 0)
+                    {
+                        final long timeoutNs = System.nanoTime() + INTER_BURST_DURATION_NS;
+                        long nowNs;
+                        do
+                        {
+                            nowNs = System.nanoTime();
+                        }
+                        while ((timeoutNs - nowNs) > 0);
+                    }
+                }
+
+                subscriberThread.join();
+            }
+        });
     }
 
-    @Test(timeout = 20_000)
+    @Test
     public void shouldReceiveMessagesInOrderWithFirstLongWordIntactFromExclusivePublication() throws Exception
     {
-        final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
-        srcBuffer.setMemory(0, MESSAGE_LENGTH, (byte)7);
-
-        try (Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID);
-            ExclusivePublication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID))
+        assertTimeout(ofSeconds(20), () ->
         {
-            final IdleStrategy idleStrategy = YieldingIdleStrategy.INSTANCE;
-            final Thread subscriberThread = new Thread(new Subscriber(subscription));
-            subscriberThread.setDaemon(true);
-            subscriberThread.start();
+            final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
+            srcBuffer.setMemory(0, MESSAGE_LENGTH, (byte)7);
 
-            for (int i = 0; i < NUM_MESSAGES; i++)
+            try (Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID);
+                ExclusivePublication publication = aeron.addExclusivePublication(CHANNEL, STREAM_ID))
             {
-                if (null != failedMessage)
-                {
-                    fail(failedMessage);
-                }
+                final IdleStrategy idleStrategy = YieldingIdleStrategy.INSTANCE;
+                final Thread subscriberThread = new Thread(new Subscriber(subscription));
+                subscriberThread.setDaemon(true);
+                subscriberThread.start();
 
-                srcBuffer.putLong(0, i);
-
-                while (publication.offer(srcBuffer) < 0L)
+                for (int i = 0; i < NUM_MESSAGES; i++)
                 {
                     if (null != failedMessage)
                     {
                         fail(failedMessage);
                     }
 
-                    idleStrategy.idle();
-                    SystemTest.checkInterruptedStatus();
-                }
+                    srcBuffer.putLong(0, i);
 
-                if (i % BURST_LENGTH == 0)
-                {
-                    final long timeoutNs = System.nanoTime() + INTER_BURST_DURATION_NS;
-                    long nowNs;
-                    do
+                    while (publication.offer(srcBuffer) < 0L)
                     {
-                        nowNs = System.nanoTime();
-                    }
-                    while ((timeoutNs - nowNs) > 0);
-                }
-            }
+                        if (null != failedMessage)
+                        {
+                            fail(failedMessage);
+                        }
 
-            subscriberThread.join();
-        }
+                        idleStrategy.idle();
+                        SystemTest.checkInterruptedStatus();
+                    }
+
+                    if (i % BURST_LENGTH == 0)
+                    {
+                        final long timeoutNs = System.nanoTime() + INTER_BURST_DURATION_NS;
+                        long nowNs;
+                        do
+                        {
+                            nowNs = System.nanoTime();
+                        }
+                        while ((timeoutNs - nowNs) > 0);
+                    }
+                }
+
+                subscriberThread.join();
+            }
+        });
     }
 
     static class Subscriber implements Runnable, FragmentHandler

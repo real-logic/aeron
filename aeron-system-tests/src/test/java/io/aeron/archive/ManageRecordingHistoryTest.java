@@ -15,7 +15,9 @@
  */
 package io.aeron.archive;
 
-import io.aeron.*;
+import io.aeron.Aeron;
+import io.aeron.ChannelUriStringBuilder;
+import io.aeron.Publication;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
@@ -24,15 +26,18 @@ import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.CloseHelper;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.status.CountersReader;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
-import static io.aeron.archive.Common.*;
+import static io.aeron.archive.Common.awaitPosition;
+import static io.aeron.archive.Common.offerToPosition;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
+import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 public class ManageRecordingHistoryTest
 {
@@ -51,7 +56,7 @@ public class ManageRecordingHistoryTest
     private Aeron aeron;
     private AeronArchive aeronArchive;
 
-    @Before
+    @BeforeEach
     public void before()
     {
         archivingMediaDriver = ArchivingMediaDriver.launch(
@@ -78,7 +83,7 @@ public class ManageRecordingHistoryTest
                 .aeron(aeron));
     }
 
-    @After
+    @AfterEach
     public void after()
     {
         CloseHelper.close(aeronArchive);
@@ -88,220 +93,238 @@ public class ManageRecordingHistoryTest
         archivingMediaDriver.archive().context().deleteArchiveDirectory();
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldPurgeForStreamJoinedAtTheBeginning()
     {
-        final String messagePrefix = "Message-Prefix-";
-        final long targetPosition = (SEGMENT_LENGTH * 3L) + 1;
-
-        try (Publication publication = aeronArchive.addRecordedPublication(uriBuilder.build(), STREAM_ID))
+        assertTimeout(ofSeconds(10), () ->
         {
-            final CountersReader counters = aeron.countersReader();
-            final int counterId = Common.awaitRecordingCounterId(counters, publication.sessionId());
-            final long recordingId = RecordingPos.getRecordingId(counters, counterId);
+            final String messagePrefix = "Message-Prefix-";
+            final long targetPosition = (SEGMENT_LENGTH * 3L) + 1;
 
-            offerToPosition(publication, messagePrefix, targetPosition);
-            awaitPosition(counters, counterId, publication.position());
+            try (Publication publication = aeronArchive.addRecordedPublication(uriBuilder.build(), STREAM_ID))
+            {
+                final CountersReader counters = aeron.countersReader();
+                final int counterId = Common.awaitRecordingCounterId(counters, publication.sessionId());
+                final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
-            final long startPosition = 0L;
-            final long segmentFileBasePosition = AeronArchive.segmentFileBasePosition(
-                startPosition, SEGMENT_LENGTH * 2L, TERM_LENGTH, SEGMENT_LENGTH);
+                offerToPosition(publication, messagePrefix, targetPosition);
+                awaitPosition(counters, counterId, publication.position());
 
-            final long count = aeronArchive.purgeSegments(recordingId, segmentFileBasePosition);
-            assertEquals(2L, count);
-            assertEquals(segmentFileBasePosition, aeronArchive.getStartPosition(recordingId));
+                final long startPosition = 0L;
+                final long segmentFileBasePosition = AeronArchive.segmentFileBasePosition(
+                    startPosition, SEGMENT_LENGTH * 2L, TERM_LENGTH, SEGMENT_LENGTH);
 
-            aeronArchive.stopRecording(publication);
-        }
+                final long count = aeronArchive.purgeSegments(recordingId, segmentFileBasePosition);
+                assertEquals(2L, count);
+                assertEquals(segmentFileBasePosition, aeronArchive.getStartPosition(recordingId));
+
+                aeronArchive.stopRecording(publication);
+            }
+        });
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldPurgeForLateJoinedStream()
     {
-        final String messagePrefix = "Message-Prefix-";
-        final int initialTermId = 7;
-        final long targetPosition = (SEGMENT_LENGTH * 3L) + 1;
-        final long startPosition = (TERM_LENGTH * 2L) + (FRAME_ALIGNMENT * 2L);
-        uriBuilder.initialPosition(startPosition, initialTermId, TERM_LENGTH);
-
-        try (Publication publication = aeronArchive.addRecordedExclusivePublication(uriBuilder.build(), STREAM_ID))
+        assertTimeout(ofSeconds(10), () ->
         {
-            assertEquals(startPosition, publication.position());
+            final String messagePrefix = "Message-Prefix-";
+            final int initialTermId = 7;
+            final long targetPosition = (SEGMENT_LENGTH * 3L) + 1;
+            final long startPosition = (TERM_LENGTH * 2L) + (FRAME_ALIGNMENT * 2L);
+            uriBuilder.initialPosition(startPosition, initialTermId, TERM_LENGTH);
 
-            final CountersReader counters = aeron.countersReader();
-            final int counterId = Common.awaitRecordingCounterId(counters, publication.sessionId());
-            final long recordingId = RecordingPos.getRecordingId(counters, counterId);
+            try (Publication publication = aeronArchive.addRecordedExclusivePublication(uriBuilder.build(), STREAM_ID))
+            {
+                assertEquals(startPosition, publication.position());
 
-            offerToPosition(publication, messagePrefix, targetPosition);
-            awaitPosition(counters, counterId, publication.position());
+                final CountersReader counters = aeron.countersReader();
+                final int counterId = Common.awaitRecordingCounterId(counters, publication.sessionId());
+                final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
-            final long segmentFileBasePosition = AeronArchive.segmentFileBasePosition(
-                startPosition, startPosition + (SEGMENT_LENGTH * 2L), TERM_LENGTH, SEGMENT_LENGTH);
+                offerToPosition(publication, messagePrefix, targetPosition);
+                awaitPosition(counters, counterId, publication.position());
 
-            final long purgeSegments = aeronArchive.purgeSegments(recordingId, segmentFileBasePosition);
-            assertEquals(2L, purgeSegments);
-            assertEquals(segmentFileBasePosition, aeronArchive.getStartPosition(recordingId));
+                final long segmentFileBasePosition = AeronArchive.segmentFileBasePosition(
+                    startPosition, startPosition + (SEGMENT_LENGTH * 2L), TERM_LENGTH, SEGMENT_LENGTH);
 
-            aeronArchive.stopRecording(publication);
-        }
+                final long purgeSegments = aeronArchive.purgeSegments(recordingId, segmentFileBasePosition);
+                assertEquals(2L, purgeSegments);
+                assertEquals(segmentFileBasePosition, aeronArchive.getStartPosition(recordingId));
+
+                aeronArchive.stopRecording(publication);
+            }
+        });
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldDetachThenAttachFullSegments()
     {
-        final String messagePrefix = "Message-Prefix-";
-        final long targetPosition = (SEGMENT_LENGTH * 3L) + 1;
-
-        try (Publication publication = aeronArchive.addRecordedPublication(uriBuilder.build(), STREAM_ID))
+        assertTimeout(ofSeconds(10), () ->
         {
-            final CountersReader counters = aeron.countersReader();
-            final int counterId = Common.awaitRecordingCounterId(counters, publication.sessionId());
-            final long recordingId = RecordingPos.getRecordingId(counters, counterId);
+            final String messagePrefix = "Message-Prefix-";
+            final long targetPosition = (SEGMENT_LENGTH * 3L) + 1;
 
-            offerToPosition(publication, messagePrefix, targetPosition);
-            awaitPosition(counters, counterId, publication.position());
-            aeronArchive.stopRecording(publication);
+            try (Publication publication = aeronArchive.addRecordedPublication(uriBuilder.build(), STREAM_ID))
+            {
+                final CountersReader counters = aeron.countersReader();
+                final int counterId = Common.awaitRecordingCounterId(counters, publication.sessionId());
+                final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
-            final long startPosition = 0L;
-            final long segmentFileBasePosition = AeronArchive.segmentFileBasePosition(
-                startPosition, SEGMENT_LENGTH * 2L, TERM_LENGTH, SEGMENT_LENGTH);
+                offerToPosition(publication, messagePrefix, targetPosition);
+                awaitPosition(counters, counterId, publication.position());
+                aeronArchive.stopRecording(publication);
 
-            aeronArchive.detachSegments(recordingId, segmentFileBasePosition);
-            assertEquals(segmentFileBasePosition, aeronArchive.getStartPosition(recordingId));
+                final long startPosition = 0L;
+                final long segmentFileBasePosition = AeronArchive.segmentFileBasePosition(
+                    startPosition, SEGMENT_LENGTH * 2L, TERM_LENGTH, SEGMENT_LENGTH);
 
-            final long attachSegments = aeronArchive.attachSegments(recordingId);
-            assertEquals(2L, attachSegments);
-            assertEquals(startPosition, aeronArchive.getStartPosition(recordingId));
-        }
+                aeronArchive.detachSegments(recordingId, segmentFileBasePosition);
+                assertEquals(segmentFileBasePosition, aeronArchive.getStartPosition(recordingId));
+
+                final long attachSegments = aeronArchive.attachSegments(recordingId);
+                assertEquals(2L, attachSegments);
+                assertEquals(startPosition, aeronArchive.getStartPosition(recordingId));
+            }
+        });
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldDetachThenAttachWhenStartNotSegmentAligned()
     {
-        final String messagePrefix = "Message-Prefix-";
-        final int initialTermId = 7;
-        final long targetPosition = (SEGMENT_LENGTH * 3L) + 1;
-        final long startPosition = (TERM_LENGTH * 2L) + (FRAME_ALIGNMENT * 2L);
-        uriBuilder.initialPosition(startPosition, initialTermId, TERM_LENGTH);
-
-        try (Publication publication = aeronArchive.addRecordedExclusivePublication(uriBuilder.build(), STREAM_ID))
+        assertTimeout(ofSeconds(10), () ->
         {
-            assertEquals(startPosition, publication.position());
+            final String messagePrefix = "Message-Prefix-";
+            final int initialTermId = 7;
+            final long targetPosition = (SEGMENT_LENGTH * 3L) + 1;
+            final long startPosition = (TERM_LENGTH * 2L) + (FRAME_ALIGNMENT * 2L);
+            uriBuilder.initialPosition(startPosition, initialTermId, TERM_LENGTH);
 
-            final CountersReader counters = aeron.countersReader();
-            final int counterId = Common.awaitRecordingCounterId(counters, publication.sessionId());
-            final long recordingId = RecordingPos.getRecordingId(counters, counterId);
+            try (Publication publication = aeronArchive.addRecordedExclusivePublication(uriBuilder.build(), STREAM_ID))
+            {
+                assertEquals(startPosition, publication.position());
 
-            offerToPosition(publication, messagePrefix, targetPosition);
-            awaitPosition(counters, counterId, publication.position());
-            aeronArchive.stopRecording(publication);
+                final CountersReader counters = aeron.countersReader();
+                final int counterId = Common.awaitRecordingCounterId(counters, publication.sessionId());
+                final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
-            final long segmentFileBasePosition = AeronArchive.segmentFileBasePosition(
-                startPosition, startPosition + (SEGMENT_LENGTH * 2L), TERM_LENGTH, SEGMENT_LENGTH);
+                offerToPosition(publication, messagePrefix, targetPosition);
+                awaitPosition(counters, counterId, publication.position());
+                aeronArchive.stopRecording(publication);
 
-            aeronArchive.detachSegments(recordingId, segmentFileBasePosition);
-            assertEquals(segmentFileBasePosition, aeronArchive.getStartPosition(recordingId));
+                final long segmentFileBasePosition = AeronArchive.segmentFileBasePosition(
+                    startPosition, startPosition + (SEGMENT_LENGTH * 2L), TERM_LENGTH, SEGMENT_LENGTH);
 
-            final long attachSegments = aeronArchive.attachSegments(recordingId);
-            assertEquals(2L, attachSegments);
-            assertEquals(startPosition, aeronArchive.getStartPosition(recordingId));
-        }
+                aeronArchive.detachSegments(recordingId, segmentFileBasePosition);
+                assertEquals(segmentFileBasePosition, aeronArchive.getStartPosition(recordingId));
+
+                final long attachSegments = aeronArchive.attachSegments(recordingId);
+                assertEquals(2L, attachSegments);
+                assertEquals(startPosition, aeronArchive.getStartPosition(recordingId));
+            }
+        });
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldMigrateSegmentsForStreamJoinedAtTheBeginning()
     {
-        final String messagePrefix = "Message-Prefix-";
-        final long targetPosition = (SEGMENT_LENGTH * 3L) + 1;
-
-        try (Publication publication = aeronArchive.addRecordedPublication(uriBuilder.build(), STREAM_ID))
+        assertTimeout(ofSeconds(10), () ->
         {
-            final CountersReader counters = aeron.countersReader();
-            final int dstCounterId = Common.awaitRecordingCounterId(counters, publication.sessionId());
-            final long dstRecordingId = RecordingPos.getRecordingId(counters, dstCounterId);
+            final String messagePrefix = "Message-Prefix-";
+            final long targetPosition = (SEGMENT_LENGTH * 3L) + 1;
 
-            offerToPosition(publication, messagePrefix, targetPosition);
-            awaitPosition(counters, dstCounterId, publication.position());
-            aeronArchive.stopRecording(publication);
-
-            final long startPosition = 0L;
-            final long segmentFileBasePosition = AeronArchive.segmentFileBasePosition(
-                startPosition, SEGMENT_LENGTH * 2L, TERM_LENGTH, SEGMENT_LENGTH);
-
-            final long count = aeronArchive.purgeSegments(dstRecordingId, segmentFileBasePosition);
-            assertEquals(2L, count);
-            assertEquals(segmentFileBasePosition, aeronArchive.getStartPosition(dstRecordingId));
-
-            final long srcRecordingId;
-            final String migrateChannel = uriBuilder
-                .initialPosition(startPosition, publication.initialTermId(), TERM_LENGTH)
-                .endpoint("localhost:4444")
-                .build();
-
-            try (Publication migratePub = aeronArchive.addRecordedExclusivePublication(migrateChannel, STREAM_ID))
+            try (Publication publication = aeronArchive.addRecordedPublication(uriBuilder.build(), STREAM_ID))
             {
-                final int srcCounterId = Common.awaitRecordingCounterId(counters, migratePub.sessionId());
-                srcRecordingId = RecordingPos.getRecordingId(counters, srcCounterId);
+                final CountersReader counters = aeron.countersReader();
+                final int dstCounterId = Common.awaitRecordingCounterId(counters, publication.sessionId());
+                final long dstRecordingId = RecordingPos.getRecordingId(counters, dstCounterId);
 
-                offerToPosition(migratePub, messagePrefix, segmentFileBasePosition);
-                awaitPosition(counters, srcCounterId, migratePub.position());
-                aeronArchive.stopRecording(migratePub);
+                offerToPosition(publication, messagePrefix, targetPosition);
+                awaitPosition(counters, dstCounterId, publication.position());
+                aeronArchive.stopRecording(publication);
+
+                final long startPosition = 0L;
+                final long segmentFileBasePosition = AeronArchive.segmentFileBasePosition(
+                    startPosition, SEGMENT_LENGTH * 2L, TERM_LENGTH, SEGMENT_LENGTH);
+
+                final long count = aeronArchive.purgeSegments(dstRecordingId, segmentFileBasePosition);
+                assertEquals(2L, count);
+                assertEquals(segmentFileBasePosition, aeronArchive.getStartPosition(dstRecordingId));
+
+                final long srcRecordingId;
+                final String migrateChannel = uriBuilder
+                    .initialPosition(startPosition, publication.initialTermId(), TERM_LENGTH)
+                    .endpoint("localhost:4444")
+                    .build();
+
+                try (Publication migratePub = aeronArchive.addRecordedExclusivePublication(migrateChannel, STREAM_ID))
+                {
+                    final int srcCounterId = Common.awaitRecordingCounterId(counters, migratePub.sessionId());
+                    srcRecordingId = RecordingPos.getRecordingId(counters, srcCounterId);
+
+                    offerToPosition(migratePub, messagePrefix, segmentFileBasePosition);
+                    awaitPosition(counters, srcCounterId, migratePub.position());
+                    aeronArchive.stopRecording(migratePub);
+                }
+
+                aeronArchive.truncateRecording(srcRecordingId, segmentFileBasePosition);
+                final long migratedSegments = aeronArchive.migrateSegments(srcRecordingId, dstRecordingId);
+                assertEquals(2L, migratedSegments);
+                assertEquals(startPosition, aeronArchive.getStartPosition(dstRecordingId));
             }
-
-            aeronArchive.truncateRecording(srcRecordingId, segmentFileBasePosition);
-            final long migratedSegments = aeronArchive.migrateSegments(srcRecordingId, dstRecordingId);
-            assertEquals(2L, migratedSegments);
-            assertEquals(startPosition, aeronArchive.getStartPosition(dstRecordingId));
-        }
+        });
     }
 
-    @Test(timeout = 10_000)
+    @Test
     public void shouldMigrateSegmentsForStreamNotSegmentAligned()
     {
-        final String messagePrefix = "Message-Prefix-";
-        final int initialTermId = 7;
-        final long targetPosition = (SEGMENT_LENGTH * 3L) + 1;
-        final long startPosition = (TERM_LENGTH * 2L) + (FRAME_ALIGNMENT * 2L);
-        uriBuilder.initialPosition(startPosition, initialTermId, TERM_LENGTH);
-
-        try (Publication publication = aeronArchive.addRecordedExclusivePublication(uriBuilder.build(), STREAM_ID))
+        assertTimeout(ofSeconds(10), () ->
         {
-            final CountersReader counters = aeron.countersReader();
-            final int dstCounterId = Common.awaitRecordingCounterId(counters, publication.sessionId());
-            final long dstRecordingId = RecordingPos.getRecordingId(counters, dstCounterId);
+            final String messagePrefix = "Message-Prefix-";
+            final int initialTermId = 7;
+            final long targetPosition = (SEGMENT_LENGTH * 3L) + 1;
+            final long startPosition = (TERM_LENGTH * 2L) + (FRAME_ALIGNMENT * 2L);
+            uriBuilder.initialPosition(startPosition, initialTermId, TERM_LENGTH);
 
-            offerToPosition(publication, messagePrefix, targetPosition);
-            awaitPosition(counters, dstCounterId, publication.position());
-            aeronArchive.stopRecording(publication);
-
-            final long segmentFileBasePosition = AeronArchive.segmentFileBasePosition(
-                startPosition, startPosition + (SEGMENT_LENGTH * 2L), TERM_LENGTH, SEGMENT_LENGTH);
-
-            final long purgedSegments = aeronArchive.purgeSegments(dstRecordingId, segmentFileBasePosition);
-            assertEquals(2L, purgedSegments);
-            assertEquals(segmentFileBasePosition, aeronArchive.getStartPosition(dstRecordingId));
-
-            final long srcRecordingId;
-            final String migrateChannel = uriBuilder
-                .initialPosition(startPosition, initialTermId, TERM_LENGTH)
-                .endpoint("localhost:4444")
-                .build();
-
-            try (Publication migratePub = aeronArchive.addRecordedExclusivePublication(migrateChannel, STREAM_ID))
+            try (Publication publication = aeronArchive.addRecordedExclusivePublication(uriBuilder.build(), STREAM_ID))
             {
-                final int srcCounterId = Common.awaitRecordingCounterId(counters, migratePub.sessionId());
-                srcRecordingId = RecordingPos.getRecordingId(counters, srcCounterId);
+                final CountersReader counters = aeron.countersReader();
+                final int dstCounterId = Common.awaitRecordingCounterId(counters, publication.sessionId());
+                final long dstRecordingId = RecordingPos.getRecordingId(counters, dstCounterId);
 
-                offerToPosition(migratePub, messagePrefix, segmentFileBasePosition);
-                awaitPosition(counters, srcCounterId, migratePub.position());
-                aeronArchive.stopRecording(migratePub);
+                offerToPosition(publication, messagePrefix, targetPosition);
+                awaitPosition(counters, dstCounterId, publication.position());
+                aeronArchive.stopRecording(publication);
+
+                final long segmentFileBasePosition = AeronArchive.segmentFileBasePosition(
+                    startPosition, startPosition + (SEGMENT_LENGTH * 2L), TERM_LENGTH, SEGMENT_LENGTH);
+
+                final long purgedSegments = aeronArchive.purgeSegments(dstRecordingId, segmentFileBasePosition);
+                assertEquals(2L, purgedSegments);
+                assertEquals(segmentFileBasePosition, aeronArchive.getStartPosition(dstRecordingId));
+
+                final long srcRecordingId;
+                final String migrateChannel = uriBuilder
+                    .initialPosition(startPosition, initialTermId, TERM_LENGTH)
+                    .endpoint("localhost:4444")
+                    .build();
+
+                try (Publication migratePub = aeronArchive.addRecordedExclusivePublication(migrateChannel, STREAM_ID))
+                {
+                    final int srcCounterId = Common.awaitRecordingCounterId(counters, migratePub.sessionId());
+                    srcRecordingId = RecordingPos.getRecordingId(counters, srcCounterId);
+
+                    offerToPosition(migratePub, messagePrefix, segmentFileBasePosition);
+                    awaitPosition(counters, srcCounterId, migratePub.position());
+                    aeronArchive.stopRecording(migratePub);
+                }
+
+                aeronArchive.truncateRecording(srcRecordingId, segmentFileBasePosition);
+                final long migratedSegments = aeronArchive.migrateSegments(srcRecordingId, dstRecordingId);
+                assertEquals(2L, migratedSegments);
+                assertEquals(startPosition, aeronArchive.getStartPosition(dstRecordingId));
+                assertEquals(startPosition, aeronArchive.getStopPosition(srcRecordingId));
             }
-
-            aeronArchive.truncateRecording(srcRecordingId, segmentFileBasePosition);
-            final long migratedSegments = aeronArchive.migrateSegments(srcRecordingId, dstRecordingId);
-            assertEquals(2L, migratedSegments);
-            assertEquals(startPosition, aeronArchive.getStartPosition(dstRecordingId));
-            assertEquals(startPosition, aeronArchive.getStopPosition(srcRecordingId));
-        }
+        });
     }
 }

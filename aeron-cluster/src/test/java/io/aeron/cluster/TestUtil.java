@@ -25,7 +25,7 @@ import org.agrona.concurrent.status.CountersReader;
 import java.io.PrintStream;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class TestUtil
 {

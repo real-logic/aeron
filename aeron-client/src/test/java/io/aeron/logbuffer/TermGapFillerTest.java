@@ -17,8 +17,8 @@ package io.aeron.logbuffer;
 
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
 
@@ -39,7 +39,7 @@ public class TermGapFillerTest
     private final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_MIN_LENGTH));
     private final DataHeaderFlyweight dataFlyweight = new DataHeaderFlyweight(termBuffer);
 
-    @Before
+    @BeforeEach
     public void setup()
     {
         initialTermId(metaDataBuffer, INITIAL_TERM_ID);

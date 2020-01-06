@@ -15,8 +15,8 @@
  */
 package io.aeron.logbuffer;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.mockito.InOrder;
 
@@ -38,7 +38,7 @@ public class LogBufferUnblockerTest
 
     private final int positionBitsToShift = LogBufferDescriptor.positionBitsToShift(TERM_LENGTH);
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         initialTermId(logMetaDataBuffer, TERM_ID_1);

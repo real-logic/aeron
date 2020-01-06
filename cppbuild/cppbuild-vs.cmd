@@ -7,6 +7,7 @@ set ZLIB_ZIP=%CD%\cppbuild\zlib1211.zip
 set BUILD_DIR=%CD%\cppbuild\Release
 set ZLIB_BUILD_DIR=%BUILD_DIR%\zlib-build
 set ZLIB_INSTALL_DIR=%BUILD_DIR%\zlib64
+set EXTRA_CMAKE_ARGS=-DAERON_SYSTEM_TESTS=OFF
 
 for %%o in (%*) do (
 
@@ -15,7 +16,7 @@ for %%o in (%*) do (
     if "%%o"=="--help" (
 	    echo cppbuild.cmd [--c-warnings-as-errors] [--cxx-warnings-as-errors] [--build-aeron-driver]
 		exit /b
-	)    
+	)
 
 	if "%%o"=="--c-warnings-as-errors" (
 	    set EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DC_WARNINGS_AS_ERRORS=ON

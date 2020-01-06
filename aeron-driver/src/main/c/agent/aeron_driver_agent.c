@@ -41,6 +41,14 @@
 #include "concurrent/aeron_thread.h"
 #include "aeron_windows.h"
 
+#if !defined(HAVE_STRUCT_MMSGHDR)
+struct mmsghdr
+{
+    struct msghdr msg_hdr;
+    unsigned int msg_len;
+};
+#endif
+
 static AERON_INIT_ONCE agent_is_initialized = AERON_INIT_ONCE_VALUE;
 static aeron_mpsc_rb_t logging_mpsc_rb;
 static uint8_t *rb_buffer = NULL;

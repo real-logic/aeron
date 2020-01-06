@@ -35,7 +35,7 @@ for %%o in (%*) do (
 )
 
 rem Set Visual Studion ENV variables for command line builds (requires at least Visual Studio 2017)
-@for /f "usebackq delims=#" %%a in (`"%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere" -latest -property installationPath`) do "%%a\Common7\Tools\VsDevCmd.bat"
+for /f "usebackq delims=#" %%a in (`"%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere" -latest -property installationPath`) do "%%a\Common7\Tools\VsDevCmd.bat"
 
 if EXIST %BUILD_DIR% rd /S /Q %BUILD_DIR%
 

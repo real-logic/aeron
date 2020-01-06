@@ -238,7 +238,11 @@ int aeron_udp_channel_data_paths_init(
             return -1;
         }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
         outgoing_transport_interceptor->interceptor_state = (void *)media_bindings->sendmmsg_func;
+#pragma GCC diagnostic pop
+
         /* last interecptor calls sendmmsg_func/sendmsg_func from transport bindings */
         outgoing_transport_interceptor->outgoing_mmsg_func = aeron_udp_channel_outgoing_interceptor_mmsg_to_transport;
         outgoing_transport_interceptor->outgoing_msg_func = aeron_udp_channel_outgoing_interceptor_msg_to_transport;
@@ -297,7 +301,10 @@ int aeron_udp_channel_data_paths_init(
             return -1;
         }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
         incoming_transport_interceptor->interceptor_state = (void *)recv_func;
+#pragma GCC diagnostic pop
         incoming_transport_interceptor->incoming_func = aeron_udp_channel_incoming_interceptor_to_endpoint;
         incoming_transport_interceptor->close_func = NULL;
         incoming_transport_interceptor->next_interceptor = NULL;

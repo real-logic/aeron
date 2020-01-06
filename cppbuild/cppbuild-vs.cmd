@@ -34,6 +34,9 @@ for %%o in (%*) do (
 	)
 )
 
+cppbuild/vs-helper.cmd
+if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+
 if EXIST %BUILD_DIR% rd /S /Q %BUILD_DIR%
 
 md %BUILD_DIR%
@@ -45,14 +48,14 @@ pushd zlib-1.2.11
 md build
 pushd build
 
-cmake -G "Visual Studio 16 2019" -DCMAKE_INSTALL_PREFIX=%ZLIB_INSTALL_DIR% ..
+cmake -DCMAKE_INSTALL_PREFIX=%ZLIB_INSTALL_DIR% ..
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 cmake --build . --target install
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 pushd %BUILD_DIR%
-cmake -G "Visual Studio 16 2019" %EXTRA_CMAKE_ARGS% %SOURCE_DIR%
+cmake %EXTRA_CMAKE_ARGS% %SOURCE_DIR%
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 cmake --build . --config Release

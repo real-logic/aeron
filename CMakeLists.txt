@@ -36,6 +36,7 @@ option(CXX_WARNINGS_AS_ERRORS "Enable warnings as errors for C++" OFF)
 option(SANITISE_BUILD "Enable sanitise options" OFF)
 option(COVERAGE_BUILD "Enable code coverage" OFF)
 option(AERON_TESTS "Enable tests" ${STANDALONE_BUILD})
+option(AERON_SYSTEM_TESTS "Enable system tests" ${STANDALONE_BUILD})
 option(AERON_BUILD_SAMPLES "Enable building the sample projects" ${STANDALONE_BUILD})
 option(AERON_BUILD_DOCUMENTATION "Build Aeron documentation" ${STANDALONE_BUILD})
 option(AERON_INSTALL_TARGETS "Enable installation step" ${STANDALONE_BUILD})
@@ -234,6 +235,7 @@ if (AERON_TESTS)
     set(AERON_CLIENT_TEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-client/src/test/cpp")
     set(AERON_DRIVER_TEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-driver/src/test/c")
     set(AERON_ARCHIVE_TEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-archive/src/test/cpp")
+    set(AERON_SYSTEM_TEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/aeron-system-tests")
 
     # gmock - includes gtest
     include_directories(${GMOCK_SOURCE_DIR}/googletest/include)
@@ -262,6 +264,9 @@ if (BUILD_AERON_DRIVER)
     if (AERON_TESTS)
         add_subdirectory(${AERON_DRIVER_TEST_PATH})
     endif ()
+    if (AERON_SYSTEM_TESTS)
+        add_subdirectory(${AERON_SYSTEM_TEST_PATH})
+    endif ()
 endif (BUILD_AERON_DRIVER)
 
 if (BUILD_AERON_ARCHIVE_API)
@@ -277,7 +282,7 @@ if (BUILD_AERON_ARCHIVE_API)
             "${CMAKE_CURRENT_SOURCE_DIR}}/aeron-archive/src/main/java/*.java")
 
         add_custom_command(OUTPUT ${AERON_ALL_JAR}
-            COMMAND ./gradlew clean assemble --no-parallel -x javadoc
+            COMMAND ./gradlew clean assemble --info --no-parallel -x javadoc
             DEPENDS ${AERON_ALL_SOURCES}
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
             COMMENT "Generating aeron-all jar")

@@ -16,6 +16,7 @@ jobs:
     name: Java ${{ matrix.java }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         java: [ '8', '11' ]
         os: ['ubuntu-latest', 'windows-latest']
@@ -45,6 +46,7 @@ jobs:
     name: C++ GCC ${{ matrix.version }}
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         version: [ '6', '7', '8', '9' ]
     env:
@@ -75,6 +77,7 @@ jobs:
     name: C++ Clang ${{ matrix.version }}
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         version: [ '6.0', '7', '8', '9' ]
     env:
@@ -109,6 +112,7 @@ jobs:
     name: C++ Clang ${{ matrix.version }} debug build
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         version: [ '7' ]
     env:
@@ -143,6 +147,7 @@ jobs:
     name: C++ Xcode ${{ matrix.version }} (macOS)
     runs-on: macOS-latest
     strategy:
+      fail-fast: false
       matrix:
         version: [ '11.2.1' ]
     env:
@@ -160,6 +165,8 @@ jobs:
   cpp-msvc-build:
     name: C++ MSVC (Windows)
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
     env:
       CC: cl
       CXX: cl

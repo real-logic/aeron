@@ -760,7 +760,7 @@ project(':aeron-samples') {
 
 project(':aeron-system-tests') {
     dependencies {
-        compile project(':aeron-archive')
+        testImplementation project(':aeron-archive')
         testImplementation project(path: ':aeron-client', configuration: 'tests')
         testImplementation project(path: ':aeron-archive', configuration: 'tests')
     }

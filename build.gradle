@@ -20,7 +20,7 @@ buildscript {
 }
 
 plugins {
-    id 'java'
+    id 'java-library'
     id 'idea'
     id 'io.freefair.javadoc-links' version '4.1.6' apply false
     id 'com.github.johnrengelman.shadow' version '5.2.0' apply false
@@ -133,7 +133,7 @@ allprojects {
 }
 
 subprojects {
-    apply plugin: 'java'
+    apply plugin: 'java-library'
     apply plugin: 'maven'
     apply plugin: 'checkstyle'
     apply plugin: 'signing'
@@ -146,9 +146,7 @@ subprojects {
     jar.enabled = true
 
     dependencies {
-        checkstyle "com.puppycrawl.tools:checkstyle:${checkstyleVersion}"
-
-        compile "org.agrona:agrona:${agronaVersion}"
+        api "org.agrona:agrona:${agronaVersion}"
 
         testImplementation "org.hamcrest:hamcrest:${hamcrestVersion}"
         testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
@@ -249,7 +247,7 @@ project(':aeron-client') {
     apply plugin: 'biz.aQute.bnd.builder'
 
     dependencies {
-        testCompile "org.mockito:mockito-inline:${mockitoVersion}"
+        testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
     }
 
     uploadArchives {
@@ -312,8 +310,8 @@ project(':aeron-driver') {
     mainClassName = 'io.aeron.driver.MediaDriver'
 
     dependencies {
-        compile project(':aeron-client')
-        testCompile "org.mockito:mockito-inline:${mockitoVersion}"
+        api project(':aeron-client')
+        testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
     }
 
     uploadArchives {
@@ -381,8 +379,8 @@ project(':aeron-archive') {
     }
 
     dependencies {
-        compile project(':aeron-driver')
-        compile files('build/classes/java/generated')
+        api project(':aeron-driver')
+        api files('build/classes/java/generated')
         codecGeneration "uk.co.real-logic:sbe-tool:${sbeVersion}"
     }
 
@@ -502,8 +500,8 @@ project(':aeron-cluster') {
     }
 
     dependencies {
-        compile project(':aeron-archive')
-        compile files('build/classes/java/generated')
+        api project(':aeron-archive')
+        api files('build/classes/java/generated')
         codecGeneration "uk.co.real-logic:sbe-tool:${sbeVersion}"
     }
 
@@ -606,8 +604,8 @@ project(':aeron-agent') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
     dependencies {
-        compile project(':aeron-cluster')
-        compile "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
+        api project(':aeron-cluster')
+        implementation "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
     }
 
     jar {
@@ -713,8 +711,8 @@ project(':aeron-samples') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
     dependencies {
-        compile project(':aeron-archive')
-        compile "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
+        api project(':aeron-archive')
+        implementation "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
     }
 
     uploadArchives {
@@ -760,9 +758,9 @@ project(':aeron-samples') {
 
 project(':aeron-system-tests') {
     dependencies {
-        compile project(':aeron-archive')
-        testCompile project(path: ':aeron-client', configuration: 'tests')
-        testCompile project(path: ':aeron-archive', configuration: 'tests')
+        testImplementation project(':aeron-archive')
+        testImplementation project(path: ':aeron-client', configuration: 'tests')
+        testImplementation project(path: ':aeron-archive', configuration: 'tests')
     }
 
     test {
@@ -810,11 +808,12 @@ project(':aeron-all') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
     dependencies {
-        compile project(':aeron-client')
-        compile project(':aeron-driver')
-        compile project(':aeron-archive')
-        compile project(':aeron-cluster')
-        compile project(':aeron-samples')
+        implementation project(':aeron-client')
+        implementation project(':aeron-driver')
+        implementation project(':aeron-archive')
+        implementation project(':aeron-cluster')
+        implementation project(':aeron-samples')
+        implementation "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
     }
 
     javadoc {
@@ -910,7 +909,6 @@ task uploadToMavenCentral {
     dependsOn 'aeron-client:uploadArchives',
         'aeron-driver:uploadArchives',
         'aeron-samples:uploadArchives',
-        'aeron-system-tests:uploadArchives',
         'aeron-archive:uploadArchives',
         'aeron-all:uploadArchives',
         'aeron-all:uploadShadow',

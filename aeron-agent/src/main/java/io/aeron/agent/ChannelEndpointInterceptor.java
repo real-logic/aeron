@@ -38,7 +38,7 @@ class ChannelEndpointInterceptor
             @Advice.OnMethodEnter
             public static void registerSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
             {
-                LOGGER.logChannelCreated(SEND_CHANNEL_CREATION, channelEndpoint.udpChannel().description());
+                LOGGER.logString(SEND_CHANNEL_CREATION, channelEndpoint.udpChannel().description());
             }
         }
 
@@ -47,7 +47,7 @@ class ChannelEndpointInterceptor
             @Advice.OnMethodEnter
             public static void closeSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
             {
-                LOGGER.logChannelCreated(SEND_CHANNEL_CLOSE, channelEndpoint.udpChannel().description());
+                LOGGER.logString(SEND_CHANNEL_CLOSE, channelEndpoint.udpChannel().description());
             }
         }
     }
@@ -59,7 +59,7 @@ class ChannelEndpointInterceptor
             @Advice.OnMethodEnter
             public static void registerReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
             {
-                LOGGER.logChannelCreated(RECEIVE_CHANNEL_CREATION, channelEndpoint.udpChannel().description());
+                LOGGER.logString(RECEIVE_CHANNEL_CREATION, channelEndpoint.udpChannel().description());
             }
         }
 
@@ -68,7 +68,7 @@ class ChannelEndpointInterceptor
             @Advice.OnMethodEnter
             public static void closeReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
             {
-                LOGGER.logChannelCreated(RECEIVE_CHANNEL_CLOSE, channelEndpoint.udpChannel().description());
+                LOGGER.logString(RECEIVE_CHANNEL_CLOSE, channelEndpoint.udpChannel().description());
             }
         }
     }

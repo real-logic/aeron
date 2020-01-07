@@ -18,115 +18,340 @@ package io.aeron.agent;
 import net.bytebuddy.asm.Advice;
 import org.agrona.DirectBuffer;
 
+import java.util.EnumMap;
+import java.util.Map;
+
 import static io.aeron.agent.DriverEventCode.*;
 import static io.aeron.agent.DriverEventLogger.LOGGER;
 import static io.aeron.command.ControlProtocolEvents.*;
+import static java.util.Collections.unmodifiableMap;
 
 /**
  * Intercepts calls for the command protocol from clients to the driver for logging.
  */
-class CmdInterceptor
+final class CmdInterceptor
 {
-    @Advice.OnMethodEnter
-    static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)
+    static final Map<DriverEventCode, Class<?>> EVENT_TO_ADVICE_MAPPING;
+
+    static
     {
-        switch (msgTypeId)
+        final Map<DriverEventCode, Class<?>> map = new EnumMap<>(DriverEventCode.class);
+        map.put(CMD_IN_ADD_PUBLICATION, AddPublication.class);
+        map.put(CMD_IN_ADD_EXCLUSIVE_PUBLICATION, AddExclusivePublication.class);
+        map.put(CMD_IN_ADD_SUBSCRIPTION, AddSubcription.class);
+        map.put(CMD_IN_REMOVE_PUBLICATION, RemovePublication.class);
+        map.put(CMD_IN_REMOVE_SUBSCRIPTION, RemoveSubscription.class);
+        map.put(CMD_IN_KEEPALIVE_CLIENT, ClientKeepAlive.class);
+        map.put(CMD_IN_ADD_DESTINATION, AddDestination.class);
+        map.put(CMD_IN_REMOVE_DESTINATION, RemoveDestination.class);
+        map.put(CMD_OUT_AVAILABLE_IMAGE, OnAvailableImage.class);
+        map.put(CMD_OUT_ERROR, OnError.class);
+        map.put(CMD_OUT_ON_OPERATION_SUCCESS, OnOperationSuccess.class);
+        map.put(CMD_OUT_PUBLICATION_READY, OnPublicationReady.class);
+        map.put(CMD_OUT_ON_UNAVAILABLE_IMAGE, OnUnavailableImage.class);
+        map.put(CMD_OUT_EXCLUSIVE_PUBLICATION_READY, OnExclusivePublicationReady.class);
+        map.put(CMD_OUT_SUBSCRIPTION_READY, OnSubscriptionReady.class);
+        map.put(CMD_OUT_COUNTER_READY, OnCounterReady.class);
+        map.put(CMD_OUT_ON_UNAVAILABLE_COUNTER, OnUnavailableCounter.class);
+        map.put(CMD_IN_ADD_COUNTER, AddCounter.class);
+        map.put(CMD_IN_REMOVE_COUNTER, RemoveCounter.class);
+        map.put(CMD_IN_CLIENT_CLOSE, ClientClose.class);
+        map.put(CMD_IN_ADD_RCV_DESTINATION, AddRcvDestination.class);
+        map.put(CMD_IN_REMOVE_RCV_DESTINATION, RemoveRcvDestination.class);
+        map.put(CMD_OUT_ON_CLIENT_TIMEOUT, OnClientTimeout.class);
+        map.put(CMD_IN_TERMINATE_DRIVER, TerminateDriver.class);
+        EVENT_TO_ADVICE_MAPPING = unmodifiableMap(map);
+    }
+
+    static final class AddPublication
+    {
+        @Advice.OnMethodEnter
+        static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)
         {
-            case ADD_PUBLICATION:
+            if (ADD_PUBLICATION == msgTypeId)
+            {
                 LOGGER.log(CMD_IN_ADD_PUBLICATION, buffer, index, length);
-                break;
-
-            case REMOVE_PUBLICATION:
-                LOGGER.log(CMD_IN_REMOVE_PUBLICATION, buffer, index, length);
-                break;
-
-            case ADD_EXCLUSIVE_PUBLICATION:
-                LOGGER.log(CMD_IN_ADD_EXCLUSIVE_PUBLICATION, buffer, index, length);
-                break;
-
-            case ADD_SUBSCRIPTION:
-                LOGGER.log(CMD_IN_ADD_SUBSCRIPTION, buffer, index, length);
-                break;
-
-            case REMOVE_SUBSCRIPTION:
-                LOGGER.log(CMD_IN_REMOVE_SUBSCRIPTION, buffer, index, length);
-                break;
-
-            case CLIENT_KEEPALIVE:
-                LOGGER.log(CMD_IN_KEEPALIVE_CLIENT, buffer, index, length);
-                break;
-
-            case ADD_DESTINATION:
-                LOGGER.log(CMD_IN_ADD_DESTINATION, buffer, index, length);
-                break;
-
-            case REMOVE_DESTINATION:
-                LOGGER.log(CMD_IN_REMOVE_DESTINATION, buffer, index, length);
-                break;
-
-            case ON_AVAILABLE_IMAGE:
-                LOGGER.log(CMD_OUT_AVAILABLE_IMAGE, buffer, index, length);
-                break;
-
-            case ON_ERROR:
-                LOGGER.log(CMD_OUT_ERROR, buffer, index, length);
-                break;
-
-            case ON_OPERATION_SUCCESS:
-                LOGGER.log(CMD_OUT_ON_OPERATION_SUCCESS, buffer, index, length);
-                break;
-
-            case ON_PUBLICATION_READY:
-                LOGGER.log(CMD_OUT_PUBLICATION_READY, buffer, index, length);
-                break;
-
-            case ON_UNAVAILABLE_IMAGE:
-                LOGGER.log(CMD_OUT_ON_UNAVAILABLE_IMAGE, buffer, index, length);
-                break;
-
-            case ON_EXCLUSIVE_PUBLICATION_READY:
-                LOGGER.log(CMD_OUT_EXCLUSIVE_PUBLICATION_READY, buffer, index, length);
-                break;
-
-            case ON_SUBSCRIPTION_READY:
-                LOGGER.log(CMD_OUT_SUBSCRIPTION_READY, buffer, index, length);
-                break;
-
-            case ON_COUNTER_READY:
-                LOGGER.log(CMD_OUT_COUNTER_READY, buffer, index, length);
-                break;
-
-            case ON_UNAVAILABLE_COUNTER:
-                LOGGER.log(CMD_OUT_ON_UNAVAILABLE_COUNTER, buffer, index, length);
-                break;
-
-            case ADD_COUNTER:
-                LOGGER.log(CMD_IN_ADD_COUNTER, buffer, index, length);
-                break;
-
-            case REMOVE_COUNTER:
-                LOGGER.log(CMD_IN_REMOVE_COUNTER, buffer, index, length);
-                break;
-
-            case CLIENT_CLOSE:
-                LOGGER.log(CMD_IN_CLIENT_CLOSE, buffer, index, length);
-                break;
-
-            case ADD_RCV_DESTINATION:
-                LOGGER.log(CMD_IN_ADD_RCV_DESTINATION, buffer, index, length);
-                break;
-
-            case REMOVE_RCV_DESTINATION:
-                LOGGER.log(CMD_IN_REMOVE_RCV_DESTINATION, buffer, index, length);
-                break;
-
-            case ON_CLIENT_TIMEOUT:
-                LOGGER.log(CMD_OUT_ON_CLIENT_TIMEOUT, buffer, index, length);
-                break;
-
-            case TERMINATE_DRIVER:
-                LOGGER.log(CMD_IN_TERMINATE_DRIVER, buffer, index, length);
-                break;
+            }
         }
+    }
+
+    static final class AddExclusivePublication
+    {
+        @Advice.OnMethodEnter
+        static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)
+        {
+            if (ADD_EXCLUSIVE_PUBLICATION == msgTypeId)
+            {
+                LOGGER.log(CMD_IN_ADD_EXCLUSIVE_PUBLICATION, buffer, index, length);
+            }
+        }
+    }
+
+    static final class AddSubcription
+    {
+        @Advice.OnMethodEnter
+        static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)
+        {
+            if (ADD_SUBSCRIPTION == msgTypeId)
+            {
+                LOGGER.log(CMD_IN_ADD_SUBSCRIPTION, buffer, index, length);
+            }
+        }
+    }
+
+    static final class RemovePublication
+    {
+        @Advice.OnMethodEnter
+        static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)
+        {
+            if (REMOVE_PUBLICATION == msgTypeId)
+            {
+                LOGGER.log(CMD_IN_REMOVE_PUBLICATION, buffer, index, length);
+            }
+        }
+    }
+
+    static final class RemoveSubscription
+    {
+        @Advice.OnMethodEnter
+        static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)
+        {
+            if (REMOVE_SUBSCRIPTION == msgTypeId)
+            {
+                LOGGER.log(CMD_IN_REMOVE_SUBSCRIPTION, buffer, index, length);
+            }
+        }
+    }
+
+    static final class ClientKeepAlive
+    {
+        @Advice.OnMethodEnter
+        static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)
+        {
+            if (CLIENT_KEEPALIVE == msgTypeId)
+            {
+                LOGGER.log(CMD_IN_KEEPALIVE_CLIENT, buffer, index, length);
+            }
+        }
+    }
+
+    static final class AddDestination
+    {
+        @Advice.OnMethodEnter
+        static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)
+        {
+            if (ADD_DESTINATION == msgTypeId)
+            {
+                LOGGER.log(CMD_IN_ADD_DESTINATION, buffer, index, length);
+            }
+        }
+    }
+
+    static final class RemoveDestination
+    {
+        @Advice.OnMethodEnter
+        static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)
+        {
+            if (REMOVE_DESTINATION == msgTypeId)
+            {
+                LOGGER.log(CMD_IN_REMOVE_DESTINATION, buffer, index, length);
+            }
+        }
+    }
+
+    static final class OnAvailableImage
+    {
+        @Advice.OnMethodEnter
+        static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)
+        {
+            if (ON_AVAILABLE_IMAGE == msgTypeId)
+            {
+                LOGGER.log(CMD_OUT_AVAILABLE_IMAGE, buffer, index, length);
+            }
+        }
+    }
+
+    static final class OnError
+    {
+        @Advice.OnMethodEnter
+        static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)
+        {
+            if (ON_ERROR == msgTypeId)
+            {
+                LOGGER.log(CMD_OUT_ERROR, buffer, index, length);
+            }
+        }
+    }
+
+    static final class OnOperationSuccess
+    {
+        @Advice.OnMethodEnter
+        static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)
+        {
+            if (ON_OPERATION_SUCCESS == msgTypeId)
+            {
+                LOGGER.log(CMD_OUT_ON_OPERATION_SUCCESS, buffer, index, length);
+            }
+        }
+    }
+
+    static final class OnPublicationReady
+    {
+        @Advice.OnMethodEnter
+        static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)
+        {
+            if (ON_PUBLICATION_READY == msgTypeId)
+            {
+                LOGGER.log(CMD_OUT_PUBLICATION_READY, buffer, index, length);
+            }
+        }
+    }
+
+    static final class OnUnavailableImage
+    {
+        @Advice.OnMethodEnter
+        static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)
+        {
+            if (ON_UNAVAILABLE_IMAGE == msgTypeId)
+            {
+                LOGGER.log(CMD_OUT_ON_UNAVAILABLE_IMAGE, buffer, index, length);
+            }
+        }
+    }
+
+    static final class OnExclusivePublicationReady
+    {
+        @Advice.OnMethodEnter
+        static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)
+        {
+            if (ON_EXCLUSIVE_PUBLICATION_READY == msgTypeId)
+            {
+                LOGGER.log(CMD_OUT_EXCLUSIVE_PUBLICATION_READY, buffer, index, length);
+            }
+        }
+    }
+
+    static final class OnSubscriptionReady
+    {
+        @Advice.OnMethodEnter
+        static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)
+        {
+            if (ON_SUBSCRIPTION_READY == msgTypeId)
+            {
+                LOGGER.log(CMD_OUT_SUBSCRIPTION_READY, buffer, index, length);
+            }
+        }
+    }
+
+    static final class OnCounterReady
+    {
+        @Advice.OnMethodEnter
+        static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)
+        {
+            if (ON_COUNTER_READY == msgTypeId)
+            {
+                LOGGER.log(CMD_OUT_COUNTER_READY, buffer, index, length);
+            }
+        }
+    }
+
+    static final class OnUnavailableCounter
+    {
+        @Advice.OnMethodEnter
+        static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)
+        {
+            if (ON_UNAVAILABLE_COUNTER == msgTypeId)
+            {
+                LOGGER.log(CMD_OUT_ON_UNAVAILABLE_COUNTER, buffer, index, length);
+            }
+        }
+    }
+
+    static final class AddCounter
+    {
+        @Advice.OnMethodEnter
+        static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)
+        {
+            if (ADD_COUNTER == msgTypeId)
+            {
+                LOGGER.log(CMD_IN_ADD_COUNTER, buffer, index, length);
+            }
+        }
+    }
+
+    static final class RemoveCounter
+    {
+        @Advice.OnMethodEnter
+        static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)
+        {
+            if (REMOVE_COUNTER == msgTypeId)
+            {
+                LOGGER.log(CMD_IN_REMOVE_COUNTER, buffer, index, length);
+            }
+        }
+    }
+
+    static final class ClientClose
+    {
+        @Advice.OnMethodEnter
+        static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)
+        {
+            if (CLIENT_CLOSE == msgTypeId)
+            {
+                LOGGER.log(CMD_IN_CLIENT_CLOSE, buffer, index, length);
+            }
+        }
+    }
+
+    static final class AddRcvDestination
+    {
+        @Advice.OnMethodEnter
+        static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)
+        {
+            if (ADD_RCV_DESTINATION == msgTypeId)
+            {
+                LOGGER.log(CMD_IN_ADD_RCV_DESTINATION, buffer, index, length);
+            }
+        }
+    }
+
+    static final class RemoveRcvDestination
+    {
+        @Advice.OnMethodEnter
+        static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)
+        {
+            if (REMOVE_RCV_DESTINATION == msgTypeId)
+            {
+                LOGGER.log(CMD_IN_REMOVE_RCV_DESTINATION, buffer, index, length);
+            }
+        }
+    }
+
+    static final class OnClientTimeout
+    {
+        @Advice.OnMethodEnter
+        static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)
+        {
+            if (ON_CLIENT_TIMEOUT == msgTypeId)
+            {
+                LOGGER.log(CMD_OUT_ON_CLIENT_TIMEOUT, buffer, index, length);
+            }
+        }
+    }
+
+    static final class TerminateDriver
+    {
+        @Advice.OnMethodEnter
+        static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)
+        {
+            if (TERMINATE_DRIVER == msgTypeId)
+            {
+                LOGGER.log(CMD_IN_TERMINATE_DRIVER, buffer, index, length);
+            }
+        }
+    }
+
+    private CmdInterceptor()
+    {
     }
 }

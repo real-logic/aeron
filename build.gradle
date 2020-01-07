@@ -500,8 +500,8 @@ project(':aeron-cluster') {
     }
 
     dependencies {
-        compile project(':aeron-archive')
-        compile files('build/classes/java/generated')
+        api project(':aeron-archive')
+        api files('build/classes/java/generated')
         codecGeneration "uk.co.real-logic:sbe-tool:${sbeVersion}"
     }
 

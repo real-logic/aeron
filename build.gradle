@@ -711,8 +711,8 @@ project(':aeron-samples') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
     dependencies {
-        compile project(':aeron-archive')
-        compile "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
+        api project(':aeron-archive')
+        implementation "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
     }
 
     uploadArchives {
@@ -813,6 +813,7 @@ project(':aeron-all') {
         compile project(':aeron-archive')
         compile project(':aeron-cluster')
         compile project(':aeron-samples')
+        implementation "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
     }
 
     javadoc {

@@ -20,7 +20,7 @@ buildscript {
 }
 
 plugins {
-    id 'java'
+    id 'java-library'
     id 'idea'
     id 'io.freefair.javadoc-links' version '4.1.6' apply false
     id 'com.github.johnrengelman.shadow' version '5.2.0' apply false
@@ -133,7 +133,7 @@ allprojects {
 }
 
 subprojects {
-    apply plugin: 'java'
+    apply plugin: 'java-library'
     apply plugin: 'maven'
     apply plugin: 'checkstyle'
     apply plugin: 'signing'
@@ -148,7 +148,7 @@ subprojects {
     dependencies {
         checkstyle "com.puppycrawl.tools:checkstyle:${checkstyleVersion}"
 
-        compile "org.agrona:agrona:${agronaVersion}"
+        api "org.agrona:agrona:${agronaVersion}"
 
         testImplementation "org.hamcrest:hamcrest:${hamcrestVersion}"
         testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"

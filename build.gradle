@@ -146,8 +146,6 @@ subprojects {
     jar.enabled = true
 
     dependencies {
-        checkstyle "com.puppycrawl.tools:checkstyle:${checkstyleVersion}"
-
         api "org.agrona:agrona:${agronaVersion}"
 
         testImplementation "org.hamcrest:hamcrest:${hamcrestVersion}"

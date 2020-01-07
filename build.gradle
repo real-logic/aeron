@@ -808,11 +808,11 @@ project(':aeron-all') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
     dependencies {
-        compile project(':aeron-client')
-        compile project(':aeron-driver')
-        compile project(':aeron-archive')
-        compile project(':aeron-cluster')
-        compile project(':aeron-samples')
+        implementation project(':aeron-client')
+        implementation project(':aeron-driver')
+        implementation project(':aeron-archive')
+        implementation project(':aeron-cluster')
+        implementation project(':aeron-samples')
         implementation "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
     }
 

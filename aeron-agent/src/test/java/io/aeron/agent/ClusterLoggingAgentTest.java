@@ -63,7 +63,7 @@ public class ClusterLoggingAgentTest
     @AfterEach
     public void after()
     {
-        Common.afterAfter();
+        Common.afterAgent();
 
         CloseHelper.close(clusteredServiceContainer);
         CloseHelper.close(clusteredMediaDriver);

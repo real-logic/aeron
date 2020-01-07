@@ -27,7 +27,7 @@ public class Common
         EventLogAgent.agentmain("", ByteBuddyAgent.install());
     }
 
-    public static void afterAfter()
+    public static void afterAgent()
     {
         EventLogAgent.removeTransformer();
         System.clearProperty(EventConfiguration.ENABLED_EVENT_CODES_PROP_NAME);

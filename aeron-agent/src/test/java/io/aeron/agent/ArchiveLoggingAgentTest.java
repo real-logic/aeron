@@ -42,7 +42,7 @@ public class ArchiveLoggingAgentTest
     @AfterEach
     public void after()
     {
-        Common.afterAfter();
+        Common.afterAgent();
 
         CloseHelper.close(aeronArchive);
         CloseHelper.close(archivingMediaDriver);

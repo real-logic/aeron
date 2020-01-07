@@ -55,7 +55,7 @@ public class DriverLoggingAgentTest
     @AfterAll
     public static void removeAgent()
     {
-        Common.afterAfter();
+        Common.afterAgent();
     }
 
     @Test

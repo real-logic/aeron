@@ -29,10 +29,7 @@ import org.agrona.concurrent.SleepingMillisIdleStrategy;
 
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
-import java.util.List;
-import java.util.Map;
 
-import static java.util.stream.Collectors.toList;
 import static net.bytebuddy.asm.Advice.to;
 import static net.bytebuddy.matcher.ElementMatchers.nameEndsWith;
 import static net.bytebuddy.matcher.ElementMatchers.named;
@@ -186,36 +183,21 @@ public class EventLogAgent
 
     private static AgentBuilder addDriverCommandInstrumentation(final AgentBuilder agentBuilder)
     {
-        final Map<DriverEventCode, Class<?>> adviceMapping = CmdInterceptor.EVENT_TO_ADVICE_MAPPING;
-        final List<Class<?>> enabledAdvices = adviceMapping.entrySet().stream()
-            .filter(e -> DriverEventCode.isEnabled(e.getKey(), DriverEventLogger.ENABLED_EVENT_CODES))
-            .map(Map.Entry::getValue)
-            .collect(toList());
-
-        if (enabledAdvices.isEmpty())
+        if (CmdInterceptor.EVENTS.stream()
+            .noneMatch(e -> DriverEventCode.isEnabled(e, DriverEventLogger.ENABLED_EVENT_CODES)))
         {
             return agentBuilder;
         }
 
         return agentBuilder
             .type(nameEndsWith("ClientCommandAdapter"))
-            .transform((builder, typeDescription, classLoader, javaModule) ->
-            {
-                for (final Class<?> advice : enabledAdvices)
-                {
-                    builder = builder.visit(to(advice).on(named("onMessage")));
-                }
-                return builder;
-            })
+            .transform((builder, typeDescription, classLoader, javaModule) -> builder
+                .visit(to(CmdInterceptor.class)
+                    .on(named("onMessage"))))
             .type(nameEndsWith("ClientProxy"))
-            .transform((builder, typeDescription, classLoader, javaModule) ->
-            {
-                for (final Class<?> advice : enabledAdvices)
-                {
-                    builder = builder.visit(to(advice).on(named("transmit")));
-                }
-                return builder;
-            });
+            .transform((builder, typeDescription, classLoader, javaModule) -> builder
+                .visit(to(CmdInterceptor.class)
+                    .on(named("transmit"))));
     }
 
     private static AgentBuilder addDriverSenderProxyInstrumentation(final AgentBuilder agentBuilder)

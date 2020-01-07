@@ -19,10 +19,8 @@ import io.aeron.security.SessionProxy;
 
 import static io.aeron.archive.codecs.ControlResponseCode.OK;
 
-public class ControlSessionProxy implements SessionProxy
+class ControlSessionProxy implements SessionProxy
 {
-    private static final String SESSION_REJECTED_MSG = "authentication rejected";
-
     private final ControlResponseProxy controlResponseProxy;
     private ControlSession controlSession;
 
@@ -76,6 +74,6 @@ public class ControlSessionProxy implements SessionProxy
 
     public void reject()
     {
-        controlSession.reject(SESSION_REJECTED_MSG);
+        controlSession.reject();
     }
 }

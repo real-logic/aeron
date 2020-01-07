@@ -138,36 +138,6 @@ class ControlResponseProxy
         return send(session, buffer, MESSAGE_HEADER_LENGTH + challengeEncoder.encodedLength());
     }
 
-    void attemptErrorResponse(
-        final long controlSessionId,
-        final long correlationId,
-        final long relevantId,
-        final String errorMessage,
-        final Publication controlPublication)
-    {
-        responseEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
-            .controlSessionId(controlSessionId)
-            .correlationId(correlationId)
-            .relevantId(relevantId)
-            .code(ControlResponseCode.ERROR)
-            .version(AeronArchive.Configuration.PROTOCOL_SEMANTIC_VERSION)
-            .errorMessage(errorMessage);
-
-        final int length = MESSAGE_HEADER_LENGTH + responseEncoder.encodedLength();
-
-        int attempts = SEND_ATTEMPTS;
-        do
-        {
-            final long result = controlPublication.offer(buffer, 0, length);
-            if (result > 0)
-            {
-                break;
-            }
-        }
-        while (--attempts > 0);
-    }
-
     void attemptSendSignal(
         final long controlSessionId,
         final long correlationId,

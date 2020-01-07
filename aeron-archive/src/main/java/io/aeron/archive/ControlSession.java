@@ -39,6 +39,7 @@ import static io.aeron.archive.codecs.ControlResponseCode.*;
 class ControlSession implements Session
 {
     private static final long RESEND_INTERVAL_MS = 200L;
+    private static final String SESSION_REJECTED_MSG = "authentication rejected";
 
     enum State
     {
@@ -62,7 +63,6 @@ class ControlSession implements Session
     private final Publication controlPublication;
     private final String invalidVersionMessage;
     private State state = State.INIT;
-    private String sessionRejectMsg;
 
     ControlSession(
         final int majorVersion,
@@ -571,13 +571,13 @@ class ControlSession implements Session
 
     void attemptErrorResponse(final long correlationId, final String errorMessage, final ControlResponseProxy proxy)
     {
-        proxy.attemptErrorResponse(controlSessionId, correlationId, GENERIC, errorMessage, controlPublication);
+        proxy.sendResponse(controlSessionId, correlationId, GENERIC, ERROR, errorMessage, this);
     }
 
     void attemptErrorResponse(
         final long correlationId, final long relevantId, final String errorMessage, final ControlResponseProxy proxy)
     {
-        proxy.attemptErrorResponse(controlSessionId, correlationId, relevantId, errorMessage, controlPublication);
+        proxy.sendResponse(controlSessionId, correlationId, relevantId, ERROR, errorMessage, this);
     }
 
     int sendDescriptor(final long correlationId, final UnsafeBuffer descriptorBuffer, final ControlResponseProxy proxy)
@@ -625,10 +625,9 @@ class ControlSession implements Session
         state(State.AUTHENTICATED);
     }
 
-    void reject(final String sessionRejectMsg)
+    void reject()
     {
         state(State.REJECTED);
-        this.sessionRejectMsg = sessionRejectMsg;
     }
 
     private void queueResponse(
@@ -792,7 +791,7 @@ class ControlSession implements Session
                 correlationId,
                 AUTHENTICATION_REJECTED,
                 ERROR,
-                sessionRejectMsg,
+                SESSION_REJECTED_MSG,
                 this);
 
             workCount += 1;

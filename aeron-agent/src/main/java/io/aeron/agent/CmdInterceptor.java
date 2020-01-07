@@ -18,20 +18,18 @@ package io.aeron.agent;
 import net.bytebuddy.asm.Advice;
 import org.agrona.DirectBuffer;
 
-import java.util.List;
+import java.util.EnumSet;
 
 import static io.aeron.agent.DriverEventCode.*;
 import static io.aeron.agent.DriverEventLogger.LOGGER;
 import static io.aeron.command.ControlProtocolEvents.*;
-import static java.util.Arrays.asList;
-import static java.util.Collections.unmodifiableList;
 
 /**
  * Intercepts calls for the command protocol from clients to the driver for logging.
  */
 class CmdInterceptor
 {
-    static final List<DriverEventCode> EVENTS = unmodifiableList(asList(
+    static final EnumSet<DriverEventCode> EVENTS = EnumSet.of(
         CMD_IN_ADD_PUBLICATION,
         CMD_IN_REMOVE_PUBLICATION,
         CMD_IN_ADD_EXCLUSIVE_PUBLICATION,
@@ -56,7 +54,7 @@ class CmdInterceptor
         CMD_IN_REMOVE_RCV_DESTINATION,
         CMD_OUT_ON_CLIENT_TIMEOUT,
         CMD_IN_TERMINATE_DRIVER
-    ));
+    );
 
     @Advice.OnMethodEnter
     static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)

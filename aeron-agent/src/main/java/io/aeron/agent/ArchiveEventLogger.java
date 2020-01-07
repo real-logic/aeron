@@ -20,11 +20,9 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 
-import java.util.List;
+import java.util.EnumSet;
 
 import static io.aeron.agent.ArchiveEventCode.*;
-import static java.util.Arrays.asList;
-import static java.util.Collections.unmodifiableList;
 
 /**
  * Event logger interface used by interceptors for recording events into a {@link RingBuffer} for an
@@ -34,37 +32,7 @@ public final class ArchiveEventLogger
 {
     static final long ENABLED_EVENT_CODES = EventConfiguration.getEnabledArchiveEventCodes();
 
-    static final List<ArchiveEventCode> CONTROL_REQUEST_EVENTS = unmodifiableList(asList(
-        CMD_IN_CONNECT,
-        CMD_IN_CLOSE_SESSION,
-        CMD_IN_START_RECORDING,
-        CMD_IN_STOP_RECORDING,
-        CMD_IN_REPLAY,
-        CMD_IN_STOP_REPLAY,
-        CMD_IN_LIST_RECORDINGS,
-        CMD_IN_LIST_RECORDINGS_FOR_URI,
-        CMD_IN_LIST_RECORDING,
-        CMD_IN_EXTEND_RECORDING,
-        CMD_IN_RECORDING_POSITION,
-        CMD_IN_TRUNCATE_RECORDING,
-        CMD_IN_STOP_RECORDING_SUBSCRIPTION,
-        CMD_IN_STOP_POSITION,
-        CMD_IN_FIND_LAST_MATCHING_RECORD,
-        CMD_IN_LIST_RECORDING_SUBSCRIPTIONS,
-        CMD_IN_START_BOUNDED_REPLAY,
-        CMD_IN_STOP_ALL_REPLAYS,
-        CMD_IN_REPLICATE,
-        CMD_IN_STOP_REPLICATION,
-        CMD_IN_START_POSITION,
-        CMD_IN_DETACH_SEGMENTS,
-        CMD_IN_DELETE_DETACHED_SEGMENTS,
-        CMD_IN_PURGE_SEGMENTS,
-        CMD_IN_ATTACH_SEGMENTS,
-        CMD_IN_MIGRATE_SEGMENTS,
-        CMD_IN_AUTH_CONNECT,
-        CMD_IN_KEEP_ALIVE,
-        CMD_IN_TAGGED_REPLICATE
-    ));
+    static final EnumSet<ArchiveEventCode> CONTROL_REQUEST_EVENTS = EnumSet.allOf(ArchiveEventCode.class);
 
     public static final ArchiveEventLogger LOGGER = new ArchiveEventLogger(EventConfiguration.EVENT_RING_BUFFER);
 

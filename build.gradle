@@ -607,7 +607,7 @@ project(':aeron-agent') {
 
     dependencies {
         compile project(':aeron-cluster')
-        compile "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
+        implementation "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
     }
 
     jar {

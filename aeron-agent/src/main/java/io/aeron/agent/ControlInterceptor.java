@@ -15,6 +15,7 @@
  */
 package io.aeron.agent;
 
+import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.logbuffer.Header;
 import net.bytebuddy.asm.Advice;
 import org.agrona.DirectBuffer;
@@ -24,7 +25,7 @@ import static io.aeron.agent.ArchiveEventLogger.LOGGER;
 /**
  * Intercepts requests to the archive.
  */
-final class ControlRequestInterceptor
+final class ControlInterceptor
 {
     static class ControlRequest
     {
@@ -32,6 +33,20 @@ final class ControlRequestInterceptor
         static void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
         {
             LOGGER.logControlRequest(buffer, offset, length);
+        }
+    }
+
+    static class ControlResponse
+    {
+        @Advice.OnMethodEnter
+        static void sendResponse(
+            final long controlSessionId,
+            final long correlationId,
+            final long relevantId,
+            final ControlResponseCode code,
+            final String errorMessage)
+        {
+            LOGGER.logControlResponse(controlSessionId, correlationId, relevantId, code, errorMessage);
         }
     }
 }

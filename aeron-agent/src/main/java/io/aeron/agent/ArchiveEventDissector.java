@@ -66,6 +66,7 @@ final class ArchiveEventDissector
     private static final KeepAliveRequestDecoder KEEP_ALIVE_REQUEST_DECODER = new KeepAliveRequestDecoder();
     private static final TaggedReplicateRequestDecoder TAGGED_REPLICATE_REQUEST_DECODER =
         new TaggedReplicateRequestDecoder();
+    private static final ControlResponseDecoder CONTROL_RESPONSE_DECODER = new ControlResponseDecoder();
 
     @SuppressWarnings("MethodLength")
     static void controlRequest(
@@ -342,6 +343,28 @@ final class ArchiveEventDissector
             default:
                 builder.append("ARCHIVE: COMMAND UNKNOWN: ").append(event);
         }
+    }
+
+    static void controlResponse(
+        final MutableDirectBuffer buffer,
+        final int offset,
+        final StringBuilder builder)
+    {
+        CONTROL_RESPONSE_DECODER.wrap(
+            buffer,
+            offset,
+            ControlResponseDecoder.BLOCK_LENGTH,
+            ControlResponseDecoder.SCHEMA_VERSION);
+
+        builder.append("ARCHIVE: CONTROL_RESPONSE")
+            .append(", controlSessionId=").append(CONTROL_RESPONSE_DECODER.controlSessionId())
+            .append(", correlationId=").append(CONTROL_RESPONSE_DECODER.correlationId())
+            .append(", relevantId=").append(CONTROL_RESPONSE_DECODER.relevantId())
+            .append(", code=").append(CONTROL_RESPONSE_DECODER.code())
+            .append(", version=").append(CONTROL_RESPONSE_DECODER.version())
+            .append(", errorMessage=");
+
+        CONTROL_RESPONSE_DECODER.getErrorMessage(builder);
     }
 
     private static void appendConnect(final StringBuilder builder)

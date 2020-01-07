@@ -17,12 +17,16 @@ package io.aeron.agent;
 
 import io.aeron.archive.codecs.*;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 
+import java.nio.ByteBuffer;
 import java.util.EnumSet;
 
 import static io.aeron.agent.ArchiveEventCode.*;
+import static java.util.EnumSet.complementOf;
+import static java.util.EnumSet.of;
 
 /**
  * Event logger interface used by interceptors for recording events into a {@link RingBuffer} for an
@@ -32,14 +36,17 @@ public final class ArchiveEventLogger
 {
     static final long ENABLED_EVENT_CODES = EventConfiguration.getEnabledArchiveEventCodes();
 
-    static final EnumSet<ArchiveEventCode> CONTROL_REQUEST_EVENTS = EnumSet.allOf(ArchiveEventCode.class);
+    static final EnumSet<ArchiveEventCode> CONTROL_REQUEST_EVENTS = complementOf(of(CMD_OUT_RESPONSE));
 
     public static final ArchiveEventLogger LOGGER = new ArchiveEventLogger(EventConfiguration.EVENT_RING_BUFFER);
 
+    private final UnsafeBuffer encodedBuffer =
+        new UnsafeBuffer(ByteBuffer.allocateDirect(EventConfiguration.MAX_EVENT_LENGTH));
+    private final ControlResponseEncoder controlResponseEncoder = new ControlResponseEncoder();
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     private final ManyToOneRingBuffer ringBuffer;
 
-    private ArchiveEventLogger(final ManyToOneRingBuffer eventRingBuffer)
+    ArchiveEventLogger(final ManyToOneRingBuffer eventRingBuffer)
     {
         ringBuffer = eventRingBuffer;
     }
@@ -185,5 +192,22 @@ public final class ArchiveEventLogger
         {
             ringBuffer.write(toEventCodeId(eventCode), buffer, offset, length);
         }
+    }
+
+    public void logControlResponse(
+        final long controlSessionId,
+        final long correlationId,
+        final long relevantId,
+        final ControlResponseCode code,
+        final String errorMessage)
+    {
+        controlResponseEncoder.wrap(encodedBuffer, 0)
+            .controlSessionId(controlSessionId)
+            .correlationId(correlationId)
+            .relevantId(relevantId)
+            .code(code)
+            .errorMessage(errorMessage);
+
+        ringBuffer.write(toEventCodeId(CMD_OUT_RESPONSE), encodedBuffer, 0, controlResponseEncoder.encodedLength());
     }
 }

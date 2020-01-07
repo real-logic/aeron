@@ -50,7 +50,10 @@ public enum ArchiveEventCode implements EventCode
     CMD_IN_MIGRATE_SEGMENTS(26, ArchiveEventDissector::controlRequest),
     CMD_IN_AUTH_CONNECT(27, ArchiveEventDissector::controlRequest),
     CMD_IN_KEEP_ALIVE(28, ArchiveEventDissector::controlRequest),
-    CMD_IN_TAGGED_REPLICATE(29, ArchiveEventDissector::controlRequest);
+    CMD_IN_TAGGED_REPLICATE(29, ArchiveEventDissector::controlRequest),
+
+    CMD_OUT_RESPONSE(30,
+        (event, buffer, offset, builder) -> ArchiveEventDissector.controlResponse(buffer, offset, builder));
 
     static final int EVENT_CODE_TYPE = EventCodeType.ARCHIVE.getTypeCode();
     private static final int MAX_ID = 63;

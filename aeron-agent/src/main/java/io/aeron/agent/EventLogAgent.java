@@ -300,6 +300,7 @@ public class EventLogAgent
     {
         AgentBuilder tempBuilder = agentBuilder;
         tempBuilder = addArchiveControlSessionDemuxerInstrumentation(tempBuilder);
+        tempBuilder = addArchiveControlResponseProxyInstrumentation(tempBuilder);
         return tempBuilder;
     }
 
@@ -314,8 +315,22 @@ public class EventLogAgent
         return agentBuilder
             .type(nameEndsWith("ControlSessionDemuxer"))
             .transform(((builder, typeDescription, classLoader, module) -> builder
-                .visit(to(ControlRequestInterceptor.ControlRequest.class)
+                .visit(to(ControlInterceptor.ControlRequest.class)
                     .on(named("onFragment")))));
+    }
+
+    private static AgentBuilder addArchiveControlResponseProxyInstrumentation(final AgentBuilder agentBuilder)
+    {
+        if (!ArchiveEventCode.isEnabled(ArchiveEventCode.CMD_OUT_RESPONSE, ArchiveEventLogger.ENABLED_EVENT_CODES))
+        {
+            return agentBuilder;
+        }
+
+        return agentBuilder
+            .type(nameEndsWith("ControlResponseProxy"))
+            .transform(((builder, typeDescription, classLoader, module) -> builder
+                .visit(to(ControlInterceptor.ControlResponse.class)
+                    .on(named("sendResponse")))));
     }
 
     private static AgentBuilder addClusterInstrumentation(final AgentBuilder agentBuilder)

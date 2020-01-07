@@ -522,7 +522,6 @@ final class ArchiveEventDissector
         LIST_RECORDING_SUBSCRIPTIONS_REQUEST_DECODER.getChannel(builder);
     }
 
-
     private static void appendStartBoundedReplay(final StringBuilder builder)
     {
         builder.append("ARCHIVE: START_BOUNDED_REPLAY")

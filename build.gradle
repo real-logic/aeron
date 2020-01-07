@@ -249,7 +249,7 @@ project(':aeron-client') {
     apply plugin: 'biz.aQute.bnd.builder'
 
     dependencies {
-        testCompile "org.mockito:mockito-inline:${mockitoVersion}"
+        testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
     }
 
     uploadArchives {
@@ -313,7 +313,7 @@ project(':aeron-driver') {
 
     dependencies {
         compile project(':aeron-client')
-        testCompile "org.mockito:mockito-inline:${mockitoVersion}"
+        testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
     }
 
     uploadArchives {
@@ -761,8 +761,8 @@ project(':aeron-samples') {
 project(':aeron-system-tests') {
     dependencies {
         compile project(':aeron-archive')
-        testCompile project(path: ':aeron-client', configuration: 'tests')
-        testCompile project(path: ':aeron-archive', configuration: 'tests')
+        testImplementation project(path: ':aeron-client', configuration: 'tests')
+        testImplementation project(path: ':aeron-archive', configuration: 'tests')
     }
 
     test {

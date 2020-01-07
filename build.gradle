@@ -310,7 +310,7 @@ project(':aeron-driver') {
     mainClassName = 'io.aeron.driver.MediaDriver'
 
     dependencies {
-        compile project(':aeron-client')
+        api project(':aeron-client')
         testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
     }
 

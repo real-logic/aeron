@@ -298,12 +298,18 @@ public class EventLogAgent
 
     private static AgentBuilder addArchiveInstrumentation(final AgentBuilder agentBuilder)
     {
-        if (ArchiveEventLogger.ENABLED_EVENT_CODES == 0)
+        AgentBuilder tempBuilder = agentBuilder;
+        tempBuilder = addArchiveControlSessionDemuxerInstrumentation(tempBuilder);
+        return tempBuilder;
+    }
+
+    private static AgentBuilder addArchiveControlSessionDemuxerInstrumentation(final AgentBuilder agentBuilder)
+    {
+        if (ArchiveEventLogger.CONTROL_REQUEST_EVENTS.stream()
+            .noneMatch(e -> ArchiveEventCode.isEnabled(e, ArchiveEventLogger.ENABLED_EVENT_CODES)))
         {
             return agentBuilder;
         }
-
-        // FIXME: Deal with individual events
 
         return agentBuilder
             .type(nameEndsWith("ControlSessionDemuxer"))

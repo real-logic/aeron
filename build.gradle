@@ -379,8 +379,8 @@ project(':aeron-archive') {
     }
 
     dependencies {
-        compile project(':aeron-driver')
-        compile files('build/classes/java/generated')
+        api project(':aeron-driver')
+        api files('build/classes/java/generated')
         codecGeneration "uk.co.real-logic:sbe-tool:${sbeVersion}"
     }
 

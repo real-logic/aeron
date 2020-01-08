@@ -813,46 +813,35 @@ abstract class ArchiveConductor
             isValidTruncate(correlationId, controlSession, recordingId, position))
         {
             final long stopPosition = recordingSummary.stopPosition;
-            if (stopPosition == position)
-            {
-                controlSession.sendOkResponse(correlationId, controlResponseProxy);
-                return;
-            }
-
             final int segmentLength = recordingSummary.segmentFileLength;
             final int termLength = recordingSummary.termBufferLength;
             final long startPosition = recordingSummary.startPosition;
             final long segmentBasePosition = segmentFileBasePosition(
                 startPosition, position, termLength, segmentLength);
             final int segmentOffset = (int)(position - segmentBasePosition);
-            final File file = new File(archiveDir, segmentFileName(recordingId, segmentBasePosition));
 
             if (segmentOffset > 0)
             {
-                if (!eraseRemainingSegment(
-                    correlationId, controlSession, position, segmentLength, segmentOffset, termLength, file))
+                if (stopPosition != position)
                 {
-                    return;
+                    final File file = new File(archiveDir, segmentFileName(recordingId, segmentBasePosition));
+                    if (!eraseRemainingSegment(
+                        correlationId, controlSession, position, segmentLength, segmentOffset, termLength, file))
+                    {
+                        return;
+                    }
                 }
             }
-            else if (!file.delete())
+            else
             {
-                final String msg = "failed to delete " + file;
-                controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
-                throw new ArchiveException(msg);
+                deleteSegmentFile(correlationId, recordingId, segmentBasePosition, controlSession);
             }
 
             catalog.stopPosition(recordingId, position);
 
             for (long p = segmentBasePosition + segmentLength; p <= stopPosition; p += segmentLength)
             {
-                final File f = new File(archiveDir, segmentFileName(recordingId, p));
-                if (!f.delete())
-                {
-                    final String msg = "failed to delete " + f;
-                    controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
-                    throw new ArchiveException(msg);
-                }
+                deleteSegmentFile(correlationId, recordingId, p, controlSession);
             }
 
             controlSession.sendOkResponse(correlationId, controlResponseProxy);
@@ -1806,6 +1795,21 @@ abstract class ArchiveConductor
         }
 
         return true;
+    }
+
+    private void deleteSegmentFile(
+        final long correlationId,
+        final long recordingId,
+        final long segmentBasePosition,
+        final ControlSession controlSession)
+    {
+        final File file = new File(archiveDir, segmentFileName(recordingId, segmentBasePosition));
+        if (!file.delete())
+        {
+            final String msg = "failed to delete " + file;
+            controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
+            throw new ArchiveException(msg);
+        }
     }
 
     private Counter getOrAddCounter(final int counterId)

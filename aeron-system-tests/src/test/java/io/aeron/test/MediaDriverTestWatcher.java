@@ -15,6 +15,7 @@
  */
 package io.aeron.test;
 
+import io.aeron.archive.TestUtil;
 import org.agrona.IoUtil;
 import org.agrona.collections.Object2ObjectHashMap;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -29,22 +30,28 @@ public class MediaDriverTestWatcher implements TestWatcher, DriverOutputConsumer
 
     public void testFailed(final ExtensionContext context, final Throwable cause)
     {
-        System.out.println("C Media Driver tests failed");
-        outputFilesByAeronDirectoryName.forEach((aeronDirectoryName, files) ->
+        if (TestMediaDriver.shouldRunCMediaDriver())
         {
-            System.out.println("Media Driver: " + aeronDirectoryName);
-            System.out.println("  stdout: " + files.stdout + ", stderr: " + files.stderr);
-        });
+            System.out.println("C Media Driver tests failed");
+            outputFilesByAeronDirectoryName.forEach((aeronDirectoryName, files) ->
+            {
+                System.out.println("Media Driver: " + aeronDirectoryName);
+                System.out.println("  stdout: " + files.stdout + ", stderr: " + files.stderr);
+            });
+        }
     }
 
     public void testSuccessful(final ExtensionContext context)
     {
-        outputFilesByAeronDirectoryName.forEach(
-            (aeronDirectoryName, files) ->
-            {
-                IoUtil.delete(files.stdout, false);
-                IoUtil.delete(files.stderr, false);
-            });
+        if (TestMediaDriver.shouldRunCMediaDriver())
+        {
+            outputFilesByAeronDirectoryName.forEach(
+                (aeronDirectoryName, files) ->
+                {
+                    IoUtil.delete(files.stdout, false);
+                    IoUtil.delete(files.stderr, false);
+                });
+        }
     }
 
     public void outputFiles(final String aeronDirectoryName, final File stdoutFile, final File stderrFile)
@@ -57,7 +64,7 @@ public class MediaDriverTestWatcher implements TestWatcher, DriverOutputConsumer
         private final File stderr;
         private final File stdout;
 
-        private StdOutputFiles(final File stderr, final File stdout)
+        private StdOutputFiles(final File stdout, final File stderr)
         {
             this.stderr = stderr;
             this.stdout = stdout;

@@ -44,7 +44,7 @@ public class ExclusivePublicationTest
         );
     }
 
-    private static final int STREAM_ID = 7;
+    private static final int STREAM_ID = 1007;
     private static final int FRAGMENT_COUNT_LIMIT = 10;
     private static final int MESSAGE_LENGTH = 200;
 

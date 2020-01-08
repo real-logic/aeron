@@ -71,7 +71,7 @@ public class ReplaySessionTest
     private static final int MTU_LENGTH = 4096;
     private static final int FRAME_LENGTH = 1024;
     private static final int SESSION_ID = 1;
-    private static final int STREAM_ID = 1;
+    private static final int STREAM_ID = 1001;
     private static final FileChannel ARCHIVE_DIR_CHANNEL = null;
 
     private final Image mockImage = mock(Image.class);

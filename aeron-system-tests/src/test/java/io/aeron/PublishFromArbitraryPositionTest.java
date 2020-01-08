@@ -40,7 +40,7 @@ import static org.mockito.Mockito.mock;
 
 public class PublishFromArbitraryPositionTest
 {
-    private static final int STREAM_ID = 7;
+    private static final int STREAM_ID = 1007;
     private static final int FRAGMENT_COUNT_LIMIT = 10;
     private static final int MAX_MESSAGE_LENGTH = 1024 - DataHeaderFlyweight.HEADER_LENGTH;
 

@@ -33,7 +33,7 @@ public class TwoBufferOfferMessageTest
 {
     public static final String CHANNEL = "aeron:ipc?term-length=64k";
 
-    private static final int STREAM_ID = 1;
+    private static final int STREAM_ID = 1001;
     private static final int FRAGMENT_COUNT_LIMIT = 10;
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()

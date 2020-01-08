@@ -45,7 +45,7 @@ public class GapFillLossTest
     private static final String UNRELIABLE_CHANNEL =
         CHANNEL + "|" + CommonContext.RELIABLE_STREAM_PARAM_NAME + "=false";
 
-    private static final int STREAM_ID = 1;
+    private static final int STREAM_ID = 1001;
     private static final int FRAGMENT_COUNT_LIMIT = 10;
     private static final int MSG_LENGTH = 1024;
     private static final int NUM_MESSAGES = 10_000;

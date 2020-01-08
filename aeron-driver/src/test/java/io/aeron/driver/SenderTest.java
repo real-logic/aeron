@@ -58,7 +58,7 @@ public class SenderTest
     private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int MAX_FRAME_LENGTH = 1024;
     private static final int SESSION_ID = 1;
-    private static final int STREAM_ID = 2;
+    private static final int STREAM_ID = 1002;
     private static final int INITIAL_TERM_ID = 3;
     private static final byte[] PAYLOAD = "Payload is here!".getBytes();
 

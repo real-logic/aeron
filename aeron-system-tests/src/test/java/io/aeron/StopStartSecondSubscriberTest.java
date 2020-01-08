@@ -38,8 +38,8 @@ public class StopStartSecondSubscriberTest
 {
     public static final String CHANNEL1 = "aeron:udp?endpoint=localhost:54325";
     public static final String CHANNEL2 = "aeron:udp?endpoint=localhost:54326";
-    private static final int STREAM_ID1 = 1;
-    private static final int STREAM_ID2 = 2;
+    private static final int STREAM_ID1 = 1001;
+    private static final int STREAM_ID2 = 1002;
 
     private MediaDriver driverOne;
     private MediaDriver driverTwo;

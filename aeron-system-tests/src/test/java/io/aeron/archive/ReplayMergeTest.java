@@ -46,7 +46,7 @@ public class ReplayMergeTest
         TERM_LENGTH / (MESSAGE_PREFIX.length() + DataHeaderFlyweight.HEADER_LENGTH);
 
     private static final int PUBLICATION_TAG = 2;
-    private static final int STREAM_ID = 33;
+    private static final int STREAM_ID = 1033;
 
     private static final String CONTROL_ENDPOINT = "localhost:43265";
     private static final String RECORDING_ENDPOINT = "localhost:43266";

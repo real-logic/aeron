@@ -40,7 +40,7 @@ public class MultiDriverTest
 {
     private static final String MULTICAST_URI = "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost";
 
-    private static final int STREAM_ID = 1;
+    private static final int STREAM_ID = 1001;
     private static final ThreadingMode THREADING_MODE = ThreadingMode.SHARED;
 
     private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;

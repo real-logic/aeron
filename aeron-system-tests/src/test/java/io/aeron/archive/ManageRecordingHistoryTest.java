@@ -43,7 +43,7 @@ public class ManageRecordingHistoryTest
 {
     private static final int TERM_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int SEGMENT_LENGTH = TERM_LENGTH * 2;
-    private static final int STREAM_ID = 33;
+    private static final int STREAM_ID = 1033;
     private static final int MTU_LENGTH = 1024;
 
     private final ChannelUriStringBuilder uriBuilder = new ChannelUriStringBuilder()

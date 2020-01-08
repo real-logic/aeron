@@ -70,7 +70,7 @@ public class PubAndSubTest
     @RegisterExtension
     public MediaDriverTestWatcher watcher = new MediaDriverTestWatcher();
 
-    private static final int STREAM_ID = 1;
+    private static final int STREAM_ID = 1001;
     private static final ThreadingMode THREADING_MODE = ThreadingMode.SHARED;
 
     private final MediaDriver.Context context = new MediaDriver.Context();

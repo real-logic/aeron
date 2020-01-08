@@ -41,7 +41,7 @@ import static org.mockito.Mockito.mock;
 public class IpcPublicationTest
 {
     private static final long CLIENT_ID = 7L;
-    private static final int STREAM_ID = 10;
+    private static final int STREAM_ID = 1010;
     private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int BUFFER_LENGTH = 16 * 1024;
 

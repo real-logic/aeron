@@ -31,7 +31,7 @@ import static org.mockito.Mockito.*;
 
 public class CounterTest
 {
-    private static final int COUNTER_TYPE_ID = 101;
+    private static final int COUNTER_TYPE_ID = 1101;
     private static final String COUNTER_LABEL = "counter label";
 
     private final UnsafeBuffer labelBuffer = new UnsafeBuffer(new byte[COUNTER_LABEL.length()]);

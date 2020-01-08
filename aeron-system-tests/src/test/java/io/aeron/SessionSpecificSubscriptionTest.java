@@ -37,7 +37,7 @@ public class SessionSpecificSubscriptionTest
     private static final String ENDPOINT = "localhost:54325";
     private static final int SESSION_ID_1 = 1077;
     private static final int SESSION_ID_2 = 1078;
-    private static final int STREAM_ID = 7;
+    private static final int STREAM_ID = 1007;
     private static final int FRAGMENT_COUNT_LIMIT = 10;
     private static final int MESSAGE_LENGTH = 1024 - DataHeaderFlyweight.HEADER_LENGTH;
     private static final int EXPECTED_NUMBER_OF_MESSAGES = 10;

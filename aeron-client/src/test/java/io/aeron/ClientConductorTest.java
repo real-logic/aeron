@@ -54,8 +54,8 @@ public class ClientConductorTest
     private static final int SESSION_ID_2 = 15;
 
     private static final String CHANNEL = "aeron:udp?endpoint=localhost:40124";
-    private static final int STREAM_ID_1 = 2;
-    private static final int STREAM_ID_2 = 4;
+    private static final int STREAM_ID_1 = 1002;
+    private static final int STREAM_ID_2 = 1004;
     private static final int SEND_BUFFER_CAPACITY = 1024;
     private static final int COUNTER_BUFFER_LENGTH = 1024;
 

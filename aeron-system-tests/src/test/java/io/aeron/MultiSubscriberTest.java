@@ -35,7 +35,7 @@ public class MultiSubscriberTest
 {
     private static final String CHANNEL_1 = "aeron:udp?endpoint=localhost:54325|fruit=banana";
     private static final String CHANNEL_2 = "aeron:udp?endpoint=localhost:54325|fruit=apple";
-    private static final int STREAM_ID = 1;
+    private static final int STREAM_ID = 1001;
     private static final int FRAGMENT_COUNT_LIMIT = 10;
 
     private final MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()

@@ -41,7 +41,7 @@ public class ImageAvailabilityTest
             "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost");
     }
 
-    private static final int STREAM_ID = 1;
+    private static final int STREAM_ID = 1001;
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Throwable::printStackTrace)

@@ -75,10 +75,10 @@ public class DriverConductorTest
     private static final String INVALID_URI = "aeron:udp://";
     private static final String COUNTER_LABEL = "counter label";
     private static final int SESSION_ID = 100;
-    private static final int STREAM_ID_1 = 10;
-    private static final int STREAM_ID_2 = 20;
-    private static final int STREAM_ID_3 = 30;
-    private static final int STREAM_ID_4 = 40;
+    private static final int STREAM_ID_1 = 1010;
+    private static final int STREAM_ID_2 = 1020;
+    private static final int STREAM_ID_3 = 1030;
+    private static final int STREAM_ID_4 = 1040;
     private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int BUFFER_LENGTH = 16 * 1024;
     private static final int COUNTER_TYPE_ID = 101;

@@ -45,7 +45,7 @@ public class SpySubscriptionTest
         );
     }
 
-    private static final int STREAM_ID = 1;
+    private static final int STREAM_ID = 1001;
     private static final int FRAGMENT_COUNT_LIMIT = 10;
     private static final int PAYLOAD_LENGTH = 10;
 

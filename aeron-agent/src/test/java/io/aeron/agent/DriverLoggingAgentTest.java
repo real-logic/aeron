@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class DriverLoggingAgentTest
 {
     private static final String NETWORK_CHANNEL = "aeron:udp?endpoint=localhost:54325";
-    private static final int STREAM_ID = 777;
+    private static final int STREAM_ID = 1777;
 
     private static final IntHashSet MSG_ID_SET = new IntHashSet();
     private static final CountDownLatch LATCH = new CountDownLatch(1);

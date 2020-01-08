@@ -53,7 +53,7 @@ public class MultiDestinationCastTest
     private static final String SUB2_MDC_MANUAL_URI = "aeron:udp?endpoint=localhost:54327|group=true";
     private static final String SUB3_MDC_MANUAL_URI = CommonContext.SPY_PREFIX + PUB_MDC_MANUAL_URI;
 
-    private static final int STREAM_ID = 1;
+    private static final int STREAM_ID = 1001;
 
     private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int MESSAGES_PER_TERM = 64;

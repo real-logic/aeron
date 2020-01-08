@@ -120,7 +120,7 @@ class ControlResponseProxy
             .version(AeronArchive.Configuration.PROTOCOL_SEMANTIC_VERSION)
             .errorMessage(errorMessage);
 
-        return send(session, buffer, MESSAGE_HEADER_LENGTH + responseEncoder.encodedLength());
+        return sendResponseHook(session, buffer, MESSAGE_HEADER_LENGTH + responseEncoder.encodedLength());
     }
 
     boolean sendChallenge(
@@ -172,6 +172,11 @@ class ControlResponseProxy
             }
         }
         while (--attempts > 0);
+    }
+
+    private boolean sendResponseHook(final ControlSession session, final DirectBuffer buffer, final int length)
+    {
+        return send(session, buffer, length);
     }
 
     private boolean send(final ControlSession session, final DirectBuffer buffer, final int length)

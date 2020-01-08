@@ -61,7 +61,7 @@ public class ReceiverTest
     private static final long UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS = Configuration.untetheredWindowLimitTimeoutNs();
     private static final long UNTETHERED_RESTING_TIMEOUT_NS = Configuration.untetheredRestingTimeoutNs();
     private static final long CORRELATION_ID = 20;
-    private static final int STREAM_ID = 10;
+    private static final int STREAM_ID = 1010;
     private static final int INITIAL_TERM_ID = 3;
     private static final int ACTIVE_TERM_ID = 3;
     private static final int SESSION_ID = 1;

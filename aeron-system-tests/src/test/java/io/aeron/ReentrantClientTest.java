@@ -57,8 +57,8 @@ public class ReentrantClientTest
             doAnswer((invocation) -> aeron.addSubscription(channel, 3))
                 .when(mockHandler).onAvailableImage(any(Image.class));
 
-            final Subscription sub = aeron.addSubscription(channel, 1, mockHandler, null);
-            final Publication pub = aeron.addPublication(channel, 1);
+            final Subscription sub = aeron.addSubscription(channel, 1001, mockHandler, null);
+            final Publication pub = aeron.addPublication(channel, 1001);
 
             verify(mockHandler, timeout(5000L)).onAvailableImage(any(Image.class));
 

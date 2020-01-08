@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class MemoryOrderingTest
 {
     private static final String CHANNEL = "aeron:udp?endpoint=localhost:54325";
-    private static final int STREAM_ID = 1;
+    private static final int STREAM_ID = 1001;
     private static final int FRAGMENT_COUNT_LIMIT = 10;
     private static final int MESSAGE_LENGTH = 2000;
     private static final int TERM_BUFFER_LENGTH = 1024 * 64;

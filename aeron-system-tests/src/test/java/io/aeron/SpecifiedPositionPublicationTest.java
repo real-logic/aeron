@@ -46,7 +46,7 @@ public class SpecifiedPositionPublicationTest
                 .initialPosition(1024, -873648623, 65536)
                 .build();
 
-            assertThrows(RegistrationException.class, () -> aeron.addPublication(channel, 101));
+            assertThrows(RegistrationException.class, () -> aeron.addPublication(channel, 1001));
         }
     }
 }

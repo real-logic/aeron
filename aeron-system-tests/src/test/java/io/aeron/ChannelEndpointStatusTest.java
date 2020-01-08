@@ -51,7 +51,7 @@ public class ChannelEndpointStatusTest
     private static final String URI_WITH_INTERFACE_PORT =
         "aeron:udp?endpoint=localhost:54326|interface=localhost:34567";
 
-    private static final int STREAM_ID = 1;
+    private static final int STREAM_ID = 1001;
     private static final ThreadingMode THREADING_MODE = ThreadingMode.DEDICATED;
 
     private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;

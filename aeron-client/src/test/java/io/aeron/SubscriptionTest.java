@@ -32,7 +32,7 @@ import static org.mockito.Mockito.*;
 public class SubscriptionTest
 {
     private static final String CHANNEL = "aeron:udp?endpoint=localhost:40124";
-    private static final int STREAM_ID_1 = 2;
+    private static final int STREAM_ID_1 = 1002;
     private static final int INITIAL_TERM_ID = 7;
     private static final long SUBSCRIPTION_CORRELATION_ID = 100;
     private static final int READ_BUFFER_CAPACITY = 1024;

@@ -52,7 +52,7 @@ public class ReplicateRecordingTest
     private static final String SRC_REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:8040";
     private static final String DST_REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:8041";
 
-    private static final int LIVE_STREAM_ID = 33;
+    private static final int LIVE_STREAM_ID = 1033;
     private static final String LIVE_CHANNEL = new ChannelUriStringBuilder()
         .media("udp")
         .controlEndpoint("localhost:8100")

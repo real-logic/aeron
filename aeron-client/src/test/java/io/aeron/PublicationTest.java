@@ -33,7 +33,7 @@ import static org.mockito.Mockito.*;
 public class PublicationTest
 {
     private static final String CHANNEL = "aeron:udp?endpoint=localhost:40124";
-    private static final int STREAM_ID_1 = 2;
+    private static final int STREAM_ID_1 = 1002;
     private static final int SESSION_ID_1 = 13;
     private static final int TERM_ID_1 = 1;
     private static final int CORRELATION_ID = 2000;

@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 public class MaxPositionPublicationTest
 {
-    private static final int STREAM_ID = 7;
+    private static final int STREAM_ID = 1007;
     private static final int MESSAGE_LENGTH = 32;
 
     private final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));

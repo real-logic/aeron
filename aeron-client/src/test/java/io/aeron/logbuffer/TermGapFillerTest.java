@@ -33,7 +33,7 @@ public class TermGapFillerTest
     private static final int INITIAL_TERM_ID = 11;
     private static final int TERM_ID = 22;
     private static final int SESSION_ID = 333;
-    private static final int STREAM_ID = 7;
+    private static final int STREAM_ID = 1007;
 
     private final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(LOG_META_DATA_LENGTH));
     private final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_MIN_LENGTH));

@@ -42,7 +42,7 @@ import static org.mockito.Mockito.spy;
 
 public class ArchiveAuthenticationTest
 {
-    private static final int RECORDED_STREAM_ID = 33;
+    private static final int RECORDED_STREAM_ID = 1033;
     private static final String RECORDED_CHANNEL = new ChannelUriStringBuilder()
         .media("udp")
         .endpoint("localhost:3333")

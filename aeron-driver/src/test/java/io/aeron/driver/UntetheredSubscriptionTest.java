@@ -33,7 +33,7 @@ public class UntetheredSubscriptionTest
     private static final long REGISTRATION_ID = 1;
     private static final int TAG_ID = 0;
     private static final int SESSION_ID = 777;
-    private static final int STREAM_ID = 3;
+    private static final int STREAM_ID = 1003;
     private static final String CHANNEL = CommonContext.IPC_CHANNEL;
     private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int TERM_WINDOW_LENGTH = TERM_BUFFER_LENGTH / 2;

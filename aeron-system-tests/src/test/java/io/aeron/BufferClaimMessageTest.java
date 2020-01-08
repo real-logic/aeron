@@ -45,7 +45,7 @@ public class BufferClaimMessageTest
         return Arrays.asList("aeron:udp?endpoint=localhost:54325", CommonContext.IPC_CHANNEL);
     }
 
-    private static final int STREAM_ID = 1;
+    private static final int STREAM_ID = 1001;
     private static final int FRAGMENT_COUNT_LIMIT = 10;
     private static final int MESSAGE_LENGTH = 200;
 

@@ -15,7 +15,6 @@
  */
 package io.aeron.test;
 
-import io.aeron.archive.TestUtil;
 import org.agrona.IoUtil;
 import org.agrona.collections.Object2ObjectHashMap;
 import org.junit.jupiter.api.extension.ExtensionContext;

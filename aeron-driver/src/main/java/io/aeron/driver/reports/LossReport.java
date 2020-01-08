@@ -137,7 +137,10 @@ public class LossReport
     {
         ReportEntry reportEntry = null;
 
-        final int requiredCapacity = CHANNEL_OFFSET + (SIZE_OF_INT * 2) + channel.length() + source.length();
+        final int requiredCapacity =
+            CHANNEL_OFFSET +
+            BitUtil.align(SIZE_OF_INT + channel.length(), SIZE_OF_INT) +
+            SIZE_OF_INT + source.length();
 
         if (requiredCapacity <= (buffer.capacity() - nextRecordOffset))
         {
@@ -150,7 +153,9 @@ public class LossReport
             buffer.putInt(offset + STREAM_ID_OFFSET, streamId);
 
             final int encodedChannelLength = buffer.putStringAscii(offset + CHANNEL_OFFSET, channel);
-            buffer.putStringAscii(offset + CHANNEL_OFFSET + encodedChannelLength, source);
+
+            buffer.putStringAscii(
+                offset + CHANNEL_OFFSET + BitUtil.align(encodedChannelLength, SIZE_OF_INT), source);
 
             buffer.putLongOrdered(offset + OBSERVATION_COUNT_OFFSET, 1);
 

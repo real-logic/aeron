@@ -51,7 +51,8 @@ public class LossReportReader
             ++recordsRead;
 
             final String channel = buffer.getStringAscii(offset + CHANNEL_OFFSET);
-            final String source = buffer.getStringAscii(offset + CHANNEL_OFFSET + SIZE_OF_INT + channel.length());
+            final String source = buffer.getStringAscii(
+                offset + CHANNEL_OFFSET + BitUtil.align(SIZE_OF_INT + channel.length(), SIZE_OF_INT));
 
             entryConsumer.accept(
                 observationCount,
@@ -63,7 +64,10 @@ public class LossReportReader
                 channel,
                 source);
 
-            final int recordLength = CHANNEL_OFFSET + (SIZE_OF_INT * 2) + channel.length() + source.length();
+            final int recordLength =
+                CHANNEL_OFFSET +
+                BitUtil.align(SIZE_OF_INT + channel.length(), SIZE_OF_INT) +
+                SIZE_OF_INT + source.length();
             offset += BitUtil.align(recordLength, ENTRY_ALIGNMENT);
         }
 

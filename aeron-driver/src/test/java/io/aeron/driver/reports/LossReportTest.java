@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.reports;
 
+import org.agrona.BitUtil;
 import org.agrona.concurrent.AtomicBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
@@ -54,7 +55,8 @@ public class LossReportTest
         inOrder.verify(buffer).putInt(SESSION_ID_OFFSET, sessionId);
         inOrder.verify(buffer).putInt(STREAM_ID_OFFSET, streamId);
         inOrder.verify(buffer).putStringAscii(CHANNEL_OFFSET, channel);
-        inOrder.verify(buffer).putStringAscii(CHANNEL_OFFSET + SIZE_OF_INT + channel.length(), source);
+        inOrder.verify(buffer).putStringAscii(
+            CHANNEL_OFFSET + BitUtil.align(SIZE_OF_INT + channel.length(), SIZE_OF_INT), source);
         inOrder.verify(buffer).putLongOrdered(OBSERVATION_COUNT_OFFSET, 1L);
     }
 

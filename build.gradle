@@ -604,6 +604,8 @@ project(':aeron-agent') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
     dependencies {
+        api project(':aeron-driver')
+        api project(':aeron-archive')
         api project(':aeron-cluster')
         implementation "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
     }
@@ -808,11 +810,11 @@ project(':aeron-all') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
     dependencies {
-        implementation project(':aeron-client')
-        implementation project(':aeron-driver')
-        implementation project(':aeron-archive')
-        implementation project(':aeron-cluster')
-        implementation project(':aeron-samples')
+        api project(':aeron-client')
+        api project(':aeron-driver')
+        api project(':aeron-archive')
+        api project(':aeron-cluster')
+        api project(':aeron-samples')
         implementation "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
     }
 

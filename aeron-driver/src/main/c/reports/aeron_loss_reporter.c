@@ -38,7 +38,9 @@ aeron_loss_reporter_entry_offset_t aeron_loss_reporter_create_entry(
 {
     aeron_loss_reporter_entry_offset_t entry_offset = -1;
     const size_t required_capacity =
-        sizeof(aeron_loss_reporter_entry_t) + (2 * sizeof(int32_t)) + channel_length + source_length;
+        sizeof(aeron_loss_reporter_entry_t) +
+        AERON_ALIGN((sizeof(int32_t) + channel_length), sizeof(int32_t)) +
+        (sizeof(int32_t) + source_length);
 
     if (required_capacity <= (reporter->capacity - reporter->next_record_offset))
     {
@@ -56,7 +58,7 @@ aeron_loss_reporter_entry_offset_t aeron_loss_reporter_create_entry(
         ptr += sizeof(int32_t);
         memcpy(ptr, channel, channel_length);
 
-        ptr += channel_length;
+        ptr += AERON_ALIGN(channel_length, sizeof(int32_t));
         *(int32_t *)ptr = (int32_t)source_length;
         ptr += sizeof(int32_t);
         memcpy(ptr, source, source_length);
@@ -106,7 +108,7 @@ size_t aeron_loss_reporter_read(
         ptr += sizeof(int32_t);
         const char *channel = (const char *)ptr;
 
-        ptr += channel_length;
+        ptr += AERON_ALIGN(channel_length, sizeof(int32_t));
         int32_t source_length = *(int32_t *)ptr;
         ptr += sizeof(int32_t);
         const char *source = (const char *)ptr;

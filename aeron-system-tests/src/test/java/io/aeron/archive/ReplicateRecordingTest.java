@@ -154,7 +154,7 @@ public class ReplicateRecordingTest
     @Test
     public void shouldThrowExceptionWhenDstRecordingIdUnknown()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final long unknownId = 7L;
             try
@@ -176,7 +176,7 @@ public class ReplicateRecordingTest
     @Test
     public void shouldReplicateStoppedRecording()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final String messagePrefix = "Message-Prefix-";
             final int messageCount = 10;
@@ -224,7 +224,7 @@ public class ReplicateRecordingTest
     @Test
     public void shouldReplicateLiveWithoutMergingRecording()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final String messagePrefix = "Message-Prefix-";
             final int messageCount = 10;
@@ -274,7 +274,7 @@ public class ReplicateRecordingTest
     @Test
     public void shouldReplicateMoreThanOnce()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final String messagePrefix = "Message-Prefix-";
             final int messageCount = 10;
@@ -335,7 +335,7 @@ public class ReplicateRecordingTest
     @Test
     public void shouldReplicateLiveRecordingAndMerge()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final String messagePrefix = "Message-Prefix-";
             final int messageCount = 10;
@@ -388,7 +388,7 @@ public class ReplicateRecordingTest
     @Test
     public void shouldReplicateLiveRecordingAndMergeBeforeDataFlows()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final String messagePrefix = "Message-Prefix-";
             final int messageCount = 10;
@@ -436,7 +436,7 @@ public class ReplicateRecordingTest
     @Test
     public void shouldReplicateLiveRecordingAndMergeWhileFollowingWithTaggedSubscription()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final String messagePrefix = "Message-Prefix-";
             final int messageCount = 10;

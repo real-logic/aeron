@@ -144,7 +144,7 @@ public class ReplayMergeTest
     @Test
     public void shouldMergeFromReplayToLive()
     {
-        assertTimeout(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             final int initialMessageCount = MIN_MESSAGES_PER_TERM * 3;
             final int subsequentMessageCount = MIN_MESSAGES_PER_TERM * 3;

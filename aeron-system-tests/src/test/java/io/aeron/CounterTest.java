@@ -80,7 +80,7 @@ public class CounterTest
     @Test
     public void shouldBeAbleToAddCounter()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             launch();
 
@@ -105,7 +105,7 @@ public class CounterTest
     @Test
     public void shouldBeAbleToAddReadableCounterWithinHandler()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             availableCounterHandlerClientB = this::createReadableCounter;
 
@@ -135,7 +135,7 @@ public class CounterTest
     @Test
     public void shouldCloseReadableCounterOnUnavailableCounter()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             availableCounterHandlerClientB = this::createReadableCounter;
             unavailableCounterHandlerClientB = this::unavailableCounterHandler;

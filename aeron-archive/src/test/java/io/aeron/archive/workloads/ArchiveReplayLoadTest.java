@@ -153,7 +153,7 @@ public class ArchiveReplayLoadTest
     @Test
     public void replay() throws InterruptedException
     {
-        assertTimeout(ofSeconds(TEST_DURATION_SEC * 2000), () ->
+        assertTimeoutPreemptively(ofSeconds(TEST_DURATION_SEC * 2000), () ->
         {
             final String channel = archive.context().recordingEventsChannel();
             final int streamId = archive.context().recordingEventsStreamId();

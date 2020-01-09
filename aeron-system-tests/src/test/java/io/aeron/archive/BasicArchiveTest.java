@@ -35,7 +35,7 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class BasicArchiveTest
 {
@@ -100,7 +100,7 @@ public class BasicArchiveTest
     @Test
     public void shouldRecordThenReplayThenTruncate()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final String messagePrefix = "Message-Prefix-";
             final int messageCount = 10;
@@ -179,7 +179,7 @@ public class BasicArchiveTest
     @Test
     public void shouldRecordReplayAndCancelReplayEarly()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final String messagePrefix = "Message-Prefix-";
             final long stopPosition;
@@ -222,7 +222,7 @@ public class BasicArchiveTest
     @Test
     public void shouldReplayRecordingFromLateJoinPosition()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final String messagePrefix = "Message-Prefix-";
             final int messageCount = 10;

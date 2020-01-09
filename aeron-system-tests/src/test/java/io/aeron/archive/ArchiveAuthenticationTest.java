@@ -75,7 +75,7 @@ public class ArchiveAuthenticationTest
     @Test
     public void shouldBeAbleToRecordWithDefaultCredentialsAndAuthenticator()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             launchArchivingMediaDriver(null);
             connectClient(null);
@@ -87,7 +87,7 @@ public class ArchiveAuthenticationTest
     @Test
     public void shouldBeAbleToRecordWithAuthenticateOnConnectRequestWithCredentials()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final MutableLong authenticatorSessionId = new MutableLong(-1L);
 
@@ -142,7 +142,7 @@ public class ArchiveAuthenticationTest
     @Test
     public void shouldBeAbleToRecordWithAuthenticateOnChallengeResponse()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final MutableLong authenticatorSessionId = new MutableLong(-1L);
 
@@ -205,7 +205,7 @@ public class ArchiveAuthenticationTest
     @Test
     public void shouldNotBeAbleToConnectWithRejectOnConnectRequest()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final MutableLong authenticatorSessionId = new MutableLong(-1L);
 
@@ -267,7 +267,7 @@ public class ArchiveAuthenticationTest
     @Test
     public void shouldNotBeAbleToConnectWithRejectOnChallengeResponse()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final MutableLong authenticatorSessionId = new MutableLong(-1L);
 

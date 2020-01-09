@@ -37,7 +37,7 @@ import static io.aeron.test.LossReportTestUtil.verifyLossOccurredForStream;
 import static java.time.Duration.ofSeconds;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class GapFillLossTest
 {
@@ -58,7 +58,7 @@ public class GapFillLossTest
     @Test
     public void shouldGapFillWhenLossOccurs() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MSG_LENGTH));
             srcBuffer.setMemory(0, MSG_LENGTH, (byte)7);

@@ -29,7 +29,7 @@ import java.nio.ByteBuffer;
 import static io.aeron.Publication.MAX_POSITION_EXCEEDED;
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class MaxPositionPublicationTest
 {
@@ -56,7 +56,7 @@ public class MaxPositionPublicationTest
     @Test
     public void shouldPublishFromExclusivePublication()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final int initialTermId = -777;
             final int termLength = 64 * 1024;

@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class ControlledMessageTest
 {
@@ -56,7 +56,7 @@ public class ControlledMessageTest
     @Test
     public void shouldReceivePublishedMessage()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             try (Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID);
                 Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))

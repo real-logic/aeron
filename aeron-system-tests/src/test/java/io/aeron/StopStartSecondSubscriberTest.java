@@ -98,7 +98,7 @@ public class StopStartSecondSubscriberTest
     @Test
     public void shouldSpinUpAndShutdown()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             launch(CHANNEL1, STREAM_ID1, CHANNEL2, STREAM_ID2);
         });
@@ -107,7 +107,7 @@ public class StopStartSecondSubscriberTest
     @Test
     public void shouldReceivePublishedMessage()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             launch(CHANNEL1, STREAM_ID1, CHANNEL2, STREAM_ID2);
 
@@ -148,7 +148,7 @@ public class StopStartSecondSubscriberTest
     @Test
     public void shouldReceiveMessagesAfterStopStartOnSameChannelSameStream()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL1, STREAM_ID1);
         });
@@ -157,7 +157,7 @@ public class StopStartSecondSubscriberTest
     @Test
     public void shouldReceiveMessagesAfterStopStartOnSameChannelDifferentStreams()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL1, STREAM_ID2);
         });
@@ -166,7 +166,7 @@ public class StopStartSecondSubscriberTest
     @Test
     public void shouldReceiveMessagesAfterStopStartOnDifferentChannelsSameStream()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL2, STREAM_ID1);
         });
@@ -175,7 +175,7 @@ public class StopStartSecondSubscriberTest
     @Test
     public void shouldReceiveMessagesAfterStopStartOnDifferentChannelsDifferentStreams()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL2, STREAM_ID2);
         });

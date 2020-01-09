@@ -219,7 +219,7 @@ public class ClientConductorTest
     @Test
     public void addPublicationShouldTimeoutWithoutReadyMessage()
     {
-        assertTimeout(ofSeconds(5),
+        assertTimeoutPreemptively(ofSeconds(5),
             () -> assertThrows(DriverTimeoutException.class, () -> conductor.addPublication(CHANNEL, STREAM_ID_1)));
     }
 
@@ -418,7 +418,7 @@ public class ClientConductorTest
     @Test
     public void addSubscriptionShouldTimeoutWithoutOperationSuccessful()
     {
-        assertTimeout(ofSeconds(5),
+        assertTimeoutPreemptively(ofSeconds(5),
             () -> assertThrows(DriverTimeoutException.class, () -> conductor.addSubscription(CHANNEL, STREAM_ID_1)));
     }
 

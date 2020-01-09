@@ -22,7 +22,7 @@ import java.util.concurrent.CountDownLatch;
 import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
 import static java.time.Duration.ofSeconds;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class ArchiveLoggingAgentTest
 {
@@ -56,7 +56,7 @@ public class ArchiveLoggingAgentTest
     @Test
     public void shouldLogMessages() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             testDirName = Paths.get(IoUtil.tmpDirName(), "archive-test").toString();
             final File testDir = new File(testDirName);

@@ -34,7 +34,7 @@ import java.nio.ByteBuffer;
 
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.mockito.Mockito.*;
 
 public class SelectorAndTransportTest
@@ -115,7 +115,7 @@ public class SelectorAndTransportTest
     @Test
     public void shouldHandleBasicSetupAndTearDown()
     {
-        assertTimeout(ofSeconds(1), () ->
+        assertTimeoutPreemptively(ofSeconds(1), () ->
         {
             receiveChannelEndpoint = new ReceiveChannelEndpoint(
                 RCV_DST, mockDispatcher, mockReceiveStatusIndicator, context);
@@ -133,7 +133,7 @@ public class SelectorAndTransportTest
     @Test
     public void shouldSendEmptyDataFrameUnicastFromSourceToReceiver()
     {
-        assertTimeout(ofSeconds(1), () ->
+        assertTimeoutPreemptively(ofSeconds(1), () ->
         {
             final MutableInteger dataHeadersReceived = new MutableInteger(0);
 
@@ -186,7 +186,7 @@ public class SelectorAndTransportTest
     @Test
     public void shouldSendMultipleDataFramesPerDatagramUnicastFromSourceToReceiver()
     {
-        assertTimeout(ofSeconds(1), () ->
+        assertTimeoutPreemptively(ofSeconds(1), () ->
         {
             final MutableInteger dataHeadersReceived = new MutableInteger(0);
 
@@ -252,7 +252,7 @@ public class SelectorAndTransportTest
     @Test
     public void shouldHandleSmFrameFromReceiverToSender()
     {
-        assertTimeout(ofSeconds(1), () ->
+        assertTimeoutPreemptively(ofSeconds(1), () ->
         {
             final MutableInteger controlMessagesReceived = new MutableInteger(0);
 

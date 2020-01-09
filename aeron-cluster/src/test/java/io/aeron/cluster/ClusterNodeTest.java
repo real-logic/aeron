@@ -92,7 +92,7 @@ public class ClusterNodeTest
     @Test
     public void shouldEchoMessageViaServiceUsingDirectOffer()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
             final String msg = "Hello World!";
@@ -129,7 +129,7 @@ public class ClusterNodeTest
     @Test
     public void shouldEchoMessageViaServiceUsingTryClaim()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
             final String msg = "Hello World!";
@@ -180,7 +180,7 @@ public class ClusterNodeTest
     @Test
     public void shouldScheduleEventInService()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
             final String msg = "Hello World!";
@@ -218,7 +218,7 @@ public class ClusterNodeTest
     @Test
     public void shouldSendResponseAfterServiceMessage()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
             final String msg = "Hello World!";

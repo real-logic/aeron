@@ -37,7 +37,7 @@ import static io.aeron.archive.Common.offerToPosition;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class ManageRecordingHistoryTest
 {
@@ -96,7 +96,7 @@ public class ManageRecordingHistoryTest
     @Test
     public void shouldPurgeForStreamJoinedAtTheBeginning()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final String messagePrefix = "Message-Prefix-";
             final long targetPosition = (SEGMENT_LENGTH * 3L) + 1;
@@ -126,7 +126,7 @@ public class ManageRecordingHistoryTest
     @Test
     public void shouldPurgeForLateJoinedStream()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final String messagePrefix = "Message-Prefix-";
             final int initialTermId = 7;
@@ -160,7 +160,7 @@ public class ManageRecordingHistoryTest
     @Test
     public void shouldDetachThenAttachFullSegments()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final String messagePrefix = "Message-Prefix-";
             final long targetPosition = (SEGMENT_LENGTH * 3L) + 1;
@@ -192,7 +192,7 @@ public class ManageRecordingHistoryTest
     @Test
     public void shouldDetachThenAttachWhenStartNotSegmentAligned()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final String messagePrefix = "Message-Prefix-";
             final int initialTermId = 7;
@@ -228,7 +228,7 @@ public class ManageRecordingHistoryTest
     @Test
     public void shouldMigrateSegmentsForStreamJoinedAtTheBeginning()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final String messagePrefix = "Message-Prefix-";
             final long targetPosition = (SEGMENT_LENGTH * 3L) + 1;
@@ -278,7 +278,7 @@ public class ManageRecordingHistoryTest
     @Test
     public void shouldMigrateSegmentsForStreamNotSegmentAligned()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final String messagePrefix = "Message-Prefix-";
             final int initialTermId = 7;

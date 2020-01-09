@@ -181,7 +181,7 @@ public class ArchiveTest
         final ThreadingMode threadingMode, final ArchiveThreadingMode archiveThreadingMode)
     {
         before(threadingMode, archiveThreadingMode);
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final String controlChannel = archive.context().localControlChannel();
             final int controlStreamId = archive.context().localControlStreamId();
@@ -226,7 +226,7 @@ public class ArchiveTest
         final ThreadingMode threadingMode, final ArchiveThreadingMode archiveThreadingMode)
     {
         before(threadingMode, archiveThreadingMode);
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final String controlChannel = archive.context().localControlChannel();
             final int controlStreamId = archive.context().localControlStreamId();
@@ -276,7 +276,7 @@ public class ArchiveTest
         final ThreadingMode threadingMode, final ArchiveThreadingMode archiveThreadingMode)
     {
         before(threadingMode, archiveThreadingMode);
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final String controlChannel = archive.context().localControlChannel();
             final int controlStreamId = archive.context().localControlStreamId();

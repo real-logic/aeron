@@ -101,7 +101,7 @@ public class SpySimulatedConnectionTest
     @MethodSource("channels")
     public void shouldNotSimulateConnectionWhenNotConfiguredTo(final String channel)
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             launch();
 
@@ -122,7 +122,7 @@ public class SpySimulatedConnectionTest
     @MethodSource("channels")
     public void shouldSimulateConnectionWithNoNetworkSubscriptions(final String channel)
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final int messagesToSend = NUM_MESSAGES_PER_TERM * 3;
 
@@ -174,7 +174,7 @@ public class SpySimulatedConnectionTest
     @MethodSource("channels")
     public void shouldSimulateConnectionWithSlowNetworkSubscription(final String channel)
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final int messagesToSend = NUM_MESSAGES_PER_TERM * 3;
             int messagesLeftToSend = messagesToSend;
@@ -225,7 +225,7 @@ public class SpySimulatedConnectionTest
     @MethodSource("channels")
     public void shouldSimulateConnectionWithLeavingNetworkSubscription(final String channel)
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final int messagesToSend = NUM_MESSAGES_PER_TERM * 3;
             int messagesLeftToSend = messagesToSend;

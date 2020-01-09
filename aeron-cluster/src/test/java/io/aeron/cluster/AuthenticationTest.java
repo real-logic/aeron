@@ -74,7 +74,7 @@ public class AuthenticationTest
     @Test
     public void shouldAuthenticateOnConnectRequestWithEmptyCredentials()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final AtomicLong serviceMsgCounter = new AtomicLong(0L);
             final MutableLong serviceSessionId = new MutableLong(-1L);
@@ -140,7 +140,7 @@ public class AuthenticationTest
     @Test
     public void shouldAuthenticateOnConnectRequestWithCredentials()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final AtomicLong serviceMsgCounter = new AtomicLong(0L);
             final MutableLong serviceSessionId = new MutableLong(-1L);
@@ -206,7 +206,7 @@ public class AuthenticationTest
     @Test
     public void shouldAuthenticateOnChallengeResponse()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final AtomicLong serviceMsgCounter = new AtomicLong(0L);
             final MutableLong serviceSessionId = new MutableLong(-1L);
@@ -280,7 +280,7 @@ public class AuthenticationTest
     @Test
     public void shouldRejectOnConnectRequest()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final AtomicLong serviceMsgCounter = new AtomicLong(0L);
             final MutableLong serviceSessionId = new MutableLong(-1L);
@@ -346,7 +346,7 @@ public class AuthenticationTest
     @Test
     public void shouldRejectOnChallengeResponse()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final AtomicLong serviceMsgCounter = new AtomicLong(0L);
             final MutableLong serviceSessionId = new MutableLong(-1L);

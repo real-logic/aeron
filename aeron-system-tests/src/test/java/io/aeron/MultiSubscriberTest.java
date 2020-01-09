@@ -28,7 +28,7 @@ import org.mockito.ArgumentCaptor;
 
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.mockito.Mockito.*;
 
 public class MultiSubscriberTest
@@ -55,7 +55,7 @@ public class MultiSubscriberTest
     @Test
     public void shouldReceiveMessageOnSeparateSubscriptions()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final FragmentHandler mockFragmentHandlerOne = mock(FragmentHandler.class);
             final FragmentHandler mockFragmentHandlerTwo = mock(FragmentHandler.class);

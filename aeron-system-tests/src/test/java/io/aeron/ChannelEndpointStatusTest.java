@@ -128,14 +128,14 @@ public class ChannelEndpointStatusTest
     @Test
     public void shouldErrorBadUri()
     {
-        assertTimeout(ofSeconds(5), () ->
+        assertTimeoutPreemptively(ofSeconds(5), () ->
             assertThrows(RegistrationException.class, () -> clientA.addSubscription("bad uri", STREAM_ID)));
     }
 
     @Test
     public void shouldBeAbleToQueryChannelStatusForSubscription()
     {
-        assertTimeout(ofSeconds(5), () ->
+        assertTimeoutPreemptively(ofSeconds(5), () ->
         {
             final Subscription subscription = clientA.addSubscription(URI, STREAM_ID);
 
@@ -152,7 +152,7 @@ public class ChannelEndpointStatusTest
     @Test
     public void shouldBeAbleToQueryChannelStatusForPublication()
     {
-        assertTimeout(ofSeconds(5), () ->
+        assertTimeoutPreemptively(ofSeconds(5), () ->
         {
             final Publication publication = clientA.addPublication(URI, STREAM_ID);
 

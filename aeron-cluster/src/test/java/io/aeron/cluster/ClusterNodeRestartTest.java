@@ -96,7 +96,7 @@ public class ClusterNodeRestartTest
     @Test
     public void shouldRestartServiceWithReplay()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final AtomicLong serviceMsgCounter = new AtomicLong(0);
             final AtomicLong restartServiceMsgCounter = new AtomicLong(0);
@@ -129,7 +129,7 @@ public class ClusterNodeRestartTest
     @Test
     public void shouldRestartServiceWithReplayAndContinue()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final AtomicLong serviceMsgCounter = new AtomicLong(0);
             final AtomicLong restartServiceMsgCounter = new AtomicLong(0);
@@ -164,7 +164,7 @@ public class ClusterNodeRestartTest
     @Test
     public void shouldRestartServiceFromEmptySnapshot() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final AtomicLong serviceMsgCounter = new AtomicLong(0);
 
@@ -202,7 +202,7 @@ public class ClusterNodeRestartTest
     @Test
     public void shouldRestartServiceFromSnapshot() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final AtomicLong serviceMsgCounter = new AtomicLong(0);
 
@@ -250,7 +250,7 @@ public class ClusterNodeRestartTest
     @Test
     public void shouldRestartServiceFromSnapshotWithFurtherLog() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final AtomicLong serviceMsgCounter = new AtomicLong(0);
 
@@ -306,7 +306,7 @@ public class ClusterNodeRestartTest
     @Test
     public void shouldTakeMultipleSnapshots() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final AtomicLong serviceMsgCounter = new AtomicLong(0);
 
@@ -335,7 +335,7 @@ public class ClusterNodeRestartTest
     @Test
     public void shouldRestartServiceWithTimerFromSnapshotWithFurtherLog() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final AtomicLong serviceMsgCounter = new AtomicLong(0);
 
@@ -392,7 +392,7 @@ public class ClusterNodeRestartTest
     @Test
     public void shouldTriggerRescheduledTimerAfterReplay()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final AtomicInteger triggeredTimersCounter = new AtomicInteger();
 
@@ -426,7 +426,7 @@ public class ClusterNodeRestartTest
     @Test
     public void shouldRestartServiceTwiceWithTombstoneSnapshotAndFurtherLog() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final AtomicLong serviceMsgCounter = new AtomicLong(0);
 

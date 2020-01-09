@@ -235,7 +235,7 @@ public class ArchiveTest
     @Test
     public void shouldListRegisteredRecordingSubscriptions()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final int expectedStreamId = 7;
             final String channelOne = "aeron:ipc";

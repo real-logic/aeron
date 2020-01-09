@@ -29,7 +29,7 @@ public class AppointedLeaderTest
     @Test
     public void shouldConnectAndSendKeepAlive() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(LEADER_ID))
             {
@@ -46,7 +46,7 @@ public class AppointedLeaderTest
     @Test
     public void shouldEchoMessagesViaService() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(LEADER_ID))
             {

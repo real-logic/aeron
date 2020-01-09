@@ -20,14 +20,14 @@ import org.junit.jupiter.api.Test;
 
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class SingleNodeTest
 {
     @Test
     public void shouldStartCluster() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             try (TestCluster cluster = TestCluster.startSingleNodeStaticCluster())
             {
@@ -42,7 +42,7 @@ public class SingleNodeTest
     @Test
     public void shouldSendMessagesToCluster() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             try (TestCluster cluster = TestCluster.startSingleNodeStaticCluster())
             {
@@ -62,7 +62,7 @@ public class SingleNodeTest
     @Test
     public void shouldReplayLog() throws Exception
     {
-        assertTimeout(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             try (TestCluster cluster = TestCluster.startSingleNodeStaticCluster())
             {

@@ -20,14 +20,14 @@ import org.junit.jupiter.api.Test;
 
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class MultiNodeTest
 {
     @Test
     public void shouldElectAppointedLeaderWithThreeNodesWithNoReplayNoSnapshot() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final int appointedLeaderIndex = 1;
 
@@ -46,7 +46,7 @@ public class MultiNodeTest
     @Test
     public void shouldReplayWithAppointedLeaderWithThreeNodesWithNoSnapshot() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final int appointedLeaderIndex = 1;
 
@@ -77,7 +77,7 @@ public class MultiNodeTest
     @Test
     public void shouldCatchUpWithAppointedLeaderWithThreeNodesWithNoSnapshot() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final int appointedLeaderIndex = 1;
 

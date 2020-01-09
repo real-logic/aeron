@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.time.Duration.ofSeconds;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class MultipleClusteredServicesTest
 {
@@ -71,7 +71,7 @@ public class MultipleClusteredServicesTest
     @Test
     public void testMultiService()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final List<TestCluster.NodeContext> nodeContexts = new ArrayList<>();
             final List<TestCluster.ServiceContext> serviceContexts = new ArrayList<>();

@@ -126,7 +126,7 @@ public class MultiDestinationSubscriptionTest
     @Test
     public void subscriptionCloseShouldAlsoCloseMediaDriverPorts()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             launch();
 
@@ -151,7 +151,7 @@ public class MultiDestinationSubscriptionTest
     @Test
     public void shouldSpinUpAndShutdownWithUnicast()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             launch();
 
@@ -171,7 +171,7 @@ public class MultiDestinationSubscriptionTest
     @Test
     public void shouldSpinUpAndShutdownWithMulticast()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             launch();
 
@@ -193,7 +193,7 @@ public class MultiDestinationSubscriptionTest
     @Test
     public void shouldSpinUpAndShutdownWithDynamicMdc()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             launch();
 
@@ -213,7 +213,7 @@ public class MultiDestinationSubscriptionTest
     @Test
     public void shouldSendToSingleDestinationSubscriptionWithUnicast()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
 
@@ -249,7 +249,7 @@ public class MultiDestinationSubscriptionTest
     @Test
     public void shouldSendToSingleDestinationMultipleSubscriptionsWithUnicast()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
             final String tags = "1,2";
@@ -298,7 +298,7 @@ public class MultiDestinationSubscriptionTest
     @Test
     public void shouldSendToSingleDestinationSubscriptionWithMulticast()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
 
@@ -334,7 +334,7 @@ public class MultiDestinationSubscriptionTest
     @Test
     public void shouldSendToSingleDestinationSubscriptionWithDynamicMdc()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
 
@@ -370,7 +370,7 @@ public class MultiDestinationSubscriptionTest
     @Test
     public void shouldSendToMultipleDestinationSubscriptionWithSameStream()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
             final int numMessagesToSendForA = numMessagesToSend / 2;
@@ -464,7 +464,7 @@ public class MultiDestinationSubscriptionTest
     @Test
     public void shouldMergeStreamsFromMultiplePublicationsWithSameParams()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final int numMessagesToSend = 30;
             final int numMessagesToSendForA = numMessagesToSend / 2;

@@ -61,7 +61,7 @@ public class DriverLoggingAgentTest
     @Test
     public void shouldLogMessages() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final MediaDriver.Context driverCtx = new MediaDriver.Context()
                 .errorHandler(Throwable::printStackTrace);

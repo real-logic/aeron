@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class MultiDriverTest
 {
@@ -108,7 +108,7 @@ public class MultiDriverTest
     @Test
     public void shouldSpinUpAndShutdown()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             launch();
 
@@ -127,7 +127,7 @@ public class MultiDriverTest
     @Test
     public void shouldJoinExistingStreamWithLockStepSendingReceiving() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final int numMessagesToSendPreJoin = NUM_MESSAGES_PER_TERM / 2;
             final int numMessagesToSendPostJoin = NUM_MESSAGES_PER_TERM;
@@ -202,7 +202,7 @@ public class MultiDriverTest
     @Test
     public void shouldJoinExistingIdleStreamWithLockStepSendingReceiving() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final int numMessagesToSendPreJoin = 0;
             final int numMessagesToSendPostJoin = NUM_MESSAGES_PER_TERM;

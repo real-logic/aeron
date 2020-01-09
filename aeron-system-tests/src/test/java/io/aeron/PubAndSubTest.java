@@ -113,7 +113,7 @@ public class PubAndSubTest
     @MethodSource("channels")
     public void shouldReceivePublishedMessageViaPollFile(final String channel)
     {
-        assertTimeout(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             launch(channel);
 
@@ -155,7 +155,7 @@ public class PubAndSubTest
     @MethodSource("channels")
     public void shouldContinueAfterBufferRollover(final String channel)
     {
-        assertTimeout(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             final int termBufferLength = 64 * 1024;
             final int numMessagesInTermBuffer = 64;
@@ -203,7 +203,7 @@ public class PubAndSubTest
     @MethodSource("channels")
     public void shouldContinueAfterRolloverWithMinimalPaddingHeader(final String channel)
     {
-        assertTimeout(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             final int termBufferLength = 64 * 1024;
             final int termBufferLengthMinusPaddingHeader = termBufferLength - HEADER_LENGTH;
@@ -307,7 +307,7 @@ public class PubAndSubTest
     {
         assumeFalse(IPC_URI.equals(channel));
 
-        assertTimeout(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             final int termBufferLength = 64 * 1024;
             final int numMessagesInTermBuffer = 64;
@@ -366,7 +366,7 @@ public class PubAndSubTest
     {
         assumeFalse(IPC_URI.equals(channel));
 
-        assertTimeout(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             final int termBufferLength = 64 * 1024;
             final int numMessagesInTermBuffer = 64;
@@ -429,7 +429,7 @@ public class PubAndSubTest
     @MethodSource("channels")
     public void shouldContinueAfterBufferRolloverBatched(final String channel)
     {
-        assertTimeout(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             final int termBufferLength = 64 * 1024;
             final int numBatchesPerTerm = 4;
@@ -504,7 +504,7 @@ public class PubAndSubTest
     @MethodSource("channels")
     public void shouldContinueAfterBufferRolloverWithPadding(final String channel)
     {
-        assertTimeout(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             /*
              * 65536 bytes in the buffer
@@ -557,7 +557,7 @@ public class PubAndSubTest
     @MethodSource("channels")
     public void shouldContinueAfterBufferRolloverWithPaddingBatched(final String channel)
     {
-        assertTimeout(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             /*
              * 65536 bytes in the buffer
@@ -615,7 +615,7 @@ public class PubAndSubTest
     @MethodSource("channels")
     public void shouldReceiveOnlyAfterSendingUpToFlowControlLimit(final String channel)
     {
-        assertTimeout(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             /*
              * The subscriber will flow control before an entire term buffer. So, send until can't send no 'more.
@@ -686,7 +686,7 @@ public class PubAndSubTest
         // Immediate re-subscription currently doesn't work in the C media driver
         assumeFalse(TestMediaDriver.shouldRunCMediaDriver());
 
-        assertTimeout(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             final int termBufferLength = 64 * 1024;
             final int numMessagesInTermBuffer = 64;
@@ -781,7 +781,7 @@ public class PubAndSubTest
     @MethodSource("channels")
     public void shouldFragmentExactMessageLengthsCorrectly(final String channel)
     {
-        assertTimeout(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             final int termBufferLength = 64 * 1024;
             final int numFragmentsPerMessage = 2;
@@ -832,7 +832,7 @@ public class PubAndSubTest
     @MethodSource("channels")
     public void shouldNoticeDroppedSubscriber(final String channel) throws Exception
     {
-        assertTimeout(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             launch(channel);
 

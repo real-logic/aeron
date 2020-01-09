@@ -76,7 +76,7 @@ public class UntetheredSubscriptionTest
     @MethodSource("channels")
     public void shouldBecomeUnavailableWhenNotKeepingUp(final String channel)
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final FragmentHandler fragmentHandler = (buffer, offset, length, header) -> {};
             final AtomicBoolean unavailableCalled = new AtomicBoolean();
@@ -137,7 +137,7 @@ public class UntetheredSubscriptionTest
     @MethodSource("channels")
     public void shouldRejoinAfterResting(final String channel)
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final AtomicInteger unavailableImageCount = new AtomicInteger();
             final AtomicInteger availableImageCount = new AtomicInteger();

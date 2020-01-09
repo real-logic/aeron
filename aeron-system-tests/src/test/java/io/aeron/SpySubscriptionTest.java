@@ -33,7 +33,7 @@ import static io.aeron.SystemTest.spyForChannel;
 import static java.time.Duration.ofSeconds;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class SpySubscriptionTest
 {
@@ -74,7 +74,7 @@ public class SpySubscriptionTest
     @MethodSource("channels")
     public void shouldReceivePublishedMessage(final String channel)
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
                 Subscription spy = aeron.addSubscription(spyForChannel(channel), STREAM_ID);

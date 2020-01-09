@@ -65,7 +65,7 @@ public class ImageAvailabilityTest
     @MethodSource("channels")
     public void shouldCallImageHandlers(final String channel)
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final AtomicInteger unavailableImageCount = new AtomicInteger();
             final AtomicInteger availableImageCount = new AtomicInteger();
@@ -121,7 +121,7 @@ public class ImageAvailabilityTest
     @MethodSource("channels")
     public void shouldCallImageHandlersWithPublisherOnDifferentClient(final String channel)
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final AtomicInteger unavailableImageCount = new AtomicInteger();
             final AtomicInteger availableImageCount = new AtomicInteger();

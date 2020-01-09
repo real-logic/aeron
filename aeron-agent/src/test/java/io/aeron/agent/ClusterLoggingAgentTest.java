@@ -42,7 +42,7 @@ import java.util.concurrent.CountDownLatch;
 import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
 import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.mockito.Mockito.mock;
 
 public class ClusterLoggingAgentTest
@@ -77,7 +77,7 @@ public class ClusterLoggingAgentTest
     @Test
     public void shouldLogMessages() throws Exception
     {
-        assertTimeout(Duration.ofSeconds(10), () ->
+        assertTimeoutPreemptively(Duration.ofSeconds(10), () ->
         {
             testDirName = Paths.get(IoUtil.tmpDirName(), "cluster-test").toString();
             final File testDir = new File(testDirName);

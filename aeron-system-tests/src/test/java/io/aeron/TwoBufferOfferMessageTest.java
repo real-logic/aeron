@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class TwoBufferOfferMessageTest
 {
@@ -53,7 +53,7 @@ public class TwoBufferOfferMessageTest
     @Test
     public void shouldTransferUnfragmentedTwoPartMessage()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final UnsafeBuffer expectedBuffer = new UnsafeBuffer(new byte[256]);
             final UnsafeBuffer bufferOne = new UnsafeBuffer(expectedBuffer, 0, 32);
@@ -91,7 +91,7 @@ public class TwoBufferOfferMessageTest
     @Test
     public void shouldTransferFragmentedTwoPartMessage()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final UnsafeBuffer expectedBuffer = new UnsafeBuffer(new byte[32 + driver.context().mtuLength()]);
             final UnsafeBuffer bufferOne = new UnsafeBuffer(expectedBuffer, 0, 32);

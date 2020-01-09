@@ -75,7 +75,7 @@ public class SessionSpecificSubscriptionTest
     @Test
     public void shouldSubscribeToSpecificSessionIdsAndWildcard()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             try (Subscription subscriptionOne = aeron.addSubscription(channelUriWithSessionIdOne, STREAM_ID);
                 Subscription subscriptionTwo = aeron.addSubscription(channelUriWithSessionIdTwo, STREAM_ID);

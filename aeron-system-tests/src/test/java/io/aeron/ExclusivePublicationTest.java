@@ -31,7 +31,7 @@ import java.util.List;
 import static java.time.Duration.ofSeconds;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class ExclusivePublicationTest
 {
@@ -68,7 +68,7 @@ public class ExclusivePublicationTest
     @MethodSource("channels")
     public void shouldPublishFromIndependentExclusivePublications(final String channel)
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
                 ExclusivePublication publicationOne = aeron.addExclusivePublication(channel, STREAM_ID);

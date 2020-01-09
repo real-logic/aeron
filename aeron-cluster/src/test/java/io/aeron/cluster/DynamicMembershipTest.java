@@ -29,7 +29,7 @@ public class DynamicMembershipTest
     @Test
     public void shouldQueryClusterMembers() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -46,7 +46,7 @@ public class DynamicMembershipTest
     @Test
     public void shouldDynamicallyJoinClusterOfThreeNoSnapshots() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             try (TestCluster cluster = TestCluster.startCluster(3, 1))
             {
@@ -69,7 +69,7 @@ public class DynamicMembershipTest
     @Test
     public void shouldDynamicallyJoinClusterOfThreeNoSnapshotsThenSend() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             try (TestCluster cluster = TestCluster.startCluster(3, 1))
             {
@@ -93,7 +93,7 @@ public class DynamicMembershipTest
     @Test
     public void shouldDynamicallyJoinClusterOfThreeNoSnapshotsWithCatchup() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             try (TestCluster cluster = TestCluster.startCluster(3, 1))
             {
@@ -115,7 +115,7 @@ public class DynamicMembershipTest
     @Test
     public void shouldDynamicallyJoinClusterOfThreeWithEmptySnapshot() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             try (TestCluster cluster = TestCluster.startCluster(3, 1))
             {
@@ -140,7 +140,7 @@ public class DynamicMembershipTest
     @Test
     public void shouldDynamicallyJoinClusterOfThreeWithSnapshot() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             try (TestCluster cluster = TestCluster.startCluster(3, 1))
             {
@@ -171,7 +171,7 @@ public class DynamicMembershipTest
     @Test
     public void shouldDynamicallyJoinClusterOfThreeWithSnapshotThenSend() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             try (TestCluster cluster = TestCluster.startCluster(3, 1))
             {
@@ -208,7 +208,7 @@ public class DynamicMembershipTest
     @Test
     public void shouldRemoveFollower() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -232,7 +232,7 @@ public class DynamicMembershipTest
     @Test
     public void shouldRemoveLeader() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -257,7 +257,7 @@ public class DynamicMembershipTest
     @Test
     public void shouldRemoveLeaderAfterDynamicNodeJoined() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             try (TestCluster cluster = TestCluster.startCluster(3, 1))
             {
@@ -285,7 +285,7 @@ public class DynamicMembershipTest
     @Test
     public void shouldJoinDynamicNodeToSingleStaticLeader() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             try (TestCluster cluster = TestCluster.startCluster(1, 1))
             {

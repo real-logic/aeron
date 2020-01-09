@@ -35,7 +35,7 @@ import java.util.List;
 
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class BufferClaimMessageTest
 {
@@ -68,7 +68,7 @@ public class BufferClaimMessageTest
     @MethodSource("channels")
     public void shouldReceivePublishedMessageWithInterleavedAbort(final String channel)
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final MutableInteger fragmentCount = new MutableInteger();
             final FragmentHandler fragmentHandler = (buffer, offset, length, header) -> fragmentCount.value++;
@@ -115,7 +115,7 @@ public class BufferClaimMessageTest
     @MethodSource("channels")
     public void shouldTransferReservedValue(final String channel)
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final BufferClaim bufferClaim = new BufferClaim();
 

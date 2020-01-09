@@ -35,7 +35,7 @@ import static io.aeron.logbuffer.FrameDescriptor.END_FRAG_FLAG;
 import static java.time.Duration.ofSeconds;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.mockito.Mockito.*;
 
 public class FragmentedMessageTest
@@ -73,7 +73,7 @@ public class FragmentedMessageTest
     @MethodSource("channels")
     public void shouldReceivePublishedMessage(final String channel)
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final FragmentAssembler assembler = new FragmentAssembler(mockFragmentHandler);
 

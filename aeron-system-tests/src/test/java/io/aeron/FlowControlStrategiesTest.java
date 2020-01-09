@@ -37,7 +37,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static java.time.Duration.ofSeconds;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.*;
 
@@ -114,7 +114,7 @@ public class FlowControlStrategiesTest
     @Test
     public void shouldSpinUpAndShutdown()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             launch();
 
@@ -133,7 +133,7 @@ public class FlowControlStrategiesTest
     @Test
     public void shouldTimeoutImageWhenBehindForTooLongWithMaxMulticastFlowControlStrategy()
     {
-        assertTimeout(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
 
@@ -206,7 +206,7 @@ public class FlowControlStrategiesTest
     @Test
     public void shouldSlowDownWhenBehindWithMinMulticastFlowControlStrategy()
     {
-        assertTimeout(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
             int numMessagesLeftToSend = numMessagesToSend;
@@ -268,7 +268,7 @@ public class FlowControlStrategiesTest
     @Test
     public void shouldRemoveDeadReceiverWithMinMulticastFlowControlStrategy()
     {
-        assertTimeout(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
             int numMessagesLeftToSend = numMessagesToSend;
@@ -329,7 +329,7 @@ public class FlowControlStrategiesTest
     {
         TestMediaDriver.notSupportedOnCMediaDriverYet("Preferred multicast flow control strategy not available");
 
-        assertTimeout(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
             int numMessagesLeftToSend = numMessagesToSend;
@@ -404,7 +404,7 @@ public class FlowControlStrategiesTest
     {
         TestMediaDriver.notSupportedOnCMediaDriverYet("Preferred multicast flow control strategy not available");
 
-        assertTimeout(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
             int numMessagesLeftToSend = numMessagesToSend;

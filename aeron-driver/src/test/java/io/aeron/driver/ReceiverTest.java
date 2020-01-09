@@ -48,7 +48,7 @@ import static org.agrona.BitUtil.align;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.mockito.Mockito.*;
 
 public class ReceiverTest
@@ -183,7 +183,7 @@ public class ReceiverTest
     @Test
     public void shouldCreateRcvTermAndSendSmOnSetup() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             receiverProxy.registerReceiveChannelEndpoint(receiveChannelEndpoint);
             receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);

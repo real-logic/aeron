@@ -82,7 +82,7 @@ public class ClusterTimerTest
     @Test
     public void shouldRestartServiceWithTimerFromSnapshotWithFurtherLog()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final AtomicInteger triggeredTimersCounter = new AtomicInteger();
 
@@ -145,7 +145,7 @@ public class ClusterTimerTest
     @Test
     public void shouldTriggerRescheduledTimerAfterReplay()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final AtomicInteger triggeredTimersCounter = new AtomicInteger();
 

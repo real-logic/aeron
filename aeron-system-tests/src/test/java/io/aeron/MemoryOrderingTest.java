@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Test;
 import java.nio.ByteBuffer;
 
 import static java.time.Duration.ofSeconds;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class MemoryOrderingTest
@@ -65,7 +65,7 @@ public class MemoryOrderingTest
     @Test
     public void shouldReceiveMessagesInOrderWithFirstLongWordIntact() throws Exception
     {
-        assertTimeout(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
             srcBuffer.setMemory(0, MESSAGE_LENGTH, (byte)7);
@@ -118,7 +118,7 @@ public class MemoryOrderingTest
     @Test
     public void shouldReceiveMessagesInOrderWithFirstLongWordIntactFromExclusivePublication() throws Exception
     {
-        assertTimeout(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
             srcBuffer.setMemory(0, MESSAGE_LENGTH, (byte)7);

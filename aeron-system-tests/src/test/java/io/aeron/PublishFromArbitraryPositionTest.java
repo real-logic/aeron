@@ -35,7 +35,7 @@ import java.util.Random;
 
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.mockito.Mockito.mock;
 
 public class PublishFromArbitraryPositionTest
@@ -74,7 +74,7 @@ public class PublishFromArbitraryPositionTest
     @Test
     public void shouldPublishFromArbitraryJoinPosition() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final Random rnd = new Random();
             rnd.setSeed(seed);

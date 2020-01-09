@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 import static java.time.Duration.ofSeconds;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class PublicationUnblockTest
 {
@@ -72,7 +72,7 @@ public class PublicationUnblockTest
     @MethodSource("channels")
     public void shouldUnblockNonCommittedMessage(final String channel)
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final MutableInteger fragmentCount = new MutableInteger();
             final FragmentHandler fragmentHandler = (buffer, offset, length, header) -> fragmentCount.value++;

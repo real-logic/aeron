@@ -31,7 +31,7 @@ public class TerminateDriverTest
     @Test
     public void shouldCallTerminationHookUponValidRequest()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final AtomicBoolean hasTerminated = new AtomicBoolean(false);
             final MediaDriver.Context ctx = new MediaDriver.Context()
@@ -59,7 +59,7 @@ public class TerminateDriverTest
     @Test
     public void shouldNotCallTerminationHookUponInvalidRequest()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final AtomicBoolean hasTerminated = new AtomicBoolean(false);
             final AtomicBoolean hasCalledTerminationValidator = new AtomicBoolean(false);

@@ -40,7 +40,7 @@ public class ClusterTest
     @Test
     public void shouldStopFollowerAndRestartFollower() throws Exception
     {
-        assertTimeout(ofSeconds(30), () ->
+        assertTimeoutPreemptively(ofSeconds(30), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -61,7 +61,7 @@ public class ClusterTest
     @Test
     public void shouldNotifyClientOfNewLeader() throws Exception
     {
-        assertTimeout(ofSeconds(30), () ->
+        assertTimeoutPreemptively(ofSeconds(30), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -77,7 +77,7 @@ public class ClusterTest
     @Test
     public void shouldStopLeaderAndFollowersThenRestartAllWithSnapshot() throws Exception
     {
-        assertTimeout(ofSeconds(30), () ->
+        assertTimeoutPreemptively(ofSeconds(30), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -111,7 +111,7 @@ public class ClusterTest
     @Test
     public void shouldShutdownClusterAndRestartWithSnapshots() throws Exception
     {
-        assertTimeout(ofSeconds(30), () ->
+        assertTimeoutPreemptively(ofSeconds(30), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -153,7 +153,7 @@ public class ClusterTest
     @Test
     public void shouldAbortClusterAndRestart() throws Exception
     {
-        assertTimeout(ofSeconds(30), () ->
+        assertTimeoutPreemptively(ofSeconds(30), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -195,7 +195,7 @@ public class ClusterTest
     @Test
     public void shouldAbortClusterOnTerminationTimeout() throws Exception
     {
-        assertTimeout(ofSeconds(30), () ->
+        assertTimeoutPreemptively(ofSeconds(30), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -230,7 +230,7 @@ public class ClusterTest
     @Test
     public void shouldEchoMessagesThenContinueOnNewLeader() throws Exception
     {
-        assertTimeout(ofSeconds(30), () ->
+        assertTimeoutPreemptively(ofSeconds(30), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -267,7 +267,7 @@ public class ClusterTest
     @Test
     public void shouldStopLeaderAndRestartAsFollower() throws Exception
     {
-        assertTimeout(ofSeconds(30), () ->
+        assertTimeoutPreemptively(ofSeconds(30), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -289,7 +289,7 @@ public class ClusterTest
     @Test
     public void shouldStopLeaderAndRestartAsFollowerWithSendingAfter() throws Exception
     {
-        assertTimeout(ofSeconds(30), () ->
+        assertTimeoutPreemptively(ofSeconds(30), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -319,7 +319,7 @@ public class ClusterTest
     @Test
     public void shouldStopLeaderAndRestartAsFollowerWithSendingAfterThenStopLeader() throws Exception
     {
-        assertTimeout(ofSeconds(60), () ->
+        assertTimeoutPreemptively(ofSeconds(60), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -353,7 +353,7 @@ public class ClusterTest
     @Test
     public void shouldAcceptMessagesAfterSingleNodeCleanRestart() throws Exception
     {
-        assertTimeout(ofSeconds(30), () ->
+        assertTimeoutPreemptively(ofSeconds(30), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -384,7 +384,7 @@ public class ClusterTest
     @Test
     public void shouldReplaySnapshotTakenWhileDown() throws Exception
     {
-        assertTimeout(ofSeconds(30), () ->
+        assertTimeoutPreemptively(ofSeconds(30), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -420,7 +420,7 @@ public class ClusterTest
     @Test
     public void shouldTolerateMultipleLeaderFailures() throws Exception
     {
-        assertTimeout(ofSeconds(45), () ->
+        assertTimeoutPreemptively(ofSeconds(45), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -451,7 +451,7 @@ public class ClusterTest
     @Test
     public void shouldAcceptMessagesAfterTwoNodeCleanRestart() throws Exception
     {
-        assertTimeout(ofSeconds(30), () ->
+        assertTimeoutPreemptively(ofSeconds(30), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -487,7 +487,7 @@ public class ClusterTest
     @Test
     public void shouldHaveOnlyOneCommitPositionCounter() throws Exception
     {
-        assertTimeout(ofSeconds(30), () ->
+        assertTimeoutPreemptively(ofSeconds(30), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -509,7 +509,7 @@ public class ClusterTest
     @Test
     public void shouldCallOnRoleChangeOnBecomingLeader() throws Exception
     {
-        assertTimeout(ofSeconds(30), () ->
+        assertTimeoutPreemptively(ofSeconds(30), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -538,7 +538,7 @@ public class ClusterTest
     @Test
     public void shouldLoseLeadershipWhenNoActiveQuorumOfFollowers() throws Exception
     {
-        assertTimeout(ofSeconds(30), () ->
+        assertTimeoutPreemptively(ofSeconds(30), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -567,7 +567,7 @@ public class ClusterTest
     @Test
     public void shouldRecoverWhileMessagesContinue() throws Exception
     {
-        assertTimeout(ofSeconds(60), () ->
+        assertTimeoutPreemptively(ofSeconds(60), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -604,7 +604,7 @@ public class ClusterTest
     @Test
     public void shouldCatchupFromEmptyLog() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -629,7 +629,7 @@ public class ClusterTest
     @Test
     public void shouldCatchupFromEmptyLogThenSnapshotAfterShutdownAndFollowerCleanStart() throws Exception
     {
-        assertTimeout(ofSeconds(30), () ->
+        assertTimeoutPreemptively(ofSeconds(30), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -684,7 +684,7 @@ public class ClusterTest
     @Test
     public void shouldCatchUpAfterFollowerMissesOneMessage() throws Exception
     {
-        assertTimeout(ofSeconds(30), () ->
+        assertTimeoutPreemptively(ofSeconds(30), () ->
         {
             shouldCatchUpAfterFollowerMissesMessage(TestMessages.NO_OP);
         });
@@ -693,7 +693,7 @@ public class ClusterTest
     @Test
     public void shouldCatchUpAfterFollowerMissesTimerRegistration() throws Exception
     {
-        assertTimeout(ofSeconds(30), () ->
+        assertTimeoutPreemptively(ofSeconds(30), () ->
         {
             shouldCatchUpAfterFollowerMissesMessage(TestMessages.REGISTER_TIMER);
         });
@@ -702,7 +702,7 @@ public class ClusterTest
     @Test
     public void shouldCatchUpTwoFreshNodesAfterRestart() throws Exception
     {
-        assertTimeout(ofSeconds(30), () ->
+        assertTimeoutPreemptively(ofSeconds(30), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -750,7 +750,7 @@ public class ClusterTest
     @Test
     public void shouldReplayMultipleSnapshotsWithEmptyFollowerLog() throws Exception
     {
-        assertTimeout(ofSeconds(30), () ->
+        assertTimeoutPreemptively(ofSeconds(30), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -835,7 +835,7 @@ public class ClusterTest
     @Test
     public void shouldRecoverQuicklyAfterKillingFollowersThenRestartingOne() throws Exception
     {
-        assertTimeout(ofSeconds(30), () ->
+        assertTimeoutPreemptively(ofSeconds(30), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {

@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
 
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.mockito.Mockito.*;
 
 public class MultiDestinationCastTest
@@ -118,7 +118,7 @@ public class MultiDestinationCastTest
     @Test
     public void shouldSpinUpAndShutdownWithDynamic()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             launch();
 
@@ -138,7 +138,7 @@ public class MultiDestinationCastTest
     @Test
     public void shouldSpinUpAndShutdownWithManual()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             launch();
 
@@ -163,7 +163,7 @@ public class MultiDestinationCastTest
     @Test
     public void shouldSendToTwoPortsWithDynamic()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final int numMessagesToSend = MESSAGES_PER_TERM * 3;
 
@@ -207,7 +207,7 @@ public class MultiDestinationCastTest
     @Test
     public void shouldSendToTwoPortsWithDynamicSingleDriver()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final int numMessagesToSend = MESSAGES_PER_TERM * 3;
 
@@ -251,7 +251,7 @@ public class MultiDestinationCastTest
     @Test
     public void shouldSendToTwoPortsWithManualSingleDriver()
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final int numMessagesToSend = MESSAGES_PER_TERM * 3;
 
@@ -294,7 +294,7 @@ public class MultiDestinationCastTest
     @Test
     public void shouldManuallyRemovePortDuringActiveStream() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final int numMessagesToSend = MESSAGES_PER_TERM * 3;
             final int numMessageForSub2 = 10;
@@ -358,7 +358,7 @@ public class MultiDestinationCastTest
     @Test
     public void shouldManuallyAddPortDuringActiveStream() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final int numMessagesToSend = MESSAGES_PER_TERM * 3;
             final int numMessageForSub2 = 10;

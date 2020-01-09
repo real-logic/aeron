@@ -19,14 +19,14 @@ import org.junit.jupiter.api.Test;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static java.time.Duration.ofSeconds;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class ServiceIpcIngressTest
 {
     @Test
     public void shouldEchoIpcMessages() throws Exception
     {
-        assertTimeout(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {

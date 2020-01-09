@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 public class MultiNodeTest
 {
     @Test
-    public void shouldElectAppointedLeaderWithThreeNodesWithNoReplayNoSnapshot() throws Exception
+    public void shouldElectAppointedLeaderWithThreeNodesWithNoReplayNoSnapshot()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
@@ -44,7 +44,7 @@ public class MultiNodeTest
     }
 
     @Test
-    public void shouldReplayWithAppointedLeaderWithThreeNodesWithNoSnapshot() throws Exception
+    public void shouldReplayWithAppointedLeaderWithThreeNodesWithNoSnapshot()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
@@ -75,7 +75,7 @@ public class MultiNodeTest
     }
 
     @Test
-    public void shouldCatchUpWithAppointedLeaderWithThreeNodesWithNoSnapshot() throws Exception
+    public void shouldCatchUpWithAppointedLeaderWithThreeNodesWithNoSnapshot()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {

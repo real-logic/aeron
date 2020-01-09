@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 public class ServiceIpcIngressTest
 {
     @Test
-    public void shouldEchoIpcMessages() throws Exception
+    public void shouldEchoIpcMessages()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {

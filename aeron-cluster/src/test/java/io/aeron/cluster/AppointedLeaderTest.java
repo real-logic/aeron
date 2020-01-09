@@ -27,7 +27,7 @@ public class AppointedLeaderTest
     private static final int LEADER_ID = 1;
 
     @Test
-    public void shouldConnectAndSendKeepAlive() throws Exception
+    public void shouldConnectAndSendKeepAlive()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
@@ -44,7 +44,7 @@ public class AppointedLeaderTest
     }
 
     @Test
-    public void shouldEchoMessagesViaService() throws Exception
+    public void shouldEchoMessagesViaService()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {

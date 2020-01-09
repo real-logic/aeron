@@ -58,8 +58,7 @@ public class ArchiveTest
         return Stream.of(
             arguments(ThreadingMode.INVOKER, ArchiveThreadingMode.SHARED),
             arguments(ThreadingMode.SHARED, ArchiveThreadingMode.SHARED),
-            arguments(ThreadingMode.DEDICATED, ArchiveThreadingMode.DEDICATED)
-        );
+            arguments(ThreadingMode.DEDICATED, ArchiveThreadingMode.DEDICATED));
     }
 
     private static final long MAX_CATALOG_ENTRIES = 1024;
@@ -77,7 +76,7 @@ public class ArchiveTest
     private final long seed = System.nanoTime();
 
     @RegisterExtension
-    final TestWatcher testWatcher = TestUtil.newWatcher(seed);
+    public final TestWatcher testWatcher = TestUtil.newWatcher(seed);
 
     private long controlSessionId;
     private String publishUri;

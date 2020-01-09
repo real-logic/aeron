@@ -42,8 +42,7 @@ public class PublicationUnblockTest
     {
         return asList(
             "aeron:udp?endpoint=localhost:54325",
-            "aeron:ipc"
-        );
+            "aeron:ipc");
     }
 
     private static final int STREAM_ID = 1001;

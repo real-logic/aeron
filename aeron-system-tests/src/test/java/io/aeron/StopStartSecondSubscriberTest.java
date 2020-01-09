@@ -98,10 +98,7 @@ public class StopStartSecondSubscriberTest
     @Test
     public void shouldSpinUpAndShutdown()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
-        {
-            launch(CHANNEL1, STREAM_ID1, CHANNEL2, STREAM_ID2);
-        });
+        assertTimeoutPreemptively(ofSeconds(10), () -> launch(CHANNEL1, STREAM_ID1, CHANNEL2, STREAM_ID2));
     }
 
     @Test
@@ -149,36 +146,28 @@ public class StopStartSecondSubscriberTest
     public void shouldReceiveMessagesAfterStopStartOnSameChannelSameStream()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
-        {
-            shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL1, STREAM_ID1);
-        });
+            shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL1, STREAM_ID1));
     }
 
     @Test
     public void shouldReceiveMessagesAfterStopStartOnSameChannelDifferentStreams()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
-        {
-            shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL1, STREAM_ID2);
-        });
+            shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL1, STREAM_ID2));
     }
 
     @Test
     public void shouldReceiveMessagesAfterStopStartOnDifferentChannelsSameStream()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
-        {
-            shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL2, STREAM_ID1);
-        });
+            shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL2, STREAM_ID1));
     }
 
     @Test
     public void shouldReceiveMessagesAfterStopStartOnDifferentChannelsDifferentStreams()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
-        {
-            shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL2, STREAM_ID2);
-        });
+            shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL2, STREAM_ID2));
     }
 
     private void doPublisherWork(final Publication publication, final AtomicBoolean running)

@@ -59,7 +59,7 @@ public class DriverLoggingAgentTest
     }
 
     @Test
-    public void shouldLogMessages() throws Exception
+    public void shouldLogMessages()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {

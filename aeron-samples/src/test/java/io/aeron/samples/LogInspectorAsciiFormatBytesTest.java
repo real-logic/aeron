@@ -38,8 +38,7 @@ public class LogInspectorAsciiFormatBytesTest
             arguments((byte)0, (char)0),
             arguments((byte)-1, (char)0),
             arguments(Byte.MAX_VALUE, (char)Byte.MAX_VALUE),
-            arguments(Byte.MIN_VALUE, (char)0)
-        );
+            arguments(Byte.MIN_VALUE, (char)0));
     }
 
     @BeforeEach

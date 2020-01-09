@@ -70,8 +70,8 @@ public class LossReportTest
         final String channel = "aeron:udp://stuff";
         final String source = "127.0.0.1:8888";
 
-        final ReportEntry entry =
-            lossReport.createEntry(initialBytesLost, timestampMs, sessionId, streamId, channel, source);
+        final ReportEntry entry = lossReport.createEntry(
+            initialBytesLost, timestampMs, sessionId, streamId, channel, source);
 
         final long additionBytesLost = 64;
         final long latestTimestamp = 10;

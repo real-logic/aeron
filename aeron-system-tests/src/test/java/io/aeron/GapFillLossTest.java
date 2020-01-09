@@ -56,7 +56,7 @@ public class GapFillLossTest
     MediaDriverTestWatcher watcher = new MediaDriverTestWatcher();
 
     @Test
-    public void shouldGapFillWhenLossOccurs() throws Exception
+    public void shouldGapFillWhenLossOccurs()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {

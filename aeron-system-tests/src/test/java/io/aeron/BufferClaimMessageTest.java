@@ -39,7 +39,6 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class BufferClaimMessageTest
 {
-
     private static List<String> channels()
     {
         return Arrays.asList("aeron:udp?endpoint=localhost:54325", CommonContext.IPC_CHANNEL);

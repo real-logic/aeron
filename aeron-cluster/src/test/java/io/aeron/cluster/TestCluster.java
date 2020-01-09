@@ -129,12 +129,12 @@ public class TestCluster implements AutoCloseable
             backupNode.cleanUp();
         }
 
-        for (int i = 0, length = nodes.length; i < length; i++)
+        for (final TestNode node : nodes)
         {
-            if (null != nodes[i])
+            if (null != node)
             {
-                nodes[i].close();
-                nodes[i].cleanUp();
+                node.close();
+                node.cleanUp();
             }
         }
     }
@@ -448,11 +448,11 @@ public class TestCluster implements AutoCloseable
 
     void stopAllNodes()
     {
-        for (int i = 0, length = nodes.length; i < length; i++)
+        for (final TestNode node : nodes)
         {
-            if (null != nodes[i])
+            if (null != node)
             {
-                nodes[i].close();
+                node.close();
             }
         }
 

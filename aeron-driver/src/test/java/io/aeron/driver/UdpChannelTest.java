@@ -421,28 +421,7 @@ public class UdpChannelTest
 
     private static Matcher<NetworkInterface> supportsMulticastOrIsLoopback()
     {
-        return new TypeSafeMatcher<NetworkInterface>()
-        {
-            public void describeTo(final Description description)
-            {
-                description.appendText("Interface supports multicast or is loopack");
-            }
-
-            protected boolean matchesSafely(final NetworkInterface item)
-            {
-                boolean matchesSafely = false;
-                try
-                {
-                    matchesSafely = item.supportsMulticast() || item.isLoopback();
-                }
-                catch (final SocketException ex)
-                {
-                    LangUtil.rethrowUnchecked(ex);
-                }
-
-                return matchesSafely;
-            }
-        };
+        return new NetworkInterfaceTypeSafeMatcher();
     }
 
     private String resolveToHexAddress(final String host) throws UnknownHostException
@@ -459,5 +438,28 @@ public class UdpChannelTest
     private static String uri(final String endpointKey, final String endpointValue)
     {
         return "aeron:udp?" + endpointKey + "=" + endpointValue;
+    }
+
+    static class NetworkInterfaceTypeSafeMatcher extends TypeSafeMatcher<NetworkInterface>
+    {
+        public void describeTo(final Description description)
+        {
+            description.appendText("Interface supports multicast or is loopack");
+        }
+
+        protected boolean matchesSafely(final NetworkInterface item)
+        {
+            boolean matchesSafely = false;
+            try
+            {
+                matchesSafely = item.supportsMulticast() || item.isLoopback();
+            }
+            catch (final SocketException ex)
+            {
+                LangUtil.rethrowUnchecked(ex);
+            }
+
+            return matchesSafely;
+        }
     }
 }

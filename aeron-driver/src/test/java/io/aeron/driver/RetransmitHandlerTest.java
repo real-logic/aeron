@@ -83,9 +83,8 @@ public class RetransmitHandlerTest
     private static List<BiConsumer<RetransmitHandlerTest, Integer>> consumers()
     {
         return asList(
-            (h, i) -> h.addSentDataFrame(),
-            RetransmitHandlerTest::addReceivedDataFrame
-        );
+            (retransmitHandlerTest, i) -> retransmitHandlerTest.addSentDataFrame(),
+            RetransmitHandlerTest::addReceivedDataFrame);
     }
 
     @ParameterizedTest

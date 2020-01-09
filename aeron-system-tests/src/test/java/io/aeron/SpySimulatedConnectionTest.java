@@ -45,8 +45,7 @@ public class SpySimulatedConnectionTest
     {
         return asList(
             "aeron:udp?endpoint=localhost:54325",
-            "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost"
-        );
+            "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost");
     }
 
     private static final int STREAM_ID = 1001;
@@ -73,7 +72,7 @@ public class SpySimulatedConnectionTest
     private final FragmentHandler fragmentHandlerSub = (buffer1, offset, length, header) -> fragmentCountSub.value++;
 
     @RegisterExtension
-    public MediaDriverTestWatcher watcher = new MediaDriverTestWatcher();
+    public final MediaDriverTestWatcher watcher = new MediaDriverTestWatcher();
 
     private void launch()
     {

@@ -38,7 +38,7 @@ public class ClusterTest
     private static final String MSG = "Hello World!";
 
     @Test
-    public void shouldStopFollowerAndRestartFollower() throws Exception
+    public void shouldStopFollowerAndRestartFollower()
     {
         assertTimeoutPreemptively(ofSeconds(30), () ->
         {
@@ -59,7 +59,7 @@ public class ClusterTest
     }
 
     @Test
-    public void shouldNotifyClientOfNewLeader() throws Exception
+    public void shouldNotifyClientOfNewLeader()
     {
         assertTimeoutPreemptively(ofSeconds(30), () ->
         {
@@ -75,7 +75,7 @@ public class ClusterTest
     }
 
     @Test
-    public void shouldStopLeaderAndFollowersThenRestartAllWithSnapshot() throws Exception
+    public void shouldStopLeaderAndFollowersThenRestartAllWithSnapshot()
     {
         assertTimeoutPreemptively(ofSeconds(30), () ->
         {
@@ -109,7 +109,7 @@ public class ClusterTest
     }
 
     @Test
-    public void shouldShutdownClusterAndRestartWithSnapshots() throws Exception
+    public void shouldShutdownClusterAndRestartWithSnapshots()
     {
         assertTimeoutPreemptively(ofSeconds(30), () ->
         {
@@ -151,7 +151,7 @@ public class ClusterTest
     }
 
     @Test
-    public void shouldAbortClusterAndRestart() throws Exception
+    public void shouldAbortClusterAndRestart()
     {
         assertTimeoutPreemptively(ofSeconds(30), () ->
         {
@@ -193,7 +193,7 @@ public class ClusterTest
     }
 
     @Test
-    public void shouldAbortClusterOnTerminationTimeout() throws Exception
+    public void shouldAbortClusterOnTerminationTimeout()
     {
         assertTimeoutPreemptively(ofSeconds(30), () ->
         {
@@ -228,7 +228,7 @@ public class ClusterTest
     }
 
     @Test
-    public void shouldEchoMessagesThenContinueOnNewLeader() throws Exception
+    public void shouldEchoMessagesThenContinueOnNewLeader()
     {
         assertTimeoutPreemptively(ofSeconds(30), () ->
         {
@@ -265,7 +265,7 @@ public class ClusterTest
     }
 
     @Test
-    public void shouldStopLeaderAndRestartAsFollower() throws Exception
+    public void shouldStopLeaderAndRestartAsFollower()
     {
         assertTimeoutPreemptively(ofSeconds(30), () ->
         {
@@ -287,7 +287,7 @@ public class ClusterTest
     }
 
     @Test
-    public void shouldStopLeaderAndRestartAsFollowerWithSendingAfter() throws Exception
+    public void shouldStopLeaderAndRestartAsFollowerWithSendingAfter()
     {
         assertTimeoutPreemptively(ofSeconds(30), () ->
         {
@@ -317,7 +317,7 @@ public class ClusterTest
     }
 
     @Test
-    public void shouldStopLeaderAndRestartAsFollowerWithSendingAfterThenStopLeader() throws Exception
+    public void shouldStopLeaderAndRestartAsFollowerWithSendingAfterThenStopLeader()
     {
         assertTimeoutPreemptively(ofSeconds(60), () ->
         {
@@ -351,7 +351,7 @@ public class ClusterTest
     }
 
     @Test
-    public void shouldAcceptMessagesAfterSingleNodeCleanRestart() throws Exception
+    public void shouldAcceptMessagesAfterSingleNodeCleanRestart()
     {
         assertTimeoutPreemptively(ofSeconds(30), () ->
         {
@@ -382,7 +382,7 @@ public class ClusterTest
     }
 
     @Test
-    public void shouldReplaySnapshotTakenWhileDown() throws Exception
+    public void shouldReplaySnapshotTakenWhileDown()
     {
         assertTimeoutPreemptively(ofSeconds(30), () ->
         {
@@ -418,7 +418,7 @@ public class ClusterTest
     }
 
     @Test
-    public void shouldTolerateMultipleLeaderFailures() throws Exception
+    public void shouldTolerateMultipleLeaderFailures()
     {
         assertTimeoutPreemptively(ofSeconds(45), () ->
         {
@@ -449,7 +449,7 @@ public class ClusterTest
     }
 
     @Test
-    public void shouldAcceptMessagesAfterTwoNodeCleanRestart() throws Exception
+    public void shouldAcceptMessagesAfterTwoNodeCleanRestart()
     {
         assertTimeoutPreemptively(ofSeconds(30), () ->
         {
@@ -485,7 +485,7 @@ public class ClusterTest
     }
 
     @Test
-    public void shouldHaveOnlyOneCommitPositionCounter() throws Exception
+    public void shouldHaveOnlyOneCommitPositionCounter()
     {
         assertTimeoutPreemptively(ofSeconds(30), () ->
         {
@@ -507,7 +507,7 @@ public class ClusterTest
     }
 
     @Test
-    public void shouldCallOnRoleChangeOnBecomingLeader() throws Exception
+    public void shouldCallOnRoleChangeOnBecomingLeader()
     {
         assertTimeoutPreemptively(ofSeconds(30), () ->
         {
@@ -536,7 +536,7 @@ public class ClusterTest
     }
 
     @Test
-    public void shouldLoseLeadershipWhenNoActiveQuorumOfFollowers() throws Exception
+    public void shouldLoseLeadershipWhenNoActiveQuorumOfFollowers()
     {
         assertTimeoutPreemptively(ofSeconds(30), () ->
         {
@@ -565,7 +565,7 @@ public class ClusterTest
     }
 
     @Test
-    public void shouldRecoverWhileMessagesContinue() throws Exception
+    public void shouldRecoverWhileMessagesContinue()
     {
         assertTimeoutPreemptively(ofSeconds(60), () ->
         {
@@ -602,7 +602,7 @@ public class ClusterTest
     }
 
     @Test
-    public void shouldCatchupFromEmptyLog() throws Exception
+    public void shouldCatchupFromEmptyLog()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
@@ -627,7 +627,7 @@ public class ClusterTest
     }
 
     @Test
-    public void shouldCatchupFromEmptyLogThenSnapshotAfterShutdownAndFollowerCleanStart() throws Exception
+    public void shouldCatchupFromEmptyLogThenSnapshotAfterShutdownAndFollowerCleanStart()
     {
         assertTimeoutPreemptively(ofSeconds(30), () ->
         {
@@ -682,25 +682,21 @@ public class ClusterTest
     }
 
     @Test
-    public void shouldCatchUpAfterFollowerMissesOneMessage() throws Exception
+    public void shouldCatchUpAfterFollowerMissesOneMessage()
     {
         assertTimeoutPreemptively(ofSeconds(30), () ->
-        {
-            shouldCatchUpAfterFollowerMissesMessage(TestMessages.NO_OP);
-        });
+            shouldCatchUpAfterFollowerMissesMessage(TestMessages.NO_OP));
     }
 
     @Test
-    public void shouldCatchUpAfterFollowerMissesTimerRegistration() throws Exception
+    public void shouldCatchUpAfterFollowerMissesTimerRegistration()
     {
         assertTimeoutPreemptively(ofSeconds(30), () ->
-        {
-            shouldCatchUpAfterFollowerMissesMessage(TestMessages.REGISTER_TIMER);
-        });
+            shouldCatchUpAfterFollowerMissesMessage(TestMessages.REGISTER_TIMER));
     }
 
     @Test
-    public void shouldCatchUpTwoFreshNodesAfterRestart() throws Exception
+    public void shouldCatchUpTwoFreshNodesAfterRestart()
     {
         assertTimeoutPreemptively(ofSeconds(30), () ->
         {
@@ -748,7 +744,7 @@ public class ClusterTest
     }
 
     @Test
-    public void shouldReplayMultipleSnapshotsWithEmptyFollowerLog() throws Exception
+    public void shouldReplayMultipleSnapshotsWithEmptyFollowerLog()
     {
         assertTimeoutPreemptively(ofSeconds(30), () ->
         {
@@ -833,7 +829,7 @@ public class ClusterTest
     }
 
     @Test
-    public void shouldRecoverQuicklyAfterKillingFollowersThenRestartingOne() throws Exception
+    public void shouldRecoverQuicklyAfterKillingFollowersThenRestartingOne()
     {
         assertTimeoutPreemptively(ofSeconds(30), () ->
         {

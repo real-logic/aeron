@@ -75,7 +75,7 @@ public class ClusterLoggingAgentTest
     }
 
     @Test
-    public void shouldLogMessages() throws Exception
+    public void shouldLogMessages()
     {
         assertTimeoutPreemptively(Duration.ofSeconds(10), () ->
         {

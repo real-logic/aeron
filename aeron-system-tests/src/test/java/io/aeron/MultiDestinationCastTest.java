@@ -292,7 +292,7 @@ public class MultiDestinationCastTest
     }
 
     @Test
-    public void shouldManuallyRemovePortDuringActiveStream() throws Exception
+    public void shouldManuallyRemovePortDuringActiveStream()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
@@ -356,7 +356,7 @@ public class MultiDestinationCastTest
     }
 
     @Test
-    public void shouldManuallyAddPortDuringActiveStream() throws Exception
+    public void shouldManuallyAddPortDuringActiveStream()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {

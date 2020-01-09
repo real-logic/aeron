@@ -45,8 +45,7 @@ public class FragmentedMessageTest
         return asList(
             CommonContext.IPC_CHANNEL,
             "aeron:udp?endpoint=localhost:54325",
-            "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost"
-        );
+            "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost");
     }
 
     private static final int STREAM_ID = 1001;

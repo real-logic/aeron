@@ -38,7 +38,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
-import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -55,7 +54,6 @@ import static org.mockito.Mockito.*;
 
 public class PubAndSubTest
 {
-
     private static final String IPC_URI = "aeron:ipc";
 
     private static List<String> channels()
@@ -63,8 +61,7 @@ public class PubAndSubTest
         return asList(
             "aeron:udp?endpoint=localhost:54325",
             "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost",
-            IPC_URI
-        );
+            IPC_URI);
     }
 
     @RegisterExtension
@@ -303,7 +300,7 @@ public class PubAndSubTest
 
     @ParameterizedTest
     @MethodSource("channels")
-    public void shouldReceivePublishedMessageOneForOneWithDataLoss(final String channel) throws IOException
+    public void shouldReceivePublishedMessageOneForOneWithDataLoss(final String channel)
     {
         assumeFalse(IPC_URI.equals(channel));
 
@@ -362,7 +359,7 @@ public class PubAndSubTest
 
     @ParameterizedTest
     @MethodSource("channels")
-    public void shouldReceivePublishedMessageBatchedWithDataLoss(final String channel) throws IOException
+    public void shouldReceivePublishedMessageBatchedWithDataLoss(final String channel)
     {
         assumeFalse(IPC_URI.equals(channel));
 
@@ -830,7 +827,7 @@ public class PubAndSubTest
 
     @ParameterizedTest
     @MethodSource("channels")
-    public void shouldNoticeDroppedSubscriber(final String channel) throws Exception
+    public void shouldNoticeDroppedSubscriber(final String channel)
     {
         assertTimeoutPreemptively(ofSeconds(20), () ->
         {

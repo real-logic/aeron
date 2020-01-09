@@ -49,8 +49,7 @@ public class SessionSpecificPublicationTest
     {
         return Stream.of(
             new ChannelUriStringBuilder().media(UDP_MEDIA).endpoint(ENDPOINT),
-            new ChannelUriStringBuilder().media(IPC_MEDIA)
-        );
+            new ChannelUriStringBuilder().media(IPC_MEDIA));
     }
 
     private final ErrorHandler mockErrorHandler = mock(ErrorHandler.class);

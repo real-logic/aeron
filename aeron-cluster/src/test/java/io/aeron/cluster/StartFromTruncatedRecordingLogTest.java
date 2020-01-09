@@ -146,7 +146,7 @@ public class StartFromTruncatedRecordingLogTest
     }
 
     @Test
-    public void shouldBeAbleToStartClusterFromTruncatedRecordingLog() throws Exception
+    public void shouldBeAbleToStartClusterFromTruncatedRecordingLog()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {

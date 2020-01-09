@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 public class SingleNodeTest
 {
     @Test
-    public void shouldStartCluster() throws Exception
+    public void shouldStartCluster()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
@@ -40,7 +40,7 @@ public class SingleNodeTest
     }
 
     @Test
-    public void shouldSendMessagesToCluster() throws Exception
+    public void shouldSendMessagesToCluster()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
@@ -60,7 +60,7 @@ public class SingleNodeTest
     }
 
     @Test
-    public void shouldReplayLog() throws Exception
+    public void shouldReplayLog()
     {
         assertTimeoutPreemptively(ofSeconds(20), () ->
         {

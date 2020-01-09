@@ -56,7 +56,7 @@ public class PublishFromArbitraryPositionTest
     private final Aeron aeron = Aeron.connect();
 
     @RegisterExtension
-    TestWatcher testWatcher = new TestWatcher()
+    public final TestWatcher testWatcher = new TestWatcher()
     {
         public void testFailed(final ExtensionContext context, final Throwable cause)
         {
@@ -72,7 +72,7 @@ public class PublishFromArbitraryPositionTest
     }
 
     @Test
-    public void shouldPublishFromArbitraryJoinPosition() throws Exception
+    public void shouldPublishFromArbitraryJoinPosition()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {

@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class DynamicMembershipTest
 {
     @Test
-    public void shouldQueryClusterMembers() throws Exception
+    public void shouldQueryClusterMembers()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
@@ -44,7 +44,7 @@ public class DynamicMembershipTest
     }
 
     @Test
-    public void shouldDynamicallyJoinClusterOfThreeNoSnapshots() throws Exception
+    public void shouldDynamicallyJoinClusterOfThreeNoSnapshots()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
@@ -67,7 +67,7 @@ public class DynamicMembershipTest
     }
 
     @Test
-    public void shouldDynamicallyJoinClusterOfThreeNoSnapshotsThenSend() throws Exception
+    public void shouldDynamicallyJoinClusterOfThreeNoSnapshotsThenSend()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
@@ -91,7 +91,7 @@ public class DynamicMembershipTest
     }
 
     @Test
-    public void shouldDynamicallyJoinClusterOfThreeNoSnapshotsWithCatchup() throws Exception
+    public void shouldDynamicallyJoinClusterOfThreeNoSnapshotsWithCatchup()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
@@ -113,7 +113,7 @@ public class DynamicMembershipTest
     }
 
     @Test
-    public void shouldDynamicallyJoinClusterOfThreeWithEmptySnapshot() throws Exception
+    public void shouldDynamicallyJoinClusterOfThreeWithEmptySnapshot()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
@@ -138,7 +138,7 @@ public class DynamicMembershipTest
     }
 
     @Test
-    public void shouldDynamicallyJoinClusterOfThreeWithSnapshot() throws Exception
+    public void shouldDynamicallyJoinClusterOfThreeWithSnapshot()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
@@ -169,7 +169,7 @@ public class DynamicMembershipTest
     }
 
     @Test
-    public void shouldDynamicallyJoinClusterOfThreeWithSnapshotThenSend() throws Exception
+    public void shouldDynamicallyJoinClusterOfThreeWithSnapshotThenSend()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
@@ -206,7 +206,7 @@ public class DynamicMembershipTest
     }
 
     @Test
-    public void shouldRemoveFollower() throws Exception
+    public void shouldRemoveFollower()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
@@ -230,7 +230,7 @@ public class DynamicMembershipTest
     }
 
     @Test
-    public void shouldRemoveLeader() throws Exception
+    public void shouldRemoveLeader()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
@@ -255,7 +255,7 @@ public class DynamicMembershipTest
     }
 
     @Test
-    public void shouldRemoveLeaderAfterDynamicNodeJoined() throws Exception
+    public void shouldRemoveLeaderAfterDynamicNodeJoined()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
@@ -283,7 +283,7 @@ public class DynamicMembershipTest
     }
 
     @Test
-    public void shouldJoinDynamicNodeToSingleStaticLeader() throws Exception
+    public void shouldJoinDynamicNodeToSingleStaticLeader()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {

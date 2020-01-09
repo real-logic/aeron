@@ -125,7 +125,7 @@ public class MultiDriverTest
     }
 
     @Test
-    public void shouldJoinExistingStreamWithLockStepSendingReceiving() throws Exception
+    public void shouldJoinExistingStreamWithLockStepSendingReceiving()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
@@ -200,7 +200,7 @@ public class MultiDriverTest
     }
 
     @Test
-    public void shouldJoinExistingIdleStreamWithLockStepSendingReceiving() throws Exception
+    public void shouldJoinExistingIdleStreamWithLockStepSendingReceiving()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {

@@ -162,7 +162,7 @@ public class ClusterNodeRestartTest
     }
 
     @Test
-    public void shouldRestartServiceFromEmptySnapshot() throws Exception
+    public void shouldRestartServiceFromEmptySnapshot()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
@@ -200,7 +200,7 @@ public class ClusterNodeRestartTest
     }
 
     @Test
-    public void shouldRestartServiceFromSnapshot() throws Exception
+    public void shouldRestartServiceFromSnapshot()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
@@ -248,7 +248,7 @@ public class ClusterNodeRestartTest
     }
 
     @Test
-    public void shouldRestartServiceFromSnapshotWithFurtherLog() throws Exception
+    public void shouldRestartServiceFromSnapshotWithFurtherLog()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
@@ -304,7 +304,7 @@ public class ClusterNodeRestartTest
     }
 
     @Test
-    public void shouldTakeMultipleSnapshots() throws Exception
+    public void shouldTakeMultipleSnapshots()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
@@ -333,7 +333,7 @@ public class ClusterNodeRestartTest
     }
 
     @Test
-    public void shouldRestartServiceWithTimerFromSnapshotWithFurtherLog() throws Exception
+    public void shouldRestartServiceWithTimerFromSnapshotWithFurtherLog()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
@@ -424,7 +424,7 @@ public class ClusterNodeRestartTest
 
     @Disabled
     @Test
-    public void shouldRestartServiceTwiceWithTombstoneSnapshotAndFurtherLog() throws Exception
+    public void shouldRestartServiceTwiceWithTombstoneSnapshotAndFurtherLog()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {

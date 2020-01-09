@@ -181,7 +181,7 @@ public class ReceiverTest
     }
 
     @Test
-    public void shouldCreateRcvTermAndSendSmOnSetup() throws Exception
+    public void shouldCreateRcvTermAndSendSmOnSetup()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {

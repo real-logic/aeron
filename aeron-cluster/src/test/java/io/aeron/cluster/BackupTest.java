@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class BackupTest
 {
     @Test
-    public void shouldBackupClusterNoSnapshotsAndEmptyLog() throws Exception
+    public void shouldBackupClusterNoSnapshotsAndEmptyLog()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
@@ -52,7 +52,7 @@ public class BackupTest
     }
 
     @Test
-    public void shouldBackupClusterNoSnapshotsAndNonEmptyLog() throws Exception
+    public void shouldBackupClusterNoSnapshotsAndNonEmptyLog()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
@@ -84,7 +84,7 @@ public class BackupTest
     }
 
     @Test
-    public void shouldBackupClusterNoSnapshotsAndThenSendMessages() throws Exception
+    public void shouldBackupClusterNoSnapshotsAndThenSendMessages()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
@@ -116,7 +116,7 @@ public class BackupTest
     }
 
     @Test
-    public void shouldBackupClusterWithSnapshot() throws Exception
+    public void shouldBackupClusterWithSnapshot()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
@@ -153,7 +153,7 @@ public class BackupTest
     }
 
     @Test
-    public void shouldBackupClusterWithSnapshotAndNonEmptyLog() throws Exception
+    public void shouldBackupClusterWithSnapshotAndNonEmptyLog()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
@@ -198,7 +198,7 @@ public class BackupTest
     }
 
     @Test
-    public void shouldBackupClusterWithSnapshotThenSend() throws Exception
+    public void shouldBackupClusterWithSnapshotThenSend()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
@@ -243,7 +243,7 @@ public class BackupTest
     }
 
     @Test
-    public void shouldBeAbleToGetTimeOfNextBackupQuery() throws Exception
+    public void shouldBeAbleToGetTimeOfNextBackupQuery()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
@@ -262,7 +262,7 @@ public class BackupTest
     }
 
     @Test
-    public void shouldBackupClusterNoSnapshotsAndNonEmptyLogWithReQuery() throws Exception
+    public void shouldBackupClusterNoSnapshotsAndNonEmptyLogWithReQuery()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
@@ -304,7 +304,7 @@ public class BackupTest
     }
 
     @Test
-    public void shouldBackupClusterNoSnapshotsAndNonEmptyLogAfterFailure() throws Exception
+    public void shouldBackupClusterNoSnapshotsAndNonEmptyLogAfterFailure()
     {
         assertTimeoutPreemptively(ofSeconds(20), () ->
         {
@@ -340,7 +340,7 @@ public class BackupTest
     }
 
     @Test
-    public void shouldBackupClusterNoSnapshotsAndNonEmptyLogWithFailure() throws Exception
+    public void shouldBackupClusterNoSnapshotsAndNonEmptyLogWithFailure()
     {
         assertTimeoutPreemptively(ofSeconds(30), () ->
         {

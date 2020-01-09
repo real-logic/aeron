@@ -43,8 +43,7 @@ public class UntetheredSubscriptionTest
         return asList(
             "aeron:ipc?term-length=64k",
             "aeron:udp?endpoint=localhost:54325|term-length=64k",
-            "aeron-spy:aeron:udp?endpoint=localhost:54325|term-length=64k"
-        );
+            "aeron-spy:aeron:udp?endpoint=localhost:54325|term-length=64k");
     }
 
     private static final int STREAM_ID = 1001;

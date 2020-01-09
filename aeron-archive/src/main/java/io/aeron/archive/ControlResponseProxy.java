@@ -176,6 +176,7 @@ class ControlResponseProxy
 
     private boolean sendResponseHook(final ControlSession session, final DirectBuffer buffer, final int length)
     {
+        System.out.println(Thread.currentThread().getName() + " => sendResponseHook");
         return send(session, buffer, length);
     }
 

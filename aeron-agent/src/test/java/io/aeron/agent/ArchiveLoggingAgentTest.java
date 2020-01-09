@@ -18,6 +18,9 @@ import java.io.File;
 import java.nio.file.Paths;
 import java.util.concurrent.CountDownLatch;
 
+import static io.aeron.agent.ArchiveEventCode.CMD_IN_AUTH_CONNECT;
+import static io.aeron.agent.ArchiveEventCode.CMD_OUT_RESPONSE;
+import static io.aeron.agent.ArchiveEventLogger.toEventCodeId;
 import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
 import static java.time.Duration.ofSeconds;
@@ -25,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class ArchiveLoggingAgentTest
 {
-    private static final CountDownLatch LATCH = new CountDownLatch(1);
+    private static final CountDownLatch LATCH = new CountDownLatch(2);
 
     private String testDirName;
 
@@ -109,7 +112,7 @@ public class ArchiveLoggingAgentTest
 
         public void onMessage(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
         {
-            if (ArchiveEventLogger.toEventCodeId(ArchiveEventCode.CMD_IN_AUTH_CONNECT) == msgTypeId)
+            if (toEventCodeId(CMD_IN_AUTH_CONNECT) == msgTypeId || toEventCodeId(CMD_OUT_RESPONSE) == msgTypeId)
             {
                 LATCH.countDown();
             }

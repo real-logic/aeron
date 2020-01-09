@@ -21,13 +21,11 @@ import net.bytebuddy.agent.builder.ResettableClassFileTransformer;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.dynamic.scaffold.TypeValidation;
-import net.bytebuddy.matcher.ElementMatcher;
 import net.bytebuddy.utility.JavaModule;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.AgentRunner;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
 
-import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
 
 import static io.aeron.agent.EventConfiguration.*;
@@ -53,7 +51,8 @@ public class EventLogAgent
 
     private static AgentRunner readerAgentRunner;
     private static Instrumentation instrumentation;
-    private static ClassFileTransformer logTransformer;
+    private static ResettableClassFileTransformer logTransformer;
+    private static Thread thread;
 
     public static void premain(final String agentArgs, final Instrumentation instrumentation)
     {
@@ -70,25 +69,18 @@ public class EventLogAgent
         if (logTransformer != null)
         {
             readerAgentRunner.close();
-            instrumentation.removeTransformer(logTransformer);
+            thread.interrupt();
+            try
+            {
+                thread.join();
+            }
+            catch (final InterruptedException e)
+            {
+            }
 
-            final ElementMatcher.Junction<TypeDescription> junction = nameEndsWith("DriverConductor")
-                .or(nameEndsWith("ClientProxy"))
-                .or(nameEndsWith("ClientCommandAdapter"))
-                .or(nameEndsWith("SenderProxy"))
-                .or(nameEndsWith("ReceiverProxy"))
-                .or(nameEndsWith("UdpChannelTransport"))
-                .or(nameEndsWith("ControlSessionDemuxer"))
-                .or(nameEndsWith("Election"))
-                .or(nameEndsWith("ConsensusModuleAgent"));
+            logTransformer.reset(instrumentation, AgentBuilder.RedefinitionStrategy.RETRANSFORMATION);
 
-            final ResettableClassFileTransformer transformer = new AgentBuilder.Default()
-                .type(junction)
-                .transform(AgentBuilder.Transformer.NoOp.INSTANCE)
-                .installOn(instrumentation);
-
-            instrumentation.removeTransformer(transformer);
-
+            thread = null;
             readerAgentRunner = null;
             instrumentation = null;
             logTransformer = null;
@@ -129,7 +121,7 @@ public class EventLogAgent
 
         logTransformer = agentBuilder.installOn(instrumentation);
 
-        final Thread thread = new Thread(readerAgentRunner);
+        thread = new Thread(readerAgentRunner);
         thread.setName("event-log-reader");
         thread.setDaemon(true);
         thread.start();

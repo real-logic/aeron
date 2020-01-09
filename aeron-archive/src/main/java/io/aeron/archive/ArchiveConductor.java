@@ -1804,7 +1804,7 @@ abstract class ArchiveConductor
         final ControlSession controlSession)
     {
         final File file = new File(archiveDir, segmentFileName(recordingId, segmentBasePosition));
-        if (!file.delete())
+        if (file.exists() && !file.delete())
         {
             final String msg = "failed to delete " + file;
             controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);

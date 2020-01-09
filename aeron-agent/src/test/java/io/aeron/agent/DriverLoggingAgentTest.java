@@ -20,18 +20,22 @@ import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.FragmentHandler;
+import org.agrona.IoUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.IntHashSet;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.MessageHandler;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
+import java.nio.file.Paths;
 import java.util.concurrent.CountDownLatch;
 
+import static io.aeron.agent.DriverEventCode.*;
 import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
 import static java.time.Duration.ofSeconds;
@@ -44,18 +48,31 @@ public class DriverLoggingAgentTest
 
     private static final IntHashSet MSG_ID_SET = new IntHashSet();
     private static final CountDownLatch LATCH = new CountDownLatch(1);
+    private String testDirName;
 
-    @BeforeAll
-    public static void installAgent()
+    @BeforeEach
+    public void before()
     {
         System.setProperty(EventLogAgent.READER_CLASSNAME_PROP_NAME, StubEventLogReaderAgent.class.getName());
         Common.beforeAgent();
+
+        testDirName = Paths.get(IoUtil.tmpDirName(), "driver-test").toString();
+        final File testDir = new File(testDirName);
+        if (testDir.exists())
+        {
+            IoUtil.delete(testDir, false);
+        }
     }
 
-    @AfterAll
-    public static void removeAgent()
+    @AfterEach
+    public void after()
     {
         Common.afterAgent();
+
+        if (testDirName != null)
+        {
+            IoUtil.delete(new File(testDirName), false);
+        }
     }
 
     @Test
@@ -63,8 +80,11 @@ public class DriverLoggingAgentTest
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
+            final String aeronDirectoryName = Paths.get(testDirName, "media").toString();
+
             final MediaDriver.Context driverCtx = new MediaDriver.Context()
-                .errorHandler(Throwable::printStackTrace);
+                .errorHandler(Throwable::printStackTrace)
+                .aeronDirectoryName(aeronDirectoryName);
 
             try (MediaDriver ignore = MediaDriver.launchEmbedded(driverCtx))
             {
@@ -89,18 +109,18 @@ public class DriverLoggingAgentTest
                         Thread.yield();
                     }
 
-                    assertSame(counter.get(), 1);
+                    assertEquals(counter.get(), 1);
                 }
 
                 LATCH.await();
             }
 
-            assertTrue(MSG_ID_SET.contains(DriverEventCode.CMD_IN_ADD_PUBLICATION.id()));
-            assertTrue(MSG_ID_SET.contains(DriverEventCode.CMD_IN_ADD_SUBSCRIPTION.id()));
-            assertTrue(MSG_ID_SET.contains(DriverEventCode.FRAME_IN.id()));
-            assertTrue(MSG_ID_SET.contains(DriverEventCode.FRAME_OUT.id()));
-            assertTrue(MSG_ID_SET.contains(DriverEventCode.CMD_OUT_AVAILABLE_IMAGE.id()));
-            assertTrue(MSG_ID_SET.contains(DriverEventCode.CMD_IN_CLIENT_CLOSE.id()));
+            assertTrue(MSG_ID_SET.contains(CMD_IN_ADD_PUBLICATION.id()));
+            assertTrue(MSG_ID_SET.contains(CMD_IN_ADD_SUBSCRIPTION.id()));
+            assertTrue(MSG_ID_SET.contains(FRAME_IN.id()));
+            assertTrue(MSG_ID_SET.contains(FRAME_OUT.id()));
+            assertTrue(MSG_ID_SET.contains(CMD_OUT_AVAILABLE_IMAGE.id()));
+            assertTrue(MSG_ID_SET.contains(CMD_IN_CLIENT_CLOSE.id()));
         });
     }
 
@@ -118,11 +138,11 @@ public class DriverLoggingAgentTest
 
         public void onMessage(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
         {
-            DriverLoggingAgentTest.MSG_ID_SET.add(msgTypeId);
+            MSG_ID_SET.add(msgTypeId);
 
-            if (DriverEventCode.CMD_IN_CLIENT_CLOSE.id() == msgTypeId)
+            if (CMD_IN_CLIENT_CLOSE.id() == msgTypeId)
             {
-                DriverLoggingAgentTest.LATCH.countDown();
+                LATCH.countDown();
             }
         }
     }

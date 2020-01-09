@@ -25,7 +25,6 @@ import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.ThreadingMode;
-import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.Agent;
@@ -50,23 +49,25 @@ public class ClusterLoggingAgentTest
     private static final CountDownLatch LATCH = new CountDownLatch(3);
 
     private String testDirName;
-    private ClusteredMediaDriver clusteredMediaDriver;
-    private ClusteredServiceContainer clusteredServiceContainer;
 
     @BeforeEach
     public void before()
     {
         System.setProperty(EventLogAgent.READER_CLASSNAME_PROP_NAME, StubEventLogReaderAgent.class.getName());
         Common.beforeAgent();
+
+        testDirName = Paths.get(IoUtil.tmpDirName(), "cluster-test").toString();
+        final File testDir = new File(testDirName);
+        if (testDir.exists())
+        {
+            IoUtil.delete(testDir, false);
+        }
     }
 
     @AfterEach
     public void after()
     {
         Common.afterAgent();
-
-        CloseHelper.close(clusteredServiceContainer);
-        CloseHelper.close(clusteredMediaDriver);
 
         if (testDirName != null)
         {
@@ -79,13 +80,6 @@ public class ClusterLoggingAgentTest
     {
         assertTimeoutPreemptively(Duration.ofSeconds(10), () ->
         {
-            testDirName = Paths.get(IoUtil.tmpDirName(), "cluster-test").toString();
-            final File testDir = new File(testDirName);
-            if (testDir.exists())
-            {
-                IoUtil.delete(testDir, false);
-            }
-
             final String aeronDirectoryName = Paths.get(testDirName, "media").toString();
 
             final MediaDriver.Context mediaDriverCtx = new Context()
@@ -127,10 +121,15 @@ public class ClusterLoggingAgentTest
                 .clusterDir(new File(testDirName, "service"))
                 .clusteredService(mock(ClusteredService.class));
 
-            clusteredMediaDriver = ClusteredMediaDriver.launch(mediaDriverCtx, archiveCtx, consensusModuleCtx);
-            clusteredServiceContainer = ClusteredServiceContainer.launch(clusteredServiceCtx);
-
-            LATCH.await();
+            try (ClusteredMediaDriver clusteredMediaDriver = ClusteredMediaDriver
+                .launch(mediaDriverCtx, archiveCtx, consensusModuleCtx))
+            {
+                try (ClusteredServiceContainer clusteredServiceContainer = ClusteredServiceContainer
+                    .launch(clusteredServiceCtx))
+                {
+                    LATCH.await();
+                }
+            }
         });
     }
 

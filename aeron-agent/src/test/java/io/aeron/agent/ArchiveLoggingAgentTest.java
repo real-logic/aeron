@@ -6,7 +6,6 @@ import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
-import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.Agent;
@@ -29,23 +28,25 @@ public class ArchiveLoggingAgentTest
     private static final CountDownLatch LATCH = new CountDownLatch(1);
 
     private String testDirName;
-    private ArchivingMediaDriver archivingMediaDriver;
-    private AeronArchive aeronArchive;
 
     @BeforeEach
     public void before()
     {
         System.setProperty(EventLogAgent.READER_CLASSNAME_PROP_NAME, StubEventLogReaderAgent.class.getName());
         Common.beforeAgent();
+
+        testDirName = Paths.get(IoUtil.tmpDirName(), "archive-test").toString();
+        final File testDir = new File(testDirName);
+        if (testDir.exists())
+        {
+            IoUtil.delete(testDir, false);
+        }
     }
 
     @AfterEach
     public void after()
     {
         Common.afterAgent();
-
-        CloseHelper.close(aeronArchive);
-        CloseHelper.close(archivingMediaDriver);
 
         if (testDirName != null)
         {
@@ -58,13 +59,6 @@ public class ArchiveLoggingAgentTest
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
-            testDirName = Paths.get(IoUtil.tmpDirName(), "archive-test").toString();
-            final File testDir = new File(testDirName);
-            if (testDir.exists())
-            {
-                IoUtil.delete(testDir, false);
-            }
-
             final String aeronDirectoryName = Paths.get(testDirName, "media").toString();
 
             final MediaDriver.Context mediaDriverCtx = new MediaDriver.Context()
@@ -90,10 +84,13 @@ public class ArchiveLoggingAgentTest
                 .recordingEventsChannel(aeronArchiveContext.recordingEventsChannel())
                 .threadingMode(ArchiveThreadingMode.SHARED);
 
-            archivingMediaDriver = ArchivingMediaDriver.launch(mediaDriverCtx, archiveCtx);
-            aeronArchive = AeronArchive.connect(aeronArchiveContext);
-
-            LATCH.await();
+            try (ArchivingMediaDriver archivingMediaDriver = ArchivingMediaDriver.launch(mediaDriverCtx, archiveCtx))
+            {
+                try (AeronArchive aeronArchive = AeronArchive.connect(aeronArchiveContext))
+                {
+                    LATCH.await();
+                }
+            }
         });
     }
 

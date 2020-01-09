@@ -2,6 +2,7 @@ package io.aeron.agent;
 
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.ControlResponseEncoder;
+import io.aeron.archive.codecs.MessageHeaderEncoder;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
@@ -15,7 +16,7 @@ class ArchiveEventDissectorTest
     {
         final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(1024, 32));
         final ControlResponseEncoder responseEncoder = new ControlResponseEncoder();
-        responseEncoder.wrap(buffer, 16)
+        responseEncoder.wrapAndApplyHeader(buffer, 16, new MessageHeaderEncoder())
             .controlSessionId(13)
             .correlationId(42)
             .relevantId(8)

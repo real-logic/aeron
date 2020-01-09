@@ -330,7 +330,7 @@ public class EventLogAgent
             .type(nameEndsWith("ControlResponseProxy"))
             .transform(((builder, typeDescription, classLoader, module) -> builder
                 .visit(to(ControlInterceptor.ControlResponse.class)
-                    .on(named("sendResponse")))));
+                    .on(named("sendResponseHook")))));
     }
 
     private static AgentBuilder addClusterInstrumentation(final AgentBuilder agentBuilder)

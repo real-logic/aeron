@@ -17,11 +17,9 @@ package io.aeron.agent;
 
 import io.aeron.archive.codecs.*;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 
-import java.nio.ByteBuffer;
 import java.util.EnumSet;
 
 import static io.aeron.agent.ArchiveEventCode.*;
@@ -40,9 +38,6 @@ public final class ArchiveEventLogger
 
     public static final ArchiveEventLogger LOGGER = new ArchiveEventLogger(EventConfiguration.EVENT_RING_BUFFER);
 
-    private final UnsafeBuffer encodedBuffer =
-        new UnsafeBuffer(ByteBuffer.allocateDirect(EventConfiguration.MAX_EVENT_LENGTH));
-    private final ControlResponseEncoder controlResponseEncoder = new ControlResponseEncoder();
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     private final ManyToOneRingBuffer ringBuffer;
 
@@ -194,20 +189,8 @@ public final class ArchiveEventLogger
         }
     }
 
-    public void logControlResponse(
-        final long controlSessionId,
-        final long correlationId,
-        final long relevantId,
-        final ControlResponseCode code,
-        final String errorMessage)
+    public void logControlResponse(final DirectBuffer buffer, final int length)
     {
-        controlResponseEncoder.wrap(encodedBuffer, 0)
-            .controlSessionId(controlSessionId)
-            .correlationId(correlationId)
-            .relevantId(relevantId)
-            .code(code)
-            .errorMessage(errorMessage);
-
-        ringBuffer.write(toEventCodeId(CMD_OUT_RESPONSE), encodedBuffer, 0, controlResponseEncoder.encodedLength());
+        ringBuffer.write(toEventCodeId(CMD_OUT_RESPONSE), buffer, 0, length);
     }
 }

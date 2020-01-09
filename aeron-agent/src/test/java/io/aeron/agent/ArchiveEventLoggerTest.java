@@ -1,6 +1,5 @@
 package io.aeron.agent;
 
-import io.aeron.archive.codecs.ControlResponseDecoder;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.junit.jupiter.api.Test;
@@ -10,13 +9,9 @@ import org.junit.jupiter.params.provider.EnumSource;
 import static io.aeron.agent.ArchiveEventCode.CMD_OUT_RESPONSE;
 import static io.aeron.agent.ArchiveEventCode.EVENT_CODE_TYPE;
 import static io.aeron.agent.ArchiveEventLogger.CONTROL_REQUEST_EVENTS;
-import static io.aeron.archive.codecs.ControlResponseCode.RECORDING_UNKNOWN;
-import static io.aeron.archive.codecs.ControlResponseDecoder.BLOCK_LENGTH;
-import static io.aeron.archive.codecs.ControlResponseDecoder.SCHEMA_VERSION;
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static org.agrona.concurrent.ringbuffer.RecordDescriptor.encodedMsgOffset;
-import static org.agrona.concurrent.ringbuffer.RecordDescriptor.typeOffset;
+import static org.agrona.concurrent.ringbuffer.RecordDescriptor.*;
 import static org.agrona.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.params.provider.EnumSource.Mode.EXCLUDE;
@@ -35,24 +30,21 @@ class ArchiveEventLoggerTest
     @Test
     void logControlResponse()
     {
-        final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirect(2048 + TRAILER_LENGTH));
-        final ArchiveEventLogger logger = new ArchiveEventLogger(new ManyToOneRingBuffer(buffer));
+        final UnsafeBuffer dest = new UnsafeBuffer(allocateDirect(2048 + TRAILER_LENGTH));
+        final ArchiveEventLogger logger = new ArchiveEventLogger(new ManyToOneRingBuffer(dest));
+        final UnsafeBuffer src = new UnsafeBuffer(allocateDirect(128));
+        src.setMemory(0, 64, (byte)1);
 
-        logger.logControlResponse(
-            Long.MIN_VALUE,
-            -100,
-            Long.MAX_VALUE,
-            RECORDING_UNKNOWN,
-            "the ERROR message");
+        logger.logControlResponse(src, 64);
 
-        assertEquals(ArchiveEventLogger.toEventCodeId(CMD_OUT_RESPONSE), buffer.getInt(typeOffset(0), LITTLE_ENDIAN));
-        final ControlResponseDecoder controlResponseDecoder = new ControlResponseDecoder();
-        controlResponseDecoder.wrap(buffer, encodedMsgOffset(0), BLOCK_LENGTH, SCHEMA_VERSION);
-        assertEquals(Long.MIN_VALUE, controlResponseDecoder.controlSessionId());
-        assertEquals(-100, controlResponseDecoder.correlationId());
-        assertEquals(Long.MAX_VALUE, controlResponseDecoder.relevantId());
-        assertEquals(RECORDING_UNKNOWN, controlResponseDecoder.code());
-        assertEquals("the ERROR message", controlResponseDecoder.errorMessage());
+        assertEquals(64 + HEADER_LENGTH, dest.getInt(lengthOffset(0), LITTLE_ENDIAN));
+        assertEquals(ArchiveEventLogger.toEventCodeId(CMD_OUT_RESPONSE), dest.getInt(typeOffset(0), LITTLE_ENDIAN));
+        final byte[] data = new byte[64];
+        dest.getBytes(encodedMsgOffset(0), data);
+        for (final byte b : data)
+        {
+            assertEquals((byte)1, b);
+        }
     }
 
     @ParameterizedTest

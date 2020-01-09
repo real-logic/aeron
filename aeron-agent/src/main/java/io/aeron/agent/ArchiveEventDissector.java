@@ -350,11 +350,13 @@ final class ArchiveEventDissector
         final int offset,
         final StringBuilder builder)
     {
+        HEADER_DECODER.wrap(buffer, offset);
+
         CONTROL_RESPONSE_DECODER.wrap(
             buffer,
-            offset,
-            ControlResponseDecoder.BLOCK_LENGTH,
-            ControlResponseDecoder.SCHEMA_VERSION);
+            offset + MessageHeaderDecoder.ENCODED_LENGTH,
+            HEADER_DECODER.blockLength(),
+            HEADER_DECODER.version());
 
         builder.append("ARCHIVE: CONTROL_RESPONSE")
             .append(", controlSessionId=").append(CONTROL_RESPONSE_DECODER.controlSessionId())

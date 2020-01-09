@@ -23,6 +23,8 @@ import org.agrona.concurrent.ringbuffer.RingBuffer;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
+import static io.aeron.agent.EventConfiguration.DRIVER_EVENT_CODES;
+
 /**
  * Event logger interface used by interceptors for recording into a {@link RingBuffer} for a
  * {@link io.aeron.driver.MediaDriver} via a Java Agent.
@@ -43,7 +45,7 @@ public final class DriverEventLogger
 
     public void log(final DriverEventCode code, final DirectBuffer buffer, final int offset, final int length)
     {
-        if (DriverEventCode.isEnabled(code, EventConfiguration.driverEventCodes))
+        if (DRIVER_EVENT_CODES.contains(code))
         {
             final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
             final int encodedLength = DriverEventEncoder.encode(encodedBuffer, buffer, offset, length);

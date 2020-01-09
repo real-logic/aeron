@@ -22,7 +22,8 @@ import java.io.PrintStream;
 import java.util.EnumSet;
 import java.util.Set;
 
-import static io.aeron.agent.EventConfiguration.*;
+import static io.aeron.agent.EventConfiguration.getEnabledClusterEventCodes;
+import static io.aeron.agent.EventConfiguration.getEnabledDriverEventCodes;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -56,7 +57,7 @@ public class EventConfigurationTest
     @Test
     public void allPropertyShouldReturnAllEventCodes()
     {
-        assertEquals(ALL_LOGGER_EVENT_CODES, getEnabledDriverEventCodes("all"));
+        assertEquals(EnumSet.allOf(DriverEventCode.class), getEnabledDriverEventCodes("all"));
     }
 
     @Test
@@ -70,13 +71,5 @@ public class EventConfigurationTest
     public void allClusterEventsShouldBeEnabled()
     {
         assertEquals(EnumSet.allOf(ClusterEventCode.class), getEnabledClusterEventCodes("all"));
-    }
-
-    @Test
-    public void makeTagBitSet()
-    {
-        final Set<DriverEventCode> eventCodes = EnumSet.of(DriverEventCode.FRAME_OUT, DriverEventCode.FRAME_IN);
-        final long bitSet = EventConfiguration.makeTagBitSet(eventCodes);
-        assertEquals((DriverEventCode.FRAME_OUT.tagBit() | DriverEventCode.FRAME_IN.tagBit()), bitSet);
     }
 }

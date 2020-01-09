@@ -105,9 +105,9 @@ public class EventLogAgent
 
         EventConfiguration.init();
 
-        if (0 == driverEventCodes &&
-            0 == archiveEventCodes &&
-            0 == clusterEventCodes)
+        if (DRIVER_EVENT_CODES.isEmpty() &&
+            ARCHIVE_EVENT_CODES.isEmpty() &&
+            CLUSTER_EVENT_CODES.isEmpty())
         {
             return;
         }
@@ -149,13 +149,11 @@ public class EventLogAgent
     private static AgentBuilder addDriverConductorInstrumentation(final AgentBuilder agentBuilder)
     {
         final boolean cleanupImage =
-            DriverEventCode.isEnabled(DriverEventCode.REMOVE_IMAGE_CLEANUP, driverEventCodes);
+            DRIVER_EVENT_CODES.contains(DriverEventCode.REMOVE_IMAGE_CLEANUP);
         final boolean cleanupPublication =
-            DriverEventCode
-                .isEnabled(DriverEventCode.REMOVE_PUBLICATION_CLEANUP, driverEventCodes);
+            DRIVER_EVENT_CODES.contains(DriverEventCode.REMOVE_PUBLICATION_CLEANUP);
         final boolean cleanupSubscriptionLink =
-            DriverEventCode
-                .isEnabled(DriverEventCode.REMOVE_SUBSCRIPTION_CLEANUP, driverEventCodes);
+            DRIVER_EVENT_CODES.contains(DriverEventCode.REMOVE_SUBSCRIPTION_CLEANUP);
 
         if (!cleanupImage && !cleanupPublication && !cleanupSubscriptionLink)
         {
@@ -186,8 +184,7 @@ public class EventLogAgent
 
     private static AgentBuilder addDriverCommandInstrumentation(final AgentBuilder agentBuilder)
     {
-        if (CmdInterceptor.EVENTS.stream()
-            .noneMatch(e -> DriverEventCode.isEnabled(e, driverEventCodes)))
+        if (CmdInterceptor.EVENTS.stream().noneMatch(DRIVER_EVENT_CODES::contains))
         {
             return agentBuilder;
         }
@@ -205,10 +202,8 @@ public class EventLogAgent
 
     private static AgentBuilder addDriverSenderProxyInstrumentation(final AgentBuilder agentBuilder)
     {
-        final boolean registerChannel =
-            DriverEventCode.isEnabled(DriverEventCode.SEND_CHANNEL_CREATION, driverEventCodes);
-        final boolean closeChannel =
-            DriverEventCode.isEnabled(DriverEventCode.SEND_CHANNEL_CLOSE, driverEventCodes);
+        final boolean registerChannel = DRIVER_EVENT_CODES.contains(DriverEventCode.SEND_CHANNEL_CREATION);
+        final boolean closeChannel = DRIVER_EVENT_CODES.contains(DriverEventCode.SEND_CHANNEL_CLOSE);
 
         if (!registerChannel && !closeChannel)
         {
@@ -237,10 +232,8 @@ public class EventLogAgent
 
     private static AgentBuilder addDriverReceiverProxyInstrumentation(final AgentBuilder agentBuilder)
     {
-        final boolean registerChannel =
-            DriverEventCode.isEnabled(DriverEventCode.RECEIVE_CHANNEL_CREATION, driverEventCodes);
-        final boolean closeChannel =
-            DriverEventCode.isEnabled(DriverEventCode.RECEIVE_CHANNEL_CLOSE, driverEventCodes);
+        final boolean registerChannel = DRIVER_EVENT_CODES.contains(DriverEventCode.RECEIVE_CHANNEL_CREATION);
+        final boolean closeChannel = DRIVER_EVENT_CODES.contains(DriverEventCode.RECEIVE_CHANNEL_CLOSE);
 
         if (!registerChannel && !closeChannel)
         {
@@ -269,10 +262,8 @@ public class EventLogAgent
 
     private static AgentBuilder addDriverUdpChannelTransportInstrumentation(final AgentBuilder agentBuilder)
     {
-        final boolean frameOut =
-            DriverEventCode.isEnabled(DriverEventCode.FRAME_OUT, driverEventCodes);
-        final boolean frameIn =
-            DriverEventCode.isEnabled(DriverEventCode.FRAME_IN, driverEventCodes);
+        final boolean frameOut = DRIVER_EVENT_CODES.contains(DriverEventCode.FRAME_OUT);
+        final boolean frameIn = DRIVER_EVENT_CODES.contains(DriverEventCode.FRAME_IN);
 
         if (!frameOut && !frameIn)
         {
@@ -309,8 +300,7 @@ public class EventLogAgent
 
     private static AgentBuilder addArchiveControlSessionDemuxerInstrumentation(final AgentBuilder agentBuilder)
     {
-        if (ArchiveEventLogger.CONTROL_REQUEST_EVENTS.stream()
-            .noneMatch(e -> ArchiveEventCode.isEnabled(e, archiveEventCodes)))
+        if (ArchiveEventLogger.CONTROL_REQUEST_EVENTS.stream().noneMatch(ARCHIVE_EVENT_CODES::contains))
         {
             return agentBuilder;
         }
@@ -324,7 +314,7 @@ public class EventLogAgent
 
     private static AgentBuilder addArchiveControlResponseProxyInstrumentation(final AgentBuilder agentBuilder)
     {
-        if (!ArchiveEventCode.isEnabled(ArchiveEventCode.CMD_OUT_RESPONSE, archiveEventCodes))
+        if (!ARCHIVE_EVENT_CODES.contains(ArchiveEventCode.CMD_OUT_RESPONSE))
         {
             return agentBuilder;
         }
@@ -346,7 +336,7 @@ public class EventLogAgent
 
     private static AgentBuilder addClusterElectionInstrumentation(final AgentBuilder agentBuilder)
     {
-        if (!ClusterEventCode.isEnabled(ClusterEventCode.ELECTION_STATE_CHANGE, clusterEventCodes))
+        if (!CLUSTER_EVENT_CODES.contains(ClusterEventCode.ELECTION_STATE_CHANGE))
         {
             return agentBuilder;
         }
@@ -360,12 +350,9 @@ public class EventLogAgent
 
     private static AgentBuilder addClusterConsensusModuleAgentInstrumentation(final AgentBuilder agentBuilder)
     {
-        final boolean newLeadershipTerm = ClusterEventCode
-            .isEnabled(ClusterEventCode.NEW_LEADERSHIP_TERM, clusterEventCodes);
-        final boolean stateChange = ClusterEventCode
-            .isEnabled(ClusterEventCode.STATE_CHANGE, clusterEventCodes);
-        final boolean roleChange = ClusterEventCode
-            .isEnabled(ClusterEventCode.ROLE_CHANGE, clusterEventCodes);
+        final boolean newLeadershipTerm = CLUSTER_EVENT_CODES.contains(ClusterEventCode.NEW_LEADERSHIP_TERM);
+        final boolean stateChange = CLUSTER_EVENT_CODES.contains(ClusterEventCode.STATE_CHANGE);
+        final boolean roleChange = CLUSTER_EVENT_CODES.contains(ClusterEventCode.ROLE_CHANGE);
 
         if (!newLeadershipTerm && !stateChange && !roleChange)
         {

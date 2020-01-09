@@ -22,11 +22,11 @@ import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 import java.nio.ByteBuffer;
 import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Function;
 
 import static io.aeron.agent.DriverEventCode.*;
+import static java.lang.System.*;
 
 /**
  * Common configuration elements between event loggers and event reader side
@@ -95,8 +95,6 @@ public class EventConfiguration
         SEND_CHANNEL_CLOSE,
         RECEIVE_CHANNEL_CLOSE);
 
-    public static final Set<DriverEventCode> ALL_LOGGER_EVENT_CODES = EnumSet.allOf(DriverEventCode.class);
-
     /**
      * Event Buffer default length (in bytes)
      */
@@ -105,7 +103,7 @@ public class EventConfiguration
     /**
      * Maximum length of an event in bytes
      */
-    public static final int MAX_EVENT_LENGTH = 4096 + System.lineSeparator().length();
+    public static final int MAX_EVENT_LENGTH = 4096 + lineSeparator().length();
 
     /**
      * Limit for event reader loop
@@ -126,18 +124,23 @@ public class EventConfiguration
         EVENT_RING_BUFFER = new ManyToOneRingBuffer(new UnsafeBuffer(ByteBuffer.allocateDirect(bufferLength)));
     }
 
-    public static long driverEventCodes;
-    public static long archiveEventCodes;
-    public static long clusterEventCodes;
+    public static final EnumSet<DriverEventCode> DRIVER_EVENT_CODES = EnumSet.noneOf(DriverEventCode.class);
+    public static final EnumSet<ArchiveEventCode> ARCHIVE_EVENT_CODES = EnumSet.noneOf(ArchiveEventCode.class);
+    public static final EnumSet<ClusterEventCode> CLUSTER_EVENT_CODES = EnumSet.noneOf(ClusterEventCode.class);
 
     /**
      * Initialize configuration.
      */
     static void init()
     {
-        driverEventCodes = getEnabledDriverEventCodes();
-        archiveEventCodes = getEnabledArchiveEventCodes();
-        clusterEventCodes = getEnabledClusterEventCodes();
+        DRIVER_EVENT_CODES.clear();
+        DRIVER_EVENT_CODES.addAll(getEnabledDriverEventCodes(getProperty(ENABLED_EVENT_CODES_PROP_NAME)));
+
+        ARCHIVE_EVENT_CODES.clear();
+        ARCHIVE_EVENT_CODES.addAll(getEnabledArchiveEventCodes(getProperty(ENABLED_ARCHIVE_EVENT_CODES_PROP_NAME)));
+
+        CLUSTER_EVENT_CODES.clear();
+        CLUSTER_EVENT_CODES.addAll(getEnabledClusterEventCodes(getProperty(ENABLED_CLUSTER_EVENT_CODES_PROP_NAME)));
     }
 
     /**
@@ -145,37 +148,10 @@ public class EventConfiguration
      */
     static void reset()
     {
-        driverEventCodes = 0;
-        archiveEventCodes = 0;
-        clusterEventCodes = 0;
+        DRIVER_EVENT_CODES.clear();
+        ARCHIVE_EVENT_CODES.clear();
+        CLUSTER_EVENT_CODES.clear();
         EVENT_RING_BUFFER.unblock();
-    }
-
-    public static long getEnabledDriverEventCodes()
-    {
-        return makeTagBitSet(getEnabledDriverEventCodes(System.getProperty(ENABLED_EVENT_CODES_PROP_NAME)));
-    }
-
-    public static long getEnabledClusterEventCodes()
-    {
-        return makeTagBitSet(getEnabledClusterEventCodes(System.getProperty(ENABLED_CLUSTER_EVENT_CODES_PROP_NAME)));
-    }
-
-    public static long getEnabledArchiveEventCodes()
-    {
-        return makeTagBitSet(getEnabledArchiveEventCodes(System.getProperty(ENABLED_ARCHIVE_EVENT_CODES_PROP_NAME)));
-    }
-
-    static long makeTagBitSet(final Set<? extends EventCode> eventCodes)
-    {
-        long result = 0;
-
-        for (final EventCode eventCode : eventCodes)
-        {
-            result |= eventCode.tagBit();
-        }
-
-        return result;
     }
 
     /**
@@ -193,9 +169,8 @@ public class EventConfiguration
 
         final Function<Integer, ClusterEventCode> eventCodeById = ClusterEventCode::get;
         final Function<String, ClusterEventCode> eventCodeByName = ClusterEventCode::valueOf;
-        final EnumSet<ClusterEventCode> allEventsSet = EnumSet.allOf(ClusterEventCode.class);
 
-        return parseEventCodes(enabledClusterEventCodes, eventCodeById, eventCodeByName, allEventsSet);
+        return parseEventCodes(ClusterEventCode.class, enabledClusterEventCodes, eventCodeById, eventCodeByName);
     }
 
     /**
@@ -204,7 +179,7 @@ public class EventConfiguration
      * @param enabledArchiveEventCodes that can be "all" or a comma separated list of Event Code ids or names.
      * @return the {@link Set} of {@link ArchiveEventCode}s that are enabled for the logger.
      */
-    static Set<ArchiveEventCode> getEnabledArchiveEventCodes(final String enabledArchiveEventCodes)
+    static EnumSet<ArchiveEventCode> getEnabledArchiveEventCodes(final String enabledArchiveEventCodes)
     {
         if (null == enabledArchiveEventCodes || "".equals(enabledArchiveEventCodes))
         {
@@ -213,9 +188,8 @@ public class EventConfiguration
 
         final Function<Integer, ArchiveEventCode> eventCodeById = ArchiveEventCode::get;
         final Function<String, ArchiveEventCode> eventCodeByName = ArchiveEventCode::valueOf;
-        final EnumSet<ArchiveEventCode> allEventsSet = EnumSet.allOf(ArchiveEventCode.class);
 
-        return parseEventCodes(enabledArchiveEventCodes, eventCodeById, eventCodeByName, allEventsSet);
+        return parseEventCodes(ArchiveEventCode.class, enabledArchiveEventCodes, eventCodeById, eventCodeByName);
     }
 
     /**
@@ -224,14 +198,14 @@ public class EventConfiguration
      * @param enabledLoggerEventCodes that can be "all", "admin", or a comma separated list of Event Code ids or names.
      * @return the {@link Set} of {@link DriverEventCode}s that are enabled for the logger.
      */
-    static Set<DriverEventCode> getEnabledDriverEventCodes(final String enabledLoggerEventCodes)
+    static EnumSet<DriverEventCode> getEnabledDriverEventCodes(final String enabledLoggerEventCodes)
     {
         if (null == enabledLoggerEventCodes || "".equals(enabledLoggerEventCodes))
         {
             return EnumSet.noneOf(DriverEventCode.class);
         }
 
-        final Set<DriverEventCode> eventCodeSet = new HashSet<>();
+        final EnumSet<DriverEventCode> eventCodeSet = EnumSet.noneOf(DriverEventCode.class);
         final String[] codeIds = enabledLoggerEventCodes.split(",");
 
         for (final String codeId : codeIds)
@@ -239,8 +213,7 @@ public class EventConfiguration
             switch (codeId)
             {
                 case "all":
-                    eventCodeSet.addAll(ALL_LOGGER_EVENT_CODES);
-                    break;
+                    return EnumSet.allOf(DriverEventCode.class);
 
                 case "admin":
                     eventCodeSet.addAll(ADMIN_ONLY_EVENT_CODES);
@@ -274,7 +247,7 @@ public class EventConfiguration
                     }
                     else
                     {
-                        System.err.println("unknown event code: " + codeId);
+                        err.println("unknown event code: " + codeId);
                     }
                 }
             }
@@ -283,20 +256,20 @@ public class EventConfiguration
         return eventCodeSet;
     }
 
-    private static <T extends Enum<T>> Set<T> parseEventCodes(
+    private static <T extends Enum<T>> EnumSet<T> parseEventCodes(
+        final Class<T> eventCodeType,
         final String enabledEventCodes,
         final Function<Integer, T> eventCodeById,
-        final Function<String, T> eventCodeByName,
-        final EnumSet<T> allEventsSet)
+        final Function<String, T> eventCodeByName)
     {
-        final Set<T> eventCodeSet = new HashSet<>();
+        final EnumSet<T> eventCodeSet = EnumSet.noneOf(eventCodeType);
         final String[] codeIds = enabledEventCodes.split(",");
 
         for (final String codeId : codeIds)
         {
             if ("all".equals(codeId))
             {
-                eventCodeSet.addAll(allEventsSet);
+                return EnumSet.allOf(eventCodeType);
             }
             else
             {
@@ -326,7 +299,7 @@ public class EventConfiguration
                 }
                 else
                 {
-                    System.err.println("unknown event code: " + codeId);
+                    err.println("unknown event code: " + codeId);
                 }
             }
         }

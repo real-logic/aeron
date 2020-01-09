@@ -15,15 +15,17 @@
  */
 package io.aeron.agent;
 
-/**
- * Identifies an event that can be enabled for logging.
- */
-public interface EventCode
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+
+import static org.junit.jupiter.api.Assertions.assertSame;
+
+public class ClusterEventCodeTest
 {
-    /**
-     * Returns the unique event identifier withing an {@link EventCodeType}.
-     *
-     * @return the unique event identifier withing an {@link EventCodeType}.
-     */
-    int id();
+    @ParameterizedTest
+    @EnumSource(ClusterEventCode.class)
+    void getCodeById(final ClusterEventCode code)
+    {
+        assertSame(code, ClusterEventCode.get(code.id()));
+    }
 }

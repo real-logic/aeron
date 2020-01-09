@@ -22,66 +22,112 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.FragmentHandler;
 import org.agrona.IoUtil;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.collections.IntHashSet;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.MessageHandler;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.io.File;
 import java.nio.file.Paths;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
 import static io.aeron.agent.DriverEventCode.*;
 import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
 import static java.time.Duration.ofSeconds;
-import static org.junit.jupiter.api.Assertions.*;
+import static java.util.Collections.synchronizedSet;
+import static java.util.stream.Collectors.toSet;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.junit.jupiter.params.provider.EnumSource.Mode.INCLUDE;
 
 public class DriverLoggingAgentTest
 {
     private static final String NETWORK_CHANNEL = "aeron:udp?endpoint=localhost:54325";
     private static final int STREAM_ID = 1777;
 
-    private static final IntHashSet MSG_ID_SET = new IntHashSet();
-    private static final CountDownLatch LATCH = new CountDownLatch(1);
-    private String testDirName;
+    private static final Set<Integer> LOGGED_EVENTS = synchronizedSet(new HashSet<>());
+    private static final Set<Integer> WAIT_LIST = synchronizedSet(new HashSet<>());
+    private static CountDownLatch latch;
 
-    @BeforeEach
-    public void before()
-    {
-        System.setProperty(EventLogAgent.READER_CLASSNAME_PROP_NAME, StubEventLogReaderAgent.class.getName());
-        System.setProperty(EventConfiguration.ENABLED_EVENT_CODES_PROP_NAME, "all");
-        Common.beforeAgent();
-
-        testDirName = Paths.get(IoUtil.tmpDirName(), "driver-test").toString();
-        final File testDir = new File(testDirName);
-        if (testDir.exists())
-        {
-            IoUtil.delete(testDir, false);
-        }
-    }
+    private File testDir;
 
     @AfterEach
     public void after()
     {
         Common.afterAgent();
 
-        if (testDirName != null)
+        LOGGED_EVENTS.clear();
+        WAIT_LIST.clear();
+
+        if (testDir != null && testDir.exists())
         {
-            IoUtil.delete(new File(testDirName), false);
+            IoUtil.delete(testDir, false);
         }
     }
 
     @Test
-    public void shouldLogMessages()
+    public void logAll()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        testLogMediaDriverEvents("all", EnumSet.of(
+            FRAME_IN,
+            FRAME_OUT,
+            CMD_IN_ADD_PUBLICATION,
+            CMD_IN_REMOVE_PUBLICATION,
+            CMD_IN_ADD_SUBSCRIPTION,
+            CMD_IN_REMOVE_SUBSCRIPTION,
+            CMD_OUT_PUBLICATION_READY,
+            CMD_OUT_AVAILABLE_IMAGE,
+            CMD_OUT_ON_OPERATION_SUCCESS,
+            REMOVE_PUBLICATION_CLEANUP,
+            REMOVE_IMAGE_CLEANUP,
+            SEND_CHANNEL_CREATION,
+            RECEIVE_CHANNEL_CREATION,
+            SEND_CHANNEL_CLOSE,
+            RECEIVE_CHANNEL_CLOSE,
+            CMD_OUT_SUBSCRIPTION_READY,
+            CMD_IN_CLIENT_CLOSE));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = DriverEventCode.class, mode = INCLUDE, names = {
+        "REMOVE_IMAGE_CLEANUP",
+        "REMOVE_PUBLICATION_CLEANUP",
+        "SEND_CHANNEL_CREATION",
+        "SEND_CHANNEL_CLOSE",
+        "RECEIVE_CHANNEL_CREATION",
+        "RECEIVE_CHANNEL_CLOSE",
+        "FRAME_IN",
+        "FRAME_OUT",
+        "CMD_IN_ADD_SUBSCRIPTION",
+        "CMD_OUT_AVAILABLE_IMAGE"
+    })
+    public void logIndividualEvents(final DriverEventCode eventCode)
+    {
+        try
         {
-            final String aeronDirectoryName = Paths.get(testDirName, "media").toString();
+            testLogMediaDriverEvents(eventCode.name(), EnumSet.of(eventCode));
+        }
+        finally
+        {
+            after();
+        }
+    }
+
+    private void testLogMediaDriverEvents(final String enabledEvents, final EnumSet<DriverEventCode> expectedEvents)
+    {
+        before(enabledEvents, expectedEvents);
+
+        assertTimeoutPreemptively(ofSeconds(20), () ->
+        {
+            final String aeronDirectoryName = testDir.toPath().resolve("media").toString();
 
             final MediaDriver.Context driverCtx = new MediaDriver.Context()
                 .errorHandler(Throwable::printStackTrace)
@@ -113,16 +159,27 @@ public class DriverLoggingAgentTest
                     assertEquals(counter.get(), 1);
                 }
 
-                LATCH.await();
+                latch.await();
             }
 
-            assertTrue(MSG_ID_SET.contains(CMD_IN_ADD_PUBLICATION.id()));
-            assertTrue(MSG_ID_SET.contains(CMD_IN_ADD_SUBSCRIPTION.id()));
-            assertTrue(MSG_ID_SET.contains(FRAME_IN.id()));
-            assertTrue(MSG_ID_SET.contains(FRAME_OUT.id()));
-            assertTrue(MSG_ID_SET.contains(CMD_OUT_AVAILABLE_IMAGE.id()));
-            assertTrue(MSG_ID_SET.contains(CMD_IN_CLIENT_CLOSE.id()));
+            assertEquals(expectedEvents.stream().map(DriverEventCode::id).collect(toSet()), LOGGED_EVENTS);
         });
+    }
+
+    private void before(final String enabledEvents, final EnumSet<DriverEventCode> expectedEvents)
+    {
+        System.setProperty(EventLogAgent.READER_CLASSNAME_PROP_NAME, StubEventLogReaderAgent.class.getName());
+        System.setProperty(EventConfiguration.ENABLED_EVENT_CODES_PROP_NAME, enabledEvents);
+        Common.beforeAgent();
+
+        latch = new CountDownLatch(expectedEvents.size());
+        WAIT_LIST.addAll(expectedEvents.stream().map(DriverEventCode::id).collect(toSet()));
+
+        testDir = Paths.get(IoUtil.tmpDirName(), "driver-test").toFile();
+        if (testDir.exists())
+        {
+            IoUtil.delete(testDir, false);
+        }
     }
 
     static class StubEventLogReaderAgent implements Agent, MessageHandler
@@ -139,11 +196,11 @@ public class DriverLoggingAgentTest
 
         public void onMessage(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
         {
-            MSG_ID_SET.add(msgTypeId);
+            LOGGED_EVENTS.add(msgTypeId);
 
-            if (CMD_IN_CLIENT_CLOSE.id() == msgTypeId)
+            if (WAIT_LIST.contains(msgTypeId) && WAIT_LIST.remove(msgTypeId))
             {
-                LATCH.countDown();
+                latch.countDown();
             }
         }
     }

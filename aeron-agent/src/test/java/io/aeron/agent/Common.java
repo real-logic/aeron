@@ -21,9 +21,6 @@ public class Common
 {
     public static void beforeAgent()
     {
-        System.setProperty(EventConfiguration.ENABLED_EVENT_CODES_PROP_NAME, "all");
-        System.setProperty(EventConfiguration.ENABLED_ARCHIVE_EVENT_CODES_PROP_NAME, "all");
-        System.setProperty(EventConfiguration.ENABLED_CLUSTER_EVENT_CODES_PROP_NAME, "all");
         EventLogAgent.agentmain("", ByteBuddyAgent.install());
     }
 
@@ -34,5 +31,6 @@ public class Common
         System.clearProperty(EventConfiguration.ENABLED_ARCHIVE_EVENT_CODES_PROP_NAME);
         System.clearProperty(EventConfiguration.ENABLED_CLUSTER_EVENT_CODES_PROP_NAME);
         System.clearProperty(EventLogAgent.READER_CLASSNAME_PROP_NAME);
+        EventConfiguration.reset();
     }
 }

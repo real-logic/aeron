@@ -54,6 +54,7 @@ public class DriverLoggingAgentTest
     public void before()
     {
         System.setProperty(EventLogAgent.READER_CLASSNAME_PROP_NAME, StubEventLogReaderAgent.class.getName());
+        System.setProperty(EventConfiguration.ENABLED_EVENT_CODES_PROP_NAME, "all");
         Common.beforeAgent();
 
         testDirName = Paths.get(IoUtil.tmpDirName(), "driver-test").toString();

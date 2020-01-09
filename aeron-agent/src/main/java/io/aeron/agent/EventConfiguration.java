@@ -126,6 +126,31 @@ public class EventConfiguration
         EVENT_RING_BUFFER = new ManyToOneRingBuffer(new UnsafeBuffer(ByteBuffer.allocateDirect(bufferLength)));
     }
 
+    public static long driverEventCodes;
+    public static long archiveEventCodes;
+    public static long clusterEventCodes;
+
+    /**
+     * Initialize configuration.
+     */
+    static void init()
+    {
+        driverEventCodes = getEnabledDriverEventCodes();
+        archiveEventCodes = getEnabledArchiveEventCodes();
+        clusterEventCodes = getEnabledClusterEventCodes();
+    }
+
+    /**
+     * Reset configuration.
+     */
+    static void reset()
+    {
+        driverEventCodes = 0;
+        archiveEventCodes = 0;
+        clusterEventCodes = 0;
+        EVENT_RING_BUFFER.unblock();
+    }
+
     public static long getEnabledDriverEventCodes()
     {
         return makeTagBitSet(getEnabledDriverEventCodes(System.getProperty(ENABLED_EVENT_CODES_PROP_NAME)));

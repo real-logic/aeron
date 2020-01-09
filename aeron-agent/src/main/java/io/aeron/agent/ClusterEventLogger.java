@@ -33,7 +33,6 @@ import static io.aeron.agent.ClusterEventCode.*;
  */
 public final class ClusterEventLogger
 {
-    static final long ENABLED_EVENT_CODES = EventConfiguration.getEnabledClusterEventCodes();
     public static final ClusterEventLogger LOGGER = new ClusterEventLogger(EventConfiguration.EVENT_RING_BUFFER);
 
     private final MutableDirectBuffer encodedBuffer =

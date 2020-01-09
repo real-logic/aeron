@@ -23,6 +23,7 @@ import org.agrona.concurrent.ringbuffer.RingBuffer;
 import java.util.EnumSet;
 
 import static io.aeron.agent.ArchiveEventCode.*;
+import static io.aeron.agent.EventConfiguration.archiveEventCodes;
 import static java.util.EnumSet.complementOf;
 import static java.util.EnumSet.of;
 
@@ -32,8 +33,6 @@ import static java.util.EnumSet.of;
  */
 public final class ArchiveEventLogger
 {
-    static final long ENABLED_EVENT_CODES = EventConfiguration.getEnabledArchiveEventCodes();
-
     static final EnumSet<ArchiveEventCode> CONTROL_REQUEST_EVENTS = complementOf(of(CMD_OUT_RESPONSE));
 
     public static final ArchiveEventLogger LOGGER = new ArchiveEventLogger(EventConfiguration.EVENT_RING_BUFFER);
@@ -183,7 +182,7 @@ public final class ArchiveEventLogger
         final int length,
         final ArchiveEventCode eventCode)
     {
-        if (ArchiveEventCode.isEnabled(eventCode, ENABLED_EVENT_CODES))
+        if (ArchiveEventCode.isEnabled(eventCode, archiveEventCodes))
         {
             ringBuffer.write(toEventCodeId(eventCode), buffer, offset, length);
         }

@@ -29,8 +29,6 @@ import java.nio.ByteBuffer;
  */
 public final class DriverEventLogger
 {
-    public static final long ENABLED_EVENT_CODES = EventConfiguration.getEnabledDriverEventCodes();
-
     public static final DriverEventLogger LOGGER = new DriverEventLogger(EventConfiguration.EVENT_RING_BUFFER);
 
     private static final ThreadLocal<MutableDirectBuffer> ENCODING_BUFFER = ThreadLocal.withInitial(
@@ -45,7 +43,7 @@ public final class DriverEventLogger
 
     public void log(final DriverEventCode code, final DirectBuffer buffer, final int offset, final int length)
     {
-        if (DriverEventCode.isEnabled(code, ENABLED_EVENT_CODES))
+        if (DriverEventCode.isEnabled(code, EventConfiguration.driverEventCodes))
         {
             final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
             final int encodedLength = DriverEventEncoder.encode(encodedBuffer, buffer, offset, length);

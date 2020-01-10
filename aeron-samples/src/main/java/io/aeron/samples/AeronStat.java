@@ -237,7 +237,7 @@ public class AeronStat
 
     private static void clearScreen() throws Exception
     {
-        if (SystemUtil.osName().contains("win"))
+        if (SystemUtil.isWindows())
         {
             new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
         }

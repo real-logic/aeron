@@ -304,7 +304,7 @@ public final class MediaDriver implements AutoCloseable
         CloseHelper.close(conductorRunner);
         CloseHelper.close(sharedInvoker);
 
-        if (ctx.useWindowsHighResTimer() && SystemUtil.osName().startsWith("win"))
+        if (ctx.useWindowsHighResTimer() && SystemUtil.isWindows())
         {
             if (!wasHighResTimerEnabled)
             {
@@ -326,7 +326,7 @@ public final class MediaDriver implements AutoCloseable
 
     private MediaDriver start()
     {
-        if (ctx.useWindowsHighResTimer() && SystemUtil.osName().startsWith("win"))
+        if (ctx.useWindowsHighResTimer() && SystemUtil.isWindows())
         {
             wasHighResTimerEnabled = HighResolutionTimer.isEnabled();
             if (!wasHighResTimerEnabled)

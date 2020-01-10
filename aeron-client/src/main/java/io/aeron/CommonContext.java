@@ -278,10 +278,9 @@ public class CommonContext implements Cloneable
     {
         String baseDirName = null;
 
-        if (SystemUtil.osName().contains("linux"))
+        if (SystemUtil.isLinux())
         {
             final File devShmDir = new File("/dev/shm");
-
             if (devShmDir.exists())
             {
                 baseDirName = "/dev/shm/aeron";

@@ -17,6 +17,8 @@ package io.aeron.agent;
 
 import org.agrona.MutableDirectBuffer;
 
+import java.util.Arrays;
+
 /**
  * Events that can be enabled for logging in the archive module.
  */
@@ -50,19 +52,23 @@ public enum ArchiveEventCode implements EventCode
     CMD_IN_MIGRATE_SEGMENTS(26, ArchiveEventDissector::controlRequest),
     CMD_IN_AUTH_CONNECT(27, ArchiveEventDissector::controlRequest),
     CMD_IN_KEEP_ALIVE(28, ArchiveEventDissector::controlRequest),
-    CMD_IN_TAGGED_REPLICATE(29, ArchiveEventDissector::controlRequest);
+    CMD_IN_TAGGED_REPLICATE(29, ArchiveEventDissector::controlRequest),
+
+    CMD_OUT_RESPONSE(30,
+        (event, buffer, offset, builder) -> ArchiveEventDissector.controlResponse(buffer, offset, builder));
 
     static final int EVENT_CODE_TYPE = EventCodeType.ARCHIVE.getTypeCode();
-    private static final int MAX_ID = 63;
-    private static final ArchiveEventCode[] EVENT_CODE_BY_ID = new ArchiveEventCode[MAX_ID];
+    private static final ArchiveEventCode[] EVENT_CODE_BY_ID;
 
-    private final long tagBit;
     private final int id;
     private final DissectFunction<ArchiveEventCode> dissector;
 
     static
     {
-        for (final ArchiveEventCode code : ArchiveEventCode.values())
+        final ArchiveEventCode[] codes = ArchiveEventCode.values();
+        final int maxId = Arrays.stream(codes).mapToInt(ArchiveEventCode::id).max().orElse(0);
+        EVENT_CODE_BY_ID = new ArchiveEventCode[maxId + 1];
+        for (final ArchiveEventCode code : codes)
         {
             final int id = code.id();
             if (null != EVENT_CODE_BY_ID[id])
@@ -77,7 +83,6 @@ public enum ArchiveEventCode implements EventCode
     ArchiveEventCode(final int id, final DissectFunction<ArchiveEventCode> dissector)
     {
         this.id = id;
-        this.tagBit = 1L << id;
         this.dissector = dissector;
     }
 
@@ -94,29 +99,8 @@ public enum ArchiveEventCode implements EventCode
         return id;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public long tagBit()
-    {
-        return tagBit;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public EventCodeType eventCodeType()
-    {
-        return EventCodeType.ARCHIVE;
-    }
-
     public void decode(final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
         dissector.dissect(this, buffer, offset, builder);
-    }
-
-    public static boolean isEnabled(final ArchiveEventCode code, final long mask)
-    {
-        return (mask & code.tagBit()) == code.tagBit();
     }
 }

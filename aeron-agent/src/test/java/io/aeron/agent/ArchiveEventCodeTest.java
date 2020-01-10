@@ -15,23 +15,17 @@
  */
 package io.aeron.agent;
 
-import io.aeron.logbuffer.Header;
-import net.bytebuddy.asm.Advice;
-import org.agrona.DirectBuffer;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
-import static io.aeron.agent.ArchiveEventLogger.LOGGER;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
-/**
- * Intercepts requests to the archive.
- */
-final class ControlRequestInterceptor
+public class ArchiveEventCodeTest
 {
-    static class ControlRequest
+    @ParameterizedTest
+    @EnumSource(ArchiveEventCode.class)
+    void getCodeById(final ArchiveEventCode code)
     {
-        @Advice.OnMethodEnter
-        static void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
-        {
-            LOGGER.logControlRequest(buffer, offset, length);
-        }
+        assertSame(code, ArchiveEventCode.get(code.id()));
     }
 }

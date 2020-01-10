@@ -6,66 +6,76 @@ import io.aeron.archive.ArchivingMediaDriver;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
-import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.MessageHandler;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.nio.file.Paths;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
+import static io.aeron.agent.ArchiveEventCode.*;
 import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
 import static java.time.Duration.ofSeconds;
+import static java.util.Collections.synchronizedSet;
+import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class ArchiveLoggingAgentTest
 {
-    private static final CountDownLatch LATCH = new CountDownLatch(1);
+    private static final Set<Integer> LOGGED_EVENTS = synchronizedSet(new HashSet<>());
+    private static final Set<Integer> WAIT_LIST = synchronizedSet(new HashSet<>());
+    private static CountDownLatch latch;
 
-    private String testDirName;
-    private ArchivingMediaDriver archivingMediaDriver;
-    private AeronArchive aeronArchive;
-
-    @BeforeEach
-    public void before()
-    {
-        System.setProperty(EventLogAgent.READER_CLASSNAME_PROP_NAME, StubEventLogReaderAgent.class.getName());
-        Common.beforeAgent();
-    }
+    private File testDir;
 
     @AfterEach
     public void after()
     {
-        Common.afterAfter();
+        Common.afterAgent();
 
-        CloseHelper.close(aeronArchive);
-        CloseHelper.close(archivingMediaDriver);
+        LOGGED_EVENTS.clear();
+        WAIT_LIST.clear();
 
-        if (testDirName != null)
+        if (testDir != null && testDir.exists())
         {
-            IoUtil.delete(new File(testDirName), false);
+            IoUtil.delete(testDir, false);
         }
     }
 
     @Test
-    public void shouldLogMessages()
+    public void logAll()
     {
+        testArchiveLogging("all", EnumSet.of(CMD_OUT_RESPONSE, CMD_IN_AUTH_CONNECT, CMD_IN_KEEP_ALIVE));
+    }
+
+    @Test
+    public void logControlSessionDemuxerOnFragment()
+    {
+        testArchiveLogging(CMD_IN_KEEP_ALIVE.name() + "," + CMD_IN_AUTH_CONNECT.id(),
+            EnumSet.of(CMD_IN_AUTH_CONNECT, CMD_IN_KEEP_ALIVE));
+    }
+
+    @Test
+    public void logControlResponseProxySendResponseHook()
+    {
+        testArchiveLogging(CMD_OUT_RESPONSE.name(), EnumSet.of(CMD_OUT_RESPONSE));
+    }
+
+    private void testArchiveLogging(final String enabledEvents, final EnumSet<ArchiveEventCode> expectedEvents)
+    {
+        before(enabledEvents, expectedEvents);
+
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
-            testDirName = Paths.get(IoUtil.tmpDirName(), "archive-test").toString();
-            final File testDir = new File(testDirName);
-            if (testDir.exists())
-            {
-                IoUtil.delete(testDir, false);
-            }
-
-            final String aeronDirectoryName = Paths.get(testDirName, "media").toString();
+            final String aeronDirectoryName = testDir.toPath().resolve("media").toString();
 
             final MediaDriver.Context mediaDriverCtx = new MediaDriver.Context()
                 .errorHandler(Throwable::printStackTrace)
@@ -83,18 +93,37 @@ public class ArchiveLoggingAgentTest
             final Archive.Context archiveCtx = new Archive.Context()
                 .aeronDirectoryName(aeronDirectoryName)
                 .errorHandler(Throwable::printStackTrace)
-                .archiveDir(new File(testDirName, "archive"))
+                .archiveDir(new File(testDir, "archive"))
                 .controlChannel(aeronArchiveContext.controlRequestChannel())
                 .controlStreamId(aeronArchiveContext.controlRequestStreamId())
                 .localControlStreamId(aeronArchiveContext.controlRequestStreamId())
                 .recordingEventsChannel(aeronArchiveContext.recordingEventsChannel())
                 .threadingMode(ArchiveThreadingMode.SHARED);
 
-            archivingMediaDriver = ArchivingMediaDriver.launch(mediaDriverCtx, archiveCtx);
-            aeronArchive = AeronArchive.connect(aeronArchiveContext);
-
-            LATCH.await();
+            try (ArchivingMediaDriver archivingMediaDriver = ArchivingMediaDriver.launch(mediaDriverCtx, archiveCtx))
+            {
+                try (AeronArchive aeronArchive = AeronArchive.connect(aeronArchiveContext))
+                {
+                    latch.await();
+                }
+            }
         });
+    }
+
+    private void before(final String enabledEvents, final EnumSet<ArchiveEventCode> expectedEvents)
+    {
+        System.setProperty(EventLogAgent.READER_CLASSNAME_PROP_NAME, StubEventLogReaderAgent.class.getName());
+        System.setProperty(EventConfiguration.ENABLED_ARCHIVE_EVENT_CODES_PROP_NAME, enabledEvents);
+        Common.beforeAgent();
+
+        latch = new CountDownLatch(expectedEvents.size());
+        WAIT_LIST.addAll(expectedEvents.stream().map(ArchiveEventLogger::toEventCodeId).collect(toSet()));
+
+        testDir = Paths.get(IoUtil.tmpDirName(), "archive-test").toFile();
+        if (testDir.exists())
+        {
+            IoUtil.delete(testDir, false);
+        }
     }
 
     static class StubEventLogReaderAgent implements Agent, MessageHandler
@@ -111,9 +140,11 @@ public class ArchiveLoggingAgentTest
 
         public void onMessage(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
         {
-            if (ArchiveEventLogger.toEventCodeId(ArchiveEventCode.CMD_IN_AUTH_CONNECT) == msgTypeId)
+            LOGGED_EVENTS.add(msgTypeId);
+
+            if (WAIT_LIST.contains(msgTypeId) && WAIT_LIST.remove(msgTypeId))
             {
-                LATCH.countDown();
+                latch.countDown();
             }
         }
     }

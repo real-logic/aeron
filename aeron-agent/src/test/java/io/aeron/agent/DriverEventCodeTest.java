@@ -15,22 +15,17 @@
  */
 package io.aeron.agent;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 public class DriverEventCodeTest
 {
-    @Test
-    public void allTagsBitsAreUnique()
+    @ParameterizedTest
+    @EnumSource(DriverEventCode.class)
+    void getCodeById(final DriverEventCode code)
     {
-        final Set<Long> seenTagBits = new HashSet<>();
-        for (final DriverEventCode code : DriverEventCode.values())
-        {
-            assertTrue(seenTagBits.add(code.tagBit()));
-        }
+        assertSame(code, DriverEventCode.get(code.id()));
     }
 }

@@ -18,6 +18,8 @@ package io.aeron.agent;
 import net.bytebuddy.asm.Advice;
 import org.agrona.DirectBuffer;
 
+import java.util.EnumSet;
+
 import static io.aeron.agent.DriverEventCode.*;
 import static io.aeron.agent.DriverEventLogger.LOGGER;
 import static io.aeron.command.ControlProtocolEvents.*;
@@ -27,6 +29,33 @@ import static io.aeron.command.ControlProtocolEvents.*;
  */
 class CmdInterceptor
 {
+    static final EnumSet<DriverEventCode> EVENTS = EnumSet.of(
+        CMD_IN_ADD_PUBLICATION,
+        CMD_IN_REMOVE_PUBLICATION,
+        CMD_IN_ADD_EXCLUSIVE_PUBLICATION,
+        CMD_IN_ADD_SUBSCRIPTION,
+        CMD_IN_REMOVE_SUBSCRIPTION,
+        CMD_IN_KEEPALIVE_CLIENT,
+        CMD_IN_ADD_DESTINATION,
+        CMD_IN_REMOVE_DESTINATION,
+        CMD_OUT_AVAILABLE_IMAGE,
+        CMD_OUT_ERROR,
+        CMD_OUT_ON_OPERATION_SUCCESS,
+        CMD_OUT_PUBLICATION_READY,
+        CMD_OUT_ON_UNAVAILABLE_IMAGE,
+        CMD_OUT_EXCLUSIVE_PUBLICATION_READY,
+        CMD_OUT_SUBSCRIPTION_READY,
+        CMD_OUT_COUNTER_READY,
+        CMD_OUT_ON_UNAVAILABLE_COUNTER,
+        CMD_IN_ADD_COUNTER,
+        CMD_IN_REMOVE_COUNTER,
+        CMD_IN_CLIENT_CLOSE,
+        CMD_IN_ADD_RCV_DESTINATION,
+        CMD_IN_REMOVE_RCV_DESTINATION,
+        CMD_OUT_ON_CLIENT_TIMEOUT,
+        CMD_IN_TERMINATE_DRIVER
+    );
+
     @Advice.OnMethodEnter
     static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)
     {

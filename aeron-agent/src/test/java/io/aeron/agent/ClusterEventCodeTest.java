@@ -15,22 +15,17 @@
  */
 package io.aeron.agent;
 
-import net.bytebuddy.agent.ByteBuddyAgent;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
-public class Common
+import static org.junit.jupiter.api.Assertions.assertSame;
+
+public class ClusterEventCodeTest
 {
-    public static void beforeAgent()
+    @ParameterizedTest
+    @EnumSource(ClusterEventCode.class)
+    void getCodeById(final ClusterEventCode code)
     {
-        EventLogAgent.agentmain("", ByteBuddyAgent.install());
-    }
-
-    public static void afterAgent()
-    {
-        EventLogAgent.removeTransformer();
-        System.clearProperty(EventConfiguration.ENABLED_EVENT_CODES_PROP_NAME);
-        System.clearProperty(EventConfiguration.ENABLED_ARCHIVE_EVENT_CODES_PROP_NAME);
-        System.clearProperty(EventConfiguration.ENABLED_CLUSTER_EVENT_CODES_PROP_NAME);
-        System.clearProperty(EventLogAgent.READER_CLASSNAME_PROP_NAME);
-        EventConfiguration.reset();
+        assertSame(code, ClusterEventCode.get(code.id()));
     }
 }

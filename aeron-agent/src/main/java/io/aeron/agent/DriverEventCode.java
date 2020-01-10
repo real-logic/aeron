@@ -17,6 +17,8 @@ package io.aeron.agent;
 
 import org.agrona.MutableDirectBuffer;
 
+import java.util.Arrays;
+
 /**
  * Events and codecs for encoding/decoding events recorded to the {@link EventConfiguration#EVENT_RING_BUFFER}.
  */
@@ -69,16 +71,17 @@ public enum DriverEventCode implements EventCode
 
     static final int EVENT_CODE_TYPE = EventCodeType.DRIVER.getTypeCode();
 
-    private static final int MAX_ID = 63;
-    private static final DriverEventCode[] EVENT_CODE_BY_ID = new DriverEventCode[MAX_ID];
+    private static final DriverEventCode[] EVENT_CODE_BY_ID;
 
-    private final long tagBit;
     private final int id;
     private final DissectFunction<DriverEventCode> dissector;
 
     static
     {
-        for (final DriverEventCode code : DriverEventCode.values())
+        final DriverEventCode[] codes = DriverEventCode.values();
+        final int maxId = Arrays.stream(codes).mapToInt(DriverEventCode::id).max().orElse(0);
+        EVENT_CODE_BY_ID = new DriverEventCode[maxId + 1];
+        for (final DriverEventCode code : codes)
         {
             final int id = code.id();
             if (null != EVENT_CODE_BY_ID[id])
@@ -93,7 +96,6 @@ public enum DriverEventCode implements EventCode
     DriverEventCode(final int id, final DissectFunction<DriverEventCode> dissector)
     {
         this.id = id;
-        this.tagBit = 1L << id;
         this.dissector = dissector;
     }
 
@@ -105,25 +107,9 @@ public enum DriverEventCode implements EventCode
         return id;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    public long tagBit()
-    {
-        return tagBit;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public EventCodeType eventCodeType()
-    {
-        return EventCodeType.DRIVER;
-    }
-
     public static DriverEventCode get(final int id)
     {
-        if (id < 0 || id > MAX_ID)
+        if (id < 0 || id >= EVENT_CODE_BY_ID.length)
         {
             throw new IllegalArgumentException("no DriverEventCode for id: " + id);
         }
@@ -136,11 +122,6 @@ public enum DriverEventCode implements EventCode
         }
 
         return code;
-    }
-
-    public static boolean isEnabled(final DriverEventCode code, final long mask)
-    {
-        return (mask & code.tagBit()) == code.tagBit();
     }
 
     public void decode(final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)

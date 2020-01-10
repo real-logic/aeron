@@ -33,10 +33,10 @@ import static io.aeron.agent.ClusterEventCode.*;
  */
 public final class ClusterEventLogger
 {
-    static final long ENABLED_EVENT_CODES = EventConfiguration.getEnabledClusterEventCodes();
     public static final ClusterEventLogger LOGGER = new ClusterEventLogger(EventConfiguration.EVENT_RING_BUFFER);
-    private static final ThreadLocal<MutableDirectBuffer> ENCODING_BUFFER = ThreadLocal.withInitial(
-        () -> new UnsafeBuffer(ByteBuffer.allocateDirect(EventConfiguration.MAX_EVENT_LENGTH)));
+
+    private final MutableDirectBuffer encodedBuffer =
+        new UnsafeBuffer(ByteBuffer.allocateDirect(EventConfiguration.MAX_EVENT_LENGTH));
 
     private final ManyToOneRingBuffer ringBuffer;
 
@@ -47,14 +47,10 @@ public final class ClusterEventLogger
 
     public void logElectionStateChange(final Election.State oldState, final Election.State newState, final int memberId)
     {
-        if (ClusterEventCode.isEnabled(ELECTION_STATE_CHANGE, ENABLED_EVENT_CODES))
-        {
-            final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
-            final int encodedLength = ClusterEventEncoder.encodeElectionStateChange(
-                encodedBuffer, oldState, newState, memberId);
+        final int encodedLength = ClusterEventEncoder.encodeElectionStateChange(
+            encodedBuffer, oldState, newState, memberId);
 
-            ringBuffer.write(toEventCodeId(ELECTION_STATE_CHANGE), encodedBuffer, 0, encodedLength);
-        }
+        ringBuffer.write(toEventCodeId(ELECTION_STATE_CHANGE), encodedBuffer, 0, encodedLength);
     }
 
     public void logNewLeadershipTerm(
@@ -65,43 +61,31 @@ public final class ClusterEventLogger
         final int leaderMemberId,
         final int logSessionId)
     {
-        if (ClusterEventCode.isEnabled(NEW_LEADERSHIP_TERM, ENABLED_EVENT_CODES))
-        {
-            final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
-            final int encodedLength = ClusterEventEncoder.newLeadershipTerm(
-                encodedBuffer,
-                logLeadershipTermId,
-                leadershipTermId,
-                logPosition,
-                timestamp,
-                leaderMemberId,
-                logSessionId);
+        final int encodedLength = ClusterEventEncoder.newLeadershipTerm(
+            encodedBuffer,
+            logLeadershipTermId,
+            leadershipTermId,
+            logPosition,
+            timestamp,
+            leaderMemberId,
+            logSessionId);
 
-            ringBuffer.write(toEventCodeId(NEW_LEADERSHIP_TERM), encodedBuffer, 0, encodedLength);
-        }
+        ringBuffer.write(toEventCodeId(NEW_LEADERSHIP_TERM), encodedBuffer, 0, encodedLength);
     }
 
     public void logStateChange(
         final ConsensusModule.State oldState, final ConsensusModule.State newState, final int memberId)
     {
-        if (ClusterEventCode.isEnabled(STATE_CHANGE, ENABLED_EVENT_CODES))
-        {
-            final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
-            final int encodedLength = ClusterEventEncoder.stateChange(encodedBuffer, oldState, newState, memberId);
+        final int encodedLength = ClusterEventEncoder.stateChange(encodedBuffer, oldState, newState, memberId);
 
-            ringBuffer.write(toEventCodeId(STATE_CHANGE), encodedBuffer, 0, encodedLength);
-        }
+        ringBuffer.write(toEventCodeId(STATE_CHANGE), encodedBuffer, 0, encodedLength);
     }
 
     public void logRoleChange(final Cluster.Role oldRole, final Cluster.Role newRole, final int memberId)
     {
-        if (ClusterEventCode.isEnabled(ROLE_CHANGE, ENABLED_EVENT_CODES))
-        {
-            final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
-            final int encodedLength = ClusterEventEncoder.roleChange(encodedBuffer, oldRole, newRole, memberId);
+        final int encodedLength = ClusterEventEncoder.roleChange(encodedBuffer, oldRole, newRole, memberId);
 
-            ringBuffer.write(toEventCodeId(ROLE_CHANGE), encodedBuffer, 0, encodedLength);
-        }
+        ringBuffer.write(toEventCodeId(ROLE_CHANGE), encodedBuffer, 0, encodedLength);
     }
 
     public static int toEventCodeId(final ClusterEventCode code)

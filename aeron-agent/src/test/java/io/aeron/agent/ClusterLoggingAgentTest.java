@@ -77,13 +77,17 @@ public class ClusterLoggingAgentTest
     @Test
     public void logRoleChange()
     {
-        testClusterEventsLogging(ROLE_CHANGE.name(), EnumSet.of(ROLE_CHANGE));
+        // FIXME: ELECTION_STATE_CHANGE is only added to ensure clean termination of the cluster
+        testClusterEventsLogging(ROLE_CHANGE.name() + "," + ELECTION_STATE_CHANGE.name(),
+            EnumSet.of(ROLE_CHANGE, ELECTION_STATE_CHANGE));
     }
 
     @Test
     public void logStateChange()
     {
-        testClusterEventsLogging(STATE_CHANGE.name(), EnumSet.of(STATE_CHANGE));
+        // FIXME: ELECTION_STATE_CHANGE is only added to ensure clean termination of the cluster
+        testClusterEventsLogging(STATE_CHANGE.name() + "," + ELECTION_STATE_CHANGE.name(),
+            EnumSet.of(STATE_CHANGE, ELECTION_STATE_CHANGE));
     }
 
     @Test

@@ -34,7 +34,6 @@ import static org.junit.jupiter.params.provider.EnumSource.Mode.INCLUDE;
 
 class ArchiveEventLoggerTest
 {
-
     @ParameterizedTest
     @EnumSource(ArchiveEventCode.class)
     void toEventCodeId(final ArchiveEventCode code)

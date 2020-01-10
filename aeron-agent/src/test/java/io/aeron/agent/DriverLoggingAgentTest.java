@@ -37,6 +37,7 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static io.aeron.agent.DriverEventCode.*;
 import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
@@ -131,6 +132,8 @@ public class DriverLoggingAgentTest
 
             final MediaDriver.Context driverCtx = new MediaDriver.Context()
                 .errorHandler(Throwable::printStackTrace)
+                .publicationLingerTimeoutNs(0)
+                .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(1))
                 .aeronDirectoryName(aeronDirectoryName);
 
             try (MediaDriver ignore = MediaDriver.launchEmbedded(driverCtx))

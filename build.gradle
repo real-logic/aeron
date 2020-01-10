@@ -146,8 +146,6 @@ subprojects {
     jar.enabled = true
 
     dependencies {
-        api "org.agrona:agrona:${agronaVersion}"
-
         testImplementation "org.hamcrest:hamcrest:${hamcrestVersion}"
         testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
         testImplementation "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
@@ -247,6 +245,7 @@ project(':aeron-client') {
     apply plugin: 'biz.aQute.bnd.builder'
 
     dependencies {
+        api "org.agrona:agrona:${agronaVersion}"
         testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
     }
 
@@ -604,9 +603,7 @@ project(':aeron-agent') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
     dependencies {
-        api project(':aeron-driver')
-        api project(':aeron-archive')
-        api project(':aeron-cluster')
+        implementation project(':aeron-cluster')
         implementation "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
     }
 
@@ -810,13 +807,12 @@ project(':aeron-all') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
     dependencies {
-        api project(':aeron-client')
-        api project(':aeron-driver')
-        api project(':aeron-archive')
-        api project(':aeron-cluster')
-        api project(':aeron-samples')
+        implementation project(':aeron-cluster')
+        implementation project(':aeron-samples')
         implementation "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
     }
+
+    test.enabled = false
 
     javadoc {
         source += project(':aeron-client').sourceSets.main.allJava

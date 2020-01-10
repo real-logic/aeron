@@ -1343,7 +1343,7 @@ public class Archive implements AutoCloseable
          * @return this for a fluent API.
          * @see Configuration#REPLAY_CHECKSUM_PROP_NAME
          */
-        public Context replayChecksumSupplier(final Checksum replayChecksum)
+        public Context replayChecksum(final Checksum replayChecksum)
         {
             this.replayChecksum = replayChecksum;
             return this;

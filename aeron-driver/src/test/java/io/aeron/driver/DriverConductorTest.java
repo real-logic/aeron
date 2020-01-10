@@ -86,9 +86,9 @@ public class DriverConductorTest
     private static final int COUNTER_KEY_LENGTH = 12;
     private static final int COUNTER_LABEL_OFFSET = COUNTER_KEY_OFFSET + COUNTER_KEY_LENGTH;
     private static final int COUNTER_LABEL_LENGTH = COUNTER_LABEL.length();
-    private static final long CLIENT_LIVENESS_TIMEOUT_NS = clientLivenessTimeoutNs();
-    private static final long PUBLICATION_LINGER_TIMEOUT_NS = publicationLingerTimeoutNs();
-    private static final int MTU_LENGTH = Configuration.mtuLength();
+    private static final long CLIENT_LIVENESS_TIMEOUT_NS = CLIENT_LIVENESS_TIMEOUT_DEFAULT_NS;
+    private static final long PUBLICATION_LINGER_TIMEOUT_NS = PUBLICATION_LINGER_DEFAULT_NS;
+    private static final int MTU_LENGTH = MTU_LENGTH_DEFAULT;
 
     private final ByteBuffer conductorBuffer = ByteBuffer.allocate(CONDUCTOR_BUFFER_LENGTH_DEFAULT);
     private final UnsafeBuffer counterKeyAndLabel = new UnsafeBuffer(new byte[BUFFER_LENGTH]);
@@ -122,7 +122,7 @@ public class DriverConductorTest
     };
 
     @BeforeEach
-    public void setUp()
+    public void before()
     {
         currentTimeNs = 0;
 
@@ -138,6 +138,7 @@ public class DriverConductorTest
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .tempBuffer(new UnsafeBuffer(new byte[METADATA_LENGTH]))
+            .timerIntervalNs(DEFAULT_TIMER_INTERVAL_NS)
             .publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .ipcTermBufferLength(TERM_BUFFER_LENGTH)
             .applicationSpecificFeedback(Configuration.applicationSpecificFeedback())
@@ -171,12 +172,11 @@ public class DriverConductorTest
     }
 
     @AfterEach
-    public void tearDown()
+    public void after()
     {
         driverConductor.closeChannelEndpoints();
         driverConductor.onClose();
     }
-
 
     @Test
     public void shouldErrorWhenOriginalPublicationHasNoDistinguishingCharacteristicBeyondTag()
@@ -562,13 +562,13 @@ public class DriverConductorTest
         assertThat(publication.state(),
             Matchers.anyOf(is(NetworkPublication.State.DRAINING), is(NetworkPublication.State.LINGER)));
 
-        final long endTime = nanoClock.nanoTime() + publicationConnectionTimeoutNs() + timerIntervalNs();
+        final long endTime = nanoClock.nanoTime() + publicationConnectionTimeoutNs() + DEFAULT_TIMER_INTERVAL_NS;
         doWorkUntil(() -> nanoClock.nanoTime() >= endTime, publication::updateHasReceivers);
 
         assertThat(publication.state(),
             Matchers.anyOf(is(NetworkPublication.State.LINGER), is(NetworkPublication.State.CLOSING)));
 
-        currentTimeNs += timerIntervalNs() + PUBLICATION_LINGER_TIMEOUT_NS;
+        currentTimeNs += DEFAULT_TIMER_INTERVAL_NS + PUBLICATION_LINGER_TIMEOUT_NS;
         driverConductor.doWork();
         assertEquals(NetworkPublication.State.CLOSING, publication.state());
 

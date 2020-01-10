@@ -199,6 +199,7 @@ subprojects {
             'aeron.sender.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
             'aeron.receiver.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
             'aeron.use.windows.high.res.timer': 'true',
+            'aeron.timer.interval': '10000000',
             'aeron.dir.delete.on.start': 'true',
             'aeron.dir.delete.on.shutdown': 'true',
             'aeron.term.buffer.sparse.file': 'true',

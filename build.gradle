@@ -622,8 +622,6 @@ project(':aeron-agent') {
     }
 
     shadowJar {
-        mustRunAfter jar
-
         dependencies {
             exclude(project(':aeron-client'))
             exclude(project(':aeron-driver'))
@@ -643,6 +641,8 @@ project(':aeron-agent') {
             'Automatic-Module-Name': 'io.aeron.agent.all'
         )
     }
+
+    jar.finalizedBy shadowJar
 
     uploadArchives {
         repositories {
@@ -813,8 +813,6 @@ project(':aeron-all') {
         implementation "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
     }
 
-    test.enabled = false
-
     javadoc {
         source += project(':aeron-client').sourceSets.main.allJava
         source += project(':aeron-driver').sourceSets.main.allJava
@@ -883,7 +881,6 @@ project(':aeron-all') {
     }
 
     shadowJar {
-        mustRunAfter jar
         archiveClassifier.set ''
         manifest.attributes(
             'Implementation-Title': 'Aeron',
@@ -893,6 +890,8 @@ project(':aeron-all') {
         relocate 'org.HdrHistogram', 'io.aeron.shadow.org.HdrHistogram'
     }
 
+    jar.finalizedBy shadowJar
+    
     artifacts {
         archives sourcesJar
         archives javadocJar

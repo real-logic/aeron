@@ -219,7 +219,7 @@ subprojects {
     }
 
     task testJar(type: Jar, dependsOn: testClasses) {
-        archiveBaseName = "test-${project.archivesBaseName}"
+        archiveClassifier.set "test-${project.archivesBaseName}"
         from sourceSets.test.output
     }
 
@@ -287,12 +287,12 @@ project(':aeron-client') {
     }
 
     task sourcesJar(type: Jar) {
-        archiveClassifier = 'sources'
+        archiveClassifier.set 'sources'
         from sourceSets.main.allSource
     }
 
     task javadocJar(type: Jar, dependsOn: javadoc) {
-        archiveClassifier = 'javadoc'
+        archiveClassifier.set 'javadoc'
         from javadoc.destinationDir
     }
 
@@ -351,12 +351,12 @@ project(':aeron-driver') {
     }
 
     task sourcesJar(type: Jar) {
-        archiveClassifier = 'sources'
+        archiveClassifier.set 'sources'
         from sourceSets.main.allSource
     }
 
     task javadocJar(type: Jar, dependsOn: javadoc) {
-        archiveClassifier = 'javadoc'
+        archiveClassifier.set 'javadoc'
         from javadoc.destinationDir
     }
 
@@ -475,13 +475,13 @@ project(':aeron-archive') {
 
     task sourcesJar(type: Jar) {
         dependsOn generateCodecs
-        archiveClassifier = 'sources'
+        archiveClassifier.set 'sources'
         from sourceSets.main.allSource
         from sourceSets.generated.allSource
     }
 
     task javadocJar(type: Jar, dependsOn: javadoc) {
-        archiveClassifier = 'javadoc'
+        archiveClassifier.set 'javadoc'
         from javadoc.destinationDir
     }
 
@@ -583,13 +583,13 @@ project(':aeron-cluster') {
 
     task sourcesJar(type: Jar) {
         dependsOn generateCodecs
-        archiveClassifier = 'sources'
+        archiveClassifier.set 'sources'
         from sourceSets.main.allSource
         from sourceSets.generated.allSource
     }
 
     task javadocJar(type: Jar, dependsOn: javadoc) {
-        archiveClassifier = 'javadoc'
+        archiveClassifier.set 'javadoc'
         from javadoc.destinationDir
     }
 
@@ -686,12 +686,12 @@ project(':aeron-agent') {
     }
 
     task sourcesJar(type: Jar) {
-        archiveClassifier = 'sources'
+        archiveClassifier.set 'sources'
         from sourceSets.main.allSource
     }
 
     task javadocJar(type: Jar, dependsOn: javadoc) {
-        archiveClassifier = 'javadoc'
+        archiveClassifier.set 'javadoc'
         from javadoc.destinationDir
     }
 
@@ -735,12 +735,12 @@ project(':aeron-samples') {
     }
 
     task sourcesJar(type: Jar) {
-        archiveClassifier = 'sources'
+        archiveClassifier.set 'sources'
         from sourceSets.main.allSource
     }
 
     task javadocJar(type: Jar, dependsOn: javadoc) {
-        archiveClassifier = 'javadoc'
+        archiveClassifier.set 'javadoc'
         from javadoc.destinationDir
     }
 
@@ -788,12 +788,12 @@ project(':aeron-system-tests') {
     }
 
     task sourcesJar(type: Jar) {
-        archiveClassifier = 'sources'
+        archiveClassifier.set 'sources'
         from sourceSets.test.allSource
     }
 
     task javadocJar(type: Jar, dependsOn: javadoc) {
-        archiveClassifier = 'javadoc'
+        archiveClassifier.set 'javadoc'
         from javadoc.destinationDir
     }
 
@@ -867,7 +867,7 @@ project(':aeron-all') {
     }
 
     task sourcesJar(type: Jar) {
-        archiveClassifier = 'sources'
+        archiveClassifier.set 'sources'
         from project(':aeron-client').sourceSets.main.allSource
         from project(':aeron-driver').sourceSets.main.allSource
         from project(':aeron-archive').sourceSets.main.allSource
@@ -877,13 +877,13 @@ project(':aeron-all') {
     }
 
     task javadocJar(type: Jar, dependsOn: javadoc) {
-        archiveClassifier = 'javadoc'
+        archiveClassifier.set 'javadoc'
         from javadoc.destinationDir
     }
 
     shadowJar {
         mustRunAfter jar
-        archiveClassifier = ''
+        archiveClassifier.set ''
         manifest.attributes(
             'Implementation-Title': 'Aeron',
             'Implementation-Version': "${aeronVersion}",

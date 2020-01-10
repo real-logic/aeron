@@ -22,6 +22,7 @@ import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.dynamic.scaffold.TypeValidation;
 import net.bytebuddy.utility.JavaModule;
+import org.agrona.CloseHelper;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.AgentRunner;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
@@ -68,16 +69,7 @@ public class EventLogAgent
     {
         if (logTransformer != null)
         {
-            readerAgentRunner.close();
-            thread.interrupt();
-            try
-            {
-                thread.join();
-            }
-            catch (final InterruptedException ignore)
-            {
-            }
-
+            CloseHelper.quietClose(readerAgentRunner);
             logTransformer.reset(instrumentation, AgentBuilder.RedefinitionStrategy.RETRANSFORMATION);
 
             thread = null;

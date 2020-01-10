@@ -74,7 +74,7 @@ public class EventLogAgent
             {
                 thread.join();
             }
-            catch (final InterruptedException e)
+            catch (final InterruptedException ignore)
             {
             }
 
@@ -92,7 +92,7 @@ public class EventLogAgent
     {
         if (null != logTransformer)
         {
-            throw new IllegalStateException("agent already instrumenting");
+            throw new IllegalStateException("agent already instrumented");
         }
 
         EventConfiguration.init();
@@ -135,19 +135,17 @@ public class EventLogAgent
         tempBuilder = addDriverSenderProxyInstrumentation(tempBuilder);
         tempBuilder = addDriverReceiverProxyInstrumentation(tempBuilder);
         tempBuilder = addDriverUdpChannelTransportInstrumentation(tempBuilder);
+
         return tempBuilder;
     }
 
     private static AgentBuilder addDriverConductorInstrumentation(final AgentBuilder agentBuilder)
     {
-        final boolean cleanupImage =
-            DRIVER_EVENT_CODES.contains(DriverEventCode.REMOVE_IMAGE_CLEANUP);
-        final boolean cleanupPublication =
-            DRIVER_EVENT_CODES.contains(DriverEventCode.REMOVE_PUBLICATION_CLEANUP);
-        final boolean cleanupSubscriptionLink =
-            DRIVER_EVENT_CODES.contains(DriverEventCode.REMOVE_SUBSCRIPTION_CLEANUP);
+        final boolean hasImageHook = DRIVER_EVENT_CODES.contains(DriverEventCode.REMOVE_IMAGE_CLEANUP);
+        final boolean hasPublicationHook = DRIVER_EVENT_CODES.contains(DriverEventCode.REMOVE_PUBLICATION_CLEANUP);
+        final boolean hasSubscriptionHook = DRIVER_EVENT_CODES.contains(DriverEventCode.REMOVE_SUBSCRIPTION_CLEANUP);
 
-        if (!cleanupImage && !cleanupPublication && !cleanupSubscriptionLink)
+        if (!hasImageHook && !hasPublicationHook && !hasSubscriptionHook)
         {
             return agentBuilder;
         }
@@ -155,21 +153,22 @@ public class EventLogAgent
         return agentBuilder.type(nameEndsWith("DriverConductor"))
             .transform((builder, typeDescription, classLoader, javaModule) ->
             {
-                if (cleanupImage)
+                if (hasImageHook)
                 {
                     builder = builder.visit(to(CleanupInterceptor.CleanupImage.class)
                         .on(named("cleanupImage")));
                 }
-                if (cleanupPublication)
+                if (hasPublicationHook)
                 {
                     builder = builder.visit(to(CleanupInterceptor.CleanupPublication.class)
                         .on(named("cleanupPublication")));
                 }
-                if (cleanupSubscriptionLink)
+                if (hasSubscriptionHook)
                 {
                     builder = builder.visit(to(CleanupInterceptor.CleanupSubscriptionLink.class)
-                        .on(named("cleanupSubscriptionLink")));
+                        .on(named("cleanupSubscription")));
                 }
+
                 return builder;
             });
     }
@@ -194,10 +193,10 @@ public class EventLogAgent
 
     private static AgentBuilder addDriverSenderProxyInstrumentation(final AgentBuilder agentBuilder)
     {
-        final boolean registerChannel = DRIVER_EVENT_CODES.contains(DriverEventCode.SEND_CHANNEL_CREATION);
-        final boolean closeChannel = DRIVER_EVENT_CODES.contains(DriverEventCode.SEND_CHANNEL_CLOSE);
+        final boolean hasChannelRegister = DRIVER_EVENT_CODES.contains(DriverEventCode.SEND_CHANNEL_CREATION);
+        final boolean hasCloseChannel = DRIVER_EVENT_CODES.contains(DriverEventCode.SEND_CHANNEL_CLOSE);
 
-        if (!registerChannel && !closeChannel)
+        if (!hasChannelRegister && !hasCloseChannel)
         {
             return agentBuilder;
         }
@@ -206,28 +205,29 @@ public class EventLogAgent
             .type(nameEndsWith("SenderProxy"))
             .transform((builder, typeDescription, classLoader, javaModule) ->
             {
-                if (registerChannel)
+                if (hasChannelRegister)
                 {
                     builder = builder
                         .visit(to(ChannelEndpointInterceptor.SenderProxy.RegisterSendChannelEndpoint.class)
                             .on(named("registerSendChannelEndpoint")));
                 }
-                if (closeChannel)
+                if (hasCloseChannel)
                 {
                     builder = builder
                         .visit(to(ChannelEndpointInterceptor.SenderProxy.CloseSendChannelEndpoint.class)
                             .on(named("closeSendChannelEndpoint")));
                 }
+
                 return builder;
             });
     }
 
     private static AgentBuilder addDriverReceiverProxyInstrumentation(final AgentBuilder agentBuilder)
     {
-        final boolean registerChannel = DRIVER_EVENT_CODES.contains(DriverEventCode.RECEIVE_CHANNEL_CREATION);
-        final boolean closeChannel = DRIVER_EVENT_CODES.contains(DriverEventCode.RECEIVE_CHANNEL_CLOSE);
+        final boolean hasRegisterChannel = DRIVER_EVENT_CODES.contains(DriverEventCode.RECEIVE_CHANNEL_CREATION);
+        final boolean hasCloseChannel = DRIVER_EVENT_CODES.contains(DriverEventCode.RECEIVE_CHANNEL_CLOSE);
 
-        if (!registerChannel && !closeChannel)
+        if (!hasRegisterChannel && !hasCloseChannel)
         {
             return agentBuilder;
         }
@@ -236,28 +236,29 @@ public class EventLogAgent
             .type(nameEndsWith("ReceiverProxy"))
             .transform((builder, typeDescription, classLoader, javaModule) ->
             {
-                if (registerChannel)
+                if (hasRegisterChannel)
                 {
                     builder = builder
                         .visit(to(ChannelEndpointInterceptor.ReceiverProxy.RegisterReceiveChannelEndpoint.class)
                             .on(named("registerReceiveChannelEndpoint")));
                 }
-                if (closeChannel)
+                if (hasCloseChannel)
                 {
                     builder = builder
                         .visit(to(ChannelEndpointInterceptor.ReceiverProxy.CloseReceiveChannelEndpoint.class)
                             .on(named("closeReceiveChannelEndpoint")));
                 }
+
                 return builder;
             });
     }
 
     private static AgentBuilder addDriverUdpChannelTransportInstrumentation(final AgentBuilder agentBuilder)
     {
-        final boolean frameOut = DRIVER_EVENT_CODES.contains(DriverEventCode.FRAME_OUT);
-        final boolean frameIn = DRIVER_EVENT_CODES.contains(DriverEventCode.FRAME_IN);
+        final boolean hasFrameOut = DRIVER_EVENT_CODES.contains(DriverEventCode.FRAME_OUT);
+        final boolean hasFrameIn = DRIVER_EVENT_CODES.contains(DriverEventCode.FRAME_IN);
 
-        if (!frameOut && !frameIn)
+        if (!hasFrameOut && !hasFrameIn)
         {
             return agentBuilder;
         }
@@ -266,18 +267,19 @@ public class EventLogAgent
             .type(nameEndsWith("UdpChannelTransport"))
             .transform((builder, typeDescription, classLoader, javaModule) ->
             {
-                if (frameOut)
+                if (hasFrameOut)
                 {
                     builder = builder
                         .visit(to(ChannelEndpointInterceptor.UdpChannelTransport.SendHook.class)
                             .on(named("sendHook")));
                 }
-                if (frameIn)
+                if (hasFrameIn)
                 {
                     builder = builder
                         .visit(to(ChannelEndpointInterceptor.UdpChannelTransport.ReceiveHook.class)
                             .on(named("receiveHook")));
                 }
+
                 return builder;
             });
     }
@@ -287,6 +289,7 @@ public class EventLogAgent
         AgentBuilder tempBuilder = agentBuilder;
         tempBuilder = addArchiveControlSessionDemuxerInstrumentation(tempBuilder);
         tempBuilder = addArchiveControlResponseProxyInstrumentation(tempBuilder);
+
         return tempBuilder;
     }
 
@@ -323,6 +326,7 @@ public class EventLogAgent
         AgentBuilder tempBuilder = agentBuilder;
         tempBuilder = addClusterElectionInstrumentation(tempBuilder);
         tempBuilder = addClusterConsensusModuleAgentInstrumentation(tempBuilder);
+
         return tempBuilder;
     }
 
@@ -342,11 +346,11 @@ public class EventLogAgent
 
     private static AgentBuilder addClusterConsensusModuleAgentInstrumentation(final AgentBuilder agentBuilder)
     {
-        final boolean newLeadershipTerm = CLUSTER_EVENT_CODES.contains(ClusterEventCode.NEW_LEADERSHIP_TERM);
-        final boolean stateChange = CLUSTER_EVENT_CODES.contains(ClusterEventCode.STATE_CHANGE);
-        final boolean roleChange = CLUSTER_EVENT_CODES.contains(ClusterEventCode.ROLE_CHANGE);
+        final boolean hasNewLeadershipTerm = CLUSTER_EVENT_CODES.contains(ClusterEventCode.NEW_LEADERSHIP_TERM);
+        final boolean hasStateChange = CLUSTER_EVENT_CODES.contains(ClusterEventCode.STATE_CHANGE);
+        final boolean hasRoleChange = CLUSTER_EVENT_CODES.contains(ClusterEventCode.ROLE_CHANGE);
 
-        if (!newLeadershipTerm && !stateChange && !roleChange)
+        if (!hasNewLeadershipTerm && !hasStateChange && !hasRoleChange)
         {
             return agentBuilder;
         }
@@ -354,24 +358,25 @@ public class EventLogAgent
         return agentBuilder.type(nameEndsWith("ConsensusModuleAgent"))
             .transform(((builder, typeDescription, classLoader, module) ->
             {
-                if (newLeadershipTerm)
+                if (hasNewLeadershipTerm)
                 {
                     builder = builder
                         .visit(to(ClusterInterceptor.NewLeadershipTerm.class)
                             .on(named("onNewLeadershipTerm")));
                 }
-                if (stateChange)
+                if (hasStateChange)
                 {
                     builder = builder
                         .visit(to(ClusterInterceptor.ConsensusModuleStateChange.class)
                             .on(named("stateChange")));
                 }
-                if (roleChange)
+                if (hasRoleChange)
                 {
                     builder = builder
                         .visit(to(ClusterInterceptor.ConsensusModuleRoleChange.class)
                             .on(named("roleChange")));
                 }
+
                 return builder;
             }));
     }

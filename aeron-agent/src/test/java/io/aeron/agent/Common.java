@@ -17,6 +17,8 @@ package io.aeron.agent;
 
 import net.bytebuddy.agent.ByteBuddyAgent;
 
+import static org.junit.jupiter.api.Assertions.fail;
+
 public class Common
 {
     public static void beforeAgent()
@@ -32,5 +34,13 @@ public class Common
         System.clearProperty(EventConfiguration.ENABLED_CLUSTER_EVENT_CODES_PROP_NAME);
         System.clearProperty(EventLogAgent.READER_CLASSNAME_PROP_NAME);
         EventConfiguration.reset();
+    }
+
+    public static void checkInterruptedStatus()
+    {
+        if (Thread.currentThread().isInterrupted())
+        {
+            fail("unexpected interrupt - test likely to have timed out");
+        }
     }
 }

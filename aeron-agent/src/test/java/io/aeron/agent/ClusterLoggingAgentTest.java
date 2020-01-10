@@ -143,11 +143,10 @@ public class ClusterLoggingAgentTest
                 .clusterDir(new File(testDir, "service"))
                 .clusteredService(mock(ClusteredService.class));
 
-            try (ClusteredMediaDriver clusteredMediaDriver =
-                ClusteredMediaDriver.launch(mediaDriverCtx, archiveCtx, consensusModuleCtx))
+            try (ClusteredMediaDriver ignore1 = ClusteredMediaDriver.launch(
+                mediaDriverCtx, archiveCtx, consensusModuleCtx))
             {
-                try (ClusteredServiceContainer clusteredServiceContainer =
-                    ClusteredServiceContainer.launch(clusteredServiceCtx))
+                try (ClusteredServiceContainer ignore2 = ClusteredServiceContainer.launch(clusteredServiceCtx))
                 {
                     assertFalse(Thread.interrupted());
                     latch.await();

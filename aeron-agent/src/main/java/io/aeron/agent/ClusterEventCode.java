@@ -40,6 +40,7 @@ public enum ClusterEventCode implements EventCode
         final ClusterEventCode[] codes = ClusterEventCode.values();
         final int maxId = Arrays.stream(codes).mapToInt(ClusterEventCode::id).max().orElse(0);
         EVENT_CODE_BY_ID = new ClusterEventCode[maxId + 1];
+
         for (final ClusterEventCode code : codes)
         {
             final int id = code.id();

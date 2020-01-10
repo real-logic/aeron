@@ -68,6 +68,7 @@ public enum ArchiveEventCode implements EventCode
         final ArchiveEventCode[] codes = ArchiveEventCode.values();
         final int maxId = Arrays.stream(codes).mapToInt(ArchiveEventCode::id).max().orElse(0);
         EVENT_CODE_BY_ID = new ArchiveEventCode[maxId + 1];
+
         for (final ArchiveEventCode code : codes)
         {
             final int id = code.id();

@@ -53,8 +53,7 @@ class CmdInterceptor
         CMD_IN_ADD_RCV_DESTINATION,
         CMD_IN_REMOVE_RCV_DESTINATION,
         CMD_OUT_ON_CLIENT_TIMEOUT,
-        CMD_IN_TERMINATE_DRIVER
-    );
+        CMD_IN_TERMINATE_DRIVER);
 
     @Advice.OnMethodEnter
     static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)

@@ -146,6 +146,7 @@ public class DriverLoggingAgentTest
                     while (publication.offer(offerBuffer) < 0)
                     {
                         Thread.yield();
+                        Common.checkInterruptedStatus();
                     }
 
                     final MutableInteger counter = new MutableInteger();
@@ -154,6 +155,7 @@ public class DriverLoggingAgentTest
                     while (0 == subscription.poll(handler, 1))
                     {
                         Thread.yield();
+                        Common.checkInterruptedStatus();
                     }
 
                     assertEquals(counter.get(), 1);

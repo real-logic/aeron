@@ -81,6 +81,7 @@ public enum DriverEventCode implements EventCode
         final DriverEventCode[] codes = DriverEventCode.values();
         final int maxId = Arrays.stream(codes).mapToInt(DriverEventCode::id).max().orElse(0);
         EVENT_CODE_BY_ID = new DriverEventCode[maxId + 1];
+
         for (final DriverEventCode code : codes)
         {
             final int id = code.id();

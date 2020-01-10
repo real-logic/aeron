@@ -96,17 +96,17 @@ public class EventConfiguration
         RECEIVE_CHANNEL_CLOSE);
 
     /**
-     * Event Buffer default length (in bytes)
+     * Event Buffer default length (in bytes).
      */
     public static final int BUFFER_LENGTH_DEFAULT = 2 * 1024 * 1024;
 
     /**
-     * Maximum length of an event in bytes
+     * Maximum length of an event in bytes.
      */
     public static final int MAX_EVENT_LENGTH = 4096 + lineSeparator().length();
 
     /**
-     * Limit for event reader loop
+     * Iteration limit for event reader loop.
      */
     public static final int EVENT_READER_FRAME_LIMIT = 8;
 
@@ -128,9 +128,6 @@ public class EventConfiguration
     public static final EnumSet<ArchiveEventCode> ARCHIVE_EVENT_CODES = EnumSet.noneOf(ArchiveEventCode.class);
     public static final EnumSet<ClusterEventCode> CLUSTER_EVENT_CODES = EnumSet.noneOf(ClusterEventCode.class);
 
-    /**
-     * Initialize configuration.
-     */
     static void init()
     {
         DRIVER_EVENT_CODES.clear();
@@ -144,7 +141,7 @@ public class EventConfiguration
     }
 
     /**
-     * Reset configuration.
+     * Reset configuration back to clear state.
      */
     static void reset()
     {

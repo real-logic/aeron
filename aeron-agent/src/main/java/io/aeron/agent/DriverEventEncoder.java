@@ -82,7 +82,7 @@ public class DriverEventEncoder
 
     public static int encode(final MutableDirectBuffer encodingBuffer, final String value)
     {
-        final int length = encodingBuffer.putStringUtf8(LOG_HEADER_LENGTH, value, LITTLE_ENDIAN);
+        final int length = encodingBuffer.putStringAscii(LOG_HEADER_LENGTH, value, LITTLE_ENDIAN);
         final int recordLength = LOG_HEADER_LENGTH + length;
         encodeLogHeader(encodingBuffer, recordLength, recordLength);
 

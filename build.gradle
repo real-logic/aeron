@@ -238,6 +238,14 @@ subprojects {
 
     install {
         repositories.mavenInstaller.pom.project(projectPom)
+
+        repositories.mavenInstaller.pom.whenConfigured {
+            p -> p.dependencies = p.dependencies.findAll {
+                dep -> !(dep.artifactId.contains("hamcrest") ||
+                         dep.artifactId.contains("mockito") ||
+                         dep.artifactId.contains("junit"))
+            }
+        }
     }
 }
 
@@ -702,6 +710,12 @@ project(':aeron-agent') {
         archives javadocJar
     }
 
+    install {
+        repositories.mavenInstaller.pom.whenConfigured {
+            p -> p.dependencies = []
+        }
+    }
+
     signing {
         required { isReleasedVersion && gradle.taskGraph.hasTask("uploadArchives") }
         sign configurations.shadow
@@ -807,26 +821,14 @@ project(':aeron-system-tests') {
 
 project(':aeron-all') {
     apply plugin: 'com.github.johnrengelman.shadow'
-
-    configurations {
-        customCompile
-    }
     
     dependencies {
-        customCompile project(':aeron-cluster')
-        customCompile project(':aeron-samples')
-        customCompile "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
-    }
-
-    sourceSets {
-        main {
-            compileClasspath += configurations.customCompile
-            runtimeClasspath += compileClasspath
-        }
+        implementation project(':aeron-cluster')
+        implementation project(':aeron-samples')
+        implementation "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
     }
 
     javadoc {
-        classpath += configurations.customCompile
         source += project(':aeron-client').sourceSets.main.allJava
         source += project(':aeron-driver').sourceSets.main.allJava
         source += project(':aeron-archive').sourceSets.main.allJava
@@ -852,7 +854,6 @@ project(':aeron-all') {
     }
 
     shadowJar {
-        configurations = [project.configurations.customCompile]
         archiveClassifier.set ''
         manifest.attributes(
             'Implementation-Title': 'Aeron',
@@ -909,6 +910,12 @@ project(':aeron-all') {
         }
 
         mustRunAfter 'uploadArchives'
+    }
+
+    install {
+        repositories.mavenInstaller.pom.whenConfigured {
+            p -> p.dependencies = []
+        }
     }
     
     signing {

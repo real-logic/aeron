@@ -144,6 +144,7 @@ subprojects {
     version = aeronVersion
 
     jar.enabled = true
+    checkstyle.toolVersion = "${checkstyleVersion}"
 
     dependencies {
         testImplementation "org.hamcrest:hamcrest:${hamcrestVersion}"
@@ -152,8 +153,6 @@ subprojects {
         testImplementation "org.junit.jupiter:junit-jupiter-params:${junitVersion}"
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
     }
-
-    checkstyle.toolVersion = "${checkstyleVersion}"
 
     compileJava {
         if (JavaVersion.current().ordinal() >= JavaVersion.VERSION_1_9.ordinal()) {
@@ -807,13 +806,25 @@ project(':aeron-system-tests') {
 project(':aeron-all') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
+    configurations {
+        customCompile
+    }
+    
     dependencies {
-        implementation project(':aeron-cluster')
-        implementation project(':aeron-samples')
-        implementation "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
+        customCompile project(':aeron-cluster')
+        customCompile project(':aeron-samples')
+        customCompile "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
+    }
+
+    sourceSets {
+        main {
+            compileClasspath += configurations.customCompile
+            runtimeClasspath += compileClasspath
+        }
     }
 
     javadoc {
+        classpath += configurations.customCompile
         source += project(':aeron-client').sourceSets.main.allJava
         source += project(':aeron-driver').sourceSets.main.allJava
         source += project(':aeron-archive').sourceSets.main.allJava
@@ -821,6 +832,39 @@ project(':aeron-all') {
         source += project(':aeron-cluster').sourceSets.main.allJava
         source += project(':aeron-cluster').sourceSets.generated.allJava
         source += project(':aeron-samples').sourceSets.main.allJava
+    }
+
+    task sourcesJar(type: Jar) {
+        archiveClassifier.set 'sources'
+        from project(':aeron-client').sourceSets.main.allSource
+        from project(':aeron-driver').sourceSets.main.allSource
+        from project(':aeron-archive').sourceSets.main.allSource
+        from project(':aeron-archive').sourceSets.generated.allSource
+        from project(':aeron-cluster').sourceSets.main.allSource
+        from project(':aeron-cluster').sourceSets.generated.allSource
+    }
+
+    task javadocJar(type: Jar, dependsOn: javadoc) {
+        archiveClassifier.set 'javadoc'
+        from javadoc.destinationDir
+    }
+
+    shadowJar {
+        configurations = [project.configurations.customCompile]
+        archiveClassifier.set ''
+        manifest.attributes(
+            'Implementation-Title': 'Aeron',
+            'Implementation-Version': "${aeronVersion}",
+            'Implementation-Vendor': 'Real Logic Limited',
+            'Automatic-Module-Name': 'io.aeron.all')
+        relocate 'org.HdrHistogram', 'io.aeron.shadow.org.HdrHistogram'
+    }
+
+    jar.finalizedBy shadowJar
+    
+    artifacts {
+        archives sourcesJar
+        archives javadocJar
     }
 
     uploadArchives {
@@ -864,39 +908,7 @@ project(':aeron-all') {
 
         mustRunAfter 'uploadArchives'
     }
-
-    task sourcesJar(type: Jar) {
-        archiveClassifier.set 'sources'
-        from project(':aeron-client').sourceSets.main.allSource
-        from project(':aeron-driver').sourceSets.main.allSource
-        from project(':aeron-archive').sourceSets.main.allSource
-        from project(':aeron-archive').sourceSets.generated.allSource
-        from project(':aeron-cluster').sourceSets.main.allSource
-        from project(':aeron-cluster').sourceSets.generated.allSource
-    }
-
-    task javadocJar(type: Jar, dependsOn: javadoc) {
-        archiveClassifier.set 'javadoc'
-        from javadoc.destinationDir
-    }
-
-    shadowJar {
-        archiveClassifier.set ''
-        manifest.attributes(
-            'Implementation-Title': 'Aeron',
-            'Implementation-Version': "${aeronVersion}",
-            'Implementation-Vendor': 'Real Logic Limited',
-            'Automatic-Module-Name': 'io.aeron.all')
-        relocate 'org.HdrHistogram', 'io.aeron.shadow.org.HdrHistogram'
-    }
-
-    jar.finalizedBy shadowJar
     
-    artifacts {
-        archives sourcesJar
-        archives javadocJar
-    }
-
     signing {
         required { isReleasedVersion && gradle.taskGraph.hasTask("uploadArchives") }
         sign configurations.shadow

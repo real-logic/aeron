@@ -621,6 +621,8 @@ project(':aeron-agent') {
     }
 
     shadowJar {
+        exclude 'io/aeron/archive'
+        exclude 'io/aeron/cluster'
         dependencies {
             exclude(project(':aeron-client'))
             exclude(project(':aeron-driver'))

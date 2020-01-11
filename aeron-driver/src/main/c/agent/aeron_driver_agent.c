@@ -437,7 +437,7 @@ static const char *dissect_msg_type_id(int32_t id)
 
 static const char *dissect_timestamp(int64_t time_ms)
 {
-    static char buffer[256];
+    static char buffer[80];
 
     snprintf(buffer, sizeof(buffer) - 1, "%" PRId64 ".%" PRId64, time_ms / 1000, time_ms % 1000);
     return buffer;

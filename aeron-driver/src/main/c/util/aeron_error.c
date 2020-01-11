@@ -113,7 +113,7 @@ void aeron_set_err(int errcode, const char *format, ...)
     va_start(args, format);
     vsnprintf(stack_message, sizeof(stack_message) - 1, format, args);
     va_end(args);
-    strncpy(error_state->errmsg, stack_message, sizeof(error_state->errmsg) - 1);
+    strncpy(error_state->errmsg, stack_message, sizeof(error_state->errmsg));
 }
 
 const char *aeron_error_code_str(int errcode)

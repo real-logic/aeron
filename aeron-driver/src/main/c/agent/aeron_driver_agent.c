@@ -446,7 +446,7 @@ static const char *dissect_timestamp(int64_t time_ms)
 const char *dissect_log_start(int64_t time_ms)
 {
     static char buffer[384];
-    char datestamp[80];
+    char datestamp[256];
 
     aeron_agent_format_date(datestamp, sizeof(datestamp) - 1, time_ms);
     snprintf(buffer, sizeof(buffer) - 1, "[%s] log started %s", dissect_timestamp(time_ms), datestamp);

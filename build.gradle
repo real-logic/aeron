@@ -34,7 +34,7 @@ def aeronGroup = 'io.aeron'
 def aeronVersion = file('version.txt').text.trim()
 
 def agronaVersion = '1.2.0'
-def sbeVersion = '1.15.0'
+def sbeVersion = '1.16.0'
 def checkstyleVersion = '8.28'
 def hamcrestVersion = '2.2'
 def junitVersion = '5.6.0-RC1'

@@ -14,6 +14,11 @@
  * limitations under the License.
  */
 
+#if defined(__linux__)
+#define _BSD_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #include <stdint.h>
 #include <time.h>
 #include "aeron_alloc.h"

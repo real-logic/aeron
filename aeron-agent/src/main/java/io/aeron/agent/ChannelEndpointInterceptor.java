@@ -31,63 +31,63 @@ import static io.aeron.agent.DriverEventLogger.LOGGER;
  */
 class ChannelEndpointInterceptor
 {
-    public static class SenderProxy
+    static class SenderProxy
     {
-        public static class RegisterSendChannelEndpoint
+        static class RegisterSendChannelEndpoint
         {
             @Advice.OnMethodEnter
-            public static void registerSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
+            static void registerSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
             {
                 LOGGER.logString(SEND_CHANNEL_CREATION, channelEndpoint.udpChannel().description());
             }
         }
 
-        public static class CloseSendChannelEndpoint
+        static class CloseSendChannelEndpoint
         {
             @Advice.OnMethodEnter
-            public static void closeSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
+            static void closeSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
             {
                 LOGGER.logString(SEND_CHANNEL_CLOSE, channelEndpoint.udpChannel().description());
             }
         }
     }
 
-    public static class ReceiverProxy
+    static class ReceiverProxy
     {
-        public static class RegisterReceiveChannelEndpoint
+        static class RegisterReceiveChannelEndpoint
         {
             @Advice.OnMethodEnter
-            public static void registerReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
+            static void registerReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
             {
                 LOGGER.logString(RECEIVE_CHANNEL_CREATION, channelEndpoint.udpChannel().description());
             }
         }
 
-        public static class CloseReceiveChannelEndpoint
+        static class CloseReceiveChannelEndpoint
         {
             @Advice.OnMethodEnter
-            public static void closeReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
+            static void closeReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
             {
                 LOGGER.logString(RECEIVE_CHANNEL_CLOSE, channelEndpoint.udpChannel().description());
             }
         }
     }
 
-    public static class UdpChannelTransport
+    static class UdpChannelTransport
     {
-        public static class SendHook
+        static class SendHook
         {
             @Advice.OnMethodEnter
-            public static void sendHook(final ByteBuffer buffer, final InetSocketAddress address)
+            static void sendHook(final ByteBuffer buffer, final InetSocketAddress address)
             {
                 LOGGER.logFrameOut(buffer, address);
             }
         }
 
-        public static class ReceiveHook
+        static class ReceiveHook
         {
             @Advice.OnMethodEnter
-            public static void receiveHook(final UnsafeBuffer buffer, final int length, final InetSocketAddress address)
+            static void receiveHook(final UnsafeBuffer buffer, final int length, final InetSocketAddress address)
             {
                 LOGGER.logFrameIn(buffer, 0, length, address);
             }

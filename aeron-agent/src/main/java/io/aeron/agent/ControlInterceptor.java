@@ -23,7 +23,7 @@ import static io.aeron.agent.ArchiveEventLogger.LOGGER;
 /**
  * Intercepts requests to the archive.
  */
-final class ControlInterceptor
+class ControlInterceptor
 {
     static class ControlRequest
     {

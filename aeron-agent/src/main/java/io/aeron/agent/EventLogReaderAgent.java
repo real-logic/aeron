@@ -27,18 +27,22 @@ import java.nio.CharBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 
-import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
-import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
+import static io.aeron.agent.CommonEventDisector.dissectLogStartMessage;
+import static io.aeron.agent.EventConfiguration.*;
+import static java.lang.System.*;
+import static java.nio.channels.FileChannel.open;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.*;
+import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
+import static org.agrona.BufferUtil.allocateDirectAligned;
 
 /**
  * Simple reader of {@link EventConfiguration#EVENT_RING_BUFFER} that appends to {@link System#out} by default
  * or to file if {@link #LOG_FILENAME_PROP_NAME} System property is set.
  */
-public class EventLogReaderAgent implements Agent, MessageHandler
+final class EventLogReaderAgent implements Agent, MessageHandler
 {
     /**
      * Event Buffer length system property name. If not set then output will default to {@link System#out}.
@@ -50,32 +54,35 @@ public class EventLogReaderAgent implements Agent, MessageHandler
     private ByteBuffer byteBuffer;
     private FileChannel fileChannel = null;
 
+    EventLogReaderAgent()
+    {
+    }
+
     public void onStart()
     {
-        final String filename = System.getProperty(LOG_FILENAME_PROP_NAME);
+        final String filename = getProperty(LOG_FILENAME_PROP_NAME);
         if (null != filename)
         {
             try
             {
-                fileChannel = FileChannel.open(Paths.get(filename), CREATE, APPEND, WRITE);
+                fileChannel = open(Paths.get(filename), CREATE, APPEND, WRITE);
             }
             catch (final IOException ex)
             {
                 LangUtil.rethrowUnchecked(ex);
             }
 
-            encoder = StandardCharsets.UTF_8.newEncoder();
-            byteBuffer = ByteBuffer.allocateDirect(
-                EventConfiguration.MAX_EVENT_LENGTH + System.lineSeparator().length());
+            encoder = UTF_8.newEncoder();
+            byteBuffer = allocateDirectAligned(MAX_EVENT_LENGTH + lineSeparator().length(), CACHE_LINE_LENGTH);
         }
 
         builder.setLength(0);
-        DriverEventDissector.dissectLogStartMessage(System.nanoTime(), System.currentTimeMillis(), builder);
-        builder.append(System.lineSeparator());
+        dissectLogStartMessage(nanoTime(), currentTimeMillis(), builder);
+        builder.append(lineSeparator());
 
         if (null == fileChannel)
         {
-            System.out.print(builder);
+            out.print(builder);
         }
         else
         {
@@ -123,11 +130,11 @@ public class EventLogReaderAgent implements Agent, MessageHandler
             builder.append("Unknown EventCodeType: ").append(eventCodeTypeId);
         }
 
-        builder.append(System.lineSeparator());
+        builder.append(lineSeparator());
 
         if (null == fileChannel)
         {
-            System.out.print(builder);
+            out.print(builder);
         }
         else
         {

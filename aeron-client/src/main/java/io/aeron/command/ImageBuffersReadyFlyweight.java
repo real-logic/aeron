@@ -240,10 +240,22 @@ public class ImageBuffersReadyFlyweight
     }
 
     /**
-     * Set the source identity string in ASCII
+     * Append the source identity to an {@link Appendable}.
+     *
+     * @param appendable to append source identity to.
+     */
+    public void appendSourceIdentity(final Appendable appendable)
+    {
+        buffer.getStringAscii(offset + sourceIdentityOffset(), appendable);
+    }
+
+    /**
+     * Set the source identity string in ASCII.
+     * <p>Note: Can be called only after log file name was set!</p>
      *
      * @param value for the source identity
      * @return flyweight
+     * @see #logFileName(String)
      */
     public ImageBuffersReadyFlyweight sourceIdentity(final String value)
     {

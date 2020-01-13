@@ -19,6 +19,8 @@ import org.agrona.MutableDirectBuffer;
 
 import java.util.Arrays;
 
+import static io.aeron.agent.DriverEventDissector.*;
+
 /**
  * Events and codecs for encoding/decoding events recorded to the {@link EventConfiguration#EVENT_RING_BUFFER}.
  */
@@ -33,14 +35,16 @@ public enum DriverEventCode implements EventCode
     CMD_IN_REMOVE_SUBSCRIPTION(6, DriverEventDissector::dissectAsCommand),
     CMD_OUT_PUBLICATION_READY(7, DriverEventDissector::dissectAsCommand),
     CMD_OUT_AVAILABLE_IMAGE(8, DriverEventDissector::dissectAsCommand),
-    INVOCATION(9, DriverEventDissector::dissectAsInvocation),
 
     CMD_OUT_ON_OPERATION_SUCCESS(12, DriverEventDissector::dissectAsCommand),
     CMD_IN_KEEPALIVE_CLIENT(13, DriverEventDissector::dissectAsCommand),
-    REMOVE_PUBLICATION_CLEANUP(14, DriverEventDissector::dissectAsString),
-    REMOVE_SUBSCRIPTION_CLEANUP(15, DriverEventDissector::dissectAsString),
+    REMOVE_PUBLICATION_CLEANUP(14,
+        (code, buffer, offset, builder) -> dissectRemovePublicationCleanup(buffer, offset, builder)),
+    REMOVE_SUBSCRIPTION_CLEANUP(15,
+        (code, buffer, offset, builder) -> dissectRemoveSubscriptionCleanup(buffer, offset, builder)),
 
-    REMOVE_IMAGE_CLEANUP(16, DriverEventDissector::dissectAsString),
+    REMOVE_IMAGE_CLEANUP(16,
+        (code, buffer, offset, builder) -> dissectRemoveImageCleanup(buffer, offset, builder)),
     CMD_OUT_ON_UNAVAILABLE_IMAGE(17, DriverEventDissector::dissectAsCommand),
 
     SEND_CHANNEL_CREATION(23, DriverEventDissector::dissectAsString),

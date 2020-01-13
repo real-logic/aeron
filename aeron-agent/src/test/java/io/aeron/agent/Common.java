@@ -16,8 +16,13 @@
 package io.aeron.agent;
 
 import net.bytebuddy.agent.ByteBuddyAgent;
+import org.agrona.concurrent.UnsafeBuffer;
 
-import static org.junit.jupiter.api.Assertions.fail;
+import static io.aeron.agent.CommonEventEncoder.LOG_HEADER_LENGTH;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.concurrent.ringbuffer.RecordDescriptor.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class Common
 {
@@ -42,5 +47,20 @@ public class Common
         {
             fail("unexpected interrupt - test likely to have timed out");
         }
+    }
+
+    public static void verifyLogHeader(
+        final UnsafeBuffer logBuffer,
+        final int eventCodeId,
+        final int totalLength,
+        final int captureLength,
+        final int length)
+    {
+        assertEquals(HEADER_LENGTH + LOG_HEADER_LENGTH + totalLength,
+            logBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN));
+        assertEquals(eventCodeId, logBuffer.getInt(typeOffset(0), LITTLE_ENDIAN));
+        assertEquals(captureLength, logBuffer.getInt(encodedMsgOffset(0), LITTLE_ENDIAN));
+        assertEquals(length, logBuffer.getInt(encodedMsgOffset(SIZE_OF_INT), LITTLE_ENDIAN));
+        assertNotEquals(0, logBuffer.getLong(encodedMsgOffset(SIZE_OF_INT * 2), LITTLE_ENDIAN));
     }
 }

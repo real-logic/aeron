@@ -15,23 +15,25 @@
  */
 package io.aeron.agent;
 
-import org.agrona.SystemUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
-import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
-import java.nio.ByteBuffer;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.function.Function;
 
 import static io.aeron.agent.DriverEventCode.*;
-import static java.lang.System.*;
+import static java.lang.System.err;
+import static java.lang.System.getProperty;
+import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
+import static org.agrona.BufferUtil.allocateDirectAligned;
+import static org.agrona.SystemUtil.getSizeAsInt;
+import static org.agrona.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
 
 /**
  * Common configuration elements between event loggers and event reader side
  */
-public class EventConfiguration
+final class EventConfiguration
 {
     /**
      * Event Buffer length system property name
@@ -103,7 +105,7 @@ public class EventConfiguration
     /**
      * Maximum length of an event in bytes.
      */
-    public static final int MAX_EVENT_LENGTH = 4096 + lineSeparator().length();
+    public static final int MAX_EVENT_LENGTH = 4096;
 
     /**
      * Iteration limit for event reader loop.
@@ -117,16 +119,19 @@ public class EventConfiguration
 
     static
     {
-        final int bufferLength = SystemUtil.getSizeAsInt(
-            EventConfiguration.BUFFER_LENGTH_PROP_NAME, EventConfiguration.BUFFER_LENGTH_DEFAULT) +
-            RingBufferDescriptor.TRAILER_LENGTH;
+        final int bufferLength = getSizeAsInt(BUFFER_LENGTH_PROP_NAME, BUFFER_LENGTH_DEFAULT) + TRAILER_LENGTH;
 
-        EVENT_RING_BUFFER = new ManyToOneRingBuffer(new UnsafeBuffer(ByteBuffer.allocateDirect(bufferLength)));
+        EVENT_RING_BUFFER =
+            new ManyToOneRingBuffer(new UnsafeBuffer(allocateDirectAligned(bufferLength, CACHE_LINE_LENGTH)));
     }
 
     public static final EnumSet<DriverEventCode> DRIVER_EVENT_CODES = EnumSet.noneOf(DriverEventCode.class);
     public static final EnumSet<ArchiveEventCode> ARCHIVE_EVENT_CODES = EnumSet.noneOf(ArchiveEventCode.class);
     public static final EnumSet<ClusterEventCode> CLUSTER_EVENT_CODES = EnumSet.noneOf(ClusterEventCode.class);
+
+    private EventConfiguration()
+    {
+    }
 
     static void init()
     {

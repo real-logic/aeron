@@ -18,7 +18,7 @@ package io.aeron.agent;
 /**
  * Specifies the type of EventCode that can be handled by the logging agent.
  */
-public enum EventCodeType
+enum EventCodeType
 {
     /**
      * Events related to media driver operation.

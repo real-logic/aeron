@@ -40,7 +40,7 @@ import static net.bytebuddy.matcher.ElementMatchers.named;
  * which is consumed and appended asynchronous to a log as defined by the class {@link #READER_CLASSNAME_PROP_NAME}
  * which defaults to {@link EventLogReaderAgent}.
  */
-public class EventLogAgent
+public final class EventLogAgent
 {
     /**
      * Event reader {@link Agent} which consumes the {@link EventConfiguration#EVENT_RING_BUFFER} to output log events.
@@ -389,7 +389,7 @@ public class EventLogAgent
     }
 }
 
-class AgentBuilderListener implements AgentBuilder.Listener
+final class AgentBuilderListener implements AgentBuilder.Listener
 {
     public void onDiscovery(
         final String typeName,

@@ -15,38 +15,25 @@
  */
 package io.aeron.agent;
 
-import io.aeron.cluster.ConsensusModule;
-import io.aeron.cluster.Election;
-import io.aeron.cluster.service.Cluster;
-import org.agrona.BitUtil;
-import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+
+import static io.aeron.agent.CommonEventEncoder.MAX_CAPTURE_LENGTH;
+import static io.aeron.agent.CommonEventEncoder.encodeLogHeader;
+import static java.lang.Math.min;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 final class ClusterEventEncoder
 {
-    static int encodeElectionStateChange(
-        final MutableDirectBuffer encodedBuffer,
-        final Election.State oldState,
-        final Election.State newState,
-        final int memberId)
+    static final String SEPARATOR = " -> ";
+
+    private ClusterEventEncoder()
     {
-        int offset = 0;
-
-        encodedBuffer.putInt(offset, memberId);
-        offset += BitUtil.SIZE_OF_INT;
-
-        final int stringLength = oldState.name().length() + " -> ".length() + newState.name().length();
-        encodedBuffer.putInt(offset, stringLength);
-        offset += BitUtil.SIZE_OF_INT;
-
-        offset += encodedBuffer.putStringWithoutLengthAscii(offset, oldState.name());
-        offset += encodedBuffer.putStringWithoutLengthAscii(offset, " -> ");
-        offset += encodedBuffer.putStringWithoutLengthAscii(offset, newState.name());
-
-        return offset;
     }
 
-    static int newLeadershipTerm(
-        final MutableDirectBuffer encodedBuffer,
+    static int encodeNewLeadershipTerm(
+        final UnsafeBuffer encodingBuffer,
         final long logLeadershipTermId,
         final long leadershipTermId,
         final long logPosition,
@@ -54,62 +41,49 @@ final class ClusterEventEncoder
         final int leaderMemberId,
         final int logSessionId)
     {
-        int offset = 0;
-        encodedBuffer.putLong(0, logLeadershipTermId);
-        offset += BitUtil.SIZE_OF_LONG;
-        encodedBuffer.putLong(offset, leadershipTermId);
-        offset += BitUtil.SIZE_OF_LONG;
-        encodedBuffer.putLong(offset, logPosition);
-        offset += BitUtil.SIZE_OF_LONG;
-        encodedBuffer.putLong(offset, timestamp);
-        offset += BitUtil.SIZE_OF_LONG;
-        encodedBuffer.putInt(offset, leaderMemberId);
-        offset += BitUtil.SIZE_OF_INT;
-        encodedBuffer.putInt(offset, logSessionId);
+        final int length = SIZE_OF_LONG * 4 + SIZE_OF_INT * 2;
 
-        return offset + BitUtil.SIZE_OF_INT;
-    }
+        int offset = encodeLogHeader(encodingBuffer, length, length);
 
-    static int stateChange(
-        final MutableDirectBuffer encodedBuffer,
-        final ConsensusModule.State oldState,
-        final ConsensusModule.State newState,
-        final int memberId)
-    {
-        int offset = 0;
+        encodingBuffer.putLong(offset, logLeadershipTermId, LITTLE_ENDIAN);
+        offset += SIZE_OF_LONG;
 
-        encodedBuffer.putInt(offset, memberId);
-        offset += BitUtil.SIZE_OF_INT;
+        encodingBuffer.putLong(offset, leadershipTermId, LITTLE_ENDIAN);
+        offset += SIZE_OF_LONG;
 
-        final int stringLength = oldState.name().length() + " -> ".length() + newState.name().length();
-        encodedBuffer.putInt(offset, stringLength);
-        offset += BitUtil.SIZE_OF_INT;
+        encodingBuffer.putLong(offset, logPosition, LITTLE_ENDIAN);
+        offset += SIZE_OF_LONG;
 
-        offset += encodedBuffer.putStringWithoutLengthAscii(offset, oldState.name());
-        offset += encodedBuffer.putStringWithoutLengthAscii(offset, " -> ");
-        offset += encodedBuffer.putStringWithoutLengthAscii(offset, newState.name());
+        encodingBuffer.putLong(offset, timestamp, LITTLE_ENDIAN);
+        offset += SIZE_OF_LONG;
+
+        encodingBuffer.putInt(offset, leaderMemberId, LITTLE_ENDIAN);
+        offset += SIZE_OF_INT;
+
+        encodingBuffer.putInt(offset, logSessionId, LITTLE_ENDIAN);
+        offset += SIZE_OF_INT;
 
         return offset;
     }
 
-    static int roleChange(
-        final MutableDirectBuffer encodedBuffer,
-        final Cluster.Role oldRole,
-        final Cluster.Role newRole,
-        final int memberId)
+    static <T extends Enum<T>> int encodeStateChange(
+        final UnsafeBuffer encodingBuffer, final T from, final T to, final int memberId)
     {
-        int offset = 0;
+        final int stringLength = from.name().length() + SEPARATOR.length() + to.name().length();
+        final int length = stringLength + SIZE_OF_INT * 2;
+        final int captureLength = min(length, MAX_CAPTURE_LENGTH);
 
-        encodedBuffer.putInt(offset, memberId);
-        offset += BitUtil.SIZE_OF_INT;
+        int offset = encodeLogHeader(encodingBuffer, captureLength, length);
 
-        final int stringLength = oldRole.name().length() + " -> ".length() + newRole.name().length();
-        encodedBuffer.putInt(offset, stringLength);
-        offset += BitUtil.SIZE_OF_INT;
+        encodingBuffer.putInt(offset, memberId, LITTLE_ENDIAN);
+        offset += SIZE_OF_INT;
 
-        offset += encodedBuffer.putStringWithoutLengthAscii(offset, oldRole.name());
-        offset += encodedBuffer.putStringWithoutLengthAscii(offset, " -> ");
-        offset += encodedBuffer.putStringWithoutLengthAscii(offset, newRole.name());
+        encodingBuffer.putInt(offset, stringLength, LITTLE_ENDIAN);
+        offset += SIZE_OF_INT;
+
+        offset += encodingBuffer.putStringWithoutLengthAscii(offset, from.name());
+        offset += encodingBuffer.putStringWithoutLengthAscii(offset, SEPARATOR);
+        offset += encodingBuffer.putStringWithoutLengthAscii(offset, to.name());
 
         return offset;
     }

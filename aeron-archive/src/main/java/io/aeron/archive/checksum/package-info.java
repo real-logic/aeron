@@ -17,7 +17,9 @@
 /**
  * Checksums can be added to recordings so that file corruption can be detected.
  * <p>
- * Recording can be checksumed as they are recorded or later via {@link io.aeron.archive.ArchiveTool} checksum methods.
+ * Recordings can be checksumed as they are recorded or later via {@link io.aeron.archive.ArchiveTool} checksum methods.
  * Checksums are generated via implementations of {@link io.aeron.archive.checksum.Checksum} interface.
+ * <p>
+ * Recordings can be verified on replay or via the {@link io.aeron.archive.ArchiveTool} verify methods.
  */
 package io.aeron.archive.checksum;

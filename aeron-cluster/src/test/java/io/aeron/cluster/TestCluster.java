@@ -29,10 +29,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.MinMulticastFlowControlSupplier;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.Header;
-import org.agrona.BitUtil;
-import org.agrona.CloseHelper;
-import org.agrona.DirectBuffer;
-import org.agrona.ExpandableArrayBuffer;
+import org.agrona.*;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.YieldingIdleStrategy;
@@ -42,11 +39,12 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.function.Supplier;
 
 import static io.aeron.Aeron.NULL_VALUE;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestCluster implements AutoCloseable
 {
@@ -853,6 +851,18 @@ public class TestCluster implements AutoCloseable
     private static String clusterBackupTransferEndpoint(final int maxMemberCount)
     {
         return "localhost:2044" + maxMemberCount;
+    }
+
+    public void tombstoneLatestSnapshots()
+    {
+        for (TestNode node : nodes)
+        {
+            if (null != node)
+            {
+                final RecordingLog recordingLog = new RecordingLog(node.consensusModule().context().clusterDir());
+                assertTrue(recordingLog.tombstoneLatestSnapshot());
+            }
+        }
     }
 
     static class ServiceContext

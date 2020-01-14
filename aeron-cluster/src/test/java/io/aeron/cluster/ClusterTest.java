@@ -32,7 +32,7 @@ import static io.aeron.cluster.service.CommitPos.COMMIT_POSITION_TYPE_ID;
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.*;
 
-@Disabled
+//@Disabled
 public class ClusterTest
 {
     private static final String MSG = "Hello World!";
@@ -857,6 +857,88 @@ public class ClusterTest
                 cluster.awaitLeader();
             }
         });
+    }
+
+    @Test
+    @Disabled
+    void shouldRecoverWhenLastSnapshotIsTombstonedAndWasBetweenTwoElections()
+    {
+        assertTimeoutPreemptively(ofSeconds(60), () ->
+        {
+            final int numMessages = 3;
+
+            try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+            {
+                // Leadership Term 0
+                final TestNode leader0 = cluster.awaitLeader();
+                cluster.connectClient();
+
+                cluster.sendMessages(numMessages);
+                awaitMessageCountForAllServices(cluster, 3, numMessages);
+
+                cluster.awaitNeutralControlToggle(leader0);
+                cluster.takeSnapshot(leader0);
+                cluster.awaitNeutralControlToggle(leader0);
+
+                // Leadership Term 1
+                cluster.stopNode(leader0);
+                final TestNode leader1 = cluster.awaitLeader(leader0.index());
+                cluster.startStaticNode(leader0.index(), false);
+
+                cluster.sendMessages(numMessages);
+                awaitMessageCountForAllServices(cluster, 3, numMessages * 2);
+
+                cluster.awaitNeutralControlToggle(leader1);
+                cluster.takeSnapshot(leader1);
+                cluster.awaitNeutralControlToggle(leader1);
+
+                // Leadership Term 2
+                cluster.stopNode(leader1);
+                final TestNode leader2 = cluster.awaitLeader(leader1.index());
+                cluster.startStaticNode(leader1.index(), false);
+
+                cluster.sendMessages(numMessages);
+                awaitMessageCountForAllServices(cluster, 3, numMessages * 3);
+
+                // No snapshot for Term 2
+
+                // Stop without snapshot
+                cluster.node(0).terminationExpected(true);
+                cluster.node(1).terminationExpected(true);
+                cluster.node(2).terminationExpected(true);
+
+                cluster.stopNode(cluster.node(0));
+                cluster.stopNode(cluster.node(1));
+                cluster.stopNode(cluster.node(2));
+                Thread.sleep(1_000);
+
+                // Tombstone snapshot from leadershipTermId = 1
+                cluster.tombstoneLatestSnapshots();
+
+                // Start, should replay from snapshot in leadershipTerm = 0.
+                cluster.startStaticNode(0, false);
+                cluster.startStaticNode(1, false);
+                cluster.startStaticNode(2, false);
+
+                cluster.awaitLeader();
+            }
+        });
+    }
+
+    private void awaitMessageCountForAllServices(final TestCluster cluster, final int numNodes, final int numMessages)
+    {
+        for (int i = 0; i < numNodes; i++)
+        {
+            cluster.awaitMessageCountForService(cluster.node(i), numMessages);
+        }
+    }
+
+    private void awaitSnapshotCountForAllServices(final TestCluster cluster, final int numNodes, final int numSnapshots)
+    {
+        for (int i = 0; i < numNodes; i++)
+        {
+            cluster.awaitSnapshotCounter(cluster.node(i), numSnapshots);
+        }
     }
 
     private void shouldCatchUpAfterFollowerMissesMessage(final String message) throws InterruptedException

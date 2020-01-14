@@ -861,9 +861,70 @@ public class ClusterTest
 
     @Test
     @Disabled
+    void shouldRecoverWhenLastSnapshotIsTombstoned()
+    {
+        assertTimeoutPreemptively(ofSeconds(6000), () ->
+        {
+            final int numMessages = 3;
+
+            try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+            {
+                // Leadership Term 0
+                final TestNode leader0 = cluster.awaitLeader();
+                cluster.connectClient();
+
+                cluster.sendMessages(numMessages);
+                awaitMessageCountForAllServices(cluster, 3, numMessages);
+
+                // Snapshot
+                cluster.awaitNeutralControlToggle(leader0);
+                cluster.takeSnapshot(leader0);
+                cluster.awaitNeutralControlToggle(leader0);
+
+                cluster.sendMessages(numMessages);
+                awaitMessageCountForAllServices(cluster, 3, numMessages * 2);
+
+                // Snapshot
+                cluster.awaitNeutralControlToggle(leader0);
+                cluster.takeSnapshot(leader0);
+                cluster.awaitNeutralControlToggle(leader0);
+
+                // Leadership Term 1
+                cluster.stopNode(leader0);
+                final TestNode leader1 = cluster.awaitLeader(leader0.index());
+                cluster.startStaticNode(leader0.index(), false);
+
+                cluster.sendMessages(numMessages);
+                awaitMessageCountForAllServices(cluster, 3, numMessages * 3);
+
+                // Stop without snapshot
+                cluster.node(0).terminationExpected(true);
+                cluster.node(1).terminationExpected(true);
+                cluster.node(2).terminationExpected(true);
+
+                cluster.stopNode(cluster.node(0));
+                cluster.stopNode(cluster.node(1));
+                cluster.stopNode(cluster.node(2));
+                Thread.sleep(1_000);
+
+                // Tombstone snapshot from leadershipTermId = 1
+                cluster.tombstoneLatestSnapshots();
+
+                // Start, should replay from snapshot in leadershipTerm = 0.
+                cluster.startStaticNode(0, false);
+                cluster.startStaticNode(1, false);
+                cluster.startStaticNode(2, false);
+
+                cluster.awaitLeader();
+            }
+        });
+    }
+
+    @Test
+    @Disabled
     void shouldRecoverWhenLastSnapshotIsTombstonedAndWasBetweenTwoElections()
     {
-        assertTimeoutPreemptively(ofSeconds(60), () ->
+        assertTimeoutPreemptively(ofSeconds(6000), () ->
         {
             final int numMessages = 3;
 

@@ -66,6 +66,7 @@ class ConsensusModuleAgent implements Agent
     private long nextServiceSessionId = Long.MIN_VALUE + 1;
     private long logServiceSessionId = Long.MIN_VALUE;
     private long leadershipTermId = NULL_VALUE;
+    private long snapshotLeadershipTermId = NULL_VALUE;
     private long expectedAckPosition = 0;
     private long serviceAckId = 0;
     private long terminationPosition = NULL_POSITION;
@@ -257,7 +258,7 @@ class ConsensusModuleAgent implements Agent
             timeNs = nowNs;
             timeOfLastLogUpdateNs = nowNs;
             timeOfLastAppendPositionNs = nowNs;
-            leadershipTermId = recoveryPlan.lastLeadershipTermId;
+            initialiseLeadershipTermId(recoveryPlan.lastLeadershipTermId);
 
             election = new Election(
                 true,
@@ -1189,7 +1190,7 @@ class ConsensusModuleAgent implements Agent
             return;
         }
 
-        this.leadershipTermId = leadershipTermId;
+        updateLeadershipTermId(leadershipTermId);
 
         if (null != election && null != appendedPosition)
         {
@@ -1343,7 +1344,7 @@ class ConsensusModuleAgent implements Agent
 
     void becomeLeader(final long leadershipTermId, final long logPosition, final int logSessionId)
     {
-        this.leadershipTermId = leadershipTermId;
+        updateLeadershipTermId(leadershipTermId);
 
         final ChannelUri channelUri = ChannelUri.parse(ctx.logChannel());
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(logSessionId));
@@ -1472,7 +1473,7 @@ class ConsensusModuleAgent implements Agent
 
     void awaitImageAndCreateFollowerLogAdapter(final Subscription subscription, final int logSessionId)
     {
-        leadershipTermId = election.leadershipTermId();
+        updateLeadershipTermId(election.leadershipTermId());
         idleStrategy.reset();
         while (!findImageAndLogAdapter(subscription, logSessionId))
         {
@@ -1501,7 +1502,7 @@ class ConsensusModuleAgent implements Agent
             final RecordingLog.Log log = plan.log;
             final long startPosition = log.startPosition;
             final long stopPosition = Math.min(log.stopPosition, electionCommitPosition);
-            leadershipTermId = log.leadershipTermId;
+            initialiseLeadershipTermId(log.leadershipTermId);
 
             if (log.logPosition < 0)
             {
@@ -1819,7 +1820,7 @@ class ConsensusModuleAgent implements Agent
             }
 
             timeOfLastLogUpdateNs = nowNs;
-            leadershipTermId = recoveryPlan.lastLeadershipTermId;
+            initialiseLeadershipTermId(recoveryPlan.lastLeadershipTermId);
 
             return true;
         }
@@ -2265,10 +2266,21 @@ class ConsensusModuleAgent implements Agent
         appendedPosition = new ReadableCounter(counters, recordingCounterId);
     }
 
+    private void updateLeadershipTermId(final long leadershipTermId)
+    {
+        this.leadershipTermId = leadershipTermId;
+        this.snapshotLeadershipTermId = leadershipTermId;
+    }
+
+    public void initialiseLeadershipTermId(final long leadershipTermId)
+    {
+        this.leadershipTermId = leadershipTermId;
+    }
+
     private void recoverFromSnapshot(final RecordingLog.Snapshot snapshot, final AeronArchive archive)
     {
         expectedAckPosition = snapshot.logPosition;
-        leadershipTermId = snapshot.leadershipTermId;
+        updateLeadershipTermId(snapshot.leadershipTermId);
 
         final String channel = ctx.replayChannel();
         final int streamId = ctx.replayStreamId();
@@ -2549,20 +2561,21 @@ class ConsensusModuleAgent implements Agent
                 final CountersReader counters = aeron.countersReader();
                 final int counterId = awaitRecordingCounter(counters, publication.sessionId());
                 final long recordingId = RecordingPos.getRecordingId(counters, counterId);
-                final long termBaseLogPosition = recordingLog.getTermEntry(leadershipTermId).termBaseLogPosition;
+                final long termBaseLogPosition = recordingLog.getTermEntry(snapshotLeadershipTermId).termBaseLogPosition;
 
-                snapshotState(publication, logPosition, leadershipTermId);
+                snapshotState(publication, logPosition, snapshotLeadershipTermId);
                 awaitRecordingComplete(recordingId, publication.position(), counters, counterId);
 
                 for (int serviceId = serviceAckQueues.length - 1; serviceId >= 0; serviceId--)
                 {
                     final long snapshotId = serviceAckQueues[serviceId].pollFirst().relevantId();
                     recordingLog.appendSnapshot(
-                        snapshotId, leadershipTermId, termBaseLogPosition, logPosition, timestamp, serviceId);
+                        snapshotId, snapshotLeadershipTermId, termBaseLogPosition, logPosition, timestamp, serviceId);
                 }
 
+                System.out.flush();
                 recordingLog.appendSnapshot(
-                    recordingId, leadershipTermId, termBaseLogPosition, logPosition, timestamp, SERVICE_ID);
+                    recordingId, snapshotLeadershipTermId, termBaseLogPosition, logPosition, timestamp, SERVICE_ID);
 
                 recordingLog.force(ctx.fileSyncLevel());
                 recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount());

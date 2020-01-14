@@ -876,10 +876,6 @@ public class ClusterTest
                 cluster.sendMessages(numMessages);
                 awaitMessageCountForAllServices(cluster, 3, numMessages);
 
-                cluster.awaitNeutralControlToggle(leader0);
-                cluster.takeSnapshot(leader0);
-                cluster.awaitNeutralControlToggle(leader0);
-
                 // Leadership Term 1
                 cluster.stopNode(leader0);
                 final TestNode leader1 = cluster.awaitLeader(leader0.index());
@@ -888,6 +884,7 @@ public class ClusterTest
                 cluster.sendMessages(numMessages);
                 awaitMessageCountForAllServices(cluster, 3, numMessages * 2);
 
+                // Snapshot
                 cluster.awaitNeutralControlToggle(leader1);
                 cluster.takeSnapshot(leader1);
                 cluster.awaitNeutralControlToggle(leader1);

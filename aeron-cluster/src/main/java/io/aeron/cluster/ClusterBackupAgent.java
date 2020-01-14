@@ -642,7 +642,7 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
                 final long replayId = ctx.aeron().nextCorrelationId();
                 final RecordingLog.Entry logEntry = recordingLog.findLastTerm();
                 final long startPosition = null == logEntry ?
-                    leaderLogEntry.termBaseLogPosition : backupArchive.getStopPosition(logEntry.recordingId);
+                    NULL_POSITION : backupArchive.getStopPosition(logEntry.recordingId);
 
                 final String transferChannel = "aeron:udp?endpoint=" + ctx.transferEndpoint();
 

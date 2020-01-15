@@ -115,14 +115,7 @@ public class ClusterNodeTest
                 TestUtil.checkInterruptedStatus();
             }
 
-            while (messageCount.get() == 0)
-            {
-                if (aeronCluster.pollEgress() <= 0)
-                {
-                    Thread.yield();
-                }
-                TestUtil.checkInterruptedStatus();
-            }
+            awaitResponse(messageCount);
         });
     }
 
@@ -166,14 +159,7 @@ public class ClusterNodeTest
                 TestUtil.checkInterruptedStatus();
             }
 
-            while (messageCount.get() == 0)
-            {
-                if (aeronCluster.pollEgress() <= 0)
-                {
-                    Thread.yield();
-                    TestUtil.checkInterruptedStatus();
-                }
-            }
+            awaitResponse(messageCount);
         });
     }
 
@@ -204,14 +190,7 @@ public class ClusterNodeTest
                 TestUtil.checkInterruptedStatus();
             }
 
-            while (messageCount.get() == 0)
-            {
-                if (aeronCluster.pollEgress() <= 0)
-                {
-                    Thread.yield();
-                    TestUtil.checkInterruptedStatus();
-                }
-            }
+            awaitResponse(messageCount);
         });
     }
 
@@ -241,15 +220,20 @@ public class ClusterNodeTest
                 TestUtil.checkInterruptedStatus();
             }
 
-            while (messageCount.get() == 0)
-            {
-                if (aeronCluster.pollEgress() <= 0)
-                {
-                    Thread.yield();
-                    TestUtil.checkInterruptedStatus();
-                }
-            }
+            awaitResponse(messageCount);
         });
+    }
+
+    private void awaitResponse(final MutableInteger messageCount)
+    {
+        while (messageCount.get() == 0)
+        {
+            if (aeronCluster.pollEgress() <= 0)
+            {
+                Thread.yield();
+                TestUtil.checkInterruptedStatus();
+            }
+        }
     }
 
     private ClusteredServiceContainer launchEchoService()
@@ -296,8 +280,9 @@ public class ClusterNodeTest
             {
                 clusterSessionId = session.id();
                 msg = buffer.getStringWithoutLengthAscii(offset, length);
+                final long correlationId = serviceCorrelationId(nextCorrelationId++);
 
-                while (!cluster.scheduleTimer(serviceCorrelationId(nextCorrelationId++), timestamp + 100))
+                while (!cluster.scheduleTimer(correlationId, timestamp + 100))
                 {
                     cluster.idle();
                 }

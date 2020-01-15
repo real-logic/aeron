@@ -51,16 +51,16 @@ import static org.agrona.SystemUtil.getDurationInNanos;
  * Tool for investigating the state of a cluster node.
  * <pre>
  * Usage: ClusterTool &#60;cluster-dir&#62; &#60;command&#62; [options]
- *                   describe: prints out all descriptors in the file.
- *                        pid: prints PID of cluster component.
- *              recovery-plan: [service count] prints recovery plan of cluster component.
- *              recording-log: prints recording log of cluster component.
- *                     errors: prints Aeron and cluster component error logs.
- *               list-members: print leader memberId, active members list, and passive members list.
- *              remove-member: [memberId] requests removal of a member specified in memberId.
- *             remove-passive: [memberId] requests removal of passive member specified in memberId.
- *               backup-query: [delay] schedules (or displays) time of next backup query for cluster backup.
- *  tombstone-latest-snapshot: Mark the latest snapshot as a tombstone so previous is loaded..
+ *                    describe: prints out all descriptors in the file.
+ *                         pid: prints PID of cluster component.
+ *               recovery-plan: [service count] prints recovery plan of cluster component.
+ *               recording-log: prints recording log of cluster component.
+ *                      errors: prints Aeron and cluster component error logs.
+ *                list-members: print leader memberId, active members list, and passive members list.
+ *               remove-member: [memberId] requests removal of a member specified in memberId.
+ *              remove-passive: [memberId] requests removal of passive member specified in memberId.
+ *                backup-query: [delay] schedules (or displays) time of next backup query for cluster backup.
+ *  invalidate-latest-snapshot: Mark the latest snapshot as invalid so previous is loaded.
  * </pre>
  */
 public class ClusterTool
@@ -150,8 +150,8 @@ public class ClusterTool
                 }
                 break;
 
-            case "tombstone-latest-snapshot":
-                tombstoneLatestSnapshot(System.out, clusterDir);
+            case "invalidate-latest-snapshot":
+                invalidateLatestSnapshot(System.out, clusterDir);
                 break;
         }
     }
@@ -553,12 +553,12 @@ public class ClusterTool
         return result.value;
     }
 
-    public static boolean tombstoneLatestSnapshot(final PrintStream out, final File clusterDir)
+    public static boolean invalidateLatestSnapshot(final PrintStream out, final File clusterDir)
     {
         try (RecordingLog recordingLog = new RecordingLog(clusterDir))
         {
-            final boolean result = recordingLog.tombstoneLatestSnapshot();
-            out.println(" tombstone latest snapshot: " + result);
+            final boolean result = recordingLog.invalidateLatestSnapshot();
+            out.println(" invalidate latest snapshot: " + result);
             return result;
         }
     }
@@ -652,6 +652,6 @@ public class ClusterTool
         out.println(
             "               backup-query: [delay] display time of next backup query or set time of next backup query.");
         out.println(
-            "  tombstone-latest-snapshot: Mark the latest snapshot as a tombstone so previous is loaded.");
+            " invalidate-latest-snapshot: Mark the latest snapshot as a invalid so previous is loaded.");
     }
 }

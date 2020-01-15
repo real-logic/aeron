@@ -1144,20 +1144,18 @@ class ConsensusModuleAgent implements Agent
     void onReplayClusterAction(
         final long leadershipTermId, final long logPosition, final long timestamp, final ClusterAction action)
     {
-        switch (action)
+        if (ClusterAction.SUSPEND == action)
         {
-            case SUSPEND:
-                state(ConsensusModule.State.SUSPENDED);
-                break;
-
-            case RESUME:
-                state(ConsensusModule.State.ACTIVE);
-                break;
-
-            case SNAPSHOT:
-                expectedAckPosition = logPosition;
-                state(ConsensusModule.State.SNAPSHOT);
-                break;
+            state(ConsensusModule.State.SUSPENDED);
+        }
+        else if (ClusterAction.RESUME == action)
+        {
+            state(ConsensusModule.State.ACTIVE);
+        }
+        else if (ClusterAction.SNAPSHOT == action)
+        {
+            expectedAckPosition = logPosition;
+            state(ConsensusModule.State.SNAPSHOT);
         }
     }
 
@@ -2134,10 +2132,8 @@ class ConsensusModuleAgent implements Agent
     {
         int workCount = 0;
 
-        for (int i = 0, length = passiveMembers.length; i < length; i++)
+        for (final ClusterMember member : passiveMembers)
         {
-            final ClusterMember member = passiveMembers[i];
-
             if (member.correlationId() != Aeron.NULL_VALUE)
             {
                 if (memberStatusPublisher.clusterMemberChange(

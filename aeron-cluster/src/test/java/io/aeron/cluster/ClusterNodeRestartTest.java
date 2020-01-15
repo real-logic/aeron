@@ -424,7 +424,7 @@ public class ClusterNodeRestartTest
 
     @Disabled
     @Test
-    public void shouldRestartServiceTwiceWithTombstoneSnapshotAndFurtherLog()
+    public void shouldRestartServiceTwiceWithInvalidSnapshotAndFurtherLog()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
@@ -465,7 +465,7 @@ public class ClusterNodeRestartTest
             forceCloseForRestart();
 
             final PrintStream mockOut = mock(PrintStream.class);
-            assertTrue(ClusterTool.tombstoneLatestSnapshot(
+            assertTrue(ClusterTool.invalidateLatestSnapshot(
                 mockOut, clusteredMediaDriver.consensusModule().context().clusterDir()));
 
             serviceMsgCounter.set(0);

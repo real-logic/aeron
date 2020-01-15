@@ -109,7 +109,7 @@ public class RecordingLogTest
     }
 
     @Test
-    public void shouldIgnoreTombstoneLastSnapshotInRecoveryPlan()
+    public void shouldIgnoreInvalidLastSnapshotInRecoveryPlan()
     {
         final int serviceCount = 1;
 
@@ -120,7 +120,7 @@ public class RecordingLogTest
             recordingLog.appendSnapshot(3L, 1L, 0, 888L, 0, 0);
             recordingLog.appendSnapshot(4L, 1L, 0, 888L, 0, SERVICE_ID);
 
-            recordingLog.tombstoneLatestSnapshot();
+            recordingLog.invalidateLatestSnapshot();
         }
 
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
@@ -136,7 +136,7 @@ public class RecordingLogTest
     }
 
     @Test
-    public void shouldIgnoreTombstoneMidSnapshotInRecoveryPlan()
+    public void shouldIgnoreInvalidMidSnapshotInRecoveryPlan()
     {
         final int serviceCount = 1;
 
@@ -149,8 +149,8 @@ public class RecordingLogTest
             recordingLog.appendSnapshot(5L, 1L, 0, 999L, 0, 0);
             recordingLog.appendSnapshot(6L, 1L, 0, 999L, 0, SERVICE_ID);
 
-            recordingLog.tombstoneEntry(1L, 2);
-            recordingLog.tombstoneEntry(1L, 3);
+            recordingLog.invalidateEntry(1L, 2);
+            recordingLog.invalidateEntry(1L, 3);
         }
 
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
@@ -166,7 +166,7 @@ public class RecordingLogTest
     }
 
     @Test
-    public void shouldIgnoreTombstoneTermInRecoveryPlan()
+    public void shouldIgnoreInvalidTermInRecoveryPlan()
     {
         final int serviceCount = 1;
         final long removedLeadershipTerm = 11L;
@@ -185,7 +185,7 @@ public class RecordingLogTest
 
             assertEquals(5L, lastTerm.recordingId);
 
-            recordingLog.tombstoneEntry(11, 6);
+            recordingLog.invalidateEntry(11, 6);
         }
 
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
@@ -283,7 +283,7 @@ public class RecordingLogTest
     }
 
     @Test
-    public void shouldTombstoneLatestSnapshot()
+    public void shouldInvalidateLatestSnapshot()
     {
         final long termBaseLogPosition = 0L;
         final long logIncrement = 640L;
@@ -315,7 +315,7 @@ public class RecordingLogTest
             leadershipTermId++;
             recordingLog.appendTerm(recordingId, leadershipTermId, logPosition, timestamp);
 
-            assertTrue(recordingLog.tombstoneLatestSnapshot());
+            assertTrue(recordingLog.invalidateLatestSnapshot());
             assertEquals(6, recordingLog.entries().size());
         }
 
@@ -333,7 +333,7 @@ public class RecordingLogTest
             assertEquals(2L, recordingLog.getLatestSnapshot(0).recordingId);
             assertEquals(3L, recordingLog.getLatestSnapshot(SERVICE_ID).recordingId);
 
-            assertTrue(recordingLog.tombstoneLatestSnapshot());
+            assertTrue(recordingLog.invalidateLatestSnapshot());
             assertEquals(6, recordingLog.entries().size());
         }
 
@@ -348,13 +348,13 @@ public class RecordingLogTest
             assertFalse(recordingLog.entries().get(4).isValid);
             assertTrue(recordingLog.entries().get(5).isValid);
 
-            assertFalse(recordingLog.tombstoneLatestSnapshot());
+            assertFalse(recordingLog.invalidateLatestSnapshot());
             assertEquals(leadershipTermId, recordingLog.getTermEntry(leadershipTermId).leadershipTermId);
         }
     }
 
     @Test
-    void shouldRecoverSnapshotsMidLogMarkedWithTombstone()
+    void shouldRecoverSnapshotsMidLogMarkedInvalid()
     {
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
         {
@@ -365,8 +365,8 @@ public class RecordingLogTest
             recordingLog.appendSnapshot(5L, 1L, 20, 999L, 0, 0);
             recordingLog.appendSnapshot(6L, 1L, 20, 999L, 0, SERVICE_ID);
 
-            recordingLog.tombstoneEntry(1L, 2);
-            recordingLog.tombstoneEntry(1L, 3);
+            recordingLog.invalidateEntry(1L, 2);
+            recordingLog.invalidateEntry(1L, 3);
         }
 
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
@@ -392,7 +392,7 @@ public class RecordingLogTest
     }
 
     @Test
-    void shouldRecoverSnapshotsLastInLogMarkedWithTombstone()
+    void shouldRecoverSnapshotsLastInLogMarkedWithInvalid()
     {
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
         {
@@ -403,8 +403,8 @@ public class RecordingLogTest
             recordingLog.appendSnapshot(5L, 1L, 20, 999L, 0, 0);
             recordingLog.appendSnapshot(6L, 1L, 20, 999L, 0, SERVICE_ID);
 
-            recordingLog.tombstoneLatestSnapshot();
-            recordingLog.tombstoneLatestSnapshot();
+            recordingLog.invalidateLatestSnapshot();
+            recordingLog.invalidateLatestSnapshot();
         }
 
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
@@ -427,7 +427,7 @@ public class RecordingLogTest
     }
 
     @Test
-    void shouldFailToRecoverSnapshotsMarkedWithTombstoneIfFieldsDoNotMatchCorrectly()
+    void shouldFailToRecoverSnapshotsMarkedInvalidIfFieldsDoNotMatchCorrectly()
     {
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
         {
@@ -441,7 +441,7 @@ public class RecordingLogTest
             recordingLog.appendSnapshot(6L, 1L, 20, 999L, 0, SERVICE_ID);
             recordingLog.appendTerm(0L, 2L, 1000, 0);
 
-            recordingLog.tombstoneLatestSnapshot();
+            recordingLog.invalidateLatestSnapshot();
         }
 
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))

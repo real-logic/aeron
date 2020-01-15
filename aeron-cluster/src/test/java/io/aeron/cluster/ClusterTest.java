@@ -860,7 +860,7 @@ public class ClusterTest
     }
 
     @Test
-    void shouldRecoverWhenLastSnapshotIsMarkedWithTombstone()
+    void shouldRecoverWhenLastSnapshotIsMarkedInvalid()
     {
         assertTimeoutPreemptively(ofSeconds(60), () ->
         {
@@ -906,8 +906,8 @@ public class ClusterTest
                 cluster.stopNode(cluster.node(2));
                 Thread.sleep(1_000);
 
-                // Tombstone snapshot from leadershipTermId = 1
-                cluster.tombstoneLatestSnapshots();
+                // Invalidate snapshot from leadershipTermId = 1
+                cluster.invalidateLatestSnapshots();
 
                 // Start, should replay from snapshot in leadershipTerm = 0.
                 cluster.startStaticNode(0, false);
@@ -920,8 +920,7 @@ public class ClusterTest
     }
 
     @Test
-//    @Disabled
-    void shouldRecoverWhenLastSnapshotIsTombstonedAndWasBetweenTwoElections()
+    void shouldRecoverWhenLastSnapshotIsInvalidAndWasBetweenTwoElections()
     {
         assertTimeoutPreemptively(ofSeconds(6000), () ->
         {
@@ -969,8 +968,8 @@ public class ClusterTest
                 cluster.stopNode(cluster.node(2));
                 Thread.sleep(1_000);
 
-                // Tombstone snapshot from leadershipTermId = 1
-                cluster.tombstoneLatestSnapshots();
+                // Invalidate snapshot from leadershipTermId = 1
+                cluster.invalidateLatestSnapshots();
 
                 // Start, should replay from snapshot in leadershipTerm = 0.
                 cluster.startStaticNode(0, false);

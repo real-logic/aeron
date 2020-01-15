@@ -855,14 +855,14 @@ public class TestCluster implements AutoCloseable
         return "localhost:2044" + maxMemberCount;
     }
 
-    public void tombstoneLatestSnapshots()
+    public void invalidateLatestSnapshots()
     {
         for (final TestNode node : nodes)
         {
             if (null != node)
             {
                 final RecordingLog recordingLog = new RecordingLog(node.consensusModule().context().clusterDir());
-                assertTrue(recordingLog.tombstoneLatestSnapshot());
+                assertTrue(recordingLog.invalidateLatestSnapshot());
             }
         }
     }

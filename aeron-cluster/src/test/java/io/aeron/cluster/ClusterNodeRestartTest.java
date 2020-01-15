@@ -105,7 +105,7 @@ public class ClusterNodeRestartTest
             connectClient();
 
             sendCountedMessageIntoCluster(0);
-            awaitCount(serviceMsgCounter, 1);
+            TestCluster.awaitCount(serviceMsgCounter, 1);
 
             forceCloseForRestart();
 
@@ -113,7 +113,7 @@ public class ClusterNodeRestartTest
             launchService(restartServiceMsgCounter);
             connectClient();
 
-            awaitCount(restartServiceMsgCounter, 1);
+            TestCluster.awaitCount(restartServiceMsgCounter, 1);
         });
     }
 
@@ -128,7 +128,7 @@ public class ClusterNodeRestartTest
             connectClient();
 
             sendCountedMessageIntoCluster(0);
-            awaitCount(serviceMsgCounter, 1);
+            TestCluster.awaitCount(serviceMsgCounter, 1);
 
             forceCloseForRestart();
 
@@ -139,7 +139,7 @@ public class ClusterNodeRestartTest
             connectClient();
 
             sendCountedMessageIntoCluster(1);
-            awaitCount(restartServiceMsgCounter, 1);
+            TestCluster.awaitCount(restartServiceMsgCounter, 1);
         });
     }
 
@@ -158,7 +158,7 @@ public class ClusterNodeRestartTest
             assertNotNull(controlToggle);
             assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
 
-            awaitCount(snapshotCount, 1);
+            TestCluster.awaitCount(snapshotCount, 1);
 
             forceCloseForRestart();
 
@@ -191,14 +191,14 @@ public class ClusterNodeRestartTest
             sendCountedMessageIntoCluster(1);
             sendCountedMessageIntoCluster(2);
 
-            awaitCount(serviceMsgCounter, 3);
+            TestCluster.awaitCount(serviceMsgCounter, 3);
 
             final CountersReader counters = aeronCluster.context().aeron().countersReader();
             final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters);
             assertNotNull(controlToggle);
             assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
 
-            awaitCount(snapshotCount, 1);
+            TestCluster.awaitCount(snapshotCount, 1);
 
             forceCloseForRestart();
 
@@ -231,18 +231,18 @@ public class ClusterNodeRestartTest
             sendCountedMessageIntoCluster(1);
             sendCountedMessageIntoCluster(2);
 
-            awaitCount(serviceMsgCounter, 3);
+            TestCluster.awaitCount(serviceMsgCounter, 3);
 
             final CountersReader counters = aeronCluster.context().aeron().countersReader();
             final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters);
             assertNotNull(controlToggle);
             assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
 
-            awaitCount(snapshotCount, 1);
+            TestCluster.awaitCount(snapshotCount, 1);
 
             sendCountedMessageIntoCluster(3);
 
-            awaitCount(serviceMsgCounter, 4);
+            TestCluster.awaitCount(serviceMsgCounter, 4);
 
             forceCloseForRestart();
 
@@ -251,7 +251,7 @@ public class ClusterNodeRestartTest
             launchService(serviceMsgCounter);
             connectClient();
 
-            awaitCount(serviceMsgCounter, 1);
+            TestCluster.awaitCount(serviceMsgCounter, 1);
 
             assertEquals("4", serviceState.get());
         });
@@ -301,18 +301,18 @@ public class ClusterNodeRestartTest
             sendCountedMessageIntoCluster(2);
             sendTimerMessageIntoCluster(3, 1, TimeUnit.HOURS.toMillis(10));
 
-            awaitCount(serviceMsgCounter, 4);
+            TestCluster.awaitCount(serviceMsgCounter, 4);
 
             final CountersReader counters = aeronCluster.context().aeron().countersReader();
             final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters);
             assertNotNull(controlToggle);
             assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
 
-            awaitCount(snapshotCount, 1);
+            TestCluster.awaitCount(snapshotCount, 1);
 
             sendCountedMessageIntoCluster(4);
 
-            awaitCount(serviceMsgCounter, 5);
+            TestCluster.awaitCount(serviceMsgCounter, 5);
 
             forceCloseForRestart();
 
@@ -321,7 +321,7 @@ public class ClusterNodeRestartTest
             launchService(serviceMsgCounter);
             connectClient();
 
-            awaitCount(serviceMsgCounter, 1);
+            TestCluster.awaitCount(serviceMsgCounter, 1);
 
             assertEquals("5", serviceState.get());
         });
@@ -375,18 +375,18 @@ public class ClusterNodeRestartTest
             sendCountedMessageIntoCluster(1);
             sendCountedMessageIntoCluster(2);
 
-            awaitCount(serviceMsgCounter, 3);
+            TestCluster.awaitCount(serviceMsgCounter, 3);
 
             final CountersReader counters = container.context().aeron().countersReader();
             final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters);
             assertNotNull(controlToggle);
             assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
 
-            awaitCount(snapshotCount, 1);
+            TestCluster.awaitCount(snapshotCount, 1);
 
             sendCountedMessageIntoCluster(3);
 
-            awaitCount(serviceMsgCounter, 4);
+            TestCluster.awaitCount(serviceMsgCounter, 4);
 
             forceCloseForRestart();
 
@@ -398,13 +398,13 @@ public class ClusterNodeRestartTest
             launchClusteredMediaDriver(false);
             launchService(serviceMsgCounter);
 
-            awaitCount(serviceMsgCounter, 1);
+            TestCluster.awaitCount(serviceMsgCounter, 1);
 
             assertEquals("4", serviceState.get());
 
             connectClient();
             sendCountedMessageIntoCluster(4);
-            awaitCount(serviceMsgCounter, 5);
+            TestCluster.awaitCount(serviceMsgCounter, 5);
 
             forceCloseForRestart();
 
@@ -658,15 +658,6 @@ public class ClusterNodeRestartTest
             result == Publication.MAX_POSITION_EXCEEDED)
         {
             throw new IllegalStateException("unexpected publication state: " + result);
-        }
-    }
-
-    private void awaitCount(final AtomicLong counter, final int value)
-    {
-        while (counter.get() < value)
-        {
-            Thread.yield();
-            TestUtil.checkInterruptedStatus();
         }
     }
 }

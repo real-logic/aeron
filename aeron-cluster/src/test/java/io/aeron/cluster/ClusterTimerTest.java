@@ -36,7 +36,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.time.Duration.ofSeconds;
@@ -84,7 +83,7 @@ public class ClusterTimerTest
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
-            final AtomicInteger triggeredTimersCounter = new AtomicInteger();
+            final AtomicLong triggeredTimersCounter = new AtomicLong();
 
             launchReschedulingService(triggeredTimersCounter);
             connectClient();
@@ -100,17 +99,8 @@ public class ClusterTimerTest
             assertNotNull(controlToggle);
             assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
 
-            while (snapshotCount.get() == 0)
-            {
-                TestUtil.checkInterruptedStatus();
-                Thread.yield();
-            }
-
-            while (triggeredTimersCounter.get() < 4)
-            {
-                TestUtil.checkInterruptedStatus();
-                Thread.yield();
-            }
+            TestCluster.awaitCount(snapshotCount, 1);
+            TestCluster.awaitCount(triggeredTimersCounter, 4);
 
             forceCloseForRestart();
             triggeredTimersCounter.set(0);
@@ -119,14 +109,10 @@ public class ClusterTimerTest
             launchReschedulingService(triggeredTimersCounter);
             connectClient();
 
-            while (triggeredTimersCounter.get() < (2 + 4))
-            {
-                TestUtil.checkInterruptedStatus();
-                Thread.yield();
-            }
+            TestCluster.awaitCount(triggeredTimersCounter, 2 + 4);
 
             forceCloseForRestart();
-            final int triggeredSinceStart = triggeredTimersCounter.getAndSet(0);
+            final long triggeredSinceStart = triggeredTimersCounter.getAndSet(0);
 
             triggeredTimersCounter.set(0);
 
@@ -134,11 +120,7 @@ public class ClusterTimerTest
             launchReschedulingService(triggeredTimersCounter);
             connectClient();
 
-            while (triggeredTimersCounter.get() < (triggeredSinceStart + 4))
-            {
-                TestUtil.checkInterruptedStatus();
-                Thread.yield();
-            }
+            TestCluster.awaitCount(triggeredTimersCounter, triggeredSinceStart + 4);
         });
     }
 
@@ -147,29 +129,21 @@ public class ClusterTimerTest
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
-            final AtomicInteger triggeredTimersCounter = new AtomicInteger();
+            final AtomicLong triggeredTimersCounter = new AtomicLong();
 
             launchReschedulingService(triggeredTimersCounter);
             connectClient();
 
-            while (triggeredTimersCounter.get() < 2)
-            {
-                TestUtil.checkInterruptedStatus();
-                Thread.yield();
-            }
+            TestCluster.awaitCount(triggeredTimersCounter, 2);
 
             forceCloseForRestart();
 
-            int triggeredSinceStart = triggeredTimersCounter.getAndSet(0);
+            long triggeredSinceStart = triggeredTimersCounter.getAndSet(0);
 
             launchClusteredMediaDriver(false);
             launchReschedulingService(triggeredTimersCounter);
 
-            while (triggeredTimersCounter.get() <= (triggeredSinceStart + 2))
-            {
-                TestUtil.checkInterruptedStatus();
-                Thread.yield();
-            }
+            TestCluster.awaitCount(triggeredTimersCounter, triggeredSinceStart + 2);
 
             forceCloseForRestart();
 
@@ -178,15 +152,11 @@ public class ClusterTimerTest
             launchClusteredMediaDriver(false);
             launchReschedulingService(triggeredTimersCounter);
 
-            while (triggeredTimersCounter.get() <= (triggeredSinceStart + 4))
-            {
-                TestUtil.checkInterruptedStatus();
-                Thread.yield();
-            }
+            TestCluster.awaitCount(triggeredTimersCounter, triggeredSinceStart + 4);
         });
     }
 
-    private void launchReschedulingService(final AtomicInteger triggeredTimersCounter)
+    private void launchReschedulingService(final AtomicLong triggeredTimersCounter)
     {
         final ClusteredService service = new StubClusteredService()
         {

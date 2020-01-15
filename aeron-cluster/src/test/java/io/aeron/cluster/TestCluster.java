@@ -42,6 +42,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -136,6 +137,15 @@ public class TestCluster implements AutoCloseable
                 node.close();
                 node.cleanUp();
             }
+        }
+    }
+
+    static void awaitCount(final AtomicLong counter, final long value)
+    {
+        while (counter.get() < value)
+        {
+            Thread.yield();
+            TestUtil.checkInterruptedStatus();
         }
     }
 

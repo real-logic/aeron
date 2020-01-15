@@ -21,7 +21,7 @@ import io.aeron.cluster.client.ClusterException;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
-import org.agrona.collections.IntHashSet;
+import org.agrona.collections.IntArrayList;
 import org.agrona.collections.Long2LongHashMap;
 import org.agrona.collections.MutableReference;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -386,7 +386,7 @@ public class RecordingLog implements AutoCloseable
     private final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
     private final ArrayList<Entry> entriesCache = new ArrayList<>();
     private final Long2LongHashMap cacheIndexByLeadershipTermIdMap = new Long2LongHashMap(NULL_VALUE);
-    private final IntHashSet invalidSnapshots = new IntHashSet();
+    private final IntArrayList invalidSnapshots = new IntArrayList();
 
     /**
      * Create a log that appends to an existing log or creates a new one.
@@ -469,6 +469,7 @@ public class RecordingLog implements AutoCloseable
     {
         entriesCache.clear();
         cacheIndexByLeadershipTermIdMap.clear();
+        invalidSnapshots.clear();
         cacheIndexByLeadershipTermIdMap.compact();
 
         nextEntryIndex = 0;
@@ -830,16 +831,12 @@ public class RecordingLog implements AutoCloseable
         final long timestamp,
         final int serviceId)
     {
-        if (invalidSnapshots.isEmpty())
+        for (int i = invalidSnapshots.size() - 1; i >= 0; i--)
         {
-            return false;
-        }
+            final int entryCacheIndex = invalidSnapshots.getInt(i);
+            final Entry entry = entriesCache.get(entryCacheIndex);
 
-        for (int i = entriesCache.size() - 1; i >= 0; i--)
-        {
-            final Entry entry = entriesCache.get(i);
-            if (invalidSnapshots.contains(entry.entryIndex) &&
-                entryMatches(entry, leadershipTermId, termBaseLogPosition, logPosition, serviceId))
+            if (entryMatches(entry, leadershipTermId, termBaseLogPosition, logPosition, serviceId))
             {
                 final Entry validatedEntry = new Entry(
                     recordingId, leadershipTermId, termBaseLogPosition, logPosition, timestamp, serviceId,
@@ -859,8 +856,8 @@ public class RecordingLog implements AutoCloseable
                     LangUtil.rethrowUnchecked(ex);
                 }
 
-                invalidSnapshots.remove(entry.entryIndex);
-                entriesCache.set(i, validatedEntry);
+                entriesCache.set(entryCacheIndex, validatedEntry);
+                invalidSnapshots.fastUnorderedRemove(i);
 
                 return true;
             }
@@ -925,7 +922,7 @@ public class RecordingLog implements AutoCloseable
                 }
                 else if (ENTRY_TYPE_SNAPSHOT == entry.type)
                 {
-                    invalidSnapshots.add(entry.entryIndex);
+                    invalidSnapshots.add(i);
                 }
 
                 break;
@@ -956,8 +953,8 @@ public class RecordingLog implements AutoCloseable
     }
 
     /**
-     * Remove an entry in the log and associated caches so it is no longer valid.  This mimics the old tombstoning
-     * behaviour, but is just here to verify that the new code can deal with old tombstones.
+     * Remove an entry in the log and reload the caches.  This mimics the old tombstoneEntry
+     * behaviour, but is just here to verify that the new code can deal with old tombstones, hence it is not public.
      *
      * @param leadershipTermId to match for validation.
      * @param entryIndex       reached in the leadership term.
@@ -971,22 +968,6 @@ public class RecordingLog implements AutoCloseable
             if (entry.leadershipTermId == leadershipTermId && entry.entryIndex == entryIndex)
             {
                 index = entry.entryIndex;
-                entriesCache.remove(i);
-
-                if (ENTRY_TYPE_TERM == entry.type)
-                {
-                    cacheIndexByLeadershipTermIdMap.remove(leadershipTermId);
-                }
-
-                for (int j = i, size = entriesCache.size(); j < size; j++)
-                {
-                    final Entry e = entriesCache.get(j);
-                    if (ENTRY_TYPE_TERM == entry.type)
-                    {
-                        cacheIndexByLeadershipTermIdMap.put(e.leadershipTermId, j);
-                    }
-                }
-
                 break;
             }
         }
@@ -1006,6 +987,9 @@ public class RecordingLog implements AutoCloseable
             {
                 throw new ClusterException("failed to write field atomically");
             }
+
+            fileChannel.position(0);
+            reload();
         }
         catch (final Exception ex)
         {
@@ -1106,7 +1090,7 @@ public class RecordingLog implements AutoCloseable
 
                 if (ENTRY_TYPE_SNAPSHOT == entry.type && !entry.isValid)
                 {
-                    invalidSnapshots.add(nextEntryIndex);
+                    invalidSnapshots.add(entries.size() - 1);
                 }
             }
 

@@ -234,7 +234,7 @@ public class RecordingLogTest
     }
 
     @Test
-    public void shouldTombstoneEntry()
+    public void shouldRemoveEntry()
     {
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
         {

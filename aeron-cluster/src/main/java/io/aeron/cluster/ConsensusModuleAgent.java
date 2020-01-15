@@ -225,9 +225,9 @@ class ConsensusModuleAgent implements Agent
             CloseHelper.close(ingressAdapter);
             CloseHelper.close(serviceProxy);
             CloseHelper.close(consensusModuleAdapter);
+            CloseHelper.close(archive);
         }
 
-        CloseHelper.close(archive);
         ctx.close();
     }
 

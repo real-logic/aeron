@@ -388,6 +388,7 @@ public class RecordingLog implements AutoCloseable
      */
     private static final int ENTRY_LENGTH = BitUtil.align(ENTRY_TYPE_OFFSET + SIZE_OF_INT, CACHE_LINE_LENGTH);
 
+    private long filePosition = 0;
     private int nextEntryIndex;
     private final FileChannel fileChannel;
     private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4096).order(LITTLE_ENDIAN);
@@ -475,6 +476,7 @@ public class RecordingLog implements AutoCloseable
      */
     public void reload()
     {
+        filePosition = 0;
         entriesCache.clear();
         cacheIndexByLeadershipTermIdMap.clear();
         invalidSnapshots.clear();
@@ -487,7 +489,7 @@ public class RecordingLog implements AutoCloseable
         {
             while (true)
             {
-                final int bytes = fileChannel.read(byteBuffer);
+                final int bytesRead = fileChannel.read(byteBuffer, filePosition);
                 if (byteBuffer.remaining() == 0)
                 {
                     byteBuffer.flip();
@@ -495,7 +497,7 @@ public class RecordingLog implements AutoCloseable
                     byteBuffer.clear();
                 }
 
-                if (-1 == bytes)
+                if (-1 == bytesRead)
                 {
                     if (byteBuffer.position() > 0)
                     {
@@ -506,6 +508,8 @@ public class RecordingLog implements AutoCloseable
 
                     break;
                 }
+
+                filePosition += bytesRead;
             }
         }
         catch (final IOException ex)
@@ -515,7 +519,7 @@ public class RecordingLog implements AutoCloseable
     }
 
     /**
-     * Find the last recording id used for a leader ship term. If not found then {@link RecordingPos#NULL_RECORDING_ID}.
+     * Find the last recording id used for a leadership term. If not found then {@link RecordingPos#NULL_RECORDING_ID}.
      *
      * @return the last leadership term recording id or {@link RecordingPos#NULL_RECORDING_ID} if not found.
      */
@@ -857,10 +861,10 @@ public class RecordingLog implements AutoCloseable
                     entry.entryIndex);
 
                 writeEntryToBuffer(validatedEntry, buffer, byteBuffer);
-                final long filePosition = (entry.entryIndex * (long)ENTRY_LENGTH);
+                final long position = (entry.entryIndex * (long)ENTRY_LENGTH);
                 try
                 {
-                    if (ENTRY_LENGTH != fileChannel.write(byteBuffer, filePosition))
+                    if (ENTRY_LENGTH != fileChannel.write(byteBuffer, position))
                     {
                         throw new ClusterException("failed to write entry atomically");
                     }
@@ -950,11 +954,11 @@ public class RecordingLog implements AutoCloseable
         final int invalidEntryType = ENTRY_TYPE_INVALID_FLAG | invalidEntry.type;
         buffer.putInt(0, invalidEntryType, LITTLE_ENDIAN);
         byteBuffer.limit(SIZE_OF_INT).position(0);
-        final long filePosition = (invalidEntry.entryIndex * (long)ENTRY_LENGTH) + ENTRY_TYPE_OFFSET;
+        final long position = (invalidEntry.entryIndex * (long)ENTRY_LENGTH) + ENTRY_TYPE_OFFSET;
 
         try
         {
-            if (SIZE_OF_INT != fileChannel.write(byteBuffer, filePosition))
+            if (SIZE_OF_INT != fileChannel.write(byteBuffer, position))
             {
                 throw new ClusterException("failed to write field atomically");
             }
@@ -991,16 +995,15 @@ public class RecordingLog implements AutoCloseable
 
         buffer.putInt(0, NULL_VALUE, LITTLE_ENDIAN);
         byteBuffer.limit(SIZE_OF_INT).position(0);
-        final long filePosition = (index * (long)ENTRY_LENGTH) + ENTRY_TYPE_OFFSET;
+        final long position = (index * (long)ENTRY_LENGTH) + ENTRY_TYPE_OFFSET;
 
         try
         {
-            if (SIZE_OF_INT != fileChannel.write(byteBuffer, filePosition))
+            if (SIZE_OF_INT != fileChannel.write(byteBuffer, position))
             {
                 throw new ClusterException("failed to write field atomically");
             }
 
-            fileChannel.position(0);
             reload();
         }
         catch (final Exception ex)
@@ -1041,10 +1044,12 @@ public class RecordingLog implements AutoCloseable
         writeEntryToBuffer(entry, buffer, byteBuffer);
         try
         {
-            if (ENTRY_LENGTH != fileChannel.write(byteBuffer))
+            final int bytesWritten = fileChannel.write(byteBuffer, filePosition);
+            if (ENTRY_LENGTH != bytesWritten)
             {
                 throw new ClusterException("failed to write entry atomically");
             }
+            filePosition += bytesWritten;
         }
         catch (final IOException ex)
         {
@@ -1123,11 +1128,11 @@ public class RecordingLog implements AutoCloseable
     {
         buffer.putLong(0, value, LITTLE_ENDIAN);
         byteBuffer.limit(SIZE_OF_LONG).position(0);
-        final long filePosition = (entryIndex * (long)ENTRY_LENGTH) + fieldOffset;
+        final long position = (entryIndex * (long)ENTRY_LENGTH) + fieldOffset;
 
         try
         {
-            if (SIZE_OF_LONG != fileChannel.write(byteBuffer, filePosition))
+            if (SIZE_OF_LONG != fileChannel.write(byteBuffer, position))
             {
                 throw new ClusterException("failed to write field atomically");
             }

@@ -125,7 +125,6 @@ public class ArchivingMediaDriver implements AutoCloseable
 
     public void close()
     {
-        CloseHelper.close(archive);
-        CloseHelper.close(driver);
+        CloseHelper.closeAll(archive, driver);
     }
 }

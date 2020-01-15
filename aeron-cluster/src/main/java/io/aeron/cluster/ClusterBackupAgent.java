@@ -369,7 +369,8 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
                     NULL_TIMESTAMP,
                     NULL_VALUE,
                     RecordingLog.ENTRY_TYPE_TERM,
-                    -1);
+                    true, -1
+                );
             }
 
             if (null == lastTerm ||
@@ -384,7 +385,9 @@ public class ClusterBackupAgent implements Agent, UnavailableCounterHandler
                     NULL_TIMESTAMP,
                     NULL_VALUE,
                     RecordingLog.ENTRY_TYPE_TERM,
-                    -1);
+                    true,
+                    -1
+                );
             }
 
             timeOfLastBackupQueryMs = 0;

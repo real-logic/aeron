@@ -16,6 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.cluster.client.ClusterException;
 import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
 import org.junit.jupiter.api.AfterEach;
@@ -30,7 +31,10 @@ import static io.aeron.cluster.ConsensusModule.Configuration.SERVICE_ID;
 import static io.aeron.cluster.RecordingLog.ENTRY_TYPE_SNAPSHOT;
 import static io.aeron.cluster.RecordingLog.ENTRY_TYPE_TERM;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class RecordingLogTest
 {
@@ -55,7 +59,8 @@ public class RecordingLogTest
     @Test
     public void shouldAppendAndThenReloadLatestSnapshot()
     {
-        final RecordingLog.Entry entry = new RecordingLog.Entry(1, 3, 2, 777, 4, NULL_VALUE, ENTRY_TYPE_SNAPSHOT, 0);
+        final RecordingLog.Entry entry = new RecordingLog.Entry(
+            1, 3, 2, 777, 4, NULL_VALUE, ENTRY_TYPE_SNAPSHOT, true, 0);
 
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
         {
@@ -104,6 +109,124 @@ public class RecordingLogTest
     }
 
     @Test
+    public void shouldIgnoreTombstoneLastSnapshotInRecoveryPlan()
+    {
+        final int serviceCount = 1;
+
+        try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
+        {
+            recordingLog.appendSnapshot(1L, 1L, 0, 777L, 0, 0);
+            recordingLog.appendSnapshot(2L, 1L, 0, 777L, 0, SERVICE_ID);
+            recordingLog.appendSnapshot(3L, 1L, 0, 888L, 0, 0);
+            recordingLog.appendSnapshot(4L, 1L, 0, 888L, 0, SERVICE_ID);
+
+            recordingLog.tombstoneLatestSnapshot();
+        }
+
+        try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
+        {
+            final AeronArchive mockArchive = mock(AeronArchive.class);
+            final RecordingLog.RecoveryPlan recoveryPlan = recordingLog.createRecoveryPlan(mockArchive, serviceCount);
+            assertEquals(2, recoveryPlan.snapshots.size());
+            assertEquals(SERVICE_ID, recoveryPlan.snapshots.get(0).serviceId);
+            assertEquals(2L, recoveryPlan.snapshots.get(0).recordingId);
+            assertEquals(0, recoveryPlan.snapshots.get(1).serviceId);
+            assertEquals(1L, recoveryPlan.snapshots.get(1).recordingId);
+        }
+    }
+
+    @Test
+    public void shouldIgnoreTombstoneMidSnapshotInRecoveryPlan()
+    {
+        final int serviceCount = 1;
+
+        try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
+        {
+            recordingLog.appendSnapshot(1L, 1L, 0, 777L, 0, 0);
+            recordingLog.appendSnapshot(2L, 1L, 0, 777L, 0, SERVICE_ID);
+            recordingLog.appendSnapshot(3L, 1L, 0, 888L, 0, 0);
+            recordingLog.appendSnapshot(4L, 1L, 0, 888L, 0, SERVICE_ID);
+            recordingLog.appendSnapshot(5L, 1L, 0, 999L, 0, 0);
+            recordingLog.appendSnapshot(6L, 1L, 0, 999L, 0, SERVICE_ID);
+
+            recordingLog.tombstoneEntry(1L, 2);
+            recordingLog.tombstoneEntry(1L, 3);
+        }
+
+        try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
+        {
+            final AeronArchive mockArchive = mock(AeronArchive.class);
+            final RecordingLog.RecoveryPlan recoveryPlan = recordingLog.createRecoveryPlan(mockArchive, serviceCount);
+            assertEquals(2, recoveryPlan.snapshots.size());
+            assertEquals(SERVICE_ID, recoveryPlan.snapshots.get(0).serviceId);
+            assertEquals(6L, recoveryPlan.snapshots.get(0).recordingId);
+            assertEquals(0, recoveryPlan.snapshots.get(1).serviceId);
+            assertEquals(5L, recoveryPlan.snapshots.get(1).recordingId);
+        }
+    }
+
+    @Test
+    public void shouldIgnoreTombstoneTermInRecoveryPlan()
+    {
+        final int serviceCount = 1;
+        final long removedLeadershipTerm = 11L;
+
+        try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
+        {
+            recordingLog.appendTerm(0L, 9L, 444, 0);
+            recordingLog.appendTerm(0L, 10L, 666, 0);
+            recordingLog.appendSnapshot(1L, 10L, 0, 777L, 0, 0);
+            recordingLog.appendSnapshot(2L, 10L, 0, 777L, 0, SERVICE_ID);
+            recordingLog.appendSnapshot(3L, 10L, 0, 888L, 0, 0);
+            recordingLog.appendSnapshot(4L, 10L, 0, 888L, 0, SERVICE_ID);
+            recordingLog.appendTerm(5L, removedLeadershipTerm, 555, 0);
+
+            final RecordingLog.Entry lastTerm = recordingLog.findLastTerm();
+
+            assertEquals(5L, lastTerm.recordingId);
+
+            recordingLog.tombstoneEntry(11, 6);
+        }
+
+        try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
+        {
+            final AeronArchive mockArchive = mock(AeronArchive.class);
+            when(mockArchive.listRecording(anyLong(), any())).thenReturn(1);
+
+            final RecordingLog.RecoveryPlan recoveryPlan = recordingLog.createRecoveryPlan(mockArchive, serviceCount);
+            assertEquals(0L, recoveryPlan.log.recordingId);
+            assertEquals(10L, recoveryPlan.log.leadershipTermId);
+            assertEquals(666, recoveryPlan.log.termBaseLogPosition);
+
+            final RecordingLog.Entry lastTerm = recordingLog.findLastTerm();
+            assertEquals(0L, lastTerm.recordingId);
+            assertEquals(0L, recordingLog.findLastTermRecordingId());
+            assertTrue(recordingLog.isUnknown(removedLeadershipTerm));
+            try
+            {
+                recordingLog.getTermEntry(removedLeadershipTerm);
+                fail("Exception expected");
+            }
+            catch (ClusterException e)
+            {
+                // Okay...
+            }
+
+            try
+            {
+                recordingLog.commitLogPosition(removedLeadershipTerm, 99L);
+                fail("Exception expected");
+            }
+            catch (ClusterException e)
+            {
+                // Okay...
+            }
+
+            assertEquals(NULL_VALUE, recordingLog.getTermTimestamp(removedLeadershipTerm));
+        }
+    }
+
+    @Test
     public void shouldAppendAndThenCommitTermPosition()
     {
         final long newPosition = 9999L;
@@ -133,16 +256,16 @@ public class RecordingLogTest
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
         {
             final RecordingLog.Entry entryOne = new RecordingLog.Entry(
-                1L, 3, 2, NULL_POSITION, 4, 0, ENTRY_TYPE_TERM, 0);
+                1L, 3, 2, NULL_POSITION, 4, 0, ENTRY_TYPE_TERM, true, 0);
             recordingLog.appendTerm(
                 entryOne.recordingId, entryOne.leadershipTermId, entryOne.termBaseLogPosition, entryOne.timestamp);
 
             final RecordingLog.Entry entryTwo = new RecordingLog.Entry(
-                1L, 4, 3, NULL_POSITION, 5, 0, ENTRY_TYPE_TERM, 0);
+                1L, 4, 3, NULL_POSITION, 5, 0, ENTRY_TYPE_TERM, true, 0);
             recordingLog.appendTerm(
                 entryTwo.recordingId, entryTwo.leadershipTermId, entryTwo.termBaseLogPosition, entryTwo.timestamp);
 
-            recordingLog.tombstoneEntry(entryTwo.leadershipTermId, recordingLog.nextEntryIndex() - 1);
+            recordingLog.removeEntry(entryTwo.leadershipTermId, recordingLog.nextEntryIndex() - 1);
             assertEquals(1, recordingLog.entries().size());
         }
 
@@ -210,22 +333,38 @@ public class RecordingLogTest
             recordingLog.appendTerm(recordingId, leadershipTermId, logPosition, timestamp);
 
             assertTrue(recordingLog.tombstoneLatestSnapshot());
-            assertEquals(4, recordingLog.entries().size());
+            assertEquals(6, recordingLog.entries().size());
         }
 
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
         {
-            assertEquals(4, recordingLog.entries().size());
+            assertEquals(6, recordingLog.entries().size());
+
+            assertTrue(recordingLog.entries().get(0).isValid);
+            assertTrue(recordingLog.entries().get(1).isValid);
+            assertTrue(recordingLog.entries().get(2).isValid);
+            assertFalse(recordingLog.entries().get(3).isValid);
+            assertFalse(recordingLog.entries().get(4).isValid);
+            assertTrue(recordingLog.entries().get(5).isValid);
+
             assertEquals(2L, recordingLog.getLatestSnapshot(0).recordingId);
             assertEquals(3L, recordingLog.getLatestSnapshot(SERVICE_ID).recordingId);
 
             assertTrue(recordingLog.tombstoneLatestSnapshot());
-            assertEquals(2, recordingLog.entries().size());
+            assertEquals(6, recordingLog.entries().size());
         }
 
         try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
         {
-            assertEquals(2, recordingLog.entries().size());
+            assertEquals(6, recordingLog.entries().size());
+
+            assertTrue(recordingLog.entries().get(0).isValid);
+            assertFalse(recordingLog.entries().get(1).isValid);
+            assertFalse(recordingLog.entries().get(2).isValid);
+            assertFalse(recordingLog.entries().get(3).isValid);
+            assertFalse(recordingLog.entries().get(4).isValid);
+            assertTrue(recordingLog.entries().get(5).isValid);
+
             assertFalse(recordingLog.tombstoneLatestSnapshot());
             assertEquals(leadershipTermId, recordingLog.getTermEntry(leadershipTermId).leadershipTermId);
         }
@@ -238,6 +377,6 @@ public class RecordingLogTest
         final int entryType)
     {
         entries.add(new RecordingLog.Entry(
-            recordingId, 1, 1440, 2880, 0L, serviceId, entryType, entries.size()));
+            recordingId, 1, 1440, 2880, 0L, serviceId, entryType, true, entries.size()));
     }
 }

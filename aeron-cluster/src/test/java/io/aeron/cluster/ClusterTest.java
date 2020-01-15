@@ -32,7 +32,7 @@ import static io.aeron.cluster.service.CommitPos.COMMIT_POSITION_TYPE_ID;
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.*;
 
-//@Disabled
+@Disabled
 public class ClusterTest
 {
     private static final String MSG = "Hello World!";

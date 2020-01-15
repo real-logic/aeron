@@ -125,11 +125,7 @@ public class AuthenticationTest
 
             connectClient(credentialsSupplier);
             sendCountedMessageIntoCluster(0);
-            while (serviceMsgCounter.get() == 0)
-            {
-                Thread.yield();
-                TestUtil.checkInterruptedStatus();
-            }
+            awaitResponseMessage(serviceMsgCounter);
 
             assertEquals(aeronCluster.clusterSessionId(), authenticatorSessionId.value);
             assertEquals(aeronCluster.clusterSessionId(), serviceSessionId.value);
@@ -191,11 +187,7 @@ public class AuthenticationTest
 
             connectClient(credentialsSupplier);
             sendCountedMessageIntoCluster(0);
-            while (serviceMsgCounter.get() == 0)
-            {
-                Thread.yield();
-                TestUtil.checkInterruptedStatus();
-            }
+            awaitResponseMessage(serviceMsgCounter);
 
             assertEquals(aeronCluster.clusterSessionId(), authenticatorSessionId.value);
             assertEquals(aeronCluster.clusterSessionId(), serviceSessionId.value);
@@ -265,11 +257,7 @@ public class AuthenticationTest
 
             connectClient(credentialsSupplier);
             sendCountedMessageIntoCluster(0);
-            while (serviceMsgCounter.get() == 0)
-            {
-                Thread.yield();
-                TestUtil.checkInterruptedStatus();
-            }
+            awaitResponseMessage(serviceMsgCounter);
 
             assertEquals(aeronCluster.clusterSessionId(), authenticatorSessionId.value);
             assertEquals(aeronCluster.clusterSessionId(), serviceSessionId.value);
@@ -422,6 +410,15 @@ public class AuthenticationTest
         msgBuffer.putInt(0, value);
 
         while (aeronCluster.offer(msgBuffer, 0, SIZE_OF_INT) < 0)
+        {
+            Thread.yield();
+            TestUtil.checkInterruptedStatus();
+        }
+    }
+
+    private void awaitResponseMessage(final AtomicLong serviceMsgCounter)
+    {
+        while (serviceMsgCounter.get() == 0)
         {
             Thread.yield();
             TestUtil.checkInterruptedStatus();

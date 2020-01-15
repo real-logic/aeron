@@ -109,12 +109,7 @@ public class ClusterNodeTest
             container = launchEchoService();
             aeronCluster = connectToCluster(listener);
 
-            while (aeronCluster.offer(msgBuffer, 0, msg.length()) < 0)
-            {
-                Thread.yield();
-                TestUtil.checkInterruptedStatus();
-            }
-
+            offerMessage(msgBuffer, msg);
             awaitResponse(messageCount);
         });
     }
@@ -153,12 +148,7 @@ public class ClusterNodeTest
             }
             while (publicationResult < 0);
 
-            while (aeronCluster.offer(msgBuffer, 0, msg.length()) < 0)
-            {
-                Thread.yield();
-                TestUtil.checkInterruptedStatus();
-            }
-
+            offerMessage(msgBuffer, msg);
             awaitResponse(messageCount);
         });
     }
@@ -184,12 +174,7 @@ public class ClusterNodeTest
             container = launchTimedService();
             aeronCluster = connectToCluster(listener);
 
-            while (aeronCluster.offer(msgBuffer, 0, msg.length()) < 0)
-            {
-                Thread.yield();
-                TestUtil.checkInterruptedStatus();
-            }
-
+            offerMessage(msgBuffer, msg);
             awaitResponse(messageCount);
         });
     }
@@ -214,14 +199,18 @@ public class ClusterNodeTest
             container = launchServiceMessageIngressService();
             aeronCluster = connectToCluster(listener);
 
-            while (aeronCluster.offer(msgBuffer, 0, msg.length()) < 0)
-            {
-                Thread.yield();
-                TestUtil.checkInterruptedStatus();
-            }
-
+            offerMessage(msgBuffer, msg);
             awaitResponse(messageCount);
         });
+    }
+
+    private void offerMessage(final ExpandableArrayBuffer msgBuffer, final String msg)
+    {
+        while (aeronCluster.offer(msgBuffer, 0, msg.length()) < 0)
+        {
+            Thread.yield();
+            TestUtil.checkInterruptedStatus();
+        }
     }
 
     private void awaitResponse(final MutableInteger messageCount)

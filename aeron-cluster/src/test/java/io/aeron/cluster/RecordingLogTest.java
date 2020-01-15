@@ -202,27 +202,10 @@ public class RecordingLogTest
             assertEquals(0L, lastTerm.recordingId);
             assertEquals(0L, recordingLog.findLastTermRecordingId());
             assertTrue(recordingLog.isUnknown(removedLeadershipTerm));
-            try
-            {
-                recordingLog.getTermEntry(removedLeadershipTerm);
-                fail("Exception expected");
-            }
-            catch (ClusterException e)
-            {
-                // Okay...
-            }
-
-            try
-            {
-                recordingLog.commitLogPosition(removedLeadershipTerm, 99L);
-                fail("Exception expected");
-            }
-            catch (ClusterException e)
-            {
-                // Okay...
-            }
-
             assertEquals(NULL_VALUE, recordingLog.getTermTimestamp(removedLeadershipTerm));
+
+            assertThrows(ClusterException.class, () -> recordingLog.getTermEntry(removedLeadershipTerm));
+            assertThrows(ClusterException.class, () -> recordingLog.commitLogPosition(removedLeadershipTerm, 99L));
         }
     }
 
@@ -367,6 +350,106 @@ public class RecordingLogTest
 
             assertFalse(recordingLog.tombstoneLatestSnapshot());
             assertEquals(leadershipTermId, recordingLog.getTermEntry(leadershipTermId).leadershipTermId);
+        }
+    }
+
+    @Test
+    void shouldRecoverSnapshotsMidLogMarkedWithTombstone()
+    {
+        try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
+        {
+            recordingLog.appendSnapshot(1L, 1L, 0, 777L, 0, 0);
+            recordingLog.appendSnapshot(2L, 1L, 0, 777L, 0, SERVICE_ID);
+            recordingLog.appendSnapshot(3L, 1L, 10, 888L, 0, 0);
+            recordingLog.appendSnapshot(4L, 1L, 10, 888L, 0, SERVICE_ID);
+            recordingLog.appendSnapshot(5L, 1L, 20, 999L, 0, 0);
+            recordingLog.appendSnapshot(6L, 1L, 20, 999L, 0, SERVICE_ID);
+
+            recordingLog.tombstoneEntry(1L, 2);
+            recordingLog.tombstoneEntry(1L, 3);
+        }
+
+        try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
+        {
+            recordingLog.appendSnapshot(7L, 1L, 10, 888L, 0, 0);
+            recordingLog.appendSnapshot(8L, 1L, 10, 888L, 0, SERVICE_ID);
+
+            assertEquals(6, recordingLog.entries().size());
+            assertTrue(recordingLog.entries().get(2).isValid);
+            assertEquals(7L, recordingLog.entries().get(2).recordingId);
+            assertTrue(recordingLog.entries().get(3).isValid);
+            assertEquals(8L, recordingLog.entries().get(3).recordingId);
+        }
+
+        try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
+        {
+            assertEquals(6, recordingLog.entries().size());
+            assertTrue(recordingLog.entries().get(2).isValid);
+            assertEquals(7L, recordingLog.entries().get(2).recordingId);
+            assertTrue(recordingLog.entries().get(3).isValid);
+            assertEquals(8L, recordingLog.entries().get(3).recordingId);
+        }
+    }
+
+    @Test
+    void shouldRecoverSnapshotsLastInLogMarkedWithTombstone()
+    {
+        try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
+        {
+            recordingLog.appendSnapshot(1L, 1L, 0, 777L, 0, 0);
+            recordingLog.appendSnapshot(2L, 1L, 0, 777L, 0, SERVICE_ID);
+            recordingLog.appendSnapshot(3L, 1L, 10, 888L, 0, 0);
+            recordingLog.appendSnapshot(4L, 1L, 10, 888L, 0, SERVICE_ID);
+            recordingLog.appendSnapshot(5L, 1L, 20, 999L, 0, 0);
+            recordingLog.appendSnapshot(6L, 1L, 20, 999L, 0, SERVICE_ID);
+
+            recordingLog.tombstoneLatestSnapshot();
+            recordingLog.tombstoneLatestSnapshot();
+        }
+
+        try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
+        {
+            recordingLog.appendSnapshot(7L, 1L, 20, 999L, 0, 0);
+            recordingLog.appendSnapshot(8L, 1L, 20, 999L, 0, SERVICE_ID);
+            recordingLog.appendSnapshot(9L, 1L, 10, 888L, 0, 0);
+            recordingLog.appendSnapshot(10L, 1L, 10, 888L, 0, SERVICE_ID);
+
+            assertEquals(6, recordingLog.entries().size());
+            assertTrue(recordingLog.entries().get(2).isValid);
+            assertEquals(9L, recordingLog.entries().get(2).recordingId);
+            assertTrue(recordingLog.entries().get(3).isValid);
+            assertEquals(10L, recordingLog.entries().get(3).recordingId);
+            assertTrue(recordingLog.entries().get(4).isValid);
+            assertEquals(7L, recordingLog.entries().get(4).recordingId);
+            assertTrue(recordingLog.entries().get(5).isValid);
+            assertEquals(8L, recordingLog.entries().get(5).recordingId);
+        }
+    }
+
+    @Test
+    void shouldFailToRecoverSnapshotsMarkedWithTombstoneIfFieldsDoNotMatchCorrectly()
+    {
+        try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
+        {
+            recordingLog.appendTerm(0L, 0L, 0, 0);
+            recordingLog.appendTerm(0L, 1L, 1000, 0);
+            recordingLog.appendSnapshot(1L, 1L, 0, 777L, 0, 0);
+            recordingLog.appendSnapshot(2L, 1L, 0, 777L, 0, SERVICE_ID);
+            recordingLog.appendSnapshot(3L, 1L, 10, 888L, 0, 0);
+            recordingLog.appendSnapshot(4L, 1L, 10, 888L, 0, SERVICE_ID);
+            recordingLog.appendSnapshot(5L, 1L, 20, 999L, 0, 0);
+            recordingLog.appendSnapshot(6L, 1L, 20, 999L, 0, SERVICE_ID);
+            recordingLog.appendTerm(0L, 2L, 1000, 0);
+
+            recordingLog.tombstoneLatestSnapshot();
+        }
+
+        try (RecordingLog recordingLog = new RecordingLog(TEMP_DIR))
+        {
+            assertThrows(ClusterException.class, () -> recordingLog.appendSnapshot(7L, 1L, 20, 998L, 0, 0));
+            assertThrows(ClusterException.class, () -> recordingLog.appendSnapshot(7L, 0L, 20, 999L, 0, 0));
+            assertThrows(ClusterException.class, () -> recordingLog.appendSnapshot(7L, 1L, 21, 999L, 0, 0));
+            assertThrows(ClusterException.class, () -> recordingLog.appendSnapshot(7L, 1L, 20, 999L, 0, 1));
         }
     }
 

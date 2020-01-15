@@ -2561,7 +2561,8 @@ class ConsensusModuleAgent implements Agent
                 final CountersReader counters = aeron.countersReader();
                 final int counterId = awaitRecordingCounter(counters, publication.sessionId());
                 final long recordingId = RecordingPos.getRecordingId(counters, counterId);
-                final long termBaseLogPosition = recordingLog.getTermEntry(snapshotLeadershipTermId).termBaseLogPosition;
+                final long termBaseLogPosition =
+                    recordingLog.getTermEntry(snapshotLeadershipTermId).termBaseLogPosition;
 
                 snapshotState(publication, logPosition, snapshotLeadershipTermId);
                 awaitRecordingComplete(recordingId, publication.position(), counters, counterId);

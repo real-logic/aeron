@@ -29,7 +29,10 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.MinMulticastFlowControlSupplier;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.Header;
-import org.agrona.*;
+import org.agrona.BitUtil;
+import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.YieldingIdleStrategy;
@@ -39,12 +42,11 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-import java.util.function.IntFunction;
 import java.util.function.Supplier;
 
 import static io.aeron.Aeron.NULL_VALUE;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TestCluster implements AutoCloseable
 {
@@ -855,7 +857,7 @@ public class TestCluster implements AutoCloseable
 
     public void tombstoneLatestSnapshots()
     {
-        for (TestNode node : nodes)
+        for (final TestNode node : nodes)
         {
             if (null != node)
             {
@@ -863,6 +865,13 @@ public class TestCluster implements AutoCloseable
                 assertTrue(recordingLog.tombstoneLatestSnapshot());
             }
         }
+    }
+
+    public void printRecordingLogEntries(final int nodeId)
+    {
+        final TestNode node = node(nodeId);
+        final RecordingLog recordingLog = new RecordingLog(node.consensusModule().context().clusterDir());
+        recordingLog.entries().forEach((e) -> System.out.println(node.index() + " - " + e));
     }
 
     static class ServiceContext

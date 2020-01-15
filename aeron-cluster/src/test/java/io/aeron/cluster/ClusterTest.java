@@ -860,10 +860,9 @@ public class ClusterTest
     }
 
     @Test
-    @Disabled
-    void shouldRecoverWhenLastSnapshotIsTombstoned()
+    void shouldRecoverWhenLastSnapshotIsMarkedWithTombstone()
     {
-        assertTimeoutPreemptively(ofSeconds(6000), () ->
+        assertTimeoutPreemptively(ofSeconds(60), () ->
         {
             final int numMessages = 3;
 
@@ -891,7 +890,7 @@ public class ClusterTest
 
                 // Leadership Term 1
                 cluster.stopNode(leader0);
-                final TestNode leader1 = cluster.awaitLeader(leader0.index());
+                @SuppressWarnings("unused") final TestNode leader1 = cluster.awaitLeader(leader0.index());
                 cluster.startStaticNode(leader0.index(), false);
 
                 cluster.sendMessages(numMessages);
@@ -921,7 +920,7 @@ public class ClusterTest
     }
 
     @Test
-    @Disabled
+//    @Disabled
     void shouldRecoverWhenLastSnapshotIsTombstonedAndWasBetweenTwoElections()
     {
         assertTimeoutPreemptively(ofSeconds(6000), () ->
@@ -952,7 +951,7 @@ public class ClusterTest
 
                 // Leadership Term 2
                 cluster.stopNode(leader1);
-                final TestNode leader2 = cluster.awaitLeader(leader1.index());
+                @SuppressWarnings("unused") final TestNode leader2 = cluster.awaitLeader(leader1.index());
                 cluster.startStaticNode(leader1.index(), false);
 
                 cluster.sendMessages(numMessages);
@@ -988,14 +987,6 @@ public class ClusterTest
         for (int i = 0; i < numNodes; i++)
         {
             cluster.awaitMessageCountForService(cluster.node(i), numMessages);
-        }
-    }
-
-    private void awaitSnapshotCountForAllServices(final TestCluster cluster, final int numNodes, final int numSnapshots)
-    {
-        for (int i = 0; i < numNodes; i++)
-        {
-            cluster.awaitSnapshotCounter(cluster.node(i), numSnapshots);
         }
     }
 

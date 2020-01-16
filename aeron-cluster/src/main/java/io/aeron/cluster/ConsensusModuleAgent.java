@@ -1018,66 +1018,58 @@ class ConsensusModuleAgent implements Agent
 
         if (ServiceAck.hasReachedPosition(logPosition, serviceAckId, serviceAckQueues))
         {
-            switch (state)
+            if (ConsensusModule.State.SNAPSHOT == state)
             {
-                case SNAPSHOT:
+                ++serviceAckId;
+                takeSnapshot(timestamp, logPosition);
+                final long nowNs = clusterTimeUnit.toNanos(clusterClock.time());
+
+                if (NULL_POSITION == terminationPosition)
                 {
-                    ++serviceAckId;
-                    takeSnapshot(timestamp, logPosition);
-                    final long nowNs = clusterTimeUnit.toNanos(clusterClock.time());
-
-                    if (NULL_POSITION == terminationPosition)
+                    state(ConsensusModule.State.ACTIVE);
+                    ClusterControl.ToggleState.reset(controlToggle);
+                    for (final ClusterSession session : sessionByIdMap.values())
                     {
-                        state(ConsensusModule.State.ACTIVE);
-                        ClusterControl.ToggleState.reset(controlToggle);
-                        for (final ClusterSession session : sessionByIdMap.values())
-                        {
-                            session.timeOfLastActivityNs(nowNs);
-                        }
+                        session.timeOfLastActivityNs(nowNs);
                     }
-                    else
+                }
+                else
+                {
+                    serviceProxy.terminationPosition(terminationPosition);
+                    if (null != clusterTermination)
                     {
-                        serviceProxy.terminationPosition(terminationPosition);
-                        if (null != clusterTermination)
-                        {
-                            clusterTermination.deadlineNs(nowNs + ctx.terminationTimeoutNs());
-                        }
-
-                        state(ConsensusModule.State.TERMINATING);
+                        clusterTermination.deadlineNs(nowNs + ctx.terminationTimeoutNs());
                     }
-                    break;
+
+                    state(ConsensusModule.State.TERMINATING);
+                }
+            }
+            else if (ConsensusModule.State.QUITING == state)
+            {
+                recordingLog.commitLogPosition(leadershipTermId, logPosition);
+                state(ConsensusModule.State.CLOSED);
+                ctx.terminationHook().run();
+            }
+            else if (ConsensusModule.State.TERMINATING == state)
+            {
+                final boolean canTerminate;
+                if (null == clusterTermination)
+                {
+                    memberStatusPublisher.terminationAck(leaderMember.publication(), logPosition, memberId);
+                    canTerminate = true;
+                }
+                else
+                {
+                    clusterTermination.hasServiceTerminated(true);
+                    canTerminate = clusterTermination.canTerminate(
+                        clusterMembers, terminationPosition, clusterTimeUnit.toNanos(clusterClock.time()));
                 }
 
-                case LEAVING:
+                if (canTerminate)
                 {
                     recordingLog.commitLogPosition(leadershipTermId, logPosition);
                     state(ConsensusModule.State.CLOSED);
                     ctx.terminationHook().run();
-                    break;
-                }
-
-                case TERMINATING:
-                {
-                    final boolean canTerminate;
-                    if (null == clusterTermination)
-                    {
-                        memberStatusPublisher.terminationAck(leaderMember.publication(), logPosition, memberId);
-                        canTerminate = true;
-                    }
-                    else
-                    {
-                        clusterTermination.hasServiceTerminated(true);
-                        canTerminate = clusterTermination.canTerminate(
-                            clusterMembers, terminationPosition, clusterTimeUnit.toNanos(clusterClock.time()));
-                    }
-
-                    if (canTerminate)
-                    {
-                        recordingLog.commitLogPosition(leadershipTermId, logPosition);
-                        state(ConsensusModule.State.CLOSED);
-                        ctx.terminationHook().run();
-                    }
-                    break;
                 }
             }
         }
@@ -1243,7 +1235,7 @@ class ConsensusModuleAgent implements Agent
             if (memberId == this.memberId)
             {
                 expectedAckPosition = logPosition;
-                state(ConsensusModule.State.LEAVING);
+                state(ConsensusModule.State.QUITING);
             }
             else
             {
@@ -2187,37 +2179,36 @@ class ConsensusModuleAgent implements Agent
 
             if (nowNs > (session.timeOfLastActivityNs() + sessionTimeoutNs))
             {
-                switch (session.state())
+                if (session.state() == OPEN)
                 {
-                    case OPEN:
-                        if (session.isResponsePublicationConnected())
-                        {
-                            egressPublisher.sendEvent(
-                                session, leadershipTermId, leaderMember.id(), EventCode.ERROR, SESSION_TIMEOUT_MSG);
-                        }
+                    if (session.isResponsePublicationConnected())
+                    {
+                        egressPublisher.sendEvent(
+                            session, leadershipTermId, leaderMember.id(), EventCode.ERROR, SESSION_TIMEOUT_MSG);
+                    }
 
-                        session.close(CloseReason.TIMEOUT);
-                        if (logPublisher.appendSessionClose(session, leadershipTermId, clusterClock.time()))
+                    session.close(CloseReason.TIMEOUT);
+                    if (logPublisher.appendSessionClose(session, leadershipTermId, clusterClock.time()))
+                    {
+                        i.remove();
+                        ctx.timedOutClientCounter().incrementOrdered();
+                    }
+                }
+                else if (session.state() == CLOSED)
+                {
+                    if (logPublisher.appendSessionClose(session, leadershipTermId, clusterClock.time()))
+                    {
+                        i.remove();
+                        if (session.closeReason() == CloseReason.TIMEOUT)
                         {
-                            i.remove();
                             ctx.timedOutClientCounter().incrementOrdered();
                         }
-                        break;
-
-                    case CLOSED:
-                        if (logPublisher.appendSessionClose(session, leadershipTermId, clusterClock.time()))
-                        {
-                            i.remove();
-                            if (session.closeReason() == CloseReason.TIMEOUT)
-                            {
-                                ctx.timedOutClientCounter().incrementOrdered();
-                            }
-                        }
-                        break;
-
-                    default:
-                        i.remove();
-                        session.close();
+                    }
+                }
+                else
+                {
+                    i.remove();
+                    session.close();
                 }
 
                 workCount += 1;
@@ -2410,7 +2401,7 @@ class ConsensusModuleAgent implements Agent
                 if (member == thisMember)
                 {
                     expectedAckPosition = commitPosition;
-                    state(ConsensusModule.State.LEAVING);
+                    state(ConsensusModule.State.QUITING);
                 }
 
                 newClusterMembers = ClusterMember.removeMember(newClusterMembers, member.id());

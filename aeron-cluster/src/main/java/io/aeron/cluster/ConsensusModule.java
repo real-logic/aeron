@@ -82,9 +82,9 @@ public class ConsensusModule implements AutoCloseable
         SNAPSHOT(3),
 
         /**
-         * Leaving cluster and shutting down as soon as services ack without taking a snapshot.
+         * Quitting the cluster and shutting down as soon as services ack without taking a snapshot.
          */
-        LEAVING(4),
+        QUITING(4),
 
         /**
          * In the process of terminating the node.

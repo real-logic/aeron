@@ -82,7 +82,7 @@ protected:
 
     inline void getBytes(util::index_t offset, uint8_t *dest, util::index_t length) const
     {
-        m_buffer.getBytes(offset, dest, length);
+        m_buffer.getBytes(m_baseOffset + offset, dest, length);
     }
 
     template <typename struct_t2>

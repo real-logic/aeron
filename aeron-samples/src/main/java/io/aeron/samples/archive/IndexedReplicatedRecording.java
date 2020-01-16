@@ -202,7 +202,8 @@ public class IndexedReplicatedRecording implements AutoCloseable
 
             final long channelTagId = 333;
             final long subscriptionTagId = 777;
-            final String taggedChannel = "aeron:udp?control-mode=manual|tags=" + channelTagId + "," + subscriptionTagId;
+            final String taggedChannel =
+                "aeron:udp?control-mode=manual|rejoin=false|tags=" + channelTagId + "," + subscriptionTagId;
 
             final Indexer secondaryIndexer = new Indexer(
                 test.dstAeron.addSubscription(taggedChannel, LIVE_STREAM_ID),

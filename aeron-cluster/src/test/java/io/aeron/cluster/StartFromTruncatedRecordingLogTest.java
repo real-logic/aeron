@@ -148,7 +148,7 @@ public class StartFromTruncatedRecordingLogTest
     @Test
     public void shouldBeAbleToStartClusterFromTruncatedRecordingLog()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(45), () ->
         {
             stopAndStartClusterWithTruncationOfRecordingLog();
             assertClusterIsFunctioningCorrectly();

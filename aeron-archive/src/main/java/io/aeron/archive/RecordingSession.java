@@ -93,7 +93,7 @@ class RecordingSession implements Session
 
     public void abort()
     {
-        this.state = State.INACTIVE;
+        state(State.INACTIVE);
     }
 
     public void close()
@@ -138,7 +138,7 @@ class RecordingSession implements Session
 
         if (State.INACTIVE == state)
         {
-            state = State.STOPPED;
+            state(State.STOPPED);
             recordingEventsProxy.stopped(recordingId, image.joinPosition(), image.position());
             recordingWriter.close();
             workCount += 1;
@@ -166,7 +166,7 @@ class RecordingSession implements Session
         catch (final IOException ex)
         {
             recordingWriter.close();
-            state = State.STOPPED;
+            state(State.STOPPED);
             LangUtil.rethrowUnchecked(ex);
         }
 
@@ -178,7 +178,7 @@ class RecordingSession implements Session
             originalChannel,
             image.sourceIdentity());
 
-        state = State.RECORDING;
+        state(State.RECORDING);
 
         return 1;
     }
@@ -191,7 +191,7 @@ class RecordingSession implements Session
             workCount = image.blockPoll(recordingWriter, blockLengthLimit);
             if (recordingWriter.isClosed())
             {
-                state = State.INACTIVE;
+                state(State.INACTIVE);
             }
             else if (workCount > 0)
             {
@@ -201,15 +201,21 @@ class RecordingSession implements Session
             }
             else if (image.isEndOfStream() || image.isClosed())
             {
-                state = State.INACTIVE;
+                state(State.INACTIVE);
             }
         }
         catch (final Exception ex)
         {
-            state = State.INACTIVE;
+            state(State.INACTIVE);
             LangUtil.rethrowUnchecked(ex);
         }
 
         return workCount;
+    }
+
+    private void state(final State newState)
+    {
+        //System.out.println("RecordingSession: " + state + " -> " + newState);
+        state = newState;
     }
 }

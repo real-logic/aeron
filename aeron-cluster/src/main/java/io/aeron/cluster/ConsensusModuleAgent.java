@@ -1044,7 +1044,7 @@ class ConsensusModuleAgent implements Agent
                     state(ConsensusModule.State.TERMINATING);
                 }
             }
-            else if (ConsensusModule.State.QUITING == state)
+            else if (ConsensusModule.State.QUITTING == state)
             {
                 recordingLog.commitLogPosition(leadershipTermId, logPosition);
                 state(ConsensusModule.State.CLOSED);
@@ -1235,7 +1235,7 @@ class ConsensusModuleAgent implements Agent
             if (memberId == this.memberId)
             {
                 expectedAckPosition = logPosition;
-                state(ConsensusModule.State.QUITING);
+                state(ConsensusModule.State.QUITTING);
             }
             else
             {
@@ -2401,7 +2401,7 @@ class ConsensusModuleAgent implements Agent
                 if (member == thisMember)
                 {
                     expectedAckPosition = commitPosition;
-                    state(ConsensusModule.State.QUITING);
+                    state(ConsensusModule.State.QUITTING);
                 }
 
                 newClusterMembers = ClusterMember.removeMember(newClusterMembers, member.id());

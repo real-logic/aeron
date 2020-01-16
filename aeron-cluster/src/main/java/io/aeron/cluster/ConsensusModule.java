@@ -84,7 +84,7 @@ public class ConsensusModule implements AutoCloseable
         /**
          * Quitting the cluster and shutting down as soon as services ack without taking a snapshot.
          */
-        QUITING(4),
+        QUITTING(4),
 
         /**
          * In the process of terminating the node.

@@ -26,6 +26,7 @@
 #include <command/SubscriptionMessageFlyweight.h>
 #include <command/PublicationMessageFlyweight.h>
 #include <command/PublicationBuffersReadyFlyweight.h>
+#include <command/CounterMessageFlyweight.h>
 
 using namespace aeron::util;
 using namespace aeron::command;
@@ -68,6 +69,10 @@ TEST (commandTests, testInstantiateFlyweights)
 
     ASSERT_NO_THROW({
         PublicationBuffersReadyFlyweight cmd(ab, BASE_OFFSET);
+    });
+
+    ASSERT_NO_THROW({
+        CounterMessageFlyweight cmd(ab, BASE_OFFSET);
     });
 }
 
@@ -179,6 +184,41 @@ TEST (commandTests, testImageBuffersReadyFlyweight)
 
         int expectedLength = static_cast<int>(
             startOfSourceIdentityAligned + sizeof(std::int32_t) + sourceInfoData.length());
+
+        ASSERT_EQ(cmd.length(), expectedLength);
+    });
+}
+
+TEST (commandTests, testCounterMessageFlyweight)
+{
+    clearBuffer();
+    AtomicBuffer ab(&testBuffer[0], testBuffer.size());
+
+    std::array<std::uint8_t, 29> keyBuffer = {};
+    keyBuffer.fill(1);
+    std::string label = "this is very cool label";
+
+    ASSERT_NO_THROW({
+        CounterMessageFlyweight cmd(ab, 16);
+
+        cmd.correlationId(42).clientId(-9);
+
+        cmd.typeId(36)
+            .keyBuffer(keyBuffer.data(), keyBuffer.size())
+            .label(label);
+
+        ASSERT_EQ(cmd.correlationId(), 42);
+        ASSERT_EQ(cmd.clientId(), -9);
+        ASSERT_EQ(cmd.typeId(), 36);
+        ASSERT_EQ(cmd.keyLength(), 29);
+        const uint8_t* srcBuffer = keyBuffer.data();
+        const uint8_t* writtenBuffer = cmd.keyBuffer();
+        ASSERT_TRUE( 0 == std::memcmp( srcBuffer, writtenBuffer, sizeof( srcBuffer ) ) );
+        ASSERT_EQ(cmd.labelLength(), static_cast<int>(label.size()));
+        ASSERT_EQ(cmd.label(), label);
+
+        const int expectedLength = static_cast<int>(
+                sizeof(std::int64_t) * 2 + sizeof(std::int32_t) * 2 + BitUtil::align(29, 4) + sizeof(std::int32_t) + label.length());
 
         ASSERT_EQ(cmd.length(), expectedLength);
     });

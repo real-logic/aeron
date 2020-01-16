@@ -348,7 +348,7 @@ public class StartFromTruncatedRecordingLogTest
                 .threadingMode(ThreadingMode.SHARED)
                 .termBufferSparseFile(true)
                 .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
-                .errorHandler(TestUtil.errorHandler(0))
+                .errorHandler(TestUtil.errorHandler(index))
                 .dirDeleteOnStart(true),
             new Archive.Context()
                 .maxCatalogEntries(MAX_CATALOG_ENTRIES)
@@ -365,7 +365,7 @@ public class StartFromTruncatedRecordingLogTest
                 .deleteArchiveOnStart(cleanStart),
             new ConsensusModule.Context()
                 .epochClock(epochClock)
-                .errorHandler(TestUtil.errorHandler(0))
+                .errorHandler(TestUtil.errorHandler(index))
                 .clusterMemberId(index)
                 .clusterMembers(CLUSTER_MEMBERS)
                 .aeronDirectoryName(aeronDirName)
@@ -381,7 +381,7 @@ public class StartFromTruncatedRecordingLogTest
                 .archiveContext(archiveCtx.clone())
                 .clusterDir(new File(baseDirName, "service"))
                 .clusteredService(echoServices[index])
-                .errorHandler(TestUtil.errorHandler(0)));
+                .errorHandler(TestUtil.errorHandler(index)));
     }
 
     private void stopNode(final int index)

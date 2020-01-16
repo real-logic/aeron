@@ -37,8 +37,8 @@ class TerminateDriverFlyweightTest
 
         flyweight.tokenBuffer(newBuffer(16), 4, 8);
 
-        assertEquals(offset + TOKEN_BUFFER_OFFSET, flyweight.tokenBufferOffset());
         assertEquals(8, flyweight.tokenBufferLength());
+        assertEquals(TOKEN_BUFFER_OFFSET, flyweight.tokenBufferOffset());
         assertEquals(TOKEN_BUFFER_OFFSET + 8, flyweight.length());
     }
 

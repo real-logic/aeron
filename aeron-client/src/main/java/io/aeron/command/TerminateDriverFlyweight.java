@@ -47,13 +47,13 @@ public class TerminateDriverFlyweight extends CorrelatedMessageFlyweight
     private static final int MINIMUM_LENGTH = TOKEN_LENGTH_OFFSET + SIZE_OF_INT;
 
     /**
-     * Absolute offset of the token buffer
+     * Relative offset of the token buffer
      *
-     * @return absolute offset of the token buffer
+     * @return relative offset of the token buffer
      */
     public int tokenBufferOffset()
     {
-        return offset + TOKEN_BUFFER_OFFSET;
+        return TOKEN_BUFFER_OFFSET;
     }
 
     /**
@@ -80,7 +80,7 @@ public class TerminateDriverFlyweight extends CorrelatedMessageFlyweight
         buffer.putInt(offset + TOKEN_LENGTH_OFFSET, tokenLength);
         if (null != tokenBuffer && tokenLength > 0)
         {
-            buffer.putBytes(tokenBufferOffset(), tokenBuffer, tokenOffset, tokenLength);
+            buffer.putBytes(offset + tokenBufferOffset(), tokenBuffer, tokenOffset, tokenLength);
         }
 
         return this;

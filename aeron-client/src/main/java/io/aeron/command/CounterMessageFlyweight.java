@@ -79,13 +79,13 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
     }
 
     /**
-     * Absolute offset of the key buffer
+     * Relative offset of the key buffer
      *
-     * @return absolute offset of the key buffer
+     * @return relative offset of the key buffer
      */
     public int keyBufferOffset()
     {
-        return offset + KEY_BUFFER_OFFSET;
+        return KEY_BUFFER_OFFSET;
     }
 
     /**
@@ -111,20 +111,20 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
         buffer.putInt(offset + KEY_LENGTH_OFFSET, keyLength);
         if (null != keyBuffer && keyLength > 0)
         {
-            buffer.putBytes(keyBufferOffset(), keyBuffer, keyOffset, keyLength);
+            buffer.putBytes(offset + KEY_BUFFER_OFFSET, keyBuffer, keyOffset, keyLength);
         }
 
         return this;
     }
 
     /**
-     * Absolute offset of label buffer.
+     * Relative offset of label buffer.
      *
-     * @return absolute offset of label buffer
+     * @return relative offset of label buffer
      */
     public int labelBufferOffset()
     {
-        return offset + labelOffset() + SIZE_OF_INT;
+        return labelOffset() + SIZE_OF_INT;
     }
 
     /**
@@ -151,7 +151,7 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
         buffer.putInt(offset + labelOffset(), labelLength);
         if (null != labelBuffer && labelLength > 0)
         {
-            buffer.putBytes(labelBufferOffset(), labelBuffer, labelOffset, labelLength);
+            buffer.putBytes(offset + labelBufferOffset(), labelBuffer, labelOffset, labelLength);
         }
 
         return this;

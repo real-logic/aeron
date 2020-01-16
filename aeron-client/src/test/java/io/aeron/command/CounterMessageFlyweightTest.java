@@ -39,7 +39,7 @@ class CounterMessageFlyweightTest
         flyweight.keyBuffer(newBuffer(16), 4, 8);
 
         assertEquals(8, flyweight.keyBufferLength());
-        assertEquals(offset + KEY_BUFFER_OFFSET, flyweight.keyBufferOffset());
+        assertEquals(KEY_BUFFER_OFFSET, flyweight.keyBufferOffset());
     }
 
     @Test
@@ -53,8 +53,8 @@ class CounterMessageFlyweightTest
         flyweight.labelBuffer(newBuffer(32), 2, 21);
 
         assertEquals(21, flyweight.labelBufferLength());
-        assertEquals(flyweight.keyBufferOffset() + 16, flyweight.labelBufferOffset());
-        assertEquals(KEY_BUFFER_OFFSET + 12 + 25, flyweight.length());
+        assertEquals(KEY_BUFFER_OFFSET + 16, flyweight.labelBufferOffset());
+        assertEquals(KEY_BUFFER_OFFSET + 37, flyweight.length());
     }
 
     private DirectBuffer newBuffer(final int length)

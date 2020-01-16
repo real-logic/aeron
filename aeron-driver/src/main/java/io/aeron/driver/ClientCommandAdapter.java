@@ -188,10 +188,10 @@ class ClientCommandAdapter implements MessageHandler
                     conductor.onAddCounter(
                         counterMsgFlyweight.typeId(),
                         buffer,
-                        counterMsgFlyweight.keyBufferOffset(),
+                        index + counterMsgFlyweight.keyBufferOffset(),
                         counterMsgFlyweight.keyBufferLength(),
                         buffer,
-                        counterMsgFlyweight.labelBufferOffset(),
+                        index + counterMsgFlyweight.labelBufferOffset(),
                         counterMsgFlyweight.labelBufferLength(),
                         correlationId,
                         counterMsgFlyweight.clientId());

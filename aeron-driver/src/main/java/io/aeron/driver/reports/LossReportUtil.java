@@ -17,9 +17,14 @@ package io.aeron.driver.reports;
 
 import java.io.File;
 import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 
+import static org.agrona.IoUtil.mapExistingFile;
 import static org.agrona.IoUtil.mapNewFile;
 
+/**
+ * Utility functions for dealing with the Loss Report.
+ */
 public class LossReportUtil
 {
     /**
@@ -48,5 +53,16 @@ public class LossReportUtil
     public static MappedByteBuffer mapLossReport(final String aeronDirectoryName, final int reportFileLength)
     {
         return mapNewFile(file(aeronDirectoryName), reportFileLength, false);
+    }
+
+    /**
+     * Map a new loss report in the Aeron directory for a given length.
+     *
+     * @param aeronDirectoryName containing the file
+     * @return the read only mapped buffer for the file.
+     */
+    public static MappedByteBuffer mapLossReportReadOnly(final String aeronDirectoryName)
+    {
+        return mapExistingFile(file(aeronDirectoryName), FileChannel.MapMode.READ_ONLY, "Loss Report");
     }
 }

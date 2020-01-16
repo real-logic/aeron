@@ -82,7 +82,6 @@ class ClientCommandAdapter implements MessageHandler
                 case ADD_PUBLICATION:
                 {
                     publicationMsgFlyweight.wrap(buffer, index);
-
                     publicationMsgFlyweight.validateLength(msgTypeId, length);
 
                     correlationId = publicationMsgFlyweight.correlationId();
@@ -93,7 +92,6 @@ class ClientCommandAdapter implements MessageHandler
                 case REMOVE_PUBLICATION:
                 {
                     removeMsgFlyweight.wrap(buffer, index);
-
                     removeMsgFlyweight.validateLength(msgTypeId, length);
 
                     correlationId = removeMsgFlyweight.correlationId();
@@ -104,7 +102,6 @@ class ClientCommandAdapter implements MessageHandler
                 case ADD_EXCLUSIVE_PUBLICATION:
                 {
                     publicationMsgFlyweight.wrap(buffer, index);
-
                     publicationMsgFlyweight.validateLength(msgTypeId, length);
 
                     correlationId = publicationMsgFlyweight.correlationId();
@@ -115,7 +112,6 @@ class ClientCommandAdapter implements MessageHandler
                 case ADD_SUBSCRIPTION:
                 {
                     subscriptionMsgFlyweight.wrap(buffer, index);
-
                     subscriptionMsgFlyweight.validateLength(msgTypeId, length);
 
                     correlationId = subscriptionMsgFlyweight.correlationId();
@@ -141,7 +137,6 @@ class ClientCommandAdapter implements MessageHandler
                 case REMOVE_SUBSCRIPTION:
                 {
                     removeMsgFlyweight.wrap(buffer, index);
-
                     removeMsgFlyweight.validateLength(msgTypeId, length);
 
                     correlationId = removeMsgFlyweight.correlationId();
@@ -152,7 +147,6 @@ class ClientCommandAdapter implements MessageHandler
                 case ADD_DESTINATION:
                 {
                     destinationMsgFlyweight.wrap(buffer, index);
-
                     destinationMsgFlyweight.validateLength(msgTypeId, length);
 
                     correlationId = destinationMsgFlyweight.correlationId();
@@ -166,7 +160,6 @@ class ClientCommandAdapter implements MessageHandler
                 case REMOVE_DESTINATION:
                 {
                     destinationMsgFlyweight.wrap(buffer, index);
-
                     destinationMsgFlyweight.validateLength(msgTypeId, length);
 
                     correlationId = destinationMsgFlyweight.correlationId();
@@ -180,7 +173,6 @@ class ClientCommandAdapter implements MessageHandler
                 case CLIENT_KEEPALIVE:
                 {
                     correlatedMsgFlyweight.wrap(buffer, index);
-
                     correlatedMsgFlyweight.validateLength(msgTypeId, length);
 
                     conductor.onClientKeepalive(correlatedMsgFlyweight.clientId());
@@ -190,7 +182,6 @@ class ClientCommandAdapter implements MessageHandler
                 case ADD_COUNTER:
                 {
                     counterMsgFlyweight.wrap(buffer, index);
-
                     counterMsgFlyweight.validateLength(msgTypeId, length);
 
                     correlationId = counterMsgFlyweight.correlationId();
@@ -210,7 +201,6 @@ class ClientCommandAdapter implements MessageHandler
                 case REMOVE_COUNTER:
                 {
                     removeMsgFlyweight.wrap(buffer, index);
-
                     removeMsgFlyweight.validateLength(msgTypeId, length);
 
                     correlationId = removeMsgFlyweight.correlationId();
@@ -221,7 +211,6 @@ class ClientCommandAdapter implements MessageHandler
                 case CLIENT_CLOSE:
                 {
                     correlatedMsgFlyweight.wrap(buffer, index);
-
                     correlatedMsgFlyweight.validateLength(msgTypeId, length);
 
                     conductor.onClientClose(correlatedMsgFlyweight.clientId());
@@ -231,7 +220,6 @@ class ClientCommandAdapter implements MessageHandler
                 case ADD_RCV_DESTINATION:
                 {
                     destinationMsgFlyweight.wrap(buffer, index);
-
                     destinationMsgFlyweight.validateLength(msgTypeId, length);
 
                     correlationId = destinationMsgFlyweight.correlationId();
@@ -245,7 +233,6 @@ class ClientCommandAdapter implements MessageHandler
                 case REMOVE_RCV_DESTINATION:
                 {
                     destinationMsgFlyweight.wrap(buffer, index);
-
                     destinationMsgFlyweight.validateLength(msgTypeId, length);
 
                     correlationId = destinationMsgFlyweight.correlationId();
@@ -259,7 +246,6 @@ class ClientCommandAdapter implements MessageHandler
                 case TERMINATE_DRIVER:
                 {
                     terminateDriverFlyweight.wrap(buffer, index);
-
                     terminateDriverFlyweight.validateLength(msgTypeId, length);
 
                     conductor.onTerminateDriver(

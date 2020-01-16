@@ -113,9 +113,10 @@ class RecordingWriter implements BlockHandler
                 byteBuffer.limit(dataLength).position(0);
             }
 
+            int fileOffset = segmentOffset;
             do
             {
-                recordingFileChannel.write(byteBuffer);
+                fileOffset += recordingFileChannel.write(byteBuffer, fileOffset);
             }
             while (byteBuffer.remaining() > 0);
 

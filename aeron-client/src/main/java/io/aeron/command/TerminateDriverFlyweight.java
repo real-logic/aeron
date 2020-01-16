@@ -43,16 +43,17 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 public class TerminateDriverFlyweight extends CorrelatedMessageFlyweight
 {
     private static final int TOKEN_LENGTH_OFFSET = CORRELATION_ID_FIELD_OFFSET + SIZE_OF_LONG;
+    static final int TOKEN_BUFFER_OFFSET = TOKEN_LENGTH_OFFSET + SIZE_OF_INT;
     private static final int MINIMUM_LENGTH = TOKEN_LENGTH_OFFSET + SIZE_OF_INT;
 
     /**
-     * Offset of the token buffer
+     * Absolute offset of the token buffer
      *
-     * @return offset of the token buffer
+     * @return absolute offset of the token buffer
      */
     public int tokenBufferOffset()
     {
-        return TOKEN_LENGTH_OFFSET + SIZE_OF_INT;
+        return offset + TOKEN_BUFFER_OFFSET;
     }
 
     /**
@@ -76,7 +77,7 @@ public class TerminateDriverFlyweight extends CorrelatedMessageFlyweight
     public TerminateDriverFlyweight tokenBuffer(
         final DirectBuffer tokenBuffer, final int tokenOffset, final int tokenLength)
     {
-        buffer.putInt(TOKEN_LENGTH_OFFSET, tokenLength);
+        buffer.putInt(offset + TOKEN_LENGTH_OFFSET, tokenLength);
         if (null != tokenBuffer && tokenLength > 0)
         {
             buffer.putBytes(tokenBufferOffset(), tokenBuffer, tokenOffset, tokenLength);
@@ -94,14 +95,14 @@ public class TerminateDriverFlyweight extends CorrelatedMessageFlyweight
      */
     public int length()
     {
-        return tokenBufferOffset() + buffer.getInt(offset + TOKEN_LENGTH_OFFSET);
+        return TOKEN_BUFFER_OFFSET + tokenBufferLength();
     }
 
     /**
      * Validate buffer length is long enough for message.
      *
      * @param msgTypeId type of message.
-     * @param length of message in bytes to validate.
+     * @param length    of message in bytes to validate.
      */
     public void validateLength(final int msgTypeId, final int length)
     {

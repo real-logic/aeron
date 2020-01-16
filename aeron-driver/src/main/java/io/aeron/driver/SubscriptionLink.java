@@ -178,6 +178,25 @@ public abstract class SubscriptionLink implements DriverManagedResource
     {
         return !hasSessionId || this.sessionId == sessionId;
     }
+
+    public String toString()
+    {
+        return "SubscriptionLink{" +
+            "registrationId=" + registrationId +
+            ", streamId=" + streamId +
+            ", sessionId=" + sessionId +
+            ", hasSessionId=" + hasSessionId +
+            ", isReliable=" + isReliable() +
+            ", isSparse=" + isSparse() +
+            ", isTether=" + isTether() +
+            ", isRejoin=" + isRejoin() +
+            ", reachedEndOfLife=" + reachedEndOfLife +
+            ", group=" + group +
+            ", channel='" + channel + '\'' +
+            ", aeronClient=" + aeronClient +
+            ", positionBySubscribableMap=" + positionBySubscribableMap +
+            '}';
+    }
 }
 
 class NetworkSubscriptionLink extends SubscriptionLink

@@ -58,4 +58,13 @@ public final class SubscriberPosition
     {
         subscriptionLink.link(image, position);
     }
+
+    public String toString()
+    {
+        return "SubscriberPosition{" +
+            "subscriptionLink=" + subscriptionLink +
+            ", subscribable=" + subscribable +
+            ", position=" + position +
+            '}';
+    }
 }

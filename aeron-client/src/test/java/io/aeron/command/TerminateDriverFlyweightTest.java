@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class TerminateDriverFlyweightTest
 {
-
     @Test
     void tokenBuffer()
     {
@@ -43,11 +42,11 @@ class TerminateDriverFlyweightTest
         assertEquals(TOKEN_BUFFER_OFFSET + 8, flyweight.length());
     }
 
-    private DirectBuffer newBuffer(final int size)
+    private DirectBuffer newBuffer(final int length)
     {
-        final byte[] bytes = new byte[size];
+        final byte[] bytes = new byte[length];
         fill(bytes, (byte)1);
-        final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(4 + size, 4));
+        final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(4 + length, 4));
         buffer.putBytes(4, bytes);
         return buffer;
     }

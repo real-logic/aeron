@@ -17,11 +17,9 @@ package io.aeron.command;
 
 import io.aeron.ErrorCode;
 import io.aeron.exceptions.ControlProtocolException;
-import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.*;
 
 /**
  * Message to denote a new counter.
@@ -54,6 +52,7 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
 {
     private static final int COUNTER_TYPE_ID_FIELD_OFFSET = CORRELATION_ID_FIELD_OFFSET + SIZE_OF_LONG;
     private static final int KEY_LENGTH_OFFSET = COUNTER_TYPE_ID_FIELD_OFFSET + SIZE_OF_INT;
+    static final int KEY_BUFFER_OFFSET = KEY_LENGTH_OFFSET + SIZE_OF_INT;
     private static final int MINIMUM_LENGTH = KEY_LENGTH_OFFSET + SIZE_OF_INT;
 
     /**
@@ -80,13 +79,13 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
     }
 
     /**
-     * Offset of the key buffer
+     * Absolute offset of the key buffer
      *
-     * @return offset of the key buffer
+     * @return absolute offset of the key buffer
      */
     public int keyBufferOffset()
     {
-        return KEY_LENGTH_OFFSET + SIZE_OF_INT;
+        return offset + KEY_BUFFER_OFFSET;
     }
 
     /**
@@ -109,7 +108,7 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
      */
     public CounterMessageFlyweight keyBuffer(final DirectBuffer keyBuffer, final int keyOffset, final int keyLength)
     {
-        buffer.putInt(KEY_LENGTH_OFFSET, keyLength);
+        buffer.putInt(offset + KEY_LENGTH_OFFSET, keyLength);
         if (null != keyBuffer && keyLength > 0)
         {
             buffer.putBytes(keyBufferOffset(), keyBuffer, keyOffset, keyLength);
@@ -119,13 +118,13 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
     }
 
     /**
-     * Offset of label buffer.
+     * Absolute offset of label buffer.
      *
-     * @return offset of label buffer
+     * @return absolute offset of label buffer
      */
     public int labelBufferOffset()
     {
-        return labelOffset() + SIZE_OF_INT;
+        return offset + labelOffset() + SIZE_OF_INT;
     }
 
     /**
@@ -149,8 +148,11 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
     public CounterMessageFlyweight labelBuffer(
         final DirectBuffer labelBuffer, final int labelOffset, final int labelLength)
     {
-        buffer.putInt(labelOffset(), labelLength);
-        buffer.putBytes(labelBufferOffset(), labelBuffer, labelOffset, labelLength);
+        buffer.putInt(offset + labelOffset(), labelLength);
+        if (null != labelBuffer && labelLength > 0)
+        {
+            buffer.putBytes(labelBufferOffset(), labelBuffer, labelOffset, labelLength);
+        }
 
         return this;
     }
@@ -178,14 +180,14 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
     public int length()
     {
         final int labelOffset = labelOffset();
-        return labelOffset + buffer.getInt(offset + labelOffset) + SIZE_OF_INT;
+        return labelOffset + SIZE_OF_INT + labelBufferLength();
     }
 
     /**
      * Validate buffer length is long enough for message.
      *
      * @param msgTypeId type of message.
-     * @param length of message in bytes to validate.
+     * @param length    of message in bytes to validate.
      */
     public void validateLength(final int msgTypeId, final int length)
     {
@@ -212,6 +214,6 @@ public class CounterMessageFlyweight extends CorrelatedMessageFlyweight
 
     private int labelOffset()
     {
-        return KEY_LENGTH_OFFSET + SIZE_OF_INT + BitUtil.align(buffer.getInt(offset + KEY_LENGTH_OFFSET), SIZE_OF_INT);
+        return KEY_BUFFER_OFFSET + align(keyBufferLength(), SIZE_OF_INT);
     }
 }

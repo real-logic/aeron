@@ -15,8 +15,8 @@
  */
 
 #include <array>
+#include <cstring>
 #include <gtest/gtest.h>
-#include <util/Exceptions.h>
 #include <util/Index.h>
 #include <util/BitUtil.h>
 #include <concurrent/AtomicBuffer.h>
@@ -213,7 +213,7 @@ TEST (commandTests, testCounterMessageFlyweight)
         ASSERT_EQ(cmd.keyLength(), 29);
         const uint8_t* srcBuffer = keyBuffer.data();
         const uint8_t* writtenBuffer = cmd.keyBuffer();
-        ASSERT_TRUE( 0 == std::memcmp( srcBuffer, writtenBuffer, sizeof( srcBuffer ) ) );
+        ASSERT_TRUE( 0 == std::memcmp( srcBuffer, writtenBuffer, 29 ) );
         ASSERT_EQ(cmd.labelLength(), static_cast<int>(label.size()));
         ASSERT_EQ(cmd.label(), label);
 

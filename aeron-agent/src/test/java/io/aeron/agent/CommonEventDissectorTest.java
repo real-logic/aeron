@@ -31,7 +31,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class CommonEventDissectorTest
 {
-
     private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(MAX_EVENT_LENGTH, CACHE_LINE_LENGTH));
     private final StringBuilder builder = new StringBuilder();
 
@@ -42,7 +41,7 @@ class CommonEventDissectorTest
         final long timestampNs = 10_000_001_055L;
         final long timestampMs = 10_000_001L;
 
-        CommonEventDisector.dissectLogStartMessage(timestampNs, timestampMs, builder);
+        CommonEventDissector.dissectLogStartMessage(timestampNs, timestampMs, builder);
 
         assertThat(builder.toString(), allOf(
             startsWith("[10.000001055] log started 1970-01-01 0"),
@@ -54,7 +53,7 @@ class CommonEventDissectorTest
     {
         internalEncodeLogHeader(buffer, 100, 222, () -> 1234567890);
 
-        final int decodedLength = CommonEventDisector
+        final int decodedLength = CommonEventDissector
             .dissectLogHeader("test ctx", ArchiveEventCode.CMD_OUT_RESPONSE, buffer, 0, builder);
 
         assertEquals(LOG_HEADER_LENGTH, decodedLength);
@@ -69,7 +68,7 @@ class CommonEventDissectorTest
         buffer.putInt(offset + SIZE_OF_INT, 4, LITTLE_ENDIAN);
         buffer.putBytes(offset + SIZE_OF_INT * 2, new byte[]{ 127, 0, 0, 1 });
 
-        final int decodedLength = CommonEventDisector.dissectSocketAddress(buffer, offset, builder);
+        final int decodedLength = CommonEventDissector.dissectSocketAddress(buffer, offset, builder);
 
         assertEquals(12, decodedLength);
         assertEquals("127.0.0.1:12121", builder.toString());
@@ -84,7 +83,7 @@ class CommonEventDissectorTest
         buffer.putBytes(offset + SIZE_OF_INT * 2,
             new byte[]{ -100, 124, 0, 18, 120, -128, 44, 44, 10, -80, 80, 22, 122, 5, 5, -99 });
 
-        final int decodedLength = CommonEventDisector.dissectSocketAddress(buffer, offset, builder);
+        final int decodedLength = CommonEventDissector.dissectSocketAddress(buffer, offset, builder);
 
         assertEquals(24, decodedLength);
         assertEquals("9c7c:12:7880:2c2c:ab0:5016:7a05:59d:7777", builder.toString());
@@ -97,7 +96,7 @@ class CommonEventDissectorTest
         buffer.putInt(offset, 555, LITTLE_ENDIAN);
         buffer.putInt(offset + SIZE_OF_INT, 7, LITTLE_ENDIAN);
 
-        final int decodedLength = CommonEventDisector.dissectSocketAddress(buffer, offset, builder);
+        final int decodedLength = CommonEventDissector.dissectSocketAddress(buffer, offset, builder);
 
         assertEquals(15, decodedLength);
         assertEquals("unknown-address:555", builder.toString());

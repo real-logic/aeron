@@ -20,8 +20,8 @@ import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.*;
 import org.agrona.MutableDirectBuffer;
 
-import static io.aeron.agent.CommonEventDisector.dissectLogHeader;
-import static io.aeron.agent.CommonEventDisector.dissectSocketAddress;
+import static io.aeron.agent.CommonEventDissector.dissectLogHeader;
+import static io.aeron.agent.CommonEventDissector.dissectSocketAddress;
 import static io.aeron.agent.DriverEventCode.*;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_INT;

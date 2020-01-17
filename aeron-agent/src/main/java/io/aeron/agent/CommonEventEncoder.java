@@ -105,10 +105,11 @@ final class CommonEventEncoder
         {
             encodingBuffer.putInt(relativeOffset + offset, maxLength, LITTLE_ENDIAN);
             relativeOffset += SIZE_OF_INT;
-            relativeOffset +=
-                encodingBuffer.putStringWithoutLengthAscii(relativeOffset + offset, value, 0, maxLength - 3);
+            relativeOffset += encodingBuffer.putStringWithoutLengthAscii(
+                relativeOffset + offset, value, 0, maxLength - 3);
             relativeOffset += encodingBuffer.putStringWithoutLengthAscii(relativeOffset + offset, "...");
         }
+
         return relativeOffset;
     }
 

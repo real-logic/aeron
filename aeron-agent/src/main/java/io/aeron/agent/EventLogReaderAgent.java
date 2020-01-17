@@ -29,7 +29,7 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 import java.nio.file.Paths;
 
-import static io.aeron.agent.CommonEventDisector.dissectLogStartMessage;
+import static io.aeron.agent.CommonEventDissector.dissectLogStartMessage;
 import static io.aeron.agent.EventConfiguration.*;
 import static java.lang.System.*;
 import static java.nio.channels.FileChannel.open;

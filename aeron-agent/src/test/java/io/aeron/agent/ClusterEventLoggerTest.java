@@ -42,7 +42,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ClusterEventLoggerTest
 {
-
     private final UnsafeBuffer logBuffer = new UnsafeBuffer(allocateDirect(MAX_EVENT_LENGTH + TRAILER_LENGTH));
     private final ClusterEventLogger logger = new ClusterEventLogger(new ManyToOneRingBuffer(logBuffer));
 
@@ -95,5 +94,4 @@ class ClusterEventLoggerTest
         assertEquals(42, logBuffer.getInt(encodedMsgOffset(LOG_HEADER_LENGTH), LITTLE_ENDIAN));
         assertEquals(payload, logBuffer.getStringAscii(encodedMsgOffset(LOG_HEADER_LENGTH + SIZE_OF_INT)));
     }
-
 }

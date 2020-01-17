@@ -121,8 +121,8 @@ final class EventConfiguration
     {
         final int bufferLength = getSizeAsInt(BUFFER_LENGTH_PROP_NAME, BUFFER_LENGTH_DEFAULT) + TRAILER_LENGTH;
 
-        EVENT_RING_BUFFER =
-            new ManyToOneRingBuffer(new UnsafeBuffer(allocateDirectAligned(bufferLength, CACHE_LINE_LENGTH)));
+        EVENT_RING_BUFFER = new ManyToOneRingBuffer(
+            new UnsafeBuffer(allocateDirectAligned(bufferLength, CACHE_LINE_LENGTH)));
     }
 
     public static final EnumSet<DriverEventCode> DRIVER_EVENT_CODES = EnumSet.noneOf(DriverEventCode.class);

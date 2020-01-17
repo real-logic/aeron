@@ -96,6 +96,7 @@ class DriverEventLoggerTest
         verifyLogHeader(logBuffer, toEventCodeId(FRAME_IN), captureLength + 12, captureLength, 10_000);
         assertEquals(5555, logBuffer.getInt(encodedMsgOffset(LOG_HEADER_LENGTH), LITTLE_ENDIAN));
         assertEquals(4, logBuffer.getInt(encodedMsgOffset(LOG_HEADER_LENGTH + SIZE_OF_INT), LITTLE_ENDIAN));
+
         for (int i = 0; i < captureLength; i++)
         {
             assertEquals(3, logBuffer.getByte(encodedMsgOffset(LOG_HEADER_LENGTH + 12 + i)));
@@ -118,6 +119,7 @@ class DriverEventLoggerTest
         verifyLogHeader(logBuffer, toEventCodeId(FRAME_OUT), captureLength + 12, captureLength, captureLength);
         assertEquals(3232, logBuffer.getInt(encodedMsgOffset(LOG_HEADER_LENGTH), LITTLE_ENDIAN));
         assertEquals(4, logBuffer.getInt(encodedMsgOffset(LOG_HEADER_LENGTH + SIZE_OF_INT), LITTLE_ENDIAN));
+
         for (int i = 0; i < captureLength; i++)
         {
             assertEquals(-1, logBuffer.getByte(encodedMsgOffset(LOG_HEADER_LENGTH + 12 + i)));

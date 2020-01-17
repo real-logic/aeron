@@ -18,14 +18,13 @@ package io.aeron.agent;
 import org.agrona.MutableDirectBuffer;
 
 import static io.aeron.agent.ClusterEventCode.NEW_LEADERSHIP_TERM;
-import static io.aeron.agent.CommonEventDisector.dissectLogHeader;
+import static io.aeron.agent.CommonEventDissector.dissectLogHeader;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 final class ClusterEventDissector
 {
-
     static final String CONTEXT = "CLUSTER";
 
     private ClusterEventDissector()
@@ -33,9 +32,7 @@ final class ClusterEventDissector
     }
 
     static void dissectNewLeadershipTerm(
-        final MutableDirectBuffer buffer,
-        final int offset,
-        final StringBuilder builder)
+        final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
         int absoluteOffset = offset;
         absoluteOffset += dissectLogHeader(CONTEXT, NEW_LEADERSHIP_TERM, buffer, absoluteOffset, builder);

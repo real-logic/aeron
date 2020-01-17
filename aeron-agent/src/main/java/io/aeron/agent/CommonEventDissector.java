@@ -28,12 +28,12 @@ import static java.time.format.DateTimeFormatter.ofPattern;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
-final class CommonEventDisector
+final class CommonEventDissector
 {
     private static final DateTimeFormatter DATE_TIME_FORMATTER = ofPattern("uuuu-MM-dd HH:mm:ss.SSSZ");
     private static final double NANOS_PER_SECOND = 1_000_000_000.0;
 
-    private CommonEventDisector()
+    private CommonEventDissector()
     {
     }
 

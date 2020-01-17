@@ -163,5 +163,4 @@ class DriverEventEncoderTest
         assertEquals(uri.substring(0, encodedUriLength - 3) + "...",
             buffer.getStringAscii(LOG_HEADER_LENGTH + SIZE_OF_INT * 2 + SIZE_OF_LONG, LITTLE_ENDIAN));
     }
-
 }

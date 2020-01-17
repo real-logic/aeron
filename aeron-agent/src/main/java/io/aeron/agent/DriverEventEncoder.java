@@ -147,5 +147,4 @@ final class DriverEventEncoder
     {
         return min(bufferLength, MAX_EVENT_LENGTH - LOG_HEADER_LENGTH - SOCKET_ADDRESS_MAX_LENGTH);
     }
-
 }

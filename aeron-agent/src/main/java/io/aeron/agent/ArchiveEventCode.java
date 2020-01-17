@@ -85,7 +85,7 @@ public enum ArchiveEventCode implements EventCode
         final int maxId = Arrays.stream(codes).mapToInt(idSupplier).max().orElse(0);
         if (maxId > 100_000)
         {
-            throw new IllegalStateException("Size of the lookup array exceeds 100000: " + maxId);
+            throw new IllegalStateException("length of the lookup array exceeds 100000: " + maxId);
         }
         final ArchiveEventCode[] array = new ArchiveEventCode[maxId + 1];
 

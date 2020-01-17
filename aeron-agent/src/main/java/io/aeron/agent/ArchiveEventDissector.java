@@ -19,10 +19,12 @@ import io.aeron.archive.codecs.*;
 import org.agrona.MutableDirectBuffer;
 
 import static io.aeron.agent.ArchiveEventCode.CMD_OUT_RESPONSE;
-import static io.aeron.agent.CommonEventDisector.dissectLogHeader;
+import static io.aeron.agent.CommonEventDissector.dissectLogHeader;
 
 final class ArchiveEventDissector
 {
+    static final String CONTEXT = "ARCHIVE";
+
     private static final MessageHeaderDecoder HEADER_DECODER = new MessageHeaderDecoder();
     private static final ConnectRequestDecoder CONNECT_REQUEST_DECODER = new ConnectRequestDecoder();
     private static final CloseSessionRequestDecoder CLOSE_SESSION_REQUEST_DECODER = new CloseSessionRequestDecoder();
@@ -70,7 +72,6 @@ final class ArchiveEventDissector
     private static final TaggedReplicateRequestDecoder TAGGED_REPLICATE_REQUEST_DECODER =
         new TaggedReplicateRequestDecoder();
     private static final ControlResponseDecoder CONTROL_RESPONSE_DECODER = new ControlResponseDecoder();
-    static final String CONTEXT = "ARCHIVE";
 
     private ArchiveEventDissector()
     {

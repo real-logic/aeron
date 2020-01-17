@@ -19,15 +19,17 @@ import org.agrona.MutableDirectBuffer;
 
 import java.util.Arrays;
 
+import static io.aeron.agent.ClusterEventDissector.dissectNewLeadershipTerm;
+
 /**
  * Events that can be enabled for logging in the cluster module.
  */
 public enum ClusterEventCode implements EventCode
 {
-    ELECTION_STATE_CHANGE(1, ClusterEventDissector::electionStateChange),
-    NEW_LEADERSHIP_TERM(2, ClusterEventDissector::newLeadershipTerm),
-    STATE_CHANGE(3, ClusterEventDissector::stateChange),
-    ROLE_CHANGE(4, ClusterEventDissector::roleChange);
+    ELECTION_STATE_CHANGE(1, ClusterEventDissector::dissectStateChange),
+    NEW_LEADERSHIP_TERM(2, (eventCode, buffer, offset, builder) -> dissectNewLeadershipTerm(buffer, offset, builder)),
+    STATE_CHANGE(3, ClusterEventDissector::dissectStateChange),
+    ROLE_CHANGE(4, ClusterEventDissector::dissectStateChange);
 
     static final int EVENT_CODE_TYPE = EventCodeType.CLUSTER.getTypeCode();
     private static final ClusterEventCode[] EVENT_CODE_BY_ID;

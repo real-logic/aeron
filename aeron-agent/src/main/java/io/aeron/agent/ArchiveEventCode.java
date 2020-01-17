@@ -15,75 +15,96 @@
  */
 package io.aeron.agent;
 
+import io.aeron.archive.codecs.*;
 import org.agrona.MutableDirectBuffer;
 
 import java.util.Arrays;
+import java.util.function.ToIntFunction;
 
 /**
  * Events that can be enabled for logging in the archive module.
  */
 public enum ArchiveEventCode implements EventCode
 {
-    CMD_IN_CONNECT(1, ArchiveEventDissector::controlRequest),
-    CMD_IN_CLOSE_SESSION(2, ArchiveEventDissector::controlRequest),
-    CMD_IN_START_RECORDING(3, ArchiveEventDissector::controlRequest),
-    CMD_IN_STOP_RECORDING(4, ArchiveEventDissector::controlRequest),
-    CMD_IN_REPLAY(5, ArchiveEventDissector::controlRequest),
-    CMD_IN_STOP_REPLAY(6, ArchiveEventDissector::controlRequest),
-    CMD_IN_LIST_RECORDINGS(7, ArchiveEventDissector::controlRequest),
-    CMD_IN_LIST_RECORDINGS_FOR_URI(8, ArchiveEventDissector::controlRequest),
-    CMD_IN_LIST_RECORDING(9, ArchiveEventDissector::controlRequest),
-    CMD_IN_EXTEND_RECORDING(10, ArchiveEventDissector::controlRequest),
-    CMD_IN_RECORDING_POSITION(11, ArchiveEventDissector::controlRequest),
-    CMD_IN_TRUNCATE_RECORDING(12, ArchiveEventDissector::controlRequest),
-    CMD_IN_STOP_RECORDING_SUBSCRIPTION(13, ArchiveEventDissector::controlRequest),
-    CMD_IN_STOP_POSITION(14, ArchiveEventDissector::controlRequest),
-    CMD_IN_FIND_LAST_MATCHING_RECORD(15, ArchiveEventDissector::controlRequest),
-    CMD_IN_LIST_RECORDING_SUBSCRIPTIONS(16, ArchiveEventDissector::controlRequest),
-    CMD_IN_START_BOUNDED_REPLAY(17, ArchiveEventDissector::controlRequest),
-    CMD_IN_STOP_ALL_REPLAYS(18, ArchiveEventDissector::controlRequest),
-    CMD_IN_REPLICATE(19, ArchiveEventDissector::controlRequest),
-    CMD_IN_STOP_REPLICATION(20, ArchiveEventDissector::controlRequest),
-    CMD_IN_START_POSITION(21, ArchiveEventDissector::controlRequest),
-    CMD_IN_DETACH_SEGMENTS(22, ArchiveEventDissector::controlRequest),
-    CMD_IN_DELETE_DETACHED_SEGMENTS(23, ArchiveEventDissector::controlRequest),
-    CMD_IN_PURGE_SEGMENTS(24, ArchiveEventDissector::controlRequest),
-    CMD_IN_ATTACH_SEGMENTS(25, ArchiveEventDissector::controlRequest),
-    CMD_IN_MIGRATE_SEGMENTS(26, ArchiveEventDissector::controlRequest),
-    CMD_IN_AUTH_CONNECT(27, ArchiveEventDissector::controlRequest),
-    CMD_IN_KEEP_ALIVE(28, ArchiveEventDissector::controlRequest),
-    CMD_IN_TAGGED_REPLICATE(29, ArchiveEventDissector::controlRequest),
+    CMD_IN_CONNECT(1, ConnectRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::controlRequest),
+    CMD_IN_CLOSE_SESSION(2, CloseSessionRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::controlRequest),
+    CMD_IN_START_RECORDING(3, StartRecordingRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::controlRequest),
+    CMD_IN_STOP_RECORDING(4, StopRecordingRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::controlRequest),
+    CMD_IN_REPLAY(5, ReplayRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::controlRequest),
+    CMD_IN_STOP_REPLAY(6, StopReplayRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::controlRequest),
+    CMD_IN_LIST_RECORDINGS(7, ListRecordingsRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::controlRequest),
+    CMD_IN_LIST_RECORDINGS_FOR_URI(8, ListRecordingsForUriRequestDecoder.TEMPLATE_ID,
+        ArchiveEventDissector::controlRequest),
+    CMD_IN_LIST_RECORDING(9, ListRecordingRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::controlRequest),
+    CMD_IN_EXTEND_RECORDING(10, ExtendRecordingRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::controlRequest),
+    CMD_IN_RECORDING_POSITION(11, RecordingPositionRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::controlRequest),
+    CMD_IN_TRUNCATE_RECORDING(12, TruncateRecordingRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::controlRequest),
+    CMD_IN_STOP_RECORDING_SUBSCRIPTION(13, StopRecordingSubscriptionRequestDecoder.TEMPLATE_ID,
+        ArchiveEventDissector::controlRequest),
+    CMD_IN_STOP_POSITION(14, StopPositionRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::controlRequest),
+    CMD_IN_FIND_LAST_MATCHING_RECORD(15, FindLastMatchingRecordingRequestDecoder.TEMPLATE_ID,
+        ArchiveEventDissector::controlRequest),
+    CMD_IN_LIST_RECORDING_SUBSCRIPTIONS(16, ListRecordingSubscriptionsRequestDecoder.TEMPLATE_ID,
+        ArchiveEventDissector::controlRequest),
+    CMD_IN_START_BOUNDED_REPLAY(17, BoundedReplayRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::controlRequest),
+    CMD_IN_STOP_ALL_REPLAYS(18, StopAllReplaysRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::controlRequest),
+    CMD_IN_REPLICATE(19, ReplicateRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::controlRequest),
+    CMD_IN_STOP_REPLICATION(20, StopReplicationRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::controlRequest),
+    CMD_IN_START_POSITION(21, StartPositionRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::controlRequest),
+    CMD_IN_DETACH_SEGMENTS(22, DetachSegmentsRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::controlRequest),
+    CMD_IN_DELETE_DETACHED_SEGMENTS(23, DeleteDetachedSegmentsRequestDecoder.TEMPLATE_ID,
+        ArchiveEventDissector::controlRequest),
+    CMD_IN_PURGE_SEGMENTS(24, PurgeSegmentsRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::controlRequest),
+    CMD_IN_ATTACH_SEGMENTS(25, AttachSegmentsRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::controlRequest),
+    CMD_IN_MIGRATE_SEGMENTS(26, MigrateSegmentsRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::controlRequest),
+    CMD_IN_AUTH_CONNECT(27, AuthConnectRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::controlRequest),
+    CMD_IN_KEEP_ALIVE(28, KeepAliveRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::controlRequest),
+    CMD_IN_TAGGED_REPLICATE(29, TaggedReplicateRequestDecoder.TEMPLATE_ID, ArchiveEventDissector::controlRequest),
 
-    CMD_OUT_RESPONSE(30,
+    CMD_OUT_RESPONSE(30, ControlResponseDecoder.TEMPLATE_ID,
         (event, buffer, offset, builder) -> ArchiveEventDissector.controlResponse(buffer, offset, builder));
 
     static final int EVENT_CODE_TYPE = EventCodeType.ARCHIVE.getTypeCode();
     private static final ArchiveEventCode[] EVENT_CODE_BY_ID;
+    private static final ArchiveEventCode[] EVENT_CODE_BY_TEMPLATE_ID;
 
     private final int id;
+    private final int templateId;
     private final DissectFunction<ArchiveEventCode> dissector;
 
     static
     {
         final ArchiveEventCode[] codes = ArchiveEventCode.values();
-        final int maxId = Arrays.stream(codes).mapToInt(ArchiveEventCode::id).max().orElse(0);
-        EVENT_CODE_BY_ID = new ArchiveEventCode[maxId + 1];
+        EVENT_CODE_BY_ID = createLookupArray(codes, ArchiveEventCode::id);
+        EVENT_CODE_BY_TEMPLATE_ID = createLookupArray(codes, ArchiveEventCode::templateId);
+    }
+
+    private static ArchiveEventCode[] createLookupArray(
+        final ArchiveEventCode[] codes, final ToIntFunction<ArchiveEventCode> idSupplier)
+    {
+        final int maxId = Arrays.stream(codes).mapToInt(idSupplier).max().orElse(0);
+        if (maxId > 100_000)
+        {
+            throw new IllegalStateException("Size of the lookup array exceeds 100000: " + maxId);
+        }
+        final ArchiveEventCode[] array = new ArchiveEventCode[maxId + 1];
 
         for (final ArchiveEventCode code : codes)
         {
-            final int id = code.id();
-            if (null != EVENT_CODE_BY_ID[id])
+            final int id = idSupplier.applyAsInt(code);
+            if (null != array[id])
             {
                 throw new IllegalArgumentException("id already in use: " + id);
             }
-
-            EVENT_CODE_BY_ID[id] = code;
+            array[id] = code;
         }
+        return array;
     }
 
-    ArchiveEventCode(final int id, final DissectFunction<ArchiveEventCode> dissector)
+    ArchiveEventCode(final int id, final int templateId, final DissectFunction<ArchiveEventCode> dissector)
     {
         this.id = id;
+        this.templateId = templateId;
         this.dissector = dissector;
     }
 
@@ -92,12 +113,22 @@ public enum ArchiveEventCode implements EventCode
         return EVENT_CODE_BY_ID[eventCodeId];
     }
 
+    static ArchiveEventCode getByTemplateId(final int templateId)
+    {
+        return EVENT_CODE_BY_TEMPLATE_ID[templateId];
+    }
+
     /**
      * {@inheritDoc}
      */
     public int id()
     {
         return id;
+    }
+
+    public int templateId()
+    {
+        return templateId;
     }
 
     public void decode(final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)

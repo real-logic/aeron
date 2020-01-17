@@ -16,16 +16,18 @@
 package io.aeron.agent;
 
 import io.aeron.cluster.ConsensusModule;
-import io.aeron.cluster.Election;
-import io.aeron.cluster.service.Cluster;
-import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 
-import java.nio.ByteBuffer;
-
-import static io.aeron.agent.ClusterEventCode.*;
+import static io.aeron.agent.ClusterEventCode.EVENT_CODE_TYPE;
+import static io.aeron.agent.ClusterEventCode.NEW_LEADERSHIP_TERM;
+import static io.aeron.agent.ClusterEventEncoder.encodeNewLeadershipTerm;
+import static io.aeron.agent.ClusterEventEncoder.encodeStateChange;
+import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
+import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
+import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
+import static org.agrona.BufferUtil.allocateDirectAligned;
 
 /**
  * Event logger interface used by interceptors for recording cluster events into a {@link RingBuffer} for a
@@ -33,24 +35,16 @@ import static io.aeron.agent.ClusterEventCode.*;
  */
 public final class ClusterEventLogger
 {
-    public static final ClusterEventLogger LOGGER = new ClusterEventLogger(EventConfiguration.EVENT_RING_BUFFER);
+    public static final ClusterEventLogger LOGGER = new ClusterEventLogger(EVENT_RING_BUFFER);
 
-    private final MutableDirectBuffer encodedBuffer =
-        new UnsafeBuffer(ByteBuffer.allocateDirect(EventConfiguration.MAX_EVENT_LENGTH));
+    private final UnsafeBuffer encodedBuffer =
+        new UnsafeBuffer(allocateDirectAligned(MAX_EVENT_LENGTH, CACHE_LINE_LENGTH));
 
     private final ManyToOneRingBuffer ringBuffer;
 
-    private ClusterEventLogger(final ManyToOneRingBuffer eventRingBuffer)
+    ClusterEventLogger(final ManyToOneRingBuffer eventRingBuffer)
     {
         ringBuffer = eventRingBuffer;
-    }
-
-    public void logElectionStateChange(final Election.State oldState, final Election.State newState, final int memberId)
-    {
-        final int encodedLength = ClusterEventEncoder.encodeElectionStateChange(
-            encodedBuffer, oldState, newState, memberId);
-
-        ringBuffer.write(toEventCodeId(ELECTION_STATE_CHANGE), encodedBuffer, 0, encodedLength);
     }
 
     public void logNewLeadershipTerm(
@@ -61,7 +55,7 @@ public final class ClusterEventLogger
         final int leaderMemberId,
         final int logSessionId)
     {
-        final int encodedLength = ClusterEventEncoder.newLeadershipTerm(
+        final int encodedLength = encodeNewLeadershipTerm(
             encodedBuffer,
             logLeadershipTermId,
             leadershipTermId,
@@ -73,23 +67,16 @@ public final class ClusterEventLogger
         ringBuffer.write(toEventCodeId(NEW_LEADERSHIP_TERM), encodedBuffer, 0, encodedLength);
     }
 
-    public void logStateChange(
-        final ConsensusModule.State oldState, final ConsensusModule.State newState, final int memberId)
+    public <T extends Enum<T>> void logStateChange(
+        final ClusterEventCode eventCode, final T oldState, final T newState, final int memberId)
     {
-        final int encodedLength = ClusterEventEncoder.stateChange(encodedBuffer, oldState, newState, memberId);
+        final int encodedLength = encodeStateChange(encodedBuffer, oldState, newState, memberId);
 
-        ringBuffer.write(toEventCodeId(STATE_CHANGE), encodedBuffer, 0, encodedLength);
+        ringBuffer.write(toEventCodeId(eventCode), encodedBuffer, 0, encodedLength);
     }
 
-    public void logRoleChange(final Cluster.Role oldRole, final Cluster.Role newRole, final int memberId)
+    public static int toEventCodeId(final ClusterEventCode eventCode)
     {
-        final int encodedLength = ClusterEventEncoder.roleChange(encodedBuffer, oldRole, newRole, memberId);
-
-        ringBuffer.write(toEventCodeId(ROLE_CHANGE), encodedBuffer, 0, encodedLength);
-    }
-
-    public static int toEventCodeId(final ClusterEventCode code)
-    {
-        return ClusterEventCode.EVENT_CODE_TYPE << 16 | (code.id() & 0xFFFF);
+        return EVENT_CODE_TYPE << 16 | (eventCode.id() & 0xFFFF);
     }
 }

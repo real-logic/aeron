@@ -39,6 +39,7 @@ import java.util.concurrent.CountDownLatch;
 
 import static io.aeron.agent.ClusterEventCode.*;
 import static io.aeron.agent.ClusterEventLogger.toEventCodeId;
+import static io.aeron.agent.CommonEventEncoder.LOG_HEADER_LENGTH;
 import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
 import static java.time.Duration.ofSeconds;
@@ -188,9 +189,10 @@ public class ClusterLoggingAgentTest
         {
             LOGGED_EVENTS.add(msgTypeId);
 
+            final int offset = LOG_HEADER_LENGTH + index + SIZE_OF_INT;
             if (toEventCodeId(ROLE_CHANGE) == msgTypeId)
             {
-                final String roleChange = buffer.getStringAscii(index + SIZE_OF_INT);
+                final String roleChange = buffer.getStringAscii(offset);
                 if (roleChange.contains("LEADER"))
                 {
                     latch.countDown();
@@ -198,7 +200,7 @@ public class ClusterLoggingAgentTest
             }
             else if (toEventCodeId(STATE_CHANGE) == msgTypeId)
             {
-                final String stateChange = buffer.getStringAscii(index + SIZE_OF_INT);
+                final String stateChange = buffer.getStringAscii(offset);
                 if (stateChange.contains("ACTIVE"))
                 {
                     latch.countDown();
@@ -206,7 +208,7 @@ public class ClusterLoggingAgentTest
             }
             else if (toEventCodeId(ELECTION_STATE_CHANGE) == msgTypeId)
             {
-                final String stateChange = buffer.getStringAscii(index + SIZE_OF_INT);
+                final String stateChange = buffer.getStringAscii(offset);
                 if (stateChange.contains("CLOSE"))
                 {
                     latch.countDown();

@@ -70,13 +70,24 @@ MemoryMappedFile::ptr_t MemoryMappedFile::createNew(const char *filename, size_t
         throw IOException(std::string("Failed to create file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
     }
 
+    OnScopeExit tidy(
+        [&]()
+        {
+            if (INVALID_HANDLE_VALUE != fd.handle)
+            {
+                CloseHandle(fd.handle);
+            }
+        });
+
     if (!fill(fd, size, 0))
     {
-        CloseHandle(fd.handle);
         throw IOException(std::string("Failed to write to file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
     }
 
-    return MemoryMappedFile::ptr_t(new MemoryMappedFile(fd, offset, size, false));
+    auto obj = MemoryMappedFile::ptr_t(new MemoryMappedFile(fd, offset, size, false));
+    fd.handle = INVALID_HANDLE_VALUE;
+
+    return obj;
 }
 
 MemoryMappedFile::ptr_t MemoryMappedFile::mapExisting(const char *filename, size_t offset, size_t size, bool readOnly)
@@ -91,7 +102,19 @@ MemoryMappedFile::ptr_t MemoryMappedFile::mapExisting(const char *filename, size
         throw IOException(std::string("Failed to create file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
     }
 
-    return MemoryMappedFile::ptr_t(new MemoryMappedFile(fd, offset, size, readOnly));
+    OnScopeExit tidy(
+        [&]()
+        {
+            if (INVALID_HANDLE_VALUE != fd.handle)
+            {
+                CloseHandle(fd.handle);
+            }
+        });
+
+    auto obj = MemoryMappedFile::ptr_t(new MemoryMappedFile(fd, offset, size, readOnly));
+    fd.handle = INVALID_HANDLE_VALUE;
+
+    return obj;
 }
 #else
 bool MemoryMappedFile::fill(FileHandle fd, size_t size, uint8_t value)
@@ -184,6 +207,8 @@ size_t MemoryMappedFile::m_page_size = getPageSize();
 #ifdef _WIN32
 MemoryMappedFile::MemoryMappedFile(FileHandle fd, size_t offset, size_t length, bool readOnly)
 {
+    m_file = fd.handle;
+
     if (0 == length && 0 == offset)
     {
         LARGE_INTEGER fileSize;
@@ -204,8 +229,6 @@ MemoryMappedFile::MemoryMappedFile(FileHandle fd, size_t offset, size_t length, 
         cleanUp();
         throw IOException(std::string("Failed to Map Memory: ") + toString(GetLastError()), SOURCEINFO);
     }
-
-    m_file = fd.handle;
 }
 
 void MemoryMappedFile::cleanUp()
@@ -213,16 +236,19 @@ void MemoryMappedFile::cleanUp()
     if (m_memory)
     {
         UnmapViewOfFile(m_memory);
+        m_memory = NULL;
     }
 
     if (m_mapping)
     {
         CloseHandle(m_mapping);
+        m_mapping = NULL;
     }
 
     if (m_file)
     {
         CloseHandle(m_file);
+        m_file = NULL;
     }
 }
 

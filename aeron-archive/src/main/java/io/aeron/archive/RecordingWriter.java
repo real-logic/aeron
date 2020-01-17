@@ -130,10 +130,6 @@ class RecordingWriter implements BlockHandler
             {
                 onFileRollOver();
             }
-            else if (isPaddingFrame)
-            {
-                recordingFileChannel.position(segmentOffset);
-            }
         }
         catch (final ClosedByInterruptException ex)
         {

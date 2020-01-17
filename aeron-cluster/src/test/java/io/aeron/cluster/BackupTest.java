@@ -15,7 +15,7 @@
  */
 package io.aeron.cluster;
 
-import org.junit.jupiter.api.Disabled;
+import io.aeron.test.SlowTest;
 import org.junit.jupiter.api.Test;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -24,7 +24,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.*;
 
-@Disabled
+@SlowTest
 public class BackupTest
 {
     @Test

@@ -31,6 +31,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.MinMulticastFlowControlSupplier;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.Header;
+import io.aeron.test.SlowTest;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
@@ -41,7 +42,6 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -62,7 +62,7 @@ import static io.aeron.cluster.RecordingLog.RECORDING_LOG_FILE_NAME;
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.*;
 
-@Disabled
+@SlowTest
 public class StartFromTruncatedRecordingLogTest
 {
     private static final long MAX_CATALOG_ENTRIES = 1024;
@@ -234,7 +234,7 @@ public class StartFromTruncatedRecordingLogTest
 
     private void truncateRecordingLogAndDeleteMarkFiles(final int index) throws IOException
     {
-        final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + index;
+        final String baseDirName = baseDirName(index);
 
         final File consensusModuleDataDir = new File(baseDirName, "consensus-module");
         final File archiveDataDir = new File(baseDirName, "archive");
@@ -292,6 +292,17 @@ public class StartFromTruncatedRecordingLogTest
         }
     }
 
+    private String baseDirName(final int index)
+    {
+        return CommonContext.getAeronDirectoryName() + "-" + index;
+    }
+
+    private String aeronDirName(final int index)
+    {
+        return CommonContext.getAeronDirectoryName() + "-" + index + "-driver";
+    }
+
+
     private void deleteFile(final File file)
     {
         if (file.exists())
@@ -331,8 +342,8 @@ public class StartFromTruncatedRecordingLogTest
         {
             echoServices[index] = new EchoService(latchOne, latchTwo);
         }
-        final String baseDirName = CommonContext.getAeronDirectoryName() + "-" + index;
-        final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + index + "-driver";
+        final String baseDirName = baseDirName(index);
+        final String aeronDirName = aeronDirName(index);
 
         final AeronArchive.Context archiveCtx = new AeronArchive.Context()
             .controlRequestChannel(memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, index))

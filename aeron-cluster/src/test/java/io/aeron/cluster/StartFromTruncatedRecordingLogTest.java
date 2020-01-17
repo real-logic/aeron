@@ -409,18 +409,19 @@ public class StartFromTruncatedRecordingLogTest
         if (client != null)
         {
             client.close();
-            client = null;
-            clientMediaDriver.close();
         }
 
         final String aeronDirName = CommonContext.getAeronDirectoryName();
 
-        clientMediaDriver = MediaDriver.launch(
-            new MediaDriver.Context()
-                .threadingMode(ThreadingMode.SHARED)
-                .aeronDirectoryName(aeronDirName)
-                .warnIfDirectoryExists(false)
-                .dirDeleteOnStart(true));
+        if (clientMediaDriver == null)
+        {
+            clientMediaDriver = MediaDriver.launch(
+                new MediaDriver.Context()
+                    .threadingMode(ThreadingMode.SHARED)
+                    .aeronDirectoryName(aeronDirName)
+                    .warnIfDirectoryExists(false)
+                    .dirDeleteOnStart(true));
+        }
 
         client = AeronCluster.connect(
             new AeronCluster.Context()

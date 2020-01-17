@@ -38,8 +38,7 @@ final class CommonEventEncoder
     {
     }
 
-    static int encodeLogHeader(
-        final UnsafeBuffer encodingBuffer, final int captureLength, final int length)
+    static int encodeLogHeader(final UnsafeBuffer encodingBuffer, final int captureLength, final int length)
     {
         return internalEncodeLogHeader(encodingBuffer, captureLength, length, SystemNanoClock.INSTANCE);
     }
@@ -92,8 +91,7 @@ final class CommonEventEncoder
         return relativeOffset;
     }
 
-    static int encodeTrailingString(
-        final UnsafeBuffer encodingBuffer, final int offset, final String value)
+    static int encodeTrailingString(final UnsafeBuffer encodingBuffer, final int offset, final String value)
     {
         int relativeOffset = 0;
         final int maxLength = MAX_EVENT_LENGTH - offset - SIZE_OF_INT;
@@ -113,8 +111,7 @@ final class CommonEventEncoder
         return relativeOffset;
     }
 
-    static int encode(
-        final UnsafeBuffer encodingBuffer, final DirectBuffer buffer, final int offset, final int length)
+    static int encode(final UnsafeBuffer encodingBuffer, final DirectBuffer buffer, final int offset, final int length)
     {
         final int captureLength = min(length, MAX_CAPTURE_LENGTH);
         int relativeOffset = encodeLogHeader(encodingBuffer, captureLength, length);

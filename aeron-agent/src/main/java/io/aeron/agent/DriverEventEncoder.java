@@ -33,7 +33,6 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  */
 final class DriverEventEncoder
 {
-
     private DriverEventEncoder()
     {
     }

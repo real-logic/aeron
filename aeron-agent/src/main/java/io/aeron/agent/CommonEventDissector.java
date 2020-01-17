@@ -37,8 +37,7 @@ final class CommonEventDissector
     {
     }
 
-    static void dissectLogStartMessage(
-        final long timestampNs, final long timestampMs, final StringBuilder builder)
+    static void dissectLogStartMessage(final long timestampNs, final long timestampMs, final StringBuilder builder)
     {
         builder
             .append('[')
@@ -81,8 +80,7 @@ final class CommonEventDissector
         return relativeOffset;
     }
 
-    static int dissectSocketAddress(
-        final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
+    static int dissectSocketAddress(final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
         int relativeOffset = 0;
 

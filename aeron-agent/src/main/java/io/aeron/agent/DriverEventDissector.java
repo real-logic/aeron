@@ -115,7 +115,6 @@ final class DriverEventDissector
         final DriverEventCode code, final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
         final int relativeOffset = dissectLogHeader(CONTEXT, code, buffer, offset, builder);
-
         builder.append(": ");
 
         switch (code)
@@ -289,7 +288,6 @@ final class DriverEventDissector
     private static void dissectStatusFrame(final StringBuilder builder)
     {
         builder.append("SM ");
-
         HeaderFlyweight.appendFlagsAsChars(SM_HEADER.flags(), builder);
 
         builder
@@ -312,7 +310,6 @@ final class DriverEventDissector
     private static void dissectNakFrame(final StringBuilder builder)
     {
         builder.append("NAK ");
-
         HeaderFlyweight.appendFlagsAsChars(NAK_HEADER.flags(), builder);
 
         builder
@@ -333,7 +330,6 @@ final class DriverEventDissector
     private static void dissectSetupFrame(final StringBuilder builder)
     {
         builder.append("SETUP ");
-
         HeaderFlyweight.appendFlagsAsChars(SETUP_HEADER.flags(), builder);
 
         builder
@@ -360,7 +356,6 @@ final class DriverEventDissector
     private static void dissectRttFrame(final StringBuilder builder)
     {
         builder.append("RTT ");
-
         HeaderFlyweight.appendFlagsAsChars(RTT_MEASUREMENT.flags(), builder);
 
         builder

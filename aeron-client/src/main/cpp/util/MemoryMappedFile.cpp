@@ -70,14 +70,9 @@ MemoryMappedFile::ptr_t MemoryMappedFile::createNew(const char *filename, size_t
         throw IOException(std::string("Failed to create file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
     }
 
-    OnScopeExit tidy(
-        [&]()
-        {
-            CloseHandle(fd.handle);
-        });
-
     if (!fill(fd, size, 0))
     {
+        CloseHandle(fd.handle);
         throw IOException(std::string("Failed to write to file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
     }
 
@@ -95,12 +90,6 @@ MemoryMappedFile::ptr_t MemoryMappedFile::mapExisting(const char *filename, size
     {
         throw IOException(std::string("Failed to create file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
     }
-
-    OnScopeExit tidy(
-        [&]()
-        {
-            CloseHandle(fd.handle);
-        });
 
     return MemoryMappedFile::ptr_t(new MemoryMappedFile(fd, offset, size, readOnly));
 }
@@ -215,15 +204,12 @@ MemoryMappedFile::MemoryMappedFile(FileHandle fd, size_t offset, size_t length, 
         cleanUp();
         throw IOException(std::string("Failed to Map Memory: ") + toString(GetLastError()), SOURCEINFO);
     }
+
+    m_file = fd.handle;
 }
 
 void MemoryMappedFile::cleanUp()
 {
-    if (m_file)
-    {
-        CloseHandle(m_file);
-    }
-
     if (m_memory)
     {
         UnmapViewOfFile(m_memory);
@@ -232,6 +218,11 @@ void MemoryMappedFile::cleanUp()
     if (m_mapping)
     {
         CloseHandle(m_mapping);
+    }
+
+    if (m_file)
+    {
+        CloseHandle(m_file);
     }
 }
 

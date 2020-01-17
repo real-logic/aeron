@@ -279,7 +279,7 @@ class DriverEventDissectorTest
         dissectAsCommand(eventCode, buffer, 0, builder);
 
         assertEquals("[1.78] " + CONTEXT + ": " + eventCode.name() + " [10/10]: " +
-            "pub channel 3 [" + eventCode.id() + ":15]",
+            "3 [" + eventCode.id() + ":15] pub channel",
             builder.toString());
     }
 
@@ -299,7 +299,7 @@ class DriverEventDissectorTest
         dissectAsCommand(eventCode, buffer, 0, builder);
 
         assertEquals("[1.78] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/10]: " +
-            "sub channel 31 [90][" + eventCode.id() + ":6]",
+            "31 [90][" + eventCode.id() + ":6] sub channel",
             builder.toString());
     }
 
@@ -363,7 +363,7 @@ class DriverEventDissectorTest
         dissectAsCommand(eventCode, buffer, 0, builder);
 
         assertEquals("[21.032] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/10]: " +
-            eventCode.ordinal() + ":22 [0:245] \"source identity\" [767] log2.txt",
+            eventCode.ordinal() + ":22 [0:245] [767] log2.txt source identity",
             builder.toString());
     }
 
@@ -415,7 +415,7 @@ class DriverEventDissectorTest
         dissectAsCommand(eventCode, buffer, 0, builder);
 
         assertEquals("[21.032] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/10]: " +
-            "the channel 300 [" + eventCode.id() + " -19]",
+            "300 [" + eventCode.id() + " -19] the channel",
             builder.toString());
     }
 
@@ -438,7 +438,7 @@ class DriverEventDissectorTest
         dissectAsCommand(eventCode, buffer, 0, builder);
 
         assertEquals("[21.032] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/10]: " +
-            "dst " + eventCode.id() + " [1010101:404]",
+            eventCode.id() + " [1010101:404] dst",
             builder.toString());
     }
 

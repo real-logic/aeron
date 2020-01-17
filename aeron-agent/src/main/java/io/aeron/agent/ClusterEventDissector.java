@@ -74,8 +74,8 @@ final class ClusterEventDissector
         final int memberId = buffer.getInt(absoluteOffset, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_INT;
 
-        builder.append(": ");
+        builder.append(": memberId=").append(memberId);
+        builder.append(", ");
         buffer.getStringAscii(absoluteOffset, builder);
-        builder.append(", memberId=").append(memberId);
     }
 }

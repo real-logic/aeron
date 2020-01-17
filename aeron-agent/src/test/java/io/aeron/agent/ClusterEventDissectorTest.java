@@ -61,7 +61,7 @@ class ClusterEventDissectorTest
 
         ClusterEventDissector.dissectStateChange(ELECTION_STATE_CHANGE, buffer, 0, builder);
 
-        assertEquals("[-1.0] " + CONTEXT + ": " + ELECTION_STATE_CHANGE.name() + " [100/200]: a -> b, memberId=42",
+        assertEquals("[-1.0] " + CONTEXT + ": " + ELECTION_STATE_CHANGE.name() + " [100/200]: memberId=42, a -> b",
             builder.toString());
     }
 }

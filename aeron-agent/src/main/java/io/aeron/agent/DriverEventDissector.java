@@ -375,24 +375,20 @@ final class DriverEventDissector
 
     private static void dissectPublication(final StringBuilder builder)
     {
-        PUB_MSG.appendChannel(builder);
-
         builder
-            .append(' ')
             .append(PUB_MSG.streamId())
             .append(" [")
             .append(PUB_MSG.clientId())
             .append(':')
             .append(PUB_MSG.correlationId())
-            .append(']');
+            .append("] ");
+
+        PUB_MSG.appendChannel(builder);
     }
 
     private static void dissectSubscription(final StringBuilder builder)
     {
-        SUB_MSG.appendChannel(builder);
-
         builder
-            .append(' ')
             .append(SUB_MSG.streamId())
             .append(" [")
             .append(SUB_MSG.registrationCorrelationId())
@@ -400,7 +396,9 @@ final class DriverEventDissector
             .append(SUB_MSG.clientId())
             .append(':')
             .append(SUB_MSG.correlationId())
-            .append(']');
+            .append("] ");
+
+        SUB_MSG.appendChannel(builder);
     }
 
     private static void dissectPublicationReady(final StringBuilder builder)
@@ -432,15 +430,14 @@ final class DriverEventDissector
             .append(IMAGE_READY.subscriberPositionId())
             .append(':')
             .append(IMAGE_READY.subscriptionRegistrationId())
-            .append("] \"");
-
-        IMAGE_READY.appendSourceIdentity(builder);
-
-        builder.append("\" [")
+            .append("] [")
             .append(IMAGE_READY.correlationId())
             .append("] ");
 
         IMAGE_READY.appendLogFileName(builder);
+        builder.append(' ');
+
+        IMAGE_READY.appendSourceIdentity(builder);
     }
 
     private static void dissectCorrelationEvent(final StringBuilder builder)
@@ -455,16 +452,15 @@ final class DriverEventDissector
 
     private static void dissectImage(final StringBuilder builder)
     {
-        IMAGE_MSG.appendChannel(builder);
-
         builder
-            .append(' ')
             .append(IMAGE_MSG.streamId())
             .append(" [")
             .append(IMAGE_MSG.correlationId())
             .append(' ')
             .append(IMAGE_MSG.subscriptionRegistrationId())
-            .append(']');
+            .append("] ");
+
+        IMAGE_MSG.appendChannel(builder);
     }
 
     private static void dissectRemoveEvent(final StringBuilder builder)
@@ -480,16 +476,15 @@ final class DriverEventDissector
 
     private static void dissectDestination(final StringBuilder builder)
     {
-        DESTINATION_MSG.appendChannel(builder);
-
         builder
-            .append(' ')
             .append(DESTINATION_MSG.registrationCorrelationId())
             .append(" [")
             .append(DESTINATION_MSG.clientId())
             .append(':')
             .append(DESTINATION_MSG.correlationId())
-            .append(']');
+            .append("] ");
+
+        DESTINATION_MSG.appendChannel(builder);
     }
 
     private static void dissectError(final StringBuilder builder)

@@ -185,7 +185,9 @@ subprojects {
             jvmArgs('--add-exports', 'jdk.unsupported/sun.misc=ALL-UNNAMED')
         }
 
-        useJUnitPlatform()
+        useJUnitPlatform {
+            excludeTags 'slow'
+        }
 
         testLogging {
             showStandardStreams = true
@@ -203,6 +205,39 @@ subprojects {
             'aeron.dir.delete.on.shutdown': 'true',
             'aeron.term.buffer.sparse.file': 'true',
             'aeron.perform.storage.checks': 'false')
+
+        reports.html.enabled = false // Disable individual test reports
+    }
+
+    task slowTest(type: Test) {
+        maxParallelForks = 1
+
+        if (JavaVersion.current().ordinal() >= JavaVersion.VERSION_1_9.ordinal()) {
+            jvmArgs('--add-opens', 'java.base/java.lang.reflect=ALL-UNNAMED')
+            jvmArgs('--add-opens', 'java.base/java.net=ALL-UNNAMED')
+            jvmArgs('--add-opens', 'java.base/sun.nio.ch=ALL-UNNAMED')
+            jvmArgs('--add-opens', 'java.base/java.util.zip=ALL-UNNAMED')
+            jvmArgs('--add-exports', 'jdk.unsupported/sun.misc=ALL-UNNAMED')
+        }
+
+        useJUnitPlatform {
+            includeTags 'slow'
+        }
+
+        testLogging {
+            showStandardStreams = true
+            exceptionFormat = 'full'
+        }
+
+        systemProperties(
+                'aeron.shared.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
+                'aeron.conductor.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
+                'aeron.sender.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
+                'aeron.receiver.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
+                'aeron.use.windows.high.res.timer': 'true',
+                'aeron.timer.interval': '10000000',
+                'aeron.perform.storage.checks': 'false'
+        )
 
         reports.html.enabled = false // Disable individual test reports
     }
@@ -402,6 +437,7 @@ project(':aeron-archive') {
         api project(':aeron-driver')
         api files('build/classes/java/generated')
         codecGeneration "uk.co.real-logic:sbe-tool:${sbeVersion}"
+        testImplementation project(':aeron-test-support')
     }
 
     def generatedDir = file("${buildDir}/generated-src")
@@ -523,6 +559,7 @@ project(':aeron-cluster') {
         api project(':aeron-archive')
         api files('build/classes/java/generated')
         codecGeneration "uk.co.real-logic:sbe-tool:${sbeVersion}"
+        testImplementation project(':aeron-test-support')
     }
 
     def generatedDir = file("${buildDir}/generated-src")
@@ -794,6 +831,7 @@ project(':aeron-samples') {
 project(':aeron-system-tests') {
     dependencies {
         testImplementation project(':aeron-archive')
+        testImplementation project(':aeron-test-support')
         testImplementation project(path: ':aeron-client', configuration: 'tests')
         testImplementation project(path: ':aeron-archive', configuration: 'tests')
     }
@@ -819,9 +857,15 @@ project(':aeron-system-tests') {
     }
 }
 
+project(':aeron-test-support') {
+    dependencies {
+        api "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
+    }
+}
+
 project(':aeron-all') {
     apply plugin: 'com.github.johnrengelman.shadow'
-    
+
     dependencies {
         implementation project(':aeron-cluster')
         implementation project(':aeron-samples')
@@ -864,7 +908,7 @@ project(':aeron-all') {
     }
 
     jar.finalizedBy shadowJar
-    
+
     artifacts {
         archives sourcesJar
         archives javadocJar
@@ -925,7 +969,7 @@ project(':aeron-all') {
             p -> p.dependencies = []
         }
     }
-    
+
     signing {
         required { isReleasedVersion && gradle.taskGraph.hasTask("uploadArchives") }
         sign configurations.shadow

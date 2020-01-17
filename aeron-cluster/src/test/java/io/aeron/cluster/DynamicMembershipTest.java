@@ -16,14 +16,14 @@
 package io.aeron.cluster;
 
 import io.aeron.cluster.service.Cluster;
-import org.junit.jupiter.api.Disabled;
+import io.aeron.test.SlowTest;
 import org.junit.jupiter.api.Test;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.*;
 
-@Disabled
+@SlowTest
 public class DynamicMembershipTest
 {
     @Test

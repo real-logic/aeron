@@ -219,49 +219,52 @@ final class DriverEventDissector
     static void dissectRemovePublicationCleanup(
         final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
-        int relativeOffset = dissectLogHeader(CONTEXT, REMOVE_PUBLICATION_CLEANUP, buffer, offset, builder);
+        int absoluteOffset = offset;
+        absoluteOffset += dissectLogHeader(CONTEXT, REMOVE_PUBLICATION_CLEANUP, buffer, absoluteOffset, builder);
 
-        builder.append(": sessionId=").append(buffer.getInt(relativeOffset, LITTLE_ENDIAN));
-        relativeOffset += SIZE_OF_INT;
+        builder.append(": sessionId=").append(buffer.getInt(absoluteOffset, LITTLE_ENDIAN));
+        absoluteOffset += SIZE_OF_INT;
 
-        builder.append(", streamId=").append(buffer.getInt(relativeOffset, LITTLE_ENDIAN));
-        relativeOffset += SIZE_OF_INT;
+        builder.append(", streamId=").append(buffer.getInt(absoluteOffset, LITTLE_ENDIAN));
+        absoluteOffset += SIZE_OF_INT;
 
         builder.append(", uri=");
-        buffer.getStringAscii(relativeOffset, builder);
+        buffer.getStringAscii(absoluteOffset, builder);
     }
 
     static void dissectRemoveSubscriptionCleanup(
         final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
-        int relativeOffset = dissectLogHeader(CONTEXT, REMOVE_SUBSCRIPTION_CLEANUP, buffer, offset, builder);
+        int absoluteOffset = offset;
+        absoluteOffset += dissectLogHeader(CONTEXT, REMOVE_SUBSCRIPTION_CLEANUP, buffer, absoluteOffset, builder);
 
-        builder.append(": streamId=").append(buffer.getInt(relativeOffset, LITTLE_ENDIAN));
-        relativeOffset += SIZE_OF_INT;
+        builder.append(": streamId=").append(buffer.getInt(absoluteOffset, LITTLE_ENDIAN));
+        absoluteOffset += SIZE_OF_INT;
 
-        builder.append(", id=").append(buffer.getLong(relativeOffset, LITTLE_ENDIAN));
-        relativeOffset += SIZE_OF_LONG;
+        builder.append(", id=").append(buffer.getLong(absoluteOffset, LITTLE_ENDIAN));
+        absoluteOffset += SIZE_OF_LONG;
 
         builder.append(", uri=");
-        buffer.getStringAscii(relativeOffset, builder);
+        buffer.getStringAscii(absoluteOffset, builder);
     }
 
     static void dissectRemoveImageCleanup(
         final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
-        int relativeOffset = dissectLogHeader(CONTEXT, REMOVE_IMAGE_CLEANUP, buffer, offset, builder);
+        int absoluteOffset = offset;
+        absoluteOffset += dissectLogHeader(CONTEXT, REMOVE_IMAGE_CLEANUP, buffer, absoluteOffset, builder);
 
-        builder.append(": sessionId=").append(buffer.getInt(relativeOffset, LITTLE_ENDIAN));
-        relativeOffset += SIZE_OF_INT;
+        builder.append(": sessionId=").append(buffer.getInt(absoluteOffset, LITTLE_ENDIAN));
+        absoluteOffset += SIZE_OF_INT;
 
-        builder.append(", streamId=").append(buffer.getInt(relativeOffset, LITTLE_ENDIAN));
-        relativeOffset += SIZE_OF_INT;
+        builder.append(", streamId=").append(buffer.getInt(absoluteOffset, LITTLE_ENDIAN));
+        absoluteOffset += SIZE_OF_INT;
 
-        builder.append(", id=").append(buffer.getLong(relativeOffset, LITTLE_ENDIAN));
-        relativeOffset += SIZE_OF_LONG;
+        builder.append(", id=").append(buffer.getLong(absoluteOffset, LITTLE_ENDIAN));
+        absoluteOffset += SIZE_OF_LONG;
 
         builder.append(", uri=");
-        buffer.getStringAscii(relativeOffset, builder);
+        buffer.getStringAscii(absoluteOffset, builder);
     }
 
     private static void dissectDataFrame(final StringBuilder builder)

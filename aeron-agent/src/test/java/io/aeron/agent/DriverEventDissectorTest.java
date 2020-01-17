@@ -45,12 +45,13 @@ class DriverEventDissectorTest
     @Test
     void dissectRemovePublicationCleanup()
     {
-        internalEncodeLogHeader(buffer, 22, 88, () -> 2_500_000_000L);
-        buffer.putInt(LOG_HEADER_LENGTH, 42, LITTLE_ENDIAN);
-        buffer.putInt(LOG_HEADER_LENGTH + SIZE_OF_INT, 11, LITTLE_ENDIAN);
-        buffer.putStringAscii(LOG_HEADER_LENGTH + SIZE_OF_INT * 2, "channel uri");
+        final int offset = 12;
+        internalEncodeLogHeader(buffer, offset, 22, 88, () -> 2_500_000_000L);
+        buffer.putInt(offset + LOG_HEADER_LENGTH, 42, LITTLE_ENDIAN);
+        buffer.putInt(offset + LOG_HEADER_LENGTH + SIZE_OF_INT, 11, LITTLE_ENDIAN);
+        buffer.putStringAscii(offset + LOG_HEADER_LENGTH + SIZE_OF_INT * 2, "channel uri");
 
-        DriverEventDissector.dissectRemovePublicationCleanup(buffer, 0, builder);
+        DriverEventDissector.dissectRemovePublicationCleanup(buffer, offset, builder);
 
         assertEquals("[2.5] " + CONTEXT + ": " + REMOVE_PUBLICATION_CLEANUP.name() +
             " [22/88]: sessionId=42, streamId=11, uri=channel uri",
@@ -60,12 +61,13 @@ class DriverEventDissectorTest
     @Test
     void dissectRemoveSubscriptionCleanup()
     {
-        internalEncodeLogHeader(buffer, 100, 100, () -> 100_000_000L);
-        buffer.putInt(LOG_HEADER_LENGTH, 33, LITTLE_ENDIAN);
-        buffer.putLong(LOG_HEADER_LENGTH + SIZE_OF_INT, 111_111_111_111L, LITTLE_ENDIAN);
-        buffer.putStringAscii(LOG_HEADER_LENGTH + SIZE_OF_INT + SIZE_OF_LONG, "test");
+        final int offset = 16;
+        internalEncodeLogHeader(buffer, offset, 100, 100, () -> 100_000_000L);
+        buffer.putInt(offset + LOG_HEADER_LENGTH, 33, LITTLE_ENDIAN);
+        buffer.putLong(offset + LOG_HEADER_LENGTH + SIZE_OF_INT, 111_111_111_111L, LITTLE_ENDIAN);
+        buffer.putStringAscii(offset + LOG_HEADER_LENGTH + SIZE_OF_INT + SIZE_OF_LONG, "test");
 
-        DriverEventDissector.dissectRemoveSubscriptionCleanup(buffer, 0, builder);
+        DriverEventDissector.dissectRemoveSubscriptionCleanup(buffer, offset, builder);
 
         assertEquals("[0.1] " + CONTEXT + ": " + REMOVE_SUBSCRIPTION_CLEANUP.name() +
             " [100/100]: streamId=33, id=111111111111, uri=test",
@@ -75,13 +77,14 @@ class DriverEventDissectorTest
     @Test
     void dissectRemoveImageCleanup()
     {
-        internalEncodeLogHeader(buffer, 66, 99, () -> 12345678900L);
-        buffer.putInt(LOG_HEADER_LENGTH, 77, LITTLE_ENDIAN);
-        buffer.putInt(LOG_HEADER_LENGTH + SIZE_OF_INT, 55, LITTLE_ENDIAN);
-        buffer.putLong(LOG_HEADER_LENGTH + SIZE_OF_INT * 2, 1_000_000L, LITTLE_ENDIAN);
-        buffer.putStringAscii(LOG_HEADER_LENGTH + SIZE_OF_INT * 2 + SIZE_OF_LONG, "URI");
+        final int offset = 32;
+        internalEncodeLogHeader(buffer, offset, 66, 99, () -> 12345678900L);
+        buffer.putInt(offset + LOG_HEADER_LENGTH, 77, LITTLE_ENDIAN);
+        buffer.putInt(offset + LOG_HEADER_LENGTH + SIZE_OF_INT, 55, LITTLE_ENDIAN);
+        buffer.putLong(offset + LOG_HEADER_LENGTH + SIZE_OF_INT * 2, 1_000_000L, LITTLE_ENDIAN);
+        buffer.putStringAscii(offset + LOG_HEADER_LENGTH + SIZE_OF_INT * 2 + SIZE_OF_LONG, "URI");
 
-        DriverEventDissector.dissectRemoveImageCleanup(buffer, 0, builder);
+        DriverEventDissector.dissectRemoveImageCleanup(buffer, offset, builder);
 
         assertEquals("[12.3456789] " + CONTEXT + ": " + REMOVE_IMAGE_CLEANUP.name() +
             " [66/99]: sessionId=77, streamId=55, id=1000000, uri=URI",
@@ -91,7 +94,7 @@ class DriverEventDissectorTest
     @Test
     void dissectAsFrameTypePad()
     {
-        internalEncodeLogHeader(buffer, 5, 5, () -> 1_000_000_000);
+        internalEncodeLogHeader(buffer, 0, 5, 5, () -> 1_000_000_000);
         final int socketAddressOffset =
             encodeSocketAddress(buffer, LOG_HEADER_LENGTH, new InetSocketAddress("localhost", 8080));
         final DataHeaderFlyweight flyweight = new DataHeaderFlyweight();
@@ -114,7 +117,7 @@ class DriverEventDissectorTest
     @Test
     void dissectAsFrameTypeData()
     {
-        internalEncodeLogHeader(buffer, 5, 5, () -> 1_000_000_000);
+        internalEncodeLogHeader(buffer, 0, 5, 5, () -> 1_000_000_000);
         final int socketAddressOffset =
             encodeSocketAddress(buffer, LOG_HEADER_LENGTH, new InetSocketAddress("localhost", 8888));
         final DataHeaderFlyweight flyweight = new DataHeaderFlyweight();
@@ -137,7 +140,7 @@ class DriverEventDissectorTest
     @Test
     void dissectAsFrameTypeStatusMessage()
     {
-        internalEncodeLogHeader(buffer, 5, 5, () -> 1_000_000_000);
+        internalEncodeLogHeader(buffer, 0, 5, 5, () -> 1_000_000_000);
         final int socketAddressOffset =
             encodeSocketAddress(buffer, LOG_HEADER_LENGTH, new InetSocketAddress("localhost", 8888));
         final StatusMessageFlyweight flyweight = new StatusMessageFlyweight();
@@ -162,7 +165,7 @@ class DriverEventDissectorTest
     @Test
     void dissectAsFrameTypeNak()
     {
-        internalEncodeLogHeader(buffer, 3, 3, () -> 3_000_000_000L);
+        internalEncodeLogHeader(buffer, 0, 3, 3, () -> 3_000_000_000L);
         final int socketAddressOffset =
             encodeSocketAddress(buffer, LOG_HEADER_LENGTH, new InetSocketAddress("localhost", 8888));
         final NakFlyweight flyweight = new NakFlyweight();
@@ -186,7 +189,7 @@ class DriverEventDissectorTest
     @Test
     void dissectAsFrameTypeSetup()
     {
-        internalEncodeLogHeader(buffer, 3, 3, () -> 3_000_000_000L);
+        internalEncodeLogHeader(buffer, 0, 3, 3, () -> 3_000_000_000L);
         final int socketAddressOffset =
             encodeSocketAddress(buffer, LOG_HEADER_LENGTH, new InetSocketAddress("localhost", 8888));
         final SetupFlyweight flyweight = new SetupFlyweight();
@@ -214,7 +217,7 @@ class DriverEventDissectorTest
     @Test
     void dissectAsFrameTypeRtt()
     {
-        internalEncodeLogHeader(buffer, 3, 3, () -> 3_000_000_000L);
+        internalEncodeLogHeader(buffer, 0, 3, 3, () -> 3_000_000_000L);
         final int socketAddressOffset =
             encodeSocketAddress(buffer, LOG_HEADER_LENGTH, new InetSocketAddress("localhost", 8888));
         final RttMeasurementFlyweight flyweight = new RttMeasurementFlyweight();
@@ -238,7 +241,7 @@ class DriverEventDissectorTest
     @Test
     void dissectAsFrameTypeUnknown()
     {
-        internalEncodeLogHeader(buffer, 3, 3, () -> 3_000_000_000L);
+        internalEncodeLogHeader(buffer, 0, 3, 3, () -> 3_000_000_000L);
         final int socketAddressOffset =
             encodeSocketAddress(buffer, LOG_HEADER_LENGTH, new InetSocketAddress("localhost", 8888));
         final DataHeaderFlyweight flyweight = new DataHeaderFlyweight();
@@ -255,7 +258,7 @@ class DriverEventDissectorTest
     @Test
     void dissectAsString()
     {
-        internalEncodeLogHeader(buffer, 1, 1, () -> 1_100_000_000L);
+        internalEncodeLogHeader(buffer, 0, 1, 1, () -> 1_100_000_000L);
         buffer.putStringAscii(LOG_HEADER_LENGTH, "Hello, World!");
 
         DriverEventDissector.dissectAsString(CMD_IN_CLIENT_CLOSE, buffer, 0, builder);
@@ -268,7 +271,7 @@ class DriverEventDissectorTest
     @EnumSource(value = DriverEventCode.class, names = { "CMD_IN_ADD_PUBLICATION", "CMD_IN_ADD_EXCLUSIVE_PUBLICATION" })
     void dissectAsCommandPublication(final DriverEventCode eventCode)
     {
-        internalEncodeLogHeader(buffer, 10, 10, () -> 1_780_000_000L);
+        internalEncodeLogHeader(buffer, 0, 10, 10, () -> 1_780_000_000L);
         final PublicationMessageFlyweight flyweight = new PublicationMessageFlyweight();
         flyweight.wrap(buffer, LOG_HEADER_LENGTH);
         flyweight.channel("pub channel");
@@ -287,7 +290,7 @@ class DriverEventDissectorTest
     @EnumSource(value = DriverEventCode.class, names = { "CMD_IN_ADD_SUBSCRIPTION" })
     void dissectAsCommandSubscription(final DriverEventCode eventCode)
     {
-        internalEncodeLogHeader(buffer, eventCode.ordinal(), 10, () -> 1_780_000_000L);
+        internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 10, () -> 1_780_000_000L);
         final SubscriptionMessageFlyweight flyweight = new SubscriptionMessageFlyweight();
         flyweight.wrap(buffer, LOG_HEADER_LENGTH);
         flyweight.channel("sub channel");
@@ -308,7 +311,7 @@ class DriverEventDissectorTest
         names = { "CMD_IN_REMOVE_PUBLICATION", "CMD_IN_REMOVE_SUBSCRIPTION", "CMD_IN_REMOVE_COUNTER" })
     void dissectAsCommandRemoveEvent(final DriverEventCode eventCode)
     {
-        internalEncodeLogHeader(buffer, eventCode.ordinal(), 10, () -> 21_032_000_000L);
+        internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 10, () -> 21_032_000_000L);
         final RemoveMessageFlyweight flyweight = new RemoveMessageFlyweight();
         flyweight.wrap(buffer, LOG_HEADER_LENGTH);
         flyweight.registrationId(11);
@@ -327,7 +330,7 @@ class DriverEventDissectorTest
         names = { "CMD_OUT_PUBLICATION_READY", "CMD_OUT_EXCLUSIVE_PUBLICATION_READY" })
     void dissectAsCommandPublicationReady(final DriverEventCode eventCode)
     {
-        internalEncodeLogHeader(buffer, eventCode.ordinal(), 10, () -> 21_032_000_000L);
+        internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 10, () -> 21_032_000_000L);
         final PublicationBuffersReadyFlyweight flyweight = new PublicationBuffersReadyFlyweight();
         flyweight.wrap(buffer, LOG_HEADER_LENGTH);
         flyweight.sessionId(eventCode.ordinal());
@@ -349,7 +352,7 @@ class DriverEventDissectorTest
     @EnumSource(value = DriverEventCode.class, names = { "CMD_OUT_AVAILABLE_IMAGE" })
     void dissectAsCommandImageReady(final DriverEventCode eventCode)
     {
-        internalEncodeLogHeader(buffer, eventCode.ordinal(), 10, () -> 21_032_000_000L);
+        internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 10, () -> 21_032_000_000L);
         final ImageBuffersReadyFlyweight flyweight = new ImageBuffersReadyFlyweight();
         flyweight.wrap(buffer, LOG_HEADER_LENGTH);
         flyweight.sessionId(eventCode.ordinal());
@@ -371,7 +374,7 @@ class DriverEventDissectorTest
     @EnumSource(value = DriverEventCode.class, names = { "CMD_OUT_ON_OPERATION_SUCCESS" })
     void dissectAsCommandOperationSuccess(final DriverEventCode eventCode)
     {
-        internalEncodeLogHeader(buffer, eventCode.ordinal(), 10, () -> 21_032_000_000L);
+        internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 10, () -> 21_032_000_000L);
         final OperationSucceededFlyweight flyweight = new OperationSucceededFlyweight();
         flyweight.wrap(buffer, LOG_HEADER_LENGTH);
         flyweight.correlationId(eventCode.id());
@@ -387,7 +390,7 @@ class DriverEventDissectorTest
     @EnumSource(value = DriverEventCode.class, names = { "CMD_IN_KEEPALIVE_CLIENT", "CMD_IN_CLIENT_CLOSE" })
     void dissectAsCommandCorrelationEvent(final DriverEventCode eventCode)
     {
-        internalEncodeLogHeader(buffer, eventCode.ordinal(), 10, () -> 21_032_000_000L);
+        internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 10, () -> 21_032_000_000L);
         final CorrelatedMessageFlyweight flyweight = new CorrelatedMessageFlyweight();
         flyweight.wrap(buffer, LOG_HEADER_LENGTH);
         flyweight.clientId(eventCode.id());
@@ -404,7 +407,7 @@ class DriverEventDissectorTest
     @EnumSource(value = DriverEventCode.class, names = { "CMD_OUT_ON_UNAVAILABLE_IMAGE" })
     void dissectAsCommandImage(final DriverEventCode eventCode)
     {
-        internalEncodeLogHeader(buffer, eventCode.ordinal(), 10, () -> 21_032_000_000L);
+        internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 10, () -> 21_032_000_000L);
         final ImageMessageFlyweight flyweight = new ImageMessageFlyweight();
         flyweight.wrap(buffer, LOG_HEADER_LENGTH);
         flyweight.streamId(300);
@@ -427,7 +430,7 @@ class DriverEventDissectorTest
         "CMD_IN_REMOVE_RCV_DESTINATION" })
     void dissectAsCommandDestination(final DriverEventCode eventCode)
     {
-        internalEncodeLogHeader(buffer, eventCode.ordinal(), 10, () -> 21_032_000_000L);
+        internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 10, () -> 21_032_000_000L);
         final DestinationMessageFlyweight flyweight = new DestinationMessageFlyweight();
         flyweight.wrap(buffer, LOG_HEADER_LENGTH);
         flyweight.channel("dst");
@@ -446,7 +449,7 @@ class DriverEventDissectorTest
     @EnumSource(value = DriverEventCode.class, names = { "CMD_OUT_ERROR" })
     void dissectAsCommandError(final DriverEventCode eventCode)
     {
-        internalEncodeLogHeader(buffer, eventCode.ordinal(), 100, () -> 1_900_000_000L);
+        internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 100, () -> 1_900_000_000L);
         final ErrorResponseFlyweight flyweight = new ErrorResponseFlyweight();
         flyweight.wrap(buffer, LOG_HEADER_LENGTH);
         flyweight.offendingCommandCorrelationId(eventCode.id());
@@ -464,7 +467,7 @@ class DriverEventDissectorTest
     @EnumSource(value = DriverEventCode.class, names = { "CMD_IN_ADD_COUNTER" })
     void dissectAsCommandCounter(final DriverEventCode eventCode)
     {
-        internalEncodeLogHeader(buffer, eventCode.ordinal(), 100, () -> 1_900_000_000L);
+        internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 100, () -> 1_900_000_000L);
         final CounterMessageFlyweight flyweight = new CounterMessageFlyweight();
         flyweight.wrap(buffer, LOG_HEADER_LENGTH);
         flyweight.typeId(3);
@@ -485,7 +488,7 @@ class DriverEventDissectorTest
     @EnumSource(value = DriverEventCode.class, names = { "CMD_OUT_SUBSCRIPTION_READY" })
     void dissectAsCommandSubscriptionReady(final DriverEventCode eventCode)
     {
-        internalEncodeLogHeader(buffer, eventCode.ordinal(), 100, () -> 1_900_000_000L);
+        internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 100, () -> 1_900_000_000L);
         final SubscriptionReadyFlyweight flyweight = new SubscriptionReadyFlyweight();
         flyweight.wrap(buffer, LOG_HEADER_LENGTH);
         flyweight.correlationId(42);
@@ -502,7 +505,7 @@ class DriverEventDissectorTest
     @EnumSource(value = DriverEventCode.class, names = { "CMD_OUT_COUNTER_READY", "CMD_OUT_ON_UNAVAILABLE_COUNTER" })
     void dissectAsCommandCounterUpdate(final DriverEventCode eventCode)
     {
-        internalEncodeLogHeader(buffer, eventCode.ordinal(), 100, () -> 1_900_000_000L);
+        internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 100, () -> 1_900_000_000L);
         final CounterUpdateFlyweight flyweight = new CounterUpdateFlyweight();
         flyweight.wrap(buffer, LOG_HEADER_LENGTH);
         flyweight.correlationId(eventCode.id());
@@ -519,7 +522,7 @@ class DriverEventDissectorTest
     @EnumSource(value = DriverEventCode.class, names = { "CMD_OUT_ON_CLIENT_TIMEOUT" })
     void dissectAsCommandClientTimeout(final DriverEventCode eventCode)
     {
-        internalEncodeLogHeader(buffer, eventCode.ordinal(), 100, () -> 1_900_000_000L);
+        internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 100, () -> 1_900_000_000L);
         final ClientTimeoutFlyweight flyweight = new ClientTimeoutFlyweight();
         flyweight.wrap(buffer, LOG_HEADER_LENGTH);
         flyweight.clientId(eventCode.id());
@@ -535,7 +538,7 @@ class DriverEventDissectorTest
     @EnumSource(value = DriverEventCode.class, names = { "CMD_IN_TERMINATE_DRIVER" })
     void dissectAsCommandTerminateDriver(final DriverEventCode eventCode)
     {
-        internalEncodeLogHeader(buffer, eventCode.ordinal(), 100, () -> 1_900_000_000L);
+        internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 100, () -> 1_900_000_000L);
         final TerminateDriverFlyweight flyweight = new TerminateDriverFlyweight();
         flyweight.wrap(buffer, LOG_HEADER_LENGTH);
         flyweight.clientId(eventCode.id());
@@ -552,7 +555,7 @@ class DriverEventDissectorTest
     void dissectAsCommandUnknown()
     {
         final DriverEventCode eventCode = SEND_CHANNEL_CREATION;
-        internalEncodeLogHeader(buffer, 5, 5, () -> 1_000_000_000L);
+        internalEncodeLogHeader(buffer, 0, 5, 5, () -> 1_000_000_000L);
 
         dissectAsCommand(eventCode, buffer, 0, builder);
 

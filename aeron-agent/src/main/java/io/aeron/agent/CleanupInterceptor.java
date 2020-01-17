@@ -30,7 +30,7 @@ class CleanupInterceptor
     static class CleanupImage
     {
         @Advice.OnMethodEnter
-        static void cleanupImageInterceptor(final PublicationImage image)
+        static void cleanupImage(final PublicationImage image)
         {
             LOGGER.logImageRemoval(image.channel(), image.sessionId(), image.streamId(), image.correlationId());
         }

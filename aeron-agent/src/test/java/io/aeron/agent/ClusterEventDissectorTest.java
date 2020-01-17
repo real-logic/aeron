@@ -37,7 +37,7 @@ class ClusterEventDissectorTest
     @Test
     void dissectNewLeadershipTerm()
     {
-        internalEncodeLogHeader(buffer, 8, 9, () -> 33_000_000_000L);
+        internalEncodeLogHeader(buffer, 0, 8, 9, () -> 33_000_000_000L);
         buffer.putLong(LOG_HEADER_LENGTH, 1, LITTLE_ENDIAN);
         buffer.putLong(LOG_HEADER_LENGTH + SIZE_OF_LONG, 2, LITTLE_ENDIAN);
         buffer.putLong(LOG_HEADER_LENGTH + SIZE_OF_LONG * 2, 3, LITTLE_ENDIAN);
@@ -55,7 +55,7 @@ class ClusterEventDissectorTest
     @Test
     void dissectStateChange()
     {
-        internalEncodeLogHeader(buffer, 100, 200, () -> -1_000_000_000);
+        internalEncodeLogHeader(buffer, 0, 100, 200, () -> -1_000_000_000);
         buffer.putInt(LOG_HEADER_LENGTH, 42, LITTLE_ENDIAN);
         buffer.putStringAscii(LOG_HEADER_LENGTH + SIZE_OF_INT, "a -> b");
 

@@ -158,7 +158,7 @@ public final class EventLogAgent
                 if (hasSubscriptionHook)
                 {
                     builder = builder.visit(to(CleanupInterceptor.CleanupSubscriptionLink.class)
-                        .on(named("cleanupSubscription")));
+                        .on(named("cleanupSubscriptionLink")));
                 }
 
                 return builder;

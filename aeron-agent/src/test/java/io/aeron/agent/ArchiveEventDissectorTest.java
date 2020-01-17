@@ -40,7 +40,7 @@ class ArchiveEventDissectorTest
     @Test
     void controlResponse()
     {
-        internalEncodeLogHeader(buffer, 100, 100, () -> 1_250_000_000);
+        internalEncodeLogHeader(buffer, 0, 100, 100, () -> 1_250_000_000);
         final ControlResponseEncoder responseEncoder = new ControlResponseEncoder();
         responseEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
             .controlSessionId(13)
@@ -65,7 +65,7 @@ class ArchiveEventDissectorTest
     @Test
     void controlRequestConnect()
     {
-        internalEncodeLogHeader(buffer, 32, 64, () -> 5_600_000_000L);
+        internalEncodeLogHeader(buffer, 0, 32, 64, () -> 5_600_000_000L);
         final ConnectRequestEncoder requestEncoder = new ConnectRequestEncoder();
         requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
             .correlationId(88)
@@ -86,7 +86,7 @@ class ArchiveEventDissectorTest
     @Test
     void controlRequestCloseSession()
     {
-        internalEncodeLogHeader(buffer, 32, 64, () -> 5_600_000_000L);
+        internalEncodeLogHeader(buffer, 0, 32, 64, () -> 5_600_000_000L);
         final CloseSessionRequestEncoder requestEncoder = new CloseSessionRequestEncoder();
         requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
             .controlSessionId(-1);
@@ -100,7 +100,7 @@ class ArchiveEventDissectorTest
     @Test
     void controlRequestStartRecording()
     {
-        internalEncodeLogHeader(buffer, 32, 64, () -> 5_600_000_000L);
+        internalEncodeLogHeader(buffer, 0, 32, 64, () -> 5_600_000_000L);
         final StartRecordingRequestEncoder requestEncoder = new StartRecordingRequestEncoder();
         requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
             .controlSessionId(5)
@@ -123,7 +123,7 @@ class ArchiveEventDissectorTest
     @Test
     void controlRequestStopRecording()
     {
-        internalEncodeLogHeader(buffer, 32, 64, () -> 5_600_000_000L);
+        internalEncodeLogHeader(buffer, 0, 32, 64, () -> 5_600_000_000L);
         final StopRecordingRequestEncoder requestEncoder = new StopRecordingRequestEncoder();
         requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
             .controlSessionId(5)
@@ -144,7 +144,7 @@ class ArchiveEventDissectorTest
     @Test
     void controlRequestReplay()
     {
-        internalEncodeLogHeader(buffer, 90, 90, () -> 1_125_000_000L);
+        internalEncodeLogHeader(buffer, 0, 90, 90, () -> 1_125_000_000L);
         final ReplayRequestEncoder requestEncoder = new ReplayRequestEncoder();
         requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
             .controlSessionId(5)
@@ -171,7 +171,7 @@ class ArchiveEventDissectorTest
     @Test
     void controlRequestStopReplay()
     {
-        internalEncodeLogHeader(buffer, 90, 90, () -> 1_125_000_000L);
+        internalEncodeLogHeader(buffer, 0, 90, 90, () -> 1_125_000_000L);
         final StopReplayRequestEncoder requestEncoder = new StopReplayRequestEncoder();
         requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
             .controlSessionId(5)
@@ -190,7 +190,7 @@ class ArchiveEventDissectorTest
     @Test
     void controlRequestListRecordings()
     {
-        internalEncodeLogHeader(buffer, 32, 32, () -> 100_000_000L);
+        internalEncodeLogHeader(buffer, 0, 32, 32, () -> 100_000_000L);
         final ListRecordingsRequestEncoder requestEncoder = new ListRecordingsRequestEncoder();
         requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
             .controlSessionId(9)
@@ -211,7 +211,7 @@ class ArchiveEventDissectorTest
     @Test
     void controlRequestListRecordingsForUri()
     {
-        internalEncodeLogHeader(buffer, 32, 32, () -> 100_000_000L);
+        internalEncodeLogHeader(buffer, 0, 32, 32, () -> 100_000_000L);
         final ListRecordingsForUriRequestEncoder requestEncoder = new ListRecordingsForUriRequestEncoder();
         requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
             .controlSessionId(9)
@@ -236,7 +236,7 @@ class ArchiveEventDissectorTest
     @Test
     void controlRequestListRecording()
     {
-        internalEncodeLogHeader(buffer, 32, 32, () -> 100_000_000L);
+        internalEncodeLogHeader(buffer, 0, 32, 32, () -> 100_000_000L);
         final ListRecordingRequestEncoder requestEncoder = new ListRecordingRequestEncoder();
         requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
             .controlSessionId(19)
@@ -255,7 +255,7 @@ class ArchiveEventDissectorTest
     @Test
     void controlRequestExtendRecording()
     {
-        internalEncodeLogHeader(buffer, 12, 32, () -> 10_000_000_000L);
+        internalEncodeLogHeader(buffer, 0, 12, 32, () -> 10_000_000_000L);
         final ExtendRecordingRequestEncoder requestEncoder = new ExtendRecordingRequestEncoder();
         requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
             .controlSessionId(9)
@@ -280,7 +280,7 @@ class ArchiveEventDissectorTest
     @Test
     void controlRequestRecordingPosition()
     {
-        internalEncodeLogHeader(buffer, 12, 32, () -> 10_000_000_000L);
+        internalEncodeLogHeader(buffer, 0, 12, 32, () -> 10_000_000_000L);
         final RecordingPositionRequestEncoder requestEncoder = new RecordingPositionRequestEncoder();
         requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
             .controlSessionId(2)
@@ -299,7 +299,7 @@ class ArchiveEventDissectorTest
     @Test
     void controlRequestTruncateRecording()
     {
-        internalEncodeLogHeader(buffer, 12, 32, () -> 10_000_000_000L);
+        internalEncodeLogHeader(buffer, 0, 12, 32, () -> 10_000_000_000L);
         final TruncateRecordingRequestEncoder requestEncoder = new TruncateRecordingRequestEncoder();
         requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
             .controlSessionId(2)
@@ -320,7 +320,7 @@ class ArchiveEventDissectorTest
     @Test
     void controlRequestStopRecordingSubscription()
     {
-        internalEncodeLogHeader(buffer, 12, 32, () -> 10_000_000_000L);
+        internalEncodeLogHeader(buffer, 0, 12, 32, () -> 10_000_000_000L);
         final StopRecordingSubscriptionRequestEncoder requestEncoder = new StopRecordingSubscriptionRequestEncoder();
         requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
             .controlSessionId(22)
@@ -339,7 +339,7 @@ class ArchiveEventDissectorTest
     @Test
     void controlRequestStopPosition()
     {
-        internalEncodeLogHeader(buffer, 12, 32, () -> 10_000_000_000L);
+        internalEncodeLogHeader(buffer, 0, 12, 32, () -> 10_000_000_000L);
         final StopPositionRequestEncoder requestEncoder = new StopPositionRequestEncoder();
         requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
             .controlSessionId(22)
@@ -358,7 +358,7 @@ class ArchiveEventDissectorTest
     @Test
     void controlRequestFindLastMatchingRecording()
     {
-        internalEncodeLogHeader(buffer, 90, 90, () -> 10_325_000_000L);
+        internalEncodeLogHeader(buffer, 0, 90, 90, () -> 10_325_000_000L);
         final FindLastMatchingRecordingRequestEncoder requestEncoder = new FindLastMatchingRecordingRequestEncoder();
         requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
             .controlSessionId(1)
@@ -383,7 +383,7 @@ class ArchiveEventDissectorTest
     @Test
     void controlRequestListRecordingSubscriptions()
     {
-        internalEncodeLogHeader(buffer, 90, 90, () -> 10_325_000_000L);
+        internalEncodeLogHeader(buffer, 0, 90, 90, () -> 10_325_000_000L);
         final ListRecordingSubscriptionsRequestEncoder requestEncoder = new ListRecordingSubscriptionsRequestEncoder();
         requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
             .controlSessionId(1)
@@ -410,7 +410,7 @@ class ArchiveEventDissectorTest
     @Test
     void controlRequestStartBoundedReplay()
     {
-        internalEncodeLogHeader(buffer, 90, 90, () -> 10_325_000_000L);
+        internalEncodeLogHeader(buffer, 0, 90, 90, () -> 10_325_000_000L);
         final BoundedReplayRequestEncoder requestEncoder = new BoundedReplayRequestEncoder();
         requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
             .controlSessionId(10)
@@ -439,7 +439,7 @@ class ArchiveEventDissectorTest
     @Test
     void controlRequestStopAllReplays()
     {
-        internalEncodeLogHeader(buffer, 90, 90, () -> 10_325_000_000L);
+        internalEncodeLogHeader(buffer, 0, 90, 90, () -> 10_325_000_000L);
         final StopAllReplaysRequestEncoder requestEncoder = new StopAllReplaysRequestEncoder();
         requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
             .controlSessionId(10)
@@ -458,7 +458,7 @@ class ArchiveEventDissectorTest
     @Test
     void controlRequestReplicate()
     {
-        internalEncodeLogHeader(buffer, 1000, 1000, () -> 500_000_000L);
+        internalEncodeLogHeader(buffer, 0, 1000, 1000, () -> 500_000_000L);
         final ReplicateRequestEncoder requestEncoder = new ReplicateRequestEncoder();
         requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
             .controlSessionId(2)
@@ -485,7 +485,7 @@ class ArchiveEventDissectorTest
     @Test
     void controlRequestStopReplication()
     {
-        internalEncodeLogHeader(buffer, 1000, 1000, () -> 500_000_000L);
+        internalEncodeLogHeader(buffer, 0, 1000, 1000, () -> 500_000_000L);
         final StopReplicationRequestEncoder requestEncoder = new StopReplicationRequestEncoder();
         requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
             .controlSessionId(-2)
@@ -504,7 +504,7 @@ class ArchiveEventDissectorTest
     @Test
     void controlRequestStartPosition()
     {
-        internalEncodeLogHeader(buffer, 1000, 1000, () -> 500_000_000L);
+        internalEncodeLogHeader(buffer, 0, 1000, 1000, () -> 500_000_000L);
         final StartPositionRequestEncoder requestEncoder = new StartPositionRequestEncoder();
         requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
             .controlSessionId(3)
@@ -523,7 +523,7 @@ class ArchiveEventDissectorTest
     @Test
     void controlRequestDetachSegments()
     {
-        internalEncodeLogHeader(buffer, 1000, 1000, () -> 500_000_000L);
+        internalEncodeLogHeader(buffer, 0, 1000, 1000, () -> 500_000_000L);
         final DetachSegmentsRequestEncoder requestEncoder = new DetachSegmentsRequestEncoder();
         requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
             .controlSessionId(3)
@@ -542,7 +542,7 @@ class ArchiveEventDissectorTest
     @Test
     void controlRequestDeleteDetachedSegments()
     {
-        internalEncodeLogHeader(buffer, 1000, 1000, () -> 500_000_000L);
+        internalEncodeLogHeader(buffer, 0, 1000, 1000, () -> 500_000_000L);
         final DeleteDetachedSegmentsRequestEncoder requestEncoder = new DeleteDetachedSegmentsRequestEncoder();
         requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
             .controlSessionId(53)
@@ -561,7 +561,7 @@ class ArchiveEventDissectorTest
     @Test
     void controlRequestPurgeSegments()
     {
-        internalEncodeLogHeader(buffer, 1000, 1000, () -> 500_000_000L);
+        internalEncodeLogHeader(buffer, 0, 1000, 1000, () -> 500_000_000L);
         final PurgeSegmentsRequestEncoder requestEncoder = new PurgeSegmentsRequestEncoder();
         requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
             .controlSessionId(3)
@@ -582,7 +582,7 @@ class ArchiveEventDissectorTest
     @Test
     void controlRequestAttachSegments()
     {
-        internalEncodeLogHeader(buffer, 1000, 1000, () -> 500_000_000L);
+        internalEncodeLogHeader(buffer, 0, 1000, 1000, () -> 500_000_000L);
         final AttachSegmentsRequestEncoder requestEncoder = new AttachSegmentsRequestEncoder();
         requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
             .controlSessionId(30)
@@ -601,7 +601,7 @@ class ArchiveEventDissectorTest
     @Test
     void controlRequestMigrateSegments()
     {
-        internalEncodeLogHeader(buffer, 1000, 1000, () -> 500_000_000L);
+        internalEncodeLogHeader(buffer, 0, 1000, 1000, () -> 500_000_000L);
         final MigrateSegmentsRequestEncoder requestEncoder = new MigrateSegmentsRequestEncoder();
         requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
             .controlSessionId(7)
@@ -622,7 +622,7 @@ class ArchiveEventDissectorTest
     @Test
     void controlRequestAuthConnect()
     {
-        internalEncodeLogHeader(buffer, 3, 6, () -> 5_500_000_000L);
+        internalEncodeLogHeader(buffer, 0, 3, 6, () -> 5_500_000_000L);
         final AuthConnectRequestEncoder requestEncoder = new AuthConnectRequestEncoder();
         requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
             .correlationId(16)
@@ -645,7 +645,7 @@ class ArchiveEventDissectorTest
     @Test
     void controlRequestKeepAlive()
     {
-        internalEncodeLogHeader(buffer, 3, 6, () -> 5_500_000_000L);
+        internalEncodeLogHeader(buffer, 0, 3, 6, () -> 5_500_000_000L);
         final KeepAliveRequestEncoder requestEncoder = new KeepAliveRequestEncoder();
         requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
             .controlSessionId(31)
@@ -662,7 +662,7 @@ class ArchiveEventDissectorTest
     @Test
     void controlRequestTaggedReplicate()
     {
-        internalEncodeLogHeader(buffer, 3, 6, () -> 5_500_000_000L);
+        internalEncodeLogHeader(buffer, 0, 3, 6, () -> 5_500_000_000L);
         final TaggedReplicateRequestEncoder requestEncoder = new TaggedReplicateRequestEncoder();
         requestEncoder.wrapAndApplyHeader(buffer, LOG_HEADER_LENGTH, headerEncoder)
             .controlSessionId(1)
@@ -693,7 +693,7 @@ class ArchiveEventDissectorTest
     @Test
     void controlRequestUnknownCommand()
     {
-        internalEncodeLogHeader(buffer, 10, 20, () -> 2_500_000_000L);
+        internalEncodeLogHeader(buffer, 0, 10, 20, () -> 2_500_000_000L);
         headerEncoder.wrap(buffer, LOG_HEADER_LENGTH).templateId(Integer.MIN_VALUE);
 
         controlRequest(CMD_OUT_RESPONSE, buffer, 0, builder);

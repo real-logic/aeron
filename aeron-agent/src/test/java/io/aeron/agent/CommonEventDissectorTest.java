@@ -51,7 +51,7 @@ class CommonEventDissectorTest
     @Test
     void dissectLogHeader()
     {
-        internalEncodeLogHeader(buffer, 100, 222, () -> 1234567890);
+        internalEncodeLogHeader(buffer, 0, 100, 222, () -> 1234567890);
 
         final int decodedLength = CommonEventDissector
             .dissectLogHeader("test ctx", ArchiveEventCode.CMD_OUT_RESPONSE, buffer, 0, builder);

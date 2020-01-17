@@ -36,7 +36,7 @@ class CommonEventEncoderTest
     @Test
     void encodeLogHeader()
     {
-        final int encodedLength = internalEncodeLogHeader(buffer, 100, Integer.MAX_VALUE, () -> 555_000L);
+        final int encodedLength = internalEncodeLogHeader(buffer, 0, 100, Integer.MAX_VALUE, () -> 555_000L);
 
         assertEquals(LOG_HEADER_LENGTH, encodedLength);
         assertEquals(100, buffer.getInt(0, LITTLE_ENDIAN));

@@ -40,11 +40,15 @@ final class CommonEventEncoder
 
     static int encodeLogHeader(final UnsafeBuffer encodingBuffer, final int captureLength, final int length)
     {
-        return internalEncodeLogHeader(encodingBuffer, captureLength, length, SystemNanoClock.INSTANCE);
+        return internalEncodeLogHeader(encodingBuffer, 0, captureLength, length, SystemNanoClock.INSTANCE);
     }
 
     static int internalEncodeLogHeader(
-        final UnsafeBuffer encodingBuffer, final int captureLength, final int length, final NanoClock nanoClock)
+        final UnsafeBuffer encodingBuffer,
+        final int offset,
+        final int captureLength,
+        final int length,
+        final NanoClock nanoClock)
     {
         int relativeOffset = 0;
         /*
@@ -55,13 +59,13 @@ final class CommonEventEncoder
          * - buffer (until end)
          */
 
-        encodingBuffer.putInt(relativeOffset, captureLength, LITTLE_ENDIAN);
+        encodingBuffer.putInt(offset + relativeOffset, captureLength, LITTLE_ENDIAN);
         relativeOffset += SIZE_OF_INT;
 
-        encodingBuffer.putInt(relativeOffset, length, LITTLE_ENDIAN);
+        encodingBuffer.putInt(offset + relativeOffset, length, LITTLE_ENDIAN);
         relativeOffset += SIZE_OF_INT;
 
-        encodingBuffer.putLong(relativeOffset, nanoClock.nanoTime(), LITTLE_ENDIAN);
+        encodingBuffer.putLong(offset + relativeOffset, nanoClock.nanoTime(), LITTLE_ENDIAN);
         relativeOffset += SIZE_OF_LONG;
 
         return relativeOffset;

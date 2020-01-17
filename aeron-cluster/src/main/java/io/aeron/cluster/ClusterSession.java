@@ -204,7 +204,7 @@ class ClusterSession
         return encodedPrincipal;
     }
 
-    void lastActivity(final long timeNs, final long correlationId)
+    void lastActivityNs(final long timeNs, final long correlationId)
     {
         timeOfLastActivityNs = timeNs;
         this.correlationId = correlationId;

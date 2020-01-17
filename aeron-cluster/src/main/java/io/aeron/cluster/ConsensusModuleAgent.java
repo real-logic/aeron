@@ -319,7 +319,7 @@ class ConsensusModuleAgent implements Agent
         final long clusterSessionId = Cluster.Role.LEADER == role ? nextSessionId++ : NULL_VALUE;
         final ClusterSession session = new ClusterSession(clusterSessionId, responseStreamId, responseChannel);
         final long now = clusterClock.time();
-        session.lastActivity(clusterTimeUnit.toNanos(now), correlationId);
+        session.lastActivityNs(clusterTimeUnit.toNanos(now), correlationId);
         session.connect(aeron);
 
         if (Cluster.Role.LEADER != role)
@@ -420,7 +420,7 @@ class ConsensusModuleAgent implements Agent
                 {
                     final long now = clusterClock.time();
                     final long nowMs = clusterTimeUnit.toMillis(now);
-                    session.lastActivity(clusterTimeUnit.toNanos(now), correlationId);
+                    session.lastActivityNs(clusterTimeUnit.toNanos(now), correlationId);
                     authenticator.onChallengeResponse(clusterSessionId, encodedCredentials, nowMs);
                     break;
                 }
@@ -713,7 +713,7 @@ class ConsensusModuleAgent implements Agent
         {
             final ClusterSession session = new ClusterSession(NULL_VALUE, responseStreamId, responseChannel);
             final long now = clusterClock.time();
-            session.lastActivity(clusterTimeUnit.toNanos(now), correlationId);
+            session.lastActivityNs(clusterTimeUnit.toNanos(now), correlationId);
             session.isBackupQuery(true);
             session.connect(aeron);
 
@@ -1091,7 +1091,7 @@ class ConsensusModuleAgent implements Agent
         }
         else
         {
-            clusterSession.timeOfLastActivityNs(timestamp);
+            clusterSession.timeOfLastActivityNs(clusterTimeUnit.toNanos(timestamp));
         }
     }
 
@@ -1113,7 +1113,7 @@ class ConsensusModuleAgent implements Agent
     {
         final ClusterSession session = new ClusterSession(clusterSessionId, responseStreamId, responseChannel);
         session.open(logPosition);
-        session.lastActivity(timestamp, correlationId);
+        session.lastActivityNs(clusterTimeUnit.toNanos(timestamp), correlationId);
 
         sessionByIdMap.put(clusterSessionId, session);
         if (clusterSessionId >= nextSessionId)

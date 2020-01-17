@@ -859,13 +859,13 @@ project(':aeron-system-tests') {
 
 project(':aeron-test-support') {
     dependencies {
-        implementation "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
+        api "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
     }
 }
 
 project(':aeron-all') {
     apply plugin: 'com.github.johnrengelman.shadow'
-    
+
     dependencies {
         implementation project(':aeron-cluster')
         implementation project(':aeron-samples')
@@ -908,7 +908,7 @@ project(':aeron-all') {
     }
 
     jar.finalizedBy shadowJar
-    
+
     artifacts {
         archives sourcesJar
         archives javadocJar
@@ -969,7 +969,7 @@ project(':aeron-all') {
             p -> p.dependencies = []
         }
     }
-    
+
     signing {
         required { isReleasedVersion && gradle.taskGraph.hasTask("uploadArchives") }
         sign configurations.shadow

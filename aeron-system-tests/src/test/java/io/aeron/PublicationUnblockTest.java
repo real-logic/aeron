@@ -21,6 +21,7 @@ import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.test.TestMediaDriver;
+import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -88,7 +89,7 @@ public class PublicationUnblockTest
                 while (publicationOne.tryClaim(length, bufferClaim) < 0L)
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 bufferClaim.buffer().setMemory(bufferClaim.offset(), length, (byte)65);
@@ -97,19 +98,19 @@ public class PublicationUnblockTest
                 while (publicationTwo.offer(srcBuffer, 0, length) < 0L)
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 while (publicationOne.tryClaim(length, bufferClaim) < 0L)
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 while (publicationTwo.offer(srcBuffer, 0, length) < 0L)
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 final int expectedFragments = 3;
@@ -120,7 +121,7 @@ public class PublicationUnblockTest
                     if (fragments == 0)
                     {
                         Thread.yield();
-                        SystemTest.checkInterruptedStatus();
+                        Tests.checkInterruptedStatus();
                     }
 
                     numFragments += fragments;

@@ -63,7 +63,7 @@ public class RecordingSessionTest
     private final RecordingEventsProxy recordingEventsProxy = mock(RecordingEventsProxy.class);
     private final Counter mockPosition = mock(Counter.class);
     private final Image image = mockImage(mockSubscription());
-    private final File archiveDir = TestUtil.makeTestDirectory();
+    private final File archiveDir = ArchiveTests.makeTestDirectory();
     private FileChannel mockLogBufferChannel;
     private UnsafeBuffer mockLogBufferMapped;
     private File termFile;

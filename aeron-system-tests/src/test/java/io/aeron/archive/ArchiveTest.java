@@ -27,6 +27,7 @@ import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.Header;
+import io.aeron.test.Tests;
 import org.agrona.*;
 import org.agrona.collections.MutableBoolean;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -43,7 +44,7 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Stream;
 
-import static io.aeron.archive.TestUtil.awaitConnectedReply;
+import static io.aeron.archive.ArchiveTests.awaitConnectedReply;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.time.Duration.ofSeconds;
@@ -76,7 +77,7 @@ public class ArchiveTest
     private final long seed = System.nanoTime();
 
     @RegisterExtension
-    public final TestWatcher testWatcher = TestUtil.newWatcher(seed);
+    public final TestWatcher testWatcher = ArchiveTests.newWatcher(seed);
 
     private long controlSessionId;
     private String publishUri;
@@ -345,7 +346,7 @@ public class ArchiveTest
             if (recordingEventsAdapter.poll() == 0)
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
         }
 
@@ -369,7 +370,7 @@ public class ArchiveTest
             throw new IllegalStateException("Failed to stop recording");
         }
 
-        TestUtil.awaitOk(controlResponse, requestStopCorrelationId);
+        ArchiveTests.awaitOk(controlResponse, requestStopCorrelationId);
 
         final MutableBoolean recordingStopped = new MutableBoolean();
         final RecordingEventsAdapter recordingEventsAdapter = new RecordingEventsAdapter(
@@ -389,7 +390,7 @@ public class ArchiveTest
             if (recordingEventsAdapter.poll() == 0)
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
         }
 
@@ -403,14 +404,14 @@ public class ArchiveTest
         final Publication controlPublication,
         final Subscription recordingEvents)
     {
-        TestUtil.await(controlPublication::isConnected);
-        TestUtil.await(recordingEvents::isConnected);
+        ArchiveTests.await(controlPublication::isConnected);
+        ArchiveTests.await(recordingEvents::isConnected);
 
         controlResponse = client.addSubscription(CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID);
         final long connectCorrelationId = correlationId++;
         assertTrue(archiveProxy.connect(CONTROL_RESPONSE_URI, CONTROL_RESPONSE_STREAM_ID, connectCorrelationId));
 
-        TestUtil.await(controlResponse::isConnected);
+        ArchiveTests.await(controlResponse::isConnected);
         awaitConnectedReply(controlResponse, connectCorrelationId, (sessionId) -> controlSessionId = sessionId);
         verifyEmptyDescriptorList(archiveProxy);
 
@@ -425,14 +426,14 @@ public class ArchiveTest
             throw new IllegalStateException("Failed to start recording");
         }
 
-        TestUtil.awaitOk(controlResponse, startRecordingCorrelationId);
+        ArchiveTests.awaitOk(controlResponse, startRecordingCorrelationId);
     }
 
     private void verifyEmptyDescriptorList(final ArchiveProxy client)
     {
         final long requestRecordingsCorrelationId = correlationId++;
         client.listRecordings(0, 100, requestRecordingsCorrelationId, controlSessionId);
-        TestUtil.awaitResponse(controlResponse, requestRecordingsCorrelationId);
+        ArchiveTests.awaitResponse(controlResponse, requestRecordingsCorrelationId);
     }
 
     private void verifyDescriptorListOngoingArchive(
@@ -481,7 +482,7 @@ public class ArchiveTest
             if (controlResponseAdapter.poll() == 0)
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
         }
     }
@@ -560,7 +561,7 @@ public class ArchiveTest
                 }
 
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
         }
 
@@ -592,8 +593,8 @@ public class ArchiveTest
                 throw new IllegalStateException("Failed to replay");
             }
 
-            TestUtil.awaitOk(controlResponse, replayCorrelationId);
-            TestUtil.await(replay::isConnected);
+            ArchiveTests.awaitOk(controlResponse, replayCorrelationId);
+            ArchiveTests.await(replay::isConnected);
 
             final Image image = replay.images().get(0);
             assertEquals(initialTermId, image.initialTermId());
@@ -610,7 +611,7 @@ public class ArchiveTest
                 if (0 == fragments)
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
             }
 
@@ -629,7 +630,7 @@ public class ArchiveTest
         while (catalog.stopPosition(recordingId) != stopPosition)
         {
             Thread.yield();
-            SystemTest.checkInterruptedStatus();
+            Tests.checkInterruptedStatus();
         }
 
         try (RecordingReader recordingReader = new RecordingReader(
@@ -641,7 +642,7 @@ public class ArchiveTest
             while (!recordingReader.isDone())
             {
                 recordingReader.poll(this::validateRecordingFragment, messageCount);
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
         }
 
@@ -709,8 +710,8 @@ public class ArchiveTest
                     {
                         if (recordingEventsAdapter.poll() == 0)
                         {
-                            SystemTest.sleep(1);
-                            SystemTest.checkInterruptedStatus();
+                            Tests.sleep(1);
+                            Tests.checkInterruptedStatus();
                         }
                     }
                 }
@@ -743,7 +744,7 @@ public class ArchiveTest
             {
                 while (0 == recorded)
                 {
-                    SystemTest.sleep(1);
+                    Tests.sleep(1);
                 }
 
                 try (Subscription replay = client.addSubscription(REPLAY_URI, REPLAY_STREAM_ID))
@@ -762,8 +763,8 @@ public class ArchiveTest
                         throw new IllegalStateException("failed to start replay");
                     }
 
-                    TestUtil.awaitOk(controlResponse, replayCorrelationId);
-                    TestUtil.await(replay::isConnected);
+                    ArchiveTests.awaitOk(controlResponse, replayCorrelationId);
+                    ArchiveTests.await(replay::isConnected);
 
                     final Image image = replay.images().get(0);
                     assertEquals(initialTermId, image.initialTermId());
@@ -781,7 +782,7 @@ public class ArchiveTest
                         if (0 == fragments)
                         {
                             Thread.yield();
-                            SystemTest.checkInterruptedStatus();
+                            Tests.checkInterruptedStatus();
                         }
                     }
                 }

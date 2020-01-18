@@ -25,6 +25,7 @@ import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.test.MediaDriverTestWatcher;
 import io.aeron.test.TestMediaDriver;
+import io.aeron.test.Tests;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
@@ -96,7 +97,7 @@ public class GapFillLossTest
                     while ((position = publication.offer(srcBuffer)) < 0L)
                     {
                         Thread.yield();
-                        SystemTest.checkInterruptedStatus();
+                        Tests.checkInterruptedStatus();
                     }
                 }
 
@@ -124,7 +125,7 @@ public class GapFillLossTest
             while (!subscription.isConnected())
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
 
             final Image image = subscription.imageAtIndex(0);
@@ -134,7 +135,7 @@ public class GapFillLossTest
                 final int fragments = subscription.poll(this, FRAGMENT_COUNT_LIMIT);
                 if (0 == fragments)
                 {
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                     if (subscription.isClosed())
                     {
                         return;

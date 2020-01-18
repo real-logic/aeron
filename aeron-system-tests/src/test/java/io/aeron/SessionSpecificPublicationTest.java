@@ -20,6 +20,7 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.test.TestMediaDriver;
+import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.junit.jupiter.api.AfterEach;
@@ -81,7 +82,7 @@ public class SessionSpecificPublicationTest
             while (!publication.isConnected())
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
 
             final int existingSessionId = publication.sessionId();

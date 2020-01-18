@@ -19,6 +19,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.test.TestMediaDriver;
+import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableReference;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -131,7 +132,7 @@ public class TwoBufferOfferMessageTest
         while (publication.offer(bufferOne, 0, bufferOne.capacity(), bufferTwo, 0, bufferTwo.capacity()) < 0L)
         {
             Thread.yield();
-            SystemTest.checkInterruptedStatus();
+            Tests.checkInterruptedStatus();
         }
     }
 
@@ -146,7 +147,7 @@ public class TwoBufferOfferMessageTest
             if (fragments == 0)
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
         }
     }

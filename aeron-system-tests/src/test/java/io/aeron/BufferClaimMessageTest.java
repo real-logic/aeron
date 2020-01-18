@@ -21,6 +21,7 @@ import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.test.TestMediaDriver;
+import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableBoolean;
 import org.agrona.collections.MutableInteger;
@@ -83,7 +84,7 @@ public class BufferClaimMessageTest
                 while (publication.tryClaim(MESSAGE_LENGTH, bufferClaim) < 0L)
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 publishMessage(srcBuffer, publication);
@@ -98,7 +99,7 @@ public class BufferClaimMessageTest
                     if (0 == fragments)
                     {
                         Thread.yield();
-                        SystemTest.checkInterruptedStatus();
+                        Tests.checkInterruptedStatus();
                     }
 
                     numFragments += fragments;
@@ -124,7 +125,7 @@ public class BufferClaimMessageTest
                 while (publication.tryClaim(MESSAGE_LENGTH, bufferClaim) < 0L)
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 final long reservedValue = System.currentTimeMillis();
@@ -147,7 +148,7 @@ public class BufferClaimMessageTest
                     if (0 == fragments)
                     {
                         Thread.yield();
-                        SystemTest.checkInterruptedStatus();
+                        Tests.checkInterruptedStatus();
                     }
                 }
             }
@@ -159,7 +160,7 @@ public class BufferClaimMessageTest
         while (publication.offer(srcBuffer, 0, MESSAGE_LENGTH) < 0L)
         {
             Thread.yield();
-            SystemTest.checkInterruptedStatus();
+            Tests.checkInterruptedStatus();
         }
     }
 }

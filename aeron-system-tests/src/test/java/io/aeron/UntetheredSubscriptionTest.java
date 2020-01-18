@@ -20,6 +20,7 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.test.TestMediaDriver;
+import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
@@ -93,7 +94,7 @@ public class UntetheredSubscriptionTest
                 while (!tetheredSub.isConnected() || !untetheredSub.isConnected())
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                     aeron.conductorAgentInvoker().invoke();
                 }
 
@@ -102,7 +103,7 @@ public class UntetheredSubscriptionTest
                     if (publication.offer(srcBuffer) < 0)
                     {
                         Thread.yield();
-                        SystemTest.checkInterruptedStatus();
+                        Tests.checkInterruptedStatus();
                         aeron.conductorAgentInvoker().invoke();
                     }
 
@@ -121,7 +122,7 @@ public class UntetheredSubscriptionTest
                         while (publication.offer(srcBuffer) < 0)
                         {
                             Thread.yield();
-                            SystemTest.checkInterruptedStatus();
+                            Tests.checkInterruptedStatus();
                             aeron.conductorAgentInvoker().invoke();
                         }
 
@@ -157,7 +158,7 @@ public class UntetheredSubscriptionTest
                 while (!tetheredSub.isConnected() || !untetheredSub.isConnected())
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                     aeron.conductorAgentInvoker().invoke();
                 }
 
@@ -166,7 +167,7 @@ public class UntetheredSubscriptionTest
                     if (publication.offer(srcBuffer) < 0)
                     {
                         Thread.yield();
-                        SystemTest.checkInterruptedStatus();
+                        Tests.checkInterruptedStatus();
                         aeron.conductorAgentInvoker().invoke();
                     }
 
@@ -182,7 +183,7 @@ public class UntetheredSubscriptionTest
                         while (availableImageCount.get() < 2)
                         {
                             Thread.yield();
-                            SystemTest.checkInterruptedStatus();
+                            Tests.checkInterruptedStatus();
                             aeron.conductorAgentInvoker().invoke();
                         }
 

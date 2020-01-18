@@ -20,6 +20,7 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.test.Tests;
 import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
 import org.agrona.collections.MutableInteger;
@@ -119,7 +120,7 @@ public class MultiDriverTest
             while (!subscriptionA.isConnected() && !subscriptionB.isConnected())
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
         });
     }
@@ -142,11 +143,11 @@ public class MultiDriverTest
                 while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 final MutableInteger fragmentsRead = new MutableInteger();
-                SystemTest.executeUntil(
+                SystemTests.executeUntil(
                     () -> fragmentsRead.get() > 0,
                     (j) ->
                     {
@@ -167,12 +168,12 @@ public class MultiDriverTest
             {
                 while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
                 {
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                     Thread.yield();
                 }
 
                 final MutableInteger fragmentsRead = new MutableInteger();
-                SystemTest.executeUntil(
+                SystemTests.executeUntil(
                     () -> fragmentsRead.get() > 0,
                     (j) ->
                     {
@@ -183,7 +184,7 @@ public class MultiDriverTest
                     TimeUnit.MILLISECONDS.toNanos(500));
 
                 fragmentsRead.set(0);
-                SystemTest.executeUntil(
+                SystemTests.executeUntil(
                     () -> fragmentsRead.get() > 0,
                     (j) ->
                     {
@@ -215,7 +216,7 @@ public class MultiDriverTest
             while (!publication.isConnected() && !subscriptionA.isConnected())
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
 
             final CountDownLatch newImageLatch = new CountDownLatch(1);
@@ -229,11 +230,11 @@ public class MultiDriverTest
                 while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 final MutableInteger fragmentsRead = new MutableInteger();
-                SystemTest.executeUntil(
+                SystemTests.executeUntil(
                     () -> fragmentsRead.get() > 0,
                     (j) ->
                     {
@@ -244,7 +245,7 @@ public class MultiDriverTest
                     TimeUnit.MILLISECONDS.toNanos(500));
 
                 fragmentsRead.set(0);
-                SystemTest.executeUntil(
+                SystemTests.executeUntil(
                     () -> fragmentsRead.get() > 0,
                     (j) ->
                     {

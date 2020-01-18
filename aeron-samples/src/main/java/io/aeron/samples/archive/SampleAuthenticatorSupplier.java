@@ -18,10 +18,10 @@ package io.aeron.samples.archive;
 import io.aeron.security.Authenticator;
 import io.aeron.security.AuthenticatorSupplier;
 
-public class TestAuthenticatorSupplier implements AuthenticatorSupplier
+public class SampleAuthenticatorSupplier implements AuthenticatorSupplier
 {
     public Authenticator get()
     {
-        return new TestAuthenticator();
+        return new SampleAuthenticator();
     }
 }

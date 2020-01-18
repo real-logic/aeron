@@ -25,23 +25,13 @@ import org.agrona.concurrent.status.CountersReader;
 import java.io.PrintStream;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.junit.jupiter.api.Assertions.fail;
-
-class TestUtil
+class ClusterTests
 {
     public static final Runnable TERMINATION_HOOK =
         () ->
         {
             throw new AgentTerminationException();
         };
-
-    public static void checkInterruptedStatus()
-    {
-        if (Thread.currentThread().isInterrupted())
-        {
-            fail("unexpected interrupt - test likely to have timed out");
-        }
-    }
 
     public static Runnable dynamicTerminationHook(
         final AtomicBoolean terminationExpected, final AtomicBoolean wasTerminated)

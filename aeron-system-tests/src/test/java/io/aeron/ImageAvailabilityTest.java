@@ -18,6 +18,7 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.test.TestMediaDriver;
+import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -82,7 +83,7 @@ public class ImageAvailabilityTest
                 while (!subOne.isConnected() || !subTwo.isConnected() || !publication.isConnected())
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                     aeron.conductorAgentInvoker().invoke();
                 }
 
@@ -102,7 +103,7 @@ public class ImageAvailabilityTest
                 while (subOne.isConnected() || subTwo.isConnected())
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                     aeron.conductorAgentInvoker().invoke();
                 }
 
@@ -143,7 +144,7 @@ public class ImageAvailabilityTest
                 {
                     aeron.conductorAgentInvoker().invoke();
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 final Image image = subOne.imageAtIndex(0);
@@ -162,7 +163,7 @@ public class ImageAvailabilityTest
                 while (subOne.isConnected() || subTwo.isConnected())
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                     aeron.conductorAgentInvoker().invoke();
                 }
 

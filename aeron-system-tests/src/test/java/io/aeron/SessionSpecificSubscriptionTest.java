@@ -20,6 +20,7 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
@@ -88,7 +89,7 @@ public class SessionSpecificSubscriptionTest
                     subscriptionWildcard.imageCount() != 2)
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 for (int i = 0; i < EXPECTED_NUMBER_OF_MESSAGES; i++)
@@ -100,7 +101,7 @@ public class SessionSpecificSubscriptionTest
                 int numFragments = 0;
                 do
                 {
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                     numFragments += subscriptionOne.poll(handlerSessionIdOne, FRAGMENT_COUNT_LIMIT);
                 }
                 while (numFragments < EXPECTED_NUMBER_OF_MESSAGES);
@@ -108,7 +109,7 @@ public class SessionSpecificSubscriptionTest
                 numFragments = 0;
                 do
                 {
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                     numFragments += subscriptionTwo.poll(handlerSessionIdTwo, FRAGMENT_COUNT_LIMIT);
                 }
                 while (numFragments < EXPECTED_NUMBER_OF_MESSAGES);
@@ -116,7 +117,7 @@ public class SessionSpecificSubscriptionTest
                 numFragments = 0;
                 do
                 {
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                     numFragments += subscriptionWildcard.poll(mockFragmentHandler, FRAGMENT_COUNT_LIMIT);
                 }
                 while (numFragments < (EXPECTED_NUMBER_OF_MESSAGES * 2));
@@ -135,7 +136,7 @@ public class SessionSpecificSubscriptionTest
             while (!publication.isConnected())
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
 
             assertEquals(1, subscription.imageCount());
@@ -148,7 +149,7 @@ public class SessionSpecificSubscriptionTest
             int numFragments = 0;
             do
             {
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
                 numFragments += subscription.poll(handlerSessionIdOne, FRAGMENT_COUNT_LIMIT);
             }
             while (numFragments < EXPECTED_NUMBER_OF_MESSAGES);
@@ -163,7 +164,7 @@ public class SessionSpecificSubscriptionTest
         while (publication.offer(buffer, 0, MESSAGE_LENGTH) < 0L)
         {
             Thread.yield();
-            SystemTest.checkInterruptedStatus();
+            Tests.checkInterruptedStatus();
         }
     }
 }

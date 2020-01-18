@@ -87,7 +87,7 @@ public class ReplaySessionTest
     private int messageCounter = 0;
 
     private final RecordingSummary recordingSummary = new RecordingSummary();
-    private final File archiveDir = TestUtil.makeTestDirectory();
+    private final File archiveDir = ArchiveTests.makeTestDirectory();
     private final ControlResponseProxy proxy = mock(ControlResponseProxy.class);
     private final CachedEpochClock epochClock = new CachedEpochClock();
     private final Catalog mockCatalog = mock(Catalog.class);

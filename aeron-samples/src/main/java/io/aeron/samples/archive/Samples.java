@@ -20,7 +20,7 @@ import io.aeron.logbuffer.FragmentHandler;
 import java.io.File;
 import java.io.IOException;
 
-class TestUtil
+class Samples
 {
     public static final double MEGABYTE = 1024.0d * 1024.0d;
     public static final FragmentHandler NOOP_FRAGMENT_HANDLER = (buffer, offset, length, header) -> {};

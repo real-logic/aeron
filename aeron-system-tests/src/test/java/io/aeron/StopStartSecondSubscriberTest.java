@@ -17,6 +17,7 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.test.Tests;
 import org.agrona.*;
 import org.agrona.collections.MutableInteger;
 import org.junit.jupiter.api.AfterEach;
@@ -115,18 +116,18 @@ public class StopStartSecondSubscriberTest
             while (publicationOne.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
 
             while (publicationTwo.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
 
             final MutableInteger fragmentsRead1 = new MutableInteger();
             final MutableInteger fragmentsRead2 = new MutableInteger();
-            SystemTest.executeUntil(
+            SystemTests.executeUntil(
                 () -> fragmentsRead1.get() >= messagesPerPublication && fragmentsRead2.get() >= messagesPerPublication,
                 (i) ->
                 {
@@ -177,7 +178,7 @@ public class StopStartSecondSubscriberTest
             while (running.get() && publication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
         }
     }
@@ -205,7 +206,7 @@ public class StopStartSecondSubscriberTest
         final BooleanSupplier fragmentsReadCondition =
             () -> fragmentsReadOne.get() >= numMessages && fragmentsReadTwo.get() >= numMessages;
 
-        SystemTest.executeUntil(
+        SystemTests.executeUntil(
             fragmentsReadCondition,
             (i) ->
             {
@@ -226,7 +227,7 @@ public class StopStartSecondSubscriberTest
 
         subscriptionTwo = subscriberTwo.addSubscription(channelTwo, streamTwo);
 
-        SystemTest.executeUntil(
+        SystemTests.executeUntil(
             fragmentsReadCondition,
             (i) ->
             {

@@ -20,6 +20,7 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.test.TestMediaDriver;
+import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -29,7 +30,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.List;
 
-import static io.aeron.SystemTest.spyForChannel;
+import static io.aeron.SystemTests.spyForChannel;
 import static java.time.Duration.ofSeconds;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -92,7 +93,7 @@ public class SpySubscriptionTest
                     while (publication.offer(srcBuffer, i * PAYLOAD_LENGTH, PAYLOAD_LENGTH) < 0L)
                     {
                         Thread.yield();
-                        SystemTest.checkInterruptedStatus();
+                        Tests.checkInterruptedStatus();
                     }
                 }
 
@@ -100,7 +101,7 @@ public class SpySubscriptionTest
                 int numSpyFragments = 0;
                 do
                 {
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
 
                     numFragments += subscription.poll(fragmentHandlerSub, FRAGMENT_COUNT_LIMIT);
                     numSpyFragments += spy.poll(fragmentHandlerSpy, FRAGMENT_COUNT_LIMIT);

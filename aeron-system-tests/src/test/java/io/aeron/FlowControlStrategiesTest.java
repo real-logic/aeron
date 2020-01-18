@@ -22,6 +22,7 @@ import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.test.MediaDriverTestWatcher;
 import io.aeron.test.TestMediaDriver;
+import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
@@ -124,7 +125,7 @@ public class FlowControlStrategiesTest
             while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
         });
     }
@@ -148,7 +149,7 @@ public class FlowControlStrategiesTest
             while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
 
             for (int i = 0; i < numMessagesToSend; i++)
@@ -156,12 +157,12 @@ public class FlowControlStrategiesTest
                 while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 // A keeps up
                 final MutableInteger fragmentsRead = new MutableInteger();
-                SystemTest.executeUntil(
+                SystemTests.executeUntil(
                     () -> fragmentsRead.get() > 0,
                     (j) ->
                     {
@@ -176,7 +177,7 @@ public class FlowControlStrategiesTest
                 // B receives slowly and eventually can't keep up
                 if (i % 10 == 0)
                 {
-                    SystemTest.executeUntil(
+                    SystemTests.executeUntil(
                         () -> fragmentsRead.get() > 0,
                         (j) ->
                         {
@@ -224,7 +225,7 @@ public class FlowControlStrategiesTest
             while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
 
             for (long i = 0; numFragmentsFromA < numMessagesToSend || numFragmentsFromB < numMessagesToSend; i++)
@@ -238,7 +239,7 @@ public class FlowControlStrategiesTest
                 }
 
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
 
                 // A keeps up
                 numFragmentsFromA += subscriptionA.poll(fragmentHandlerA, 10);
@@ -287,7 +288,7 @@ public class FlowControlStrategiesTest
             while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
 
             while (numFragmentsFromA < numMessagesToSend)
@@ -348,7 +349,7 @@ public class FlowControlStrategiesTest
             while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
 
             for (long i = 0; numFragmentsFromB < numMessagesToSend; i++)
@@ -367,7 +368,7 @@ public class FlowControlStrategiesTest
                 }
 
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
 
                 // A keeps up
                 subscriptionA.poll(fragmentHandlerA, 10);
@@ -424,7 +425,7 @@ public class FlowControlStrategiesTest
             while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
 
             while (numFragmentsReadFromA < numMessagesToSend)

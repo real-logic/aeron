@@ -149,7 +149,6 @@ subprojects {
     dependencies {
         testImplementation "org.hamcrest:hamcrest:${hamcrestVersion}"
         testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
-        testImplementation "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
         testImplementation "org.junit.jupiter:junit-jupiter-params:${junitVersion}"
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
     }
@@ -230,13 +229,13 @@ subprojects {
         }
 
         systemProperties(
-                'aeron.shared.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
-                'aeron.conductor.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
-                'aeron.sender.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
-                'aeron.receiver.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
-                'aeron.use.windows.high.res.timer': 'true',
-                'aeron.timer.interval': '10000000',
-                'aeron.perform.storage.checks': 'false'
+            'aeron.shared.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
+            'aeron.conductor.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
+            'aeron.sender.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
+            'aeron.receiver.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
+            'aeron.use.windows.high.res.timer': 'true',
+            'aeron.timer.interval': '10000000',
+            'aeron.perform.storage.checks': 'false'
         )
 
         reports.html.enabled = false // Disable individual test reports
@@ -860,6 +859,7 @@ project(':aeron-system-tests') {
 project(':aeron-test-support') {
     dependencies {
         api "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
+        implementation "org.agrona:agrona:${agronaVersion}"
     }
 }
 

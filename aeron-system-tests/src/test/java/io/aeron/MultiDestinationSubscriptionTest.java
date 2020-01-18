@@ -22,6 +22,7 @@ import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.test.TestMediaDriver;
+import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
@@ -163,7 +164,7 @@ public class MultiDestinationSubscriptionTest
             while (subscription.hasNoImages())
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
         });
     }
@@ -183,7 +184,7 @@ public class MultiDestinationSubscriptionTest
             while (subscription.hasNoImages())
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
 
             assertFalse(clientA.isCommandActive(correlationId));
@@ -205,7 +206,7 @@ public class MultiDestinationSubscriptionTest
             while (subscription.hasNoImages())
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
         });
     }
@@ -227,7 +228,7 @@ public class MultiDestinationSubscriptionTest
             while (subscription.hasNoImages())
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
 
             for (int i = 0; i < numMessagesToSend; i++)
@@ -235,7 +236,7 @@ public class MultiDestinationSubscriptionTest
                 while (publicationA.offer(buffer, 0, buffer.capacity()) < 0L)
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 final MutableInteger fragmentsRead = new MutableInteger();
@@ -272,7 +273,7 @@ public class MultiDestinationSubscriptionTest
             while (subscription.hasNoImages())
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
 
             for (int i = 0; i < numMessagesToSend; i++)
@@ -280,7 +281,7 @@ public class MultiDestinationSubscriptionTest
                 while (publicationA.offer(buffer, 0, buffer.capacity()) < 0L)
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 final MutableInteger fragmentsRead = new MutableInteger();
@@ -312,7 +313,7 @@ public class MultiDestinationSubscriptionTest
             while (subscription.hasNoImages())
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
 
             for (int i = 0; i < numMessagesToSend; i++)
@@ -320,7 +321,7 @@ public class MultiDestinationSubscriptionTest
                 while (publicationA.offer(buffer, 0, buffer.capacity()) < 0L)
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 final MutableInteger fragmentsRead = new MutableInteger();
@@ -348,7 +349,7 @@ public class MultiDestinationSubscriptionTest
             while (subscription.hasNoImages())
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
 
             for (int i = 0; i < numMessagesToSend; i++)
@@ -356,7 +357,7 @@ public class MultiDestinationSubscriptionTest
                 while (publicationA.offer(buffer, 0, buffer.capacity()) < 0L)
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 final MutableInteger fragmentsRead = new MutableInteger();
@@ -398,7 +399,7 @@ public class MultiDestinationSubscriptionTest
             while (subscription.hasNoImages())
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
 
             for (int i = 0; i < numMessagesToSendForA; i++)
@@ -406,7 +407,7 @@ public class MultiDestinationSubscriptionTest
                 while (publicationA.offer(buffer, 0, buffer.capacity()) < 0L)
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 final MutableInteger fragmentsRead = new MutableInteger();
@@ -448,7 +449,7 @@ public class MultiDestinationSubscriptionTest
                 while (publicationB.offer(buffer, 0, buffer.capacity()) < 0L)
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 final MutableInteger fragmentsRead = new MutableInteger();
@@ -511,7 +512,7 @@ public class MultiDestinationSubscriptionTest
                 while (publicationA.offer(buffer, 0, buffer.capacity()) < 0L)
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 final MutableInteger fragmentsRead = new MutableInteger();
@@ -520,7 +521,7 @@ public class MultiDestinationSubscriptionTest
                 while (publicationB.offer(buffer, 0, buffer.capacity()) < 0L)
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 assertEquals(0, subscription.poll(fragmentHandler, 10));
@@ -530,7 +531,7 @@ public class MultiDestinationSubscriptionTest
             {
                 while (publicationB.offer(buffer, 0, buffer.capacity()) < 0L)
                 {
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                     Thread.yield();
                 }
 
@@ -540,7 +541,7 @@ public class MultiDestinationSubscriptionTest
                 while (publicationA.offer(buffer, 0, buffer.capacity()) < 0L)
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 assertEquals(0, subscription.poll(fragmentHandler, 10));
@@ -555,7 +556,7 @@ public class MultiDestinationSubscriptionTest
     private void pollForFragment(
         final Subscription subscription, final FragmentHandler handler, final MutableInteger fragmentsRead)
     {
-        SystemTest.executeUntil(
+        SystemTests.executeUntil(
             () -> fragmentsRead.get() > 0,
             (j) ->
             {

@@ -21,7 +21,7 @@ import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
-import io.aeron.archive.TestUtil;
+import io.aeron.archive.ArchiveTests;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.RecordingEventsPoller;
 import io.aeron.archive.codecs.RecordingProgressDecoder;
@@ -52,8 +52,8 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static io.aeron.archive.TestUtil.await;
-import static io.aeron.archive.TestUtil.printf;
+import static io.aeron.archive.ArchiveTests.await;
+import static io.aeron.archive.ArchiveTests.printf;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.time.Duration.ofSeconds;
 import static org.agrona.BufferUtil.allocateDirectAligned;
@@ -91,7 +91,7 @@ public class ArchiveReplayLoadTest
     private final long seed = System.nanoTime();
 
     @RegisterExtension
-    final TestWatcher testWatcher = TestUtil.newWatcher(seed);
+    final TestWatcher testWatcher = ArchiveTests.newWatcher(seed);
 
     private Aeron aeron;
     private Archive archive;
@@ -249,7 +249,7 @@ public class ArchiveReplayLoadTest
         try (Subscription replay = aeronArchive.replay(
             recordingId, startPosition, expectedRecordingLength, REPLAY_URI, iteration))
         {
-            TestUtil.await(replay::isConnected);
+            ArchiveTests.await(replay::isConnected);
 
             fragmentCount = 0;
             remaining = totalPayloadLength;

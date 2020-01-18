@@ -55,12 +55,12 @@ class TestNode implements AutoCloseable
             context.mediaDriverContext,
             context.archiveContext,
             context.consensusModuleContext
-                .terminationHook(TestUtil.dynamicTerminationHook(
+                .terminationHook(ClusterTests.dynamicTerminationHook(
                     context.terminationExpected, context.memberWasTerminated)));
 
         container = ClusteredServiceContainer.launch(
             context.serviceContainerContext
-                .terminationHook(TestUtil.dynamicTerminationHook(
+                .terminationHook(ClusterTests.dynamicTerminationHook(
                     context.terminationExpected, context.serviceWasTerminated)));
 
         service = context.service;

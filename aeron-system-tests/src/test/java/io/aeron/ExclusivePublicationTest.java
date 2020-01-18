@@ -18,6 +18,7 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.test.TestMediaDriver;
+import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -76,7 +77,7 @@ public class ExclusivePublicationTest
                 while (subscription.imageCount() < 2)
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 final int expectedNumberOfFragments = 778;
@@ -102,7 +103,7 @@ public class ExclusivePublicationTest
                     if (0 == fragmentsRead)
                     {
                         Thread.yield();
-                        SystemTest.checkInterruptedStatus();
+                        Tests.checkInterruptedStatus();
                     }
 
                     totalFragmentsRead += fragmentsRead;
@@ -119,7 +120,7 @@ public class ExclusivePublicationTest
         while (publication.offer(srcBuffer, 0, MESSAGE_LENGTH) < 0L)
         {
             Thread.yield();
-            SystemTest.checkInterruptedStatus();
+            Tests.checkInterruptedStatus();
         }
     }
 }

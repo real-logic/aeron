@@ -32,6 +32,7 @@ import io.aeron.driver.MinMulticastFlowControlSupplier;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.Header;
 import io.aeron.test.SlowTest;
+import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
@@ -170,7 +171,7 @@ public class StartFromTruncatedRecordingLogTest
         while (NULL_VALUE == (leaderMemberId = findLeaderId(NULL_VALUE)))
         {
             Thread.sleep(1000);
-            TestUtil.checkInterruptedStatus();
+            Tests.checkInterruptedStatus();
         }
 
         final int followerMemberIdA = (leaderMemberId + 1) >= MEMBER_COUNT ? 0 : (leaderMemberId + 1);
@@ -211,7 +212,7 @@ public class StartFromTruncatedRecordingLogTest
         while (NULL_VALUE == (leaderMemberId = findLeaderId(NULL_VALUE)))
         {
             Thread.sleep(1000);
-            TestUtil.checkInterruptedStatus();
+            Tests.checkInterruptedStatus();
         }
 
         final int followerMemberIdA = (leaderMemberId + 1) >= MEMBER_COUNT ? 0 : (leaderMemberId + 1);
@@ -359,7 +360,7 @@ public class StartFromTruncatedRecordingLogTest
                 .threadingMode(ThreadingMode.SHARED)
                 .termBufferSparseFile(true)
                 .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
-                .errorHandler(TestUtil.errorHandler(index))
+                .errorHandler(ClusterTests.errorHandler(index))
                 .dirDeleteOnStart(true),
             new Archive.Context()
                 .maxCatalogEntries(MAX_CATALOG_ENTRIES)
@@ -376,7 +377,7 @@ public class StartFromTruncatedRecordingLogTest
                 .deleteArchiveOnStart(cleanStart),
             new ConsensusModule.Context()
                 .epochClock(epochClock)
-                .errorHandler(TestUtil.errorHandler(index))
+                .errorHandler(ClusterTests.errorHandler(index))
                 .clusterMemberId(index)
                 .clusterMembers(CLUSTER_MEMBERS)
                 .aeronDirectoryName(aeronDirName)
@@ -392,7 +393,7 @@ public class StartFromTruncatedRecordingLogTest
                 .archiveContext(archiveCtx.clone())
                 .clusterDir(new File(baseDirName, "service"))
                 .clusteredService(echoServices[index])
-                .errorHandler(TestUtil.errorHandler(index)));
+                .errorHandler(ClusterTests.errorHandler(index)));
     }
 
     private void stopNode(final int index)
@@ -438,7 +439,7 @@ public class StartFromTruncatedRecordingLogTest
             while (client.offer(msgBuffer, 0, MSG.length()) < 0)
             {
                 Thread.yield();
-                TestUtil.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
                 client.pollEgress();
             }
 
@@ -451,7 +452,7 @@ public class StartFromTruncatedRecordingLogTest
         while (responseCount.get() < messageCount)
         {
             Thread.yield();
-            TestUtil.checkInterruptedStatus();
+            Tests.checkInterruptedStatus();
             client.pollEgress();
         }
 
@@ -460,7 +461,7 @@ public class StartFromTruncatedRecordingLogTest
             while (echoServices[i].messageCount() < messageCount)
             {
                 Thread.yield();
-                TestUtil.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
         }
     }
@@ -600,7 +601,7 @@ public class StartFromTruncatedRecordingLogTest
         while (ClusterControl.ToggleState.get(controlToggle) != ClusterControl.ToggleState.NEUTRAL)
         {
             Thread.yield();
-            TestUtil.checkInterruptedStatus();
+            Tests.checkInterruptedStatus();
         }
     }
 
@@ -612,7 +613,7 @@ public class StartFromTruncatedRecordingLogTest
         while (snapshotCounter.get() != value)
         {
             Thread.yield();
-            TestUtil.checkInterruptedStatus();
+            Tests.checkInterruptedStatus();
         }
     }
 }

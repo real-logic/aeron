@@ -23,6 +23,7 @@ import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.test.SlowTest;
 import io.aeron.test.TestMediaDriver;
+import io.aeron.test.Tests;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
@@ -93,12 +94,12 @@ public class PongTest
         while (pingPublication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
             Thread.yield();
-            SystemTest.checkInterruptedStatus();
+            Tests.checkInterruptedStatus();
         }
 
         final MutableInteger fragmentsRead = new MutableInteger();
 
-        SystemTest.executeUntil(
+        SystemTests.executeUntil(
             () -> fragmentsRead.get() > 0,
             (i) ->
             {
@@ -110,7 +111,7 @@ public class PongTest
 
         fragmentsRead.set(0);
 
-        SystemTest.executeUntil(
+        SystemTests.executeUntil(
             () -> fragmentsRead.get() > 0,
             (i) ->
             {
@@ -136,12 +137,12 @@ public class PongTest
         while (pingPublication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
             Thread.yield();
-            SystemTest.checkInterruptedStatus();
+            Tests.checkInterruptedStatus();
         }
 
         final MutableInteger fragmentsRead = new MutableInteger();
 
-        SystemTest.executeUntil(
+        SystemTests.executeUntil(
             () -> fragmentsRead.get() > 0,
             (i) ->
             {
@@ -153,7 +154,7 @@ public class PongTest
 
         fragmentsRead.set(0);
 
-        SystemTest.executeUntil(
+        SystemTests.executeUntil(
             () -> fragmentsRead.get() > 0,
             (i) ->
             {
@@ -171,7 +172,7 @@ public class PongTest
         while (pingPublication.isConnected())
         {
             Thread.sleep(100);
-            SystemTest.checkInterruptedStatus();
+            Tests.checkInterruptedStatus();
         }
 
         // restart Pong side
@@ -183,10 +184,10 @@ public class PongTest
         while (pingPublication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
             Thread.yield();
-            SystemTest.checkInterruptedStatus();
+            Tests.checkInterruptedStatus();
         }
 
-        SystemTest.executeUntil(
+        SystemTests.executeUntil(
             () -> fragmentsRead.get() > 0,
             (i) ->
             {
@@ -198,7 +199,7 @@ public class PongTest
 
         fragmentsRead.set(0);
 
-        SystemTest.executeUntil(
+        SystemTests.executeUntil(
             () -> fragmentsRead.get() > 0,
             (i) ->
             {
@@ -221,7 +222,7 @@ public class PongTest
         while (pongPublication.offer(buffer, offset, length) < 0L)
         {
             Thread.yield();
-            SystemTest.checkInterruptedStatus();
+            Tests.checkInterruptedStatus();
         }
     }
 }

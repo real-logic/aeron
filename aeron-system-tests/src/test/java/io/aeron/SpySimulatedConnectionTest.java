@@ -22,6 +22,7 @@ import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.test.MediaDriverTestWatcher;
 import io.aeron.test.TestMediaDriver;
+import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -33,7 +34,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static io.aeron.SystemTest.spyForChannel;
+import static io.aeron.SystemTests.spyForChannel;
 import static java.time.Duration.ofSeconds;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.*;
@@ -110,7 +111,7 @@ public class SpySimulatedConnectionTest
             while (!spy.isConnected())
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
 
             assertFalse(publication.isConnected());
@@ -138,7 +139,7 @@ public class SpySimulatedConnectionTest
             while (!spy.isConnected() || !publication.isConnected())
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
 
             for (int i = 0; i < messagesToSend; i++)
@@ -146,11 +147,11 @@ public class SpySimulatedConnectionTest
                 while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 final MutableInteger fragmentsRead = new MutableInteger();
-                SystemTest.executeUntil(
+                SystemTests.executeUntil(
                     () -> fragmentsRead.get() > 0,
                     (j) ->
                     {
@@ -204,7 +205,7 @@ public class SpySimulatedConnectionTest
                 }
 
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
 
                 fragmentsFromSpy += spy.poll(fragmentHandlerSpy, 10);
 
@@ -255,7 +256,7 @@ public class SpySimulatedConnectionTest
                     }
                     else
                     {
-                        SystemTest.checkInterruptedStatus();
+                        Tests.checkInterruptedStatus();
                     }
                 }
 
@@ -282,26 +283,26 @@ public class SpySimulatedConnectionTest
         while (!spy.isConnected() || !subscription.isConnected() || !publication.isConnected())
         {
             Thread.yield();
-            SystemTest.checkInterruptedStatus();
+            Tests.checkInterruptedStatus();
         }
 
         // send initial message to ensure connectivity
         while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
         {
             Thread.yield();
-            SystemTest.checkInterruptedStatus();
+            Tests.checkInterruptedStatus();
         }
 
         while (spy.poll(mock(FragmentHandler.class), 1) == 0)
         {
             Thread.yield();
-            SystemTest.checkInterruptedStatus();
+            Tests.checkInterruptedStatus();
         }
 
         while (subscription.poll(mock(FragmentHandler.class), 1) == 0)
         {
             Thread.yield();
-            SystemTest.checkInterruptedStatus();
+            Tests.checkInterruptedStatus();
         }
     }
 }

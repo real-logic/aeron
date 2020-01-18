@@ -36,7 +36,7 @@ public class CatalogViewTest
     private static final int SEGMENT_LENGTH = 2 * TERM_LENGTH;
     private static final int MTU_LENGTH = 1024;
 
-    private final File archiveDir = TestUtil.makeTestDirectory();
+    private final File archiveDir = ArchiveTests.makeTestDirectory();
 
     private long currentTimeMs = 1;
     private final EpochClock clock = () -> currentTimeMs;

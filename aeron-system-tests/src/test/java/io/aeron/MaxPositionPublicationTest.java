@@ -19,6 +19,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.test.TestMediaDriver;
+import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
@@ -75,7 +76,7 @@ public class MaxPositionPublicationTest
                 while (!subscription.isConnected())
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 assertEquals(lastMessagePosition, publication.position());
@@ -85,7 +86,7 @@ public class MaxPositionPublicationTest
                 while (resultingPosition < 0)
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                     resultingPosition = publication.offer(srcBuffer, 0, MESSAGE_LENGTH);
                 }
 

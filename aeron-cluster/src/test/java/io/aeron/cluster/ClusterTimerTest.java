@@ -27,6 +27,7 @@ import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -90,7 +91,7 @@ public class ClusterTimerTest
 
             while (triggeredTimersCounter.get() < 2)
             {
-                TestUtil.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
                 Thread.yield();
             }
 
@@ -227,8 +228,8 @@ public class ClusterTimerTest
         container = ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
                 .clusteredService(service)
-                .terminationHook(TestUtil.TERMINATION_HOOK)
-                .errorHandler(TestUtil.errorHandler(0)));
+                .terminationHook(ClusterTests.TERMINATION_HOOK)
+                .errorHandler(ClusterTests.errorHandler(0)));
     }
 
     private AeronCluster connectToCluster()
@@ -259,7 +260,7 @@ public class ClusterTimerTest
                 .warnIfDirectoryExists(initialLaunch)
                 .threadingMode(ThreadingMode.SHARED)
                 .termBufferSparseFile(true)
-                .errorHandler(TestUtil.errorHandler(0))
+                .errorHandler(ClusterTests.errorHandler(0))
                 .dirDeleteOnShutdown(true)
                 .dirDeleteOnStart(true),
             new Archive.Context()
@@ -268,9 +269,9 @@ public class ClusterTimerTest
                 .recordingEventsEnabled(false)
                 .deleteArchiveOnStart(initialLaunch),
             new ConsensusModule.Context()
-                .errorHandler(TestUtil.errorHandler(0))
+                .errorHandler(ClusterTests.errorHandler(0))
                 .snapshotCounter(mockSnapshotCounter)
-                .terminationHook(TestUtil.TERMINATION_HOOK)
+                .terminationHook(ClusterTests.TERMINATION_HOOK)
                 .deleteDirOnStart(initialLaunch));
     }
 }

@@ -22,7 +22,7 @@ import org.agrona.collections.Long2ObjectHashMap;
 
 import java.nio.charset.StandardCharsets;
 
-public class TestAuthenticator implements Authenticator
+public class SampleAuthenticator implements Authenticator
 {
     private static final String CREDENTIALS_STRING_NO_CHALLENGE = "admin:admin";
     private static final String CREDENTIALS_STRING_REQUIRING_CHALLENGE = "admin:adminC";

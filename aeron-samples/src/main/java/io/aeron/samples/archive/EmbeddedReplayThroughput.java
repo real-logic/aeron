@@ -36,8 +36,8 @@ import java.io.File;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.archive.Archive.Configuration.ARCHIVE_DIR_DEFAULT;
-import static io.aeron.samples.archive.TestUtil.MEGABYTE;
-import static io.aeron.samples.archive.TestUtil.NOOP_FRAGMENT_HANDLER;
+import static io.aeron.samples.archive.Samples.MEGABYTE;
+import static io.aeron.samples.archive.Samples.NOOP_FRAGMENT_HANDLER;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
@@ -103,7 +103,7 @@ public class EmbeddedReplayThroughput implements AutoCloseable
     {
         final String archiveDirName = Archive.Configuration.archiveDirName();
         final File archiveDir = ARCHIVE_DIR_DEFAULT.equals(archiveDirName) ?
-            TestUtil.createTempDir() : new File(archiveDirName);
+            Samples.createTempDir() : new File(archiveDirName);
 
         archivingMediaDriver = ArchivingMediaDriver.launch(
             new MediaDriver.Context()

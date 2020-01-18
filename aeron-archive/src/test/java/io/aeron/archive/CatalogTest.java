@@ -59,7 +59,7 @@ class CatalogTest
 
     private final UnsafeBuffer unsafeBuffer = new UnsafeBuffer();
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
-    private final File archiveDir = TestUtil.makeTestDirectory();
+    private final File archiveDir = ArchiveTests.makeTestDirectory();
 
     private long currentTimeMs = 1;
     private final EpochClock clock = () -> currentTimeMs;
@@ -343,7 +343,7 @@ class CatalogTest
     void shouldBeAbleToCreateMaxEntries()
     {
         after();
-        final File archiveDir = TestUtil.makeTestDirectory();
+        final File archiveDir = ArchiveTests.makeTestDirectory();
         final long maxEntries = 2;
 
         try (Catalog catalog = new Catalog(archiveDir, null, 0, maxEntries, clock))

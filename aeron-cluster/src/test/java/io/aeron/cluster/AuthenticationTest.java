@@ -25,6 +25,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.Header;
 import io.aeron.security.*;
+import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
@@ -412,7 +413,7 @@ public class AuthenticationTest
         while (aeronCluster.offer(msgBuffer, 0, SIZE_OF_INT) < 0)
         {
             Thread.yield();
-            TestUtil.checkInterruptedStatus();
+            Tests.checkInterruptedStatus();
         }
     }
 
@@ -448,8 +449,8 @@ public class AuthenticationTest
         container = ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
                 .clusteredService(service)
-                .terminationHook(TestUtil.TERMINATION_HOOK)
-                .errorHandler(TestUtil.errorHandler(0)));
+                .terminationHook(ClusterTests.TERMINATION_HOOK)
+                .errorHandler(ClusterTests.errorHandler(0)));
     }
 
     private AeronCluster connectToCluster(final CredentialsSupplier credentialsSupplier)
@@ -473,7 +474,7 @@ public class AuthenticationTest
             new MediaDriver.Context()
                 .warnIfDirectoryExists(true)
                 .threadingMode(ThreadingMode.SHARED)
-                .errorHandler(TestUtil.errorHandler(0))
+                .errorHandler(ClusterTests.errorHandler(0))
                 .dirDeleteOnStart(true)
                 .dirDeleteOnShutdown(true),
             new Archive.Context()
@@ -484,7 +485,7 @@ public class AuthenticationTest
             new ConsensusModule.Context()
                 .errorHandler(Throwable::printStackTrace)
                 .authenticatorSupplier(authenticatorSupplier)
-                .terminationHook(TestUtil.TERMINATION_HOOK)
+                .terminationHook(ClusterTests.TERMINATION_HOOK)
                 .deleteDirOnStart(true));
     }
 }

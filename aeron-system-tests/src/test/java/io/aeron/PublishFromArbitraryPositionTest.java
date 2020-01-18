@@ -21,6 +21,7 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.test.TestMediaDriver;
+import io.aeron.test.Tests;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -102,7 +103,7 @@ public class PublishFromArbitraryPositionTest
                 while (!publication.isConnected())
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 final Thread t = new Thread(
@@ -145,7 +146,7 @@ public class PublishFromArbitraryPositionTest
         while (publication.offer(buffer, 0, 1 + rnd.nextInt(MAX_MESSAGE_LENGTH - 1)) < 0L)
         {
             Thread.yield();
-            SystemTest.checkInterruptedStatus();
+            Tests.checkInterruptedStatus();
         }
     }
 }

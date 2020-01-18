@@ -90,7 +90,7 @@ class ArchiveToolTests
     @BeforeEach
     void before() throws IOException
     {
-        archiveDir = TestUtil.makeTestDirectory();
+        archiveDir = ArchiveTests.makeTestDirectory();
 
         try (Catalog catalog = new Catalog(archiveDir, null, 0, 128, epochClock))
         {

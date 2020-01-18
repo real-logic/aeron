@@ -30,6 +30,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
+import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
@@ -170,7 +171,7 @@ public class ClusterNodeRestartTest
             while (null == serviceState.get())
             {
                 Thread.yield();
-                TestUtil.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
 
             assertEquals("0", serviceState.get());
@@ -210,7 +211,7 @@ public class ClusterNodeRestartTest
             while (null == serviceState.get())
             {
                 Thread.yield();
-                TestUtil.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
 
             assertEquals("3", serviceState.get());
@@ -278,7 +279,7 @@ public class ClusterNodeRestartTest
                 while (controlToggle.get() != ClusterControl.ToggleState.NEUTRAL.code())
                 {
                     Thread.sleep(1);
-                    TestUtil.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
             }
 
@@ -342,7 +343,7 @@ public class ClusterNodeRestartTest
             while (triggeredTimersCounter.get() < 2)
             {
                 Thread.yield();
-                TestUtil.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
 
             forceCloseForRestart();
@@ -355,7 +356,7 @@ public class ClusterNodeRestartTest
             while (triggeredTimersCounter.get() <= triggeredSinceStart)
             {
                 Thread.yield();
-                TestUtil.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
         });
     }
@@ -445,7 +446,7 @@ public class ClusterNodeRestartTest
 
             checkResult(result);
             Thread.yield();
-            TestUtil.checkInterruptedStatus();
+            Tests.checkInterruptedStatus();
         }
     }
 
@@ -534,8 +535,8 @@ public class ClusterNodeRestartTest
         container = ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
                 .clusteredService(service)
-                .terminationHook(TestUtil.TERMINATION_HOOK)
-                .errorHandler(TestUtil.errorHandler(0)));
+                .terminationHook(ClusterTests.TERMINATION_HOOK)
+                .errorHandler(ClusterTests.errorHandler(0)));
     }
 
     private void launchReschedulingService(final AtomicInteger triggeredTimersCounter)
@@ -604,8 +605,8 @@ public class ClusterNodeRestartTest
         container = ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
                 .clusteredService(service)
-                .terminationHook(TestUtil.TERMINATION_HOOK)
-                .errorHandler(TestUtil.errorHandler(0)));
+                .terminationHook(ClusterTests.TERMINATION_HOOK)
+                .errorHandler(ClusterTests.errorHandler(0)));
     }
 
     private AeronCluster connectToCluster()
@@ -636,7 +637,7 @@ public class ClusterNodeRestartTest
                 .warnIfDirectoryExists(initialLaunch)
                 .threadingMode(ThreadingMode.SHARED)
                 .termBufferSparseFile(true)
-                .errorHandler(TestUtil.errorHandler(0))
+                .errorHandler(ClusterTests.errorHandler(0))
                 .dirDeleteOnShutdown(true)
                 .dirDeleteOnStart(true),
             new Archive.Context()
@@ -645,9 +646,9 @@ public class ClusterNodeRestartTest
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .deleteArchiveOnStart(initialLaunch),
             new ConsensusModule.Context()
-                .errorHandler(TestUtil.errorHandler(0))
+                .errorHandler(ClusterTests.errorHandler(0))
                 .snapshotCounter(mockSnapshotCounter)
-                .terminationHook(TestUtil.TERMINATION_HOOK)
+                .terminationHook(ClusterTests.TERMINATION_HOOK)
                 .deleteDirOnStart(initialLaunch));
     }
 

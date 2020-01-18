@@ -19,6 +19,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.status.ReadableCounter;
 import io.aeron.test.TestMediaDriver;
+import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
@@ -122,8 +123,8 @@ public class CounterTest
 
             while (null == readableCounter)
             {
-                SystemTest.checkInterruptedStatus();
-                SystemTest.sleep(1);
+                Tests.checkInterruptedStatus();
+                Tests.sleep(1);
             }
 
             assertEquals(CountersReader.RECORD_ALLOCATED, readableCounter.state());
@@ -153,8 +154,8 @@ public class CounterTest
 
             while (null == readableCounter)
             {
-                SystemTest.sleep(1);
-                SystemTest.checkInterruptedStatus();
+                Tests.sleep(1);
+                Tests.checkInterruptedStatus();
             }
 
             assertFalse(readableCounter.isClosed());
@@ -164,8 +165,8 @@ public class CounterTest
 
             while (!readableCounter.isClosed())
             {
-                SystemTest.sleep(1);
-                SystemTest.checkInterruptedStatus();
+                Tests.sleep(1);
+                Tests.checkInterruptedStatus();
             }
         });
     }

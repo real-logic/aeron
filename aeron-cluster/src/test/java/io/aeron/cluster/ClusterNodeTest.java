@@ -26,6 +26,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.Header;
+import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
@@ -52,7 +53,7 @@ public class ClusterNodeTest
             new MediaDriver.Context()
                 .threadingMode(ThreadingMode.SHARED)
                 .termBufferSparseFile(true)
-                .errorHandler(TestUtil.errorHandler(0))
+                .errorHandler(ClusterTests.errorHandler(0))
                 .dirDeleteOnShutdown(true)
                 .dirDeleteOnStart(true),
             new Archive.Context()
@@ -61,8 +62,8 @@ public class ClusterNodeTest
                 .recordingEventsEnabled(false)
                 .deleteArchiveOnStart(true),
             new ConsensusModule.Context()
-                .errorHandler(TestUtil.errorHandler(0))
-                .terminationHook(TestUtil.TERMINATION_HOOK)
+                .errorHandler(ClusterTests.errorHandler(0))
+                .terminationHook(ClusterTests.TERMINATION_HOOK)
                 .deleteDirOnStart(true));
     }
 
@@ -209,7 +210,7 @@ public class ClusterNodeTest
         while (aeronCluster.offer(msgBuffer, 0, msg.length()) < 0)
         {
             Thread.yield();
-            TestUtil.checkInterruptedStatus();
+            Tests.checkInterruptedStatus();
         }
     }
 
@@ -220,7 +221,7 @@ public class ClusterNodeTest
             if (aeronCluster.pollEgress() <= 0)
             {
                 Thread.yield();
-                TestUtil.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
         }
     }
@@ -293,8 +294,8 @@ public class ClusterNodeTest
         return ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
                 .clusteredService(clusteredService)
-                .terminationHook(TestUtil.TERMINATION_HOOK)
-                .errorHandler(TestUtil.errorHandler(0)));
+                .terminationHook(ClusterTests.TERMINATION_HOOK)
+                .errorHandler(ClusterTests.errorHandler(0)));
     }
 
     private ClusteredServiceContainer launchServiceMessageIngressService()
@@ -332,8 +333,8 @@ public class ClusterNodeTest
         return ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
                 .clusteredService(clusteredService)
-                .terminationHook(TestUtil.TERMINATION_HOOK)
-                .errorHandler(TestUtil.errorHandler(0)));
+                .terminationHook(ClusterTests.TERMINATION_HOOK)
+                .errorHandler(ClusterTests.errorHandler(0)));
     }
 
     private AeronCluster connectToCluster(final EgressListener egressListener)

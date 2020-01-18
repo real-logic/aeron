@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.function.LongConsumer;
 
-public class TestUtil
+public class ArchiveTests
 {
     public static final long TIMEOUT_NS = TimeUnit.SECONDS.toNanos(5);
     static final boolean DEBUG = false;

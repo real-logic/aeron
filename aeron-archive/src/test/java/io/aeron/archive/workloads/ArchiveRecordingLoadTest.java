@@ -22,7 +22,7 @@ import io.aeron.Subscription;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.FailRecordingEventsListener;
-import io.aeron.archive.TestUtil;
+import io.aeron.archive.ArchiveTests;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.RecordingEventsAdapter;
 import io.aeron.archive.codecs.SourceLocation;
@@ -48,8 +48,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 
-import static io.aeron.archive.TestUtil.await;
-import static io.aeron.archive.TestUtil.printf;
+import static io.aeron.archive.ArchiveTests.await;
+import static io.aeron.archive.ArchiveTests.printf;
 import static io.aeron.logbuffer.LogBufferDescriptor.computeTermIdFromPosition;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -77,7 +77,7 @@ public class ArchiveRecordingLoadTest
     private final long seed = System.nanoTime();
 
     @RegisterExtension
-    final TestWatcher testWatcher = TestUtil.newWatcher(seed);
+    final TestWatcher testWatcher = ArchiveTests.newWatcher(seed);
 
     private Aeron aeron;
     private Archive archive;
@@ -291,7 +291,7 @@ public class ArchiveRecordingLoadTest
     {
         if (publication.offer(buffer, 0, length) < 0)
         {
-            final long deadlineNs = System.nanoTime() + TestUtil.TIMEOUT_NS;
+            final long deadlineNs = System.nanoTime() + ArchiveTests.TIMEOUT_NS;
             slowOffer(publication, buffer, length, deadlineNs);
         }
     }

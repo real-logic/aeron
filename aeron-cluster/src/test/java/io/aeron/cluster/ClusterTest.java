@@ -17,6 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.cluster.service.Cluster;
 import io.aeron.test.SlowTest;
+import io.aeron.test.Tests;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
@@ -556,7 +557,7 @@ public class ClusterTest
                 while (leader.service().roleChangedTo() == Cluster.Role.LEADER)
                 {
                     Thread.yield();
-                    TestUtil.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 assertEquals(Cluster.Role.FOLLOWER, leader.service().roleChangedTo());

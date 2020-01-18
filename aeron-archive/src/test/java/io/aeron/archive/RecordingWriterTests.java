@@ -55,7 +55,7 @@ class RecordingWriterTests
     @BeforeEach
     void before()
     {
-        archiveDir = TestUtil.makeTestDirectory();
+        archiveDir = ArchiveTests.makeTestDirectory();
     }
 
     @AfterEach

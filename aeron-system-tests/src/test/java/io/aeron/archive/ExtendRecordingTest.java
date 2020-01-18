@@ -25,6 +25,7 @@ import io.aeron.driver.Configuration;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.SystemUtil;
@@ -218,7 +219,7 @@ public class ExtendRecordingTest
             while (publication.offer(buffer, 0, length) <= 0)
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
         }
     }
@@ -244,7 +245,7 @@ public class ExtendRecordingTest
             if (0 == subscription.poll(fragmentHandler, FRAGMENT_LIMIT))
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
         }
 

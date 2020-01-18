@@ -23,6 +23,7 @@ import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.Header;
+import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
@@ -121,20 +122,20 @@ public class MultipleClusteredServicesTest
                 while (client.offer(buffer, 0, 100) < 0)
                 {
                     Thread.yield();
-                    TestUtil.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 // Comment out the while loop to see more failures.
                 while (serviceAMessageCount.get() < 3)
                 {
                     Thread.yield();
-                    TestUtil.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 while (serviceBMessageCount.get() < 3)
                 {
                     Thread.yield();
-                    TestUtil.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
             }
             finally

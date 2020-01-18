@@ -20,6 +20,7 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.test.TestMediaDriver;
+import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.IdleStrategy;
@@ -95,7 +96,7 @@ public class MemoryOrderingTest
                         }
 
                         idleStrategy.idle();
-                        SystemTest.checkInterruptedStatus();
+                        Tests.checkInterruptedStatus();
                     }
 
                     if (i % BURST_LENGTH == 0)
@@ -148,7 +149,7 @@ public class MemoryOrderingTest
                         }
 
                         idleStrategy.idle();
-                        SystemTest.checkInterruptedStatus();
+                        Tests.checkInterruptedStatus();
                     }
 
                     if (i % BURST_LENGTH == 0)

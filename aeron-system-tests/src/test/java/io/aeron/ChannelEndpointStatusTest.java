@@ -23,6 +23,7 @@ import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.status.ChannelEndpointStatus;
 import io.aeron.test.TestMediaDriver;
+import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
@@ -142,7 +143,7 @@ public class ChannelEndpointStatusTest
             while (subscription.channelStatus() == ChannelEndpointStatus.INITIALIZING)
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
 
             assertThat(subscription.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
@@ -159,7 +160,7 @@ public class ChannelEndpointStatusTest
             while (publication.channelStatus() == ChannelEndpointStatus.INITIALIZING)
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
 
             assertThat(publication.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
@@ -174,7 +175,7 @@ public class ChannelEndpointStatusTest
         while (subscriptionA.channelStatus() == ChannelEndpointStatus.INITIALIZING)
         {
             Thread.yield();
-            SystemTest.checkInterruptedStatus();
+            Tests.checkInterruptedStatus();
         }
 
         assertThat(subscriptionA.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
@@ -204,7 +205,7 @@ public class ChannelEndpointStatusTest
         while (publicationA.channelStatus() == ChannelEndpointStatus.INITIALIZING)
         {
             Thread.yield();
-            SystemTest.checkInterruptedStatus();
+            Tests.checkInterruptedStatus();
         }
 
         assertThat(publicationA.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
@@ -235,7 +236,7 @@ public class ChannelEndpointStatusTest
         while (subscriptionA.channelStatus() == ChannelEndpointStatus.INITIALIZING)
         {
             Thread.yield();
-            SystemTest.checkInterruptedStatus();
+            Tests.checkInterruptedStatus();
         }
 
         final Subscription subscriptionB = clientB.addSubscription(URI_NO_CONFLICT, STREAM_ID);
@@ -245,7 +246,7 @@ public class ChannelEndpointStatusTest
             subscriptionC.channelStatus() == ChannelEndpointStatus.INITIALIZING)
         {
             Thread.yield();
-            SystemTest.checkInterruptedStatus();
+            Tests.checkInterruptedStatus();
         }
 
         verify(errorHandlerClientC, timeout(5000L)).onError(any(ChannelEndpointException.class));

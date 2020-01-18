@@ -25,6 +25,7 @@ import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.RawBlockHandler;
 import io.aeron.test.MediaDriverTestWatcher;
 import io.aeron.test.TestMediaDriver;
+import io.aeron.test.Tests;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
@@ -117,7 +118,7 @@ public class PubAndSubTest
             publishMessage();
 
             final MutableLong bytesRead = new MutableLong();
-            SystemTest.executeUntil(
+            SystemTests.executeUntil(
                 () -> bytesRead.value > 0,
                 (i) ->
                 {
@@ -168,12 +169,12 @@ public class PubAndSubTest
                 while (publication.offer(buffer, 0, messageLength) < 0L)
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 final MutableInteger fragmentsRead = new MutableInteger();
 
-                SystemTest.executeUntil(
+                SystemTests.executeUntil(
                     () -> fragmentsRead.value > 0,
                     (j) ->
                     {
@@ -219,12 +220,12 @@ public class PubAndSubTest
                 while (publication.offer(buffer, 0, messageLength) < 0L)
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 final MutableInteger fragmentsRead = new MutableInteger();
 
-                SystemTest.executeUntil(
+                SystemTests.executeUntil(
                     () -> fragmentsRead.value > 0,
                     (j) ->
                     {
@@ -244,7 +245,7 @@ public class PubAndSubTest
                 while (publication.offer(buffer, 0, messageLength) < 0L)
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
             }
 
@@ -252,19 +253,19 @@ public class PubAndSubTest
             while (publication.offer(buffer, 0, lastMessageLength) < 0L)
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
 
             // no roll over
             while (publication.offer(buffer, 0, messageLength) < 0L)
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();
 
-            SystemTest.executeUntil(
+            SystemTests.executeUntil(
                 () -> fragmentsRead.value == 9,
                 (j) ->
                 {
@@ -328,11 +329,11 @@ public class PubAndSubTest
                 while (publication.offer(buffer, 0, messageLength) < 0L)
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 final MutableInteger mutableInteger = new MutableInteger();
-                SystemTest.executeUntil(
+                SystemTests.executeUntil(
                     () -> mutableInteger.value > 0,
                     (j) ->
                     {
@@ -391,13 +392,13 @@ public class PubAndSubTest
                     while (publication.offer(buffer, 0, messageLength) < 0L)
                     {
                         Thread.yield();
-                        SystemTest.checkInterruptedStatus();
+                        Tests.checkInterruptedStatus();
                     }
                 }
 
                 final MutableInteger fragmentsRead = new MutableInteger();
 
-                SystemTest.executeUntil(
+                SystemTests.executeUntil(
                     () -> fragmentsRead.value >= numMessagesPerBatch,
                     (j) ->
                     {
@@ -446,13 +447,13 @@ public class PubAndSubTest
                     while (publication.offer(buffer, 0, messageLength) < 0L)
                     {
                         Thread.yield();
-                        SystemTest.checkInterruptedStatus();
+                        Tests.checkInterruptedStatus();
                     }
                 }
 
                 final MutableInteger fragmentsRead = new MutableInteger();
 
-                SystemTest.executeUntil(
+                SystemTests.executeUntil(
                     () -> fragmentsRead.value >= numMessagesPerBatch,
                     (j) ->
                     {
@@ -469,13 +470,13 @@ public class PubAndSubTest
 
             while (publication.offer(buffer, 0, messageLength) < 0L)
             {
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
                 Thread.yield();
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();
 
-            SystemTest.executeUntil(
+            SystemTests.executeUntil(
                 () -> fragmentsRead.value > 0,
                 (j) ->
                 {
@@ -522,12 +523,12 @@ public class PubAndSubTest
                 while (publication.offer(buffer, 0, messageLength) < 0L)
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 final MutableInteger fragmentsRead = new MutableInteger();
 
-                SystemTest.executeUntil(
+                SystemTests.executeUntil(
                     () -> fragmentsRead.value > 0,
                     (j) ->
                     {
@@ -579,13 +580,13 @@ public class PubAndSubTest
                     while (publication.offer(buffer, 0, messageLength) < 0L)
                     {
                         Thread.yield();
-                        SystemTest.checkInterruptedStatus();
+                        Tests.checkInterruptedStatus();
                     }
                 }
 
                 final MutableInteger fragmentsRead = new MutableInteger();
 
-                SystemTest.executeUntil(
+                SystemTests.executeUntil(
                     () -> fragmentsRead.value >= numMessagesPerBatch,
                     (j) ->
                     {
@@ -639,7 +640,7 @@ public class PubAndSubTest
                         break;
                     }
 
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                     Thread.yield();
                 }
 
@@ -654,7 +655,7 @@ public class PubAndSubTest
             final MutableInteger fragmentsRead = new MutableInteger();
             final int messagesToReceive = messagesSent;
 
-            SystemTest.executeUntil(
+            SystemTests.executeUntil(
                 () -> fragmentsRead.value >= messagesToReceive,
                 (j) ->
                 {
@@ -698,7 +699,7 @@ public class PubAndSubTest
             while (!subscription.isConnected())
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
 
             for (int i = 0; i < numMessagesToSendStageOne; i++)
@@ -706,12 +707,12 @@ public class PubAndSubTest
                 while (publication.offer(buffer, 0, messageLength) < 0L)
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 final MutableInteger fragmentsRead = new MutableInteger();
 
-                SystemTest.executeUntil(
+                SystemTests.executeUntil(
                     () -> fragmentsRead.value > 0,
                     (j) ->
                     {
@@ -734,7 +735,7 @@ public class PubAndSubTest
             while (!subscription.isConnected())
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
 
             assertEquals(publication.position(), subscription.imageAtIndex(0).position());
@@ -744,12 +745,12 @@ public class PubAndSubTest
                 while (publication.offer(buffer, 0, messageLength) < 0L)
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 final MutableInteger fragmentsRead = new MutableInteger();
 
-                SystemTest.executeUntil(
+                SystemTests.executeUntil(
                     () -> fragmentsRead.value > 0,
                     (j) ->
                     {
@@ -797,13 +798,13 @@ public class PubAndSubTest
                 while (publication.offer(buffer, 0, messageLength) < 0L)
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();
 
-            SystemTest.executeUntil(
+            SystemTests.executeUntil(
                 () -> fragmentsRead.value > numFramesToExpect,
                 (j) ->
                 {
@@ -836,7 +837,7 @@ public class PubAndSubTest
             while (!publication.isConnected())
             {
                 Thread.sleep(1);
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
 
             subscription.close();
@@ -844,7 +845,7 @@ public class PubAndSubTest
             while (publication.isConnected())
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
         });
     }
@@ -856,7 +857,7 @@ public class PubAndSubTest
         while (publication.offer(buffer, 0, SIZE_OF_INT) < 0L)
         {
             Thread.yield();
-            SystemTest.checkInterruptedStatus();
+            Tests.checkInterruptedStatus();
         }
     }
 }

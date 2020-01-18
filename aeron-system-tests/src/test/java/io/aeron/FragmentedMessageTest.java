@@ -21,6 +21,7 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.test.TestMediaDriver;
+import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -91,7 +92,7 @@ public class FragmentedMessageTest
                 while (publication.offer(srcBuffer, offset, srcBuffer.capacity()) < 0L)
                 {
                     Thread.yield();
-                    SystemTest.checkInterruptedStatus();
+                    Tests.checkInterruptedStatus();
                 }
 
                 final int expectedFragmentsBecauseOfHeader = 5;
@@ -102,7 +103,7 @@ public class FragmentedMessageTest
                     if (0 == fragments)
                     {
                         Thread.yield();
-                        SystemTest.checkInterruptedStatus();
+                        Tests.checkInterruptedStatus();
                     }
                     numFragments += fragments;
                 }

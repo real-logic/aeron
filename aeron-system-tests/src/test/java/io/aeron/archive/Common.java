@@ -18,12 +18,12 @@ package io.aeron.archive;
 import io.aeron.FragmentAssembler;
 import io.aeron.Publication;
 import io.aeron.Subscription;
-import io.aeron.SystemTest;
 import io.aeron.archive.client.RecordingSignalAdapter;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.test.Tests;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableReference;
@@ -44,7 +44,7 @@ class Common
         while (NULL_VALUE == (counterId = RecordingPos.findCounterIdBySession(counters, sessionId)))
         {
             Thread.yield();
-            SystemTest.checkInterruptedStatus();
+            Tests.checkInterruptedStatus();
         }
 
         return counterId;
@@ -61,7 +61,7 @@ class Common
             while (publication.offer(buffer, 0, length) <= 0)
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
         }
     }
@@ -77,7 +77,7 @@ class Common
             while (publication.offer(buffer, 0, length) <= 0)
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
         }
     }
@@ -102,7 +102,7 @@ class Common
             if (0 == subscription.poll(fragmentHandler, FRAGMENT_LIMIT))
             {
                 Thread.yield();
-                SystemTest.checkInterruptedStatus();
+                Tests.checkInterruptedStatus();
             }
         }
 
@@ -119,7 +119,7 @@ class Common
             }
 
             Thread.yield();
-            SystemTest.checkInterruptedStatus();
+            Tests.checkInterruptedStatus();
         }
     }
 
@@ -128,7 +128,7 @@ class Common
         while (0 == recordingSignalAdapter.poll())
         {
             Thread.yield();
-            SystemTest.checkInterruptedStatus();
+            Tests.checkInterruptedStatus();
         }
     }
 

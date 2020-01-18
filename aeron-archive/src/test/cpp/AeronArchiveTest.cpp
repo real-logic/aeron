@@ -72,7 +72,8 @@ public:
         m_pid = ::fork();
         if (0 == m_pid)
         {
-            if (::execl(m_java.c_str(),
+            if (::execl(
+                m_java.c_str(),
                 "java",
 #if JAVA_MAJOR_VERSION >= 9
                 "--add-opens",
@@ -107,13 +108,13 @@ public:
 
         auto onEncodedCredentials = []() -> std::pair<const char *, std::uint32_t>
         {
-            std::string creds("admin:admin");
+            std::string credentials("admin:admin");
 
-            char *arr = new char[creds.length() + 1];
-            std::memcpy(arr, creds.data(), creds.length());
-            arr[creds.length()] = '\0';
+            char *arr = new char[credentials.length() + 1];
+            std::memcpy(arr, credentials.data(), credentials.length());
+            arr[credentials.length()] = '\0';
 
-            return { arr, creds.length() };
+            return { arr, credentials.length() };
         };
 
         m_context.credentialsSupplier(CredentialsSupplier(onEncodedCredentials));
@@ -322,11 +323,22 @@ TEST_F(AeronArchiveTest, shouldRecordPublicationAndFindRecording)
 
     const std::int32_t count = aeronArchive->listRecording(
         recordingId,
-        [&](std::int64_t controlSessionId, std::int64_t correlationId, std::int64_t recordingId1,
-            std::int64_t startTimestamp, std::int64_t stopTimestamp, std::int64_t startPosition,
-            std::int64_t newStopPosition, std::int32_t initialTermId, std::int32_t segmentFileLength,
-            std::int32_t termBufferLength, std::int32_t mtuLength, std::int32_t sessionId1, std::int32_t streamId,
-            const std::string& strippedChannel, const std::string& originalChannel, const std::string& sourceIdentity)
+        [&](std::int64_t controlSessionId,
+            std::int64_t correlationId,
+            std::int64_t recordingId1,
+            std::int64_t startTimestamp,
+            std::int64_t stopTimestamp,
+            std::int64_t startPosition,
+            std::int64_t newStopPosition,
+            std::int32_t initialTermId,
+            std::int32_t segmentFileLength,
+            std::int32_t termBufferLength,
+            std::int32_t mtuLength,
+            std::int32_t sessionId1,
+            std::int32_t streamId,
+            const std::string& strippedChannel,
+            const std::string& originalChannel,
+            const std::string& sourceIdentity)
         {
             EXPECT_EQ(recordingId, recordingId1);
             EXPECT_EQ(streamId, m_recordingStreamId);
@@ -600,15 +612,15 @@ struct SubscriptionDescriptor
 TEST_F(AeronArchiveTest, shouldListRegisteredRecordingSubscriptions)
 {
     std::vector<SubscriptionDescriptor> descriptors;
-    recording_subscription_descriptor_consumer_t consumer = [&](
-        std::int64_t controlSessionId,
-        std::int64_t correlationId,
-        std::int64_t subscriptionId,
-        std::int32_t streamId,
-        const std::string& strippedChannel)
-    {
-        descriptors.emplace_back(controlSessionId, correlationId, subscriptionId, streamId, strippedChannel);
-    };
+    recording_subscription_descriptor_consumer_t consumer =
+        [&](std::int64_t controlSessionId,
+            std::int64_t correlationId,
+            std::int64_t subscriptionId,
+            std::int32_t streamId,
+            const std::string& strippedChannel)
+        {
+            descriptors.emplace_back(controlSessionId, correlationId, subscriptionId, streamId, strippedChannel);
+        };
 
     const std::int32_t expectedStreamId = 7;
     const std::string channelOne = "aeron:ipc";
@@ -789,18 +801,18 @@ TEST_F(AeronArchiveTest, shouldMergeFromReplayToLive)
 
 TEST_F(AeronArchiveTest, shouldExceptionForIncorrectInitialCredentials)
 {
-    auto onEncodedCrdentials = []() -> std::pair<const char *, std::uint32_t>
+    auto onEncodedCredentials = []() -> std::pair<const char *, std::uint32_t>
     {
-        std::string creds("admin:NotAdmin");
+        std::string credentials("admin:NotAdmin");
 
-        char *arr = new char[creds.length() + 1];
-        std::memcpy(arr, creds.data(), creds.length());
-        arr[creds.length()] = '\0';
+        char *arr = new char[credentials.length() + 1];
+        std::memcpy(arr, credentials.data(), credentials.length());
+        arr[credentials.length()] = '\0';
 
-        return { arr, creds.length() };
+        return { arr, credentials.length() };
     };
 
-    m_context.credentialsSupplier(CredentialsSupplier(onEncodedCrdentials));
+    m_context.credentialsSupplier(CredentialsSupplier(onEncodedCredentials));
 
     ASSERT_THROW(
         {
@@ -811,30 +823,30 @@ TEST_F(AeronArchiveTest, shouldExceptionForIncorrectInitialCredentials)
 
 TEST_F(AeronArchiveTest, shouldBeAbleToHandleBeingChallenged)
 {
-    auto onEncodedCrdentials = []() -> std::pair<const char *, std::uint32_t>
+    auto onEncodedCredentials = []() -> std::pair<const char *, std::uint32_t>
     {
-        std::string creds("admin:adminC");
+        std::string credentials("admin:adminC");
 
-        char *arr = new char[creds.length() + 1];
-        std::memcpy(arr, creds.data(), creds.length());
-        arr[creds.length()] = '\0';
+        char *arr = new char[credentials.length() + 1];
+        std::memcpy(arr, credentials.data(), credentials.length());
+        arr[credentials.length()] = '\0';
 
-        return { arr, creds.length() };
+        return { arr, credentials.length() };
     };
 
     auto onChallenge = [](std::pair<const char *, std::uint32_t> encodedChallenge) ->
         std::pair<const char *, std::uint32_t>
     {
-        std::string creds("admin:CSadmin");
+        std::string credentials("admin:CSadmin");
 
-        char *arr = new char[creds.length() + 1];
-        std::memcpy(arr, creds.data(), creds.length());
-        arr[creds.length()] = '\0';
+        char *arr = new char[credentials.length() + 1];
+        std::memcpy(arr, credentials.data(), credentials.length());
+        arr[credentials.length()] = '\0';
 
-        return { arr, creds.length() };
+        return { arr, credentials.length() };
     };
 
-    m_context.credentialsSupplier(CredentialsSupplier(onEncodedCrdentials, onChallenge));
+    m_context.credentialsSupplier(CredentialsSupplier(onEncodedCredentials, onChallenge));
 
     ASSERT_NO_THROW(
         {
@@ -844,30 +856,30 @@ TEST_F(AeronArchiveTest, shouldBeAbleToHandleBeingChallenged)
 
 TEST_F(AeronArchiveTest, shouldExceptionForIncorrectChallengeCredentials)
 {
-    auto onEncodedCrdentials = []() -> std::pair<const char *, std::uint32_t>
+    auto onEncodedCredentials = []() -> std::pair<const char *, std::uint32_t>
     {
-        std::string creds("admin:adminC");
+        std::string credentials("admin:adminC");
 
-        char *arr = new char[creds.length() + 1];
-        std::memcpy(arr, creds.data(), creds.length());
-        arr[creds.length()] = '\0';
+        char *arr = new char[credentials.length() + 1];
+        std::memcpy(arr, credentials.data(), credentials.length());
+        arr[credentials.length()] = '\0';
 
-        return { arr, creds.length() };
+        return { arr, credentials.length() };
     };
 
     auto onChallenge = [](std::pair<const char *, std::uint32_t> encodedChallenge) ->
         std::pair<const char *, std::uint32_t>
     {
-        std::string creds("admin:adminNoCS");
+        std::string credentials("admin:adminNoCS");
 
-        char *arr = new char[creds.length() + 1];
-        std::memcpy(arr, creds.data(), creds.length());
-        arr[creds.length()] = '\0';
+        char *arr = new char[credentials.length() + 1];
+        std::memcpy(arr, credentials.data(), credentials.length());
+        arr[credentials.length()] = '\0';
 
-        return { arr, creds.length() };
+        return { arr, credentials.length() };
     };
 
-    m_context.credentialsSupplier(CredentialsSupplier(onEncodedCrdentials, onChallenge));
+    m_context.credentialsSupplier(CredentialsSupplier(onEncodedCredentials, onChallenge));
 
     ASSERT_THROW(
         {

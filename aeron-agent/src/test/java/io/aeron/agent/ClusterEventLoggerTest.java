@@ -15,6 +15,7 @@
  */
 package io.aeron.agent;
 
+import org.agrona.BitUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.junit.jupiter.api.Test;
@@ -42,7 +43,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ClusterEventLoggerTest
 {
-    private final UnsafeBuffer logBuffer = new UnsafeBuffer(allocateDirect(MAX_EVENT_LENGTH + TRAILER_LENGTH));
+    private final UnsafeBuffer logBuffer = new UnsafeBuffer(
+        allocateDirect(BitUtil.align(MAX_EVENT_LENGTH, 64) + TRAILER_LENGTH));
     private final ClusterEventLogger logger = new ClusterEventLogger(new ManyToOneRingBuffer(logBuffer));
 
     @ParameterizedTest

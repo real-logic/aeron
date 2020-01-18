@@ -23,20 +23,19 @@ import java.util.Set;
 import java.util.function.Function;
 
 import static io.aeron.agent.DriverEventCode.*;
-import static java.lang.System.err;
-import static java.lang.System.getProperty;
+import static java.lang.System.*;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.SystemUtil.getSizeAsInt;
 import static org.agrona.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
 
 /**
- * Common configuration elements between event loggers and event reader side
+ * Common configuration elements between event loggers and event reader side.
  */
 final class EventConfiguration
 {
     /**
-     * Event Buffer length system property name
+     * Event Buffer length system property name.
      */
     public static final String BUFFER_LENGTH_PROP_NAME = "aeron.event.buffer.length";
 
@@ -68,6 +67,9 @@ final class EventConfiguration
      */
     public static final String ENABLED_ARCHIVE_EVENT_CODES_PROP_NAME = "aeron.event.archive.log";
 
+    /**
+     * Event codes for admin events within the driver, i.e. does not include frame capture.
+     */
     public static final Set<DriverEventCode> ADMIN_ONLY_EVENT_CODES = EnumSet.of(
         CMD_IN_ADD_PUBLICATION,
         CMD_IN_ADD_SUBSCRIPTION,
@@ -100,12 +102,12 @@ final class EventConfiguration
     /**
      * Event Buffer default length (in bytes).
      */
-    public static final int BUFFER_LENGTH_DEFAULT = 2 * 1024 * 1024;
+    public static final int BUFFER_LENGTH_DEFAULT = 4 * 1024 * 1024;
 
     /**
      * Maximum length of an event in bytes.
      */
-    public static final int MAX_EVENT_LENGTH = 4096;
+    public static final int MAX_EVENT_LENGTH = 4096 - lineSeparator().length();
 
     /**
      * Iteration limit for event reader loop.

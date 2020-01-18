@@ -23,17 +23,13 @@ import org.agrona.concurrent.MessageHandler;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.charset.CharsetEncoder;
-import java.nio.charset.CoderResult;
 import java.nio.file.Paths;
 
 import static io.aeron.agent.CommonEventDissector.dissectLogStartMessage;
 import static io.aeron.agent.EventConfiguration.*;
 import static java.lang.System.*;
 import static java.nio.channels.FileChannel.open;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.*;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BufferUtil.allocateDirectAligned;
@@ -50,7 +46,6 @@ final class EventLogReaderAgent implements Agent, MessageHandler
     public static final String LOG_FILENAME_PROP_NAME = "aeron.event.log.filename";
 
     private final StringBuilder builder = new StringBuilder();
-    private CharsetEncoder encoder;
     private ByteBuffer byteBuffer;
     private FileChannel fileChannel = null;
 
@@ -72,7 +67,6 @@ final class EventLogReaderAgent implements Agent, MessageHandler
                 LangUtil.rethrowUnchecked(ex);
             }
 
-            encoder = UTF_8.newEncoder();
             byteBuffer = allocateDirectAligned(MAX_EVENT_LENGTH + lineSeparator().length(), CACHE_LINE_LENGTH);
         }
 
@@ -146,16 +140,14 @@ final class EventLogReaderAgent implements Agent, MessageHandler
     {
         try
         {
-            buffer.clear();
-            encoder.reset();
+            final StringBuilder builder = this.builder;
+            final int length = builder.length();
+            buffer.clear().limit(length);
 
-            final CoderResult coderResult = encoder.encode(CharBuffer.wrap(builder), buffer, false);
-            if (CoderResult.UNDERFLOW != coderResult)
+            for (int i = 0; i < length; i++)
             {
-                coderResult.throwException();
+                buffer.put(i, (byte)builder.charAt(i));
             }
-
-            buffer.flip();
 
             do
             {

@@ -17,6 +17,7 @@ package io.aeron.agent;
 
 import io.aeron.archive.codecs.ListRecordingRequestDecoder;
 import io.aeron.archive.codecs.MessageHeaderEncoder;
+import org.agrona.BitUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.junit.jupiter.api.AfterEach;
@@ -45,9 +46,10 @@ import static org.junit.jupiter.params.provider.EnumSource.Mode.INCLUDE;
 
 class ArchiveEventLoggerTest
 {
-    private final UnsafeBuffer logBuffer = new UnsafeBuffer(allocateDirect(MAX_EVENT_LENGTH * 8 + TRAILER_LENGTH));
+    private final UnsafeBuffer logBuffer = new UnsafeBuffer(
+        allocateDirect(BitUtil.align(MAX_EVENT_LENGTH, 64) * 8 + TRAILER_LENGTH));
     private final ArchiveEventLogger logger = new ArchiveEventLogger(new ManyToOneRingBuffer(logBuffer));
-    private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirect(MAX_EVENT_LENGTH * 3));
+    private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirect(BitUtil.align(MAX_EVENT_LENGTH, 64) * 3));
 
     @AfterEach
     void after()

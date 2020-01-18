@@ -15,6 +15,7 @@
  */
 package io.aeron.agent;
 
+import org.agrona.BitUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.junit.jupiter.api.AfterEach;
@@ -42,9 +43,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class DriverEventLoggerTest
 {
-    private final UnsafeBuffer logBuffer = new UnsafeBuffer(allocateDirect(MAX_EVENT_LENGTH * 8 + TRAILER_LENGTH));
+    private final UnsafeBuffer logBuffer = new UnsafeBuffer(
+        allocateDirect(BitUtil.align(MAX_EVENT_LENGTH, 64) * 8 + TRAILER_LENGTH));
     private final DriverEventLogger logger = new DriverEventLogger(new ManyToOneRingBuffer(logBuffer));
-    private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirect(MAX_EVENT_LENGTH * 3));
+    private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirect(BitUtil.align(MAX_EVENT_LENGTH, 64) * 3));
 
     @AfterEach
     void after()

@@ -73,7 +73,7 @@ public class ErrorResponseFlyweight
     /**
      * Set correlation ID of the offending command.
      *
-     * @param correlationId of the offending command
+     * @param correlationId of the offending command.
      * @return flyweight
      */
     public ErrorResponseFlyweight offendingCommandCorrelationId(final long correlationId)
@@ -85,7 +85,7 @@ public class ErrorResponseFlyweight
     /**
      * Error code for the command.
      *
-     * @return error code for the command
+     * @return error code for the command.
      */
     public ErrorCode errorCode()
     {
@@ -95,7 +95,7 @@ public class ErrorResponseFlyweight
     /**
      * Error code value for the command.
      *
-     * @return error code value for the command
+     * @return error code value for the command.
      */
     public int errorCodeValue()
     {
@@ -105,7 +105,7 @@ public class ErrorResponseFlyweight
     /**
      * Set the error code for the command.
      *
-     * @param code for the error
+     * @param code for the error.
      * @return flyweight
      */
     public ErrorResponseFlyweight errorCode(final ErrorCode code)
@@ -121,18 +121,29 @@ public class ErrorResponseFlyweight
      */
     public String errorMessage()
     {
-        return buffer.getStringUtf8(offset + ERROR_MESSAGE_OFFSET);
+        return buffer.getStringAscii(offset + ERROR_MESSAGE_OFFSET);
     }
 
     /**
-     * Set the error message
+     * Append the error message to an appendable without allocation.
      *
-     * @param message to associate with the error
+     * @param appendable to append error message to.
+     * @return number bytes copied.
+     */
+    public int appendMessage(final Appendable appendable)
+    {
+        return buffer.getStringAscii(offset + ERROR_MESSAGE_OFFSET, appendable);
+    }
+
+    /**
+     * Set the error message.
+     *
+     * @param message to associate with the error.
      * @return flyweight
      */
     public ErrorResponseFlyweight errorMessage(final String message)
     {
-        buffer.putStringUtf8(offset + ERROR_MESSAGE_OFFSET, message);
+        buffer.putStringAscii(offset + ERROR_MESSAGE_OFFSET, message);
         return this;
     }
 

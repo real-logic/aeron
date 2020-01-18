@@ -496,8 +496,9 @@ final class DriverEventDissector
             .append(ERROR_MSG.offendingCommandCorrelationId())
             .append(' ')
             .append(ERROR_MSG.errorCode())
-            .append(' ')
-            .append(ERROR_MSG.errorMessage());
+            .append(' ');
+
+        ERROR_MSG.appendMessage(builder);
     }
 
     private static void dissectCounter(final StringBuilder builder)

@@ -48,7 +48,7 @@ namespace aeron { namespace concurrent { namespace errors {
  *  |R|               First Observation Timestamp                   |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |                     UTF-8 Encoded Error                      ...
+ *  |                     ASCII Encoded Error                      ...
  * ...                                                              |
  *  +---------------------------------------------------------------+
  * </pre>

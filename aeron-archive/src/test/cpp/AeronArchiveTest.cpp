@@ -93,7 +93,7 @@ public:
                 "-Daeron.term.buffer.sparse.file=true",
                 "-Daeron.driver.termination.validator=io.aeron.driver.DefaultAllowTerminationValidator",
                 "-Daeron.term.buffer.length=64k",
-                "-Daeron.archive.authenticator.supplier=io.aeron.samples.archive.TestAuthenticatorSupplier",
+                "-Daeron.archive.authenticator.supplier=io.aeron.samples.archive.SampleAuthenticatorSupplier",
                 ("-Daeron.archive.dir=" + m_archiveDir).c_str(),
                 "-cp",
                 m_aeronAllJar.c_str(),
@@ -105,7 +105,7 @@ public:
             }
         }
 
-        auto onEncodedCrdentials = []() -> std::pair<const char *, std::uint32_t>
+        auto onEncodedCredentials = []() -> std::pair<const char *, std::uint32_t>
         {
             std::string creds("admin:admin");
 
@@ -116,7 +116,7 @@ public:
             return { arr, creds.length() };
         };
 
-        m_context.credentialsSupplier(CredentialsSupplier(onEncodedCrdentials));
+        m_context.credentialsSupplier(CredentialsSupplier(onEncodedCredentials));
 
         m_stream << "ArchivingMediaDriver PID " << std::to_string(m_pid) << std::endl;
     }

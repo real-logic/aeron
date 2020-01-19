@@ -42,7 +42,7 @@ public class BufferClaimMessageTest
 {
     private static List<String> channels()
     {
-        return Arrays.asList("aeron:udp?endpoint=localhost:54325", CommonContext.IPC_CHANNEL);
+        return Arrays.asList("aeron:udp?endpoint=localhost:24325", CommonContext.IPC_CHANNEL);
     }
 
     private static final int STREAM_ID = 1001;

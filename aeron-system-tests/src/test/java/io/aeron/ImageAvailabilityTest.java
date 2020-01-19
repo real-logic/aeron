@@ -38,7 +38,7 @@ public class ImageAvailabilityTest
     {
         return asList(
             "aeron:ipc?term-length=64k",
-            "aeron:udp?endpoint=localhost:54325|term-length=64k",
+            "aeron:udp?endpoint=localhost:24325|term-length=64k",
             "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost");
     }
 

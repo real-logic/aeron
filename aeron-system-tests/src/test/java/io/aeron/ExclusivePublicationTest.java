@@ -40,7 +40,7 @@ public class ExclusivePublicationTest
     {
         return asList(
             "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost",
-            "aeron:udp?endpoint=localhost:54325",
+            "aeron:udp?endpoint=localhost:24325",
             CommonContext.IPC_CHANNEL);
     }
 

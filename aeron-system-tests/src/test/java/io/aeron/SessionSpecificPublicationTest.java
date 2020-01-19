@@ -37,7 +37,7 @@ import static org.mockito.Mockito.mock;
 
 public class SessionSpecificPublicationTest
 {
-    private static final String ENDPOINT = "localhost:54325";
+    private static final String ENDPOINT = "localhost:24325";
     private static final int SESSION_ID_1 = 1077;
     private static final int SESSION_ID_2 = 1078;
     private static final int STREAM_ID = 1007;

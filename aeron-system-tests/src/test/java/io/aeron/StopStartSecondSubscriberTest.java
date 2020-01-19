@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class StopStartSecondSubscriberTest
 {
-    public static final String CHANNEL1 = "aeron:udp?endpoint=localhost:54325";
+    public static final String CHANNEL1 = "aeron:udp?endpoint=localhost:24325";
     public static final String CHANNEL2 = "aeron:udp?endpoint=localhost:54326";
     private static final int STREAM_ID1 = 1001;
     private static final int STREAM_ID2 = 1002;

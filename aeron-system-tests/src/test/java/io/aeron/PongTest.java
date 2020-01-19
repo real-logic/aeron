@@ -41,7 +41,7 @@ import static org.mockito.Mockito.*;
 
 public class PongTest
 {
-    private static final String PING_URI = "aeron:udp?endpoint=localhost:54325";
+    private static final String PING_URI = "aeron:udp?endpoint=localhost:24325";
     private static final String PONG_URI = "aeron:udp?endpoint=localhost:54326";
 
     private static final int PING_STREAM_ID = 1001;

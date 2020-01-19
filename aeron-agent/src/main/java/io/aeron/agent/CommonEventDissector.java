@@ -17,13 +17,13 @@ package io.aeron.agent;
 
 import org.agrona.MutableDirectBuffer;
 
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 import static java.lang.Integer.toHexString;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.time.Instant.ofEpochMilli;
 import static java.time.OffsetDateTime.ofInstant;
-import static java.time.ZoneId.systemDefault;
 import static java.time.format.DateTimeFormatter.ofPattern;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
@@ -37,13 +37,17 @@ final class CommonEventDissector
     {
     }
 
-    static void dissectLogStartMessage(final long timestampNs, final long timestampMs, final StringBuilder builder)
+    static void dissectLogStartMessage(
+        final long timestampNs,
+        final long timestampMs,
+        final ZoneId zone,
+        final StringBuilder builder)
     {
         builder
             .append('[')
             .append(((double)timestampNs) / NANOS_PER_SECOND)
             .append("] log started ")
-            .append(DATE_TIME_FORMATTER.format(ofInstant(ofEpochMilli(timestampMs), systemDefault())));
+            .append(DATE_TIME_FORMATTER.format(ofInstant(ofEpochMilli(timestampMs), zone)));
     }
 
     static int dissectLogHeader(

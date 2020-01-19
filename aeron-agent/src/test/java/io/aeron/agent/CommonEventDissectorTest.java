@@ -18,6 +18,8 @@ package io.aeron.agent;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
+import java.time.ZoneId;
+
 import static io.aeron.agent.CommonEventEncoder.LOG_HEADER_LENGTH;
 import static io.aeron.agent.CommonEventEncoder.internalEncodeLogHeader;
 import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
@@ -37,15 +39,16 @@ class CommonEventDissectorTest
     @Test
     void dissectLogStartMessage()
     {
-
         final long timestampNs = 10_000_001_055L;
         final long timestampMs = 10_000_001L;
 
-        CommonEventDissector.dissectLogStartMessage(timestampNs, timestampMs, builder);
+        CommonEventDissector.dissectLogStartMessage(timestampNs, timestampMs, ZoneId.of("UTC"), builder);
+        assertThat(builder.toString(), equalTo("[10.000001055] log started 1970-01-01 02:46:40.001+0000"));
 
-        assertThat(builder.toString(), allOf(
-            startsWith("[10.000001055] log started 1970-01-01 0"),
-            containsString(":46:40.001+")));
+        builder.delete(0, builder.length());
+
+        CommonEventDissector.dissectLogStartMessage(timestampNs, timestampMs, ZoneId.of("America/New_York"), builder);
+        assertThat(builder.toString(), equalTo("[10.000001055] log started 1969-12-31 21:46:40.001-0500"));
     }
 
     @Test

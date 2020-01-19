@@ -31,6 +31,7 @@ import static io.aeron.agent.EventConfiguration.*;
 import static java.lang.System.*;
 import static java.nio.channels.FileChannel.open;
 import static java.nio.file.StandardOpenOption.*;
+import static java.time.ZoneId.systemDefault;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 
@@ -71,7 +72,7 @@ final class EventLogReaderAgent implements Agent, MessageHandler
         }
 
         builder.setLength(0);
-        dissectLogStartMessage(nanoTime(), currentTimeMillis(), builder);
+        dissectLogStartMessage(nanoTime(), currentTimeMillis(), systemDefault(), builder);
         builder.append(lineSeparator());
 
         if (null == fileChannel)

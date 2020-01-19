@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class GapFillLossTest
 {
-    private static final String CHANNEL = "aeron:udp?endpoint=localhost:54325";
+    private static final String CHANNEL = "aeron:udp?endpoint=localhost:24325";
     private static final String UNRELIABLE_CHANNEL =
         CHANNEL + "|" + CommonContext.RELIABLE_STREAM_PARAM_NAME + "=false";
 

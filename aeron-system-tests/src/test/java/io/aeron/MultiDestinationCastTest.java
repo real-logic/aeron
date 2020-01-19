@@ -44,9 +44,9 @@ import static org.mockito.Mockito.*;
 
 public class MultiDestinationCastTest
 {
-    private static final String PUB_MDC_DYNAMIC_URI = "aeron:udp?control=localhost:54325";
-    private static final String SUB1_MDC_DYNAMIC_URI = "aeron:udp?control=localhost:54325|group=true";
-    private static final String SUB2_MDC_DYNAMIC_URI = "aeron:udp?control=localhost:54325|group=true";
+    private static final String PUB_MDC_DYNAMIC_URI = "aeron:udp?control=localhost:24325";
+    private static final String SUB1_MDC_DYNAMIC_URI = "aeron:udp?control=localhost:24325|group=true";
+    private static final String SUB2_MDC_DYNAMIC_URI = "aeron:udp?control=localhost:24325|group=true";
     private static final String SUB3_MDC_DYNAMIC_URI = CommonContext.SPY_PREFIX + PUB_MDC_DYNAMIC_URI;
 
     private static final String PUB_MDC_MANUAL_URI = "aeron:udp?control-mode=manual|tags=3,4";

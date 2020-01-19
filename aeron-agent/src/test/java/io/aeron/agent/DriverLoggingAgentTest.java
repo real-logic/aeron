@@ -51,7 +51,7 @@ import static org.junit.jupiter.params.provider.EnumSource.Mode.INCLUDE;
 
 public class DriverLoggingAgentTest
 {
-    private static final String NETWORK_CHANNEL = "aeron:udp?endpoint=localhost:54325";
+    private static final String NETWORK_CHANNEL = "aeron:udp?endpoint=localhost:24325";
     private static final int STREAM_ID = 1777;
 
     private static final Set<Integer> LOGGED_EVENTS = synchronizedSet(new HashSet<>());

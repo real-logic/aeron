@@ -116,7 +116,7 @@ public class ArchiveTest
 
         publishUri = new ChannelUriStringBuilder()
             .media("udp")
-            .endpoint("localhost:54325")
+            .endpoint("localhost:24325")
             .termLength(termLength)
             .mtu(mtu)
             .initialTermId(requestedInitialTermId)

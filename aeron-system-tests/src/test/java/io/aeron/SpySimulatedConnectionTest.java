@@ -45,7 +45,7 @@ public class SpySimulatedConnectionTest
     private static List<String> channels()
     {
         return asList(
-            "aeron:udp?endpoint=localhost:54325",
+            "aeron:udp?endpoint=localhost:24325",
             "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost");
     }
 

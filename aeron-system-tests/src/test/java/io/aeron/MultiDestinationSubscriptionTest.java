@@ -42,15 +42,15 @@ import static org.mockito.Mockito.*;
 
 public class MultiDestinationSubscriptionTest
 {
-    private static final String UNICAST_ENDPOINT_A = "localhost:54325";
+    private static final String UNICAST_ENDPOINT_A = "localhost:24325";
     private static final String UNICAST_ENDPOINT_B = "localhost:54326";
 
-    private static final String PUB_UNICAST_URI = "aeron:udp?endpoint=localhost:54325";
+    private static final String PUB_UNICAST_URI = "aeron:udp?endpoint=localhost:24325";
     private static final String PUB_MULTICAST_URI = "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost";
-    private static final String PUB_MDC_URI = "aeron:udp?control=localhost:54325|control-mode=dynamic";
+    private static final String PUB_MDC_URI = "aeron:udp?control=localhost:24325|control-mode=dynamic";
 
     private static final String SUB_URI = "aeron:udp?control-mode=manual";
-    private static final String SUB_MDC_DESTINATION_URI = "aeron:udp?endpoint=localhost:54326|control=localhost:54325";
+    private static final String SUB_MDC_DESTINATION_URI = "aeron:udp?endpoint=localhost:54326|control=localhost:24325";
 
     private static final int STREAM_ID = 1001;
 

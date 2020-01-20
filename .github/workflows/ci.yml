@@ -43,7 +43,7 @@ jobs:
         run: ./gradlew
 
   java-slow-test-build:
-    name: Slow Tests ${{ matrix.java }} (${{ matrix.os }})
+    name: Slow Tests (JDK ${{ matrix.java }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false

@@ -43,12 +43,12 @@ jobs:
         run: ./gradlew
 
   java-slow-test-build:
-    name: Java ${{ matrix.java }} (${{ matrix.os }})
+    name: Slow Tests ${{ matrix.java }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        java: [ '11' ]
+        java: [ '8' ]
         os: ['ubuntu-latest']
     steps:
       - name: Checkout code

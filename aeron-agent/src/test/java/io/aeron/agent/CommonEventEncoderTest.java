@@ -17,31 +17,68 @@ package io.aeron.agent;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.net.InetSocketAddress;
+import java.util.List;
 
 import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static java.util.Arrays.asList;
 import static java.util.Arrays.fill;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 class CommonEventEncoderTest
 {
-    private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(MAX_EVENT_LENGTH, CACHE_LINE_LENGTH));
+    private final UnsafeBuffer buffer = new UnsafeBuffer(
+        allocateDirectAligned(MAX_EVENT_LENGTH * 10, CACHE_LINE_LENGTH));
 
     @Test
     void encodeLogHeader()
     {
-        final int encodedLength = internalEncodeLogHeader(buffer, 0, 100, Integer.MAX_VALUE, () -> 555_000L);
+        final int offset = 12;
+
+        final int encodedLength = internalEncodeLogHeader(buffer, offset, 100, Integer.MAX_VALUE, () -> 555_000L);
 
         assertEquals(LOG_HEADER_LENGTH, encodedLength);
-        assertEquals(100, buffer.getInt(0, LITTLE_ENDIAN));
-        assertEquals(Integer.MAX_VALUE, buffer.getInt(SIZE_OF_INT, LITTLE_ENDIAN));
-        assertEquals(555_000L, buffer.getLong(SIZE_OF_INT * 2, LITTLE_ENDIAN));
+        assertEquals(100, buffer.getInt(offset, LITTLE_ENDIAN));
+        assertEquals(Integer.MAX_VALUE, buffer.getInt(offset + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertEquals(555_000L, buffer.getLong(offset + SIZE_OF_INT * 2, LITTLE_ENDIAN));
+    }
+
+    @Test
+    void encodeLogHeaderThrowsIllegalArgumentExceptionIfCaptureLengthIsNegative()
+    {
+        assertThrows(IllegalArgumentException.class,
+            () -> internalEncodeLogHeader(buffer, 0, -1, Integer.MAX_VALUE, () -> 0));
+    }
+
+    @Test
+    void encodeLogHeaderThrowsIllegalArgumentExceptionIfCaptureLengthIsGreaterThanMaxCaptureSize()
+    {
+        assertThrows(IllegalArgumentException.class,
+            () -> internalEncodeLogHeader(buffer, 0, MAX_CAPTURE_LENGTH + 1, Integer.MAX_VALUE, () -> 0));
+    }
+
+    @Test
+    void encodeLogHeaderThrowsIllegalArgumentExceptionIfCaptureLengthIsGreaterThanLength()
+    {
+        assertThrows(IllegalArgumentException.class,
+            () -> internalEncodeLogHeader(buffer, 0, 100, 80, () -> 0));
+    }
+
+    @Test
+    void encodeLogHeaderThrowsIllegalArgumentExceptionIfLengthIsNegative()
+    {
+        assertThrows(IllegalArgumentException.class,
+            () -> internalEncodeLogHeader(buffer, 0, 20, -2, () -> 0));
     }
 
     @Test
@@ -63,64 +100,104 @@ class CommonEventEncoderTest
     @Test
     void encodeTrailingStringAsAsciiWhenPayloadIsSmallerThanMaxMessageSizeWithoutHeader()
     {
-        final int encodedLength = encodeTrailingString(buffer, LOG_HEADER_LENGTH, "ab©d️");
+        final int offset = 17;
+        final int remainingCapacity = 22;
+
+        final int encodedLength = encodeTrailingString(buffer, offset, remainingCapacity, "ab©d️");
 
         assertEquals(SIZE_OF_INT + 5, encodedLength);
-        assertEquals("ab?d?", buffer.getStringAscii(LOG_HEADER_LENGTH));
+        assertEquals("ab?d?", buffer.getStringAscii(offset));
     }
 
     @Test
     void encodeTrailingStringAsAsciiWhenPayloadExceedsMaxMessageSizeWithoutHeader()
     {
-        final int offset = 100;
-        final char[] chars = new char[MAX_EVENT_LENGTH - offset - SIZE_OF_INT + 1];
+        final int offset = 23;
+        final int remainingCapacity = 59;
+        final char[] chars = new char[100];
         fill(chars, 'x');
         final String value = new String(chars);
 
-        final int encodedLength = encodeTrailingString(buffer, offset, value);
+        final int encodedLength = encodeTrailingString(buffer, offset, remainingCapacity, value);
 
-        assertEquals(MAX_EVENT_LENGTH - offset, encodedLength);
-        assertEquals(value.substring(0, MAX_EVENT_LENGTH - offset - SIZE_OF_INT - 3) + "...",
+        assertEquals(remainingCapacity, encodedLength);
+        assertEquals(value.substring(0, remainingCapacity - SIZE_OF_INT - 3) + "...",
             buffer.getStringAscii(offset));
     }
 
     @Test
     void encodeBufferSmallerThanMaxCaptureSize()
     {
-        final int offset = 20;
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(allocateDirectAligned(256, CACHE_LINE_LENGTH));
+        final int offset = 24;
+        final int srcOffset = 20;
         final int length = 128;
-        final UnsafeBuffer src = new UnsafeBuffer(allocateDirectAligned(256, CACHE_LINE_LENGTH));
-        src.setMemory(offset, length, (byte)111);
+        srcBuffer.setMemory(srcOffset, length, (byte)111);
 
-        final int encodedLength = encode(buffer, src, offset, length);
+        final int encodedLength = encode(buffer, offset, length, length, srcBuffer, srcOffset);
 
         assertEquals(LOG_HEADER_LENGTH + length, encodedLength);
-        assertEquals(length, buffer.getInt(0, LITTLE_ENDIAN));
-        assertEquals(length, buffer.getInt(SIZE_OF_INT, LITTLE_ENDIAN));
-        assertNotEquals(0, buffer.getLong(SIZE_OF_INT * 2, LITTLE_ENDIAN));
+        assertEquals(length, buffer.getInt(offset, LITTLE_ENDIAN));
+        assertEquals(length, buffer.getInt(offset + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertNotEquals(0, buffer.getLong(offset + SIZE_OF_INT * 2, LITTLE_ENDIAN));
         for (int i = 0; i < length; i++)
         {
-            assertEquals(111, buffer.getByte(LOG_HEADER_LENGTH + i));
+            assertEquals(111, buffer.getByte(offset + LOG_HEADER_LENGTH + i));
         }
     }
 
     @Test
     void encodeBufferBuggerThanMaxCaptureSize()
     {
-        final int offset = 20;
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(allocateDirectAligned(MAX_EVENT_LENGTH * 2, CACHE_LINE_LENGTH));
+        final int offset = 256;
+        final int srcOffset = 20;
         final int length = MAX_EVENT_LENGTH + 1000;
-        final UnsafeBuffer src = new UnsafeBuffer(allocateDirectAligned(MAX_EVENT_LENGTH * 2, CACHE_LINE_LENGTH));
-        src.setMemory(offset, length, (byte)-5);
+        srcBuffer.setMemory(srcOffset, length, (byte)-5);
 
-        final int encodedLength = encode(buffer, src, offset, length);
+        final int encodedLength = encode(buffer, offset, MAX_CAPTURE_LENGTH, length, srcBuffer, srcOffset);
 
         assertEquals(MAX_EVENT_LENGTH, encodedLength);
-        assertEquals(MAX_CAPTURE_LENGTH, buffer.getInt(0, LITTLE_ENDIAN));
-        assertEquals(length, buffer.getInt(SIZE_OF_INT, LITTLE_ENDIAN));
-        assertNotEquals(0, buffer.getLong(SIZE_OF_INT * 2, LITTLE_ENDIAN));
+        assertEquals(MAX_CAPTURE_LENGTH, buffer.getInt(offset, LITTLE_ENDIAN));
+        assertEquals(length, buffer.getInt(offset + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertNotEquals(0, buffer.getLong(offset + SIZE_OF_INT * 2, LITTLE_ENDIAN));
         for (int i = 0; i < MAX_CAPTURE_LENGTH; i++)
         {
-            assertEquals(-5, buffer.getByte(LOG_HEADER_LENGTH + i));
+            assertEquals(-5, buffer.getByte(offset + LOG_HEADER_LENGTH + i));
         }
+    }
+
+    @ParameterizedTest
+    @MethodSource("captureLengthArgs")
+    void testCaptureLength(final int length, final int captureLength)
+    {
+        assertEquals(captureLength, captureLength(length));
+    }
+
+    @ParameterizedTest
+    @MethodSource("encodedLengthArgs")
+    void testEncodedLength(final int length, final int encodedLength)
+    {
+        assertEquals(encodedLength, encodedLength(length));
+    }
+
+    private static List<Arguments> captureLengthArgs()
+    {
+        return asList(
+            arguments(0, 0),
+            arguments(10, 10),
+            arguments(MAX_CAPTURE_LENGTH, MAX_CAPTURE_LENGTH),
+            arguments(Integer.MAX_VALUE, MAX_CAPTURE_LENGTH)
+        );
+    }
+
+    private static List<Arguments> encodedLengthArgs()
+    {
+        return asList(
+            arguments(0, LOG_HEADER_LENGTH),
+            arguments(2, LOG_HEADER_LENGTH + 2),
+            arguments(-LOG_HEADER_LENGTH, 0),
+            arguments(Integer.MAX_VALUE, Integer.MIN_VALUE + LOG_HEADER_LENGTH - 1)
+        );
     }
 }

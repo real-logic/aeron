@@ -51,16 +51,16 @@ public class Common
 
     public static void verifyLogHeader(
         final UnsafeBuffer logBuffer,
+        final int recordOffset,
         final int eventCodeId,
-        final int totalLength,
         final int captureLength,
         final int length)
     {
-        assertEquals(HEADER_LENGTH + LOG_HEADER_LENGTH + totalLength,
-            logBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN));
-        assertEquals(eventCodeId, logBuffer.getInt(typeOffset(0), LITTLE_ENDIAN));
-        assertEquals(captureLength, logBuffer.getInt(encodedMsgOffset(0), LITTLE_ENDIAN));
-        assertEquals(length, logBuffer.getInt(encodedMsgOffset(SIZE_OF_INT), LITTLE_ENDIAN));
-        assertNotEquals(0, logBuffer.getLong(encodedMsgOffset(SIZE_OF_INT * 2), LITTLE_ENDIAN));
+        assertEquals(HEADER_LENGTH + LOG_HEADER_LENGTH + captureLength,
+            logBuffer.getInt(lengthOffset(recordOffset), LITTLE_ENDIAN));
+        assertEquals(eventCodeId, logBuffer.getInt(typeOffset(recordOffset), LITTLE_ENDIAN));
+        assertEquals(captureLength, logBuffer.getInt(encodedMsgOffset(recordOffset), LITTLE_ENDIAN));
+        assertEquals(length, logBuffer.getInt(encodedMsgOffset(recordOffset + SIZE_OF_INT), LITTLE_ENDIAN));
+        assertNotEquals(0, logBuffer.getLong(encodedMsgOffset(recordOffset + SIZE_OF_INT * 2), LITTLE_ENDIAN));
     }
 }

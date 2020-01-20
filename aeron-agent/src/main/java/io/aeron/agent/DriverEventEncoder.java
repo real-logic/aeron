@@ -22,8 +22,6 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 import static io.aeron.agent.CommonEventEncoder.*;
-import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
-import static java.lang.Math.min;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
@@ -37,113 +35,116 @@ final class DriverEventEncoder
     {
     }
 
-    static int encode(
+    static void encode(
         final UnsafeBuffer encodingBuffer,
-        final ByteBuffer buffer,
         final int offset,
-        final int bufferLength,
+        final int captureLength,
+        final int length,
+        final ByteBuffer srcBuffer,
+        final int srcOffset,
         final InetSocketAddress dstAddress)
     {
-        final int captureLength = determineCaptureLength(bufferLength);
-        int relativeOffset = encodeLogHeader(encodingBuffer, captureLength, bufferLength);
+        int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
 
-        relativeOffset += encodeSocketAddress(encodingBuffer, relativeOffset, dstAddress);
+        final int encodedSocketLength = encodeSocketAddress(encodingBuffer, offset + relativeOffset, dstAddress);
+        relativeOffset += encodedSocketLength;
 
-        encodingBuffer.putBytes(relativeOffset, buffer, offset, captureLength);
-        relativeOffset += captureLength;
-
-        return relativeOffset;
+        final int bufferCaptureLength = captureLength - encodedSocketLength;
+        encodingBuffer.putBytes(offset + relativeOffset, srcBuffer, srcOffset, bufferCaptureLength);
     }
 
-    static int encode(
+    static void encode(
         final UnsafeBuffer encodingBuffer,
-        final DirectBuffer buffer,
         final int offset,
-        final int bufferLength,
+        final int captureLength,
+        final int length,
+        final DirectBuffer srcBuffer,
+        final int srcOffset,
         final InetSocketAddress dstAddress)
     {
-        final int captureLength = determineCaptureLength(bufferLength);
-        int relativeOffset = encodeLogHeader(encodingBuffer, captureLength, bufferLength);
+        int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
 
-        relativeOffset += encodeSocketAddress(encodingBuffer, relativeOffset, dstAddress);
+        final int encodedSocketLength = encodeSocketAddress(encodingBuffer, offset + relativeOffset, dstAddress);
+        relativeOffset += encodedSocketLength;
 
-        encodingBuffer.putBytes(relativeOffset, buffer, offset, captureLength);
-        relativeOffset += captureLength;
-
-        return relativeOffset;
+        final int bufferCaptureLength = captureLength - encodedSocketLength;
+        encodingBuffer.putBytes(offset + relativeOffset, srcBuffer, srcOffset, bufferCaptureLength);
     }
 
-    static int encode(final UnsafeBuffer encodingBuffer, final String value)
-    {
-        final int encodedLength = encodeTrailingString(encodingBuffer, LOG_HEADER_LENGTH, value);
-        encodeLogHeader(encodingBuffer, encodedLength, value.length() + SIZE_OF_INT);
-
-        return LOG_HEADER_LENGTH + encodedLength;
-    }
-
-    static int encodePublicationRemoval(
-        final UnsafeBuffer encodingBuffer, final String uri, final int sessionId, final int streamId)
-    {
-        int offset = LOG_HEADER_LENGTH;
-        encodingBuffer.putInt(offset, sessionId, LITTLE_ENDIAN);
-        offset += SIZE_OF_INT;
-
-        encodingBuffer.putInt(offset, streamId, LITTLE_ENDIAN);
-        offset += SIZE_OF_INT;
-
-        final int encodedUriLength = encodeTrailingString(encodingBuffer, offset, uri);
-
-        encodeLogHeader(encodingBuffer, offset + encodedUriLength - LOG_HEADER_LENGTH,
-            offset + SIZE_OF_INT + uri.length() - LOG_HEADER_LENGTH);
-
-        return offset + encodedUriLength;
-    }
-
-    static int encodeSubscriptionRemoval(
-        final UnsafeBuffer encodingBuffer, final String uri, final int streamId, final long id)
-    {
-        int offset = LOG_HEADER_LENGTH;
-        encodingBuffer.putInt(offset, streamId, LITTLE_ENDIAN);
-        offset += SIZE_OF_INT;
-
-        encodingBuffer.putLong(offset, id, LITTLE_ENDIAN);
-        offset += SIZE_OF_LONG;
-
-        final int encodedUriLength = encodeTrailingString(encodingBuffer, offset, uri);
-
-        encodeLogHeader(encodingBuffer, offset + encodedUriLength - LOG_HEADER_LENGTH,
-            offset + SIZE_OF_INT + uri.length() - LOG_HEADER_LENGTH);
-
-        return offset + encodedUriLength;
-    }
-
-    static int encodeImageRemoval(
+    static void encode(
         final UnsafeBuffer encodingBuffer,
+        final int offset,
+        final int captureLength,
+        final int length,
+        final String value)
+    {
+        final int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+        encodeTrailingString(encodingBuffer, offset + relativeOffset, captureLength, value);
+    }
+
+    static void encodePublicationRemoval(
+        final UnsafeBuffer encodingBuffer,
+        final int offset,
+        final int captureLength,
+        final int length,
+        final String uri,
+        final int sessionId,
+        final int streamId)
+    {
+        int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+
+        encodingBuffer.putInt(offset + relativeOffset, sessionId, LITTLE_ENDIAN);
+        relativeOffset += SIZE_OF_INT;
+
+        encodingBuffer.putInt(offset + relativeOffset, streamId, LITTLE_ENDIAN);
+        relativeOffset += SIZE_OF_INT;
+
+        encodeTrailingString(encodingBuffer, offset + relativeOffset, captureLength - SIZE_OF_INT * 2, uri);
+    }
+
+    static void encodeSubscriptionRemoval(
+        final UnsafeBuffer encodingBuffer,
+        final int offset,
+        final int captureLength,
+        final int length,
+        final String uri,
+        final int streamId,
+        final long id)
+    {
+        int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+
+        encodingBuffer.putInt(offset + relativeOffset, streamId, LITTLE_ENDIAN);
+        relativeOffset += SIZE_OF_INT;
+
+        encodingBuffer.putLong(offset + relativeOffset, id, LITTLE_ENDIAN);
+        relativeOffset += SIZE_OF_LONG;
+
+        encodeTrailingString(encodingBuffer, offset + relativeOffset, captureLength - SIZE_OF_INT - SIZE_OF_LONG, uri);
+    }
+
+    static void encodeImageRemoval(
+        final UnsafeBuffer encodingBuffer,
+        final int offset,
+        final int captureLength,
+        final int length,
         final String uri,
         final int sessionId,
         final int streamId,
         final long id)
     {
-        int offset = LOG_HEADER_LENGTH;
-        encodingBuffer.putInt(offset, sessionId, LITTLE_ENDIAN);
-        offset += SIZE_OF_INT;
+        int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
 
-        encodingBuffer.putInt(offset, streamId, LITTLE_ENDIAN);
-        offset += SIZE_OF_INT;
+        encodingBuffer.putInt(offset + relativeOffset, sessionId, LITTLE_ENDIAN);
+        relativeOffset += SIZE_OF_INT;
 
-        encodingBuffer.putLong(offset, id, LITTLE_ENDIAN);
-        offset += SIZE_OF_LONG;
+        encodingBuffer.putInt(offset + relativeOffset, streamId, LITTLE_ENDIAN);
+        relativeOffset += SIZE_OF_INT;
 
-        final int encodedUriLength = encodeTrailingString(encodingBuffer, offset, uri);
+        encodingBuffer.putLong(offset + relativeOffset, id, LITTLE_ENDIAN);
+        relativeOffset += SIZE_OF_LONG;
 
-        encodeLogHeader(encodingBuffer, offset + encodedUriLength - LOG_HEADER_LENGTH,
-            offset + SIZE_OF_INT + uri.length() - LOG_HEADER_LENGTH);
-
-        return offset + encodedUriLength;
+        encodeTrailingString(
+            encodingBuffer, offset + relativeOffset, captureLength - SIZE_OF_INT * 2 - SIZE_OF_LONG, uri);
     }
 
-    private static int determineCaptureLength(final int bufferLength)
-    {
-        return min(bufferLength, MAX_EVENT_LENGTH - LOG_HEADER_LENGTH - SOCKET_ADDRESS_MAX_LENGTH);
-    }
 }

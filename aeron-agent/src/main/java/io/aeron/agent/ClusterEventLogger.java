@@ -22,12 +22,10 @@ import org.agrona.concurrent.ringbuffer.RingBuffer;
 
 import static io.aeron.agent.ClusterEventCode.EVENT_CODE_TYPE;
 import static io.aeron.agent.ClusterEventCode.NEW_LEADERSHIP_TERM;
-import static io.aeron.agent.ClusterEventEncoder.encodeNewLeadershipTerm;
-import static io.aeron.agent.ClusterEventEncoder.encodeStateChange;
+import static io.aeron.agent.ClusterEventEncoder.*;
+import static io.aeron.agent.CommonEventEncoder.captureLength;
+import static io.aeron.agent.CommonEventEncoder.encodedLength;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
-import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
-import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
-import static org.agrona.BufferUtil.allocateDirectAligned;
 
 /**
  * Event logger interface used by interceptors for recording cluster events into a {@link RingBuffer} for a
@@ -36,9 +34,6 @@ import static org.agrona.BufferUtil.allocateDirectAligned;
 public final class ClusterEventLogger
 {
     public static final ClusterEventLogger LOGGER = new ClusterEventLogger(EVENT_RING_BUFFER);
-
-    private final UnsafeBuffer encodedBuffer =
-        new UnsafeBuffer(allocateDirectAligned(MAX_EVENT_LENGTH, CACHE_LINE_LENGTH));
 
     private final ManyToOneRingBuffer ringBuffer;
 
@@ -55,24 +50,58 @@ public final class ClusterEventLogger
         final int leaderMemberId,
         final int logSessionId)
     {
-        final int encodedLength = encodeNewLeadershipTerm(
-            encodedBuffer,
-            logLeadershipTermId,
-            leadershipTermId,
-            logPosition,
-            timestamp,
-            leaderMemberId,
-            logSessionId);
-
-        ringBuffer.write(toEventCodeId(NEW_LEADERSHIP_TERM), encodedBuffer, 0, encodedLength);
+        final int length = newLeaderShipTermLength();
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
+        final int index = ringBuffer.tryClaim(toEventCodeId(NEW_LEADERSHIP_TERM), encodedLength);
+        if (index > 0)
+        {
+            try
+            {
+                encodeNewLeadershipTerm(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    captureLength,
+                    length,
+                    logLeadershipTermId,
+                    leadershipTermId,
+                    logPosition,
+                    timestamp,
+                    leaderMemberId,
+                    logSessionId);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
     }
 
     public <T extends Enum<T>> void logStateChange(
         final ClusterEventCode eventCode, final T oldState, final T newState, final int memberId)
     {
-        final int encodedLength = encodeStateChange(encodedBuffer, oldState, newState, memberId);
-
-        ringBuffer.write(toEventCodeId(eventCode), encodedBuffer, 0, encodedLength);
+        final int length = stateChangeLength(oldState, newState);
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
+        final int index = ringBuffer.tryClaim(toEventCodeId(eventCode), encodedLength);
+        if (index > 0)
+        {
+            try
+            {
+                encodeStateChange(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    captureLength,
+                    length,
+                    oldState,
+                    newState,
+                    memberId);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
     }
 
     public static int toEventCodeId(final ClusterEventCode eventCode)

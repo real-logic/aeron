@@ -15,7 +15,6 @@
  */
 package io.aeron.agent;
 
-import org.agrona.BitUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.junit.jupiter.api.AfterEach;
@@ -27,26 +26,27 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 import static io.aeron.agent.Common.verifyLogHeader;
-import static io.aeron.agent.CommonEventEncoder.*;
+import static io.aeron.agent.CommonEventEncoder.LOG_HEADER_LENGTH;
+import static io.aeron.agent.CommonEventEncoder.MAX_CAPTURE_LENGTH;
 import static io.aeron.agent.DriverEventCode.*;
 import static io.aeron.agent.DriverEventLogger.toEventCodeId;
 import static io.aeron.agent.EventConfiguration.*;
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.util.Arrays.fill;
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
-import static org.agrona.concurrent.ringbuffer.RecordDescriptor.encodedMsgOffset;
-import static org.agrona.concurrent.ringbuffer.RecordDescriptor.lengthOffset;
+import static org.agrona.BitUtil.*;
+import static org.agrona.concurrent.ringbuffer.RecordDescriptor.*;
+import static org.agrona.concurrent.ringbuffer.RingBufferDescriptor.TAIL_POSITION_OFFSET;
 import static org.agrona.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class DriverEventLoggerTest
 {
-    private final UnsafeBuffer logBuffer = new UnsafeBuffer(
-        allocateDirect(BitUtil.align(MAX_EVENT_LENGTH, 64) * 8 + TRAILER_LENGTH));
+    public static final int CAPACITY = align(MAX_EVENT_LENGTH, CACHE_LINE_LENGTH) * 8;
+    private final UnsafeBuffer logBuffer = new UnsafeBuffer(allocateDirect(CAPACITY + TRAILER_LENGTH));
     private final DriverEventLogger logger = new DriverEventLogger(new ManyToOneRingBuffer(logBuffer));
-    private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirect(BitUtil.align(MAX_EVENT_LENGTH, 64) * 3));
+    private final UnsafeBuffer buffer = new UnsafeBuffer(
+        allocateDirect(align(MAX_EVENT_LENGTH, CACHE_LINE_LENGTH) * 3));
 
     @AfterEach
     void after()
@@ -76,74 +76,96 @@ class DriverEventLoggerTest
     {
         final DriverEventCode eventCode = CMD_IN_TERMINATE_DRIVER;
         DRIVER_EVENT_CODES.add(eventCode);
-        buffer.setMemory(20, 100, (byte)5);
+        final int recordOffset = align(13, ALIGNMENT);
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, recordOffset);
+        final int length = 100;
+        final int srcOffset = 20;
+        buffer.setMemory(srcOffset, length, (byte)5);
 
-        logger.log(eventCode, buffer, 20, 100);
+        logger.log(eventCode, buffer, srcOffset, length);
 
-        verifyLogHeader(logBuffer, toEventCodeId(eventCode), 100, 100, 100);
-        for (int i = 0; i < 100; i++)
+        verifyLogHeader(logBuffer, recordOffset, toEventCodeId(eventCode), length, length);
+        for (int i = 0; i < length; i++)
         {
-            assertEquals(5, logBuffer.getByte(encodedMsgOffset(LOG_HEADER_LENGTH + i)));
+            assertEquals(5, logBuffer.getByte(encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH + i)));
         }
     }
 
     @Test
     void logFrameIn()
     {
-        final int captureLength = MAX_CAPTURE_LENGTH - SOCKET_ADDRESS_MAX_LENGTH;
-        buffer.setMemory(4, MAX_CAPTURE_LENGTH, (byte)3);
+        final int recordOffset = align(100, ALIGNMENT);
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, recordOffset);
+        final int length = 10_000;
+        final int captureLength = MAX_CAPTURE_LENGTH;
+        final int srcOffset = 4;
+        buffer.setMemory(srcOffset, MAX_CAPTURE_LENGTH, (byte)3);
+        final int encodedSocketLength = 12;
 
-        logger.logFrameIn(buffer, 4, 10_000, new InetSocketAddress("localhost", 5555));
+        logger.logFrameIn(buffer, srcOffset, length, new InetSocketAddress("localhost", 5555));
 
-        verifyLogHeader(logBuffer, toEventCodeId(FRAME_IN), captureLength + 12, captureLength, 10_000);
-        assertEquals(5555, logBuffer.getInt(encodedMsgOffset(LOG_HEADER_LENGTH), LITTLE_ENDIAN));
-        assertEquals(4, logBuffer.getInt(encodedMsgOffset(LOG_HEADER_LENGTH + SIZE_OF_INT), LITTLE_ENDIAN));
+        verifyLogHeader(logBuffer, recordOffset, toEventCodeId(FRAME_IN), captureLength, length + encodedSocketLength);
+        assertEquals(5555, logBuffer.getInt(encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH), LITTLE_ENDIAN));
+        assertEquals(srcOffset,
+            logBuffer.getInt(encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH + SIZE_OF_INT), LITTLE_ENDIAN));
 
-        for (int i = 0; i < captureLength; i++)
+        for (int i = 0; i < captureLength - encodedSocketLength; i++)
         {
-            assertEquals(3, logBuffer.getByte(encodedMsgOffset(LOG_HEADER_LENGTH + 12 + i)));
+            assertEquals(3,
+                logBuffer.getByte(encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH + encodedSocketLength + i)));
         }
     }
 
     @Test
     void logFrameOut()
     {
-        final ByteBuffer byteBuffer = this.buffer.byteBuffer();
+        final int recordOffset = 24;
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, recordOffset);
+        final ByteBuffer byteBuffer = buffer.byteBuffer();
         byteBuffer.position(8);
         final byte[] bytes = new byte[32];
         fill(bytes, (byte)-1);
         byteBuffer.put(bytes);
         byteBuffer.flip().position(10).limit(38);
-        final int captureLength = 28;
+        final int encodedSocketLength = 12;
+        final int length = byteBuffer.remaining() + encodedSocketLength;
+        final int arrayCaptureLength = length - encodedSocketLength;
 
         logger.logFrameOut(byteBuffer, new InetSocketAddress("localhost", 3232));
 
-        verifyLogHeader(logBuffer, toEventCodeId(FRAME_OUT), captureLength + 12, captureLength, captureLength);
-        assertEquals(3232, logBuffer.getInt(encodedMsgOffset(LOG_HEADER_LENGTH), LITTLE_ENDIAN));
-        assertEquals(4, logBuffer.getInt(encodedMsgOffset(LOG_HEADER_LENGTH + SIZE_OF_INT), LITTLE_ENDIAN));
+        verifyLogHeader(logBuffer, recordOffset, toEventCodeId(FRAME_OUT), length, length);
+        assertEquals(3232, logBuffer.getInt(encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH), LITTLE_ENDIAN));
+        assertEquals(4,
+            logBuffer.getInt(encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH + SIZE_OF_INT), LITTLE_ENDIAN));
 
-        for (int i = 0; i < captureLength; i++)
+        for (int i = 0; i < arrayCaptureLength; i++)
         {
-            assertEquals(-1, logBuffer.getByte(encodedMsgOffset(LOG_HEADER_LENGTH + 12 + i)));
+            assertEquals(-1,
+                logBuffer.getByte(encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH + encodedSocketLength + i)));
         }
     }
 
     @Test
     void logString()
     {
+        final int recordOffset = align(100, ALIGNMENT);
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, recordOffset);
         final DriverEventCode eventCode = CMD_IN_ADD_PUBLICATION;
         final String value = "abc";
         final int captureLength = value.length() + SIZE_OF_INT;
 
         logger.logString(eventCode, value);
 
-        verifyLogHeader(logBuffer, toEventCodeId(eventCode), captureLength, captureLength, captureLength);
-        assertEquals(value, logBuffer.getStringAscii(encodedMsgOffset(LOG_HEADER_LENGTH), LITTLE_ENDIAN));
+        verifyLogHeader(logBuffer, recordOffset, toEventCodeId(eventCode), captureLength, captureLength);
+        assertEquals(value,
+            logBuffer.getStringAscii(encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH), LITTLE_ENDIAN));
     }
 
     @Test
     void logPublicationRemoval()
     {
+        final int recordOffset = align(1111, ALIGNMENT);
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, recordOffset);
         final String uri = "uri";
         final int sessionId = 42;
         final int streamId = 19;
@@ -152,16 +174,20 @@ class DriverEventLoggerTest
         logger.logPublicationRemoval(uri, sessionId, streamId);
 
         verifyLogHeader(
-            logBuffer, toEventCodeId(REMOVE_PUBLICATION_CLEANUP), captureLength, captureLength, captureLength);
-        assertEquals(sessionId, logBuffer.getInt(encodedMsgOffset(LOG_HEADER_LENGTH), LITTLE_ENDIAN));
-        assertEquals(streamId, logBuffer.getInt(encodedMsgOffset(LOG_HEADER_LENGTH + SIZE_OF_INT), LITTLE_ENDIAN));
+            logBuffer, recordOffset, toEventCodeId(REMOVE_PUBLICATION_CLEANUP), captureLength, captureLength);
+        assertEquals(sessionId, logBuffer.getInt(encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH), LITTLE_ENDIAN));
+        assertEquals(streamId,
+            logBuffer.getInt(encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH + SIZE_OF_INT), LITTLE_ENDIAN));
         assertEquals(uri,
-            logBuffer.getStringAscii(encodedMsgOffset(LOG_HEADER_LENGTH + SIZE_OF_INT * 2), LITTLE_ENDIAN));
+            logBuffer.getStringAscii(encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH + SIZE_OF_INT * 2),
+            LITTLE_ENDIAN));
     }
 
     @Test
     void logSubscriptionRemoval()
     {
+        final int recordOffset = align(131, ALIGNMENT);
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, recordOffset);
         final String uri = "uri";
         final int streamId = 42;
         final long id = 19;
@@ -170,16 +196,20 @@ class DriverEventLoggerTest
         logger.logSubscriptionRemoval(uri, streamId, id);
 
         verifyLogHeader(
-            logBuffer, toEventCodeId(REMOVE_SUBSCRIPTION_CLEANUP), captureLength, captureLength, captureLength);
-        assertEquals(streamId, logBuffer.getInt(encodedMsgOffset(LOG_HEADER_LENGTH), LITTLE_ENDIAN));
-        assertEquals(id, logBuffer.getLong(encodedMsgOffset(LOG_HEADER_LENGTH + SIZE_OF_INT), LITTLE_ENDIAN));
+            logBuffer, recordOffset, toEventCodeId(REMOVE_SUBSCRIPTION_CLEANUP), captureLength, captureLength);
+        assertEquals(streamId, logBuffer.getInt(encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH), LITTLE_ENDIAN));
+        assertEquals(id,
+            logBuffer.getLong(encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH + SIZE_OF_INT), LITTLE_ENDIAN));
         assertEquals(uri,
-            logBuffer.getStringAscii(encodedMsgOffset(LOG_HEADER_LENGTH + SIZE_OF_INT + SIZE_OF_LONG), LITTLE_ENDIAN));
+            logBuffer.getStringAscii(encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH + SIZE_OF_INT + SIZE_OF_LONG),
+            LITTLE_ENDIAN));
     }
 
     @Test
     void logImageRemoval()
     {
+        final int recordOffset = align(192, ALIGNMENT);
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, recordOffset);
         final String uri = "uri";
         final int sessionId = 8;
         final int streamId = 61;
@@ -189,11 +219,13 @@ class DriverEventLoggerTest
         logger.logImageRemoval(uri, sessionId, streamId, id);
 
         verifyLogHeader(
-            logBuffer, toEventCodeId(REMOVE_IMAGE_CLEANUP), captureLength, captureLength, captureLength);
-        assertEquals(sessionId, logBuffer.getInt(encodedMsgOffset(LOG_HEADER_LENGTH), LITTLE_ENDIAN));
-        assertEquals(streamId, logBuffer.getInt(encodedMsgOffset(LOG_HEADER_LENGTH + SIZE_OF_INT), LITTLE_ENDIAN));
-        assertEquals(id, logBuffer.getLong(encodedMsgOffset(LOG_HEADER_LENGTH + SIZE_OF_INT * 2), LITTLE_ENDIAN));
+            logBuffer, recordOffset, toEventCodeId(REMOVE_IMAGE_CLEANUP), captureLength, captureLength);
+        assertEquals(sessionId, logBuffer.getInt(encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH), LITTLE_ENDIAN));
+        assertEquals(streamId,
+            logBuffer.getInt(encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH + SIZE_OF_INT), LITTLE_ENDIAN));
+        assertEquals(id,
+            logBuffer.getLong(encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH + SIZE_OF_INT * 2), LITTLE_ENDIAN));
         assertEquals(uri, logBuffer.getStringAscii(
-            encodedMsgOffset(LOG_HEADER_LENGTH + SIZE_OF_INT * 2 + SIZE_OF_LONG), LITTLE_ENDIAN));
+            encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH + SIZE_OF_INT * 2 + SIZE_OF_LONG), LITTLE_ENDIAN));
     }
 }

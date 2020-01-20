@@ -31,16 +31,16 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 final class CommonEventEncoder
 {
     static final int LOG_HEADER_LENGTH = 16;
-    static final int SOCKET_ADDRESS_MAX_LENGTH = 24;
     static final int MAX_CAPTURE_LENGTH = MAX_EVENT_LENGTH - LOG_HEADER_LENGTH;
 
     private CommonEventEncoder()
     {
     }
 
-    static int encodeLogHeader(final UnsafeBuffer encodingBuffer, final int captureLength, final int length)
+    static int encodeLogHeader(
+        final UnsafeBuffer encodingBuffer, final int offset, final int captureLength, final int length)
     {
-        return internalEncodeLogHeader(encodingBuffer, 0, captureLength, length, SystemNanoClock.INSTANCE);
+        return internalEncodeLogHeader(encodingBuffer, offset, captureLength, length, SystemNanoClock.INSTANCE);
     }
 
     static int internalEncodeLogHeader(
@@ -50,6 +50,11 @@ final class CommonEventEncoder
         final int length,
         final NanoClock nanoClock)
     {
+        if (captureLength < 0 || captureLength > length || captureLength > MAX_CAPTURE_LENGTH)
+        {
+            throw new IllegalArgumentException("invalid input: captureLength=" + captureLength + ", length=" + length);
+        }
+
         int relativeOffset = 0;
         /*
          * Stream of values:
@@ -95,34 +100,51 @@ final class CommonEventEncoder
         return relativeOffset;
     }
 
-    static int encodeTrailingString(final UnsafeBuffer encodingBuffer, final int offset, final String value)
+    static int encodeTrailingString(
+        final UnsafeBuffer encodingBuffer, final int offset, final int remainingCapacity, final String value)
     {
-        int relativeOffset = 0;
-        final int maxLength = MAX_EVENT_LENGTH - offset - SIZE_OF_INT;
+        final int maxLength = remainingCapacity - SIZE_OF_INT;
         if (value.length() <= maxLength)
         {
-            relativeOffset += encodingBuffer.putStringAscii(relativeOffset + offset, value, LITTLE_ENDIAN);
+            return encodingBuffer.putStringAscii(offset, value, LITTLE_ENDIAN);
         }
         else
         {
-            encodingBuffer.putInt(relativeOffset + offset, maxLength, LITTLE_ENDIAN);
-            relativeOffset += SIZE_OF_INT;
-            relativeOffset += encodingBuffer.putStringWithoutLengthAscii(
-                relativeOffset + offset, value, 0, maxLength - 3);
-            relativeOffset += encodingBuffer.putStringWithoutLengthAscii(relativeOffset + offset, "...");
+            encodingBuffer.putInt(offset, maxLength, LITTLE_ENDIAN);
+            encodingBuffer.putStringWithoutLengthAscii(offset + SIZE_OF_INT, value, 0, maxLength - 3);
+            encodingBuffer.putStringWithoutLengthAscii(offset + SIZE_OF_INT + maxLength - 3, "...");
+            return remainingCapacity;
         }
+    }
+
+    static int encode(
+        final UnsafeBuffer encodingBuffer,
+        final int offset,
+        final int captureLength,
+        final int length,
+        final DirectBuffer srcBuffer,
+        final int srcOffset)
+    {
+        int relativeOffset = encodeLogHeader(encodingBuffer, offset, captureLength, length);
+
+        encodingBuffer.putBytes(offset + relativeOffset, srcBuffer, srcOffset, captureLength);
+        relativeOffset += captureLength;
 
         return relativeOffset;
     }
 
-    static int encode(final UnsafeBuffer encodingBuffer, final DirectBuffer buffer, final int offset, final int length)
+    static int captureLength(final int length)
     {
-        final int captureLength = min(length, MAX_CAPTURE_LENGTH);
-        int relativeOffset = encodeLogHeader(encodingBuffer, captureLength, length);
+        return min(length, MAX_CAPTURE_LENGTH);
+    }
 
-        encodingBuffer.putBytes(relativeOffset, buffer, offset, captureLength);
-        relativeOffset += captureLength;
+    static int encodedLength(final int captureLength)
+    {
+        return LOG_HEADER_LENGTH + captureLength;
+    }
 
-        return relativeOffset;
+    static int socketAddressLength(final InetSocketAddress address)
+    {
+        return 2 * SIZE_OF_INT + address.getAddress().getAddress().length;
     }
 }

@@ -24,13 +24,10 @@ import org.agrona.concurrent.ringbuffer.RingBuffer;
 import java.util.EnumSet;
 
 import static io.aeron.agent.ArchiveEventCode.*;
-import static io.aeron.agent.CommonEventEncoder.encode;
+import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.EventConfiguration.ARCHIVE_EVENT_CODES;
-import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
 import static java.util.EnumSet.complementOf;
 import static java.util.EnumSet.of;
-import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
-import static org.agrona.BufferUtil.allocateDirectAligned;
 
 /**
  * Event logger interface used by interceptors for recording events into a {@link RingBuffer} for an
@@ -38,12 +35,10 @@ import static org.agrona.BufferUtil.allocateDirectAligned;
  */
 public final class ArchiveEventLogger
 {
-    static final EnumSet<ArchiveEventCode> CONTROL_REQUEST_EVENTS = complementOf(of(CMD_OUT_RESPONSE));
-
     public static final ArchiveEventLogger LOGGER = new ArchiveEventLogger(EventConfiguration.EVENT_RING_BUFFER);
 
-    private final UnsafeBuffer encodedBuffer =
-        new UnsafeBuffer(allocateDirectAligned(MAX_EVENT_LENGTH, CACHE_LINE_LENGTH));
+    static final EnumSet<ArchiveEventCode> CONTROL_REQUEST_EVENTS = complementOf(of(CMD_OUT_RESPONSE));
+
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     private final ManyToOneRingBuffer ringBuffer;
 
@@ -57,27 +52,39 @@ public final class ArchiveEventLogger
         return EVENT_CODE_TYPE << 16 | (code.id() & 0xFFFF);
     }
 
-    public void logControlRequest(final DirectBuffer buffer, final int offset, final int length)
+    public void logControlRequest(final DirectBuffer srcBuffer, final int srcOffset, final int length)
     {
-        headerDecoder.wrap(buffer, offset);
+        headerDecoder.wrap(srcBuffer, srcOffset);
 
         final int templateId = headerDecoder.templateId();
         final ArchiveEventCode eventCode = getByTemplateId(templateId);
         if (eventCode != null && ARCHIVE_EVENT_CODES.contains(eventCode))
         {
-            log(eventCode, buffer, offset, length);
+            log(eventCode, srcBuffer, srcOffset, length);
         }
     }
 
-    public void logControlResponse(final DirectBuffer buffer, final int length)
+    public void logControlResponse(final DirectBuffer srcBuffer, final int length)
     {
-        log(CMD_OUT_RESPONSE, buffer, 0, length);
+        log(CMD_OUT_RESPONSE, srcBuffer, 0, length);
     }
 
-    private void log(final ArchiveEventCode eventCode, final DirectBuffer buffer, final int offset, final int length)
+    private void log(
+        final ArchiveEventCode eventCode, final DirectBuffer srcBuffer, final int srcOffset, final int length)
     {
-        final int encodedLength = encode(encodedBuffer, buffer, offset, length);
-
-        ringBuffer.write(toEventCodeId(eventCode), encodedBuffer, 0, encodedLength);
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
+        final int index = ringBuffer.tryClaim(toEventCodeId(eventCode), encodedLength);
+        if (index > 0)
+        {
+            try
+            {
+                encode((UnsafeBuffer)ringBuffer.buffer(), index, captureLength, length, srcBuffer, srcOffset);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
     }
 }

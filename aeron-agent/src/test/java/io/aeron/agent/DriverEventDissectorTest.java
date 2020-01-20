@@ -311,7 +311,7 @@ class DriverEventDissectorTest
         names = { "CMD_IN_REMOVE_PUBLICATION", "CMD_IN_REMOVE_SUBSCRIPTION", "CMD_IN_REMOVE_COUNTER" })
     void dissectAsCommandRemoveEvent(final DriverEventCode eventCode)
     {
-        internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 10, () -> 21_032_000_000L);
+        internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 87, () -> 21_032_000_000L);
         final RemoveMessageFlyweight flyweight = new RemoveMessageFlyweight();
         flyweight.wrap(buffer, LOG_HEADER_LENGTH);
         flyweight.registrationId(11);
@@ -320,7 +320,7 @@ class DriverEventDissectorTest
 
         dissectAsCommand(eventCode, buffer, 0, builder);
 
-        assertEquals("[21.032] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/10]: " +
+        assertEquals("[21.032] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/87]: " +
             "11 [" + eventCode.id() + ":16]",
             builder.toString());
     }
@@ -330,7 +330,7 @@ class DriverEventDissectorTest
         names = { "CMD_OUT_PUBLICATION_READY", "CMD_OUT_EXCLUSIVE_PUBLICATION_READY" })
     void dissectAsCommandPublicationReady(final DriverEventCode eventCode)
     {
-        internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 10, () -> 21_032_000_000L);
+        internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 100, () -> 21_032_000_000L);
         final PublicationBuffersReadyFlyweight flyweight = new PublicationBuffersReadyFlyweight();
         flyweight.wrap(buffer, LOG_HEADER_LENGTH);
         flyweight.sessionId(eventCode.ordinal());
@@ -343,7 +343,7 @@ class DriverEventDissectorTest
 
         dissectAsCommand(eventCode, buffer, 0, builder);
 
-        assertEquals("[21.032] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/10]: " +
+        assertEquals("[21.032] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/100]: " +
             eventCode.ordinal() + ":42 1 5 [8 " + eventCode.id() + "] log.txt",
             builder.toString());
     }
@@ -352,7 +352,7 @@ class DriverEventDissectorTest
     @EnumSource(value = DriverEventCode.class, names = { "CMD_OUT_AVAILABLE_IMAGE" })
     void dissectAsCommandImageReady(final DriverEventCode eventCode)
     {
-        internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 10, () -> 21_032_000_000L);
+        internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 100, () -> 21_032_000_000L);
         final ImageBuffersReadyFlyweight flyweight = new ImageBuffersReadyFlyweight();
         flyweight.wrap(buffer, LOG_HEADER_LENGTH);
         flyweight.sessionId(eventCode.ordinal());
@@ -365,7 +365,7 @@ class DriverEventDissectorTest
 
         dissectAsCommand(eventCode, buffer, 0, builder);
 
-        assertEquals("[21.032] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/10]: " +
+        assertEquals("[21.032] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/100]: " +
             eventCode.ordinal() + ":22 [0:245] [767] log2.txt source identity",
             builder.toString());
     }
@@ -374,14 +374,14 @@ class DriverEventDissectorTest
     @EnumSource(value = DriverEventCode.class, names = { "CMD_OUT_ON_OPERATION_SUCCESS" })
     void dissectAsCommandOperationSuccess(final DriverEventCode eventCode)
     {
-        internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 10, () -> 21_032_000_000L);
+        internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 111, () -> 21_032_000_000L);
         final OperationSucceededFlyweight flyweight = new OperationSucceededFlyweight();
         flyweight.wrap(buffer, LOG_HEADER_LENGTH);
         flyweight.correlationId(eventCode.id());
 
         dissectAsCommand(eventCode, buffer, 0, builder);
 
-        assertEquals("[21.032] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/10]: " +
+        assertEquals("[21.032] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/111]: " +
             eventCode.id(),
             builder.toString());
     }
@@ -390,7 +390,7 @@ class DriverEventDissectorTest
     @EnumSource(value = DriverEventCode.class, names = { "CMD_IN_KEEPALIVE_CLIENT", "CMD_IN_CLIENT_CLOSE" })
     void dissectAsCommandCorrelationEvent(final DriverEventCode eventCode)
     {
-        internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 10, () -> 21_032_000_000L);
+        internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 100, () -> 21_032_000_000L);
         final CorrelatedMessageFlyweight flyweight = new CorrelatedMessageFlyweight();
         flyweight.wrap(buffer, LOG_HEADER_LENGTH);
         flyweight.clientId(eventCode.id());
@@ -398,7 +398,7 @@ class DriverEventDissectorTest
 
         dissectAsCommand(eventCode, buffer, 0, builder);
 
-        assertEquals("[21.032] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/10]: " +
+        assertEquals("[21.032] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/100]: " +
             "[" + eventCode.id() + ":2]",
             builder.toString());
     }
@@ -407,7 +407,7 @@ class DriverEventDissectorTest
     @EnumSource(value = DriverEventCode.class, names = { "CMD_OUT_ON_UNAVAILABLE_IMAGE" })
     void dissectAsCommandImage(final DriverEventCode eventCode)
     {
-        internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 10, () -> 21_032_000_000L);
+        internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 99, () -> 21_032_000_000L);
         final ImageMessageFlyweight flyweight = new ImageMessageFlyweight();
         flyweight.wrap(buffer, LOG_HEADER_LENGTH);
         flyweight.streamId(300);
@@ -417,7 +417,7 @@ class DriverEventDissectorTest
 
         dissectAsCommand(eventCode, buffer, 0, builder);
 
-        assertEquals("[21.032] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/10]: " +
+        assertEquals("[21.032] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/99]: " +
             "300 [" + eventCode.id() + " -19] the channel",
             builder.toString());
     }
@@ -430,7 +430,7 @@ class DriverEventDissectorTest
         "CMD_IN_REMOVE_RCV_DESTINATION" })
     void dissectAsCommandDestination(final DriverEventCode eventCode)
     {
-        internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 10, () -> 21_032_000_000L);
+        internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 77, () -> 21_032_000_000L);
         final DestinationMessageFlyweight flyweight = new DestinationMessageFlyweight();
         flyweight.wrap(buffer, LOG_HEADER_LENGTH);
         flyweight.channel("dst");
@@ -440,7 +440,7 @@ class DriverEventDissectorTest
 
         dissectAsCommand(eventCode, buffer, 0, builder);
 
-        assertEquals("[21.032] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/10]: " +
+        assertEquals("[21.032] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/77]: " +
             eventCode.id() + " [1010101:404] dst",
             builder.toString());
     }

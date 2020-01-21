@@ -1,7 +1,7 @@
 name: Continuous Integration (Low Cadence)
 on:
   schedule:
-    - cron: '0,20,40 * * * *'
+    - cron: '0 0,12 * * *'
 
 env:
   GRADLE_OPTS: "-Dorg.gradle.daemon=false"
@@ -14,7 +14,7 @@ jobs:
       fail-fast: false
       matrix:
         java: [ '8', '11' ]
-        os: [ 'ubuntu-latest', 'windows-latest' ]
+        os: [ 'ubuntu-latest' ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2

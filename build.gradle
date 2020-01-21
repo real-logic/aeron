@@ -57,6 +57,14 @@ ext {
     if (!project.hasProperty('ossrhPassword')) {
         ossrhPassword = ''
     }
+
+    if (!project.hasProperty('releaseUrl')) {
+        releaseUrl = 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
+    }
+
+    if (!project.hasProperty('snapshotUrl')) {
+        snapshotUrl = 'https://oss.sonatype.org/content/repositories/snapshots/'
+    }
 }
 
 def projectPom = {
@@ -311,11 +319,11 @@ project(':aeron-client') {
                     MavenDeployment deployment -> signing.signPom(deployment)
                 }
 
-                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                repository(url: releaseUrl) {
                     authentication(userName: ossrhUsername, password: ossrhPassword)
                 }
 
-                snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                snapshotRepository(url: snapshotUrl) {
                     authentication(userName: ossrhUsername, password: ossrhPassword)
                 }
 
@@ -375,11 +383,11 @@ project(':aeron-driver') {
                     MavenDeployment deployment -> signing.signPom(deployment)
                 }
 
-                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                repository(url: releaseUrl) {
                     authentication(userName: ossrhUsername, password: ossrhPassword)
                 }
 
-                snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                snapshotRepository(url: snapshotUrl) {
                     authentication(userName: ossrhUsername, password: ossrhPassword)
                 }
 
@@ -516,11 +524,11 @@ project(':aeron-archive') {
                     MavenDeployment deployment -> signing.signPom(deployment)
                 }
 
-                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                repository(url: releaseUrl) {
                     authentication(userName: ossrhUsername, password: ossrhPassword)
                 }
 
-                snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                snapshotRepository(url: snapshotUrl) {
                     authentication(userName: ossrhUsername, password: ossrhPassword)
                 }
 
@@ -625,11 +633,11 @@ project(':aeron-cluster') {
                     MavenDeployment deployment -> signing.signPom(deployment)
                 }
 
-                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                repository(url: releaseUrl) {
                     authentication(userName: ossrhUsername, password: ossrhPassword)
                 }
 
-                snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                snapshotRepository(url: snapshotUrl) {
                     authentication(userName: ossrhUsername, password: ossrhPassword)
                 }
 
@@ -712,11 +720,11 @@ project(':aeron-agent') {
                     MavenDeployment deployment -> signing.signPom(deployment)
                 }
 
-                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                repository(url: releaseUrl) {
                     authentication(userName: ossrhUsername, password: ossrhPassword)
                 }
 
-                snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                snapshotRepository(url: snapshotUrl) {
                     authentication(userName: ossrhUsername, password: ossrhPassword)
                 }
 
@@ -736,11 +744,11 @@ project(':aeron-agent') {
                     MavenDeployment deployment -> signing.signPom(deployment)
                 }
 
-                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                repository(url: releaseUrl) {
                     authentication(userName: ossrhUsername, password: ossrhPassword)
                 }
 
-                snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                snapshotRepository(url: snapshotUrl) {
                     authentication(userName: ossrhUsername, password: ossrhPassword)
                 }
 
@@ -793,11 +801,11 @@ project(':aeron-samples') {
                     MavenDeployment deployment -> signing.signPom(deployment)
                 }
 
-                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                repository(url: releaseUrl) {
                     authentication(userName: ossrhUsername, password: ossrhPassword)
                 }
 
-                snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                snapshotRepository(url: snapshotUrl) {
                     authentication(userName: ossrhUsername, password: ossrhPassword)
                 }
 
@@ -925,11 +933,11 @@ project(':aeron-all') {
                     MavenDeployment deployment -> signing.signPom(deployment)
                 }
 
-                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                repository(url: releaseUrl) {
                     authentication(userName: ossrhUsername, password: ossrhPassword)
                 }
 
-                snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                snapshotRepository(url: snapshotUrl) {
                     authentication(userName: ossrhUsername, password: ossrhPassword)
                 }
 
@@ -949,11 +957,11 @@ project(':aeron-all') {
                     MavenDeployment deployment -> signing.signPom(deployment)
                 }
 
-                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                repository(url: releaseUrl) {
                     authentication(userName: ossrhUsername, password: ossrhPassword)
                 }
 
-                snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                snapshotRepository(url: snapshotUrl) {
                     authentication(userName: ossrhUsername, password: ossrhPassword)
                 }
 

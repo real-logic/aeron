@@ -466,9 +466,9 @@ project(':aeron-archive') {
     }
 
     task generateCodecs(type: JavaExec) {
-        def codecsFile = 'src/main/resources/aeron-archive-codecs.xml'
-        def markCodecsFile = 'src/main/resources/aeron-archive-mark-codecs.xml'
-        def sbeFile = 'src/main/resources/fpl/sbe.xsd'
+        def codecsFile = 'src/main/resources/archive/aeron-archive-codecs.xml'
+        def markCodecsFile = 'src/main/resources/archive/aeron-archive-mark-codecs.xml'
+        def sbeFile = 'src/main/resources/archive/fpl/sbe.xsd'
 
         inputs.files(codecsFile, markCodecsFile, sbeFile)
         outputs.dir generatedDir
@@ -491,9 +491,9 @@ project(':aeron-archive') {
             'sbe.output.dir': generatedCppDir,
             'sbe.target.language': 'Cpp',
             'sbe.target.namespace': 'aeron.archive.client',
-            'sbe.validation.xsd': 'src/main/resources/fpl/sbe.xsd',
+            'sbe.validation.xsd': 'src/main/resources/archive/fpl/sbe.xsd',
             'sbe.validation.stop.on.error': 'true')
-        args = ['src/main/resources/aeron-archive-codecs.xml']
+        args = ['src/main/resources/archive/aeron-archive-codecs.xml']
     }
 
     jar {
@@ -588,9 +588,9 @@ project(':aeron-cluster') {
     }
 
     task generateCodecs(type: JavaExec) {
-        def codecsFile = 'src/main/resources/aeron-cluster-codecs.xml'
-        def markCodecsFile = 'src/main/resources/aeron-cluster-mark-codecs.xml'
-        def sbeFile = 'src/main/resources/fpl/sbe.xsd'
+        def codecsFile = 'src/main/resources/cluster/aeron-cluster-codecs.xml'
+        def markCodecsFile = 'src/main/resources/cluster/aeron-cluster-mark-codecs.xml'
+        def sbeFile = 'src/main/resources/cluster/fpl/sbe.xsd'
 
         inputs.files(codecsFile, markCodecsFile, sbeFile)
         outputs.dir generatedDir

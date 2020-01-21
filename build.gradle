@@ -296,7 +296,8 @@ subprojects {
                     p -> p.dependencies = p.dependencies.findAll {
                         dep -> !(dep.artifactId.contains("hamcrest") ||
                                  dep.artifactId.contains("mockito") ||
-                                 dep.artifactId.contains("junit"))
+                                 dep.artifactId.contains("junit") ||
+                                 dep.artifactId.contains("aeron-test-support"))
                         }
                 }
             }

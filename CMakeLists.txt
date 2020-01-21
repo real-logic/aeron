@@ -271,7 +271,7 @@ endif (BUILD_AERON_DRIVER)
 
 if (BUILD_AERON_ARCHIVE_API)
     set(ARCHIVE_CODEC_TARGET_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
-    set(ARCHIVE_CODEC_SCHEMA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/aeron-archive/src/main/resources")
+    set(ARCHIVE_CODEC_SCHEMA_DIR "${CMAKE_CURRENT_SOURCE_DIR}/aeron-archive/src/main/resources/archive")
     set(ARCHIVE_CODEC_WORKING_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 
     add_subdirectory(${AERON_ARCHIVE_SOURCE_PATH})

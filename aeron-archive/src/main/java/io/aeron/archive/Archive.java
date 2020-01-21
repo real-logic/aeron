@@ -48,6 +48,7 @@ import static io.aeron.archive.ArchiveThreadingMode.DEDICATED;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
 import static java.lang.System.getProperty;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static org.agrona.SystemUtil.*;
 
@@ -787,7 +788,8 @@ public class Archive implements AutoCloseable
 
             if (null == errorHandler)
             {
-                errorHandler = new LoggingErrorHandler(new DistinctErrorLog(markFile.errorBuffer(), epochClock));
+                errorHandler = new LoggingErrorHandler(new DistinctErrorLog(
+                    markFile.errorBuffer(), epochClock, US_ASCII));
             }
 
             if (null == aeron)

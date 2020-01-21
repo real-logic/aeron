@@ -71,7 +71,6 @@ final class EventLogReaderAgent implements Agent, MessageHandler
             byteBuffer = allocateDirectAligned(MAX_EVENT_LENGTH + lineSeparator().length(), CACHE_LINE_LENGTH);
         }
 
-        builder.setLength(0);
         dissectLogStartMessage(nanoTime(), currentTimeMillis(), systemDefault(), builder);
         builder.append(lineSeparator());
 
@@ -81,7 +80,7 @@ final class EventLogReaderAgent implements Agent, MessageHandler
         }
         else
         {
-            write(byteBuffer, fileChannel);
+            write(builder, byteBuffer, fileChannel);
         }
     }
 
@@ -132,15 +131,14 @@ final class EventLogReaderAgent implements Agent, MessageHandler
         }
         else
         {
-            write(byteBuffer, fileChannel);
+            write(builder, byteBuffer, fileChannel);
         }
     }
 
-    private void write(final ByteBuffer buffer, final FileChannel fileChannel)
+    private static void write(final StringBuilder builder, final ByteBuffer buffer, final FileChannel fileChannel)
     {
         try
         {
-            final StringBuilder builder = this.builder;
             final int length = builder.length();
             buffer.clear().limit(length);
 

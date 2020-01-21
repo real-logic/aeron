@@ -99,7 +99,7 @@ public final class EventLogAgent
         EventLogAgent.instrumentation = instrumentation;
 
         readerAgentRunner = new AgentRunner(
-            new SleepingMillisIdleStrategy(SLEEP_PERIOD_MS), Throwable::printStackTrace, null, getReaderAgent());
+            new SleepingMillisIdleStrategy(SLEEP_PERIOD_MS), Throwable::printStackTrace, null, newReaderAgent());
 
         AgentBuilder agentBuilder = new AgentBuilder.Default(new ByteBuddy()
             .with(TypeValidation.DISABLED))
@@ -373,7 +373,7 @@ public final class EventLogAgent
             }));
     }
 
-    private static Agent getReaderAgent()
+    private static Agent newReaderAgent()
     {
         try
         {

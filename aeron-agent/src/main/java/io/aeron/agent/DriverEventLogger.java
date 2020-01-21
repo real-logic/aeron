@@ -23,15 +23,14 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 import static io.aeron.agent.CommonEventEncoder.encode;
+import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.DriverEventCode.*;
 import static io.aeron.agent.DriverEventEncoder.encode;
-import static io.aeron.agent.DriverEventEncoder.encodeImageRemoval;
-import static io.aeron.agent.DriverEventEncoder.encodePublicationRemoval;
-import static io.aeron.agent.DriverEventEncoder.encodeSubscriptionRemoval;
-import static io.aeron.agent.EventConfiguration.*;
-import static java.lang.ThreadLocal.withInitial;
-import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
-import static org.agrona.BufferUtil.allocateDirectAligned;
+import static io.aeron.agent.DriverEventEncoder.*;
+import static io.aeron.agent.EventConfiguration.DRIVER_EVENT_CODES;
+import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * Event logger interface used by interceptors for recording into a {@link RingBuffer} for a
@@ -41,9 +40,6 @@ public final class DriverEventLogger
 {
     public static final DriverEventLogger LOGGER = new DriverEventLogger(EVENT_RING_BUFFER);
 
-    private static final ThreadLocal<UnsafeBuffer> ENCODING_BUFFER = withInitial(
-        () -> new UnsafeBuffer(allocateDirectAligned(MAX_EVENT_LENGTH, CACHE_LINE_LENGTH)));
-
     private final RingBuffer ringBuffer;
 
     DriverEventLogger(final RingBuffer ringBuffer)
@@ -51,64 +47,158 @@ public final class DriverEventLogger
         this.ringBuffer = ringBuffer;
     }
 
-    public void log(final DriverEventCode code, final DirectBuffer buffer, final int offset, final int length)
+    public void log(final DriverEventCode code, final DirectBuffer srcBuffer, final int srcOffset, final int length)
     {
         if (DRIVER_EVENT_CODES.contains(code))
         {
-            final UnsafeBuffer encodedBuffer = ENCODING_BUFFER.get();
-            final int encodedLength = encode(encodedBuffer, buffer, offset, length);
+            final int captureLength = captureLength(length);
+            final int encodedLength = encodedLength(captureLength);
 
-            ringBuffer.write(toEventCodeId(code), encodedBuffer, 0, encodedLength);
+            final int index = ringBuffer.tryClaim(toEventCodeId(code), encodedLength);
+            if (index > 0)
+            {
+                try
+                {
+                    encode((UnsafeBuffer)ringBuffer.buffer(), index, captureLength, length, srcBuffer, srcOffset);
+                }
+                finally
+                {
+                    ringBuffer.commit(index);
+                }
+            }
         }
     }
 
     public void logFrameIn(
-        final DirectBuffer buffer, final int offset, final int length, final InetSocketAddress dstAddress)
+        final DirectBuffer srcBuffer, final int srcOffset, final int bufferLength, final InetSocketAddress dstAddress)
     {
-        final UnsafeBuffer encodedBuffer = ENCODING_BUFFER.get();
-        final int encodedLength = encode(encodedBuffer, buffer, offset, length, dstAddress);
+        final int length = bufferLength + socketAddressLength(dstAddress);
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
 
-        ringBuffer.write(toEventCodeId(FRAME_IN), encodedBuffer, 0, encodedLength);
+        final int index = ringBuffer.tryClaim(toEventCodeId(FRAME_IN), encodedLength);
+        if (index > 0)
+        {
+            try
+            {
+                encode(
+                    (UnsafeBuffer)ringBuffer.buffer(), index, captureLength, length, srcBuffer, srcOffset, dstAddress);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
     }
 
-    public void logFrameOut(final ByteBuffer buffer, final InetSocketAddress dstAddress)
+    public void logFrameOut(final ByteBuffer srcBuffer, final InetSocketAddress dstAddress)
     {
-        final UnsafeBuffer encodedBuffer = ENCODING_BUFFER.get();
-        final int encodedLength = encode(encodedBuffer, buffer, buffer.position(), buffer.remaining(), dstAddress);
+        final int length = srcBuffer.remaining() + socketAddressLength(dstAddress);
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
 
-        ringBuffer.write(toEventCodeId(FRAME_OUT), encodedBuffer, 0, encodedLength);
+        final int index = ringBuffer.tryClaim(toEventCodeId(FRAME_OUT), encodedLength);
+        if (index > 0)
+        {
+            try
+            {
+                encode(
+                    (UnsafeBuffer)ringBuffer.buffer(),
+                    index,
+                    captureLength,
+                    length,
+                    srcBuffer,
+                    srcBuffer.position(),
+                    dstAddress);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
     }
 
     public void logPublicationRemoval(final String uri, final int sessionId, final int streamId)
     {
-        final UnsafeBuffer encodedBuffer = ENCODING_BUFFER.get();
-        final int encodedLength = encodePublicationRemoval(encodedBuffer, uri, sessionId, streamId);
+        final int length = SIZE_OF_INT * 3 + uri.length();
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
 
-        ringBuffer.write(toEventCodeId(REMOVE_PUBLICATION_CLEANUP), encodedBuffer, 0, encodedLength);
+        final int index = ringBuffer.tryClaim(toEventCodeId(REMOVE_PUBLICATION_CLEANUP), encodedLength);
+        if (index > 0)
+        {
+            try
+            {
+                encodePublicationRemoval(
+                    (UnsafeBuffer)ringBuffer.buffer(), index, captureLength, length, uri, sessionId, streamId);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
     }
 
     public void logSubscriptionRemoval(final String uri, final int streamId, final long id)
     {
-        final UnsafeBuffer encodedBuffer = ENCODING_BUFFER.get();
-        final int encodedLength = encodeSubscriptionRemoval(encodedBuffer, uri, streamId, id);
+        final int length = SIZE_OF_INT * 2 + SIZE_OF_LONG + uri.length();
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
 
-        ringBuffer.write(toEventCodeId(REMOVE_SUBSCRIPTION_CLEANUP), encodedBuffer, 0, encodedLength);
+        final int index = ringBuffer.tryClaim(toEventCodeId(REMOVE_SUBSCRIPTION_CLEANUP), encodedLength);
+        if (index > 0)
+        {
+            try
+            {
+                encodeSubscriptionRemoval(
+                    (UnsafeBuffer)ringBuffer.buffer(), index, captureLength, length, uri, streamId, id);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
     }
 
     public void logImageRemoval(final String uri, final int sessionId, final int streamId, final long id)
     {
-        final UnsafeBuffer encodedBuffer = ENCODING_BUFFER.get();
-        final int encodedLength = encodeImageRemoval(encodedBuffer, uri, sessionId, streamId, id);
+        final int length = SIZE_OF_INT * 3 + SIZE_OF_LONG + uri.length();
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
 
-        ringBuffer.write(toEventCodeId(REMOVE_IMAGE_CLEANUP), encodedBuffer, 0, encodedLength);
+        final int index = ringBuffer.tryClaim(toEventCodeId(REMOVE_IMAGE_CLEANUP), encodedLength);
+        if (index > 0)
+        {
+            try
+            {
+                encodeImageRemoval(
+                    (UnsafeBuffer)ringBuffer.buffer(), index, captureLength, length, uri, sessionId, streamId, id);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
     }
 
     public void logString(final DriverEventCode code, final String value)
     {
-        final UnsafeBuffer encodedBuffer = ENCODING_BUFFER.get();
-        final int encodingLength = encode(encodedBuffer, value);
+        final int length = value.length() + SIZE_OF_INT;
+        final int captureLength = captureLength(length);
+        final int encodedLength = encodedLength(captureLength);
 
-        ringBuffer.write(toEventCodeId(code), encodedBuffer, 0, encodingLength);
+        final int index = ringBuffer.tryClaim(toEventCodeId(code), encodedLength);
+        if (index > 0)
+        {
+            try
+            {
+                encode((UnsafeBuffer)ringBuffer.buffer(), index, captureLength, length, value);
+            }
+            finally
+            {
+                ringBuffer.commit(index);
+            }
+        }
     }
 
     public static int toEventCodeId(final DriverEventCode code)

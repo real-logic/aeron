@@ -19,148 +19,148 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
 import static io.aeron.agent.CommonEventEncoder.LOG_HEADER_LENGTH;
+import static io.aeron.agent.CommonEventEncoder.captureLength;
 import static io.aeron.agent.DriverEventEncoder.*;
 import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
-import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.util.Arrays.fill;
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.*;
+import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 class DriverEventEncoderTest
 {
-    private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirect(MAX_EVENT_LENGTH));
+    private final UnsafeBuffer buffer = new UnsafeBuffer(
+        allocateDirectAligned(MAX_EVENT_LENGTH * 10, CACHE_LINE_LENGTH));
 
     @Test
     void encodePublicationRemovalShouldWriteUriLast()
     {
+        final int offset = 10;
         final String uri = "aeron:udp?endpoint=224.10.9.8";
-        final int expectedLength = 3 * SIZE_OF_INT + uri.length();
+        final int sessionId = 42;
+        final int streamId = 5;
+        final int captureLength = 3 * SIZE_OF_INT + uri.length();
 
-        final int encodedLength = encodePublicationRemoval(buffer, uri, 42, 5);
+        encodePublicationRemoval(buffer, offset, captureLength, captureLength, uri, sessionId, streamId);
 
-        assertEquals(LOG_HEADER_LENGTH + expectedLength, encodedLength);
-        assertEquals(expectedLength, buffer.getInt(0, LITTLE_ENDIAN));
-        assertEquals(expectedLength, buffer.getInt(SIZE_OF_INT, LITTLE_ENDIAN));
-        assertNotEquals(0, buffer.getLong(SIZE_OF_INT * 2, LITTLE_ENDIAN));
-        assertEquals(42, buffer.getInt(LOG_HEADER_LENGTH, LITTLE_ENDIAN));
-        assertEquals(5, buffer.getInt(LOG_HEADER_LENGTH + SIZE_OF_INT, LITTLE_ENDIAN));
-        assertEquals(uri, buffer.getStringAscii(LOG_HEADER_LENGTH + SIZE_OF_INT * 2, LITTLE_ENDIAN));
-    }
-
-    @Test
-    void encodePublicationRemovalShouldWriteOutAnEntireUriWhenFitsIntoTheResultMessage()
-    {
-        final char[] data = new char[MAX_EVENT_LENGTH - LOG_HEADER_LENGTH - 3 * SIZE_OF_INT];
-        fill(data, 'x');
-        final String uri = new String(data);
-
-        final int encodedLength = encodePublicationRemoval(buffer, uri, 555, 222);
-
-        assertEquals(MAX_EVENT_LENGTH, encodedLength);
-        assertEquals(MAX_EVENT_LENGTH - LOG_HEADER_LENGTH, buffer.getInt(0, LITTLE_ENDIAN));
-        assertEquals(MAX_EVENT_LENGTH - LOG_HEADER_LENGTH, buffer.getInt(SIZE_OF_INT, LITTLE_ENDIAN));
-        assertNotEquals(0, buffer.getLong(SIZE_OF_INT * 2, LITTLE_ENDIAN));
-        assertEquals(555, buffer.getInt(LOG_HEADER_LENGTH, LITTLE_ENDIAN));
-        assertEquals(222, buffer.getInt(LOG_HEADER_LENGTH + SIZE_OF_INT, LITTLE_ENDIAN));
-        assertEquals(uri, buffer.getStringAscii(LOG_HEADER_LENGTH + SIZE_OF_INT * 2, LITTLE_ENDIAN));
+        assertEquals(captureLength, buffer.getInt(offset, LITTLE_ENDIAN));
+        assertEquals(captureLength, buffer.getInt(offset + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertNotEquals(0, buffer.getLong(offset + SIZE_OF_INT * 2, LITTLE_ENDIAN));
+        assertEquals(sessionId, buffer.getInt(offset + LOG_HEADER_LENGTH, LITTLE_ENDIAN));
+        assertEquals(streamId, buffer.getInt(offset + LOG_HEADER_LENGTH + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertEquals(uri, buffer.getStringAscii(offset + LOG_HEADER_LENGTH + SIZE_OF_INT * 2, LITTLE_ENDIAN));
     }
 
     @Test
     void encodePublicationRemovalShouldTruncateUriIfItExceedsMaxMessageLength()
     {
-        final int encodedUriLength = MAX_EVENT_LENGTH - LOG_HEADER_LENGTH - 3 * SIZE_OF_INT;
-        final char[] data = new char[encodedUriLength + 100];
+        final int offset = 121;
+        final char[] data = new char[MAX_EVENT_LENGTH];
         fill(data, 'z');
         final String uri = new String(data);
+        final int length = data.length + 3 * SIZE_OF_INT;
+        final int captureLength = captureLength(length);
 
-        final int encodedLength = encodePublicationRemoval(buffer, uri, 1, -1);
+        encodePublicationRemoval(buffer, offset, captureLength, length, uri, 1, -1);
 
-        assertEquals(MAX_EVENT_LENGTH, encodedLength);
-        assertEquals(MAX_EVENT_LENGTH - LOG_HEADER_LENGTH, buffer.getInt(0, LITTLE_ENDIAN));
-        assertEquals(3 * SIZE_OF_INT + data.length, buffer.getInt(SIZE_OF_INT, LITTLE_ENDIAN));
-        assertNotEquals(0, buffer.getLong(SIZE_OF_INT * 2, LITTLE_ENDIAN));
-        assertEquals(1, buffer.getInt(LOG_HEADER_LENGTH, LITTLE_ENDIAN));
-        assertEquals(-1, buffer.getInt(LOG_HEADER_LENGTH + SIZE_OF_INT, LITTLE_ENDIAN));
-        assertEquals(uri.substring(0, encodedUriLength - 3) + "...",
-            buffer.getStringAscii(LOG_HEADER_LENGTH + SIZE_OF_INT * 2, LITTLE_ENDIAN));
+        assertEquals(captureLength, buffer.getInt(offset, LITTLE_ENDIAN));
+        assertEquals(length, buffer.getInt(offset + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertNotEquals(0, buffer.getLong(offset + SIZE_OF_INT * 2, LITTLE_ENDIAN));
+        assertEquals(1, buffer.getInt(offset + LOG_HEADER_LENGTH, LITTLE_ENDIAN));
+        assertEquals(-1, buffer.getInt(offset + LOG_HEADER_LENGTH + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertEquals(uri.substring(0, captureLength - 3 * SIZE_OF_INT - 3) + "...",
+            buffer.getStringAscii(offset + LOG_HEADER_LENGTH + SIZE_OF_INT * 2, LITTLE_ENDIAN));
     }
 
     @Test
     void encodeSubscriptionRemovalShouldWriteUriLast()
     {
+        final int offset = 0;
         final String uri = "aeron:udp?endpoint=224.10.9.8";
-        final int expectedLength = 2 * SIZE_OF_INT + SIZE_OF_LONG + uri.length();
+        final int streamId = 13;
+        final long id = Long.MAX_VALUE;
+        final int captureLength = 2 * SIZE_OF_INT + SIZE_OF_LONG + uri.length();
 
-        final int encodedLength = encodeSubscriptionRemoval(buffer, uri, 13, Long.MAX_VALUE);
+        encodeSubscriptionRemoval(buffer, offset, captureLength, captureLength, uri, streamId, id);
 
-        assertEquals(LOG_HEADER_LENGTH + expectedLength, encodedLength);
-        assertEquals(expectedLength, buffer.getInt(0, LITTLE_ENDIAN));
-        assertEquals(expectedLength, buffer.getInt(SIZE_OF_INT, LITTLE_ENDIAN));
-        assertNotEquals(0, buffer.getLong(SIZE_OF_INT * 2, LITTLE_ENDIAN));
-        assertEquals(13, buffer.getInt(LOG_HEADER_LENGTH, LITTLE_ENDIAN));
-        assertEquals(Long.MAX_VALUE, buffer.getLong(LOG_HEADER_LENGTH + SIZE_OF_INT, LITTLE_ENDIAN));
-        assertEquals(uri, buffer.getStringAscii(LOG_HEADER_LENGTH + SIZE_OF_INT + SIZE_OF_LONG, LITTLE_ENDIAN));
+        assertEquals(captureLength, buffer.getInt(offset, LITTLE_ENDIAN));
+        assertEquals(captureLength, buffer.getInt(offset + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertNotEquals(0, buffer.getLong(offset + SIZE_OF_INT * 2, LITTLE_ENDIAN));
+        assertEquals(streamId, buffer.getInt(offset + LOG_HEADER_LENGTH, LITTLE_ENDIAN));
+        assertEquals(id, buffer.getLong(offset + LOG_HEADER_LENGTH + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertEquals(uri,
+            buffer.getStringAscii(offset + LOG_HEADER_LENGTH + SIZE_OF_INT + SIZE_OF_LONG, LITTLE_ENDIAN));
     }
 
     @Test
     void encodeSubscriptionRemovalShouldTruncateUriIfItExceedsMaxMessageLength()
     {
-        final int encodedUriLength = MAX_EVENT_LENGTH - LOG_HEADER_LENGTH - 2 * SIZE_OF_INT - SIZE_OF_LONG;
-        final char[] data = new char[encodedUriLength + 5];
+        final char[] data = new char[MAX_EVENT_LENGTH * 3 + 5];
         fill(data, 'a');
+        final int offset = 0;
+        final int length = SIZE_OF_INT * 2 + SIZE_OF_LONG + data.length;
+        final int captureLength = captureLength(length);
         final String uri = new String(data);
+        final int streamId = 1;
+        final long id = -1;
 
-        final int encodedLength = encodeSubscriptionRemoval(buffer, uri, 1, -1);
+        encodeSubscriptionRemoval(buffer, offset, captureLength, length, uri, streamId, id);
 
-        assertEquals(MAX_EVENT_LENGTH, encodedLength);
-        assertEquals(MAX_EVENT_LENGTH - LOG_HEADER_LENGTH, buffer.getInt(0, LITTLE_ENDIAN));
-        assertEquals(2 * SIZE_OF_INT + SIZE_OF_LONG + data.length, buffer.getInt(SIZE_OF_INT, LITTLE_ENDIAN));
-        assertNotEquals(0, buffer.getLong(SIZE_OF_INT * 2, LITTLE_ENDIAN));
-        assertEquals(1, buffer.getInt(LOG_HEADER_LENGTH, LITTLE_ENDIAN));
-        assertEquals(-1, buffer.getLong(LOG_HEADER_LENGTH + SIZE_OF_INT, LITTLE_ENDIAN));
-        assertEquals(uri.substring(0, encodedUriLength - 3) + "...",
-            buffer.getStringAscii(LOG_HEADER_LENGTH + SIZE_OF_INT + SIZE_OF_LONG, LITTLE_ENDIAN));
+        assertEquals(captureLength, buffer.getInt(offset, LITTLE_ENDIAN));
+        assertEquals(length, buffer.getInt(offset + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertNotEquals(0, buffer.getLong(offset + SIZE_OF_INT * 2, LITTLE_ENDIAN));
+        assertEquals(streamId, buffer.getInt(offset + LOG_HEADER_LENGTH, LITTLE_ENDIAN));
+        assertEquals(id, buffer.getLong(offset + LOG_HEADER_LENGTH + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertEquals(uri.substring(0, captureLength - SIZE_OF_INT * 2 - SIZE_OF_LONG - 3) + "...",
+            buffer.getStringAscii(offset + LOG_HEADER_LENGTH + SIZE_OF_INT + SIZE_OF_LONG, LITTLE_ENDIAN));
     }
 
     @Test
     void encodeImageRemovalShouldWriteUriLast()
     {
+        final int offset = 0;
         final String uri = "aeron:udp?endpoint=224.10.9.8";
-        final int expectedLength = 3 * SIZE_OF_INT + SIZE_OF_LONG + uri.length();
+        final int sessionId = 13;
+        final int streamId = 42;
+        final long id = Long.MAX_VALUE;
+        final int captureLength = 3 * SIZE_OF_INT + SIZE_OF_LONG + uri.length();
 
-        final int encodedLength = encodeImageRemoval(buffer, uri, 13, 42, Long.MAX_VALUE);
+        encodeImageRemoval(buffer, offset, captureLength, captureLength, uri, sessionId, streamId, id);
 
-        assertEquals(LOG_HEADER_LENGTH + expectedLength, encodedLength);
-        assertEquals(expectedLength, buffer.getInt(0, LITTLE_ENDIAN));
-        assertEquals(expectedLength, buffer.getInt(SIZE_OF_INT, LITTLE_ENDIAN));
-        assertNotEquals(0, buffer.getLong(SIZE_OF_INT * 2, LITTLE_ENDIAN));
-        assertEquals(13, buffer.getInt(LOG_HEADER_LENGTH, LITTLE_ENDIAN));
-        assertEquals(42, buffer.getInt(LOG_HEADER_LENGTH + SIZE_OF_INT, LITTLE_ENDIAN));
-        assertEquals(Long.MAX_VALUE, buffer.getLong(LOG_HEADER_LENGTH + SIZE_OF_INT * 2, LITTLE_ENDIAN));
-        assertEquals(uri, buffer.getStringAscii(LOG_HEADER_LENGTH + SIZE_OF_INT * 2 + SIZE_OF_LONG, LITTLE_ENDIAN));
+        assertEquals(captureLength, buffer.getInt(offset, LITTLE_ENDIAN));
+        assertEquals(captureLength, buffer.getInt(offset + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertNotEquals(0, buffer.getLong(offset + SIZE_OF_INT * 2, LITTLE_ENDIAN));
+        assertEquals(sessionId, buffer.getInt(offset + LOG_HEADER_LENGTH, LITTLE_ENDIAN));
+        assertEquals(streamId, buffer.getInt(offset + LOG_HEADER_LENGTH + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertEquals(id, buffer.getLong(offset + LOG_HEADER_LENGTH + SIZE_OF_INT * 2, LITTLE_ENDIAN));
+        assertEquals(uri,
+            buffer.getStringAscii(offset + LOG_HEADER_LENGTH + SIZE_OF_INT * 2 + SIZE_OF_LONG, LITTLE_ENDIAN));
     }
 
     @Test
     void encodeImageRemovalShouldTruncateUriIfItExceedsMaxMessageLength()
     {
-        final int encodedUriLength = MAX_EVENT_LENGTH - LOG_HEADER_LENGTH - 3 * SIZE_OF_INT - SIZE_OF_LONG;
-        final char[] data = new char[encodedUriLength + 8];
+        final char[] data = new char[MAX_EVENT_LENGTH + 8];
         fill(data, 'a');
+        final int offset = 0;
+        final int length = data.length + SIZE_OF_LONG + SIZE_OF_INT * 3;
+        final int captureLength = captureLength(length);
         final String uri = new String(data);
+        final int sessionId = -1;
+        final int streamId = 1;
+        final long id = 0;
 
-        final int encodedLength = encodeImageRemoval(buffer, uri, -1, 1, 0);
+        encodeImageRemoval(buffer, offset, captureLength, length, uri, sessionId, streamId, id);
 
-        assertEquals(MAX_EVENT_LENGTH, encodedLength);
-        assertEquals(MAX_EVENT_LENGTH - LOG_HEADER_LENGTH, buffer.getInt(0, LITTLE_ENDIAN));
-        assertEquals(3 * SIZE_OF_INT + SIZE_OF_LONG + data.length, buffer.getInt(SIZE_OF_INT, LITTLE_ENDIAN));
-        assertNotEquals(0, buffer.getLong(SIZE_OF_INT * 2, LITTLE_ENDIAN));
-        assertEquals(-1, buffer.getInt(LOG_HEADER_LENGTH, LITTLE_ENDIAN));
-        assertEquals(1, buffer.getInt(LOG_HEADER_LENGTH + SIZE_OF_INT, LITTLE_ENDIAN));
-        assertEquals(0, buffer.getLong(LOG_HEADER_LENGTH + SIZE_OF_INT * 2, LITTLE_ENDIAN));
-        assertEquals(uri.substring(0, encodedUriLength - 3) + "...",
-            buffer.getStringAscii(LOG_HEADER_LENGTH + SIZE_OF_INT * 2 + SIZE_OF_LONG, LITTLE_ENDIAN));
+        assertEquals(captureLength, buffer.getInt(offset, LITTLE_ENDIAN));
+        assertEquals(length, buffer.getInt(offset + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertNotEquals(0, buffer.getLong(offset + SIZE_OF_INT * 2, LITTLE_ENDIAN));
+        assertEquals(sessionId, buffer.getInt(offset + LOG_HEADER_LENGTH, LITTLE_ENDIAN));
+        assertEquals(streamId, buffer.getInt(offset + LOG_HEADER_LENGTH + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertEquals(id, buffer.getLong(offset + LOG_HEADER_LENGTH + SIZE_OF_INT * 2, LITTLE_ENDIAN));
+        assertEquals(uri.substring(0, captureLength - SIZE_OF_LONG - SIZE_OF_INT * 3 - 3) + "...",
+            buffer.getStringAscii(offset + LOG_HEADER_LENGTH + SIZE_OF_INT * 2 + SIZE_OF_LONG, LITTLE_ENDIAN));
     }
 }

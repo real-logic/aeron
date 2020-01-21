@@ -19,50 +19,60 @@ import io.aeron.cluster.Election;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
-import static io.aeron.agent.ClusterEventEncoder.SEPARATOR;
-import static io.aeron.agent.CommonEventEncoder.LOG_HEADER_LENGTH;
+import java.time.temporal.ChronoUnit;
+
+import static io.aeron.agent.ClusterEventEncoder.*;
+import static io.aeron.agent.CommonEventEncoder.*;
+import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.*;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 class ClusterEventEncoderTest
 {
-    private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(256, 32));
+    private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(MAX_EVENT_LENGTH, CACHE_LINE_LENGTH));
 
     @Test
-    void encodeStateChange()
+    void testEncodeStateChange()
     {
+        final int offset = 24;
         final Election.State from = Election.State.CANDIDATE_BALLOT;
         final Election.State to = Election.State.CANVASS;
+        final int memberId = 42;
         final String payload = from.name() + SEPARATOR + to.name();
-        final int captureLength = SIZE_OF_INT * 2 + payload.length();
+        final int length = payload.length() + SIZE_OF_INT * 2;
+        final int captureLength = captureLength(length);
 
-        final int encodedLength = ClusterEventEncoder.encodeStateChange(buffer, from, to, 42);
+        final int encodedLength = encodeStateChange(buffer, offset, captureLength, length, from, to, memberId);
 
-        assertEquals(LOG_HEADER_LENGTH + captureLength, encodedLength);
-        assertEquals(captureLength, buffer.getInt(0, LITTLE_ENDIAN));
-        assertEquals(captureLength, buffer.getInt(SIZE_OF_INT, LITTLE_ENDIAN));
-        assertNotEquals(0, buffer.getLong(SIZE_OF_INT * 2, LITTLE_ENDIAN));
-        assertEquals(42, buffer.getInt(LOG_HEADER_LENGTH));
-        assertEquals(payload, buffer.getStringAscii(LOG_HEADER_LENGTH + SIZE_OF_INT));
+        assertEquals(encodedLength(stateChangeLength(from, to)), encodedLength);
+        assertEquals(captureLength, buffer.getInt(offset, LITTLE_ENDIAN));
+        assertEquals(length, buffer.getInt(offset + SIZE_OF_INT, LITTLE_ENDIAN));
+        assertNotEquals(0, buffer.getLong(offset + SIZE_OF_INT * 2, LITTLE_ENDIAN));
+        assertEquals(memberId, buffer.getInt(offset + LOG_HEADER_LENGTH));
+        assertEquals(payload, buffer.getStringAscii(offset + LOG_HEADER_LENGTH + SIZE_OF_INT));
     }
 
     @Test
-    void encodeNewLeadershipTerm()
+    void testEncodeNewLeadershipTerm()
     {
+        final int offset = 200;
+        final int captureLength = 18;
+        final int length = 54;
         final int logLeadershipTermId = 111;
         final int leadershipTermId = 222;
         final int logPosition = 1024;
         final int timestamp = 32423436;
         final int leaderMemberId = 42;
         final int logSessionId = 18;
-        final int length = SIZE_OF_LONG * 4 + SIZE_OF_INT * 2;
 
-        final int encodedLength = ClusterEventEncoder.encodeNewLeadershipTerm(
+        final int encodedLength = encodeNewLeadershipTerm(
             buffer,
+            offset,
+            captureLength,
+            length,
             logLeadershipTermId,
             leadershipTermId,
             logPosition,
@@ -70,24 +80,39 @@ class ClusterEventEncoderTest
             leaderMemberId,
             logSessionId);
 
-        assertEquals(LOG_HEADER_LENGTH + length, encodedLength);
-        int offset = 0;
-        assertEquals(length, buffer.getInt(offset, LITTLE_ENDIAN));
-        offset += SIZE_OF_INT;
-        assertEquals(length, buffer.getInt(offset, LITTLE_ENDIAN));
-        offset += SIZE_OF_INT;
-        assertNotEquals(0, buffer.getLong(offset, LITTLE_ENDIAN));
-        offset += SIZE_OF_LONG;
-        assertEquals(logLeadershipTermId, buffer.getLong(offset, LITTLE_ENDIAN));
-        offset += SIZE_OF_LONG;
-        assertEquals(leadershipTermId, buffer.getLong(offset, LITTLE_ENDIAN));
-        offset += SIZE_OF_LONG;
-        assertEquals(logPosition, buffer.getLong(offset, LITTLE_ENDIAN));
-        offset += SIZE_OF_LONG;
-        assertEquals(timestamp, buffer.getLong(offset, LITTLE_ENDIAN));
-        offset += SIZE_OF_LONG;
-        assertEquals(leaderMemberId, buffer.getInt(offset, LITTLE_ENDIAN));
-        offset += SIZE_OF_INT;
-        assertEquals(logSessionId, buffer.getInt(offset, LITTLE_ENDIAN));
+        assertEquals(encodedLength(newLeaderShipTermLength()), encodedLength);
+        int relativeOffset = 0;
+        assertEquals(captureLength, buffer.getInt(offset + relativeOffset, LITTLE_ENDIAN));
+        relativeOffset += SIZE_OF_INT;
+        assertEquals(length, buffer.getInt(offset + relativeOffset, LITTLE_ENDIAN));
+        relativeOffset += SIZE_OF_INT;
+        assertNotEquals(0, buffer.getLong(offset + relativeOffset, LITTLE_ENDIAN));
+        relativeOffset += SIZE_OF_LONG;
+        assertEquals(logLeadershipTermId, buffer.getLong(offset + relativeOffset, LITTLE_ENDIAN));
+        relativeOffset += SIZE_OF_LONG;
+        assertEquals(leadershipTermId, buffer.getLong(offset + relativeOffset, LITTLE_ENDIAN));
+        relativeOffset += SIZE_OF_LONG;
+        assertEquals(logPosition, buffer.getLong(offset + relativeOffset, LITTLE_ENDIAN));
+        relativeOffset += SIZE_OF_LONG;
+        assertEquals(timestamp, buffer.getLong(offset + relativeOffset, LITTLE_ENDIAN));
+        relativeOffset += SIZE_OF_LONG;
+        assertEquals(leaderMemberId, buffer.getInt(offset + relativeOffset, LITTLE_ENDIAN));
+        relativeOffset += SIZE_OF_INT;
+        assertEquals(logSessionId, buffer.getInt(offset + relativeOffset, LITTLE_ENDIAN));
+    }
+
+    @Test
+    void testNewLeaderShipTermLength()
+    {
+        assertEquals(SIZE_OF_LONG * 4 + SIZE_OF_INT * 2, newLeaderShipTermLength());
+    }
+
+    @Test
+    void testStateChangeLength()
+    {
+        final ChronoUnit from = ChronoUnit.CENTURIES;
+        final ChronoUnit to = ChronoUnit.HALF_DAYS;
+        final String payload = from.name() + SEPARATOR + to.name();
+        assertEquals(payload.length() + SIZE_OF_INT * 2, stateChangeLength(from, to));
     }
 }

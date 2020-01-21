@@ -17,7 +17,6 @@ package io.aeron.agent;
 
 import io.aeron.archive.codecs.ListRecordingRequestDecoder;
 import io.aeron.archive.codecs.MessageHeaderEncoder;
-import org.agrona.BitUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.junit.jupiter.api.AfterEach;
@@ -37,19 +36,22 @@ import static io.aeron.agent.EventConfiguration.*;
 import static io.aeron.archive.codecs.MessageHeaderEncoder.ENCODED_LENGTH;
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static org.agrona.concurrent.ringbuffer.RecordDescriptor.encodedMsgOffset;
-import static org.agrona.concurrent.ringbuffer.RecordDescriptor.lengthOffset;
-import static org.agrona.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENGTH;
+import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
+import static org.agrona.BitUtil.align;
+import static org.agrona.concurrent.ringbuffer.RecordDescriptor.*;
+import static org.agrona.concurrent.ringbuffer.RingBufferDescriptor.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.params.provider.EnumSource.Mode.EXCLUDE;
 import static org.junit.jupiter.params.provider.EnumSource.Mode.INCLUDE;
 
 class ArchiveEventLoggerTest
 {
+    private static final int CAPACITY = align(MAX_EVENT_LENGTH, CACHE_LINE_LENGTH) * 8;
     private final UnsafeBuffer logBuffer = new UnsafeBuffer(
-        allocateDirect(BitUtil.align(MAX_EVENT_LENGTH, 64) * 8 + TRAILER_LENGTH));
+        allocateDirect(CAPACITY + TRAILER_LENGTH));
     private final ArchiveEventLogger logger = new ArchiveEventLogger(new ManyToOneRingBuffer(logBuffer));
-    private final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirect(BitUtil.align(MAX_EVENT_LENGTH, 64) * 3));
+    private final UnsafeBuffer srcBuffer = new UnsafeBuffer(
+        allocateDirect(align(MAX_EVENT_LENGTH, CACHE_LINE_LENGTH) * 3));
 
     @AfterEach
     void after()
@@ -69,18 +71,22 @@ class ArchiveEventLoggerTest
     void logControlRequest(final ArchiveEventCode eventCode)
     {
         ARCHIVE_EVENT_CODES.add(eventCode);
-        final int offset = 100;
-        final int dataLength = MAX_EVENT_LENGTH * 2;
-        new MessageHeaderEncoder().wrap(buffer, offset).templateId(eventCode.templateId());
-        buffer.setMemory(offset + ENCODED_LENGTH, dataLength, (byte)3);
+        final int srcOffset = 100;
+        final int length = MAX_EVENT_LENGTH * 2;
+        new MessageHeaderEncoder().wrap(srcBuffer, srcOffset).templateId(eventCode.templateId());
+        srcBuffer.setMemory(srcOffset + ENCODED_LENGTH, length, (byte)3);
         final int captureLength = MAX_CAPTURE_LENGTH;
+        logBuffer.putLong(CAPACITY + HEAD_CACHE_POSITION_OFFSET, CAPACITY * 3);
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, 128 + CAPACITY * 3);
+        final int recordOffset = 128;
 
-        logger.logControlRequest(buffer, offset, dataLength);
+        logger.logControlRequest(srcBuffer, srcOffset, length);
 
-        verifyLogHeader(logBuffer, toEventCodeId(eventCode), captureLength, captureLength, MAX_EVENT_LENGTH * 2);
+        verifyLogHeader(logBuffer, recordOffset, toEventCodeId(eventCode), captureLength, length);
         for (int i = 0; i < captureLength - ENCODED_LENGTH; i++)
         {
-            assertEquals((byte)3, logBuffer.getByte(encodedMsgOffset(LOG_HEADER_LENGTH + ENCODED_LENGTH + i)));
+            assertEquals((byte)3,
+                logBuffer.getByte(encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH + ENCODED_LENGTH + i)));
         }
     }
 
@@ -88,25 +94,31 @@ class ArchiveEventLoggerTest
     @ValueSource(ints = { Integer.MIN_VALUE, ListRecordingRequestDecoder.TEMPLATE_ID })
     void logControlRequestNoOp(final int templateId)
     {
-        new MessageHeaderEncoder().wrap(buffer, 0).templateId(templateId);
-        buffer.setMemory(ENCODED_LENGTH, 100, (byte)3);
+        final int srcOffset = 0;
+        new MessageHeaderEncoder().wrap(srcBuffer, srcOffset).templateId(templateId);
+        final int length = 100;
+        srcBuffer.setMemory(srcOffset + ENCODED_LENGTH, length, (byte)3);
+        final int recordOffset = 0;
 
-        logger.logControlRequest(buffer, 0, 100);
+        logger.logControlRequest(srcBuffer, srcOffset, length);
 
-        assertEquals(0, logBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN));
+        assertEquals(0, logBuffer.getInt(lengthOffset(recordOffset), LITTLE_ENDIAN));
     }
 
     @Test
     void logControlResponse()
     {
-        buffer.setMemory(0, 64, (byte)1);
+        final int length = 64;
+        srcBuffer.setMemory(0, length, (byte)1);
+        final int recordOffset = HEADER_LENGTH * 5;
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, recordOffset);
 
-        logger.logControlResponse(buffer, 64);
+        logger.logControlResponse(srcBuffer, length);
 
-        verifyLogHeader(logBuffer, toEventCodeId(CMD_OUT_RESPONSE), 64, 64, 64);
-        for (int i = 0; i < 64; i++)
+        verifyLogHeader(logBuffer, recordOffset, toEventCodeId(CMD_OUT_RESPONSE), length, length);
+        for (int i = 0; i < length; i++)
         {
-            assertEquals((byte)1, logBuffer.getByte(encodedMsgOffset(LOG_HEADER_LENGTH + i)));
+            assertEquals((byte)1, logBuffer.getByte(encodedMsgOffset(recordOffset + LOG_HEADER_LENGTH + i)));
         }
     }
 

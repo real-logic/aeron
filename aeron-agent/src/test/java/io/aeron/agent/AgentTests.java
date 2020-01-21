@@ -24,7 +24,7 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.concurrent.ringbuffer.RecordDescriptor.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class Common
+public class AgentTests
 {
     public static void beforeAgent()
     {
@@ -39,14 +39,6 @@ public class Common
         System.clearProperty(EventConfiguration.ENABLED_CLUSTER_EVENT_CODES_PROP_NAME);
         System.clearProperty(EventLogAgent.READER_CLASSNAME_PROP_NAME);
         EventConfiguration.reset();
-    }
-
-    public static void checkInterruptedStatus()
-    {
-        if (Thread.currentThread().isInterrupted())
-        {
-            fail("unexpected interrupt - test likely to have timed out");
-        }
     }
 
     public static void verifyLogHeader(

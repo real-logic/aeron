@@ -25,7 +25,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-import static io.aeron.agent.Common.verifyLogHeader;
+import static io.aeron.agent.AgentTests.verifyLogHeader;
 import static io.aeron.agent.CommonEventEncoder.LOG_HEADER_LENGTH;
 import static io.aeron.agent.CommonEventEncoder.MAX_CAPTURE_LENGTH;
 import static io.aeron.agent.DriverEventCode.*;

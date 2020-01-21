@@ -29,7 +29,7 @@ import static io.aeron.agent.ArchiveEventCode.CMD_OUT_RESPONSE;
 import static io.aeron.agent.ArchiveEventCode.EVENT_CODE_TYPE;
 import static io.aeron.agent.ArchiveEventLogger.CONTROL_REQUEST_EVENTS;
 import static io.aeron.agent.ArchiveEventLogger.toEventCodeId;
-import static io.aeron.agent.Common.verifyLogHeader;
+import static io.aeron.agent.AgentTests.verifyLogHeader;
 import static io.aeron.agent.CommonEventEncoder.LOG_HEADER_LENGTH;
 import static io.aeron.agent.CommonEventEncoder.MAX_CAPTURE_LENGTH;
 import static io.aeron.agent.EventConfiguration.*;
@@ -47,8 +47,7 @@ import static org.junit.jupiter.params.provider.EnumSource.Mode.INCLUDE;
 class ArchiveEventLoggerTest
 {
     private static final int CAPACITY = align(MAX_EVENT_LENGTH, CACHE_LINE_LENGTH) * 8;
-    private final UnsafeBuffer logBuffer = new UnsafeBuffer(
-        allocateDirect(CAPACITY + TRAILER_LENGTH));
+    private final UnsafeBuffer logBuffer = new UnsafeBuffer(allocateDirect(CAPACITY + TRAILER_LENGTH));
     private final ArchiveEventLogger logger = new ArchiveEventLogger(new ManyToOneRingBuffer(logBuffer));
     private final UnsafeBuffer srcBuffer = new UnsafeBuffer(
         allocateDirect(align(MAX_EVENT_LENGTH, CACHE_LINE_LENGTH) * 3));

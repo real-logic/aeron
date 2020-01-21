@@ -54,6 +54,7 @@ final class DriverEventDissector
     private static final SubscriptionReadyFlyweight SUBSCRIPTION_READY = new SubscriptionReadyFlyweight();
     private static final ClientTimeoutFlyweight CLIENT_TIMEOUT = new ClientTimeoutFlyweight();
     private static final TerminateDriverFlyweight TERMINATE_DRIVER = new TerminateDriverFlyweight();
+
     static final String CONTEXT = "DRIVER";
 
     private DriverEventDissector()

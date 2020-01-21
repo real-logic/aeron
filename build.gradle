@@ -670,6 +670,7 @@ project(':aeron-agent') {
     dependencies {
         implementation project(':aeron-cluster')
         implementation "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
+        testImplementation project(':aeron-test-support')
     }
 
     jar {
@@ -867,7 +868,7 @@ project(':aeron-system-tests') {
 project(':aeron-test-support') {
     dependencies {
         api "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
-        implementation "org.agrona:agrona:${agronaVersion}"
+        api "org.agrona:agrona:${agronaVersion}"
     }
 }
 

@@ -54,7 +54,7 @@ public class ArchiveLoggingAgentTest
     @AfterEach
     public void after()
     {
-        Common.afterAgent();
+        AgentTests.afterAgent();
 
         LOGGED_EVENTS.clear();
         WAIT_LIST.clear();
@@ -129,7 +129,7 @@ public class ArchiveLoggingAgentTest
     {
         System.setProperty(EventLogAgent.READER_CLASSNAME_PROP_NAME, StubEventLogReaderAgent.class.getName());
         System.setProperty(EventConfiguration.ENABLED_ARCHIVE_EVENT_CODES_PROP_NAME, enabledEvents);
-        Common.beforeAgent();
+        AgentTests.beforeAgent();
 
         latch = new CountDownLatch(expectedEvents.size());
         WAIT_LIST.addAll(expectedEvents.stream().map(ArchiveEventLogger::toEventCodeId).collect(toSet()));

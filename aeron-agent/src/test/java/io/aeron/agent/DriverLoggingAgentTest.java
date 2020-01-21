@@ -20,6 +20,7 @@ import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.test.Tests;
 import org.agrona.IoUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.MutableInteger;
@@ -63,7 +64,7 @@ public class DriverLoggingAgentTest
     @AfterEach
     public void after()
     {
-        Common.afterAgent();
+        AgentTests.afterAgent();
 
         LOGGED_EVENTS.clear();
         WAIT_LIST.clear();
@@ -149,7 +150,7 @@ public class DriverLoggingAgentTest
                     while (publication.offer(offerBuffer) < 0)
                     {
                         Thread.yield();
-                        Common.checkInterruptedStatus();
+                        Tests.checkInterruptedStatus();
                     }
 
                     final MutableInteger counter = new MutableInteger();
@@ -158,7 +159,7 @@ public class DriverLoggingAgentTest
                     while (0 == subscription.poll(handler, 1))
                     {
                         Thread.yield();
-                        Common.checkInterruptedStatus();
+                        Tests.checkInterruptedStatus();
                     }
 
                     assertEquals(counter.get(), 1);
@@ -175,7 +176,7 @@ public class DriverLoggingAgentTest
     {
         System.setProperty(EventLogAgent.READER_CLASSNAME_PROP_NAME, StubEventLogReaderAgent.class.getName());
         System.setProperty(EventConfiguration.ENABLED_EVENT_CODES_PROP_NAME, enabledEvents);
-        Common.beforeAgent();
+        AgentTests.beforeAgent();
 
         latch = new CountDownLatch(expectedEvents.size());
         WAIT_LIST.addAll(expectedEvents.stream().map(DriverEventCode::id).collect(toSet()));

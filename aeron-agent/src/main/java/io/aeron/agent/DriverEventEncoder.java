@@ -146,5 +146,4 @@ final class DriverEventEncoder
         encodeTrailingString(
             encodingBuffer, offset + relativeOffset, captureLength - SIZE_OF_INT * 2 - SIZE_OF_LONG, uri);
     }
-
 }

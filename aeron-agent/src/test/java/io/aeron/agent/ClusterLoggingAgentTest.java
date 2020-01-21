@@ -59,7 +59,7 @@ public class ClusterLoggingAgentTest
     @AfterEach
     public void after()
     {
-        Common.afterAgent();
+        AgentTests.afterAgent();
 
         LOGGED_EVENTS.clear();
 
@@ -162,7 +162,7 @@ public class ClusterLoggingAgentTest
     {
         System.setProperty(EventLogAgent.READER_CLASSNAME_PROP_NAME, StubEventLogReaderAgent.class.getName());
         System.setProperty(EventConfiguration.ENABLED_CLUSTER_EVENT_CODES_PROP_NAME, enabledEvents);
-        Common.beforeAgent();
+        AgentTests.beforeAgent();
 
         latch = new CountDownLatch(expectedEvents);
 

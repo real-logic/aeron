@@ -27,7 +27,7 @@ import static io.aeron.agent.ClusterEventCode.NEW_LEADERSHIP_TERM;
 import static io.aeron.agent.ClusterEventCode.STATE_CHANGE;
 import static io.aeron.agent.ClusterEventEncoder.SEPARATOR;
 import static io.aeron.agent.ClusterEventLogger.toEventCodeId;
-import static io.aeron.agent.Common.verifyLogHeader;
+import static io.aeron.agent.AgentTests.verifyLogHeader;
 import static io.aeron.agent.CommonEventEncoder.LOG_HEADER_LENGTH;
 import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
 import static java.nio.ByteBuffer.allocateDirect;
@@ -44,8 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class ClusterEventLoggerTest
 {
     private static final int CAPACITY = align(MAX_EVENT_LENGTH, CACHE_LINE_LENGTH);
-    private final UnsafeBuffer logBuffer = new UnsafeBuffer(
-        allocateDirect(CAPACITY + TRAILER_LENGTH));
+    private final UnsafeBuffer logBuffer = new UnsafeBuffer(allocateDirect(CAPACITY + TRAILER_LENGTH));
     private final ClusterEventLogger logger = new ClusterEventLogger(new ManyToOneRingBuffer(logBuffer));
 
     @ParameterizedTest

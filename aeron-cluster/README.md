@@ -40,4 +40,4 @@ and in the event of failure the remaining member must be manually reconfigured a
 Protocol
 =====
 
-Messages are specified using SBE in [aeron-cluster-codecs.xml](https://github.com/real-logic/aeron/blob/master/aeron-cluster/src/main/resources/aeron-cluster-codecs.xml).
+Messages are specified using SBE in [aeron-cluster-codecs.xml](https://github.com/real-logic/aeron/blob/master/aeron-cluster/src/main/resources/cluster/aeron-cluster-codecs.xml).

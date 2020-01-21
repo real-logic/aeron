@@ -377,8 +377,8 @@ public final class EventLogAgent
     {
         try
         {
-            final Class<?> aClass = Class.forName(
-                System.getProperty(READER_CLASSNAME_PROP_NAME, READER_CLASSNAME_DEFAULT));
+            final String className = System.getProperty(READER_CLASSNAME_PROP_NAME, READER_CLASSNAME_DEFAULT);
+            final Class<?> aClass = Class.forName(className);
 
             return (Agent)aClass.getDeclaredConstructor().newInstance();
         }

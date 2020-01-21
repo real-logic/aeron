@@ -88,7 +88,6 @@ final class EventLogReaderAgent implements Agent, MessageHandler
     public void onClose()
     {
         CloseHelper.close(fileChannel);
-        fileChannel = null;
     }
 
     public String roleName()

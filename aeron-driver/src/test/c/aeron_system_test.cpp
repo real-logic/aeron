@@ -44,8 +44,8 @@ TEST_F(SystemTest, shouldReclaimSubscriptionWhenOutOfScopeAndNotFound)
 {
     std::shared_ptr<Aeron> aeron = Aeron::connect();
 
-    aeron->addSubscription("aeron:udp?endpoint=localhost:50000", 0);
-    const auto pub_reg_id = aeron->addPublication("aeron:udp?endpoint=localhost:50000", 0);
+    aeron->addSubscription("aeron:udp?endpoint=localhost:24325", 10);
+    const auto pub_reg_id = aeron->addPublication("aeron:udp?endpoint=localhost:24325", 10);
 
     auto pub = aeron->findPublication(pub_reg_id);
     while (!pub)

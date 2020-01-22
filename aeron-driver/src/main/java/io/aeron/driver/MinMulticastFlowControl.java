@@ -16,10 +16,8 @@
 package io.aeron.driver;
 
 import io.aeron.protocol.StatusMessageFlyweight;
-import org.agrona.collections.ArrayListUtil;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
@@ -48,7 +46,8 @@ public class MinMulticastFlowControl implements FlowControl
     public static final long RECEIVER_TIMEOUT = getDurationInNanos(
         RECEIVER_TIMEOUT_PROP_NAME, RECEIVER_TIMEOUT_DEFAULT);
 
-    private final ArrayList<Receiver> receiverList = new ArrayList<>();
+    static final Receiver[] EMPTY_RECEIVERS = new Receiver[0];
+    private Receiver[] receivers = EMPTY_RECEIVERS;
 
     /**
      * {@inheritDoc}
@@ -79,11 +78,8 @@ public class MinMulticastFlowControl implements FlowControl
         boolean isExisting = false;
         long minPosition = Long.MAX_VALUE;
 
-        final ArrayList<Receiver> receiverList = this.receiverList;
-        for (int i = 0, size = receiverList.size(); i < size; i++)
+        for (final Receiver receiver : receivers)
         {
-            final Receiver receiver = receiverList.get(i);
-
             if (receiverId == receiver.receiverId)
             {
                 receiver.lastPosition = Math.max(position, receiver.lastPosition);
@@ -97,8 +93,9 @@ public class MinMulticastFlowControl implements FlowControl
 
         if (!isExisting)
         {
-            receiverList.add(new Receiver(
-                position, position + windowLength, timeNs, receiverId, receiverAddress));
+            final Receiver receiver = new Receiver(
+                position, position + windowLength, timeNs, receiverId, receiverAddress);
+            receivers = add(receivers, receiver);
             minPosition = Math.min(minPosition, position + windowLength);
         }
 
@@ -112,14 +109,18 @@ public class MinMulticastFlowControl implements FlowControl
     {
         long minPosition = Long.MAX_VALUE;
         long minLimitPosition = Long.MAX_VALUE;
-        final ArrayList<Receiver> receiverList = this.receiverList;
+        int removed = 0;
 
-        for (int lastIndex = receiverList.size() - 1, i = lastIndex; i >= 0; i--)
+        for (int lastIndex = receivers.length - 1, i = lastIndex; i >= 0; i--)
         {
-            final Receiver receiver = receiverList.get(i);
+            final Receiver receiver = receivers[i];
             if ((receiver.timeOfLastStatusMessageNs + RECEIVER_TIMEOUT) - timeNs < 0)
             {
-                ArrayListUtil.fastUnorderedRemove(receiverList, i, lastIndex--);
+                if (i != lastIndex)
+                {
+                    receivers[i] = receivers[lastIndex--];
+                }
+                removed++;
             }
             else
             {
@@ -128,7 +129,39 @@ public class MinMulticastFlowControl implements FlowControl
             }
         }
 
-        return receiverList.size() > 0 ? minLimitPosition : senderLimit;
+        if (removed > 0)
+        {
+            receivers = truncateReceivers(receivers, removed);
+        }
+
+        return receivers.length > 0 ? minLimitPosition : senderLimit;
+    }
+
+    static Receiver[] add(final Receiver[] receivers, final Receiver receiver)
+    {
+        final int length = receivers.length;
+        final Receiver[] newElements = new Receiver[length + 1];
+
+        System.arraycopy(receivers, 0, newElements, 0, length);
+        newElements[length] = receiver;
+        return newElements;
+    }
+
+    static Receiver[] truncateReceivers(final Receiver[] receivers, final int removed)
+    {
+        final int length = receivers.length;
+        final int newLength = length - removed;
+
+        if (0 == newLength)
+        {
+            return EMPTY_RECEIVERS;
+        }
+        else
+        {
+            final Receiver[] newElements = new Receiver[newLength];
+            System.arraycopy(receivers, 0, newElements, 0, newLength);
+            return newElements;
+        }
     }
 
     static class Receiver

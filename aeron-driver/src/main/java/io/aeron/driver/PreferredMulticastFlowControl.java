@@ -17,12 +17,11 @@ package io.aeron.driver;
 
 import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.BitUtil;
-import org.agrona.collections.ArrayListUtil;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
+import static io.aeron.driver.MinMulticastFlowControl.EMPTY_RECEIVERS;
 import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
 import static java.lang.System.getProperty;
 import static org.agrona.SystemUtil.getDurationInNanos;
@@ -63,7 +62,7 @@ public class PreferredMulticastFlowControl implements FlowControl
     public static final String PREFERRED_ASF = getProperty(PREFERRED_ASF_PROP_NAME, PREFERRED_ASF_DEFAULT);
     public static final byte[] PREFERRED_ASF_BYTES = BitUtil.fromHex(PREFERRED_ASF);
 
-    private final ArrayList<Receiver> receiverList = new ArrayList<>();
+    private MinMulticastFlowControl.Receiver[] receivers = EMPTY_RECEIVERS;
     private final byte[] smAsf = new byte[64];
 
     /**
@@ -90,10 +89,8 @@ public class PreferredMulticastFlowControl implements FlowControl
         boolean isExisting = false;
         long minPosition = Long.MAX_VALUE;
 
-        final ArrayList<Receiver> receiverList = this.receiverList;
-        for (int i = 0, size = receiverList.size(); i < size; i++)
+        for (final MinMulticastFlowControl.Receiver receiver : receivers)
         {
-            final Receiver receiver = receiverList.get(i);
             if (isFromPreferred && receiverId == receiver.receiverId)
             {
                 receiver.lastPosition = Math.max(position, receiver.lastPosition);
@@ -107,13 +104,14 @@ public class PreferredMulticastFlowControl implements FlowControl
 
         if (isFromPreferred && !isExisting)
         {
-            receiverList.add(new Receiver(position, lastPositionPlusWindow, timeNs, receiverId, receiverAddress));
+            final MinMulticastFlowControl.Receiver receiver = new MinMulticastFlowControl.Receiver(
+                position, lastPositionPlusWindow, timeNs, receiverId, receiverAddress);
+            receivers = MinMulticastFlowControl.add(receivers, receiver);
             minPosition = Math.min(minPosition, lastPositionPlusWindow);
         }
 
-        return receiverList.size() > 0 ?
-            Math.max(senderLimit, minPosition) :
-            Math.max(senderLimit, lastPositionPlusWindow);
+        return receivers.length > 0 ?
+            Math.max(senderLimit, minPosition) : Math.max(senderLimit, lastPositionPlusWindow);
     }
 
     /**
@@ -130,14 +128,18 @@ public class PreferredMulticastFlowControl implements FlowControl
     {
         long minPosition = Long.MAX_VALUE;
         long minLimitPosition = Long.MAX_VALUE;
-        final ArrayList<Receiver> receiverList = this.receiverList;
+        int removed = 0;
 
-        for (int lastIndex = receiverList.size() - 1, i = lastIndex; i >= 0; i--)
+        for (int lastIndex = receivers.length - 1, i = lastIndex; i >= 0; i--)
         {
-            final Receiver receiver = receiverList.get(i);
+            final MinMulticastFlowControl.Receiver receiver = receivers[i];
             if ((receiver.timeOfLastStatusMessageNs + RECEIVER_TIMEOUT) - timeNs < 0)
             {
-                ArrayListUtil.fastUnorderedRemove(receiverList, i, lastIndex--);
+                if (i != lastIndex)
+                {
+                    receivers[i] = receivers[lastIndex--];
+                }
+                removed++;
             }
             else
             {
@@ -146,10 +148,15 @@ public class PreferredMulticastFlowControl implements FlowControl
             }
         }
 
-        return receiverList.size() > 0 ? minLimitPosition : senderLimit;
+        if (removed > 0)
+        {
+            receivers = MinMulticastFlowControl.truncateReceivers(receivers, removed);
+        }
+
+        return receivers.length > 0 ? minLimitPosition : senderLimit;
     }
 
-    public boolean isFromPreferred(final StatusMessageFlyweight statusMessageFlyweight)
+    private boolean isFromPreferred(final StatusMessageFlyweight statusMessageFlyweight)
     {
         final int asfLength = statusMessageFlyweight.applicationSpecificFeedback(smAsf);
         boolean result = false;
@@ -167,28 +174,5 @@ public class PreferredMulticastFlowControl implements FlowControl
         }
 
         return result;
-    }
-
-    static class Receiver
-    {
-        long lastPosition;
-        long lastPositionPlusWindow;
-        long timeOfLastStatusMessageNs;
-        final long receiverId;
-        final InetSocketAddress address;
-
-        Receiver(
-            final long lastPosition,
-            final long lastPositionPlusWindow,
-            final long timeNs,
-            final long receiverId,
-            final InetSocketAddress receiverAddress)
-        {
-            this.lastPosition = lastPosition;
-            this.lastPositionPlusWindow = lastPositionPlusWindow;
-            this.timeOfLastStatusMessageNs = timeNs;
-            this.receiverId = receiverId;
-            this.address = receiverAddress;
-        }
     }
 }

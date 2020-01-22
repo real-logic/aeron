@@ -94,8 +94,17 @@ public class ControlProtocolEvents
 
     /**
      * Add a Publication with the only the URI (which will include the stream-id)
+     *
+     * @since 0.1.0 (CnC)
      */
-    public static final int ADD_PUBLICATION_URI_ONLY = 0x0F;
+    public static final int ADD_PUBLICATION_V1 = 0x0F;
+
+    /**
+     * Add a Subscription with the only the URI (which will include the stream-id)
+     *
+     * @since 0.1.0 (CnC)
+     */
+    public static final int ADD_SUBSCRIPTION_V1 = 0x10;
 
     // Media Driver to Clients
 
@@ -148,4 +157,12 @@ public class ControlProtocolEvents
      * Inform clients of client timeout.
      */
     public static final int ON_CLIENT_TIMEOUT = 0x0F0A;
+
+    /**
+     * New Subscription is ready notification, in response to an add subscription that
+     * only includes a channel uri.
+     *
+     * @since 0.1.0 (CnC)
+     */
+    public static final int ON_SUBSCRIPTION_READY_V1 = 0x0F0B;
 }

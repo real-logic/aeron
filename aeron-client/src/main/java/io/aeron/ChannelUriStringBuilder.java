@@ -110,6 +110,7 @@ public class ChannelUriStringBuilder
 
     public ChannelUriStringBuilder(final ChannelUri channelUri)
     {
+        prefix(channelUri);
         media(channelUri);
         endpoint(channelUri);
         networkInterface(channelUri);

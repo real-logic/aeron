@@ -49,7 +49,7 @@ class SubscriptionParams
             params.hasSessionId = true;
         }
 
-        final String streamIdStr = channelUri.get(CommonContext.SESSION_ID_PARAM_NAME);
+        final String streamIdStr = channelUri.get(STREAM_ID_PARAM_NAME);
         if (null != streamIdStr)
         {
             params.streamId = Integer.parseInt(streamIdStr);

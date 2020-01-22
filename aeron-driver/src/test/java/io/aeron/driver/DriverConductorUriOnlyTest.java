@@ -40,6 +40,8 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.stubbing.Answer;
@@ -73,7 +75,7 @@ public class DriverConductorUriOnlyTest
     private static final String CHANNEL_TAG_ID_1 = "aeron:udp?tags=1001";
     private static final String CHANNEL_SUB_CONTROL_MODE_MANUAL = "aeron:udp?control-mode=manual";
     private static final String CHANNEL_IPC = "aeron:ipc";
-    private static final String INVALID_URI = "aeron:udp://";
+    private static final String INVALID_URI = "aeron:udp://?stream-id=1002";
     private static final String COUNTER_LABEL = "counter label";
     private static final int SESSION_ID = 100;
     private static final int STREAM_ID_1 = 1010;
@@ -284,21 +286,95 @@ public class DriverConductorUriOnlyTest
     @Test
     public void shouldBeAbleToAddSingleSubscription()
     {
-        final long id = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
+        final long id = addSubscription(driverProxy, CHANNEL_4000, STREAM_ID_1);
+
+        driverConductor.doWork();
+
+        verify(receiverProxy).registerReceiveChannelEndpoint(any());
+        verify(receiverProxy).addSubscription(any(), eq(STREAM_ID_1));
+        verify(mockClientProxy).onSubscriptionReady(eq(id), anyInt(), eq(STREAM_ID_1));
+
+        assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000)));
+    }
+
+    @Test
+    public void shouldNotAccidentallySendNetworkSubscriptionReadyV1ToAddSubscriptionV0()
+    {
+        final String channelWithStream = new ChannelUriStringBuilder(CHANNEL_4000).streamId(STREAM_ID_1).build();
+        final long id = driverProxy.addSubscription(channelWithStream, STREAM_ID_1);
 
         driverConductor.doWork();
 
         verify(receiverProxy).registerReceiveChannelEndpoint(any());
         verify(receiverProxy).addSubscription(any(), eq(STREAM_ID_1));
         verify(mockClientProxy).onSubscriptionReady(eq(id), anyInt());
+        verify(mockClientProxy, never()).onSubscriptionReady(eq(id), anyInt(), anyInt());
 
         assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000)));
     }
 
     @Test
+    public void shouldNotAccidentallySendIpcSubscriptionReadyV1ToAddSubscriptionV0()
+    {
+        final String channelWithStream = new ChannelUriStringBuilder(CHANNEL_IPC).streamId(STREAM_ID_1).build();
+        final long id = driverProxy.addSubscription(channelWithStream, STREAM_ID_1);
+
+        driverConductor.doWork();
+
+        verify(mockClientProxy).onSubscriptionReady(eq(id), anyInt());
+        verify(mockClientProxy, never()).onSubscriptionReady(eq(id), anyInt(), anyInt());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {CHANNEL_4000, CHANNEL_IPC})
+    public void shouldErrorIfUriStreamIdDoesNotMatchParameterStreamIdForSubscription(final String uri)
+    {
+        final String channelWithStream = new ChannelUriStringBuilder(uri).streamId(STREAM_ID_1).build();
+        final long id = driverProxy.addSubscription(channelWithStream, STREAM_ID_2);
+
+        driverConductor.doWork();
+
+        verify(mockClientProxy).onError(eq(id), eq(INVALID_CHANNEL), contains("Ambiguous streamId specified"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {CHANNEL_4000, CHANNEL_IPC})
+    public void shouldErrorIfStreamIdNotSpecifiedForSubscription(final String uri)
+    {
+        final long id = driverProxy.addSubscription(uri);
+
+        driverConductor.doWork();
+
+        verify(mockClientProxy).onError(eq(id), eq(INVALID_CHANNEL), contains("URI must specify an stream-id"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {CHANNEL_4000, CHANNEL_IPC})
+    public void shouldErrorIfUriStreamIdDoesNotMatchParameterStreamIdForPublication(final String uri)
+    {
+        final String channelWithStream = new ChannelUriStringBuilder(uri).streamId(STREAM_ID_1).build();
+        final long id = driverProxy.addPublication(channelWithStream, STREAM_ID_2);
+
+        driverConductor.doWork();
+
+        verify(mockClientProxy).onError(eq(id), eq(INVALID_CHANNEL), contains("Ambiguous streamId specified"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {CHANNEL_4000, CHANNEL_IPC})
+    public void shouldErrorIfStreamIdNotSpecifiedForPublication(final String uri)
+    {
+        final long id = driverProxy.addPublication(uri);
+
+        driverConductor.doWork();
+
+        verify(mockClientProxy).onError(eq(id), eq(INVALID_CHANNEL), contains("URI must specify an stream-id"));
+    }
+
+    @Test
     public void shouldBeAbleToAddAndRemoveSingleSubscription()
     {
-        final long id = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
+        final long id = addSubscription(driverProxy, CHANNEL_4000, STREAM_ID_1);
         driverProxy.removeSubscription(id);
 
         driverConductor.doWork();
@@ -355,9 +431,9 @@ public class DriverConductorUriOnlyTest
     {
         final UdpChannel udpChannel = UdpChannel.parse(CHANNEL_4000);
 
-        final long id1 = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
-        final long id2 = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_2);
-        driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_3);
+        final long id1 = addSubscription(driverProxy, CHANNEL_4000, STREAM_ID_1);
+        final long id2 = addSubscription(driverProxy, CHANNEL_4000, STREAM_ID_2);
+        addSubscription(driverProxy, CHANNEL_4000, STREAM_ID_3);
 
         driverConductor.doWork();
 
@@ -380,9 +456,9 @@ public class DriverConductorUriOnlyTest
     {
         final UdpChannel udpChannel = UdpChannel.parse(CHANNEL_4000);
 
-        final long id1 = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
-        final long id2 = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_2);
-        final long id3 = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_3);
+        final long id1 = addSubscription(driverProxy, CHANNEL_4000, STREAM_ID_1);
+        final long id2 = addSubscription(driverProxy, CHANNEL_4000, STREAM_ID_2);
+        final long id3 = addSubscription(driverProxy, CHANNEL_4000, STREAM_ID_3);
 
         driverConductor.doWork();
 
@@ -444,7 +520,7 @@ public class DriverConductorUriOnlyTest
     @Test
     public void shouldErrorOnRemoveSubscriptionOnUnknownRegistrationId()
     {
-        final long id1 = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
+        final long id1 = addSubscription(driverProxy, CHANNEL_4000, STREAM_ID_1);
         driverProxy.removeSubscription(id1 + 100);
 
         driverConductor.doWork();
@@ -452,7 +528,7 @@ public class DriverConductorUriOnlyTest
         final InOrder inOrder = inOrder(receiverProxy, mockClientProxy);
 
         inOrder.verify(receiverProxy).addSubscription(any(), anyInt());
-        inOrder.verify(mockClientProxy).onSubscriptionReady(eq(id1), anyInt());
+        inOrder.verify(mockClientProxy).onSubscriptionReady(eq(id1), anyInt(), eq(STREAM_ID_1));
         inOrder.verify(mockClientProxy).onError(anyLong(), eq(UNKNOWN_SUBSCRIPTION), anyString());
         inOrder.verifyNoMoreInteractions();
 
@@ -462,7 +538,7 @@ public class DriverConductorUriOnlyTest
     @Test
     public void shouldErrorOnAddSubscriptionWithInvalidChannel()
     {
-        driverProxy.addSubscription(INVALID_URI, STREAM_ID_1);
+        driverProxy.addSubscription(INVALID_URI);
 
         driverConductor.doWork();
         driverConductor.doWork();
@@ -580,7 +656,7 @@ public class DriverConductorUriOnlyTest
     @Test
     public void shouldTimeoutSubscription()
     {
-        driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
+        addSubscription(driverProxy, CHANNEL_4000, STREAM_ID_1);
 
         driverConductor.doWork();
 
@@ -603,7 +679,7 @@ public class DriverConductorUriOnlyTest
     @Test
     public void shouldNotTimeoutSubscriptionOnKeepAlive()
     {
-        driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
+        addSubscription(driverProxy, CHANNEL_4000, STREAM_ID_1);
 
         driverConductor.doWork();
 
@@ -635,7 +711,7 @@ public class DriverConductorUriOnlyTest
         final int activeTermId = 2;
         final int termOffset = 100;
 
-        driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
+        addSubscription(driverProxy, CHANNEL_4000, STREAM_ID_1);
 
         driverConductor.doWork();
 
@@ -665,7 +741,7 @@ public class DriverConductorUriOnlyTest
     {
         final InetSocketAddress sourceAddress = new InetSocketAddress("localhost", 4400);
 
-        driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
+        addSubscription(driverProxy, CHANNEL_4000, STREAM_ID_1);
 
         driverConductor.doWork();
 
@@ -689,7 +765,7 @@ public class DriverConductorUriOnlyTest
     {
         final InetSocketAddress sourceAddress = new InetSocketAddress("localhost", 4400);
 
-        final long subId = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
+        final long subId = addSubscription(driverProxy, CHANNEL_4000, STREAM_ID_1);
 
         driverConductor.doWork();
 
@@ -722,7 +798,7 @@ public class DriverConductorUriOnlyTest
     {
         final InetSocketAddress sourceAddress = new InetSocketAddress("localhost", 4400);
 
-        final long subId1 = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
+        final long subId1 = addSubscription(driverProxy, CHANNEL_4000, STREAM_ID_1);
 
         driverConductor.doWork();
 
@@ -743,7 +819,7 @@ public class DriverConductorUriOnlyTest
 
         publicationImage.activate();
 
-        final long subId2 = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
+        final long subId2 = addSubscription(driverProxy, CHANNEL_4000, STREAM_ID_1);
 
         driverConductor.doWork();
 
@@ -771,7 +847,7 @@ public class DriverConductorUriOnlyTest
     {
         final InetSocketAddress sourceAddress = new InetSocketAddress("localhost", 4400);
 
-        final long subOneId = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
+        final long subOneId = addSubscription(driverProxy, CHANNEL_4000, STREAM_ID_1);
 
         driverConductor.doWork();
 
@@ -799,12 +875,12 @@ public class DriverConductorUriOnlyTest
 
         doWorkUntil(() -> nanoClock.nanoTime() >= imageLivenessTimeoutNs() + 1000);
 
-        final long subTwoId = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
+        final long subTwoId = addSubscription(driverProxy, CHANNEL_4000, STREAM_ID_1);
 
         driverConductor.doWork();
 
         final InOrder inOrder = inOrder(mockClientProxy);
-        inOrder.verify(mockClientProxy, times(1)).onSubscriptionReady(eq(subOneId), anyInt());
+        inOrder.verify(mockClientProxy, times(1)).onSubscriptionReady(eq(subOneId), anyInt(), eq(STREAM_ID_1));
         inOrder.verify(mockClientProxy, times(1)).onAvailableImage(
             eq(publicationImage.correlationId()),
             eq(STREAM_ID_1),
@@ -815,7 +891,7 @@ public class DriverConductorUriOnlyTest
             anyString());
         inOrder.verify(mockClientProxy, times(1)).onUnavailableImage(
             eq(publicationImage.correlationId()), eq(subOneId), eq(STREAM_ID_1), anyString());
-        inOrder.verify(mockClientProxy, times(1)).onSubscriptionReady(eq(subTwoId), anyInt());
+        inOrder.verify(mockClientProxy, times(1)).onSubscriptionReady(eq(subTwoId), anyInt(), eq(STREAM_ID_1));
         inOrder.verifyNoMoreInteractions();
     }
 
@@ -835,7 +911,7 @@ public class DriverConductorUriOnlyTest
     public void shouldBeAbleToAddIpcPublicationThenSubscription()
     {
         final long idPub = addPublication(driverProxy, CHANNEL_IPC, STREAM_ID_1);
-        final long idSub = driverProxy.addSubscription(CHANNEL_IPC, STREAM_ID_1);
+        final long idSub = addSubscription(driverProxy, CHANNEL_IPC, STREAM_ID_1);
 
         driverConductor.doWork();
 
@@ -845,7 +921,7 @@ public class DriverConductorUriOnlyTest
         final InOrder inOrder = inOrder(mockClientProxy);
         inOrder.verify(mockClientProxy).onPublicationReady(
             anyLong(), eq(idPub), eq(STREAM_ID_1), anyInt(), any(), anyInt(), anyInt(), eq(false));
-        inOrder.verify(mockClientProxy).onSubscriptionReady(eq(idSub), anyInt());
+        inOrder.verify(mockClientProxy).onSubscriptionReady(eq(idSub), anyInt(), eq(STREAM_ID_1));
         inOrder.verify(mockClientProxy).onAvailableImage(
             eq(ipcPublication.registrationId()), eq(STREAM_ID_1), eq(ipcPublication.sessionId()),
             anyLong(), anyInt(), eq(ipcPublication.rawLog().fileName()), anyString());
@@ -854,7 +930,7 @@ public class DriverConductorUriOnlyTest
     @Test
     public void shouldBeAbleToAddThenRemoveTheAddIpcPublicationWithExistingSubscription()
     {
-        final long idSub = driverProxy.addSubscription(CHANNEL_IPC, STREAM_ID_1);
+        final long idSub = addSubscription(driverProxy, CHANNEL_IPC, STREAM_ID_1);
         final long idPubOne = addPublication(driverProxy, CHANNEL_IPC, STREAM_ID_1);
         driverConductor.doWork();
 
@@ -871,7 +947,7 @@ public class DriverConductorUriOnlyTest
         assertNotNull(ipcPublicationTwo);
 
         final InOrder inOrder = inOrder(mockClientProxy);
-        inOrder.verify(mockClientProxy).onSubscriptionReady(eq(idSub), anyInt());
+        inOrder.verify(mockClientProxy).onSubscriptionReady(eq(idSub), anyInt(), eq(STREAM_ID_1));
         inOrder.verify(mockClientProxy).onPublicationReady(
             anyLong(), eq(idPubOne), eq(STREAM_ID_1), anyInt(), any(), anyInt(), anyInt(), eq(false));
         inOrder.verify(mockClientProxy).onAvailableImage(
@@ -888,7 +964,7 @@ public class DriverConductorUriOnlyTest
     @Test
     public void shouldBeAbleToAddSubscriptionThenIpcPublication()
     {
-        final long idSub = driverProxy.addSubscription(CHANNEL_IPC, STREAM_ID_1);
+        final long idSub = addSubscription(driverProxy, CHANNEL_IPC, STREAM_ID_1);
         final long idPub = addPublication(driverProxy, CHANNEL_IPC, STREAM_ID_1);
 
         driverConductor.doWork();
@@ -897,7 +973,7 @@ public class DriverConductorUriOnlyTest
         assertNotNull(ipcPublication);
 
         final InOrder inOrder = inOrder(mockClientProxy);
-        inOrder.verify(mockClientProxy).onSubscriptionReady(eq(idSub), anyInt());
+        inOrder.verify(mockClientProxy).onSubscriptionReady(eq(idSub), anyInt(), eq(STREAM_ID_1));
         inOrder.verify(mockClientProxy).onPublicationReady(
             anyLong(), eq(idPub), eq(STREAM_ID_1), anyInt(), any(), anyInt(), anyInt(), eq(false));
         inOrder.verify(mockClientProxy).onAvailableImage(
@@ -920,7 +996,7 @@ public class DriverConductorUriOnlyTest
     @Test
     public void shouldBeAbleToAddAndRemoveSubscriptionToIpcPublication()
     {
-        final long idAdd = driverProxy.addSubscription(CHANNEL_IPC, STREAM_ID_1);
+        final long idAdd = addSubscription(driverProxy, CHANNEL_IPC, STREAM_ID_1);
         driverProxy.removeSubscription(idAdd);
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
@@ -952,7 +1028,7 @@ public class DriverConductorUriOnlyTest
     @Test
     public void shouldBeAbleToAddAndRemoveIpcPublicationAndSubscription()
     {
-        final long idAdd1 = driverProxy.addSubscription(CHANNEL_IPC, STREAM_ID_1);
+        final long idAdd1 = addSubscription(driverProxy, CHANNEL_IPC, STREAM_ID_1);
         final long idAdd2 = addPublication(driverProxy, CHANNEL_IPC, STREAM_ID_1);
         driverProxy.removeSubscription(idAdd1);
 
@@ -1008,13 +1084,13 @@ public class DriverConductorUriOnlyTest
     @Test
     public void shouldBeAbleToAddSingleSpy()
     {
-        final long id = driverProxy.addSubscription(spyForChannel(CHANNEL_4000), STREAM_ID_1);
+        final long id = addSubscription(driverProxy, spyForChannel(CHANNEL_4000), STREAM_ID_1);
 
         driverConductor.doWork();
 
         verify(receiverProxy, never()).registerReceiveChannelEndpoint(any());
         verify(receiverProxy, never()).addSubscription(any(), eq(STREAM_ID_1));
-        verify(mockClientProxy).onSubscriptionReady(eq(id), anyInt());
+        verify(mockClientProxy).onSubscriptionReady(eq(id), anyInt(), eq(STREAM_ID_1));
 
         assertNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000)));
     }
@@ -1023,7 +1099,7 @@ public class DriverConductorUriOnlyTest
     public void shouldBeAbleToAddNetworkPublicationThenSingleSpy()
     {
         addPublication(driverProxy, CHANNEL_4000, STREAM_ID_1);
-        final long idSpy = driverProxy.addSubscription(spyForChannel(CHANNEL_4000), STREAM_ID_1);
+        final long idSpy = addSubscription(driverProxy, spyForChannel(CHANNEL_4000), STREAM_ID_1);
 
         driverConductor.doWork();
 
@@ -1034,7 +1110,7 @@ public class DriverConductorUriOnlyTest
         assertTrue(publication.hasSpies());
 
         final InOrder inOrder = inOrder(mockClientProxy);
-        inOrder.verify(mockClientProxy).onSubscriptionReady(eq(idSpy), anyInt());
+        inOrder.verify(mockClientProxy).onSubscriptionReady(eq(idSpy), anyInt(), eq(STREAM_ID_1));
         inOrder.verify(mockClientProxy).onAvailableImage(
             eq(networkPublicationCorrelationId(publication)), eq(STREAM_ID_1), eq(publication.sessionId()),
             anyLong(), anyInt(), eq(publication.rawLog().fileName()), anyString());
@@ -1043,7 +1119,7 @@ public class DriverConductorUriOnlyTest
     @Test
     public void shouldBeAbleToAddSingleSpyThenNetworkPublication()
     {
-        final long idSpy = driverProxy.addSubscription(spyForChannel(CHANNEL_4000), STREAM_ID_1);
+        final long idSpy = addSubscription(driverProxy, spyForChannel(CHANNEL_4000), STREAM_ID_1);
         addPublication(driverProxy, CHANNEL_4000, STREAM_ID_1);
 
         driverConductor.doWork();
@@ -1055,7 +1131,7 @@ public class DriverConductorUriOnlyTest
         assertTrue(publication.hasSpies());
 
         final InOrder inOrder = inOrder(mockClientProxy);
-        inOrder.verify(mockClientProxy).onSubscriptionReady(eq(idSpy), anyInt());
+        inOrder.verify(mockClientProxy).onSubscriptionReady(eq(idSpy), anyInt(), eq(STREAM_ID_1));
         inOrder.verify(mockClientProxy).onAvailableImage(
             eq(networkPublicationCorrelationId(publication)), eq(STREAM_ID_1), eq(publication.sessionId()),
             anyLong(), anyInt(), eq(publication.rawLog().fileName()), anyString());
@@ -1065,7 +1141,7 @@ public class DriverConductorUriOnlyTest
     public void shouldBeAbleToAddNetworkPublicationThenSingleSpyThenRemoveSpy()
     {
         addPublication(driverProxy, CHANNEL_4000, STREAM_ID_1);
-        final long idSpy = driverProxy.addSubscription(spyForChannel(CHANNEL_4000), STREAM_ID_1);
+        final long idSpy = addSubscription(driverProxy, spyForChannel(CHANNEL_4000), STREAM_ID_1);
         driverProxy.removeSubscription(idSpy);
 
         driverConductor.doWork();
@@ -1081,7 +1157,7 @@ public class DriverConductorUriOnlyTest
     public void shouldTimeoutSpy()
     {
         addPublication(driverProxy, CHANNEL_4000, STREAM_ID_1);
-        driverProxy.addSubscription(spyForChannel(CHANNEL_4000), STREAM_ID_1);
+        addSubscription(driverProxy, spyForChannel(CHANNEL_4000), STREAM_ID_1);
 
         driverConductor.doWork();
 
@@ -1100,7 +1176,7 @@ public class DriverConductorUriOnlyTest
     public void shouldNotTimeoutSpyWithKeepalive()
     {
         addPublication(driverProxy, CHANNEL_4000, STREAM_ID_1);
-        driverProxy.addSubscription(spyForChannel(CHANNEL_4000), STREAM_ID_1);
+        addSubscription(driverProxy, spyForChannel(CHANNEL_4000), STREAM_ID_1);
 
         driverConductor.doWork();
 
@@ -1126,7 +1202,7 @@ public class DriverConductorUriOnlyTest
         final DriverProxy spyDriverProxy = new DriverProxy(toDriverCommands, clientId);
 
         addPublication(driverProxy, CHANNEL_4000, STREAM_ID_1);
-        final long subId = spyDriverProxy.addSubscription(spyForChannel(CHANNEL_4000), STREAM_ID_1);
+        final long subId = addSubscription(spyDriverProxy, spyForChannel(CHANNEL_4000), STREAM_ID_1);
 
         driverConductor.doWork();
 
@@ -1168,8 +1244,8 @@ public class DriverConductorUriOnlyTest
     @Test
     public void shouldOnlyCloseReceiveChannelEndpointOnceWithMultipleSubscriptions()
     {
-        final long id1 = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
-        final long id2 = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_2);
+        final long id1 = addSubscription(driverProxy, CHANNEL_4000, STREAM_ID_1);
+        final long id2 = addSubscription(driverProxy, CHANNEL_4000, STREAM_ID_2);
         driverProxy.removeSubscription(id1);
         driverProxy.removeSubscription(id2);
 
@@ -1185,10 +1261,10 @@ public class DriverConductorUriOnlyTest
     @Test
     public void shouldErrorWhenConflictingUnreliableSubscriptionAdded()
     {
-        driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
+        addSubscription(driverProxy, CHANNEL_4000, STREAM_ID_1);
         driverConductor.doWork();
 
-        final long id2 = driverProxy.addSubscription(CHANNEL_4000 + "|reliable=false", STREAM_ID_1);
+        final long id2 = addSubscription(driverProxy, CHANNEL_4000 + "|reliable=false", STREAM_ID_1);
         driverConductor.doWork();
 
         verify(mockClientProxy).onError(eq(id2), any(ErrorCode.class), anyString());
@@ -1197,10 +1273,10 @@ public class DriverConductorUriOnlyTest
     @Test
     public void shouldErrorWhenConflictingDefaultReliableSubscriptionAdded()
     {
-        driverProxy.addSubscription(CHANNEL_4000 + "|reliable=false", STREAM_ID_1);
+        addSubscription(driverProxy, CHANNEL_4000 + "|reliable=false", STREAM_ID_1);
         driverConductor.doWork();
 
-        final long id2 = driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
+        final long id2 = addSubscription(driverProxy, CHANNEL_4000, STREAM_ID_1);
         driverConductor.doWork();
 
         verify(mockClientProxy).onError(eq(id2), any(ErrorCode.class), anyString());
@@ -1209,10 +1285,10 @@ public class DriverConductorUriOnlyTest
     @Test
     public void shouldErrorWhenConflictingReliableSubscriptionAdded()
     {
-        driverProxy.addSubscription(CHANNEL_4000 + "|reliable=false", STREAM_ID_1);
+        addSubscription(driverProxy, CHANNEL_4000 + "|reliable=false", STREAM_ID_1);
         driverConductor.doWork();
 
-        final long id2 = driverProxy.addSubscription(CHANNEL_4000 + "|reliable=true", STREAM_ID_1);
+        final long id2 = addSubscription(driverProxy, CHANNEL_4000 + "|reliable=true", STREAM_ID_1);
         driverConductor.doWork();
 
         verify(mockClientProxy).onError(eq(id2), any(ErrorCode.class), anyString());
@@ -1460,7 +1536,7 @@ public class DriverConductorUriOnlyTest
         final String channelIpcAndSessionId = CHANNEL_IPC + sessionIdParam;
 
         addPublication(driverProxy, channelIpcAndSessionId, STREAM_ID_1);
-        driverProxy.addSubscription(channelIpcAndSessionId, STREAM_ID_1);
+        addSubscription(driverProxy, channelIpcAndSessionId, STREAM_ID_1);
 
         driverConductor.doWork();
 
@@ -1479,7 +1555,7 @@ public class DriverConductorUriOnlyTest
         final String sessionIdParam = "?" + CommonContext.SESSION_ID_PARAM_NAME + "=" + sessionId;
         final String channelIpcAndSessionId = CHANNEL_IPC + sessionIdParam;
 
-        driverProxy.addSubscription(channelIpcAndSessionId, STREAM_ID_1);
+        addSubscription(driverProxy, channelIpcAndSessionId, STREAM_ID_1);
         addPublication(driverProxy, channelIpcAndSessionId, STREAM_ID_1);
 
         driverConductor.doWork();
@@ -1501,7 +1577,7 @@ public class DriverConductorUriOnlyTest
         final String sessionIdSubParam = "?" + CommonContext.SESSION_ID_PARAM_NAME + "=" + sessionIdSub;
 
         addPublication(driverProxy, CHANNEL_IPC + sessionIdPubParam, STREAM_ID_1);
-        driverProxy.addSubscription(CHANNEL_IPC + sessionIdSubParam, STREAM_ID_1);
+        addSubscription(driverProxy, CHANNEL_IPC + sessionIdSubParam, STREAM_ID_1);
 
         driverConductor.doWork();
 
@@ -1520,7 +1596,7 @@ public class DriverConductorUriOnlyTest
         final String sessionIdPubParam = "?" + CommonContext.SESSION_ID_PARAM_NAME + "=" + sessionIdPub;
         final String sessionIdSubParam = "?" + CommonContext.SESSION_ID_PARAM_NAME + "=" + sessionIdSub;
 
-        driverProxy.addSubscription(CHANNEL_IPC + sessionIdSubParam, STREAM_ID_1);
+        addSubscription(driverProxy, CHANNEL_IPC + sessionIdSubParam, STREAM_ID_1);
         addPublication(driverProxy, CHANNEL_IPC + sessionIdPubParam, STREAM_ID_1);
 
         driverConductor.doWork();
@@ -1538,7 +1614,7 @@ public class DriverConductorUriOnlyTest
         final int sessionId = -4097;
         final String sessionIdParam = "|" + CommonContext.SESSION_ID_PARAM_NAME + "=" + sessionId;
         addPublication(driverProxy, CHANNEL_4000 + sessionIdParam, STREAM_ID_1);
-        driverProxy.addSubscription(spyForChannel(CHANNEL_4000 + sessionIdParam), STREAM_ID_1);
+        addSubscription(driverProxy, spyForChannel(CHANNEL_4000 + sessionIdParam), STREAM_ID_1);
 
         driverConductor.doWork();
 
@@ -1561,7 +1637,7 @@ public class DriverConductorUriOnlyTest
         final String sessionIdPubParam = "|" + CommonContext.SESSION_ID_PARAM_NAME + "=" + sessionIdPub;
         final String sessionIdSubParam = "|" + CommonContext.SESSION_ID_PARAM_NAME + "=" + sessionIdSub;
         addPublication(driverProxy, CHANNEL_4000 + sessionIdPubParam, STREAM_ID_1);
-        driverProxy.addSubscription(spyForChannel(CHANNEL_4000 + sessionIdSubParam), STREAM_ID_1);
+        addSubscription(driverProxy, spyForChannel(CHANNEL_4000 + sessionIdSubParam), STREAM_ID_1);
 
         driverConductor.doWork();
 
@@ -1580,7 +1656,7 @@ public class DriverConductorUriOnlyTest
     {
         final int sessionId = -4097;
         final String sessionIdParam = "|" + CommonContext.SESSION_ID_PARAM_NAME + "=" + sessionId;
-        driverProxy.addSubscription(spyForChannel(CHANNEL_4000 + sessionIdParam), STREAM_ID_1);
+        addSubscription(driverProxy, spyForChannel(CHANNEL_4000 + sessionIdParam), STREAM_ID_1);
         addPublication(driverProxy, CHANNEL_4000 + sessionIdParam, STREAM_ID_1);
 
         driverConductor.doWork();
@@ -1603,7 +1679,7 @@ public class DriverConductorUriOnlyTest
         final int sessionIdSub = -4098;
         final String sessionIdPubParam = "|" + CommonContext.SESSION_ID_PARAM_NAME + "=" + sessionIdPub;
         final String sessionIdSubParam = "|" + CommonContext.SESSION_ID_PARAM_NAME + "=" + sessionIdSub;
-        driverProxy.addSubscription(spyForChannel(CHANNEL_4000 + sessionIdSubParam), STREAM_ID_1);
+        addSubscription(driverProxy, spyForChannel(CHANNEL_4000 + sessionIdSubParam), STREAM_ID_1);
         addPublication(driverProxy, CHANNEL_4000 + sessionIdPubParam, STREAM_ID_1);
 
         driverConductor.doWork();
@@ -1663,8 +1739,8 @@ public class DriverConductorUriOnlyTest
     @Test
     public void shouldUseExistingChannelEndpointOnAddSubscriptionWithSameTagId()
     {
-        final long id1 = driverProxy.addSubscription(CHANNEL_4000_TAG_ID_1, STREAM_ID_1);
-        final long id2 = driverProxy.addSubscription(CHANNEL_TAG_ID_1, STREAM_ID_1);
+        final long id1 = addSubscription(driverProxy, CHANNEL_4000_TAG_ID_1, STREAM_ID_1);
+        final long id2 = addSubscription(driverProxy, CHANNEL_TAG_ID_1, STREAM_ID_1);
 
         driverConductor.doWork();
         verify(mockErrorHandler, never()).onError(any());
@@ -1682,8 +1758,8 @@ public class DriverConductorUriOnlyTest
     @Test
     public void shouldUseUniqueChannelEndpointOnAddSubscriptionWithNoDistinguishingCharacteristics()
     {
-        final long id1 = driverProxy.addSubscription(CHANNEL_SUB_CONTROL_MODE_MANUAL, STREAM_ID_1);
-        final long id2 = driverProxy.addSubscription(CHANNEL_SUB_CONTROL_MODE_MANUAL, STREAM_ID_1);
+        final long id1 = addSubscription(driverProxy, CHANNEL_SUB_CONTROL_MODE_MANUAL, STREAM_ID_1);
+        final long id2 = addSubscription(driverProxy, CHANNEL_SUB_CONTROL_MODE_MANUAL, STREAM_ID_1);
 
         driverConductor.doWork();
 
@@ -1727,9 +1803,15 @@ public class DriverConductorUriOnlyTest
         return LogBufferDescriptor.correlationId(publication.rawLog().metaData());
     }
 
-    private long addPublication(final DriverProxy driverProxy, final String channel, final int streamId)
+    private static long addSubscription(final DriverProxy driverProxy, final String channel, final int streamId)
     {
-        final String newChannel = new ChannelUriStringBuilder(channel).streamId(streamId).build();
-        return driverProxy.addPublication(newChannel);
+        final String channelWithStream = new ChannelUriStringBuilder(channel).streamId(streamId).build();
+        return driverProxy.addSubscription(channelWithStream);
+    }
+
+    private static long addPublication(final DriverProxy driverProxy, final String channel, final int streamId)
+    {
+        final String channelWithStream = new ChannelUriStringBuilder(channel).streamId(streamId).build();
+        return driverProxy.addPublication(channelWithStream);
     }
 }

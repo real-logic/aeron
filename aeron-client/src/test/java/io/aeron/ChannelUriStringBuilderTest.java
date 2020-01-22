@@ -17,6 +17,8 @@ package io.aeron;
 
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.CoreMatchers.startsWith;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -99,5 +101,18 @@ public class ChannelUriStringBuilderTest
         assertEquals(
             "aeron:udp?endpoint=address:9999|term-length=131072|init-term-id=777|term-id=999|term-offset=64",
             builder.build());
+    }
+
+    @Test
+    void shouldRetainSpyPrefix()
+    {
+        final String uri = "aeron-spy:aeron:udp?endpoint=localhost:4000";
+
+        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder(uri)
+            .streamId(12354);
+
+        final String uriWithStreamId = builder.build();
+
+        assertThat(uriWithStreamId, startsWith("aeron-spy:"));
     }
 }

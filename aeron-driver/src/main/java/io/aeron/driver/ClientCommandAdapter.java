@@ -86,7 +86,7 @@ class ClientCommandAdapter implements MessageHandler
                     publicationMsgFlyweight.validateLength(msgTypeId, length);
 
                     correlationId = publicationMsgFlyweight.correlationId();
-                    addPublication(correlationId, false);
+                    addPublication(publicationMsgFlyweight, false);
                     break;
                 }
 
@@ -106,7 +106,17 @@ class ClientCommandAdapter implements MessageHandler
                     publicationMsgFlyweight.validateLength(msgTypeId, length);
 
                     correlationId = publicationMsgFlyweight.correlationId();
-                    addPublication(correlationId, true);
+                    addPublication(publicationMsgFlyweight, true);
+                    break;
+                }
+
+                case ADD_PUBLICATION_V1:
+                {
+                    channelMessageFlyweight.wrap(buffer, index);
+                    channelMessageFlyweight.validateLength(msgTypeId, length);
+
+                    correlationId = channelMessageFlyweight.correlationId();
+                    addPublication(channelMessageFlyweight, false);
                     break;
                 }
 
@@ -145,15 +155,29 @@ class ClientCommandAdapter implements MessageHandler
                     break;
                 }
 
-                case ADD_PUBLICATION_URI_ONLY:
+                case ADD_SUBSCRIPTION_V1:
                 {
                     channelMessageFlyweight.wrap(buffer, index);
                     channelMessageFlyweight.validateLength(msgTypeId, length);
 
                     correlationId = channelMessageFlyweight.correlationId();
-                    addPublicationUriOnly(correlationId, false);
+                    final long clientId = channelMessageFlyweight.clientId();
+                    final String channel = channelMessageFlyweight.channel();
 
+                    if (channel.startsWith(IPC_CHANNEL))
+                    {
+                        conductor.onAddIpcSubscription(channel, correlationId, clientId);
+                    }
+                    else if (channel.startsWith(SPY_QUALIFIER))
+                    {
+                        conductor.onAddSpySubscription(channel, correlationId, clientId);
+                    }
+                    else
+                    {
+                        conductor.onAddNetworkSubscription(channel, correlationId, clientId);
+                    }
                     break;
+
                 }
 
                 case ADD_DESTINATION:
@@ -307,8 +331,26 @@ class ClientCommandAdapter implements MessageHandler
         }
     }
 
-    public void addPublicationUriOnly(final long correlationId, final boolean isExclusive)
+    public void addPublication(final PublicationMessageFlyweight publicationMsgFlyweight, final boolean isExclusive)
     {
+        final long correlationId = publicationMsgFlyweight.correlationId();
+        final int streamId = publicationMsgFlyweight.streamId();
+        final long clientId = publicationMsgFlyweight.clientId();
+        final String channel = publicationMsgFlyweight.channel();
+
+        if (channel.startsWith(IPC_CHANNEL))
+        {
+            conductor.onAddIpcPublication(channel, streamId, correlationId, clientId, isExclusive);
+        }
+        else
+        {
+            conductor.onAddNetworkPublication(channel, streamId, correlationId, clientId, isExclusive);
+        }
+    }
+
+    public void addPublication(final ChannelMessageFlyweight channelMessageFlyweight, final boolean isExclusive)
+    {
+        final long correlationId = channelMessageFlyweight.correlationId();
         final long clientId = channelMessageFlyweight.clientId();
         final String channel = channelMessageFlyweight.channel();
 

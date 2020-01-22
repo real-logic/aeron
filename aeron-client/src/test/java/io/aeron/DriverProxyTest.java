@@ -51,7 +51,7 @@ public class DriverProxyTest
     public void threadSendsAddPublicationUriOnlyMessage()
     {
         threadSendsAddPublicationUriOnlyMessage(
-            () -> conductor.addPublication(CHANNEL), ADD_PUBLICATION_URI_ONLY);
+            () -> conductor.addPublication(CHANNEL), ADD_PUBLICATION_V1);
     }
 
     @Test

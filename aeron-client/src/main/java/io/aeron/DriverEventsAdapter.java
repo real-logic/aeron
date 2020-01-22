@@ -32,6 +32,7 @@ class DriverEventsAdapter implements MessageHandler
     private final ErrorResponseFlyweight errorResponse = new ErrorResponseFlyweight();
     private final PublicationBuffersReadyFlyweight publicationReady = new PublicationBuffersReadyFlyweight();
     private final SubscriptionReadyFlyweight subscriptionReady = new SubscriptionReadyFlyweight();
+    private final SubscriptionReadyFlyweightV1 subscriptionReadyV1 = new SubscriptionReadyFlyweightV1();
     private final ImageBuffersReadyFlyweight imageReady = new ImageBuffersReadyFlyweight();
     private final OperationSucceededFlyweight operationSucceeded = new OperationSucceededFlyweight();
     private final ImageMessageFlyweight imageMessage = new ImageMessageFlyweight();
@@ -165,6 +166,22 @@ class DriverEventsAdapter implements MessageHandler
                 {
                     receivedCorrelationId = correlationId;
                     listener.onNewSubscription(correlationId, subscriptionReady.channelStatusCounterId());
+                }
+                break;
+            }
+
+            case ON_SUBSCRIPTION_READY_V1:
+            {
+                subscriptionReadyV1.wrap(buffer, index);
+
+                final long correlationId = subscriptionReadyV1.correlationId();
+                if (correlationId == activeCorrelationId)
+                {
+                    receivedCorrelationId = correlationId;
+                    listener.onNewSubscription(
+                        correlationId,
+                        subscriptionReadyV1.channelStatusCounterId(),
+                        subscriptionReadyV1.streamId());
                 }
                 break;
             }

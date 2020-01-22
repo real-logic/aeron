@@ -377,7 +377,7 @@ public class DriverConductor implements Agent
 
         if (!params.hasStreamId)
         {
-            throw new IllegalArgumentException("URI must specify an stream-id: " + channel);
+            throw new InvalidChannelException("URI must specify an stream-id: " + channel);
         }
 
         onAddNetworkPublication(
@@ -394,6 +394,13 @@ public class DriverConductor implements Agent
         final UdpChannel udpChannel = UdpChannel.parse(channel);
         final ChannelUri channelUri = udpChannel.channelUri();
         final PublicationParams params = getPublicationParams(ctx, channelUri, this, isExclusive, false);
+
+        if (params.hasStreamId && params.streamId != streamId)
+        {
+            throw new InvalidChannelException(
+                "Ambiguous streamId specified, streamId: " + streamId + ", URI: " + channel);
+        }
+
         onAddNetworkPublication(
             channel, streamId, correlationId, clientId, isExclusive, udpChannel, channelUri, params);
     }
@@ -597,7 +604,7 @@ public class DriverConductor implements Agent
 
         if (!params.hasStreamId)
         {
-            throw new IllegalArgumentException("URI must specify an stream-id: " + channel);
+            throw new InvalidChannelException("URI must specify an stream-id: " + channel);
         }
 
         onIpcAddPublication(channel, params.streamId, correlationId, clientId, isExclusive, channelUri, params);
@@ -611,9 +618,15 @@ public class DriverConductor implements Agent
         final boolean isExclusive)
     {
         final ChannelUri channelUri = ChannelUri.parse(channel);
-        final PublicationParams publicationParams = getPublicationParams(ctx, channelUri, this, isExclusive, true);
+        final PublicationParams params = getPublicationParams(ctx, channelUri, this, isExclusive, true);
 
-        onIpcAddPublication(channel, streamId, correlationId, clientId, isExclusive, channelUri, publicationParams);
+        if (params.hasStreamId && params.streamId != streamId)
+        {
+            throw new InvalidChannelException(
+                "Ambiguous streamId specified, streamId: " + streamId + ", URI: " + channel);
+        }
+
+        onIpcAddPublication(channel, streamId, correlationId, clientId, isExclusive, channelUri, params);
     }
 
     private void onIpcAddPublication(
@@ -737,11 +750,43 @@ public class DriverConductor implements Agent
     }
 
     void onAddNetworkSubscription(
+        final String channel, final long registrationId, final long clientId)
+    {
+        final UdpChannel udpChannel = UdpChannel.parse(channel);
+        final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), ctx);
+
+        if (!params.hasStreamId)
+        {
+            throw new InvalidChannelException("URI must specify an stream-id: " + channel);
+        }
+
+        addNetworkSubscription(channel, params.streamId, registrationId, clientId, udpChannel, params);
+    }
+
+    void onAddNetworkSubscription(
         final String channel, final int streamId, final long registrationId, final long clientId)
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel);
         final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), ctx);
 
+        if (params.hasStreamId && params.streamId != streamId)
+        {
+            throw new InvalidChannelException(
+                "Ambiguous streamId specified, streamId: " + streamId + ", URI: " + channel);
+        }
+
+        params.hasStreamId = false;
+        addNetworkSubscription(channel, streamId, registrationId, clientId, udpChannel, params);
+    }
+
+    private void addNetworkSubscription(
+        final String channel,
+        final int streamId,
+        final long registrationId,
+        final long clientId,
+        final UdpChannel udpChannel,
+        final SubscriptionParams params)
+    {
         checkForClashingSubscription(params, udpChannel, streamId);
         final ReceiveChannelEndpoint channelEndpoint = getOrCreateReceiveChannelEndpoint(udpChannel);
 
@@ -765,14 +810,51 @@ public class DriverConductor implements Agent
             registrationId, channelEndpoint, streamId, channel, client, params);
 
         subscriptionLinks.add(subscription);
-        clientProxy.onSubscriptionReady(registrationId, channelEndpoint.statusIndicatorCounterId());
+        if (params.hasStreamId)
+        {
+            clientProxy.onSubscriptionReady(registrationId, channelEndpoint.statusIndicatorCounterId(), streamId);
+        }
+        else
+        {
+            clientProxy.onSubscriptionReady(registrationId, channelEndpoint.statusIndicatorCounterId());
+        }
 
         linkMatchingImages(subscription);
+    }
+
+    void onAddIpcSubscription(final String channel, final long registrationId, final long clientId)
+    {
+        final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(ChannelUri.parse(channel), ctx);
+
+        if (!params.hasStreamId)
+        {
+            throw new InvalidChannelException("URI must specify an stream-id: " + channel);
+        }
+
+        addIpcSubscription(channel, params.streamId, registrationId, clientId, params);
     }
 
     void onAddIpcSubscription(final String channel, final int streamId, final long registrationId, final long clientId)
     {
         final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(ChannelUri.parse(channel), ctx);
+
+        if (params.hasStreamId && params.streamId != streamId)
+        {
+            throw new InvalidChannelException(
+                "Ambiguous streamId specified, streamId: " + streamId + ", URI: " + channel);
+        }
+
+        params.hasStreamId = false;
+        addIpcSubscription(channel, streamId, registrationId, clientId, params);
+    }
+
+    private void addIpcSubscription(
+        final String channel,
+        final int streamId,
+        final long registrationId,
+        final long clientId,
+        final SubscriptionParams params)
+    {
         final IpcSubscriptionLink subscriptionLink = new IpcSubscriptionLink(
             registrationId, streamId, channel, getOrAddClient(clientId), params);
         final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
@@ -789,7 +871,14 @@ public class DriverConductor implements Agent
             }
         }
 
-        clientProxy.onSubscriptionReady(registrationId, ChannelEndpointStatus.NO_ID_ALLOCATED);
+        if (params.hasStreamId)
+        {
+            clientProxy.onSubscriptionReady(registrationId, ChannelEndpointStatus.NO_ID_ALLOCATED, streamId);
+        }
+        else
+        {
+            clientProxy.onSubscriptionReady(registrationId, ChannelEndpointStatus.NO_ID_ALLOCATED);
+        }
 
         for (int i = 0, size = subscriberPositions.size(); i < size; i++)
         {
@@ -807,11 +896,28 @@ public class DriverConductor implements Agent
         }
     }
 
+    void onAddSpySubscription(final String channel, final long registrationId, final long clientId)
+    {
+        final UdpChannel udpChannel = UdpChannel.parse(channel);
+        final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), ctx);
+        onAddSpySubscription(params.streamId, registrationId, clientId, udpChannel, params);
+    }
+
     void onAddSpySubscription(final String channel, final int streamId, final long registrationId, final long clientId)
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel);
-        final AeronClient client = getOrAddClient(clientId);
         final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), ctx);
+        onAddSpySubscription(streamId, registrationId, clientId, udpChannel, params);
+    }
+
+    private void onAddSpySubscription(
+        final int streamId,
+        final long registrationId,
+        final long clientId,
+        final UdpChannel udpChannel,
+        final SubscriptionParams params)
+    {
+        final AeronClient client = getOrAddClient(clientId);
         final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
         final SpySubscriptionLink subscriptionLink = new SpySubscriptionLink(
             registrationId, udpChannel, streamId, client, params);
@@ -828,7 +934,14 @@ public class DriverConductor implements Agent
             }
         }
 
-        clientProxy.onSubscriptionReady(registrationId, ChannelEndpointStatus.NO_ID_ALLOCATED);
+        if (params.hasStreamId)
+        {
+            clientProxy.onSubscriptionReady(registrationId, ChannelEndpointStatus.NO_ID_ALLOCATED, streamId);
+        }
+        else
+        {
+            clientProxy.onSubscriptionReady(registrationId, ChannelEndpointStatus.NO_ID_ALLOCATED);
+        }
 
         for (int i = 0, size = subscriberPositions.size(); i < size; i++)
         {

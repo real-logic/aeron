@@ -111,7 +111,7 @@ public class DriverProxy
         channelMessage.correlationId(correlationId);
         channelMessage.channel(channel);
 
-        if (!toDriverCommandBuffer.write(ADD_PUBLICATION_URI_ONLY, buffer, 0, channelMessage.length()))
+        if (!toDriverCommandBuffer.write(ADD_PUBLICATION_V1, buffer, 0, channelMessage.length()))
         {
             throw new AeronException("could not write add exclusive publication command");
         }
@@ -130,6 +130,21 @@ public class DriverProxy
         if (!toDriverCommandBuffer.write(REMOVE_PUBLICATION, buffer, 0, RemoveMessageFlyweight.length()))
         {
             throw new AeronException("could not write remove publication command");
+        }
+
+        return correlationId;
+    }
+
+    public long addSubscription(final String channel)
+    {
+        final long correlationId = toDriverCommandBuffer.nextCorrelationId();
+
+        channelMessage.correlationId(correlationId);
+        channelMessage.channel(channel);
+
+        if (!toDriverCommandBuffer.write(ADD_SUBSCRIPTION_V1, buffer, 0, channelMessage.length()))
+        {
+            throw new AeronException("could not write add subscription command");
         }
 
         return correlationId;

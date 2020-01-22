@@ -58,6 +58,8 @@ class ClientConductor implements Agent, DriverEventsListener
     private boolean isInCallback;
     private boolean isTerminating;
     private String stashedChannel;
+    private AvailableImageHandler stashedAvailableImageHandler;
+    private UnavailableImageHandler stashedUnavailableImageHandler;
     private RegistrationException driverException;
 
     private final Aeron.Context ctx;
@@ -324,6 +326,20 @@ class ClientConductor implements Agent, DriverEventsListener
         subscription.channelStatusId(statusIndicatorId);
     }
 
+    public void onNewSubscription(final long correlationId, final int statusIndicatorId, final int streamId)
+    {
+        final Subscription subscription = new Subscription(
+            this,
+            stashedChannel,
+            streamId,
+            correlationId,
+            stashedAvailableImageHandler,
+            stashedUnavailableImageHandler);
+        subscription.channelStatusId(statusIndicatorId);
+
+        resourceByRegIdMap.put(correlationId, subscription);
+    }
+
     public void onAvailableImage(
         final long correlationId,
         final int sessionId,
@@ -563,6 +579,37 @@ class ClientConductor implements Agent, DriverEventsListener
             awaitResponse(correlationId);
 
             return subscription;
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
+    Subscription addSubscription(final String channel)
+    {
+        return addSubscription(channel, defaultAvailableImageHandler, defaultUnavailableImageHandler);
+    }
+
+    Subscription addSubscription(
+        final String channel,
+        final AvailableImageHandler availableImageHandler,
+        final UnavailableImageHandler unavailableImageHandler)
+    {
+        clientLock.lock();
+        try
+        {
+            ensureActive();
+            ensureNotReentrant();
+
+            stashedChannel = channel;
+            stashedAvailableImageHandler = availableImageHandler;
+            stashedUnavailableImageHandler = unavailableImageHandler;
+
+            final long correlationId = driverProxy.addSubscription(channel);
+            awaitResponse(correlationId);
+
+            return (Subscription)resourceByRegIdMap.get(correlationId);
         }
         finally
         {

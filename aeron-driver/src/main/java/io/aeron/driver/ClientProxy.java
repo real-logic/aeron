@@ -35,6 +35,7 @@ public class ClientProxy
     private final ErrorResponseFlyweight errorResponse = new ErrorResponseFlyweight();
     private final PublicationBuffersReadyFlyweight publicationReady = new PublicationBuffersReadyFlyweight();
     private final SubscriptionReadyFlyweight subscriptionReady = new SubscriptionReadyFlyweight();
+    private final SubscriptionReadyFlyweightV1 subscriptionReadyV1 = new SubscriptionReadyFlyweightV1();
     private final ImageBuffersReadyFlyweight imageReady = new ImageBuffersReadyFlyweight();
     private final OperationSucceededFlyweight operationSucceeded = new OperationSucceededFlyweight();
     private final ImageMessageFlyweight imageMessage = new ImageMessageFlyweight();
@@ -49,6 +50,7 @@ public class ClientProxy
         imageReady.wrap(buffer, 0);
         publicationReady.wrap(buffer, 0);
         subscriptionReady.wrap(buffer, 0);
+        subscriptionReadyV1.wrap(buffer, 0);
         operationSucceeded.wrap(buffer, 0);
         imageMessage.wrap(buffer, 0);
         counterUpdate.wrap(buffer, 0);
@@ -119,6 +121,17 @@ public class ClientProxy
             .channelStatusCounterId(channelStatusCounterId);
 
         transmit(ON_SUBSCRIPTION_READY, buffer, 0, SubscriptionReadyFlyweight.LENGTH);
+    }
+
+    public void onSubscriptionReady(
+        final long correlationId, final int channelStatusCounterId, final int streamId)
+    {
+        subscriptionReadyV1
+            .correlationId(correlationId)
+            .channelStatusCounterId(channelStatusCounterId)
+            .streamId(streamId);
+
+        transmit(ON_SUBSCRIPTION_READY_V1, buffer, 0, SubscriptionReadyFlyweightV1.LENGTH);
     }
 
     public void operationSucceeded(final long correlationId)

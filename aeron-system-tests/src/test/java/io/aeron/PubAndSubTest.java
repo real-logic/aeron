@@ -94,7 +94,8 @@ public class PubAndSubTest
             .errorHandler(Throwable::printStackTrace)
             .dirDeleteOnShutdown(true)
             .publicationConnectionTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500))
-            .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100));
+            .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
+            .dirDeleteOnStart(true);
 
         driver = TestMediaDriver.launch(context, watcher);
         subscribingClient = Aeron.connect();
@@ -102,7 +103,7 @@ public class PubAndSubTest
         if (streamIdInUri)
         {
             final String channelWithStreamId = new ChannelUriStringBuilder(channel).streamId(STREAM_ID).build();
-            subscription = subscribingClient.addSubscription(channel, STREAM_ID);
+            subscription = subscribingClient.addSubscription(channelWithStreamId);
             publication = publishingClient.addPublication(channelWithStreamId);
         }
         else

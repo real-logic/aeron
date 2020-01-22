@@ -301,7 +301,7 @@ public class Aeron implements AutoCloseable
      */
     public Subscription addSubscription(final String channel)
     {
-        return conductor.addSubscription(channel, 0);
+        return conductor.addSubscription(channel);
     }
 
     /**

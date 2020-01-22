@@ -76,12 +76,14 @@ public class ClientConductorTest
 
     private final PublicationBuffersReadyFlyweight publicationReady = new PublicationBuffersReadyFlyweight();
     private final SubscriptionReadyFlyweight subscriptionReady = new SubscriptionReadyFlyweight();
+    private final SubscriptionReadyFlyweightV1 subscriptionReadyV1 = new SubscriptionReadyFlyweightV1();
     private final OperationSucceededFlyweight operationSuccess = new OperationSucceededFlyweight();
     private final ErrorResponseFlyweight errorResponse = new ErrorResponseFlyweight();
     private final ClientTimeoutFlyweight clientTimeout = new ClientTimeoutFlyweight();
 
     private final UnsafeBuffer publicationReadyBuffer = new UnsafeBuffer(allocateDirect(SEND_BUFFER_CAPACITY));
     private final UnsafeBuffer subscriptionReadyBuffer = new UnsafeBuffer(allocateDirect(SEND_BUFFER_CAPACITY));
+    private final UnsafeBuffer subscriptionReadyV1Buffer = new UnsafeBuffer(allocateDirect(SEND_BUFFER_CAPACITY));
     private final UnsafeBuffer operationSuccessBuffer = new UnsafeBuffer(allocateDirect(SEND_BUFFER_CAPACITY));
     private final UnsafeBuffer errorMessageBuffer = new UnsafeBuffer(allocateDirect(SEND_BUFFER_CAPACITY));
     private final UnsafeBuffer clientTimeoutBuffer = new UnsafeBuffer(allocateDirect(SEND_BUFFER_CAPACITY));
@@ -135,12 +137,14 @@ public class ClientConductorTest
         when(driverProxy.addPublication(CHANNEL_WITH_STREAM_ID)).thenReturn(CORRELATION_ID);
         when(driverProxy.removePublication(CORRELATION_ID)).thenReturn(CLOSE_CORRELATION_ID);
         when(driverProxy.addSubscription(anyString(), anyInt())).thenReturn(CORRELATION_ID);
+        when(driverProxy.addSubscription(anyString())).thenReturn(CORRELATION_ID);
         when(driverProxy.removeSubscription(CORRELATION_ID)).thenReturn(CLOSE_CORRELATION_ID);
 
         conductor = new ClientConductor(ctx, mockAeron);
 
         publicationReady.wrap(publicationReadyBuffer, 0);
         subscriptionReady.wrap(subscriptionReadyBuffer, 0);
+        subscriptionReadyV1.wrap(subscriptionReadyV1Buffer, 0);
         operationSuccess.wrap(operationSuccessBuffer, 0);
         errorResponse.wrap(errorMessageBuffer, 0);
         clientTimeout.wrap(clientTimeoutBuffer, 0);
@@ -492,6 +496,134 @@ public class ClientConductorTest
             });
 
         final Subscription subscription = conductor.addSubscription(CHANNEL, STREAM_ID_1);
+
+        conductor.onAvailableImage(
+            CORRELATION_ID,
+            SESSION_ID_1,
+            subscription.registrationId(),
+            SUBSCRIPTION_POSITION_ID,
+            SESSION_ID_1 + "-log",
+            SOURCE_INFO);
+
+        assertFalse(subscription.hasNoImages());
+        assertTrue(subscription.isConnected());
+        verify(mockAvailableImageHandler).onAvailableImage(any(Image.class));
+
+        conductor.onUnavailableImage(CORRELATION_ID, subscription.registrationId());
+
+        verify(mockUnavailableImageHandler).onUnavailableImage(any(Image.class));
+        assertTrue(subscription.hasNoImages());
+        assertFalse(subscription.isConnected());
+    }
+
+    @Test
+    public void addSubscriptionUriOnlyShouldNotifyMediaDriver()
+    {
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_SUBSCRIPTION_READY_V1,
+            subscriptionReadyV1Buffer,
+            (buffer) ->
+            {
+                subscriptionReadyV1.correlationId(CORRELATION_ID);
+                return SubscriptionReadyFlyweight.LENGTH;
+            });
+
+
+        conductor.addSubscription(CHANNEL_WITH_STREAM_ID);
+
+        verify(driverProxy).addSubscription(CHANNEL_WITH_STREAM_ID);
+    }
+
+    @Test
+    public void closingSubscriptionUriOnlyShouldNotifyMediaDriver()
+    {
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_SUBSCRIPTION_READY_V1,
+            subscriptionReadyV1Buffer,
+            (buffer) ->
+            {
+                subscriptionReadyV1.correlationId(CORRELATION_ID);
+                return SubscriptionReadyFlyweight.LENGTH;
+            });
+
+        final Subscription subscription = conductor.addSubscription(CHANNEL_WITH_STREAM_ID);
+
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_OPERATION_SUCCESS,
+            operationSuccessBuffer,
+            (buffer) ->
+            {
+                operationSuccess.correlationId(CLOSE_CORRELATION_ID);
+                return CorrelatedMessageFlyweight.LENGTH;
+            });
+
+        subscription.close();
+
+        verify(driverProxy).removeSubscription(CORRELATION_ID);
+    }
+
+    @Test
+    public void addSubscriptionUriOnlyShouldTimeoutWithoutOperationSuccessful()
+    {
+        assertTimeoutPreemptively(ofSeconds(5),
+            () -> assertThrows(DriverTimeoutException.class, () -> conductor.addSubscription(CHANNEL_WITH_STREAM_ID)));
+    }
+
+    @Test
+    public void shouldFailToAddSubscriptionUriOnlyOnMediaDriverError()
+    {
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_ERROR,
+            errorMessageBuffer,
+            (buffer) ->
+            {
+                errorResponse.errorCode(INVALID_CHANNEL);
+                errorResponse.errorMessage("invalid channel");
+                errorResponse.offendingCommandCorrelationId(CORRELATION_ID);
+                return errorResponse.length();
+            });
+
+        assertThrows(RegistrationException.class, () -> conductor.addSubscription(CHANNEL_WITH_STREAM_ID));
+    }
+
+    @Test
+    public void clientNotifiedOfNewImageShouldMapLogFileUriOnly()
+    {
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_SUBSCRIPTION_READY_V1,
+            subscriptionReadyV1Buffer,
+            (buffer) ->
+            {
+                subscriptionReadyV1.correlationId(CORRELATION_ID);
+                return SubscriptionReadyFlyweight.LENGTH;
+            });
+
+        final Subscription subscription = conductor.addSubscription(CHANNEL_WITH_STREAM_ID);
+
+        conductor.onAvailableImage(
+            CORRELATION_ID,
+            SESSION_ID_1,
+            subscription.registrationId(),
+            SUBSCRIPTION_POSITION_ID,
+            SESSION_ID_1 + "-log",
+            SOURCE_INFO);
+
+        verify(logBuffersFactory).map(eq(SESSION_ID_1 + "-log"));
+    }
+
+    @Test
+    public void clientNotifiedOfNewAndInactiveImagesUriOnly()
+    {
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_SUBSCRIPTION_READY_V1,
+            subscriptionReadyV1Buffer,
+            (buffer) ->
+            {
+                subscriptionReadyV1.correlationId(CORRELATION_ID);
+                return SubscriptionReadyFlyweight.LENGTH;
+            });
+
+        final Subscription subscription = conductor.addSubscription(CHANNEL_WITH_STREAM_ID);
 
         conductor.onAvailableImage(
             CORRELATION_ID,

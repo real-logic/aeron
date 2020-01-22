@@ -91,7 +91,8 @@ class ReplaySession implements Session, AutoCloseable
     private final long replayBufferAddress;
     private final Checksum checksum;
 
-    private final BufferClaim bufferClaim = new BufferClaim();
+    private final BufferClaim batchStart = new BufferClaim();
+    private final BufferClaim batchEnd = new BufferClaim();
     private final ExclusivePublication publication;
     private final ControlSession controlSession;
     private final CachedEpochClock epochClock;
@@ -299,6 +300,7 @@ class ReplaySession implements Session, AutoCloseable
         return 1;
     }
 
+    @SuppressWarnings("MethodLength")
     private int replay() throws IOException
     {
         int fragments = 0;
@@ -322,67 +324,93 @@ class ReplaySession implements Session, AutoCloseable
         int frameOffset = 0;
         final int bytesRead = readRecording(stopPosition - replayPosition);
 
-        while (frameOffset < bytesRead)
+        int claimedBytes = 0;
+        final int maxPayloadLength = publication.maxPayloadLength();
+        try
         {
-            final int frameLength = frameLength(replayBuffer, frameOffset);
-            if (frameLength <= 0)
+            while (frameOffset < bytesRead)
             {
-                throw new IllegalStateException("unexpected end of recording reached at position " + replayPosition);
-            }
-
-            final int frameType = frameType(replayBuffer, frameOffset);
-            final int alignedLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
-            final int dataLength = frameLength - DataHeaderFlyweight.HEADER_LENGTH;
-            long result = 0;
-
-            if (frameType == HeaderFlyweight.HDR_TYPE_DATA)
-            {
-                if (frameOffset + alignedLength > bytesRead)
+                final int frameLength = frameLength(replayBuffer, frameOffset);
+                if (frameLength <= 0)
                 {
-                    break;
+                    throw new IllegalStateException("unexpected end of recording reached at position " +
+                        replayPosition);
                 }
 
-                if (null != checksum)
+                final int frameType = frameType(replayBuffer, frameOffset);
+                final int alignedLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
+                final int dataLength = frameLength - DataHeaderFlyweight.HEADER_LENGTH;
+                long result = 0;
+
+                if (frameType == HeaderFlyweight.HDR_TYPE_DATA)
                 {
-                    verifyChecksum(frameOffset, alignedLength);
+                    if (frameOffset + alignedLength > bytesRead)
+                    {
+                        break;
+                    }
+
+                    if (null != checksum)
+                    {
+                        verifyChecksum(frameOffset, alignedLength);
+                    }
+
+                    final boolean newBatch = 0 == claimedBytes;
+                    final BufferClaim bufferClaim = newBatch ? batchStart : batchEnd;
+                    result = publication.tryClaim(dataLength, bufferClaim);
+                    if (result > 0)
+                    {
+                        bufferClaim
+                            .flags(frameFlags(replayBuffer, frameOffset))
+                            .reservedValue(replayBuffer.getLong(frameOffset + RESERVED_VALUE_OFFSET, LITTLE_ENDIAN))
+                            .putBytes(replayBuffer, frameOffset + HEADER_LENGTH, dataLength);
+
+                        if (!newBatch)
+                        {
+                            bufferClaim.commit(); // commit if not a new batch
+                        }
+
+                        claimedBytes += dataLength;
+                        if (claimedBytes >= maxPayloadLength)
+                        {
+                            batchStart.commit();
+                            claimedBytes = 0;
+                        }
+                    }
+                }
+                else if (frameType == HeaderFlyweight.HDR_TYPE_PAD)
+                {
+                    result = publication.appendPadding(dataLength);
                 }
 
-                result = publication.tryClaim(dataLength, bufferClaim);
                 if (result > 0)
                 {
-                    bufferClaim
-                        .flags(frameFlags(replayBuffer, frameOffset))
-                        .reservedValue(replayBuffer.getLong(frameOffset + RESERVED_VALUE_OFFSET, LITTLE_ENDIAN))
-                        .putBytes(replayBuffer, frameOffset + DataHeaderFlyweight.HEADER_LENGTH, dataLength)
-                        .commit();
+                    fragments++;
+                    frameOffset += alignedLength;
+                    termOffset += alignedLength;
+                    replayPosition += alignedLength;
+
+                    if (replayPosition >= replayLimit)
+                    {
+                        state(State.INACTIVE);
+                        break;
+                    }
                 }
-            }
-            else if (frameType == HeaderFlyweight.HDR_TYPE_PAD)
-            {
-                result = publication.appendPadding(dataLength);
-            }
-
-            if (result > 0)
-            {
-                fragments++;
-                frameOffset += alignedLength;
-                termOffset += alignedLength;
-                replayPosition += alignedLength;
-
-                if (replayPosition >= replayLimit)
+                else
                 {
-                    state(State.INACTIVE);
+                    if (Publication.CLOSED == result || Publication.NOT_CONNECTED == result)
+                    {
+                        onError("stream closed before replay is complete");
+                    }
+
                     break;
                 }
             }
-            else
+        }
+        finally
+        {
+            if (claimedBytes > 0)
             {
-                if (Publication.CLOSED == result || Publication.NOT_CONNECTED == result)
-                {
-                    onError("stream closed before replay is complete");
-                }
-
-                break;
+                batchStart.commit();
             }
         }
 

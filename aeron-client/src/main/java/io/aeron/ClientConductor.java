@@ -490,6 +490,26 @@ class ClientConductor implements Agent, DriverEventsListener
         }
     }
 
+    ConcurrentPublication addPublication(final String channel)
+    {
+        clientLock.lock();
+        try
+        {
+            ensureActive();
+            ensureNotReentrant();
+
+            stashedChannel = channel;
+            final long registrationId = driverProxy.addPublication(channel);
+            awaitResponse(registrationId);
+
+            return (ConcurrentPublication)resourceByRegIdMap.get(registrationId);
+        }
+        finally
+        {
+            clientLock.unlock();
+        }
+    }
+
     void releasePublication(final Publication publication)
     {
         clientLock.lock();

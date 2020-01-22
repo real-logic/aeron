@@ -28,8 +28,10 @@ class SubscriptionParams
     int termId = 0;
     int termOffset = 0;
     int sessionId = 0;
+    int streamId = 0;
     boolean hasJoinPosition = false;
     boolean hasSessionId = false;
+    boolean hasStreamId;
     boolean isReliable = true;
     boolean isSparse = true;
     boolean isTether = true;
@@ -45,6 +47,13 @@ class SubscriptionParams
         {
             params.sessionId = Integer.parseInt(sessionIdStr);
             params.hasSessionId = true;
+        }
+
+        final String streamIdStr = channelUri.get(CommonContext.SESSION_ID_PARAM_NAME);
+        if (null != streamIdStr)
+        {
+            params.streamId = Integer.parseInt(streamIdStr);
+            params.hasStreamId = true;
         }
 
         int count = 0;

@@ -367,6 +367,25 @@ public class DriverConductor implements Agent
 
     void onAddNetworkPublication(
         final String channel,
+        final long correlationId,
+        final long clientId,
+        final boolean isExclusive)
+    {
+        final UdpChannel udpChannel = UdpChannel.parse(channel);
+        final ChannelUri channelUri = udpChannel.channelUri();
+        final PublicationParams params = getPublicationParams(ctx, channelUri, this, isExclusive, false);
+
+        if (!params.hasStreamId)
+        {
+            throw new IllegalArgumentException("URI must specify an stream-id: " + channel);
+        }
+
+        onAddNetworkPublication(
+            channel, params.streamId, correlationId, clientId, isExclusive, udpChannel, channelUri, params);
+    }
+
+    void onAddNetworkPublication(
+        final String channel,
         final int streamId,
         final long correlationId,
         final long clientId,
@@ -375,6 +394,20 @@ public class DriverConductor implements Agent
         final UdpChannel udpChannel = UdpChannel.parse(channel);
         final ChannelUri channelUri = udpChannel.channelUri();
         final PublicationParams params = getPublicationParams(ctx, channelUri, this, isExclusive, false);
+        onAddNetworkPublication(
+            channel, streamId, correlationId, clientId, isExclusive, udpChannel, channelUri, params);
+    }
+
+    private void onAddNetworkPublication(
+        final String channel,
+        final int streamId,
+        final long correlationId,
+        final long clientId,
+        final boolean isExclusive,
+        final UdpChannel udpChannel,
+        final ChannelUri channelUri,
+        final PublicationParams params)
+    {
         validateMtuForMaxMessage(params);
 
         final SendChannelEndpoint channelEndpoint = getOrCreateSendChannelEndpoint(udpChannel);
@@ -555,12 +588,45 @@ public class DriverConductor implements Agent
 
     void onAddIpcPublication(
         final String channel,
+        final long correlationId,
+        final long clientId,
+        final boolean isExclusive)
+    {
+        final ChannelUri channelUri = ChannelUri.parse(channel);
+        final PublicationParams params = getPublicationParams(ctx, channelUri, this, isExclusive, true);
+
+        if (!params.hasStreamId)
+        {
+            throw new IllegalArgumentException("URI must specify an stream-id: " + channel);
+        }
+
+        onIpcAddPublication(channel, params.streamId, correlationId, clientId, isExclusive, channelUri, params);
+    }
+
+    void onAddIpcPublication(
+        final String channel,
         final int streamId,
         final long correlationId,
         final long clientId,
         final boolean isExclusive)
     {
-        final IpcPublication ipcPublication = getOrAddIpcPublication(correlationId, streamId, channel, isExclusive);
+        final ChannelUri channelUri = ChannelUri.parse(channel);
+        final PublicationParams publicationParams = getPublicationParams(ctx, channelUri, this, isExclusive, true);
+
+        onIpcAddPublication(channel, streamId, correlationId, clientId, isExclusive, channelUri, publicationParams);
+    }
+
+    private void onIpcAddPublication(
+        final String channel,
+        final int streamId,
+        final long correlationId,
+        final long clientId,
+        final boolean isExclusive,
+        final ChannelUri channelUri,
+        final PublicationParams publicationParams)
+    {
+        final IpcPublication ipcPublication = getOrAddIpcPublication(
+            correlationId, streamId, channel, isExclusive, channelUri, publicationParams);
         publicationLinks.add(new PublicationLink(correlationId, getOrAddClient(clientId), ipcPublication));
 
         final ArrayList<SubscriberPosition> subscriberPositions = linkIpcSubscriptions(ipcPublication);
@@ -1424,11 +1490,14 @@ public class DriverConductor implements Agent
     }
 
     private IpcPublication getOrAddIpcPublication(
-        final long correlationId, final int streamId, final String channel, final boolean isExclusive)
+        final long correlationId,
+        final int streamId,
+        final String channel,
+        final boolean isExclusive,
+        final ChannelUri channelUri,
+        final PublicationParams params)
     {
         IpcPublication publication = null;
-        final ChannelUri channelUri = ChannelUri.parse(channel);
-        final PublicationParams params = getPublicationParams(ctx, channelUri, this, isExclusive, true);
 
         if (!isExclusive)
         {

@@ -34,8 +34,10 @@ final class PublicationParams
     int termId = 0;
     int termOffset = 0;
     int sessionId = 0;
+    int streamId = 0;
     boolean hasPosition = false;
     boolean hasSessionId = false;
+    boolean hasStreamId = false;
     boolean isSessionIdTagged = false;
     boolean isSparse;
     boolean signalEos = true;
@@ -60,6 +62,7 @@ final class PublicationParams
         params.getLingerTimeoutNs(channelUri);
         params.getSparse(channelUri);
         params.getEos(channelUri);
+        params.getStreamId(channelUri);
 
         int count = 0;
 
@@ -227,6 +230,16 @@ final class PublicationParams
         {
             lingerTimeoutNs = SystemUtil.parseDuration(LINGER_PARAM_NAME, lingerParam);
             Configuration.validatePublicationLingerTimeoutNs(lingerTimeoutNs, lingerTimeoutNs);
+        }
+    }
+
+    private void getStreamId(final ChannelUri channelUri)
+    {
+        final String streamIdStr = channelUri.get(STREAM_ID_PARAM_NAME);
+        if (null != streamIdStr)
+        {
+            streamId = Integer.parseInt(streamIdStr);
+            hasStreamId = true;
         }
     }
 

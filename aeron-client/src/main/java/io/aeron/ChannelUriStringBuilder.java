@@ -27,7 +27,9 @@ import static org.agrona.SystemUtil.*;
  * Type safe means of building a channel URI associated with a {@link Publication} or {@link Subscription}.
  *
  * @see Aeron#addPublication(String, int)
+ * @see Aeron#addPublication(String)
  * @see Aeron#addSubscription(String, int)
+ * @see Aeron#addSubscription(String)
  * @see ChannelUri
  */
 public class ChannelUriStringBuilder
@@ -44,7 +46,7 @@ public class ChannelUriStringBuilder
     private String controlMode;
     private String tags;
     private String alias;
-    private String cc;
+    private String congestionControl;
     private Boolean reliable;
     private Integer ttl;
     private Integer mtu;
@@ -53,6 +55,7 @@ public class ChannelUriStringBuilder
     private Integer termId;
     private Integer termOffset;
     private Integer sessionId;
+    private Integer streamId;
     private Long linger;
     private Boolean sparse;
     private Boolean eos;
@@ -76,7 +79,7 @@ public class ChannelUriStringBuilder
         controlMode = null;
         tags = null;
         alias = null;
-        cc = null;
+        congestionControl = null;
         reliable = null;
         ttl = null;
         mtu = null;
@@ -94,6 +97,42 @@ public class ChannelUriStringBuilder
         isSessionIdTagged = false;
 
         return this;
+    }
+
+    public ChannelUriStringBuilder()
+    {
+    }
+
+    public ChannelUriStringBuilder(final String initialUri)
+    {
+        this(ChannelUri.parse(initialUri));
+    }
+
+    public ChannelUriStringBuilder(final ChannelUri channelUri)
+    {
+        media(channelUri);
+        endpoint(channelUri);
+        networkInterface(channelUri);
+        controlEndpoint(channelUri);
+        controlMode(channelUri);
+        tags(channelUri);
+        alias(channelUri);
+        congestionControl(channelUri);
+        reliable(channelUri);
+        ttl(channelUri);
+        mtu(channelUri);
+        termLength(channelUri);
+        initialTermId(channelUri);
+        termId(channelUri);
+        termOffset(channelUri);
+        sessionId(channelUri);
+        isSessionIdTagged(channelUri);
+        linger(channelUri);
+        sparse(channelUri);
+        eos(channelUri);
+        tether(channelUri);
+        group(channelUri);
+        rejoin(channelUri);
     }
 
     /**
@@ -798,6 +837,51 @@ public class ChannelUriStringBuilder
     }
 
     /**
+     * Set the session id for a publication or restricted subscription.
+     *
+     * @param streamId for the publication or a restricted subscription.
+     * @return this for a fluent API.
+     * @see CommonContext#SESSION_ID_PARAM_NAME
+     */
+    public ChannelUriStringBuilder streamId(final Integer streamId)
+    {
+        this.streamId = streamId;
+        return this;
+    }
+
+    /**
+     * Set the streamId value to be what is in the {@link ChannelUri} which may be null.
+     *
+     * @param channelUri to read the value from.
+     * @return this for a fluent API.
+     * @see CommonContext#SESSION_ID_PARAM_NAME
+     */
+    public ChannelUriStringBuilder streamId(final ChannelUri channelUri)
+    {
+        final String streamIdStr = channelUri.get(SESSION_ID_PARAM_NAME);
+        if (null == streamIdStr)
+        {
+            streamId = null;
+            return this;
+        }
+        else
+        {
+            return streamId(Integer.valueOf(streamIdStr));
+        }
+    }
+
+    /**
+     * Get the session id for a publication or restricted subscription.
+     *
+     * @return the session id for a publication or restricted subscription.
+     * @see CommonContext#SESSION_ID_PARAM_NAME
+     */
+    public Integer streamId()
+    {
+        return streamId;
+    }
+
+    /**
      * Set the time a network publication will linger in nanoseconds after being drained. This time is so that tail loss
      * can be recovered.
      *
@@ -1089,6 +1173,20 @@ public class ChannelUriStringBuilder
     }
 
     /**
+     * Toggle the value for {@link #sessionId()} being tagged or not from the {@link ChannelUri}.
+     *
+     * @param channelUri to read the value from.
+     * @return this for a fluent API.
+     * @see CommonContext#TAGS_PARAM_NAME
+     */
+    public ChannelUriStringBuilder isSessionIdTagged(final ChannelUri channelUri)
+    {
+        final String sessionId = channelUri.get(SESSION_ID_PARAM_NAME);
+        this.isSessionIdTagged = null != sessionId && ChannelUri.isTagged(sessionId);
+        return this;
+    }
+
+    /**
      * Is the value for {@link #sessionId()} a tagged.
      *
      * @return whether the value for {@link #sessionId()} a tag reference or not.
@@ -1145,7 +1243,7 @@ public class ChannelUriStringBuilder
      */
     public ChannelUriStringBuilder congestionControl(final String congestionControl)
     {
-        this.cc = congestionControl;
+        this.congestionControl = congestionControl;
         return this;
     }
 
@@ -1169,7 +1267,7 @@ public class ChannelUriStringBuilder
      */
     public String congestionControl()
     {
-        return cc;
+        return congestionControl;
     }
 
     /**
@@ -1309,6 +1407,11 @@ public class ChannelUriStringBuilder
             sb.append(TERM_OFFSET_PARAM_NAME).append('=').append(termOffset.intValue()).append('|');
         }
 
+        if (null != streamId)
+        {
+            sb.append(STREAM_ID_PARAM_NAME).append('=').append(streamId.intValue()).append('|');
+        }
+
         if (null != sessionId)
         {
             sb.append(SESSION_ID_PARAM_NAME).append('=').append(prefixTag(isSessionIdTagged, sessionId)).append('|');
@@ -1334,9 +1437,9 @@ public class ChannelUriStringBuilder
             sb.append(ALIAS_PARAM_NAME).append('=').append(alias).append('|');
         }
 
-        if (null != cc)
+        if (null != congestionControl)
         {
-            sb.append(CONGESTION_CONTROL_PARAM_NAME).append('=').append(cc).append('|');
+            sb.append(CONGESTION_CONTROL_PARAM_NAME).append('=').append(congestionControl).append('|');
         }
 
         if (null != sparse)

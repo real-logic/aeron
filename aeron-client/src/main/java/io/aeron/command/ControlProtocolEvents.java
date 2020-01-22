@@ -92,6 +92,11 @@ public class ControlProtocolEvents
      */
     public static final int TERMINATE_DRIVER = 0x0E;
 
+    /**
+     * Add a Publication with the only the URI (which will include the stream-id)
+     */
+    public static final int ADD_PUBLICATION_URI_ONLY = 0x0F;
+
     // Media Driver to Clients
 
     /**

@@ -54,6 +54,7 @@ public class ClientConductorTest
     private static final int SESSION_ID_2 = 15;
 
     private static final String CHANNEL = "aeron:udp?endpoint=localhost:40124";
+    private static final String CHANNEL_WITH_STREAM_ID = "aeron:udp?endpoint=localhost:40124|stream-id=1002";
     private static final int STREAM_ID_1 = 1002;
     private static final int STREAM_ID_2 = 1004;
     private static final int SEND_BUFFER_CAPACITY = 1024;
@@ -131,6 +132,7 @@ public class ClientConductorTest
 
         when(driverProxy.addPublication(CHANNEL, STREAM_ID_1)).thenReturn(CORRELATION_ID);
         when(driverProxy.addPublication(CHANNEL, STREAM_ID_2)).thenReturn(CORRELATION_ID_2);
+        when(driverProxy.addPublication(CHANNEL_WITH_STREAM_ID)).thenReturn(CORRELATION_ID);
         when(driverProxy.removePublication(CORRELATION_ID)).thenReturn(CLOSE_CORRELATION_ID);
         when(driverProxy.addSubscription(anyString(), anyInt())).thenReturn(CORRELATION_ID);
         when(driverProxy.removeSubscription(CORRELATION_ID)).thenReturn(CLOSE_CORRELATION_ID);
@@ -201,6 +203,19 @@ public class ClientConductorTest
         conductor.addPublication(CHANNEL, STREAM_ID_1);
 
         verify(driverProxy).addPublication(CHANNEL, STREAM_ID_1);
+    }
+
+    @Test
+    public void addPublicationUriOnlyShouldNotifyMediaDriver()
+    {
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_PUBLICATION_READY,
+            publicationReadyBuffer,
+            (buffer) -> publicationReady.length());
+
+        conductor.addPublication(CHANNEL_WITH_STREAM_ID);
+
+        verify(driverProxy).addPublication(CHANNEL_WITH_STREAM_ID);
     }
 
     @Test

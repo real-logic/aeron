@@ -189,6 +189,11 @@ public class CommonContext implements Cloneable
     public static final String MDC_CONTROL_MODE_DYNAMIC = "dynamic";
 
     /**
+     * Key for the stream id for a publication or restricted subscription.
+     */
+    public static final String STREAM_ID_PARAM_NAME = "stream-id";
+
+    /**
      * Key for the session id for a publication or restricted subscription.
      */
     public static final String SESSION_ID_PARAM_NAME = "session-id";

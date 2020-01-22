@@ -15,6 +15,7 @@
  */
 package io.aeron;
 
+import io.aeron.command.PublicationUriOnlyMessageFlyweight;
 import org.junit.jupiter.api.Test;
 import io.aeron.command.PublicationMessageFlyweight;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -37,6 +38,10 @@ public class FlyweightTest
     private final DataHeaderFlyweight decodeDataHeader = new DataHeaderFlyweight();
     private final PublicationMessageFlyweight encodePublication = new PublicationMessageFlyweight();
     private final PublicationMessageFlyweight decodePublication = new PublicationMessageFlyweight();
+    private final PublicationUriOnlyMessageFlyweight encodeUriOnlyPublication =
+        new PublicationUriOnlyMessageFlyweight();
+    private final PublicationUriOnlyMessageFlyweight decodeUriOnlyPublication =
+        new PublicationUriOnlyMessageFlyweight();
     private final NakFlyweight encodeNakHeader = new NakFlyweight();
     private final NakFlyweight decodeNakHeader = new NakFlyweight();
 
@@ -163,9 +168,24 @@ public class FlyweightTest
 
         final String channel = "aeron:udp?endpoint=localhost:4000";
         encodePublication.channel(channel);
+        encodePublication.streamId(1001);
 
         decodePublication.wrap(aBuff, 0);
 
         assertEquals(channel, decodePublication.channel());
+        assertEquals(1001, decodePublication.streamId());
+    }
+
+    @Test
+    public void shouldEncodeAndDecodeChannelsUriOnlyCorrectly()
+    {
+        decodeUriOnlyPublication.wrap(aBuff, 0);
+
+        final String channel = "aeron:udp?endpoint=localhost:4000|stream-id=1001";
+        decodeUriOnlyPublication.channel(channel);
+
+        decodeUriOnlyPublication.wrap(aBuff, 0);
+
+        assertEquals(channel, decodeUriOnlyPublication.channel());
     }
 }

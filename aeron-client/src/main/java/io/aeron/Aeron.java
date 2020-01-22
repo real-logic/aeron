@@ -249,6 +249,19 @@ public class Aeron implements AutoCloseable
     }
 
     /**
+     * Add a {@link Publication} for publishing messages to subscribers. The publication returned is threadsafe.
+     * This expects the the stream id to be included in the channel as a parameter.
+     *
+     * @param channel  for sending the messages known to the media layer.  This should include stream-id as a parameter.
+     * @return a new {@link ConcurrentPublication}.
+     * @see CommonContext#STREAM_ID_PARAM_NAME
+     */
+    public ConcurrentPublication addPublication(final String channel)
+    {
+        return conductor.addPublication(channel);
+    }
+
+    /**
      * Add an {@link ExclusivePublication} for publishing messages to subscribers from a single thread.
      *
      * @param channel  for sending the messages known to the media layer.
@@ -274,6 +287,21 @@ public class Aeron implements AutoCloseable
     public Subscription addSubscription(final String channel, final int streamId)
     {
         return conductor.addSubscription(channel, streamId);
+    }
+
+    /**
+     * Add a new {@link Subscription} for subscribing to messages from publishers.
+     * <p>
+     * The method will set up the {@link Subscription} to use the
+     * {@link Aeron.Context#availableImageHandler(AvailableImageHandler)} and
+     * {@link Aeron.Context#unavailableImageHandler(UnavailableImageHandler)} from the {@link Aeron.Context}.
+     *
+     * @param channel  for receiving the messages known to the media layer.
+     * @return the {@link Subscription} for the channel and streamId pair.
+     */
+    public Subscription addSubscription(final String channel)
+    {
+        return conductor.addSubscription(channel, 0);
     }
 
     /**

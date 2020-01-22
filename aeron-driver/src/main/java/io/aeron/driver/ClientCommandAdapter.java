@@ -35,6 +35,8 @@ import static io.aeron.command.ControlProtocolEvents.*;
 class ClientCommandAdapter implements MessageHandler
 {
     private final PublicationMessageFlyweight publicationMsgFlyweight = new PublicationMessageFlyweight();
+    private final PublicationUriOnlyMessageFlyweight publicationUriOnlyMessageFlyweight =
+        new PublicationUriOnlyMessageFlyweight();
     private final SubscriptionMessageFlyweight subscriptionMsgFlyweight = new SubscriptionMessageFlyweight();
     private final CorrelatedMessageFlyweight correlatedMsgFlyweight = new CorrelatedMessageFlyweight();
     private final RemoveMessageFlyweight removeMsgFlyweight = new RemoveMessageFlyweight();
@@ -141,6 +143,17 @@ class ClientCommandAdapter implements MessageHandler
 
                     correlationId = removeMsgFlyweight.correlationId();
                     conductor.onRemoveSubscription(removeMsgFlyweight.registrationId(), correlationId);
+                    break;
+                }
+
+                case ADD_PUBLICATION_URI_ONLY:
+                {
+                    publicationUriOnlyMessageFlyweight.wrap(buffer, index);
+                    publicationUriOnlyMessageFlyweight.validateLength(msgTypeId, length);
+
+                    correlationId = publicationUriOnlyMessageFlyweight.correlationId();
+                    addPublicationUriOnly(correlationId, false);
+
                     break;
                 }
 
@@ -292,6 +305,21 @@ class ClientCommandAdapter implements MessageHandler
         else
         {
             conductor.onAddNetworkPublication(channel, streamId, correlationId, clientId, isExclusive);
+        }
+    }
+
+    public void addPublicationUriOnly(final long correlationId, final boolean isExclusive)
+    {
+        final long clientId = publicationUriOnlyMessageFlyweight.clientId();
+        final String channel = publicationUriOnlyMessageFlyweight.channel();
+
+        if (channel.startsWith(IPC_CHANNEL))
+        {
+            conductor.onAddIpcPublication(channel, correlationId, clientId, isExclusive);
+        }
+        else
+        {
+            conductor.onAddNetworkPublication(channel, correlationId, clientId, isExclusive);
         }
     }
 

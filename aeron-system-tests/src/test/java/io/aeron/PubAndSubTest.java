@@ -35,19 +35,19 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
 import java.nio.channels.FileChannel;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.test.LossReportTestUtil.verifyLossOccurredForStream;
 import static java.time.Duration.ofSeconds;
-import static java.util.Arrays.asList;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
@@ -57,12 +57,16 @@ public class PubAndSubTest
 {
     private static final String IPC_URI = "aeron:ipc";
 
-    private static List<String> channels()
+    private static Stream<Arguments> channels()
     {
-        return asList(
-            "aeron:udp?endpoint=localhost:24325",
-            "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost",
-            IPC_URI);
+        return Stream.of(
+            Arguments.of("Unicast UDP", "aeron:udp?endpoint=localhost:54325", false),
+            Arguments.of("Multicast UDP", "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost", false),
+            Arguments.of("IPC", IPC_URI, false),
+            Arguments.of("Unicast UDP (streamId in URI)", "aeron:udp?endpoint=localhost:54325", true),
+            Arguments.of(
+                "Multicast UDP (streamId in URI)", "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost", true)
+        );
     }
 
     @RegisterExtension
@@ -83,7 +87,7 @@ public class PubAndSubTest
     private final FragmentHandler fragmentHandler = mock(FragmentHandler.class);
     private final RawBlockHandler rawBlockHandler = mock(RawBlockHandler.class);
 
-    private void launch(final String channel)
+    private void launch(final String channel, final boolean streamIdInUri)
     {
         context
             .threadingMode(THREADING_MODE)
@@ -95,8 +99,20 @@ public class PubAndSubTest
         driver = TestMediaDriver.launch(context, watcher);
         subscribingClient = Aeron.connect();
         publishingClient = Aeron.connect();
-        subscription = subscribingClient.addSubscription(channel, STREAM_ID);
-        publication = publishingClient.addPublication(channel, STREAM_ID);
+        if (streamIdInUri)
+        {
+            final String channelWithStreamId = new ChannelUriStringBuilder(channel).streamId(STREAM_ID).build();
+            subscription = subscribingClient.addSubscription(channel, STREAM_ID);
+            publication = publishingClient.addPublication(channelWithStreamId);
+        }
+        else
+        {
+            subscription = subscribingClient.addSubscription(channel, STREAM_ID);
+            publication = publishingClient.addPublication(channel, STREAM_ID);
+        }
+
+        assertEquals(STREAM_ID, publication.streamId());
+        assertEquals(STREAM_ID, subscription.streamId());
     }
 
     @AfterEach
@@ -107,13 +123,16 @@ public class PubAndSubTest
         CloseHelper.quietClose(driver);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @MethodSource("channels")
-    public void shouldReceivePublishedMessageViaPollFile(final String channel)
+    public void shouldReceivePublishedMessageViaPollFile(
+        @SuppressWarnings("unused") final String name,
+        final String channel,
+        final boolean streamIdInUri)
     {
         assertTimeoutPreemptively(ofSeconds(20), () ->
         {
-            launch(channel);
+            launch(channel, streamIdInUri);
 
             publishMessage();
 
@@ -149,9 +168,12 @@ public class PubAndSubTest
         });
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @MethodSource("channels")
-    public void shouldContinueAfterBufferRollover(final String channel)
+    public void shouldContinueAfterBufferRollover(
+        @SuppressWarnings("unused") final String name,
+        final String channel,
+        final boolean streamIdInUri)
     {
         assertTimeoutPreemptively(ofSeconds(20), () ->
         {
@@ -162,7 +184,7 @@ public class PubAndSubTest
 
             context.publicationTermBufferLength(termBufferLength);
 
-            launch(channel);
+            launch(channel, streamIdInUri);
 
             for (int i = 0; i < numMessagesToSend; i++)
             {
@@ -197,9 +219,12 @@ public class PubAndSubTest
         });
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @MethodSource("channels")
-    public void shouldContinueAfterRolloverWithMinimalPaddingHeader(final String channel)
+    public void shouldContinueAfterRolloverWithMinimalPaddingHeader(
+        @SuppressWarnings("unused") final String name,
+        final String channel,
+        final boolean streamIdInUri)
     {
         assertTimeoutPreemptively(ofSeconds(20), () ->
         {
@@ -212,7 +237,7 @@ public class PubAndSubTest
 
             context.publicationTermBufferLength(termBufferLength);
 
-            launch(channel);
+            launch(channel, streamIdInUri);
 
             // lock step reception until we get to within 8 messages of the end
             for (int i = 0; i < num1kMessagesInTermBuffer - 7; i++)
@@ -299,9 +324,12 @@ public class PubAndSubTest
         });
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @MethodSource("channels")
-    public void shouldReceivePublishedMessageOneForOneWithDataLoss(final String channel)
+    public void shouldReceivePublishedMessageOneForOneWithDataLoss(
+        @SuppressWarnings("unused") final String name,
+        final String channel,
+        final boolean streamIdInUri)
     {
         assumeFalse(IPC_URI.equals(channel));
 
@@ -322,7 +350,7 @@ public class PubAndSubTest
 
             TestMediaDriver.enableLossGenerationOnReceive(context, 0.1, 0xcafebabeL, true, false);
 
-            launch(channel);
+            launch(channel, streamIdInUri);
 
             for (int i = 0; i < numMessagesToSend; i++)
             {
@@ -358,9 +386,12 @@ public class PubAndSubTest
         });
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @MethodSource("channels")
-    public void shouldReceivePublishedMessageBatchedWithDataLoss(final String channel)
+    public void shouldReceivePublishedMessageBatchedWithDataLoss(
+        @SuppressWarnings("unused") final String name,
+        final String channel,
+        final boolean streamIdInUri)
     {
         assumeFalse(IPC_URI.equals(channel));
 
@@ -383,7 +414,7 @@ public class PubAndSubTest
 
             TestMediaDriver.enableLossGenerationOnReceive(context, 0.1, 0xcafebabeL, true, false);
 
-            launch(channel);
+            launch(channel, streamIdInUri);
 
             for (int i = 0; i < numBatches; i++)
             {
@@ -423,9 +454,12 @@ public class PubAndSubTest
         });
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @MethodSource("channels")
-    public void shouldContinueAfterBufferRolloverBatched(final String channel)
+    public void shouldContinueAfterBufferRolloverBatched(
+        @SuppressWarnings("unused") final String name,
+        final String channel,
+        final boolean streamIdInUri)
     {
         assertTimeoutPreemptively(ofSeconds(20), () ->
         {
@@ -438,7 +472,7 @@ public class PubAndSubTest
 
             context.publicationTermBufferLength(termBufferLength);
 
-            launch(channel);
+            launch(channel, streamIdInUri);
 
             for (int i = 0; i < numBatchesPerTerm; i++)
             {
@@ -498,9 +532,12 @@ public class PubAndSubTest
         });
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @MethodSource("channels")
-    public void shouldContinueAfterBufferRolloverWithPadding(final String channel)
+    public void shouldContinueAfterBufferRolloverWithPadding(
+        @SuppressWarnings("unused") final String name,
+        final String channel,
+        final boolean streamIdInUri)
     {
         assertTimeoutPreemptively(ofSeconds(20), () ->
         {
@@ -516,7 +553,7 @@ public class PubAndSubTest
 
             context.publicationTermBufferLength(termBufferLength);
 
-            launch(channel);
+            launch(channel, streamIdInUri);
 
             for (int i = 0; i < numMessagesToSend; i++)
             {
@@ -551,9 +588,12 @@ public class PubAndSubTest
         });
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @MethodSource("channels")
-    public void shouldContinueAfterBufferRolloverWithPaddingBatched(final String channel)
+    public void shouldContinueAfterBufferRolloverWithPaddingBatched(
+        @SuppressWarnings("unused") final String name,
+        final String channel,
+        final boolean streamIdInUri)
     {
         assertTimeoutPreemptively(ofSeconds(20), () ->
         {
@@ -571,7 +611,7 @@ public class PubAndSubTest
 
             context.publicationTermBufferLength(termBufferLength);
 
-            launch(channel);
+            launch(channel, streamIdInUri);
 
             for (int i = 0; i < numBatchesPerTerm; i++)
             {
@@ -609,9 +649,12 @@ public class PubAndSubTest
         });
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @MethodSource("channels")
-    public void shouldReceiveOnlyAfterSendingUpToFlowControlLimit(final String channel)
+    public void shouldReceiveOnlyAfterSendingUpToFlowControlLimit(
+        @SuppressWarnings("unused") final String name,
+        final String channel,
+        final boolean streamIdInUri)
     {
         assertTimeoutPreemptively(ofSeconds(20), () ->
         {
@@ -627,7 +670,7 @@ public class PubAndSubTest
 
             context.publicationTermBufferLength(termBufferLength);
 
-            launch(channel);
+            launch(channel, streamIdInUri);
 
             for (int i = 0; i < numMessagesPerTerm; i++)
             {
@@ -677,9 +720,12 @@ public class PubAndSubTest
         });
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @MethodSource("channels")
-    public void shouldReceivePublishedMessageOneForOneWithReSubscription(final String channel)
+    public void shouldReceivePublishedMessageOneForOneWithReSubscription(
+        @SuppressWarnings("unused") final String name,
+        final String channel,
+        final boolean streamIdInUri)
     {
         // Immediate re-subscription currently doesn't work in the C media driver
         assumeFalse(TestMediaDriver.shouldRunCMediaDriver());
@@ -694,7 +740,7 @@ public class PubAndSubTest
 
             context.publicationTermBufferLength(termBufferLength);
 
-            launch(channel);
+            launch(channel, streamIdInUri);
 
             while (!subscription.isConnected())
             {
@@ -775,9 +821,12 @@ public class PubAndSubTest
         });
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @MethodSource("channels")
-    public void shouldFragmentExactMessageLengthsCorrectly(final String channel)
+    public void shouldFragmentExactMessageLengthsCorrectly(
+        @SuppressWarnings("unused") final String name,
+        final String channel,
+        final boolean streamIdInUri)
     {
         assertTimeoutPreemptively(ofSeconds(20), () ->
         {
@@ -791,7 +840,7 @@ public class PubAndSubTest
 
             context.publicationTermBufferLength(termBufferLength);
 
-            launch(channel);
+            launch(channel, streamIdInUri);
 
             for (int i = 0; i < numMessagesToSend; i++)
             {
@@ -826,13 +875,16 @@ public class PubAndSubTest
         });
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @MethodSource("channels")
-    public void shouldNoticeDroppedSubscriber(final String channel)
+    public void shouldNoticeDroppedSubscriber(
+        @SuppressWarnings("unused") final String name,
+        final String channel,
+        final boolean streamIdInUri)
     {
         assertTimeoutPreemptively(ofSeconds(20), () ->
         {
-            launch(channel);
+            launch(channel, streamIdInUri);
 
             while (!publication.isConnected())
             {

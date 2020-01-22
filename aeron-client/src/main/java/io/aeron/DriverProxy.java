@@ -35,6 +35,8 @@ public class DriverProxy
 {
     private final MutableDirectBuffer buffer = new ExpandableArrayBuffer(1024);
     private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
+    private final PublicationUriOnlyMessageFlyweight publicationUriOnlyMessage =
+        new PublicationUriOnlyMessageFlyweight();
     private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
     private final RemoveMessageFlyweight removeMessage = new RemoveMessageFlyweight();
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
@@ -48,6 +50,7 @@ public class DriverProxy
         this.toDriverCommandBuffer = toDriverCommandBuffer;
 
         publicationMessage.wrap(buffer, 0);
+        publicationUriOnlyMessage.wrap(buffer, 0);
         subscriptionMessage.wrap(buffer, 0);
         correlatedMessage.wrap(buffer, 0);
         removeMessage.wrap(buffer, 0);
@@ -95,6 +98,21 @@ public class DriverProxy
             .channel(channel);
 
         if (!toDriverCommandBuffer.write(ADD_EXCLUSIVE_PUBLICATION, buffer, 0, publicationMessage.length()))
+        {
+            throw new AeronException("could not write add exclusive publication command");
+        }
+
+        return correlationId;
+    }
+
+    public long addPublication(final String channel)
+    {
+        final long correlationId = toDriverCommandBuffer.nextCorrelationId();
+
+        publicationUriOnlyMessage.correlationId(correlationId);
+        publicationUriOnlyMessage.channel(channel);
+
+        if (!toDriverCommandBuffer.write(ADD_PUBLICATION_URI_ONLY, buffer, 0, publicationUriOnlyMessage.length()))
         {
             throw new AeronException("could not write add exclusive publication command");
         }

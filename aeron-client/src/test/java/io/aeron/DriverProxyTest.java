@@ -15,6 +15,7 @@
  */
 package io.aeron;
 
+import io.aeron.command.PublicationUriOnlyMessageFlyweight;
 import org.junit.jupiter.api.Test;
 import io.aeron.command.PublicationMessageFlyweight;
 import io.aeron.command.RemoveMessageFlyweight;
@@ -41,13 +42,20 @@ public class DriverProxyTest
     private final DriverProxy conductor = new DriverProxy(conductorBuffer, CLIENT_ID);
 
     @Test
-    public void threadSendsAddChannelMessage()
+    public void threadSendsAddPublicationMessage()
     {
-        threadSendsChannelMessage(() -> conductor.addPublication(CHANNEL, STREAM_ID), ADD_PUBLICATION);
+        threadSendsAddPublicationMessage(() -> conductor.addPublication(CHANNEL, STREAM_ID), ADD_PUBLICATION);
     }
 
     @Test
-    public void threadSendsRemoveChannelMessage()
+    public void threadSendsAddPublicationUriOnlyMessage()
+    {
+        threadSendsAddPublicationUriOnlyMessage(
+            () -> conductor.addPublication(CHANNEL), ADD_PUBLICATION_URI_ONLY);
+    }
+
+    @Test
+    public void threadSendsRemovePublicationMessage()
     {
         conductor.removePublication(CORRELATION_ID);
         assertReadsOneMessage(
@@ -62,7 +70,7 @@ public class DriverProxyTest
         );
     }
 
-    private void threadSendsChannelMessage(final Runnable sendMessage, final int expectedMsgTypeId)
+    private void threadSendsAddPublicationMessage(final Runnable sendMessage, final int expectedMsgTypeId)
     {
         sendMessage.run();
 
@@ -75,6 +83,22 @@ public class DriverProxyTest
                 assertEquals(expectedMsgTypeId, msgTypeId);
                 assertEquals(CHANNEL, publicationMessage.channel());
                 assertEquals(STREAM_ID, publicationMessage.streamId());
+            }
+        );
+    }
+
+    private void threadSendsAddPublicationUriOnlyMessage(final Runnable sendMessage, final int expectedMsgTypeId)
+    {
+        sendMessage.run();
+
+        assertReadsOneMessage(
+            (msgTypeId, buffer, index, length) ->
+            {
+                final PublicationUriOnlyMessageFlyweight publicationMessage = new PublicationUriOnlyMessageFlyweight();
+                publicationMessage.wrap(buffer, index);
+
+                assertEquals(expectedMsgTypeId, msgTypeId);
+                assertEquals(CHANNEL, publicationMessage.channel());
             }
         );
     }

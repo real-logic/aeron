@@ -15,7 +15,7 @@
  */
 package io.aeron;
 
-import io.aeron.command.PublicationUriOnlyMessageFlyweight;
+import io.aeron.command.ChannelMessageFlyweight;
 import org.junit.jupiter.api.Test;
 import io.aeron.command.PublicationMessageFlyweight;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -38,10 +38,10 @@ public class FlyweightTest
     private final DataHeaderFlyweight decodeDataHeader = new DataHeaderFlyweight();
     private final PublicationMessageFlyweight encodePublication = new PublicationMessageFlyweight();
     private final PublicationMessageFlyweight decodePublication = new PublicationMessageFlyweight();
-    private final PublicationUriOnlyMessageFlyweight encodeUriOnlyPublication =
-        new PublicationUriOnlyMessageFlyweight();
-    private final PublicationUriOnlyMessageFlyweight decodeUriOnlyPublication =
-        new PublicationUriOnlyMessageFlyweight();
+    private final ChannelMessageFlyweight encodeUriOnlyPublication =
+        new ChannelMessageFlyweight();
+    private final ChannelMessageFlyweight decodeUriOnlyPublication =
+        new ChannelMessageFlyweight();
     private final NakFlyweight encodeNakHeader = new NakFlyweight();
     private final NakFlyweight decodeNakHeader = new NakFlyweight();
 

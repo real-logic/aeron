@@ -37,7 +37,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  *  +---------------------------------------------------------------+
  * </pre>
  */
-public class PublicationUriOnlyMessageFlyweight extends CorrelatedMessageFlyweight
+public class ChannelMessageFlyweight extends CorrelatedMessageFlyweight
 {
     private static final int CHANNEL_OFFSET = CORRELATION_ID_FIELD_OFFSET + SIZE_OF_LONG;
 
@@ -71,7 +71,7 @@ public class PublicationUriOnlyMessageFlyweight extends CorrelatedMessageFlyweig
      * @param channel field value
      * @return flyweight
      */
-    public PublicationUriOnlyMessageFlyweight channel(final String channel)
+    public ChannelMessageFlyweight channel(final String channel)
     {
         lengthOfChannel = buffer.putStringAscii(offset + CHANNEL_OFFSET, channel);
 

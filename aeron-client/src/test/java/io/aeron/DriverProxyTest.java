@@ -15,7 +15,7 @@
  */
 package io.aeron;
 
-import io.aeron.command.PublicationUriOnlyMessageFlyweight;
+import io.aeron.command.ChannelMessageFlyweight;
 import org.junit.jupiter.api.Test;
 import io.aeron.command.PublicationMessageFlyweight;
 import io.aeron.command.RemoveMessageFlyweight;
@@ -94,7 +94,7 @@ public class DriverProxyTest
         assertReadsOneMessage(
             (msgTypeId, buffer, index, length) ->
             {
-                final PublicationUriOnlyMessageFlyweight publicationMessage = new PublicationUriOnlyMessageFlyweight();
+                final ChannelMessageFlyweight publicationMessage = new ChannelMessageFlyweight();
                 publicationMessage.wrap(buffer, index);
 
                 assertEquals(expectedMsgTypeId, msgTypeId);

@@ -33,6 +33,7 @@ import org.agrona.concurrent.*;
 import org.agrona.concurrent.errors.DistinctErrorLog;
 import org.agrona.concurrent.errors.LoggingErrorHandler;
 import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
 import java.util.Random;
@@ -47,7 +48,7 @@ import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.S
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static org.agrona.SystemUtil.*;
-import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
+import static org.agrona.concurrent.status.CountersReader.*;
 
 /**
  * Component which resides on each node and is responsible for coordinating consensus within a cluster in concert
@@ -157,6 +158,32 @@ public class ConsensusModule implements AutoCloseable
             return STATES[code];
         }
     }
+
+    /**
+     * Get the current state of the ConsensusModule
+     *
+     * @param counters to search for the control toggle.
+     * @return the state of the ConsensusModule or null if not found.
+     */
+    public static State findState(final CountersReader counters)
+    {
+        final AtomicBuffer buffer = counters.metaDataBuffer();
+
+        for (int i = 0, size = counters.maxCounterId(); i < size; i++)
+        {
+            final int recordOffset = CountersReader.metaDataOffset(i);
+
+            if (counters.getCounterState(i) == RECORD_ALLOCATED &&
+                buffer.getInt(recordOffset + TYPE_ID_OFFSET) == CONSENSUS_MODULE_STATE_TYPE_ID)
+            {
+                final AtomicCounter atomicCounter = new AtomicCounter(counters.valuesBuffer(), i, null);
+                return State.get(atomicCounter);
+            }
+        }
+
+        return null;
+    }
+
 
     /**
      * Launch an {@link ConsensusModule} with that communicates with an out of process {@link io.aeron.archive.Archive}

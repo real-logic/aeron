@@ -72,6 +72,12 @@ public class ExclusivePublicationTest
     @MethodSource("channels")
     public void shouldPublishFromIndependentExclusivePublications(final String channel, final boolean streamIdInUri)
     {
+        // Stream id not support in C media driver yet.
+        if (streamIdInUri && TestMediaDriver.shouldRunCMediaDriver())
+        {
+            return;
+        }
+
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);

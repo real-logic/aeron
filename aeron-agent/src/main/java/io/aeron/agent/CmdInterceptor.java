@@ -53,8 +53,13 @@ class CmdInterceptor
         CMD_IN_ADD_RCV_DESTINATION,
         CMD_IN_REMOVE_RCV_DESTINATION,
         CMD_OUT_ON_CLIENT_TIMEOUT,
-        CMD_IN_TERMINATE_DRIVER);
+        CMD_IN_TERMINATE_DRIVER,
+        CMD_IN_ADD_PUBLICATION_V1,
+        CMD_IN_ADD_EXCLUSIVE_PUBLICATION_V1,
+        CMD_IN_ADD_SUBSCRIPTION_V1,
+        CMD_OUT_SUBSCRIPTION_READY_V1);
 
+    @SuppressWarnings("MethodLength")
     @Advice.OnMethodEnter
     static void logCmd(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)
     {
@@ -154,6 +159,22 @@ class CmdInterceptor
 
             case TERMINATE_DRIVER:
                 LOGGER.log(CMD_IN_TERMINATE_DRIVER, buffer, index, length);
+                break;
+
+            case ADD_PUBLICATION_V1:
+                LOGGER.log(CMD_IN_ADD_PUBLICATION_V1, buffer, index, length);
+                break;
+
+            case ADD_SUBSCRIPTION_V1:
+                LOGGER.log(CMD_IN_ADD_SUBSCRIPTION_V1, buffer, index, length);
+                break;
+
+            case ADD_EXCLUSIVE_PUBLICATION_V1:
+                LOGGER.log(CMD_IN_ADD_EXCLUSIVE_PUBLICATION_V1, buffer, index, length);
+                break;
+
+            case ON_SUBSCRIPTION_READY_V1:
+                LOGGER.log(CMD_OUT_SUBSCRIPTION_READY_V1, buffer, index, length);
                 break;
         }
     }

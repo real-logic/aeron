@@ -97,7 +97,11 @@ final class EventConfiguration
         SEND_CHANNEL_CREATION,
         RECEIVE_CHANNEL_CREATION,
         SEND_CHANNEL_CLOSE,
-        RECEIVE_CHANNEL_CLOSE);
+        RECEIVE_CHANNEL_CLOSE,
+        CMD_IN_ADD_PUBLICATION_V1,
+        CMD_IN_ADD_EXCLUSIVE_PUBLICATION_V1,
+        CMD_IN_ADD_SUBSCRIPTION_V1,
+        CMD_OUT_SUBSCRIPTION_READY_V1);
 
     /**
      * Event Buffer default length (in bytes).

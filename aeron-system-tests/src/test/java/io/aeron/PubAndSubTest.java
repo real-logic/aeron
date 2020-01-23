@@ -61,9 +61,9 @@ public class PubAndSubTest
     private static List<Arguments> channels()
     {
         return Arrays.asList(
-            Arguments.of("Unicast UDP", "aeron:udp?endpoint=localhost:54325", false),
-            Arguments.of("Multicast UDP", "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost", false),
-            Arguments.of("IPC", IPC_URI, false),
+//            Arguments.of("Unicast UDP", "aeron:udp?endpoint=localhost:54325", false),
+//            Arguments.of("Multicast UDP", "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost", false),
+//            Arguments.of("IPC", IPC_URI, false),
             Arguments.of("Unicast UDP (streamId in URI)", "aeron:udp?endpoint=localhost:54325", true),
             Arguments.of(
                 "Multicast UDP (streamId in URI)", "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost", true)

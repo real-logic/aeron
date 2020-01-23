@@ -40,6 +40,7 @@ final class DriverEventDissector
     private static final SetupFlyweight SETUP_HEADER = new SetupFlyweight();
     private static final RttMeasurementFlyweight RTT_MEASUREMENT = new RttMeasurementFlyweight();
     private static final PublicationMessageFlyweight PUB_MSG = new PublicationMessageFlyweight();
+    private static final ChannelMessageFlyweight CHANNEL_MSG = new ChannelMessageFlyweight();
     private static final SubscriptionMessageFlyweight SUB_MSG = new SubscriptionMessageFlyweight();
     private static final PublicationBuffersReadyFlyweight PUB_READY = new PublicationBuffersReadyFlyweight();
     private static final ImageBuffersReadyFlyweight IMAGE_READY = new ImageBuffersReadyFlyweight();
@@ -52,6 +53,7 @@ final class DriverEventDissector
     private static final CounterUpdateFlyweight COUNTER_UPDATE = new CounterUpdateFlyweight();
     private static final OperationSucceededFlyweight OPERATION_SUCCEEDED = new OperationSucceededFlyweight();
     private static final SubscriptionReadyFlyweight SUBSCRIPTION_READY = new SubscriptionReadyFlyweight();
+    private static final SubscriptionReadyFlyweightV1 SUBSCRIPTION_READY_V1 = new SubscriptionReadyFlyweightV1();
     private static final ClientTimeoutFlyweight CLIENT_TIMEOUT = new ClientTimeoutFlyweight();
     private static final TerminateDriverFlyweight TERMINATE_DRIVER = new TerminateDriverFlyweight();
 
@@ -131,6 +133,13 @@ final class DriverEventDissector
                 dissectSubscription(builder);
                 break;
 
+            case CMD_IN_ADD_PUBLICATION_V1:
+            case CMD_IN_ADD_EXCLUSIVE_PUBLICATION_V1:
+            case CMD_IN_ADD_SUBSCRIPTION_V1:
+                CHANNEL_MSG.wrap(buffer, offset + relativeOffset);
+                dissectChannelMessage(builder);
+                break;
+
             case CMD_IN_REMOVE_PUBLICATION:
             case CMD_IN_REMOVE_SUBSCRIPTION:
             case CMD_IN_REMOVE_COUNTER:
@@ -186,6 +195,11 @@ final class DriverEventDissector
             case CMD_OUT_SUBSCRIPTION_READY:
                 SUBSCRIPTION_READY.wrap(buffer, offset + relativeOffset);
                 dissectSubscriptionReady(builder);
+                break;
+
+            case CMD_OUT_SUBSCRIPTION_READY_V1:
+                SUBSCRIPTION_READY_V1.wrap(buffer, offset + relativeOffset);
+                dissectSubscriptionReadyV1(builder);
                 break;
 
             case CMD_OUT_COUNTER_READY:
@@ -405,6 +419,18 @@ final class DriverEventDissector
         SUB_MSG.appendChannel(builder);
     }
 
+    private static void dissectChannelMessage(final StringBuilder builder)
+    {
+        builder
+            .append('[')
+            .append(CHANNEL_MSG.clientId())
+            .append(':')
+            .append(CHANNEL_MSG.correlationId())
+            .append("] ");
+
+        CHANNEL_MSG.appendChannel(builder);
+    }
+
     private static void dissectPublicationReady(final StringBuilder builder)
     {
         builder
@@ -533,6 +559,16 @@ final class DriverEventDissector
             .append(SUBSCRIPTION_READY.correlationId())
             .append(' ')
             .append(SUBSCRIPTION_READY.channelStatusCounterId());
+    }
+
+    private static void dissectSubscriptionReadyV1(final StringBuilder builder)
+    {
+        builder
+            .append(SUBSCRIPTION_READY_V1.correlationId())
+            .append(' ')
+            .append(SUBSCRIPTION_READY_V1.channelStatusCounterId())
+            .append(' ')
+            .append(SUBSCRIPTION_READY_V1.streamId());
     }
 
     private static void dissectClientTimeout(final StringBuilder builder)

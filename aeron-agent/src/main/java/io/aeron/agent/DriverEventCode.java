@@ -71,7 +71,12 @@ public enum DriverEventCode implements EventCode
     CMD_IN_REMOVE_RCV_DESTINATION(42, DriverEventDissector::dissectAsCommand),
 
     CMD_OUT_ON_CLIENT_TIMEOUT(43, DriverEventDissector::dissectAsCommand),
-    CMD_IN_TERMINATE_DRIVER(44, DriverEventDissector::dissectAsCommand);
+    CMD_IN_TERMINATE_DRIVER(44, DriverEventDissector::dissectAsCommand),
+
+    CMD_IN_ADD_PUBLICATION_V1(45, DriverEventDissector::dissectAsCommand),
+    CMD_IN_ADD_EXCLUSIVE_PUBLICATION_V1(46, DriverEventDissector::dissectAsCommand),
+    CMD_IN_ADD_SUBSCRIPTION_V1(47, DriverEventDissector::dissectAsCommand),
+    CMD_OUT_SUBSCRIPTION_READY_V1(48, DriverEventDissector::dissectAsCommand);
 
     static final int EVENT_CODE_TYPE = EventCodeType.DRIVER.getTypeCode();
 

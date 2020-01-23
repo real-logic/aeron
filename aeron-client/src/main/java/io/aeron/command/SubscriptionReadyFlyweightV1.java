@@ -119,7 +119,7 @@ public class SubscriptionReadyFlyweightV1
      */
     public int streamId()
     {
-        return buffer.getInt(STREAM_ID_OFFSET);
+        return buffer.getInt(offset + STREAM_ID_OFFSET);
     }
 
     /**
@@ -130,7 +130,7 @@ public class SubscriptionReadyFlyweightV1
      */
     public SubscriptionReadyFlyweightV1 streamId(final int streamId)
     {
-        buffer.putInt(STREAM_ID_OFFSET, streamId);
+        buffer.putInt(offset + STREAM_ID_OFFSET, streamId);
 
         return this;
     }

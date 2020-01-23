@@ -287,6 +287,26 @@ class DriverEventDissectorTest
     }
 
     @ParameterizedTest
+    @EnumSource(value = DriverEventCode.class, names = {
+        "CMD_IN_ADD_PUBLICATION_V1", "CMD_IN_ADD_EXCLUSIVE_PUBLICATION_V1", "CMD_IN_ADD_SUBSCRIPTION_V1"
+    })
+    void dissectAsChannelMessageCommandPublication(final DriverEventCode eventCode)
+    {
+        internalEncodeLogHeader(buffer, 0, 10, 10, () -> 1_780_000_000L);
+        final ChannelMessageFlyweight flyweight = new ChannelMessageFlyweight();
+        flyweight.wrap(buffer, LOG_HEADER_LENGTH);
+        flyweight.channel("aeron:udp?endpoint=192.168.0.1:4000|stream-id=1042");
+        flyweight.clientId(eventCode.id());
+        flyweight.correlationId(15);
+
+        dissectAsCommand(eventCode, buffer, 0, builder);
+
+        assertEquals("[1.78] " + CONTEXT + ": " + eventCode.name() + " [10/10]: " +
+            "[" + eventCode.id() + ":15] aeron:udp?endpoint=192.168.0.1:4000|stream-id=1042",
+            builder.toString());
+    }
+
+    @ParameterizedTest
     @EnumSource(value = DriverEventCode.class, names = { "CMD_IN_ADD_SUBSCRIPTION" })
     void dissectAsCommandSubscription(final DriverEventCode eventCode)
     {
@@ -498,6 +518,24 @@ class DriverEventDissectorTest
 
         assertEquals("[1.9] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/100]: " +
             "42 " + eventCode.id(),
+            builder.toString());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = DriverEventCode.class, names = { "CMD_OUT_SUBSCRIPTION_READY_V1" })
+    void dissectAsCommandSubscriptionReadyV1(final DriverEventCode eventCode)
+    {
+        internalEncodeLogHeader(buffer, 0, eventCode.ordinal(), 100, () -> 1_900_000_000L);
+        final SubscriptionReadyFlyweightV1 flyweight = new SubscriptionReadyFlyweightV1();
+        flyweight.wrap(buffer, LOG_HEADER_LENGTH);
+        flyweight.correlationId(42);
+        flyweight.channelStatusCounterId(eventCode.id());
+        flyweight.streamId(1043);
+
+        dissectAsCommand(eventCode, buffer, 0, builder);
+
+        assertEquals("[1.9] " + CONTEXT + ": " + eventCode.name() + " [" + eventCode.ordinal() + "/100]: " +
+            "42 " + eventCode.id() + " 1043",
             builder.toString());
     }
 

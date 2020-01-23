@@ -337,6 +337,10 @@ class ClientConductor implements Agent, DriverEventsListener
             stashedUnavailableImageHandler);
         subscription.channelStatusId(statusIndicatorId);
 
+        stashedChannel = null;
+        stashedUnavailableImageHandler = null;
+        stashedAvailableImageHandler = null;
+
         resourceByRegIdMap.put(correlationId, subscription);
     }
 

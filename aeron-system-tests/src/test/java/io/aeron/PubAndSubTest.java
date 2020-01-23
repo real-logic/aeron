@@ -41,7 +41,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
 import java.nio.channels.FileChannel;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -60,10 +60,11 @@ public class PubAndSubTest
 
     private static List<Arguments> channels()
     {
-        final List<Arguments> arguments = Arrays.asList(
-            Arguments.of("Unicast UDP", "aeron:udp?endpoint=localhost:54325", false),
-            Arguments.of("Multicast UDP", "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost", false),
-            Arguments.of("IPC", IPC_URI, false));
+        final List<Arguments> arguments = new ArrayList<>();
+        arguments.add(Arguments.of("Unicast UDP", "aeron:udp?endpoint=localhost:54325", false));
+        arguments.add(Arguments.of(
+            "Multicast UDP", "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost", false));
+        arguments.add(Arguments.of("IPC", IPC_URI, false));
 
         // Stream id in uri not supported in C media driver yet.
         if (!TestMediaDriver.shouldRunCMediaDriver())

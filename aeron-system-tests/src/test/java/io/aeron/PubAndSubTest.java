@@ -41,8 +41,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
 import java.nio.channels.FileChannel;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
@@ -57,9 +58,9 @@ public class PubAndSubTest
 {
     private static final String IPC_URI = "aeron:ipc";
 
-    private static Stream<Arguments> channels()
+    private static List<Arguments> channels()
     {
-        return Stream.of(
+        return Arrays.asList(
             Arguments.of("Unicast UDP", "aeron:udp?endpoint=localhost:54325", false),
             Arguments.of("Multicast UDP", "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost", false),
             Arguments.of("IPC", IPC_URI, false),

@@ -106,6 +106,13 @@ public class ControlProtocolEvents
      */
     public static final int ADD_SUBSCRIPTION_V1 = 0x10;
 
+    /**
+     * Add an Exclusive Publication.
+     *
+     * @since 0.1.0 (Cnc)
+     */
+    public static final int ADD_EXCLUSIVE_PUBLICATION_V1 = 0x11;
+
     // Media Driver to Clients
 
     /**

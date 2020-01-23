@@ -250,7 +250,7 @@ public class Aeron implements AutoCloseable
 
     /**
      * Add a {@link Publication} for publishing messages to subscribers. The publication returned is threadsafe.
-     * This expects the the stream id to be included in the channel as a parameter.
+     * It expects that the stream id is included in the uri as a parameter.
      *
      * @param channel  for sending the messages known to the media layer.  This should include stream-id as a parameter.
      * @return a new {@link ConcurrentPublication}.
@@ -271,6 +271,19 @@ public class Aeron implements AutoCloseable
     public ExclusivePublication addExclusivePublication(final String channel, final int streamId)
     {
         return conductor.addExclusivePublication(channel, streamId);
+    }
+
+    /**
+     * Add an {@link ExclusivePublication} for publishing messages to subscribers from a single thread.  It expects
+     * that the stream id is included in the uri as a parameter.
+     *
+     * @param channel  for sending the messages known to the media layer.
+     * @return a new {@link ExclusivePublication}.
+     * @see CommonContext#STREAM_ID_PARAM_NAME
+     */
+    public ExclusivePublication addExclusivePublication(final String channel)
+    {
+        return conductor.addExclusivePublication(channel);
     }
 
     /**
@@ -295,9 +308,12 @@ public class Aeron implements AutoCloseable
      * The method will set up the {@link Subscription} to use the
      * {@link Aeron.Context#availableImageHandler(AvailableImageHandler)} and
      * {@link Aeron.Context#unavailableImageHandler(UnavailableImageHandler)} from the {@link Aeron.Context}.
+     * <p>
+     * It expects that the stream id is included in the uri as a parameter.
      *
      * @param channel  for receiving the messages known to the media layer.
      * @return the {@link Subscription} for the channel and streamId pair.
+     * @see CommonContext#STREAM_ID_PARAM_NAME
      */
     public Subscription addSubscription(final String channel)
     {
@@ -327,6 +343,32 @@ public class Aeron implements AutoCloseable
         final UnavailableImageHandler unavailableImageHandler)
     {
         return conductor.addSubscription(channel, streamId, availableImageHandler, unavailableImageHandler);
+    }
+
+
+    /**
+     * Add a new {@link Subscription} for subscribing to messages from publishers.
+     * <p>
+     * This method will override the default handlers from the {@link Aeron.Context}, i.e.
+     * {@link Aeron.Context#availableImageHandler(AvailableImageHandler)} and
+     * {@link Aeron.Context#unavailableImageHandler(UnavailableImageHandler)}. Null values are valid and will
+     * result in no action being taken.
+     * <p>
+     * It expects that the stream id is included in the uri as a parameter.
+     *
+     * @param channel                 for receiving the messages known to the media layer.
+     * @param availableImageHandler   called when {@link Image}s become available for consumption. Null is valid if no
+     *                                action is to be taken.
+     * @param unavailableImageHandler called when {@link Image}s go unavailable for consumption. Null is valid if no
+     *                                action is to be taken.
+     * @return the {@link Subscription} for the channel and streamId pair.
+     */
+    public Subscription addSubscription(
+        final String channel,
+        final AvailableImageHandler availableImageHandler,
+        final UnavailableImageHandler unavailableImageHandler)
+    {
+        return conductor.addSubscription(channel, availableImageHandler, unavailableImageHandler);
     }
 
     /**

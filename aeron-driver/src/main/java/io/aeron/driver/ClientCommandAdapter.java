@@ -90,6 +90,16 @@ class ClientCommandAdapter implements MessageHandler
                     break;
                 }
 
+                case ADD_PUBLICATION_V1:
+                {
+                    channelMessageFlyweight.wrap(buffer, index);
+                    channelMessageFlyweight.validateLength(msgTypeId, length);
+
+                    correlationId = channelMessageFlyweight.correlationId();
+                    addPublication(channelMessageFlyweight, false);
+                    break;
+                }
+
                 case REMOVE_PUBLICATION:
                 {
                     removeMsgFlyweight.wrap(buffer, index);
@@ -110,13 +120,13 @@ class ClientCommandAdapter implements MessageHandler
                     break;
                 }
 
-                case ADD_PUBLICATION_V1:
+                case ADD_EXCLUSIVE_PUBLICATION_V1:
                 {
                     channelMessageFlyweight.wrap(buffer, index);
                     channelMessageFlyweight.validateLength(msgTypeId, length);
 
                     correlationId = channelMessageFlyweight.correlationId();
-                    addPublication(channelMessageFlyweight, false);
+                    addPublication(channelMessageFlyweight, true);
                     break;
                 }
 
@@ -145,16 +155,6 @@ class ClientCommandAdapter implements MessageHandler
                     break;
                 }
 
-                case REMOVE_SUBSCRIPTION:
-                {
-                    removeMsgFlyweight.wrap(buffer, index);
-                    removeMsgFlyweight.validateLength(msgTypeId, length);
-
-                    correlationId = removeMsgFlyweight.correlationId();
-                    conductor.onRemoveSubscription(removeMsgFlyweight.registrationId(), correlationId);
-                    break;
-                }
-
                 case ADD_SUBSCRIPTION_V1:
                 {
                     channelMessageFlyweight.wrap(buffer, index);
@@ -178,6 +178,16 @@ class ClientCommandAdapter implements MessageHandler
                     }
                     break;
 
+                }
+
+                case REMOVE_SUBSCRIPTION:
+                {
+                    removeMsgFlyweight.wrap(buffer, index);
+                    removeMsgFlyweight.validateLength(msgTypeId, length);
+
+                    correlationId = removeMsgFlyweight.correlationId();
+                    conductor.onRemoveSubscription(removeMsgFlyweight.registrationId(), correlationId);
+                    break;
                 }
 
                 case ADD_DESTINATION:

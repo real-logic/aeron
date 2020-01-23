@@ -233,7 +233,7 @@ public class DriverConductorUriOnlyTest
             "|term-id=" + termId +
             "|term-offset=" + termOffset;
 
-        driverProxy.addExclusivePublication(CHANNEL_4000 + params, STREAM_ID_1);
+        addExclusivePublication(driverProxy, CHANNEL_4000 + params, STREAM_ID_1);
 
         driverConductor.doWork();
 
@@ -266,7 +266,7 @@ public class DriverConductorUriOnlyTest
             "|term-id=" + termId +
             "|term-offset=" + termOffset;
 
-        driverProxy.addExclusivePublication(CHANNEL_IPC + params, STREAM_ID_1);
+        addExclusivePublication(driverProxy, CHANNEL_IPC + params, STREAM_ID_1);
 
         driverConductor.doWork();
 
@@ -297,26 +297,11 @@ public class DriverConductorUriOnlyTest
         assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000)));
     }
 
-    @Test
-    public void shouldNotAccidentallySendNetworkSubscriptionReadyV1ToAddSubscriptionV0()
+    @ParameterizedTest
+    @ValueSource(strings = {CHANNEL_4000, CHANNEL_IPC})
+    public void shouldNotAccidentallySendSubscriptionReadyV1ToAddSubscriptionV0(final String uri)
     {
-        final String channelWithStream = new ChannelUriStringBuilder(CHANNEL_4000).streamId(STREAM_ID_1).build();
-        final long id = driverProxy.addSubscription(channelWithStream, STREAM_ID_1);
-
-        driverConductor.doWork();
-
-        verify(receiverProxy).registerReceiveChannelEndpoint(any());
-        verify(receiverProxy).addSubscription(any(), eq(STREAM_ID_1));
-        verify(mockClientProxy).onSubscriptionReady(eq(id), anyInt());
-        verify(mockClientProxy, never()).onSubscriptionReady(eq(id), anyInt(), anyInt());
-
-        assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000)));
-    }
-
-    @Test
-    public void shouldNotAccidentallySendIpcSubscriptionReadyV1ToAddSubscriptionV0()
-    {
-        final String channelWithStream = new ChannelUriStringBuilder(CHANNEL_IPC).streamId(STREAM_ID_1).build();
+        final String channelWithStream = new ChannelUriStringBuilder(uri).streamId(STREAM_ID_1).build();
         final long id = driverProxy.addSubscription(channelWithStream, STREAM_ID_1);
 
         driverConductor.doWork();
@@ -1442,7 +1427,7 @@ public class DriverConductorUriOnlyTest
     {
         final int sessionId = 4096;
         final String sessionIdParam = "|" + CommonContext.SESSION_ID_PARAM_NAME + "=" + sessionId;
-        driverProxy.addExclusivePublication(CHANNEL_4000 + sessionIdParam, STREAM_ID_1);
+        addExclusivePublication(driverProxy, CHANNEL_4000 + sessionIdParam, STREAM_ID_1);
 
         driverConductor.doWork();
 
@@ -1481,7 +1466,7 @@ public class DriverConductorUriOnlyTest
 
         final int sessionId = argumentCaptor.getValue().sessionId();
         final String sessionIdParam = "|" + CommonContext.SESSION_ID_PARAM_NAME + "=" + (sessionId + 1);
-        driverProxy.addExclusivePublication(CHANNEL_4000 + sessionIdParam, STREAM_ID_1);
+        addExclusivePublication(driverProxy, CHANNEL_4000 + sessionIdParam, STREAM_ID_1);
         driverConductor.doWork();
 
         verify(mockClientProxy).onPublicationReady(
@@ -1520,7 +1505,7 @@ public class DriverConductorUriOnlyTest
 
         final String sessionIdParam =
             "|" + CommonContext.SESSION_ID_PARAM_NAME + "=" + argumentCaptor.getValue().sessionId();
-        final long correlationId = driverProxy.addExclusivePublication(CHANNEL_4000 + sessionIdParam, STREAM_ID_1);
+        final long correlationId = addExclusivePublication(driverProxy, CHANNEL_4000 + sessionIdParam, STREAM_ID_1);
         driverConductor.doWork();
 
         verify(mockClientProxy).onError(eq(correlationId), eq(GENERIC_ERROR), anyString());
@@ -1814,4 +1799,11 @@ public class DriverConductorUriOnlyTest
         final String channelWithStream = new ChannelUriStringBuilder(channel).streamId(streamId).build();
         return driverProxy.addPublication(channelWithStream);
     }
+
+    private static long addExclusivePublication(final DriverProxy driverProxy, final String channel, final int streamId)
+    {
+        final String channelWithStream = new ChannelUriStringBuilder(channel).streamId(streamId).build();
+        return driverProxy.addExclusivePublication(channelWithStream);
+    }
+
 }

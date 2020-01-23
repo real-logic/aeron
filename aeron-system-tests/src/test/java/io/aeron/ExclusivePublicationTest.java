@@ -24,6 +24,7 @@ import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.nio.ByteBuffer;
@@ -36,12 +37,15 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class ExclusivePublicationTest
 {
-    private static List<String> channels()
+    private static List<Arguments> channels()
     {
         return asList(
-            "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost",
-            "aeron:udp?endpoint=localhost:24325",
-            CommonContext.IPC_CHANNEL);
+            Arguments.of("aeron:udp?endpoint=224.20.30.39:54326|interface=localhost", false),
+            Arguments.of("aeron:udp?endpoint=localhost:24325", false),
+            Arguments.of(CommonContext.IPC_CHANNEL, false),
+            Arguments.of("aeron:udp?endpoint=224.20.30.39:54326|interface=localhost", true),
+            Arguments.of("aeron:udp?endpoint=localhost:24325", true),
+            Arguments.of(CommonContext.IPC_CHANNEL, true));
     }
 
     private static final int STREAM_ID = 1007;
@@ -66,13 +70,13 @@ public class ExclusivePublicationTest
 
     @ParameterizedTest
     @MethodSource("channels")
-    public void shouldPublishFromIndependentExclusivePublications(final String channel)
+    public void shouldPublishFromIndependentExclusivePublications(final String channel, final boolean streamIdInUri)
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
-                ExclusivePublication publicationOne = aeron.addExclusivePublication(channel, STREAM_ID);
-                ExclusivePublication publicationTwo = aeron.addExclusivePublication(channel, STREAM_ID))
+                ExclusivePublication publicationOne = addExclusivePublication(streamIdInUri, channel, STREAM_ID);
+                ExclusivePublication publicationTwo = addExclusivePublication(streamIdInUri, channel, STREAM_ID))
             {
                 while (subscription.imageCount() < 2)
                 {
@@ -113,6 +117,22 @@ public class ExclusivePublicationTest
                 assertEquals(expectedNumberOfFragments, messageCount.value);
             }
         });
+    }
+
+    public ExclusivePublication addExclusivePublication(
+        final boolean streamIdInUri,
+        final String channel,
+        final int streamId)
+    {
+        if (streamIdInUri)
+        {
+            final String uriWithStreamId = new ChannelUriStringBuilder(channel).streamId(streamId).build();
+            return aeron.addExclusivePublication(uriWithStreamId);
+        }
+        else
+        {
+            return aeron.addExclusivePublication(channel, streamId);
+        }
     }
 
     private static void publishMessage(final UnsafeBuffer srcBuffer, final ExclusivePublication publication)

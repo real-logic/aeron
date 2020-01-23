@@ -87,6 +87,21 @@ public class DriverProxy
         return correlationId;
     }
 
+    public long addPublication(final String channel)
+    {
+        final long correlationId = toDriverCommandBuffer.nextCorrelationId();
+
+        channelMessage.correlationId(correlationId);
+        channelMessage.channel(channel);
+
+        if (!toDriverCommandBuffer.write(ADD_PUBLICATION_V1, buffer, 0, channelMessage.length()))
+        {
+            throw new AeronException("could not write add exclusive publication command");
+        }
+
+        return correlationId;
+    }
+
     public long addExclusivePublication(final String channel, final int streamId)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
@@ -104,14 +119,14 @@ public class DriverProxy
         return correlationId;
     }
 
-    public long addPublication(final String channel)
+    public long addExclusivePublication(final String channel)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
 
         channelMessage.correlationId(correlationId);
         channelMessage.channel(channel);
 
-        if (!toDriverCommandBuffer.write(ADD_PUBLICATION_V1, buffer, 0, channelMessage.length()))
+        if (!toDriverCommandBuffer.write(ADD_EXCLUSIVE_PUBLICATION_V1, buffer, 0, channelMessage.length()))
         {
             throw new AeronException("could not write add exclusive publication command");
         }

@@ -148,6 +148,9 @@ And to build the tutorial (if you haven't already)
 ./gradlew asciidoctor
 ----
 
+This will create an HTML formatted version of the tutorial at
+<AERON_HOME>/aeron-samples/build/asciidoc/html5/ClusterTutorial.html
+
 This tutorial will include snippets of code from the working example.  The core scripts and classes for this tutorial
 are:
 
@@ -174,7 +177,7 @@ this in a real world application.  You would probably want to have greater separ
 libraries to handle functionality like serialisation.
 
 We must define the link between the application logic and Aeron Cluster.  This is done implementing the
-`ClusteredService` interface.  The `ClusterService` interface defines a number of callbacks that inform us of messages
+`ClusteredService` interface.  The `ClusteredService` interface defines a number of callbacks that inform us of messages
 and lifecycle events as they occur as well as providing some of the hooks that our service can use to interact with the
 cluster (e.g. sending response messages and taking snapshots).
 

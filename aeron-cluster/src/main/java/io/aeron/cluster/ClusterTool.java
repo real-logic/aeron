@@ -407,9 +407,7 @@ public class ClusterTool
     }
 
     public static boolean queryClusterMembers(
-        final ClusterMarkFile markFile,
-        final long timeoutMs,
-        final ClusterMembership clusterMembership)
+        final ClusterMarkFile markFile, final long timeoutMs, final ClusterMembership clusterMembership)
     {
         return queryClusterMembers(markFile.loadControlProperties(), timeoutMs, clusterMembership);
     }
@@ -465,8 +463,7 @@ public class ClusterTool
             }
         };
 
-        try (
-            Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(controlProperties.aeronDirectoryName));
+        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(controlProperties.aeronDirectoryName));
             ConsensusModuleProxy consensusModuleProxy = new ConsensusModuleProxy(aeron.addPublication(
                 controlProperties.serviceControlChannel, controlProperties.toConsensusModuleStreamId));
             MemberServiceAdapter memberServiceAdapter = new MemberServiceAdapter(aeron.addSubscription(
@@ -548,13 +545,14 @@ public class ClusterTool
 
         try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(aeronDirectoryName)))
         {
-            aeron.countersReader().forEach((counterId, typeId, keyBuffer, label) ->
-            {
-                if (ClusterBackup.QUERY_DEADLINE_TYPE_ID == typeId)
+            aeron.countersReader().forEach(
+                (counterId, typeId, keyBuffer, label) ->
                 {
-                    nextQueryMs.value = aeron.countersReader().getCounterValue(counterId);
-                }
-            });
+                    if (ClusterBackup.QUERY_DEADLINE_TYPE_ID == typeId)
+                    {
+                        nextQueryMs.value = aeron.countersReader().getCounterValue(counterId);
+                    }
+                });
         }
 
         return nextQueryMs.value;
@@ -582,17 +580,18 @@ public class ClusterTool
         {
             final CountersReader countersReader = aeron.countersReader();
 
-            countersReader.forEach((counterId, typeId, keyBuffer, label) ->
-            {
-                if (ClusterBackup.QUERY_DEADLINE_TYPE_ID == typeId)
+            countersReader.forEach(
+                (counterId, typeId, keyBuffer, label) ->
                 {
-                    final AtomicCounter atomicCounter = new AtomicCounter(
-                        countersReader.valuesBuffer(), counterId, null);
+                    if (ClusterBackup.QUERY_DEADLINE_TYPE_ID == typeId)
+                    {
+                        final AtomicCounter atomicCounter = new AtomicCounter(
+                            countersReader.valuesBuffer(), counterId, null);
 
-                    atomicCounter.setOrdered(timeMs);
-                    result.value = true;
-                }
-            });
+                        atomicCounter.setOrdered(timeMs);
+                        result.value = true;
+                    }
+                });
         }
 
         return result.value;
@@ -611,35 +610,55 @@ public class ClusterTool
     public static boolean snapshot(final File clusterDir, final PrintStream out)
     {
         return toggleClusterState(
-            out, clusterDir, ConsensusModule.State.ACTIVE, ClusterControl.ToggleState.SNAPSHOT, true,
+            out,
+            clusterDir,
+            ConsensusModule.State.ACTIVE,
+            ClusterControl.ToggleState.SNAPSHOT,
+            true,
             TimeUnit.SECONDS.toMillis(30));
     }
 
     public static boolean suspend(final File clusterDir, final PrintStream out)
     {
         return toggleClusterState(
-            out, clusterDir, ConsensusModule.State.ACTIVE, ClusterControl.ToggleState.SUSPEND, true,
+            out,
+            clusterDir,
+            ConsensusModule.State.ACTIVE,
+            ClusterControl.ToggleState.SUSPEND,
+            true,
             TimeUnit.SECONDS.toMillis(1));
     }
 
     public static boolean resume(final File clusterDir, final PrintStream out)
     {
         return toggleClusterState(
-            out, clusterDir, ConsensusModule.State.SUSPENDED, ClusterControl.ToggleState.RESUME, true,
+            out,
+            clusterDir,
+            ConsensusModule.State.SUSPENDED,
+            ClusterControl.ToggleState.RESUME,
+            true,
             TimeUnit.SECONDS.toMillis(1));
     }
 
     public static boolean shutdown(final File clusterDir, final PrintStream out)
     {
         return toggleClusterState(
-            out, clusterDir, ConsensusModule.State.ACTIVE, ClusterControl.ToggleState.SHUTDOWN, false,
+            out,
+            clusterDir,
+            ConsensusModule.State.ACTIVE,
+            ClusterControl.ToggleState.SHUTDOWN,
+            false,
             TimeUnit.SECONDS.toMillis(1));
     }
 
     public static boolean abort(final File clusterDir, final PrintStream out)
     {
         return toggleClusterState(
-            out, clusterDir, ConsensusModule.State.ACTIVE, ClusterControl.ToggleState.ABORT, false,
+            out,
+            clusterDir,
+            ConsensusModule.State.ACTIVE,
+            ClusterControl.ToggleState.ABORT,
+            false,
             TimeUnit.SECONDS.toMillis(1));
     }
 
@@ -750,9 +769,9 @@ public class ClusterTool
 
     static class ClusterMembership
     {
-        long currentTimeNs = NULL_VALUE;
-        int leaderMemberId = NULL_VALUE;
         int memberId = NULL_VALUE;
+        int leaderMemberId = NULL_VALUE;
+        long currentTimeNs = NULL_VALUE;
         String activeMembersStr = null;
         String passiveMembersStr = null;
         List<ClusterMember> activeMembers = null;

@@ -24,13 +24,12 @@ public class ClusterNodeControlProperties
     public final int toConsensusModuleStreamId;
 
     public ClusterNodeControlProperties(
+        final int toServiceStreamId,
+        final int toConsensusModuleStreamId,
         final String aeronDirectoryName,
         final String archiveChannel,
-        final String serviceControlChannel,
-        final int toServiceStreamId,
-        final int toConsensusModuleStreamId)
+        final String serviceControlChannel)
     {
-
         this.aeronDirectoryName = aeronDirectoryName;
         this.archiveChannel = archiveChannel;
         this.serviceControlChannel = serviceControlChannel;

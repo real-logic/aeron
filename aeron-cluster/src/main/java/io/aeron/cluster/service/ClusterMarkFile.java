@@ -306,13 +306,20 @@ public class ClusterMarkFile implements AutoCloseable
 
     public ClusterNodeControlProperties loadControlProperties()
     {
-        final String aeronDirectoryName = decoder().aeronDirectory();
-        final String archiveChannel = decoder().archiveChannel();
-        final String serviceControlChannel = decoder().serviceControlChannel();
-        final int toServiceStreamId = decoder().serviceStreamId();
-        final int toConsensusModuleStreamId = decoder().consensusModuleStreamId();
+        final MarkFileHeaderDecoder headerDecoder = new MarkFileHeaderDecoder();
+        headerDecoder.wrap(
+            this.headerDecoder.buffer(),
+            this.headerDecoder.initialOffset(),
+            MarkFileHeaderDecoder.BLOCK_LENGTH,
+            MarkFileHeaderDecoder.SCHEMA_VERSION);
+
+        final int toServiceStreamId = headerDecoder.serviceStreamId();
+        final int toConsensusModuleStreamId = headerDecoder.consensusModuleStreamId();
+        final String aeronDirectoryName = headerDecoder.aeronDirectory();
+        final String archiveChannel = headerDecoder.archiveChannel();
+        final String serviceControlChannel = headerDecoder.serviceControlChannel();
 
         return new ClusterNodeControlProperties(
-            aeronDirectoryName, archiveChannel, serviceControlChannel, toServiceStreamId, toConsensusModuleStreamId);
+            toServiceStreamId, toConsensusModuleStreamId, aeronDirectoryName, archiveChannel, serviceControlChannel);
     }
 }

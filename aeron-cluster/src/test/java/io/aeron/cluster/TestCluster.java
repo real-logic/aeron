@@ -648,11 +648,11 @@ public class TestCluster implements AutoCloseable
     {
         final ArrayList<TestNode> followers = new ArrayList<>();
 
-        for (int i = 0, length = nodes.length; i < length; i++)
+        for (final TestNode node : nodes)
         {
-            if (null != nodes[i] && !nodes[i].isClosed() && nodes[i].isFollower())
+            if (null != node && !node.isClosed() && node.isFollower())
             {
-                followers.add(nodes[i]);
+                followers.add(node);
             }
         }
 
@@ -882,7 +882,7 @@ public class TestCluster implements AutoCloseable
     {
         final RecordingLog recordingLog = new RecordingLog(node.consensusModule().context().clusterDir());
         return recordingLog.entries().stream()
-            .filter(e -> RecordingLog.ENTRY_TYPE_SNAPSHOT == e.type &&
+            .filter((e) -> RecordingLog.ENTRY_TYPE_SNAPSHOT == e.type &&
                 ConsensusModule.Configuration.SERVICE_ID == e.serviceId)
             .count();
     }

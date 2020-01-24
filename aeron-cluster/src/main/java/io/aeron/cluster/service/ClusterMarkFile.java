@@ -303,4 +303,16 @@ public class ClusterMarkFile implements AutoCloseable
     {
         return SERVICE_FILENAME_PREFIX + serviceId + FILE_EXTENSION;
     }
+
+    public ClusterNodeControlProperties loadControlProperties()
+    {
+        final String aeronDirectoryName = decoder().aeronDirectory();
+        final String archiveChannel = decoder().archiveChannel();
+        final String serviceControlChannel = decoder().serviceControlChannel();
+        final int toServiceStreamId = decoder().serviceStreamId();
+        final int toConsensusModuleStreamId = decoder().consensusModuleStreamId();
+
+        return new ClusterNodeControlProperties(
+            aeronDirectoryName, archiveChannel, serviceControlChannel, toServiceStreamId, toConsensusModuleStreamId);
+    }
 }

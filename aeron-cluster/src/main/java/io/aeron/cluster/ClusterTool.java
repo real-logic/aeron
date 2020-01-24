@@ -662,6 +662,7 @@ public class ClusterTool
             TimeUnit.SECONDS.toMillis(1));
     }
 
+    @SuppressWarnings("MethodLength")
     public static boolean toggleClusterState(
         final PrintStream out,
         final File clusterDir,

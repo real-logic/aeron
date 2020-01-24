@@ -878,6 +878,15 @@ public class TestCluster implements AutoCloseable
         }
     }
 
+    public long countRecordingLogSnapshots(final TestNode node)
+    {
+        final RecordingLog recordingLog = new RecordingLog(node.consensusModule().context().clusterDir());
+        return recordingLog.entries().stream()
+            .filter(e -> RecordingLog.ENTRY_TYPE_SNAPSHOT == e.type &&
+                ConsensusModule.Configuration.SERVICE_ID == e.serviceId)
+            .count();
+    }
+
     public void printRecordingLogEntries(final int nodeId)
     {
         final TestNode node = node(nodeId);

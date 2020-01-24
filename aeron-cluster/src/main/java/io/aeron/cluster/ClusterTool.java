@@ -62,6 +62,11 @@ import static org.agrona.SystemUtil.getDurationInNanos;
  *              remove-passive: [memberId] requests removal of passive member specified in memberId.
  *                backup-query: [delay] schedules (or displays) time of next backup query for cluster backup.
  *  invalidate-latest-snapshot: Mark the latest snapshot as invalid so previous is loaded.
+ *                    snapshot: Trigger a snapshot on the leader.
+ *                     suspend: Suspend reading from the ingress channel.
+ *                      resume: Resume reading from the ingress channel.
+ *                    shutdown: Do an orderly stop of the cluster with a snapshot.
+ *                       abort: Stop the cluster without a snapshot.
  * </pre>
  */
 public class ClusterTool
@@ -157,28 +162,23 @@ public class ClusterTool
                 break;
 
             case "snapshot":
-                toggleClusterState(
-                    System.out, clusterDir, ConsensusModule.State.ACTIVE, ClusterControl.ToggleState.SNAPSHOT, true);
+                snapshot(clusterDir, System.out);
                 break;
 
             case "suspend":
-                toggleClusterState(
-                    System.out, clusterDir, ConsensusModule.State.ACTIVE, ClusterControl.ToggleState.SUSPEND, true);
+                suspend(clusterDir, System.out);
                 break;
 
             case "resume":
-                toggleClusterState(
-                    System.out, clusterDir, ConsensusModule.State.SUSPENDED, ClusterControl.ToggleState.RESUME, true);
+                resume(clusterDir, System.out);
                 break;
 
             case "shutdown":
-                toggleClusterState(
-                    System.out, clusterDir, ConsensusModule.State.ACTIVE, ClusterControl.ToggleState.SHUTDOWN, false);
+                shutdown(clusterDir, System.out);
                 break;
 
             case "abort":
-                toggleClusterState(
-                    System.out, clusterDir, ConsensusModule.State.ACTIVE, ClusterControl.ToggleState.ABORT, false);
+                abort(clusterDir, System.out);
                 break;
 
             default:
@@ -599,12 +599,48 @@ public class ClusterTool
         }
     }
 
+    public static boolean snapshot(final File clusterDir, final PrintStream out)
+    {
+        return toggleClusterState(
+            out, clusterDir, ConsensusModule.State.ACTIVE, ClusterControl.ToggleState.SNAPSHOT, true,
+            TimeUnit.SECONDS.toMillis(30));
+    }
+
+    public static boolean suspend(final File clusterDir, final PrintStream out)
+    {
+        return toggleClusterState(
+            out, clusterDir, ConsensusModule.State.ACTIVE, ClusterControl.ToggleState.SUSPEND, true,
+            TimeUnit.SECONDS.toMillis(1));
+    }
+
+    public static boolean resume(final File clusterDir, final PrintStream out)
+    {
+        return toggleClusterState(
+            out, clusterDir, ConsensusModule.State.SUSPENDED, ClusterControl.ToggleState.RESUME, true,
+            TimeUnit.SECONDS.toMillis(1));
+    }
+
+    public static boolean shutdown(final File clusterDir, final PrintStream out)
+    {
+        return toggleClusterState(
+            out, clusterDir, ConsensusModule.State.ACTIVE, ClusterControl.ToggleState.SHUTDOWN, false,
+            TimeUnit.SECONDS.toMillis(1));
+    }
+
+    public static boolean abort(final File clusterDir, final PrintStream out)
+    {
+        return toggleClusterState(
+            out, clusterDir, ConsensusModule.State.ACTIVE, ClusterControl.ToggleState.ABORT, false,
+            TimeUnit.SECONDS.toMillis(1));
+    }
+
     public static boolean toggleClusterState(
         final PrintStream out,
         final File clusterDir,
         final ConsensusModule.State expectedState,
         final ClusterControl.ToggleState toggleState,
-        final boolean waitForToggleToComplete)
+        final boolean waitForToggleToComplete,
+        final long defaultTimeoutMs)
     {
         if (!markFileExists(clusterDir) && TIMEOUT_MS <= 0)
         {
@@ -619,9 +655,9 @@ public class ClusterTool
         }
 
         final ClusterMembership clusterMembership = new ClusterMembership();
-        final long timeoutMs = Math.max(TimeUnit.SECONDS.toMillis(1), TIMEOUT_MS);
+        final long queryTimeoutMs = Math.max(TimeUnit.SECONDS.toMillis(1), TIMEOUT_MS);
 
-        if (!queryClusterMembers(clusterNodeControlProperties, timeoutMs, clusterMembership))
+        if (!queryClusterMembers(clusterNodeControlProperties, queryTimeoutMs, clusterMembership))
         {
             out.println("Timed out querying cluster.");
             return false;
@@ -676,12 +712,14 @@ public class ClusterTool
 
         if (waitForToggleToComplete)
         {
+            final long toggleTimeoutMs = Math.max(defaultTimeoutMs, TIMEOUT_MS);
+
             final long startTime = System.currentTimeMillis();
             ClusterControl.ToggleState currentState;
             do
             {
                 currentState = ClusterControl.ToggleState.get(controlToggle);
-                if ((System.currentTimeMillis() - startTime) > timeoutMs)
+                if ((System.currentTimeMillis() - startTime) > toggleTimeoutMs)
                 {
                     break;
                 }
@@ -692,7 +730,7 @@ public class ClusterTool
             if (currentState != ClusterControl.ToggleState.NEUTRAL)
             {
                 out.println(
-                    prefix + "Timed out after " + timeoutMs + "ms waiting for " + toggleState + " to complete.");
+                    prefix + "Timed out after " + toggleTimeoutMs + "ms waiting for " + toggleState + " to complete.");
             }
         }
 
@@ -772,7 +810,7 @@ public class ClusterTool
     {
         out.println("Usage: <cluster-dir> <command> [options]");
         out.println(
-            "                    describe: prints out all descriptors in the file.");
+            "                   describe: prints out all descriptors in the file.");
         out.println(
             "                        pid: prints PID of cluster component.");
         out.println(

@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.test.SlowTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -31,6 +32,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.*;
 
+@SlowTest
 class ClusterToolTest
 {
     private final CapturingPrintStream capturingPrintStream = new CapturingPrintStream();

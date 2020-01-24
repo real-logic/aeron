@@ -126,7 +126,6 @@ public class PreferredMulticastFlowControl implements FlowControl
      */
     public long onIdle(final long timeNs, final long senderLimit, final long senderPosition, final boolean isEos)
     {
-        long minPosition = Long.MAX_VALUE;
         long minLimitPosition = Long.MAX_VALUE;
         int removed = 0;
 
@@ -143,7 +142,6 @@ public class PreferredMulticastFlowControl implements FlowControl
             }
             else
             {
-                minPosition = Math.min(minPosition, receiver.lastPosition);
                 minLimitPosition = Math.min(minLimitPosition, receiver.lastPositionPlusWindow);
             }
         }

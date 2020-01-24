@@ -162,28 +162,37 @@ public class ClusterTool
                 break;
 
             case "snapshot":
-                snapshot(clusterDir, System.out);
+                exitWithErrorOnFailure(snapshot(clusterDir, System.out));
                 break;
 
             case "suspend":
-                suspend(clusterDir, System.out);
+                exitWithErrorOnFailure(suspend(clusterDir, System.out));
                 break;
 
             case "resume":
-                resume(clusterDir, System.out);
+                exitWithErrorOnFailure(resume(clusterDir, System.out));
                 break;
 
             case "shutdown":
-                shutdown(clusterDir, System.out);
+                exitWithErrorOnFailure(shutdown(clusterDir, System.out));
                 break;
 
             case "abort":
-                abort(clusterDir, System.out);
+                exitWithErrorOnFailure(abort(clusterDir, System.out));
                 break;
 
             default:
                 System.out.println("Unknown command: " + args[1]);
                 printHelp(System.out);
+                System.exit(-1);
+        }
+    }
+
+    private static void exitWithErrorOnFailure(final boolean success)
+    {
+        if (!success)
+        {
+            System.exit(-1);
         }
     }
 

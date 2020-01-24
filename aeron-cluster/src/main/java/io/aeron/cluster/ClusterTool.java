@@ -709,62 +709,70 @@ public class ClusterTool
         }
 
         final CountersReader countersReader = ClusterControl.mapCounters(cncFile);
-        final ConsensusModule.State consensusModuleState = ConsensusModule.findState(countersReader);
-
-        if (null == consensusModuleState)
+        try
         {
-            out.println(prefix + "Unable to resolve state of consensus module.");
-            return false;
-        }
+            final ConsensusModule.State consensusModuleState = ConsensusModule.findState(countersReader);
 
-        if (expectedState != consensusModuleState)
-        {
-            out.println(prefix + "Unable to " + toggleState + " as the state of the consensus module is " +
-                consensusModuleState + ", but needs to be " + expectedState);
-            return false;
-        }
-
-        final AtomicCounter controlToggle = ClusterControl.findControlToggle(countersReader);
-        if (null == controlToggle)
-        {
-            out.println(prefix + "Failed to find control toggle");
-            return false;
-        }
-
-        if (!toggleState.toggle(controlToggle))
-        {
-            out.println(prefix + "Failed to apply " + toggleState + ", current toggle value = " +
-                ClusterControl.ToggleState.get(controlToggle));
-            return false;
-        }
-
-        if (waitForToggleToComplete)
-        {
-            final long toggleTimeoutMs = Math.max(defaultTimeoutMs, TIMEOUT_MS);
-
-            final long startTime = System.currentTimeMillis();
-            ClusterControl.ToggleState currentState;
-            do
+            if (null == consensusModuleState)
             {
-                currentState = ClusterControl.ToggleState.get(controlToggle);
-                if ((System.currentTimeMillis() - startTime) > toggleTimeoutMs)
+                out.println(prefix + "Unable to resolve state of consensus module.");
+                return false;
+            }
+
+            if (expectedState != consensusModuleState)
+            {
+                out.println(prefix + "Unable to " + toggleState + " as the state of the consensus module is " +
+                    consensusModuleState + ", but needs to be " + expectedState);
+                return false;
+            }
+
+            final AtomicCounter controlToggle = ClusterControl.findControlToggle(countersReader);
+            if (null == controlToggle)
+            {
+                out.println(prefix + "Failed to find control toggle");
+                return false;
+            }
+
+            if (!toggleState.toggle(controlToggle))
+            {
+                out.println(prefix + "Failed to apply " + toggleState + ", current toggle value = " +
+                    ClusterControl.ToggleState.get(controlToggle));
+                return false;
+            }
+
+            if (waitForToggleToComplete)
+            {
+                final long toggleTimeoutMs = Math.max(defaultTimeoutMs, TIMEOUT_MS);
+
+                final long startTime = System.currentTimeMillis();
+                ClusterControl.ToggleState currentState;
+                do
                 {
-                    break;
+                    currentState = ClusterControl.ToggleState.get(controlToggle);
+                    if ((System.currentTimeMillis() - startTime) > toggleTimeoutMs)
+                    {
+                        break;
+                    }
+                    Thread.yield();
                 }
-                Thread.yield();
-            }
-            while (currentState != ClusterControl.ToggleState.NEUTRAL);
+                while (currentState != ClusterControl.ToggleState.NEUTRAL);
 
-            if (currentState != ClusterControl.ToggleState.NEUTRAL)
-            {
-                out.println(
-                    prefix + "Timed out after " + toggleTimeoutMs + "ms waiting for " + toggleState + " to complete.");
+                if (currentState != ClusterControl.ToggleState.NEUTRAL)
+                {
+                    out.println(prefix + "Timed out after " + toggleTimeoutMs + "ms waiting for " +
+                        toggleState + " to complete.");
+                }
             }
+
+            out.println(prefix + toggleState + " applied successfully");
+
+            return true;
+
         }
-
-        out.println(prefix + toggleState + " applied successfully");
-
-        return true;
+        finally
+        {
+            IoUtil.unmap(countersReader.valuesBuffer().byteBuffer());
+        }
     }
 
     static class ClusterMembership

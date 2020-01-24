@@ -160,7 +160,7 @@ public class ConsensusModule implements AutoCloseable
     }
 
     /**
-     * Get the current state of the ConsensusModule
+     * Get the current state of the {@link ConsensusModule}.
      *
      * @param counters to search for the control toggle.
      * @return the state of the ConsensusModule or null if not found.
@@ -183,7 +183,6 @@ public class ConsensusModule implements AutoCloseable
 
         return null;
     }
-
 
     /**
      * Launch an {@link ConsensusModule} with that communicates with an out of process {@link io.aeron.archive.Archive}

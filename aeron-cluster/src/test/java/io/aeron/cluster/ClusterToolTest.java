@@ -20,7 +20,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
@@ -133,7 +132,7 @@ class ClusterToolTest
     }
 
     @Test
-    void failIfMarkFileUnavailable(final @TempDir Path emptyClusterDir) throws IOException
+    void failIfMarkFileUnavailable(final @TempDir Path emptyClusterDir)
     {
         assertFalse(ClusterTool.snapshot(emptyClusterDir.toFile(), capturingPrintStream.resetAndGetPrintStream()));
         assertThat(
@@ -141,18 +140,18 @@ class ClusterToolTest
             containsString("cluster-mark.dat does not exist"));
     }
 
-    public static class CapturingPrintStream
+    static class CapturingPrintStream
     {
         private final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         private final PrintStream printStream = new PrintStream(byteArrayOutputStream);
 
-        public PrintStream resetAndGetPrintStream()
+        PrintStream resetAndGetPrintStream()
         {
             byteArrayOutputStream.reset();
             return printStream;
         }
 
-        public String flushAndGetContent(final Charset charset)
+        String flushAndGetContent(final Charset charset)
         {
             printStream.flush();
             return new String(byteArrayOutputStream.toByteArray(), charset);

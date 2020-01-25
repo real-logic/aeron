@@ -948,10 +948,10 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     }
 
     *id_as_uint64 = (struct uuid_as_uint64 *)&id;
-    _context->receiver_id = id_as_uint64->high ^ id_as_uint64->low;
+    _context->next_receiver_id = id_as_uint64->high ^ id_as_uint64->low;
 #else
     /* pure random id */
-    _context->receiver_id = aeron_randomised_int32();
+    _context->next_receiver_id = aeron_randomised_int32();
 #endif
 
     *context = _context;

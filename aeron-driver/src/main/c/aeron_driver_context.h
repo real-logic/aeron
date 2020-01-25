@@ -191,7 +191,7 @@ typedef struct aeron_driver_context_stct
     aeron_udp_channel_interceptor_bindings_t *udp_channel_outgoing_interceptor_bindings;
     aeron_udp_channel_interceptor_bindings_t *udp_channel_incoming_interceptor_bindings;
 
-    int64_t receiver_id;
+    int64_t next_receiver_id;
 
     aeron_feedback_delay_generator_state_t unicast_delay_feedback_generator;
     aeron_feedback_delay_generator_state_t multicast_delay_feedback_generator;

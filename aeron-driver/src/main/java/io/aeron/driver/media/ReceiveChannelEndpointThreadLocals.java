@@ -41,7 +41,7 @@ public class ReceiveChannelEndpointThreadLocals
     private final NakFlyweight nakFlyweight;
     private final ByteBuffer rttMeasurementBuffer;
     private final RttMeasurementFlyweight rttMeasurementFlyweight;
-    private final long receiverId;
+    private long nextReceiverId;
 
     public ReceiveChannelEndpointThreadLocals(final MediaDriver.Context context)
     {
@@ -53,7 +53,7 @@ public class ReceiveChannelEndpointThreadLocals
             BitUtil.align(RttMeasurementFlyweight.HEADER_LENGTH, CACHE_LINE_LENGTH);
 
         final UUID uuid = UUID.randomUUID();
-        receiverId = uuid.getMostSignificantBits() ^ uuid.getLeastSignificantBits();
+        nextReceiverId = uuid.getMostSignificantBits() ^ uuid.getLeastSignificantBits();
 
         final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(bufferLength, CACHE_LINE_LENGTH);
 
@@ -73,7 +73,6 @@ public class ReceiveChannelEndpointThreadLocals
 
         statusMessageFlyweight
             .applicationSpecificFeedback(applicationSpecificFeedback, 0, applicationSpecificFeedback.length)
-            .receiverId(receiverId)
             .version(HeaderFlyweight.CURRENT_VERSION)
             .headerType(HeaderFlyweight.HDR_TYPE_SM)
             .frameLength(StatusMessageFlyweight.HEADER_LENGTH + applicationSpecificFeedback.length);
@@ -84,7 +83,6 @@ public class ReceiveChannelEndpointThreadLocals
             .frameLength(NakFlyweight.HEADER_LENGTH);
 
         rttMeasurementFlyweight
-            .receiverId(receiverId)
             .version(HeaderFlyweight.CURRENT_VERSION)
             .headerType(HeaderFlyweight.HDR_TYPE_RTTM)
             .frameLength(RttMeasurementFlyweight.HEADER_LENGTH);
@@ -122,6 +120,6 @@ public class ReceiveChannelEndpointThreadLocals
 
     public long receiverId()
     {
-        return receiverId;
+        return nextReceiverId++;
     }
 }

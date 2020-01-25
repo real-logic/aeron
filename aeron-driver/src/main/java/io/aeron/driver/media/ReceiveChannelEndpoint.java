@@ -419,6 +419,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
                 .consumptionTermId(0)
                 .consumptionTermOffset(0)
                 .receiverWindowLength(0)
+                .receiverId(receiverId)
                 .flags(SEND_SETUP_FLAG);
 
             send(smBuffer, StatusMessageFlyweight.HEADER_LENGTH, transportIndex, controlAddress);
@@ -467,6 +468,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
                 .consumptionTermId(termId)
                 .consumptionTermOffset(termOffset)
                 .receiverWindowLength(windowLength)
+                .receiverId(receiverId)
                 .flags(flags);
 
             send(smBuffer, StatusMessageFlyweight.HEADER_LENGTH, controlAddresses);

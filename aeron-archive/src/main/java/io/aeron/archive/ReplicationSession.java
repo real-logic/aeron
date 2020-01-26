@@ -71,6 +71,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     private int replaySessionId;
     private int retryAttempts = RETRY_ATTEMPTS;
     private boolean isLiveAdded;
+    private final boolean isTagged;
     private final String replicationChannel;
     private final String liveDestination;
     private String replayDestination;
@@ -118,6 +119,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         this.controlSession = controlSession;
         this.actionTimeoutMs = TimeUnit.NANOSECONDS.toMillis(context.messageTimeoutNs());
 
+        this.isTagged = NULL_VALUE != channelTagId || NULL_VALUE != subscriptionTagId;
         this.channelTagId = NULL_VALUE == channelTagId ? replicationId : channelTagId;
         this.subscriptionTagId = NULL_VALUE == subscriptionTagId ? replicationId : subscriptionTagId;
 
@@ -443,19 +445,24 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     private int extend()
     {
         final ChannelUri channelUri = ChannelUri.parse(replicationChannel);
-        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder();
-
-        final String channel = builder
+        final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
             .media(channelUri)
             .alias(channelUri)
-            .tags(channelTagId + "," + subscriptionTagId)
-            .controlMode(CommonContext.MDC_CONTROL_MODE_MANUAL)
             .rejoin(false)
-            .sessionId((int)srcReplaySessionId)
-            .build();
+            .sessionId((int)srcReplaySessionId);
+
+        if (isTagged || null != liveDestination)
+        {
+            builder.tags(channelTagId + "," + subscriptionTagId)
+                .controlMode(CommonContext.MDC_CONTROL_MODE_MANUAL);
+        }
+        else
+        {
+            builder.endpoint(channelUri);
+        }
 
         recordingSubscription = conductor.extendRecording(
-            replicationId, dstRecordingId, replayStreamId, SourceLocation.REMOTE, channel, controlSession);
+            replicationId, dstRecordingId, replayStreamId, SourceLocation.REMOTE, builder.build(), controlSession);
 
         if (null == recordingSubscription)
         {
@@ -463,8 +470,12 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         }
         else
         {
-            replayDestination = builder.clear().media(channelUri).endpoint(channelUri).build();
-            recordingSubscription.asyncAddDestination(replayDestination);
+            if (isTagged || null != liveDestination)
+            {
+                replayDestination = builder.clear().media(channelUri).endpoint(channelUri).build();
+                recordingSubscription.asyncAddDestination(replayDestination);
+            }
+
             state(State.AWAIT_IMAGE);
         }
 

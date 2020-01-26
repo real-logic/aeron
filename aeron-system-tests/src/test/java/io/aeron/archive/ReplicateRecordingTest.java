@@ -222,6 +222,56 @@ public class ReplicateRecordingTest
     }
 
     @Test
+    public void shouldReplicateStoppedRecordingTwiceConcurrently()
+    {
+        assertTimeoutPreemptively(ofSeconds(10), () ->
+        {
+            final String messagePrefix = "Message-Prefix-";
+            final int messageCount = 10;
+            final long srcRecordingId;
+            final long position;
+
+            final long subscriptionId = srcAeronArchive.startRecording(LIVE_CHANNEL, LIVE_STREAM_ID, LOCAL);
+
+            try (Publication publication = srcAeron.addPublication(LIVE_CHANNEL, LIVE_STREAM_ID))
+            {
+                final CountersReader counters = srcAeron.countersReader();
+                final int counterId = awaitRecordingCounterId(counters, publication.sessionId());
+                srcRecordingId = RecordingPos.getRecordingId(counters, counterId);
+
+                offer(publication, messageCount, messagePrefix);
+                position = publication.position();
+                awaitPosition(counters, counterId, position);
+            }
+
+            srcAeronArchive.stopRecording(subscriptionId);
+
+            final MutableLong dstRecordingId = new MutableLong();
+            final MutableReference<RecordingSignal> signalRef = new MutableReference<>();
+            final RecordingSignalAdapter adapter = newRecordingSignalAdapter(signalRef, dstRecordingId);
+
+            dstAeronArchive.replicate(
+                srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
+
+            dstAeronArchive.replicate(
+                srcRecordingId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
+
+            int stopCount = 0;
+            while (stopCount < 2)
+            {
+                awaitSignal(signalRef, adapter);
+                if (signalRef.get() == RecordingSignal.STOP)
+                {
+                    stopCount++;
+                }
+            }
+
+            assertEquals(dstAeronArchive.getStopPosition(0), position);
+            assertEquals(dstAeronArchive.getStopPosition(1), position);
+        });
+    }
+
+    @Test
     public void shouldReplicateLiveWithoutMergingRecording()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->

@@ -24,7 +24,7 @@ plugins {
     id 'idea'
     id 'io.freefair.javadoc-links' version '4.1.6' apply false
     id 'com.github.johnrengelman.shadow' version '5.2.0' apply false
-    id 'biz.aQute.bnd.builder' version '4.3.1' apply false
+    id 'biz.aQute.bnd.builder' version '5.0.0' apply false
     id "com.github.ben-manes.versions" version "0.27.0"
 }
 
@@ -284,7 +284,8 @@ subprojects {
             p -> p.dependencies = p.dependencies.findAll {
                 dep -> !(dep.artifactId.contains("hamcrest") ||
                          dep.artifactId.contains("mockito") ||
-                         dep.artifactId.contains("junit"))
+                         dep.artifactId.contains("junit") ||
+                         dep.artifactId.contains("aeron-test-support"))
             }
         }
     }

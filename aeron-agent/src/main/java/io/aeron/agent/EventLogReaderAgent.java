@@ -68,7 +68,7 @@ final class EventLogReaderAgent implements Agent, MessageHandler
                 LangUtil.rethrowUnchecked(ex);
             }
 
-            byteBuffer = allocateDirectAligned(MAX_EVENT_LENGTH + lineSeparator().length(), CACHE_LINE_LENGTH);
+            byteBuffer = allocateDirectAligned(MAX_EVENT_LENGTH * 2, CACHE_LINE_LENGTH);
         }
 
         dissectLogStartMessage(nanoTime(), currentTimeMillis(), systemDefault(), builder);
@@ -80,7 +80,8 @@ final class EventLogReaderAgent implements Agent, MessageHandler
         }
         else
         {
-            write(builder, byteBuffer, fileChannel);
+            appendEvent(builder, byteBuffer, fileChannel);
+            writeBuffer(byteBuffer, fileChannel);
         }
     }
 
@@ -96,7 +97,13 @@ final class EventLogReaderAgent implements Agent, MessageHandler
 
     public int doWork()
     {
-        return EVENT_RING_BUFFER.read(this, EVENT_READER_FRAME_LIMIT);
+        final int eventsRead = EVENT_RING_BUFFER.read(this, EVENT_READER_FRAME_LIMIT);
+        if (null != byteBuffer && byteBuffer.position() > 0)
+        {
+            writeBuffer(byteBuffer, fileChannel);
+        }
+
+        return eventsRead;
     }
 
     public void onMessage(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
@@ -131,21 +138,34 @@ final class EventLogReaderAgent implements Agent, MessageHandler
         }
         else
         {
-            write(builder, byteBuffer, fileChannel);
+            appendEvent(builder, byteBuffer, fileChannel);
         }
     }
 
-    private static void write(final StringBuilder builder, final ByteBuffer buffer, final FileChannel fileChannel)
+    private static void appendEvent(final StringBuilder builder, final ByteBuffer buffer, final FileChannel fileChannel)
+    {
+        final int length = builder.length();
+
+        if (buffer.position() + length > buffer.capacity())
+        {
+            writeBuffer(buffer, fileChannel);
+        }
+
+        final int position = buffer.position();
+
+        for (int i = 0, p = position; i < length; i++, p++)
+        {
+            buffer.put(p, (byte)builder.charAt(i));
+        }
+
+        buffer.position(position + length);
+    }
+
+    private static void writeBuffer(final ByteBuffer buffer, final FileChannel fileChannel)
     {
         try
         {
-            final int length = builder.length();
-            buffer.clear().limit(length);
-
-            for (int i = 0; i < length; i++)
-            {
-                buffer.put(i, (byte)builder.charAt(i));
-            }
+            buffer.flip();
 
             do
             {
@@ -156,6 +176,10 @@ final class EventLogReaderAgent implements Agent, MessageHandler
         catch (final Exception ex)
         {
             LangUtil.rethrowUnchecked(ex);
+        }
+        finally
+        {
+            buffer.clear();
         }
     }
 }

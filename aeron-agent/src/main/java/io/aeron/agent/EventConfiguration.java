@@ -112,7 +112,7 @@ final class EventConfiguration
     /**
      * Iteration limit for event reader loop.
      */
-    public static final int EVENT_READER_FRAME_LIMIT = 8;
+    public static final int EVENT_READER_FRAME_LIMIT = 16;
 
     /**
      * Ring Buffer to use for logging that will be read by {@link EventLogAgent#READER_CLASSNAME_PROP_NAME}.

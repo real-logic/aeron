@@ -44,7 +44,6 @@ class ClusterToolTest
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
                 final TestNode leader = cluster.awaitLeader();
-
                 final long initialSnapshotCount = cluster.countRecordingLogSnapshots(leader);
 
                 assertTrue(ClusterTool.snapshot(
@@ -79,7 +78,6 @@ class ClusterToolTest
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
                 final TestNode leader = cluster.awaitLeader();
-
                 final long initialSnapshotCount = cluster.countRecordingLogSnapshots(leader);
 
                 assertTrue(ClusterTool.suspend(

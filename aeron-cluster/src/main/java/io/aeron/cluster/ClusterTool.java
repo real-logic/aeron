@@ -625,7 +625,7 @@ public class ClusterTool
             clusterDir,
             ConsensusModule.State.ACTIVE,
             ClusterControl.ToggleState.SUSPEND,
-            true,
+            false,
             TimeUnit.SECONDS.toMillis(1));
     }
 
@@ -744,17 +744,18 @@ public class ClusterTool
             if (waitForToggleToComplete)
             {
                 final long toggleTimeoutMs = Math.max(defaultTimeoutMs, TIMEOUT_MS);
-
                 final long startTime = System.currentTimeMillis();
-                ClusterControl.ToggleState currentState;
+                ClusterControl.ToggleState currentState = null;
+
                 do
                 {
-                    currentState = ClusterControl.ToggleState.get(controlToggle);
+                    Thread.yield();
                     if ((System.currentTimeMillis() - startTime) > toggleTimeoutMs)
                     {
                         break;
                     }
-                    Thread.yield();
+
+                    currentState = ClusterControl.ToggleState.get(controlToggle);
                 }
                 while (currentState != ClusterControl.ToggleState.NEUTRAL);
 

@@ -1937,7 +1937,6 @@ class ConsensusModuleAgent implements Agent
                 if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.SUSPEND))
                 {
                     state(ConsensusModule.State.SUSPENDED);
-                    ClusterControl.ToggleState.reset(controlToggle);
                 }
                 break;
 

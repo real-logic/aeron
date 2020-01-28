@@ -208,6 +208,7 @@ public class ConsensusModuleAgentTest
         final MutableLong controlValue = new MutableLong(NEUTRAL.code());
         final Counter mockControlToggle = mock(Counter.class);
         when(mockControlToggle.get()).thenAnswer((invocation) -> controlValue.value);
+
         doAnswer(
             (invocation) ->
             {
@@ -215,6 +216,19 @@ public class ConsensusModuleAgentTest
                 return null;
             })
             .when(mockControlToggle).set(anyLong());
+
+        doAnswer(
+            (invocation) ->
+            {
+                final long expected = invocation.getArgument(0);
+                if (expected == controlValue.value)
+                {
+                    controlValue.value = invocation.getArgument(1);
+                    return true;
+                }
+                return false;
+            })
+            .when(mockControlToggle).compareAndSet(anyLong(), anyLong());
 
         ctx.moduleStateCounter(mockState);
         ctx.controlToggleCounter(mockControlToggle);
@@ -229,14 +243,14 @@ public class ConsensusModuleAgentTest
         agent.role(Cluster.Role.LEADER);
         assertEquals(ConsensusModule.State.ACTIVE.code(), stateValue.get());
 
-        controlValue.value = SUSPEND.code();
+        SUSPEND.toggle(mockControlToggle);
         clock.update(SLOW_TICK_INTERVAL_MS, TimeUnit.MILLISECONDS);
         agent.doWork();
 
         assertEquals(ConsensusModule.State.SUSPENDED.code(), stateValue.get());
-        assertEquals(NEUTRAL.code(), controlValue.get());
+        assertEquals(SUSPEND.code(), controlValue.get());
 
-        controlValue.value = RESUME.code();
+        RESUME.toggle(mockControlToggle);
         clock.update(SLOW_TICK_INTERVAL_MS * 2, TimeUnit.MILLISECONDS);
         agent.doWork();
 

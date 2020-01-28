@@ -914,10 +914,10 @@ public final class ClusterMember
     }
 
     /**
-     * Check the member with the memberEndpoints
+     * Check the member with the memberEndpoints.
      *
-     * @param member          to check memberEndpoints against
-     * @param memberEndpoints to check member against
+     * @param member          to check memberEndpoints against.
+     * @param memberEndpoints to check member against.
      * @see ConsensusModule.Context#memberEndpoints()
      * @see ConsensusModule.Context#clusterMembers()
      */
@@ -935,8 +935,8 @@ public final class ClusterMember
     /**
      * Are two cluster members using the same endpoints?
      *
-     * @param lhs to check
-     * @param rhs to check
+     * @param lhs to compare for equality.
+     * @param rhs to compare for equality.
      * @return true if both are using the same endpoints or false if not.
      */
     public static boolean areSameEndpoints(final ClusterMember lhs, final ClusterMember rhs)

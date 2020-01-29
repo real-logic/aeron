@@ -37,50 +37,55 @@ add_executable(DriverTool DriverTool.cpp ${HEADERS})
 add_executable(ExclusiveThroughput ExclusiveThroughput.cpp ${HEADERS})
 add_executable(PingPong PingPong.cpp ${HEADERS})
 
+set(CLIENT_LINK_LIB "aeron_client")
+if(LINK_SAMPLES_CLIENT_SHARED)
+    set(CLIENT_LINK_LIB "aeron_client_shared")
+endif()
+
 target_link_libraries(AeronStat
-    aeron_client)
+    ${CLIENT_LINK_LIB})
 
 target_link_libraries(BasicPublisher
-    aeron_client)
+    ${CLIENT_LINK_LIB})
 
 target_link_libraries(TimeTests
     ${CMAKE_THREAD_LIBS_INIT})
 
 target_link_libraries(BasicSubscriber
-    aeron_client)
+    ${CLIENT_LINK_LIB})
 
 target_link_libraries(StreamingPublisher
-    aeron_client)
+    ${CLIENT_LINK_LIB})
 
 target_link_libraries(RateSubscriber
-    aeron_client)
+    ${CLIENT_LINK_LIB})
 
 target_link_libraries(Pong
-    aeron_client)
+    ${CLIENT_LINK_LIB})
 
 target_link_libraries(Ping
-    aeron_client
+    ${CLIENT_LINK_LIB}
     ${HDRHISTOGRAM_LIBS})
 
 add_dependencies(Ping hdr_histogram)
 
 target_link_libraries(Throughput
-    aeron_client)
+    ${CLIENT_LINK_LIB})
 
 target_link_libraries(ErrorStat
-    aeron_client)
+    ${CLIENT_LINK_LIB})
 
 target_link_libraries(LossStat
-    aeron_client)
+    ${CLIENT_LINK_LIB})
 
 target_link_libraries(DriverTool
-    aeron_client)
+    ${CLIENT_LINK_LIB})
 
 target_link_libraries(ExclusiveThroughput
-    aeron_client)
+    ${CLIENT_LINK_LIB})
 
 target_link_libraries(PingPong
-    aeron_client
+    ${CLIENT_LINK_LIB}
     ${HDRHISTOGRAM_LIBS})
 
 add_dependencies(PingPong hdr_histogram)

@@ -14,6 +14,14 @@
 # limitations under the License.
 #
 
+if (MSVC AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    set(BUILD_SHARED_LIBS ON)
+
+    set(AERON_LIB_WINSOCK_LIBS wsock32 ws2_32 Iphlpapi)
+    set(WSAPOLL_PROTOTYPE_EXISTS True)
+endif ()
+
 SET(SOURCE
     Publication.cpp
     ExclusivePublication.cpp
@@ -25,7 +33,9 @@ SET(SOURCE
     Context.cpp
     util/MemoryMappedFile.cpp
     util/CommandOption.cpp
-    util/CommandOptionParser.cpp)
+    util/CommandOptionParser.cpp
+    aeron_windows_client.c
+    util/aeron_error_client.c)
 
 SET(HEADERS
     ClientConductor.h
@@ -126,12 +136,19 @@ SET(HEADERS
     util/Index.h
     util/Platform.h
     protocol/SetupFlyweight.h
-    protocol/DataHeaderFlyweight.h)
+    protocol/DataHeaderFlyweight.h
+    aeron_windows_client.h
+    util/aeron_error_client.h)
 
 # static library
 add_library(aeron_client STATIC ${SOURCE} ${HEADERS})
+add_library(aeron_client_shared SHARED ${SOURCE} ${HEADERS})
 
 target_include_directories(aeron_client
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+
+target_include_directories(aeron_client_shared
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
     )
 
@@ -150,6 +167,12 @@ target_compile_definitions(aeron_client
     PUBLIC "__PROJECT_SOURCE_DIR__=\"${NATIVE_PROJECT_SOURCE_DIR}\""
     )
 
+target_compile_definitions(aeron_client_shared
+    PUBLIC $<$<NOT:$<CONFIG:Debug>>:DISABLE_BOUNDS_CHECKS>
+    # relative file paths for use in exceptions
+    PUBLIC "__PROJECT_SOURCE_DIR__=\"${NATIVE_PROJECT_SOURCE_DIR}\""
+    )
+
 if (NOT WIN32)
     set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
     set(THREADS_PREFER_PTHREAD_FLAG TRUE)
@@ -159,7 +182,14 @@ target_link_libraries(aeron_client
     INTERFACE ${CMAKE_THREAD_LIBS_INIT}
     )
 
+target_link_libraries(aeron_client_shared
+    INTERFACE ${CMAKE_THREAD_LIBS_INIT}
+    )
+
 if (AERON_INSTALL_TARGETS)
-    install(TARGETS aeron_client ARCHIVE DESTINATION lib)
+    install(TARGETS aeron_client_shared aeron_client
+        RUNTIME DESTINATION lib
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib)
     install(DIRECTORY . DESTINATION include FILES_MATCHING PATTERN "*.h")
 endif ()

@@ -32,6 +32,11 @@ for %%o in (%*) do (
         set EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DBUILD_AERON_DRIVER=ON
 	    set PROCESSED=1
 	)
+
+	if "%%o"=="--link-samples-client-shared" (
+        set EXTRA_CMAKE_ARGS=!EXTRA_CMAKE_ARGS! -DLINK_SAMPLES_CLIENT_SHARED=ON
+	    set PROCESSED=1
+	)
 )
 
 call cppbuild/vs-helper.cmd

@@ -47,10 +47,10 @@ import static org.mockito.Mockito.*;
 
 public class ChannelEndpointStatusTest
 {
-    private static final String URI = "aeron:udp?endpoint=localhost:54326";
-    private static final String URI_NO_CONFLICT = "aeron:udp?endpoint=localhost:54327";
+    private static final String URI = "aeron:udp?endpoint=localhost:23456";
+    private static final String URI_NO_CONFLICT = "aeron:udp?endpoint=localhost:23457";
     private static final String URI_WITH_INTERFACE_PORT =
-        "aeron:udp?endpoint=localhost:54326|interface=localhost:34567";
+        "aeron:udp?endpoint=localhost:23456|interface=localhost:34567";
 
     private static final int STREAM_ID = 1001;
     private static final ThreadingMode THREADING_MODE = ThreadingMode.DEDICATED;

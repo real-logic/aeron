@@ -1166,7 +1166,7 @@ public class ChannelUriStringBuilder
     /**
      * Get the congestion control algorithm to be used on a channel.
      *
-     * @return alias for the URI.
+     * @return congestion control strategy for the channel.
      * @see CommonContext#CONGESTION_CONTROL_PARAM_NAME
      */
     public String congestionControl()
@@ -1202,7 +1202,7 @@ public class ChannelUriStringBuilder
     /**
      * Get the flow control strategy to be used on a channel.
      *
-     * @return alias for the URI.
+     * @return flow control strategy for the channel.
      * @see CommonContext#FLOW_CONTROL_PARAM_NAME
      */
     public String flowControl()
@@ -1375,6 +1375,11 @@ public class ChannelUriStringBuilder
         if (null != cc)
         {
             sb.append(CONGESTION_CONTROL_PARAM_NAME).append('=').append(cc).append('|');
+        }
+
+        if (null != fc)
+        {
+            sb.append(FLOW_CONTROL_PARAM_NAME).append('=').append(fc).append('|');
         }
 
         if (null != sparse)

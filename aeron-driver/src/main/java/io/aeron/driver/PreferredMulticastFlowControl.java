@@ -15,8 +15,12 @@
  */
 package io.aeron.driver;
 
+import io.aeron.CommonContext;
+import io.aeron.driver.media.UdpChannel;
 import io.aeron.protocol.StatusMessageFlyweight;
+import org.agrona.AsciiEncoding;
 import org.agrona.BitUtil;
+import org.agrona.SystemUtil;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
@@ -64,6 +68,8 @@ public class PreferredMulticastFlowControl implements FlowControl
 
     private MinMulticastFlowControl.Receiver[] receivers = EMPTY_RECEIVERS;
     private final byte[] smAsf = new byte[64];
+    private long receiverTimeoutNs = RECEIVER_TIMEOUT;
+    private long rtag = 0xFFFFFFFF;
 
     /**
      * {@inheritDoc}
@@ -117,8 +123,25 @@ public class PreferredMulticastFlowControl implements FlowControl
     /**
      * {@inheritDoc}
      */
-    public void initialize(final int initialTermId, final int termBufferLength)
+    public void initialize(final UdpChannel udpChannel, final int initialTermId, final int termBufferLength)
     {
+        final String fcStr = udpChannel.channelUri().get(CommonContext.FLOW_CONTROL_PARAM_NAME);
+        final int param1Index = null == fcStr ? -1 : fcStr.indexOf(':');
+
+        if (param1Index > 0)
+        {
+            final int param2Index = fcStr.indexOf(',', param1Index + 1);
+            final int rtagLength = (param2Index > 0) ?
+                param2Index - param1Index - 1 :
+                fcStr.length() - param1Index - 1;
+
+            rtag = AsciiEncoding.parseLongAscii(fcStr, param1Index + 1, rtagLength);
+
+            if (param2Index > 0)
+            {
+                receiverTimeoutNs = SystemUtil.parseDuration("fc pref timeout", fcStr.substring(param2Index + 1));
+            }
+        }
     }
 
     /**
@@ -132,7 +155,7 @@ public class PreferredMulticastFlowControl implements FlowControl
         for (int lastIndex = receivers.length - 1, i = lastIndex; i >= 0; i--)
         {
             final MinMulticastFlowControl.Receiver receiver = receivers[i];
-            if ((receiver.timeOfLastStatusMessageNs + RECEIVER_TIMEOUT) - timeNs < 0)
+            if ((receiver.timeOfLastStatusMessageNs + receiverTimeoutNs) - timeNs < 0)
             {
                 if (i != lastIndex)
                 {

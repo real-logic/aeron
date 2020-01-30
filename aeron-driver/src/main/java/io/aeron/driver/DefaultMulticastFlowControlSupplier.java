@@ -15,6 +15,7 @@
  */
 package io.aeron.driver;
 
+import io.aeron.CommonContext;
 import io.aeron.driver.media.UdpChannel;
 import org.agrona.LangUtil;
 
@@ -22,7 +23,29 @@ public class DefaultMulticastFlowControlSupplier implements FlowControlSupplier
 {
     public FlowControl newInstance(final UdpChannel udpChannel, final int streamId, final long registrationId)
     {
+        final String fcStr = udpChannel.channelUri().get(CommonContext.FLOW_CONTROL_PARAM_NAME);
         FlowControl flowControl = null;
+
+        if (null != fcStr)
+        {
+            if ("max".equals(fcStr))
+            {
+                return new MaxMulticastFlowControl();
+            }
+            else if (fcStr.startsWith("min"))
+            {
+                return new MinMulticastFlowControl();
+            }
+            else if (fcStr.startsWith("pref"))
+            {
+                return new PreferredMulticastFlowControl();
+            }
+            else
+            {
+                throw new IllegalArgumentException("unsupported multicast flow control strategy : fc=" + fcStr);
+            }
+        }
+
         try
         {
             flowControl = (FlowControl)Class.forName(Configuration.MULTICAST_FLOW_CONTROL_STRATEGY)

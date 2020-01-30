@@ -15,6 +15,7 @@
  */
 package io.aeron.driver;
 
+import io.aeron.CommonContext;
 import io.aeron.driver.media.UdpChannel;
 import org.agrona.LangUtil;
 
@@ -25,7 +26,14 @@ public class DefaultUnicastFlowControlSupplier implements FlowControlSupplier
 {
     public FlowControl newInstance(final UdpChannel udpChannel, final int streamId, final long registrationId)
     {
+        final String fcStr = udpChannel.channelUri().get(CommonContext.FLOW_CONTROL_PARAM_NAME);
         FlowControl flowControl = null;
+
+        if (null != fcStr)
+        {
+            throw new IllegalArgumentException("unsupported unicast flow control strategy : fc=" + fcStr);
+        }
+
         try
         {
             flowControl = (FlowControl)Class.forName(Configuration.UNICAST_FLOW_CONTROL_STRATEGY)

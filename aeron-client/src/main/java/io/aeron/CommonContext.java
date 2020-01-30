@@ -261,6 +261,12 @@ public class CommonContext implements Cloneable
     public static final String CONGESTION_CONTROL_PARAM_NAME = "cc";
 
     /**
+     * Parameter name for Publication URI param to indicate the flow control strategy to be used.
+     * Options include {@code min}, {@code max}, and {@code pref}.
+     */
+    public static final String FLOW_CONTROL_PARAM_NAME = "fc";
+
+    /**
      * Using an integer because there is no support for boolean. 1 is concluded, 0 is not concluded.
      */
     private static final AtomicIntegerFieldUpdater<CommonContext> IS_CONCLUDED_UPDATER = newUpdater(

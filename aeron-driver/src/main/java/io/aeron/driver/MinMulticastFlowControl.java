@@ -15,7 +15,10 @@
  */
 package io.aeron.driver;
 
+import io.aeron.CommonContext;
+import io.aeron.driver.media.UdpChannel;
 import io.aeron.protocol.StatusMessageFlyweight;
+import org.agrona.SystemUtil;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
@@ -48,12 +51,20 @@ public class MinMulticastFlowControl implements FlowControl
 
     static final Receiver[] EMPTY_RECEIVERS = new Receiver[0];
     private Receiver[] receivers = EMPTY_RECEIVERS;
+    private long receiverTimeoutNs = RECEIVER_TIMEOUT;
 
     /**
      * {@inheritDoc}
      */
-    public void initialize(final int initialTermId, final int termBufferLength)
+    public void initialize(final UdpChannel udpChannel, final int initialTermId, final int termBufferLength)
     {
+        final String fcStr = udpChannel.channelUri().get(CommonContext.FLOW_CONTROL_PARAM_NAME);
+        final int paramsIndex = null == fcStr ? -1 : fcStr.indexOf(':');
+
+        if (paramsIndex > 0)
+        {
+            receiverTimeoutNs = SystemUtil.parseDuration("fc min timeout", fcStr.substring(paramsIndex + 1));
+        }
     }
 
     /**
@@ -113,7 +124,7 @@ public class MinMulticastFlowControl implements FlowControl
         for (int lastIndex = receivers.length - 1, i = lastIndex; i >= 0; i--)
         {
             final Receiver receiver = receivers[i];
-            if ((receiver.timeOfLastStatusMessageNs + RECEIVER_TIMEOUT) - timeNs < 0)
+            if ((receiver.timeOfLastStatusMessageNs + receiverTimeoutNs) - timeNs < 0)
             {
                 if (i != lastIndex)
                 {

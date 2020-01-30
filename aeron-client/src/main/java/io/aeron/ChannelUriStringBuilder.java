@@ -45,6 +45,7 @@ public class ChannelUriStringBuilder
     private String tags;
     private String alias;
     private String cc;
+    private String fc;
     private Boolean reliable;
     private Integer ttl;
     private Integer mtu;
@@ -77,6 +78,7 @@ public class ChannelUriStringBuilder
         tags = null;
         alias = null;
         cc = null;
+        fc = null;
         reliable = null;
         ttl = null;
         mtu = null;
@@ -1154,7 +1156,7 @@ public class ChannelUriStringBuilder
      *
      * @param channelUri to read the value from.
      * @return this for a fluent API.
-     * @see CommonContext#TAGS_PARAM_NAME
+     * @see CommonContext#CONGESTION_CONTROL_PARAM_NAME
      */
     public ChannelUriStringBuilder congestionControl(final ChannelUri channelUri)
     {
@@ -1170,6 +1172,42 @@ public class ChannelUriStringBuilder
     public String congestionControl()
     {
         return cc;
+    }
+
+    /**
+     * Set the flow control strategy to be used on a channel.
+     *
+     * @param flowControl for the URI.
+     * @return this for a fluent API.
+     * @see CommonContext#FLOW_CONTROL_PARAM_NAME
+     */
+    public ChannelUriStringBuilder flowControl(final String flowControl)
+    {
+        this.fc = flowControl;
+        return this;
+    }
+
+    /**
+     * Set the flow control to be value which is in the {@link ChannelUri} which may be null.
+     *
+     * @param channelUri to read the value from.
+     * @return this for a fluent API.
+     * @see CommonContext#FLOW_CONTROL_PARAM_NAME
+     */
+    public ChannelUriStringBuilder flowControl(final ChannelUri channelUri)
+    {
+        return flowControl(channelUri.get(FLOW_CONTROL_PARAM_NAME));
+    }
+
+    /**
+     * Get the flow control strategy to be used on a channel.
+     *
+     * @return alias for the URI.
+     * @see CommonContext#FLOW_CONTROL_PARAM_NAME
+     */
+    public String flowControl()
+    {
+        return fc;
     }
 
     /**

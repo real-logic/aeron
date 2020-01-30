@@ -15,6 +15,7 @@
  */
 package io.aeron.driver;
 
+import io.aeron.driver.media.UdpChannel;
 import io.aeron.protocol.StatusMessageFlyweight;
 
 import java.net.InetSocketAddress;
@@ -56,7 +57,7 @@ public class UnicastFlowControl implements FlowControl
     /**
      * {@inheritDoc}
      */
-    public void initialize(final int initialTermId, final int termBufferLength)
+    public void initialize(final UdpChannel udpChannel, final int initialTermId, final int termBufferLength)
     {
     }
 

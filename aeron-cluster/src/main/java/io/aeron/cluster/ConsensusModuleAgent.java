@@ -245,7 +245,7 @@ class ConsensusModuleAgent implements Agent
                     recoverFromSnapshot(recoveryPlan.snapshots.get(0), archive);
                 }
 
-                awaitServiceAcks(expectedAckPosition);
+                awaitServices(expectedAckPosition);
             }
 
             if (ConsensusModule.State.SUSPENDED != state)
@@ -1479,7 +1479,7 @@ class ConsensusModuleAgent implements Agent
             leadershipTermId, logPosition, Long.MAX_VALUE, memberId, logSessionId, ctx.logStreamId(), channel);
 
         expectedAckPosition = logPosition;
-        awaitServiceAcks(logPosition);
+        awaitServices(logPosition);
     }
 
     LogReplay newLogReplay(final long electionCommitPosition)
@@ -1526,13 +1526,13 @@ class ConsensusModuleAgent implements Agent
     {
         serviceProxy.joinLog(leadershipTermId, logPosition, maxLogPosition, memberId, logSessionId, streamId, channel);
         expectedAckPosition = logPosition;
-        awaitServiceAcks(logPosition);
+        awaitServices(logPosition);
     }
 
     void awaitServicesReplayComplete(final long stopPosition)
     {
         expectedAckPosition = stopPosition;
-        awaitServiceAcks(stopPosition);
+        awaitServices(stopPosition);
     }
 
     void replayLogPoll(final LogAdapter logAdapter, final long stopPosition)
@@ -2373,7 +2373,7 @@ class ConsensusModuleAgent implements Agent
         return null;
     }
 
-    private void awaitServiceAcks(final long logPosition)
+    private void awaitServices(final long logPosition)
     {
         while (!ServiceAck.hasReachedPosition(logPosition, serviceAckId, serviceAckQueues))
         {

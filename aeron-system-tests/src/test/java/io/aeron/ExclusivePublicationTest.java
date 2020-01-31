@@ -168,6 +168,7 @@ public class ExclusivePublicationTest
                 awaitPublications(subscription, 1);
                 final int sessionId = publication.sessionId();
                 final int streamId = publication.streamId();
+                final int termId = publication.termId();
                 final int offset = 128;
                 frameType(srcBuffer, offset, HDR_TYPE_NAK);
                 frameSessionId(srcBuffer, offset, -19);
@@ -180,6 +181,7 @@ public class ExclusivePublicationTest
                     " termOffset=0" + " (expected=0)," +
                     " sessionId=-19" + " (expected=" + sessionId + ")," +
                     " streamId=42 (expected=" + streamId + ")," +
+                    " termId=0 (expected=" + termId + ")," +
                     " frameType=" + HDR_TYPE_NAK + " (expected=" + HDR_TYPE_DATA + ")",
                     exception.getMessage());
             }
@@ -205,6 +207,7 @@ public class ExclusivePublicationTest
                 frameLengthOrdered(srcBuffer, offset, dataLength);
                 frameSessionId(srcBuffer, offset, sessionId);
                 srcBuffer.putInt(offset + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
+                srcBuffer.putInt(offset + TERM_ID_FIELD_OFFSET, currentTermId, LITTLE_ENDIAN);
                 srcBuffer.setMemory(offset + DATA_OFFSET, dataLength, (byte)13);
                 final long position = publication.position();
 
@@ -219,7 +222,8 @@ public class ExclusivePublicationTest
                         assertEquals(sessionId, frameSessionId(termBuffer, termOffset));
                         assertEquals(streamId,
                             termBuffer.getInt(termOffset + STREAM_ID_FIELD_OFFSET, LITTLE_ENDIAN));
-                    }, termBufferLength);
+                    },
+                    termBufferLength);
                 assertEquals(dataLength, pollBytes);
                 assertEquals(publication.termBufferLength(), publication.termOffset());
                 assertEquals(currentTermId, publication.termId());
@@ -239,12 +243,14 @@ public class ExclusivePublicationTest
                 final int length = driver.context().ipcTermBufferLength() / 2;
                 final int sessionId = publication.sessionId();
                 final int streamId = publication.streamId();
+                final int termId = publication.termId();
                 final int dataLength = length - HEADER_LENGTH;
                 final int offset = 2048;
                 frameType(srcBuffer, offset, HDR_TYPE_DATA);
                 frameLengthOrdered(srcBuffer, offset, dataLength);
                 frameSessionId(srcBuffer, offset, sessionId);
                 srcBuffer.putInt(offset + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
+                srcBuffer.putInt(offset + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
                 srcBuffer.setMemory(offset + DATA_OFFSET, dataLength, (byte)6);
                 publication.offerBlock(srcBuffer, offset, length);
 

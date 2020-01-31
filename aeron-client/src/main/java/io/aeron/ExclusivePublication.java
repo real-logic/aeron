@@ -463,21 +463,23 @@ public class ExclusivePublication extends Publication
     private void checkFirstFrame(final MutableDirectBuffer buffer, final int offset)
     {
         final int frameType = HDR_TYPE_DATA;
-
         final int blockTermOffset = buffer.getInt(offset + TERM_OFFSET_FIELD_OFFSET, LITTLE_ENDIAN);
         final int blockSessionId = buffer.getInt(offset + SESSION_ID_FIELD_OFFSET, LITTLE_ENDIAN);
         final int blockStreamId = buffer.getInt(offset + STREAM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        final int blockTermId = buffer.getInt(offset + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
         final int blockFrameType = buffer.getShort(offset + TYPE_FIELD_OFFSET, LITTLE_ENDIAN) & 0xFFFF;
 
         if (blockTermOffset != termOffset ||
             blockSessionId != sessionId ||
             blockStreamId != streamId ||
+            blockTermId != termId ||
             frameType != blockFrameType)
         {
             throw new IllegalArgumentException("improperly formatted block:" +
                 " termOffset=" + blockTermOffset + " (expected=" + termOffset + ")," +
                 " sessionId=" + blockSessionId + " (expected=" + sessionId + ")," +
                 " streamId=" + blockStreamId + " (expected=" + streamId + ")," +
+                " termId=" + blockTermId + " (expected=" + termId + ")," +
                 " frameType=" + blockFrameType + " (expected=" + frameType + ")");
         }
     }

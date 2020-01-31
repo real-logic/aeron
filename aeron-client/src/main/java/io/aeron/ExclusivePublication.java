@@ -420,26 +420,28 @@ public class ExclusivePublication extends Publication
      */
     public long offerBlock(final MutableDirectBuffer buffer, final int offset, final int length)
     {
-        if (termBufferLength == termOffset)
-        {
-            switchToNextTerm();
-        }
-
-        checkBlockLength(length);
-
         if (isClosed)
         {
             return CLOSED;
         }
+
+        if (termBufferLength == termOffset)
+        {
+            rotateTerm();
+        }
+
+        checkBlockLength(length);
 
         final long limit = positionLimit.getVolatile();
         final long position = termBeginPosition + termOffset;
 
         if (position < limit)
         {
-            checkBlockStart(buffer, offset);
+            checkFirstFrame(buffer, offset);
+
             final ExclusiveTermAppender termAppender = termAppenders[activePartitionIndex];
             final int result = termAppender.appendBlock(termId, termOffset, buffer, offset, length);
+
             return newPosition(result);
         }
         else
@@ -450,27 +452,33 @@ public class ExclusivePublication extends Publication
 
     private void checkBlockLength(final int length)
     {
-        final int availableSpace = termBufferLength - termOffset;
-        if (length > availableSpace)
+        final int remaining = termBufferLength - termOffset;
+        if (length > remaining)
         {
-            throw new IllegalArgumentException("invalid block length=" + length +
-                ", available space in the term buffer=" + availableSpace);
+            throw new IllegalArgumentException(
+                "invalid block length " + length + ", remaining space in term " + remaining);
         }
     }
 
-    private void checkBlockStart(final MutableDirectBuffer buffer, final int offset)
+    private void checkFirstFrame(final MutableDirectBuffer buffer, final int offset)
     {
-        final int sessionId = this.sessionId;
-        final int streamId = this.streamId;
         final int frameType = HDR_TYPE_DATA;
+
+        final int blockTermOffset = buffer.getInt(offset + TERM_OFFSET_FIELD_OFFSET, LITTLE_ENDIAN);
         final int blockSessionId = buffer.getInt(offset + SESSION_ID_FIELD_OFFSET, LITTLE_ENDIAN);
         final int blockStreamId = buffer.getInt(offset + STREAM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
         final int blockFrameType = buffer.getShort(offset + TYPE_FIELD_OFFSET, LITTLE_ENDIAN) & 0xFFFF;
-        if (sessionId != blockSessionId || streamId != blockStreamId || frameType != blockFrameType)
+
+        if (blockTermOffset != termOffset ||
+            blockSessionId != sessionId ||
+            blockStreamId != streamId ||
+            frameType != blockFrameType)
         {
-            throw new IllegalArgumentException("improperly formatted block of messages: sessionId=" + blockSessionId +
-                " (expected=" + sessionId + "), streamId=" + blockStreamId + " (expected=" + streamId +
-                "), frameType=" + blockFrameType + " (expected=" + frameType + ")");
+            throw new IllegalArgumentException("improperly formatted block:" +
+                " termOffset=" + blockTermOffset + " (expected=" + termOffset + ")," +
+                " sessionId=" + blockSessionId + " (expected=" + sessionId + ")," +
+                " streamId=" + blockStreamId + " (expected=" + streamId + ")," +
+                " frameType=" + blockFrameType + " (expected=" + frameType + ")");
         }
     }
 
@@ -487,12 +495,12 @@ public class ExclusivePublication extends Publication
             return MAX_POSITION_EXCEEDED;
         }
 
-        switchToNextTerm();
+        rotateTerm();
 
         return ADMIN_ACTION;
     }
 
-    private void switchToNextTerm()
+    private void rotateTerm()
     {
         final int nextIndex = LogBufferDescriptor.nextPartitionIndex(activePartitionIndex);
         final int nextTermId = termId + 1;

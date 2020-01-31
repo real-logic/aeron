@@ -323,11 +323,12 @@ class ReplaySession implements Session, AutoCloseable
 
         int batchLength = 0;
         int paddingFrameLength = 0;
-        final Checksum checksum = this.checksum;
-        final UnsafeBuffer replayBuffer = this.replayBuffer;
         final int sessionId = publication.sessionId();
         final int streamId = publication.streamId();
         final long remaining = replayLimit - replayPosition;
+        final Checksum checksum = this.checksum;
+        final UnsafeBuffer replayBuffer = this.replayBuffer;
+
         while (batchLength < bytesRead && batchLength < remaining)
         {
             final int frameLength = frameLength(replayBuffer, batchLength);
@@ -345,10 +346,12 @@ class ReplaySession implements Session, AutoCloseable
                 {
                     break;
                 }
+
                 if (null != checksum)
                 {
                     verifyChecksum(checksum, batchLength, alignedLength);
                 }
+
                 replayBuffer.putInt(batchLength + SESSION_ID_FIELD_OFFSET, sessionId, LITTLE_ENDIAN);
                 replayBuffer.putInt(batchLength + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
                 batchLength += alignedLength;
@@ -361,7 +364,7 @@ class ReplaySession implements Session, AutoCloseable
         }
 
         int workCount = 0;
-        if (0 != batchLength)
+        if (batchLength > 0)
         {
             final long result = publication.offerBlock(replayBuffer, 0, batchLength);
             if (handlePublicationResult(result, batchLength))
@@ -374,7 +377,7 @@ class ReplaySession implements Session, AutoCloseable
             }
         }
 
-        if (0 != paddingFrameLength)
+        if (paddingFrameLength > 0)
         {
             final long result = publication.appendPadding(paddingFrameLength - HEADER_LENGTH);
             if (handlePublicationResult(result, align(paddingFrameLength, FRAME_ALIGNMENT)))
@@ -397,12 +400,14 @@ class ReplaySession implements Session, AutoCloseable
             {
                 state(State.INACTIVE);
             }
+
             return true;
         }
         else if (Publication.CLOSED == result || Publication.NOT_CONNECTED == result)
         {
             onError("stream closed before replay is complete");
         }
+
         return false;
     }
 
@@ -411,6 +416,7 @@ class ReplaySession implements Session, AutoCloseable
         final int computedChecksum = checksum.compute(
             replayBufferAddress, frameOffset + HEADER_LENGTH, alignedLength - HEADER_LENGTH);
         final int recordedChecksum = frameSessionId(replayBuffer, frameOffset);
+
         if (computedChecksum != recordedChecksum)
         {
             final String message = "CRC checksum mismatch at offset=" + frameOffset + ": recorded checksum=" +

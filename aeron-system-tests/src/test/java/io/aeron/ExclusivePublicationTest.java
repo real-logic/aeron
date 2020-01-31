@@ -133,8 +133,8 @@ public class ExclusivePublicationTest
                 final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                     () -> publication.offerBlock(srcBuffer, 0, termBufferLength));
 
-                assertEquals("invalid block length=" + termBufferLength + ", available space in the term buffer=" +
-                    (termBufferLength - termOffset), exception.getMessage());
+                assertEquals("invalid block length " + termBufferLength +
+                    ", remaining space in term " + (termBufferLength - termOffset), exception.getMessage());
             }
         });
     }
@@ -176,9 +176,12 @@ public class ExclusivePublicationTest
                 final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                     () -> publication.offerBlock(srcBuffer, offset, 1000));
 
-                assertEquals("improperly formatted block of messages: sessionId=-19" +
-                    " (expected=" + sessionId + "), streamId=42 (expected=" + streamId +
-                    "), frameType=" + HDR_TYPE_NAK + " (expected=" + HDR_TYPE_DATA + ")", exception.getMessage());
+                assertEquals("improperly formatted block:" +
+                    " termOffset=0" + " (expected=0)," +
+                    " sessionId=-19" + " (expected=" + sessionId + ")," +
+                    " streamId=42 (expected=" + streamId + ")," +
+                    " frameType=" + HDR_TYPE_NAK + " (expected=" + HDR_TYPE_DATA + ")",
+                    exception.getMessage());
             }
         });
     }
@@ -225,7 +228,7 @@ public class ExclusivePublicationTest
     }
 
     @Test
-    void offerBlockReturnsBackpressureStatus()
+    void offerBlockReturnsBackPressuredStatus()
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {

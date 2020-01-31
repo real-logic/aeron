@@ -620,10 +620,9 @@ public final class ExclusiveTermAppender
         final int offset,
         final int length)
     {
-        final UnsafeBuffer termBuffer = this.termBuffer;
         final int resultingOffset = termOffset + length;
-
         final int lengthOfFirstFrame = buffer.getInt(offset, LITTLE_ENDIAN);
+
         buffer.putInt(offset, 0, LITTLE_ENDIAN);
         termBuffer.putBytes(termOffset, buffer, offset, length);
         frameLengthOrdered(termBuffer, termOffset, lengthOfFirstFrame);

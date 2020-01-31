@@ -757,6 +757,7 @@ public class ReplaySessionTest
         final ByteBuffer buffer = allocateDirectAligned(data.length, CACHE_LINE_LENGTH);
         final long address = address(buffer);
         buffer.put(data).flip();
+
         return crc32().compute(address, 0, data.length);
     }
 }

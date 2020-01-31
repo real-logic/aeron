@@ -425,18 +425,17 @@ public class ExclusivePublication extends Publication
             return CLOSED;
         }
 
-        if (termBufferLength == termOffset)
+        if (termOffset >= termBufferLength)
         {
             rotateTerm();
         }
-
-        checkBlockLength(length);
 
         final long limit = positionLimit.getVolatile();
         final long position = termBeginPosition + termOffset;
 
         if (position < limit)
         {
+            checkBlockLength(length);
             checkFirstFrame(buffer, offset);
 
             final ExclusiveTermAppender termAppender = termAppenders[activePartitionIndex];

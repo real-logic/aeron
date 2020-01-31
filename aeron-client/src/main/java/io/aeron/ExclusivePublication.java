@@ -404,10 +404,10 @@ public class ExclusivePublication extends Publication
     }
 
     /**
-     * Offer a block of pre-formatted messages directly into the current term.
+     * Offer a block of pre-formatted message fragments directly into the current term.
      *
-     * @param buffer containing the pre-formatted block of messages.
-     * @param offset offset in the buffer at which the first message begins.
+     * @param buffer containing the pre-formatted block of message fragments.
+     * @param offset offset in the buffer at which the first fragment begins.
      * @param length in bytes of the encoded block.
      * @return The new stream position, otherwise a negative error value of {@link #NOT_CONNECTED},
      * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, {@link #CLOSED}, or {@link #MAX_POSITION_EXCEEDED}.

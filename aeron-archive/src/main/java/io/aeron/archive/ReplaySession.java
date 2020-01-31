@@ -366,21 +366,21 @@ class ReplaySession implements Session, AutoCloseable
         int workCount = 0;
         if (batchLength > 0)
         {
-            final long result = publication.offerBlock(replayBuffer, 0, batchLength);
-            if (handlePublicationResult(result, batchLength))
+            final long position = publication.offerBlock(replayBuffer, 0, batchLength);
+            if (hasPublicationAdvanced(position, batchLength))
             {
                 workCount++;
             }
             else
             {
-                return 0; // do not attempt to append padding if offerBlock failed
+                paddingFrameLength = 0;
             }
         }
 
         if (paddingFrameLength > 0)
         {
-            final long result = publication.appendPadding(paddingFrameLength - HEADER_LENGTH);
-            if (handlePublicationResult(result, align(paddingFrameLength, FRAME_ALIGNMENT)))
+            final long position = publication.appendPadding(paddingFrameLength - HEADER_LENGTH);
+            if (hasPublicationAdvanced(position, align(paddingFrameLength, FRAME_ALIGNMENT)))
             {
                 workCount++;
             }
@@ -389,9 +389,9 @@ class ReplaySession implements Session, AutoCloseable
         return workCount;
     }
 
-    private boolean handlePublicationResult(final long result, final int alignedLength)
+    private boolean hasPublicationAdvanced(final long position, final int alignedLength)
     {
-        if (result > 0)
+        if (position > 0)
         {
             termOffset += alignedLength;
             replayPosition += alignedLength;
@@ -403,7 +403,7 @@ class ReplaySession implements Session, AutoCloseable
 
             return true;
         }
-        else if (Publication.CLOSED == result || Publication.NOT_CONNECTED == result)
+        else if (Publication.CLOSED == position || Publication.NOT_CONNECTED == position)
         {
             onError("stream closed before replay is complete");
         }

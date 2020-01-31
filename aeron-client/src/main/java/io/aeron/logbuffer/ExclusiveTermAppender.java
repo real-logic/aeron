@@ -601,7 +601,7 @@ public final class ExclusiveTermAppender
 
 
     /**
-     * Append pre-formatted block of messages into the term buffer.
+     * Append pre-formatted block of message fragments into the term buffer.
      * <p>
      * <em>WARNING: This is internal API used by {@code ExclusivePublication#offerBlock} method.</em>
      * </p>

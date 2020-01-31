@@ -19,10 +19,13 @@ import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.ExclusiveTermAppender;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.ReadablePosition;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
+import static io.aeron.protocol.DataHeaderFlyweight.*;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 /**
  * Aeron publisher API for sending messages to subscribers of a given channel and streamId pair. ExclusivePublications
@@ -400,6 +403,77 @@ public class ExclusivePublication extends Publication
         return newPosition;
     }
 
+    /**
+     * Offer a block of pre-formatted messages directly into the current term.
+     *
+     * @param buffer containing the pre-formatted block of messages.
+     * @param offset offset in the buffer at which the first message begins.
+     * @param length in bytes of the encoded block.
+     * @return The new stream position, otherwise a negative error value of {@link #NOT_CONNECTED},
+     * {@link #BACK_PRESSURED}, {@link #ADMIN_ACTION}, {@link #CLOSED}, or {@link #MAX_POSITION_EXCEEDED}.
+     * @throws IllegalArgumentException if the length is greater than remaining size of the current term.
+     * @throws IllegalArgumentException if the first frame within the block is not properly formatted, i.e. if the
+     *                                  {@code streamId} is not equal to the value returned by the {@link #streamId()}
+     *                                  method or if the {@code sessionId} is not equal to the value returned by the
+     *                                  {@link #sessionId()} method or if the frame type is not equal to the
+     *                                  {@link io.aeron.protocol.HeaderFlyweight#HDR_TYPE_DATA}.
+     */
+    public long offerBlock(final MutableDirectBuffer buffer, final int offset, final int length)
+    {
+        if (termBufferLength == termOffset)
+        {
+            switchToNextTerm();
+        }
+
+        checkBlockLength(length);
+
+        if (isClosed)
+        {
+            return CLOSED;
+        }
+
+        final long limit = positionLimit.getVolatile();
+        final long position = termBeginPosition + termOffset;
+
+        if (position < limit)
+        {
+            checkBlockStart(buffer, offset);
+            final ExclusiveTermAppender termAppender = termAppenders[activePartitionIndex];
+            final int result = termAppender.appendBlock(termId, termOffset, buffer, offset, length);
+            return newPosition(result);
+        }
+        else
+        {
+            return backPressureStatus(position, length);
+        }
+    }
+
+    private void checkBlockLength(final int length)
+    {
+        final int availableSpace = termBufferLength - termOffset;
+        if (length > availableSpace)
+        {
+            throw new IllegalArgumentException("invalid block length=" + length +
+                ", available space in the term buffer=" + availableSpace);
+        }
+    }
+
+    private void checkBlockStart(final MutableDirectBuffer buffer, final int offset)
+    {
+        final int sessionId = this.sessionId;
+        final int streamId = this.streamId;
+        final int frameType = HDR_TYPE_DATA;
+        final int blockSessionId = buffer.getInt(offset + SESSION_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        final int blockStreamId = buffer.getInt(offset + STREAM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        final int blockFrameType = buffer.getShort(offset + TYPE_FIELD_OFFSET, LITTLE_ENDIAN) & 0xFFFF;
+        if (sessionId != blockSessionId || streamId != blockStreamId || frameType != blockFrameType)
+        {
+            throw new IllegalArgumentException("improperly formatted block of messages: sessionId=" + blockSessionId +
+                " (expected=" + sessionId + "), streamId=" + blockStreamId + " (expected=" + streamId +
+                "), frameType=" + blockFrameType + " (expected=" + frameType + ")");
+        }
+    }
+
     private long newPosition(final int resultingOffset)
     {
         if (resultingOffset > 0)
@@ -413,6 +487,13 @@ public class ExclusivePublication extends Publication
             return MAX_POSITION_EXCEEDED;
         }
 
+        switchToNextTerm();
+
+        return ADMIN_ACTION;
+    }
+
+    private void switchToNextTerm()
+    {
         final int nextIndex = LogBufferDescriptor.nextPartitionIndex(activePartitionIndex);
         final int nextTermId = termId + 1;
 
@@ -425,7 +506,5 @@ public class ExclusivePublication extends Publication
 
         LogBufferDescriptor.initialiseTailWithTermId(logMetaDataBuffer, nextIndex, nextTermId);
         LogBufferDescriptor.activeTermCountOrdered(logMetaDataBuffer, termCount);
-
-        return ADMIN_ACTION;
     }
 }

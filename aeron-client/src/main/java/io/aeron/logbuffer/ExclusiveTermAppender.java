@@ -18,6 +18,7 @@ package io.aeron.logbuffer;
 import io.aeron.DirectBufferVector;
 import io.aeron.ReservedValueSupplier;
 import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.UnsafeAccess;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -597,6 +598,40 @@ public final class ExclusiveTermAppender
 
         return resultingOffset;
     }
+
+
+    /**
+     * Append pre-formatted block of messages into the term buffer.
+     * <p>
+     * <em>WARNING: This is internal API used by {@code ExclusivePublication#offerBlock} method.</em>
+     * </p>
+     *
+     * @param termId     for the current term.
+     * @param termOffset in the term at which to append.
+     * @param buffer     which contains block of messages.
+     * @param offset     within the buffer at which the block begins.
+     * @param length     of the block in bytes (always aligned).
+     * @return the resulting offset of the term after success otherwise {@link #FAILED}.
+     */
+    public int appendBlock(
+        final int termId,
+        final int termOffset,
+        final MutableDirectBuffer buffer,
+        final int offset,
+        final int length)
+    {
+        final UnsafeBuffer termBuffer = this.termBuffer;
+        final int resultingOffset = termOffset + length;
+
+        final int lengthOfFirstFrame = buffer.getInt(offset, LITTLE_ENDIAN);
+        buffer.putInt(offset, 0, LITTLE_ENDIAN);
+        termBuffer.putBytes(termOffset, buffer, offset, length);
+        frameLengthOrdered(termBuffer, termOffset, lengthOfFirstFrame);
+        putRawTailOrdered(termId, resultingOffset);
+
+        return resultingOffset;
+    }
+
 
     private static int handleEndOfLogCondition(
         final UnsafeBuffer termBuffer,

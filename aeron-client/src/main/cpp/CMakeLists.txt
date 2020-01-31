@@ -15,7 +15,6 @@
 #
 
 if (MSVC AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
-    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
     set(BUILD_SHARED_LIBS ON)
 
     set(AERON_LIB_WINSOCK_LIBS wsock32 ws2_32 Iphlpapi)
@@ -33,9 +32,7 @@ SET(SOURCE
     Context.cpp
     util/MemoryMappedFile.cpp
     util/CommandOption.cpp
-    util/CommandOptionParser.cpp
-    aeron_windows_client.c
-    util/aeron_error_client.c)
+    util/CommandOptionParser.cpp)
 
 SET(HEADERS
     ClientConductor.h
@@ -136,9 +133,7 @@ SET(HEADERS
     util/Index.h
     util/Platform.h
     protocol/SetupFlyweight.h
-    protocol/DataHeaderFlyweight.h
-    aeron_windows_client.h
-    util/aeron_error_client.h)
+    protocol/DataHeaderFlyweight.h)
 
 # static library
 add_library(aeron_client STATIC ${SOURCE} ${HEADERS})

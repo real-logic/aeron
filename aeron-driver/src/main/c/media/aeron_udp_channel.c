@@ -262,7 +262,7 @@ int aeron_udp_channel_parse(size_t uri_length, const char *uri, aeron_udp_channe
     if (has_no_distinguishing_characteristic && !_channel->is_manual_control_mode)
     {
         aeron_set_err(-AERON_ERROR_CODE_INVALID_CHANNEL, "%s",
-            "URIs for UDP must specify endpoint, control, tag-id, or be control-mode=manual");
+            "URIs for UDP must specify endpoint, control, tags, or control-mode=manual");
         goto error_cleanup;
     }
 

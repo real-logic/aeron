@@ -997,7 +997,7 @@ public final class AeronCluster implements AutoCloseable
          */
         public long messageTimeoutNs()
         {
-            return messageTimeoutNs;
+            return CommonContext.checkDebugTimeout(messageTimeoutNs, TimeUnit.NANOSECONDS);
         }
 
         /**

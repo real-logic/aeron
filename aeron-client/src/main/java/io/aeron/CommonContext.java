@@ -32,6 +32,7 @@ import java.nio.MappedByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
 
@@ -79,6 +80,12 @@ public class CommonContext implements Cloneable
      * Property name for driver timeout after which the driver is considered inactive.
      */
     public static final String DRIVER_TIMEOUT_PROP_NAME = "aeron.driver.timeout";
+
+    /**
+     * Property name for the timeout to use in debug mode.  By default this is not set and the configured
+     * timeouts will be used.  Setting this value enables the debug timeouts.
+     */
+    public static final String DEBUG_TIMEOUT_NS = "aeron.debug.timeout.ns";
 
     /**
      * Default timeout in which the driver is expected to respond or heartbeat.
@@ -494,7 +501,45 @@ public class CommonContext implements Cloneable
      */
     public long driverTimeoutMs()
     {
-        return driverTimeoutMs;
+        return checkDebugTimeout(driverTimeoutMs, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Override the supplied timeout with the debug value if it has been set and we are in debug mode.
+     *
+     * @param timeout The timeout value currently in use.
+     * @param timeUnit The units of the timeout value.  Debug timeout is specified in ns, so will be converted to this
+     *                 unit.
+     * @return The debug timeout if specified and we are being debugged or the supplied value if not.  Will be in
+     *         timeUnit units.
+     */
+    public static long checkDebugTimeout(final long timeout, final TimeUnit timeUnit)
+    {
+        final String debugTimeoutNsString = getProperty(DEBUG_TIMEOUT_NS);
+        if (null == debugTimeoutNsString || !SystemUtil.isDebuggerAttached())
+        {
+            return timeout;
+        }
+
+        try
+        {
+            final long debugTimeoutNs = Long.parseLong(debugTimeoutNsString);
+            final long debugTimeout = timeUnit.convert(debugTimeoutNs, TimeUnit.NANOSECONDS);
+            final StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+            final String methodName = stackTrace[2].getMethodName();
+            final String className = stackTrace[2].getClassName();
+            final String message =
+                "Using debug timeout [" + debugTimeout + "] for " + className + "::" + methodName + " replacing [" +
+                timeout + "]";
+
+            System.out.println(message);
+
+            return debugTimeout;
+        }
+        catch (final NumberFormatException e)
+        {
+            return timeout;
+        }
     }
 
     /**

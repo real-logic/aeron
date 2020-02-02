@@ -1214,7 +1214,7 @@ public class Aeron implements AutoCloseable
          */
         public long interServiceTimeoutNs()
         {
-            return interServiceTimeoutNs;
+            return CommonContext.checkDebugTimeout(interServiceTimeoutNs, TimeUnit.NANOSECONDS);
         }
 
         /**

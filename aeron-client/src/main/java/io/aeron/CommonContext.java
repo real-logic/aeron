@@ -82,10 +82,10 @@ public class CommonContext implements Cloneable
     public static final String DRIVER_TIMEOUT_PROP_NAME = "aeron.driver.timeout";
 
     /**
-     * Property name for the timeout to use in debug mode.  By default this is not set and the configured
-     * timeouts will be used.  Setting this value enables the debug timeouts.
+     * Property name for the timeout to use in debug mode. By default this is not set and the configured
+     * timeouts will be used. Setting this value adjusts timeouts to make debugging easier.
      */
-    public static final String DEBUG_TIMEOUT_NS = "aeron.debug.timeout.ns";
+    public static final String DEBUG_TIMEOUT_PROP_NAME = "aeron.debug.timeout";
 
     /**
      * Default timeout in which the driver is expected to respond or heartbeat.
@@ -508,35 +508,34 @@ public class CommonContext implements Cloneable
      * Override the supplied timeout with the debug value if it has been set and we are in debug mode.
      *
      * @param timeout The timeout value currently in use.
-     * @param timeUnit The units of the timeout value.  Debug timeout is specified in ns, so will be converted to this
+     * @param timeUnit The units of the timeout value. Debug timeout is specified in ns, so will be converted to this
      *                 unit.
-     * @return The debug timeout if specified and we are being debugged or the supplied value if not.  Will be in
+     * @return The debug timeout if specified and we are being debugged or the supplied value if not. Will be in
      *         timeUnit units.
      */
     public static long checkDebugTimeout(final long timeout, final TimeUnit timeUnit)
     {
-        final String debugTimeoutNsString = getProperty(DEBUG_TIMEOUT_NS);
-        if (null == debugTimeoutNsString || !SystemUtil.isDebuggerAttached())
+        final String debugTimeoutString = getProperty(DEBUG_TIMEOUT_PROP_NAME);
+        if (null == debugTimeoutString || !SystemUtil.isDebuggerAttached())
         {
             return timeout;
         }
 
         try
         {
-            final long debugTimeoutNs = Long.parseLong(debugTimeoutNsString);
+            final long debugTimeoutNs = SystemUtil.parseDuration(DEBUG_TIMEOUT_PROP_NAME, debugTimeoutString);
             final long debugTimeout = timeUnit.convert(debugTimeoutNs, TimeUnit.NANOSECONDS);
             final StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
             final String methodName = stackTrace[2].getMethodName();
             final String className = stackTrace[2].getClassName();
-            final String message =
-                "Using debug timeout [" + debugTimeout + "] for " + className + "::" + methodName + " replacing [" +
-                timeout + "]";
+            final String message = "Using debug timeout [" + debugTimeout + "] for " + className + "." + methodName +
+                " replacing [" + timeout + "]";
 
             System.out.println(message);
 
             return debugTimeout;
         }
-        catch (final NumberFormatException e)
+        catch (final NumberFormatException ignore)
         {
             return timeout;
         }

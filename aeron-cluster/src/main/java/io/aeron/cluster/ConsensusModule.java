@@ -364,9 +364,10 @@ public class ConsensusModule implements AutoCloseable
         public static final String LOG_CHANNEL_PROP_NAME = "aeron.cluster.log.channel";
 
         /**
-         * Channel for the clustered log.
+         * Channel for the clustered log. This channel can exist for a potentially log time given cluster operation
+         * so attention should be given to configuration such as term-length and mtu.
          */
-        public static final String LOG_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:9030|group=true";
+        public static final String LOG_CHANNEL_DEFAULT = "aeron:udp?endpoint=localhost:9030|group=true|term-length=64m";
 
         /**
          * Property name for the comma separated list of member endpoints.

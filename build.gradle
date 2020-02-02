@@ -1,3 +1,5 @@
+import org.asciidoctor.Asciidoctor
+
 /*
  * Copyright 2014-2020 Real Logic Limited.
  *
@@ -17,6 +19,10 @@ buildscript {
     repositories {
         mavenCentral()
     }
+
+    dependencies {
+        classpath 'org.asciidoctor:asciidoctorj:2.2.0'
+    }
 }
 
 plugins {
@@ -26,7 +32,6 @@ plugins {
     id 'com.github.johnrengelman.shadow' version '5.2.0' apply false
     id 'biz.aQute.bnd.builder' version '5.0.0' apply false
     id "com.github.ben-manes.versions" version "0.27.0"
-    id 'org.asciidoctor.convert' version '1.6.0' apply false
 }
 
 defaultTasks 'clean', 'build', 'shadowJar', 'install'
@@ -792,7 +797,6 @@ project(':aeron-agent') {
 
 project(':aeron-samples') {
     apply plugin: 'com.github.johnrengelman.shadow'
-    apply plugin: 'org.asciidoctor.convert'
 
     dependencies {
         api project(':aeron-archive')
@@ -840,8 +844,59 @@ project(':aeron-samples') {
         sign configurations.shadow
     }
 
-    asciidoctor {
-        attributes 'aeronVersion': "${aeronVersion}"
+    task asciidoctorGithub {
+        doLast {
+            def asciidoctor = Asciidoctor.Factory.create()
+            def attributes = new HashMap<>()
+            attributes.put("sampleBaseDir", "${project.projectDir}")
+            attributes.put("sampleSourceDir", "${project.projectDir}/src/main/java")
+            def options = new HashMap<>()
+            options.put("attributes", attributes)
+            options.put("safe", org.asciidoctor.SafeMode.UNSAFE.getLevel())
+            def inputAdocFile = new File("${project.projectDir}/src/docs/asciidoc/ClusterTutorial.adoc")
+            def outputAdocFile = new File("${project.buildDir}/asciidoc/asciidoc/ClusterTutorial.adoc")
+
+            if (!outputAdocFile.getParentFile().mkdirs())
+            {
+                throw new IOException("Unable to create build directory")
+            }
+
+            def output = null
+            try
+            {
+                output = new PrintStream(outputAdocFile)
+
+                asciidoctor.javaExtensionRegistry().preprocessor(new org.asciidoctor.extension.Preprocessor()
+                {
+                    void process(
+                            org.asciidoctor.ast.Document document,
+                            org.asciidoctor.extension.PreprocessorReader reader)
+                    {
+                        String line = null
+                        while (null != (line = reader.readLine()))
+                        {
+                            if (line.startsWith(":aeronVersion:"))
+                            {
+                                output.println(":aeronVersion: ${aeronVersion}")
+                            }
+                            else
+                            {
+                                output.println(line)
+                            }
+                        }
+                    }
+                })
+
+                asciidoctor.loadFile(inputAdocFile, options)
+            }
+            finally
+            {
+                if (null != output)
+                {
+                    output.close()
+                }
+            }
+        }
     }
 }
 

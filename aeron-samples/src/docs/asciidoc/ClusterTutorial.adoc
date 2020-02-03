@@ -113,25 +113,19 @@ recommend that you check out the source code from Github.
 === Using the Source From this Tutorial
 
 In order to look at the examples and run the code from this tutorial you will need to checkout the full Aeron source
-code.  And make sure we are using the release version of the code.
+code, use the appropriate release version and build the projects.
 
 [subs = "attributes+"]
 ----
 git clone https://github.com/real-logic/aeron.git
 cd aeron
 git checkout -b my_tutorial {aeronVersion}
-----
-
-The location on your computer where this gets checked out to will be referred to as `<AERON_HOME>`.  You will probably
-want to build Aeron now to make sure that you have the environment working correctly.
-
-----
-cd <AERON_HOME>
 ./gradlew
 ----
 
-This tutorial will include snippets of code from the working example.  The core scripts and classes for this tutorial
-are:
+The location on your computer where this has been checked out to will be referred to as `<AERON_HOME>`.
+
+This tutorial will include snippets of code from the working example.  The scripts and classes for this tutorial are:
 
  * <AERON_HOME>/aeron-samples/src/main/java/io/aeron/samples/tutorial/cluster/
  ** BasicAuctionClusteredService.java

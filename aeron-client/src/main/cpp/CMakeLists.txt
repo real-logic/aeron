@@ -16,9 +16,6 @@
 
 if (MSVC AND "${CMAKE_SYSTEM_NAME}" MATCHES "Windows")
     set(BUILD_SHARED_LIBS ON)
-
-    set(AERON_LIB_WINSOCK_LIBS wsock32 ws2_32 Iphlpapi)
-    set(WSAPOLL_PROTOTYPE_EXISTS True)
 endif ()
 
 SET(SOURCE
@@ -166,6 +163,7 @@ target_compile_definitions(aeron_client_shared
     PUBLIC $<$<NOT:$<CONFIG:Debug>>:DISABLE_BOUNDS_CHECKS>
     # relative file paths for use in exceptions
     PUBLIC "__PROJECT_SOURCE_DIR__=\"${NATIVE_PROJECT_SOURCE_DIR}\""
+    PUBLIC CLIENT_SHARED DLL_EXPORT
     )
 
 if (NOT WIN32)

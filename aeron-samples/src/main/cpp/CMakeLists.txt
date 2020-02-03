@@ -14,6 +14,12 @@
 # limitations under the License.
 #
 
+set(CLIENT_LINK_LIB "aeron_client")
+if(LINK_SAMPLES_CLIENT_SHARED)
+    set(CLIENT_LINK_LIB "aeron_client_shared")
+    add_definitions(-DCLIENT_SHARED)
+endif()
+
 include_directories(${AERON_CLIENT_SOURCE_PATH})
 
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DDISABLE_BOUNDS_CHECKS")
@@ -36,11 +42,6 @@ add_executable(LossStat LossStat.cpp ${HEADERS})
 add_executable(DriverTool DriverTool.cpp ${HEADERS})
 add_executable(ExclusiveThroughput ExclusiveThroughput.cpp ${HEADERS})
 add_executable(PingPong PingPong.cpp ${HEADERS})
-
-set(CLIENT_LINK_LIB "aeron_client")
-if(LINK_SAMPLES_CLIENT_SHARED)
-    set(CLIENT_LINK_LIB "aeron_client_shared")
-endif()
 
 target_link_libraries(AeronStat
     ${CLIENT_LINK_LIB})

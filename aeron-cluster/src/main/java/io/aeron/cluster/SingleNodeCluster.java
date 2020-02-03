@@ -30,10 +30,13 @@ import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.MinMulticastFlowControlSupplier;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
+import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.console.ContinueBarrier;
 
@@ -57,6 +60,7 @@ public class SingleNodeCluster implements AutoCloseable
     // cluster client side
     private MediaDriver clientMediaDriver;
     private AeronCluster client;
+    private final IdleStrategy idleStrategy = YieldingIdleStrategy.INSTANCE;
     private final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
     private final EgressListener egressMessageListener = new EgressListener()
     {
@@ -93,13 +97,12 @@ public class SingleNodeCluster implements AutoCloseable
             if (null != snapshotImage)
             {
                 System.out.println("onStart load snapshot");
-                while (snapshotImage.poll(
-                    (buffer, offset, length, header) ->
-                    {
-                        messageCount = buffer.getInt(offset);
-                    }, 1) <= 0)
+                final FragmentHandler fragmentHandler =
+                    (buffer, offset, length, header) -> messageCount = buffer.getInt(offset);
+
+                while (snapshotImage.poll(fragmentHandler, 1) <= 0)
                 {
-                    Thread.yield();
+                    cluster.idle();
                 }
 
                 System.out.println("snapshot messageCount=" + messageCount);
@@ -130,16 +133,18 @@ public class SingleNodeCluster implements AutoCloseable
             final int id = buffer.getInt(offset);
             if (TIMER_ID == id)
             {
+                cluster.reset();
                 while (!cluster.scheduleTimer(serviceCorrelationId(1), cluster.time() + 1_000))
                 {
-                    Thread.yield();
+                    cluster.idle();
                 }
             }
             else
             {
+                cluster.reset();
                 while (session.offer(buffer, offset, length) < 0)
                 {
-                    Thread.yield();
+                    cluster.idle();
                 }
             }
         }
@@ -152,9 +157,10 @@ public class SingleNodeCluster implements AutoCloseable
             for (final ClientSession session : cluster.clientSessions())
             {
                 buffer.putInt(0, 1);
+                cluster.reset();
                 while (session.offer(buffer, 0, 4) < 0)
                 {
-                    Thread.yield();
+                    cluster.idle();
                 }
             }
         }
@@ -164,9 +170,10 @@ public class SingleNodeCluster implements AutoCloseable
             System.out.println("onTakeSnapshot messageCount=" + messageCount);
 
             buffer.putInt(0, messageCount);
+            cluster.reset();
             while (snapshotPublication.offer(buffer, 0, 4) < 0)
             {
-                Thread.yield();
+                cluster.idle();
             }
         }
 
@@ -265,9 +272,10 @@ public class SingleNodeCluster implements AutoCloseable
     void sendMessageToCluster(final int id, final int messageLength)
     {
         msgBuffer.putInt(0, id);
+        idleStrategy.reset();
         while (client.offer(msgBuffer, 0, messageLength) < 0)
         {
-            Thread.yield();
+            idleStrategy.idle();
         }
     }
 
@@ -278,9 +286,10 @@ public class SingleNodeCluster implements AutoCloseable
 
     void pollEgressUntilMessage()
     {
+        idleStrategy.reset();
         while (pollEgress() <= 0)
         {
-            Thread.yield();
+            idleStrategy.idle();
         }
     }
 
@@ -293,9 +302,10 @@ public class SingleNodeCluster implements AutoCloseable
             clusteredMediaDriver.mediaDriver().context().countersManager());
         ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle);
 
+        idleStrategy.reset();
         while (snapshotCounter.get() <= snapshotCount)
         {
-            Thread.yield();
+            idleStrategy.idle();
         }
     }
 

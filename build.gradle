@@ -1,10 +1,5 @@
-import org.asciidoctor.Asciidoctor
-import org.eclipse.jgit.api.Git
-import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
-
-import java.nio.file.Files
-import java.nio.file.Paths
-import java.nio.file.StandardCopyOption
+import io.aeron.build.AsciidoctorPreprocessTask
+import io.aeron.build.TutorialPublishTask
 
 /*
  * Copyright 2014-2020 Real Logic Limited.
@@ -851,90 +846,23 @@ project(':aeron-samples') {
         sign configurations.shadow
     }
 
-    task asciidoctorGithub {
-        doLast {
-            def asciidoctor = Asciidoctor.Factory.create()
-            def attributes = new HashMap<>()
-            attributes.put("sampleBaseDir", "${project.projectDir}")
-            attributes.put("sampleSourceDir", "${project.projectDir}/src/main/java")
-            def options = new HashMap<>()
-            options.put("attributes", attributes)
-            options.put("safe", org.asciidoctor.SafeMode.UNSAFE.getLevel())
-            def inputAdocFile = new File("${project.projectDir}/src/docs/asciidoc/ClusterTutorial.adoc")
-            def outputAdocFile = new File("${project.buildDir}/asciidoc/asciidoc/ClusterTutorial.adoc")
-
-            if (!outputAdocFile.getParentFile().exists() && !outputAdocFile.getParentFile().mkdirs())
-            {
-                throw new IOException("Unable to create build directory")
-            }
-
-            def output = null
-            try
-            {
-                output = new PrintStream(outputAdocFile)
-
-                asciidoctor.javaExtensionRegistry().preprocessor(new org.asciidoctor.extension.Preprocessor()
-                {
-                    void process(
-                        org.asciidoctor.ast.Document document,
-                        org.asciidoctor.extension.PreprocessorReader reader)
-                    {
-                        String line = null
-                        while (null != (line = reader.readLine()))
-                        {
-                            if (line.startsWith(":aeronVersion:"))
-                            {
-                                output.println(":aeronVersion: ${aeronVersion}")
-                            }
-                            else
-                            {
-                                output.println(line)
-                            }
-                        }
-                    }
-                })
-
-                asciidoctor.loadFile(inputAdocFile, options)
-            }
-            finally
-            {
-                if (null != output)
-                {
-                    output.close()
-                }
-            }
-        }
+    task asciidoctorGithub(type: AsciidoctorPreprocessTask) {
+        sampleBaseDir = "${project.projectDir}"
+        sampleSourceDir = "${project.projectDir}/src/main/java"
+        source = new File("${project.projectDir}/src/docs/asciidoc/ClusterTutorial.adoc")
+        target = new File("${project.buildDir}/asciidoc/asciidoc/ClusterTutorial.adoc")
+        version = aeronVersion
     }
 
     task removeWikiDirectory(type: Delete) {
         delete "$buildDir/tmp/tutorialPublish"
     }
 
-    task tutorialPublish() {
+    task tutorialPublish(type: TutorialPublishTask) {
         dependsOn(removeWikiDirectory, asciidoctorGithub)
-
-        doLast {
-            def directory = new File("${project.buildDir}/tmp/tutorialPublish")
-
-            // Use Personal Access Token or GITHUB_TOKEN for workflows
-            def credentialsProvider = new UsernamePasswordCredentialsProvider(
-                project.property("aeron.ci.apiKey").toString(), "")
-
-            def git = Git.cloneRepository()
-                .setURI("https://github.com/mikeb01/Aeron.wiki.git")
-                .setCredentialsProvider(credentialsProvider)
-                .setDirectory(directory)
-                .call()
-
-            Files.copy(
-                Paths.get("${project.buildDir}/asciidoc/asciidoc/ClusterTutorial.adoc"),
-                Paths.get("${project.buildDir}/tmp/tutorialPublish/Cluster-Tutorial.asciidoc"),
-                StandardCopyOption.REPLACE_EXISTING)
-
-            git.add().addFilepattern(".").setUpdate(true).call()
-            git.commit().setMessage("Update Docs").call()
-            git.push().setCredentialsProvider(credentialsProvider).call()
-        }
+        apiKey = project.hasProperty('aeron.ci.apiKey') ? project.property('aeron.ci.apiKey') : ''
+        source = asciidoctorGithub.target
+        targetName = "Cluster-Tutorial.asciidoc"
     }
 }
 

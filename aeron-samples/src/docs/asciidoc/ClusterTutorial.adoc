@@ -119,7 +119,7 @@ code.  And make sure we are using the release version of the code.
 ----
 git clone https://github.com/real-logic/aeron.git
 cd aeron
-git checkout -b my_tutorial ${aeronVersion}
+git checkout -b my_tutorial {aeronVersion}
 ----
 
 The location on your computer where this gets checked out to will be referred to as `<AERON_HOME>`.  You will probably

@@ -582,7 +582,7 @@ class ConsensusModuleAgent implements Agent
     {
         if (null != logAdapter && null != replayLogDestination && followerMemberId == memberId)
         {
-            logAdapter.removeDestination(replayLogDestination);
+            logAdapter.asyncRemoveDestination(replayLogDestination);
             replayLogDestination = null;
         }
     }
@@ -931,13 +931,13 @@ class ConsensusModuleAgent implements Agent
         {
             if (null != replayLogDestination)
             {
-                logAdapter.removeDestination(replayLogDestination);
+                logAdapter.asyncRemoveDestination(replayLogDestination);
                 replayLogDestination = null;
             }
 
             if (null != liveLogDestination)
             {
-                logAdapter.removeDestination(liveLogDestination);
+                logAdapter.asyncRemoveDestination(liveLogDestination);
                 liveLogDestination = null;
             }
         }

@@ -845,7 +845,7 @@ public class Election implements AutoCloseable
         {
             if (null != liveLogDestination)
             {
-                logSubscription.removeDestination(liveLogDestination);
+                logSubscription.asyncRemoveDestination(liveLogDestination);
                 liveLogDestination = null;
                 consensusModuleAgent.liveLogDestination(null);
             }
@@ -859,7 +859,6 @@ public class Election implements AutoCloseable
     private void placeVote(final long candidateTermId, final int candidateId, final boolean vote)
     {
         final ClusterMember candidate = clusterMemberByIdMap.get(candidateId);
-
         if (null != candidate)
         {
             memberStatusPublisher.placeVote(

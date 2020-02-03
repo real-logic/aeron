@@ -127,15 +127,6 @@ cd <AERON_HOME>
 ./gradlew
 ----
 
-And to build the tutorial (if you haven't already)
-
-----
-./gradlew asciidoctor
-----
-
-This will create an HTML formatted version of the tutorial at
-<AERON_HOME>/aeron-samples/build/asciidoc/html5/ClusterTutorial.html
-
 This tutorial will include snippets of code from the working example.  The core scripts and classes for this tutorial
 are:
 
@@ -149,7 +140,7 @@ are:
 
 You may wish to open these up in your favourite IDE or editor while we proceed with the tutorial.
 
-== 3. Implementing a Clustered Service
+== Implementing a Clustered Service
 
 The first step to setting up a cluster is to implement the application logic.  For this tutorial we are going implement
 a simple auction service.  It will have one auction and will track a best price and an id for the customer that bid that

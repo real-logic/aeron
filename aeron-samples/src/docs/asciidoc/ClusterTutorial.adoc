@@ -1,7 +1,7 @@
 = Aeron Cluster Tutorial
 :sampleBaseDir: ../../..
 :sampleSourceDir: {sampleBaseDir}/src/main/java
-:aeronVersion: TODO
+:aeronVersion: [aeronVersion]
 :sectnums:
 :source-highlighter: prettify
 :autofit-option:
@@ -113,10 +113,13 @@ recommend that you check out the source code from Github.
 === Using the Source From this Tutorial
 
 In order to look at the examples and run the code from this tutorial you will need to checkout the full Aeron source
-code.
+code.  And make sure we are using the release version of the code.
 
+[subs = "attributes+"]
 ----
 git clone https://github.com/real-logic/aeron.git
+cd aeron
+git checkout -b my_tutorial ${aeronVersion}
 ----
 
 The location on your computer where this gets checked out to will be referred to as `<AERON_HOME>`.  You will probably

@@ -358,7 +358,7 @@ include::{sampleSourceDir}/io/aeron/samples/tutorial/cluster/BasicAuctionCluster
 Again nothing special in the Archive configuration specific to Cluster.  We've used the same aeronDirName as used by the
 Media Driver.  The `controlChannel` uses node specific port in the construction of its UDP channel.
 
-=== Archive Client
+==== Archive Client
 
 [source, Java, indent=0, options="nowrap"]
 ----
@@ -369,7 +369,7 @@ Because Cluster's Consensus Module requires that we write a log file to support 
 the constructed Archive for it to use.  The client needs a channel to receive responses back from the cluster, so again
 we are using the node specific port to prevent collisions.
 
-=== Consensus Module
+==== Consensus Module
 
 [source, Java, indent=0, options="nowrap"]
 ----

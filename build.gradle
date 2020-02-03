@@ -1,6 +1,3 @@
-import io.aeron.build.AsciidoctorPreprocessTask
-import io.aeron.build.TutorialPublishTask
-
 /*
  * Copyright 2014-2020 Real Logic Limited.
  *
@@ -16,6 +13,10 @@ import io.aeron.build.TutorialPublishTask
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import io.aeron.build.AsciidoctorPreprocessTask
+import io.aeron.build.TutorialPublishTask
+
 buildscript {
     repositories {
         mavenCentral()

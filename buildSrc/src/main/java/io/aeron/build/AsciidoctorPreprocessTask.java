@@ -3,76 +3,110 @@ package io.aeron.build;
 import org.asciidoctor.Asciidoctor;
 import org.asciidoctor.ast.Document;
 import org.asciidoctor.extension.PreprocessorReader;
+import org.asciidoctor.log.LogHandler;
+import org.asciidoctor.log.LogRecord;
+import org.asciidoctor.log.Severity;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputFile;
-import org.gradle.api.tasks.OutputFile;
+import org.gradle.api.tasks.InputDirectory;
+import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.HashMap;
+import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 
 public class AsciidoctorPreprocessTask extends DefaultTask
 {
     @Input
-    public String sampleBaseDir;
+    public String sampleBaseDir = getProject().getProjectDir().getAbsolutePath();
 
     @Input
-    public String sampleSourceDir;
+    public String sampleSourceDir = sampleBaseDir + "/src/main/java";
 
-    @InputFile
-    public File source;
+    @InputDirectory
+    public File source = new File(sampleBaseDir, "/src/doc/asciidoc");
 
-    @OutputFile
-    public File target;
+    @OutputDirectory
+    public File target = new File(getProject().getBuildDir(), "/asciidoc/asciidoc");
 
+    // Has a slightly silly name to avoid name clashes in the build script.
     @Input
-    public String version;
+    public String versionText;
 
     @TaskAction
     public void preprocess() throws Exception
     {
-        final Asciidoctor asciidoctor = Asciidoctor.Factory.create();
-
-        final HashMap<String, Object> attributes = new HashMap<>();
-        attributes.put("sampleBaseDir", requireNonNull(sampleBaseDir, "Must specify sampleBaseDir"));
-        attributes.put("sampleSourceDir", requireNonNull(sampleSourceDir, "Must specify sampleSourceDir"));
-
-        final HashMap<String, Object> options = new HashMap<>();
-        options.put("attributes", attributes);
-        options.put("safe", org.asciidoctor.SafeMode.UNSAFE.getLevel());
-
-        if (!target.getParentFile().exists() && !target.getParentFile().mkdirs())
+        if (!target.exists() && !target.mkdirs())
         {
             throw new IOException("Unable to create build directory");
         }
 
-        try (final PrintStream output = new PrintStream(target))
+        final File[] asciidocFiles = AsciidocUtil.filterAsciidocFiles(source);
+        final Map<File, Integer> errors = new HashMap<>();
+
+        for (final File asciidocFile : asciidocFiles)
         {
-            asciidoctor.javaExtensionRegistry().preprocessor(new org.asciidoctor.extension.Preprocessor()
-            {
-                public void process(Document document, PreprocessorReader reader)
+            final File outputFile = new File(target, asciidocFile.getName());
+
+            final Asciidoctor asciidoctor = Asciidoctor.Factory.create();
+
+            final int[] errorCount = { 0 };
+
+            asciidoctor.registerLogHandler(logRecord -> {
+                if (logRecord.getSeverity() == Severity.ERROR || logRecord.getSeverity() == Severity.FATAL)
                 {
-                    String line;
-                    while (null != (line = reader.readLine()))
-                    {
-                        if (line.startsWith(":aeronVersion:"))
-                        {
-                            output.println(":aeronVersion: " + version);
-                        }
-                        else
-                        {
-                            output.println(line);
-                        }
-                    }
+                    errorCount[0]++;
                 }
             });
 
-            asciidoctor.loadFile(source, options);
+            final HashMap<String, Object> attributes = new HashMap<>();
+            attributes.put("sampleBaseDir", requireNonNull(sampleBaseDir, "Must specify sampleBaseDir"));
+            attributes.put("sampleSourceDir", requireNonNull(sampleSourceDir, "Must specify sampleSourceDir"));
+
+            final HashMap<String, Object> options = new HashMap<>();
+            options.put("attributes", attributes);
+            options.put("safe", org.asciidoctor.SafeMode.UNSAFE.getLevel());
+
+            try (final PrintStream output = new PrintStream(outputFile))
+            {
+                asciidoctor.javaExtensionRegistry().preprocessor(new org.asciidoctor.extension.Preprocessor()
+                {
+                    public void process(Document document, PreprocessorReader reader)
+                    {
+                        String line;
+                        while (null != (line = reader.readLine()))
+                        {
+                            if (line.startsWith(":aeronVersion:"))
+                            {
+                                output.println(":aeronVersion: " + versionText);
+                            }
+                            else
+                            {
+                                output.println(line);
+                            }
+                        }
+                    }
+                });
+
+                asciidoctor.loadFile(asciidocFile, options);
+
+                if (0 < errorCount[0])
+                {
+                    errors.put(asciidocFile, errorCount[0]);
+                }
+            }
+        }
+
+        errors.forEach((key, value) -> System.out.println("file: " + key + ", error count: " + value));
+
+        if (0 < errors.size())
+        {
+            throw new Exception("Failed due to errors in parsing");
         }
     }
 }

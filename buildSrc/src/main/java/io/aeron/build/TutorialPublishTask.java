@@ -7,13 +7,13 @@ import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.TaskAction;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
 import static org.eclipse.jgit.lib.ConfigConstants.CONFIG_KEY_URL;
@@ -24,11 +24,8 @@ public class TutorialPublishTask extends DefaultTask
     @Input
     public String apiKey;
 
-    @Input
+    @InputDirectory
     public File source;
-
-    @Input
-    public String targetName;
 
     @TaskAction
     public void publish() throws Exception
@@ -44,10 +41,17 @@ public class TutorialPublishTask extends DefaultTask
             .setDirectory(directory)
             .call();
 
-        Files.copy(
-            source.toPath(),
-            Paths.get(new File(directory, targetName).getAbsolutePath()),
-            StandardCopyOption.REPLACE_EXISTING);
+        final File[] asciidocFiles = AsciidocUtil.filterAsciidocFiles(source);
+
+        for (File asciidocFile : asciidocFiles)
+        {
+            System.out.println("Copying: " + asciidocFile.getName());
+
+            Files.copy(
+                asciidocFile.toPath(),
+                new File(directory, asciidocFile.getName()).toPath(),
+                StandardCopyOption.REPLACE_EXISTING);
+        }
 
         git.add().addFilepattern(".").setUpdate(true).call();
         git.commit().setMessage("Update Docs").call();

@@ -117,10 +117,10 @@ code, use the appropriate release version and build the projects.
 
 [subs = "attributes+"]
 ----
-git clone https://github.com/real-logic/aeron.git
-cd aeron
-git checkout -b my_tutorial {aeronVersion}
-./gradlew
+> git clone https://github.com/real-logic/aeron.git
+> cd aeron
+> git checkout -b my_tutorial {aeronVersion}
+> ./gradlew
 ----
 
 The location on your computer where this has been checked out to will be referred to as `<AERON_HOME>`.

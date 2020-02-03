@@ -701,11 +701,7 @@ project(':aeron-samples') {
     }
 
     task asciidoctorGithub(type: AsciidoctorPreprocessTask) {
-        sampleBaseDir = "${project.projectDir}"
-        sampleSourceDir = "${project.projectDir}/src/main/java"
-        source = new File("${project.projectDir}/src/docs/asciidoc/ClusterTutorial.adoc")
-        target = new File("${project.buildDir}/asciidoc/asciidoc/ClusterTutorial.adoc")
-        version = aeronVersion
+        versionText = aeronVersion
     }
 
     task removeWikiDirectory(type: Delete) {
@@ -716,7 +712,6 @@ project(':aeron-samples') {
         dependsOn(removeWikiDirectory, asciidoctorGithub)
         apiKey = project.hasProperty('aeron.ci.apiKey') ? project.property('aeron.ci.apiKey') : ''
         source = asciidoctorGithub.target
-        targetName = "Cluster-Tutorial.asciidoc"
     }
 }
 

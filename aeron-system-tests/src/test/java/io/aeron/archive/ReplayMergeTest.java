@@ -27,13 +27,13 @@ import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.SystemUtil;
+import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.aeron.archive.Common.*;
 import static io.aeron.archive.codecs.SourceLocation.REMOTE;
@@ -86,7 +86,7 @@ public class ReplayMergeTest
         .endpoint(REPLAY_ENDPOINT);
 
     private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
-    private final AtomicInteger received = new AtomicInteger();
+    private final MutableInteger received = new MutableInteger();
     private final MediaDriver.Context mediaDriverContext = new MediaDriver.Context();
 
     private ArchivingMediaDriver archivingMediaDriver;
@@ -112,7 +112,7 @@ public class ReplayMergeTest
                 .aeronDirectoryName(mediaDriverContext.aeronDirectoryName())
                 .errorHandler(Throwable::printStackTrace)
                 .archiveDir(archiveDir)
-                .fileSyncLevel(0)
+                .recordingEventsEnabled(false)
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .deleteArchiveOnStart(true));
 
@@ -145,7 +145,7 @@ public class ReplayMergeTest
     @Test
     public void shouldMergeFromReplayToLive()
     {
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(30), () ->
         {
             final int initialMessageCount = MIN_MESSAGES_PER_TERM * 3;
             final int subsequentMessageCount = MIN_MESSAGES_PER_TERM * 3;

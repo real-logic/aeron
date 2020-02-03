@@ -88,7 +88,7 @@ public:
                 "-Daeron.archive.max.catalog.entries=1024",
                 "-Daeron.threading.mode=INVOKER",
                 "-Daeron.archive.threading.mode=SHARED",
-                "-Daeron.archive.file.sync.level=0",
+                "-Daeron.archive.recording.events.enabled=false",
                 "-Daeron.spies.simulate.connection=false",
                 "-Daeron.mtu.length=4k",
                 "-Daeron.term.buffer.sparse.file=true",
@@ -138,8 +138,7 @@ public:
         }
     }
 
-    std::shared_ptr<Publication> addPublication(
-        Aeron& aeron, const std::string& channel, std::int32_t streamId)
+    std::shared_ptr<Publication> addPublication(Aeron& aeron, const std::string& channel, std::int32_t streamId)
     {
         std::int64_t publicationId = aeron.addPublication(channel, streamId);
         std::shared_ptr<Publication> publication = aeron.findPublication(publicationId);
@@ -153,8 +152,7 @@ public:
         return publication;
     }
 
-    std::shared_ptr<Subscription> addSubscription(
-        Aeron& aeron, const std::string& channel, std::int32_t streamId)
+    std::shared_ptr<Subscription> addSubscription(Aeron& aeron, const std::string& channel, std::int32_t streamId)
     {
         std::int64_t subscriptionId = aeron.addSubscription(channel, streamId);
         std::shared_ptr<Subscription> subscription = aeron.findSubscription(subscriptionId);

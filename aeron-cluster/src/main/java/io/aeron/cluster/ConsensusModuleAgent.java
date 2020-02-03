@@ -141,7 +141,7 @@ class ConsensusModuleAgent implements Agent
     private Election election;
     private DynamicJoin dynamicJoin;
     private ClusterTermination clusterTermination;
-    private String logRecordingChannel;
+    private long logSubscriptionId = NULL_VALUE;
     private String liveLogDestination;
     private String replayLogDestination;
     private String clientFacingEndpoints;
@@ -921,22 +921,25 @@ class ConsensusModuleAgent implements Agent
 
     void stopLogRecording()
     {
-        if (null != logRecordingChannel)
+        if (NULL_VALUE != logSubscriptionId)
         {
-            archive.stopRecording(logRecordingChannel, ctx.logStreamId());
-            logRecordingChannel = null;
+            archive.stopRecording(logSubscriptionId);
+            logSubscriptionId = NULL_VALUE;
         }
 
-        if (null != logAdapter && null != replayLogDestination)
+        if (null != logAdapter)
         {
-            logAdapter.removeDestination(replayLogDestination);
-            replayLogDestination = null;
-        }
+            if (null != replayLogDestination)
+            {
+                logAdapter.removeDestination(replayLogDestination);
+                replayLogDestination = null;
+            }
 
-        if (null != logAdapter && null != liveLogDestination)
-        {
-            logAdapter.removeDestination(liveLogDestination);
-            liveLogDestination = null;
+            if (null != liveLogDestination)
+            {
+                logAdapter.removeDestination(liveLogDestination);
+                liveLogDestination = null;
+            }
         }
     }
 
@@ -2676,16 +2679,14 @@ class ConsensusModuleAgent implements Agent
 
     private void startLogRecording(final String channel, final SourceLocation sourceLocation)
     {
-        logRecordingChannel = channel;
-
         final long logRecordingId = recordingLog.findLastTermRecordingId();
         if (RecordingPos.NULL_RECORDING_ID == logRecordingId)
         {
-            archive.startRecording(channel, ctx.logStreamId(), sourceLocation);
+            logSubscriptionId = archive.startRecording(channel, ctx.logStreamId(), sourceLocation);
         }
         else
         {
-            archive.extendRecording(logRecordingId, channel, ctx.logStreamId(), sourceLocation);
+            logSubscriptionId = archive.extendRecording(logRecordingId, channel, ctx.logStreamId(), sourceLocation);
         }
     }
 

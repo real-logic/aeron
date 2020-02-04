@@ -33,6 +33,7 @@
 #include "DriverListenerAdapter.h"
 #include "LogBuffers.h"
 #include "HeartbeatTimestamp.h"
+#include "util/Export.h"
 
 namespace aeron {
 
@@ -47,7 +48,7 @@ typedef std::function<long long()> nano_clock_t;
 static const long KEEPALIVE_TIMEOUT_MS = 500;
 static const long RESOURCE_TIMEOUT_MS = 1000;
 
-class ClientConductor
+class CLIENT_EXPORT ClientConductor
 {
 public:
 

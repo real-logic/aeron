@@ -22,6 +22,7 @@
 
 #include <util/MemoryMappedFile.h>
 #include <concurrent/logbuffer/LogBufferDescriptor.h>
+#include "util/Export.h"
 
 namespace aeron {
 
@@ -29,7 +30,7 @@ using namespace aeron::util;
 using namespace aeron::concurrent;
 using namespace aeron::concurrent::logbuffer;
 
-class LogBuffers
+class CLIENT_EXPORT LogBuffers
 {
 public:
     explicit LogBuffers(const char *filename, bool preTouch);

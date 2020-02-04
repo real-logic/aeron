@@ -18,6 +18,7 @@
 
 #include <cstdint>
 #include <memory>
+#include "util/Export.h"
 
 #ifdef _WIN32
     #ifndef NOMINMAX
@@ -31,7 +32,7 @@
 
 namespace aeron { namespace util {
 
-class MemoryMappedFile
+class CLIENT_EXPORT MemoryMappedFile
 {
 public:
     typedef std::shared_ptr<MemoryMappedFile> ptr_t;

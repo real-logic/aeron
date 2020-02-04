@@ -28,6 +28,7 @@
 #include <concurrent/status/UnsafeBufferPosition.h>
 #include "concurrent/status/StatusIndicatorReader.h"
 #include "LogBuffers.h"
+#include "util/Export.h"
 
 namespace aeron {
 
@@ -55,7 +56,7 @@ static const std::int64_t MAX_POSITION_EXCEEDED = -5;
  * @see Aeron#addPublication
  * @see Aeron#findPublication
  */
-class Publication
+class CLIENT_EXPORT Publication
 {
 public:
 

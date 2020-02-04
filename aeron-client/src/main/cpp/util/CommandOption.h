@@ -23,12 +23,13 @@
 #include <map>
 
 #include "Exceptions.h"
+#include "util/Export.h"
 
 namespace aeron { namespace util {
 
 AERON_DECLARE_SOURCED_EXCEPTION (CommandOptionException, ExceptionCategory::EXCEPTION_CATEGORY_ERROR);
 
-class CommandOption
+class CLIENT_EXPORT CommandOption
 {
 
 private:

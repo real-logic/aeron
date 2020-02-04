@@ -31,6 +31,7 @@
 #include "Publication.h"
 #include "Subscription.h"
 #include "Context.h"
+#include "util/Export.h"
 
 /// Top namespace for Aeron C++ API
 namespace aeron {
@@ -53,7 +54,7 @@ using namespace aeron::concurrent::broadcast;
  * <p>
  * A client application requires only one Aeron object per Media Driver.
  */
-class Aeron
+class CLIENT_EXPORT Aeron
 {
 public:
     /**

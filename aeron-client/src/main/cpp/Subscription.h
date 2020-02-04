@@ -26,6 +26,7 @@
 #include "concurrent/status/StatusIndicatorReader.h"
 #include "concurrent/AtomicArrayUpdater.h"
 #include "Image.h"
+#include "util/Export.h"
 
 namespace aeron {
 
@@ -48,7 +49,7 @@ class ClientConductor;
  *
  * @see FragmentAssembler
  */
-class Subscription
+class CLIENT_EXPORT Subscription
 {
 public:
     /// @cond HIDDEN_SYMBOLS

@@ -1,12 +1,12 @@
 name: Continuous Integration
-on:
-  push:
-    branches:
-      - master
-  pull_request:
-    types: [opened, synchronize, reopened]
-    branches:
-      - master
+#on:
+#  push:
+#    branches:
+#      - master
+#  pull_request:
+#    types: [opened, synchronize, reopened]
+#    branches:
+#      - master
 
 env:
   GRADLE_OPTS: "-Dorg.gradle.daemon=false"

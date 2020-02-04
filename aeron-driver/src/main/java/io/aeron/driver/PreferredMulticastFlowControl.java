@@ -184,7 +184,7 @@ public class PreferredMulticastFlowControl implements FlowControl
         boolean result = false;
 
         // default ASF is 4 bytes
-        if (asfLength == 4)
+        if (asfLength >= 4)
         {
             if (statusMessageFlyweight.receiverTag() == rtag)
             {

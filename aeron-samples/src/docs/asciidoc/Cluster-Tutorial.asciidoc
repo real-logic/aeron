@@ -251,7 +251,7 @@ the data is received.
 include::{sampleSourceDir}/io/aeron/samples/tutorial/cluster/BasicAuctionClusteredService.java[tag=loadSnapshot]
 ----
 
-<1> We can use the method `Image::isEndOfStream` to determine if there is going to be any more input.
+<1> The method `Image::isEndOfStream` can be used to determine if there is going to be any more input.
 
 <2> Because our snapshot is stream of messages written to a publication, we use the `Image`'s poll method for extracting
 data from the snapshot.

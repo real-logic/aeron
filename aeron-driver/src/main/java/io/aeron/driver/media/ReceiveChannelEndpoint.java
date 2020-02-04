@@ -92,7 +92,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         final String rtagStr = udpChannel.channelUri().get(CommonContext.RECEIVER_TAG_PARAM_NAME);
         receiverTag = null == rtagStr ?
             context.receiverTag() :
-            new Integer(AsciiEncoding.parseIntAscii(rtagStr, 0, rtagStr.length()));
+            Integer.valueOf(AsciiEncoding.parseIntAscii(rtagStr, 0, rtagStr.length()));
 
         multiRcvDestination = udpChannel.isManualControlMode() ?
             new MultiRcvDestination(context.nanoClock(), DESTINATION_ADDRESS_TIMEOUT) : null;

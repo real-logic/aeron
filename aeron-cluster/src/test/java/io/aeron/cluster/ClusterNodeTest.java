@@ -238,9 +238,10 @@ public class ClusterNodeTest
                 final int length,
                 final Header header)
             {
+                idleStrategy.reset();
                 while (session.offer(buffer, offset, length) < 0)
                 {
-                    cluster.idle();
+                    idleStrategy.idle();
                 }
             }
         };
@@ -272,9 +273,10 @@ public class ClusterNodeTest
                 msg = buffer.getStringWithoutLengthAscii(offset, length);
                 final long correlationId = serviceCorrelationId(nextCorrelationId++);
 
+                idleStrategy.reset();
                 while (!cluster.scheduleTimer(correlationId, timestamp + 100))
                 {
-                    cluster.idle();
+                    idleStrategy.idle();
                 }
             }
 
@@ -284,9 +286,10 @@ public class ClusterNodeTest
                 buffer.putStringWithoutLengthAscii(0, responseMsg);
                 final ClientSession clientSession = cluster.getClientSession(clusterSessionId);
 
+                idleStrategy.reset();
                 while (clientSession.offer(buffer, 0, responseMsg.length()) < 0)
                 {
-                    cluster.idle();
+                    idleStrategy.idle();
                 }
             }
         };
@@ -312,18 +315,20 @@ public class ClusterNodeTest
             {
                 if (null != session)
                 {
+                    idleStrategy.reset();
                     while (cluster.offer(buffer, offset, length) < 0)
                     {
-                        cluster.idle();
+                        idleStrategy.idle();
                     }
                 }
                 else
                 {
                     for (final ClientSession clientSession : cluster.clientSessions())
                     {
+                        idleStrategy.reset();
                         while (clientSession.offer(buffer, offset, length) < 0)
                         {
-                            cluster.idle();
+                            idleStrategy.idle();
                         }
                     }
                 }

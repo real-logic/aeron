@@ -516,9 +516,10 @@ public class StartFromTruncatedRecordingLogTest
             final int length,
             final Header header)
         {
+            idleStrategy.reset();
             while (session.offer(buffer, offset, length) < 0)
             {
-                cluster.idle();
+                idleStrategy.idle();
             }
 
             ++messageCount;

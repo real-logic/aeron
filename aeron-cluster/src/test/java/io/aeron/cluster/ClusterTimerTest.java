@@ -187,7 +187,7 @@ public class ClusterTimerTest
                             break;
                         }
 
-                        cluster.idle();
+                        idleStrategy.idle();
                     }
                 }
             }
@@ -197,9 +197,10 @@ public class ClusterTimerTest
                 final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(SIZE_OF_INT);
                 buffer.putInt(0, timerId);
 
+                idleStrategy.reset();
                 while (snapshotPublication.offer(buffer, 0, SIZE_OF_INT) < 0)
                 {
-                    cluster.idle();
+                    idleStrategy.idle();
                 }
             }
 
@@ -218,9 +219,10 @@ public class ClusterTimerTest
 
             private void scheduleNext(final long correlationId, final long deadlineMs)
             {
+                idleStrategy.reset();
                 while (!cluster.scheduleTimer(correlationId, deadlineMs))
                 {
-                    cluster.idle();
+                    idleStrategy.idle();
                 }
             }
         };

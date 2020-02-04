@@ -23,14 +23,17 @@ import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusteredService;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.IdleStrategy;
 
 class StubClusteredService implements ClusteredService
 {
     protected Cluster cluster;
+    protected IdleStrategy idleStrategy;
 
     public void onStart(final Cluster cluster, final Image snapshotImage)
     {
         this.cluster = cluster;
+        this.idleStrategy = cluster.idleStrategy();
     }
 
     public void onSessionOpen(final ClientSession session, final long timestamp)

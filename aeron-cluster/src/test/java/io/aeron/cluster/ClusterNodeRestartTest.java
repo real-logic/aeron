@@ -484,7 +484,7 @@ public class ClusterNodeRestartTest
                             break;
                         }
 
-                        cluster.idle();
+                        idleStrategy.idle();
                     }
                 }
             }
@@ -577,7 +577,7 @@ public class ClusterNodeRestartTest
                             break;
                         }
 
-                        cluster.idle();
+                        idleStrategy.idle();
                     }
                 }
             }
@@ -593,9 +593,10 @@ public class ClusterNodeRestartTest
 
             private void scheduleNext(final long correlationId, final long deadlineMs)
             {
+                idleStrategy.reset();
                 while (!cluster.scheduleTimer(correlationId, deadlineMs))
                 {
-                    cluster.idle();
+                    idleStrategy.idle();
                 }
             }
         };

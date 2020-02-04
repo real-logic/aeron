@@ -291,7 +291,7 @@ class TestNode implements AutoCloseable
                         break;
                     }
 
-                    cluster.idle(fragments);
+                    idleStrategy.idle(fragments);
                 }
 
                 if (snapshotFragmentCount.get() != SNAPSHOT_FRAGMENT_COUNT)
@@ -320,7 +320,7 @@ class TestNode implements AutoCloseable
             {
                 while (!cluster.scheduleTimer(1, cluster.time() + 1_000))
                 {
-                    cluster.idle();
+                    idleStrategy.idle();
                 }
             }
 
@@ -330,7 +330,7 @@ class TestNode implements AutoCloseable
                 {
                     while (cluster.offer(buffer, offset, length) < 0)
                     {
-                        cluster.idle();
+                        idleStrategy.idle();
                     }
                 }
                 else
@@ -339,7 +339,7 @@ class TestNode implements AutoCloseable
                     {
                         while (clientSession.offer(buffer, offset, length) < 0)
                         {
-                            cluster.idle();
+                            idleStrategy.idle();
                         }
                     }
                 }
@@ -350,7 +350,7 @@ class TestNode implements AutoCloseable
                 {
                     while (session.offer(buffer, offset, length) < 0)
                     {
-                        cluster.idle();
+                        idleStrategy.idle();
                     }
                 }
             }
@@ -367,9 +367,10 @@ class TestNode implements AutoCloseable
 
             for (int i = 0; i < SNAPSHOT_FRAGMENT_COUNT; i++)
             {
+                idleStrategy.reset();
                 while (snapshotPublication.offer(buffer, 0, SNAPSHOT_MSG_LENGTH) <= 0)
                 {
-                    cluster.idle();
+                    idleStrategy.idle();
                 }
             }
             wasSnapshotTaken = true;

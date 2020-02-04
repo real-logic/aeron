@@ -87,12 +87,14 @@ public class SingleNodeCluster implements AutoCloseable
     static class Service implements ClusteredService
     {
         protected Cluster cluster;
+        protected IdleStrategy idleStrategy;
         private int messageCount = 0;
         private ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
 
         public void onStart(final Cluster cluster, final Image snapshotImage)
         {
             this.cluster = cluster;
+            this.idleStrategy = cluster.idleStrategy();
 
             if (null != snapshotImage)
             {
@@ -102,7 +104,7 @@ public class SingleNodeCluster implements AutoCloseable
 
                 while (snapshotImage.poll(fragmentHandler, 1) <= 0)
                 {
-                    cluster.idle();
+                    idleStrategy.idle();
                 }
 
                 System.out.println("snapshot messageCount=" + messageCount);
@@ -133,18 +135,18 @@ public class SingleNodeCluster implements AutoCloseable
             final int id = buffer.getInt(offset);
             if (TIMER_ID == id)
             {
-                cluster.reset();
+                idleStrategy.reset();
                 while (!cluster.scheduleTimer(serviceCorrelationId(1), cluster.time() + 1_000))
                 {
-                    cluster.idle();
+                    idleStrategy.idle();
                 }
             }
             else
             {
-                cluster.reset();
+                idleStrategy.reset();
                 while (session.offer(buffer, offset, length) < 0)
                 {
-                    cluster.idle();
+                    idleStrategy.idle();
                 }
             }
         }
@@ -157,10 +159,10 @@ public class SingleNodeCluster implements AutoCloseable
             for (final ClientSession session : cluster.clientSessions())
             {
                 buffer.putInt(0, 1);
-                cluster.reset();
+                idleStrategy.reset();
                 while (session.offer(buffer, 0, 4) < 0)
                 {
-                    cluster.idle();
+                    idleStrategy.idle();
                 }
             }
         }
@@ -170,10 +172,10 @@ public class SingleNodeCluster implements AutoCloseable
             System.out.println("onTakeSnapshot messageCount=" + messageCount);
 
             buffer.putInt(0, messageCount);
-            cluster.reset();
+            idleStrategy.reset();
             while (snapshotPublication.offer(buffer, 0, 4) < 0)
             {
-                cluster.idle();
+                idleStrategy.idle();
             }
         }
 

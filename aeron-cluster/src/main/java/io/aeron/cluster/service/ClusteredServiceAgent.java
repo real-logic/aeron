@@ -44,7 +44,7 @@ import static io.aeron.cluster.service.ClusteredServiceContainer.SNAPSHOT_TYPE_I
 import static java.util.Collections.unmodifiableCollection;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 
-class ClusteredServiceAgent implements Agent, Cluster
+class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 {
     static final long MARK_FILE_UPDATE_INTERVAL_MS = TimeUnit.NANOSECONDS.toMillis(MARK_FILE_UPDATE_INTERVAL_NS);
 
@@ -289,6 +289,11 @@ class ClusteredServiceAgent implements Agent, Cluster
         sessionMessageHeaderEncoder.clusterSessionId(0);
 
         return consensusModuleProxy.tryClaim(length + SESSION_HEADER_LENGTH, bufferClaim, headerBuffer);
+    }
+
+    public IdleStrategy idleStrategy()
+    {
+        return this;
     }
 
     public void reset()

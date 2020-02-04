@@ -16,7 +16,6 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.joining;
 import static org.eclipse.jgit.lib.ConfigConstants.CONFIG_KEY_URL;

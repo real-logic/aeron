@@ -15,7 +15,10 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.joining;
 import static org.eclipse.jgit.lib.ConfigConstants.CONFIG_KEY_URL;
 import static org.eclipse.jgit.lib.ConfigConstants.CONFIG_REMOTE_SECTION;
 
@@ -42,11 +45,11 @@ public class TutorialPublishTask extends DefaultTask
             .call();
 
         final File[] asciidocFiles = AsciidocUtil.filterAsciidocFiles(source);
+        System.out.println("Publishing from: " + source);
+        System.out.println("Found files: " + Arrays.stream(asciidocFiles).map(File::getName).collect(joining(", ")));
 
         for (File asciidocFile : asciidocFiles)
         {
-            System.out.println("Copying: " + asciidocFile.getName());
-
             Files.copy(
                 asciidocFile.toPath(),
                 new File(directory, asciidocFile.getName()).toPath(),

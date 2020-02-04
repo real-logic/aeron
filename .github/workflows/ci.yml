@@ -69,6 +69,8 @@ jobs:
           key: ${{ runner.os }}-gradle-wrapper
       - name: Install compiler
         run: |
+         sudo apt-get update
+         
          sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev
       - name: Build
         run: cppbuild/cppbuild --build-archive-api

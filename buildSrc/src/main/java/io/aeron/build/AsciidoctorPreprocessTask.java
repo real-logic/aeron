@@ -15,10 +15,12 @@ import org.gradle.api.tasks.TaskAction;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.joining;
 
 public class AsciidoctorPreprocessTask extends DefaultTask
 {
@@ -29,7 +31,7 @@ public class AsciidoctorPreprocessTask extends DefaultTask
     public String sampleSourceDir = sampleBaseDir + "/src/main/java";
 
     @InputDirectory
-    public File source = new File(sampleBaseDir, "/src/doc/asciidoc");
+    public File source = new File(sampleBaseDir, "/src/docs/asciidoc");
 
     @OutputDirectory
     public File target = new File(getProject().getBuildDir(), "/asciidoc/asciidoc");
@@ -47,6 +49,10 @@ public class AsciidoctorPreprocessTask extends DefaultTask
         }
 
         final File[] asciidocFiles = AsciidocUtil.filterAsciidocFiles(source);
+
+        System.out.println("Transforming from: " + source);
+        System.out.println("Found files: " + Arrays.stream(asciidocFiles).map(File::getName).collect(joining(", ")));
+
         final Map<File, Integer> errors = new HashMap<>();
 
         for (final File asciidocFile : asciidocFiles)

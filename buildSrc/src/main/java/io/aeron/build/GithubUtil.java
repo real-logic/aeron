@@ -3,28 +3,45 @@ package io.aeron.build;
 import org.eclipse.jgit.transport.URIish;
 
 import java.net.URISyntaxException;
-import java.util.regex.Matcher;
+import java.util.StringJoiner;
 import java.util.regex.Pattern;
 
 public class GithubUtil
 {
-    private static final Pattern PATH_PATTERN = Pattern.compile("^(.*/)?([^/]*)\\.git$");
+    private static final Pattern PATH_PATTERN = Pattern.compile("^(.*/)?([^/]*)(\\.git$)?");
 
     public static String getWikiUriFromOriginUri(String remoteUri) throws URISyntaxException
     {
         final URIish urIish = new URIish(remoteUri);
+        final String uriPath = urIish.getPath();
 
-        final Matcher matcher = PATH_PATTERN.matcher(urIish.getPath());
-
-        if (!matcher.matches())
+        if (uriPath.endsWith("/"))
         {
-            throw new IllegalArgumentException("Invalid URI path: " + urIish.getPath());
+            throw new IllegalArgumentException("Unable to handle URI path ending in '/': " + remoteUri);
         }
 
-        final String path = null == matcher.group(1) ? "" : matcher.group(1);
-        final String name = matcher.group(2);
+        final int lastSlashIndex = urIish.getPath().lastIndexOf('/');
+
+        final String path = lastSlashIndex == -1 ? "" : uriPath.substring(0, lastSlashIndex + 1);
+        final String repoName = lastSlashIndex == -1 ? uriPath : uriPath.substring(lastSlashIndex + 1);
+        final String name = stripSuffix(repoName, ".git");
         final String host = urIish.getHost();
 
-        return "https://" + host + "/" + path + name + ".wiki.git";
+        final String wikiUri = "https://" + host + "/" + path + name + ".wiki.git";
+
+        System.out.println("Origin: " + remoteUri);
+        System.out.println("Wiki  : " + wikiUri);
+
+        return wikiUri;
+    }
+
+    private static String stripSuffix(final String s, final String suffix)
+    {
+        if (s.endsWith(suffix))
+        {
+            return s.substring(0, s.length() - suffix.length());
+        }
+
+        return s;
     }
 }

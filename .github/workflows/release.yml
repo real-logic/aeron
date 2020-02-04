@@ -35,4 +35,4 @@ jobs:
         with:
           java-version: ${{ matrix.java }}
       - name: Build with Gradle
-        run: ./gradlew tutorialPublish -Paeron.ci.apiKey=${{ secrets.wiki_page_token }} --stacktrace
+        run: ./gradlew tutorialPublish -Paeron.ci.apiKey=${{ secrets.GITHUB_TOKEN }} --stacktrace

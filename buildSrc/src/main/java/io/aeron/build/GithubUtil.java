@@ -23,6 +23,7 @@ public class GithubUtil
         final int lastSlashIndex = urIish.getPath().lastIndexOf('/');
 
         final String path = lastSlashIndex == -1 ? "" : uriPath.substring(0, lastSlashIndex + 1);
+        final String prefixedPath = path.startsWith("/") ? path : "/" + path;
         final String repoName = lastSlashIndex == -1 ? uriPath : uriPath.substring(lastSlashIndex + 1);
         final String name = stripSuffix(repoName, ".git");
         final String host = stripSuffix(urIish.getHost(), "/");

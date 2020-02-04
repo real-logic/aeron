@@ -35,6 +35,8 @@ public class TutorialPublishTask extends DefaultTask
         // Use Personal Access Token or GITHUB_TOKEN for workflows
         final CredentialsProvider credentialsProvider = new UsernamePasswordCredentialsProvider(apiKey, "");
 
+
+
         Git git = Git.cloneRepository()
             .setURI(wikiUri)
             .setCredentialsProvider(credentialsProvider)

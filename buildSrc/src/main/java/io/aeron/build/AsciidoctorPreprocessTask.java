@@ -3,8 +3,6 @@ package io.aeron.build;
 import org.asciidoctor.Asciidoctor;
 import org.asciidoctor.ast.Document;
 import org.asciidoctor.extension.PreprocessorReader;
-import org.asciidoctor.log.LogHandler;
-import org.asciidoctor.log.LogRecord;
 import org.asciidoctor.log.Severity;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;

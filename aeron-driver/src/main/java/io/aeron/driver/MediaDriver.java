@@ -65,6 +65,7 @@ import org.agrona.concurrent.status.UnsafeBufferStatusIndicator;
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
+import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -93,6 +94,7 @@ import static io.aeron.driver.status.SystemCounterDescriptor.ERRORS;
 import static io.aeron.driver.status.SystemCounterDescriptor.RECEIVER_PROXY_FAILS;
 import static io.aeron.driver.status.SystemCounterDescriptor.SENDER_PROXY_FAILS;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.align;
 import static org.agrona.IoUtil.mapNewFile;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
@@ -490,6 +492,7 @@ public final class MediaDriver implements AutoCloseable
         private int sendToStatusMessagePollRatio = Configuration.sendToStatusMessagePollRatio();
 
         private InferableBoolean receiverGroupConsideration = Configuration.receiverGroupConsideration();
+        private Integer rtag = Configuration.receiverTag();
 
         private EpochClock epochClock;
         private NanoClock nanoClock;
@@ -2712,6 +2715,28 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
+        /**
+         * Get the receiver tag (rtag) to be sent in Status Messages from the Receiver.
+         *
+         * @return receiver tag value or null if not set.
+         */
+        public Integer receiverTag()
+        {
+            return rtag;
+        }
+
+        /**
+         * Set the receiver tag (rtag) to be sent in Status Messages from the Receiver.
+         *
+         * @param rtag value to sent in Status Messages from the receiver or null if not set.
+         * @return this for fluent API.
+         */
+        public Context receiverTag(final Integer rtag)
+        {
+            this.rtag = rtag;
+            return this;
+        }
+
         OneToOneConcurrentArrayQueue<Runnable> receiverCommandQueue()
         {
             return receiverCommandQueue;
@@ -2894,6 +2919,22 @@ public final class MediaDriver implements AutoCloseable
             if (null == applicationSpecificFeedback)
             {
                 applicationSpecificFeedback = Configuration.applicationSpecificFeedback();
+            }
+
+            if (null == rtag)
+            {
+                if (applicationSpecificFeedback.length > 0)
+                {
+                    if (applicationSpecificFeedback.length != SIZE_OF_INT)
+                    {
+                        throw new IllegalArgumentException(
+                            "applicationSpecificFeedback length must be equal to " + SIZE_OF_INT +
+                                " bytes: length=" + applicationSpecificFeedback.length);
+                    }
+
+                    final UnsafeBuffer buffer = new UnsafeBuffer(applicationSpecificFeedback);
+                    rtag = buffer.getInt(0, ByteOrder.LITTLE_ENDIAN);
+                }
             }
 
             if (null == receiveChannelEndpointThreadLocals)

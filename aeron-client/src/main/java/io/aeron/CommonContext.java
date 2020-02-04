@@ -274,6 +274,11 @@ public class CommonContext implements Cloneable
     public static final String FLOW_CONTROL_PARAM_NAME = "fc";
 
     /**
+     * Parameter name for Subscription URI param to indicate the receiver tag to be sent in SMs.
+     */
+    public static final String RECEIVER_TAG_PARAM_NAME = "rtag";
+
+    /**
      * Using an integer because there is no support for boolean. 1 is concluded, 0 is not concluded.
      */
     private static final AtomicIntegerFieldUpdater<CommonContext> IS_CONCLUDED_UPDATER = newUpdater(

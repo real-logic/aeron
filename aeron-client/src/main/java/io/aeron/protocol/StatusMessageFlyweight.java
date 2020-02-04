@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static org.agrona.BitUtil.SIZE_OF_INT;
 
 /**
  * Flyweight for a Status Message Frame.
@@ -48,6 +49,8 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     private static final int RECEIVER_WINDOW_FIELD_OFFSET = 24;
     private static final int RECEIVER_ID_FIELD_OFFSET = 28;
     private static final int APP_SPECIFIC_FEEDBACK_FIELD_OFFSET = 36;
+    // same offset as ASF
+    private static final int RECEIVER_TAG_FIELD_OFFSET = 36;
 
     public StatusMessageFlyweight()
     {
@@ -253,45 +256,51 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     }
 
     /**
-     * Retrieve the Application Specific Feedback (if present) from the Status Message.
+     * Return the length of the Application Specific Feedback (or rtag).
      *
-     * @param destination to store the feedback
-     * @return the number of bytes in the feedback copied into the destination
+     * @return length, in bytes, of the Application Specific Feedback.
      */
-    public int applicationSpecificFeedback(final byte[] destination)
+    public int asfLength()
     {
-        final int frameLength = frameLength();
-        int result = 0;
-
-        if (frameLength > HEADER_LENGTH)
-        {
-            if (frameLength > capacity())
-            {
-                throw new AeronException(
-                    "SM application specific feedback (" + (frameLength - HEADER_LENGTH) + ") is truncated (" +
-                    (capacity() - HEADER_LENGTH) + ")");
-            }
-
-            final int copyLength = Math.min(destination.length, frameLength - HEADER_LENGTH);
-            getBytes(APP_SPECIFIC_FEEDBACK_FIELD_OFFSET, destination, 0, copyLength);
-            result = copyLength;
-        }
-
-        return result;
+        return (frameLength() - HEADER_LENGTH);
     }
 
     /**
-     * Set the Application Specific Feedback for the Status Message.
+     * Retrieve the rtag (if present) from the Status Message.
      *
-     * @param source of the feedback to set
-     * @param offset of the feedback in the source
-     * @param length of the feedback in bytes
+     * @return the rtag value or 0 if not present.
+     */
+    public int receiverTag()
+    {
+        final int frameLength = frameLength();
+
+        if (frameLength > HEADER_LENGTH)
+        {
+            if (frameLength > (HEADER_LENGTH + SIZE_OF_INT))
+            {
+                throw new AeronException(
+                    "SM has longer application specific feedback (" + (frameLength - HEADER_LENGTH) + ") than rtag");
+            }
+
+            return getInt(RECEIVER_TAG_FIELD_OFFSET, LITTLE_ENDIAN);
+        }
+
+        return 0;
+    }
+
+    /**
+     * Set the Receiver Tag for the Status Message.
+     *
+     * @param rtag value to set if not null
      * @return flyweight
      */
-    public StatusMessageFlyweight applicationSpecificFeedback(final byte[] source, final int offset, final int length)
+    public StatusMessageFlyweight receiverTag(final Integer rtag)
     {
-        frameLength(HEADER_LENGTH + length);
-        putBytes(APP_SPECIFIC_FEEDBACK_FIELD_OFFSET, source, offset, length);
+        if (null != rtag)
+        {
+            frameLength(HEADER_LENGTH + SIZE_OF_INT);
+            putInt(RECEIVER_TAG_FIELD_OFFSET, rtag, LITTLE_ENDIAN);
+        }
 
         return this;
     }

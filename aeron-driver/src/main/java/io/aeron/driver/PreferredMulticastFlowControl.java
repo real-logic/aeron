@@ -21,8 +21,10 @@ import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.AsciiEncoding;
 import org.agrona.BitUtil;
 import org.agrona.SystemUtil;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.net.InetSocketAddress;
+import java.nio.ByteOrder;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.driver.MinMulticastFlowControl.EMPTY_RECEIVERS;
@@ -67,9 +69,8 @@ public class PreferredMulticastFlowControl implements FlowControl
     public static final byte[] PREFERRED_ASF_BYTES = BitUtil.fromHex(PREFERRED_ASF);
 
     private MinMulticastFlowControl.Receiver[] receivers = EMPTY_RECEIVERS;
-    private final byte[] smAsf = new byte[64];
     private long receiverTimeoutNs = RECEIVER_TIMEOUT;
-    private long rtag = 0xFFFFFFFF;
+    private long rtag = new UnsafeBuffer(PREFERRED_ASF_BYTES).getInt(0, ByteOrder.LITTLE_ENDIAN);
 
     /**
      * {@inheritDoc}
@@ -179,16 +180,13 @@ public class PreferredMulticastFlowControl implements FlowControl
 
     private boolean isFromPreferred(final StatusMessageFlyweight statusMessageFlyweight)
     {
-        final int asfLength = statusMessageFlyweight.applicationSpecificFeedback(smAsf);
+        final int asfLength = statusMessageFlyweight.asfLength();
         boolean result = false;
 
         // default ASF is 4 bytes
-        if (asfLength >= 4)
+        if (asfLength == 4)
         {
-            if (smAsf[0] == PREFERRED_ASF_BYTES[0] &&
-                smAsf[1] == PREFERRED_ASF_BYTES[1] &&
-                smAsf[2] == PREFERRED_ASF_BYTES[2] &&
-                smAsf[3] == PREFERRED_ASF_BYTES[3])
+            if (statusMessageFlyweight.receiverTag() == rtag)
             {
                 result = true;
             }

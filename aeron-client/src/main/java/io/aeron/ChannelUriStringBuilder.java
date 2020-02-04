@@ -54,6 +54,7 @@ public class ChannelUriStringBuilder
     private Integer termId;
     private Integer termOffset;
     private Integer sessionId;
+    private Integer rtag;
     private Long linger;
     private Boolean sparse;
     private Boolean eos;
@@ -87,6 +88,7 @@ public class ChannelUriStringBuilder
         termId = null;
         termOffset = null;
         sessionId = null;
+        rtag = null;
         linger = null;
         sparse = null;
         eos = null;
@@ -1211,6 +1213,51 @@ public class ChannelUriStringBuilder
     }
 
     /**
+     * Set the receiver tag (rtag) to be sent in SMs on a channel.
+     *
+     * @param rtag to be sent in SMs
+     * @return this for fluent API.
+     * @see CommonContext#RECEIVER_TAG_PARAM_NAME
+     */
+    public ChannelUriStringBuilder receiverTag(final Integer rtag)
+    {
+        this.rtag = rtag;
+        return this;
+    }
+
+    /**
+     * Set the receiver tag to be value which is in the {@link ChannelUri} which may be null.
+     *
+     * @param channelUri to read the value from.
+     * @return this for a fluent API.
+     * @see CommonContext#RECEIVER_TAG_PARAM_NAME
+     */
+    public ChannelUriStringBuilder receiverTag(final ChannelUri channelUri)
+    {
+        final String rtagStr = channelUri.get(RECEIVER_TAG_PARAM_NAME);
+        if (null == rtagStr)
+        {
+            rtag = null;
+            return this;
+        }
+        else
+        {
+            return receiverTag(Integer.valueOf(rtagStr));
+        }
+    }
+
+    /**
+     * Get the receiver tag (rtag) to be sent in SMs on a channel.
+     *
+     * @return receiver tag to be sent in SMs on a channel.
+     * @see CommonContext#RECEIVER_TAG_PARAM_NAME
+     */
+    public Integer receiverTag()
+    {
+        return rtag;
+    }
+
+    /**
      * Set the subscription semantics for if a stream should be rejoined after going unavailable.
      *
      * @param rejoin false if stream is not to be rejoined.
@@ -1380,6 +1427,11 @@ public class ChannelUriStringBuilder
         if (null != fc)
         {
             sb.append(FLOW_CONTROL_PARAM_NAME).append('=').append(fc).append('|');
+        }
+
+        if (null != rtag)
+        {
+            sb.append(RECEIVER_TAG_PARAM_NAME).append('=').append(rtag).append('|');
         }
 
         if (null != sparse)

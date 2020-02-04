@@ -631,6 +631,11 @@ public class Configuration
      */
     public static final String REJOIN_STREAM_PROP_NAME = "aeron.rejoin.stream";
 
+    /**
+     * Property name for default receiver tag (rtag) to send in all Status Messages.
+     */
+    public static final String RECEIVER_TAG_PROP_NAME = "aeron.flow.control.sm.receiver.tag";
+
     public static boolean printConfigurationOnStart()
     {
         return "true".equalsIgnoreCase(getProperty(PRINT_CONFIGURATION_ON_START_PROP_NAME, "false"));
@@ -756,6 +761,11 @@ public class Configuration
     public static boolean rejoinStream()
     {
         return "true".equalsIgnoreCase(getProperty(REJOIN_STREAM_PROP_NAME, "true"));
+    }
+
+    public static Integer receiverTag()
+    {
+        return getInteger(RECEIVER_TAG_PROP_NAME, null);
     }
 
     /**

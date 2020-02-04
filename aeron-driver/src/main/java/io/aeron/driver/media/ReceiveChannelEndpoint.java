@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.media;
 
+import io.aeron.CommonContext;
 import io.aeron.ErrorCode;
 import io.aeron.driver.DataPacketDispatcher;
 import io.aeron.driver.DriverConductorProxy;
@@ -24,6 +25,7 @@ import io.aeron.exceptions.ControlProtocolException;
 import io.aeron.exceptions.AeronException;
 import io.aeron.protocol.*;
 import io.aeron.status.ChannelEndpointStatus;
+import org.agrona.AsciiEncoding;
 import org.agrona.collections.Hashing;
 import org.agrona.collections.Int2IntCounterMap;
 import org.agrona.collections.Long2LongCounterMap;
@@ -60,6 +62,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     private final Int2IntCounterMap refCountByStreamIdMap = new Int2IntCounterMap(0);
     private final Long2LongCounterMap refCountByStreamIdAndSessionIdMap = new Long2LongCounterMap(0);
     private final MultiRcvDestination multiRcvDestination;
+    private final Integer receiverTag;
 
     private final long receiverId;
 
@@ -85,6 +88,11 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         rttMeasurementBuffer = threadLocals.rttMeasurementBuffer();
         rttMeasurementFlyweight = threadLocals.rttMeasurementFlyweight();
         receiverId = threadLocals.receiverId();
+
+        final String rtagStr = udpChannel.channelUri().get(CommonContext.RECEIVER_TAG_PARAM_NAME);
+        receiverTag = null == rtagStr ?
+            context.receiverTag() :
+            new Integer(AsciiEncoding.parseIntAscii(rtagStr, 0, rtagStr.length()));
 
         multiRcvDestination = udpChannel.isManualControlMode() ?
             new MultiRcvDestination(context.nanoClock(), DESTINATION_ADDRESS_TIMEOUT) : null;
@@ -420,9 +428,11 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
                 .consumptionTermOffset(0)
                 .receiverWindowLength(0)
                 .receiverId(receiverId)
+                .receiverTag(receiverTag)
                 .flags(SEND_SETUP_FLAG);
+            smBuffer.limit(statusMessageFlyweight.frameLength());
 
-            send(smBuffer, StatusMessageFlyweight.HEADER_LENGTH, transportIndex, controlAddress);
+            send(smBuffer, statusMessageFlyweight.frameLength(), transportIndex, controlAddress);
         }
     }
 
@@ -469,9 +479,11 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
                 .consumptionTermOffset(termOffset)
                 .receiverWindowLength(windowLength)
                 .receiverId(receiverId)
+                .receiverTag(receiverTag)
                 .flags(flags);
+            smBuffer.limit(statusMessageFlyweight.frameLength());
 
-            send(smBuffer, StatusMessageFlyweight.HEADER_LENGTH, controlAddresses);
+            send(smBuffer, statusMessageFlyweight.frameLength(), controlAddresses);
         }
     }
 

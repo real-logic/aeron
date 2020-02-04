@@ -172,6 +172,7 @@ SET(SOURCE
     media/aeron_udp_destination_tracker.c
     media/aeron_udp_channel_transport_bindings.c
     media/aeron_udp_channel_transport_loss.c
+    protocol/aeron_udp_protocol.c
     uri/aeron_uri.c
     collections/aeron_int64_to_ptr_hash_map.c
     collections/aeron_str_to_ptr_hash_map.c

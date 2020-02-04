@@ -127,20 +127,19 @@ public class PreferredMulticastFlowControl implements FlowControl
     public void initialize(final UdpChannel udpChannel, final int initialTermId, final int termBufferLength)
     {
         final String fcStr = udpChannel.channelUri().get(CommonContext.FLOW_CONTROL_PARAM_NAME);
-        final int param1Index = null == fcStr ? -1 : fcStr.indexOf(':');
 
-        if (param1Index > 0)
+        if (null != fcStr)
         {
-            final int param2Index = fcStr.indexOf(',', param1Index + 1);
-            final int rtagLength = (param2Index > 0) ?
-                param2Index - param1Index - 1 :
-                fcStr.length() - param1Index - 1;
-
-            rtag = AsciiEncoding.parseLongAscii(fcStr, param1Index + 1, rtagLength);
-
-            if (param2Index > 0)
+            for (final String arg : fcStr.split(","))
             {
-                receiverTimeoutNs = SystemUtil.parseDuration("fc pref timeout", fcStr.substring(param2Index + 1));
+                if (arg.startsWith("t:"))
+                {
+                    receiverTimeoutNs = SystemUtil.parseDuration("fc min timeout", arg.substring(2));
+                }
+                else if (arg.startsWith("g:"))
+                {
+                    rtag = AsciiEncoding.parseLongAscii(arg, 2, arg.length() - 2);
+                }
             }
         }
     }

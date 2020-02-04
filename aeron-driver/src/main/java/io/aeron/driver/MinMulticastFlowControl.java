@@ -59,11 +59,16 @@ public class MinMulticastFlowControl implements FlowControl
     public void initialize(final UdpChannel udpChannel, final int initialTermId, final int termBufferLength)
     {
         final String fcStr = udpChannel.channelUri().get(CommonContext.FLOW_CONTROL_PARAM_NAME);
-        final int paramsIndex = null == fcStr ? -1 : fcStr.indexOf(':');
 
-        if (paramsIndex > 0)
+        if (null != fcStr)
         {
-            receiverTimeoutNs = SystemUtil.parseDuration("fc min timeout", fcStr.substring(paramsIndex + 1));
+            for (final String arg : fcStr.split(","))
+            {
+                if (arg.startsWith("t:"))
+                {
+                    receiverTimeoutNs = SystemUtil.parseDuration("fc min timeout", arg.substring(2));
+                }
+            }
         }
     }
 

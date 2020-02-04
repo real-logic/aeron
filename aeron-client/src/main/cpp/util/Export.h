@@ -31,6 +31,4 @@
 #   define CLIENT_EXPORT
 #endif
 
-
-
 #endif // AERON_UTIL_EXPORT_FILE_H

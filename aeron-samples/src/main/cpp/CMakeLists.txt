@@ -15,10 +15,10 @@
 #
 
 set(CLIENT_LINK_LIB "aeron_client")
-if(LINK_SAMPLES_CLIENT_SHARED)
+if (LINK_SAMPLES_CLIENT_SHARED)
     set(CLIENT_LINK_LIB "aeron_client_shared")
     add_definitions(-DCLIENT_SHARED)
-endif()
+endif ()
 
 include_directories(${AERON_CLIENT_SOURCE_PATH})
 

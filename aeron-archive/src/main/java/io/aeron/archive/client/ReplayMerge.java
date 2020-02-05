@@ -24,8 +24,7 @@ import org.agrona.concurrent.EpochClock;
 
 import java.util.concurrent.TimeUnit;
 
-import static io.aeron.CommonContext.MDC_CONTROL_MODE_MANUAL;
-import static io.aeron.CommonContext.MDC_CONTROL_MODE_PARAM_NAME;
+import static io.aeron.CommonContext.*;
 
 /**
  * Replay a recorded stream from a starting position and merge with live stream for a full history of a stream.
@@ -35,6 +34,8 @@ import static io.aeron.CommonContext.MDC_CONTROL_MODE_PARAM_NAME;
  * After which the {@link ReplayMerge} can be closed and continued usage can be made of the {@link Image} or its
  * parent {@link Subscription}. If an exception occurs or progress stops, the merge will fail and
  * {@link #hasFailed()} will be {@code true}.
+ * <p>
+ * NOTE: Merging is only supported with UDP streams.
  */
 public class ReplayMerge implements AutoCloseable
 {
@@ -108,6 +109,15 @@ public class ReplayMerge implements AutoCloseable
         }
 
         final ChannelUri replayChannelUri = ChannelUri.parse(replayChannel);
+
+        if (subscription.channel().startsWith(IPC_CHANNEL) ||
+            replayChannel.startsWith(IPC_CHANNEL) ||
+            replayDestination.startsWith(IPC_CHANNEL) ||
+            liveDestination.startsWith(IPC_CHANNEL))
+        {
+            throw new IllegalArgumentException("IPC merging is not supported");
+        }
+
         replayChannelUri.put(CommonContext.LINGER_PARAM_NAME, "0");
         replayChannelUri.put(CommonContext.EOS_PARAM_NAME, "false");
 

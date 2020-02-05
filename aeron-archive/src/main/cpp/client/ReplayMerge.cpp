@@ -47,6 +47,14 @@ ReplayMerge::ReplayMerge(
             subscriptionChannelUri->get(MDC_CONTROL_MODE_PARAM_NAME), SOURCEINFO);
     }
 
+    if (m_subscription->channel().compare(0, 9, IPC_CHANNEL) == 0 ||
+        replayChannel.compare(0, 9, IPC_CHANNEL) == 0 ||
+        replayDestination.compare(0, 9, IPC_CHANNEL) == 0 ||
+        liveDestination.compare(0, 9, IPC_CHANNEL) == 0)
+    {
+        throw util::IllegalArgumentException("IPC merging is not supported", SOURCEINFO);
+    }
+
     m_subscription->addDestination(m_replayDestination);
 }
 

@@ -32,6 +32,8 @@ constexpr const std::int64_t REPLAY_MERGE_PROGRESS_TIMEOUT_DEFAULT_MS = 10 * 100
  * after which the ReplayMerge can go out of scope and continued usage can be made of the Image or its
  * parent Subscription. If an exception occurs or progress stops, the merge will fail and
  * #hasErrored() will be true.
+ * <p>
+ * NOTE: Merging is only supported with UDP streams.
  */
 class ReplayMerge
 {

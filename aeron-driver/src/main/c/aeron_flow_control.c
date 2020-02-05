@@ -19,11 +19,13 @@
 #define _GNU_SOURCE
 #endif
 
+#include <stdlib.h>
 #include <errno.h>
 #include "protocol/aeron_udp_protocol.h"
 #include "concurrent/aeron_logbuffer_descriptor.h"
 #include "util/aeron_error.h"
 #include "util/aeron_dlopen.h"
+#include "util/aeron_parse_util.h"
 #include "aeron_flow_control.h"
 #include "aeron_alloc.h"
 
@@ -144,4 +146,129 @@ aeron_flow_control_strategy_supplier_func_t aeron_flow_control_strategy_supplier
     }
 
     return NULL;
+}
+
+#define NUMBER_BUFFER_LEN (64)
+
+int aeron_flow_control_parse_preferred_options(
+    const size_t options_length,
+    const char *options,
+    aeron_flow_control_preferred_options_t *flow_control_options)
+{
+    flow_control_options->strategy_name = NULL;
+    flow_control_options->strategy_name_length = 0;
+    flow_control_options->timeout_ns = 0;
+    flow_control_options->has_receiver_tag = false;
+    flow_control_options->receiver_tag = -1;
+
+    char number_buffer[NUMBER_BUFFER_LEN];
+    memset(number_buffer, 0, NUMBER_BUFFER_LEN);
+
+    const char* current_option = options;
+    size_t remaining = options_length;
+
+    const char *next_option;
+    do
+    {
+        next_option = (const char *)memchr(current_option, ',', remaining);
+
+        ptrdiff_t current_option_length;
+
+        if (NULL == next_option)
+        {
+            current_option_length = remaining;
+        }
+        else
+        {
+            current_option_length = next_option - current_option;
+
+            // Skip the comma.
+            next_option++;
+            remaining -= (current_option_length + 1);
+        }
+
+        if (NULL == flow_control_options->strategy_name)
+        {
+            flow_control_options->strategy_name = current_option;
+            flow_control_options->strategy_name_length = current_option_length;
+        }
+        else if (current_option_length > 2 &&
+            ('g' == current_option[0] || 't' == current_option[0]) &&
+            ':' == current_option[1])
+        {
+            const size_t value_length = current_option_length - 2;
+            const char *value = current_option + 2;
+
+            if (NUMBER_BUFFER_LEN <= current_option_length)
+            {
+                aeron_set_err(
+                    -EINVAL,
+                    "Flow control options - number field too long (found %d, max %d), field: %.*s, options: %.*s",
+                    current_option_length, (NUMBER_BUFFER_LEN - 1),
+                    value_length, value,
+                    options_length, options);
+
+                return -EINVAL;
+            }
+            strncpy(number_buffer, value, value_length);
+
+            if ('g' == current_option[0])
+            {
+                int32_t receiver_tag;
+                char *end_ptr = "";
+                errno = 0;
+
+                receiver_tag = strtol(current_option + 2, &end_ptr, 10);
+
+                if (0 == errno && ('\0' == *end_ptr || ',' == *end_ptr))
+                {
+                    flow_control_options->has_receiver_tag = true;
+                    flow_control_options->receiver_tag = receiver_tag;
+                }
+                else
+                {
+                    aeron_set_err(
+                        -EINVAL,
+                        "Flow control options - invalid group, field: %.*s, options: %.*s",
+                        current_option_length, current_option,
+                        options_length, options);
+
+                    return -EINVAL;
+                }
+            }
+            else if ('t' == current_option[0])
+            {
+                uint64_t timeout_ns;
+                if (0 <= aeron_parse_duration_ns(number_buffer, &timeout_ns))
+                {
+                    flow_control_options->timeout_ns = timeout_ns;
+                }
+                else
+                {
+                    aeron_set_err(
+                        -EINVAL,
+                        "Flow control options - invalid timeout, field: %.*s, options: %.*s",
+                        current_option_length, current_option,
+                        options_length, options);
+
+                    return -EINVAL;
+                }
+            }
+        }
+        else
+        {
+            aeron_set_err(
+                -EINVAL,
+                "Flow control options - unrecognised option, field: %.*s, options: %.*s",
+                current_option_length, current_option,
+                options_length, options);
+
+            return -EINVAL;
+        }
+
+        current_option = next_option;
+    }
+    while (NULL != current_option && 0 < remaining);
+
+    return 0;
 }

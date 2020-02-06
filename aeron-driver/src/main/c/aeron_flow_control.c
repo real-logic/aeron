@@ -43,12 +43,6 @@ aeron_flow_control_strategy_supplier_func_t aeron_flow_control_strategy_supplier
     return func;
 }
 
-typedef struct aeron_max_flow_control_strategy_state_stct
-{
-    int64_t last_position;
-}
-aeron_max_flow_control_strategy_state_t;
-
 int64_t aeron_max_flow_control_strategy_on_idle(
     void *state,
     int64_t now_ns,
@@ -70,7 +64,6 @@ int64_t aeron_max_flow_control_strategy_on_sm(
     int64_t now_ns)
 {
     aeron_status_message_header_t *status_message_header = (aeron_status_message_header_t *)sm;
-    aeron_max_flow_control_strategy_state_t *strategy_state = (aeron_max_flow_control_strategy_state_t *)state;
 
     int64_t position = aeron_logbuffer_compute_position(
         status_message_header->consumption_term_id,
@@ -78,8 +71,6 @@ int64_t aeron_max_flow_control_strategy_on_sm(
         position_bits_to_shift,
         initial_term_id);
     int64_t window_edge = position + status_message_header->receiver_window;
-
-    strategy_state->last_position = position > strategy_state->last_position ? position : strategy_state->last_position;
 
     return snd_lmt > window_edge ? snd_lmt : window_edge;
 }
@@ -102,18 +93,15 @@ int aeron_max_multicast_flow_control_strategy_supplier(
 {
     aeron_flow_control_strategy_t *_strategy;
 
-    if (aeron_alloc((void **)&_strategy, sizeof(aeron_flow_control_strategy_t)) < 0 ||
-        aeron_alloc((void **)&_strategy->state, sizeof(aeron_max_flow_control_strategy_state_t)) < 0)
+    if (aeron_alloc((void **)&_strategy, sizeof(aeron_flow_control_strategy_t)) < 0)
     {
         return -1;
     }
 
+    _strategy->state = NULL;  // Max does not require any state.
     _strategy->on_idle = aeron_max_flow_control_strategy_on_idle;
     _strategy->on_status_message = aeron_max_flow_control_strategy_on_sm;
     _strategy->fini = aeron_max_flow_control_strategy_fini;
-
-    aeron_max_flow_control_strategy_state_t *state = (aeron_max_flow_control_strategy_state_t *)_strategy->state;
-    state->last_position = 0;
 
     *strategy = _strategy;
 

@@ -37,7 +37,6 @@ typedef struct aeron_min_flow_control_strategy_receiver_stct
     int64_t last_position_plus_window;
     int64_t time_of_last_status_message;
     int64_t receiver_id;
-    struct sockaddr_storage address;
 }
 aeron_min_flow_control_strategy_receiver_t;
 
@@ -143,7 +142,6 @@ int64_t aeron_min_flow_control_strategy_on_sm(
             receiver->last_position_plus_window = position + window_length;
             receiver->time_of_last_status_message = now_ns;
             receiver->receiver_id = receiver_id;
-            memcpy(&receiver->address, recv_addr, sizeof(receiver->address));
 
             min_position = (position + window_length) < min_position ? (position + window_length) : min_position;
         }

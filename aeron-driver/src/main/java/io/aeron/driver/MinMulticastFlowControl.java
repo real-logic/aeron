@@ -110,7 +110,7 @@ public class MinMulticastFlowControl implements FlowControl
         if (!isExisting)
         {
             final Receiver receiver = new Receiver(
-                position, position + windowLength, timeNs, receiverId, receiverAddress);
+                position, position + windowLength, timeNs, receiverId);
             receivers = add(receivers, receiver);
             minPosition = Math.min(minPosition, position + windowLength);
         }
@@ -184,20 +184,17 @@ public class MinMulticastFlowControl implements FlowControl
         long lastPositionPlusWindow;
         long timeOfLastStatusMessageNs;
         final long receiverId;
-        final InetSocketAddress address;
 
         Receiver(
             final long lastPosition,
             final long lastPositionPlusWindow,
             final long timeNs,
-            final long receiverId,
-            final InetSocketAddress receiverAddress)
+            final long receiverId)
         {
             this.lastPosition = lastPosition;
             this.lastPositionPlusWindow = lastPositionPlusWindow;
             this.timeOfLastStatusMessageNs = timeNs;
             this.receiverId = receiverId;
-            this.address = receiverAddress;
         }
     }
 }

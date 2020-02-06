@@ -30,8 +30,6 @@ import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
  */
 public class MaxMulticastFlowControl implements FlowControl
 {
-    private long lastPosition = 0;
-
     /**
      * {@inheritDoc}
      */
@@ -55,8 +53,6 @@ public class MaxMulticastFlowControl implements FlowControl
             flyweight.consumptionTermOffset(),
             positionBitsToShift,
             initialTermId);
-
-        lastPosition = Math.max(lastPosition, position);
 
         return Math.max(senderLimit, position + flyweight.receiverWindowLength());
     }

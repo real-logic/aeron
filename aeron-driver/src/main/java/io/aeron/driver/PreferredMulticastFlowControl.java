@@ -112,7 +112,7 @@ public class PreferredMulticastFlowControl implements FlowControl
         if (isFromPreferred && !isExisting)
         {
             final MinMulticastFlowControl.Receiver receiver = new MinMulticastFlowControl.Receiver(
-                position, lastPositionPlusWindow, timeNs, receiverId, receiverAddress);
+                position, lastPositionPlusWindow, timeNs, receiverId);
             receivers = MinMulticastFlowControl.add(receivers, receiver);
             minPosition = Math.min(minPosition, lastPositionPlusWindow);
         }

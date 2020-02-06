@@ -150,8 +150,6 @@ TEST_F(PreferredMulticastFlowControlTest, shouldUseMaxStrategy)
 
 TEST_F(PreferredMulticastFlowControlTest, shouldUsePreferredStrategy)
 {
-    GTEST_SKIP();
-
     aeron_flow_control_strategy_t *strategy = NULL;
 
     const char* channel = "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=min,g:123";

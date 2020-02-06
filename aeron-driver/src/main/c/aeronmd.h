@@ -480,11 +480,6 @@ uint64_t aeron_driver_context_get_counters_free_to_reuse_timeout_ns(aeron_driver
 #define AERON_PREFERRED_MULTICAST_FLOW_CONTROL_RECEIVER_TIMEOUT_ENV_VAR "AERON_PREFERRED_MULTICAST_FLOW_CONTROL_RECEIVER_TIMEOUT"
 
 /**
- * Application Specific Feedback (ASF) in Status Messages to identify preferred receivers.
- */
-#define AERON_PREFERRED_MULTICAST_FLOW_CONTROL_DEFAULT_RTAG_ENV_VAR "AERON_PREFERRED_MULTICAST_FLOW_CONTROL_DEFAULT_RTAG"
-
-/**
  * Function name to call for termination validation.
  */
 #define AERON_DRIVER_TERMINATION_VALIDATOR_ENV_VAR "AERON_DRIVER_TERMINATION_VALIDATOR"

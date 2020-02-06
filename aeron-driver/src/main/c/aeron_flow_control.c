@@ -192,8 +192,17 @@ int aeron_default_multicast_flow_control_strategy_supplier(
     if (strlen(min_strategy_name) == preferred_options.strategy_name_length &&
         0 == strncmp(min_strategy_name, preferred_options.strategy_name, strlen(min_strategy_name)))
     {
-        return aeron_min_flow_control_strategy_supplier(
-            strategy, channel_length, channel, stream_id, registration_id, initial_term_id, term_length);
+        if (preferred_options.has_receiver_tag)
+        {
+            return aeron_preferred_flow_control_strategy_supplier(
+                strategy, channel_length, channel, stream_id, registration_id, initial_term_id, term_length,
+                &preferred_options);
+        }
+        else
+        {
+            return aeron_min_flow_control_strategy_supplier(
+                strategy, channel_length, channel, stream_id, registration_id, initial_term_id, term_length);
+        }
     }
 
     aeron_set_err(

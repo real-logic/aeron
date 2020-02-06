@@ -45,8 +45,10 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import static io.aeron.Aeron.NULL_VALUE;
+import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -122,25 +124,31 @@ public class TestCluster implements AutoCloseable
 
     public void close()
     {
-        CloseHelper.close(client);
-        CloseHelper.close(clientMediaDriver);
-
-        if (null != backupNode)
-        {
-            backupNode.close();
-            backupNode.cleanUp();
-        }
-
-        for (final TestNode node : nodes)
-        {
-            if (null != node)
+        CloseHelper.closeAll(
+            client,
+            clientMediaDriver,
+            null != backupNode ? () ->
             {
-                node.close();
-                node.cleanUp();
-            }
-        }
+                backupNode.close();
+                backupNode.cleanUp();
+            } : null,
+            () -> CloseHelper.closeAll(Stream.of(nodes).map(TestCluster::closeNode).collect(toList()))
+        );
 
         ClusterTests.failOnClusterError();
+    }
+
+    static AutoCloseable closeNode(final TestNode node)
+    {
+        if (node == null)
+        {
+            return null;
+        }
+        return () ->
+        {
+            node.close();
+            node.cleanUp();
+        };
     }
 
     static void awaitCount(final AtomicLong counter, final long value)

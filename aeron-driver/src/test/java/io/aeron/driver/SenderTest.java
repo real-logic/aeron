@@ -28,6 +28,7 @@ import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.HeaderFlyweight;
 import io.aeron.protocol.SetupFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
+import org.agrona.ErrorHandler;
 import org.agrona.concurrent.CachedEpochClock;
 import org.agrona.concurrent.CachedNanoClock;
 import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
@@ -105,6 +106,8 @@ public class SenderTest
             return length;
         };
 
+    private final ErrorHandler errorHandler = mock(ErrorHandler.class);
+
     @BeforeEach
     public void setUp()
     {
@@ -120,7 +123,8 @@ public class SenderTest
                 .controlTransportPoller(mockTransportPoller)
                 .systemCounters(mockSystemCounters)
                 .senderCommandQueue(senderCommandQueue)
-                .nanoClock(nanoClock));
+                .nanoClock(nanoClock)
+                .errorHandler(errorHandler));
 
         LogBufferDescriptor.initialiseTailWithTermId(rawLog.metaData(), 0, INITIAL_TERM_ID);
 
@@ -160,7 +164,8 @@ public class SenderTest
             Configuration.untetheredWindowLimitTimeoutNs(),
             Configuration.untetheredRestingTimeoutNs(),
             false,
-            false);
+            false,
+            errorHandler);
 
         senderCommandQueue.offer(() -> sender.onNewNetworkPublication(publication));
     }

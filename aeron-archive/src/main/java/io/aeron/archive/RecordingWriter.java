@@ -15,6 +15,7 @@
  */
 package io.aeron.archive;
 
+import io.aeron.AeronCloseHelper;
 import io.aeron.Image;
 import io.aeron.archive.checksum.Checksum;
 import io.aeron.archive.client.ArchiveException;
@@ -22,6 +23,7 @@ import io.aeron.logbuffer.BlockHandler;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
+import org.agrona.concurrent.CountedErrorHandler;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
@@ -47,7 +49,7 @@ import static org.agrona.BitUtil.align;
  * <li>Isolation of an external relationship, namely the file system.</li>
  * </ul>
  */
-class RecordingWriter implements BlockHandler
+class RecordingWriter implements BlockHandler, AutoCloseable
 {
     private final long recordingId;
     private final int segmentLength;
@@ -57,6 +59,7 @@ class RecordingWriter implements BlockHandler
     private final Checksum checksum;
     private final FileChannel archiveDirChannel;
     private final File archiveDir;
+    private final CountedErrorHandler countedErrorHandler;
 
     private long segmentBasePosition;
     private int segmentOffset;
@@ -81,6 +84,8 @@ class RecordingWriter implements BlockHandler
         archiveDir = ctx.archiveDir();
         forceWrites = ctx.fileSyncLevel() > 0;
         forceMetadata = ctx.fileSyncLevel() > 1;
+
+        countedErrorHandler = ctx.countedErrorHandler();
 
         this.checksumBuffer = checksumBuffer;
         this.checksum = checksum;
@@ -143,12 +148,12 @@ class RecordingWriter implements BlockHandler
         }
     }
 
-    void close()
+    public void close()
     {
         if (!isClosed)
         {
             isClosed = true;
-            CloseHelper.quietClose(recordingFileChannel);
+            AeronCloseHelper.close(countedErrorHandler, recordingFileChannel);
         }
     }
 

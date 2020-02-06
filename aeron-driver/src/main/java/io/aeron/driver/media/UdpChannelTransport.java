@@ -15,19 +15,22 @@
  */
 package io.aeron.driver.media;
 
+import io.aeron.AeronCloseHelper;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.exceptions.AeronException;
 import io.aeron.protocol.HeaderFlyweight;
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.CloseHelper;
+import org.agrona.ErrorHandler;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.errors.DistinctErrorLog;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.io.IOException;
-import java.net.*;
+import java.net.InetSocketAddress;
+import java.net.PortUnreachableException;
+import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
@@ -44,7 +47,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
     protected final MediaDriver.Context context;
     protected final UdpChannel udpChannel;
     protected final AtomicCounter invalidPackets;
-    protected final DistinctErrorLog errorLog;
+    protected final ErrorHandler errorHandler;
     protected UdpTransportPoller transportPoller;
     protected SelectionKey selectionKey;
     protected final InetSocketAddress bindAddress;
@@ -64,7 +67,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
     {
         this.context = context;
         this.udpChannel = udpChannel;
-        this.errorLog = context.errorLog();
+        this.errorHandler = context.errorHandler();
         this.endPointAddress = endPointAddress;
         this.bindAddress = bindAddress;
         this.connectAddress = connectAddress;
@@ -208,7 +211,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
 
     /**
      * Get the bind address and port in endpoint-style format (ip:port).
-     *
+     * <p>
      * Must be called after the channel is opened.
      *
      * @return the bind address and port in endpoint-style format (ip:port).
@@ -239,37 +242,30 @@ public abstract class UdpChannelTransport implements AutoCloseable
         if (!isClosed)
         {
             isClosed = true;
-            try
+            if (null != selectionKey)
             {
-                if (null != selectionKey)
-                {
-                    selectionKey.cancel();
-                }
+                AeronCloseHelper.close(errorHandler, selectionKey::cancel);
+            }
 
-                if (null != transportPoller)
+            if (null != transportPoller)
+            {
+                AeronCloseHelper.close(errorHandler, () ->
                 {
                     transportPoller.cancelRead(this);
                     transportPoller.selectNowWithoutProcessing();
-                }
-
-                if (null != sendDatagramChannel)
-                {
-                    sendDatagramChannel.close();
-                }
-
-                if (receiveDatagramChannel != sendDatagramChannel && null != receiveDatagramChannel)
-                {
-                    receiveDatagramChannel.close();
-                }
-
-                if (null != transportPoller)
-                {
-                    transportPoller.selectNowWithoutProcessing();
-                }
+                });
             }
-            catch (final IOException ex)
+
+            AeronCloseHelper.close(errorHandler, sendDatagramChannel);
+
+            if (receiveDatagramChannel != sendDatagramChannel && null != receiveDatagramChannel)
             {
-                errorLog.record(ex);
+                AeronCloseHelper.close(errorHandler, receiveDatagramChannel);
+            }
+
+            if (null != transportPoller)
+            {
+                AeronCloseHelper.close(errorHandler, transportPoller::selectNowWithoutProcessing);
             }
         }
     }

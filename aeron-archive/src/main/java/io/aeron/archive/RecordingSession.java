@@ -15,11 +15,12 @@
  */
 package io.aeron.archive;
 
+import io.aeron.AeronCloseHelper;
 import io.aeron.Counter;
 import io.aeron.Image;
 import io.aeron.archive.checksum.Checksum;
-import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
+import org.agrona.concurrent.CountedErrorHandler;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.IOException;
@@ -47,6 +48,7 @@ class RecordingSession implements Session
     private State state = State.INIT;
     private final String originalChannel;
     private final ControlSession controlSession;
+    private final CountedErrorHandler countedErrorHandler;
 
     RecordingSession(
         final long correlationId,
@@ -70,6 +72,7 @@ class RecordingSession implements Session
         this.image = image;
         this.position = position;
         this.controlSession = controlSession;
+        countedErrorHandler = ctx.countedErrorHandler();
 
         blockLengthLimit = Math.min(image.termBufferLength(), Archive.Configuration.MAX_BLOCK_LENGTH);
         recordingWriter = new RecordingWriter(
@@ -98,8 +101,8 @@ class RecordingSession implements Session
 
     public void close()
     {
-        recordingWriter.close();
-        CloseHelper.close(position);
+        AeronCloseHelper.close(countedErrorHandler, recordingWriter);
+        AeronCloseHelper.close(countedErrorHandler, position);
     }
 
     public void abortClose()

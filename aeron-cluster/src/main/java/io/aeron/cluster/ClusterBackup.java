@@ -15,10 +15,7 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.Aeron;
-import io.aeron.ChannelUri;
-import io.aeron.CommonContext;
-import io.aeron.Counter;
+import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
@@ -26,9 +23,7 @@ import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.exceptions.ConcurrentConcludeException;
-import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
-import org.agrona.IoUtil;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.errors.DistinctErrorLog;
@@ -214,8 +209,9 @@ public final class ClusterBackup implements AutoCloseable
 
     public void close()
     {
-        CloseHelper.close(clusterBackupAgentRunner);
-        CloseHelper.close(clusterBackupAgentInvoker);
+        final CountedErrorHandler countedErrorHandler = ctx.countedErrorHandler();
+        AeronCloseHelper.close(countedErrorHandler, clusterBackupAgentRunner);
+        AeronCloseHelper.close(countedErrorHandler, clusterBackupAgentInvoker);
     }
 
     /**
@@ -388,9 +384,9 @@ public final class ClusterBackup implements AutoCloseable
                 clusterDir = new File(clusterDirectoryName);
             }
 
-            if (deleteDirOnStart && clusterDir.exists())
+            if (deleteDirOnStart)
             {
-                IoUtil.delete(clusterDir, false);
+                AeronCloseHelper.delete(clusterDir, false);
             }
 
             if (!clusterDir.exists() && !clusterDir.mkdirs())
@@ -1270,7 +1266,7 @@ public final class ClusterBackup implements AutoCloseable
         {
             if (null != clusterDir)
             {
-                IoUtil.delete(clusterDir, false);
+                AeronCloseHelper.delete(clusterDir, false);
             }
         }
 
@@ -1283,15 +1279,15 @@ public final class ClusterBackup implements AutoCloseable
         {
             if (ownsAeronClient)
             {
-                CloseHelper.close(aeron);
+                AeronCloseHelper.close(countedErrorHandler, aeron);
             }
             else
             {
-                CloseHelper.close(stateCounter);
-                CloseHelper.close(liveLogPositionCounter);
+                AeronCloseHelper.close(countedErrorHandler, stateCounter);
+                AeronCloseHelper.close(countedErrorHandler, liveLogPositionCounter);
             }
 
-            CloseHelper.close(markFile);
+            AeronCloseHelper.close(countedErrorHandler, markFile);
         }
 
         private void concludeMarkFile()

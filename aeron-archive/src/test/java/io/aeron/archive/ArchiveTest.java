@@ -19,6 +19,7 @@ import io.aeron.Aeron;
 import io.aeron.ChannelUriStringBuilder;
 import io.aeron.CommonContext;
 import io.aeron.Publication;
+import io.aeron.archive.Archive.Context;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.RecordingSubscriptionDescriptorConsumer;
 import io.aeron.archive.status.RecordingPos;
@@ -28,15 +29,21 @@ import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.DirectBuffer;
+import org.agrona.ErrorHandler;
+import org.agrona.concurrent.CountedErrorHandler;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.TooManyListenersException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -45,8 +52,10 @@ import java.util.function.IntConsumer;
 
 import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
+import static io.aeron.test.Tests.throwOnClose;
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 public class ArchiveTest
 {
@@ -118,7 +127,7 @@ public class ArchiveTest
             .dirDeleteOnStart(true)
             .publicationUnblockTimeoutNs(connectTimeoutNs * 2)
             .threadingMode(ThreadingMode.SHARED);
-        final Archive.Context archiveCtx = new Archive.Context()
+        final Context archiveCtx = new Context()
             .threadingMode(ArchiveThreadingMode.SHARED)
             .connectTimeoutNs(connectTimeoutNs);
         executor.prestartAllCoreThreads();
@@ -161,7 +170,7 @@ public class ArchiveTest
             .dirDeleteOnStart(true)
             .dirDeleteOnShutdown(true)
             .threadingMode(ThreadingMode.SHARED);
-        final Archive.Context archiveCtx = new Archive.Context().threadingMode(ArchiveThreadingMode.SHARED);
+        final Context archiveCtx = new Context().threadingMode(ArchiveThreadingMode.SHARED);
 
         long resultingPosition;
         final int initialPosition = DataHeaderFlyweight.HEADER_LENGTH * 9;
@@ -213,7 +222,7 @@ public class ArchiveTest
             assertTrue(catalog.forEntry(recordingId, catalogEntryProcessor));
         }
 
-        final Archive.Context archiveCtxClone = archiveCtx.clone();
+        final Context archiveCtxClone = archiveCtx.clone();
         try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(driverCtx.clone(), archiveCtxClone);
             AeronArchive archive = AeronArchive.connect())
         {
@@ -226,7 +235,7 @@ public class ArchiveTest
         }
     }
 
-    private static Catalog openCatalog(final Archive.Context archiveCtx)
+    private static Catalog openCatalog(final Context archiveCtx)
     {
         final IntConsumer intConsumer = (version) -> {};
         return new Catalog(new File(archiveCtx.archiveDirectoryName()), new SystemEpochClock(), true, intConsumer);
@@ -252,7 +261,7 @@ public class ArchiveTest
                 .dirDeleteOnStart(true)
                 .dirDeleteOnShutdown(true)
                 .threadingMode(ThreadingMode.SHARED);
-            final Archive.Context archiveCtx = new Archive.Context().threadingMode(ArchiveThreadingMode.SHARED);
+            final Context archiveCtx = new Context().threadingMode(ArchiveThreadingMode.SHARED);
 
             try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(driverCtx, archiveCtx);
                 AeronArchive archive = AeronArchive.connect())
@@ -291,6 +300,50 @@ public class ArchiveTest
                 archiveCtx.deleteArchiveDirectory();
             }
         });
+    }
+
+    @Test
+    void contextCloseErrorHandling() throws Exception
+    {
+        final CountedErrorHandler countedErrorHandler = mock(CountedErrorHandler.class);
+
+        final ErrorHandler errorHandler = mock(ErrorHandler.class, withSettings().extraInterfaces(AutoCloseable.class));
+        throwOnClose((AutoCloseable)errorHandler, new TooManyListenersException("error handler throws"));
+
+        final Catalog catalog = mock(Catalog.class);
+        final IndexOutOfBoundsException catalogException = new IndexOutOfBoundsException("catalog");
+        throwOnClose(catalog, catalogException);
+
+        final ArchiveMarkFile archiveMarkFile = mock(ArchiveMarkFile.class);
+        final IOException archiveMarkFileException = new IOException("file is gone");
+        throwOnClose(archiveMarkFile, archiveMarkFileException);
+
+        final AtomicCounter errorCounter = mock(AtomicCounter.class);
+        final AssertionError errorCounterException = new AssertionError("counter is dead");
+        throwOnClose(errorCounter, errorCounterException);
+
+        final Aeron aeron = mock(Aeron.class);
+        final CloneNotSupportedException aeronException = new CloneNotSupportedException("boom!");
+        throwOnClose(aeron, aeronException);
+
+        final Context context = new Context()
+            .countedErrorHandler(countedErrorHandler)
+            .errorHandler(errorHandler)
+            .catalog(catalog)
+            .archiveMarkFile(archiveMarkFile)
+            .errorCounter(errorCounter)
+            .aeron(aeron)
+            .ownsAeronClient(true);
+
+        final CloneNotSupportedException ex = assertThrows(CloneNotSupportedException.class, context::close);
+
+        assertSame(aeronException, ex);
+        final InOrder inOrder = inOrder(countedErrorHandler, errorHandler);
+        inOrder.verify(countedErrorHandler).onError(catalogException);
+        inOrder.verify(countedErrorHandler).onError(archiveMarkFileException);
+        inOrder.verify(errorHandler).onError(errorCounterException);
+        inOrder.verify((AutoCloseable)errorHandler).close();
+        inOrder.verifyNoMoreInteractions();
     }
 
     static final class SubscriptionDescriptor

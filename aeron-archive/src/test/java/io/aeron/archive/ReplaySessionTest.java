@@ -28,6 +28,7 @@ import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.IoUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.CachedEpochClock;
+import org.agrona.concurrent.CountedErrorHandler;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -95,14 +96,23 @@ public class ReplaySessionTest
     private final ControlResponseProxy proxy = mock(ControlResponseProxy.class);
     private final CachedEpochClock epochClock = new CachedEpochClock();
     private final Catalog mockCatalog = mock(Catalog.class);
+    private final CountedErrorHandler countedErrorHandler = mock(CountedErrorHandler.class);
     private Archive.Context context;
     private long recordingPosition;
 
     @BeforeEach
     public void before() throws IOException
     {
+        context = new Archive.Context()
+            .segmentFileLength(SEGMENT_LENGTH)
+            .archiveDir(archiveDir)
+            .epochClock(epochClock)
+            .countedErrorHandler(countedErrorHandler);
+
         when(recordingPositionCounter.get()).then((invocation) -> recordingPosition);
+        when(mockControlSession.archiveConductor()).thenReturn(mockArchiveConductor);
         when(mockArchiveConductor.catalog()).thenReturn(mockCatalog);
+        when(mockArchiveConductor.context()).thenReturn(context);
         when(mockReplayPub.termBufferLength()).thenReturn(TERM_BUFFER_LENGTH);
         when(mockReplayPub.positionBitsToShift())
             .thenReturn(LogBufferDescriptor.positionBitsToShift(TERM_BUFFER_LENGTH));
@@ -110,11 +120,6 @@ public class ReplaySessionTest
         when(mockReplayPub.availableWindow()).thenReturn((long)TERM_BUFFER_LENGTH / 2);
         when(mockImage.termBufferLength()).thenReturn(TERM_BUFFER_LENGTH);
         when(mockImage.joinPosition()).thenReturn(JOIN_POSITION);
-
-        context = new Archive.Context()
-            .segmentFileLength(SEGMENT_LENGTH)
-            .archiveDir(archiveDir)
-            .epochClock(epochClock);
 
         recordingSummary.recordingId = RECORDING_ID;
         recordingSummary.startPosition = START_POSITION;

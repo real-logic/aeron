@@ -22,9 +22,9 @@ import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.buffer.LogFactory;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.exceptions.InvalidChannelException;
-import io.aeron.exceptions.ControlProtocolException;
 import io.aeron.driver.media.*;
 import io.aeron.driver.status.*;
+import io.aeron.exceptions.ControlProtocolException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.status.ChannelEndpointStatus;
@@ -35,7 +35,10 @@ import org.agrona.collections.Object2ObjectHashMap;
 import org.agrona.collections.ObjectHashSet;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
-import org.agrona.concurrent.status.*;
+import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.status.CountersManager;
+import org.agrona.concurrent.status.Position;
+import org.agrona.concurrent.status.UnsafeBufferPosition;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -270,7 +273,8 @@ public class DriverConductor implements Agent
                 ctx.systemCounters(),
                 sourceAddress,
                 congestionControl,
-                ctx.lossReport());
+                ctx.lossReport(),
+                ctx.errorHandler());
 
             publicationImages.add(image);
             receiverProxy.newPublicationImage(channelEndpoint, image);
@@ -696,7 +700,7 @@ public class DriverConductor implements Agent
 
         final AeronClient client = getOrAddClient(clientId);
         final SubscriptionLink subscription = new NetworkSubscriptionLink(
-            registrationId, channelEndpoint, streamId, channel, client, params);
+            registrationId, channelEndpoint, streamId, channel, client, params, ctx.errorHandler());
 
         subscriptionLinks.add(subscription);
         clientProxy.onSubscriptionReady(registrationId, channelEndpoint.statusIndicatorCounterId());
@@ -708,7 +712,7 @@ public class DriverConductor implements Agent
     {
         final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(ChannelUri.parse(channel), ctx);
         final IpcSubscriptionLink subscriptionLink = new IpcSubscriptionLink(
-            registrationId, streamId, channel, getOrAddClient(clientId), params);
+            registrationId, streamId, channel, getOrAddClient(clientId), params, ctx.errorHandler());
         final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
 
         subscriptionLinks.add(subscriptionLink);
@@ -748,7 +752,7 @@ public class DriverConductor implements Agent
         final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), ctx);
         final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
         final SpySubscriptionLink subscriptionLink = new SpySubscriptionLink(
-            registrationId, udpChannel, streamId, client, params);
+            registrationId, udpChannel, streamId, client, params, ctx.errorHandler());
 
         subscriptionLinks.add(subscriptionLink);
 
@@ -1095,7 +1099,8 @@ public class DriverConductor implements Agent
             ctx.untetheredWindowLimitTimeoutNs(),
             ctx.untetheredRestingTimeoutNs(),
             ctx.spiesSimulateConnection(),
-            isExclusive);
+            isExclusive,
+            ctx.errorHandler());
 
         channelEndpoint.incRef();
         networkPublications.add(publication);
@@ -1491,7 +1496,8 @@ public class DriverConductor implements Agent
             ctx.untetheredRestingTimeoutNs(),
             cachedNanoClock.nanoTime(),
             ctx.systemCounters(),
-            isExclusive);
+            isExclusive,
+            ctx.errorHandler());
 
         ipcPublications.add(publication);
         activeSessionSet.add(new SessionKey(sessionId, streamId, IPC_MEDIA));

@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.AeronCloseHelper;
 import io.aeron.archive.Archive;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.status.SystemCounterDescriptor;
@@ -69,9 +70,9 @@ public class ClusterBackupMediaDriver implements AutoCloseable
     /**
      * Launch a new {@link ClusterBackupMediaDriver} with provided contexts.
      *
-     * @param driverCtx          for configuring the {@link MediaDriver}.
-     * @param archiveCtx         for configuring the {@link Archive}.
-     * @param clusterBackupCtx   for the configuration of the {@link ClusterBackup}.
+     * @param driverCtx        for configuring the {@link MediaDriver}.
+     * @param archiveCtx       for configuring the {@link Archive}.
+     * @param clusterBackupCtx for the configuration of the {@link ClusterBackup}.
      * @return a new {@link ClusterBackupMediaDriver} with the provided contexts.
      */
     public static ClusterBackupMediaDriver launch(
@@ -124,8 +125,8 @@ public class ClusterBackupMediaDriver implements AutoCloseable
 
     public void close()
     {
-        CloseHelper.close(clusterBackup);
-        CloseHelper.close(archive);
+        AeronCloseHelper.close(archive.context().countedErrorHandler(), clusterBackup);
+        AeronCloseHelper.close(driver.context().errorHandler(), archive);
         CloseHelper.close(driver);
     }
 }

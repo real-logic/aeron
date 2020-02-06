@@ -16,6 +16,7 @@
 package io.aeron.cluster.service;
 
 import io.aeron.Aeron;
+import io.aeron.AeronCloseHelper;
 import io.aeron.CommonContext;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.ClusterException;
@@ -37,7 +38,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Supplier;
 
-import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.*;
+import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.CLUSTERED_SERVICE_ERROR_COUNT_TYPE_ID;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static org.agrona.SystemUtil.getSizeAsInt;
@@ -138,7 +139,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
     public void close()
     {
-        CloseHelper.close(serviceAgentRunner);
+        AeronCloseHelper.close(ctx.errorHandler(), serviceAgentRunner);
     }
 
     /**
@@ -1399,7 +1400,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         {
             if (null != clusterDir)
             {
-                IoUtil.delete(clusterDir, false);
+                AeronCloseHelper.delete(clusterDir, false);
             }
         }
 
@@ -1410,7 +1411,8 @@ public final class ClusteredServiceContainer implements AutoCloseable
          */
         public void close()
         {
-            CloseHelper.close(markFile);
+            final ErrorHandler errorHandler = errorHandler();
+            AeronCloseHelper.close(errorHandler, markFile);
 
             if (ownsAeronClient)
             {

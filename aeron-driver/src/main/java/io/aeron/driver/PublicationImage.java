@@ -16,6 +16,7 @@
 package io.aeron.driver;
 
 import io.aeron.Aeron;
+import io.aeron.AeronCloseHelper;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.media.ImageConnection;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
@@ -26,9 +27,13 @@ import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.logbuffer.TermRebuilder;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
+import org.agrona.ErrorHandler;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.ArrayUtil;
-import org.agrona.concurrent.*;
+import org.agrona.concurrent.CachedEpochClock;
+import org.agrona.concurrent.CachedNanoClock;
+import org.agrona.concurrent.NanoClock;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.Position;
 import org.agrona.concurrent.status.ReadablePosition;
@@ -132,6 +137,7 @@ public class PublicationImage
     private final Position hwmPosition;
     private final LossDetector lossDetector;
     private final CongestionControl congestionControl;
+    private final ErrorHandler errorHandler;
     private final Position rebuildPosition;
     private final InetSocketAddress sourceAddress;
     private final AtomicCounter heartbeatsReceived;
@@ -167,7 +173,8 @@ public class PublicationImage
         final SystemCounters systemCounters,
         final InetSocketAddress sourceAddress,
         final CongestionControl congestionControl,
-        final LossReport lossReport)
+        final LossReport lossReport,
+        final ErrorHandler errorHandler)
     {
         this.correlationId = correlationId;
         this.imageLivenessTimeoutNs = imageLivenessTimeoutNs;
@@ -182,6 +189,7 @@ public class PublicationImage
         this.sourceAddress = sourceAddress;
         this.initialTermId = initialTermId;
         this.congestionControl = congestionControl;
+        this.errorHandler = errorHandler;
         this.lossReport = lossReport;
 
         this.nanoClock = nanoClock;
@@ -236,24 +244,21 @@ public class PublicationImage
      */
     public void close()
     {
-        hwmPosition.close();
-        rebuildPosition.close();
-        for (final ReadablePosition position : subscriberPositions)
-        {
-            position.close();
-        }
+        AeronCloseHelper.close(errorHandler, hwmPosition);
+        AeronCloseHelper.close(errorHandler, rebuildPosition);
+        AeronCloseHelper.closeAll(errorHandler, subscriberPositions);
 
         for (int i = 0, size = untetheredSubscriptions.size(); i < size; i++)
         {
             final UntetheredSubscription untetheredSubscription = untetheredSubscriptions.get(i);
             if (UntetheredSubscription.RESTING == untetheredSubscription.state)
             {
-                untetheredSubscription.position.close();
+                AeronCloseHelper.close(errorHandler, untetheredSubscription.position);
             }
         }
 
-        congestionControl.close();
-        rawLog.close();
+        AeronCloseHelper.close(errorHandler, congestionControl);
+        AeronCloseHelper.close(errorHandler, rawLog);
     }
 
     /**
@@ -337,7 +342,7 @@ public class PublicationImage
 
     /**
      * Called from the {@link LossDetector} when gap is detected by the {@link DriverConductor} thread.
-     *
+     * <p>
      * {@inheritDoc}
      */
     public void onGapDetected(final int termId, final int termOffset, final int length)

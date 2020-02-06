@@ -15,6 +15,7 @@
  */
 package io.aeron.archive;
 
+import io.aeron.AeronCloseHelper;
 import io.aeron.Counter;
 import io.aeron.ExclusivePublication;
 import io.aeron.Publication;
@@ -25,6 +26,7 @@ import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.CachedEpochClock;
+import org.agrona.concurrent.CountedErrorHandler;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
@@ -175,8 +177,11 @@ class ReplaySession implements Session, AutoCloseable
 
     public void close()
     {
-        closeRecordingSegment();
-        CloseHelper.close(publication);
+        final CountedErrorHandler errorHandler = controlSession.archiveConductor().context().countedErrorHandler();
+        AeronCloseHelper.close(errorHandler, fileChannel);
+        fileChannel = null;
+        segmentFile = null;
+        AeronCloseHelper.close(errorHandler, publication);
     }
 
     public long sessionId()

@@ -153,7 +153,7 @@ public class Aeron implements AutoCloseable
     /**
      * Print out the values from {@link #countersReader()} which can be useful for debugging.
      *
-     *  @param out to where the counters get printed.
+     * @param out to where the counters get printed.
      */
     public void printCounters(final PrintStream out)
     {
@@ -225,13 +225,14 @@ public class Aeron implements AutoCloseable
     {
         if (IS_CLOSED_UPDATER.compareAndSet(this, 0, 1))
         {
+            final ErrorHandler errorHandler = ctx.errorHandler();
             if (null != conductorRunner)
             {
-                conductorRunner.close();
+                AeronCloseHelper.close(errorHandler, conductorRunner);
             }
             else
             {
-                conductorInvoker.close();
+                AeronCloseHelper.close(errorHandler, conductorInvoker);
             }
         }
     }
@@ -1128,7 +1129,7 @@ public class Aeron implements AutoCloseable
 
         /**
          * Set a {@link Runnable} that is called when the client is closed by timeout or normal means.
-         *
+         * <p>
          * It is not safe to call any API functions from any threads after this hook is called. In addition any
          * in flight calls may still cause faults. It is thus recommended to treat this as a hard error and
          * terminate the process in this hook as soon as possible.

@@ -15,11 +15,13 @@
  */
 package io.aeron.driver.media;
 
+import io.aeron.AeronCloseHelper;
 import io.aeron.driver.Configuration;
 import io.aeron.protocol.NakFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.BufferUtil;
+import org.agrona.ErrorHandler;
 import org.agrona.LangUtil;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -31,9 +33,7 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 
 import static io.aeron.logbuffer.FrameDescriptor.frameType;
-import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_NAK;
-import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_RTTM;
-import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_SM;
+import static io.aeron.protocol.HeaderFlyweight.*;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 
 /**
@@ -49,12 +49,14 @@ public class ControlTransportPoller extends UdpTransportPoller
     private final RttMeasurementFlyweight rttMeasurement = new RttMeasurementFlyweight(unsafeBuffer);
     private SendChannelEndpoint[] transports = new SendChannelEndpoint[0];
 
+    public ControlTransportPoller(final ErrorHandler errorHandler)
+    {
+        super(errorHandler);
+    }
+
     public void close()
     {
-        for (final SendChannelEndpoint channelEndpoint : transports)
-        {
-            channelEndpoint.close();
-        }
+        AeronCloseHelper.closeAll(errorHandler, transports);
 
         super.close();
     }

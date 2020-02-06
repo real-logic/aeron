@@ -186,7 +186,7 @@ public final class AeronCluster implements AutoCloseable
         }
     }
 
-    private AeronCluster(
+    AeronCluster(
         final Context ctx,
         final MessageHeaderEncoder messageHeaderEncoder,
         final Publication publication,
@@ -231,15 +231,17 @@ public final class AeronCluster implements AutoCloseable
      */
     public void close()
     {
+        final ErrorHandler errorHandler = ctx.errorHandler();
+
         if (null != publication && publication.isConnected())
         {
-            closeSession();
+            AeronCloseHelper.close(errorHandler, this::closeSession);
         }
 
         if (!ctx.ownsAeronClient())
         {
-            CloseHelper.close(subscription);
-            CloseHelper.close(publication);
+            AeronCloseHelper.close(errorHandler, subscription);
+            AeronCloseHelper.close(errorHandler, publication);
         }
 
         ctx.close();
@@ -340,7 +342,7 @@ public final class AeronCluster implements AutoCloseable
      * @param length      of the range to claim, in bytes.
      * @param bufferClaim to be populated if the claim succeeds.
      * @return The new stream position, otherwise a negative error value as specified in
-     *         {@link io.aeron.Publication#tryClaim(int, BufferClaim)}.
+     * {@link io.aeron.Publication#tryClaim(int, BufferClaim)}.
      * @throws IllegalArgumentException if the length is greater than {@link io.aeron.Publication#maxPayloadLength()}.
      * @see Publication#tryClaim(int, BufferClaim)
      * @see BufferClaim#commit()
@@ -1427,9 +1429,13 @@ public final class AeronCluster implements AutoCloseable
         {
             if (5 != step)
             {
-                CloseHelper.close(ingressPublication);
-                CloseHelper.close(egressSubscription);
-                endpointByMemberIdMap.values().forEach(MemberEndpoint::disconnect);
+                final ErrorHandler errorHandler = ctx.errorHandler();
+                AeronCloseHelper.close(errorHandler, ingressPublication);
+                AeronCloseHelper.close(errorHandler, egressSubscription);
+                for (final MemberEndpoint memberEndpoint : endpointByMemberIdMap.values())
+                {
+                    AeronCloseHelper.close(errorHandler, memberEndpoint::disconnect);
+                }
                 ctx.close();
             }
         }

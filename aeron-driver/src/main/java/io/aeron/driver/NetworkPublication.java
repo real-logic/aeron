@@ -15,6 +15,7 @@
  */
 package io.aeron.driver;
 
+import io.aeron.AeronCloseHelper;
 import io.aeron.CommonContext;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.media.SendChannelEndpoint;
@@ -25,6 +26,7 @@ import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.SetupFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
+import org.agrona.ErrorHandler;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.CachedNanoClock;
@@ -124,6 +126,7 @@ public class NetworkPublication
 
     private final UnsafeBuffer[] termBuffers;
     private final ByteBuffer[] sendBuffers;
+    private final ErrorHandler errorHandler;
     private final Position publisherPos;
     private final Position publisherLimit;
     private final Position senderPosition;
@@ -171,7 +174,8 @@ public class NetworkPublication
         final long untetheredWindowLimitTimeoutNs,
         final long untetheredRestingTimeoutNs,
         final boolean spiesSimulateConnection,
-        final boolean isExclusive)
+        final boolean isExclusive,
+        final ErrorHandler errorHandler)
     {
         this.registrationId = registrationId;
         this.unblockTimeoutNs = unblockTimeoutNs;
@@ -214,6 +218,7 @@ public class NetworkPublication
 
         termBuffers = rawLog.termBuffers();
         sendBuffers = rawLog.sliceTerms();
+        this.errorHandler = errorHandler;
 
         final int termLength = rawLog.termLength();
         termBufferLength = termLength;
@@ -240,26 +245,23 @@ public class NetworkPublication
 
     public void close()
     {
-        publisherPos.close();
-        publisherLimit.close();
-        senderPosition.close();
-        senderLimit.close();
-        senderBpe.close();
-        for (final ReadablePosition position : spyPositions)
-        {
-            position.close();
-        }
+        AeronCloseHelper.close(errorHandler, publisherPos);
+        AeronCloseHelper.close(errorHandler, publisherLimit);
+        AeronCloseHelper.close(errorHandler, senderPosition);
+        AeronCloseHelper.close(errorHandler, senderLimit);
+        AeronCloseHelper.close(errorHandler, senderBpe);
+        AeronCloseHelper.closeAll(errorHandler, spyPositions);
 
         for (int i = 0, size = untetheredSubscriptions.size(); i < size; i++)
         {
             final UntetheredSubscription untetheredSubscription = untetheredSubscriptions.get(i);
             if (UntetheredSubscription.RESTING == untetheredSubscription.state)
             {
-                untetheredSubscription.position.close();
+                AeronCloseHelper.close(errorHandler, untetheredSubscription.position);
             }
         }
 
-        rawLog.close();
+        AeronCloseHelper.close(errorHandler, rawLog);
     }
 
     public long tag()

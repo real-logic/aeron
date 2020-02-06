@@ -96,7 +96,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
             Long.valueOf(AsciiEncoding.parseLongAscii(rtagStr, 0, rtagStr.length()));
 
         multiRcvDestination = udpChannel.isManualControlMode() ?
-            new MultiRcvDestination(context.nanoClock(), DESTINATION_ADDRESS_TIMEOUT) : null;
+            new MultiRcvDestination(context.nanoClock(), DESTINATION_ADDRESS_TIMEOUT, errorHandler) : null;
     }
 
     /**

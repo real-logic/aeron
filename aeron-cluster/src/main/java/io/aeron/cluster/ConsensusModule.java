@@ -16,6 +16,7 @@
 package io.aeron.cluster;
 
 import io.aeron.Aeron;
+import io.aeron.AeronCloseHelper;
 import io.aeron.CommonContext;
 import io.aeron.Counter;
 import io.aeron.archive.Archive;
@@ -266,7 +267,7 @@ public class ConsensusModule implements AutoCloseable
 
     public void close()
     {
-        CloseHelper.close(conductorRunner);
+        AeronCloseHelper.close(ctx.countedErrorHandler(), conductorRunner);
     }
 
     /**
@@ -375,6 +376,7 @@ public class ConsensusModule implements AutoCloseable
          * <code>
          *     client-facing:port,member-facing:port,log:port,transfer:port,archive:port
          * </code>
+         *
          * @see #CLUSTER_MEMBERS_PROP_NAME
          */
         public static final String MEMBER_ENDPOINTS_PROP_NAME = "aeron.cluster.member.endpoints";
@@ -503,6 +505,7 @@ public class ConsensusModule implements AutoCloseable
 
         /**
          * The number of services in this cluster instance.
+         *
          * @see io.aeron.cluster.service.ClusteredServiceContainer.Configuration#SERVICE_ID_PROP_NAME
          */
         public static final String SERVICE_COUNT_PROP_NAME = "aeron.cluster.service.count";
@@ -1125,9 +1128,9 @@ public class ConsensusModule implements AutoCloseable
                 clusterDir = new File(clusterDirectoryName);
             }
 
-            if (deleteDirOnStart && clusterDir.exists())
+            if (deleteDirOnStart)
             {
-                IoUtil.delete(clusterDir, false);
+                AeronCloseHelper.delete(clusterDir, false);
             }
 
             if (!clusterDir.exists() && !clusterDir.mkdirs())
@@ -2865,7 +2868,7 @@ public class ConsensusModule implements AutoCloseable
         {
             if (null != clusterDir)
             {
-                IoUtil.delete(clusterDir, false);
+                AeronCloseHelper.delete(clusterDir, false);
             }
         }
 
@@ -2876,11 +2879,11 @@ public class ConsensusModule implements AutoCloseable
          */
         public void close()
         {
-            CloseHelper.close(recordingLog);
-            CloseHelper.close(markFile);
+            AeronCloseHelper.close(countedErrorHandler, recordingLog);
+            AeronCloseHelper.close(countedErrorHandler, markFile);
             if (errorHandler instanceof AutoCloseable)
             {
-                CloseHelper.close((AutoCloseable)errorHandler);
+                CloseHelper.quietClose((AutoCloseable)errorHandler); // Ignore error to ensure the rest will be closed
             }
 
             if (ownsAeronClient)
@@ -2889,11 +2892,14 @@ public class ConsensusModule implements AutoCloseable
             }
             else if (!aeron.isClosed())
             {
-                CloseHelper.close(moduleState);
-                CloseHelper.close(commitPosition);
-                CloseHelper.close(clusterNodeRole);
-                CloseHelper.close(controlToggle);
-                CloseHelper.close(snapshotCounter);
+                AeronCloseHelper.closeAll(
+                    moduleState,
+                    clusterNodeRole,
+                    commitPosition,
+                    controlToggle,
+                    snapshotCounter,
+                    invalidRequestCounter,
+                    timedOutClientCounter);
             }
         }
 

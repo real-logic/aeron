@@ -156,6 +156,11 @@ abstract class ArchiveConductor
         return new UnsafeBuffer(allocateDirectAligned(MAX_BLOCK_LENGTH, BitUtil.CACHE_LINE_LENGTH));
     }
 
+    Archive.Context context()
+    {
+        return ctx;
+    }
+
     public void onStart()
     {
         replayer = newReplayer();

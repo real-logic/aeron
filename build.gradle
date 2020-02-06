@@ -157,6 +157,7 @@ subprojects {
     dependencies {
         testImplementation "org.hamcrest:hamcrest:${hamcrestVersion}"
         testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+        testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
         testImplementation "org.junit.jupiter:junit-jupiter-params:${junitVersion}"
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
     }
@@ -311,7 +312,6 @@ project(':aeron-client') {
 
     dependencies {
         api "org.agrona:agrona:${agronaVersion}"
-        testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
     }
 
     uploadArchives {
@@ -375,7 +375,7 @@ project(':aeron-driver') {
 
     dependencies {
         api project(':aeron-client')
-        testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
+        testImplementation project(':aeron-test-support')
     }
 
     uploadArchives {
@@ -871,6 +871,7 @@ project(':aeron-test-support') {
     dependencies {
         api "org.junit.jupiter:junit-jupiter-api:${junitVersion}"
         api "org.agrona:agrona:${agronaVersion}"
+        implementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
     }
 }
 

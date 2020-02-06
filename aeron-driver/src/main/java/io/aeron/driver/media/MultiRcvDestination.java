@@ -15,7 +15,8 @@
  */
 package io.aeron.driver.media;
 
-import org.agrona.CloseHelper;
+import io.aeron.AeronCloseHelper;
+import org.agrona.ErrorHandler;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.NanoClock;
 
@@ -30,24 +31,26 @@ final class MultiRcvDestination
     private static final ReceiveDestinationUdpTransport[] EMPTY_TRANSPORTS = new ReceiveDestinationUdpTransport[0];
 
     private final long destinationEndpointTimeoutNs;
+    private final ErrorHandler errorHandler;
     private final NanoClock nanoClock;
     private ReceiveDestinationUdpTransport[] transports = EMPTY_TRANSPORTS;
     private int numDestinations = 0;
 
-    MultiRcvDestination(final NanoClock nanoClock, final long timeoutNs)
+    MultiRcvDestination(final NanoClock nanoClock, final long timeoutNs, final ErrorHandler errorHandler)
     {
         this.nanoClock = nanoClock;
         this.destinationEndpointTimeoutNs = timeoutNs;
+        this.errorHandler = errorHandler;
     }
 
     void close(final DataTransportPoller poller)
     {
         for (final ReceiveDestinationUdpTransport transport : transports)
         {
-            CloseHelper.close(transport);
+            AeronCloseHelper.close(errorHandler, transport);
             if (null != poller)
             {
-                poller.selectNowWithoutProcessing();
+                AeronCloseHelper.close(errorHandler, poller::selectNowWithoutProcessing);
             }
         }
     }

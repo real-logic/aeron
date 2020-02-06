@@ -18,7 +18,6 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
-import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.logbuffer.RawBlockHandler;
 import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
@@ -48,9 +47,9 @@ public class ExclusivePublicationTest
     private static List<String> channels()
     {
         return asList(
-            "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost",
-            "aeron:udp?endpoint=localhost:24325",
-            IPC_CHANNEL);
+            "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|term-length=64k",
+            "aeron:udp?endpoint=localhost:24325|term-length=64k",
+            IPC_CHANNEL + "?term-length=64k");
     }
 
     private static final int STREAM_ID = 1007;
@@ -60,8 +59,6 @@ public class ExclusivePublicationTest
     private final UnsafeBuffer srcBuffer = new UnsafeBuffer(allocateDirectAligned(65 * 1024, 64));
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
-        .ipcTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
-        .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
         .errorHandler(Throwable::printStackTrace)
         .dirDeleteOnShutdown(true)
         .threadingMode(ThreadingMode.SHARED));
@@ -126,7 +123,7 @@ public class ExclusivePublicationTest
 
                 publishMessage(srcBuffer, publication);
 
-                final int termBufferLength = driver.context().ipcTermBufferLength();
+                final int termBufferLength = publication.termBufferLength();
                 final int termOffset = publication.termOffset();
                 final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                     () -> publication.offerBlock(srcBuffer, 0, termBufferLength));
@@ -192,8 +189,9 @@ public class ExclusivePublicationTest
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
-            try (Subscription subscription = aeron.addSubscription(IPC_CHANNEL, STREAM_ID);
-                ExclusivePublication publication = aeron.addExclusivePublication(IPC_CHANNEL, STREAM_ID))
+            final String channel = IPC_CHANNEL + "?term-length=64k";
+            try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
+                ExclusivePublication publication = aeron.addExclusivePublication(channel, STREAM_ID))
             {
                 awaitConnection(subscription, 1);
 
@@ -236,12 +234,13 @@ public class ExclusivePublicationTest
     {
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
-            try (Subscription subscription = aeron.addSubscription(IPC_CHANNEL, STREAM_ID);
-                ExclusivePublication publication = aeron.addExclusivePublication(IPC_CHANNEL, STREAM_ID))
+            final String channel = IPC_CHANNEL + "?term-length=64k";
+            try (Subscription subscription = aeron.addSubscription(channel, STREAM_ID);
+                ExclusivePublication publication = aeron.addExclusivePublication(channel, STREAM_ID))
             {
                 awaitConnection(subscription, 1);
 
-                final int length = driver.context().ipcTermBufferLength() / 2;
+                final int length = publication.termBufferLength() / 2;
                 final int sessionId = publication.sessionId();
                 final int streamId = publication.streamId();
                 final int termId = publication.termId();

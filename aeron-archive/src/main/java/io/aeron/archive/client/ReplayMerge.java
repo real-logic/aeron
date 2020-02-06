@@ -100,16 +100,6 @@ public class ReplayMerge implements AutoCloseable
         final EpochClock epochClock,
         final long mergeProgressTimeoutMs)
     {
-        final ChannelUri subscriptionChannelUri = ChannelUri.parse(subscription.channel());
-
-        if (!MDC_CONTROL_MODE_MANUAL.equals(subscriptionChannelUri.get(MDC_CONTROL_MODE_PARAM_NAME)))
-        {
-            throw new IllegalArgumentException("Subscription channel must be manual control mode: mode=" +
-                subscriptionChannelUri.get(MDC_CONTROL_MODE_PARAM_NAME));
-        }
-
-        final ChannelUri replayChannelUri = ChannelUri.parse(replayChannel);
-
         if (subscription.channel().startsWith(IPC_CHANNEL) ||
             replayChannel.startsWith(IPC_CHANNEL) ||
             replayDestination.startsWith(IPC_CHANNEL) ||
@@ -118,6 +108,14 @@ public class ReplayMerge implements AutoCloseable
             throw new IllegalArgumentException("IPC merging is not supported");
         }
 
+        final ChannelUri subscriptionChannelUri = ChannelUri.parse(subscription.channel());
+        if (!MDC_CONTROL_MODE_MANUAL.equals(subscriptionChannelUri.get(MDC_CONTROL_MODE_PARAM_NAME)))
+        {
+            throw new IllegalArgumentException("Subscription must have manual control-mode: control-mode=" +
+                subscriptionChannelUri.get(MDC_CONTROL_MODE_PARAM_NAME));
+        }
+
+        final ChannelUri replayChannelUri = ChannelUri.parse(replayChannel);
         replayChannelUri.put(CommonContext.LINGER_PARAM_NAME, "0");
         replayChannelUri.put(CommonContext.EOS_PARAM_NAME, "false");
 

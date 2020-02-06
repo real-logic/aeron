@@ -122,7 +122,7 @@ public class PublicationImage
     private final int initialTermId;
     private final boolean isReliable;
 
-    private boolean isTrackingRebuild = true;
+    private boolean isRebuilding = true;
     private volatile State state = INIT;
 
     private final NanoClock nanoClock;
@@ -331,7 +331,7 @@ public class PublicationImage
 
         if (subscriberPositions.length == 0)
         {
-            isTrackingRebuild = false;
+            isRebuilding = false;
         }
     }
 
@@ -515,7 +515,7 @@ public class PublicationImage
     {
         if (State.ACTIVE == state)
         {
-            isTrackingRebuild = false;
+            isRebuilding = false;
             state(State.INACTIVE);
         }
     }
@@ -525,9 +525,9 @@ public class PublicationImage
      *
      * @return true if this image actively rebuilding and thus should be checked for loss.
      */
-    final boolean isTrackingRebuild()
+    final boolean isRebuilding()
     {
-        return isTrackingRebuild;
+        return isRebuilding;
     }
 
     /**

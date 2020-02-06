@@ -17,6 +17,9 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.logbuffer.FragmentHandler;
+import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.logbuffer.RawBlockHandler;
 import io.aeron.test.TestMediaDriver;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
@@ -54,9 +57,11 @@ public class ExclusivePublicationTest
     private static final int FRAGMENT_COUNT_LIMIT = 10;
     private static final int MESSAGE_LENGTH = 200;
 
-    private final UnsafeBuffer srcBuffer = new UnsafeBuffer(allocateDirectAligned(100 * 1024 * 1024, 64));
+    private final UnsafeBuffer srcBuffer = new UnsafeBuffer(allocateDirectAligned(65 * 1024, 64));
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
+        .ipcTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
+        .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
         .errorHandler(Throwable::printStackTrace)
         .dirDeleteOnShutdown(true)
         .threadingMode(ThreadingMode.SHARED));
@@ -79,35 +84,28 @@ public class ExclusivePublicationTest
                 ExclusivePublication publicationOne = aeron.addExclusivePublication(channel, STREAM_ID);
                 ExclusivePublication publicationTwo = aeron.addExclusivePublication(channel, STREAM_ID))
             {
-                awaitPublications(subscription, 2);
+                awaitConnection(subscription, 2);
 
                 final int expectedNumberOfFragments = 778;
+                int totalFragmentsRead = 0;
+                final MutableInteger messageCount = new MutableInteger();
+                final FragmentHandler fragmentHandler =
+                    (buffer, offset, length, header) ->
+                    {
+                        assertEquals(MESSAGE_LENGTH, length);
+                        messageCount.value++;
+                    };
 
                 for (int i = 0; i < expectedNumberOfFragments; i += 2)
                 {
                     publishMessage(srcBuffer, publicationOne);
                     publishMessage(srcBuffer, publicationTwo);
+                    totalFragmentsRead += pollFragments(subscription, fragmentHandler);
                 }
 
-                final MutableInteger messageCount = new MutableInteger();
-                int totalFragmentsRead = 0;
                 do
                 {
-                    final int fragmentsRead = subscription.poll(
-                        (buffer, offset, length, header) ->
-                        {
-                            assertEquals(MESSAGE_LENGTH, length);
-                            messageCount.value++;
-                        },
-                        FRAGMENT_COUNT_LIMIT);
-
-                    if (0 == fragmentsRead)
-                    {
-                        Thread.yield();
-                        Tests.checkInterruptedStatus();
-                    }
-
-                    totalFragmentsRead += fragmentsRead;
+                    totalFragmentsRead += pollFragments(subscription, fragmentHandler);
                 }
                 while (totalFragmentsRead < expectedNumberOfFragments);
 
@@ -124,7 +122,7 @@ public class ExclusivePublicationTest
             try (Subscription subscription = aeron.addSubscription(IPC_CHANNEL, STREAM_ID);
                 ExclusivePublication publication = aeron.addExclusivePublication(IPC_CHANNEL, STREAM_ID))
             {
-                awaitPublications(subscription, 1);
+                awaitConnection(subscription, 1);
 
                 publishMessage(srcBuffer, publication);
 
@@ -147,11 +145,10 @@ public class ExclusivePublicationTest
             try (Subscription subscription = aeron.addSubscription(IPC_CHANNEL, STREAM_ID);
                 ExclusivePublication publication = aeron.addExclusivePublication(IPC_CHANNEL, STREAM_ID))
             {
-                awaitPublications(subscription, 1);
+                awaitConnection(subscription, 1);
                 publication.close();
 
                 final long result = publication.offerBlock(srcBuffer, 0, MESSAGE_LENGTH);
-
                 assertEquals(CLOSED, result);
             }
         });
@@ -165,16 +162,18 @@ public class ExclusivePublicationTest
             try (Subscription subscription = aeron.addSubscription(IPC_CHANNEL, STREAM_ID);
                 ExclusivePublication publication = aeron.addExclusivePublication(IPC_CHANNEL, STREAM_ID))
             {
-                awaitPublications(subscription, 1);
+                awaitConnection(subscription, 1);
+
                 final int sessionId = publication.sessionId();
                 final int streamId = publication.streamId();
                 final int termId = publication.termId();
                 final int offset = 128;
+
                 frameType(srcBuffer, offset, HDR_TYPE_NAK);
                 frameSessionId(srcBuffer, offset, -19);
                 srcBuffer.putInt(offset + STREAM_ID_FIELD_OFFSET, 42, LITTLE_ENDIAN);
 
-                final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                     () -> publication.offerBlock(srcBuffer, offset, 1000));
 
                 assertEquals("improperly formatted block:" +
@@ -183,7 +182,7 @@ public class ExclusivePublicationTest
                     " streamId=42 (expected=" + streamId + ")," +
                     " termId=0 (expected=" + termId + ")," +
                     " frameType=" + HDR_TYPE_NAK + " (expected=" + HDR_TYPE_DATA + ")",
-                    exception.getMessage());
+                    ex.getMessage());
             }
         });
     }
@@ -196,35 +195,36 @@ public class ExclusivePublicationTest
             try (Subscription subscription = aeron.addSubscription(IPC_CHANNEL, STREAM_ID);
                 ExclusivePublication publication = aeron.addExclusivePublication(IPC_CHANNEL, STREAM_ID))
             {
-                awaitPublications(subscription, 1);
+                awaitConnection(subscription, 1);
+
                 final int sessionId = publication.sessionId();
                 final int streamId = publication.streamId();
                 final int currentTermId = publication.termId();
-                final int termBufferLength = driver.context().ipcTermBufferLength();
-                final int dataLength = termBufferLength - HEADER_LENGTH;
+                final int termBufferLength = publication.termBufferLength();
                 final int offset = 1024;
+
                 frameType(srcBuffer, offset, HDR_TYPE_DATA);
-                frameLengthOrdered(srcBuffer, offset, dataLength);
+                frameLengthOrdered(srcBuffer, offset, termBufferLength);
                 frameSessionId(srcBuffer, offset, sessionId);
                 srcBuffer.putInt(offset + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
                 srcBuffer.putInt(offset + TERM_ID_FIELD_OFFSET, currentTermId, LITTLE_ENDIAN);
-                srcBuffer.setMemory(offset + DATA_OFFSET, dataLength, (byte)13);
+                srcBuffer.setMemory(offset + DATA_OFFSET, termBufferLength - HEADER_LENGTH, (byte)13);
+
                 final long position = publication.position();
-
                 final long result = publication.offerBlock(srcBuffer, offset, termBufferLength);
-
                 assertEquals(position + termBufferLength, result);
-                final long pollBytes = subscription.rawPoll(
+
+                final RawBlockHandler rawBlockHandler =
                     (fileChannel, fileOffset, termBuffer, termOffset, length, pollSessionId, termId) ->
                     {
                         assertEquals(HDR_TYPE_DATA, frameType(termBuffer, termOffset));
-                        assertEquals(dataLength, frameLength(termBuffer, termOffset));
+                        assertEquals(termBufferLength, frameLength(termBuffer, termOffset));
                         assertEquals(sessionId, frameSessionId(termBuffer, termOffset));
-                        assertEquals(streamId,
-                            termBuffer.getInt(termOffset + STREAM_ID_FIELD_OFFSET, LITTLE_ENDIAN));
-                    },
-                    termBufferLength);
-                assertEquals(dataLength, pollBytes);
+                        assertEquals(streamId, termBuffer.getInt(termOffset + STREAM_ID_FIELD_OFFSET, LITTLE_ENDIAN));
+                    };
+
+                final long pollBytes = subscription.rawPoll(rawBlockHandler, termBufferLength);
+                assertEquals(termBufferLength, pollBytes);
                 assertEquals(publication.termBufferLength(), publication.termOffset());
                 assertEquals(currentTermId, publication.termId());
             }
@@ -239,13 +239,15 @@ public class ExclusivePublicationTest
             try (Subscription subscription = aeron.addSubscription(IPC_CHANNEL, STREAM_ID);
                 ExclusivePublication publication = aeron.addExclusivePublication(IPC_CHANNEL, STREAM_ID))
             {
-                awaitPublications(subscription, 1);
+                awaitConnection(subscription, 1);
+
                 final int length = driver.context().ipcTermBufferLength() / 2;
                 final int sessionId = publication.sessionId();
                 final int streamId = publication.streamId();
                 final int termId = publication.termId();
                 final int dataLength = length - HEADER_LENGTH;
                 final int offset = 2048;
+
                 frameType(srcBuffer, offset, HDR_TYPE_DATA);
                 frameLengthOrdered(srcBuffer, offset, dataLength);
                 frameSessionId(srcBuffer, offset, sessionId);
@@ -261,7 +263,7 @@ public class ExclusivePublicationTest
         });
     }
 
-    private static void awaitPublications(final Subscription subscription, final int imageCount)
+    private static void awaitConnection(final Subscription subscription, final int imageCount)
     {
         while (subscription.imageCount() < imageCount)
         {
@@ -277,5 +279,17 @@ public class ExclusivePublicationTest
             Thread.yield();
             Tests.checkInterruptedStatus();
         }
+    }
+
+    private int pollFragments(final Subscription subscription, final FragmentHandler fragmentHandler)
+    {
+        final int fragmentsRead = subscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT);
+        if (0 == fragmentsRead)
+        {
+            Thread.yield();
+            Tests.checkInterruptedStatus();
+        }
+
+        return fragmentsRead;
     }
 }

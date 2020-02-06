@@ -166,7 +166,7 @@ int aeron_min_flow_control_strategy_fini(aeron_flow_control_strategy_t *strategy
     return 0;
 }
 
-static AERON_INIT_ONCE timeout_is_initialized = AERON_INIT_ONCE_VALUE;
+static AERON_INIT_ONCE min_timeout_is_initialized = AERON_INIT_ONCE_VALUE;
 
 static int64_t aeron_min_flow_control_strategy_timeout_ns;
 
@@ -204,7 +204,7 @@ int aeron_min_flow_control_strategy_supplier(
     _strategy->on_status_message = aeron_min_flow_control_strategy_on_sm;
     _strategy->fini = aeron_min_flow_control_strategy_fini;
 
-    (void)aeron_thread_once(&timeout_is_initialized, initialize_aeron_min_flow_control_strategy_timeout);
+    (void)aeron_thread_once(&min_timeout_is_initialized, initialize_aeron_min_flow_control_strategy_timeout);
 
     aeron_min_flow_control_strategy_state_t *state = (aeron_min_flow_control_strategy_state_t *)_strategy->state;
 
@@ -213,6 +213,119 @@ int aeron_min_flow_control_strategy_supplier(
     state->receivers.length = 0;
 
     state->receiver_timeout_ns = aeron_min_flow_control_strategy_timeout_ns;
+
+    *strategy = _strategy;
+
+    return 0;
+}
+
+typedef struct aeron_preferred_flow_control_strategy_state_stct
+{
+    aeron_min_flow_control_strategy_state_t min_flow_control_state;
+    int32_t receiver_tag;
+}
+aeron_preferred_flow_control_strategy_state_t;
+
+int64_t aeron_preferred_flow_control_strategy_on_idle(
+    void *state,
+    int64_t now_ns,
+    int64_t snd_lmt,
+    int64_t snd_pos,
+    bool is_end_of_stream)
+{
+    return -1;
+}
+
+int64_t aeron_preferred_flow_control_strategy_on_sm(
+    void *state,
+    const uint8_t *sm,
+    size_t length,
+    struct sockaddr_storage *recv_addr,
+    int64_t snd_lmt,
+    int32_t initial_term_id,
+    size_t position_bits_to_shift,
+    int64_t now_ns)
+{
+//    aeron_status_message_header_t *status_message = (aeron_status_message_header_t *)sm;
+//    aeron_preferred_flow_control_strategy_state_t *strategy_state =
+//        (aeron_preferred_flow_control_strategy_state_t *)state;
+//
+//    int32_t receiver_tag;
+//    if (0 < aeron_udp_protocol_sm_receiver_tag(status_message, &receiver_tag) &&
+//        receiver_tag == strategy_state->receiver_tag)
+//    {
+//        return aeron_min_flow_control_strategy_on_sm(
+//            &strategy_state->min_flow_control_state,
+//            sm,
+//            length,
+//            recv_addr,
+//            snd_lmt,
+//            initial_term_id,
+//            position_bits_to_shift,
+//            now_ns);
+//    }
+    return -1;
+}
+
+int aeron_preferred_flow_control_strategy_fini(aeron_flow_control_strategy_t *strategy)
+{
+    return -1;
+}
+
+static AERON_INIT_ONCE preferred_timeout_is_initialized = AERON_INIT_ONCE_VALUE;
+
+static int64_t aeron_preferred_flow_control_strategy_timeout_ns;
+
+static void initialize_aeron_preferred_flow_control_strategy_timeout()
+{
+    const char *timeout_str = getenv(AERON_PREFERRED_MULTICAST_FLOW_CONTROL_RECEIVER_TIMEOUT_ENV_VAR);
+    uint64_t timeout_ns = AERON_MAX_FLOW_CONTROL_STRATEGY_RECEIVER_TIMEOUT_NS;
+
+    if (NULL != timeout_str)
+    {
+        aeron_parse_duration_ns(timeout_str, &timeout_ns);
+    }
+
+    aeron_preferred_flow_control_strategy_timeout_ns = (int64_t)timeout_ns;
+}
+
+int aeron_preferred_flow_control_strategy_supplier(
+    aeron_flow_control_strategy_t **strategy,
+    size_t channel_length,
+    const char *channel,
+    int32_t stream_id,
+    int64_t registration_id,
+    int32_t initial_term_id,
+    size_t term_buffer_capacity,
+    aeron_flow_control_preferred_options_t *preferred_options)
+{
+    aeron_flow_control_strategy_t *_strategy;
+
+    int32_t receiver_tag = -1;
+
+    if (aeron_alloc((void **)&_strategy, sizeof(aeron_flow_control_strategy_t)) < 0 ||
+        aeron_alloc((void **)&_strategy->state, sizeof(aeron_preferred_flow_control_strategy_state_t)) < 0)
+    {
+        return -1;
+    }
+
+    _strategy->on_idle = aeron_preferred_flow_control_strategy_on_idle;
+    _strategy->on_status_message = aeron_preferred_flow_control_strategy_on_sm;
+    _strategy->fini = aeron_preferred_flow_control_strategy_fini;
+
+    (void)aeron_thread_once(
+        &preferred_timeout_is_initialized, initialize_aeron_preferred_flow_control_strategy_timeout);
+
+    aeron_preferred_flow_control_strategy_state_t *state =
+        (aeron_preferred_flow_control_strategy_state_t *)_strategy->state;
+
+
+    state->min_flow_control_state.receivers.array = NULL;
+    state->min_flow_control_state.receivers.capacity = 0;
+    state->min_flow_control_state.receivers.length = 0;
+    state->receiver_tag = receiver_tag;
+
+    state->min_flow_control_state.receiver_timeout_ns = aeron_preferred_flow_control_strategy_timeout_ns;
 
     *strategy = _strategy;
 

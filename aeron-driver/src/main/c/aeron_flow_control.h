@@ -51,6 +51,16 @@ typedef struct aeron_flow_control_strategy_stct
 }
 aeron_flow_control_strategy_t;
 
+typedef struct aeron_flow_control_preferred_options_stct
+{
+    size_t strategy_name_length;
+    const char *strategy_name;
+    bool has_receiver_tag;
+    int32_t receiver_tag;
+    uint64_t timeout_ns;
+}
+aeron_flow_control_preferred_options_t;
+
 aeron_flow_control_strategy_supplier_func_t aeron_flow_control_strategy_supplier_load(const char *strategy_name);
 
 int aeron_max_multicast_flow_control_strategy_supplier(
@@ -80,26 +90,27 @@ int aeron_min_flow_control_strategy_supplier(
     int32_t initial_term_id,
     size_t term_buffer_capacity);
 
-//int aeron_preferred_flow_control_strategy_supplier(
-//    aeron_flow_control_strategy_t **strategy,
-//    size_t channel_length,
-//    const char *channel,
-//    int32_t stream_id,
-//    int64_t registration_id,
-//    int32_t initial_term_id,
-//    size_t term_buffer_capacity);
+int aeron_preferred_flow_control_strategy_supplier(
+    aeron_flow_control_strategy_t **strategy,
+    size_t channel_length,
+    const char *channel,
+    int32_t stream_id,
+    int64_t registration_id,
+    int32_t initial_term_id,
+    size_t term_buffer_capacity,
+    aeron_flow_control_preferred_options_t *preferred_options);
 
-//int aeron_default_multicast_flow_control_strategy_supplier(
-//    aeron_flow_control_strategy_t **strategy,
-//    aeron_flow_control_strategy_supplier_func_t fallback_flow_control_supplier,
-//    size_t channel_length,
-//    const char *channel,
-//    int32_t stream_id,
-//    int64_t registration_id,
-//    int32_t initial_term_id,
-//    size_t term_length,
-//    size_t flow_control_options_length,
-//    const char *flow_control_options);
+int aeron_default_multicast_flow_control_strategy_supplier(
+    aeron_flow_control_strategy_t **strategy,
+    aeron_flow_control_strategy_supplier_func_t fallback_flow_control_supplier,
+    size_t channel_length,
+    const char *channel,
+    int32_t stream_id,
+    int64_t registration_id,
+    int32_t initial_term_id,
+    size_t term_length,
+    size_t flow_control_options_length,
+    const char *flow_control_options);
 
 typedef struct aeron_flow_control_strategy_supplier_func_table_entry_stct
 {
@@ -107,16 +118,6 @@ typedef struct aeron_flow_control_strategy_supplier_func_table_entry_stct
     aeron_flow_control_strategy_supplier_func_t supplier_func;
 }
 aeron_flow_control_strategy_supplier_func_table_entry_t;
-
-typedef struct aeron_flow_control_preferred_options_stct
-{
-    size_t strategy_name_length;
-    const char *strategy_name;
-    bool has_receiver_tag;
-    int32_t receiver_tag;
-    uint64_t timeout_ns;
-}
-aeron_flow_control_preferred_options_t;
 
 int aeron_flow_control_parse_preferred_options(
     const size_t options_length,

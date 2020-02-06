@@ -148,7 +148,64 @@ aeron_flow_control_strategy_supplier_func_t aeron_flow_control_strategy_supplier
     return NULL;
 }
 
-#define NUMBER_BUFFER_LEN (64)
+int aeron_default_multicast_flow_control_strategy_supplier(
+    aeron_flow_control_strategy_t **strategy,
+    aeron_flow_control_strategy_supplier_func_t fallback_flow_control_supplier,
+    size_t channel_length,
+    const char *channel,
+    int32_t stream_id,
+    int64_t registration_id,
+    int32_t initial_term_id,
+    size_t term_length,
+    size_t flow_control_options_length,
+    const char *flow_control_options)
+{
+    const char *max_strategy_name = "max";
+    const char *min_strategy_name = "min";
+
+    if (0 == flow_control_options_length || NULL == flow_control_options)
+    {
+        return fallback_flow_control_supplier(
+            strategy, channel_length, channel, stream_id, registration_id, initial_term_id, term_length);
+    }
+
+    aeron_flow_control_preferred_options_t preferred_options;
+    if (aeron_flow_control_parse_preferred_options(
+        flow_control_options_length, flow_control_options, &preferred_options) < 0)
+    {
+        return -1;
+    }
+
+    if (0 == preferred_options.strategy_name_length || NULL == preferred_options.strategy_name)
+    {
+        aeron_set_err(EINVAL, "No flow control strategy name specified, URI: %.*s", channel_length, channel);
+        return -1;
+    }
+
+    if (strlen(max_strategy_name) == preferred_options.strategy_name_length &&
+        0 == strncmp(max_strategy_name, preferred_options.strategy_name, strlen(max_strategy_name)))
+    {
+        return aeron_max_multicast_flow_control_strategy_supplier(
+            strategy, channel_length, channel, stream_id, registration_id, initial_term_id, term_length);
+    }
+
+    if (strlen(min_strategy_name) == preferred_options.strategy_name_length &&
+        0 == strncmp(min_strategy_name, preferred_options.strategy_name, strlen(min_strategy_name)))
+    {
+        return aeron_min_flow_control_strategy_supplier(
+            strategy, channel_length, channel, stream_id, registration_id, initial_term_id, term_length);
+    }
+
+    aeron_set_err(
+        EINVAL, "Invalid flow control strategy name: %.*s from URI: %.*s",
+        preferred_options.strategy_name_length, preferred_options.strategy_name,
+        channel_length, channel);
+
+    return -1;
+}
+
+
+#define AERON_FLOW_CONTROL_NUMBER_BUFFER_LEN (64)
 
 int aeron_flow_control_parse_preferred_options(
     const size_t options_length,
@@ -161,8 +218,8 @@ int aeron_flow_control_parse_preferred_options(
     flow_control_options->has_receiver_tag = false;
     flow_control_options->receiver_tag = -1;
 
-    char number_buffer[NUMBER_BUFFER_LEN];
-    memset(number_buffer, 0, NUMBER_BUFFER_LEN);
+    char number_buffer[AERON_FLOW_CONTROL_NUMBER_BUFFER_LEN];
+    memset(number_buffer, 0, AERON_FLOW_CONTROL_NUMBER_BUFFER_LEN);
 
     const char* current_option = options;
     size_t remaining = options_length;
@@ -199,12 +256,12 @@ int aeron_flow_control_parse_preferred_options(
             const size_t value_length = current_option_length - 2;
             const char *value = current_option + 2;
 
-            if (NUMBER_BUFFER_LEN <= current_option_length)
+            if (AERON_FLOW_CONTROL_NUMBER_BUFFER_LEN <= value_length)
             {
                 aeron_set_err(
                     -EINVAL,
                     "Flow control options - number field too long (found %d, max %d), field: %.*s, options: %.*s",
-                    current_option_length, (NUMBER_BUFFER_LEN - 1),
+                    value_length, (AERON_FLOW_CONTROL_NUMBER_BUFFER_LEN - 1),
                     value_length, value,
                     options_length, options);
 
@@ -218,9 +275,9 @@ int aeron_flow_control_parse_preferred_options(
                 char *end_ptr = "";
                 errno = 0;
 
-                receiver_tag = strtol(current_option + 2, &end_ptr, 10);
+                receiver_tag = strtol(number_buffer, &end_ptr, 10);
 
-                if (0 == errno && ('\0' == *end_ptr || ',' == *end_ptr))
+                if (0 == errno && '\0' == *end_ptr)
                 {
                     flow_control_options->has_receiver_tag = true;
                     flow_control_options->receiver_tag = receiver_tag;

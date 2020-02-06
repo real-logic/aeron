@@ -515,6 +515,7 @@ public class PublicationImage
     {
         if (State.ACTIVE == state)
         {
+            isTrackingRebuild = false;
             state(State.INACTIVE);
         }
     }
@@ -772,7 +773,6 @@ public class PublicationImage
                     timeOfLastStateChangeNs = timeNs;
                     conductor.transitionToLinger(this);
                 }
-                isTrackingRebuild = false;
                 break;
 
             case LINGER:

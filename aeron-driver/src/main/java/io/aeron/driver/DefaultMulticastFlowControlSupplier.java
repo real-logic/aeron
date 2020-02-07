@@ -28,23 +28,17 @@ public class DefaultMulticastFlowControlSupplier implements FlowControlSupplier
 
         if (null != fcStr)
         {
-            final String[] args = fcStr.split(",");
-
-            if ("max".equals(args[0]))
+            if (fcStr.startsWith("max"))
             {
                 return new MaxMulticastFlowControl();
             }
-            else if ("min".equals(args[0]))
+            else if (fcStr.startsWith("min"))
             {
-                for (final String arg : args)
-                {
-                    if (arg.startsWith("g:"))
-                    {
-                        return new PreferredMulticastFlowControl();
-                    }
-                }
-
                 return new MinMulticastFlowControl();
+            }
+            else if (fcStr.startsWith("tagged"))
+            {
+                return new TaggedMulticastFlowControl();
             }
             else
             {

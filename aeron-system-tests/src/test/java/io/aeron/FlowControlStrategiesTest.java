@@ -325,9 +325,9 @@ public class FlowControlStrategiesTest
     }
 
     @Test
-    public void shouldSlowToPreferredWithMulticastFlowControlStrategy()
+    public void shouldSlowToTaggedWithMulticastFlowControlStrategy()
     {
-        TestMediaDriver.notSupportedOnCMediaDriverYet("Preferred multicast flow control strategy not available");
+        TestMediaDriver.notSupportedOnCMediaDriverYet("Tagged multicast flow control strategy not available");
 
         assertTimeoutPreemptively(ofSeconds(20), () ->
         {
@@ -337,8 +337,8 @@ public class FlowControlStrategiesTest
 
             driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
             driverAContext.multicastFlowControlSupplier(
-                (udpChannel, streamId, registrationId) -> new PreferredMulticastFlowControl());
-            driverBContext.applicationSpecificFeedback(PreferredMulticastFlowControl.PREFERRED_ASF_BYTES);
+                (udpChannel, streamId, registrationId) -> new TaggedMulticastFlowControl());
+            driverBContext.applicationSpecificFeedback(TaggedMulticastFlowControl.PREFERRED_ASF_BYTES);
 
             launch();
 
@@ -400,9 +400,9 @@ public class FlowControlStrategiesTest
     }
 
     @Test
-    public void shouldRemoveDeadPreferredReceiverWithPreferredMulticastFlowControlStrategy()
+    public void shouldRemoveDeadTaggedReceiverWithTaggedMulticastFlowControlStrategy()
     {
-        TestMediaDriver.notSupportedOnCMediaDriverYet("Preferred multicast flow control strategy not available");
+        TestMediaDriver.notSupportedOnCMediaDriverYet("Tagged multicast flow control strategy not available");
 
         assertTimeoutPreemptively(ofSeconds(20), () ->
         {
@@ -413,8 +413,8 @@ public class FlowControlStrategiesTest
 
             driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
             driverAContext.multicastFlowControlSupplier(
-                (udpChannel, streamId, registrationId) -> new PreferredMulticastFlowControl());
-            driverBContext.applicationSpecificFeedback(PreferredMulticastFlowControl.PREFERRED_ASF_BYTES);
+                (udpChannel, streamId, registrationId) -> new TaggedMulticastFlowControl());
+            driverBContext.applicationSpecificFeedback(TaggedMulticastFlowControl.PREFERRED_ASF_BYTES);
 
             launch();
 

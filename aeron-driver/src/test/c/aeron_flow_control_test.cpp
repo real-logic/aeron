@@ -21,6 +21,7 @@ extern "C"
 #include "util/aeron_properties_util.h"
 #include "protocol/aeron_udp_protocol.h"
 #include "aeron_flow_control.h"
+#include "media/aeron_udp_channel.h"
 }
 
 #define WINDOW_LENGTH (2000)
@@ -61,7 +62,19 @@ public:
             strategy->state, (uint8_t *)sm, sm->frame_header.frame_length, &address, sizeof(address), 0, 0, 0);
     }
 
+    void initialise_channel(const char *uri)
+    {
+        aeron_udp_channel_parse(strlen(uri), uri, &channel);
+    }
+
     struct sockaddr_storage address;
+    aeron_udp_channel_t *channel;
+
+protected:
+    virtual void TearDown()
+    {
+        aeron_udp_channel_delete(channel);
+    }
 };
 
 class ParameterisedSuccessfulOptionsParsingTest :
@@ -77,13 +90,12 @@ class ParameterisedFailingOptionsParsingTest :
 TEST_F(PreferredMulticastFlowControlTest, shouldFallbackToMinStrategy)
 {
     aeron_flow_control_strategy_t *strategy = NULL;
-
-    const char* channel = "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost";
+    initialise_channel("aeron:udp?endpoint=224.20.30.39:54326|interface=localhost");
 
     ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
         &strategy, aeron_min_flow_control_strategy_supplier,
-        strlen(channel), channel,
-        1001, 1001, 0, 64 * 1024, 0, NULL));
+        channel,
+        1001, 1001, 0, 64 * 1024));
 
     ASSERT_FALSE(NULL == strategy);
 
@@ -95,14 +107,12 @@ TEST_F(PreferredMulticastFlowControlTest, shouldFallbackToMinStrategy)
 TEST_F(PreferredMulticastFlowControlTest, shouldUseMinStrategy)
 {
     aeron_flow_control_strategy_t *strategy = NULL;
-
-    const char* channel = "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=min";
-    const char* options = "min";
+    initialise_channel("aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=min");
 
     ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
         &strategy, aeron_min_flow_control_strategy_supplier,
-        strlen(channel), channel,
-        1001, 1001, 0, 64 * 1024, strlen(options), options));
+        channel,
+        1001, 1001, 0, 64 * 1024));
 
     ASSERT_FALSE(NULL == strategy);
 
@@ -114,13 +124,12 @@ TEST_F(PreferredMulticastFlowControlTest, shouldUseMinStrategy)
 TEST_F(PreferredMulticastFlowControlTest, shouldFallbackToMaxStrategy)
 {
     aeron_flow_control_strategy_t *strategy = NULL;
-
-    const char* channel = "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost";
+    initialise_channel("aeron:udp?endpoint=224.20.30.39:54326|interface=localhost");
 
     ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
         &strategy, aeron_max_multicast_flow_control_strategy_supplier,
-        strlen(channel), channel,
-        1001, 1001, 0, 64 * 1024, 0, NULL));
+        channel,
+        1001, 1001, 0, 64 * 1024));
 
     ASSERT_FALSE(NULL == strategy);
 
@@ -132,14 +141,12 @@ TEST_F(PreferredMulticastFlowControlTest, shouldFallbackToMaxStrategy)
 TEST_F(PreferredMulticastFlowControlTest, shouldUseMaxStrategy)
 {
     aeron_flow_control_strategy_t *strategy = NULL;
-
-    const char* channel = "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost";
-    const char* options = "max";
+    initialise_channel("aeron:udp?endpoint=224.20.30.39:54326|interface=localhost");
 
     ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
         &strategy, aeron_max_multicast_flow_control_strategy_supplier,
-        strlen(channel), channel,
-        1001, 1001, 0, 64 * 1024, strlen(options), options));
+        channel,
+        1001, 1001, 0, 64 * 1024));
 
     ASSERT_FALSE(NULL == strategy);
 
@@ -151,14 +158,12 @@ TEST_F(PreferredMulticastFlowControlTest, shouldUseMaxStrategy)
 TEST_F(PreferredMulticastFlowControlTest, shouldUsePreferredStrategy)
 {
     aeron_flow_control_strategy_t *strategy = NULL;
-
-    const char* channel = "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=min,g:123";
-    const char* options = "min,g:123";
+    initialise_channel("aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=min,g:123");
 
     ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
         &strategy, aeron_max_multicast_flow_control_strategy_supplier,
-        strlen(channel), channel,
-        1001, 1001, 0, 64 * 1024, strlen(options), options));
+        channel,
+        1001, 1001, 0, 64 * 1024));
 
     ASSERT_FALSE(NULL == strategy);
 
@@ -170,14 +175,12 @@ TEST_F(PreferredMulticastFlowControlTest, shouldUsePreferredStrategy)
 TEST_F(PreferredMulticastFlowControlTest, shouldUsePreferredStrategyCorrectlyWhenReceiversAreEmpty)
 {
     aeron_flow_control_strategy_t *strategy = NULL;
-
-    const char* channel = "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=min,g:123";
-    const char* options = "min,g:123";
+    initialise_channel("aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=min,g:123");
 
     ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
         &strategy, aeron_max_multicast_flow_control_strategy_supplier,
-        strlen(channel), channel,
-        1001, 1001, 0, 64 * 1024, strlen(options), options));
+        channel,
+        1001, 1001, 0, 64 * 1024));
 
     ASSERT_FALSE(NULL == strategy);
 

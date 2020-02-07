@@ -65,8 +65,7 @@ aeron_flow_control_strategy_supplier_func_t aeron_flow_control_strategy_supplier
 
 int aeron_max_multicast_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
-    size_t channel_length,
-    const char *channel,
+    aeron_udp_channel_t *channel,
     int32_t stream_id,
     int64_t registration_id,
     int32_t initial_term_id,
@@ -74,8 +73,7 @@ int aeron_max_multicast_flow_control_strategy_supplier(
 
 int aeron_unicast_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
-    size_t channel_length,
-    const char *channel,
+    aeron_udp_channel_t *channel,
     int32_t stream_id,
     int64_t registration_id,
     int32_t initial_term_id,
@@ -83,8 +81,7 @@ int aeron_unicast_flow_control_strategy_supplier(
 
 int aeron_min_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
-    size_t channel_length,
-    const char *channel,
+    aeron_udp_channel_t *channel,
     int32_t stream_id,
     int64_t registration_id,
     int32_t initial_term_id,
@@ -92,25 +89,20 @@ int aeron_min_flow_control_strategy_supplier(
 
 int aeron_preferred_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
-    size_t channel_length,
-    const char *channel,
+    aeron_udp_channel_t *channel,
     int32_t stream_id,
     int64_t registration_id,
     int32_t initial_term_id,
-    size_t term_buffer_capacity,
-    aeron_flow_control_preferred_options_t *preferred_options);
+    size_t term_buffer_capacity);
 
 int aeron_default_multicast_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
     aeron_flow_control_strategy_supplier_func_t fallback_flow_control_supplier,
-    size_t channel_length,
-    const char *channel,
+    aeron_udp_channel_t *channel,
     int32_t stream_id,
     int64_t registration_id,
     int32_t initial_term_id,
-    size_t term_length,
-    size_t flow_control_options_length,
-    const char *flow_control_options);
+    size_t term_length);
 
 typedef struct aeron_flow_control_strategy_supplier_func_table_entry_stct
 {

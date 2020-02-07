@@ -30,6 +30,8 @@
 #include "aeron_flow_control.h"
 #include "aeron_alloc.h"
 #include <aeronmd.h>
+#include <media/aeron_udp_channel.h>
+#include <uri/aeron_uri.h>
 
 typedef struct aeron_min_flow_control_strategy_receiver_stct
 {
@@ -203,8 +205,7 @@ static void initialize_aeron_min_flow_control_strategy_timeout()
 
 int aeron_min_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
-    size_t channel_length,
-    const char *channel,
+    aeron_udp_channel_t *channel,
     int32_t stream_id,
     int64_t registration_id,
     int32_t initial_term_id,
@@ -288,7 +289,7 @@ int64_t aeron_preferred_flow_control_strategy_on_sm(
     bool was_present = 0 < aeron_udp_protocol_sm_receiver_tag(status_message_header, &sm_receiver_tag);
     bool is_from_preferred = was_present && sm_receiver_tag == strategy_state->receiver_tag;
 
-    if (0 == strategy_state->min_flow_control_state.receivers.length)
+    if (!is_from_preferred && 0 == strategy_state->min_flow_control_state.receivers.length)
     {
         int64_t position_plus_window = position + window_length;
         return snd_lmt > position_plus_window ? snd_lmt : position_plus_window;
@@ -335,15 +336,23 @@ static void initialize_aeron_preferred_flow_control_strategy_timeout()
 
 int aeron_preferred_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
-    size_t channel_length,
-    const char *channel,
+    aeron_udp_channel_t *channel,
     int32_t stream_id,
     int64_t registration_id,
     int32_t initial_term_id,
-    size_t term_buffer_capacity,
-    aeron_flow_control_preferred_options_t *preferred_options)
+    size_t term_buffer_capacity)
 {
     aeron_flow_control_strategy_t *_strategy;
+    aeron_flow_control_preferred_options_t options;
+
+    const char *fc_options = aeron_uri_find_param_value(&channel->uri.params.udp.additional_params, "fc");
+    assert(NULL != fc_options && "Should of already been checked in order to get here");
+
+    // TODO: We're double parsing at the moment, but will simplify this portion later.
+    if (aeron_flow_control_parse_preferred_options(strlen(fc_options), fc_options, &options) < 0)
+    {
+        return -1;
+    }
 
     if (aeron_alloc((void **)&_strategy, sizeof(aeron_flow_control_strategy_t)) < 0 ||
         aeron_alloc((void **)&_strategy->state, sizeof(aeron_preferred_flow_control_strategy_state_t)) < 0)
@@ -364,10 +373,10 @@ int aeron_preferred_flow_control_strategy_supplier(
     state->min_flow_control_state.receivers.array = NULL;
     state->min_flow_control_state.receivers.capacity = 0;
     state->min_flow_control_state.receivers.length = 0;
-    state->receiver_tag = preferred_options->receiver_tag;
+    state->receiver_tag = options.receiver_tag;
 
-    state->min_flow_control_state.receiver_timeout_ns = preferred_options->timeout_ns != 0 ?
-        preferred_options->timeout_ns :
+    state->min_flow_control_state.receiver_timeout_ns = options.timeout_ns != 0 ?
+        options.timeout_ns :
         aeron_preferred_flow_control_strategy_timeout_ns;
 
     *strategy = _strategy;

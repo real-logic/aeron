@@ -46,6 +46,9 @@ public class MinMulticastFlowControl implements FlowControl
      */
     public static final long RECEIVER_TIMEOUT_DEFAULT = TimeUnit.SECONDS.toNanos(2);
 
+    /**
+     * Timeout after which a receiver will be considered no longer present if no status messages are received.
+     */
     public static final long RECEIVER_TIMEOUT = getDurationInNanos(
         RECEIVER_TIMEOUT_PROP_NAME, RECEIVER_TIMEOUT_DEFAULT);
 
@@ -59,7 +62,6 @@ public class MinMulticastFlowControl implements FlowControl
     public void initialize(final UdpChannel udpChannel, final int initialTermId, final int termBufferLength)
     {
         final String fcStr = udpChannel.channelUri().get(CommonContext.FLOW_CONTROL_PARAM_NAME);
-
         if (null != fcStr)
         {
             for (final String arg : fcStr.split(","))
@@ -91,8 +93,8 @@ public class MinMulticastFlowControl implements FlowControl
 
         final long windowLength = flyweight.receiverWindowLength();
         final long receiverId = flyweight.receiverId();
-        boolean isExisting = false;
         long minPosition = Long.MAX_VALUE;
+        boolean isExisting = false;
 
         for (final Receiver receiver : receivers)
         {
@@ -109,9 +111,7 @@ public class MinMulticastFlowControl implements FlowControl
 
         if (!isExisting)
         {
-            final Receiver receiver = new Receiver(
-                position, position + windowLength, timeNs, receiverId);
-            receivers = add(receivers, receiver);
+            receivers = add(receivers, new Receiver(position, position + windowLength, timeNs, receiverId));
             minPosition = Math.min(minPosition, position + windowLength);
         }
 
@@ -185,11 +185,7 @@ public class MinMulticastFlowControl implements FlowControl
         long timeOfLastStatusMessageNs;
         final long receiverId;
 
-        Receiver(
-            final long lastPosition,
-            final long lastPositionPlusWindow,
-            final long timeNs,
-            final long receiverId)
+        Receiver(final long lastPosition, final long lastPositionPlusWindow, final long timeNs, final long receiverId)
         {
             this.lastPosition = lastPosition;
             this.lastPositionPlusWindow = lastPositionPlusWindow;

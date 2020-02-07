@@ -188,7 +188,7 @@ int aeron_min_flow_control_strategy_fini(aeron_flow_control_strategy_t *strategy
 
 static AERON_INIT_ONCE min_timeout_is_initialized = AERON_INIT_ONCE_VALUE;
 
-static int64_t aeron_min_flow_control_strategy_timeout_ns;
+static uint64_t aeron_min_flow_control_strategy_timeout_ns;
 
 static void initialize_aeron_min_flow_control_strategy_timeout()
 {
@@ -200,7 +200,7 @@ static void initialize_aeron_min_flow_control_strategy_timeout()
         aeron_parse_duration_ns(timeout_str, &timeout_ns);
     }
 
-    aeron_min_flow_control_strategy_timeout_ns = (int64_t)timeout_ns;
+    aeron_min_flow_control_strategy_timeout_ns = timeout_ns;
 }
 
 int aeron_min_flow_control_strategy_supplier(
@@ -212,6 +212,7 @@ int aeron_min_flow_control_strategy_supplier(
     size_t term_buffer_capacity)
 {
     aeron_flow_control_strategy_t *_strategy;
+    aeron_flow_control_preferred_options_t options;
 
     if (aeron_alloc((void **)&_strategy, sizeof(aeron_flow_control_strategy_t)) < 0 ||
         aeron_alloc((void **)&_strategy->state, sizeof(aeron_min_flow_control_strategy_state_t)) < 0)
@@ -231,7 +232,15 @@ int aeron_min_flow_control_strategy_supplier(
     state->receivers.capacity = 0;
     state->receivers.length = 0;
 
-    state->receiver_timeout_ns = aeron_min_flow_control_strategy_timeout_ns;
+    const char* fc_options = aeron_uri_find_param_value(&channel->uri.params.udp.additional_params, AERON_URI_FC_KEY);
+
+    uint64_t timeout_ns = 0;
+    if (NULL != fc_options && 0 <= aeron_flow_control_parse_preferred_options(strlen(fc_options), fc_options, &options))
+    {
+        timeout_ns = options.timeout_ns;
+    }
+
+    state->receiver_timeout_ns = timeout_ns != 0 ? timeout_ns : aeron_min_flow_control_strategy_timeout_ns;
 
     *strategy = _strategy;
 

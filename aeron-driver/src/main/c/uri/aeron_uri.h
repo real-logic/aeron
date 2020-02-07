@@ -59,6 +59,7 @@ aeron_uri_params_t;
 #define AERON_URI_SESSION_ID_KEY "session-id"
 #define AERON_URI_GROUP_KEY "group"
 #define AERON_URI_REJOIN_KEY "rejoin"
+#define AERON_URI_FC_KEY "fc"
 #define AERON_URI_CC_KEY "cc"
 
 typedef struct aeron_uri_publication_params_stct

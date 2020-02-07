@@ -329,6 +329,8 @@ static void aeron_driver_conductor_to_client_interceptor_null(
 #define AERON_SOCKET_SO_RCVBUF_DEFAULT (128 * 1024)
 #define AERON_SOCKET_SO_SNDBUF_DEFAULT (0)
 #define AERON_SOCKET_MULTICAST_TTL_DEFAULT (0)
+#define AERON_PREFERREDFLOWCONTROL_RTAG_IS_PRESENT false
+#define AERON_PREFERREDFLOWCONTROL_RTAG_VALUE (-1)
 #define AERON_SEND_TO_STATUS_POLL_RATIO_DEFAULT (4)
 #define AERON_RCV_STATUS_MESSAGE_TIMEOUT_NS_DEFAULT (200 * 1000 * 1000LL)
 #define AERON_MULTICAST_FLOWCONTROL_SUPPLIER_DEFAULT ("aeron_max_multicast_flow_control_strategy_supplier")
@@ -467,6 +469,8 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->socket_rcvbuf = AERON_SOCKET_SO_RCVBUF_DEFAULT;
     _context->socket_sndbuf = AERON_SOCKET_SO_SNDBUF_DEFAULT;
     _context->multicast_ttl = AERON_SOCKET_MULTICAST_TTL_DEFAULT;
+    _context->receiver_tag.is_present = AERON_PREFERREDFLOWCONTROL_RTAG_IS_PRESENT;
+    _context->receiver_tag.value = AERON_PREFERREDFLOWCONTROL_RTAG_VALUE;
     _context->send_to_sm_poll_ratio = AERON_SEND_TO_STATUS_POLL_RATIO_DEFAULT;
     _context->status_message_timeout_ns = AERON_RCV_STATUS_MESSAGE_TIMEOUT_NS_DEFAULT;
     _context->image_liveness_timeout_ns = AERON_IMAGE_LIVENESS_TIMEOUT_NS_DEFAULT;
@@ -809,6 +813,18 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         _context->publication_reserved_session_id_high,
         INT32_MIN,
         INT32_MAX);
+
+    const char *receiver_tag_str = getenv(AERON_PREFERRED_MULTICAST_FLOW_CONTROL_RTAG_ENV_VAR);
+    if (NULL != receiver_tag_str)
+    {
+        _context->receiver_tag.is_present = true;
+        _context->receiver_tag.value = aeron_config_parse_int32(
+            AERON_PREFERRED_MULTICAST_FLOW_CONTROL_RTAG_ENV_VAR,
+            getenv(AERON_PREFERRED_MULTICAST_FLOW_CONTROL_RTAG_ENV_VAR),
+            _context->receiver_tag.value,
+            INT32_MIN,
+            INT32_MAX);
+    }
 
     _context->to_driver_buffer = NULL;
     _context->to_clients_buffer = NULL;

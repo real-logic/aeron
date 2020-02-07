@@ -28,7 +28,7 @@ import java.util.UUID;
 
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
-import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * Thread local variables that will only be accessed in the context of the Receiver agent thread from within a
@@ -46,7 +46,7 @@ public class ReceiveChannelEndpointThreadLocals
 
     public ReceiveChannelEndpointThreadLocals(final MediaDriver.Context context)
     {
-        final int smLength = StatusMessageFlyweight.HEADER_LENGTH + SIZE_OF_INT;
+        final int smLength = StatusMessageFlyweight.HEADER_LENGTH + SIZE_OF_LONG;
         final int bufferLength =
             BitUtil.align(smLength, CACHE_LINE_LENGTH) +
             BitUtil.align(NakFlyweight.HEADER_LENGTH, CACHE_LINE_LENGTH) +

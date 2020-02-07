@@ -21,8 +21,8 @@ import io.aeron.driver.DataPacketDispatcher;
 import io.aeron.driver.DriverConductorProxy;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.PublicationImage;
-import io.aeron.exceptions.ControlProtocolException;
 import io.aeron.exceptions.AeronException;
+import io.aeron.exceptions.ControlProtocolException;
 import io.aeron.protocol.*;
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.AsciiEncoding;
@@ -37,7 +37,8 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
-import static io.aeron.driver.status.SystemCounterDescriptor.*;
+import static io.aeron.driver.status.SystemCounterDescriptor.POSSIBLE_TTL_ASYMMETRY;
+import static io.aeron.driver.status.SystemCounterDescriptor.SHORT_SENDS;
 import static io.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
 import static io.aeron.status.ChannelEndpointStatus.status;
 
@@ -62,7 +63,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     private final Int2IntCounterMap refCountByStreamIdMap = new Int2IntCounterMap(0);
     private final Long2LongCounterMap refCountByStreamIdAndSessionIdMap = new Long2LongCounterMap(0);
     private final MultiRcvDestination multiRcvDestination;
-    private final Integer receiverTag;
+    private final Long receiverTag;
 
     private final long receiverId;
 
@@ -92,7 +93,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         final String rtagStr = udpChannel.channelUri().get(CommonContext.RECEIVER_TAG_PARAM_NAME);
         receiverTag = null == rtagStr ?
             context.receiverTag() :
-            Integer.valueOf(AsciiEncoding.parseIntAscii(rtagStr, 0, rtagStr.length()));
+            Long.valueOf(AsciiEncoding.parseLongAscii(rtagStr, 0, rtagStr.length()));
 
         multiRcvDestination = udpChannel.isManualControlMode() ?
             new MultiRcvDestination(context.nanoClock(), DESTINATION_ADDRESS_TIMEOUT) : null;

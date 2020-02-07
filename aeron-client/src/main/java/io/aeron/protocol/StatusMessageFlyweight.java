@@ -22,7 +22,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * Flyweight for a Status Message Frame.
@@ -187,33 +187,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
      */
     public long receiverId()
     {
-        final long value;
-        if (ByteOrder.nativeOrder() == LITTLE_ENDIAN)
-        {
-            value =
-                (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 7)) << 56) |
-                (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 6) & 0xFF) << 48) |
-                (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 5) & 0xFF) << 40) |
-                (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 4) & 0xFF) << 32) |
-                (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 3) & 0xFF) << 24) |
-                (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 2) & 0xFF) << 16) |
-                (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 1) & 0xFF) << 8) |
-                (((long)getByte(RECEIVER_ID_FIELD_OFFSET) & 0xFF));
-        }
-        else
-        {
-            value =
-                (((long)getByte(RECEIVER_ID_FIELD_OFFSET)) << 56) |
-                (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 1) & 0xFF) << 48) |
-                (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 2) & 0xFF) << 40) |
-                (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 3) & 0xFF) << 32) |
-                (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 4) & 0xFF) << 24) |
-                (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 5) & 0xFF) << 16) |
-                (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 6) & 0xFF) << 8) |
-                (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 7) & 0xFF));
-        }
-
-        return value;
+        return getLongUnaligned(RECEIVER_ID_FIELD_OFFSET);
     }
 
     /**
@@ -224,30 +198,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
      */
     public StatusMessageFlyweight receiverId(final long id)
     {
-        if (ByteOrder.nativeOrder() == LITTLE_ENDIAN)
-        {
-            putByte(RECEIVER_ID_FIELD_OFFSET + 7, (byte)(id >> 56));
-            putByte(RECEIVER_ID_FIELD_OFFSET + 6, (byte)(id >> 48));
-            putByte(RECEIVER_ID_FIELD_OFFSET + 5, (byte)(id >> 40));
-            putByte(RECEIVER_ID_FIELD_OFFSET + 4, (byte)(id >> 32));
-            putByte(RECEIVER_ID_FIELD_OFFSET + 3, (byte)(id >> 24));
-            putByte(RECEIVER_ID_FIELD_OFFSET + 2, (byte)(id >> 16));
-            putByte(RECEIVER_ID_FIELD_OFFSET + 1, (byte)(id >> 8));
-            putByte(RECEIVER_ID_FIELD_OFFSET, (byte)(id));
-        }
-        else
-        {
-            putByte(RECEIVER_ID_FIELD_OFFSET, (byte)(id >> 56));
-            putByte(RECEIVER_ID_FIELD_OFFSET + 1, (byte)(id >> 48));
-            putByte(RECEIVER_ID_FIELD_OFFSET + 2, (byte)(id >> 40));
-            putByte(RECEIVER_ID_FIELD_OFFSET + 3, (byte)(id >> 32));
-            putByte(RECEIVER_ID_FIELD_OFFSET + 4, (byte)(id >> 24));
-            putByte(RECEIVER_ID_FIELD_OFFSET + 5, (byte)(id >> 16));
-            putByte(RECEIVER_ID_FIELD_OFFSET + 6, (byte)(id >> 8));
-            putByte(RECEIVER_ID_FIELD_OFFSET + 7, (byte)(id));
-        }
-
-        return this;
+        return putLongUnaligned(RECEIVER_ID_FIELD_OFFSET, id);
     }
 
     /**
@@ -265,19 +216,19 @@ public class StatusMessageFlyweight extends HeaderFlyweight
      *
      * @return the rtag value or 0 if not present.
      */
-    public int receiverTag()
+    public long receiverTag()
     {
         final int frameLength = frameLength();
 
         if (frameLength > HEADER_LENGTH)
         {
-            if (frameLength > (HEADER_LENGTH + SIZE_OF_INT))
+            if (frameLength > (HEADER_LENGTH + SIZE_OF_LONG))
             {
                 throw new AeronException(
                     "SM has longer application specific feedback (" + (frameLength - HEADER_LENGTH) + ") than rtag");
             }
 
-            return getInt(RECEIVER_TAG_FIELD_OFFSET, LITTLE_ENDIAN);
+            return getLongUnaligned(RECEIVER_TAG_FIELD_OFFSET);
         }
 
         return 0;
@@ -289,12 +240,94 @@ public class StatusMessageFlyweight extends HeaderFlyweight
      * @param rtag value to set if not null
      * @return flyweight
      */
-    public StatusMessageFlyweight receiverTag(final Integer rtag)
+    public StatusMessageFlyweight receiverTag(final Long rtag)
     {
         if (null != rtag)
         {
-            frameLength(HEADER_LENGTH + SIZE_OF_INT);
-            putInt(RECEIVER_TAG_FIELD_OFFSET, rtag, LITTLE_ENDIAN);
+            frameLength(HEADER_LENGTH + SIZE_OF_LONG);
+            putLongUnaligned(RECEIVER_TAG_FIELD_OFFSET, rtag);
+        }
+
+        return this;
+    }
+
+    /**
+     * Return the field offset within the flyweight for the receiver tag field.
+     *
+     * @return offset of receiver tag field
+     */
+    public static int receiverTagFieldOffset()
+    {
+        return RECEIVER_TAG_FIELD_OFFSET;
+    }
+
+    /**
+     * Get long value from a field that is not aligned on an 8 byte boundary.
+     *
+     * @param offset of the field to get.
+     * @return value of field.
+     */
+    public long getLongUnaligned(final int offset)
+    {
+        final long value;
+        if (ByteOrder.nativeOrder() == LITTLE_ENDIAN)
+        {
+            value =
+                (((long)getByte(offset + 7)) << 56) |
+                (((long)getByte(offset + 6) & 0xFF) << 48) |
+                (((long)getByte(offset + 5) & 0xFF) << 40) |
+                (((long)getByte(offset + 4) & 0xFF) << 32) |
+                (((long)getByte(offset + 3) & 0xFF) << 24) |
+                (((long)getByte(offset + 2) & 0xFF) << 16) |
+                (((long)getByte(offset + 1) & 0xFF) << 8) |
+                (((long)getByte(offset) & 0xFF));
+        }
+        else
+        {
+            value =
+                (((long)getByte(offset)) << 56) |
+                (((long)getByte(offset + 1) & 0xFF) << 48) |
+                (((long)getByte(offset + 2) & 0xFF) << 40) |
+                (((long)getByte(offset + 3) & 0xFF) << 32) |
+                (((long)getByte(offset + 4) & 0xFF) << 24) |
+                (((long)getByte(offset + 5) & 0xFF) << 16) |
+                (((long)getByte(offset + 6) & 0xFF) << 8) |
+                (((long)getByte(offset + 7) & 0xFF));
+        }
+
+        return value;
+    }
+
+    /**
+     * Set long value into a field that is not aligned on an 8 byte boundary.
+     *
+     * @param offset of the field to put.
+     * @param value of the field to pu.
+     * @return this for fluent API.
+     */
+    public StatusMessageFlyweight putLongUnaligned(final int offset, final long value)
+    {
+        if (ByteOrder.nativeOrder() == LITTLE_ENDIAN)
+        {
+            putByte(offset + 7, (byte)(value >> 56));
+            putByte(offset + 6, (byte)(value >> 48));
+            putByte(offset + 5, (byte)(value >> 40));
+            putByte(offset + 4, (byte)(value >> 32));
+            putByte(offset + 3, (byte)(value >> 24));
+            putByte(offset + 2, (byte)(value >> 16));
+            putByte(offset + 1, (byte)(value >> 8));
+            putByte(offset, (byte)(value));
+        }
+        else
+        {
+            putByte(offset, (byte)(value >> 56));
+            putByte(offset + 1, (byte)(value >> 48));
+            putByte(offset + 2, (byte)(value >> 40));
+            putByte(offset + 3, (byte)(value >> 32));
+            putByte(offset + 4, (byte)(value >> 24));
+            putByte(offset + 5, (byte)(value >> 16));
+            putByte(offset + 6, (byte)(value >> 8));
+            putByte(offset + 7, (byte)(value));
         }
 
         return this;

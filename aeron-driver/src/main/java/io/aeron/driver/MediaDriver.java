@@ -20,47 +20,18 @@ import io.aeron.CommonContext;
 import io.aeron.driver.buffer.FileStoreLogFactory;
 import io.aeron.driver.buffer.LogFactory;
 import io.aeron.driver.exceptions.ActiveDriverException;
-import io.aeron.driver.media.ControlTransportPoller;
-import io.aeron.driver.media.DataTransportPoller;
-import io.aeron.driver.media.ReceiveChannelEndpoint;
-import io.aeron.driver.media.ReceiveChannelEndpointThreadLocals;
-import io.aeron.driver.media.SendChannelEndpoint;
+import io.aeron.driver.media.*;
 import io.aeron.driver.reports.LossReport;
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.LogBufferDescriptor;
-import org.agrona.CloseHelper;
-import org.agrona.ErrorHandler;
-import org.agrona.IoUtil;
-import org.agrona.LangUtil;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.SemanticVersion;
-import org.agrona.SystemUtil;
-import org.agrona.concurrent.Agent;
-import org.agrona.concurrent.AgentInvoker;
-import org.agrona.concurrent.AgentRunner;
-import org.agrona.concurrent.CachedEpochClock;
-import org.agrona.concurrent.CachedNanoClock;
-import org.agrona.concurrent.CompositeAgent;
-import org.agrona.concurrent.EpochClock;
-import org.agrona.concurrent.HighResolutionTimer;
-import org.agrona.concurrent.IdleStrategy;
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
-import org.agrona.concurrent.NanoClock;
-import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
-import org.agrona.concurrent.ShutdownSignalBarrier;
-import org.agrona.concurrent.SystemEpochClock;
-import org.agrona.concurrent.SystemNanoClock;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.*;
+import org.agrona.concurrent.*;
 import org.agrona.concurrent.broadcast.BroadcastTransmitter;
 import org.agrona.concurrent.errors.DistinctErrorLog;
 import org.agrona.concurrent.errors.LoggingErrorHandler;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
-import org.agrona.concurrent.status.AtomicCounter;
-import org.agrona.concurrent.status.ConcurrentCountersManager;
-import org.agrona.concurrent.status.CountersManager;
-import org.agrona.concurrent.status.StatusIndicator;
-import org.agrona.concurrent.status.UnsafeBufferStatusIndicator;
+import org.agrona.concurrent.status.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
@@ -74,28 +45,13 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import static io.aeron.CncFileDescriptor.CNC_VERSION;
-import static io.aeron.CncFileDescriptor.createCountersMetaDataBuffer;
-import static io.aeron.CncFileDescriptor.createCountersValuesBuffer;
-import static io.aeron.CncFileDescriptor.createErrorLogBuffer;
-import static io.aeron.CncFileDescriptor.createToClientsBuffer;
-import static io.aeron.CncFileDescriptor.createToDriverBuffer;
-import static io.aeron.driver.Configuration.CMD_QUEUE_CAPACITY;
-import static io.aeron.driver.Configuration.validateInitialWindowLength;
-import static io.aeron.driver.Configuration.validateMtuLength;
-import static io.aeron.driver.Configuration.validatePageSize;
-import static io.aeron.driver.Configuration.validateSessionIdRange;
-import static io.aeron.driver.Configuration.validateSocketBufferLengths;
-import static io.aeron.driver.Configuration.validateUnblockTimeout;
+import static io.aeron.CncFileDescriptor.*;
+import static io.aeron.driver.Configuration.*;
 import static io.aeron.driver.reports.LossReportUtil.mapLossReport;
-import static io.aeron.driver.status.SystemCounterDescriptor.CONDUCTOR_PROXY_FAILS;
 import static io.aeron.driver.status.SystemCounterDescriptor.CONTROLLABLE_IDLE_STRATEGY;
-import static io.aeron.driver.status.SystemCounterDescriptor.ERRORS;
-import static io.aeron.driver.status.SystemCounterDescriptor.RECEIVER_PROXY_FAILS;
-import static io.aeron.driver.status.SystemCounterDescriptor.SENDER_PROXY_FAILS;
+import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BitUtil.align;
+import static org.agrona.BitUtil.*;
 import static org.agrona.IoUtil.mapNewFile;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
@@ -492,7 +448,7 @@ public final class MediaDriver implements AutoCloseable
         private int sendToStatusMessagePollRatio = Configuration.sendToStatusMessagePollRatio();
 
         private InferableBoolean receiverGroupConsideration = Configuration.receiverGroupConsideration();
-        private Integer rtag = Configuration.receiverTag();
+        private Long rtag = Configuration.receiverTag();
 
         private EpochClock epochClock;
         private NanoClock nanoClock;
@@ -2720,7 +2676,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @return receiver tag value or null if not set.
          */
-        public Integer receiverTag()
+        public Long receiverTag()
         {
             return rtag;
         }
@@ -2731,7 +2687,7 @@ public final class MediaDriver implements AutoCloseable
          * @param rtag value to sent in Status Messages from the receiver or null if not set.
          * @return this for fluent API.
          */
-        public Context receiverTag(final Integer rtag)
+        public Context receiverTag(final Long rtag)
         {
             this.rtag = rtag;
             return this;
@@ -2925,15 +2881,15 @@ public final class MediaDriver implements AutoCloseable
             {
                 if (applicationSpecificFeedback.length > 0)
                 {
-                    if (applicationSpecificFeedback.length != SIZE_OF_INT)
+                    if (applicationSpecificFeedback.length != SIZE_OF_LONG)
                     {
                         throw new IllegalArgumentException(
-                            "applicationSpecificFeedback length must be equal to " + SIZE_OF_INT +
+                            "applicationSpecificFeedback length must be equal to " + SIZE_OF_LONG +
                                 " bytes: length=" + applicationSpecificFeedback.length);
                     }
 
                     final UnsafeBuffer buffer = new UnsafeBuffer(applicationSpecificFeedback);
-                    rtag = buffer.getInt(0, ByteOrder.LITTLE_ENDIAN);
+                    rtag = buffer.getLong(0, ByteOrder.LITTLE_ENDIAN);
                 }
             }
 

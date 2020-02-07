@@ -30,6 +30,8 @@ import java.util.concurrent.TimeUnit;
 import static io.aeron.driver.MinMulticastFlowControl.EMPTY_RECEIVERS;
 import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
 import static java.lang.System.getProperty;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.SystemUtil.getDurationInNanos;
 
 /**
@@ -63,14 +65,14 @@ public class TaggedMulticastFlowControl implements FlowControl
     /**
      * Default Application Specific Feedback (ASF) value
      */
-    public static final String PREFERRED_ASF_DEFAULT = "FFFFFFFF";
+    public static final String PREFERRED_ASF_DEFAULT = "FFFFFFFFFFFFFFFF";
 
     public static final String PREFERRED_ASF = getProperty(PREFERRED_ASF_PROP_NAME, PREFERRED_ASF_DEFAULT);
     public static final byte[] PREFERRED_ASF_BYTES = BitUtil.fromHex(PREFERRED_ASF);
 
     private MinMulticastFlowControl.Receiver[] receivers = EMPTY_RECEIVERS;
     private long receiverTimeoutNs = RECEIVER_TIMEOUT;
-    private long rtag = new UnsafeBuffer(PREFERRED_ASF_BYTES).getInt(0, ByteOrder.LITTLE_ENDIAN);
+    private long rtag = new UnsafeBuffer(PREFERRED_ASF_BYTES).getLong(0, ByteOrder.LITTLE_ENDIAN);
 
     /**
      * {@inheritDoc}
@@ -182,10 +184,23 @@ public class TaggedMulticastFlowControl implements FlowControl
         final int asfLength = statusMessageFlyweight.asfLength();
         boolean result = false;
 
-        // default ASF is 4 bytes
-        if (asfLength >= 4)
+        if (asfLength == SIZE_OF_LONG)
         {
             if (statusMessageFlyweight.receiverTag() == rtag)
+            {
+                result = true;
+            }
+        }
+        else if (asfLength >= SIZE_OF_INT)
+        {
+            // compatible check for ASF of first 4 bytes
+            final int offset = StatusMessageFlyweight.receiverTagFieldOffset();
+
+            if (
+                statusMessageFlyweight.getByte(offset) == PREFERRED_ASF_BYTES[0] &&
+                statusMessageFlyweight.getByte(offset + 1) == PREFERRED_ASF_BYTES[1] &&
+                statusMessageFlyweight.getByte(offset + 2) == PREFERRED_ASF_BYTES[2] &&
+                statusMessageFlyweight.getByte(offset + 3) == PREFERRED_ASF_BYTES[3])
             {
                 result = true;
             }

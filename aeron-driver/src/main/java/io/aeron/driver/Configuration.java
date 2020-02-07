@@ -44,6 +44,7 @@ import static io.aeron.driver.ThreadingMode.DEDICATED;
 import static io.aeron.logbuffer.LogBufferDescriptor.PAGE_MAX_SIZE;
 import static io.aeron.logbuffer.LogBufferDescriptor.PAGE_MIN_SIZE;
 import static java.lang.Integer.getInteger;
+import static java.lang.Long.getLong;
 import static java.lang.System.getProperty;
 import static org.agrona.BitUtil.fromHex;
 import static org.agrona.SystemUtil.*;
@@ -763,9 +764,9 @@ public class Configuration
         return "true".equalsIgnoreCase(getProperty(REJOIN_STREAM_PROP_NAME, "true"));
     }
 
-    public static Integer receiverTag()
+    public static Long receiverTag()
     {
-        return getInteger(RECEIVER_TAG_PROP_NAME, null);
+        return getLong(RECEIVER_TAG_PROP_NAME, null);
     }
 
     /**

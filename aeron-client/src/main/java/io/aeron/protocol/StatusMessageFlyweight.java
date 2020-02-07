@@ -49,8 +49,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     private static final int RECEIVER_WINDOW_FIELD_OFFSET = 24;
     private static final int RECEIVER_ID_FIELD_OFFSET = 28;
     private static final int APP_SPECIFIC_FEEDBACK_FIELD_OFFSET = 36;
-    // same offset as ASF
-    private static final int RECEIVER_TAG_FIELD_OFFSET = 36;
+    private static final int RECEIVER_TAG_FIELD_OFFSET = APP_SPECIFIC_FEEDBACK_FIELD_OFFSET;
 
     public StatusMessageFlyweight()
     {
@@ -67,9 +66,9 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     }
 
     /**
-     * return session id field
+     * The session-id for the stream.
      *
-     * @return session id field
+     * @return session-id for the stream.
      */
     public int sessionId()
     {
@@ -77,7 +76,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     }
 
     /**
-     * set session id field
+     * Set the session-id of the stream.
      *
      * @param sessionId field value
      * @return flyweight
@@ -90,9 +89,9 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     }
 
     /**
-     * return stream id field
+     * The stream-id for the stream.
      *
-     * @return stream id field
+     * @return the session-id for the stream.
      */
     public int streamId()
     {
@@ -100,7 +99,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     }
 
     /**
-     * set stream id field
+     * Set the session-id for the stream.
      *
      * @param streamId field value
      * @return flyweight
@@ -113,9 +112,9 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     }
 
     /**
-     * return highest consumption term offset field
+     * The highest consumption offset within the term.
      *
-     * @return highest consumption term offset field
+     * @return the highest consumption offset within the term.
      */
     public int consumptionTermOffset()
     {
@@ -123,7 +122,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     }
 
     /**
-     * set highest consumption term offset field
+     * Set the highest consumption offset within the term.
      *
      * @param termOffset field value
      * @return flyweight
@@ -136,9 +135,9 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     }
 
     /**
-     * return highest consumption term id field
+     * The highest consumption term-id.
      *
-     * @return highest consumption term id field
+     * @return highest consumption term-id.
      */
     public int consumptionTermId()
     {
@@ -146,7 +145,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     }
 
     /**
-     * set highest consumption term id field
+     * Set the highest consumption term-id.
      *
      * @param termId field value
      * @return flyweight
@@ -159,9 +158,9 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     }
 
     /**
-     * return receiver window field
+     * The receiver window length they will accept.
      *
-     * @return receiver window field
+     * @return receiver window length they will accept.
      */
     public int receiverWindowLength()
     {
@@ -169,7 +168,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     }
 
     /**
-     * set receiver window field
+     * Set the receiver window length they will accept.
      *
      * @param receiverWindowLength field value
      * @return flyweight
@@ -192,30 +191,26 @@ public class StatusMessageFlyweight extends HeaderFlyweight
         if (ByteOrder.nativeOrder() == LITTLE_ENDIAN)
         {
             value =
-                (
-                    (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 7)) << 56) |
-                    (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 6) & 0xFF) << 48) |
-                    (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 5) & 0xFF) << 40) |
-                    (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 4) & 0xFF) << 32) |
-                    (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 3) & 0xFF) << 24) |
-                    (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 2) & 0xFF) << 16) |
-                    (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 1) & 0xFF) << 8) |
-                    (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 0) & 0xFF))
-                );
+                (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 7)) << 56) |
+                (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 6) & 0xFF) << 48) |
+                (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 5) & 0xFF) << 40) |
+                (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 4) & 0xFF) << 32) |
+                (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 3) & 0xFF) << 24) |
+                (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 2) & 0xFF) << 16) |
+                (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 1) & 0xFF) << 8) |
+                (((long)getByte(RECEIVER_ID_FIELD_OFFSET) & 0xFF));
         }
         else
         {
             value =
-                (
-                    (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 0)) << 56) |
-                    (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 1) & 0xFF) << 48) |
-                    (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 2) & 0xFF) << 40) |
-                    (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 3) & 0xFF) << 32) |
-                    (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 4) & 0xFF) << 24) |
-                    (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 5) & 0xFF) << 16) |
-                    (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 6) & 0xFF) << 8) |
-                    (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 7) & 0xFF))
-                );
+                (((long)getByte(RECEIVER_ID_FIELD_OFFSET)) << 56) |
+                (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 1) & 0xFF) << 48) |
+                (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 2) & 0xFF) << 40) |
+                (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 3) & 0xFF) << 32) |
+                (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 4) & 0xFF) << 24) |
+                (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 5) & 0xFF) << 16) |
+                (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 6) & 0xFF) << 8) |
+                (((long)getByte(RECEIVER_ID_FIELD_OFFSET + 7) & 0xFF));
         }
 
         return value;
@@ -238,11 +233,11 @@ public class StatusMessageFlyweight extends HeaderFlyweight
             putByte(RECEIVER_ID_FIELD_OFFSET + 3, (byte)(id >> 24));
             putByte(RECEIVER_ID_FIELD_OFFSET + 2, (byte)(id >> 16));
             putByte(RECEIVER_ID_FIELD_OFFSET + 1, (byte)(id >> 8));
-            putByte(RECEIVER_ID_FIELD_OFFSET + 0, (byte)(id));
+            putByte(RECEIVER_ID_FIELD_OFFSET, (byte)(id));
         }
         else
         {
-            putByte(RECEIVER_ID_FIELD_OFFSET + 0, (byte)(id >> 56));
+            putByte(RECEIVER_ID_FIELD_OFFSET, (byte)(id >> 56));
             putByte(RECEIVER_ID_FIELD_OFFSET + 1, (byte)(id >> 48));
             putByte(RECEIVER_ID_FIELD_OFFSET + 2, (byte)(id >> 40));
             putByte(RECEIVER_ID_FIELD_OFFSET + 3, (byte)(id >> 32));
@@ -256,9 +251,9 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     }
 
     /**
-     * Return the length of the Application Specific Feedback (or rtag).
+     * The length of the Application Specific Feedback (or rtag).
      *
-     * @return length, in bytes, of the Application Specific Feedback.
+     * @return length, in bytes, of the Application Specific Feedback (or rtag).
      */
     public int asfLength()
     {
@@ -266,7 +261,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     }
 
     /**
-     * Retrieve the rtag (if present) from the Status Message.
+     * The rtag (if present) from the Status Message.
      *
      * @return the rtag value or 0 if not present.
      */

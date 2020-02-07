@@ -88,22 +88,15 @@ int64_t aeron_min_flow_control_strategy_on_idle(
     return strategy_state->receivers.length > 0 ? min_limit_position : snd_lmt;
 }
 
-int64_t aeron_preferred_flow_control_apply_status_message(
+static int64_t aeron_preferred_flow_control_apply_position_update(
     aeron_min_flow_control_strategy_state_t *strategy_state,
-    aeron_status_message_header_t *status_message_header,
+    int64_t position,
+    int64_t window_length,
+    int64_t receiver_id,
     int64_t snd_lmt,
-    int32_t initial_term_id,
-    size_t position_bits_to_shift,
     int64_t now_ns,
     bool is_from_preferred)
 {
-    const int64_t position = aeron_logbuffer_compute_position(
-        status_message_header->consumption_term_id,
-        status_message_header->consumption_term_offset,
-        position_bits_to_shift,
-        initial_term_id);
-    const int64_t window_length = status_message_header->receiver_window;
-    const int64_t receiver_id = status_message_header->receiver_id;
     bool is_existing = false;
     int64_t min_position = INT64_MAX;
 
@@ -161,12 +154,20 @@ int64_t aeron_min_flow_control_strategy_on_sm(
     size_t position_bits_to_shift,
     int64_t now_ns)
 {
-    return aeron_preferred_flow_control_apply_status_message(
-        (aeron_min_flow_control_strategy_state_t *)state,
-        (aeron_status_message_header_t *)sm,
-        snd_lmt,
-        initial_term_id,
+    aeron_status_message_header_t *status_message_header = (aeron_status_message_header_t *)sm;
+
+    const int64_t position = aeron_logbuffer_compute_position(
+        status_message_header->consumption_term_id,
+        status_message_header->consumption_term_offset,
         position_bits_to_shift,
+        initial_term_id);
+
+    return aeron_preferred_flow_control_apply_position_update(
+        (aeron_min_flow_control_strategy_state_t *)state,
+        position,
+        status_message_header->receiver_window,
+        status_message_header->receiver_id,
+        snd_lmt,
         now_ns,
         true);
 }
@@ -275,16 +276,30 @@ int64_t aeron_preferred_flow_control_strategy_on_sm(
         (aeron_preferred_flow_control_strategy_state_t *)state;
     aeron_status_message_header_t *status_message_header = (aeron_status_message_header_t *)sm;
 
-    int32_t status_receiver_tag;
-    bool was_present = 0 < aeron_udp_protocol_sm_receiver_tag(status_message_header, &status_receiver_tag);
-    bool is_from_preferred = was_present && status_receiver_tag == strategy_state->receiver_tag;
-
-    return aeron_preferred_flow_control_apply_status_message(
-        &strategy_state->min_flow_control_state,
-        status_message_header,
-        snd_lmt,
-        initial_term_id,
+    const int64_t position = aeron_logbuffer_compute_position(
+        status_message_header->consumption_term_id,
+        status_message_header->consumption_term_offset,
         position_bits_to_shift,
+        initial_term_id);
+    const int64_t window_length = status_message_header->receiver_window;
+    const int64_t receiver_id = status_message_header->receiver_id;
+
+    int32_t sm_receiver_tag;
+    bool was_present = 0 < aeron_udp_protocol_sm_receiver_tag(status_message_header, &sm_receiver_tag);
+    bool is_from_preferred = was_present && sm_receiver_tag == strategy_state->receiver_tag;
+
+    if (0 == strategy_state->min_flow_control_state.receivers.length)
+    {
+        int64_t position_plus_window = position + window_length;
+        return snd_lmt > position_plus_window ? snd_lmt : position_plus_window;
+    }
+
+    return aeron_preferred_flow_control_apply_position_update(
+        &strategy_state->min_flow_control_state,
+        position,
+        window_length,
+        receiver_id,
+        snd_lmt,
         now_ns,
         is_from_preferred);
 }

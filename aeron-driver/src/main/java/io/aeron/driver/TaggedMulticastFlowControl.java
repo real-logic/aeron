@@ -54,6 +54,9 @@ public class TaggedMulticastFlowControl implements FlowControl
      */
     public static final long RECEIVER_TIMEOUT_DEFAULT = TimeUnit.SECONDS.toNanos(2);
 
+    /**
+     * Timeout after which receivers will be considered inactive.
+     */
     public static final long RECEIVER_TIMEOUT = getDurationInNanos(
         RECEIVER_TIMEOUT_PROP_NAME, RECEIVER_TIMEOUT_DEFAULT);
 
@@ -93,14 +96,14 @@ public class TaggedMulticastFlowControl implements FlowControl
 
         final long windowLength = flyweight.receiverWindowLength();
         final long receiverId = flyweight.receiverId();
-        final boolean isFromTagged = isFromTagged(flyweight);
+        final boolean isTagged = isTagged(flyweight);
         final long lastPositionPlusWindow = position + windowLength;
         boolean isExisting = false;
         long minPosition = Long.MAX_VALUE;
 
         for (final MinMulticastFlowControl.Receiver receiver : receivers)
         {
-            if (isFromTagged && receiverId == receiver.receiverId)
+            if (isTagged && receiverId == receiver.receiverId)
             {
                 receiver.lastPosition = Math.max(position, receiver.lastPosition);
                 receiver.lastPositionPlusWindow = lastPositionPlusWindow;
@@ -111,7 +114,7 @@ public class TaggedMulticastFlowControl implements FlowControl
             minPosition = Math.min(minPosition, receiver.lastPositionPlusWindow);
         }
 
-        if (isFromTagged && !isExisting)
+        if (isTagged && !isExisting)
         {
             final MinMulticastFlowControl.Receiver receiver = new MinMulticastFlowControl.Receiver(
                 position, lastPositionPlusWindow, timeNs, receiverId);
@@ -179,7 +182,7 @@ public class TaggedMulticastFlowControl implements FlowControl
         return receivers.length > 0 ? minLimitPosition : senderLimit;
     }
 
-    private boolean isFromTagged(final StatusMessageFlyweight statusMessageFlyweight)
+    private boolean isTagged(final StatusMessageFlyweight statusMessageFlyweight)
     {
         final int asfLength = statusMessageFlyweight.asfLength();
         boolean result = false;

@@ -19,6 +19,12 @@ import io.aeron.CommonContext;
 import io.aeron.driver.media.UdpChannel;
 import org.agrona.LangUtil;
 
+import static io.aeron.driver.Configuration.MULTICAST_FLOW_CONTROL_STRATEGY;
+
+/**
+ * Default supplier of {@link FlowControl} strategies for multicast streams which supports defining the strategy in
+ * the channel URI as a priority over {@link Configuration#MULTICAST_FLOW_CONTROL_STRATEGY_PROP_NAME}.
+ */
 public class DefaultMulticastFlowControlSupplier implements FlowControlSupplier
 {
     public FlowControl newInstance(final UdpChannel udpChannel, final int streamId, final long registrationId)
@@ -30,7 +36,7 @@ public class DefaultMulticastFlowControlSupplier implements FlowControlSupplier
         {
             if (fcStr.startsWith("max"))
             {
-                return new MaxMulticastFlowControl();
+                return MaxMulticastFlowControl.INSTANCE;
             }
             else if (fcStr.startsWith("min"))
             {
@@ -46,9 +52,22 @@ public class DefaultMulticastFlowControlSupplier implements FlowControlSupplier
             }
         }
 
+        if (MaxMulticastFlowControl.class.getName().equals(MULTICAST_FLOW_CONTROL_STRATEGY))
+        {
+            return MaxMulticastFlowControl.INSTANCE;
+        }
+        else if (MinMulticastFlowControl.class.getName().equals(MULTICAST_FLOW_CONTROL_STRATEGY))
+        {
+            return new MinMulticastFlowControl();
+        }
+        else if (TaggedMulticastFlowControl.class.getName().equals(MULTICAST_FLOW_CONTROL_STRATEGY))
+        {
+            return new TaggedMulticastFlowControl();
+        }
+
         try
         {
-            flowControl = (FlowControl)Class.forName(Configuration.MULTICAST_FLOW_CONTROL_STRATEGY)
+            flowControl = (FlowControl)Class.forName(MULTICAST_FLOW_CONTROL_STRATEGY)
                 .getConstructor()
                 .newInstance();
         }
@@ -63,6 +82,6 @@ public class DefaultMulticastFlowControlSupplier implements FlowControlSupplier
     public String toString()
     {
         return "DefaultMulticastFlowControlSupplier{flowControlClass=" +
-            Configuration.MULTICAST_FLOW_CONTROL_STRATEGY + "}";
+            MULTICAST_FLOW_CONTROL_STRATEGY + "}";
     }
 }

@@ -336,8 +336,7 @@ public class FlowControlStrategiesTest
             int numFragmentsFromB = 0;
 
             driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
-            driverAContext.multicastFlowControlSupplier(
-                (udpChannel, streamId, registrationId) -> new TaggedMulticastFlowControl());
+            driverAContext.multicastFlowControlSupplier(new TaggedMulticastFlowControlSupplier());
             driverBContext.applicationSpecificFeedback(TaggedMulticastFlowControl.PREFERRED_ASF_BYTES);
 
             launch();
@@ -412,8 +411,7 @@ public class FlowControlStrategiesTest
             boolean isBClosed = false;
 
             driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
-            driverAContext.multicastFlowControlSupplier(
-                (udpChannel, streamId, registrationId) -> new TaggedMulticastFlowControl());
+            driverAContext.multicastFlowControlSupplier(new TaggedMulticastFlowControlSupplier());
             driverBContext.applicationSpecificFeedback(TaggedMulticastFlowControl.PREFERRED_ASF_BYTES);
 
             launch();

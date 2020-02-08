@@ -31,6 +31,11 @@ import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
 public class MaxMulticastFlowControl implements FlowControl
 {
     /**
+     * Singleton instance which can be used to avoid allocation.
+     */
+    public static final MaxMulticastFlowControl INSTANCE = new MaxMulticastFlowControl();
+
+    /**
      * {@inheritDoc}
      */
     public void initialize(final UdpChannel udpChannel, final int initialTermId, final int termBufferLength)

@@ -18,12 +18,12 @@ package io.aeron.driver;
 import io.aeron.driver.media.UdpChannel;
 
 /**
- * Supplier of {@link MaxMulticastFlowControl} strategy implementations.
+ * Supplier of {@link TaggedMulticastFlowControl} implementation strategies.
  */
-public class MaxMulticastFlowControlSupplier implements FlowControlSupplier
+public class TaggedMulticastFlowControlSupplier implements FlowControlSupplier
 {
     public FlowControl newInstance(final UdpChannel udpChannel, final int streamId, final long registrationId)
     {
-        return MaxMulticastFlowControl.INSTANCE;
+        return new TaggedMulticastFlowControl();
     }
 }

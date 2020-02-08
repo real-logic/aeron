@@ -30,7 +30,10 @@ import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
  */
 public class UnicastFlowControl implements FlowControl
 {
-    private long lastPosition = 0;
+    /**
+     * Singleton instance which can be used to avoid allocation.
+     */
+    public static final UnicastFlowControl INSTANCE = new UnicastFlowControl();
 
     /**
      * {@inheritDoc}
@@ -48,8 +51,6 @@ public class UnicastFlowControl implements FlowControl
             flyweight.consumptionTermOffset(),
             positionBitsToShift,
             initialTermId);
-
-        lastPosition = Math.max(lastPosition, position);
 
         return Math.max(senderLimit, position + flyweight.receiverWindowLength());
     }

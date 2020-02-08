@@ -181,16 +181,13 @@ public class DataPacketDispatcher
 
     public void addPublicationImage(final PublicationImage image)
     {
-        final int sessionId = image.sessionId();
-        final int streamId = image.streamId();
-
-        final StreamInterest streamInterest = streamInterestByIdMap.get(streamId);
-        SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.get(sessionId);
+        final StreamInterest streamInterest = streamInterestByIdMap.get(image.streamId());
+        SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.get(image.sessionId());
 
         if (null == sessionInterest)
         {
             sessionInterest = new SessionInterest(ACTIVE);
-            streamInterest.sessionInterestByIdMap.put(sessionId, sessionInterest);
+            streamInterest.sessionInterestByIdMap.put(image.sessionId(), sessionInterest);
         }
         else
         {
@@ -203,13 +200,10 @@ public class DataPacketDispatcher
 
     public void removePublicationImage(final PublicationImage image)
     {
-        final int sessionId = image.sessionId();
-        final int streamId = image.streamId();
-
-        final StreamInterest streamInterest = streamInterestByIdMap.get(streamId);
+        final StreamInterest streamInterest = streamInterestByIdMap.get(image.streamId());
         if (null != streamInterest)
         {
-            final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.get(sessionId);
+            final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.get(image.sessionId());
             if (null != sessionInterest && null != sessionInterest.image)
             {
                 if (sessionInterest.image.correlationId() == image.correlationId())

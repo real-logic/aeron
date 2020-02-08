@@ -456,7 +456,7 @@ public class PublicationImage
     /**
      * Called from the {@link DriverConductor}.
      *
-     * @param nowNs                  in nanoseconds
+     * @param nowNs                  current time.
      * @param statusMessageTimeoutNs for sending of Status Messages.
      */
     final void trackRebuild(final long nowNs, final long statusMessageTimeoutNs)

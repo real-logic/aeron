@@ -379,7 +379,7 @@ class TestNode implements AutoCloseable
             if (message.equals(TestMessages.POISON_MESSAGE))
             {
                 hasReceivedUnexpectedMessage = true;
-                return;
+                throw new IllegalStateException("Poison message received.");
             }
             if (message.equals(TestMessages.ECHO_IPC_INGRESS))
             {

@@ -45,6 +45,11 @@ import static org.agrona.SystemUtil.getDurationInNanos;
 public class TaggedMulticastFlowControl implements FlowControl
 {
     /**
+     * URI param value to identify this {@link FlowControl} strategy.
+     */
+    public static final String FC_PARAM_VALUE = "max";
+
+    /**
      * Property name to set timeout, in nanoseconds, for a receiver to be tracked.
      */
     public static final String RECEIVER_TIMEOUT_PROP_NAME = "aeron.PreferredMulticastFlowControl.receiverTimeout";

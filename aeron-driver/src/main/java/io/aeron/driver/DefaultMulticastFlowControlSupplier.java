@@ -34,15 +34,15 @@ public class DefaultMulticastFlowControlSupplier implements FlowControlSupplier
 
         if (null != fcStr)
         {
-            if (fcStr.startsWith("max"))
+            if (fcStr.startsWith(MaxMulticastFlowControl.FC_PARAM_VALUE))
             {
                 return MaxMulticastFlowControl.INSTANCE;
             }
-            else if (fcStr.startsWith("min"))
+            else if (fcStr.startsWith(MinMulticastFlowControl.FC_PARAM_VALUE))
             {
                 return new MinMulticastFlowControl();
             }
-            else if (fcStr.startsWith("tagged"))
+            else if (fcStr.startsWith(TaggedMulticastFlowControl.FC_PARAM_VALUE))
             {
                 return new TaggedMulticastFlowControl();
             }

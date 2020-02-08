@@ -31,6 +31,11 @@ import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
 public class MaxMulticastFlowControl implements FlowControl
 {
     /**
+     * URI param value to identify this {@link FlowControl} strategy.
+     */
+    public static final String FC_PARAM_VALUE = "max";
+
+    /**
      * Singleton instance which can be used to avoid allocation.
      */
     public static final MaxMulticastFlowControl INSTANCE = new MaxMulticastFlowControl();

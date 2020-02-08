@@ -47,7 +47,7 @@ public class DefaultCongestionControlSupplier implements CongestionControlSuppli
     {
         final String ccStr = udpChannel.channelUri().get(CommonContext.CONGESTION_CONTROL_PARAM_NAME);
 
-        if (null == ccStr || "static".equals(ccStr))
+        if (null == ccStr || ccStr.startsWith(StaticWindowCongestionControl.CC_PARAM_VALUE))
         {
             return new StaticWindowCongestionControl(
                 registrationId,
@@ -62,7 +62,7 @@ public class DefaultCongestionControlSupplier implements CongestionControlSuppli
                 context,
                 countersManager);
         }
-        else if ("cubic".equals(ccStr))
+        else if (ccStr.startsWith(CubicCongestionControl.CC_PARAM_VALUE))
         {
             return new CubicCongestionControl(
                 registrationId,

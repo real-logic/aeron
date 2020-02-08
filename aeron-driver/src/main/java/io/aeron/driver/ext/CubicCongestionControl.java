@@ -48,6 +48,11 @@ import static io.aeron.driver.CongestionControl.packOutcome;
  */
 public class CubicCongestionControl implements CongestionControl
 {
+    /**
+     * URI param value to identify this {@link CongestionControl} strategy.
+     */
+    public static final String CC_PARAM_VALUE = "cubic";
+
     private static final boolean RTT_MEASUREMENT = CubicCongestionControlConfiguration.MEASURE_RTT;
     private static final boolean TCP_MODE = CubicCongestionControlConfiguration.TCP_MODE;
 

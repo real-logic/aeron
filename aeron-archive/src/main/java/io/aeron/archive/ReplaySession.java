@@ -321,7 +321,7 @@ class ReplaySession implements Session, AutoCloseable
             return 0;
         }
 
-        int batchLength = 0;
+        int batchOffset = 0;
         int paddingFrameLength = 0;
         final int sessionId = publication.sessionId();
         final int streamId = publication.streamId();
@@ -329,32 +329,33 @@ class ReplaySession implements Session, AutoCloseable
         final Checksum checksum = this.checksum;
         final UnsafeBuffer replayBuffer = this.replayBuffer;
 
-        while (batchLength < bytesRead && batchLength < remaining)
+        while (batchOffset < bytesRead && batchOffset < remaining)
         {
-            final int frameLength = frameLength(replayBuffer, batchLength);
+            final int frameLength = frameLength(replayBuffer, batchOffset);
             if (frameLength <= 0)
             {
-                throw new IllegalStateException("unexpected end of recording reached at position " + replayPosition);
+                throw new IllegalStateException(
+                    "unexpected end of recording at position=" + replayPosition + " batchOffset=" + batchOffset);
             }
 
-            final int frameType = frameType(replayBuffer, batchLength);
+            final int frameType = frameType(replayBuffer, batchOffset);
             final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
 
             if (HDR_TYPE_DATA == frameType)
             {
-                if (batchLength + alignedLength > bytesRead)
+                if (batchOffset + alignedLength > bytesRead)
                 {
                     break;
                 }
 
                 if (null != checksum)
                 {
-                    verifyChecksum(checksum, batchLength, alignedLength);
+                    verifyChecksum(checksum, batchOffset, alignedLength);
                 }
 
-                replayBuffer.putInt(batchLength + SESSION_ID_FIELD_OFFSET, sessionId, LITTLE_ENDIAN);
-                replayBuffer.putInt(batchLength + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
-                batchLength += alignedLength;
+                replayBuffer.putInt(batchOffset + SESSION_ID_FIELD_OFFSET, sessionId, LITTLE_ENDIAN);
+                replayBuffer.putInt(batchOffset + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
+                batchOffset += alignedLength;
             }
             else if (HDR_TYPE_PAD == frameType)
             {
@@ -364,10 +365,10 @@ class ReplaySession implements Session, AutoCloseable
         }
 
         int workCount = 0;
-        if (batchLength > 0)
+        if (batchOffset > 0)
         {
-            final long position = publication.offerBlock(replayBuffer, 0, batchLength);
-            if (hasPublicationAdvanced(position, batchLength))
+            final long position = publication.offerBlock(replayBuffer, 0, batchOffset);
+            if (hasPublicationAdvanced(position, batchOffset))
             {
                 workCount++;
             }

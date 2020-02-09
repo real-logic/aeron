@@ -147,6 +147,15 @@ aeron_flow_control_strategy_supplier_func_t aeron_flow_control_strategy_supplier
     return NULL;
 }
 
+void aeron_flow_control_extract_strategy_name_length(
+    const size_t options_length,
+    const char *options,
+    size_t *strategy_length)
+{
+    const char *next_option = (const char *)memchr(options, ',', options_length);
+    *strategy_length = NULL == next_option ? options_length : (size_t) labs(next_option - options);
+}
+
 int aeron_default_multicast_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
     aeron_flow_control_strategy_supplier_func_t fallback_flow_control_supplier,
@@ -156,9 +165,6 @@ int aeron_default_multicast_flow_control_strategy_supplier(
     int32_t initial_term_id,
     size_t term_length)
 {
-    const char *max_strategy_name = "max";
-    const char *min_strategy_name = "min";
-
     const char *flow_control_options = aeron_uri_find_param_value(&channel->uri.params.udp.additional_params, "fc");
     if (NULL == flow_control_options)
     {
@@ -166,50 +172,48 @@ int aeron_default_multicast_flow_control_strategy_supplier(
             strategy, channel, stream_id, registration_id, initial_term_id, term_length);
     }
 
-    aeron_flow_control_preferred_options_t preferred_options;
-    if (aeron_flow_control_parse_preferred_options(
-        strlen(flow_control_options), flow_control_options, &preferred_options) < 0)
-    {
-        return -1;
-    }
+    size_t strategy_name_length = 0;
+    aeron_flow_control_extract_strategy_name_length(
+        strlen(flow_control_options), flow_control_options, &strategy_name_length);
 
-    if (0 == preferred_options.strategy_name_length || NULL == preferred_options.strategy_name)
+    if (0 == strategy_name_length)
     {
         aeron_set_err(
             EINVAL, "No flow control strategy name specified, URI: %.*s", channel->uri_length, channel->original_uri);
         return -1;
     }
 
-    if (strlen(max_strategy_name) == preferred_options.strategy_name_length &&
-        0 == strncmp(max_strategy_name, preferred_options.strategy_name, strlen(max_strategy_name)))
+    const char *strategy_name = flow_control_options;
+
+    if (strlen(AERON_MAX_FLOW_CONTROL_STRAEGY_NAME) == strategy_name_length &&
+        0 == strncmp(AERON_MAX_FLOW_CONTROL_STRAEGY_NAME, strategy_name, strategy_name_length))
     {
         return aeron_max_multicast_flow_control_strategy_supplier(
             strategy, channel, stream_id, registration_id, initial_term_id, term_length);
     }
-
-    if (strlen(min_strategy_name) == preferred_options.strategy_name_length &&
-        0 == strncmp(min_strategy_name, preferred_options.strategy_name, strlen(min_strategy_name)))
+    else if (strlen(AERON_MIN_FLOW_CONTROL_STRAEGY_NAME) == strategy_name_length &&
+        0 == strncmp(AERON_MIN_FLOW_CONTROL_STRAEGY_NAME, strategy_name, strategy_name_length))
     {
-        if (preferred_options.has_receiver_tag)
-        {
-            return aeron_preferred_flow_control_strategy_supplier(
-                strategy, channel, stream_id, registration_id, initial_term_id, term_length);
-        }
-        else
-        {
-            return aeron_min_flow_control_strategy_supplier(
-                strategy, channel, stream_id, registration_id, initial_term_id, term_length);
-        }
+        return aeron_min_flow_control_strategy_supplier(
+            strategy, channel, stream_id, registration_id, initial_term_id, term_length);
     }
+    else if (strlen(AERON_TAGGED_FLOW_CONTROL_STRAEGY_NAME) == strategy_name_length &&
+        0 == strncmp(AERON_TAGGED_FLOW_CONTROL_STRAEGY_NAME, strategy_name, strategy_name_length))
+    {
+        return aeron_preferred_flow_control_strategy_supplier(
+            strategy, channel, stream_id, registration_id, initial_term_id, term_length);
+    }
+    else
+    {
+        aeron_set_err(
+            EINVAL, "Invalid flow control strategy name: %.*s from URI: %.*s",
+            strategy_name_length, strategy_name,
+            channel->uri_length, channel->original_uri);
 
-    aeron_set_err(
-        EINVAL, "Invalid flow control strategy name: %.*s from URI: %.*s",
-        preferred_options.strategy_name_length, preferred_options.strategy_name,
-        channel->uri_length, channel->original_uri);
+    }
 
     return -1;
 }
-
 
 #define AERON_FLOW_CONTROL_NUMBER_BUFFER_LEN (64)
 

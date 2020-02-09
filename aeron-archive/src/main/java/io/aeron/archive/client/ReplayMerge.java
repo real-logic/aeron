@@ -538,4 +538,14 @@ public class ReplayMerge implements AutoCloseable
     {
         return archive.controlResponsePoller().relevantId();
     }
+
+    public String toString()
+    {
+        return "ReplayMerge{" +
+            "state=" + state +
+            ", positionOfLastProgress=" + positionOfLastProgress +
+            ", isLiveAdded=" + isLiveAdded +
+            ", isReplayActive=" + isReplayActive +
+            '}';
+    }
 }

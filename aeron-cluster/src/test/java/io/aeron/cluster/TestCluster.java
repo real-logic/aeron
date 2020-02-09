@@ -144,6 +144,7 @@ public class TestCluster implements AutoCloseable
         {
             return null;
         }
+
         return () ->
         {
             node.close();

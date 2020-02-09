@@ -178,7 +178,7 @@ public class ReplayMerge implements AutoCloseable
             {
                 if (State.MERGED != state)
                 {
-                    subscription.removeDestination(replayDestination);
+                    subscription.asyncRemoveDestination(replayDestination);
                 }
 
                 if (isReplayActive && archive.archiveProxy().publication().isConnected())

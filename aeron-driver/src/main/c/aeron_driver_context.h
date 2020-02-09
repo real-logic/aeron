@@ -119,7 +119,7 @@ typedef struct aeron_driver_context_stct
     struct                                                  /* aeron.preferred.multicast.flow.control.rtag = <unset> */
     {
         bool is_present;                                    /* default: false */
-        int32_t value;                                      /* default: -1 */
+        int64_t value;                                      /* default: -1 */
     }
     receiver_tag;
 

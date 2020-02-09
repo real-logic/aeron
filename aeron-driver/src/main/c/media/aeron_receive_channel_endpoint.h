@@ -60,7 +60,7 @@ typedef struct aeron_receive_channel_endpoint_stct
     struct
     {
         bool is_present;
-        int32_t value;
+        int64_t value;
     }
     receiver_tag;
 

@@ -19,7 +19,7 @@
 
 #include "aeron_udp_protocol.h"
 
-int aeron_udp_protocol_sm_receiver_tag(aeron_status_message_header_t *sm, int32_t *receiver_tag)
+int aeron_udp_protocol_sm_receiver_tag(aeron_status_message_header_t *sm, int64_t *receiver_tag)
 {
     const size_t receiver_tag_offset = sizeof(aeron_status_message_header_t) +
         offsetof(aeron_status_message_optional_header_t, receiver_tag);
@@ -28,8 +28,20 @@ int aeron_udp_protocol_sm_receiver_tag(aeron_status_message_header_t *sm, int32_
     
     if (sm->frame_header.frame_length < (int32_t)frame_length_with_receiver_tag)
     {
-        *receiver_tag = 0;
-        return 0;
+        // Ugly ASF 4 byte SM compatibility.
+        if (sm->frame_header.frame_length - sizeof(aeron_status_message_header_t) == sizeof(int32_t))
+        {
+            int32_t asf_value = 0;
+            const uint8_t *sm_ptr = (const uint8_t *)sm + sizeof(aeron_status_message_header_t);
+            memcpy(&asf_value, sm_ptr, sizeof(asf_value));
+            *receiver_tag = (int64_t) asf_value;
+            return sizeof(asf_value);
+        }
+        else
+        {
+            *receiver_tag = 0;
+            return 0;
+        }
     }
 
     const uint8_t *sm_ptr = (const uint8_t *)sm + receiver_tag_offset;

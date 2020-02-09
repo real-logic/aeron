@@ -250,7 +250,7 @@ int aeron_min_flow_control_strategy_supplier(
 typedef struct aeron_tagged_flow_control_strategy_state_stct
 {
     aeron_min_flow_control_strategy_state_t min_flow_control_state;
-    int32_t receiver_tag;
+    int64_t receiver_tag;
 }
 aeron_tagged_flow_control_strategy_state_t;
 
@@ -294,7 +294,7 @@ int64_t aeron_tagged_flow_control_strategy_on_sm(
     const int64_t window_length = status_message_header->receiver_window;
     const int64_t receiver_id = status_message_header->receiver_id;
 
-    int32_t sm_receiver_tag;
+    int64_t sm_receiver_tag;
     bool was_present = 0 < aeron_udp_protocol_sm_receiver_tag(status_message_header, &sm_receiver_tag);
     bool is_tagged = was_present && sm_receiver_tag == strategy_state->receiver_tag;
 

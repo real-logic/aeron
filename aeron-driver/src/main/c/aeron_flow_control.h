@@ -59,7 +59,7 @@ typedef struct aeron_flow_control_tagged_options_stct
     size_t strategy_name_length;
     const char *strategy_name;
     bool has_receiver_tag;
-    int32_t receiver_tag;
+    int64_t receiver_tag;
     uint64_t timeout_ns;
 }
 aeron_flow_control_tagged_options_t;

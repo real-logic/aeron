@@ -281,11 +281,11 @@ int aeron_flow_control_parse_tagged_options(
 
             if ('g' == current_option[0])
             {
-                int32_t receiver_tag;
+                int64_t receiver_tag;
                 char *end_ptr = "";
                 errno = 0;
 
-                receiver_tag = strtol(number_buffer, &end_ptr, 10);
+                receiver_tag = strtoll(number_buffer, &end_ptr, 10);
 
                 if (0 == errno && '\0' == *end_ptr)
                 {

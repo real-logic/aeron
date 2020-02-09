@@ -41,7 +41,7 @@ public:
         aeron_flow_control_strategy_t *strategy,
         int64_t receiver_id,
         int32_t term_offset,
-        int32_t rtag,
+        int64_t rtag,
         int64_t now_ns = 0,
         bool send_rtag = true)
     {
@@ -61,6 +61,28 @@ public:
 
         return strategy->on_status_message(
             strategy->state, (uint8_t *)sm, sm->frame_header.frame_length, &address, sizeof(address), 0, 0, now_ns);
+    }
+
+    int64_t apply_old_asf_status_message(
+        aeron_flow_control_strategy_t *strategy,
+        int64_t receiver_id,
+        int32_t term_offset,
+        int32_t asf_value)
+    {
+        uint8_t buffer[1024];
+        aeron_status_message_header_t *sm = (aeron_status_message_header_t *)buffer;
+        int32_t *asf =
+            (int32_t *) (buffer + sizeof(aeron_status_message_header_t));
+
+        sm->frame_header.frame_length = sizeof(aeron_status_message_header_t) + sizeof(int32_t);
+        sm->consumption_term_id = 0;
+        sm->consumption_term_offset = term_offset;
+        sm->receiver_window = WINDOW_LENGTH;
+        sm->receiver_id = receiver_id;
+        *asf = asf_value;
+
+        return strategy->on_status_message(
+            strategy->state, (uint8_t *)sm, sm->frame_header.frame_length, &address, sizeof(address), 0, 0, 0);
     }
 
     void initialise_channel(const char *uri)
@@ -212,6 +234,40 @@ TEST_F(PreferredMulticastFlowControlTest, shouldUsePreferredStrategy)
     ASSERT_EQ(WINDOW_LENGTH + 1000, apply_status_message(strategy, 1, 1000, 123));
     ASSERT_EQ(WINDOW_LENGTH + 1000, apply_status_message(strategy, 2, 2000, 123));
     ASSERT_EQ(WINDOW_LENGTH + 1000, apply_status_message(strategy, 3, 994, 0));
+}
+
+TEST_F(PreferredMulticastFlowControlTest, shouldUsePreferredStrategyWith8ByteTag)
+{
+    aeron_flow_control_strategy_t *strategy = NULL;
+    initialise_channel("aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=tagged,g:3000000000");
+
+    ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
+        &strategy, aeron_max_multicast_flow_control_strategy_supplier,
+        channel,
+        1001, 1001, 0, 64 * 1024));
+
+    ASSERT_FALSE(NULL == strategy);
+
+    ASSERT_EQ(WINDOW_LENGTH + 1000, apply_status_message(strategy, 1, 1000, 3000000000));
+    ASSERT_EQ(WINDOW_LENGTH + 1000, apply_status_message(strategy, 2, 2000, 3000000000));
+    ASSERT_EQ(WINDOW_LENGTH + 1000, apply_status_message(strategy, 3, 994, -1294967296));
+}
+
+TEST_F(PreferredMulticastFlowControlTest, shouldUsePreferredStrategyWithOldAsfValue)
+{
+    aeron_flow_control_strategy_t *strategy = NULL;
+    initialise_channel("aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=tagged,g:123");
+
+    ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
+        &strategy, aeron_max_multicast_flow_control_strategy_supplier,
+        channel,
+        1001, 1001, 0, 64 * 1024));
+
+    ASSERT_FALSE(NULL == strategy);
+
+    ASSERT_EQ(WINDOW_LENGTH + 1000, apply_old_asf_status_message(strategy, 1, 1000, 123));
+    ASSERT_EQ(WINDOW_LENGTH + 1000, apply_old_asf_status_message(strategy, 2, 2000, 123));
+    ASSERT_EQ(WINDOW_LENGTH + 1000, apply_old_asf_status_message(strategy, 3, 994, 2));
 }
 
 TEST_F(PreferredMulticastFlowControlTest, shouldUsePreferredStrategyCorrectlyWhenReceiversAreEmpty)

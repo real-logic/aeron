@@ -192,6 +192,29 @@ int32_t aeron_config_parse_int32(const char *name, const char *str, int32_t def,
     return result;
 }
 
+int32_t aeron_config_parse_int64(const char *name, const char *str, int64_t def, int64_t min, int64_t max)
+{
+    int64_t result = def;
+
+    if (NULL != str)
+    {
+        errno = 0;
+        char *end_ptr = NULL;
+        int64_t value = strtoll(str, &end_ptr, 0);
+
+        if ((0 == value && 0 != errno) || '\0' != end_ptr)
+        {
+            aeron_config_prop_warning(name, str);
+            value = def;
+        }
+
+        result = value > max ? max : (int64_t)value;
+        result = value < min ? min : (int64_t)result;
+    }
+
+    return result;
+}
+
 uint64_t aeron_config_parse_size64(const char *name, const char *str, uint64_t def, uint64_t min, uint64_t max)
 {
     uint64_t result = def;
@@ -818,12 +841,12 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     if (NULL != receiver_tag_str)
     {
         _context->receiver_tag.is_present = true;
-        _context->receiver_tag.value = aeron_config_parse_int32(
+        _context->receiver_tag.value = aeron_config_parse_int64(
             AERON_TAGGED_MULTICAST_FLOW_CONTROL_RTAG_ENV_VAR,
             getenv(AERON_TAGGED_MULTICAST_FLOW_CONTROL_RTAG_ENV_VAR),
             _context->receiver_tag.value,
-            INT32_MIN,
-            INT32_MAX);
+            INT64_MIN,
+            INT64_MAX);
     }
 
     _context->to_driver_buffer = NULL;

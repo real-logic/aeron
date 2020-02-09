@@ -80,7 +80,7 @@ aeron_status_message_header_t;
 
 typedef struct aeron_status_message_optional_header_stct
 {
-    int32_t receiver_tag;
+    int64_t receiver_tag;
 }
 aeron_status_message_optional_header_t;
 
@@ -96,7 +96,7 @@ typedef struct aeron_rttm_header_stct
 aeron_rttm_header_t;
 #pragma pack(pop)
 
-int aeron_udp_protocol_sm_receiver_tag(aeron_status_message_header_t *sm, int32_t *receiver_tag);
+int aeron_udp_protocol_sm_receiver_tag(aeron_status_message_header_t *sm, int64_t *receiver_tag);
 
 #define AERON_FRAME_HEADER_VERSION (0)
 

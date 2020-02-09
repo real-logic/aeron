@@ -29,39 +29,27 @@
 #include "aeron_driver_receiver.h"
 #include "aeron_receive_channel_endpoint.h"
 
-int aeron_receive_channel_endpoint_set_rtag(
+int aeron_receive_channel_endpoint_set_receiver_tag(
     aeron_receive_channel_endpoint_t *endpoint,
     aeron_udp_channel_t *channel,
     aeron_driver_context_t *context)
 {
-    const char *rtag_str = aeron_uri_find_param_value(&channel->uri.params.udp.additional_params, AERON_URI_RTAG_KEY);
-    if (NULL != rtag_str)
+    int64_t receiver_tag = 0;
+    int rc = aeron_uri_get_int64(&channel->uri.params.udp.additional_params, AERON_URI_RTAG_KEY, &receiver_tag);
+    if (rc < 0)
     {
-        char *end_ptr = "";
-        errno = 0;
-        int32_t rtag = strtol(rtag_str, &end_ptr, 10);
-
-        if (0 != errno)
-        {
-            int errcode = errno;
-            aeron_set_err(errcode, "failed to parse channel rtag: %s, %s", rtag_str, strerror(errcode));
-            return -1;
-        }
-        else if ('\0' == *end_ptr)
-        {
-            aeron_set_err(EINVAL, "failed to parse channel rtag: %s");
-            return -1;
-        }
-        else
-        {
-            endpoint->receiver_tag.is_present = true;
-            endpoint->receiver_tag.value = rtag;
-        }
+        return -1;
     }
-    else
+
+    if (0 == rc)
     {
         endpoint->receiver_tag.is_present = context->receiver_tag.is_present;
         endpoint->receiver_tag.value = context->receiver_tag.value;
+    }
+    else
+    {
+        endpoint->receiver_tag.is_present = true;
+        endpoint->receiver_tag.value = receiver_tag;
     }
 
     return 0;
@@ -139,7 +127,7 @@ int aeron_receive_channel_endpoint_create(
     _endpoint->receiver_id = context->next_receiver_id++;
     _endpoint->receiver_proxy = context->receiver_proxy;
 
-    if (aeron_receive_channel_endpoint_set_rtag(_endpoint, channel, context) < 0)
+    if (aeron_receive_channel_endpoint_set_receiver_tag(_endpoint, channel, context) < 0)
     {
         aeron_receive_channel_endpoint_delete(NULL, _endpoint);
         return -1;

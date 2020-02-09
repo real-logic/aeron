@@ -38,24 +38,27 @@ public class DefaultMulticastFlowControlSupplier implements FlowControlSupplier
             final String strategyStr = (-1 == strategyEndIndex) ?
                     fcStr : fcStr.substring(0, strategyEndIndex);
 
-            if (MaxMulticastFlowControl.FC_PARAM_VALUE.equals(strategyStr))
+            switch (strategyStr)
             {
-                System.out.println("max");
-                return MaxMulticastFlowControl.INSTANCE;
-            }
-            else if (MinMulticastFlowControl.FC_PARAM_VALUE.equals(strategyStr))
-            {
-                System.out.println("min");
-                return new MinMulticastFlowControl();
-            }
-            else if (TaggedMulticastFlowControl.FC_PARAM_VALUE.equals(strategyStr))
-            {
-                System.out.println("tagged");
-                return new TaggedMulticastFlowControl();
-            }
-            else
-            {
-                throw new IllegalArgumentException("unsupported multicast flow control strategy : fc=" + fcStr);
+                case MaxMulticastFlowControl.FC_PARAM_VALUE:
+                {
+                    return MaxMulticastFlowControl.INSTANCE;
+                }
+
+                case MinMulticastFlowControl.FC_PARAM_VALUE:
+                {
+                    return new MinMulticastFlowControl();
+                }
+
+                case TaggedMulticastFlowControl.FC_PARAM_VALUE:
+                {
+                    return new TaggedMulticastFlowControl();
+                }
+
+                default:
+                {
+                    throw new IllegalArgumentException("unsupported multicast flow control strategy : fc=" + fcStr);
+                }
             }
         }
 

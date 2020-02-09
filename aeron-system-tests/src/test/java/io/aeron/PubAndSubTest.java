@@ -61,7 +61,7 @@ public class PubAndSubTest
     {
         return asList(
             "aeron:udp?endpoint=localhost:24325",
-            "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost",
+            "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost",
             IPC_URI);
     }
 

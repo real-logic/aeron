@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class MultiDriverTest
 {
-    private static final String MULTICAST_URI = "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost";
+    private static final String MULTICAST_URI = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost";
 
     private static final int STREAM_ID = 1001;
     private static final ThreadingMode THREADING_MODE = ThreadingMode.SHARED;

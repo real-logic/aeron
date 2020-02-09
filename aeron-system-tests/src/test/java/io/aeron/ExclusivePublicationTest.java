@@ -47,7 +47,7 @@ public class ExclusivePublicationTest
     private static List<String> channels()
     {
         return asList(
-            "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|term-length=64k",
+            "aeron:udp?endpoint=224.20.30.39:24323|interface=localhost|term-length=64k",
             "aeron:udp?endpoint=localhost:24325|term-length=64k",
             IPC_CHANNEL + "?term-length=64k");
     }

@@ -66,7 +66,7 @@ public class ArchiveReplayLoadTest
     private static final int CONTROL_RESPONSE_STREAM_ID = 100;
 
     private static final int TEST_DURATION_SEC = 60;
-    private static final String REPLAY_URI = "aeron:udp?endpoint=localhost:54326";
+    private static final String REPLAY_URI = "aeron:udp?endpoint=localhost:24326";
 
     private static final String PUBLISH_URI = new ChannelUriStringBuilder()
         .media("ipc")

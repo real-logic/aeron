@@ -49,7 +49,6 @@ public class ReplayMerge implements AutoCloseable
         REPLAY,
         CATCHUP,
         ATTEMPT_LIVE_JOIN,
-        STOP_REPLAY,
         MERGED,
         FAILED,
         CLOSED
@@ -177,16 +176,14 @@ public class ReplayMerge implements AutoCloseable
         {
             if (!archive.context().aeron().isClosed())
             {
-                if (State.MERGED != state && State.STOP_REPLAY != state)
+                if (State.MERGED != state)
                 {
                     subscription.removeDestination(replayDestination);
                 }
 
-                if (isReplayActive)
+                if (isReplayActive && archive.archiveProxy().publication().isConnected())
                 {
-                    isReplayActive = false;
-                    final long correlationId = archive.context().aeron().nextCorrelationId();
-                    archive.archiveProxy().stopReplay(replaySessionId, correlationId, archive.controlSessionId());
+                    stopReplay();
                 }
             }
 
@@ -237,10 +234,6 @@ public class ReplayMerge implements AutoCloseable
                 case ATTEMPT_LIVE_JOIN:
                     workCount += attemptLiveJoin(nowMs);
                     checkProgress(nowMs);
-                    break;
-
-                case STOP_REPLAY:
-                    workCount += stopReplay();
                     break;
             }
         }
@@ -465,7 +458,8 @@ public class ReplayMerge implements AutoCloseable
                     {
                         subscription.asyncRemoveDestination(replayDestination);
                         timeOfLastProgressMs = nowMs;
-                        nextState = State.STOP_REPLAY;
+                        stopReplay();
+                        nextState = State.MERGED;
                     }
                 }
 
@@ -478,20 +472,13 @@ public class ReplayMerge implements AutoCloseable
         return workCount;
     }
 
-    private int stopReplay()
+    private void stopReplay()
     {
-        int workCount = 0;
         final long correlationId = archive.context().aeron().nextCorrelationId();
-
         if (archive.archiveProxy().stopReplay(replaySessionId, correlationId, archive.controlSessionId()))
         {
             isReplayActive = false;
-            state(State.MERGED);
-
-            workCount += 1;
         }
-
-        return workCount;
     }
 
     private void state(final ReplayMerge.State newState)

@@ -259,8 +259,8 @@ TEST_P(ParameterisedSuccessfulOptionsParsingTest, shouldBeValid)
     const char* fc_options = std::get<0>(GetParam());
     const char* strategy = std::get<1>(GetParam());
 
-    aeron_flow_control_preferred_options_t options;
-    ASSERT_EQ(0, aeron_flow_control_parse_preferred_options(strlen(fc_options), fc_options, &options));
+    aeron_flow_control_tagged_options_t options;
+    ASSERT_EQ(0, aeron_flow_control_parse_tagged_options(strlen(fc_options), fc_options, &options));
 
     ASSERT_EQ(strlen(strategy), options.strategy_name_length);
     ASSERT_TRUE(0 == strncmp(strategy, options.strategy_name, options.strategy_name_length));
@@ -307,9 +307,9 @@ TEST_P(ParameterisedFailingOptionsParsingTest, shouldBeInvalid)
 {
     const char* fc_options = std::get<0>(GetParam());
 
-    aeron_flow_control_preferred_options_t options;
+    aeron_flow_control_tagged_options_t options;
     ASSERT_EQ(
-        std::get<1>(GetParam()), aeron_flow_control_parse_preferred_options(strlen(fc_options), fc_options, &options));
+        std::get<1>(GetParam()), aeron_flow_control_parse_tagged_options(strlen(fc_options), fc_options, &options));
 }
 
 INSTANTIATE_TEST_SUITE_P(

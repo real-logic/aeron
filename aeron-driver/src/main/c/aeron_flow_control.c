@@ -200,7 +200,7 @@ int aeron_default_multicast_flow_control_strategy_supplier(
     else if (strlen(AERON_TAGGED_FLOW_CONTROL_STRAEGY_NAME) == strategy_name_length &&
         0 == strncmp(AERON_TAGGED_FLOW_CONTROL_STRAEGY_NAME, strategy_name, strategy_name_length))
     {
-        return aeron_preferred_flow_control_strategy_supplier(
+        return aeron_tagged_flow_control_strategy_supplier(
             strategy, channel, stream_id, registration_id, initial_term_id, term_length);
     }
     else
@@ -217,10 +217,10 @@ int aeron_default_multicast_flow_control_strategy_supplier(
 
 #define AERON_FLOW_CONTROL_NUMBER_BUFFER_LEN (64)
 
-int aeron_flow_control_parse_preferred_options(
+int aeron_flow_control_parse_tagged_options(
     const size_t options_length,
     const char *options,
-    aeron_flow_control_preferred_options_t *flow_control_options)
+    aeron_flow_control_tagged_options_t *flow_control_options)
 {
     flow_control_options->strategy_name = NULL;
     flow_control_options->strategy_name_length = 0;

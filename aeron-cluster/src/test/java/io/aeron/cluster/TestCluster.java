@@ -139,6 +139,8 @@ public class TestCluster implements AutoCloseable
                 node.cleanUp();
             }
         }
+
+        ClusterTests.failOnClusterError();
     }
 
     static void awaitCount(final AtomicLong counter, final long value)

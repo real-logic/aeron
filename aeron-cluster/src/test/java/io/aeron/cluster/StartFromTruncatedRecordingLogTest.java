@@ -162,6 +162,8 @@ public class StartFromTruncatedRecordingLogTest
 
             stopAndStartClusterWithTruncationOfRecordingLog();
             assertClusterIsFunctioningCorrectly();
+
+            ClusterTests.failOnClusterError();
         });
     }
 

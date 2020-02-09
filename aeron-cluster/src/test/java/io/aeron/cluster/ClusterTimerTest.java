@@ -122,6 +122,8 @@ public class ClusterTimerTest
             connectClient();
 
             TestCluster.awaitCount(triggeredTimersCounter, triggeredSinceStart + 4);
+
+            ClusterTests.failOnClusterError();
         });
     }
 
@@ -154,6 +156,8 @@ public class ClusterTimerTest
             launchReschedulingService(triggeredTimersCounter);
 
             TestCluster.awaitCount(triggeredTimersCounter, triggeredSinceStart + 4);
+
+            ClusterTests.failOnClusterError();
         });
     }
 

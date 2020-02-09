@@ -115,6 +115,8 @@ public class ClusterNodeRestartTest
             connectClient();
 
             TestCluster.awaitCount(restartServiceMsgCounter, 1);
+
+            ClusterTests.failOnClusterError();
         });
     }
 
@@ -141,6 +143,8 @@ public class ClusterNodeRestartTest
 
             sendCountedMessageIntoCluster(1);
             TestCluster.awaitCount(restartServiceMsgCounter, 1);
+
+            ClusterTests.failOnClusterError();
         });
     }
 
@@ -175,6 +179,8 @@ public class ClusterNodeRestartTest
             }
 
             assertEquals("0", serviceState.get());
+
+            ClusterTests.failOnClusterError();
         });
     }
 
@@ -215,6 +221,8 @@ public class ClusterNodeRestartTest
             }
 
             assertEquals("3", serviceState.get());
+
+            ClusterTests.failOnClusterError();
         });
     }
 
@@ -255,6 +263,8 @@ public class ClusterNodeRestartTest
             TestCluster.awaitCount(serviceMsgCounter, 1);
 
             assertEquals("4", serviceState.get());
+
+            ClusterTests.failOnClusterError();
         });
     }
 
@@ -284,6 +294,8 @@ public class ClusterNodeRestartTest
             }
 
             assertEquals(3L, snapshotCount.get());
+
+            ClusterTests.failOnClusterError();
         });
     }
 
@@ -325,6 +337,8 @@ public class ClusterNodeRestartTest
             TestCluster.awaitCount(serviceMsgCounter, 1);
 
             assertEquals("5", serviceState.get());
+
+            ClusterTests.failOnClusterError();
         });
     }
 
@@ -358,6 +372,8 @@ public class ClusterNodeRestartTest
                 Thread.yield();
                 Tests.checkInterruptedStatus();
             }
+
+            ClusterTests.failOnClusterError();
         });
     }
 
@@ -415,6 +431,8 @@ public class ClusterNodeRestartTest
 
             connectClient();
             assertEquals("5", serviceState.get());
+
+            ClusterTests.failOnClusterError();
         });
     }
 

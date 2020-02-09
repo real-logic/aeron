@@ -18,15 +18,19 @@ package io.aeron.cluster;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.exceptions.AeronException;
 import org.agrona.ErrorHandler;
+import org.agrona.LangUtil;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.io.PrintStream;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 class ClusterTests
 {
+    private static final AtomicReference<Throwable> CLUSTER_ERROR = new AtomicReference<>();
+
     public static final Runnable TERMINATION_HOOK =
         () ->
         {
@@ -63,6 +67,16 @@ class ClusterTests
                     }
                 }
 
+                final Throwable error = CLUSTER_ERROR.get();
+                if (error == null)
+                {
+                    CLUSTER_ERROR.set(ex);
+                }
+                else
+                {
+                    error.addSuppressed(ex);
+                }
+
                 System.err.println("\n*** Error in node " + nodeId + " followed by system thread dump ***\n\n");
                 ex.printStackTrace();
 
@@ -79,5 +93,14 @@ class ClusterTests
                 final long value = countersReader.getCounterValue(counterId);
                 out.format("%3d: %,20d - %s%n", counterId, value, label);
             });
+    }
+
+    public static void failOnClusterError()
+    {
+        final Throwable error = CLUSTER_ERROR.getAndSet(null);
+        if (null != error)
+        {
+            LangUtil.rethrowUnchecked(error);
+        }
     }
 }

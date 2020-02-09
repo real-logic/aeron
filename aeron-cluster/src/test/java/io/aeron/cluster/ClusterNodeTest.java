@@ -112,6 +112,8 @@ public class ClusterNodeTest
 
             offerMessage(msgBuffer, msg);
             awaitResponse(messageCount);
+
+            ClusterTests.failOnClusterError();
         });
     }
 
@@ -151,6 +153,8 @@ public class ClusterNodeTest
 
             offerMessage(msgBuffer, msg);
             awaitResponse(messageCount);
+
+            ClusterTests.failOnClusterError();
         });
     }
 
@@ -177,6 +181,8 @@ public class ClusterNodeTest
 
             offerMessage(msgBuffer, msg);
             awaitResponse(messageCount);
+
+            ClusterTests.failOnClusterError();
         });
     }
 
@@ -202,6 +208,8 @@ public class ClusterNodeTest
 
             offerMessage(msgBuffer, msg);
             awaitResponse(messageCount);
+
+            ClusterTests.failOnClusterError();
         });
     }
 

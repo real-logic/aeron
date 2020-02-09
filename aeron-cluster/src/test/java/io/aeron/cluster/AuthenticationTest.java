@@ -131,6 +131,8 @@ public class AuthenticationTest
             assertEquals(aeronCluster.clusterSessionId(), authenticatorSessionId.value);
             assertEquals(aeronCluster.clusterSessionId(), serviceSessionId.value);
             assertEquals(0, encodedPrincipal.get().length);
+
+            ClusterTests.failOnClusterError();
         });
     }
 
@@ -193,6 +195,8 @@ public class AuthenticationTest
             assertEquals(aeronCluster.clusterSessionId(), authenticatorSessionId.value);
             assertEquals(aeronCluster.clusterSessionId(), serviceSessionId.value);
             assertEquals(PRINCIPAL_STRING, new String(encodedPrincipal.get()));
+
+            ClusterTests.failOnClusterError();
         });
     }
 
@@ -263,6 +267,8 @@ public class AuthenticationTest
             assertEquals(aeronCluster.clusterSessionId(), authenticatorSessionId.value);
             assertEquals(aeronCluster.clusterSessionId(), serviceSessionId.value);
             assertEquals(PRINCIPAL_STRING, new String(encodedPrincipal.get()));
+
+            ClusterTests.failOnClusterError();
         });
     }
 
@@ -325,6 +331,8 @@ public class AuthenticationTest
             catch (final AuthenticationException ex)
             {
                 assertEquals(-1L, serviceSessionId.value);
+
+                ClusterTests.failOnClusterError();
                 return;
             }
 
@@ -399,6 +407,8 @@ public class AuthenticationTest
             catch (final AuthenticationException ex)
             {
                 assertEquals(-1L, serviceSessionId.value);
+
+                ClusterTests.failOnClusterError();
                 return;
             }
 

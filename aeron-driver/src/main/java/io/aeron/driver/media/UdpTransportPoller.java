@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.media;
 
+import org.agrona.ErrorHandler;
 import org.agrona.nio.TransportPoller;
 
 import java.nio.channels.SelectionKey;
@@ -24,6 +25,13 @@ import java.nio.channels.SelectionKey;
  */
 public abstract class UdpTransportPoller extends TransportPoller
 {
+    protected final ErrorHandler errorHandler;
+
+    public UdpTransportPoller(final ErrorHandler errorHandler)
+    {
+        this.errorHandler = errorHandler;
+    }
+
     /**
      * Explicit event loop processing as a poll
      *

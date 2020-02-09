@@ -15,7 +15,8 @@
  */
 package io.aeron;
 
-import io.aeron.exceptions.*;
+import io.aeron.exceptions.ConcurrentConcludeException;
+import io.aeron.exceptions.DriverTimeoutException;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
@@ -37,7 +38,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
 
 import static io.aeron.Aeron.sleep;
-import static io.aeron.CncFileDescriptor.*;
+import static io.aeron.CncFileDescriptor.cncVersionOffset;
 import static java.lang.Long.getLong;
 import static java.lang.System.getProperty;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
@@ -250,6 +251,7 @@ public class CommonContext implements Cloneable
      * from the perspective of message reception. This can inform loss handling and similar semantics.
      * <p>
      * When configuring an subscription for an MDC publication then should be added as this is effective multicast.
+     *
      * @see CommonContext#MDC_CONTROL_MODE_PARAM_NAME
      * @see CommonContext#MDC_CONTROL_PARAM_NAME
      */
@@ -512,11 +514,11 @@ public class CommonContext implements Cloneable
     /**
      * Override the supplied timeout with the debug value if it has been set and we are in debug mode.
      *
-     * @param timeout The timeout value currently in use.
+     * @param timeout  The timeout value currently in use.
      * @param timeUnit The units of the timeout value. Debug timeout is specified in ns, so will be converted to this
      *                 unit.
      * @return The debug timeout if specified and we are being debugged or the supplied value if not. Will be in
-     *         timeUnit units.
+     * timeUnit units.
      */
     public static long checkDebugTimeout(final long timeout, final TimeUnit timeUnit)
     {
@@ -551,7 +553,7 @@ public class CommonContext implements Cloneable
      */
     public void deleteAeronDirectory()
     {
-        IoUtil.delete(aeronDirectory, false);
+        AeronCloseHelper.delete(aeronDirectory, false);
     }
 
     /**
@@ -676,7 +678,7 @@ public class CommonContext implements Cloneable
     /**
      * Request a driver to run its termination hook.
      *
-     * @param directory for the driver.
+     * @param directory   for the driver.
      * @param tokenBuffer containing the optional token for the request.
      * @param tokenOffset within the tokenBuffer at which the token begins.
      * @param tokenLength of the token in the tokenBuffer.

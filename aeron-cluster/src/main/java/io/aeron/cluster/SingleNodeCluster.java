@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.AeronCloseHelper;
 import io.aeron.CommonContext;
 import io.aeron.ExclusivePublication;
 import io.aeron.Image;
@@ -32,8 +33,8 @@ import io.aeron.driver.MinMulticastFlowControlSupplier;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
-import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.ErrorHandler;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
@@ -45,7 +46,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Single Node Cluster that includes everything needed to run all in one place. Includes a simple service to show
  * event processing. And also includes a cluster client.
- *
+ * <p>
  * Perfect for playing around with the cluster
  */
 public class SingleNodeCluster implements AutoCloseable
@@ -246,10 +247,11 @@ public class SingleNodeCluster implements AutoCloseable
 
     public void close()
     {
-        CloseHelper.quietClose(client);
-        CloseHelper.quietClose(container);
-        CloseHelper.quietClose(clusteredMediaDriver);
-        CloseHelper.quietClose(clientMediaDriver);
+        final ErrorHandler errorHandler = clientMediaDriver.context().errorHandler();
+        AeronCloseHelper.close(errorHandler, client);
+        AeronCloseHelper.close(errorHandler, container);
+        AeronCloseHelper.close(errorHandler, clusteredMediaDriver);
+        AeronCloseHelper.close(errorHandler, clientMediaDriver);
     }
 
     void connectClientToCluster()

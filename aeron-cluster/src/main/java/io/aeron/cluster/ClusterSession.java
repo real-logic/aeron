@@ -90,9 +90,10 @@ class ClusterSession
 
     public void close()
     {
-        CloseHelper.close(responsePublication);
-        responsePublication = null;
+        final Publication responsePublication = this.responsePublication;
+        this.responsePublication = null;
         state = State.CLOSED;
+        CloseHelper.close(responsePublication);
     }
 
     long id()

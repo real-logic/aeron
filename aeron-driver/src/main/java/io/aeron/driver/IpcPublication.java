@@ -15,11 +15,13 @@
  */
 package io.aeron.driver;
 
+import io.aeron.AeronCloseHelper;
 import io.aeron.CommonContext;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.logbuffer.LogBufferUnblocker;
+import org.agrona.ErrorHandler;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -57,6 +59,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
     private final int termWindowLength;
     private final int positionBitsToShift;
     private final int initialTermId;
+    private final ErrorHandler errorHandler;
     private long tripLimit;
     private long consumerPosition;
     private long lastConsumerPosition;
@@ -89,7 +92,8 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         final long untetheredRestingTimeoutNs,
         final long nowNs,
         final SystemCounters systemCounters,
-        final boolean isExclusive)
+        final boolean isExclusive,
+        final ErrorHandler errorHandler)
     {
         this.registrationId = registrationId;
         this.tag = tag;
@@ -98,6 +102,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         this.isExclusive = isExclusive;
         this.termBuffers = rawLog.termBuffers();
         this.initialTermId = initialTermId(rawLog.metaData());
+        this.errorHandler = errorHandler;
 
         final int termLength = rawLog.termLength();
         this.termBufferLength = termLength;
@@ -171,23 +176,20 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
 
     public void close()
     {
-        publisherPos.close();
-        publisherLimit.close();
-        for (final ReadablePosition position : subscriberPositions)
-        {
-            position.close();
-        }
+        AeronCloseHelper.close(errorHandler, publisherPos);
+        AeronCloseHelper.close(errorHandler, publisherLimit);
+        AeronCloseHelper.closeAll(errorHandler, subscriberPositions);
 
         for (int i = 0, size = untetheredSubscriptions.size(); i < size; i++)
         {
             final UntetheredSubscription untetheredSubscription = untetheredSubscriptions.get(i);
             if (UntetheredSubscription.RESTING == untetheredSubscription.state)
             {
-                untetheredSubscription.position.close();
+                AeronCloseHelper.close(errorHandler, untetheredSubscription.position);
             }
         }
 
-        rawLog.close();
+        AeronCloseHelper.close(errorHandler, rawLog);
     }
 
     public void addSubscriber(final SubscriptionLink subscriptionLink, final ReadablePosition subscriberPosition)

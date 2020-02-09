@@ -18,6 +18,7 @@ package io.aeron;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
+import org.agrona.LangUtil;
 import org.agrona.ManagedResource;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -34,9 +35,7 @@ import java.util.EnumSet;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.SPARSE;
-import static java.nio.file.StandardOpenOption.WRITE;
+import static java.nio.file.StandardOpenOption.*;
 
 /**
  * Takes a log file name and maps the file into memory and wraps it with {@link UnsafeBuffer}s as appropriate.
@@ -205,12 +204,38 @@ public class LogBuffers implements AutoCloseable, ManagedResource
 
     public void close()
     {
-        CloseHelper.close(fileChannel);
+        Throwable error = null;
+        try
+        {
+            CloseHelper.close(fileChannel);
+        }
+        catch (final Throwable t)
+        {
+            error = t;
+        }
 
         for (int i = 0, length = mappedByteBuffers.length; i < length; i++)
         {
-            IoUtil.unmap(mappedByteBuffers[i]);
+            try
+            {
+                IoUtil.unmap(mappedByteBuffers[i]);
+            }
+            catch (final Throwable t)
+            {
+                if (error == null)
+                {
+                    error = t;
+                }
+                else
+                {
+                    error.addSuppressed(t);
+                }
+            }
             mappedByteBuffers[i] = null;
+        }
+        if (error != null)
+        {
+            LangUtil.rethrowUnchecked(error);
         }
     }
 

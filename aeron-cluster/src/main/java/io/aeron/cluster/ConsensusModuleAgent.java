@@ -34,7 +34,10 @@ import io.aeron.security.Authenticator;
 import io.aeron.status.ReadableCounter;
 import org.agrona.*;
 import org.agrona.collections.*;
-import org.agrona.concurrent.*;
+import org.agrona.concurrent.Agent;
+import org.agrona.concurrent.AgentInvoker;
+import org.agrona.concurrent.AgentTerminationException;
+import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.util.ArrayDeque;
@@ -200,10 +203,16 @@ class ConsensusModuleAgent implements Agent
 
         ClusterMember.addMemberStatusPublications(clusterMembers, thisMember, memberStatusUri, statusStreamId, aeron);
 
-        ingressAdapter = new IngressAdapter(ctx.ingressFragmentLimit(), this, ctx.invalidRequestCounter());
+        ingressAdapter = new IngressAdapter(
+            ctx.ingressFragmentLimit(),
+            this,
+            ctx.invalidRequestCounter(),
+            ctx.countedErrorHandler());
 
         consensusModuleAdapter = new ConsensusModuleAdapter(
-            aeron.addSubscription(ctx.serviceControlChannel(), ctx.consensusModuleStreamId()), this);
+            aeron.addSubscription(ctx.serviceControlChannel(), ctx.consensusModuleStreamId()),
+            this,
+            ctx.countedErrorHandler());
         serviceProxy = new ServiceProxy(aeron.addPublication(ctx.serviceControlChannel(), ctx.serviceStreamId()));
 
         authenticator = ctx.authenticatorSupplier().get();
@@ -1448,7 +1457,7 @@ class ConsensusModuleAgent implements Agent
             final Image image = subscription.imageBySessionId(logSessionId);
             if (null != image)
             {
-                logAdapter = new LogAdapter(image, this);
+                logAdapter = new LogAdapter(image, this, ctx.countedErrorHandler());
                 lastAppendedPosition = 0;
                 createAppendPosition(logSessionId);
                 appendDynamicJoinTermAndSnapshots();

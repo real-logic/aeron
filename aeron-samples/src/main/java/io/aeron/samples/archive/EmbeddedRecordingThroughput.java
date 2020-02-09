@@ -25,7 +25,9 @@ import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.samples.SampleConfiguration;
 import org.agrona.CloseHelper;
-import org.agrona.concurrent.*;
+import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.YieldingIdleStrategy;
 import org.agrona.concurrent.status.CountersReader;
 import org.agrona.console.ContinueBarrier;
 
@@ -99,12 +101,12 @@ public class EmbeddedRecordingThroughput implements AutoCloseable
 
     public void close()
     {
-        CloseHelper.close(aeronArchive);
-        CloseHelper.close(aeron);
-        CloseHelper.close(archivingMediaDriver);
-
-        archivingMediaDriver.archive().context().deleteArchiveDirectory();
-        archivingMediaDriver.mediaDriver().context().deleteAeronDirectory();
+        CloseHelper.closeAll(
+            aeronArchive,
+            aeron,
+            archivingMediaDriver,
+            () -> archivingMediaDriver.archive().context().deleteArchiveDirectory(),
+            () -> archivingMediaDriver.mediaDriver().context().deleteAeronDirectory());
     }
 
     public long streamMessagesForRecording()

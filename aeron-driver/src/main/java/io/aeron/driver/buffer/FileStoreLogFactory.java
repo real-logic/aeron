@@ -15,8 +15,8 @@
  */
 package io.aeron.driver.buffer;
 
+import io.aeron.AeronCloseHelper;
 import io.aeron.exceptions.AeronException;
-import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
 import org.agrona.LangUtil;
@@ -26,7 +26,8 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
 import java.nio.channels.FileChannel;
-import java.nio.file.*;
+import java.nio.file.FileStore;
+import java.nio.file.Files;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.computeLogLength;
 
@@ -83,7 +84,7 @@ public class FileStoreLogFactory implements LogFactory
 
     public void close()
     {
-        CloseHelper.close(blankChannel);
+        AeronCloseHelper.close(errorHandler, blankChannel);
     }
 
     /**

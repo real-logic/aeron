@@ -166,15 +166,15 @@ public class IndexedReplicatedRecording implements AutoCloseable
 
     public void close()
     {
-        CloseHelper.close(srcAeronArchive);
-        CloseHelper.close(dstAeronArchive);
-        CloseHelper.close(srcAeron);
-        CloseHelper.close(dstAeron);
-        CloseHelper.close(srcArchivingMediaDriver);
-        CloseHelper.close(dstArchivingMediaDriver);
-
-        srcArchivingMediaDriver.archive().context().deleteArchiveDirectory();
-        dstArchivingMediaDriver.archive().context().deleteArchiveDirectory();
+        CloseHelper.closeAll(
+            srcAeronArchive,
+            dstAeronArchive,
+            srcAeron,
+            dstAeron,
+            srcArchivingMediaDriver,
+            dstArchivingMediaDriver,
+            () -> srcArchivingMediaDriver.archive().context().deleteArchiveDirectory(),
+            () -> dstArchivingMediaDriver.archive().context().deleteArchiveDirectory());
     }
 
     public static void main(final String[] args) throws Exception

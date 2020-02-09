@@ -288,7 +288,7 @@ class Catalog implements AutoCloseable
         if (!isClosed)
         {
             isClosed = true;
-            CloseHelper.close(catalogChannel);
+            CloseHelper.quietClose(catalogChannel); // Ignore error so that the rest can be closed
             IoUtil.unmap(catalogByteBuffer);
         }
     }

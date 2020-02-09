@@ -31,6 +31,7 @@ import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2LongHashMap;
+import org.agrona.concurrent.CountedErrorHandler;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.util.ArrayList;
@@ -108,10 +109,11 @@ class DynamicJoin implements AutoCloseable
 
     public void close()
     {
-        CloseHelper.close(memberStatusPublication);
-        CloseHelper.close(snapshotRetrieveSubscription);
-        CloseHelper.close(leaderArchive);
-        CloseHelper.close(leaderArchiveAsyncConnect);
+        final CountedErrorHandler countedErrorHandler = ctx.countedErrorHandler();
+        AeronCloseHelper.close(countedErrorHandler, memberStatusPublication);
+        AeronCloseHelper.close(countedErrorHandler, snapshotRetrieveSubscription);
+        AeronCloseHelper.close(countedErrorHandler, leaderArchive);
+        AeronCloseHelper.close(countedErrorHandler, leaderArchiveAsyncConnect);
     }
 
     ClusterMember[] clusterMembers()

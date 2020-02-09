@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.AeronCloseHelper;
 import io.aeron.ControlledFragmentAssembler;
 import io.aeron.Subscription;
 import io.aeron.cluster.client.AeronCluster;
@@ -22,9 +23,9 @@ import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
-import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.ArrayUtil;
+import org.agrona.concurrent.CountedErrorHandler;
 import org.agrona.concurrent.status.AtomicCounter;
 
 class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
@@ -39,21 +40,24 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this);
     private final ConsensusModuleAgent consensusModuleAgent;
     private final AtomicCounter invalidRequests;
+    private final CountedErrorHandler countedErrorHandler;
     private Subscription subscription;
 
     IngressAdapter(
         final int fragmentPollLimit,
         final ConsensusModuleAgent consensusModuleAgent,
-        final AtomicCounter invalidRequests)
+        final AtomicCounter invalidRequests,
+        final CountedErrorHandler countedErrorHandler)
     {
         this.fragmentPollLimit = fragmentPollLimit;
         this.consensusModuleAgent = consensusModuleAgent;
         this.invalidRequests = invalidRequests;
+        this.countedErrorHandler = countedErrorHandler;
     }
 
     public void close()
     {
-        CloseHelper.close(subscription);
+        AeronCloseHelper.close(countedErrorHandler, subscription);
         subscription = null;
         fragmentAssembler.clear();
     }

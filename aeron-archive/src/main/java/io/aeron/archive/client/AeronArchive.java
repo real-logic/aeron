@@ -139,15 +139,17 @@ public class AeronArchive implements AutoCloseable
             if (!isClosed)
             {
                 isClosed = true;
+                final ErrorHandler errorHandler = context.errorHandler();
+
                 if (archiveProxy.publication().isConnected())
                 {
-                    archiveProxy.closeSession(controlSessionId);
+                    AeronCloseHelper.close(errorHandler, () -> archiveProxy.closeSession(controlSessionId));
                 }
 
                 if (!context.ownsAeronClient())
                 {
-                    CloseHelper.close(archiveProxy.publication());
-                    CloseHelper.close(controlResponsePoller.subscription());
+                    AeronCloseHelper.close(errorHandler, archiveProxy.publication());
+                    AeronCloseHelper.close(errorHandler, controlResponsePoller.subscription());
                 }
 
                 context.close();
@@ -2625,8 +2627,9 @@ public class AeronArchive implements AutoCloseable
         {
             if (5 != step)
             {
-                CloseHelper.close(controlResponsePoller.subscription());
-                CloseHelper.close(archiveProxy.publication());
+                final ErrorHandler errorHandler = ctx.errorHandler();
+                AeronCloseHelper.close(errorHandler, controlResponsePoller.subscription());
+                AeronCloseHelper.close(errorHandler, archiveProxy.publication());
                 ctx.close();
             }
         }

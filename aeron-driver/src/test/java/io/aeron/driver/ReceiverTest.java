@@ -109,9 +109,9 @@ public class ReceiverTest
     private ReceiverProxy receiverProxy;
     private final ManyToOneConcurrentArrayQueue<Runnable> toConductorQueue =
         new ManyToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY);
+    private final CongestionControl congestionControl = mock(CongestionControl.class);
 
     private ReceiveChannelEndpoint receiveChannelEndpoint;
-    private final CongestionControl congestionControl = mock(CongestionControl.class);
 
     @BeforeEach
     public void setUp() throws Exception
@@ -218,7 +218,8 @@ public class ReceiverTest
                 mockSystemCounters,
                 SOURCE_ADDRESS,
                 congestionControl,
-                lossReport);
+                lossReport,
+                mockErrorHandler);
 
             final int messagesRead = toConductorQueue.drain((e) ->
             {
@@ -292,7 +293,8 @@ public class ReceiverTest
                     mockSystemCounters,
                     SOURCE_ADDRESS,
                     congestionControl,
-                    lossReport);
+                    lossReport,
+                    mockErrorHandler);
 
                 receiverProxy.newPublicationImage(receiveChannelEndpoint, image);
             });
@@ -363,7 +365,8 @@ public class ReceiverTest
                     mockSystemCounters,
                     SOURCE_ADDRESS,
                     congestionControl,
-                    lossReport);
+                    lossReport,
+                    mockErrorHandler);
 
                 receiverProxy.newPublicationImage(receiveChannelEndpoint, image);
             });
@@ -437,7 +440,8 @@ public class ReceiverTest
                     mockSystemCounters,
                     SOURCE_ADDRESS,
                     congestionControl,
-                    lossReport);
+                    lossReport,
+                    mockErrorHandler);
 
                 receiverProxy.newPublicationImage(receiveChannelEndpoint, image);
             });
@@ -515,7 +519,8 @@ public class ReceiverTest
                     mockSystemCounters,
                     SOURCE_ADDRESS,
                     congestionControl,
-                    lossReport);
+                    lossReport,
+                    mockErrorHandler);
 
                 receiverProxy.newPublicationImage(receiveChannelEndpoint, image);
             });

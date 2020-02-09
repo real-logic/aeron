@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.AeronCloseHelper;
 import io.aeron.ExclusivePublication;
 import io.aeron.Image;
 import io.aeron.archive.Archive;
@@ -27,8 +28,8 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
-import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.ErrorHandler;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableLong;
@@ -82,8 +83,9 @@ class TestNode implements AutoCloseable
         if (!isClosed)
         {
             isClosed = true;
-            CloseHelper.close(container);
-            CloseHelper.close(clusteredMediaDriver);
+            final ErrorHandler errorHandler = context.mediaDriverContext.errorHandler();
+            AeronCloseHelper.close(errorHandler, container);
+            AeronCloseHelper.close(errorHandler, clusteredMediaDriver);
         }
     }
 

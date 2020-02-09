@@ -15,10 +15,7 @@
  */
 package io.aeron.archive;
 
-import io.aeron.Aeron;
-import io.aeron.CommonContext;
-import io.aeron.Counter;
-import io.aeron.Image;
+import io.aeron.*;
 import io.aeron.archive.checksum.Checksum;
 import io.aeron.archive.checksum.Checksums;
 import io.aeron.archive.client.AeronArchive;
@@ -112,8 +109,9 @@ public class Archive implements AutoCloseable
 
     public void close()
     {
-        CloseHelper.close(conductorInvoker);
-        CloseHelper.close(conductorRunner);
+        final CountedErrorHandler errorHandler = ctx.countedErrorHandler();
+        AeronCloseHelper.close(errorHandler, conductorInvoker);
+        AeronCloseHelper.close(errorHandler, conductorRunner);
     }
 
     private Archive start()
@@ -753,9 +751,9 @@ public class Archive implements AutoCloseable
                 archiveDir = new File(archiveDirectoryName);
             }
 
-            if (deleteArchiveOnStart && archiveDir.exists())
+            if (deleteArchiveOnStart)
             {
-                IoUtil.delete(archiveDir, false);
+                AeronCloseHelper.delete(archiveDir, false);
             }
 
             if (!archiveDir.exists() && !archiveDir.mkdirs())
@@ -1757,7 +1755,7 @@ public class Archive implements AutoCloseable
         {
             if (null != archiveDir)
             {
-                IoUtil.delete(archiveDir, false);
+                AeronCloseHelper.delete(archiveDir, false);
             }
         }
 
@@ -1958,15 +1956,15 @@ public class Archive implements AutoCloseable
          */
         public void close()
         {
-            CloseHelper.close(catalog);
-            CloseHelper.close(markFile);
-            CloseHelper.close(archiveDirChannel);
+            AeronCloseHelper.close(countedErrorHandler, catalog);
+            AeronCloseHelper.close(countedErrorHandler, markFile);
+            AeronCloseHelper.close(countedErrorHandler, archiveDirChannel);
             archiveDirChannel = null;
 
-            CloseHelper.close(errorCounter);
+            AeronCloseHelper.close(errorHandler, errorCounter);
             if (errorHandler instanceof AutoCloseable)
             {
-                CloseHelper.close((AutoCloseable)errorHandler);
+                CloseHelper.quietClose((AutoCloseable)errorHandler); // Ignore error to ensure the rest is closed
             }
 
             if (ownsAeronClient)

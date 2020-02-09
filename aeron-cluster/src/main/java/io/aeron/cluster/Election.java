@@ -18,7 +18,6 @@ package io.aeron.cluster;
 import io.aeron.*;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.service.Cluster;
-import org.agrona.CloseHelper;
 import org.agrona.collections.Int2ObjectHashMap;
 
 import java.util.Random;
@@ -158,7 +157,7 @@ public class Election implements AutoCloseable
 
     public void close()
     {
-        CloseHelper.close(stateCounter);
+        AeronCloseHelper.close(ctx.countedErrorHandler(), stateCounter);
     }
 
     public ClusterMember leader()

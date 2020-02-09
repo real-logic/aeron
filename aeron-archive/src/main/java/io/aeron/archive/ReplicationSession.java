@@ -25,8 +25,8 @@ import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.LogBufferDescriptor;
-import org.agrona.CloseHelper;
 import org.agrona.concurrent.CachedEpochClock;
+import org.agrona.concurrent.CountedErrorHandler;
 
 import java.util.concurrent.TimeUnit;
 
@@ -147,12 +147,15 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
     public void close()
     {
-        stopRecording();
-        stopReplaySession();
+        final ArchiveConductor archiveConductor = controlSession.archiveConductor();
+        final CountedErrorHandler countedErrorHandler = archiveConductor.context().countedErrorHandler();
 
-        CloseHelper.close(asyncConnect);
-        CloseHelper.close(srcArchive);
-        controlSession.archiveConductor().removeReplicationSession(this);
+        stopRecording(countedErrorHandler);
+        stopReplaySession(countedErrorHandler);
+
+        AeronCloseHelper.close(countedErrorHandler, asyncConnect);
+        AeronCloseHelper.close(countedErrorHandler, srcArchive);
+        archiveConductor.removeReplicationSession(this);
     }
 
     public int doWork()
@@ -642,22 +645,24 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         controlSession.attemptSignal(replicationId, dstRecordingId, subscriptionId, position, recordingSignal);
     }
 
-    private void stopReplaySession()
+    private void stopReplaySession(final CountedErrorHandler countedErrorHandler)
     {
         if (NULL_VALUE != srcReplaySessionId)
         {
             final long correlationId = aeron.nextCorrelationId();
-            srcArchive.archiveProxy().stopReplay(srcReplaySessionId, correlationId, srcArchive.controlSessionId());
+            AeronCloseHelper.close(countedErrorHandler,
+                () -> srcArchive.archiveProxy()
+                .stopReplay(srcReplaySessionId, correlationId, srcArchive.controlSessionId()));
             srcReplaySessionId = NULL_VALUE;
         }
     }
 
-    private void stopRecording()
+    private void stopRecording(final CountedErrorHandler countedErrorHandler)
     {
         if (null != recordingSubscription)
         {
             conductor.removeRecordingSubscription(recordingSubscription.registrationId());
-            recordingSubscription.close();
+            AeronCloseHelper.close(countedErrorHandler, recordingSubscription);
             recordingSubscription = null;
         }
     }

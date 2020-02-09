@@ -18,6 +18,7 @@ package io.aeron.test;
 import org.agrona.LangUtil;
 
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.doAnswer;
 
 public class Tests
 {
@@ -50,5 +51,21 @@ public class Tests
         {
             LangUtil.rethrowUnchecked(ex);
         }
+    }
+
+    /**
+     * Helper method to mock {@link AutoCloseable#close()} method to throw exception.
+     *
+     * @param mock      to have it's method mocked
+     * @param exception exception to be thrown
+     * @throws Exception to make compiler happy
+     */
+    public static void throwOnClose(final AutoCloseable mock, final Throwable exception) throws Exception
+    {
+        doAnswer((invocation) ->
+        {
+            LangUtil.rethrowUnchecked(exception);
+            return null;
+        }).when(mock).close();
     }
 }

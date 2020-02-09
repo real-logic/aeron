@@ -22,6 +22,7 @@ import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.HeaderFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.BitUtil;
+import org.agrona.ErrorHandler;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -65,9 +66,10 @@ public class SelectorAndTransportTest
 
     private final DataPacketDispatcher mockDispatcher = mock(DataPacketDispatcher.class);
     private final NetworkPublication mockPublication = mock(NetworkPublication.class);
+    private final ErrorHandler errorHandler = mock(ErrorHandler.class);
 
-    private final DataTransportPoller dataTransportPoller = new DataTransportPoller();
-    private final ControlTransportPoller controlTransportPoller = new ControlTransportPoller();
+    private final DataTransportPoller dataTransportPoller = new DataTransportPoller(errorHandler);
+    private final ControlTransportPoller controlTransportPoller = new ControlTransportPoller(errorHandler);
     private SendChannelEndpoint sendChannelEndpoint;
     private ReceiveChannelEndpoint receiveChannelEndpoint;
 

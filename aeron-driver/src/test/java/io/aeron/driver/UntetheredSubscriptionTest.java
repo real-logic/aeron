@@ -20,6 +20,7 @@ import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.buffer.TestLogFactory;
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import org.agrona.ErrorHandler;
 import org.agrona.concurrent.status.AtomicLongPosition;
 import org.agrona.concurrent.status.Position;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,6 +44,7 @@ public class UntetheredSubscriptionTest
 
     private final RawLog rawLog = TestLogFactory.newLogBuffers(TERM_BUFFER_LENGTH);
     private final AtomicLongPosition publisherLimit = new AtomicLongPosition();
+    private final ErrorHandler errorHandler = mock(ErrorHandler.class);
     private IpcPublication ipcPublication;
 
     @BeforeEach
@@ -62,7 +64,8 @@ public class UntetheredSubscriptionTest
             UNTETHERED_RESTING_TIMEOUT_NS,
             TIME_NS,
             mock(SystemCounters.class),
-            true);
+            true,
+            errorHandler);
     }
 
     @Test
@@ -115,6 +118,6 @@ public class UntetheredSubscriptionTest
         final SubscriptionParams params = new SubscriptionParams();
         params.isTether = isTether;
 
-        return new IpcSubscriptionLink(registrationId, STREAM_ID, CHANNEL, null, params);
+        return new IpcSubscriptionLink(registrationId, STREAM_ID, CHANNEL, null, params, errorHandler);
     }
 }

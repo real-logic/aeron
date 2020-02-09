@@ -16,14 +16,16 @@
 package io.aeron.archive;
 
 import io.aeron.Aeron;
+import io.aeron.AeronCloseHelper;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.security.Authenticator;
-import org.agrona.CloseHelper;
-import org.agrona.concurrent.*;
+import org.agrona.concurrent.CachedEpochClock;
+import org.agrona.concurrent.CountedErrorHandler;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.util.ArrayDeque;
 import java.util.function.BooleanSupplier;
@@ -119,14 +121,16 @@ class ControlSession implements Session
 
     public void close()
     {
+        final CountedErrorHandler errorHandler = conductor.context().countedErrorHandler();
         if (null != activeListing)
         {
-            activeListing.abort();
+            AeronCloseHelper.close(errorHandler, activeListing::abort);
         }
 
-        CloseHelper.close(controlPublication);
-        demuxer.removeControlSession(this);
+        AeronCloseHelper.close(errorHandler, controlPublication);
+
         state(State.CLOSED);
+        demuxer.removeControlSession(this);
     }
 
     public boolean isDone()
@@ -628,6 +632,11 @@ class ControlSession implements Session
     void reject()
     {
         state(State.REJECTED);
+    }
+
+    State state()
+    {
+        return state;
     }
 
     private void queueResponse(

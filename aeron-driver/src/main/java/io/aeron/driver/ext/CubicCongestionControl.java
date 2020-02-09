@@ -15,11 +15,12 @@
  */
 package io.aeron.driver.ext;
 
+import io.aeron.AeronCloseHelper;
 import io.aeron.driver.CongestionControl;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.driver.status.PerImageIndicator;
-import org.agrona.CloseHelper;
+import org.agrona.ErrorHandler;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
@@ -33,7 +34,7 @@ import static io.aeron.driver.CongestionControl.packOutcome;
  * CUBIC congestion control manipulation of the receiver window length.
  * <p>
  * <a target="_blank" href="https://research.csc.ncsu.edu/netsrv/?q=content/bic-and-cubic">
- *     https://research.csc.ncsu.edu/netsrv/?q=content/bic-and-cubic</a>
+ * https://research.csc.ncsu.edu/netsrv/?q=content/bic-and-cubic</a>
  * <p>
  * {@code W_cubic = C(T - K)^3 + w_max}
  * <p>
@@ -67,6 +68,7 @@ public class CubicCongestionControl implements CongestionControl
     private final int minWindow;
     private final int mtu;
     private final int maxCwnd;
+    private final ErrorHandler errorHandler;
 
     private long lastLossTimestampNs;
     private long lastUpdateTimestampNs;
@@ -131,6 +133,8 @@ public class CubicCongestionControl implements CongestionControl
 
         lastLossTimestampNs = clock.nanoTime();
         lastUpdateTimestampNs = lastLossTimestampNs;
+
+        errorHandler = context.errorHandler();
     }
 
     public boolean shouldMeasureRtt(final long nowNs)
@@ -211,7 +215,7 @@ public class CubicCongestionControl implements CongestionControl
 
     public void close()
     {
-        CloseHelper.close(rttIndicator);
-        CloseHelper.close(windowIndicator);
+        AeronCloseHelper.close(errorHandler, rttIndicator);
+        AeronCloseHelper.close(errorHandler, windowIndicator);
     }
 }

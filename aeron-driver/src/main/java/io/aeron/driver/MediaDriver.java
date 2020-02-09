@@ -15,6 +15,7 @@
  */
 package io.aeron.driver;
 
+import io.aeron.AeronCloseHelper;
 import io.aeron.CncFileDescriptor;
 import io.aeron.CommonContext;
 import io.aeron.driver.buffer.FileStoreLogFactory;
@@ -51,7 +52,8 @@ import static io.aeron.driver.reports.LossReportUtil.mapLossReport;
 import static io.aeron.driver.status.SystemCounterDescriptor.CONTROLLABLE_IDLE_STRATEGY;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static org.agrona.BitUtil.*;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.align;
 import static org.agrona.IoUtil.mapNewFile;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
@@ -255,12 +257,13 @@ public final class MediaDriver implements AutoCloseable
      */
     public void close()
     {
-        CloseHelper.close(sharedRunner);
-        CloseHelper.close(sharedNetworkRunner);
-        CloseHelper.close(receiverRunner);
-        CloseHelper.close(senderRunner);
-        CloseHelper.close(conductorRunner);
-        CloseHelper.close(sharedInvoker);
+        final ErrorHandler errorHandler = ctx.errorHandler();
+        AeronCloseHelper.close(errorHandler, sharedRunner);
+        AeronCloseHelper.close(errorHandler, sharedNetworkRunner);
+        AeronCloseHelper.close(errorHandler, receiverRunner);
+        AeronCloseHelper.close(errorHandler, senderRunner);
+        AeronCloseHelper.close(errorHandler, conductorRunner);
+        AeronCloseHelper.close(errorHandler, sharedInvoker);
 
         if (ctx.useWindowsHighResTimer() && SystemUtil.isWindows())
         {
@@ -522,15 +525,15 @@ public final class MediaDriver implements AutoCloseable
             {
                 isClosed = true;
 
-                CloseHelper.close(logFactory);
+                AeronCloseHelper.close(errorHandler, logFactory);
 
-                CloseHelper.close(lossReport);
+                AeronCloseHelper.close(errorHandler, lossReport);
                 IoUtil.unmap(lossReportBuffer);
                 lossReportBuffer = null;
 
                 if (errorHandler instanceof AutoCloseable)
                 {
-                    CloseHelper.close((AutoCloseable)errorHandler);
+                    CloseHelper.quietClose((AutoCloseable)errorHandler); // Ignore error to ensure the rest is closed
                 }
 
                 IoUtil.unmap(cncByteBuffer);
@@ -2467,7 +2470,7 @@ public final class MediaDriver implements AutoCloseable
          * Low end of the publication reserved session id range which will not be automatically assigned.
          *
          * @param sessionId for low end of the publication reserved session id range which will not be automatically
-         *                 assigned.
+         *                  assigned.
          * @return this for fluent API.
          * @see #publicationReservedSessionIdHigh(int)
          * @see Configuration#PUBLICATION_RESERVED_SESSION_ID_LOW_PROP_NAME
@@ -2494,7 +2497,7 @@ public final class MediaDriver implements AutoCloseable
          * High end of the publication reserved session id range which will not be automatically assigned.
          *
          * @param sessionId for high end of the publication reserved session id range which will not be automatically
-         *                 assigned.
+         *                  assigned.
          * @return this for fluent API.
          * @see #publicationReservedSessionIdLow(int)
          * @see Configuration#PUBLICATION_RESERVED_SESSION_ID_HIGH_PROP_NAME
@@ -2567,7 +2570,7 @@ public final class MediaDriver implements AutoCloseable
         /**
          * Set the {@link FeedbackDelayGenerator} for controlling the delay of sending NAK feedback on unicast.
          *
-         * @param feedbackDelayGenerator  for controlling the delay of sending NAK feedback.
+         * @param feedbackDelayGenerator for controlling the delay of sending NAK feedback.
          * @return this for a fluent API
          * @see Configuration#NAK_UNICAST_DELAY_PROP_NAME
          */
@@ -2592,7 +2595,7 @@ public final class MediaDriver implements AutoCloseable
         /**
          * Set the {@link FeedbackDelayGenerator} for controlling the delay of sending NAK feedback on multicast.
          *
-         * @param feedbackDelayGenerator  for controlling the delay of sending NAK feedback.
+         * @param feedbackDelayGenerator for controlling the delay of sending NAK feedback.
          * @return this for a fluent API
          * @see Configuration#NAK_MULTICAST_MAX_BACKOFF_PROP_NAME
          * @see Configuration#NAK_MULTICAST_GROUP_SIZE_PROP_NAME
@@ -2864,12 +2867,12 @@ public final class MediaDriver implements AutoCloseable
 
             if (null == dataTransportPoller)
             {
-                dataTransportPoller = new DataTransportPoller();
+                dataTransportPoller = new DataTransportPoller(errorHandler);
             }
 
             if (null == controlTransportPoller)
             {
-                controlTransportPoller = new ControlTransportPoller();
+                controlTransportPoller = new ControlTransportPoller(errorHandler);
             }
 
             if (null == applicationSpecificFeedback)

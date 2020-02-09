@@ -255,6 +255,7 @@ typedef struct aeron_udp_channel_stct aeron_udp_channel_t;
 
 typedef int (*aeron_flow_control_strategy_supplier_func_t)(
     aeron_flow_control_strategy_t **strategy,
+    aeron_driver_context_t *context,
     aeron_udp_channel_t *channel,
     int32_t stream_id,
     int64_t registration_id,

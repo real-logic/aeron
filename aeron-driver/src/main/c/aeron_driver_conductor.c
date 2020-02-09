@@ -1099,6 +1099,7 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
 
                 if (flow_control_strategy_supplier_func(
                     &flow_control_strategy,
+                    conductor->context,
                     udp_channel,
                     stream_id,
                     registration_id,

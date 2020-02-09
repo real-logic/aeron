@@ -202,7 +202,7 @@ int32_t aeron_config_parse_int64(const char *name, const char *str, int64_t def,
         char *end_ptr = NULL;
         int64_t value = strtoll(str, &end_ptr, 0);
 
-        if ((0 == value && 0 != errno) || '\0' != end_ptr)
+        if ((0 == value && 0 != errno) || '\0' != *end_ptr)
         {
             aeron_config_prop_warning(name, str);
             value = def;

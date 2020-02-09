@@ -29,6 +29,7 @@
 #include "util/aeron_parse_util.h"
 #include "aeron_flow_control.h"
 #include "aeron_alloc.h"
+#include "aeron_driver_context.h"
 #include <aeronmd.h>
 #include <media/aeron_udp_channel.h>
 #include <uri/aeron_uri.h>
@@ -205,6 +206,7 @@ static void initialize_aeron_min_flow_control_strategy_timeout()
 
 int aeron_min_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
+    aeron_driver_context_t *context,
     aeron_udp_channel_t *channel,
     int32_t stream_id,
     int64_t registration_id,
@@ -251,6 +253,7 @@ typedef struct aeron_tagged_flow_control_strategy_state_stct
 {
     aeron_min_flow_control_strategy_state_t min_flow_control_state;
     int64_t receiver_tag;
+    aeron_distinct_error_log_t *error_log;
 }
 aeron_tagged_flow_control_strategy_state_t;
 
@@ -295,9 +298,19 @@ int64_t aeron_tagged_flow_control_strategy_on_sm(
     const int64_t receiver_id = status_message_header->receiver_id;
 
     int64_t sm_receiver_tag;
-    bool was_present = 0 < aeron_udp_protocol_sm_receiver_tag(status_message_header, &sm_receiver_tag);
-    bool is_tagged = was_present && sm_receiver_tag == strategy_state->receiver_tag;
+    int bytes_read = aeron_udp_protocol_sm_receiver_tag(status_message_header, &sm_receiver_tag);
+    bool was_present = bytes_read == sizeof(sm_receiver_tag);
 
+    if (0 != bytes_read && !was_present)
+    {
+        aeron_distinct_error_log_record(
+            strategy_state->error_log,
+            EINVAL,
+            "invalid receiver tag on status message",
+            "Received a status message for tagged flow control that did not have 0 or 8 bytes for the receiver_tag");
+    }
+
+    bool is_tagged = was_present && sm_receiver_tag == strategy_state->receiver_tag;
     if (!is_tagged && 0 == strategy_state->min_flow_control_state.receivers.length)
     {
         int64_t position_plus_window = position + window_length;
@@ -345,6 +358,7 @@ static void initialize_aeron_tagged_flow_control_strategy_timeout()
 
 int aeron_tagged_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
+    aeron_driver_context_t *context,
     aeron_udp_channel_t *channel,
     int32_t stream_id,
     int64_t registration_id,
@@ -383,6 +397,7 @@ int aeron_tagged_flow_control_strategy_supplier(
     state->min_flow_control_state.receivers.capacity = 0;
     state->min_flow_control_state.receivers.length = 0;
     state->receiver_tag = options.receiver_tag;
+    state->error_log = context->error_log;
 
     state->min_flow_control_state.receiver_timeout_ns = options.timeout_ns != 0 ?
         options.timeout_ns :

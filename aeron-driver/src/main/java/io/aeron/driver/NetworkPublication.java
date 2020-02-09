@@ -444,17 +444,15 @@ public class NetworkPublication
         final long timeNs = nanoClock.nanoTime();
         statusMessageDeadlineNs = timeNs + connectionTimeoutNs;
 
-        final long limit = flowControl.onStatusMessage(
+        senderLimit.setOrdered(flowControl.onStatusMessage(
             msg,
             srcAddress,
             senderLimit.get(),
             initialTermId,
             positionBitsToShift,
-            timeNs);
+            timeNs));
 
-        senderLimit.setOrdered(limit);
-
-        if (!isConnected)
+        if (!isConnected && flowControl.hasRequiredReceivers())
         {
             LogBufferDescriptor.isConnected(metaDataBuffer, true);
             isConnected = true;
@@ -505,7 +503,7 @@ public class NetworkPublication
         int workCount = 0;
 
         final long senderPosition = this.senderPosition.getVolatile();
-        if (hasReceivers || (spiesSimulateConnection && spyPositions.length > 0))
+        if (hasRequiredReceivers() || (spiesSimulateConnection && spyPositions.length > 0))
         {
             long minConsumerPosition = senderPosition;
             for (final ReadablePosition spyPosition : spyPositions)
@@ -724,13 +722,19 @@ public class NetworkPublication
 
     private void updateConnectedStatus()
     {
-        final boolean currentConnectedState = hasReceivers || (spiesSimulateConnection && spyPositions.length > 0);
+        final boolean currentConnectedState =
+            hasRequiredReceivers() || (spiesSimulateConnection && spyPositions.length > 0);
 
         if (currentConnectedState != isConnected)
         {
             LogBufferDescriptor.isConnected(metaDataBuffer, currentConnectedState);
             isConnected = currentConnectedState;
         }
+    }
+
+    private boolean hasRequiredReceivers()
+    {
+        return hasReceivers && flowControl.hasRequiredReceivers();
     }
 
     private void checkUntetheredSubscriptions(final long nowNs, final DriverConductor conductor)

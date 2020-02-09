@@ -47,7 +47,7 @@ public class TaggedMulticastFlowControl implements FlowControl
     /**
      * URI param value to identify this {@link FlowControl} strategy.
      */
-    public static final String FC_PARAM_VALUE = "max";
+    public static final String FC_PARAM_VALUE = "tagged";
 
     /**
      * Property name to set timeout, in nanoseconds, for a receiver to be tracked.
@@ -78,9 +78,36 @@ public class TaggedMulticastFlowControl implements FlowControl
     public static final String PREFERRED_ASF = getProperty(PREFERRED_ASF_PROP_NAME, PREFERRED_ASF_DEFAULT);
     public static final byte[] PREFERRED_ASF_BYTES = BitUtil.fromHex(PREFERRED_ASF);
 
-    private MinMulticastFlowControl.Receiver[] receivers = EMPTY_RECEIVERS;
+    private volatile MinMulticastFlowControl.Receiver[] receivers = EMPTY_RECEIVERS;
+    private int requiredGroupSize = 0;
     private long receiverTimeoutNs = RECEIVER_TIMEOUT;
     private long rtag = new UnsafeBuffer(PREFERRED_ASF_BYTES).getLong(0, ByteOrder.LITTLE_ENDIAN);
+
+    /**
+     * {@inheritDoc}
+     */
+    public void initialize(final UdpChannel udpChannel, final int initialTermId, final int termBufferLength)
+    {
+        final String fcStr = udpChannel.channelUri().get(CommonContext.FLOW_CONTROL_PARAM_NAME);
+
+        if (null != fcStr)
+        {
+            for (final String arg : fcStr.split(","))
+            {
+                if (arg.startsWith("t:"))
+                {
+                    receiverTimeoutNs = SystemUtil.parseDuration("fc receiver timeout", arg.substring(2));
+                }
+                else if (arg.startsWith("g:"))
+                {
+                    rtag = AsciiEncoding.parseLongAscii(arg, 2, arg.length() - 2);
+                }
+            }
+
+            // TODO: parse out group size
+            requiredGroupSize = 0;
+        }
+    }
 
     /**
      * {@inheritDoc}
@@ -134,29 +161,6 @@ public class TaggedMulticastFlowControl implements FlowControl
     /**
      * {@inheritDoc}
      */
-    public void initialize(final UdpChannel udpChannel, final int initialTermId, final int termBufferLength)
-    {
-        final String fcStr = udpChannel.channelUri().get(CommonContext.FLOW_CONTROL_PARAM_NAME);
-
-        if (null != fcStr)
-        {
-            for (final String arg : fcStr.split(","))
-            {
-                if (arg.startsWith("t:"))
-                {
-                    receiverTimeoutNs = SystemUtil.parseDuration("fc min timeout", arg.substring(2));
-                }
-                else if (arg.startsWith("g:"))
-                {
-                    rtag = AsciiEncoding.parseLongAscii(arg, 2, arg.length() - 2);
-                }
-            }
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     public long onIdle(final long timeNs, final long senderLimit, final long senderPosition, final boolean isEos)
     {
         long minLimitPosition = Long.MAX_VALUE;
@@ -185,6 +189,11 @@ public class TaggedMulticastFlowControl implements FlowControl
         }
 
         return receivers.length > 0 ? minLimitPosition : senderLimit;
+    }
+
+    public boolean hasRequiredReceivers()
+    {
+        return receivers.length >= requiredGroupSize;
     }
 
     private boolean isTagged(final StatusMessageFlyweight statusMessageFlyweight)

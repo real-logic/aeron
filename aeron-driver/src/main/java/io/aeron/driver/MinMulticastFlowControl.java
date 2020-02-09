@@ -73,7 +73,7 @@ public class MinMulticastFlowControl implements FlowControl
             {
                 if (arg.startsWith("t:"))
                 {
-                    receiverTimeoutNs = SystemUtil.parseDuration("fc min timeout", arg.substring(2));
+                    receiverTimeoutNs = SystemUtil.parseDuration("fc receiver timeout", arg.substring(2));
                 }
             }
         }

@@ -35,8 +35,7 @@ public class DefaultMulticastFlowControlSupplier implements FlowControlSupplier
         if (null != fcStr)
         {
             final int strategyEndIndex = fcStr.indexOf(',');
-            final String strategyStr = (-1 == strategyEndIndex) ?
-                    fcStr : fcStr.substring(0, strategyEndIndex);
+            final String strategyStr = (-1 == strategyEndIndex) ? fcStr : fcStr.substring(0, strategyEndIndex);
 
             switch (strategyStr)
             {

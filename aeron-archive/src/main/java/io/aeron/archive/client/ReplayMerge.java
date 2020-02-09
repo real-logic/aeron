@@ -457,8 +457,8 @@ public class ReplayMerge implements AutoCloseable
                     else if (shouldStopAndRemoveReplay(position))
                     {
                         subscription.asyncRemoveDestination(replayDestination);
-                        timeOfLastProgressMs = nowMs;
                         stopReplay();
+                        timeOfLastProgressMs = nowMs;
                         nextState = State.MERGED;
                     }
                 }

@@ -99,10 +99,6 @@ public:
                     checkProgress(nowMs);
                     break;
 
-                case State::STOP_REPLAY:
-                    workCount += stopReplay();
-                    break;
-
                 default:
                     break;
             }
@@ -178,7 +174,6 @@ private:
         REPLAY,
         CATCHUP,
         ATTEMPT_LIVE_JOIN,
-        STOP_REPLAY,
         MERGED,
         FAILED,
         CLOSED
@@ -226,13 +221,13 @@ private:
     int replay(long long nowMs);
     int catchup(long long nowMs);
     int attemptLiveJoin(long long nowMs);
-    int stopReplay();
 
     inline bool hasProgressStalled(long long nowMs)
     {
         return nowMs > (m_timeOfLastProgressMs + m_mergeProgressTimeoutMs);
     }
 
+    void stopReplay();
     void checkProgress(long long nowMs);
     static bool pollForResponse(AeronArchive& archive, std::int64_t correlationId);
 };

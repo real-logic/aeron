@@ -105,7 +105,6 @@ int aeron_tagged_flow_control_strategy_supplier(
 int aeron_default_multicast_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
     aeron_driver_context_t *context,
-    aeron_flow_control_strategy_supplier_func_t fallback_flow_control_supplier,
     aeron_udp_channel_t *channel,
     int32_t stream_id,
     int64_t registration_id,

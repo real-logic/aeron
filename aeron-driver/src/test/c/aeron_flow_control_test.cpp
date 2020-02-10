@@ -120,8 +120,6 @@ protected:
     virtual void SetUp()
     {
         channel = NULL;
-
-
         aeron_distinct_error_log_init(&error_log, buffer.data(), buffer.size(), now, linger, NULL);
         context.error_log = &error_log;
         context.multicast_flow_control_supplier_func = aeron_min_flow_control_strategy_supplier;

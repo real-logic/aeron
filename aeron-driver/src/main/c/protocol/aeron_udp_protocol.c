@@ -32,11 +32,11 @@ int aeron_udp_protocol_sm_receiver_tag(aeron_status_message_header_t *sm, int64_
         const uint8_t *sm_ptr = (const uint8_t *)sm + receiver_tag_offset;
         memcpy(receiver_tag, sm_ptr, receiver_tag_size);
 
-        return receiver_tag_size;
+        return (int)receiver_tag_size;
     }
 
     *receiver_tag = 0;
 
-    return sm->frame_header.frame_length - receiver_tag_offset;
+    return (int)sm->frame_header.frame_length - receiver_tag_offset;
 }
 

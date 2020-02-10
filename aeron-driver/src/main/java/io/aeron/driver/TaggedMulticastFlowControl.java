@@ -100,12 +100,22 @@ public class TaggedMulticastFlowControl implements FlowControl
                 }
                 else if (arg.startsWith("g:"))
                 {
-                    rtag = AsciiEncoding.parseLongAscii(arg, 2, arg.length() - 2);
+                    final int requiredGroupSizeIndex = arg.indexOf('/');
+
+                    if (2 != requiredGroupSizeIndex)
+                    {
+                        final int lengthToParse = -1 == requiredGroupSizeIndex ?
+                            arg.length() - 2 : requiredGroupSizeIndex - 2;
+                        rtag = AsciiEncoding.parseLongAscii(arg, 2, lengthToParse);
+                    }
+
+                    if (-1 != requiredGroupSizeIndex)
+                    {
+                        requiredGroupSize = AsciiEncoding.parseIntAscii(
+                            arg, requiredGroupSizeIndex + 1, arg.length() - (requiredGroupSizeIndex + 1));
+                    }
                 }
             }
-
-            // TODO: parse out group size
-            requiredGroupSize = 0;
         }
     }
 
@@ -224,5 +234,20 @@ public class TaggedMulticastFlowControl implements FlowControl
         }
 
         return result;
+    }
+
+    long getRtag()
+    {
+        return rtag;
+    }
+
+    long getReceiverTimeoutNs()
+    {
+        return receiverTimeoutNs;
+    }
+
+    long getRequiredGroupSize()
+    {
+        return requiredGroupSize;
     }
 }

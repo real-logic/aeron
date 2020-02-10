@@ -58,13 +58,13 @@ typedef struct aeron_flow_control_tagged_options_stct
 {
     size_t strategy_name_length;
     const char *strategy_name;
-    struct foo1
+    struct
     {
         bool is_present;
         int64_t value;
     }
     receiver_tag;
-    struct foo2
+    struct
     {
         bool is_present;
         uint64_t value;

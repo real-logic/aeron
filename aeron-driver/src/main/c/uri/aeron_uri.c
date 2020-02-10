@@ -393,18 +393,25 @@ int aeron_uri_get_int32(aeron_uri_params_t *uri_params, const char *key, int32_t
         return 0;
     }
 
-    char *end_ptr;
-    int32_t value;
-
+    char *end_ptr = "";
     errno = 0;
-    value = strtol(value_str, &end_ptr, 0);
+    const long value = strtol(value_str, &end_ptr, 0);
+
     if (0 != errno || '\0' != *end_ptr)
     {
-        aeron_set_err(EINVAL, "could not parse %s as int32_t, for key %s in URI: ", value_str, key, strerror(errno));
+        aeron_set_err(EINVAL, "could not parse %s as int32_t, for key %s in URI: %s", value_str, key, strerror(errno));
+        return -1;
+    }
+    else if (value < INT32_MIN || INT32_MAX < value)
+    {
+        aeron_set_err(
+            EINVAL,
+            "could not parse %s as int32_t, for key %s in URI: Numerical result out of range",
+            value_str, key);
         return -1;
     }
 
-    *retval = value;
+    *retval = (int32_t)value;
 
     return 1;
 }

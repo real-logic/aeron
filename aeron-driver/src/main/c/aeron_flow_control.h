@@ -70,6 +70,12 @@ typedef struct aeron_flow_control_tagged_options_stct
         uint64_t value;
     }
     timeout_ns;
+    struct
+    {
+        bool is_present;
+        int32_t value;
+    }
+    group_count;
 }
 aeron_flow_control_tagged_options_t;
 

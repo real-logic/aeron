@@ -127,7 +127,7 @@ protected:
 };
 
 class ParameterisedSuccessfulOptionsParsingTest :
-    public testing::TestWithParam<std::tuple<const char *, const char *, uint64_t, bool, int32_t>>
+    public testing::TestWithParam<std::tuple<const char *, const char *, uint64_t, bool, int32_t, bool, int32_t>>
 {
 };
 
@@ -354,7 +354,23 @@ TEST_P(ParameterisedSuccessfulOptionsParsingTest, shouldBeValid)
     ASSERT_EQ(std::get<2>(GetParam()), options.timeout_ns.value);
     ASSERT_EQ(std::get<3>(GetParam()), options.receiver_tag.is_present);
     ASSERT_EQ(std::get<4>(GetParam()), options.receiver_tag.value);
+    ASSERT_EQ(std::get<5>(GetParam()), options.group_count.is_present);
+    ASSERT_EQ(std::get<6>(GetParam()), options.group_count.value);
 }
+
+INSTANTIATE_TEST_SUITE_P(
+    ParsingTests,
+    ParameterisedSuccessfulOptionsParsingTest,
+    testing::Values(
+        std::make_tuple("max", "max", 0, false, -1, false, -1),
+        std::make_tuple("min", "min", 0, false, -1, false, -1),
+        std::make_tuple("min,t:10s", "min", 10000000000, false, -1, false, -1),
+        std::make_tuple("tagged,g:-1", "tagged", 0, true, -1, false, -1),
+        std::make_tuple("tagged,g:100", "tagged", 0, true, 100, false, -1),
+        std::make_tuple("tagged,t:10s,g:100", "tagged", 10000000000, true, 100, false, -1),
+        std::make_tuple("tagged,t:10s,g:100/0", "tagged", 10000000000, true, 100, true, 0),
+        std::make_tuple("tagged,t:10s,g:100/10", "tagged", 10000000000, true, 100, true, 10),
+        std::make_tuple("tagged,g:/10", "tagged", 0, false, -1, true, 10)));
 
 TEST_F(FlowControlTest, shouldParseNull)
 {
@@ -389,17 +405,6 @@ TEST_F(FlowControlTest, shouldFallWithInvalidStrategyName)
         1001, 1001, 0, 64 * 1024));
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    ParsingTests,
-    ParameterisedSuccessfulOptionsParsingTest,
-    testing::Values(
-        std::make_tuple("max", "max", 0, false, -1),
-        std::make_tuple("min", "min", 0, false, -1),
-        std::make_tuple("min,t:10s", "min", 10000000000, false, -1),
-        std::make_tuple("min,g:-1", "min", 0, true, -1),
-        std::make_tuple("min,g:100", "min", 0, true, 100),
-        std::make_tuple("min,t:10s,g:100", "min", 10000000000, true, 100)));
-
 TEST_P(ParameterisedFailingOptionsParsingTest, shouldBeInvalid)
 {
     const char* fc_options = std::get<0>(GetParam());
@@ -416,4 +421,7 @@ INSTANTIATE_TEST_SUITE_P(
         std::make_tuple("min,t1a0s", -EINVAL),
         std::make_tuple("min,g:1f2", -EINVAL),
         std::make_tuple("min,t:10s,g:1b2", -EINVAL),
-        std::make_tuple("min,o:-1", -EINVAL)));
+        std::make_tuple("min,o:-1", -EINVAL),
+        std::make_tuple("tagged,g:1/", -EINVAL),
+        std::make_tuple("tagged,g:", -EINVAL),
+        std::make_tuple("tagged,g:/", -EINVAL)));

@@ -240,6 +240,8 @@ int aeron_flow_control_parse_tagged_options(
     flow_control_options->timeout_ns.value = 0;
     flow_control_options->receiver_tag.is_present = false;
     flow_control_options->receiver_tag.value = -1;
+    flow_control_options->group_count.is_present = false;
+    flow_control_options->group_count.value = -1;
 
     char number_buffer[AERON_FLOW_CONTROL_NUMBER_BUFFER_LEN];
     memset(number_buffer, 0, AERON_FLOW_CONTROL_NUMBER_BUFFER_LEN);
@@ -299,18 +301,18 @@ int aeron_flow_control_parse_tagged_options(
 
             if ('g' == current_option[0])
             {
-                int64_t receiver_tag;
                 char *end_ptr = "";
                 errno = 0;
 
-                receiver_tag = strtoll(number_buffer, &end_ptr, 10);
+                const long receiver_tag = strtoll(number_buffer, &end_ptr, 10);
+                const bool has_group_count = '/' == *end_ptr;
 
-                if (0 == errno && '\0' == *end_ptr)
+                if (0 == errno && number_buffer != end_ptr && ('\0' == *end_ptr || has_group_count))
                 {
                     flow_control_options->receiver_tag.is_present = true;
-                    flow_control_options->receiver_tag.value = receiver_tag;
+                    flow_control_options->receiver_tag.value = (int64_t)receiver_tag;
                 }
-                else
+                else if (number_buffer != end_ptr && !has_group_count) // Allow empty values if we have a group count
                 {
                     aeron_set_err(
                         -EINVAL,
@@ -319,6 +321,34 @@ int aeron_flow_control_parse_tagged_options(
                         options_length, options);
 
                     return -EINVAL;
+                }
+
+                if (has_group_count)
+                {
+                    const char *count_ptr = end_ptr + 1;
+                    end_ptr = "";
+                    errno = 0;
+
+                    const long group_count = strtol(count_ptr, &end_ptr, 10);
+
+                    if (0 == errno &&
+                        '\0' == *end_ptr &&
+                        count_ptr != end_ptr &&
+                        0 <= group_count && group_count <= INT32_MAX)
+                    {
+                        flow_control_options->group_count.is_present = true;
+                        flow_control_options->group_count.value = (int32_t)group_count;
+                    }
+                    else
+                    {
+                        aeron_set_err(
+                            -EINVAL,
+                            "Group count invalid, field: %.*s, options: %.*s",
+                            current_option_length, current_option,
+                            options_length, options);
+
+                        return -EINVAL;
+                    }
                 }
             }
             else if ('t' == current_option[0])

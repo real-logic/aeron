@@ -54,7 +54,7 @@ public class ChannelUriStringBuilder
     private Integer termId;
     private Integer termOffset;
     private Integer sessionId;
-    private Integer rtag;
+    private Long rtag;
     private Long linger;
     private Boolean sparse;
     private Boolean eos;
@@ -1219,7 +1219,7 @@ public class ChannelUriStringBuilder
      * @return this for fluent API.
      * @see CommonContext#RECEIVER_TAG_PARAM_NAME
      */
-    public ChannelUriStringBuilder receiverTag(final Integer rtag)
+    public ChannelUriStringBuilder receiverTag(final Long rtag)
     {
         this.rtag = rtag;
         return this;
@@ -1242,7 +1242,7 @@ public class ChannelUriStringBuilder
         }
         else
         {
-            return receiverTag(Integer.valueOf(rtagStr));
+            return receiverTag(Long.valueOf(rtagStr));
         }
     }
 
@@ -1252,7 +1252,7 @@ public class ChannelUriStringBuilder
      * @return receiver tag to be sent in SMs on a channel.
      * @see CommonContext#RECEIVER_TAG_PARAM_NAME
      */
-    public Integer receiverTag()
+    public Long receiverTag()
     {
         return rtag;
     }

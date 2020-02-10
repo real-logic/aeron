@@ -40,14 +40,14 @@ static void linger(void *clientd, uint8_t *resource)
 
 }
 
-class PreferredMulticastFlowControlTest : public testing::Test
+class FlowControlTest : public testing::Test
 {
 public:
-    PreferredMulticastFlowControlTest()
+    FlowControlTest()
     {
     }
 
-    virtual ~PreferredMulticastFlowControlTest()
+    virtual ~FlowControlTest()
     {
     }
 
@@ -136,7 +136,7 @@ class ParameterisedFailingOptionsParsingTest :
 {
 };
 
-TEST_F(PreferredMulticastFlowControlTest, shouldFallbackToMinStrategy)
+TEST_F(FlowControlTest, shouldFallbackToMinStrategy)
 {
     aeron_flow_control_strategy_t *strategy = NULL;
     initialise_channel("aeron:udp?endpoint=224.20.30.39:54326|interface=localhost");
@@ -152,7 +152,7 @@ TEST_F(PreferredMulticastFlowControlTest, shouldFallbackToMinStrategy)
     ASSERT_EQ(WINDOW_LENGTH + 994, apply_status_message(strategy, 3, 994, 2));
 }
 
-TEST_F(PreferredMulticastFlowControlTest, shouldUseMinStrategy)
+TEST_F(FlowControlTest, shouldUseMinStrategy)
 {
     aeron_flow_control_strategy_t *strategy = NULL;
     initialise_channel("aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=min");
@@ -169,7 +169,7 @@ TEST_F(PreferredMulticastFlowControlTest, shouldUseMinStrategy)
     ASSERT_EQ(WINDOW_LENGTH + 994, apply_status_message(strategy, 3, 994, 2));
 }
 
-TEST_F(PreferredMulticastFlowControlTest, shouldUseMinStrategyAndIgnoreGroupParams)
+TEST_F(FlowControlTest, shouldUseMinStrategyAndIgnoreGroupParams)
 {
     aeron_flow_control_strategy_t *strategy = NULL;
     initialise_channel("aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=min,g:123");
@@ -186,7 +186,7 @@ TEST_F(PreferredMulticastFlowControlTest, shouldUseMinStrategyAndIgnoreGroupPara
     ASSERT_EQ(WINDOW_LENGTH + 994, apply_status_message(strategy, 3, 994, 2));
 }
 
-TEST_F(PreferredMulticastFlowControlTest, shouldTimeoutWithMinStrategy)
+TEST_F(FlowControlTest, shouldTimeoutWithMinStrategy)
 {
     aeron_flow_control_strategy_t *strategy = NULL;
     const int64_t sender_position = 5000;
@@ -210,7 +210,7 @@ TEST_F(PreferredMulticastFlowControlTest, shouldTimeoutWithMinStrategy)
     ASSERT_EQ(sender_position, strategy->on_idle(strategy->state, 701 * 1000000, sender_position, 0, false));
 }
 
-TEST_F(PreferredMulticastFlowControlTest, shouldFallbackToMaxStrategy)
+TEST_F(FlowControlTest, shouldFallbackToMaxStrategy)
 {
     aeron_flow_control_strategy_t *strategy = NULL;
     initialise_channel("aeron:udp?endpoint=224.20.30.39:54326|interface=localhost");
@@ -227,7 +227,7 @@ TEST_F(PreferredMulticastFlowControlTest, shouldFallbackToMaxStrategy)
     ASSERT_EQ(WINDOW_LENGTH + 994, apply_status_message(strategy, 3, 994, 2));
 }
 
-TEST_F(PreferredMulticastFlowControlTest, shouldUseMaxStrategy)
+TEST_F(FlowControlTest, shouldUseMaxStrategy)
 {
     aeron_flow_control_strategy_t *strategy = NULL;
     initialise_channel("aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=max");
@@ -243,7 +243,7 @@ TEST_F(PreferredMulticastFlowControlTest, shouldUseMaxStrategy)
     ASSERT_EQ(WINDOW_LENGTH + 994, apply_status_message(strategy, 3, 994, 2));
 }
 
-TEST_F(PreferredMulticastFlowControlTest, shouldUseTaggedStrategy)
+TEST_F(FlowControlTest, shouldUseTaggedStrategy)
 {
     aeron_flow_control_strategy_t *strategy = NULL;
     initialise_channel("aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=tagged,g:123");
@@ -259,7 +259,7 @@ TEST_F(PreferredMulticastFlowControlTest, shouldUseTaggedStrategy)
     ASSERT_EQ(WINDOW_LENGTH + 1000, apply_status_message(strategy, 3, 994, 0));
 }
 
-TEST_F(PreferredMulticastFlowControlTest, shouldFailToUseTaggedStrategyWhenGroupMissing)
+TEST_F(FlowControlTest, shouldFailToUseTaggedStrategyWhenGroupMissing)
 {
     aeron_flow_control_strategy_t *strategy = NULL;
     initialise_channel("aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=tagged");
@@ -269,7 +269,7 @@ TEST_F(PreferredMulticastFlowControlTest, shouldFailToUseTaggedStrategyWhenGroup
         1001, 1001, 0, 64 * 1024));
 }
 
-TEST_F(PreferredMulticastFlowControlTest, shouldUseTaggedStrategyWith8ByteTag)
+TEST_F(FlowControlTest, shouldUseTaggedStrategyWith8ByteTag)
 {
     aeron_flow_control_strategy_t *strategy = NULL;
     initialise_channel("aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=tagged,g:3000000000");
@@ -285,7 +285,7 @@ TEST_F(PreferredMulticastFlowControlTest, shouldUseTaggedStrategyWith8ByteTag)
     ASSERT_EQ(WINDOW_LENGTH + 1000, apply_status_message(strategy, 3, 994, -1294967296));
 }
 
-TEST_F(PreferredMulticastFlowControlTest, shouldUseTaggedStrategyWithOldAsfValue)
+TEST_F(FlowControlTest, shouldUseTaggedStrategyWithOldAsfValue)
 {
     aeron_flow_control_strategy_t *strategy = NULL;
     initialise_channel("aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=tagged,g:123");
@@ -303,7 +303,7 @@ TEST_F(PreferredMulticastFlowControlTest, shouldUseTaggedStrategyWithOldAsfValue
     ASSERT_LT(initial_observations, aeron_distinct_error_log_num_observations(&error_log));
 }
 
-TEST_F(PreferredMulticastFlowControlTest, shouldUseTaggedStrategyCorrectlyWhenReceiversAreEmpty)
+TEST_F(FlowControlTest, shouldUseTaggedStrategyCorrectlyWhenReceiversAreEmpty)
 {
     aeron_flow_control_strategy_t *strategy = NULL;
     initialise_channel("aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=tagged,g:123");
@@ -317,7 +317,7 @@ TEST_F(PreferredMulticastFlowControlTest, shouldUseTaggedStrategyCorrectlyWhenRe
     ASSERT_EQ(WINDOW_LENGTH + 1000, apply_status_message(strategy, 1, 1000, 0));
 }
 
-TEST_F(PreferredMulticastFlowControlTest, shouldTimeoutWithTaggedStrategy)
+TEST_F(FlowControlTest, shouldTimeoutWithTaggedStrategy)
 {
     aeron_flow_control_strategy_t *strategy = NULL;
     const int64_t sender_position = 5000;
@@ -356,7 +356,7 @@ TEST_P(ParameterisedSuccessfulOptionsParsingTest, shouldBeValid)
     ASSERT_EQ(std::get<4>(GetParam()), options.receiver_tag.value);
 }
 
-TEST_F(PreferredMulticastFlowControlTest, shouldParseNull)
+TEST_F(FlowControlTest, shouldParseNull)
 {
     aeron_flow_control_tagged_options_t options;
     ASSERT_EQ(0, aeron_flow_control_parse_tagged_options(0, NULL, &options));
@@ -369,7 +369,7 @@ TEST_F(PreferredMulticastFlowControlTest, shouldParseNull)
     ASSERT_EQ(-1, options.receiver_tag.value);
 }
 
-TEST_F(PreferredMulticastFlowControlTest, shouldFallWithInvalidStrategyName)
+TEST_F(FlowControlTest, shouldFallWithInvalidStrategyName)
 {
     aeron_flow_control_strategy_t *strategy = NULL;
 

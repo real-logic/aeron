@@ -165,10 +165,13 @@ public class DataPacketDispatcher
             throw new UnknownSubscriptionException("no subscription for stream " + streamId);
         }
 
-        final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.remove(sessionId);
-        if (null != sessionInterest && null != sessionInterest.image)
+        if (!streamInterest.isAllSessions)
         {
-            sessionInterest.image.ifActiveGoInactive();
+            final SessionInterest sessionInterest = streamInterest.sessionInterestByIdMap.remove(sessionId);
+            if (null != sessionInterest && null != sessionInterest.image)
+            {
+                sessionInterest.image.ifActiveGoInactive();
+            }
         }
 
         streamInterest.subscribedSessionIds.remove(sessionId);

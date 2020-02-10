@@ -242,4 +242,22 @@ public class DataPacketDispatcherTest
         dispatcher.addSubscription(STREAM_ID, SESSION_ID);
         dispatcher.removeSubscription(STREAM_ID, SESSION_ID);
     }
+
+    @Test
+    public void shouldRemoveSessionSpecificSubscriptionAndStillReceiveIntoImage()
+    {
+        final PublicationImage mockImage = mock(PublicationImage.class);
+
+        when(mockImage.sessionId()).thenReturn(SESSION_ID);
+        when(mockImage.streamId()).thenReturn(STREAM_ID);
+        when(mockImage.correlationId()).thenReturn(CORRELATION_ID_1);
+
+        dispatcher.addSubscription(STREAM_ID);
+        dispatcher.addPublicationImage(mockImage);
+        dispatcher.addSubscription(STREAM_ID, SESSION_ID);
+        dispatcher.removeSubscription(STREAM_ID, SESSION_ID);
+        dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS, 0);
+
+        verify(mockImage).insertPacket(ACTIVE_TERM_ID, TERM_OFFSET, mockBuffer, LENGTH, 0, SRC_ADDRESS);
+    }
 }

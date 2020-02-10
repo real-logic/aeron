@@ -40,6 +40,7 @@ public:
         m_agent(agent),
         m_idleStrategy(idleStrategy),
         m_exceptionHandler(exceptionHandler),
+        m_isStarted(false),
         m_isRunning(false),
         m_isClosed(false),
         m_name("aeron-agent")
@@ -54,6 +55,7 @@ public:
         m_agent(agent),
         m_idleStrategy(idleStrategy),
         m_exceptionHandler(exceptionHandler),
+        m_isStarted(false),
         m_isRunning(false),
         m_isClosed(false),
         m_name(name)
@@ -71,9 +73,19 @@ public:
     }
 
     /**
+     * Is the Agent started?
+     *
+     * @return is the Agent started?
+     */
+    inline bool isStarted() const
+    {
+        return m_isStarted;
+    }
+
+    /**
      * Is the Agent running?
      *
-     * @return is the Agent been started successfully and not closed?
+     * @return is the Agent started successfully and not closed?
      */
     inline bool isRunning() const
     {
@@ -91,12 +103,23 @@ public:
     }
 
     /**
-     * Start the Agent running
+     * Start the Agent running. Start may be called only once and is invalid after close has been called.
      *
      * Will spawn a std::thread.
      */
     inline void start()
     {
+        if (m_isClosed)
+        {
+            throw util::IllegalStateException(std::string("AgentRunner closed"), SOURCEINFO);
+        }
+
+        bool expected = false;
+        if (!std::atomic_compare_exchange_strong(&m_isStarted, &expected, true))
+        {
+            throw util::IllegalStateException(std::string("AgentRunner already started"), SOURCEINFO);
+        }
+
         m_thread = std::thread(
             [&]()
             {
@@ -118,7 +141,7 @@ public:
         m_isRunning = true;
         bool isRunning = true;
 
-        aeron::util::OnScopeExit tidy(
+        util::OnScopeExit tidy(
             [&]()
             {
                 m_isRunning = false;
@@ -178,6 +201,7 @@ private:
     Agent& m_agent;
     IdleStrategy& m_idleStrategy;
     logbuffer::exception_handler_t& m_exceptionHandler;
+    std::atomic<bool> m_isStarted;
     std::atomic<bool> m_isRunning;
     std::atomic<bool> m_isClosed;
     std::thread m_thread;

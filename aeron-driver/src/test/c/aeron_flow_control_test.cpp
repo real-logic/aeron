@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <array>
 #include <gtest/gtest.h>
 
 extern "C"

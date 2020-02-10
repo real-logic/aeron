@@ -378,7 +378,7 @@ int aeron_tagged_flow_control_strategy_supplier(
     {
         aeron_set_err(
             EINVAL, "Must specify 'g:' field when using tagged strategy URI: %.*s",
-            channel->uri_length, channel->original_uri);
+            (int)channel->uri_length, channel->original_uri);
         return -1;
     }
 

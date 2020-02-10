@@ -167,7 +167,7 @@ public:
         bool expected = false;
         if (std::atomic_compare_exchange_strong(&m_isClosed, &expected, true))
         {
-            if (m_isRunning)
+            if (m_thread.joinable())
             {
                 m_thread.join();
             }

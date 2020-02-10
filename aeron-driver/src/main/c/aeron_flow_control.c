@@ -244,7 +244,6 @@ int aeron_flow_control_parse_tagged_options(
     flow_control_options->group_count.value = -1;
 
     char number_buffer[AERON_FLOW_CONTROL_NUMBER_BUFFER_LEN];
-    memset(number_buffer, 0, AERON_FLOW_CONTROL_NUMBER_BUFFER_LEN);
 
     if (0 == options_length || NULL == options)
     {
@@ -298,13 +297,14 @@ int aeron_flow_control_parse_tagged_options(
                 return -EINVAL;
             }
             strncpy(number_buffer, value, value_length);
+            number_buffer[value_length] = '\0';
 
             if ('g' == current_option[0])
             {
                 char *end_ptr = "";
                 errno = 0;
 
-                const long receiver_tag = strtoll(number_buffer, &end_ptr, 10);
+                const long long receiver_tag = strtoll(number_buffer, &end_ptr, 10);
                 const bool has_group_count = '/' == *end_ptr;
 
                 if (0 == errno && number_buffer != end_ptr && ('\0' == *end_ptr || has_group_count))

@@ -17,10 +17,11 @@
 #define AERON_AGENT_RUNNER_H
 
 #include <string>
-#include <util/Exceptions.h>
 #include <functional>
 #include <thread>
 #include <atomic>
+#include <util/Exceptions.h>
+#include <util/ScopeUtils.h>
 #include <concurrent/logbuffer/TermReader.h>
 
 #if !defined(AERON_COMPILER_MSVC)
@@ -46,7 +47,10 @@ public:
     }
 
     AgentRunner(
-        Agent& agent, IdleStrategy& idleStrategy, logbuffer::exception_handler_t& exceptionHandler, const std::string& name) :
+        Agent& agent,
+        IdleStrategy& idleStrategy,
+        logbuffer::exception_handler_t& exceptionHandler,
+        const std::string& name) :
         m_agent(agent),
         m_idleStrategy(idleStrategy),
         m_exceptionHandler(exceptionHandler),
@@ -67,10 +71,10 @@ public:
     }
 
     /**
- * Is the Agent running?
- *
- * @return is the Agent been started successfully and not closed?
- */
+     * Is the Agent running?
+     *
+     * @return is the Agent been started successfully and not closed?
+     */
     inline bool isRunning() const
     {
         return m_isRunning;
@@ -93,16 +97,17 @@ public:
      */
     inline void start()
     {
-        m_thread = std::thread([&]()
-        {
+        m_thread = std::thread(
+            [&]()
+            {
 #if defined(AERON_COMPILER_MSVC)
 #elif defined(Darwin)
-            pthread_setname_np(m_name.c_str());
+                pthread_setname_np(m_name.c_str());
 #else
-            pthread_setname_np(pthread_self(), m_name.c_str());
+                pthread_setname_np(pthread_self(), m_name.c_str());
 #endif
-            run();
-        });
+                run();
+            });
     }
 
     /**
@@ -110,8 +115,14 @@ public:
      */
     inline void run()
     {
-        bool expected = false;
-        std::atomic_compare_exchange_strong(&m_isRunning, &expected, true);
+        m_isRunning = true;
+        bool isRunning = true;
+
+        aeron::util::OnScopeExit tidy(
+            [&]()
+            {
+                m_isRunning = false;
+            });
 
         try
         {
@@ -119,19 +130,22 @@ public:
         }
         catch (const util::SourcedException &exception)
         {
+            isRunning = false;
             m_exceptionHandler(exception);
-            m_isRunning = false;
         }
 
-        while (m_isRunning)
+        if (isRunning)
         {
-            try
+            while (!m_isClosed)
             {
-                m_idleStrategy.idle(m_agent.doWork());
-            }
-            catch (const util::SourcedException &exception)
-            {
-                m_exceptionHandler(exception);
+                try
+                {
+                    m_idleStrategy.idle(m_agent.doWork());
+                }
+                catch (const util::SourcedException &exception)
+                {
+                    m_exceptionHandler(exception);
+                }
             }
         }
 
@@ -153,8 +167,10 @@ public:
         bool expected = false;
         if (std::atomic_compare_exchange_strong(&m_isClosed, &expected, true))
         {
-            m_isRunning = false;
-            m_thread.join();
+            if (m_isRunning)
+            {
+                m_thread.join();
+            }
         }
     }
 

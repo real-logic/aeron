@@ -45,6 +45,8 @@ public:
         m_tags.reset(nullptr);
         m_alias.reset(nullptr);
         m_cc.reset(nullptr);
+        m_fc.reset(nullptr);
+        m_rtag.reset(nullptr);
         m_reliable.reset(nullptr);
         m_ttl.reset(nullptr);
         m_mtu.reset(nullptr);
@@ -135,6 +137,18 @@ public:
     inline this_t& congestionControl(const std::string& congestionControl)
     {
         m_cc.reset(new std::string(congestionControl));
+        return *this;
+    }
+
+    inline this_t& flowControl(const std::string& flowControl)
+    {
+        m_fc.reset(new std::string(flowControl));
+        return *this;
+    }
+
+    inline this_t& receiverTag(std::int64_t rtag)
+    {
+        m_rtag.reset(new Value(rtag));
         return *this;
     }
 
@@ -359,6 +373,16 @@ public:
             sb << CONGESTION_CONTROL_PARAM_NAME << '=' << *m_cc << '|';
         }
 
+        if (m_fc)
+        {
+            sb << FLOW_CONTROL_PARAM_NAME << '=' << *m_fc << '|';
+        }
+
+        if (m_rtag)
+        {
+            sb << RECEIVER_TAG_PARAM_NAME << '=' << std::to_string(m_rtag->value) << '|';
+        }
+
         if (m_sparse)
         {
             sb << SPARSE_PARAM_NAME << '=' << (m_sparse->value == 1 ? "true" : "false") << '|';
@@ -414,6 +438,7 @@ private:
     std::unique_ptr<std::string> m_tags;
     std::unique_ptr<std::string> m_alias;
     std::unique_ptr<std::string> m_cc;
+    std::unique_ptr<std::string> m_fc;
     std::unique_ptr<Value> m_reliable;
     std::unique_ptr<Value> m_ttl;
     std::unique_ptr<Value> m_mtu;
@@ -422,6 +447,7 @@ private:
     std::unique_ptr<Value> m_termId;
     std::unique_ptr<Value> m_termOffset;
     std::unique_ptr<Value> m_sessionId;
+    std::unique_ptr<Value> m_rtag;
     std::unique_ptr<Value> m_linger;
     std::unique_ptr<Value> m_sparse;
     std::unique_ptr<Value> m_eos;

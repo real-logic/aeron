@@ -216,6 +216,13 @@ int aeron_min_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t *_strategy;
     aeron_flow_control_tagged_options_t options;
 
+    const char* fc_options = aeron_uri_find_param_value(&channel->uri.params.udp.additional_params, AERON_URI_FC_KEY);
+    size_t fc_options_length = NULL != fc_options ? strlen(fc_options) : 0;
+    if (aeron_flow_control_parse_tagged_options(fc_options_length, fc_options, &options) < 0)
+    {
+        return -1;
+    }
+
     if (aeron_alloc((void **)&_strategy, sizeof(aeron_flow_control_strategy_t)) < 0 ||
         aeron_alloc((void **)&_strategy->state, sizeof(aeron_min_flow_control_strategy_state_t)) < 0)
     {
@@ -234,15 +241,8 @@ int aeron_min_flow_control_strategy_supplier(
     state->receivers.capacity = 0;
     state->receivers.length = 0;
 
-    const char* fc_options = aeron_uri_find_param_value(&channel->uri.params.udp.additional_params, AERON_URI_FC_KEY);
-
-    uint64_t timeout_ns = 0;
-    if (NULL != fc_options && 0 <= aeron_flow_control_parse_tagged_options(strlen(fc_options), fc_options, &options))
-    {
-        timeout_ns = options.timeout_ns;
-    }
-
-    state->receiver_timeout_ns = timeout_ns != 0 ? timeout_ns : aeron_min_flow_control_strategy_timeout_ns;
+    state->receiver_timeout_ns = options.timeout_ns.is_present ?
+        options.timeout_ns.value : aeron_min_flow_control_strategy_timeout_ns;
 
     *strategy = _strategy;
 
@@ -369,11 +369,16 @@ int aeron_tagged_flow_control_strategy_supplier(
     aeron_flow_control_tagged_options_t options;
 
     const char *fc_options = aeron_uri_find_param_value(&channel->uri.params.udp.additional_params, "fc");
-    assert(NULL != fc_options && "Should of already been checked in order to get here");
-
-    // TODO: We're double parsing at the moment, but will simplify this portion later.
     if (aeron_flow_control_parse_tagged_options(strlen(fc_options), fc_options, &options) < 0)
     {
+        return -1;
+    }
+
+    if (!options.receiver_tag.is_present)
+    {
+        aeron_set_err(
+            EINVAL, "Must specify 'g:' field when using tagged strategy URI: %.*s",
+            channel->uri_length, channel->original_uri);
         return -1;
     }
 
@@ -396,12 +401,11 @@ int aeron_tagged_flow_control_strategy_supplier(
     state->min_flow_control_state.receivers.array = NULL;
     state->min_flow_control_state.receivers.capacity = 0;
     state->min_flow_control_state.receivers.length = 0;
-    state->receiver_tag = options.receiver_tag;
+    state->receiver_tag = options.receiver_tag.value;
     state->error_log = context->error_log;
 
-    state->min_flow_control_state.receiver_timeout_ns = options.timeout_ns != 0 ?
-        options.timeout_ns :
-        aeron_tagged_flow_control_strategy_timeout_ns;
+    state->min_flow_control_state.receiver_timeout_ns = options.timeout_ns.is_present ?
+        options.timeout_ns.value : aeron_tagged_flow_control_strategy_timeout_ns;
 
     *strategy = _strategy;
 

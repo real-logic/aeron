@@ -236,12 +236,18 @@ int aeron_flow_control_parse_tagged_options(
 {
     flow_control_options->strategy_name = NULL;
     flow_control_options->strategy_name_length = 0;
-    flow_control_options->timeout_ns = 0;
-    flow_control_options->has_receiver_tag = false;
-    flow_control_options->receiver_tag = -1;
+    flow_control_options->timeout_ns.is_present = false;
+    flow_control_options->timeout_ns.value = 0;
+    flow_control_options->receiver_tag.is_present = false;
+    flow_control_options->receiver_tag.value = -1;
 
     char number_buffer[AERON_FLOW_CONTROL_NUMBER_BUFFER_LEN];
     memset(number_buffer, 0, AERON_FLOW_CONTROL_NUMBER_BUFFER_LEN);
+
+    if (0 == options_length || NULL == options)
+    {
+        return 0;
+    }
 
     const char* current_option = options;
     size_t remaining = options_length;
@@ -301,8 +307,8 @@ int aeron_flow_control_parse_tagged_options(
 
                 if (0 == errno && '\0' == *end_ptr)
                 {
-                    flow_control_options->has_receiver_tag = true;
-                    flow_control_options->receiver_tag = receiver_tag;
+                    flow_control_options->receiver_tag.is_present = true;
+                    flow_control_options->receiver_tag.value = receiver_tag;
                 }
                 else
                 {
@@ -320,7 +326,8 @@ int aeron_flow_control_parse_tagged_options(
                 uint64_t timeout_ns;
                 if (0 <= aeron_parse_duration_ns(number_buffer, &timeout_ns))
                 {
-                    flow_control_options->timeout_ns = timeout_ns;
+                    flow_control_options->timeout_ns.is_present = true;
+                    flow_control_options->timeout_ns.value = timeout_ns;
                 }
                 else
                 {
@@ -349,5 +356,5 @@ int aeron_flow_control_parse_tagged_options(
     }
     while (NULL != current_option && 0 < remaining);
 
-    return 0;
+    return 1;
 }

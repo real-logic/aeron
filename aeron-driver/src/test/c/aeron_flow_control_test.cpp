@@ -118,6 +118,9 @@ protected:
 
     virtual void SetUp()
     {
+        channel = NULL;
+
+
         aeron_distinct_error_log_init(&error_log, buffer.data(), buffer.size(), now, linger, NULL);
         context.error_log = &error_log;
         context.multicast_flow_control_supplier_func = aeron_min_flow_control_strategy_supplier;
@@ -140,8 +143,7 @@ TEST_F(PreferredMulticastFlowControlTest, shouldFallbackToMinStrategy)
     initialise_channel("aeron:udp?endpoint=224.20.30.39:54326|interface=localhost");
 
     ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
-        &strategy, &context,
-        channel,
+        &strategy, &context, channel,
         1001, 1001, 0, 64 * 1024));
 
     ASSERT_FALSE(NULL == strategy);
@@ -242,7 +244,7 @@ TEST_F(PreferredMulticastFlowControlTest, shouldUseMaxStrategy)
     ASSERT_EQ(WINDOW_LENGTH + 994, apply_status_message(strategy, 3, 994, 2));
 }
 
-TEST_F(PreferredMulticastFlowControlTest, shouldUsePreferredStrategy)
+TEST_F(PreferredMulticastFlowControlTest, shouldUseTaggedStrategy)
 {
     aeron_flow_control_strategy_t *strategy = NULL;
     initialise_channel("aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=tagged,g:123");
@@ -258,7 +260,17 @@ TEST_F(PreferredMulticastFlowControlTest, shouldUsePreferredStrategy)
     ASSERT_EQ(WINDOW_LENGTH + 1000, apply_status_message(strategy, 3, 994, 0));
 }
 
-TEST_F(PreferredMulticastFlowControlTest, shouldUsePreferredStrategyWith8ByteTag)
+TEST_F(PreferredMulticastFlowControlTest, shouldFailToUseTaggedStrategyWhenGroupMissing)
+{
+    aeron_flow_control_strategy_t *strategy = NULL;
+    initialise_channel("aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=tagged");
+
+    ASSERT_EQ(-1, aeron_default_multicast_flow_control_strategy_supplier(
+        &strategy, &context, channel,
+        1001, 1001, 0, 64 * 1024));
+}
+
+TEST_F(PreferredMulticastFlowControlTest, shouldUseTaggedStrategyWith8ByteTag)
 {
     aeron_flow_control_strategy_t *strategy = NULL;
     initialise_channel("aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=tagged,g:3000000000");
@@ -274,7 +286,7 @@ TEST_F(PreferredMulticastFlowControlTest, shouldUsePreferredStrategyWith8ByteTag
     ASSERT_EQ(WINDOW_LENGTH + 1000, apply_status_message(strategy, 3, 994, -1294967296));
 }
 
-TEST_F(PreferredMulticastFlowControlTest, shouldUsePreferredStrategyWithOldAsfValue)
+TEST_F(PreferredMulticastFlowControlTest, shouldUseTaggedStrategyWithOldAsfValue)
 {
     aeron_flow_control_strategy_t *strategy = NULL;
     initialise_channel("aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=tagged,g:123");
@@ -292,7 +304,7 @@ TEST_F(PreferredMulticastFlowControlTest, shouldUsePreferredStrategyWithOldAsfVa
     ASSERT_LT(initial_observations, aeron_distinct_error_log_num_observations(&error_log));
 }
 
-TEST_F(PreferredMulticastFlowControlTest, shouldUsePreferredStrategyCorrectlyWhenReceiversAreEmpty)
+TEST_F(PreferredMulticastFlowControlTest, shouldUseTaggedStrategyCorrectlyWhenReceiversAreEmpty)
 {
     aeron_flow_control_strategy_t *strategy = NULL;
     initialise_channel("aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=tagged,g:123");
@@ -306,7 +318,7 @@ TEST_F(PreferredMulticastFlowControlTest, shouldUsePreferredStrategyCorrectlyWhe
     ASSERT_EQ(WINDOW_LENGTH + 1000, apply_status_message(strategy, 1, 1000, 0));
 }
 
-TEST_F(PreferredMulticastFlowControlTest, shouldTimeoutWithPreferredStrategy)
+TEST_F(PreferredMulticastFlowControlTest, shouldTimeoutWithTaggedStrategy)
 {
     aeron_flow_control_strategy_t *strategy = NULL;
     const int64_t sender_position = 5000;
@@ -336,13 +348,26 @@ TEST_P(ParameterisedSuccessfulOptionsParsingTest, shouldBeValid)
     const char* strategy = std::get<1>(GetParam());
 
     aeron_flow_control_tagged_options_t options;
-    ASSERT_EQ(0, aeron_flow_control_parse_tagged_options(strlen(fc_options), fc_options, &options));
+    ASSERT_EQ(1, aeron_flow_control_parse_tagged_options(strlen(fc_options), fc_options, &options));
 
     ASSERT_EQ(strlen(strategy), options.strategy_name_length);
     ASSERT_TRUE(0 == strncmp(strategy, options.strategy_name, options.strategy_name_length));
-    ASSERT_EQ(std::get<2>(GetParam()), options.timeout_ns);
-    ASSERT_EQ(std::get<3>(GetParam()), options.has_receiver_tag);
-    ASSERT_EQ(std::get<4>(GetParam()), options.receiver_tag);
+    ASSERT_EQ(std::get<2>(GetParam()), options.timeout_ns.value);
+    ASSERT_EQ(std::get<3>(GetParam()), options.receiver_tag.is_present);
+    ASSERT_EQ(std::get<4>(GetParam()), options.receiver_tag.value);
+}
+
+TEST_F(PreferredMulticastFlowControlTest, shouldParseNull)
+{
+    aeron_flow_control_tagged_options_t options;
+    ASSERT_EQ(0, aeron_flow_control_parse_tagged_options(0, NULL, &options));
+
+    ASSERT_EQ(0U, options.strategy_name_length);
+    ASSERT_EQ(NULL, options.strategy_name);
+    ASSERT_EQ(false, options.timeout_ns.is_present);
+    ASSERT_EQ(0U, options.timeout_ns.value);
+    ASSERT_EQ(false, options.receiver_tag.is_present);
+    ASSERT_EQ(-1, options.receiver_tag.value);
 }
 
 TEST_F(PreferredMulticastFlowControlTest, shouldFallWithInvalidStrategyName)

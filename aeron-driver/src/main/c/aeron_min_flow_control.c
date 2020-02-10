@@ -339,7 +339,7 @@ int aeron_tagged_flow_control_strategy_fini(aeron_flow_control_strategy_t *strat
     return 0;
 }
 
-static AERON_INIT_ONCE preferred_timeout_is_initialized = AERON_INIT_ONCE_VALUE;
+static AERON_INIT_ONCE tagged_timeout_is_initialized = AERON_INIT_ONCE_VALUE;
 
 static uint64_t aeron_tagged_flow_control_strategy_timeout_ns;
 
@@ -393,7 +393,7 @@ int aeron_tagged_flow_control_strategy_supplier(
     _strategy->fini = aeron_tagged_flow_control_strategy_fini;
 
     (void)aeron_thread_once(
-        &preferred_timeout_is_initialized, initialize_aeron_tagged_flow_control_strategy_timeout);
+        &tagged_timeout_is_initialized, initialize_aeron_tagged_flow_control_strategy_timeout);
 
     aeron_tagged_flow_control_strategy_state_t *state =
         (aeron_tagged_flow_control_strategy_state_t *)_strategy->state;

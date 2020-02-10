@@ -116,7 +116,7 @@ typedef struct aeron_driver_context_stct
     int32_t publication_reserved_session_id_low;            /* aeron.publication.reserved.session.id.low = -1 */
     int32_t publication_reserved_session_id_high;           /* aeron.publication.reserved.session.id.high = 10000 */
     uint8_t multicast_ttl;                                  /* aeron.socket.multicast.ttl = 0 */
-    struct                                                  /* aeron.preferred.multicast.flow.control.rtag = <unset> */
+    struct                                                  /* aeron.tagged.multicast.flow.control.rtag = <unset> */
     {
         bool is_present;                                    /* default: false */
         int64_t value;                                      /* default: -1 */

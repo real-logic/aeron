@@ -30,34 +30,24 @@ public class DefaultMulticastFlowControlSupplier implements FlowControlSupplier
     public FlowControl newInstance(final UdpChannel udpChannel, final int streamId, final long registrationId)
     {
         final String fcStr = udpChannel.channelUri().get(CommonContext.FLOW_CONTROL_PARAM_NAME);
-        FlowControl flowControl = null;
-
         if (null != fcStr)
         {
-            final int strategyEndIndex = fcStr.indexOf(',');
-            final String strategyStr = (-1 == strategyEndIndex) ? fcStr : fcStr.substring(0, strategyEndIndex);
+            final int delimiter = fcStr.indexOf(',');
+            final String strategyStr = -1 == delimiter ? fcStr : fcStr.substring(0, delimiter);
 
             switch (strategyStr)
             {
                 case MaxMulticastFlowControl.FC_PARAM_VALUE:
-                {
                     return MaxMulticastFlowControl.INSTANCE;
-                }
 
                 case MinMulticastFlowControl.FC_PARAM_VALUE:
-                {
                     return new MinMulticastFlowControl();
-                }
 
                 case TaggedMulticastFlowControl.FC_PARAM_VALUE:
-                {
                     return new TaggedMulticastFlowControl();
-                }
 
                 default:
-                {
                     throw new IllegalArgumentException("unsupported multicast flow control strategy : fc=" + fcStr);
-                }
             }
         }
 
@@ -74,6 +64,7 @@ public class DefaultMulticastFlowControlSupplier implements FlowControlSupplier
             return new TaggedMulticastFlowControl();
         }
 
+        FlowControl flowControl = null;
         try
         {
             flowControl = (FlowControl)Class.forName(MULTICAST_FLOW_CONTROL_STRATEGY)

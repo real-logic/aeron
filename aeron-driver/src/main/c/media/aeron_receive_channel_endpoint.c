@@ -43,8 +43,8 @@ int aeron_receive_channel_endpoint_set_receiver_tag(
 
     if (0 == rc)
     {
-        endpoint->receiver_tag.is_present = context->receiver_tag.is_present;
-        endpoint->receiver_tag.value = context->receiver_tag.value;
+        endpoint->receiver_tag.is_present = context->sm_receiver_tag.is_present;
+        endpoint->receiver_tag.value = context->sm_receiver_tag.value;
     }
     else
     {

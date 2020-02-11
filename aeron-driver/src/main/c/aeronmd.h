@@ -482,9 +482,19 @@ uint64_t aeron_driver_context_get_counters_free_to_reuse_timeout_ns(aeron_driver
 #define AERON_TAGGED_MULTICAST_FLOW_CONTROL_RECEIVER_TIMEOUT_ENV_VAR "AERON_TAGGED_MULTICAST_FLOW_CONTROL_RECEIVER_TIMEOUT"
 
 /**
- * Timeout for a tagged receiver to be tracked.
+ * Default receiver tag for publishers to group endpoints by using tagged flow control.
  */
-#define AERON_TAGGED_MULTICAST_FLOW_CONTROL_RTAG_ENV_VAR "AERON_TAGGED_MULTICAST_FLOW_CONTROL_RECEIVER_TIMEOUT"
+#define AERON_FLOW_CONTROL_GROUP_RECEIVER_TAG_ENV_VAR "AERON_FLOW_CONTROL_GROUP_RTAG"
+
+/**
+ * Default required group size to use in tagged multicast flow control.
+ */
+#define AERON_FLOW_CONTROL_GROUP_REQUIRED_SIZE_ENV_VAR "AERON_FLOW_CONTROL_GROUP_REQUIRED_SIZE"
+
+/**
+ * Default receiver tag to be sent on status messages from channel to handle tagged flow control.
+ */
+#define AERON_SM_RECEIVER_TAG_ENV_VAR "AERON_SM_RTAG"
 
 /**
  * Function name to call for termination validation.

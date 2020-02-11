@@ -58,6 +58,7 @@
 #include "aeron_driver.h"
 #include "aeron_socket.h"
 #include "util/aeron_dlopen.h"
+#include "aeron_driver_context.h"
 
 const char aeron_version_full_str[] = "aeron version " AERON_VERSION_TXT " built " __DATE__ " " __TIME__;
 int aeron_major_version = AERON_VERSION_MAJOR;
@@ -631,6 +632,11 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
     fprintf(fpout, "\n    multicast_flow_control_supplier_func=%p%s",
         (void *)context->multicast_flow_control_supplier_func,
         aeron_dlinfo((const void *)context->multicast_flow_control_supplier_func, buffer, sizeof(buffer)));
+    fprintf(fpout, "\n    sm_receiver_tag.is_present=%d",
+        context->sm_receiver_tag.is_present);
+    fprintf(fpout, "\n    sm_receiver_tag.value=%" PRId64, context->sm_receiver_tag.value);
+    fprintf(fpout, "\n    flow_control_group.required_size=%" PRId32, context->flow_control_group.required_size);
+    fprintf(fpout, "\n    flow_control_group.receiver_tag=%" PRId64, context->flow_control_group.receiver_tag);
     /* applicationSpecificFeedback */
     fprintf(fpout, "\n    congestion_control_supplier_func=%p%s",
         (void *)context->congestion_control_supplier_func,

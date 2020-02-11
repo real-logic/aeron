@@ -177,9 +177,9 @@ int32_t aeron_config_parse_int32(const char *name, const char *str, int32_t def,
     {
         errno = 0;
         char *end_ptr = NULL;
-        int64_t value = strtoll(str, NULL, 0);
+        long long value = strtoll(str, &end_ptr, 0);
 
-        if ((0 == value && 0 != errno) || end_ptr == str || value < INT32_MIN || INT32_MAX < value)
+        if (0 != errno || '\0' != *end_ptr || value < INT32_MIN || INT32_MAX < value)
         {
             aeron_config_prop_warning(name, str);
             value = def;
@@ -352,8 +352,10 @@ static void aeron_driver_conductor_to_client_interceptor_null(
 #define AERON_SOCKET_SO_RCVBUF_DEFAULT (128 * 1024)
 #define AERON_SOCKET_SO_SNDBUF_DEFAULT (0)
 #define AERON_SOCKET_MULTICAST_TTL_DEFAULT (0)
-#define AERON_TAGGEDFLOWCONTROL_RTAG_IS_PRESENT false
-#define AERON_TAGGEDFLOWCONTROL_RTAG_VALUE (-1)
+#define AERON_SM_RECEIVER_TAG_IS_PRESENT_DEFAULT false
+#define AERON_SM_RECEIVER_TAG_VALUE_DEFAULT (-1)
+#define AERON_FLOW_CONTROL_GROUP_RECEIVER_TAG_DEFAULT (-1)
+#define AERON_FLOW_CONTROL_GROUP_REQUIRED_SIZE_DEFAULT (0)
 #define AERON_SEND_TO_STATUS_POLL_RATIO_DEFAULT (4)
 #define AERON_RCV_STATUS_MESSAGE_TIMEOUT_NS_DEFAULT (200 * 1000 * 1000LL)
 #define AERON_MULTICAST_FLOWCONTROL_SUPPLIER_DEFAULT ("aeron_max_multicast_flow_control_strategy_supplier")
@@ -492,8 +494,10 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->socket_rcvbuf = AERON_SOCKET_SO_RCVBUF_DEFAULT;
     _context->socket_sndbuf = AERON_SOCKET_SO_SNDBUF_DEFAULT;
     _context->multicast_ttl = AERON_SOCKET_MULTICAST_TTL_DEFAULT;
-    _context->receiver_tag.is_present = AERON_TAGGEDFLOWCONTROL_RTAG_IS_PRESENT;
-    _context->receiver_tag.value = AERON_TAGGEDFLOWCONTROL_RTAG_VALUE;
+    _context->sm_receiver_tag.is_present = AERON_SM_RECEIVER_TAG_IS_PRESENT_DEFAULT;
+    _context->sm_receiver_tag.value = AERON_SM_RECEIVER_TAG_VALUE_DEFAULT;
+    _context->flow_control_group.receiver_tag = AERON_FLOW_CONTROL_GROUP_RECEIVER_TAG_DEFAULT;
+    _context->flow_control_group.required_size = AERON_FLOW_CONTROL_GROUP_REQUIRED_SIZE_DEFAULT;
     _context->send_to_sm_poll_ratio = AERON_SEND_TO_STATUS_POLL_RATIO_DEFAULT;
     _context->status_message_timeout_ns = AERON_RCV_STATUS_MESSAGE_TIMEOUT_NS_DEFAULT;
     _context->image_liveness_timeout_ns = AERON_IMAGE_LIVENESS_TIMEOUT_NS_DEFAULT;
@@ -837,17 +841,31 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
         INT32_MIN,
         INT32_MAX);
 
-    const char *receiver_tag_str = getenv(AERON_TAGGED_MULTICAST_FLOW_CONTROL_RTAG_ENV_VAR);
+    const char *receiver_tag_str = getenv(AERON_SM_RECEIVER_TAG_ENV_VAR);
     if (NULL != receiver_tag_str)
     {
-        _context->receiver_tag.is_present = true;
-        _context->receiver_tag.value = aeron_config_parse_int64(
-            AERON_TAGGED_MULTICAST_FLOW_CONTROL_RTAG_ENV_VAR,
-            getenv(AERON_TAGGED_MULTICAST_FLOW_CONTROL_RTAG_ENV_VAR),
-            _context->receiver_tag.value,
+        _context->sm_receiver_tag.is_present = true;
+        _context->sm_receiver_tag.value = aeron_config_parse_int64(
+            AERON_SM_RECEIVER_TAG_ENV_VAR,
+            getenv(AERON_SM_RECEIVER_TAG_ENV_VAR),
+            _context->sm_receiver_tag.value,
             INT64_MIN,
             INT64_MAX);
     }
+
+    _context->flow_control_group.receiver_tag = aeron_config_parse_int64(
+        AERON_FLOW_CONTROL_GROUP_RECEIVER_TAG_ENV_VAR,
+        getenv(AERON_FLOW_CONTROL_GROUP_RECEIVER_TAG_ENV_VAR),
+        _context->flow_control_group.receiver_tag,
+        INT64_MIN,
+        INT64_MAX);
+
+    _context->flow_control_group.required_size = aeron_config_parse_int32(
+        AERON_FLOW_CONTROL_GROUP_REQUIRED_SIZE_ENV_VAR,
+        getenv(AERON_FLOW_CONTROL_GROUP_REQUIRED_SIZE_ENV_VAR),
+        _context->flow_control_group.receiver_tag,
+        0,
+        INT32_MAX);
 
     _context->to_driver_buffer = NULL;
     _context->to_clients_buffer = NULL;

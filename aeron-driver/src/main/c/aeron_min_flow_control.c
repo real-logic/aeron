@@ -253,6 +253,7 @@ typedef struct aeron_tagged_flow_control_strategy_state_stct
 {
     aeron_min_flow_control_strategy_state_t min_flow_control_state;
     int64_t receiver_tag;
+    int32_t required_group_size;
     aeron_distinct_error_log_t *error_log;
 }
 aeron_tagged_flow_control_strategy_state_t;
@@ -369,16 +370,8 @@ int aeron_tagged_flow_control_strategy_supplier(
     aeron_flow_control_tagged_options_t options;
 
     const char *fc_options = aeron_uri_find_param_value(&channel->uri.params.udp.additional_params, "fc");
-    if (aeron_flow_control_parse_tagged_options(strlen(fc_options), fc_options, &options) < 0)
+    if (aeron_flow_control_parse_tagged_options(NULL != fc_options ? strlen(fc_options) : 0, fc_options, &options) < 0)
     {
-        return -1;
-    }
-
-    if (!options.receiver_tag.is_present)
-    {
-        aeron_set_err(
-            EINVAL, "Must specify 'g:' field when using tagged strategy URI: %.*s",
-            (int)channel->uri_length, channel->original_uri);
         return -1;
     }
 
@@ -401,7 +394,11 @@ int aeron_tagged_flow_control_strategy_supplier(
     state->min_flow_control_state.receivers.array = NULL;
     state->min_flow_control_state.receivers.capacity = 0;
     state->min_flow_control_state.receivers.length = 0;
-    state->receiver_tag = options.receiver_tag.value;
+    state->receiver_tag = options.receiver_tag.is_present ?
+        options.receiver_tag.value : context->flow_control_group.receiver_tag;
+    state->required_group_size = options.required_group_size.is_present ?
+        options.required_group_size.value : context->flow_control_group.required_size;
+
     state->error_log = context->error_log;
 
     state->min_flow_control_state.receiver_timeout_ns = options.timeout_ns.is_present ?

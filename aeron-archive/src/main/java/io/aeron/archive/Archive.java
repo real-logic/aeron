@@ -109,9 +109,8 @@ public class Archive implements AutoCloseable
 
     public void close()
     {
-        final CountedErrorHandler errorHandler = ctx.countedErrorHandler();
-        AeronCloseHelper.close(errorHandler, conductorInvoker);
-        AeronCloseHelper.close(errorHandler, conductorRunner);
+        CloseHelper.close(conductorInvoker);
+        CloseHelper.close(conductorRunner);
     }
 
     private Archive start()

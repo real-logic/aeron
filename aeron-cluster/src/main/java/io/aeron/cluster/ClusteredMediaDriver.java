@@ -15,7 +15,6 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.AeronCloseHelper;
 import io.aeron.archive.Archive;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.status.SystemCounterDescriptor;
@@ -142,8 +141,6 @@ public class ClusteredMediaDriver implements AutoCloseable
 
     public void close()
     {
-        AeronCloseHelper.close(archive.context().countedErrorHandler(), consensusModule);
-        AeronCloseHelper.close(driver.context().errorHandler(), archive);
-        CloseHelper.close(driver);
+        CloseHelper.closeAll(consensusModule, archive, driver);
     }
 }

@@ -139,7 +139,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
     public void close()
     {
-        AeronCloseHelper.close(ctx.errorHandler(), serviceAgentRunner);
+        CloseHelper.close(serviceAgentRunner);
     }
 
     /**

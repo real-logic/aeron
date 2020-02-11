@@ -267,7 +267,7 @@ public class ConsensusModule implements AutoCloseable
 
     public void close()
     {
-        AeronCloseHelper.close(ctx.countedErrorHandler(), conductorRunner);
+        CloseHelper.close(conductorRunner);
     }
 
     /**

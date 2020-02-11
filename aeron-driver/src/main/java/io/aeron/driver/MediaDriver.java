@@ -257,14 +257,6 @@ public final class MediaDriver implements AutoCloseable
      */
     public void close()
     {
-        final ErrorHandler errorHandler = ctx.errorHandler();
-        AeronCloseHelper.close(errorHandler, sharedRunner);
-        AeronCloseHelper.close(errorHandler, sharedNetworkRunner);
-        AeronCloseHelper.close(errorHandler, receiverRunner);
-        AeronCloseHelper.close(errorHandler, senderRunner);
-        AeronCloseHelper.close(errorHandler, conductorRunner);
-        AeronCloseHelper.close(errorHandler, sharedInvoker);
-
         if (ctx.useWindowsHighResTimer() && SystemUtil.isWindows())
         {
             if (!wasHighResTimerEnabled)
@@ -272,6 +264,9 @@ public final class MediaDriver implements AutoCloseable
                 HighResolutionTimer.disable();
             }
         }
+
+        CloseHelper.closeAll(
+            sharedRunner, sharedNetworkRunner, receiverRunner, senderRunner, conductorRunner, sharedInvoker);
     }
 
     /**

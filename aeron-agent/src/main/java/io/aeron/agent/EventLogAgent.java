@@ -69,13 +69,13 @@ public final class EventLogAgent
     {
         if (logTransformer != null)
         {
-            CloseHelper.quietClose(readerAgentRunner);
             logTransformer.reset(instrumentation, AgentBuilder.RedefinitionStrategy.RETRANSFORMATION);
-
             thread = null;
-            readerAgentRunner = null;
             instrumentation = null;
             logTransformer = null;
+
+            CloseHelper.close(readerAgentRunner);
+            readerAgentRunner = null;
         }
     }
 

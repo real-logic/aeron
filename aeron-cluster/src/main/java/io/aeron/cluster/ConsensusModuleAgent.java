@@ -51,6 +51,7 @@ import static io.aeron.CommonContext.*;
 import static io.aeron.archive.client.AeronArchive.NULL_LENGTH;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
+import static io.aeron.cluster.ClusterMember.quorumPosition;
 import static io.aeron.cluster.ClusterSession.State.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static io.aeron.cluster.client.AeronCluster.SESSION_HEADER_LENGTH;
@@ -2439,12 +2440,11 @@ class ConsensusModuleAgent implements Agent
         {
             final long leaderPosition = Math.min(appendedPosition, logPublisher.position());
             thisMember.logPosition(leaderPosition).timeOfLastAppendPositionNs(nowNs);
-            final long quorumPosition = ClusterMember.quorumPosition(clusterMembers, rankedPositions);
+            final long commitPosition = Math.min(quorumPosition(clusterMembers, rankedPositions), leaderPosition);
 
-            if (commitPosition.proposeMaxOrdered(quorumPosition) ||
+            if (this.commitPosition.proposeMaxOrdered(commitPosition) ||
                 nowNs >= (timeOfLastLogUpdateNs + leaderHeartbeatIntervalNs))
             {
-                final long commitPosition = this.commitPosition.getWeak();
                 for (final ClusterMember member : clusterMembers)
                 {
                     if (member != thisMember)

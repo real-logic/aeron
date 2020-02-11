@@ -54,7 +54,7 @@ public class ChannelUriStringBuilder
     private Integer termId;
     private Integer termOffset;
     private Integer sessionId;
-    private Long rtag;
+    private Long receiverTag;
     private Long linger;
     private Boolean sparse;
     private Boolean eos;
@@ -88,7 +88,7 @@ public class ChannelUriStringBuilder
         termId = null;
         termOffset = null;
         sessionId = null;
-        rtag = null;
+        receiverTag = null;
         linger = null;
         sparse = null;
         eos = null;
@@ -1221,7 +1221,7 @@ public class ChannelUriStringBuilder
      */
     public ChannelUriStringBuilder receiverTag(final Long rtag)
     {
-        this.rtag = rtag;
+        this.receiverTag = rtag;
         return this;
     }
 
@@ -1234,15 +1234,15 @@ public class ChannelUriStringBuilder
      */
     public ChannelUriStringBuilder receiverTag(final ChannelUri channelUri)
     {
-        final String rtagStr = channelUri.get(RECEIVER_TAG_PARAM_NAME);
-        if (null == rtagStr)
+        final String receiverTagStr = channelUri.get(RECEIVER_TAG_PARAM_NAME);
+        if (null == receiverTagStr)
         {
-            rtag = null;
+            receiverTag = null;
             return this;
         }
         else
         {
-            return receiverTag(Long.valueOf(rtagStr));
+            return receiverTag(Long.valueOf(receiverTagStr));
         }
     }
 
@@ -1254,7 +1254,7 @@ public class ChannelUriStringBuilder
      */
     public Long receiverTag()
     {
-        return rtag;
+        return receiverTag;
     }
 
     /**
@@ -1429,9 +1429,9 @@ public class ChannelUriStringBuilder
             sb.append(FLOW_CONTROL_PARAM_NAME).append('=').append(fc).append('|');
         }
 
-        if (null != rtag)
+        if (null != receiverTag)
         {
-            sb.append(RECEIVER_TAG_PARAM_NAME).append('=').append(rtag).append('|');
+            sb.append(RECEIVER_TAG_PARAM_NAME).append('=').append(receiverTag).append('|');
         }
 
         if (null != sparse)

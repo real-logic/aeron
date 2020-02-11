@@ -446,7 +446,7 @@ public final class MediaDriver implements AutoCloseable
         private int sendToStatusMessagePollRatio = Configuration.sendToStatusMessagePollRatio();
 
         private InferableBoolean receiverGroupConsideration = Configuration.receiverGroupConsideration();
-        private Long rtag = Configuration.receiverTag();
+        private Long receiverTag = Configuration.receiverTag();
 
         private EpochClock epochClock;
         private NanoClock nanoClock;
@@ -2676,7 +2676,7 @@ public final class MediaDriver implements AutoCloseable
          */
         public Long receiverTag()
         {
-            return rtag;
+            return receiverTag;
         }
 
         /**
@@ -2687,7 +2687,7 @@ public final class MediaDriver implements AutoCloseable
          */
         public Context receiverTag(final Long rtag)
         {
-            this.rtag = rtag;
+            this.receiverTag = rtag;
             return this;
         }
 
@@ -2875,7 +2875,7 @@ public final class MediaDriver implements AutoCloseable
                 applicationSpecificFeedback = Configuration.applicationSpecificFeedback();
             }
 
-            if (null == rtag)
+            if (null == receiverTag)
             {
                 if (applicationSpecificFeedback.length > 0)
                 {
@@ -2887,7 +2887,7 @@ public final class MediaDriver implements AutoCloseable
                     }
 
                     final UnsafeBuffer buffer = new UnsafeBuffer(applicationSpecificFeedback);
-                    rtag = buffer.getLong(0, ByteOrder.LITTLE_ENDIAN);
+                    receiverTag = buffer.getLong(0, ByteOrder.LITTLE_ENDIAN);
                 }
             }
 

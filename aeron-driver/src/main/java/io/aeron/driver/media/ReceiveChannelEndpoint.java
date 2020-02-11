@@ -90,10 +90,10 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         rttMeasurementFlyweight = threadLocals.rttMeasurementFlyweight();
         receiverId = threadLocals.receiverId();
 
-        final String rtagStr = udpChannel.channelUri().get(CommonContext.RECEIVER_TAG_PARAM_NAME);
-        receiverTag = null == rtagStr ?
+        final String receiverTagStr = udpChannel.channelUri().get(CommonContext.RECEIVER_TAG_PARAM_NAME);
+        receiverTag = null == receiverTagStr ?
             context.receiverTag() :
-            Long.valueOf(AsciiEncoding.parseLongAscii(rtagStr, 0, rtagStr.length()));
+            Long.valueOf(AsciiEncoding.parseLongAscii(receiverTagStr, 0, receiverTagStr.length()));
 
         multiRcvDestination = udpChannel.isManualControlMode() ?
             new MultiRcvDestination(context.nanoClock(), DESTINATION_ADDRESS_TIMEOUT, errorHandler) : null;

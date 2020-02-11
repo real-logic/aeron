@@ -89,7 +89,7 @@ public class TaggedMulticastFlowControl implements FlowControl
     private volatile MinMulticastFlowControl.Receiver[] receivers = EMPTY_RECEIVERS;
     private int requiredGroupSize = REQUIRED_GROUP_SIZE;
     private long receiverTimeoutNs = RECEIVER_TIMEOUT;
-    private long rtag = new UnsafeBuffer(PREFERRED_ASF_BYTES).getLong(0, ByteOrder.LITTLE_ENDIAN);
+    private long receiverTag = new UnsafeBuffer(PREFERRED_ASF_BYTES).getLong(0, ByteOrder.LITTLE_ENDIAN);
 
     /**
      * {@inheritDoc}
@@ -114,7 +114,7 @@ public class TaggedMulticastFlowControl implements FlowControl
                     {
                         final int lengthToParse = -1 == requiredGroupSizeIndex ?
                             arg.length() - 2 : requiredGroupSizeIndex - 2;
-                        rtag = AsciiEncoding.parseLongAscii(arg, 2, lengthToParse);
+                        receiverTag = AsciiEncoding.parseLongAscii(arg, 2, lengthToParse);
                     }
 
                     if (-1 != requiredGroupSizeIndex)
@@ -221,7 +221,7 @@ public class TaggedMulticastFlowControl implements FlowControl
 
         if (asfLength == SIZE_OF_LONG)
         {
-            if (statusMessageFlyweight.receiverTag() == rtag)
+            if (statusMessageFlyweight.receiverTag() == receiverTag)
             {
                 result = true;
             }
@@ -244,17 +244,17 @@ public class TaggedMulticastFlowControl implements FlowControl
         return result;
     }
 
-    long getRtag()
+    long receiverTag()
     {
-        return rtag;
+        return receiverTag;
     }
 
-    long getReceiverTimeoutNs()
+    long receiverTimeoutNs()
     {
         return receiverTimeoutNs;
     }
 
-    int getRequiredGroupSize()
+    int requiredGroupSize()
     {
         return requiredGroupSize;
     }

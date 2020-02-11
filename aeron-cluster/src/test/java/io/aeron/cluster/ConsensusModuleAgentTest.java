@@ -101,7 +101,7 @@ public class ConsensusModuleAgentTest
         final long correlationIdOne = 1L;
         agent.state(ConsensusModule.State.ACTIVE);
         agent.role(Cluster.Role.LEADER);
-        agent.appendedPositionCounter(mock(ReadableCounter.class));
+        agent.appendPositionCounter(mock(ReadableCounter.class));
         agent.onSessionConnect(correlationIdOne, 2, PROTOCOL_SEMANTIC_VERSION, RESPONSE_CHANNEL_ONE, new byte[0]);
 
         clock.update(17, TimeUnit.MILLISECONDS);
@@ -133,7 +133,7 @@ public class ConsensusModuleAgentTest
         final long correlationId = 1L;
         agent.state(ConsensusModule.State.ACTIVE);
         agent.role(Cluster.Role.LEADER);
-        agent.appendedPositionCounter(mock(ReadableCounter.class));
+        agent.appendPositionCounter(mock(ReadableCounter.class));
         agent.onSessionConnect(correlationId, 2, PROTOCOL_SEMANTIC_VERSION, RESPONSE_CHANNEL_ONE, new byte[0]);
 
         agent.doWork();
@@ -169,7 +169,7 @@ public class ConsensusModuleAgentTest
         final long correlationId = 1L;
         agent.state(ConsensusModule.State.ACTIVE);
         agent.role(Cluster.Role.LEADER);
-        agent.appendedPositionCounter(mock(ReadableCounter.class));
+        agent.appendPositionCounter(mock(ReadableCounter.class));
         agent.onSessionConnect(correlationId, 2, PROTOCOL_SEMANTIC_VERSION, RESPONSE_CHANNEL_ONE, new byte[0]);
 
         agent.doWork();
@@ -235,7 +235,7 @@ public class ConsensusModuleAgentTest
         ctx.epochClock(clock).clusterClock(clock);
 
         final ConsensusModuleAgent agent = new ConsensusModuleAgent(ctx);
-        agent.appendedPositionCounter(mock(ReadableCounter.class));
+        agent.appendPositionCounter(mock(ReadableCounter.class));
 
         assertEquals(ConsensusModule.State.INIT.code(), stateValue.get());
 

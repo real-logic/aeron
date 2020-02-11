@@ -33,7 +33,7 @@ class MemberStatusPublisher
     private final RequestVoteEncoder requestVoteEncoder = new RequestVoteEncoder();
     private final VoteEncoder voteEncoder = new VoteEncoder();
     private final NewLeadershipTermEncoder newLeadershipTermEncoder = new NewLeadershipTermEncoder();
-    private final AppendedPositionEncoder appendedPositionEncoder = new AppendedPositionEncoder();
+    private final AppendPositionEncoder appendPositionEncoder = new AppendPositionEncoder();
     private final CommitPositionEncoder commitPositionEncoder = new CommitPositionEncoder();
     private final CatchupPositionEncoder catchupPositionEncoder = new CatchupPositionEncoder();
     private final StopCatchupEncoder stopCatchupEncoder = new StopCatchupEncoder();
@@ -183,13 +183,13 @@ class MemberStatusPublisher
         while (--attempts > 0);
     }
 
-    boolean appendedPosition(
+    boolean appendPosition(
         final ExclusivePublication publication,
         final long leadershipTermId,
         final long logPosition,
         final int followerMemberId)
     {
-        final int length = MessageHeaderEncoder.ENCODED_LENGTH + AppendedPositionEncoder.BLOCK_LENGTH;
+        final int length = MessageHeaderEncoder.ENCODED_LENGTH + AppendPositionEncoder.BLOCK_LENGTH;
 
         int attempts = SEND_ATTEMPTS;
         do
@@ -197,7 +197,7 @@ class MemberStatusPublisher
             final long result = publication.tryClaim(length, bufferClaim);
             if (result > 0)
             {
-                appendedPositionEncoder
+                appendPositionEncoder
                     .wrapAndApplyHeader(bufferClaim.buffer(), bufferClaim.offset(), messageHeaderEncoder)
                     .leadershipTermId(leadershipTermId)
                     .logPosition(logPosition)

@@ -431,7 +431,7 @@
     </sbe:message>
 
     <!-- keep this under 32 - 8 = 24 bytes for efficiency -->
-    <sbe:message name="AppendedPosition"
+    <sbe:message name="AppendPosition"
                  id="54"
                  description="The highest position a follower has appended to their local log.">
         <field name="leadershipTermId"         id="1" type="int64"/>

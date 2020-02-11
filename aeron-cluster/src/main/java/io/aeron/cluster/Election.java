@@ -386,7 +386,7 @@ public class Election implements AutoCloseable
         }
     }
 
-    void onAppendedPosition(final long leadershipTermId, final long logPosition, final int followerMemberId)
+    void onAppendPosition(final long leadershipTermId, final long logPosition, final int followerMemberId)
     {
         final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
 
@@ -832,7 +832,7 @@ public class Election implements AutoCloseable
     {
         final ExclusivePublication publication = leaderMember.publication();
 
-        if (memberStatusPublisher.appendedPosition(publication, leadershipTermId, logPosition, thisMember.id()))
+        if (memberStatusPublisher.appendPosition(publication, leadershipTermId, logPosition, thisMember.id()))
         {
             if (consensusModuleAgent.electionComplete())
             {

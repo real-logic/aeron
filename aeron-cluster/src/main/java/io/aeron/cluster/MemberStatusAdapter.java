@@ -33,7 +33,7 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
     private final RequestVoteDecoder requestVoteDecoder = new RequestVoteDecoder();
     private final VoteDecoder voteDecoder = new VoteDecoder();
     private final NewLeadershipTermDecoder newLeadershipTermDecoder = new NewLeadershipTermDecoder();
-    private final AppendedPositionDecoder appendedPositionDecoder = new AppendedPositionDecoder();
+    private final AppendPositionDecoder appendPositionDecoder = new AppendPositionDecoder();
     private final CommitPositionDecoder commitPositionDecoder = new CommitPositionDecoder();
     private final CatchupPositionDecoder catchupPositionDecoder = new CatchupPositionDecoder();
     private final StopCatchupDecoder stopCatchupDecoder = new StopCatchupDecoder();
@@ -145,17 +145,17 @@ class MemberStatusAdapter implements FragmentHandler, AutoCloseable
                     newLeadershipTermDecoder.logSessionId());
                 break;
 
-            case AppendedPositionDecoder.TEMPLATE_ID:
-                appendedPositionDecoder.wrap(
+            case AppendPositionDecoder.TEMPLATE_ID:
+                appendPositionDecoder.wrap(
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     messageHeaderDecoder.blockLength(),
                     messageHeaderDecoder.version());
 
-                consensusModuleAgent.onAppendedPosition(
-                    appendedPositionDecoder.leadershipTermId(),
-                    appendedPositionDecoder.logPosition(),
-                    appendedPositionDecoder.followerMemberId());
+                consensusModuleAgent.onAppendPosition(
+                    appendPositionDecoder.leadershipTermId(),
+                    appendPositionDecoder.logPosition(),
+                    appendPositionDecoder.followerMemberId());
                 break;
 
             case CommitPositionDecoder.TEMPLATE_ID:

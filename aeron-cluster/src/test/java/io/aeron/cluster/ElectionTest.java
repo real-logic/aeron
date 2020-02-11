@@ -172,8 +172,8 @@ public class ElectionTest
         when(consensusModuleAgent.electionComplete()).thenReturn(true);
 
         final long t7 = t6 + 1;
-        election.onAppendedPosition(candidateTermId, logPosition, clusterMembers[1].id());
-        election.onAppendedPosition(candidateTermId, logPosition, clusterMembers[2].id());
+        election.onAppendPosition(candidateTermId, logPosition, clusterMembers[1].id());
+        election.onAppendPosition(candidateTermId, logPosition, clusterMembers[2].id());
         election.doWork(t7);
         final InOrder inOrder = inOrder(consensusModuleAgent, electionStateCounter);
         inOrder.verify(consensusModuleAgent).electionComplete();
@@ -226,13 +226,13 @@ public class ElectionTest
         election.doWork(t3);
         verify(electionStateCounter).setOrdered(Election.State.FOLLOWER_READY.code());
 
-        when(memberStatusPublisher.appendedPosition(any(), anyLong(), anyLong(), anyInt())).thenReturn(Boolean.TRUE);
+        when(memberStatusPublisher.appendPosition(any(), anyLong(), anyLong(), anyInt())).thenReturn(Boolean.TRUE);
         when(consensusModuleAgent.electionComplete()).thenReturn(true);
 
         final long t4 = 4;
         election.doWork(t4);
         final InOrder inOrder = inOrder(memberStatusPublisher, consensusModuleAgent, electionStateCounter);
-        inOrder.verify(memberStatusPublisher).appendedPosition(
+        inOrder.verify(memberStatusPublisher).appendPosition(
             clusterMembers[candidateId].publication(), candidateTermId, logPosition, followerMember.id());
         inOrder.verify(consensusModuleAgent).electionComplete();
         inOrder.verify(electionStateCounter).close();
@@ -336,7 +336,7 @@ public class ElectionTest
         election.doWork(t1);
         verify(electionStateCounter).setOrdered(Election.State.CANVASS.code());
 
-        election.onAppendedPosition(leadershipTermId, logPosition, 0);
+        election.onAppendPosition(leadershipTermId, logPosition, 0);
 
         final long t2 = t1 + 1;
         election.doWork(t2);

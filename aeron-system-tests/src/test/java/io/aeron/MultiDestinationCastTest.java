@@ -51,7 +51,7 @@ public class MultiDestinationCastTest
 
     private static final String PUB_MDC_MANUAL_URI = "aeron:udp?control-mode=manual|tags=3,4";
     private static final String SUB1_MDC_MANUAL_URI = "aeron:udp?endpoint=localhost:24326|group=true";
-    private static final String SUB2_MDC_MANUAL_URI = "aeron:udp?endpoint=localhost:54327|group=true";
+    private static final String SUB2_MDC_MANUAL_URI = "aeron:udp?endpoint=localhost:24327|group=true";
     private static final String SUB3_MDC_MANUAL_URI = CommonContext.SPY_PREFIX + PUB_MDC_MANUAL_URI;
 
     private static final int STREAM_ID = 1001;

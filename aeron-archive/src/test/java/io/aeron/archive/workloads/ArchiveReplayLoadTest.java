@@ -62,7 +62,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Disabled
 public class ArchiveReplayLoadTest
 {
-    private static final String CONTROL_RESPONSE_URI = "aeron:udp?endpoint=localhost:54327";
+    private static final String CONTROL_RESPONSE_URI = "aeron:udp?endpoint=localhost:24327";
     private static final int CONTROL_RESPONSE_STREAM_ID = 100;
 
     private static final int TEST_DURATION_SEC = 60;

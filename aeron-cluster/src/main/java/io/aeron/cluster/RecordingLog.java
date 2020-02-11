@@ -497,7 +497,7 @@ public class RecordingLog implements AutoCloseable
                     byteBuffer.clear();
                 }
 
-                if (-1 == bytesRead)
+                if (bytesRead <= 0)
                 {
                     if (byteBuffer.position() > 0)
                     {

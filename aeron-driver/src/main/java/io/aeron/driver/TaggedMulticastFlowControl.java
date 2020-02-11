@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 
 import static io.aeron.driver.MinMulticastFlowControl.EMPTY_RECEIVERS;
 import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
+import static java.lang.Integer.parseInt;
 import static java.lang.System.getProperty;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
@@ -71,6 +72,13 @@ public class TaggedMulticastFlowControl implements FlowControl
     public static final String PREFERRED_ASF_PROP_NAME = "aeron.PreferredMulticastFlowControl.asf";
 
     /**
+     * Property name to set the required group size for tagged multicast flow control.  This is the minimum number
+     * of live channel endpoint required in order for the strategy to consider the publication connected.
+     */
+    public static final String REQUIRED_GROUP_SIZE_PROP_NAME = "aeron.TaggedMulticastFlowControl.requiredGroupSize";
+    private static final int REQUIRED_GROUP_SIZE = parseInt(System.getProperty(REQUIRED_GROUP_SIZE_PROP_NAME, "0"));
+
+    /**
      * Default Application Specific Feedback (ASF) value
      */
     public static final String PREFERRED_ASF_DEFAULT = "FFFFFFFFFFFFFFFF";
@@ -79,7 +87,7 @@ public class TaggedMulticastFlowControl implements FlowControl
     public static final byte[] PREFERRED_ASF_BYTES = BitUtil.fromHex(PREFERRED_ASF);
 
     private volatile MinMulticastFlowControl.Receiver[] receivers = EMPTY_RECEIVERS;
-    private int requiredGroupSize = 0;
+    private int requiredGroupSize = REQUIRED_GROUP_SIZE;
     private long receiverTimeoutNs = RECEIVER_TIMEOUT;
     private long rtag = new UnsafeBuffer(PREFERRED_ASF_BYTES).getLong(0, ByteOrder.LITTLE_ENDIAN);
 
@@ -246,7 +254,7 @@ public class TaggedMulticastFlowControl implements FlowControl
         return receiverTimeoutNs;
     }
 
-    long getRequiredGroupSize()
+    int getRequiredGroupSize()
     {
         return requiredGroupSize;
     }

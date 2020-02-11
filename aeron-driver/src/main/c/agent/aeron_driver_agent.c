@@ -221,7 +221,7 @@ int aeron_driver_agent_map_raw_log_close_interceptor(aeron_mapped_raw_log_t *map
 void aeron_driver_agent_log_frame(
     int32_t msg_type_id, const struct msghdr *msghdr, int result, int32_t message_len)
 {
-    uint8_t buffer[MAX_FRAME_LENGTH + sizeof(aeron_driver_agent_frame_log_header_t) + sizeof(struct sockaddr_in6)];
+    uint8_t buffer[MAX_FRAME_LENGTH + sizeof(aeron_driver_agent_frame_log_header_t) + sizeof(struct sockaddr_storage)];
     aeron_driver_agent_frame_log_header_t *hdr = (aeron_driver_agent_frame_log_header_t *)buffer;
     size_t length = sizeof(aeron_driver_agent_frame_log_header_t);
 
@@ -688,26 +688,30 @@ static const char *dissect_cmd_out(int64_t cmd_id, const void *message, size_t l
         case AERON_RESPONSE_ON_AVAILABLE_IMAGE:
         {
             aeron_image_buffers_ready_t *command = (aeron_image_buffers_ready_t *)message;
-            char *ptr = buffer;
-
-            int len = snprintf(buffer, sizeof(buffer) - 1, "ON_AVAILABLE_IMAGE %d:%d [%" PRId32 ":%" PRId64 "]",
-                command->session_id,
-                command->stream_id,
-                command->subscriber_position_id,
-                command->subscriber_registration_id);
-
             char *log_file_name_ptr = (char *)message + sizeof(aeron_image_buffers_ready_t);
-            int32_t *log_file_name_length = (int32_t *)log_file_name_ptr;
+            int32_t log_file_name_length;
+            memcpy(&log_file_name_length, log_file_name_ptr, sizeof(int32_t));
             const char *log_file_name = log_file_name_ptr + sizeof(int32_t);
 
             char *source_identity_ptr =
-                log_file_name_ptr + AERON_ALIGN(*log_file_name_length, sizeof(int32_t)) + sizeof(int32_t);
-            int32_t *source_identity_length = (int32_t *)source_identity_ptr;
+                log_file_name_ptr + AERON_ALIGN(log_file_name_length, sizeof(int32_t)) + sizeof(int32_t);
+            int32_t source_identity_length;
+            memcpy(&source_identity_length, source_identity_ptr, sizeof(int32_t));
             const char *source_identity = source_identity_ptr + sizeof(int32_t);
-            len += snprintf(ptr + len, sizeof(buffer) - 1 - len, " \"%*s\" [%" PRId64 "]\n",
-                *source_identity_length, source_identity, command->correlation_id);
 
-            snprintf(ptr + len, sizeof(buffer) - 1 - len, "    \"%*s\"", *log_file_name_length, log_file_name);
+            snprintf(
+                buffer,
+                sizeof(buffer) - 1,
+                "ON_AVAILABLE_IMAGE %d:%d [%" PRId32 ":%" PRId64 "] \"%*s\" [%" PRId64 "] \"%*s\"",
+                command->session_id,
+                command->stream_id,
+                command->subscriber_position_id,
+                command->subscriber_registration_id,
+                source_identity_length,
+                source_identity,
+                command->correlation_id,
+                log_file_name_length,
+                log_file_name);
             break;
         }
 

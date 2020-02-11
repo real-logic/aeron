@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.*;
 
-public class TaggedUriFlowControlTest
+public class UriSpecifiedFlowControlTest
 {
     private static final String MULTICAST_URI = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost";
     private static final String URI_WITH_MIN_FLOW_CONTROL = MULTICAST_URI + "|fc=min";

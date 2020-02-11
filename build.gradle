@@ -28,7 +28,7 @@ plugins {
     id "com.github.ben-manes.versions" version "0.27.0"
 }
 
-defaultTasks 'clean', 'build', 'shadowJar', 'install'
+defaultTasks 'clean', 'build'
 
 def aeronGroup = 'io.aeron'
 def aeronVersion = file('version.txt').text.trim()
@@ -42,13 +42,10 @@ def mockitoVersion = '3.2.4'
 def byteBuddyVersion = '1.10.5'
 def hdrHistogramVersion = '2.1.12'
 
-group = aeronGroup
-version = aeronVersion
-ext.isReleasedVersion = !version.endsWith("SNAPSHOT")
-
 ext {
-    group = aeronGroup
-    version = aeronVersion
+    isReleaseVersion = !version.endsWith('-SNAPSHOT')
+    releasesRepoUrl = 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
+    snapshotsRepoUrl = 'https://oss.sonatype.org/content/repositories/snapshots/'
 
     if (!project.hasProperty('ossrhUsername')) {
         ossrhUsername = ''
@@ -56,14 +53,6 @@ ext {
 
     if (!project.hasProperty('ossrhPassword')) {
         ossrhPassword = ''
-    }
-
-    if (!project.hasProperty('releaseUrl')) {
-        releaseUrl = 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
-    }
-
-    if (!project.hasProperty('snapshotUrl')) {
-        snapshotUrl = 'https://oss.sonatype.org/content/repositories/snapshots/'
     }
 }
 
@@ -127,10 +116,6 @@ def projectPom = {
     }
 }
 
-configurations {
-    shadow
-}
-
 jar.enabled = false
 
 allprojects {
@@ -142,17 +127,9 @@ allprojects {
 
 subprojects {
     apply plugin: 'java-library'
-    apply plugin: 'maven'
     apply plugin: 'checkstyle'
-    apply plugin: 'signing'
     apply plugin: 'eclipse'
     apply plugin: 'io.freefair.javadoc-links'
-
-    group = aeronGroup
-    version = aeronVersion
-
-    jar.enabled = true
-    checkstyle.toolVersion = "${checkstyleVersion}"
 
     dependencies {
         testImplementation "org.hamcrest:hamcrest:${hamcrestVersion}"
@@ -162,8 +139,24 @@ subprojects {
         testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:${junitVersion}"
     }
 
-    compileJava {
-        if (JavaVersion.current().ordinal() >= JavaVersion.VERSION_1_9.ordinal()) {
+    group = aeronGroup
+    version = aeronVersion
+
+    checkstyle.toolVersion = "${checkstyleVersion}"
+
+    tasks.withType(Sign) {
+        onlyIf {
+            isReleaseVersion && gradle.taskGraph.hasTask(tasks.publish)
+        }
+    }
+
+    tasks.withType(Jar) {
+        enabled = true
+        includeEmptyDirs = false
+    }
+
+    tasks.withType(JavaCompile) {
+        if (JavaVersion.current().isJava9Compatible()) {
             options.compilerArgs.addAll(['--add-exports', 'java.base/java.lang.reflect=ALL-UNNAMED'])
             options.compilerArgs.addAll(['--add-exports', 'java.base/java.net=ALL-UNNAMED'])
             options.compilerArgs.addAll(['--add-exports', 'java.base/sun.nio.ch=ALL-UNNAMED'])
@@ -173,19 +166,8 @@ subprojects {
         options.deprecation = true
     }
 
-    compileTestJava {
-        if (JavaVersion.current().ordinal() >= JavaVersion.VERSION_1_9.ordinal()) {
-            options.compilerArgs.addAll(['--add-exports', 'java.base/java.lang.reflect=ALL-UNNAMED'])
-            options.compilerArgs.addAll(['--add-exports', 'java.base/java.net=ALL-UNNAMED'])
-            options.compilerArgs.addAll(['--add-exports', 'java.base/sun.nio.ch=ALL-UNNAMED'])
-            options.compilerArgs.addAll(['--add-exports', 'jdk.unsupported/sun.misc=ALL-UNNAMED'])
-        }
-        options.encoding = 'UTF-8'
-        options.deprecation = true
-    }
-
-    test {
-        if (JavaVersion.current().ordinal() >= JavaVersion.VERSION_1_9.ordinal()) {
+    tasks.withType(Test) {
+        if (JavaVersion.current().isJava9Compatible()) {
             jvmArgs('--add-opens', 'java.base/java.lang.reflect=ALL-UNNAMED')
             jvmArgs('--add-opens', 'java.base/java.net=ALL-UNNAMED')
             jvmArgs('--add-opens', 'java.base/sun.nio.ch=ALL-UNNAMED')
@@ -220,34 +202,9 @@ subprojects {
     task slowTest(type: Test) {
         maxParallelForks = 1
 
-        if (JavaVersion.current().ordinal() >= JavaVersion.VERSION_1_9.ordinal()) {
-            jvmArgs('--add-opens', 'java.base/java.lang.reflect=ALL-UNNAMED')
-            jvmArgs('--add-opens', 'java.base/java.net=ALL-UNNAMED')
-            jvmArgs('--add-opens', 'java.base/sun.nio.ch=ALL-UNNAMED')
-            jvmArgs('--add-opens', 'java.base/java.util.zip=ALL-UNNAMED')
-            jvmArgs('--add-exports', 'jdk.unsupported/sun.misc=ALL-UNNAMED')
-        }
-
         useJUnitPlatform {
             includeTags 'slow'
         }
-
-        testLogging {
-            showStandardStreams = true
-            exceptionFormat = 'full'
-        }
-
-        systemProperties(
-            'aeron.shared.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
-            'aeron.conductor.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
-            'aeron.sender.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
-            'aeron.receiver.idle.strategy': 'org.agrona.concurrent.YieldingIdleStrategy',
-            'aeron.use.windows.high.res.timer': 'true',
-            'aeron.timer.interval': '10000000',
-            'aeron.perform.storage.checks': 'false'
-        )
-
-        reports.html.enabled = false // Disable individual test reports
     }
 
     javadoc {
@@ -256,7 +213,7 @@ subprojects {
         options.encoding = 'UTF-8'
         options.docEncoding = 'UTF-8'
         options.charSet = 'UTF-8'
-        if (JavaVersion.current().ordinal() >= JavaVersion.VERSION_1_10.ordinal()) {
+        if (JavaVersion.current().isJava10Compatible()) {
             options.addBooleanOption 'html5', true
         }
     }
@@ -273,65 +230,15 @@ subprojects {
     artifacts {
         tests testJar
     }
-
-    signing {
-        required { isReleasedVersion && gradle.taskGraph.hasTask("uploadArchives") }
-        sign configurations.archives
-    }
-
-    install {
-        repositories.mavenInstaller.pom.project(projectPom)
-        repositories.mavenInstaller.pom.whenConfigured {
-            p -> p.dependencies = p.dependencies.findAll {
-                dep -> !(dep.artifactId.contains("hamcrest") ||
-                         dep.artifactId.contains("mockito") ||
-                         dep.artifactId.contains("junit") ||
-                         dep.artifactId.contains("aeron-test-support"))
-            }
-        }
-    }
-
-    uploadArchives {
-        repositories {
-            mavenDeployer {
-                pom.whenConfigured {
-                    p -> p.dependencies = p.dependencies.findAll {
-                        dep -> !(dep.artifactId.contains("hamcrest") ||
-                                 dep.artifactId.contains("mockito") ||
-                                 dep.artifactId.contains("junit") ||
-                                 dep.artifactId.contains("aeron-test-support"))
-                        }
-                }
-            }
-        }
-    }
 }
 
 project(':aeron-client') {
+    apply plugin: 'maven-publish'
+    apply plugin: 'signing'
     apply plugin: 'biz.aQute.bnd.builder'
 
     dependencies {
         api "org.agrona:agrona:${agronaVersion}"
-    }
-
-    uploadArchives {
-        repositories {
-            mavenDeployer {
-                beforeDeployment {
-                    MavenDeployment deployment -> signing.signPom(deployment)
-                }
-
-                repository(url: releaseUrl) {
-                    authentication(userName: ossrhUsername, password: ossrhPassword)
-                }
-
-                snapshotRepository(url: snapshotUrl) {
-                    authentication(userName: ossrhUsername, password: ossrhPassword)
-                }
-
-                pom.project(projectPom)
-            }
-        }
     }
 
     jar {
@@ -351,23 +258,38 @@ project(':aeron-client') {
         """
     }
 
-    task sourcesJar(type: Jar) {
-        archiveClassifier.set 'sources'
-        from sourceSets.main.allSource
+    java {
+        withSourcesJar()
+        withJavadocJar()
     }
 
-    task javadocJar(type: Jar, dependsOn: javadoc) {
-        archiveClassifier.set 'javadoc'
-        from javadoc.destinationDir
+    publishing {
+        publications {
+            aeronClient(MavenPublication) {
+                from components.java
+                pom(projectPom)
+            }
+        }
+
+        repositories {
+            maven {
+                url = !isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl
+                credentials {
+                    username = ossrhUsername
+                    password = ossrhPassword
+                }
+            }
+        }
     }
 
-    artifacts {
-        archives sourcesJar
-        archives javadocJar
+    signing {
+        sign publishing.publications.aeronClient
     }
 }
 
 project(':aeron-driver') {
+    apply plugin: 'maven-publish'
+    apply plugin: 'signing'
     apply plugin: 'application'
     apply plugin: 'biz.aQute.bnd.builder'
 
@@ -376,26 +298,6 @@ project(':aeron-driver') {
     dependencies {
         api project(':aeron-client')
         testImplementation project(':aeron-test-support')
-    }
-
-    uploadArchives {
-        repositories {
-            mavenDeployer {
-                beforeDeployment {
-                    MavenDeployment deployment -> signing.signPom(deployment)
-                }
-
-                repository(url: releaseUrl) {
-                    authentication(userName: ossrhUsername, password: ossrhPassword)
-                }
-
-                snapshotRepository(url: snapshotUrl) {
-                    authentication(userName: ossrhUsername, password: ossrhPassword)
-                }
-
-                pom.project(projectPom)
-            }
-        }
     }
 
     jar {
@@ -415,27 +317,42 @@ project(':aeron-driver') {
         """
     }
 
-    task sourcesJar(type: Jar) {
-        archiveClassifier.set 'sources'
-        from sourceSets.main.allSource
+    jar.finalizedBy assembleDist
+
+    java {
+        withSourcesJar()
+        withJavadocJar()
     }
 
-    task javadocJar(type: Jar, dependsOn: javadoc) {
-        archiveClassifier.set 'javadoc'
-        from javadoc.destinationDir
+    publishing {
+        publications {
+            aeronDriver(MavenPublication) {
+                from components.java
+                artifact distZip
+                artifact distTar
+                pom(projectPom)
+            }
+        }
+
+        repositories {
+            maven {
+                url = !isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl
+                credentials {
+                    username = ossrhUsername
+                    password = ossrhPassword
+                }
+            }
+        }
     }
 
-    artifacts {
-        archives sourcesJar
-        archives javadocJar
-    }
-
-    build.doLast {
-        distZip
+    signing {
+        sign publishing.publications.aeronDriver
     }
 }
 
 project(':aeron-archive') {
+    apply plugin: 'maven-publish'
+    apply plugin: 'signing'
     apply plugin: 'biz.aQute.bnd.builder'
 
     configurations{
@@ -458,12 +375,6 @@ project(':aeron-archive') {
 
     compileGeneratedJava {
         dependsOn 'generateCodecs'
-        if (JavaVersion.current().ordinal() >= JavaVersion.VERSION_1_9.ordinal()) {
-            options.compilerArgs.addAll(['--add-exports', 'java.base/java.lang.reflect=ALL-UNNAMED'])
-            options.compilerArgs.addAll(['--add-exports', 'jdk.unsupported/sun.misc=ALL-UNNAMED'])
-        }
-        options.encoding = 'UTF-8'
-        options.deprecation = true
         classpath += configurations.codecGeneration
     }
 
@@ -499,9 +410,7 @@ project(':aeron-archive') {
     }
 
     jar {
-        from("${buildDir}/classes/java/generated") {
-            include '**/*.class'
-        }
+        from sourceSets.generated.output
 
         bnd """
             Automatic-Module-Name:  io.aeron.archive
@@ -519,45 +428,48 @@ project(':aeron-archive') {
         """
     }
 
-    uploadArchives {
-        repositories {
-            mavenDeployer {
-                beforeDeployment {
-                    MavenDeployment deployment -> signing.signPom(deployment)
-                }
-
-                repository(url: releaseUrl) {
-                    authentication(userName: ossrhUsername, password: ossrhPassword)
-                }
-
-                snapshotRepository(url: snapshotUrl) {
-                    authentication(userName: ossrhUsername, password: ossrhPassword)
-                }
-
-                pom.project(projectPom)
-            }
-        }
-    }
-
     task sourcesJar(type: Jar) {
-        dependsOn generateCodecs
         archiveClassifier.set 'sources'
         from sourceSets.main.allSource
         from sourceSets.generated.allSource
     }
 
-    task javadocJar(type: Jar, dependsOn: javadoc) {
-        archiveClassifier.set 'javadoc'
-        from javadoc.destinationDir
+    javadoc {
+        source += sourceSets.generated.allJava
     }
 
-    artifacts {
-        archives sourcesJar
-        archives javadocJar
+    java {
+        withSourcesJar()
+        withJavadocJar()
+    }
+
+    publishing {
+        publications {
+            aeronArchive(MavenPublication) {
+                from components.java
+                pom(projectPom)
+            }
+        }
+
+        repositories {
+            maven {
+                url = !isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl
+                credentials {
+                    username = ossrhUsername
+                    password = ossrhPassword
+                }
+            }
+        }
+    }
+
+    signing {
+        sign publishing.publications.aeronArchive
     }
 }
 
 project(':aeron-cluster') {
+    apply plugin: 'maven-publish'
+    apply plugin: 'signing'
     apply plugin: 'biz.aQute.bnd.builder'
 
     configurations{
@@ -580,12 +492,6 @@ project(':aeron-cluster') {
 
     compileGeneratedJava {
         dependsOn 'generateCodecs'
-        if (JavaVersion.current().ordinal() >= JavaVersion.VERSION_1_9.ordinal()) {
-            options.compilerArgs.addAll(['--add-exports', 'java.base/java.lang.reflect=ALL-UNNAMED'])
-            options.compilerArgs.addAll(['--add-exports', 'jdk.unsupported/sun.misc=ALL-UNNAMED'])
-        }
-        options.encoding = 'UTF-8'
-        options.deprecation = true
         classpath += configurations.codecGeneration
     }
 
@@ -608,9 +514,7 @@ project(':aeron-cluster') {
     }
 
     jar {
-        from("${buildDir}/classes/java/generated") {
-            include '**/*.class'
-        }
+        from sourceSets.generated.output
 
         bnd """
             Automatic-Module-Name:  io.aeron.cluster
@@ -628,54 +532,64 @@ project(':aeron-cluster') {
         """
     }
 
-    uploadArchives {
-        repositories {
-            mavenDeployer {
-                beforeDeployment {
-                    MavenDeployment deployment -> signing.signPom(deployment)
-                }
-
-                repository(url: releaseUrl) {
-                    authentication(userName: ossrhUsername, password: ossrhPassword)
-                }
-
-                snapshotRepository(url: snapshotUrl) {
-                    authentication(userName: ossrhUsername, password: ossrhPassword)
-                }
-
-                pom.project(projectPom)
-            }
-        }
-    }
-
     task sourcesJar(type: Jar) {
-        dependsOn generateCodecs
         archiveClassifier.set 'sources'
         from sourceSets.main.allSource
         from sourceSets.generated.allSource
     }
 
-    task javadocJar(type: Jar, dependsOn: javadoc) {
-        archiveClassifier.set 'javadoc'
-        from javadoc.destinationDir
+    javadoc {
+        source += sourceSets.generated.allJava
     }
 
-    artifacts {
-        archives sourcesJar
-        archives javadocJar
+    java {
+        withSourcesJar()
+        withJavadocJar()
+    }
+
+    publishing {
+        publications {
+            aeronCluster(MavenPublication) {
+                from components.java
+                pom(projectPom)
+            }
+        }
+
+        repositories {
+            maven {
+                url = !isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl
+                credentials {
+                    username = ossrhUsername
+                    password = ossrhPassword
+                }
+            }
+        }
+    }
+
+    signing {
+        sign publishing.publications.aeronCluster
     }
 }
 
 project(':aeron-agent') {
+    apply plugin: 'maven-publish'
+    apply plugin: 'signing'
     apply plugin: 'com.github.johnrengelman.shadow'
 
+    def aeronClientProject = project(':aeron-client')
+    def aeronDriverProject = project(':aeron-driver')
+    def aeronArchiveProject = project(':aeron-archive')
+    def aeronClusterProject = project(':aeron-cluster')
+
     dependencies {
-        implementation project(':aeron-cluster')
+        implementation aeronClusterProject
         implementation "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
         testImplementation project(':aeron-test-support')
     }
 
-    jar {
+    shadowJar {
+        archiveClassifier.set('')
+
         manifest.attributes(
             'Implementation-Title': 'Aeron',
             'Implementation-Version': "${aeronVersion}",
@@ -688,83 +602,26 @@ project(':aeron-agent') {
         )
     }
 
-    shadowJar {
-        exclude 'io/aeron/archive'
-        exclude 'io/aeron/cluster'
-        dependencies {
-            exclude(dependency('org.agrona:agrona'))
-            exclude(project(':aeron-client'))
-            exclude(project(':aeron-driver'))
-            exclude(project(':aeron-archive'))
-            exclude(project(':aeron-cluster'))
-        }
-        manifest.attributes(
-            'Implementation-Title': 'Aeron',
-            'Implementation-Version': "${aeronVersion}",
-            'Implementation-Vendor': 'Real Logic Limited',
-            "Premain-Class": "io.aeron.agent.EventLogAgent",
-            "Agent-Class": "io.aeron.agent.EventLogAgent",
-            "Can-Redefine-Classes": "true",
-            "Can-Retransform-Classes": "true",
-            'Automatic-Module-Name': 'io.aeron.agent.all'
-        )
-    }
-
     jar.finalizedBy shadowJar
-
-    uploadArchives {
-        repositories {
-            mavenDeployer {
-                pom.whenConfigured {
-                    p -> p.dependencies = []
-                }
-
-                beforeDeployment {
-                    MavenDeployment deployment -> signing.signPom(deployment)
-                }
-
-                repository(url: releaseUrl) {
-                    authentication(userName: ossrhUsername, password: ossrhPassword)
-                }
-
-                snapshotRepository(url: snapshotUrl) {
-                    authentication(userName: ossrhUsername, password: ossrhPassword)
-                }
-
-                pom.project(projectPom)
-            }
-        }
-    }
-
-    uploadShadow {
-        repositories {
-            mavenDeployer {
-                pom.whenConfigured {
-                    p -> p.dependencies = []
-                }
-
-                beforeDeployment {
-                    MavenDeployment deployment -> signing.signPom(deployment)
-                }
-
-                repository(url: releaseUrl) {
-                    authentication(userName: ossrhUsername, password: ossrhPassword)
-                }
-
-                snapshotRepository(url: snapshotUrl) {
-                    authentication(userName: ossrhUsername, password: ossrhPassword)
-                }
-
-                pom.project(projectPom)
-            }
-        }
-
-        mustRunAfter 'uploadArchives'
-    }
 
     task sourcesJar(type: Jar) {
         archiveClassifier.set 'sources'
-        from sourceSets.main.allSource
+        from files(
+                aeronClientProject.sourceSets.main.allSource,
+                aeronDriverProject.sourceSets.main.allSource,
+                aeronArchiveProject.sourceSets.main.allSource,
+                aeronArchiveProject.sourceSets.generated.allSource,
+                aeronClusterProject.sourceSets.main.allSource,
+                aeronClusterProject.sourceSets.generated.allSource)
+    }
+
+    javadoc {
+        source += aeronClientProject.sourceSets.main.allJava
+        source += aeronDriverProject.sourceSets.main.allJava
+        source += aeronArchiveProject.sourceSets.main.allJava
+        source += aeronArchiveProject.sourceSets.generated.allJava
+        source += aeronClusterProject.sourceSets.main.allJava
+        source += aeronClusterProject.sourceSets.generated.allJava
     }
 
     task javadocJar(type: Jar, dependsOn: javadoc) {
@@ -772,69 +629,66 @@ project(':aeron-agent') {
         from javadoc.destinationDir
     }
 
-    artifacts {
-        archives sourcesJar
-        archives javadocJar
-    }
-
-    install {
-        repositories.mavenInstaller.pom.whenConfigured {
-            p -> p.dependencies = []
+    publishing {
+        publications {
+            aeronAgent(MavenPublication) {
+                artifact shadowJar
+                artifact sourcesJar
+                artifact javadocJar
+                pom(projectPom)
+            }
+        }
+        repositories {
+            maven {
+                url = !isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl
+                credentials {
+                    username = ossrhUsername
+                    password = ossrhPassword
+                }
+            }
         }
     }
 
     signing {
-        required { isReleasedVersion && gradle.taskGraph.hasTask("uploadArchives") }
-        sign configurations.shadow
+        sign publishing.publications.aeronAgent
     }
 }
 
 project(':aeron-samples') {
-    apply plugin: 'com.github.johnrengelman.shadow'
+    apply plugin: 'maven-publish'
+    apply plugin: 'signing'
 
     dependencies {
         api project(':aeron-archive')
         implementation "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
     }
 
-    uploadArchives {
+    java {
+        withSourcesJar()
+        withJavadocJar()
+    }
+
+    publishing {
+        publications {
+            aeronSamples(MavenPublication) {
+                from components.java
+                pom(projectPom)
+            }
+        }
+
         repositories {
-            mavenDeployer {
-                beforeDeployment {
-                    MavenDeployment deployment -> signing.signPom(deployment)
+            maven {
+                url = !isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl
+                credentials {
+                    username = ossrhUsername
+                    password = ossrhPassword
                 }
-
-                repository(url: releaseUrl) {
-                    authentication(userName: ossrhUsername, password: ossrhPassword)
-                }
-
-                snapshotRepository(url: snapshotUrl) {
-                    authentication(userName: ossrhUsername, password: ossrhPassword)
-                }
-
-                pom.project(projectPom)
             }
         }
     }
 
-    task sourcesJar(type: Jar) {
-        archiveClassifier.set 'sources'
-        from sourceSets.main.allSource
-    }
-
-    task javadocJar(type: Jar, dependsOn: javadoc) {
-        archiveClassifier.set 'javadoc'
-        from javadoc.destinationDir
-    }
-
-    artifacts {
-        archives sourcesJar
-        archives javadocJar
-    }
-
     signing {
-        required { isReleasedVersion && gradle.taskGraph.hasTask("uploadArchives") }
-        sign configurations.shadow
+        sign publishing.publications.aeronSamples
     }
 }
 
@@ -850,21 +704,6 @@ project(':aeron-system-tests') {
         systemProperties('java.net.preferIPv4Stack': 'true')
         systemProperties('aeron.test.system.aeronmd.path': System.getProperty('aeron.test.system.aeronmd.path'))
     }
-
-    task sourcesJar(type: Jar) {
-        archiveClassifier.set 'sources'
-        from sourceSets.test.allSource
-    }
-
-    task javadocJar(type: Jar, dependsOn: javadoc) {
-        archiveClassifier.set 'javadoc'
-        from javadoc.destinationDir
-    }
-
-    artifacts {
-        archives sourcesJar
-        archives javadocJar
-    }
 }
 
 project(':aeron-test-support') {
@@ -876,6 +715,8 @@ project(':aeron-test-support') {
 }
 
 project(':aeron-all') {
+    apply plugin: 'maven-publish'
+    apply plugin: 'signing'
     apply plugin: 'com.github.johnrengelman.shadow'
 
     def aeronClientProject = project(':aeron-client')
@@ -890,15 +731,17 @@ project(':aeron-all') {
         implementation "org.hdrhistogram:HdrHistogram:${hdrHistogramVersion}"
     }
 
-    javadoc {
-        source += aeronClientProject.sourceSets.main.allJava
-        source += aeronDriverProject.sourceSets.main.allJava
-        source += aeronArchiveProject.sourceSets.main.allJava
-        source += aeronArchiveProject.sourceSets.generated.allJava
-        source += aeronClusterProject.sourceSets.main.allJava
-        source += aeronClusterProject.sourceSets.generated.allJava
-        source += aeronSamplesProject.sourceSets.main.allJava
+    shadowJar {
+        archiveClassifier.set ''
+        manifest.attributes(
+                'Implementation-Title': 'Aeron',
+                'Implementation-Version': "${aeronVersion}",
+                'Implementation-Vendor': 'Real Logic Limited',
+                'Automatic-Module-Name': 'io.aeron.all')
+        relocate 'org.HdrHistogram', 'io.aeron.shadow.org.HdrHistogram'
     }
+
+    jar.finalizedBy shadowJar
 
     task sourcesJar(type: Jar) {
         archiveClassifier.set 'sources'
@@ -912,105 +755,49 @@ project(':aeron-all') {
             aeronSamplesProject.sourceSets.main.allSource)
     }
 
+    javadoc {
+        source += aeronClientProject.sourceSets.main.allJava
+        source += aeronDriverProject.sourceSets.main.allJava
+        source += aeronArchiveProject.sourceSets.main.allJava
+        source += aeronArchiveProject.sourceSets.generated.allJava
+        source += aeronClusterProject.sourceSets.main.allJava
+        source += aeronClusterProject.sourceSets.generated.allJava
+        source += aeronSamplesProject.sourceSets.main.allJava
+    }
+
     task javadocJar(type: Jar, dependsOn: javadoc) {
         archiveClassifier.set 'javadoc'
         from javadoc.destinationDir
     }
 
-    shadowJar {
-        archiveClassifier.set ''
-        manifest.attributes(
-            'Implementation-Title': 'Aeron',
-            'Implementation-Version': "${aeronVersion}",
-            'Implementation-Vendor': 'Real Logic Limited',
-            'Automatic-Module-Name': 'io.aeron.all')
-        relocate 'org.HdrHistogram', 'io.aeron.shadow.org.HdrHistogram'
-    }
-
-    jar.finalizedBy shadowJar
-
-    artifacts {
-        archives sourcesJar
-        archives javadocJar
-    }
-
-    uploadArchives {
-        repositories {
-            mavenDeployer {
-                pom.whenConfigured {
-                    p -> p.dependencies = []
-                }
-
-                beforeDeployment {
-                    MavenDeployment deployment -> signing.signPom(deployment)
-                }
-
-                repository(url: releaseUrl) {
-                    authentication(userName: ossrhUsername, password: ossrhPassword)
-                }
-
-                snapshotRepository(url: snapshotUrl) {
-                    authentication(userName: ossrhUsername, password: ossrhPassword)
-                }
-
-                pom.project(projectPom)
+    publishing {
+        publications {
+            aeronAll(MavenPublication) {
+                artifact shadowJar
+                artifact sourcesJar
+                artifact javadocJar
+                pom(projectPom)
             }
         }
-    }
-
-    uploadShadow {
         repositories {
-            mavenDeployer {
-                pom.whenConfigured {
-                    p -> p.dependencies = []
+            maven {
+                url = !isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl
+                credentials {
+                    username = ossrhUsername
+                    password = ossrhPassword
                 }
-
-                beforeDeployment {
-                    MavenDeployment deployment -> signing.signPom(deployment)
-                }
-
-                repository(url: releaseUrl) {
-                    authentication(userName: ossrhUsername, password: ossrhPassword)
-                }
-
-                snapshotRepository(url: snapshotUrl) {
-                    authentication(userName: ossrhUsername, password: ossrhPassword)
-                }
-
-                pom.project(projectPom)
             }
-        }
-
-        mustRunAfter 'uploadArchives'
-    }
-
-    install {
-        repositories.mavenInstaller.pom.whenConfigured {
-            p -> p.dependencies = []
         }
     }
 
     signing {
-        required { isReleasedVersion && gradle.taskGraph.hasTask("uploadArchives") }
-        sign configurations.shadow
+        sign publishing.publications.aeronAll
     }
-}
-
-task uploadToMavenCentral {
-    dependsOn 'aeron-client:uploadArchives',
-        'aeron-driver:uploadArchives',
-        'aeron-samples:uploadArchives',
-        'aeron-archive:uploadArchives',
-        'aeron-all:uploadArchives',
-        'aeron-all:uploadShadow',
-        'aeron-agent:uploadArchives',
-        'aeron-agent:uploadShadow',
-        'aeron-cluster:uploadArchives'
 }
 
 task testReport(type: TestReport) {
     destinationDir = file("$buildDir/reports/allTests")
-    // Include the results from the `test` task in all subprojects
+    // Include the results from the `test` task in all sub-projects
     reportOn subprojects*.test
 }
 

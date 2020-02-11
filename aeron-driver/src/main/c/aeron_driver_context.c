@@ -1997,6 +1997,7 @@ int aeron_driver_context_set_sm_receiver_tag(aeron_driver_context_t *context, bo
 
     context->sm_receiver_tag.is_present = is_present;
     context->sm_receiver_tag.value = value;
+    return 0;
 }
 
 bool aeron_driver_context_get_sm_receiver_tag_is_present(aeron_driver_context_t *context)

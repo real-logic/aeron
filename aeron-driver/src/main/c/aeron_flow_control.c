@@ -129,7 +129,8 @@ aeron_flow_control_strategy_supplier_func_table_entry_t aeron_flow_control_strat
 {
     { AERON_UNICAST_MAX_FLOW_CONTROL_STRATEGY_NAME, aeron_unicast_flow_control_strategy_supplier },
     { AERON_MULTICAST_MAX_FLOW_CONTROL_STRATEGY_NAME, aeron_max_multicast_flow_control_strategy_supplier },
-    { AERON_MULTICAST_MIN_FLOW_CONTROL_STRATEGY_NAME, aeron_min_flow_control_strategy_supplier }
+    { AERON_MULTICAST_MIN_FLOW_CONTROL_STRATEGY_NAME, aeron_min_flow_control_strategy_supplier },
+    { AERON_MULTICAST_TAGGED_FLOW_CONTROL_STRATEGY_NAME, aeron_tagged_flow_control_strategy_supplier }
 };
 
 aeron_flow_control_strategy_supplier_func_t aeron_flow_control_strategy_supplier_by_name(const char *name)
@@ -240,8 +241,8 @@ int aeron_flow_control_parse_tagged_options(
     flow_control_options->timeout_ns.value = 0;
     flow_control_options->receiver_tag.is_present = false;
     flow_control_options->receiver_tag.value = -1;
-    flow_control_options->group_count.is_present = false;
-    flow_control_options->group_count.value = -1;
+    flow_control_options->required_group_size.is_present = false;
+    flow_control_options->required_group_size.value = -1;
 
     char number_buffer[AERON_FLOW_CONTROL_NUMBER_BUFFER_LEN];
 
@@ -305,14 +306,14 @@ int aeron_flow_control_parse_tagged_options(
                 errno = 0;
 
                 const long long receiver_tag = strtoll(number_buffer, &end_ptr, 10);
-                const bool has_group_count = '/' == *end_ptr;
+                const bool has_group_size = '/' == *end_ptr;
 
-                if (0 == errno && number_buffer != end_ptr && ('\0' == *end_ptr || has_group_count))
+                if (0 == errno && number_buffer != end_ptr && ('\0' == *end_ptr || has_group_size))
                 {
                     flow_control_options->receiver_tag.is_present = true;
                     flow_control_options->receiver_tag.value = (int64_t)receiver_tag;
                 }
-                else if (number_buffer != end_ptr && !has_group_count) // Allow empty values if we have a group count
+                else if (number_buffer != end_ptr && !has_group_size) // Allow empty values if we have a group count
                 {
                     aeron_set_err(
                         -EINVAL,
@@ -323,21 +324,21 @@ int aeron_flow_control_parse_tagged_options(
                     return -EINVAL;
                 }
 
-                if (has_group_count)
+                if (has_group_size)
                 {
-                    const char *count_ptr = end_ptr + 1;
+                    const char *group_size_ptr = end_ptr + 1;
                     end_ptr = "";
                     errno = 0;
 
-                    const long group_count = strtol(count_ptr, &end_ptr, 10);
+                    const long group_size = strtol(group_size_ptr, &end_ptr, 10);
 
                     if (0 == errno &&
                         '\0' == *end_ptr &&
-                        count_ptr != end_ptr &&
-                        0 <= group_count && group_count <= INT32_MAX)
+                        group_size_ptr != end_ptr &&
+                        0 <= group_size && group_size <= INT32_MAX)
                     {
-                        flow_control_options->group_count.is_present = true;
-                        flow_control_options->group_count.value = (int32_t)group_count;
+                        flow_control_options->required_group_size.is_present = true;
+                        flow_control_options->required_group_size.value = (int32_t)group_size;
                     }
                     else
                     {

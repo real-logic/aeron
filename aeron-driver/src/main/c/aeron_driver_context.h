@@ -116,12 +116,21 @@ typedef struct aeron_driver_context_stct
     int32_t publication_reserved_session_id_low;            /* aeron.publication.reserved.session.id.low = -1 */
     int32_t publication_reserved_session_id_high;           /* aeron.publication.reserved.session.id.high = 10000 */
     uint8_t multicast_ttl;                                  /* aeron.socket.multicast.ttl = 0 */
-    struct                                                  /* aeron.tagged.multicast.flow.control.rtag = <unset> */
+
+    struct                                                  /* aeron.sm.receiver.tag = <unset> */
     {
-        bool is_present;                                    /* default: false */
-        int64_t value;                                      /* default: -1 */
+        bool is_present;
+        int64_t value;
     }
-    receiver_tag;
+    sm_receiver_tag;
+    struct
+    {
+        int64_t receiver_tag;                               /* aeron.flow.control.group.rtag = -1 */
+        int32_t required_size;                              /* aeron.flow.control.group.required.size = 0 */
+    }
+    flow_control_group;
+    uint64_t min_flow_control_timeout_ns;                   /* aeron.min.multicast.flow.control.receiver.timeout */
+    uint64_t tagged_flow_control_timeout_ns;                /* aeron.tagged.multicast.flow.control.receiver.timeout */
 
     aeron_mapped_file_t cnc_map;
     aeron_mapped_file_t loss_report;

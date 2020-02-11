@@ -264,6 +264,7 @@ typedef int (*aeron_flow_control_strategy_supplier_func_t)(
 
 #define AERON_MULTICAST_MIN_FLOW_CONTROL_STRATEGY_NAME "multicast_min"
 #define AERON_MULTICAST_MAX_FLOW_CONTROL_STRATEGY_NAME "multicast_max"
+#define AERON_MULTICAST_TAGGED_FLOW_CONTROL_STRATEGY_NAME "multicast_tagged"
 #define AERON_UNICAST_MAX_FLOW_CONTROL_STRATEGY_NAME "unicast_max"
 
 /**
@@ -476,15 +477,47 @@ uint64_t aeron_driver_context_get_counters_free_to_reuse_timeout_ns(aeron_driver
  */
 #define AERON_MIN_MULTICAST_FLOW_CONTROL_RECEIVER_TIMEOUT_ENV_VAR "AERON_MIN_MULTICAST_FLOW_CONTROL_RECEIVER_TIMEOUT"
 
-/**
- * Timeout for a preferred receiver to be tracked.
- */
-#define AERON_TAGGED_MULTICAST_FLOW_CONTROL_RECEIVER_TIMEOUT_ENV_VAR "AERON_TAGGED_MULTICAST_FLOW_CONTROL_RECEIVER_TIMEOUT"
+int aeron_driver_context_set_min_multicast_flow_control_receiver_timeout_ns(
+    aeron_driver_context_t *context,
+    uint64_t value);
+
+uint64_t aeron_driver_context_get__min_multicast_flow_control_receiver_timeout_ns(aeron_driver_context_t *context);
 
 /**
  * Timeout for a tagged receiver to be tracked.
  */
-#define AERON_TAGGED_MULTICAST_FLOW_CONTROL_RTAG_ENV_VAR "AERON_TAGGED_MULTICAST_FLOW_CONTROL_RECEIVER_TIMEOUT"
+#define AERON_TAGGED_MULTICAST_FLOW_CONTROL_RECEIVER_TIMEOUT_ENV_VAR "AERON_TAGGED_MULTICAST_FLOW_CONTROL_RECEIVER_TIMEOUT"
+
+int aeron_driver_context_set_tagged_multicast_flow_control_receiver_timeout_ns(
+    aeron_driver_context_t *context,
+    uint64_t value);
+
+uint64_t aeron_driver_context_get__tagged_multicast_flow_control_receiver_timeout_ns(aeron_driver_context_t *context);
+
+/**
+ * Default receiver tag for publishers to group endpoints by using tagged flow control.
+ */
+#define AERON_FLOW_CONTROL_GROUP_RECEIVER_TAG_ENV_VAR "AERON_FLOW_CONTROL_GROUP_RTAG"
+
+int aeron_driver_context_set_flow_control_group_receiver_tag(aeron_driver_context_t *context, int64_t value);
+int64_t aeron_driver_context_get_flow_control_group_receiver_tag(aeron_driver_context_t *context);
+
+/**
+ * Default required group size to use in tagged multicast flow control.
+ */
+#define AERON_FLOW_CONTROL_GROUP_REQUIRED_SIZE_ENV_VAR "AERON_FLOW_CONTROL_GROUP_REQUIRED_SIZE"
+
+int aeron_driver_context_set_flow_control_group_required_size(aeron_driver_context_t *context, int32_t value);
+int32_t aeron_driver_context_get_flow_control_group_required_size(aeron_driver_context_t *context);
+
+/**
+ * Default receiver tag to be sent on status messages from channel to handle tagged flow control.
+ */
+#define AERON_SM_RECEIVER_TAG_ENV_VAR "AERON_SM_RTAG"
+
+int aeron_driver_context_set_sm_receiver_tag(aeron_driver_context_t *context, bool is_present, int64_t value);
+bool aeron_driver_context_get_sm_receiver_tag_is_present(aeron_driver_context_t *context);
+int64_t aeron_driver_context_get_sm_receiver_tag_value(aeron_driver_context_t *context);
 
 /**
  * Function name to call for termination validation.

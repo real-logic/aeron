@@ -340,7 +340,8 @@ class ReplaySession implements Session, AutoCloseable
             if (frameLength <= 0)
             {
                 throw new IllegalStateException(
-                    "unexpected end of recording at position=" + replayPosition + " batchOffset=" + batchOffset);
+                    "unexpected end of recording at position=" + replayPosition +
+                    " batchOffset=" + batchOffset + " bytesRead=" + bytesRead);
             }
 
             final int frameType = frameType(replayBuffer, batchOffset);

@@ -159,7 +159,6 @@ public class ReplayMergeTest
                     final String actual = buffer.getStringWithoutLengthAscii(offset, length);
 
                     assertEquals(expected, actual);
-
                     received.incrementAndGet();
                 });
 
@@ -200,10 +199,30 @@ public class ReplayMergeTest
                         }
                     }
 
-                    while (received.get() < totalMessageCount || !replayMerge.isMerged())
+                    while (!replayMerge.isMerged())
                     {
                         if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
                         {
+                            if (replayMerge.hasFailed())
+                            {
+                                fail("failed to merge");
+                            }
+
+                            Thread.yield();
+                            Tests.checkInterruptedStatus();
+                        }
+                    }
+
+                    final Image image = replayMerge.image();
+                    while (received.get() < totalMessageCount)
+                    {
+                        if (0 == image.poll(fragmentHandler, FRAGMENT_LIMIT))
+                        {
+                            if (image.isClosed())
+                            {
+                                fail("image closed unexpectedly");
+                            }
+
                             Thread.yield();
                             Tests.checkInterruptedStatus();
                         }

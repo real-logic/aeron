@@ -1196,7 +1196,7 @@ abstract class ArchiveConductor
             {
                 byteBuffer.clear().limit(Math.min(termLength - termOffset, MAX_BLOCK_LENGTH));
                 final int bytesRead = fileChannel.read(byteBuffer, termOffset);
-                if (-1 == bytesRead)
+                if (bytesRead <= 0)
                 {
                     final String msg = "read failed on " + file;
                     controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);

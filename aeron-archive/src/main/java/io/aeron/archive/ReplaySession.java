@@ -443,7 +443,13 @@ class ReplaySession implements Session, AutoCloseable
             int position = termBaseSegmentOffset + termOffset;
             do
             {
-                position += fileChannel.read(byteBuffer, position);
+                final int bytesRead = fileChannel.read(byteBuffer, position);
+                if (bytesRead <= 0)
+                {
+                    break;
+                }
+
+                position += bytesRead;
             }
             while (byteBuffer.remaining() > 0);
 

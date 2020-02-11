@@ -15,12 +15,9 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.Aeron;
-import io.aeron.ChannelUri;
-import io.aeron.ExclusivePublication;
-import io.aeron.Publication;
+import io.aeron.*;
 import io.aeron.cluster.client.ClusterException;
-import org.agrona.CloseHelper;
+import org.agrona.ErrorHandler;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.Int2ObjectHashMap;
 
@@ -483,10 +480,12 @@ public final class ClusterMember
 
     /**
      * Close member status publication and null out reference.
+     *
+     * @param errorHandler to capture errors during close.
      */
-    public void closePublication()
+    public void closePublication(final ErrorHandler errorHandler)
     {
-        CloseHelper.close(publication);
+        AeronCloseHelper.close(errorHandler, publication);
         publication = null;
     }
 
@@ -621,13 +620,14 @@ public final class ClusterMember
     /**
      * Close the publications associated with members of the cluster.
      *
+     * @param errorHandler   to capture errors during close.
      * @param clusterMembers to close the publications for.
      */
-    public static void closeMemberPublications(final ClusterMember[] clusterMembers)
+    public static void closeMemberPublications(final ErrorHandler errorHandler, final ClusterMember[] clusterMembers)
     {
         for (final ClusterMember member : clusterMembers)
         {
-            CloseHelper.close(member.publication);
+            AeronCloseHelper.close(errorHandler, member.publication);
         }
     }
 
@@ -1151,7 +1151,7 @@ public final class ClusterMember
      * Create a string of member facing endpoints by id in format {@code id=endpoint,id=endpoint, ...}.
      *
      * @param members for which the endpoints string will be generated.
-     * @return  a string of member facing endpoints by id.
+     * @return a string of member facing endpoints by id.
      */
     public static String clientFacingEndpoints(final ClusterMember[] members)
     {

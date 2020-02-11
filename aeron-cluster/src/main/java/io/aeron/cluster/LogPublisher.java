@@ -15,16 +15,13 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.ExclusivePublication;
-import io.aeron.Publication;
+import io.aeron.*;
 import io.aeron.cluster.client.ClusterClock;
 import io.aeron.cluster.codecs.*;
 import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.protocol.DataHeaderFlyweight;
-import org.agrona.BitUtil;
-import org.agrona.DirectBuffer;
-import org.agrona.ExpandableArrayBuffer;
+import org.agrona.*;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.util.concurrent.TimeUnit;
@@ -62,12 +59,12 @@ class LogPublisher
         this.publication = publication;
     }
 
-    void disconnect()
+    void disconnect(final ErrorHandler errorHandler)
     {
         if (null != publication)
         {
-            publication.close();
-            publication = null;
+            AeronCloseHelper.close(errorHandler, publication);
+            this.publication = null;
         }
     }
 

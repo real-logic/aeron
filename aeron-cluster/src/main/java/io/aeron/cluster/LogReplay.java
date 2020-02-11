@@ -17,7 +17,6 @@ package io.aeron.cluster;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
-import org.agrona.concurrent.CountedErrorHandler;
 
 class LogReplay implements AutoCloseable
 {
@@ -37,7 +36,6 @@ class LogReplay implements AutoCloseable
     private final AeronArchive archive;
     private final ConsensusModuleAgent consensusModuleAgent;
     private final String channel;
-    private final CountedErrorHandler countedErrorHandler;
 
     private int replaySessionId = Aeron.NULL_VALUE;
     private State state = State.INIT;
@@ -62,7 +60,6 @@ class LogReplay implements AutoCloseable
         this.logSessionId = logSessionId;
         this.consensusModuleAgent = consensusModuleAgent;
         this.replayStreamId = ctx.replayStreamId();
-        countedErrorHandler = ctx.countedErrorHandler();
 
         final Aeron aeron = ctx.aeron();
 
@@ -75,7 +72,10 @@ class LogReplay implements AutoCloseable
 
     public void close()
     {
-        AeronCloseHelper.close(countedErrorHandler, logSubscription);
+        if (null != logSubscription)
+        {
+            logSubscription.close();
+        }
     }
 
     int doWork(@SuppressWarnings("unused") final long nowMs)
@@ -99,7 +99,7 @@ class LogReplay implements AutoCloseable
                 final Image image = logSubscription.imageBySessionId(replaySessionId);
                 if (null != image)
                 {
-                    logAdapter = new LogAdapter(image, consensusModuleAgent, countedErrorHandler);
+                    logAdapter = new LogAdapter(image, consensusModuleAgent);
                     workCount = 1;
                 }
             }

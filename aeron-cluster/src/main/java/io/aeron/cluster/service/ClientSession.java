@@ -15,14 +15,11 @@
  */
 package io.aeron.cluster.service;
 
-import io.aeron.Aeron;
-import io.aeron.DirectBufferVector;
-import io.aeron.Publication;
+import io.aeron.*;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.BufferClaim;
-import org.agrona.CloseHelper;
-import org.agrona.DirectBuffer;
+import org.agrona.*;
 
 /**
  * Session representing a connected client to the cluster.
@@ -212,9 +209,9 @@ public class ClientSession
         isClosing = false;
     }
 
-    void disconnect()
+    void disconnect(final ErrorHandler errorHandler)
     {
-        CloseHelper.close(responsePublication);
+        AeronCloseHelper.close(errorHandler, responsePublication);
         responsePublication = null;
     }
 }

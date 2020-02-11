@@ -25,7 +25,6 @@ import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.Header;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.status.ReadableCounter;
-import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.SemanticVersion;
 import org.agrona.collections.Long2ObjectHashMap;
@@ -129,6 +128,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         {
             aeron.removeCloseHandler(abortHandler);
 
+            final CountedErrorHandler errorHandler = ctx.countedErrorHandler();
             if (isServiceActive)
             {
                 isServiceActive = false;
@@ -136,9 +136,9 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
                 {
                     service.onTerminate(this);
                 }
-                catch (final Exception ex)
+                catch (final Throwable ex)
                 {
-                    ctx.countedErrorHandler().onError(ex);
+                    errorHandler.onError(ex);
                 }
             }
 
@@ -146,12 +146,12 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             {
                 for (final ClientSession session : sessionByIdMap.values())
                 {
-                    session.disconnect();
+                    session.disconnect(errorHandler);
                 }
 
-                CloseHelper.close(logAdapter);
-                CloseHelper.close(serviceAdapter);
-                CloseHelper.close(consensusModuleProxy);
+                AeronCloseHelper.close(errorHandler, logAdapter);
+                AeronCloseHelper.close(errorHandler, serviceAdapter);
+                AeronCloseHelper.close(errorHandler, consensusModuleProxy);
             }
         }
 
@@ -176,7 +176,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
                 if (logAdapter.isDone())
                 {
                     checkPosition(logAdapter.position(), activeLogEvent);
-                    logAdapter.close();
+                    AeronCloseHelper.close(ctx.countedErrorHandler(), logAdapter);
                     logAdapter = null;
                 }
             }
@@ -333,7 +333,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
                 throw new ClusterException("existing position " + existingPosition + " new position " + logPosition);
             }
 
-            logAdapter.close();
+            AeronCloseHelper.close(ctx.countedErrorHandler(), logAdapter);
             logAdapter = null;
         }
 
@@ -423,7 +423,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
                 " leadershipTermId=" + leadershipTermId + " logPosition=" + logPosition);
         }
 
-        session.disconnect();
+        session.disconnect(ctx.countedErrorHandler());
         service.onSessionClose(session, timestamp, closeReason);
     }
 
@@ -723,7 +723,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             }
             else
             {
-                session.disconnect();
+                session.disconnect(ctx.countedErrorHandler());
             }
         }
     }

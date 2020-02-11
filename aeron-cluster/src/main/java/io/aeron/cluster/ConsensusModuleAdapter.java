@@ -15,7 +15,6 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.AeronCloseHelper;
 import io.aeron.ControlledFragmentAssembler;
 import io.aeron.Subscription;
 import io.aeron.cluster.client.AeronCluster;
@@ -24,14 +23,12 @@ import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.CountedErrorHandler;
 
 final class ConsensusModuleAdapter implements AutoCloseable
 {
     private static final int FRAGMENT_LIMIT = 10;
     private final Subscription subscription;
     private final ConsensusModuleAgent consensusModuleAgent;
-    private final CountedErrorHandler countedErrorHandler;
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
     private final SessionMessageHeaderDecoder sessionMessageHeaderDecoder = new SessionMessageHeaderDecoder();
     private final ScheduleTimerDecoder scheduleTimerDecoder = new ScheduleTimerDecoder();
@@ -42,19 +39,15 @@ final class ConsensusModuleAdapter implements AutoCloseable
     private final RemoveMemberDecoder removeMemberDecoder = new RemoveMemberDecoder();
     private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this::onFragment);
 
-    ConsensusModuleAdapter(
-        final Subscription subscription,
-        final ConsensusModuleAgent consensusModuleAgent,
-        final CountedErrorHandler countedErrorHandler)
+    ConsensusModuleAdapter(final Subscription subscription, final ConsensusModuleAgent consensusModuleAgent)
     {
         this.subscription = subscription;
         this.consensusModuleAgent = consensusModuleAgent;
-        this.countedErrorHandler = countedErrorHandler;
     }
 
     public void close()
     {
-        AeronCloseHelper.close(countedErrorHandler, subscription);
+        subscription.close();
     }
 
     int poll()

@@ -1411,7 +1411,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
          */
         public void close()
         {
-            final ErrorHandler errorHandler = errorHandler();
+            final ErrorHandler errorHandler = countedErrorHandler();
             AeronCloseHelper.close(errorHandler, markFile);
 
             if (ownsAeronClient)

@@ -15,20 +15,18 @@
  */
 package io.aeron.cluster;
 
-import io.aeron.Aeron;
-import io.aeron.Publication;
+import io.aeron.*;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.codecs.EventCode;
 import io.aeron.driver.exceptions.InvalidChannelException;
 import io.aeron.logbuffer.BufferClaim;
-import org.agrona.CloseHelper;
-import org.agrona.DirectBuffer;
+import org.agrona.*;
 import org.agrona.collections.ArrayUtil;
 
 import java.util.Arrays;
 
-class ClusterSession
+class ClusterSession implements AutoCloseable
 {
     static final byte[] NULL_PRINCIPAL = ArrayUtil.EMPTY_BYTE_ARRAY;
     static final int MAX_ENCODED_PRINCIPAL_LENGTH = 4 * 1024;
@@ -93,7 +91,10 @@ class ClusterSession
         final Publication responsePublication = this.responsePublication;
         this.responsePublication = null;
         state = State.CLOSED;
-        CloseHelper.close(responsePublication);
+        if (null != responsePublication)
+        {
+            responsePublication.close();
+        }
     }
 
     long id()
@@ -138,9 +139,9 @@ class ClusterSession
         }
     }
 
-    void disconnect()
+    void disconnect(final ErrorHandler errorHandler)
     {
-        CloseHelper.close(responsePublication);
+        AeronCloseHelper.close(errorHandler, responsePublication);
         responsePublication = null;
     }
 

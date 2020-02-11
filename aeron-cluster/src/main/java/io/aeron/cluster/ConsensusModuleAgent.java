@@ -34,10 +34,7 @@ import io.aeron.security.Authenticator;
 import io.aeron.status.ReadableCounter;
 import org.agrona.*;
 import org.agrona.collections.*;
-import org.agrona.concurrent.Agent;
-import org.agrona.concurrent.AgentInvoker;
-import org.agrona.concurrent.AgentTerminationException;
-import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.util.ArrayDeque;
@@ -204,16 +201,10 @@ class ConsensusModuleAgent implements Agent
 
         ClusterMember.addMemberStatusPublications(clusterMembers, thisMember, memberStatusUri, statusStreamId, aeron);
 
-        ingressAdapter = new IngressAdapter(
-            ctx.ingressFragmentLimit(),
-            this,
-            ctx.invalidRequestCounter(),
-            ctx.countedErrorHandler());
+        ingressAdapter = new IngressAdapter(ctx.ingressFragmentLimit(), this, ctx.invalidRequestCounter());
 
         consensusModuleAdapter = new ConsensusModuleAdapter(
-            aeron.addSubscription(ctx.serviceControlChannel(), ctx.consensusModuleStreamId()),
-            this,
-            ctx.countedErrorHandler());
+            aeron.addSubscription(ctx.serviceControlChannel(), ctx.consensusModuleStreamId()), this);
         serviceProxy = new ServiceProxy(aeron.addPublication(ctx.serviceControlChannel(), ctx.serviceStreamId()));
 
         authenticator = ctx.authenticatorSupplier().get();
@@ -223,19 +214,19 @@ class ConsensusModuleAgent implements Agent
     {
         if (!ctx.ownsAeronClient())
         {
+            final CountedErrorHandler errorHandler = ctx.countedErrorHandler();
             for (final ClusterSession session : sessionByIdMap.values())
             {
-                session.close();
+                AeronCloseHelper.close(errorHandler, session);
             }
 
-            CloseHelper.close(memberStatusAdapter);
-            ClusterMember.closeMemberPublications(clusterMembers);
-
-            logPublisher.disconnect();
-            CloseHelper.close(ingressAdapter);
-            CloseHelper.close(serviceProxy);
-            CloseHelper.close(consensusModuleAdapter);
-            CloseHelper.close(archive);
+            logPublisher.disconnect(errorHandler);
+            ClusterMember.closeMemberPublications(errorHandler, clusterMembers);
+            AeronCloseHelper.close(errorHandler, memberStatusAdapter);
+            AeronCloseHelper.close(errorHandler, ingressAdapter);
+            AeronCloseHelper.close(errorHandler, serviceProxy);
+            AeronCloseHelper.close(errorHandler, consensusModuleAdapter);
+            AeronCloseHelper.close(errorHandler, archive);
         }
 
         ctx.close();
@@ -758,7 +749,7 @@ class ConsensusModuleAgent implements Agent
             {
                 passiveMembers = ClusterMember.removeMember(passiveMembers, memberId);
 
-                member.closePublication();
+                member.closePublication(ctx.countedErrorHandler());
                 logPublisher.removePassiveFollower(member.logEndpoint());
 
                 clusterMemberByIdMap.remove(memberId);
@@ -925,7 +916,7 @@ class ConsensusModuleAgent implements Agent
         clearSessionsAfter(logPosition);
         for (final ClusterSession session : sessionByIdMap.values())
         {
-            session.disconnect();
+            session.disconnect(ctx.countedErrorHandler());
         }
     }
 
@@ -966,13 +957,13 @@ class ConsensusModuleAgent implements Agent
             if (session.openedLogPosition() > logPosition)
             {
                 i.remove();
-                session.close();
+                AeronCloseHelper.close(ctx.countedErrorHandler(), session);
             }
         }
 
         for (final ClusterSession session : pendingSessions)
         {
-            session.close();
+            AeronCloseHelper.close(ctx.countedErrorHandler(), session);
         }
 
         pendingSessions.clear();
@@ -1458,7 +1449,7 @@ class ConsensusModuleAgent implements Agent
             final Image image = subscription.imageBySessionId(logSessionId);
             if (null != image)
             {
-                logAdapter = new LogAdapter(image, this, ctx.countedErrorHandler());
+                logAdapter = new LogAdapter(image, this);
                 lastAppendPosition = 0;
                 createAppendPosition(logSessionId);
                 appendDynamicJoinTermAndSnapshots();
@@ -2058,7 +2049,7 @@ class ConsensusModuleAgent implements Agent
                             ClusterMember.encodeAsString(clusterMembers)))
                         {
                             ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
-                            session.close();
+                            AeronCloseHelper.close(ctx.countedErrorHandler(), session);
                         }
                     }
                 }
@@ -2080,7 +2071,7 @@ class ConsensusModuleAgent implements Agent
             else if (nowNs > (session.timeOfLastActivityNs() + sessionTimeoutNs))
             {
                 ArrayListUtil.fastUnorderedRemove(pendingSessions, i, lastIndex--);
-                session.close();
+                AeronCloseHelper.close(ctx.countedErrorHandler(), session);
                 ctx.timedOutClientCounter().incrementOrdered();
             }
         }
@@ -2102,7 +2093,7 @@ class ConsensusModuleAgent implements Agent
                 nowNs > (session.timeOfLastActivityNs() + sessionTimeoutNs))
             {
                 ArrayListUtil.fastUnorderedRemove(rejectedSessions, i, lastIndex--);
-                session.close();
+                AeronCloseHelper.close(ctx.countedErrorHandler(), session);
                 workCount++;
             }
         }
@@ -2124,7 +2115,7 @@ class ConsensusModuleAgent implements Agent
                 nowNs > (session.timeOfLastActivityNs() + sessionTimeoutNs))
             {
                 ArrayListUtil.fastUnorderedRemove(redirectSessions, i, lastIndex--);
-                session.close();
+                AeronCloseHelper.close(ctx.countedErrorHandler(), session);
                 workCount++;
             }
         }
@@ -2220,7 +2211,7 @@ class ConsensusModuleAgent implements Agent
                 else
                 {
                     i.remove();
-                    session.close();
+                    AeronCloseHelper.close(ctx.countedErrorHandler(), session);
                 }
 
                 workCount += 1;
@@ -2420,7 +2411,7 @@ class ConsensusModuleAgent implements Agent
                 clusterMemberByIdMap.remove(member.id());
                 clusterMemberByIdMap.compact();
 
-                member.closePublication();
+                member.closePublication(ctx.countedErrorHandler());
 
                 logPublisher.removePassiveFollower(member.logEndpoint());
                 pendingMemberRemovals--;
@@ -2496,7 +2487,7 @@ class ConsensusModuleAgent implements Agent
 
     private void enterElection(final long nowNs)
     {
-        ingressAdapter.close();
+        AeronCloseHelper.close(ctx.countedErrorHandler(), ingressAdapter);
 
         election = new Election(
             false,
@@ -2727,8 +2718,8 @@ class ConsensusModuleAgent implements Agent
 
     private void closeExistingLog()
     {
-        logPublisher.disconnect();
-        CloseHelper.close(logAdapter);
+        logPublisher.disconnect(ctx.countedErrorHandler());
+        AeronCloseHelper.close(ctx.countedErrorHandler(), logAdapter);
         logAdapter = null;
     }
 

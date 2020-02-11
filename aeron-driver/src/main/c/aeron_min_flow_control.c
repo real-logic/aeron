@@ -187,23 +187,6 @@ int aeron_min_flow_control_strategy_fini(aeron_flow_control_strategy_t *strategy
     return 0;
 }
 
-static AERON_INIT_ONCE min_timeout_is_initialized = AERON_INIT_ONCE_VALUE;
-
-static uint64_t aeron_min_flow_control_strategy_timeout_ns;
-
-static void initialize_aeron_min_flow_control_strategy_timeout()
-{
-    const char *timeout_str = getenv(AERON_MIN_MULTICAST_FLOW_CONTROL_RECEIVER_TIMEOUT_ENV_VAR);
-    uint64_t timeout_ns = AERON_MAX_FLOW_CONTROL_STRATEGY_RECEIVER_TIMEOUT_NS;
-
-    if (NULL != timeout_str)
-    {
-        aeron_parse_duration_ns(timeout_str, &timeout_ns);
-    }
-
-    aeron_min_flow_control_strategy_timeout_ns = timeout_ns;
-}
-
 int aeron_min_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
     aeron_driver_context_t *context,
@@ -233,8 +216,6 @@ int aeron_min_flow_control_strategy_supplier(
     _strategy->on_status_message = aeron_min_flow_control_strategy_on_sm;
     _strategy->fini = aeron_min_flow_control_strategy_fini;
 
-    (void)aeron_thread_once(&min_timeout_is_initialized, initialize_aeron_min_flow_control_strategy_timeout);
-
     aeron_min_flow_control_strategy_state_t *state = (aeron_min_flow_control_strategy_state_t *)_strategy->state;
 
     state->receivers.array = NULL;
@@ -242,7 +223,7 @@ int aeron_min_flow_control_strategy_supplier(
     state->receivers.length = 0;
 
     state->receiver_timeout_ns = options.timeout_ns.is_present ?
-        options.timeout_ns.value : aeron_min_flow_control_strategy_timeout_ns;
+        options.timeout_ns.value : context->min_flow_control_timeout_ns;
 
     *strategy = _strategy;
 
@@ -340,23 +321,6 @@ int aeron_tagged_flow_control_strategy_fini(aeron_flow_control_strategy_t *strat
     return 0;
 }
 
-static AERON_INIT_ONCE tagged_timeout_is_initialized = AERON_INIT_ONCE_VALUE;
-
-static uint64_t aeron_tagged_flow_control_strategy_timeout_ns;
-
-static void initialize_aeron_tagged_flow_control_strategy_timeout()
-{
-    const char *timeout_str = getenv(AERON_TAGGED_MULTICAST_FLOW_CONTROL_RECEIVER_TIMEOUT_ENV_VAR);
-    uint64_t timeout_ns = AERON_MAX_FLOW_CONTROL_STRATEGY_RECEIVER_TIMEOUT_NS;
-
-    if (NULL != timeout_str)
-    {
-        aeron_parse_duration_ns(timeout_str, &timeout_ns);
-    }
-
-    aeron_tagged_flow_control_strategy_timeout_ns = timeout_ns;
-}
-
 int aeron_tagged_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
     aeron_driver_context_t *context,
@@ -385,9 +349,6 @@ int aeron_tagged_flow_control_strategy_supplier(
     _strategy->on_status_message = aeron_tagged_flow_control_strategy_on_sm;
     _strategy->fini = aeron_tagged_flow_control_strategy_fini;
 
-    (void)aeron_thread_once(
-        &tagged_timeout_is_initialized, initialize_aeron_tagged_flow_control_strategy_timeout);
-
     aeron_tagged_flow_control_strategy_state_t *state =
         (aeron_tagged_flow_control_strategy_state_t *)_strategy->state;
 
@@ -402,7 +363,7 @@ int aeron_tagged_flow_control_strategy_supplier(
     state->error_log = context->error_log;
 
     state->min_flow_control_state.receiver_timeout_ns = options.timeout_ns.is_present ?
-        options.timeout_ns.value : aeron_tagged_flow_control_strategy_timeout_ns;
+        options.timeout_ns.value : context->tagged_flow_control_timeout_ns;
 
     *strategy = _strategy;
 

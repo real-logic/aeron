@@ -393,24 +393,50 @@ int aeron_uri_get_int32(aeron_uri_params_t *uri_params, const char *key, int32_t
         return 0;
     }
 
+    char *end_ptr = "";
+    errno = 0;
+    const long value = strtol(value_str, &end_ptr, 0);
+
+    if (0 != errno || '\0' != *end_ptr)
+    {
+        aeron_set_err(EINVAL, "could not parse %s as int32_t, for key %s in URI: %s", value_str, key, strerror(errno));
+        return -1;
+    }
+    else if (value < INT32_MIN || INT32_MAX < value)
+    {
+        aeron_set_err(
+            EINVAL,
+            "could not parse %s as int32_t, for key %s in URI: Numerical result out of range",
+            value_str, key);
+        return -1;
+    }
+
+    *retval = (int32_t)value;
+
+    return 1;
+}
+
+int aeron_uri_get_int64(aeron_uri_params_t *uri_params, const char *key, int64_t *retval)
+{
+    const char *value_str;
+    if ((value_str = aeron_uri_find_param_value(uri_params, key)) == NULL)
+    {
+        *retval = 0;
+        return 0;
+    }
+
     char *end_ptr;
     int64_t value;
 
     errno = 0;
     value = strtoll(value_str, &end_ptr, 0);
-    if ((0 == value && 0 != errno) || end_ptr == value_str)
+    if (0 != errno || '\0' != *end_ptr)
     {
-        aeron_set_err(EINVAL, "could not parse %s in URI", key);
+        aeron_set_err(EINVAL, "could not parse %s as int64_t, for key %s in URI: ", value_str, key, strerror(errno));
         return -1;
     }
 
-    if (value < INT32_MIN || value > INT32_MAX)
-    {
-        aeron_set_err(EINVAL, "Params %s=%" PRId64 " out of range", key, value);
-        return -1;
-    }
-
-    *retval = (int32_t) value;
+    *retval = value;
 
     return 1;
 }

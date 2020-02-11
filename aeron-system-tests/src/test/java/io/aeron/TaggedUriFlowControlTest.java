@@ -116,8 +116,6 @@ public class TaggedUriFlowControlTest
     @Test
     public void shouldSpinUpAndShutdown()
     {
-        TestMediaDriver.notSupportedOnCMediaDriverYet("Tagged multicast flow control strategy not available");
-
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             launch();
@@ -137,8 +135,6 @@ public class TaggedUriFlowControlTest
     @Test
     public void shouldTimeoutImageWhenBehindForTooLongWithMaxMulticastFlowControlStrategy()
     {
-        TestMediaDriver.notSupportedOnCMediaDriverYet("Tagged multicast flow control strategy not available");
-
         assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
@@ -211,8 +207,6 @@ public class TaggedUriFlowControlTest
     @Test
     public void shouldSlowDownWhenBehindWithMinMulticastFlowControlStrategy()
     {
-        TestMediaDriver.notSupportedOnCMediaDriverYet("Tagged multicast flow control strategy not available");
-
         assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
@@ -274,8 +268,6 @@ public class TaggedUriFlowControlTest
     @Test
     public void shouldRemoveDeadReceiverWithMinMulticastFlowControlStrategy()
     {
-        TestMediaDriver.notSupportedOnCMediaDriverYet("Tagged multicast flow control strategy not available");
-
         assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
@@ -334,8 +326,6 @@ public class TaggedUriFlowControlTest
     @Test
     public void shouldSlowToTaggedWithMulticastFlowControlStrategy()
     {
-        TestMediaDriver.notSupportedOnCMediaDriverYet("Tagged multicast flow control strategy not available");
-
         final Long rtag = 123L;
         final ChannelUriStringBuilder uriBuilder = new ChannelUriStringBuilder()
             .media("udp")
@@ -420,8 +410,6 @@ public class TaggedUriFlowControlTest
     @Test
     public void shouldRemoveDeadTaggedReceiverWithTaggedMulticastFlowControlStrategy()
     {
-        TestMediaDriver.notSupportedOnCMediaDriverYet("Tagged multicast flow control strategy not available");
-
         final Long rtag = 123L;
         final ChannelUriStringBuilder uriBuilder = new ChannelUriStringBuilder()
             .media("udp")

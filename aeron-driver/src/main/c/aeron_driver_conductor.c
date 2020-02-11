@@ -1091,16 +1091,11 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                     aeron_counter_set_ordered(snd_lmt_position.value_addr, position);
                 }
 
-                aeron_flow_control_strategy_supplier_func_t flow_control_strategy_supplier_func =
-                    udp_channel->has_explicit_control || udp_channel->is_multicast ?
-                        conductor->context->multicast_flow_control_supplier_func :
-                        conductor->context->unicast_flow_control_supplier_func;
                 aeron_flow_control_strategy_t *flow_control_strategy;
-
-                if (flow_control_strategy_supplier_func(
+                if (aeron_default_multicast_flow_control_strategy_supplier(
                     &flow_control_strategy,
-                    uri_length,
-                    uri,
+                    conductor->context,
+                    udp_channel,
                     stream_id,
                     registration_id,
                     initial_term_id,

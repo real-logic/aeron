@@ -22,6 +22,9 @@
 #include "aeronmd.h"
 
 #define AERON_MAX_FLOW_CONTROL_STRATEGY_RECEIVER_TIMEOUT_NS (2 * 1000 * 1000 * 1000L)
+#define AERON_MAX_FLOW_CONTROL_STRAEGY_NAME "max"
+#define AERON_MIN_FLOW_CONTROL_STRAEGY_NAME "min"
+#define AERON_TAGGED_FLOW_CONTROL_STRAEGY_NAME "tagged"
 
 typedef int64_t (*aeron_flow_control_strategy_on_idle_func_t)(
     void *state,
@@ -51,12 +54,37 @@ typedef struct aeron_flow_control_strategy_stct
 }
 aeron_flow_control_strategy_t;
 
+typedef struct aeron_flow_control_tagged_options_stct
+{
+    size_t strategy_name_length;
+    const char *strategy_name;
+    struct
+    {
+        bool is_present;
+        int64_t value;
+    }
+    receiver_tag;
+    struct
+    {
+        bool is_present;
+        uint64_t value;
+    }
+    timeout_ns;
+    struct
+    {
+        bool is_present;
+        int32_t value;
+    }
+    group_count;
+}
+aeron_flow_control_tagged_options_t;
+
 aeron_flow_control_strategy_supplier_func_t aeron_flow_control_strategy_supplier_load(const char *strategy_name);
 
 int aeron_max_multicast_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
-    size_t channel_length,
-    const char *channel,
+    aeron_driver_context_t *context,
+    aeron_udp_channel_t *channel,
     int32_t stream_id,
     int64_t registration_id,
     int32_t initial_term_id,
@@ -64,8 +92,8 @@ int aeron_max_multicast_flow_control_strategy_supplier(
 
 int aeron_unicast_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
-    size_t channel_length,
-    const char *channel,
+    aeron_driver_context_t *context,
+    aeron_udp_channel_t *channel,
     int32_t stream_id,
     int64_t registration_id,
     int32_t initial_term_id,
@@ -73,12 +101,30 @@ int aeron_unicast_flow_control_strategy_supplier(
 
 int aeron_min_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
-    size_t channel_length,
-    const char *channel,
+    aeron_driver_context_t *context,
+    aeron_udp_channel_t *channel,
     int32_t stream_id,
     int64_t registration_id,
     int32_t initial_term_id,
     size_t term_buffer_capacity);
+
+int aeron_tagged_flow_control_strategy_supplier(
+    aeron_flow_control_strategy_t **strategy,
+    aeron_driver_context_t *context,
+    aeron_udp_channel_t *channel,
+    int32_t stream_id,
+    int64_t registration_id,
+    int32_t initial_term_id,
+    size_t term_buffer_capacity);
+
+int aeron_default_multicast_flow_control_strategy_supplier(
+    aeron_flow_control_strategy_t **strategy,
+    aeron_driver_context_t *context,
+    aeron_udp_channel_t *channel,
+    int32_t stream_id,
+    int64_t registration_id,
+    int32_t initial_term_id,
+    size_t term_length);
 
 typedef struct aeron_flow_control_strategy_supplier_func_table_entry_stct
 {
@@ -86,5 +132,10 @@ typedef struct aeron_flow_control_strategy_supplier_func_table_entry_stct
     aeron_flow_control_strategy_supplier_func_t supplier_func;
 }
 aeron_flow_control_strategy_supplier_func_table_entry_t;
+
+int aeron_flow_control_parse_tagged_options(
+    const size_t options_length,
+    const char *options,
+    aeron_flow_control_tagged_options_t *flow_control_options);
 
 #endif //AERON_FLOW_CONTROL_H

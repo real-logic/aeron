@@ -251,10 +251,12 @@ uint64_t aeron_driver_context_get_rcv_status_message_timeout_ns(aeron_driver_con
 
 typedef struct aeron_flow_control_strategy_stct aeron_flow_control_strategy_t;
 
+typedef struct aeron_udp_channel_stct aeron_udp_channel_t;
+
 typedef int (*aeron_flow_control_strategy_supplier_func_t)(
     aeron_flow_control_strategy_t **strategy,
-    size_t channel_length,
-    const char *channel,
+    aeron_driver_context_t *context,
+    aeron_udp_channel_t *channel,
     int32_t stream_id,
     int64_t registration_id,
     int32_t initial_term_id,
@@ -473,6 +475,16 @@ uint64_t aeron_driver_context_get_counters_free_to_reuse_timeout_ns(aeron_driver
  * Timeout for a receiver to be tracked.
  */
 #define AERON_MIN_MULTICAST_FLOW_CONTROL_RECEIVER_TIMEOUT_ENV_VAR "AERON_MIN_MULTICAST_FLOW_CONTROL_RECEIVER_TIMEOUT"
+
+/**
+ * Timeout for a preferred receiver to be tracked.
+ */
+#define AERON_TAGGED_MULTICAST_FLOW_CONTROL_RECEIVER_TIMEOUT_ENV_VAR "AERON_TAGGED_MULTICAST_FLOW_CONTROL_RECEIVER_TIMEOUT"
+
+/**
+ * Timeout for a tagged receiver to be tracked.
+ */
+#define AERON_TAGGED_MULTICAST_FLOW_CONTROL_RTAG_ENV_VAR "AERON_TAGGED_MULTICAST_FLOW_CONTROL_RECEIVER_TIMEOUT"
 
 /**
  * Function name to call for termination validation.

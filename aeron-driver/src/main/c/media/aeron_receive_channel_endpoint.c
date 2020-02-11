@@ -16,6 +16,8 @@
 
 #include <stdio.h>
 #include <inttypes.h>
+#include <stdlib.h>
+#include <aeron_driver_context.h>
 #include "aeron_socket.h"
 #include "aeron_system_counters.h"
 #include "util/aeron_netutil.h"
@@ -25,6 +27,33 @@
 #include "collections/aeron_int64_to_ptr_hash_map.h"
 #include "media/aeron_receive_channel_endpoint.h"
 #include "aeron_driver_receiver.h"
+#include "aeron_receive_channel_endpoint.h"
+
+int aeron_receive_channel_endpoint_set_receiver_tag(
+    aeron_receive_channel_endpoint_t *endpoint,
+    aeron_udp_channel_t *channel,
+    aeron_driver_context_t *context)
+{
+    int64_t receiver_tag = 0;
+    int rc = aeron_uri_get_int64(&channel->uri.params.udp.additional_params, AERON_URI_RTAG_KEY, &receiver_tag);
+    if (rc < 0)
+    {
+        return -1;
+    }
+
+    if (0 == rc)
+    {
+        endpoint->receiver_tag.is_present = context->receiver_tag.is_present;
+        endpoint->receiver_tag.value = context->receiver_tag.value;
+    }
+    else
+    {
+        endpoint->receiver_tag.is_present = true;
+        endpoint->receiver_tag.value = receiver_tag;
+    }
+
+    return 0;
+}
 
 int aeron_receive_channel_endpoint_create(
     aeron_receive_channel_endpoint_t **endpoint,
@@ -98,6 +127,12 @@ int aeron_receive_channel_endpoint_create(
     _endpoint->receiver_id = context->next_receiver_id++;
     _endpoint->receiver_proxy = context->receiver_proxy;
 
+    if (aeron_receive_channel_endpoint_set_receiver_tag(_endpoint, channel, context) < 0)
+    {
+        aeron_receive_channel_endpoint_delete(NULL, _endpoint);
+        return -1;
+    }
+
     _endpoint->short_sends_counter = aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_SHORT_SENDS);
     _endpoint->possible_ttl_asymmetry_counter =
         aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_POSSIBLE_TTL_ASYMMETRY);
@@ -148,12 +183,19 @@ int aeron_receive_channel_endpoint_send_sm(
     int32_t receiver_window,
     uint8_t flags)
 {
-    uint8_t buffer[sizeof(aeron_status_message_header_t)];
+    uint8_t buffer[sizeof(aeron_status_message_header_t) + sizeof(aeron_status_message_optional_header_t)];
     aeron_status_message_header_t *sm_header = (aeron_status_message_header_t *) buffer;
+    aeron_status_message_optional_header_t *sm_optional_header =
+        (aeron_status_message_optional_header_t *)(buffer + sizeof(aeron_status_message_header_t));
+
     struct iovec iov[1];
     struct msghdr msghdr;
 
-    sm_header->frame_header.frame_length = sizeof(aeron_status_message_header_t);
+    const int32_t frame_length = endpoint->receiver_tag.is_present ?
+        sizeof(aeron_status_message_header_t) + sizeof(aeron_status_message_optional_header_t) :
+        sizeof(aeron_status_message_header_t);
+
+    sm_header->frame_header.frame_length = frame_length;
     sm_header->frame_header.version = AERON_FRAME_HEADER_VERSION;
     sm_header->frame_header.flags = flags;
     sm_header->frame_header.type = AERON_HDR_TYPE_SM;
@@ -163,9 +205,10 @@ int aeron_receive_channel_endpoint_send_sm(
     sm_header->consumption_term_offset = term_offset;
     sm_header->receiver_window = receiver_window;
     sm_header->receiver_id = endpoint->receiver_id;
+    sm_optional_header->receiver_tag = endpoint->receiver_tag.value;
 
     iov[0].iov_base = buffer;
-    iov[0].iov_len = sizeof(aeron_status_message_header_t);
+    iov[0].iov_len = frame_length;
     msghdr.msg_iov = iov;
     msghdr.msg_iovlen = 1;
     msghdr.msg_flags = 0;

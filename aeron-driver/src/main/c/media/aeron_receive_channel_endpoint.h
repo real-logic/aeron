@@ -57,6 +57,12 @@ typedef struct aeron_receive_channel_endpoint_stct
     int64_t receiver_id;
     size_t so_rcvbuf;
     bool has_receiver_released;
+    struct
+    {
+        bool is_present;
+        int64_t value;
+    }
+    receiver_tag;
 
     int64_t *short_sends_counter;
     int64_t *possible_ttl_asymmetry_counter;

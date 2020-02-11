@@ -59,6 +59,8 @@ aeron_uri_params_t;
 #define AERON_URI_SESSION_ID_KEY "session-id"
 #define AERON_URI_GROUP_KEY "group"
 #define AERON_URI_REJOIN_KEY "rejoin"
+#define AERON_URI_FC_KEY "fc"
+#define AERON_URI_RTAG_KEY "rtag"
 #define AERON_URI_CC_KEY "cc"
 
 typedef struct aeron_uri_publication_params_stct
@@ -144,6 +146,7 @@ void aeron_uri_close(aeron_uri_t *params);
 uint8_t aeron_uri_multicast_ttl(aeron_uri_t *uri);
 
 const char *aeron_uri_find_param_value(aeron_uri_params_t *uri_params, const char *key);
+int aeron_uri_get_int64(aeron_uri_params_t *uri_params, const char *key, int64_t *retval);
 
 typedef struct aeron_driver_context_stct aeron_driver_context_t;
 typedef struct aeron_driver_conductor_stct aeron_driver_conductor_t;

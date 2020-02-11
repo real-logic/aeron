@@ -635,7 +635,7 @@ public class Configuration
     /**
      * Property name for default receiver tag (rtag) to send in all Status Messages.
      */
-    public static final String RECEIVER_TAG_PROP_NAME = "aeron.flow.control.sm.receiver.tag";
+    public static final String RECEIVER_TAG_PROP_NAME = "aeron.sm.rtag";
 
     public static boolean printConfigurationOnStart()
     {

@@ -264,6 +264,7 @@ typedef int (*aeron_flow_control_strategy_supplier_func_t)(
 
 #define AERON_MULTICAST_MIN_FLOW_CONTROL_STRATEGY_NAME "multicast_min"
 #define AERON_MULTICAST_MAX_FLOW_CONTROL_STRATEGY_NAME "multicast_max"
+#define AERON_MULTICAST_TAGGED_FLOW_CONTROL_STRATEGY_NAME "multicast_tagged"
 #define AERON_UNICAST_MAX_FLOW_CONTROL_STRATEGY_NAME "unicast_max"
 
 /**

@@ -129,7 +129,8 @@ aeron_flow_control_strategy_supplier_func_table_entry_t aeron_flow_control_strat
 {
     { AERON_UNICAST_MAX_FLOW_CONTROL_STRATEGY_NAME, aeron_unicast_flow_control_strategy_supplier },
     { AERON_MULTICAST_MAX_FLOW_CONTROL_STRATEGY_NAME, aeron_max_multicast_flow_control_strategy_supplier },
-    { AERON_MULTICAST_MIN_FLOW_CONTROL_STRATEGY_NAME, aeron_min_flow_control_strategy_supplier }
+    { AERON_MULTICAST_MIN_FLOW_CONTROL_STRATEGY_NAME, aeron_min_flow_control_strategy_supplier },
+    { AERON_MULTICAST_TAGGED_FLOW_CONTROL_STRATEGY_NAME, aeron_tagged_flow_control_strategy_supplier }
 };
 
 aeron_flow_control_strategy_supplier_func_t aeron_flow_control_strategy_supplier_by_name(const char *name)

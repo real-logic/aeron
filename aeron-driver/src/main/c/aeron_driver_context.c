@@ -1914,6 +1914,50 @@ uint64_t aeron_driver_context_get_counters_free_to_reuse_timeout_ns(aeron_driver
     return NULL != context ? context->counter_free_to_reuse_ns : AERON_COUNTERS_FREE_TO_REUSE_TIMEOUT_NS_DEFAULT;
 }
 
+int aeron_driver_context_set_flow_control_group_receiver_tag(aeron_driver_context_t *context, int64_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->flow_control_group.receiver_tag = value;
+    return 0;
+}
+
+int64_t aeron_driver_context_get_flow_control_group_receiver_tag(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->flow_control_group.receiver_tag : AERON_FLOW_CONTROL_GROUP_RECEIVER_TAG_DEFAULT;
+}
+
+int aeron_driver_context_set_flow_control_group_required_size(aeron_driver_context_t *context, int32_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->flow_control_group.required_size = value;
+    return 0;
+}
+
+int32_t aeron_driver_context_get_flow_control_group_required_size(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->flow_control_group.required_size : AERON_FLOW_CONTROL_GROUP_REQUIRED_SIZE_DEFAULT;
+}
+
+int aeron_driver_context_set_sm_receiver_tag(aeron_driver_context_t *context, bool is_present, int64_t value)
+{
+    AERON_DRIVER_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
+
+    context->sm_receiver_tag.is_present = is_present;
+    context->sm_receiver_tag.value = value;
+}
+
+bool aeron_driver_context_get_sm_receiver_tag_is_present(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->sm_receiver_tag.is_present : AERON_SM_RECEIVER_TAG_IS_PRESENT_DEFAULT;
+}
+
+int64_t aeron_driver_context_get_sm_receiver_tag_value(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->sm_receiver_tag.value : AERON_SM_RECEIVER_TAG_VALUE_DEFAULT;
+}
+
 int aeron_driver_context_set_driver_termination_validator(
     aeron_driver_context_t *context, aeron_driver_termination_validator_func_t value, void *state)
 {

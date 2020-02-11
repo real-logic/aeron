@@ -2438,9 +2438,8 @@ class ConsensusModuleAgent implements Agent
         final long appendedPosition = this.appendedPosition.get();
         if (Cluster.Role.LEADER == role)
         {
-            final long leaderPosition = Math.min(appendedPosition, logPublisher.position());
-            thisMember.logPosition(leaderPosition).timeOfLastAppendPositionNs(nowNs);
-            final long commitPosition = Math.min(quorumPosition(clusterMembers, rankedPositions), leaderPosition);
+            thisMember.logPosition(appendedPosition).timeOfLastAppendPositionNs(nowNs);
+            final long commitPosition = Math.min(quorumPosition(clusterMembers, rankedPositions), appendedPosition);
 
             if (this.commitPosition.proposeMaxOrdered(commitPosition) ||
                 nowNs >= (timeOfLastLogUpdateNs + leaderHeartbeatIntervalNs))
@@ -2463,8 +2462,8 @@ class ConsensusModuleAgent implements Agent
 
                 if (uncommittedServiceMessages > 0)
                 {
-                    pendingServiceMessageHeadOffset -=
-                        pendingServiceMessages.consume(leaderServiceSessionMessageSweeper, Integer.MAX_VALUE);
+                    pendingServiceMessageHeadOffset -= pendingServiceMessages.consume(
+                        leaderServiceSessionMessageSweeper, Integer.MAX_VALUE);
                 }
 
                 while (uncommittedTimers.peekLong() <= commitPosition)

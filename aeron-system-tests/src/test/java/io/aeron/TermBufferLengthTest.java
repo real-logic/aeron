@@ -30,12 +30,10 @@ public class TermBufferLengthTest
     public static final int STREAM_ID = 1001;
 
     @ParameterizedTest
-    @ValueSource(strings =
-        {
+    @ValueSource(strings = {
         "aeron:udp?endpoint=localhost:24325|" + CommonContext.TERM_LENGTH_PARAM_NAME + "=" + TEST_TERM_LENGTH,
         "aeron:ipc?" + CommonContext.TERM_LENGTH_PARAM_NAME + "=" + TEST_TERM_LENGTH
-        }
-    )
+    })
     public void shouldHaveCorrectTermBufferLength(final String channel)
     {
         final MediaDriver.Context ctx = new MediaDriver.Context()

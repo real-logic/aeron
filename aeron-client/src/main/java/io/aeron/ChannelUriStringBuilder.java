@@ -1190,6 +1190,45 @@ public class ChannelUriStringBuilder
     }
 
     /**
+     * Set the tagged flow control settings to be used on channel.  All specified values may be null and the default
+     * specified in the MediaDriver.Context will be used instead.
+     *
+     * @param receiverTag receiver tag for this channel.
+     * @param groupSize group size required to allow publications for this channel to be move to connected status.
+     * @param timeout timeout receivers, default is ns, but allows suffixing of time units (e.g. 100ms).
+     * @return this for fluent API.
+     */
+    public ChannelUriStringBuilder taggedFlowControl(
+        final Long receiverTag,
+        final Integer groupSize,
+        final String timeout)
+    {
+        String flowControlStr = "tagged";
+
+        if (null != receiverTag || null != groupSize)
+        {
+            flowControlStr += ",g:";
+        }
+        if (null != receiverTag)
+        {
+            flowControlStr += receiverTag;
+        }
+        if (null != groupSize)
+        {
+            flowControlStr += "/";
+            flowControlStr += groupSize;
+        }
+
+        if (null != timeout)
+        {
+            flowControlStr += ",t:";
+            flowControlStr += timeout;
+        }
+
+        return flowControl(flowControlStr);
+    }
+
+    /**
      * Set the flow control to be value which is in the {@link ChannelUri} which may be null.
      *
      * @param channelUri to read the value from.

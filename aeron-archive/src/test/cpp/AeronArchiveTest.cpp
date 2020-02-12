@@ -88,6 +88,7 @@ public:
                 "-Daeron.archive.max.catalog.entries=1024",
                 "-Daeron.threading.mode=INVOKER",
                 "-Daeron.archive.threading.mode=SHARED",
+                "-Daeron.multicast.flow.control.strategy=io.aeron.driver.MinMulticastFlowControl",
                 "-Daeron.archive.recording.events.enabled=false",
                 "-Daeron.spies.simulate.connection=false",
                 "-Daeron.mtu.length=4k",
@@ -106,16 +107,17 @@ public:
             }
         }
 
-        auto onEncodedCredentials = []() -> std::pair<const char *, std::uint32_t>
-        {
-            std::string credentials("admin:admin");
+        auto onEncodedCredentials =
+            []() -> std::pair<const char *, std::uint32_t>
+            {
+                std::string credentials("admin:admin");
 
-            char *arr = new char[credentials.length() + 1];
-            std::memcpy(arr, credentials.data(), credentials.length());
-            arr[credentials.length()] = '\0';
+                char *arr = new char[credentials.length() + 1];
+                std::memcpy(arr, credentials.data(), credentials.length());
+                arr[credentials.length()] = '\0';
 
-            return { arr, credentials.length() };
-        };
+                return { arr, credentials.length() };
+            };
 
         m_context.credentialsSupplier(CredentialsSupplier(onEncodedCredentials));
 

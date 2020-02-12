@@ -19,8 +19,7 @@ import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ReplayMerge;
 import io.aeron.archive.status.RecordingPos;
-import io.aeron.driver.MediaDriver;
-import io.aeron.driver.ThreadingMode;
+import io.aeron.driver.*;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.test.Tests;
@@ -92,7 +91,6 @@ public class ReplayMergeTest
     private ArchivingMediaDriver archivingMediaDriver;
     private Aeron aeron;
     private AeronArchive aeronArchive;
-    private ReplayMerge replayMerge;
 
     @BeforeEach
     public void before()
@@ -105,6 +103,7 @@ public class ReplayMergeTest
                 .publicationTermBufferLength(TERM_LENGTH)
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Throwable::printStackTrace)
+                .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
                 .spiesSimulateConnection(false)
                 .dirDeleteOnShutdown(true)
                 .dirDeleteOnStart(true),
@@ -133,7 +132,7 @@ public class ReplayMergeTest
     {
         if (received.get() != MIN_MESSAGES_PER_TERM * 6)
         {
-            System.out.println("received " + received.get() + "/" + (MIN_MESSAGES_PER_TERM * 6) + " " + replayMerge);
+            System.out.println("received " + received.get() + "/" + (MIN_MESSAGES_PER_TERM * 6));
         }
 
         CloseHelper.quietClose(aeronArchive);
@@ -174,7 +173,7 @@ public class ReplayMergeTest
                 final int counterId = awaitRecordingCounterId(counters, publication.sessionId());
                 final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
-                offerMessages(publication, 0, initialMessageCount, MESSAGE_PREFIX);
+                offerMessages(publication, initialMessageCount, MESSAGE_PREFIX);
                 awaitPosition(counters, counterId, publication.position());
 
                 try (Subscription subscription = aeron.addSubscription(subscriptionChannel, STREAM_ID);
@@ -187,7 +186,6 @@ public class ReplayMergeTest
                         recordingId,
                         0))
                 {
-                    this.replayMerge = replayMerge;
                     for (int i = initialMessageCount; i < totalMessageCount; i++)
                     {
                         offer(publication, i, MESSAGE_PREFIX);
@@ -252,10 +250,9 @@ public class ReplayMergeTest
         }
     }
 
-    private void offerMessages(
-        final Publication publication, final int startIndex, final int count, final String prefix)
+    private void offerMessages(final Publication publication, final int count, final String prefix)
     {
-        for (int i = startIndex; i < (startIndex + count); i++)
+        for (int i = 0; i < count; i++)
         {
             offer(publication, i, prefix);
         }

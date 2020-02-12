@@ -24,7 +24,10 @@ import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.exceptions.ConfigurationException;
 import io.aeron.security.Authenticator;
 import io.aeron.security.AuthenticatorSupplier;
-import org.agrona.*;
+import org.agrona.CloseHelper;
+import org.agrona.ErrorHandler;
+import org.agrona.LangUtil;
+import org.agrona.Strings;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.errors.DistinctErrorLog;
 import org.agrona.concurrent.errors.LoggingErrorHandler;
@@ -44,9 +47,14 @@ import java.util.function.Supplier;
 import static io.aeron.archive.ArchiveThreadingMode.DEDICATED;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
+import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.lang.System.getProperty;
+import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
+import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
+import static org.agrona.BitUtil.isPowerOfTwo;
+import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.SystemUtil.*;
 
 /**
@@ -711,6 +719,10 @@ public class Archive implements AutoCloseable
         private Checksum recordChecksum;
         private Checksum replayChecksum;
 
+        UnsafeBuffer dataBuffer;
+        UnsafeBuffer replayBuffer;
+        UnsafeBuffer recordChecksumBuffer;
+
         /**
          * Perform a shallow copy of the object.
          *
@@ -851,7 +863,7 @@ public class Archive implements AutoCloseable
                 }
             }
 
-            if (!BitUtil.isPowerOfTwo(segmentFileLength))
+            if (!isPowerOfTwo(segmentFileLength))
             {
                 throw new ArchiveException("segment file length not a power of 2: " + segmentFileLength);
             }
@@ -1946,6 +1958,35 @@ public class Archive implements AutoCloseable
                     replayChecksum = Checksums.newInstance(checksumClass);
                 }
             }
+        }
+
+        UnsafeBuffer dataBuffer()
+        {
+            if (null == dataBuffer)
+            {
+                dataBuffer = new UnsafeBuffer(allocateDirect(HEADER_LENGTH));
+            }
+            return dataBuffer;
+        }
+
+        UnsafeBuffer replayBuffer()
+        {
+            if (null == replayBuffer)
+            {
+                replayBuffer = new UnsafeBuffer(allocateDirectAligned(
+                    Configuration.MAX_BLOCK_LENGTH, CACHE_LINE_LENGTH));
+            }
+            return replayBuffer;
+        }
+
+        UnsafeBuffer recordChecksumBuffer()
+        {
+            if (null == recordChecksumBuffer && null != recordChecksum)
+            {
+                recordChecksumBuffer = new UnsafeBuffer(allocateDirectAligned(
+                    Configuration.MAX_BLOCK_LENGTH, CACHE_LINE_LENGTH));
+            }
+            return recordChecksumBuffer;
         }
 
         /**

@@ -2562,7 +2562,6 @@ class ConsensusModuleAgent implements Agent
                         snapshotId, snapshotLeadershipTermId, termBaseLogPosition, logPosition, timestamp, serviceId);
                 }
 
-                System.out.flush();
                 recordingLog.appendSnapshot(
                     recordingId, snapshotLeadershipTermId, termBaseLogPosition, logPosition, timestamp, SERVICE_ID);
 

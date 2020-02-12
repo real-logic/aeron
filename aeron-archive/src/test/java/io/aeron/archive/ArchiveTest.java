@@ -20,6 +20,7 @@ import io.aeron.ChannelUriStringBuilder;
 import io.aeron.CommonContext;
 import io.aeron.Publication;
 import io.aeron.archive.Archive.Context;
+import io.aeron.archive.checksum.Checksum;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.RecordingSubscriptionDescriptorConsumer;
 import io.aeron.archive.status.RecordingPos;
@@ -50,8 +51,10 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntConsumer;
 
+import static io.aeron.archive.Archive.Configuration.MAX_BLOCK_LENGTH;
 import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
+import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.test.Tests.throwOnClose;
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.*;
@@ -344,6 +347,54 @@ public class ArchiveTest
         inOrder.verify(errorHandler).onError(errorCounterException);
         inOrder.verify((AutoCloseable)errorHandler).close();
         inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void dataBufferIsAllocatedOnDemand()
+    {
+        final Context context = new Context();
+        assertNull(context.dataBuffer);
+
+        final UnsafeBuffer buffer = context.dataBuffer();
+
+        assertNotNull(buffer);
+        assertEquals(HEADER_LENGTH, buffer.capacity());
+        assertSame(buffer, context.dataBuffer);
+    }
+
+    @Test
+    void replayBufferIsAllocatedOnDemand()
+    {
+        final Context context = new Context();
+        assertNull(context.replayBuffer);
+
+        final UnsafeBuffer buffer = context.replayBuffer();
+
+        assertNotNull(buffer);
+        assertEquals(MAX_BLOCK_LENGTH, buffer.capacity());
+        assertSame(buffer, context.replayBuffer);
+    }
+
+    @Test
+    void recordChecksumBufferReturnsNullIfRecordChecksumIsNull()
+    {
+        final Context context = new Context();
+        assertNull(context.recordChecksumBuffer);
+
+        assertNull(context.recordChecksumBuffer());
+    }
+
+    @Test
+    void recordChecksumBufferIsAllocatedOnDemand()
+    {
+        final Context context = new Context().recordChecksum(mock(Checksum.class));
+        assertNull(context.recordChecksumBuffer);
+
+        final UnsafeBuffer buffer = context.recordChecksumBuffer();
+
+        assertNotNull(buffer);
+        assertEquals(MAX_BLOCK_LENGTH, buffer.capacity());
+        assertSame(buffer, context.recordChecksumBuffer);
     }
 
     static final class SubscriptionDescriptor

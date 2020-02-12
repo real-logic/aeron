@@ -23,9 +23,7 @@ import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.logbuffer.LogBufferDescriptor;
-import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.security.Authenticator;
-import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.agrona.SemanticVersion;
@@ -56,9 +54,9 @@ import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
 import static io.aeron.archive.client.ArchiveException.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
+import static io.aeron.protocol.DataHeaderFlyweight.*;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
-import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 
 abstract class ArchiveConductor
@@ -82,9 +80,6 @@ abstract class ArchiveConductor
     private final RecordingDescriptorDecoder recordingDescriptorDecoder = new RecordingDescriptorDecoder();
     private final ControlResponseProxy controlResponseProxy = new ControlResponseProxy();
     private final UnsafeBuffer counterMetadataBuffer = new UnsafeBuffer(new byte[METADATA_LENGTH]);
-    private final UnsafeBuffer dataBuffer = allocateBuffer();
-    private final UnsafeBuffer replayBuffer = allocateBuffer();
-    private final UnsafeBuffer checksumBuffer;
 
     private final Runnable aeronCloseHandler = this::abort;
     private final Aeron aeron;
@@ -147,13 +142,6 @@ abstract class ArchiveConductor
         cachedEpochClock.update(epochClock.time());
         authenticator = ctx.authenticatorSupplier().get();
         controlSessionProxy = new ControlSessionProxy(controlResponseProxy);
-
-        checksumBuffer = null != ctx.recordChecksum() ? allocateBuffer() : null;
-    }
-
-    private static UnsafeBuffer allocateBuffer()
-    {
-        return new UnsafeBuffer(allocateDirectAligned(MAX_BLOCK_LENGTH, BitUtil.CACHE_LINE_LENGTH));
     }
 
     Archive.Context context()
@@ -596,7 +584,7 @@ abstract class ArchiveConductor
             correlationId,
             controlSession,
             controlResponseProxy,
-            replayBuffer,
+            ctx.replayBuffer(),
             catalog,
             archiveDir,
             segmentFile,
@@ -667,7 +655,7 @@ abstract class ArchiveConductor
             correlationId,
             controlSession,
             controlResponseProxy,
-            replayBuffer,
+            ctx.replayBuffer(),
             catalog,
             archiveDir,
             segmentFile,
@@ -1178,17 +1166,18 @@ abstract class ArchiveConductor
         throws IOException
     {
         int termOffset = 0;
+        final UnsafeBuffer dataBuffer = ctx.dataBuffer();
         final ByteBuffer byteBuffer = dataBuffer.byteBuffer();
-        byteBuffer.clear().limit(DataHeaderFlyweight.HEADER_LENGTH);
+        byteBuffer.clear().limit(HEADER_LENGTH);
 
-        if (DataHeaderFlyweight.HEADER_LENGTH != fileChannel.read(byteBuffer, 0))
+        if (HEADER_LENGTH != fileChannel.read(byteBuffer, 0))
         {
             final String msg = "failed to read segment file";
             controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
             return termOffset;
         }
 
-        final int fragmentLength = DataHeaderFlyweight.fragmentLength(dataBuffer, termOffset);
+        final int fragmentLength = fragmentLength(dataBuffer, termOffset);
         if (fragmentLength <= 0)
         {
             boolean found = false;
@@ -1207,7 +1196,7 @@ abstract class ArchiveConductor
                 int offset = 0;
                 while (offset < limit)
                 {
-                    if (DataHeaderFlyweight.fragmentLength(dataBuffer, offset) > 0)
+                    if (fragmentLength(dataBuffer, offset) > 0)
                     {
                         found = true;
                         break;
@@ -1228,7 +1217,7 @@ abstract class ArchiveConductor
             return NULL_VALUE;
         }
 
-        final int fileTermId = DataHeaderFlyweight.termId(dataBuffer, termOffset);
+        final int fileTermId = termId(dataBuffer, termOffset);
         if (fileTermId != termId)
         {
             final String msg = "term id does not match: actual=" + fileTermId + " expected=" + termId;
@@ -1236,7 +1225,7 @@ abstract class ArchiveConductor
             return NULL_VALUE;
         }
 
-        final int fileStreamId = DataHeaderFlyweight.streamId(dataBuffer, termOffset);
+        final int fileStreamId = streamId(dataBuffer, termOffset);
         if (fileStreamId != streamId)
         {
             final String msg = "stream id does not match: actual=" + fileStreamId + " expected=" + streamId;
@@ -1395,7 +1384,7 @@ abstract class ArchiveConductor
             archiveDirChannel,
             ctx,
             controlSession,
-            checksumBuffer,
+            ctx.recordChecksumBuffer(),
             ctx.recordChecksum());
 
         recordingSessionByIdMap.put(recordingId, session);
@@ -1450,7 +1439,7 @@ abstract class ArchiveConductor
             archiveDirChannel,
             ctx,
             controlSession,
-            checksumBuffer,
+            ctx.recordChecksumBuffer(),
             ctx.recordChecksum());
 
         recordingSessionByIdMap.put(recordingId, session);
@@ -1780,6 +1769,7 @@ abstract class ArchiveConductor
             final int termOffset = (int)(position & (termLength - 1));
             final int termCount = (int)(position >> LogBufferDescriptor.positionBitsToShift(termLength));
             final int termId = recordingSummary.initialTermId + termCount;
+            final UnsafeBuffer dataBuffer = ctx.dataBuffer();
 
             if (ReplaySession.notHeaderAligned(
                 channel, dataBuffer, segmentOffset, termOffset, termId, recordingSummary.streamId))

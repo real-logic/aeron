@@ -1,6 +1,7 @@
 package io.aeron.driver;
 
 import io.aeron.driver.media.UdpChannel;
+import io.aeron.test.SlowTest;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -11,51 +12,48 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+@SlowTest
 class TaggedMulticastFlowControlTest
 {
     private static final int DEFAULT_GROUP_SIZE = 0;
     private static final long DEFAULT_RECEIVER_TAG = Configuration.flowControlGroupReceiverTag();
     private static final long DEFAULT_TIMEOUT = Configuration.taggedFlowControlTimeoutNs();
 
-    private final TaggedMulticastFlowControl flowControl = new TaggedMulticastFlowControl();
-
     private static Stream<Arguments> validUris()
     {
         return Stream.of(
             Arguments.of(
-                "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=tagged",
+                "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged",
                 DEFAULT_RECEIVER_TAG, DEFAULT_GROUP_SIZE, DEFAULT_TIMEOUT),
             Arguments.of(
-                "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=tagged,t:100ms",
+                "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged,t:100ms",
                 DEFAULT_RECEIVER_TAG, DEFAULT_GROUP_SIZE, 100_000_000),
             Arguments.of(
-                "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=tagged,g:123",
+                "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged,g:123",
                 123, DEFAULT_GROUP_SIZE, DEFAULT_TIMEOUT),
             Arguments.of(
-                "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=tagged,g:3000000000",
+                "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged,g:3000000000",
                 3_000_000_000L, DEFAULT_GROUP_SIZE, DEFAULT_TIMEOUT),
             Arguments.of(
-                "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=tagged,g:123,t:100ms",
+                "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged,g:123,t:100ms",
                 123, DEFAULT_GROUP_SIZE, 100_000_000),
             Arguments.of(
-                "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=tagged,g:100/10",
+                "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged,g:100/10",
                 100, 10, DEFAULT_TIMEOUT),
             Arguments.of(
-                "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=tagged,g:/10",
+                "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged,g:/10",
                 DEFAULT_RECEIVER_TAG, 10, DEFAULT_TIMEOUT),
             Arguments.of(
-                "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=tagged,g:100/10,t:100ms",
+                "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged,g:100/10,t:100ms",
                 100, 10, 100_000_000));
     }
 
     @ParameterizedTest
     @MethodSource("validUris")
     void shouldParseValidFlowControlConfiguration(
-        final String uri,
-        final long receiverTag,
-        final int groupSize,
-        final long timeout)
+        final String uri, final long receiverTag, final int groupSize, final long timeout)
     {
+        final TaggedMulticastFlowControl flowControl = new TaggedMulticastFlowControl();
         flowControl.initialize(new MediaDriver.Context(), UdpChannel.parse(uri), 0, 0);
 
         assertEquals(receiverTag, flowControl.receiverTag());
@@ -74,6 +72,8 @@ class TaggedMulticastFlowControlTest
     })
     void shouldFailWithInvalidUris(final String uri)
     {
+        final TaggedMulticastFlowControl flowControl = new TaggedMulticastFlowControl();
+
         assertThrows(
             Exception.class,
             () -> flowControl.initialize(new MediaDriver.Context(), UdpChannel.parse(uri), 0, 0));

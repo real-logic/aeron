@@ -52,13 +52,13 @@ class TaggedMulticastFlowControlTest
     @MethodSource("validUris")
     void shouldParseValidFlowControlConfiguration(
         final String uri,
-        final long rtag,
+        final long receiverTag,
         final int groupSize,
         final long timeout)
     {
-        flowControl.initialize(UdpChannel.parse(uri), 0, 0);
+        flowControl.initialize(new MediaDriver.Context(), UdpChannel.parse(uri), 0, 0);
 
-        assertEquals(rtag, flowControl.receiverTag());
+        assertEquals(receiverTag, flowControl.receiverTag());
         assertEquals(groupSize, flowControl.requiredGroupSize());
         assertEquals(timeout, flowControl.receiverTimeoutNs());
     }
@@ -74,6 +74,8 @@ class TaggedMulticastFlowControlTest
     })
     void shouldFailWithInvalidUris(final String uri)
     {
-        assertThrows(Exception.class, () -> flowControl.initialize(UdpChannel.parse(uri), 0, 0));
+        assertThrows(
+            Exception.class,
+            () -> flowControl.initialize(new MediaDriver.Context(), UdpChannel.parse(uri), 0, 0));
     }
 }

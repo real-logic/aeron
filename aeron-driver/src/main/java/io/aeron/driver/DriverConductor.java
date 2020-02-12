@@ -1074,6 +1074,7 @@ public class DriverConductor implements Agent
         final FlowControl flowControl = udpChannel.isMulticast() || udpChannel.hasExplicitControl() ?
             ctx.multicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId) :
             ctx.unicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId);
+        flowControl.initialize(ctx, udpChannel, initialTermId, params.termLength);
 
         final NetworkPublication publication = new NetworkPublication(
             registrationId,

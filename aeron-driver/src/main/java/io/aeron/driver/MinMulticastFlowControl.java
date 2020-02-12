@@ -64,7 +64,11 @@ public class MinMulticastFlowControl implements FlowControl
     /**
      * {@inheritDoc}
      */
-    public void initialize(final UdpChannel udpChannel, final int initialTermId, final int termBufferLength)
+    public void initialize(
+        final MediaDriver.Context context,
+        final UdpChannel udpChannel,
+        final int initialTermId,
+        final int termBufferLength)
     {
         final String fcStr = udpChannel.channelUri().get(CommonContext.FLOW_CONTROL_PARAM_NAME);
         if (null != fcStr)

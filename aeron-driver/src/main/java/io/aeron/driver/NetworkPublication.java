@@ -223,7 +223,6 @@ public class NetworkPublication
         final int termLength = rawLog.termLength();
         termBufferLength = termLength;
         termLengthMask = termLength - 1;
-        flowControl.initialize(channelEndpoint.udpChannel(), initialTermId, termLength);
 
         final long nowNs = nanoClock.nanoTime();
         timeOfLastSendOrHeartbeatNs = nowNs - PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;

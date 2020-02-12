@@ -54,7 +54,6 @@ import java.util.function.IntConsumer;
 import static io.aeron.archive.Archive.Configuration.MAX_BLOCK_LENGTH;
 import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
-import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.test.Tests.throwOnClose;
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.*;
@@ -358,7 +357,7 @@ public class ArchiveTest
         final UnsafeBuffer buffer = context.dataBuffer();
 
         assertNotNull(buffer);
-        assertEquals(HEADER_LENGTH, buffer.capacity());
+        assertEquals(MAX_BLOCK_LENGTH, buffer.capacity());
         assertSame(buffer, context.dataBuffer);
     }
 
@@ -380,7 +379,6 @@ public class ArchiveTest
     {
         final Context context = new Context();
         assertNull(context.recordChecksumBuffer);
-
         assertNull(context.recordChecksumBuffer());
     }
 

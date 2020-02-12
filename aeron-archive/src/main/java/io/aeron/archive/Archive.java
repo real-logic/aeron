@@ -47,9 +47,7 @@ import java.util.function.Supplier;
 import static io.aeron.archive.ArchiveThreadingMode.DEDICATED;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
-import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static java.lang.System.getProperty;
-import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
@@ -1964,8 +1962,10 @@ public class Archive implements AutoCloseable
         {
             if (null == dataBuffer)
             {
-                dataBuffer = new UnsafeBuffer(allocateDirect(HEADER_LENGTH));
+                dataBuffer = new UnsafeBuffer(allocateDirectAligned(
+                    Configuration.MAX_BLOCK_LENGTH, CACHE_LINE_LENGTH));
             }
+
             return dataBuffer;
         }
 
@@ -1976,6 +1976,7 @@ public class Archive implements AutoCloseable
                 replayBuffer = new UnsafeBuffer(allocateDirectAligned(
                     Configuration.MAX_BLOCK_LENGTH, CACHE_LINE_LENGTH));
             }
+
             return replayBuffer;
         }
 
@@ -1986,6 +1987,7 @@ public class Archive implements AutoCloseable
                 recordChecksumBuffer = new UnsafeBuffer(allocateDirectAligned(
                     Configuration.MAX_BLOCK_LENGTH, CACHE_LINE_LENGTH));
             }
+
             return recordChecksumBuffer;
         }
 

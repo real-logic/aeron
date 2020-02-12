@@ -59,8 +59,6 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
-import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
-import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 
 abstract class ArchiveConductor
@@ -1029,7 +1027,6 @@ abstract class ArchiveConductor
             final int termLength = recordingSummary.termBufferLength;
             final int bitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
             final int streamId = recordingSummary.streamId;
-            final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(MAX_BLOCK_LENGTH, CACHE_LINE_LENGTH));
             long position = recordingSummary.startPosition - segmentLength;
             long count = 0;
 
@@ -1054,7 +1051,7 @@ abstract class ArchiveConductor
                     final int termCount = (int)(position >> bitsToShift);
                     final int termId = recordingSummary.initialTermId + termCount;
                     final int termOffset = findTermOffsetForStart(
-                        correlationId, controlSession, file, fileChannel, streamId, termId, termLength, buffer);
+                        correlationId, controlSession, file, fileChannel, streamId, termId, termLength);
 
                     if (termOffset < 0)
                     {
@@ -1167,11 +1164,11 @@ abstract class ArchiveConductor
         final FileChannel fileChannel,
         final int streamId,
         final int termId,
-        final int termLength,
-        final UnsafeBuffer buffer)
+        final int termLength)
         throws IOException
     {
         int termOffset = 0;
+        final UnsafeBuffer buffer = ctx.dataBuffer();
         final ByteBuffer byteBuffer = buffer.byteBuffer();
         byteBuffer.clear().limit(HEADER_LENGTH);
 

@@ -106,10 +106,12 @@ public class TaggedFlowControlTest
     private static Stream<Arguments> strategyConfigurations()
     {
         return Stream.of(
-            Arguments.of(new TaggedMulticastFlowControlSupplier(), DEFAULT_RECEIVER_TAG, "", ""),
-            Arguments.of(new TaggedMulticastFlowControlSupplier(), null, "", "|rtag=-1"),
-            Arguments.of(null, DEFAULT_RECEIVER_TAG, "|fc=tagged", ""),
-            Arguments.of(null, null, "|fc=tagged,g:123", "|rtag=123")
+            Arguments.of(new TaggedMulticastFlowControlSupplier(), DEFAULT_RECEIVER_TAG, null, "", ""),
+            Arguments.of(new TaggedMulticastFlowControlSupplier(), null, null, "", "|rtag=-1"),
+            Arguments.of(new TaggedMulticastFlowControlSupplier(), null, 2004L, "", "|rtag=2004"),
+            Arguments.of(null, DEFAULT_RECEIVER_TAG, null, "|fc=tagged", ""),
+            Arguments.of(null, 2020L, 2020L, "|fc=tagged", ""),
+            Arguments.of(null, null, null, "|fc=tagged,g:123", "|rtag=123")
         );
     }
 
@@ -118,6 +120,7 @@ public class TaggedFlowControlTest
     public void shouldSlowToTaggedWithMulticastFlowControlStrategy(
         final FlowControlSupplier flowControlSupplier,
         final Long receiverTag,
+        final Long flowControlGroupReceiverTag,
         final String publisherUriParams,
         final String subscriptionBUriParams)
     {
@@ -132,6 +135,11 @@ public class TaggedFlowControlTest
             {
                 driverAContext.multicastFlowControlSupplier(flowControlSupplier);
             }
+            if (null != flowControlGroupReceiverTag)
+            {
+                driverAContext.flowControlGroupReceiverTag(flowControlGroupReceiverTag);
+            }
+
             if (null != receiverTag)
             {
                 driverBContext.receiverTag(receiverTag);
@@ -201,10 +209,11 @@ public class TaggedFlowControlTest
     public void shouldRemoveDeadTaggedReceiverWithTaggedMulticastFlowControlStrategy(
         final FlowControlSupplier flowControlSupplier,
         final Long receiverTag,
+        final Long flowControlGroupReceiverTag,
         final String publisherUriParams,
         final String subscriptionBUriParams)
     {
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(200), () ->
         {
             final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
             int numMessagesLeftToSend = numMessagesToSend;
@@ -219,6 +228,10 @@ public class TaggedFlowControlTest
             if (null != receiverTag)
             {
                 driverBContext.receiverTag(receiverTag);
+            }
+            if (null != flowControlGroupReceiverTag)
+            {
+                driverBContext.flowControlGroupReceiverTag(flowControlGroupReceiverTag);
             }
 
             launch();

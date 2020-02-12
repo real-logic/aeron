@@ -21,10 +21,8 @@ import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.SystemUtil;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.TimeUnit;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
-import static org.agrona.SystemUtil.getDurationInNanos;
 
 /**
  * Minimum multicast sender flow control strategy.
@@ -41,25 +39,9 @@ public class MinMulticastFlowControl implements FlowControl
      */
     public static final String FC_PARAM_VALUE = "min";
 
-    /**
-     * Property name to set timeout, in nanoseconds, for a receiver to be tracked.
-     */
-    public static final String RECEIVER_TIMEOUT_PROP_NAME = "aeron.MinMulticastFlowControl.receiverTimeout";
-
-    /**
-     * Default timeout, in nanoseconds, until a receiver is no longer tracked and considered for minimum.
-     */
-    public static final long RECEIVER_TIMEOUT_DEFAULT = TimeUnit.SECONDS.toNanos(2);
-
-    /**
-     * Timeout after which a receiver will be considered no longer present if no status messages are received.
-     */
-    public static final long RECEIVER_TIMEOUT = getDurationInNanos(
-        RECEIVER_TIMEOUT_PROP_NAME, RECEIVER_TIMEOUT_DEFAULT);
-
     static final Receiver[] EMPTY_RECEIVERS = new Receiver[0];
     private Receiver[] receivers = EMPTY_RECEIVERS;
-    private long receiverTimeoutNs = RECEIVER_TIMEOUT;
+    private long receiverTimeoutNs;
 
     /**
      * {@inheritDoc}
@@ -70,6 +52,7 @@ public class MinMulticastFlowControl implements FlowControl
         final int initialTermId,
         final int termBufferLength)
     {
+        receiverTimeoutNs = context.minFlowControlTimeoutNs();
         final String fcStr = udpChannel.channelUri().get(CommonContext.FLOW_CONTROL_PARAM_NAME);
         if (null != fcStr)
         {

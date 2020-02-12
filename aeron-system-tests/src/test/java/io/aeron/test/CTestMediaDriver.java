@@ -126,8 +126,11 @@ public final class CTestMediaDriver implements TestMediaDriver
             "AERON_UNTETHERED_WINDOW_LIMIT_TIMEOUT", String.valueOf(context.untetheredWindowLimitTimeoutNs()));
         if (null != context.receiverTag())
         {
-            pb.environment().put("AERON_FLOW_CONTROL_SM_RECEIVER_TAG", context.receiverTag().toString());
+            pb.environment().put("AERON_SM_RTAG", context.receiverTag().toString());
         }
+        pb.environment().put("AERON_FLOW_CONTROL_GROUP_RTAG", String.valueOf(context.flowControlGroupReceiverTag()));
+        pb.environment().put(
+            "AERON_FLOW_CONTROL_GROUP_REQUIRED_SIZE", String.valueOf(context.flowControlGroupRequiredSize()));
         pb.environment().put("AERON_PRINT_CONFIGURATION", "true");
         pb.environment().put("AERON_EVENT_LOG", "0xFFFF");
 

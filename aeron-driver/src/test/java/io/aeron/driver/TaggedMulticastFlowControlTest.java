@@ -14,8 +14,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class TaggedMulticastFlowControlTest
 {
     private static final int DEFAULT_GROUP_SIZE = 0;
-    private static final long DEFAULT_RECEIVER_TAG = new TaggedMulticastFlowControl().receiverTag();
-    private static final long DEFAULT_TIMEOUT = new TaggedMulticastFlowControl().receiverTimeoutNs();
+    private static final long DEFAULT_RECEIVER_TAG = Configuration.flowControlGroupReceiverTag();
+    private static final long DEFAULT_TIMEOUT = Configuration.taggedFlowControlTimeoutNs();
 
     private final TaggedMulticastFlowControl flowControl = new TaggedMulticastFlowControl();
 

@@ -21,19 +21,14 @@ import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.AsciiEncoding;
 import org.agrona.BitUtil;
 import org.agrona.SystemUtil;
-import org.agrona.concurrent.UnsafeBuffer;
 
 import java.net.InetSocketAddress;
-import java.nio.ByteOrder;
-import java.util.concurrent.TimeUnit;
 
 import static io.aeron.driver.MinMulticastFlowControl.EMPTY_RECEIVERS;
 import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
-import static java.lang.Integer.parseInt;
 import static java.lang.System.getProperty;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
-import static org.agrona.SystemUtil.getDurationInNanos;
 
 /**
  * Minimum multicast sender flow control strategy only for tagged members identified by a receiver tag or ASF key.
@@ -51,51 +46,36 @@ public class TaggedMulticastFlowControl implements FlowControl
     public static final String FC_PARAM_VALUE = "tagged";
 
     /**
-     * Property name to set timeout, in nanoseconds, for a receiver to be tracked.
-     */
-    public static final String RECEIVER_TIMEOUT_PROP_NAME = "aeron.PreferredMulticastFlowControl.receiverTimeout";
-
-    /**
-     * Default timeout, in nanoseconds, until a receiver is no longer tracked and considered for minimum.
-     */
-    public static final long RECEIVER_TIMEOUT_DEFAULT = TimeUnit.SECONDS.toNanos(2);
-
-    /**
-     * Timeout after which receivers will be considered inactive.
-     */
-    public static final long RECEIVER_TIMEOUT = getDurationInNanos(
-        RECEIVER_TIMEOUT_PROP_NAME, RECEIVER_TIMEOUT_DEFAULT);
-
-    /**
      * Property name used to set Application Specific Feedback (ASF) in Status Messages to identify preferred receivers.
      */
-    public static final String PREFERRED_ASF_PROP_NAME = "aeron.PreferredMulticastFlowControl.asf";
-
-    /**
-     * Property name to set the required group size for tagged multicast flow control.  This is the minimum number
-     * of live channel endpoint required in order for the strategy to consider the publication connected.
-     */
-    public static final String REQUIRED_GROUP_SIZE_PROP_NAME = "aeron.TaggedMulticastFlowControl.requiredGroupSize";
-    private static final int REQUIRED_GROUP_SIZE = parseInt(System.getProperty(REQUIRED_GROUP_SIZE_PROP_NAME, "0"));
+    public static final String PREFERRED_ASF_PROP_NAME = Configuration.PREFERRED_ASF_PROP_NAME;
 
     /**
      * Default Application Specific Feedback (ASF) value
      */
-    public static final String PREFERRED_ASF_DEFAULT = "FFFFFFFFFFFFFFFF";
+    public static final String PREFERRED_ASF_DEFAULT = Configuration.PREFERRED_ASF_DEFAULT;
 
     public static final String PREFERRED_ASF = getProperty(PREFERRED_ASF_PROP_NAME, PREFERRED_ASF_DEFAULT);
     public static final byte[] PREFERRED_ASF_BYTES = BitUtil.fromHex(PREFERRED_ASF);
 
     private volatile MinMulticastFlowControl.Receiver[] receivers = EMPTY_RECEIVERS;
-    private int requiredGroupSize = REQUIRED_GROUP_SIZE;
-    private long receiverTimeoutNs = RECEIVER_TIMEOUT;
-    private long rtag = new UnsafeBuffer(PREFERRED_ASF_BYTES).getLong(0, ByteOrder.LITTLE_ENDIAN);
+    private int requiredGroupSize;
+    private long receiverTimeoutNs;
+    private long receiverTag;
 
     /**
      * {@inheritDoc}
      */
-    public void initialize(final UdpChannel udpChannel, final int initialTermId, final int termBufferLength)
+    public void initialize(
+        final MediaDriver.Context context,
+        final UdpChannel udpChannel,
+        final int initialTermId,
+        final int termBufferLength)
     {
+        receiverTimeoutNs = context.taggedFlowControlTimeoutNs();
+        receiverTag = context.flowControlGroupReceiverTag();
+        requiredGroupSize = context.flowControlGroupRequiredSize();
+
         final String fcStr = udpChannel.channelUri().get(CommonContext.FLOW_CONTROL_PARAM_NAME);
 
         if (null != fcStr)
@@ -114,7 +94,7 @@ public class TaggedMulticastFlowControl implements FlowControl
                     {
                         final int lengthToParse = -1 == requiredGroupSizeIndex ?
                             arg.length() - 2 : requiredGroupSizeIndex - 2;
-                        rtag = AsciiEncoding.parseLongAscii(arg, 2, lengthToParse);
+                        receiverTag = AsciiEncoding.parseLongAscii(arg, 2, lengthToParse);
                     }
 
                     if (-1 != requiredGroupSizeIndex)
@@ -221,7 +201,7 @@ public class TaggedMulticastFlowControl implements FlowControl
 
         if (asfLength == SIZE_OF_LONG)
         {
-            if (statusMessageFlyweight.receiverTag() == rtag)
+            if (statusMessageFlyweight.receiverTag() == receiverTag)
             {
                 result = true;
             }
@@ -244,17 +224,17 @@ public class TaggedMulticastFlowControl implements FlowControl
         return result;
     }
 
-    long getRtag()
+    long receiverTag()
     {
-        return rtag;
+        return receiverTag;
     }
 
-    long getReceiverTimeoutNs()
+    long receiverTimeoutNs()
     {
         return receiverTimeoutNs;
     }
 
-    int getRequiredGroupSize()
+    int requiredGroupSize()
     {
         return requiredGroupSize;
     }

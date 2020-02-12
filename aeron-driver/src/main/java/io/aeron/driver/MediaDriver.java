@@ -444,9 +444,13 @@ public final class MediaDriver implements AutoCloseable
         private int publicationReservedSessionIdHigh = Configuration.publicationReservedSessionIdHigh();
         private int lossReportBufferLength = Configuration.lossReportBufferLength();
         private int sendToStatusMessagePollRatio = Configuration.sendToStatusMessagePollRatio();
+        private long minFlowControlTimeoutNs = Configuration.minFlowControlTimeoutNs();
+        private long taggedFlowControlTimeoutNs = Configuration.taggedFlowControlTimeoutNs();
 
         private InferableBoolean receiverGroupConsideration = Configuration.receiverGroupConsideration();
-        private Long rtag = Configuration.receiverTag();
+        private Long receiverTag = Configuration.receiverTag();
+        private long flowControlGroupReceiverTag = Configuration.flowControlGroupReceiverTag();
+        private int flowControlGroupRequiredSize = Configuration.flowControlGroupRequiredSize();
 
         private EpochClock epochClock;
         private NanoClock nanoClock;
@@ -2269,6 +2273,54 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
+         * Timeout for min multicast flow control strategy.
+         *
+         * @return timeout in ns.
+         * @see Configuration#MIN_FLOW_CONTROL_TIMEOUT_PROP_NAME
+         */
+        public long minFlowControlTimeoutNs()
+        {
+            return minFlowControlTimeoutNs;
+        }
+
+        /**
+         * Timeout for min multicast flow control strategy.
+         *
+         * @param timeoutNs in ns.
+         * @return this for a fluent API.
+         * @see Configuration#MIN_FLOW_CONTROL_TIMEOUT_PROP_NAME
+         */
+        public Context minFlowControlTimeoutNs(final long timeoutNs)
+        {
+            this.minFlowControlTimeoutNs = timeoutNs;
+            return this;
+        }
+
+        /**
+         * Timeout for tagged multicast flow control strategy.
+         *
+         * @return timeout in ns.
+         * @see Configuration#MIN_FLOW_CONTROL_TIMEOUT_PROP_NAME
+         */
+        public long taggedFlowControlTimeoutNs()
+        {
+            return taggedFlowControlTimeoutNs;
+        }
+
+        /**
+         * Timeout for tagged multicast flow control strategy.
+         *
+         * @param timeoutNs in ns.
+         * @return this for a fluent API.
+         * @see Configuration#MIN_FLOW_CONTROL_TIMEOUT_PROP_NAME
+         */
+        public Context taggedFlowControlTimeoutNs(final long timeoutNs)
+        {
+            this.taggedFlowControlTimeoutNs = timeoutNs;
+            return this;
+        }
+
+        /**
          * Application specific feedback used to identify a receiver group when using a
          * {@link TaggedMulticastFlowControl} strategy which is added to Status Messages (SMs)..
          *
@@ -2673,21 +2725,71 @@ public final class MediaDriver implements AutoCloseable
          * Get the receiver tag (rtag) to be sent in Status Messages from the Receiver.
          *
          * @return receiver tag value or null if not set.
+         * @see Configuration#RECEIVER_TAG_PROP_NAME
          */
         public Long receiverTag()
         {
-            return rtag;
+            return receiverTag;
         }
 
         /**
          * Set the receiver tag (rtag) to be sent in Status Messages from the Receiver.
          *
-         * @param rtag value to sent in Status Messages from the receiver or null if not set.
+         * @param receiverTag value to sent in Status Messages from the receiver or null if not set.
          * @return this for fluent API.
+         * @see Configuration#RECEIVER_TAG_PROP_NAME
          */
-        public Context receiverTag(final Long rtag)
+        public Context receiverTag(final Long receiverTag)
         {
-            this.rtag = rtag;
+            this.receiverTag = receiverTag;
+            return this;
+        }
+
+        /**
+         * Get the default receiver tag (rtag) to be used by the tagged flow control strategy.
+         *
+         * @return group receiver tag value or null if not set.
+         * @see Configuration#FLOW_CONTROL_GROUP_RECEIVER_TAG_PROP_NAME
+         */
+        public long flowControlGroupReceiverTag()
+        {
+            return flowControlGroupReceiverTag;
+        }
+
+        /**
+         * Set the default receiver tag (rtag) to be used by the tagged flow control strategy.
+         *
+         * @param receiverTag value to use by default by the tagged flow control strategy.
+         * @return this for fluent API.
+         * @see Configuration#FLOW_CONTROL_GROUP_RECEIVER_TAG_PROP_NAME
+         */
+        public Context flowControlGroupReceiverTag(final long receiverTag)
+        {
+            this.flowControlGroupReceiverTag = receiverTag;
+            return this;
+        }
+
+        /**
+         * Get the default required group size for the tagged flow control strategy to indicate connectivity.
+         *
+         * @return required group size.
+         * @see Configuration#FLOW_CONTROL_GROUP_REQUIRED_SIZE_PROP_NAME
+         */
+        public int flowControlGroupRequiredSize()
+        {
+            return flowControlGroupRequiredSize;
+        }
+
+        /**
+         * Set the default required group size for the tagged flow control strategy to indicate connectivity.
+         *
+         * @param groupSize minimum required group size used by the tagged flow control strategy.
+         * @return this for fluent API.
+         * @see Configuration#FLOW_CONTROL_GROUP_REQUIRED_SIZE_PROP_NAME
+         */
+        public Context flowControlGroupRequiredSize(final int groupSize)
+        {
+            this.flowControlGroupRequiredSize = groupSize;
             return this;
         }
 
@@ -2875,7 +2977,7 @@ public final class MediaDriver implements AutoCloseable
                 applicationSpecificFeedback = Configuration.applicationSpecificFeedback();
             }
 
-            if (null == rtag)
+            if (null == receiverTag)
             {
                 if (applicationSpecificFeedback.length > 0)
                 {
@@ -2887,7 +2989,7 @@ public final class MediaDriver implements AutoCloseable
                     }
 
                     final UnsafeBuffer buffer = new UnsafeBuffer(applicationSpecificFeedback);
-                    rtag = buffer.getLong(0, ByteOrder.LITTLE_ENDIAN);
+                    receiverTag = buffer.getLong(0, ByteOrder.LITTLE_ENDIAN);
                 }
             }
 

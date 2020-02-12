@@ -16,12 +16,7 @@
 package io.aeron.test;
 
 import io.aeron.CommonContext;
-import io.aeron.driver.DefaultMulticastFlowControlSupplier;
-import io.aeron.driver.DefaultUnicastFlowControlSupplier;
-import io.aeron.driver.FlowControlSupplier;
-import io.aeron.driver.MaxMulticastFlowControlSupplier;
-import io.aeron.driver.MediaDriver;
-import io.aeron.driver.MinMulticastFlowControlSupplier;
+import io.aeron.driver.*;
 import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.IoUtil;
 import org.agrona.collections.Object2ObjectHashMap;
@@ -53,6 +48,8 @@ public final class CTestMediaDriver implements TestMediaDriver
             MinMulticastFlowControlSupplier.class, "aeron_min_flow_control_strategy_supplier");
         C_DRIVER_FLOW_CONTROL_STRATEGY_NAME_BY_SUPPLIER_TYPE.put(
             DefaultUnicastFlowControlSupplier.class, "aeron_unicast_flow_control_strategy_supplier");
+        C_DRIVER_FLOW_CONTROL_STRATEGY_NAME_BY_SUPPLIER_TYPE.put(
+            TaggedMulticastFlowControlSupplier.class, "aeron_tagged_flow_control_strategy_supplier");
     }
 
     private final Process aeronMediaDriverProcess;
@@ -127,6 +124,15 @@ public final class CTestMediaDriver implements TestMediaDriver
         pb.environment().put("AERON_UNTETHERED_RESTING_TIMEOUT", String.valueOf(context.untetheredRestingTimeoutNs()));
         pb.environment().put(
             "AERON_UNTETHERED_WINDOW_LIMIT_TIMEOUT", String.valueOf(context.untetheredWindowLimitTimeoutNs()));
+        if (null != context.receiverTag())
+        {
+            pb.environment().put("AERON_SM_RTAG", context.receiverTag().toString());
+        }
+        pb.environment().put("AERON_FLOW_CONTROL_GROUP_RTAG", String.valueOf(context.flowControlGroupReceiverTag()));
+        pb.environment().put(
+            "AERON_FLOW_CONTROL_GROUP_REQUIRED_SIZE", String.valueOf(context.flowControlGroupRequiredSize()));
+        pb.environment().put("AERON_PRINT_CONFIGURATION", "true");
+        pb.environment().put("AERON_EVENT_LOG", "0xFFFF");
 
         setFlowControlStrategy(pb.environment(), context);
         TRANSPORT_BINDINGS_CONFIGURATION.get().getOrDefault(context, emptyMap()).forEach(pb.environment()::put);

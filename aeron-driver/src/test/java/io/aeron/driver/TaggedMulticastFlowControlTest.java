@@ -14,8 +14,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class TaggedMulticastFlowControlTest
 {
     private static final int DEFAULT_GROUP_SIZE = 0;
-    private static final long DEFAULT_RTAG = new TaggedMulticastFlowControl().getRtag();
-    private static final long DEFAULT_TIMEOUT = new TaggedMulticastFlowControl().getReceiverTimeoutNs();
+    private static final long DEFAULT_RECEIVER_TAG = Configuration.flowControlGroupReceiverTag();
+    private static final long DEFAULT_TIMEOUT = Configuration.taggedFlowControlTimeoutNs();
 
     private final TaggedMulticastFlowControl flowControl = new TaggedMulticastFlowControl();
 
@@ -24,10 +24,10 @@ class TaggedMulticastFlowControlTest
         return Stream.of(
             Arguments.of(
                 "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=tagged",
-                DEFAULT_RTAG, DEFAULT_GROUP_SIZE, DEFAULT_TIMEOUT),
+                DEFAULT_RECEIVER_TAG, DEFAULT_GROUP_SIZE, DEFAULT_TIMEOUT),
             Arguments.of(
                 "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=tagged,t:100ms",
-                DEFAULT_RTAG, DEFAULT_GROUP_SIZE, 100_000_000),
+                DEFAULT_RECEIVER_TAG, DEFAULT_GROUP_SIZE, 100_000_000),
             Arguments.of(
                 "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=tagged,g:123",
                 123, DEFAULT_GROUP_SIZE, DEFAULT_TIMEOUT),
@@ -42,7 +42,7 @@ class TaggedMulticastFlowControlTest
                 100, 10, DEFAULT_TIMEOUT),
             Arguments.of(
                 "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=tagged,g:/10",
-                DEFAULT_RTAG, 10, DEFAULT_TIMEOUT),
+                DEFAULT_RECEIVER_TAG, 10, DEFAULT_TIMEOUT),
             Arguments.of(
                 "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=tagged,g:100/10,t:100ms",
                 100, 10, 100_000_000));
@@ -52,15 +52,15 @@ class TaggedMulticastFlowControlTest
     @MethodSource("validUris")
     void shouldParseValidFlowControlConfiguration(
         final String uri,
-        final long rtag,
+        final long receiverTag,
         final int groupSize,
         final long timeout)
     {
-        flowControl.initialize(UdpChannel.parse(uri), 0, 0);
+        flowControl.initialize(new MediaDriver.Context(), UdpChannel.parse(uri), 0, 0);
 
-        assertEquals(rtag, flowControl.getRtag());
-        assertEquals(groupSize, flowControl.getRequiredGroupSize());
-        assertEquals(timeout, flowControl.getReceiverTimeoutNs());
+        assertEquals(receiverTag, flowControl.receiverTag());
+        assertEquals(groupSize, flowControl.requiredGroupSize());
+        assertEquals(timeout, flowControl.receiverTimeoutNs());
     }
 
     @ParameterizedTest
@@ -74,6 +74,8 @@ class TaggedMulticastFlowControlTest
     })
     void shouldFailWithInvalidUris(final String uri)
     {
-        assertThrows(Exception.class, () -> flowControl.initialize(UdpChannel.parse(uri), 0, 0));
+        assertThrows(
+            Exception.class,
+            () -> flowControl.initialize(new MediaDriver.Context(), UdpChannel.parse(uri), 0, 0));
     }
 }

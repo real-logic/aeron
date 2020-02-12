@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
+import java.nio.ByteOrder;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -53,6 +54,8 @@ public class FlowControlStrategiesTest
         (TERM_BUFFER_LENGTH / NUM_MESSAGES_PER_TERM) - DataHeaderFlyweight.HEADER_LENGTH;
     private static final String ROOT_DIR =
         SystemUtil.tmpDirName() + "aeron-system-tests-" + UUID.randomUUID().toString() + File.separator;
+    public static final long DEFAULT_RECEIVER_TAG =
+        new UnsafeBuffer(TaggedMulticastFlowControl.PREFERRED_ASF_BYTES).getLong(0, ByteOrder.LITTLE_ENDIAN);
 
     private final MediaDriver.Context driverAContext = new MediaDriver.Context();
     private final MediaDriver.Context driverBContext = new MediaDriver.Context();
@@ -327,8 +330,6 @@ public class FlowControlStrategiesTest
     @Test
     public void shouldSlowToTaggedWithMulticastFlowControlStrategy()
     {
-        TestMediaDriver.notSupportedOnCMediaDriverYet("Tagged multicast flow control strategy not available");
-
         assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
@@ -337,7 +338,7 @@ public class FlowControlStrategiesTest
 
             driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
             driverAContext.multicastFlowControlSupplier(new TaggedMulticastFlowControlSupplier());
-            driverBContext.applicationSpecificFeedback(TaggedMulticastFlowControl.PREFERRED_ASF_BYTES);
+            driverBContext.receiverTag(DEFAULT_RECEIVER_TAG);
 
             launch();
 
@@ -401,8 +402,6 @@ public class FlowControlStrategiesTest
     @Test
     public void shouldRemoveDeadTaggedReceiverWithTaggedMulticastFlowControlStrategy()
     {
-        TestMediaDriver.notSupportedOnCMediaDriverYet("Tagged multicast flow control strategy not available");
-
         assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
@@ -412,7 +411,7 @@ public class FlowControlStrategiesTest
 
             driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
             driverAContext.multicastFlowControlSupplier(new TaggedMulticastFlowControlSupplier());
-            driverBContext.applicationSpecificFeedback(TaggedMulticastFlowControl.PREFERRED_ASF_BYTES);
+            driverBContext.receiverTag(DEFAULT_RECEIVER_TAG);
 
             launch();
 

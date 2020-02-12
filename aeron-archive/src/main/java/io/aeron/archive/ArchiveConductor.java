@@ -55,8 +55,12 @@ import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
 import static io.aeron.archive.client.ArchiveException.*;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.*;
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
+import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
+import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 
 abstract class ArchiveConductor
@@ -1025,6 +1029,7 @@ abstract class ArchiveConductor
             final int termLength = recordingSummary.termBufferLength;
             final int bitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
             final int streamId = recordingSummary.streamId;
+            final UnsafeBuffer buffer = new UnsafeBuffer(allocateDirectAligned(MAX_BLOCK_LENGTH, CACHE_LINE_LENGTH));
             long position = recordingSummary.startPosition - segmentLength;
             long count = 0;
 
@@ -1049,7 +1054,7 @@ abstract class ArchiveConductor
                     final int termCount = (int)(position >> bitsToShift);
                     final int termId = recordingSummary.initialTermId + termCount;
                     final int termOffset = findTermOffsetForStart(
-                        correlationId, controlSession, file, fileChannel, streamId, termId, termLength);
+                        correlationId, controlSession, file, fileChannel, streamId, termId, termLength, buffer);
 
                     if (termOffset < 0)
                     {
@@ -1162,12 +1167,12 @@ abstract class ArchiveConductor
         final FileChannel fileChannel,
         final int streamId,
         final int termId,
-        final int termLength)
+        final int termLength,
+        final UnsafeBuffer buffer)
         throws IOException
     {
         int termOffset = 0;
-        final UnsafeBuffer dataBuffer = ctx.dataBuffer();
-        final ByteBuffer byteBuffer = dataBuffer.byteBuffer();
+        final ByteBuffer byteBuffer = buffer.byteBuffer();
         byteBuffer.clear().limit(HEADER_LENGTH);
 
         if (HEADER_LENGTH != fileChannel.read(byteBuffer, 0))
@@ -1177,13 +1182,13 @@ abstract class ArchiveConductor
             return termOffset;
         }
 
-        final int fragmentLength = fragmentLength(dataBuffer, termOffset);
+        final int fragmentLength = fragmentLength(buffer, termOffset);
         if (fragmentLength <= 0)
         {
             boolean found = false;
             do
             {
-                byteBuffer.clear().limit(Math.min(termLength - termOffset, MAX_BLOCK_LENGTH));
+                byteBuffer.clear().limit(min(termLength - termOffset, MAX_BLOCK_LENGTH));
                 final int bytesRead = fileChannel.read(byteBuffer, termOffset);
                 if (bytesRead <= 0)
                 {
@@ -1196,7 +1201,7 @@ abstract class ArchiveConductor
                 int offset = 0;
                 while (offset < limit)
                 {
-                    if (fragmentLength(dataBuffer, offset) > 0)
+                    if (fragmentLength(buffer, offset) > 0)
                     {
                         found = true;
                         break;
@@ -1217,7 +1222,7 @@ abstract class ArchiveConductor
             return NULL_VALUE;
         }
 
-        final int fileTermId = termId(dataBuffer, termOffset);
+        final int fileTermId = termId(buffer, termOffset);
         if (fileTermId != termId)
         {
             final String msg = "term id does not match: actual=" + fileTermId + " expected=" + termId;
@@ -1225,7 +1230,7 @@ abstract class ArchiveConductor
             return NULL_VALUE;
         }
 
-        final int fileStreamId = streamId(dataBuffer, termOffset);
+        final int fileStreamId = streamId(buffer, termOffset);
         if (fileStreamId != streamId)
         {
             final String msg = "stream id does not match: actual=" + fileStreamId + " expected=" + streamId;
@@ -1353,7 +1358,7 @@ abstract class ArchiveConductor
         final int mtuLength = image.mtuLength();
         final int initialTermId = image.initialTermId();
         final long startPosition = image.joinPosition();
-        final int segmentFileLength = Math.max(ctx.segmentFileLength(), termBufferLength);
+        final int segmentFileLength = max(ctx.segmentFileLength(), termBufferLength);
 
         final long recordingId = catalog.addNewRecording(
             startPosition,
@@ -1635,7 +1640,7 @@ abstract class ArchiveConductor
         {
             if (replaySession.recordingId() == recordingId)
             {
-                upperBound = Math.min(upperBound, replaySession.segmentFileBasePosition());
+                upperBound = min(upperBound, replaySession.segmentFileBasePosition());
             }
         }
 

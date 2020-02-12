@@ -361,6 +361,71 @@ TEST_F(FlowControlTest, shouldTimeoutWithTaggedStrategy)
     ASSERT_EQ(sender_position, strategy->on_idle(strategy->state, 701 * 1000000, sender_position, 0, false));
 }
 
+TEST_F(FlowControlTest, shouldAlwaysHaveRequiredReceiverMaxFlowControlStrategy)
+{
+    aeron_flow_control_strategy_t *strategy = NULL;
+    initialise_channel("aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=max");
+
+    ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
+        &strategy, &context, channel,
+        1001, 1001, 0, 64 * 1024));
+
+    ASSERT_TRUE(strategy->has_required_receivers(strategy));
+}
+
+TEST_F(FlowControlTest, shouldAlwaysHaveRequiredReceiverMinFlowControlStrategy)
+{
+    aeron_flow_control_strategy_t *strategy = NULL;
+    initialise_channel("aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=min");
+
+    ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
+        &strategy, &context, channel,
+        1001, 1001, 0, 64 * 1024));
+
+    ASSERT_TRUE(strategy->has_required_receivers(strategy));
+}
+
+TEST_F(FlowControlTest, shouldAlwaysHaveRequiredReceiverTaggedFlowControlStrategyDefault)
+{
+    aeron_flow_control_strategy_t *strategy = NULL;
+    initialise_channel("aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=tagged");
+
+    ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
+        &strategy, &context, channel,
+        1001, 1001, 0, 64 * 1024));
+
+    ASSERT_TRUE(strategy->has_required_receivers(strategy));
+}
+
+TEST_F(FlowControlTest, shouldOnlyHaveRequiredReceiverTaggedFlowControlStrategyWhenGroupSizeMet)
+{
+    aeron_flow_control_strategy_t *strategy = NULL;
+    initialise_channel("aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=tagged,g:123/3");
+
+    ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
+        &strategy, &context, channel,
+        1001, 1001, 0, 64 * 1024));
+
+    ASSERT_FALSE(strategy->has_required_receivers(strategy));
+
+    apply_status_message(strategy, 1, 1000, -1);
+    apply_status_message(strategy, 2, 1000, -1);
+    apply_status_message(strategy, 3, 1000, -1);
+
+    ASSERT_FALSE(strategy->has_required_receivers(strategy));
+
+    apply_status_message(strategy, 4, 1000, 123);
+
+    ASSERT_FALSE(strategy->has_required_receivers(strategy));
+
+    apply_status_message(strategy, 5, 1000, 123);
+
+    ASSERT_FALSE(strategy->has_required_receivers(strategy));
+
+    apply_status_message(strategy, 6, 1000, 123);
+
+    ASSERT_TRUE(strategy->has_required_receivers(strategy));
+}
 
 TEST_P(ParameterisedSuccessfulOptionsParsingTest, shouldBeValid)
 {

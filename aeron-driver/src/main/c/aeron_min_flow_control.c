@@ -321,6 +321,14 @@ int aeron_tagged_flow_control_strategy_fini(aeron_flow_control_strategy_t *strat
     return 0;
 }
 
+bool aeron_tagged_flow_control_strategy_has_required_receivers(aeron_flow_control_strategy_t *strategy)
+{
+    aeron_tagged_flow_control_strategy_state_t *strategy_state =
+        (aeron_tagged_flow_control_strategy_state_t *)strategy->state;
+
+    return strategy_state->required_group_size <= (int32_t)strategy_state->min_flow_control_state.receivers.length;
+}
+
 int aeron_tagged_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
     aeron_driver_context_t *context,
@@ -348,6 +356,7 @@ int aeron_tagged_flow_control_strategy_supplier(
     _strategy->on_idle = aeron_tagged_flow_control_strategy_on_idle;
     _strategy->on_status_message = aeron_tagged_flow_control_strategy_on_sm;
     _strategy->fini = aeron_tagged_flow_control_strategy_fini;
+    _strategy->has_required_receivers = aeron_tagged_flow_control_strategy_has_required_receivers;
 
     aeron_tagged_flow_control_strategy_state_t *state =
         (aeron_tagged_flow_control_strategy_state_t *)_strategy->state;

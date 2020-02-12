@@ -30,7 +30,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-@SlowTest
 public class TaggedFlowControlTest
 {
     private static final String MULTICAST_URI = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost";
@@ -138,7 +137,6 @@ public class TaggedFlowControlTest
             {
                 driverAContext.flowControlGroupReceiverTag(flowControlGroupReceiverTag);
             }
-
             if (null != receiverTag)
             {
                 driverBContext.receiverTag(receiverTag);
@@ -203,14 +201,8 @@ public class TaggedFlowControlTest
         });
     }
 
-    @ParameterizedTest
-    @MethodSource("strategyConfigurations")
-    public void shouldRemoveDeadTaggedReceiverWithTaggedMulticastFlowControlStrategy(
-        final FlowControlSupplier flowControlSupplier,
-        final Long receiverTag,
-        final Long flowControlGroupReceiverTag,
-        final String publisherUriParams,
-        final String subscriptionBUriParams)
+    @Test
+    public void shouldRemoveDeadTaggedReceiverWithTaggedMulticastFlowControlStrategy()
     {
         assertTimeoutPreemptively(ofSeconds(200), () ->
         {
@@ -220,24 +212,15 @@ public class TaggedFlowControlTest
             boolean isBClosed = false;
 
             driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
-            if (null != flowControlSupplier)
-            {
-                driverAContext.multicastFlowControlSupplier(flowControlSupplier);
-            }
-            if (null != receiverTag)
-            {
-                driverBContext.receiverTag(receiverTag);
-            }
-            if (null != flowControlGroupReceiverTag)
-            {
-                driverBContext.flowControlGroupReceiverTag(flowControlGroupReceiverTag);
-            }
+            driverAContext.multicastFlowControlSupplier(new TaggedMulticastFlowControlSupplier());
+            driverBContext.receiverTag(DEFAULT_RECEIVER_TAG);
+            driverBContext.flowControlGroupReceiverTag(DEFAULT_RECEIVER_TAG);
 
             launch();
 
             subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
-            subscriptionB = clientB.addSubscription(MULTICAST_URI + subscriptionBUriParams, STREAM_ID);
-            publication = clientA.addPublication(MULTICAST_URI + publisherUriParams, STREAM_ID);
+            subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
+            publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
 
             while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
             {

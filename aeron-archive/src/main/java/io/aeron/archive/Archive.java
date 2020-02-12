@@ -44,7 +44,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Supplier;
 
-import static io.aeron.archive.Archive.Configuration.MAX_BLOCK_LENGTH;
+import static io.aeron.archive.ArchiveThreadingMode.DEDICATED;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
 import static java.lang.System.getProperty;
@@ -69,7 +69,7 @@ public class Archive implements AutoCloseable
         this.ctx = ctx;
         ctx.conclude();
 
-        final ArchiveConductor conductor = ArchiveThreadingMode.DEDICATED == ctx.threadingMode() ?
+        final ArchiveConductor conductor = DEDICATED == ctx.threadingMode() ?
             new DedicatedModeArchiveConductor(ctx) :
             new SharedModeArchiveConductor(ctx);
 
@@ -458,8 +458,7 @@ public class Archive implements AutoCloseable
          */
         public static ArchiveThreadingMode threadingMode()
         {
-            return ArchiveThreadingMode.valueOf(System.getProperty(
-                THREADING_MODE_PROP_NAME, ArchiveThreadingMode.DEDICATED.name()));
+            return ArchiveThreadingMode.valueOf(System.getProperty(THREADING_MODE_PROP_NAME, DEDICATED.name()));
         }
 
         /**
@@ -722,6 +721,8 @@ public class Archive implements AutoCloseable
         UnsafeBuffer replayBuffer;
         UnsafeBuffer recordChecksumBuffer;
 
+        private boolean shouldFreeBuffersOnClose;
+
         /**
          * Perform a shallow copy of the object.
          *
@@ -841,7 +842,7 @@ public class Archive implements AutoCloseable
                 idleStrategySupplier = Configuration.idleStrategySupplier(null);
             }
 
-            if (ArchiveThreadingMode.DEDICATED == threadingMode)
+            if (DEDICATED == threadingMode)
             {
                 if (null == recorderIdleStrategySupplier)
                 {
@@ -892,7 +893,7 @@ public class Archive implements AutoCloseable
 
             archiveClientContext.aeron(aeron).lock(NoOpLock.INSTANCE).errorHandler(errorHandler);
 
-            int expectedCount = ArchiveThreadingMode.DEDICATED == threadingMode ? 2 : 0;
+            int expectedCount = DEDICATED == threadingMode ? 2 : 0;
             expectedCount += aeron.conductorAgentInvoker() == null ? 1 : 0;
             abortLatch = new CountDownLatch(expectedCount);
 
@@ -1930,6 +1931,36 @@ public class Archive implements AutoCloseable
             return this;
         }
 
+        /**
+         * Should all direct {@link java.nio.ByteBuffer}s that are allocated by this context be explicitly freed upon
+         * {@link #close()}.
+         *
+         * @return {@code true} if direct {@link java.nio.ByteBuffer}s should be freed upon {@link #close()}.
+         */
+        public boolean shouldFreeBuffersOnClose()
+        {
+            return shouldFreeBuffersOnClose;
+        }
+
+        /**
+         * Should all direct {@link java.nio.ByteBuffer}s that are allocated by this context be explicitly freed upon
+         * {@link #close()}.
+         * <p>
+         * The default is to rely on GC to free the resources associated with the direct {@link java.nio.ByteBuffer}s.
+         * Also the {@link java.nio.ByteBuffer}s from the memory-mapped files are always unmapped.
+         * <p>
+         * <em>WARNING: Use at your own risk!</em>
+         *
+         * @param shouldFreeBuffersOnClose {@code true} if direct {@link java.nio.ByteBuffer}s should be freed
+         *                                 upon {@link #close()}.
+         * @return this for a fluent API.
+         */
+        public Context shouldFreeBuffersOnClose(final boolean shouldFreeBuffersOnClose)
+        {
+            this.shouldFreeBuffersOnClose = shouldFreeBuffersOnClose;
+            return this;
+        }
+
         CountDownLatch abortLatch()
         {
             return abortLatch;
@@ -1963,32 +1994,47 @@ public class Archive implements AutoCloseable
         {
             if (null == dataBuffer)
             {
-                dataBuffer = new UnsafeBuffer(allocateDirectAligned(MAX_BLOCK_LENGTH, CACHE_LINE_LENGTH));
+                dataBuffer = allocateBuffer();
             }
-
             return dataBuffer;
         }
 
         UnsafeBuffer replayBuffer()
         {
-            if (null == replayBuffer)
+            if (DEDICATED != threadingMode)
             {
-                replayBuffer = ArchiveThreadingMode.DEDICATED == threadingMode ?
-                    new UnsafeBuffer(allocateDirectAligned(MAX_BLOCK_LENGTH, CACHE_LINE_LENGTH)) : dataBuffer();
+                return dataBuffer();
             }
 
+            if (null == replayBuffer)
+            {
+                replayBuffer = allocateBuffer();
+            }
             return replayBuffer;
         }
 
         UnsafeBuffer recordChecksumBuffer()
         {
-            if (null == recordChecksumBuffer && null != recordChecksum)
+            if (null == recordChecksum)
             {
-                recordChecksumBuffer = ArchiveThreadingMode.DEDICATED == threadingMode ?
-                    new UnsafeBuffer(allocateDirectAligned(MAX_BLOCK_LENGTH, CACHE_LINE_LENGTH)) : dataBuffer();
+                return null;
             }
 
+            if (DEDICATED != threadingMode)
+            {
+                return dataBuffer();
+            }
+
+            if (null == recordChecksumBuffer)
+            {
+                recordChecksumBuffer = allocateBuffer();
+            }
             return recordChecksumBuffer;
+        }
+
+        private UnsafeBuffer allocateBuffer()
+        {
+            return new UnsafeBuffer(allocateDirectAligned(Configuration.MAX_BLOCK_LENGTH, CACHE_LINE_LENGTH));
         }
 
         /**
@@ -2012,6 +2058,19 @@ public class Archive implements AutoCloseable
             if (ownsAeronClient)
             {
                 CloseHelper.close(aeron);
+            }
+
+            if (shouldFreeBuffersOnClose)
+            {
+                final UnsafeBuffer dataBuffer = this.dataBuffer;
+                this.dataBuffer = null;
+                final UnsafeBuffer replayBuffer = this.replayBuffer;
+                this.replayBuffer = null;
+                final UnsafeBuffer recordChecksumBuffer = this.recordChecksumBuffer;
+                this.recordChecksumBuffer = null;
+                AeronCloseHelper.free(dataBuffer);
+                AeronCloseHelper.free(replayBuffer);
+                AeronCloseHelper.free(recordChecksumBuffer);
             }
         }
     }

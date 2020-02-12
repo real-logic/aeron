@@ -1931,6 +1931,36 @@ public class Archive implements AutoCloseable
             return this;
         }
 
+        /**
+         * Should all direct {@link java.nio.ByteBuffer}s that are allocated by this context be explicitly freed upon
+         * {@link #close()}.
+         *
+         * @return {@code true} if direct {@link java.nio.ByteBuffer}s should be freed upon {@link #close()}.
+         */
+        public boolean shouldFreeBuffersOnClose()
+        {
+            return shouldFreeBuffersOnClose;
+        }
+
+        /**
+         * Should all direct {@link java.nio.ByteBuffer}s that are allocated by this context be explicitly freed upon
+         * {@link #close()}.
+         * <p>
+         * The default is to rely on GC to free the resources associated with the direct {@link java.nio.ByteBuffer}s.
+         * Also the {@link java.nio.ByteBuffer}s from the memory-mapped files are always unmapped.
+         * <p>
+         * <em>WARNING: Use at your own risk!</em>
+         *
+         * @param shouldFreeBuffersOnClose {@code true} if direct {@link java.nio.ByteBuffer}s should be freed
+         *                                 upon {@link #close()}.
+         * @return this for a fluent API.
+         */
+        public Context shouldFreeBuffersOnClose(final boolean shouldFreeBuffersOnClose)
+        {
+            this.shouldFreeBuffersOnClose = shouldFreeBuffersOnClose;
+            return this;
+        }
+
         CountDownLatch abortLatch()
         {
             return abortLatch;
@@ -2000,12 +2030,6 @@ public class Archive implements AutoCloseable
                 recordChecksumBuffer = allocateBuffer();
             }
             return recordChecksumBuffer;
-        }
-
-        Context shouldFreeBuffersOnClose(final boolean shouldFreeBuffersOnClose)
-        {
-            this.shouldFreeBuffersOnClose = shouldFreeBuffersOnClose;
-            return this;
         }
 
         private UnsafeBuffer allocateBuffer()

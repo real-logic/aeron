@@ -83,6 +83,16 @@ public class MediaDriverContextTest
     }
 
     @Test
+    void shouldFreeBuffersOnClose()
+    {
+        final Context context = new Context();
+        assertFalse(context.shouldFreeBuffersOnClose());
+
+        context.shouldFreeBuffersOnClose(true);
+        assertTrue(context.shouldFreeBuffersOnClose());
+    }
+
+    @Test
     void defaultDataHeaderIsAllocatedOnDemand()
     {
         final Context context = new Context();

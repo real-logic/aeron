@@ -443,6 +443,16 @@ public class ArchiveTest
     }
 
     @Test
+    void shouldFreeBuffersOnClose()
+    {
+        final Context context = new Context();
+        assertFalse(context.shouldFreeBuffersOnClose());
+
+        context.shouldFreeBuffersOnClose(true);
+        assertTrue(context.shouldFreeBuffersOnClose());
+    }
+
+    @Test
     void closeFreesBuffersIfShouldFreeBuffersOnCloseIsSetToTrue()
     {
         final Context context = new Context().recordChecksum(mock(Checksum.class)).shouldFreeBuffersOnClose(true);

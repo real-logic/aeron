@@ -44,7 +44,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Supplier;
 
-import static io.aeron.archive.ArchiveThreadingMode.DEDICATED;
+import static io.aeron.archive.Archive.Configuration.MAX_BLOCK_LENGTH;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
 import static java.lang.System.getProperty;
@@ -69,7 +69,7 @@ public class Archive implements AutoCloseable
         this.ctx = ctx;
         ctx.conclude();
 
-        final ArchiveConductor conductor = DEDICATED == ctx.threadingMode() ?
+        final ArchiveConductor conductor = ArchiveThreadingMode.DEDICATED == ctx.threadingMode() ?
             new DedicatedModeArchiveConductor(ctx) :
             new SharedModeArchiveConductor(ctx);
 
@@ -458,7 +458,8 @@ public class Archive implements AutoCloseable
          */
         public static ArchiveThreadingMode threadingMode()
         {
-            return ArchiveThreadingMode.valueOf(System.getProperty(THREADING_MODE_PROP_NAME, DEDICATED.name()));
+            return ArchiveThreadingMode.valueOf(System.getProperty(
+                THREADING_MODE_PROP_NAME, ArchiveThreadingMode.DEDICATED.name()));
         }
 
         /**
@@ -840,7 +841,7 @@ public class Archive implements AutoCloseable
                 idleStrategySupplier = Configuration.idleStrategySupplier(null);
             }
 
-            if (DEDICATED == threadingMode)
+            if (ArchiveThreadingMode.DEDICATED == threadingMode)
             {
                 if (null == recorderIdleStrategySupplier)
                 {
@@ -891,7 +892,7 @@ public class Archive implements AutoCloseable
 
             archiveClientContext.aeron(aeron).lock(NoOpLock.INSTANCE).errorHandler(errorHandler);
 
-            int expectedCount = DEDICATED == threadingMode ? 2 : 0;
+            int expectedCount = ArchiveThreadingMode.DEDICATED == threadingMode ? 2 : 0;
             expectedCount += aeron.conductorAgentInvoker() == null ? 1 : 0;
             abortLatch = new CountDownLatch(expectedCount);
 
@@ -1962,8 +1963,7 @@ public class Archive implements AutoCloseable
         {
             if (null == dataBuffer)
             {
-                dataBuffer = new UnsafeBuffer(allocateDirectAligned(
-                    Configuration.MAX_BLOCK_LENGTH, CACHE_LINE_LENGTH));
+                dataBuffer = new UnsafeBuffer(allocateDirectAligned(MAX_BLOCK_LENGTH, CACHE_LINE_LENGTH));
             }
 
             return dataBuffer;
@@ -1973,8 +1973,8 @@ public class Archive implements AutoCloseable
         {
             if (null == replayBuffer)
             {
-                replayBuffer = new UnsafeBuffer(allocateDirectAligned(
-                    Configuration.MAX_BLOCK_LENGTH, CACHE_LINE_LENGTH));
+                replayBuffer = ArchiveThreadingMode.SHARED == threadingMode ?
+                    new UnsafeBuffer(allocateDirectAligned(MAX_BLOCK_LENGTH, CACHE_LINE_LENGTH)) : dataBuffer();
             }
 
             return replayBuffer;
@@ -1984,8 +1984,8 @@ public class Archive implements AutoCloseable
         {
             if (null == recordChecksumBuffer && null != recordChecksum)
             {
-                recordChecksumBuffer = new UnsafeBuffer(allocateDirectAligned(
-                    Configuration.MAX_BLOCK_LENGTH, CACHE_LINE_LENGTH));
+                recordChecksumBuffer = ArchiveThreadingMode.SHARED == threadingMode ?
+                    new UnsafeBuffer(allocateDirectAligned(MAX_BLOCK_LENGTH, CACHE_LINE_LENGTH)) : dataBuffer();
             }
 
             return recordChecksumBuffer;

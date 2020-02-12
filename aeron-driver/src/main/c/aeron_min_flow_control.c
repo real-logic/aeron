@@ -326,17 +326,7 @@ bool aeron_tagged_flow_control_strategy_has_required_receivers(aeron_flow_contro
     aeron_tagged_flow_control_strategy_state_t *strategy_state =
         (aeron_tagged_flow_control_strategy_state_t *)strategy->state;
 
-
-    bool result = strategy_state->required_group_size <= (int32_t)strategy_state->min_flow_control_state.receivers
-        .length;
-
-    fprintf(
-        stdout,
-        "required: %d, currently: %zu, result: %s\n",
-        strategy_state->required_group_size,
-        strategy_state->min_flow_control_state.receivers.length,
-        result ? "true" : "false");
-    return result;
+    return strategy_state->required_group_size <= (int32_t)strategy_state->min_flow_control_state.receivers.length;
 }
 
 int aeron_tagged_flow_control_strategy_supplier(

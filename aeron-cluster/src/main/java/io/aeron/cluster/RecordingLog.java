@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.AeronCloseHelper;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.cluster.client.ClusterException;
@@ -100,6 +101,7 @@ public class RecordingLog implements AutoCloseable
 
         /**
          * A new entry in the recording log.
+         *
          * @param recordingId         of the entry in an archive.
          * @param leadershipTermId    of this entry.
          * @param termBaseLogPosition position of the log over leadership terms at the beginning of this term.
@@ -391,11 +393,11 @@ public class RecordingLog implements AutoCloseable
     private long filePosition = 0;
     private int nextEntryIndex;
     private final FileChannel fileChannel;
-    private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4096).order(LITTLE_ENDIAN);
-    private final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
     private final ArrayList<Entry> entriesCache = new ArrayList<>();
     private final Long2LongHashMap cacheIndexByLeadershipTermIdMap = new Long2LongHashMap(NULL_VALUE);
     private final IntArrayList invalidSnapshots = new IntArrayList();
+    private UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(4096).order(LITTLE_ENDIAN));
+    private boolean isClosed = false;
 
     /**
      * Create a log that appends to an existing log or creates a new one.
@@ -428,7 +430,15 @@ public class RecordingLog implements AutoCloseable
 
     public void close()
     {
-        CloseHelper.close(fileChannel);
+        if (!isClosed)
+        {
+            isClosed = true;
+            CloseHelper.close(fileChannel);
+
+            final UnsafeBuffer buffer = this.buffer;
+            this.buffer = null;
+            AeronCloseHelper.free(buffer);
+        }
     }
 
     /**
@@ -438,6 +448,8 @@ public class RecordingLog implements AutoCloseable
      */
     public void force(final int fileSyncLevel)
     {
+        ensureNotClosed();
+
         if (fileSyncLevel > 0)
         {
             try
@@ -476,6 +488,8 @@ public class RecordingLog implements AutoCloseable
      */
     public void reload()
     {
+        ensureNotClosed();
+
         filePosition = 0;
         entriesCache.clear();
         cacheIndexByLeadershipTermIdMap.clear();
@@ -483,6 +497,7 @@ public class RecordingLog implements AutoCloseable
         cacheIndexByLeadershipTermIdMap.compact();
 
         nextEntryIndex = 0;
+        final ByteBuffer byteBuffer = buffer.byteBuffer();
         byteBuffer.clear();
 
         try
@@ -605,6 +620,8 @@ public class RecordingLog implements AutoCloseable
      */
     public boolean invalidateLatestSnapshot()
     {
+        ensureNotClosed();
+
         int index = -1;
         for (int i = entriesCache.size() - 1; i >= 0; i--)
         {
@@ -760,6 +777,8 @@ public class RecordingLog implements AutoCloseable
     public void appendTerm(
         final long recordingId, final long leadershipTermId, final long termBaseLogPosition, final long timestamp)
     {
+        ensureNotClosed();
+
         final int size = entriesCache.size();
         if (size > 0)
         {
@@ -807,6 +826,8 @@ public class RecordingLog implements AutoCloseable
         final long timestamp,
         final int serviceId)
     {
+        ensureNotClosed();
+
         final int size = entriesCache.size();
         if (size > 0)
         {
@@ -842,6 +863,7 @@ public class RecordingLog implements AutoCloseable
         final long timestamp,
         final int serviceId)
     {
+        final ByteBuffer byteBuffer = buffer.byteBuffer();
         for (int i = invalidSnapshots.size() - 1; i >= 0; i--)
         {
             final int entryCacheIndex = invalidSnapshots.getInt(i);
@@ -892,6 +914,8 @@ public class RecordingLog implements AutoCloseable
      */
     public void commitLogPosition(final long leadershipTermId, final long logPosition)
     {
+        ensureNotClosed();
+
         final int index = (int)cacheIndexByLeadershipTermIdMap.get(leadershipTermId);
         if (NULL_VALUE == index)
         {
@@ -924,6 +948,8 @@ public class RecordingLog implements AutoCloseable
      */
     public void invalidateEntry(final long leadershipTermId, final int entryIndex)
     {
+        ensureNotClosed();
+
         Entry invalidEntry = null;
         for (int i = entriesCache.size() - 1; i >= 0; i--)
         {
@@ -953,6 +979,7 @@ public class RecordingLog implements AutoCloseable
 
         final int invalidEntryType = ENTRY_TYPE_INVALID_FLAG | invalidEntry.type;
         buffer.putInt(0, invalidEntryType, LITTLE_ENDIAN);
+        final ByteBuffer byteBuffer = buffer.byteBuffer();
         byteBuffer.limit(SIZE_OF_INT).position(0);
         final long position = (invalidEntry.entryIndex * (long)ENTRY_LENGTH) + ENTRY_TYPE_OFFSET;
 
@@ -977,6 +1004,8 @@ public class RecordingLog implements AutoCloseable
      */
     void removeEntry(final long leadershipTermId, final int entryIndex)
     {
+        ensureNotClosed();
+
         int index = -1;
         for (int i = entriesCache.size() - 1; i >= 0; i--)
         {
@@ -994,6 +1023,7 @@ public class RecordingLog implements AutoCloseable
         }
 
         buffer.putInt(0, NULL_VALUE, LITTLE_ENDIAN);
+        final ByteBuffer byteBuffer = buffer.byteBuffer();
         byteBuffer.limit(SIZE_OF_INT).position(0);
         final long position = (index * (long)ENTRY_LENGTH) + ENTRY_TYPE_OFFSET;
 
@@ -1021,6 +1051,14 @@ public class RecordingLog implements AutoCloseable
             '}';
     }
 
+    private void ensureNotClosed()
+    {
+        if (isClosed)
+        {
+            throw new ClusterException("RecordingLog is closed!");
+        }
+    }
+
     private void append(
         final int entryType,
         final long recordingId,
@@ -1041,6 +1079,7 @@ public class RecordingLog implements AutoCloseable
             true,
             nextEntryIndex);
 
+        final ByteBuffer byteBuffer = buffer.byteBuffer();
         writeEntryToBuffer(entry, buffer, byteBuffer);
         try
         {
@@ -1127,6 +1166,7 @@ public class RecordingLog implements AutoCloseable
     private void commitEntryValue(final int entryIndex, final long value, final int fieldOffset)
     {
         buffer.putLong(0, value, LITTLE_ENDIAN);
+        final ByteBuffer byteBuffer = buffer.byteBuffer();
         byteBuffer.limit(SIZE_OF_LONG).position(0);
         final long position = (entryIndex * (long)ENTRY_LENGTH) + fieldOffset;
 

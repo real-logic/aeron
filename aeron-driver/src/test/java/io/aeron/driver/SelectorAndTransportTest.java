@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
+import static java.nio.ByteBuffer.allocateDirect;
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
@@ -51,7 +52,7 @@ public class SelectorAndTransportTest
         UdpChannel.parse("aeron:udp?interface=localhost:" + SRC_PORT + "|endpoint=localhost:" + RCV_PORT);
     private static final UdpChannel RCV_DST = UdpChannel.parse("aeron:udp?endpoint=localhost:" + RCV_PORT);
 
-    private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(256);
+    private final ByteBuffer byteBuffer = allocateDirect(256);
     private final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
 
     private final DataHeaderFlyweight encodeDataHeader = new DataHeaderFlyweight();
@@ -68,8 +69,10 @@ public class SelectorAndTransportTest
     private final NetworkPublication mockPublication = mock(NetworkPublication.class);
     private final ErrorHandler errorHandler = mock(ErrorHandler.class);
 
-    private final DataTransportPoller dataTransportPoller = new DataTransportPoller(errorHandler);
-    private final ControlTransportPoller controlTransportPoller = new ControlTransportPoller(errorHandler);
+    private final DataTransportPoller dataTransportPoller =
+        new DataTransportPoller(allocateDirect(Configuration.MAX_UDP_PAYLOAD_LENGTH), errorHandler);
+    private final ControlTransportPoller controlTransportPoller =
+        new ControlTransportPoller(allocateDirect(Configuration.MAX_UDP_PAYLOAD_LENGTH), errorHandler);
     private SendChannelEndpoint sendChannelEndpoint;
     private ReceiveChannelEndpoint receiveChannelEndpoint;
 

@@ -38,6 +38,7 @@ import org.agrona.concurrent.status.*;
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.text.SimpleDateFormat;
@@ -54,8 +55,8 @@ import static io.aeron.driver.status.SystemCounterDescriptor.CONTROLLABLE_IDLE_S
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
-import static org.agrona.BitUtil.align;
+import static org.agrona.BitUtil.*;
+import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.IoUtil.mapNewFile;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
 import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
@@ -506,7 +507,10 @@ public final class MediaDriver implements AutoCloseable
         private MappedByteBuffer lossReportBuffer;
         private MappedByteBuffer cncByteBuffer;
         private UnsafeBuffer cncMetaDataBuffer;
+
         DataHeaderFlyweight defaultDataHeader;
+        ByteBuffer dataTransportPollerBuffer;
+        ByteBuffer controlTransportPollerBuffer;
 
         private boolean shouldFreeBuffersOnClose;
 
@@ -564,6 +568,16 @@ public final class MediaDriver implements AutoCloseable
                     final DataHeaderFlyweight defaultDataHeader = this.defaultDataHeader;
                     this.defaultDataHeader = null;
                     AeronCloseHelper.free(defaultDataHeader);
+
+                    final ByteBuffer controlTransportPollerBuffer = this.controlTransportPollerBuffer;
+                    this.controlTransportPollerBuffer = null;
+                    controlTransportPoller = null;
+                    AeronCloseHelper.free(controlTransportPollerBuffer);
+
+                    final ByteBuffer dataTransportPollerBuffer = this.dataTransportPollerBuffer;
+                    this.dataTransportPollerBuffer = null;
+                    dataTransportPoller = null;
+                    AeronCloseHelper.free(dataTransportPollerBuffer);
                 }
             }
         }
@@ -3000,12 +3014,16 @@ public final class MediaDriver implements AutoCloseable
 
             if (null == dataTransportPoller)
             {
-                dataTransportPoller = new DataTransportPoller(errorHandler);
+                dataTransportPollerBuffer =
+                    allocateDirectAligned(Configuration.MAX_UDP_PAYLOAD_LENGTH, CACHE_LINE_LENGTH);
+                dataTransportPoller = new DataTransportPoller(dataTransportPollerBuffer, errorHandler);
             }
 
             if (null == controlTransportPoller)
             {
-                controlTransportPoller = new ControlTransportPoller(errorHandler);
+                controlTransportPollerBuffer =
+                    allocateDirectAligned(Configuration.MAX_UDP_PAYLOAD_LENGTH, CACHE_LINE_LENGTH);
+                controlTransportPoller = new ControlTransportPoller(controlTransportPollerBuffer, errorHandler);
             }
 
             if (null == applicationSpecificFeedback)

@@ -2,6 +2,8 @@ package io.aeron.driver;
 
 import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.buffer.LogFactory;
+import io.aeron.driver.media.ControlTransportPoller;
+import io.aeron.driver.media.DataTransportPoller;
 import io.aeron.driver.media.ReceiveChannelEndpointThreadLocals;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.ErrorHandler;
@@ -12,6 +14,7 @@ import org.mockito.InOrder;
 import java.io.IOError;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 
 import static io.aeron.driver.Configuration.NAK_MAX_BACKOFF_DEFAULT_NS;
@@ -110,10 +113,18 @@ public class MediaDriverContextTest
         final Context context = new Context().shouldFreeBuffersOnClose(true);
         context.receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals(context));
         context.defaultDataHeader();
+        context.controlTransportPollerBuffer = mock(ByteBuffer.class);
+        context.controlTransportPoller(mock(ControlTransportPoller.class));
+        context.dataTransportPollerBuffer = mock(ByteBuffer.class);
+        context.dataTransportPoller(mock(DataTransportPoller.class));
 
         context.close();
 
         assertNull(context.receiveChannelEndpointThreadLocals());
         assertNull(context.defaultDataHeader);
+        assertNull(context.controlTransportPollerBuffer);
+        assertNull(context.controlTransportPoller());
+        assertNull(context.dataTransportPollerBuffer);
+        assertNull(context.dataTransportPoller());
     }
 }

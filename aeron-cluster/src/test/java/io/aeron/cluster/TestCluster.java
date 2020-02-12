@@ -48,6 +48,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static io.aeron.Aeron.NULL_VALUE;
+import static io.aeron.cluster.ConsensusModule.Configuration.SNAPSHOT_CHANNEL_DEFAULT;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -62,6 +63,8 @@ public class TestCluster implements AutoCloseable
         "aeron:udp?term-length=64k|endpoint=localhost:8010";
     private static final String ARCHIVE_CONTROL_RESPONSE_CHANNEL =
         "aeron:udp?term-length=64k|endpoint=localhost:8020";
+    private static final String CLUSTER_EGRESS_CHANNEL =
+        "aeron:udp?term-length=64k|endpoint=localhost:9020";
 
     private final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
     private final MutableInteger responseCount = new MutableInteger();
@@ -512,9 +515,10 @@ public class TestCluster implements AutoCloseable
 
         client = AeronCluster.connect(
             new AeronCluster.Context()
-                .egressListener(egressMessageListener)
                 .aeronDirectoryName(aeronDirName)
-                .ingressChannel("aeron:udp")
+                .egressListener(egressMessageListener)
+                .ingressChannel("aeron:udp?term-length=64k")
+                .egressChannel(CLUSTER_EGRESS_CHANNEL)
                 .clusterMemberEndpoints(staticClusterMemberEndpoints));
     }
 
@@ -531,9 +535,10 @@ public class TestCluster implements AutoCloseable
 
         client = AeronCluster.connect(
             new AeronCluster.Context()
-                .egressListener(egressMessageListener)
                 .aeronDirectoryName(aeronDirName)
-                .ingressChannel("aeron:udp")
+                .egressListener(egressMessageListener)
+                .ingressChannel("aeron:udp?term-length=64k")
+                .egressChannel(CLUSTER_EGRESS_CHANNEL)
                 .clusterMemberEndpoints(staticClusterMemberEndpoints));
     }
 
@@ -943,6 +948,7 @@ public class TestCluster implements AutoCloseable
             .clusterDir(new File(baseDirName, "service"))
             .clusteredService(context.service)
             .serviceId(serviceId)
+            .snapshotChannel(SNAPSHOT_CHANNEL_DEFAULT + "|term-length=64k")
             .errorHandler(ClusterTests.errorHandler(serviceIndex));
 
         return context;
@@ -965,6 +971,7 @@ public class TestCluster implements AutoCloseable
 
         context.archiveContext
             .maxCatalogEntries(MAX_CATALOG_ENTRIES)
+            .segmentFileLength(256 * 1024)
             .aeronDirectoryName(aeronDirName)
             .archiveDir(new File(baseDirName, "archive"))
             .controlChannel(TestCluster.memberSpecificPort(ARCHIVE_CONTROL_REQUEST_CHANNEL, index))
@@ -994,6 +1001,7 @@ public class TestCluster implements AutoCloseable
             .ingressChannel("aeron:udp?term-length=64k")
             .logChannel(memberSpecificPort(LOG_CHANNEL, index))
             .archiveContext(context.aeronArchiveContext.clone())
+            .snapshotChannel(SNAPSHOT_CHANNEL_DEFAULT + "|term-length=64k")
             .deleteDirOnStart(cleanStart);
 
         return context;

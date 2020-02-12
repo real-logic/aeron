@@ -586,6 +586,14 @@ void aeron_network_publication_on_nak(
         publication);
 }
 
+inline static bool aeron_network_publication_has_required_receivers(aeron_network_publication_t *publication)
+{
+    bool has_receivers;
+    AERON_GET_VOLATILE(has_receivers, publication->has_receivers);
+
+    return has_receivers && publication->flow_control->has_required_receivers(publication->flow_control);
+}
+
 inline static void aeron_network_publication_update_connected_status(
     aeron_network_publication_t *publication,
     bool expected_status)
@@ -611,7 +619,9 @@ void aeron_network_publication_on_status_message(
         AERON_PUT_ORDERED(publication->has_receivers, true);
     }
 
-    aeron_network_publication_update_connected_status(publication, true);
+    aeron_network_publication_update_connected_status(
+        publication,
+        aeron_network_publication_has_required_receivers(publication));
 
     aeron_counter_set_ordered(
         publication->snd_lmt_position.value_addr,
@@ -701,9 +711,7 @@ int aeron_network_publication_update_pub_lmt(aeron_network_publication_t *public
     int work_count = 0;
     int64_t snd_pos = aeron_counter_get_volatile(publication->snd_pos_position.value_addr);
 
-    bool has_receivers;
-    AERON_GET_VOLATILE(has_receivers, publication->has_receivers);
-    if (has_receivers ||
+    if (aeron_network_publication_has_required_receivers(publication) ||
         (publication->spies_simulate_connection && publication->conductor_fields.subscribable.length > 0))
     {
         int64_t min_consumer_position = snd_pos;
@@ -905,7 +913,7 @@ void aeron_network_publication_on_time_event(
     AERON_GET_VOLATILE(has_receivers, publication->has_receivers);
 
     bool current_connected_status =
-        has_receivers ||
+        aeron_network_publication_has_required_receivers(publication) ||
         (publication->spies_simulate_connection && publication->conductor_fields.subscribable.length > 0);
 
     aeron_network_publication_update_connected_status(publication, current_connected_status);

@@ -45,14 +45,19 @@ typedef int64_t (*aeron_flow_control_strategy_on_sm_func_t)(
 
 typedef int (*aeron_flow_control_strategy_fini_func_t)(aeron_flow_control_strategy_t *strategy);
 
+typedef bool (*aeron_flow_control_strategy_has_required_receivers)(aeron_flow_control_strategy_t *strategy);
+
 typedef struct aeron_flow_control_strategy_stct
 {
     aeron_flow_control_strategy_on_sm_func_t on_status_message;
     aeron_flow_control_strategy_on_idle_func_t on_idle;
     aeron_flow_control_strategy_fini_func_t fini;
+    aeron_flow_control_strategy_has_required_receivers has_required_receivers;
     void *state;
 }
 aeron_flow_control_strategy_t;
+
+bool aeron_flow_control_strategy_has_required_receivers_default(aeron_flow_control_strategy_t *strategy);
 
 typedef struct aeron_flow_control_tagged_options_stct
 {

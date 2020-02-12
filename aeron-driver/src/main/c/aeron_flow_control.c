@@ -47,6 +47,11 @@ aeron_flow_control_strategy_supplier_func_t aeron_flow_control_strategy_supplier
     return func;
 }
 
+bool aeron_flow_control_strategy_has_required_receivers_default(aeron_flow_control_strategy_t *strategy)
+{
+    return true;
+}
+
 int64_t aeron_max_flow_control_strategy_on_idle(
     void *state,
     int64_t now_ns,
@@ -224,8 +229,15 @@ int aeron_default_multicast_flow_control_strategy_supplier(
         flow_control_strategy_supplier_func = context->unicast_flow_control_supplier_func;
     }
 
-    return flow_control_strategy_supplier_func(
+    int rc = flow_control_strategy_supplier_func(
         strategy, context, channel, stream_id, registration_id, initial_term_id, term_length);
+
+    if (0 <= rc && NULL != *strategy && NULL == (*strategy)->has_required_receivers)
+    {
+        (*strategy)->has_required_receivers = aeron_flow_control_strategy_has_required_receivers_default;
+    }
+
+    return rc;
 }
 
 #define AERON_FLOW_CONTROL_NUMBER_BUFFER_LEN (64)

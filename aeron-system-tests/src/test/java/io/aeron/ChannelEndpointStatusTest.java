@@ -36,7 +36,6 @@ import org.mockito.ArgumentCaptor;
 
 import java.io.File;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.time.Duration.ofSeconds;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -74,8 +73,8 @@ public class ChannelEndpointStatusTest
     private final ErrorHandler errorHandlerClientB = mock(ErrorHandler.class);
     private final ErrorHandler errorHandlerClientC = mock(ErrorHandler.class);
 
-    private final AtomicInteger errorCounter = new AtomicInteger();
-    private final ErrorHandler countingErrorHandler = (ex) -> errorCounter.getAndIncrement();
+    private final ErrorHandler errorHandlerDriverA = mock(ErrorHandler.class);
+    private final ErrorHandler errorHandlerDriverB = mock(ErrorHandler.class);
 
     @BeforeEach
     public void before()
@@ -91,13 +90,13 @@ public class ChannelEndpointStatusTest
         final MediaDriver.Context driverAContext = new MediaDriver.Context()
             .publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirA)
-            .errorHandler(countingErrorHandler)
+            .errorHandler(errorHandlerDriverA)
             .threadingMode(THREADING_MODE);
 
         final MediaDriver.Context driverBContext = new MediaDriver.Context()
             .publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirB)
-            .errorHandler(countingErrorHandler)
+            .errorHandler(errorHandlerDriverB)
             .threadingMode(THREADING_MODE);
 
         driverA = TestMediaDriver.launch(driverAContext);
@@ -184,6 +183,8 @@ public class ChannelEndpointStatusTest
 
         final ArgumentCaptor<Throwable> captor = ArgumentCaptor.forClass(Throwable.class);
         verify(errorHandlerClientB, timeout(5000L)).onError(captor.capture());
+        verify(errorHandlerDriverB, timeout(5000L)).onError(any());
+        verify(errorHandlerDriverA, never()).onError(any());
 
         assertThat(captor.getValue(), instanceOf(ChannelEndpointException.class));
 
@@ -191,8 +192,6 @@ public class ChannelEndpointStatusTest
         final long status = clientB.countersReader().getCounterValue(channelEndpointException.statusIndicatorId());
 
         assertThat(status, is(ChannelEndpointStatus.ERRORED));
-        assertThat(errorCounter.get(), greaterThan(0));
-
         assertThat(subscriptionB.channelStatusId(), is(channelEndpointException.statusIndicatorId()));
         assertThat(subscriptionA.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
     }
@@ -214,6 +213,8 @@ public class ChannelEndpointStatusTest
 
         final ArgumentCaptor<Throwable> captor = ArgumentCaptor.forClass(Throwable.class);
         verify(errorHandlerClientB, timeout(5000L)).onError(captor.capture());
+        verify(errorHandlerDriverB, timeout(5000L)).onError(any());
+        verify(errorHandlerDriverA, never()).onError(any());
 
         assertThat(captor.getValue(), instanceOf(ChannelEndpointException.class));
 
@@ -221,8 +222,6 @@ public class ChannelEndpointStatusTest
         final long status = clientB.countersReader().getCounterValue(channelEndpointException.statusIndicatorId());
 
         assertThat(status, is(ChannelEndpointStatus.ERRORED));
-        assertThat(errorCounter.get(), greaterThan(0));
-
         assertThat(publicationB.channelStatusId(), is(channelEndpointException.statusIndicatorId()));
         assertTrue(publicationB.isClosed());
         assertThat(publicationA.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
@@ -250,7 +249,9 @@ public class ChannelEndpointStatusTest
         }
 
         verify(errorHandlerClientC, timeout(5000L)).onError(any(ChannelEndpointException.class));
-        assertThat(errorCounter.get(), greaterThan(0));
+        verify(errorHandlerDriverB, timeout(5000L)).onError(any());
+        verify(errorHandlerDriverA, never()).onError(any());
+
         assertThat(subscriptionC.channelStatus(), is(ChannelEndpointStatus.ERRORED));
         assertTrue(subscriptionC.isClosed());
 

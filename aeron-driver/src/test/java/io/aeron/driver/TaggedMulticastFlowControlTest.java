@@ -63,12 +63,12 @@ class TaggedMulticastFlowControlTest
 
     @ParameterizedTest
     @ValueSource(strings = {
-        "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=tagged,g:",
-        "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=tagged,g:100/",
-        "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=tagged,g:/",
-        "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=tagged,t:",
-        "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=tagged,g:100,t:",
-        "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost|fc=tagged,t:100ms,g:100/",
+        "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged,g:",
+        "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged,g:100/",
+        "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged,g:/",
+        "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged,t:",
+        "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged,g:100,t:",
+        "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged,t:100ms,g:100/",
     })
     void shouldFailWithInvalidUris(final String uri)
     {

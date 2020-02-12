@@ -245,9 +245,9 @@ public class ClusterTimerTest
 
     private void forceCloseForRestart()
     {
-        clusteredMediaDriver.consensusModule().close();
-        container.close();
         aeronCluster.close();
+        container.close();
+        clusteredMediaDriver.consensusModule().close();
         clusteredMediaDriver.close();
     }
 

@@ -656,7 +656,7 @@ public class Configuration
         "aeron.tagged.multicast.flow.control.receiver.timeout";
 
     /**
-     * Property name for tagged flow control timeouts.
+     * Property name for min flow control timeouts.
      */
     public static final String MIN_FLOW_CONTROL_TIMEOUT_PROP_NAME =
         "aeron.min.multicast.flow.control.receiver.timeout";

@@ -5,9 +5,7 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
-import io.aeron.test.MediaDriverTestWatcher;
-import io.aeron.test.TestMediaDriver;
-import io.aeron.test.Tests;
+import io.aeron.test.*;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
@@ -31,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+@SlowTest
 public class TaggedFlowControlTest
 {
     private static final String MULTICAST_URI = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost";
@@ -111,8 +110,7 @@ public class TaggedFlowControlTest
             Arguments.of(new TaggedMulticastFlowControlSupplier(), null, 2004L, "", "|rtag=2004"),
             Arguments.of(null, DEFAULT_RECEIVER_TAG, null, "|fc=tagged", ""),
             Arguments.of(null, 2020L, 2020L, "|fc=tagged", ""),
-            Arguments.of(null, null, null, "|fc=tagged,g:123", "|rtag=123")
-        );
+            Arguments.of(null, null, null, "|fc=tagged,g:123", "|rtag=123"));
     }
 
     @ParameterizedTest

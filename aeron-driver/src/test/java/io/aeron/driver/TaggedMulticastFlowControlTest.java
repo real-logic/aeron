@@ -1,7 +1,6 @@
 package io.aeron.driver;
 
 import io.aeron.driver.media.UdpChannel;
-import io.aeron.test.SlowTest;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -12,7 +11,6 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@SlowTest
 class TaggedMulticastFlowControlTest
 {
     private static final int DEFAULT_GROUP_SIZE = 0;

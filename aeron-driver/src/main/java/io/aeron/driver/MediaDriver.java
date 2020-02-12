@@ -447,10 +447,10 @@ public final class MediaDriver implements AutoCloseable
         private long minFlowControlTimeoutNs = Configuration.minFlowControlTimeoutNs();
         private long taggedFlowControlTimeoutNs = Configuration.taggedFlowControlTimeoutNs();
 
-        private InferableBoolean receiverGroupConsideration = Configuration.receiverGroupConsideration();
         private Long receiverTag = Configuration.receiverTag();
         private long flowControlGroupReceiverTag = Configuration.flowControlGroupReceiverTag();
         private int flowControlGroupRequiredSize = Configuration.flowControlGroupRequiredSize();
+        private InferableBoolean receiverGroupConsideration = Configuration.receiverGroupConsideration();
 
         private EpochClock epochClock;
         private NanoClock nanoClock;
@@ -3274,7 +3274,13 @@ public final class MediaDriver implements AutoCloseable
                 "\n    tempBuffer=" + tempBuffer +
                 "\n    unicastFlowControlSupplier=" + unicastFlowControlSupplier +
                 "\n    multicastFlowControlSupplier=" + multicastFlowControlSupplier +
+                "\n    minFlowControlTimeoutNs=" + minFlowControlTimeoutNs +
+                "\n    taggedFlowControlTimeoutNs=" + taggedFlowControlTimeoutNs +
                 "\n    applicationSpecificFeedback=" + Arrays.toString(applicationSpecificFeedback) +
+                "\n    receiverTag=" + receiverTag +
+                "\n    flowControlGroupReceiverTag=" + flowControlGroupReceiverTag +
+                "\n    flowControlGroupRequiredSize=" + flowControlGroupRequiredSize +
+                "\n    receiverGroupConsideration=" + receiverGroupConsideration +
                 "\n    congestionControlSupplier=" + congestionControlSupplier +
                 "\n    terminationValidator=" + terminationValidator +
                 "\n    terminationHook=" + terminationHook +

@@ -1973,7 +1973,7 @@ public class Archive implements AutoCloseable
         {
             if (null == replayBuffer)
             {
-                replayBuffer = ArchiveThreadingMode.SHARED == threadingMode ?
+                replayBuffer = ArchiveThreadingMode.DEDICATED == threadingMode ?
                     new UnsafeBuffer(allocateDirectAligned(MAX_BLOCK_LENGTH, CACHE_LINE_LENGTH)) : dataBuffer();
             }
 
@@ -1984,7 +1984,7 @@ public class Archive implements AutoCloseable
         {
             if (null == recordChecksumBuffer && null != recordChecksum)
             {
-                recordChecksumBuffer = ArchiveThreadingMode.SHARED == threadingMode ?
+                recordChecksumBuffer = ArchiveThreadingMode.DEDICATED == threadingMode ?
                     new UnsafeBuffer(allocateDirectAligned(MAX_BLOCK_LENGTH, CACHE_LINE_LENGTH)) : dataBuffer();
             }
 

@@ -25,6 +25,7 @@ import io.aeron.driver.media.*;
 import io.aeron.driver.reports.LossReport;
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.broadcast.BroadcastTransmitter;
@@ -51,6 +52,7 @@ import static io.aeron.driver.Configuration.*;
 import static io.aeron.driver.reports.LossReportUtil.mapLossReport;
 import static io.aeron.driver.status.SystemCounterDescriptor.CONTROLLABLE_IDLE_STRATEGY;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
+import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.BitUtil.align;
@@ -504,6 +506,9 @@ public final class MediaDriver implements AutoCloseable
         private MappedByteBuffer lossReportBuffer;
         private MappedByteBuffer cncByteBuffer;
         private UnsafeBuffer cncMetaDataBuffer;
+        DataHeaderFlyweight defaultDataHeader;
+
+        private boolean shouldFreeBuffersOnClose;
 
         /**
          * Perform a shallow copy of the object.
@@ -544,6 +549,22 @@ public final class MediaDriver implements AutoCloseable
                 }
 
                 super.close();
+
+                if (shouldFreeBuffersOnClose)
+                {
+                    final ReceiveChannelEndpointThreadLocals threadLocals = this.receiveChannelEndpointThreadLocals;
+                    this.receiveChannelEndpointThreadLocals = null;
+                    if (null != threadLocals)
+                    {
+                        AeronCloseHelper.free(threadLocals.rttMeasurementBuffer());
+                        AeronCloseHelper.free(threadLocals.smBuffer());
+                        AeronCloseHelper.free(threadLocals.nakBuffer());
+                    }
+
+                    final DataHeaderFlyweight defaultDataHeader = this.defaultDataHeader;
+                    this.defaultDataHeader = null;
+                    AeronCloseHelper.free(defaultDataHeader);
+                }
             }
         }
 
@@ -2911,6 +2932,21 @@ public final class MediaDriver implements AutoCloseable
         Context driverConductorProxy(final DriverConductorProxy driverConductorProxy)
         {
             this.driverConductorProxy = driverConductorProxy;
+            return this;
+        }
+
+        DataHeaderFlyweight defaultDataHeader()
+        {
+            if (null == defaultDataHeader)
+            {
+                defaultDataHeader = new DataHeaderFlyweight(createDefaultHeader(0, 0, 0));
+            }
+            return defaultDataHeader;
+        }
+
+        Context shouldFreeBuffersOnClose(final boolean shouldFreeBuffersOnClose)
+        {
+            this.shouldFreeBuffersOnClose = shouldFreeBuffersOnClose;
             return this;
         }
 

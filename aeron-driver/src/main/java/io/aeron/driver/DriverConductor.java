@@ -51,7 +51,6 @@ import static io.aeron.ErrorCode.*;
 import static io.aeron.driver.PublicationParams.*;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
-import static io.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
 import static org.agrona.collections.ArrayListUtil.fastUnorderedRemove;
 
 /**
@@ -98,7 +97,6 @@ public class DriverConductor implements Agent
     private final CountersManager countersManager;
     private final NetworkPublicationThreadLocals networkPublicationThreadLocals = new NetworkPublicationThreadLocals();
     private final MutableDirectBuffer tempBuffer;
-    private final DataHeaderFlyweight defaultDataHeader = new DataHeaderFlyweight(createDefaultHeader(0, 0, 0));
 
     public DriverConductor(final Context ctx)
     {
@@ -1148,6 +1146,7 @@ public class DriverConductor implements Agent
     {
         final UnsafeBuffer logMetaData = rawLog.metaData();
 
+        final DataHeaderFlyweight defaultDataHeader = ctx.defaultDataHeader();
         defaultDataHeader.sessionId(sessionId).streamId(streamId).termId(initialTermId);
         storeDefaultFrameHeader(logMetaData, defaultDataHeader);
 
@@ -1203,6 +1202,7 @@ public class DriverConductor implements Agent
         final RawLog rawLog = logFactory.newImage(correlationId, termBufferLength, isSparse);
         final UnsafeBuffer logMetaData = rawLog.metaData();
 
+        final DataHeaderFlyweight defaultDataHeader = ctx.defaultDataHeader();
         defaultDataHeader.sessionId(sessionId).streamId(streamId).termId(initialTermId);
         storeDefaultFrameHeader(logMetaData, defaultDataHeader);
 

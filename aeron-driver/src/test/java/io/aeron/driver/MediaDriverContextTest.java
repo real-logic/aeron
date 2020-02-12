@@ -2,6 +2,8 @@ package io.aeron.driver;
 
 import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.buffer.LogFactory;
+import io.aeron.driver.media.ReceiveChannelEndpointThreadLocals;
+import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.ErrorHandler;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -75,5 +77,43 @@ public class MediaDriverContextTest
         inOrder.verify(errorHandler).onError(logFactoryException);
         inOrder.verify((AutoCloseable)errorHandler).close();
         inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void defaultDataHeaderIsAllocatedOnDemand()
+    {
+        final Context context = new Context();
+        assertNull(context.defaultDataHeader);
+
+        final DataHeaderFlyweight defaultDataHeader = context.defaultDataHeader();
+
+        assertNotNull(defaultDataHeader);
+        assertSame(defaultDataHeader, context.defaultDataHeader);
+    }
+
+    @Test
+    void closeDoesNotFreeBuffersIfShouldFreeBuffersOnCloseIsSetToFalse()
+    {
+        final Context context = new Context()
+            .receiveChannelEndpointThreadLocals(mock(ReceiveChannelEndpointThreadLocals.class));
+        context.defaultDataHeader();
+
+        context.close();
+
+        assertNotNull(context.receiveChannelEndpointThreadLocals());
+        assertNotNull(context.defaultDataHeader);
+    }
+
+    @Test
+    void closeFreesBuffersIfShouldFreeBuffersOnCloseIsSetToTrue()
+    {
+        final Context context = new Context().shouldFreeBuffersOnClose(true);
+        context.receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals(context));
+        context.defaultDataHeader();
+
+        context.close();
+
+        assertNull(context.receiveChannelEndpointThreadLocals());
+        assertNull(context.defaultDataHeader);
     }
 }

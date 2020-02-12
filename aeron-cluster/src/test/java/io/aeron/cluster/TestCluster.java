@@ -127,29 +127,21 @@ public class TestCluster implements AutoCloseable
         CloseHelper.closeAll(
             client,
             clientMediaDriver,
-            null != backupNode ? () ->
-            {
-                backupNode.close();
-                backupNode.cleanUp();
-            } : null,
-            () -> CloseHelper.closeAll(Stream.of(nodes).map(TestCluster::closeNode).collect(toList()))
+            null != backupNode ? () -> backupNode.closeAndDelete() : null,
+            () -> CloseHelper.closeAll(Stream.of(nodes).map(TestCluster::closeAndDeleteNode).collect(toList()))
         );
 
         ClusterTests.failOnClusterError();
     }
 
-    static AutoCloseable closeNode(final TestNode node)
+    static AutoCloseable closeAndDeleteNode(final TestNode node)
     {
         if (node == null)
         {
             return null;
         }
 
-        return () ->
-        {
-            node.close();
-            node.cleanUp();
-        };
+        return node::closeAndDelete;
     }
 
     static void awaitCount(final AtomicLong counter, final long value)

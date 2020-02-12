@@ -44,7 +44,7 @@ public class TestBackupNode
         }
     }
 
-    void cleanUp()
+    void closeAndDelete()
     {
         if (!isClosed)
         {

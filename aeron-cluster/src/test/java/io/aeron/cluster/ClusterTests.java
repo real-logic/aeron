@@ -61,7 +61,7 @@ class ClusterTests
             {
                 if (ex instanceof ClusterException)
                 {
-                    if (((ClusterException)ex).category() == AeronException.Category.WARN)
+                    if (((AeronException)ex).category() == AeronException.Category.WARN)
                     {
                         return;
                     }

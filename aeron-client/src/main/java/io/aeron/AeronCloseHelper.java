@@ -15,11 +15,16 @@
  */
 package io.aeron;
 
+import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
 import org.agrona.LangUtil;
 
 import java.io.File;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.nio.ByteBuffer;
 import java.util.Collection;
 
 // FIXME: Temporary class until next Agrona release
@@ -175,5 +180,71 @@ public final class AeronCloseHelper
         }
 
         IoUtil.delete(file, ignoreFailures);
+    }
+
+    private static final Class<?> DIRECT_BUFFER_INTERFACE;
+    private static final MethodHandle DIRECT_BUFFER_CLEANER_ACCESSOR;
+    private static final MethodHandle CLEANER_INVOKER;
+
+    static
+    {
+        try
+        {
+            DIRECT_BUFFER_INTERFACE = Class.forName("sun.nio.ch.DirectBuffer");
+            final MethodHandles.Lookup lookup = MethodHandles.lookup();
+            final Class<?> cleanerClass = resolveCleanerClass();
+            DIRECT_BUFFER_CLEANER_ACCESSOR = lookup.findVirtual(DIRECT_BUFFER_INTERFACE, "cleaner", MethodType
+                .methodType(cleanerClass));
+            CLEANER_INVOKER = lookup.findVirtual(cleanerClass, "clean", MethodType.methodType(void.class));
+        }
+        catch (final ReflectiveOperationException e)
+        {
+            throw new Error("Failed to init cleaner", e);
+        }
+    }
+
+    private static Class<?> resolveCleanerClass() throws ClassNotFoundException
+    {
+        try
+        {
+            return Class.forName("jdk.internal.ref.Cleaner"); // JDK 9+
+        }
+        catch (final ClassNotFoundException e)
+        {
+            return Class.forName("sun.misc.Cleaner");
+        }
+    }
+
+    public static void free(final DirectBuffer directBuffer)
+    {
+        if (null == directBuffer)
+        {
+            return;
+        }
+        free(directBuffer.byteBuffer());
+    }
+
+    public static void free(final ByteBuffer byteBuffer)
+    {
+        if (null == byteBuffer)
+        {
+            return;
+        }
+
+        if (DIRECT_BUFFER_INTERFACE.isInstance(byteBuffer)) // direct buffer
+        {
+            try
+            {
+                final Object cleaner = DIRECT_BUFFER_CLEANER_ACCESSOR.invoke(byteBuffer);
+                if (null != cleaner)
+                {
+                    CLEANER_INVOKER.invoke(cleaner);
+                }
+            }
+            catch (final Throwable throwable)
+            {
+                LangUtil.rethrowUnchecked(throwable);
+            }
+        }
     }
 }

@@ -395,6 +395,37 @@ public class ArchiveTest
         assertSame(buffer, context.recordChecksumBuffer);
     }
 
+    @Test
+    void closeDoesNotFreeBuffersIfShouldFreeBuffersOnCloseIsSetToFalse()
+    {
+        final Context context = new Context().recordChecksum(mock(Checksum.class));
+        context.dataBuffer();
+        context.replayBuffer();
+        context.recordChecksumBuffer();
+        context.shouldFreeBuffersOnClose(false);
+
+        context.close();
+
+        assertNotNull(context.dataBuffer);
+        assertNotNull(context.replayBuffer);
+        assertNotNull(context.recordChecksumBuffer);
+    }
+
+    @Test
+    void closeFreesBuffersIfShouldFreeBuffersOnCloseIsSetToTrue()
+    {
+        final Context context = new Context().recordChecksum(mock(Checksum.class)).shouldFreeBuffersOnClose(true);
+        context.dataBuffer();
+        context.replayBuffer();
+        context.recordChecksumBuffer();
+
+        context.close();
+
+        assertNull(context.dataBuffer);
+        assertNull(context.replayBuffer);
+        assertNull(context.recordChecksumBuffer);
+    }
+
     static final class SubscriptionDescriptor
     {
         final long controlSessionId;

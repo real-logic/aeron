@@ -722,6 +722,8 @@ public class Archive implements AutoCloseable
         UnsafeBuffer replayBuffer;
         UnsafeBuffer recordChecksumBuffer;
 
+        private boolean shouldFreeBuffersOnClose;
+
         /**
          * Perform a shallow copy of the object.
          *
@@ -1991,6 +1993,12 @@ public class Archive implements AutoCloseable
             return recordChecksumBuffer;
         }
 
+        Context shouldFreeBuffersOnClose(final boolean shouldFreeBuffersOnClose)
+        {
+            this.shouldFreeBuffersOnClose = shouldFreeBuffersOnClose;
+            return this;
+        }
+
         /**
          * Close the context and free applicable resources.
          * <p>
@@ -2012,6 +2020,19 @@ public class Archive implements AutoCloseable
             if (ownsAeronClient)
             {
                 CloseHelper.close(aeron);
+            }
+
+            if (shouldFreeBuffersOnClose)
+            {
+                final UnsafeBuffer dataBuffer = this.dataBuffer;
+                this.dataBuffer = null;
+                final UnsafeBuffer replayBuffer = this.replayBuffer;
+                this.replayBuffer = null;
+                final UnsafeBuffer recordChecksumBuffer = this.recordChecksumBuffer;
+                this.recordChecksumBuffer = null;
+                AeronCloseHelper.free(dataBuffer);
+                AeronCloseHelper.free(replayBuffer);
+                AeronCloseHelper.free(recordChecksumBuffer);
             }
         }
     }

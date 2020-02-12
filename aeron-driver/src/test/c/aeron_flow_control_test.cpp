@@ -385,6 +385,7 @@ TEST_F(FlowControlTest, shouldAlwaysHaveRequiredReceiverMinFlowControlStrategy)
     ASSERT_TRUE(strategy->has_required_receivers(strategy));
 }
 
+/*
 TEST_F(FlowControlTest, shouldAlwaysHaveRequiredReceiverTaggedFlowControlStrategyDefault)
 {
     aeron_flow_control_strategy_t *strategy = NULL;
@@ -396,7 +397,7 @@ TEST_F(FlowControlTest, shouldAlwaysHaveRequiredReceiverTaggedFlowControlStrateg
 
     ASSERT_TRUE(strategy->has_required_receivers(strategy));
 }
-
+*/
 TEST_F(FlowControlTest, shouldOnlyHaveRequiredReceiverTaggedFlowControlStrategyWhenGroupSizeMet)
 {
     aeron_flow_control_strategy_t *strategy = NULL;

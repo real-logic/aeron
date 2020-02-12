@@ -38,6 +38,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.InOrder;
 
 import java.io.File;
@@ -52,11 +54,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.IntConsumer;
 
 import static io.aeron.archive.Archive.Configuration.MAX_BLOCK_LENGTH;
+import static io.aeron.archive.ArchiveThreadingMode.DEDICATED;
+import static io.aeron.archive.ArchiveThreadingMode.SHARED;
 import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static io.aeron.test.Tests.throwOnClose;
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.params.provider.EnumSource.Mode.EXCLUDE;
 import static org.mockito.Mockito.*;
 
 public class ArchiveTest
@@ -130,7 +135,7 @@ public class ArchiveTest
             .publicationUnblockTimeoutNs(connectTimeoutNs * 2)
             .threadingMode(ThreadingMode.SHARED);
         final Context archiveCtx = new Context()
-            .threadingMode(ArchiveThreadingMode.SHARED)
+            .threadingMode(SHARED)
             .connectTimeoutNs(connectTimeoutNs);
         executor.prestartAllCoreThreads();
 
@@ -172,7 +177,7 @@ public class ArchiveTest
             .dirDeleteOnStart(true)
             .dirDeleteOnShutdown(true)
             .threadingMode(ThreadingMode.SHARED);
-        final Context archiveCtx = new Context().threadingMode(ArchiveThreadingMode.SHARED);
+        final Context archiveCtx = new Context().threadingMode(SHARED);
 
         long resultingPosition;
         final int initialPosition = DataHeaderFlyweight.HEADER_LENGTH * 9;
@@ -263,7 +268,7 @@ public class ArchiveTest
                 .dirDeleteOnStart(true)
                 .dirDeleteOnShutdown(true)
                 .threadingMode(ThreadingMode.SHARED);
-            final Context archiveCtx = new Context().threadingMode(ArchiveThreadingMode.SHARED);
+            final Context archiveCtx = new Context().threadingMode(SHARED);
 
             try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(driverCtx, archiveCtx);
                 AeronArchive archive = AeronArchive.connect())
@@ -362,9 +367,9 @@ public class ArchiveTest
     }
 
     @Test
-    void replayBufferIsAllocatedOnDemand()
+    void replayBufferIsAllocatedOnDemandIfThreadingModeIsDEDICATED()
     {
-        final Context context = new Context();
+        final Context context = new Context().threadingMode(DEDICATED);
         assertNull(context.replayBuffer);
 
         final UnsafeBuffer buffer = context.replayBuffer();
@@ -372,6 +377,19 @@ public class ArchiveTest
         assertNotNull(buffer);
         assertEquals(MAX_BLOCK_LENGTH, buffer.capacity());
         assertSame(buffer, context.replayBuffer);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ArchiveThreadingMode.class, mode = EXCLUDE, names = "DEDICATED")
+    void replayBufferReturnsDataBufferIfThreadingModeIsNotDEDICATED(final ArchiveThreadingMode threadingMode)
+    {
+        final Context context = new Context().threadingMode(threadingMode);
+        assertNull(context.replayBuffer);
+
+        final UnsafeBuffer buffer = context.replayBuffer();
+
+        assertSame(context.dataBuffer(), buffer);
+        assertNull(context.replayBuffer);
     }
 
     @Test
@@ -383,9 +401,9 @@ public class ArchiveTest
     }
 
     @Test
-    void recordChecksumBufferIsAllocatedOnDemand()
+    void recordChecksumBufferIsAllocatedOnDemandIfThreadingModeIsDEDICATED()
     {
-        final Context context = new Context().recordChecksum(mock(Checksum.class));
+        final Context context = new Context().recordChecksum(mock(Checksum.class)).threadingMode(DEDICATED);
         assertNull(context.recordChecksumBuffer);
 
         final UnsafeBuffer buffer = context.recordChecksumBuffer();
@@ -393,6 +411,19 @@ public class ArchiveTest
         assertNotNull(buffer);
         assertEquals(MAX_BLOCK_LENGTH, buffer.capacity());
         assertSame(buffer, context.recordChecksumBuffer);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ArchiveThreadingMode.class, mode = EXCLUDE, names = "DEDICATED")
+    void recordChecksumBufferReturnsDataBufferIfThreadingModeIsNotDEDICATED(final ArchiveThreadingMode threadingMode)
+    {
+        final Context context = new Context().recordChecksum(mock(Checksum.class)).threadingMode(threadingMode);
+        assertNull(context.recordChecksumBuffer);
+
+        final UnsafeBuffer buffer = context.recordChecksumBuffer();
+
+        assertSame(context.dataBuffer(), buffer);
+        assertNull(context.recordChecksumBuffer);
     }
 
     @Test

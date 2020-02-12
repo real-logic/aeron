@@ -1168,8 +1168,8 @@ abstract class ArchiveConductor
         throws IOException
     {
         int termOffset = 0;
-        final UnsafeBuffer buffer = ctx.dataBuffer();
-        final ByteBuffer byteBuffer = buffer.byteBuffer();
+        final UnsafeBuffer dataBuffer = ctx.dataBuffer();
+        final ByteBuffer byteBuffer = dataBuffer.byteBuffer();
         byteBuffer.clear().limit(HEADER_LENGTH);
 
         if (HEADER_LENGTH != fileChannel.read(byteBuffer, 0))
@@ -1179,7 +1179,7 @@ abstract class ArchiveConductor
             return termOffset;
         }
 
-        final int fragmentLength = fragmentLength(buffer, termOffset);
+        final int fragmentLength = fragmentLength(dataBuffer, termOffset);
         if (fragmentLength <= 0)
         {
             boolean found = false;
@@ -1198,7 +1198,7 @@ abstract class ArchiveConductor
                 int offset = 0;
                 while (offset < limit)
                 {
-                    if (fragmentLength(buffer, offset) > 0)
+                    if (fragmentLength(dataBuffer, offset) > 0)
                     {
                         found = true;
                         break;
@@ -1219,7 +1219,7 @@ abstract class ArchiveConductor
             return NULL_VALUE;
         }
 
-        final int fileTermId = termId(buffer, termOffset);
+        final int fileTermId = termId(dataBuffer, termOffset);
         if (fileTermId != termId)
         {
             final String msg = "term id does not match: actual=" + fileTermId + " expected=" + termId;
@@ -1227,7 +1227,7 @@ abstract class ArchiveConductor
             return NULL_VALUE;
         }
 
-        final int fileStreamId = streamId(buffer, termOffset);
+        final int fileStreamId = streamId(dataBuffer, termOffset);
         if (fileStreamId != streamId)
         {
             final String msg = "stream id does not match: actual=" + fileStreamId + " expected=" + streamId;

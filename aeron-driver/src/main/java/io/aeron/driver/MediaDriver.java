@@ -509,6 +509,7 @@ public final class MediaDriver implements AutoCloseable
         private UnsafeBuffer cncMetaDataBuffer;
 
         DataHeaderFlyweight defaultDataHeader;
+        NetworkPublicationThreadLocals networkPublicationThreadLocals;
         ByteBuffer dataTransportPollerBuffer;
         ByteBuffer controlTransportPollerBuffer;
 
@@ -2986,6 +2987,15 @@ public final class MediaDriver implements AutoCloseable
                 defaultDataHeader = new DataHeaderFlyweight(createDefaultHeader(0, 0, 0));
             }
             return defaultDataHeader;
+        }
+
+        NetworkPublicationThreadLocals networkPublicationThreadLocals()
+        {
+            if (null == networkPublicationThreadLocals)
+            {
+                networkPublicationThreadLocals = new NetworkPublicationThreadLocals();
+            }
+            return networkPublicationThreadLocals;
         }
 
         @SuppressWarnings("MethodLength")

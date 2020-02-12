@@ -95,7 +95,6 @@ public class DriverConductor implements Agent
     private final CachedEpochClock cachedEpochClock;
     private final CachedNanoClock cachedNanoClock;
     private final CountersManager countersManager;
-    private final NetworkPublicationThreadLocals networkPublicationThreadLocals = new NetworkPublicationThreadLocals();
     private final MutableDirectBuffer tempBuffer;
 
     public DriverConductor(final Context ctx)
@@ -1092,7 +1091,7 @@ public class DriverConductor implements Agent
             ctx.systemCounters(),
             flowControl,
             retransmitHandler,
-            networkPublicationThreadLocals,
+            ctx.networkPublicationThreadLocals(),
             ctx.publicationUnblockTimeoutNs(),
             ctx.publicationConnectionTimeoutNs(),
             ctx.untetheredWindowLimitTimeoutNs(),

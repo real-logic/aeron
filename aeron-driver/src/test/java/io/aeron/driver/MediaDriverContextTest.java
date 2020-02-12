@@ -105,6 +105,18 @@ public class MediaDriverContextTest
     }
 
     @Test
+    void networkPublicationThreadLocalsIsAllocatedOnDemand()
+    {
+        final Context context = new Context();
+        assertNull(context.networkPublicationThreadLocals);
+
+        final NetworkPublicationThreadLocals threadLocals = context.networkPublicationThreadLocals();
+
+        assertNotNull(threadLocals);
+        assertSame(threadLocals, context.networkPublicationThreadLocals);
+    }
+
+    @Test
     void closeDoesNotFreeBuffersIfShouldFreeBuffersOnCloseIsSetToFalse()
     {
         final Context context = new Context()

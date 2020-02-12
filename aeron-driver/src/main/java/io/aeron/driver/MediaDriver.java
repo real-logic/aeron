@@ -566,6 +566,15 @@ public final class MediaDriver implements AutoCloseable
                         AeronCloseHelper.free(threadLocals.nakBuffer());
                     }
 
+                    final NetworkPublicationThreadLocals networkThreadLocals = this.networkPublicationThreadLocals;
+                    this.networkPublicationThreadLocals = null;
+                    if (null != networkThreadLocals)
+                    {
+                        AeronCloseHelper.free(networkThreadLocals.rttMeasurementBuffer());
+                        AeronCloseHelper.free(networkThreadLocals.setupBuffer());
+                        AeronCloseHelper.free(networkThreadLocals.heartbeatBuffer());
+                    }
+
                     final DataHeaderFlyweight defaultDataHeader = this.defaultDataHeader;
                     this.defaultDataHeader = null;
                     AeronCloseHelper.free(defaultDataHeader);

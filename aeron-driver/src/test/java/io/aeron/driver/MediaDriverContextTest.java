@@ -135,6 +135,7 @@ public class MediaDriverContextTest
         final Context context = new Context().shouldFreeBuffersOnClose(true);
         context.receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals(context));
         context.defaultDataHeader();
+        context.networkPublicationThreadLocals();
         context.controlTransportPollerBuffer = mock(ByteBuffer.class);
         context.controlTransportPoller(mock(ControlTransportPoller.class));
         context.dataTransportPollerBuffer = mock(ByteBuffer.class);
@@ -143,6 +144,7 @@ public class MediaDriverContextTest
         context.close();
 
         assertNull(context.receiveChannelEndpointThreadLocals());
+        assertNull(context.networkPublicationThreadLocals);
         assertNull(context.defaultDataHeader);
         assertNull(context.controlTransportPollerBuffer);
         assertNull(context.controlTransportPoller());

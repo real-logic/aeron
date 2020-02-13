@@ -402,7 +402,7 @@ public class FlowControlStrategiesTest
     @Test
     public void shouldRemoveDeadTaggedReceiverWithTaggedMulticastFlowControlStrategy()
     {
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(200), () ->
         {
             final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
             int numMessagesLeftToSend = numMessagesToSend;

@@ -39,6 +39,7 @@ import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.LongHashSet;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.EpochClock;
+import org.agrona.concurrent.SleepingMillisIdleStrategy;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
@@ -431,6 +432,7 @@ public class StartFromTruncatedRecordingLogTest
                 .egressListener(egressMessageListener)
                 .aeronDirectoryName(aeronDirName)
                 .ingressChannel("aeron:udp")
+                .idleStrategy(new SleepingMillisIdleStrategy(1))
                 .clusterMemberEndpoints("0=localhost:20110,1=localhost:20111,2=localhost:20112"));
     }
 
@@ -440,8 +442,7 @@ public class StartFromTruncatedRecordingLogTest
         {
             while (client.offer(msgBuffer, 0, MSG.length()) < 0)
             {
-                Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.sleep(1);
                 client.pollEgress();
             }
 
@@ -453,8 +454,7 @@ public class StartFromTruncatedRecordingLogTest
     {
         while (responseCount.get() < messageCount)
         {
-            Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.sleep(1);
             client.pollEgress();
         }
 
@@ -462,8 +462,7 @@ public class StartFromTruncatedRecordingLogTest
         {
             while (echoServices[i].messageCount() < messageCount)
             {
-                Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.sleep(1);
             }
         }
     }
@@ -603,8 +602,7 @@ public class StartFromTruncatedRecordingLogTest
         final AtomicCounter controlToggle = getControlToggle(index);
         while (ClusterControl.ToggleState.get(controlToggle) != ClusterControl.ToggleState.NEUTRAL)
         {
-            Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.sleep(1);
         }
     }
 
@@ -615,8 +613,7 @@ public class StartFromTruncatedRecordingLogTest
 
         while (snapshotCounter.get() != value)
         {
-            Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.sleep(1);
         }
     }
 }

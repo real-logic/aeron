@@ -444,7 +444,7 @@ public class PublicationImage
     }
 
     /**
-     * Remove a destination to this image so it can merge streams.
+     * Remove a destination to this image once merge is achieved.
      *
      * @param transportIndex from which packets arrive.
      */
@@ -459,7 +459,8 @@ public class PublicationImage
     }
 
     /**
-     * Called from the {@link DriverConductor}.
+     * Called from the {@link DriverConductor} to track the rebuild os stream which is used for loss detection
+     * and congestion control.
      *
      * @param nowNs                  current time.
      * @param statusMessageTimeoutNs for sending of Status Messages.

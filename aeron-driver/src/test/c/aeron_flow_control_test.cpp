@@ -397,8 +397,8 @@ TEST_F(FlowControlTest, shouldAlwaysHaveRequiredReceiverTaggedFlowControlStrateg
 
     ASSERT_TRUE(NULL != strategy);
 
-    ASSERT_TRUE(strategy->has_required_receivers(strategy)) <<
-        aeron_tagged_flow_control_strategy_to_string(strategy, buffer, sizeof(buffer));
+    aeron_tagged_flow_control_strategy_to_string(strategy, buffer, sizeof(buffer));
+    ASSERT_TRUE(strategy->has_required_receivers(strategy)) << buffer;
 }
 
 TEST_F(FlowControlTest, shouldOnlyHaveRequiredReceiverTaggedFlowControlStrategyWhenGroupSizeMet)

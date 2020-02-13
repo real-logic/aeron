@@ -338,6 +338,8 @@ int aeron_tagged_flow_control_strategy_to_string(
     aeron_tagged_flow_control_strategy_state_t *strategy_state =
         (aeron_tagged_flow_control_strategy_state_t *)strategy->state;
 
+    buffer[buffer_len - 1] = '\0';
+
     return snprintf(
         buffer,
         buffer_len - 1,

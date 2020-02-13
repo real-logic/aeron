@@ -21,6 +21,7 @@
 
 #include <stdlib.h>
 #include <errno.h>
+#include <inttypes.h>
 #include "protocol/aeron_udp_protocol.h"
 #include "concurrent/aeron_logbuffer_descriptor.h"
 #include "concurrent/aeron_thread.h"
@@ -327,6 +328,23 @@ bool aeron_tagged_flow_control_strategy_has_required_receivers(aeron_flow_contro
         (aeron_tagged_flow_control_strategy_state_t *)strategy->state;
 
     return strategy_state->required_group_size <= (int32_t)strategy_state->min_flow_control_state.receivers.length;
+}
+
+int aeron_tagged_flow_control_strategy_to_string(
+    aeron_flow_control_strategy_t *strategy,
+    char *buffer,
+    size_t buffer_len)
+{
+    aeron_tagged_flow_control_strategy_state_t *strategy_state =
+        (aeron_tagged_flow_control_strategy_state_t *)strategy->state;
+
+    return snprintf(
+        buffer,
+        buffer_len - 1,
+        "receiver_tag: %" PRId64 ", required_group_size: %" PRId32 ", receiver_count: %zu",
+        strategy_state->receiver_tag,
+        strategy_state->required_group_size,
+        strategy_state->min_flow_control_state.receivers.length);
 }
 
 int aeron_tagged_flow_control_strategy_supplier(

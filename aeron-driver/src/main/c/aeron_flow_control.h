@@ -122,6 +122,11 @@ int aeron_tagged_flow_control_strategy_supplier(
     int32_t initial_term_id,
     size_t term_buffer_capacity);
 
+int aeron_tagged_flow_control_strategy_to_string(
+    aeron_flow_control_strategy_t *strategy,
+    char *buffer,
+    size_t buffer_len);
+
 int aeron_default_multicast_flow_control_strategy_supplier(
     aeron_flow_control_strategy_t **strategy,
     aeron_driver_context_t *context,

@@ -385,9 +385,9 @@ TEST_F(FlowControlTest, shouldAlwaysHaveRequiredReceiverMinFlowControlStrategy)
     ASSERT_TRUE(strategy->has_required_receivers(strategy));
 }
 
-/*
 TEST_F(FlowControlTest, shouldAlwaysHaveRequiredReceiverTaggedFlowControlStrategyDefault)
 {
+    char buffer[1024];
     aeron_flow_control_strategy_t *strategy = NULL;
     initialise_channel("aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged");
 
@@ -395,9 +395,12 @@ TEST_F(FlowControlTest, shouldAlwaysHaveRequiredReceiverTaggedFlowControlStrateg
         &strategy, &context, channel,
         1001, 1001, 0, 64 * 1024));
 
-    ASSERT_TRUE(strategy->has_required_receivers(strategy));
+    ASSERT_TRUE(NULL != strategy);
+
+    ASSERT_TRUE(strategy->has_required_receivers(strategy)) <<
+        aeron_tagged_flow_control_strategy_to_string(strategy, buffer, sizeof(buffer));
 }
-*/
+
 TEST_F(FlowControlTest, shouldOnlyHaveRequiredReceiverTaggedFlowControlStrategyWhenGroupSizeMet)
 {
     aeron_flow_control_strategy_t *strategy = NULL;

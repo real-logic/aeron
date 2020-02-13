@@ -527,16 +527,19 @@ public final class MediaDriver implements AutoCloseable
                 AeronCloseHelper.close(errorHandler, logFactory);
 
                 AeronCloseHelper.close(errorHandler, lossReport);
+
+                final MappedByteBuffer lossReportBuffer = this.lossReportBuffer;
+                this.lossReportBuffer = null;
                 IoUtil.unmap(lossReportBuffer);
-                lossReportBuffer = null;
 
                 if (errorHandler instanceof AutoCloseable)
                 {
                     CloseHelper.quietClose((AutoCloseable)errorHandler); // Ignore error to ensure the rest is closed
                 }
 
+                final MappedByteBuffer cncByteBuffer = this.cncByteBuffer;
+                this.cncByteBuffer = null;
                 IoUtil.unmap(cncByteBuffer);
-                cncByteBuffer = null;
 
                 if (dirDeleteOnShutdown && null != aeronDirectory())
                 {

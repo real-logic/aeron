@@ -112,9 +112,9 @@ class Catalog implements AutoCloseable
     private final RecordingDescriptorEncoder descriptorEncoder = new RecordingDescriptorEncoder();
     private final RecordingDescriptorDecoder descriptorDecoder = new RecordingDescriptorDecoder();
 
-    private final MappedByteBuffer catalogByteBuffer;
-    private final UnsafeBuffer catalogBuffer;
-    private final UnsafeBuffer fieldAccessBuffer;
+    private MappedByteBuffer catalogByteBuffer;
+    private UnsafeBuffer catalogBuffer;
+    private UnsafeBuffer fieldAccessBuffer;
 
     private final int recordLength;
     private final int maxDescriptorStringsCombinedLength;
@@ -289,6 +289,11 @@ class Catalog implements AutoCloseable
         {
             isClosed = true;
             CloseHelper.quietClose(catalogChannel); // Ignore error so that the rest can be closed
+
+            final MappedByteBuffer catalogByteBuffer = this.catalogByteBuffer;
+            this.catalogByteBuffer = null;
+            catalogBuffer = null;
+            fieldAccessBuffer = null;
             IoUtil.unmap(catalogByteBuffer);
         }
     }

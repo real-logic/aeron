@@ -1373,9 +1373,10 @@ public class Aeron implements AutoCloseable
                         throw new DriverTimeoutException("no driver heartbeat detected");
                     }
 
-                    IoUtil.unmap(cncByteBuffer);
-                    cncByteBuffer = null;
+                    final MappedByteBuffer cncByteBuffer = this.cncByteBuffer;
+                    this.cncByteBuffer = null;
                     cncMetaDataBuffer = null;
+                    IoUtil.unmap(cncByteBuffer);
 
                     sleep(100);
                     continue;

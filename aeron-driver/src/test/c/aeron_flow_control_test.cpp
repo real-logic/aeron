@@ -106,7 +106,7 @@ public:
 
     struct sockaddr_storage address;
     aeron_udp_channel_t *channel;
-    aeron_driver_context_t context;
+    aeron_driver_context_t *context;
     aeron_distinct_error_log_t error_log;
     buffer_t buffer;
 
@@ -120,9 +120,10 @@ protected:
     virtual void SetUp()
     {
         channel = NULL;
+        aeron_driver_context_init(&context);
         aeron_distinct_error_log_init(&error_log, buffer.data(), buffer.size(), now, linger, NULL);
-        context.error_log = &error_log;
-        context.multicast_flow_control_supplier_func = aeron_min_flow_control_strategy_supplier;
+        context->error_log = &error_log;
+        context->multicast_flow_control_supplier_func = aeron_min_flow_control_strategy_supplier;
     }
 };
 
@@ -142,7 +143,7 @@ TEST_F(FlowControlTest, shouldFallbackToMinStrategy)
     initialise_channel("aeron:udp?endpoint=224.20.30.39:24326|interface=localhost");
 
     ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
-        &strategy, &context, channel,
+        &strategy, context, channel,
         1001, 1001, 0, 64 * 1024));
 
     ASSERT_FALSE(NULL == strategy);
@@ -158,7 +159,7 @@ TEST_F(FlowControlTest, shouldUseMinStrategy)
     initialise_channel("aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=min");
 
     ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
-        &strategy, &context,
+        &strategy, context,
         channel,
         1001, 1001, 0, 64 * 1024));
 
@@ -175,7 +176,7 @@ TEST_F(FlowControlTest, shouldUseMinStrategyAndIgnoreGroupParams)
     initialise_channel("aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=min,g:123");
 
     ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
-        &strategy, &context,
+        &strategy, context,
         channel,
         1001, 1001, 0, 64 * 1024));
 
@@ -195,7 +196,7 @@ TEST_F(FlowControlTest, shouldTimeoutWithMinStrategy)
     initialise_channel("aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=min,t:500ms");
 
     ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
-        &strategy, &context,
+        &strategy, context,
         channel,
         1001, 1001, 0, 64 * 1024));
     ASSERT_FALSE(NULL == strategy);
@@ -214,10 +215,10 @@ TEST_F(FlowControlTest, shouldFallbackToMaxStrategy)
 {
     aeron_flow_control_strategy_t *strategy = NULL;
     initialise_channel("aeron:udp?endpoint=224.20.30.39:24326|interface=localhost");
-    context.multicast_flow_control_supplier_func = aeron_max_multicast_flow_control_strategy_supplier;
+    context->multicast_flow_control_supplier_func = aeron_max_multicast_flow_control_strategy_supplier;
 
     ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
-        &strategy, &context, channel,
+        &strategy, context, channel,
         1001, 1001, 0, 64 * 1024));
 
     ASSERT_FALSE(NULL == strategy);
@@ -233,7 +234,7 @@ TEST_F(FlowControlTest, shouldUseMaxStrategy)
     initialise_channel("aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=max");
 
     ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
-        &strategy, &context, channel,
+        &strategy, context, channel,
         1001, 1001, 0, 64 * 1024));
 
     ASSERT_FALSE(NULL == strategy);
@@ -247,14 +248,14 @@ TEST_F(FlowControlTest, shouldUseFallbackToTaggedStrategy)
 {
     aeron_flow_control_strategy_t *strategy = NULL;
     initialise_channel("aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=max");
-    context.multicast_flow_control_supplier_func = aeron_tagged_flow_control_strategy_supplier;
-    context.sm_receiver_tag.is_present = true;
-    context.sm_receiver_tag.value = 1;
-    context.flow_control_group.receiver_tag = 1;
-    context.flow_control_group.required_size = 0;
+    context->multicast_flow_control_supplier_func = aeron_tagged_flow_control_strategy_supplier;
+    context->sm_receiver_tag.is_present = true;
+    context->sm_receiver_tag.value = 1;
+    context->flow_control_group.receiver_tag = 1;
+    context->flow_control_group.required_size = 0;
 
     ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
-        &strategy, &context, channel,
+        &strategy, context, channel,
         1001, 1001, 0, 64 * 1024));
 
     ASSERT_FALSE(NULL == strategy);
@@ -270,7 +271,7 @@ TEST_F(FlowControlTest, shouldUseTaggedStrategy)
     initialise_channel("aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged,g:123");
 
     ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
-        &strategy, &context, channel,
+        &strategy, context, channel,
         1001, 1001, 0, 64 * 1024));
 
     ASSERT_FALSE(NULL == strategy);
@@ -286,7 +287,7 @@ TEST_F(FlowControlTest, shouldAllowUseTaggedStrategyWhenGroupMissing)
     initialise_channel("aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged");
 
     ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
-        &strategy, &context, channel,
+        &strategy, context, channel,
         1001, 1001, 0, 64 * 1024));
 }
 
@@ -296,7 +297,7 @@ TEST_F(FlowControlTest, shouldUseTaggedStrategyWith8ByteTag)
     initialise_channel("aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged,g:3000000000");
 
     ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
-        &strategy, &context, channel,
+        &strategy, context, channel,
         1001, 1001, 0, 64 * 1024));
 
     ASSERT_FALSE(NULL == strategy);
@@ -312,7 +313,7 @@ TEST_F(FlowControlTest, shouldUseTaggedStrategyWithOldAsfValue)
     initialise_channel("aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged,g:123");
 
     ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
-        &strategy, &context, channel,
+        &strategy, context, channel,
         1001, 1001, 0, 64 * 1024));
 
     ASSERT_FALSE(NULL == strategy);
@@ -330,7 +331,7 @@ TEST_F(FlowControlTest, shouldUseTaggedStrategyCorrectlyWhenReceiversAreEmpty)
     initialise_channel("aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged,g:123");
 
     ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
-        &strategy, &context, channel,
+        &strategy, context, channel,
         1001, 1001, 0, 64 * 1024));
 
     ASSERT_FALSE(NULL == strategy);
@@ -347,7 +348,7 @@ TEST_F(FlowControlTest, shouldTimeoutWithTaggedStrategy)
     initialise_channel("aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged,g:123,t:500ms");
 
     ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
-        &strategy, &context, channel,
+        &strategy, context, channel,
         1001, 1001, 0, 64 * 1024));
     ASSERT_FALSE(NULL == strategy);
 
@@ -367,7 +368,7 @@ TEST_F(FlowControlTest, shouldAlwaysHaveRequiredReceiverMaxFlowControlStrategy)
     initialise_channel("aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=max");
 
     ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
-        &strategy, &context, channel,
+        &strategy, context, channel,
         1001, 1001, 0, 64 * 1024));
 
     ASSERT_TRUE(strategy->has_required_receivers(strategy));
@@ -379,7 +380,7 @@ TEST_F(FlowControlTest, shouldAlwaysHaveRequiredReceiverMinFlowControlStrategy)
     initialise_channel("aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=min");
 
     ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
-        &strategy, &context, channel,
+        &strategy, context, channel,
         1001, 1001, 0, 64 * 1024));
 
     ASSERT_TRUE(strategy->has_required_receivers(strategy));
@@ -392,7 +393,7 @@ TEST_F(FlowControlTest, shouldAlwaysHaveRequiredReceiverTaggedFlowControlStrateg
     initialise_channel("aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged");
 
     ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
-        &strategy, &context, channel,
+        &strategy, context, channel,
         1001, 1001, 0, 64 * 1024));
 
     ASSERT_TRUE(NULL != strategy);
@@ -407,7 +408,7 @@ TEST_F(FlowControlTest, shouldOnlyHaveRequiredReceiverTaggedFlowControlStrategyW
     initialise_channel("aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged,g:123/3");
 
     ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
-        &strategy, &context, channel,
+        &strategy, context, channel,
         1001, 1001, 0, 64 * 1024));
 
     ASSERT_FALSE(strategy->has_required_receivers(strategy));
@@ -481,17 +482,17 @@ TEST_F(FlowControlTest, shouldFallWithInvalidStrategyName)
 
     initialise_channel("aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=minute");
     ASSERT_EQ(-1, aeron_default_multicast_flow_control_strategy_supplier(
-        &strategy, &context, channel,
+        &strategy, context, channel,
         1001, 1001, 0, 64 * 1024));
 
     initialise_channel("aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=maximilien");
     ASSERT_EQ(-1, aeron_default_multicast_flow_control_strategy_supplier(
-        &strategy, &context, channel,
+        &strategy, context, channel,
         1001, 1001, 0, 64 * 1024));
 
     initialise_channel("aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=taggedagado");
     ASSERT_EQ(-1, aeron_default_multicast_flow_control_strategy_supplier(
-        &strategy, &context, channel,
+        &strategy, context, channel,
         1001, 1001, 0, 64 * 1024));
 }
 

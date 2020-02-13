@@ -20,7 +20,7 @@ import io.aeron.AeronCloseHelper;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.media.ImageConnection;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
-import io.aeron.driver.media.ReceiveDestinationUdpTransport;
+import io.aeron.driver.media.ReceiveDestinationTransport;
 import io.aeron.driver.reports.LossReport;
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.LogBufferDescriptor;
@@ -427,7 +427,7 @@ public class PublicationImage
      * @param transportIndex from which packets will arrive.
      * @param transport      from which packets will arrive.
      */
-    void addDestination(final int transportIndex, final ReceiveDestinationUdpTransport transport)
+    void addDestination(final int transportIndex, final ReceiveDestinationTransport transport)
     {
         imageConnections = ArrayUtil.ensureCapacity(imageConnections, transportIndex + 1);
 

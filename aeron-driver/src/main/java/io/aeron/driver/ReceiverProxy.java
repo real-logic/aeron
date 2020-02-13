@@ -16,7 +16,7 @@
 package io.aeron.driver;
 
 import io.aeron.driver.media.ReceiveChannelEndpoint;
-import io.aeron.driver.media.ReceiveDestinationUdpTransport;
+import io.aeron.driver.media.ReceiveDestinationTransport;
 import io.aeron.driver.media.UdpChannel;
 import org.agrona.concurrent.status.AtomicCounter;
 
@@ -151,7 +151,7 @@ public class ReceiverProxy
     }
 
     public void addDestination(
-        final ReceiveChannelEndpoint channelEndpoint, final ReceiveDestinationUdpTransport transport)
+        final ReceiveChannelEndpoint channelEndpoint, final ReceiveDestinationTransport transport)
     {
         if (notConcurrent())
         {

@@ -909,7 +909,7 @@ public class DriverConductor implements Agent
         receiveChannelEndpoint.validateAllowsDestinationControl();
 
         final UdpChannel udpChannel = UdpChannel.parse(destinationChannel);
-        final ReceiveDestinationUdpTransport transport = new ReceiveDestinationUdpTransport(udpChannel, ctx);
+        final ReceiveDestinationTransport transport = new ReceiveDestinationTransport(udpChannel, ctx);
 
         receiverProxy.addDestination(receiveChannelEndpoint, transport);
         clientProxy.operationSucceeded(correlationId);

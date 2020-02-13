@@ -357,7 +357,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         }
     }
 
-    public int addDestination(final ReceiveDestinationUdpTransport transport)
+    public int addDestination(final ReceiveDestinationTransport transport)
     {
         return multiRcvDestination.addDestination(transport);
     }
@@ -372,7 +372,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         return multiRcvDestination.transport(udpChannel);
     }
 
-    public ReceiveDestinationUdpTransport destination(final int transportIndex)
+    public ReceiveDestinationTransport destination(final int transportIndex)
     {
         return multiRcvDestination.transport(transportIndex);
     }

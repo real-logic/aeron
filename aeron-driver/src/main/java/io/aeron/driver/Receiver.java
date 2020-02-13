@@ -17,7 +17,7 @@ package io.aeron.driver;
 
 import io.aeron.driver.media.DataTransportPoller;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
-import io.aeron.driver.media.ReceiveDestinationUdpTransport;
+import io.aeron.driver.media.ReceiveDestinationTransport;
 import io.aeron.driver.media.UdpChannel;
 import org.agrona.CloseHelper;
 import org.agrona.collections.ArrayListUtil;
@@ -148,10 +148,8 @@ public class Receiver implements Agent
 
             if (channelEndpoint.hasExplicitControl())
             {
-                addPendingSetupMessage(
-                    0, 0, 0, channelEndpoint, true, channelEndpoint.explicitControlAddress());
-                channelEndpoint.sendSetupElicitingStatusMessage(
-                    0, channelEndpoint.explicitControlAddress(), 0, 0);
+                addPendingSetupMessage(0, 0, 0, channelEndpoint, true, channelEndpoint.explicitControlAddress());
+                channelEndpoint.sendSetupElicitingStatusMessage(0, channelEndpoint.explicitControlAddress(), 0, 0);
             }
         }
         else
@@ -184,7 +182,7 @@ public class Receiver implements Agent
     }
 
     public void onAddDestination(
-        final ReceiveChannelEndpoint channelEndpoint, final ReceiveDestinationUdpTransport transport)
+        final ReceiveChannelEndpoint channelEndpoint, final ReceiveDestinationTransport transport)
     {
         transport.openChannel(conductorProxy, channelEndpoint.statusIndicatorCounter());
 
@@ -194,10 +192,8 @@ public class Receiver implements Agent
 
         if (transport.hasExplicitControl())
         {
-            addPendingSetupMessage(
-                0, 0, transportIndex, channelEndpoint, true, transport.explicitControlAddress());
-            channelEndpoint.sendSetupElicitingStatusMessage(
-                transportIndex, transport.explicitControlAddress(), 0, 0);
+            addPendingSetupMessage(0, 0, transportIndex, channelEndpoint, true, transport.explicitControlAddress());
+            channelEndpoint.sendSetupElicitingStatusMessage(transportIndex, transport.explicitControlAddress(), 0, 0);
         }
 
         for (final PublicationImage image : publicationImages)
@@ -209,14 +205,13 @@ public class Receiver implements Agent
         }
     }
 
-    public void onRemoveDestination(
-        final ReceiveChannelEndpoint channelEndpoint, final UdpChannel udpChannel)
+    public void onRemoveDestination(final ReceiveChannelEndpoint channelEndpoint, final UdpChannel udpChannel)
     {
         final int transportIndex = channelEndpoint.destination(udpChannel);
 
         if (ArrayUtil.UNKNOWN_INDEX != transportIndex)
         {
-            final ReceiveDestinationUdpTransport transport = channelEndpoint.destination(transportIndex);
+            final ReceiveDestinationTransport transport = channelEndpoint.destination(transportIndex);
 
             dataTransportPoller.cancelRead(channelEndpoint, transport);
             channelEndpoint.removeDestination(transportIndex);

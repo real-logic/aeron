@@ -28,12 +28,12 @@ import static io.aeron.driver.media.UdpChannelTransport.sendError;
 
 final class MultiRcvDestination
 {
-    private static final ReceiveDestinationUdpTransport[] EMPTY_TRANSPORTS = new ReceiveDestinationUdpTransport[0];
+    private static final ReceiveDestinationTransport[] EMPTY_TRANSPORTS = new ReceiveDestinationTransport[0];
 
     private final long destinationEndpointTimeoutNs;
     private final ErrorHandler errorHandler;
     private final NanoClock nanoClock;
-    private ReceiveDestinationUdpTransport[] transports = EMPTY_TRANSPORTS;
+    private ReceiveDestinationTransport[] transports = EMPTY_TRANSPORTS;
     private int numDestinations = 0;
 
     MultiRcvDestination(final NanoClock nanoClock, final long timeoutNs, final ErrorHandler errorHandler)
@@ -45,7 +45,7 @@ final class MultiRcvDestination
 
     void close(final DataTransportPoller poller)
     {
-        for (final ReceiveDestinationUdpTransport transport : transports)
+        for (final ReceiveDestinationTransport transport : transports)
         {
             AeronCloseHelper.close(errorHandler, transport);
             if (null != poller)
@@ -55,7 +55,7 @@ final class MultiRcvDestination
         }
     }
 
-    int addDestination(final ReceiveDestinationUdpTransport transport)
+    int addDestination(final ReceiveDestinationTransport transport)
     {
         int index = transports.length;
 
@@ -86,19 +86,19 @@ final class MultiRcvDestination
         return numDestinations > transportIndex && null != transports[transportIndex];
     }
 
-    ReceiveDestinationUdpTransport transport(final int transportIndex)
+    ReceiveDestinationTransport transport(final int transportIndex)
     {
         return transports[transportIndex];
     }
 
     int transport(final UdpChannel udpChannel)
     {
-        final ReceiveDestinationUdpTransport[] transports = this.transports;
+        final ReceiveDestinationTransport[] transports = this.transports;
         int index = ArrayUtil.UNKNOWN_INDEX;
 
         for (int i = 0, length = transports.length; i < length; i++)
         {
-            final ReceiveDestinationUdpTransport transport = transports[i];
+            final ReceiveDestinationTransport transport = transports[i];
 
             if (null != transport && transport.udpChannel().equals(udpChannel))
             {
@@ -116,7 +116,7 @@ final class MultiRcvDestination
         final int bufferPosition,
         final int bytesToSend)
     {
-        final ReceiveDestinationUdpTransport[] transports = this.transports;
+        final ReceiveDestinationTransport[] transports = this.transports;
         final long nowNs = nanoClock.nanoTime();
         int minBytesSent = bytesToSend;
 

@@ -25,9 +25,9 @@ import java.nio.channels.SelectionKey;
 /**
  * Destination endpoint representation for reception into an image from a UDP transport.
  */
-public class ReceiveDestinationUdpTransport extends UdpChannelTransport
+public class ReceiveDestinationTransport extends UdpChannelTransport
 {
-    public ReceiveDestinationUdpTransport(final UdpChannel udpChannel, final MediaDriver.Context context)
+    public ReceiveDestinationTransport(final UdpChannel udpChannel, final MediaDriver.Context context)
     {
         super(udpChannel, udpChannel.remoteData(), udpChannel.remoteData(), null, context);
     }

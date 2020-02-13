@@ -46,7 +46,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
     private int refCount = 0;
     private final BiInt2ObjectMap<NetworkPublication> publicationBySessionAndStreamId = new BiInt2ObjectMap<>();
-    private final MultiDestination multiDestination;
+    private final MultiSndDestination multiSndDestination;
     private final AtomicCounter statusMessagesReceived;
     private final AtomicCounter nakMessagesReceived;
     private final AtomicCounter statusIndicator;
@@ -65,17 +65,17 @@ public class SendChannelEndpoint extends UdpChannelTransport
         statusMessagesReceived = context.systemCounters().get(STATUS_MESSAGES_RECEIVED);
         this.statusIndicator = statusIndicator;
 
-        MultiDestination multiDestination = null;
+        MultiSndDestination multiSndDestination = null;
         if (udpChannel.isManualControlMode())
         {
-            multiDestination = new ManualMultiDestination();
+            multiSndDestination = new ManualSndMultiDestination();
         }
         else if (udpChannel.isDynamicControlMode() || udpChannel.hasExplicitControl())
         {
-            multiDestination = new DynamicMultiDestination(context.cachedNanoClock(), DESTINATION_TIMEOUT);
+            multiSndDestination = new DynamicSndMultiDestination(context.cachedNanoClock(), DESTINATION_TIMEOUT);
         }
 
-        this.multiDestination = multiDestination;
+        this.multiSndDestination = multiSndDestination;
     }
 
     public void decRef()
@@ -185,7 +185,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
         {
             final int bytesToSend = buffer.remaining();
 
-            if (null == multiDestination)
+            if (null == multiSndDestination)
             {
                 try
                 {
@@ -205,7 +205,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
             }
             else
             {
-                bytesSent = multiDestination.send(sendDatagramChannel, buffer, this, bytesToSend);
+                bytesSent = multiSndDestination.send(sendDatagramChannel, buffer, this, bytesToSend);
             }
         }
 
@@ -222,9 +222,9 @@ public class SendChannelEndpoint extends UdpChannelTransport
         final int streamId = msg.streamId();
         final NetworkPublication publication = publicationBySessionAndStreamId.get(sessionId, streamId);
 
-        if (null != multiDestination)
+        if (null != multiSndDestination)
         {
-            multiDestination.onStatusMessage(msg, srcAddress);
+            multiSndDestination.onStatusMessage(msg, srcAddress);
 
             if (0 == sessionId && 0 == streamId && SEND_SETUP_FLAG == (msg.flags() & SEND_SETUP_FLAG))
             {
@@ -279,7 +279,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
     public void validateAllowsManualControl()
     {
-        if (!(multiDestination instanceof ManualMultiDestination))
+        if (!(multiSndDestination instanceof ManualSndMultiDestination))
         {
             throw new ControlProtocolException(ErrorCode.INVALID_CHANNEL, "channel does not allow manual control");
         }
@@ -287,11 +287,11 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
     public void addDestination(final InetSocketAddress address)
     {
-        multiDestination.addDestination(address);
+        multiSndDestination.addDestination(address);
     }
 
     public void removeDestination(final InetSocketAddress address)
     {
-        multiDestination.removeDestination(address);
+        multiSndDestination.removeDestination(address);
     }
 }

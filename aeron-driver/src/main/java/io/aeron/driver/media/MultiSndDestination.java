@@ -26,7 +26,7 @@ import java.nio.channels.DatagramChannel;
 
 import static io.aeron.driver.media.UdpChannelTransport.sendError;
 
-abstract class MultiDestination
+abstract class MultiSndDestination
 {
     abstract int send(DatagramChannel channel, ByteBuffer buffer, SendChannelEndpoint channelEndpoint, int bytesToSend);
 
@@ -72,7 +72,7 @@ abstract class MultiDestination
     }
 }
 
-class ManualMultiDestination extends MultiDestination
+class ManualSndMultiDestination extends MultiSndDestination
 {
     private static final InetSocketAddress[] EMPTY_DESTINATIONS = new InetSocketAddress[0];
 
@@ -149,7 +149,7 @@ class ManualMultiDestination extends MultiDestination
     }
 }
 
-class DynamicMultiDestination extends MultiDestination
+class DynamicSndMultiDestination extends MultiSndDestination
 {
     private static final Destination[] EMPTY_DESTINATIONS = new Destination[0];
 
@@ -157,7 +157,7 @@ class DynamicMultiDestination extends MultiDestination
     private final CachedNanoClock nanoClock;
     private Destination[] destinations = EMPTY_DESTINATIONS;
 
-    DynamicMultiDestination(final CachedNanoClock nanoClock, final long timeout)
+    DynamicSndMultiDestination(final CachedNanoClock nanoClock, final long timeout)
     {
         this.nanoClock = nanoClock;
         this.destinationTimeoutNs = timeout;

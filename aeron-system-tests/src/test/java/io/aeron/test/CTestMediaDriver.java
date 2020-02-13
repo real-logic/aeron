@@ -108,6 +108,7 @@ public final class CTestMediaDriver implements TestMediaDriver
         final ProcessBuilder pb = new ProcessBuilder(f.getAbsolutePath());
 
         pb.environment().put("AERON_CLIENT_LIVENESS_TIMEOUT", String.valueOf(context.clientLivenessTimeoutNs()));
+        pb.environment().put("AERON_IMAGE_LIVENESS_TIMEOUT", String.valueOf(context.imageLivenessTimeoutNs()));
         pb.environment().put("AERON_DIR", context.aeronDirectoryName());
         pb.environment().put("AERON_DRIVER_TERMINATION_VALIDATOR", "allow");
         pb.environment().put("AERON_TERM_BUFFER_LENGTH", String.valueOf(context.publicationTermBufferLength()));

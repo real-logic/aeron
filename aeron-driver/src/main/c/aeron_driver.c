@@ -575,8 +575,8 @@ void aeron_driver_context_print_configuration(aeron_driver_context_t *context)
     fprintf(fpout, "\n    mtu_length=%" PRIu64, (uint64_t)context->mtu_length);
     fprintf(fpout, "\n    ipc_mtu_length=%" PRIu64, (uint64_t)context->ipc_mtu_length);
     fprintf(fpout, "\n    file_page_size=%" PRIu64, (uint64_t)context->file_page_size);
-    /* publicationReservedSessionIdLow */
-    /* publicationReservedSessionIdHigh */
+    fprintf(fpout, "\n    publication_reserved_session_id_low=%" PRId32, context->publication_reserved_session_id_low);
+    fprintf(fpout, "\n    publication_reserved_session_id_high=%" PRId32, context->publication_reserved_session_id_high);
     fprintf(fpout, "\n    loss_report_length=%" PRIu64, (uint64_t)context->loss_report_length);
     fprintf(fpout, "\n    send_to_sm_poll_ratio=%" PRIu64, (uint64_t)context->send_to_sm_poll_ratio);
 

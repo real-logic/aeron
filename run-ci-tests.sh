@@ -3,7 +3,7 @@
 if [ -z "$AERON_GITHUB_PAT" ]
 then
   echo "Please set AERON_GITHUB_PAT environment variable to contain your token"
-  exit -1
+  exit 1
 fi
 
 event_type=run-commit-tests

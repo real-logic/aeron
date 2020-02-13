@@ -6,7 +6,7 @@ then
   exit -1
 fi
 
-event_type=run-tests
+event_type=run-commit-tests
 
 for option in "$@"
 do
@@ -27,8 +27,8 @@ done
 
 echo "Sending repository_dispatch, event_type: ${event_type}"
 
-curl -H "Accept: application/vnd.github.everest-preview+json" \
+curl -v -H "Accept: application/vnd.github.everest-preview+json" \
     -H "Authorization: token ${AERON_GITHUB_PAT}" \
     --request POST \
-    --data '{"event_type": "${event_type}"}' \
+    --data "{\"event_type\": \"${event_type}\"}" \
     https://api.github.com/repos/real-logic/aeron/dispatches

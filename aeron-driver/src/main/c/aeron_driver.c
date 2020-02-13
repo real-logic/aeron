@@ -32,6 +32,7 @@
 #include "aeron_windows.h"
 #if defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
 
+    #define _CRT_RAND_S
     #include <io.h>
     #include <direct.h>
     #include <process.h>
@@ -146,9 +147,18 @@ int32_t aeron_randomised_int32()
         fprintf(stderr, "Failed to read from aeron_dev_random (%d): %s\n", errno, strerror(errno));
         exit(EXIT_FAILURE);
     }
-
+#elif defined(AERON_COMPILER_MSVC)
+    uint32_t value;
+    if (0 == rand_s(&value))
+    {
+        memcpy(&result, &value, sizeof(int32_t));
+    }
+    else
+    {
+        result = (int32_t)(rand() / (double)RAND_MAX * INT_MAX);
+    }
 #else
-    result = rand() * INT_MAX;
+    result = (int32_t)(rand() / (double)RAND_MAX * INT_MAX);
 #endif
     return result;
 }

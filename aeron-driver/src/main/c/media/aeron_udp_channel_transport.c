@@ -236,7 +236,7 @@ int aeron_udp_channel_transport_init(
     error:
         if (-1 != transport->fd)
         {
-            close(transport->fd);
+            aeron_close_socket(transport->fd);
         }
 
         transport->fd = -1;

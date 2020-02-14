@@ -15,6 +15,7 @@
  */
 package io.aeron.agent;
 
+import org.agrona.Strings;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 
@@ -35,7 +36,7 @@ import static org.agrona.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENG
 final class EventConfiguration
 {
     /**
-     * Event Buffer length system property name.
+     * Event buffer length system property name.
      */
     public static final String BUFFER_LENGTH_PROP_NAME = "aeron.event.buffer.length";
 
@@ -50,15 +51,6 @@ final class EventConfiguration
     public static final String ENABLED_EVENT_CODES_PROP_NAME = "aeron.event.log";
 
     /**
-     * Cluster Event tags system property name. This is either:
-     * <ul>
-     * <li>A comma separated list of {@link ClusterEventCode}s to enable</li>
-     * <li>"all" which enables all the codes</li>
-     * </ul>
-     */
-    public static final String ENABLED_CLUSTER_EVENT_CODES_PROP_NAME = "aeron.event.cluster.log";
-
-    /**
      * Archive Event tags system property name. This is either:
      * <ul>
      * <li>A comma separated list of {@link ArchiveEventCode}s to enable</li>
@@ -66,6 +58,15 @@ final class EventConfiguration
      * </ul>
      */
     public static final String ENABLED_ARCHIVE_EVENT_CODES_PROP_NAME = "aeron.event.archive.log";
+
+    /**
+     * Cluster Event tags system property name. This is either:
+     * <ul>
+     * <li>A comma separated list of {@link ClusterEventCode}s to enable</li>
+     * <li>"all" which enables all the codes</li>
+     * </ul>
+     */
+    public static final String ENABLED_CLUSTER_EVENT_CODES_PROP_NAME = "aeron.event.cluster.log";
 
     /**
      * Event codes for admin events within the driver, i.e. does not include frame capture.
@@ -159,33 +160,14 @@ final class EventConfiguration
     }
 
     /**
-     * Get the {@link Set} of {@link ClusterEventCode}s that are enabled for the logger.
-     *
-     * @param enabledClusterEventCodes that can be "all" or a comma separated list of Event Code ids or names.
-     * @return the {@link Set} of {@link ClusterEventCode}s that are enabled for the logger.
-     */
-    static Set<ClusterEventCode> getEnabledClusterEventCodes(final String enabledClusterEventCodes)
-    {
-        if (null == enabledClusterEventCodes || "".equals(enabledClusterEventCodes))
-        {
-            return EnumSet.noneOf(ClusterEventCode.class);
-        }
-
-        final Function<Integer, ClusterEventCode> eventCodeById = ClusterEventCode::get;
-        final Function<String, ClusterEventCode> eventCodeByName = ClusterEventCode::valueOf;
-
-        return parseEventCodes(ClusterEventCode.class, enabledClusterEventCodes, eventCodeById, eventCodeByName);
-    }
-
-    /**
      * Get the {@link Set} of {@link ArchiveEventCode}s that are enabled for the logger.
      *
-     * @param enabledArchiveEventCodes that can be "all" or a comma separated list of Event Code ids or names.
+     * @param enabledEventCodes that can be "all" or a comma separated list of Event Code ids or names.
      * @return the {@link Set} of {@link ArchiveEventCode}s that are enabled for the logger.
      */
-    static EnumSet<ArchiveEventCode> getEnabledArchiveEventCodes(final String enabledArchiveEventCodes)
+    static EnumSet<ArchiveEventCode> getEnabledArchiveEventCodes(final String enabledEventCodes)
     {
-        if (null == enabledArchiveEventCodes || "".equals(enabledArchiveEventCodes))
+        if (Strings.isEmpty(enabledEventCodes))
         {
             return EnumSet.noneOf(ArchiveEventCode.class);
         }
@@ -193,24 +175,43 @@ final class EventConfiguration
         final Function<Integer, ArchiveEventCode> eventCodeById = ArchiveEventCode::get;
         final Function<String, ArchiveEventCode> eventCodeByName = ArchiveEventCode::valueOf;
 
-        return parseEventCodes(ArchiveEventCode.class, enabledArchiveEventCodes, eventCodeById, eventCodeByName);
+        return parseEventCodes(ArchiveEventCode.class, enabledEventCodes, eventCodeById, eventCodeByName);
+    }
+
+    /**
+     * Get the {@link Set} of {@link ClusterEventCode}s that are enabled for the logger.
+     *
+     * @param enabledEventCodes that can be "all" or a comma separated list of Event Code ids or names.
+     * @return the {@link Set} of {@link ClusterEventCode}s that are enabled for the logger.
+     */
+    static Set<ClusterEventCode> getEnabledClusterEventCodes(final String enabledEventCodes)
+    {
+        if (Strings.isEmpty(enabledEventCodes))
+        {
+            return EnumSet.noneOf(ClusterEventCode.class);
+        }
+
+        final Function<Integer, ClusterEventCode> eventCodeById = ClusterEventCode::get;
+        final Function<String, ClusterEventCode> eventCodeByName = ClusterEventCode::valueOf;
+
+        return parseEventCodes(ClusterEventCode.class, enabledEventCodes, eventCodeById, eventCodeByName);
     }
 
     /**
      * Get the {@link Set} of {@link DriverEventCode}s that are enabled for the logger.
      *
-     * @param enabledLoggerEventCodes that can be "all", "admin", or a comma separated list of Event Code ids or names.
+     * @param enabledEventCodes that can be "all", "admin", or a comma separated list of Event Code ids or names.
      * @return the {@link Set} of {@link DriverEventCode}s that are enabled for the logger.
      */
-    static EnumSet<DriverEventCode> getEnabledDriverEventCodes(final String enabledLoggerEventCodes)
+    static EnumSet<DriverEventCode> getEnabledDriverEventCodes(final String enabledEventCodes)
     {
-        if (null == enabledLoggerEventCodes || "".equals(enabledLoggerEventCodes))
+        if (Strings.isEmpty(enabledEventCodes))
         {
             return EnumSet.noneOf(DriverEventCode.class);
         }
 
         final EnumSet<DriverEventCode> eventCodeSet = EnumSet.noneOf(DriverEventCode.class);
-        final String[] codeIds = enabledLoggerEventCodes.split(",");
+        final String[] codeIds = enabledEventCodes.split(",");
 
         for (final String codeId : codeIds)
         {

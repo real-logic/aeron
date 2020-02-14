@@ -96,8 +96,10 @@ public enum ArchiveEventCode implements EventCode
             {
                 throw new IllegalArgumentException("id already in use: " + id);
             }
+
             array[id] = code;
         }
+
         return array;
     }
 

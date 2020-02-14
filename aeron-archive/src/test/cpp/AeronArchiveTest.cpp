@@ -88,7 +88,6 @@ public:
                 "-Daeron.archive.max.catalog.entries=1024",
                 "-Daeron.threading.mode=INVOKER",
                 "-Daeron.archive.threading.mode=SHARED",
-                "-Daeron.multicast.flow.control.strategy=io.aeron.driver.MinMulticastFlowControl",
                 "-Daeron.archive.recording.events.enabled=false",
                 "-Daeron.spies.simulate.connection=false",
                 "-Daeron.mtu.length=4k",
@@ -230,7 +229,7 @@ protected:
     const std::string m_aeronAllJar = AERON_ALL_JAR;
     const std::string m_archiveDir = ARCHIVE_DIR;
 
-    const std::string m_recordingChannel = "aeron:udp?endpoint=localhost:3333|term-length=65536";
+    const std::string m_recordingChannel = "aeron:udp?endpoint=localhost:3333|term-length=64k";
     const std::int32_t m_recordingStreamId = 33;
     const std::string m_replayChannel = "aeron:udp?endpoint=localhost:6666";
     const std::int32_t m_replayStreamId = 66;
@@ -675,10 +674,10 @@ TEST_F(AeronArchiveTest, shouldMergeFromReplayToLive)
     const std::size_t termLength = 64 * 1024;
     const std::string messagePrefix = "Message ";
     const std::size_t minMessagesPerTerm = termLength / (messagePrefix.length() + DataFrameHeader::LENGTH);
-    const std::string controlEndpoint = "localhost:43265";
-    const std::string recordingEndpoint = "localhost:43266";
-    const std::string liveEndpoint = "localhost:43267";
-    const std::string replayEndpoint = "localhost:43268";
+    const std::string controlEndpoint = "localhost:23265";
+    const std::string recordingEndpoint = "localhost:23266";
+    const std::string liveEndpoint = "localhost:23267";
+    const std::string replayEndpoint = "localhost:23268";
 
     ChannelUriStringBuilder publicationChannel, recordingChannel, subscriptionChannel;
     ChannelUriStringBuilder liveDestination, replayDestination, replayChannel;
@@ -688,6 +687,7 @@ TEST_F(AeronArchiveTest, shouldMergeFromReplayToLive)
         .tags("1,2")
         .controlEndpoint(controlEndpoint)
         .controlMode(MDC_CONTROL_MODE_DYNAMIC)
+        .flowControl("min")
         .termLength(termLength);
 
     recordingChannel
@@ -801,16 +801,17 @@ TEST_F(AeronArchiveTest, shouldMergeFromReplayToLive)
 
 TEST_F(AeronArchiveTest, shouldExceptionForIncorrectInitialCredentials)
 {
-    auto onEncodedCredentials = []() -> std::pair<const char *, std::uint32_t>
-    {
-        std::string credentials("admin:NotAdmin");
+    auto onEncodedCredentials =
+        []() -> std::pair<const char *, std::uint32_t>
+        {
+            std::string credentials("admin:NotAdmin");
 
-        char *arr = new char[credentials.length() + 1];
-        std::memcpy(arr, credentials.data(), credentials.length());
-        arr[credentials.length()] = '\0';
+            char *arr = new char[credentials.length() + 1];
+            std::memcpy(arr, credentials.data(), credentials.length());
+            arr[credentials.length()] = '\0';
 
-        return { arr, credentials.length() };
-    };
+            return { arr, credentials.length() };
+        };
 
     m_context.credentialsSupplier(CredentialsSupplier(onEncodedCredentials));
 
@@ -823,28 +824,29 @@ TEST_F(AeronArchiveTest, shouldExceptionForIncorrectInitialCredentials)
 
 TEST_F(AeronArchiveTest, shouldBeAbleToHandleBeingChallenged)
 {
-    auto onEncodedCredentials = []() -> std::pair<const char *, std::uint32_t>
-    {
-        std::string credentials("admin:adminC");
+    auto onEncodedCredentials =
+        []() -> std::pair<const char *, std::uint32_t>
+        {
+            std::string credentials("admin:adminC");
 
-        char *arr = new char[credentials.length() + 1];
-        std::memcpy(arr, credentials.data(), credentials.length());
-        arr[credentials.length()] = '\0';
+            char *arr = new char[credentials.length() + 1];
+            std::memcpy(arr, credentials.data(), credentials.length());
+            arr[credentials.length()] = '\0';
 
-        return { arr, credentials.length() };
-    };
+            return { arr, credentials.length() };
+        };
 
-    auto onChallenge = [](std::pair<const char *, std::uint32_t> encodedChallenge) ->
-        std::pair<const char *, std::uint32_t>
-    {
-        std::string credentials("admin:CSadmin");
+    auto onChallenge =
+        [](std::pair<const char *, std::uint32_t> encodedChallenge) -> std::pair<const char *, std::uint32_t>
+        {
+            std::string credentials("admin:CSadmin");
 
-        char *arr = new char[credentials.length() + 1];
-        std::memcpy(arr, credentials.data(), credentials.length());
-        arr[credentials.length()] = '\0';
+            char *arr = new char[credentials.length() + 1];
+            std::memcpy(arr, credentials.data(), credentials.length());
+            arr[credentials.length()] = '\0';
 
-        return { arr, credentials.length() };
-    };
+            return { arr, credentials.length() };
+        };
 
     m_context.credentialsSupplier(CredentialsSupplier(onEncodedCredentials, onChallenge));
 
@@ -856,28 +858,29 @@ TEST_F(AeronArchiveTest, shouldBeAbleToHandleBeingChallenged)
 
 TEST_F(AeronArchiveTest, shouldExceptionForIncorrectChallengeCredentials)
 {
-    auto onEncodedCredentials = []() -> std::pair<const char *, std::uint32_t>
-    {
-        std::string credentials("admin:adminC");
+    auto onEncodedCredentials =
+        []() -> std::pair<const char *, std::uint32_t>
+        {
+            std::string credentials("admin:adminC");
 
-        char *arr = new char[credentials.length() + 1];
-        std::memcpy(arr, credentials.data(), credentials.length());
-        arr[credentials.length()] = '\0';
+            char *arr = new char[credentials.length() + 1];
+            std::memcpy(arr, credentials.data(), credentials.length());
+            arr[credentials.length()] = '\0';
 
-        return { arr, credentials.length() };
-    };
+            return { arr, credentials.length() };
+        };
 
-    auto onChallenge = [](std::pair<const char *, std::uint32_t> encodedChallenge) ->
-        std::pair<const char *, std::uint32_t>
-    {
-        std::string credentials("admin:adminNoCS");
+    auto onChallenge =
+        [](std::pair<const char *, std::uint32_t> encodedChallenge) -> std::pair<const char *, std::uint32_t>
+        {
+            std::string credentials("admin:adminNoCS");
 
-        char *arr = new char[credentials.length() + 1];
-        std::memcpy(arr, credentials.data(), credentials.length());
-        arr[credentials.length()] = '\0';
+            char *arr = new char[credentials.length() + 1];
+            std::memcpy(arr, credentials.data(), credentials.length());
+            arr[credentials.length()] = '\0';
 
-        return { arr, credentials.length() };
-    };
+            return { arr, credentials.length() };
+        };
 
     m_context.credentialsSupplier(CredentialsSupplier(onEncodedCredentials, onChallenge));
 

@@ -216,23 +216,11 @@ public class LogBuffers implements AutoCloseable, ManagedResource
 
         for (int i = 0, length = mappedByteBuffers.length; i < length; i++)
         {
-            try
-            {
-                IoUtil.unmap(mappedByteBuffers[i]);
-            }
-            catch (final Throwable t)
-            {
-                if (error == null)
-                {
-                    error = t;
-                }
-                else
-                {
-                    error.addSuppressed(t);
-                }
-            }
+            final MappedByteBuffer mappedByteBuffer = mappedByteBuffers[i];
             mappedByteBuffers[i] = null;
+            IoUtil.unmap(mappedByteBuffer);
         }
+
         if (error != null)
         {
             LangUtil.rethrowUnchecked(error);

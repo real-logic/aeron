@@ -39,7 +39,7 @@ public final class CncFileReader implements AutoCloseable
     private boolean isClosed = false;
     private final int cncVersion;
     private final String cncSemanticVersion;
-    private final MappedByteBuffer cncByteBuffer;
+    private MappedByteBuffer cncByteBuffer;
     private final CountersReader countersReader;
     private final UnsafeBuffer toDriverBuffer;
 
@@ -73,8 +73,8 @@ public final class CncFileReader implements AutoCloseable
     /**
      * Map an existing CnC file.
      *
-     * @throws AeronException if the cnc version major version is not compatible.
      * @return the {@link CncFileReader} wrapper for reading useful data from the cnc file.
+     * @throws AeronException if the cnc version major version is not compatible.
      */
     public static CncFileReader map()
     {
@@ -142,6 +142,8 @@ public final class CncFileReader implements AutoCloseable
         if (!isClosed)
         {
             isClosed = true;
+            final MappedByteBuffer cncByteBuffer = this.cncByteBuffer;
+            this.cncByteBuffer = null;
             IoUtil.unmap(cncByteBuffer);
         }
     }

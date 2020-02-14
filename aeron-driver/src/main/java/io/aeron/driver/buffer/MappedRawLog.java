@@ -16,7 +16,8 @@
 package io.aeron.driver.buffer;
 
 import io.aeron.exceptions.AeronException;
-import org.agrona.*;
+import org.agrona.ErrorHandler;
+import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
@@ -30,8 +31,8 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
 import java.util.EnumSet;
 
-import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
+import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static java.nio.file.StandardOpenOption.*;
 import static org.agrona.BitUtil.align;
 
@@ -137,14 +138,17 @@ class MappedRawLog implements RawLog
 
     public boolean free()
     {
+        final MappedByteBuffer[] mappedBuffers = this.mappedBuffers;
         if (null != mappedBuffers)
         {
-            for (final MappedByteBuffer buffer : mappedBuffers)
+            for (int i = 0; i < mappedBuffers.length; i++)
             {
+                final MappedByteBuffer buffer = mappedBuffers[i];
+                mappedBuffers[i] = null;
                 IoUtil.unmap(buffer);
             }
 
-            mappedBuffers = null;
+            this.mappedBuffers = null;
         }
 
         if (null != logFile)

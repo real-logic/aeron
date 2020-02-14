@@ -197,8 +197,9 @@ class RecordingReader implements AutoCloseable
 
     private void closeRecordingSegment()
     {
+        final MappedByteBuffer mappedSegmentBuffer = this.mappedSegmentBuffer;
+        this.mappedSegmentBuffer = null;
         IoUtil.unmap(mappedSegmentBuffer);
-        mappedSegmentBuffer = null;
     }
 
     private void openRecordingSegment()

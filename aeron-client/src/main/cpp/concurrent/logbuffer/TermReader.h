@@ -45,6 +45,8 @@ typedef std::function<void(
 /**
  * Callback to indicate an exception has occurred.
  *
+ * This handler may be called in a context of noexcept so the handler can not safely throw.
+ *
  * @param exception that has occurred.
  */
 typedef std::function<void(const std::exception& exception)> exception_handler_t;

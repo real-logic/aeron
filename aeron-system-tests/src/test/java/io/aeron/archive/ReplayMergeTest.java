@@ -48,16 +48,17 @@ public class ReplayMergeTest
     private static final int PUBLICATION_TAG = 2;
     private static final int STREAM_ID = 1033;
 
-    private static final String CONTROL_ENDPOINT = "localhost:43265";
-    private static final String RECORDING_ENDPOINT = "localhost:43266";
-    private static final String LIVE_ENDPOINT = "localhost:43267";
-    private static final String REPLAY_ENDPOINT = "localhost:43268";
+    private static final String CONTROL_ENDPOINT = "localhost:23265";
+    private static final String RECORDING_ENDPOINT = "localhost:23266";
+    private static final String LIVE_ENDPOINT = "localhost:23267";
+    private static final String REPLAY_ENDPOINT = "localhost:23268";
 
     private final ChannelUriStringBuilder publicationChannel = new ChannelUriStringBuilder()
         .media(CommonContext.UDP_MEDIA)
         .tags("1," + PUBLICATION_TAG)
         .controlEndpoint(CONTROL_ENDPOINT)
         .controlMode(CommonContext.MDC_CONTROL_MODE_DYNAMIC)
+        .flowControl(MinMulticastFlowControl.FC_PARAM_VALUE)
         .termLength(TERM_LENGTH);
 
     private ChannelUriStringBuilder recordingChannel = new ChannelUriStringBuilder()
@@ -103,7 +104,6 @@ public class ReplayMergeTest
                 .publicationTermBufferLength(TERM_LENGTH)
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Throwable::printStackTrace)
-                .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
                 .spiesSimulateConnection(false)
                 .dirDeleteOnShutdown(true)
                 .dirDeleteOnStart(true),
@@ -135,11 +135,7 @@ public class ReplayMergeTest
             System.out.println("received " + received.get() + "/" + (MIN_MESSAGES_PER_TERM * 6));
         }
 
-        CloseHelper.quietClose(aeronArchive);
-        CloseHelper.quietClose(aeron);
-        CloseHelper.close(archivingMediaDriver);
-
-        archivingMediaDriver.archive().context().deleteArchiveDirectory();
+        CloseHelper.closeAll(aeronArchive, aeron, archivingMediaDriver);
     }
 
     @Test

@@ -20,8 +20,7 @@ import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.*;
 import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
-import org.agrona.CloseHelper;
-import org.agrona.ExpandableArrayBuffer;
+import org.agrona.*;
 
 final class ServiceProxy implements AutoCloseable
 {
@@ -212,7 +211,7 @@ final class ServiceProxy implements AutoCloseable
         throw new ClusterException("failed to send service termination position");
     }
 
-    void electionStartEvent(final long logPosition)
+    void electionStartEvent(final long logPosition, final ErrorHandler errorHandler)
     {
         final int length = MessageHeaderDecoder.ENCODED_LENGTH + ElectionStartEventEncoder.BLOCK_LENGTH;
 
@@ -235,14 +234,12 @@ final class ServiceProxy implements AutoCloseable
         }
         while (--attempts > 0);
 
-        throw new ClusterException("failed to send election start event");
+        errorHandler.onError(new ClusterException("failed to send election start event", AeronException.Category.WARN));
     }
 
     private static void checkResult(final long result)
     {
-        if (result == Publication.NOT_CONNECTED ||
-            result == Publication.CLOSED ||
-            result == Publication.MAX_POSITION_EXCEEDED)
+        if (result == Publication.CLOSED || result == Publication.MAX_POSITION_EXCEEDED)
         {
             throw new AeronException("unexpected publication state: " + result);
         }

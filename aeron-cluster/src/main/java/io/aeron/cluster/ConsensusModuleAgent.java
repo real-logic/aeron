@@ -2502,7 +2502,7 @@ class ConsensusModuleAgent implements Agent
             this);
 
         election.doWork(nowNs);
-        serviceProxy.electionStartEvent(commitPosition.getWeak());
+        serviceProxy.electionStartEvent(commitPosition.getWeak(), ctx.countedErrorHandler());
     }
 
     private void idle()

@@ -76,11 +76,11 @@ public class TaggedMulticastFlowControl implements FlowControl
         receiverTag = context.flowControlGroupReceiverTag();
         requiredGroupSize = context.flowControlGroupRequiredSize();
 
-        final String fcStr = udpChannel.channelUri().get(CommonContext.FLOW_CONTROL_PARAM_NAME);
+        final String fcValue = udpChannel.channelUri().get(CommonContext.FLOW_CONTROL_PARAM_NAME);
 
-        if (null != fcStr)
+        if (null != fcValue)
         {
-            for (final String arg : fcStr.split(","))
+            for (final String arg : fcValue.split(","))
             {
                 if (arg.startsWith("t:"))
                 {
@@ -131,6 +131,8 @@ public class TaggedMulticastFlowControl implements FlowControl
         boolean isExisting = false;
         long minPosition = Long.MAX_VALUE;
 
+        MinMulticastFlowControl.Receiver[] receivers = this.receivers;
+
         for (final MinMulticastFlowControl.Receiver receiver : receivers)
         {
             if (isTagged && receiverId == receiver.receiverId)
@@ -149,6 +151,7 @@ public class TaggedMulticastFlowControl implements FlowControl
             final MinMulticastFlowControl.Receiver receiver = new MinMulticastFlowControl.Receiver(
                 position, lastPositionPlusWindow, timeNs, receiverId);
             receivers = MinMulticastFlowControl.add(receivers, receiver);
+            this.receivers = receivers;
             minPosition = Math.min(minPosition, lastPositionPlusWindow);
         }
 
@@ -163,6 +166,7 @@ public class TaggedMulticastFlowControl implements FlowControl
     {
         long minLimitPosition = Long.MAX_VALUE;
         int removed = 0;
+        MinMulticastFlowControl.Receiver[] receivers = this.receivers;
 
         for (int lastIndex = receivers.length - 1, i = lastIndex; i >= 0; i--)
         {
@@ -184,6 +188,7 @@ public class TaggedMulticastFlowControl implements FlowControl
         if (removed > 0)
         {
             receivers = MinMulticastFlowControl.truncateReceivers(receivers, removed);
+            this.receivers = receivers;
         }
 
         return receivers.length > 0 ? minLimitPosition : senderLimit;

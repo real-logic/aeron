@@ -53,10 +53,10 @@ public class MinMulticastFlowControl implements FlowControl
         final int termBufferLength)
     {
         receiverTimeoutNs = context.minFlowControlTimeoutNs();
-        final String fcStr = udpChannel.channelUri().get(CommonContext.FLOW_CONTROL_PARAM_NAME);
-        if (null != fcStr)
+        final String fcValue = udpChannel.channelUri().get(CommonContext.FLOW_CONTROL_PARAM_NAME);
+        if (null != fcValue)
         {
-            for (final String arg : fcStr.split(","))
+            for (final String arg : fcValue.split(","))
             {
                 if (arg.startsWith("t:"))
                 {

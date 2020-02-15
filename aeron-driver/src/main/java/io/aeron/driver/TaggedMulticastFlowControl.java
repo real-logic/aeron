@@ -216,8 +216,7 @@ public class TaggedMulticastFlowControl implements FlowControl
             // compatible check for ASF of first 4 bytes
             final int offset = StatusMessageFlyweight.receiverTagFieldOffset();
 
-            if (
-                statusMessageFlyweight.getByte(offset) == PREFERRED_ASF_BYTES[0] &&
+            if (statusMessageFlyweight.getByte(offset) == PREFERRED_ASF_BYTES[0] &&
                 statusMessageFlyweight.getByte(offset + 1) == PREFERRED_ASF_BYTES[1] &&
                 statusMessageFlyweight.getByte(offset + 2) == PREFERRED_ASF_BYTES[2] &&
                 statusMessageFlyweight.getByte(offset + 3) == PREFERRED_ASF_BYTES[3])

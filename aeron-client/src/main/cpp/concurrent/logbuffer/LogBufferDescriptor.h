@@ -233,74 +233,72 @@ inline bool casActiveTermCount(
     return logMetaDataBuffer.compareAndSetInt32(LOG_ACTIVE_TERM_COUNT_OFFSET, expectedTermCount, updateTermCount);
 }
 
-inline int nextPartitionIndex(int currentIndex) AERON_NOEXCEPT
+inline int nextPartitionIndex(int currentIndex) noexcept
 {
     return (currentIndex + 1) % PARTITION_COUNT;
 }
 
-inline int previousPartitionIndex(int currentIndex) AERON_NOEXCEPT
+inline int previousPartitionIndex(int currentIndex) noexcept
 {
     return (currentIndex + (PARTITION_COUNT - 1)) % PARTITION_COUNT;
 }
 
-inline bool isConnected(const AtomicBuffer &logMetaDataBuffer) AERON_NOEXCEPT
+inline bool isConnected(const AtomicBuffer &logMetaDataBuffer) noexcept
 {
-    return (logMetaDataBuffer.getInt32Volatile(LOG_IS_CONNECTED_OFFSET) == 1);
+    return logMetaDataBuffer.getInt32Volatile(LOG_IS_CONNECTED_OFFSET) == 1;
 }
 
-inline void isConnected(AtomicBuffer &logMetaDataBuffer, bool isConnected) AERON_NOEXCEPT
+inline void isConnected(AtomicBuffer &logMetaDataBuffer, bool isConnected) noexcept
 {
     logMetaDataBuffer.putInt32Ordered(LOG_IS_CONNECTED_OFFSET, isConnected ? 1 : 0);
 }
 
-inline std::int32_t activeTransportCount(AtomicBuffer &logMegaDataBuffer) AERON_NOEXCEPT
+inline std::int32_t activeTransportCount(AtomicBuffer &logMegaDataBuffer) noexcept
 {
     return logMegaDataBuffer.getInt32Volatile(LOG_ACTIVE_TRANSPORT_COUNT);
 }
 
-inline void activeTransportCount(AtomicBuffer &logMetaDataBuffer, std::int32_t numberOfActiveTransports) AERON_NOEXCEPT
+inline void activeTransportCount(AtomicBuffer &logMetaDataBuffer, std::int32_t numberOfActiveTransports) noexcept
 {
     logMetaDataBuffer.putInt32Ordered(LOG_ACTIVE_TRANSPORT_COUNT, numberOfActiveTransports);
 }
 
-inline std::int64_t endOfStreamPosition(const AtomicBuffer &logMetaDataBuffer) AERON_NOEXCEPT
+inline std::int64_t endOfStreamPosition(const AtomicBuffer &logMetaDataBuffer) noexcept
 {
     return logMetaDataBuffer.getInt64Volatile(LOG_END_OF_STREAM_POSITION_OFFSET);
 }
 
-inline void endOfStreamPosition(AtomicBuffer &logMetaDataBuffer, std::int64_t position) AERON_NOEXCEPT
+inline void endOfStreamPosition(AtomicBuffer &logMetaDataBuffer, std::int64_t position) noexcept
 {
     logMetaDataBuffer.putInt64Ordered(LOG_END_OF_STREAM_POSITION_OFFSET, position);
 }
 
-inline int indexByTerm(std::int32_t initialTermId, std::int32_t activeTermId) AERON_NOEXCEPT
+inline int indexByTerm(std::int32_t initialTermId, std::int32_t activeTermId) noexcept
 {
     return (activeTermId - initialTermId) % PARTITION_COUNT;
 }
 
-inline int indexByTermCount(std::int64_t termCount) AERON_NOEXCEPT
+inline int indexByTermCount(std::int64_t termCount) noexcept
 {
     return static_cast<int>(termCount % PARTITION_COUNT);
 }
 
-inline int indexByPosition(std::int64_t position, std::int32_t positionBitsToShift) AERON_NOEXCEPT
+inline int indexByPosition(std::int64_t position, std::int32_t positionBitsToShift) noexcept
 {
     return static_cast<int>((static_cast<std::uint64_t>(position) >> positionBitsToShift) % PARTITION_COUNT);
 }
 
 inline std::int64_t computePosition(
-    std::int32_t activeTermId, std::int32_t termOffset, std::int32_t positionBitsToShift, std::int32_t initialTermId) AERON_NOEXCEPT
+    std::int32_t activeTermId, std::int32_t termOffset, std::int32_t positionBitsToShift, std::int32_t initialTermId) noexcept
 {
     const std::int64_t termCount = activeTermId - initialTermId;
-
     return (termCount << positionBitsToShift) + termOffset;
 }
 
 inline std::int64_t computeTermBeginPosition(
-    std::int32_t activeTermId, std::int32_t positionBitsToShift, std::int32_t initialTermId) AERON_NOEXCEPT
+    std::int32_t activeTermId, std::int32_t positionBitsToShift, std::int32_t initialTermId) noexcept
 {
     const std::int64_t termCount = activeTermId - initialTermId;
-
     return termCount << positionBitsToShift;
 }
 
@@ -329,7 +327,6 @@ inline std::int32_t termId(const std::int64_t rawTail)
 inline std::int32_t termOffset(const std::int64_t rawTail, const std::int64_t termLength)
 {
     const std::int64_t tail = rawTail & 0xFFFFFFFFl;
-
     return static_cast<std::int32_t>(std::min(tail, termLength));
 }
 
@@ -343,7 +340,6 @@ inline bool casRawTail(
 inline AtomicBuffer defaultFrameHeader(AtomicBuffer& logMetaDataBuffer)
 {
     std::uint8_t *header = logMetaDataBuffer.buffer() + LOG_DEFAULT_FRAME_HEADER_OFFSET;
-
     return AtomicBuffer(header, DataFrameHeader::LENGTH);
 }
 

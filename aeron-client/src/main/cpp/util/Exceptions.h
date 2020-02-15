@@ -43,14 +43,8 @@ static constexpr const char* past_prefix(const char * const prefix, const char *
 
 #ifdef _MSC_VER
     #define SOURCEINFO __FUNCTION__,  __SHORT_FILE__, __LINE__
-    #if _MSC_VER >= 1900
-        #define AERON_NOEXCEPT noexcept
-    #else
-        #define AERON_NOEXCEPT throw()
-    #endif
 #else
     #define SOURCEINFO  __PRETTY_FUNCTION__,  __SHORT_FILE__, __LINE__
-    #define AERON_NOEXCEPT noexcept
 #endif
 
 enum class ExceptionCategory : std::int64_t
@@ -85,17 +79,17 @@ public:
     {
     }
 
-    virtual const char * what() const AERON_NOEXCEPT
+    virtual const char * what() const noexcept
     {
         return m_what.c_str();
     }
 
-    const char * where() const AERON_NOEXCEPT
+    const char * where() const noexcept
     {
         return m_where.c_str();
     }
 
-    ExceptionCategory category() const AERON_NOEXCEPT
+    ExceptionCategory category() const noexcept
     {
         return m_category;
     }

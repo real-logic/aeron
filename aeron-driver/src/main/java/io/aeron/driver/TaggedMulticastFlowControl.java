@@ -72,9 +72,9 @@ public class TaggedMulticastFlowControl implements FlowControl
         final int initialTermId,
         final int termBufferLength)
     {
-        receiverTimeoutNs = context.taggedFlowControlTimeoutNs();
+        receiverTimeoutNs = context.flowControlReceiverTimeoutNs();
         receiverTag = context.flowControlGroupReceiverTag();
-        requiredGroupSize = context.flowControlGroupRequiredSize();
+        requiredGroupSize = context.flowControlReceiverGroupMinSize();
 
         final String fcValue = udpChannel.channelUri().get(CommonContext.FLOW_CONTROL_PARAM_NAME);
 

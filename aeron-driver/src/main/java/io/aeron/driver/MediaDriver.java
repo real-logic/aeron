@@ -444,12 +444,11 @@ public final class MediaDriver implements AutoCloseable
         private int publicationReservedSessionIdHigh = Configuration.publicationReservedSessionIdHigh();
         private int lossReportBufferLength = Configuration.lossReportBufferLength();
         private int sendToStatusMessagePollRatio = Configuration.sendToStatusMessagePollRatio();
-        private long minFlowControlTimeoutNs = Configuration.minFlowControlTimeoutNs();
-        private long taggedFlowControlTimeoutNs = Configuration.taggedFlowControlTimeoutNs();
+        private long flowControlReceiverTimeoutNs = Configuration.flowControlReceiverTimeoutNs();
 
         private Long receiverTag = Configuration.receiverTag();
         private long flowControlGroupReceiverTag = Configuration.flowControlGroupReceiverTag();
-        private int flowControlGroupRequiredSize = Configuration.flowControlGroupRequiredSize();
+        private int flowControlReceiverGroupMinSize = Configuration.flowControlReceiverGroupMinSize();
         private InferableBoolean receiverGroupConsideration = Configuration.receiverGroupConsideration();
 
         private EpochClock epochClock;
@@ -2279,11 +2278,11 @@ public final class MediaDriver implements AutoCloseable
          * Timeout for min multicast flow control strategy.
          *
          * @return timeout in ns.
-         * @see Configuration#MIN_FLOW_CONTROL_TIMEOUT_PROP_NAME
+         * @see Configuration#FLOW_CONTROL_RECEIVER_TIMEOUT_PROP_NAME
          */
-        public long minFlowControlTimeoutNs()
+        public long flowControlReceiverTimeoutNs()
         {
-            return minFlowControlTimeoutNs;
+            return flowControlReceiverTimeoutNs;
         }
 
         /**
@@ -2291,35 +2290,11 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param timeoutNs in ns.
          * @return this for a fluent API.
-         * @see Configuration#MIN_FLOW_CONTROL_TIMEOUT_PROP_NAME
+         * @see Configuration#FLOW_CONTROL_RECEIVER_TIMEOUT_PROP_NAME
          */
-        public Context minFlowControlTimeoutNs(final long timeoutNs)
+        public Context flowControlReceiverTimeoutNs(final long timeoutNs)
         {
-            this.minFlowControlTimeoutNs = timeoutNs;
-            return this;
-        }
-
-        /**
-         * Timeout for tagged multicast flow control strategy.
-         *
-         * @return timeout in ns.
-         * @see Configuration#MIN_FLOW_CONTROL_TIMEOUT_PROP_NAME
-         */
-        public long taggedFlowControlTimeoutNs()
-        {
-            return taggedFlowControlTimeoutNs;
-        }
-
-        /**
-         * Timeout for tagged multicast flow control strategy.
-         *
-         * @param timeoutNs in ns.
-         * @return this for a fluent API.
-         * @see Configuration#MIN_FLOW_CONTROL_TIMEOUT_PROP_NAME
-         */
-        public Context taggedFlowControlTimeoutNs(final long timeoutNs)
-        {
-            this.taggedFlowControlTimeoutNs = timeoutNs;
+            this.flowControlReceiverTimeoutNs = timeoutNs;
             return this;
         }
 
@@ -2773,26 +2748,26 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Get the default required group size for the tagged flow control strategy to indicate connectivity.
+         * Get the default min group size used by flow control strategies to indicate connectivity.
          *
          * @return required group size.
-         * @see Configuration#FLOW_CONTROL_GROUP_REQUIRED_SIZE_PROP_NAME
+         * @see Configuration#FLOW_CONTROL_RECEIVER_GROUP_MIN_SIZE_PROP_NAME
          */
-        public int flowControlGroupRequiredSize()
+        public int flowControlReceiverGroupMinSize()
         {
-            return flowControlGroupRequiredSize;
+            return flowControlReceiverGroupMinSize;
         }
 
         /**
-         * Set the default required group size for the tagged flow control strategy to indicate connectivity.
+         * Set the default min group size used by flow control strategies to indicate connectivity.
          *
          * @param groupSize minimum required group size used by the tagged flow control strategy.
          * @return this for fluent API.
-         * @see Configuration#FLOW_CONTROL_GROUP_REQUIRED_SIZE_PROP_NAME
+         * @see Configuration#FLOW_CONTROL_RECEIVER_GROUP_MIN_SIZE_PROP_NAME
          */
-        public Context flowControlGroupRequiredSize(final int groupSize)
+        public Context flowControlReceiverGroupMinSize(final int groupSize)
         {
-            this.flowControlGroupRequiredSize = groupSize;
+            this.flowControlReceiverGroupMinSize = groupSize;
             return this;
         }
 
@@ -3277,12 +3252,11 @@ public final class MediaDriver implements AutoCloseable
                 "\n    tempBuffer=" + tempBuffer +
                 "\n    unicastFlowControlSupplier=" + unicastFlowControlSupplier +
                 "\n    multicastFlowControlSupplier=" + multicastFlowControlSupplier +
-                "\n    minFlowControlTimeoutNs=" + minFlowControlTimeoutNs +
-                "\n    taggedFlowControlTimeoutNs=" + taggedFlowControlTimeoutNs +
                 "\n    applicationSpecificFeedback=" + Arrays.toString(applicationSpecificFeedback) +
                 "\n    receiverTag=" + receiverTag +
+                "\n    flowControlReceiverTimeoutNs=" + flowControlReceiverTimeoutNs +
+                "\n    flowControlReceiverGroupMinSize=" + flowControlReceiverGroupMinSize +
                 "\n    flowControlGroupReceiverTag=" + flowControlGroupReceiverTag +
-                "\n    flowControlGroupRequiredSize=" + flowControlGroupRequiredSize +
                 "\n    receiverGroupConsideration=" + receiverGroupConsideration +
                 "\n    congestionControlSupplier=" + congestionControlSupplier +
                 "\n    terminationValidator=" + terminationValidator +

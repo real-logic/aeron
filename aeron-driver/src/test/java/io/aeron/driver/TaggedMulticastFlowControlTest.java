@@ -15,7 +15,7 @@ class TaggedMulticastFlowControlTest
 {
     private static final int DEFAULT_GROUP_SIZE = 0;
     private static final long DEFAULT_RECEIVER_TAG = Configuration.flowControlGroupReceiverTag();
-    private static final long DEFAULT_TIMEOUT = Configuration.taggedFlowControlTimeoutNs();
+    private static final long DEFAULT_TIMEOUT = Configuration.flowControlReceiverTimeoutNs();
 
     private static Stream<Arguments> validUris()
     {

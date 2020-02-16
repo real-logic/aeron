@@ -644,22 +644,17 @@ public class Configuration
     public static final String FLOW_CONTROL_GROUP_RECEIVER_TAG_PROP_NAME = "aeron.flow.control.group.rtag";
 
     /**
-     * Property name for default required group size (rtag) used by the tagged flow control strategy to determine
+     * Property name for default minimum group size used by flow control strategies to determine
      * connectivity.
      */
-    public static final String FLOW_CONTROL_GROUP_REQUIRED_SIZE_PROP_NAME = "aeron.flow.control.group.required.size";
+    public static final String FLOW_CONTROL_RECEIVER_GROUP_MIN_SIZE_PROP_NAME =
+        "aeron.flow.control.receiver.group.min.size";
 
     /**
-     * Property name for tagged flow control timeouts.
+     * Property name for flow control timeouts.
      */
-    public static final String TAGGED_FLOW_CONTROL_TIMEOUT_PROP_NAME =
-        "aeron.tagged.multicast.flow.control.receiver.timeout";
-
-    /**
-     * Property name for min flow control timeouts.
-     */
-    public static final String MIN_FLOW_CONTROL_TIMEOUT_PROP_NAME =
-        "aeron.min.multicast.flow.control.receiver.timeout";
+    public static final String FLOW_CONTROL_RECEIVER_TIMEOUT_PROP_NAME =
+        "aeron.flow.control.receiver.timeout";
 
     private static final String MIN_FLOW_CONTROL_TIMEOUT_OLD_PROP_NAME =
         "aeron.MinMulticastFlowControl.receiverTimeout";
@@ -808,20 +803,15 @@ public class Configuration
         return getLong(FLOW_CONTROL_GROUP_RECEIVER_TAG_PROP_NAME, legacyAsfValue);
     }
 
-    public static int flowControlGroupRequiredSize()
+    public static int flowControlReceiverGroupMinSize()
     {
-        return getInteger(FLOW_CONTROL_GROUP_REQUIRED_SIZE_PROP_NAME, 0);
+        return getInteger(FLOW_CONTROL_RECEIVER_GROUP_MIN_SIZE_PROP_NAME, 0);
     }
 
-    public static long taggedFlowControlTimeoutNs()
-    {
-        return getDurationInNanos(TAGGED_FLOW_CONTROL_TIMEOUT_PROP_NAME, TimeUnit.SECONDS.toNanos(2));
-    }
-
-    public static long minFlowControlTimeoutNs()
+    public static long flowControlReceiverTimeoutNs()
     {
         return getDurationInNanos(
-            MIN_FLOW_CONTROL_TIMEOUT_PROP_NAME,
+            FLOW_CONTROL_RECEIVER_TIMEOUT_PROP_NAME,
             getDurationInNanos(MIN_FLOW_CONTROL_TIMEOUT_OLD_PROP_NAME, TimeUnit.SECONDS.toNanos(2)));
     }
 

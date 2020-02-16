@@ -177,7 +177,7 @@ public:
             throw IllegalArgumentException("MTU not in range 32-65504: " + std::to_string(mtu), SOURCEINFO);
         }
 
-        if ((mtu & (concurrent::logbuffer::FrameDescriptor::FRAME_ALIGNMENT - 1)) != 0)
+        if (0 != (mtu & static_cast<std::uint32_t>(concurrent::logbuffer::FrameDescriptor::FRAME_ALIGNMENT - 1)))
         {
             throw IllegalArgumentException(
                 "MTU not a multiple of FRAME_ALIGNMENT: mtu=" + std::to_string(mtu), SOURCEINFO);
@@ -213,7 +213,7 @@ public:
             throw IllegalArgumentException("term offset not in range 0-1g: " + std::to_string(termOffset), SOURCEINFO);
         }
 
-        if (0 != (termOffset & (concurrent::logbuffer::FrameDescriptor::FRAME_ALIGNMENT - 1)))
+        if (0 != (termOffset & static_cast<std::uint32_t>(concurrent::logbuffer::FrameDescriptor::FRAME_ALIGNMENT - 1)))
         {
             throw IllegalArgumentException(
                 "term offset not multiple of FRAME_ALIGNMENT: " + std::to_string(termOffset), SOURCEINFO);

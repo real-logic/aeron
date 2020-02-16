@@ -224,7 +224,7 @@ int aeron_min_flow_control_strategy_supplier(
     state->receivers.length = 0;
 
     state->receiver_timeout_ns = options.timeout_ns.is_present ?
-        options.timeout_ns.value : context->min_flow_control_timeout_ns;
+        options.timeout_ns.value : context->flow_control.receiver_timeout_ns;
 
     *strategy = _strategy;
 
@@ -385,14 +385,14 @@ int aeron_tagged_flow_control_strategy_supplier(
     state->min_flow_control_state.receivers.capacity = 0;
     state->min_flow_control_state.receivers.length = 0;
     state->receiver_tag = options.receiver_tag.is_present ?
-        options.receiver_tag.value : context->flow_control_group.receiver_tag;
+        options.receiver_tag.value : context->flow_control.group_receiver_tag;
     state->required_group_size = options.required_group_size.is_present ?
-        options.required_group_size.value : context->flow_control_group.required_size;
+        options.required_group_size.value : context->flow_control.receiver_group_min_size;
 
     state->error_log = context->error_log;
 
     state->min_flow_control_state.receiver_timeout_ns = options.timeout_ns.is_present ?
-        options.timeout_ns.value : context->tagged_flow_control_timeout_ns;
+        options.timeout_ns.value : context->flow_control.receiver_timeout_ns;
 
     *strategy = _strategy;
 

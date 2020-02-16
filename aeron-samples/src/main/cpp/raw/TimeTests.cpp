@@ -51,7 +51,7 @@ int main(int argc, char** argv)
     cout << std::chrono::duration<long, std::nano>(diff).count() << " ns\n";
 
     start = chrono::steady_clock::now();
-    chrono::high_resolution_clock::now();
+    static_cast<void>(chrono::high_resolution_clock::now());
     end = chrono::steady_clock::now();
     diff = end - start;
 
@@ -59,7 +59,7 @@ int main(int argc, char** argv)
     cout << std::chrono::duration<long, std::nano>(diff).count() << " ns\n";
 
     start = chrono::steady_clock::now();
-    chrono::steady_clock::now();
+    static_cast<void>(chrono::steady_clock::now());
     end = chrono::steady_clock::now();
     diff = end - start;
 
@@ -67,7 +67,7 @@ int main(int argc, char** argv)
     cout << std::chrono::duration<long, std::nano>(diff).count() << " ns\n";
 
     start = chrono::steady_clock::now();
-    chrono::system_clock::now();
+    static_cast<void>(chrono::system_clock::now());
     end = chrono::steady_clock::now();
     diff = end - start;
 

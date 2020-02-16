@@ -38,12 +38,13 @@ int aeron_mpsc_concurrent_array_queue_init(
     queue->consumer.head = 0;
     queue->capacity = length;
     queue->mask = length - 1;
+
     return 0;
 }
 
 int aeron_mpsc_concurrent_array_queue_close(aeron_mpsc_concurrent_array_queue_t *queue)
 {
-    aeron_free(queue->buffer);
+    aeron_free((void *)queue->buffer);
     return 0;
 }
 

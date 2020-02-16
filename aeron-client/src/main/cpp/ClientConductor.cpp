@@ -718,7 +718,8 @@ void ClientConductor::onOperationSuccess(std::int64_t correlationId)
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
     auto it = m_destinationStateByCorrelationId.find(correlationId);
-    if (it != m_destinationStateByCorrelationId.end() && it->second.m_status == RegistrationStatus::AWAITING_MEDIA_DRIVER)
+    if (it != m_destinationStateByCorrelationId.end() &&
+        it->second.m_status == RegistrationStatus::AWAITING_MEDIA_DRIVER)
     {
         DestinationStateDefn &state = it->second;
 
@@ -726,8 +727,7 @@ void ClientConductor::onOperationSuccess(std::int64_t correlationId)
     }
 }
 
-void ClientConductor::onChannelEndpointErrorResponse(
-        std::int64_t offendingCommandCorrelationId, const std::string &errorMessage)
+void ClientConductor::onChannelEndpointErrorResponse(std::int32_t channelStatusId, const std::string &errorMessage)
 {
     std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
@@ -735,9 +735,9 @@ void ClientConductor::onChannelEndpointErrorResponse(
     {
         std::shared_ptr<Subscription> subscription = it->second.m_subscription.lock();
 
-        if (subscription && subscription->channelStatusId() == offendingCommandCorrelationId)
+        if (subscription && subscription->channelStatusId() == channelStatusId)
         {
-            ChannelEndpointException exception(offendingCommandCorrelationId, errorMessage, SOURCEINFO);
+            ChannelEndpointException exception(channelStatusId, errorMessage, SOURCEINFO);
             m_errorHandler(exception);
 
             std::pair<Image::array_t, std::size_t> imageArrayPair = subscription->closeAndRemoveImages();
@@ -767,9 +767,9 @@ void ClientConductor::onChannelEndpointErrorResponse(
     {
         std::shared_ptr<Publication> publication = it->second.m_publication.lock();
 
-        if (publication && publication->channelStatusId() == offendingCommandCorrelationId)
+        if (publication && publication->channelStatusId() == channelStatusId)
         {
-            ChannelEndpointException exception(offendingCommandCorrelationId, errorMessage, SOURCEINFO);
+            ChannelEndpointException exception(channelStatusId, errorMessage, SOURCEINFO);
             m_errorHandler(exception);
 
             publication->close();
@@ -786,9 +786,9 @@ void ClientConductor::onChannelEndpointErrorResponse(
     {
         std::shared_ptr<ExclusivePublication> publication = it->second.m_publication.lock();
 
-        if (publication && publication->channelStatusId() == offendingCommandCorrelationId)
+        if (publication && publication->channelStatusId() == channelStatusId)
         {
-            ChannelEndpointException exception(offendingCommandCorrelationId, errorMessage, SOURCEINFO);
+            ChannelEndpointException exception(channelStatusId, errorMessage, SOURCEINFO);
             m_errorHandler(exception);
 
             publication->close();

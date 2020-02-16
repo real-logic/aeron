@@ -131,7 +131,7 @@ public:
                         if (ERROR_CODE_CHANNEL_ENDPOINT_ERROR == errorCode)
                         {
                             m_driverListener.onChannelEndpointErrorResponse(
-                                errorResponse.offendingCommandCorrelationId(),
+                                static_cast<std::int32_t>(errorResponse.offendingCommandCorrelationId()),
                                 errorResponse.errorMessage());
                         }
                         else

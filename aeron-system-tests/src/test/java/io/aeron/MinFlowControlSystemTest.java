@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-public class TaggedFlowControlTest
+public class MinFlowControlSystemTest
 {
     private static final String MULTICAST_URI = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost";
     private static final int STREAM_ID = 1001;
@@ -110,24 +110,18 @@ public class TaggedFlowControlTest
     private static Stream<Arguments> strategyConfigurations()
     {
         return Stream.of(
-            Arguments.of(new TaggedMulticastFlowControlSupplier(), DEFAULT_RECEIVER_TAG, null, "", ""),
-            Arguments.of(new TaggedMulticastFlowControlSupplier(), null, null, "", "|rtag=-1"),
-            Arguments.of(new TaggedMulticastFlowControlSupplier(), null, 2004L, "", "|rtag=2004"),
-            Arguments.of(null, DEFAULT_RECEIVER_TAG, null, "|fc=tagged", ""),
-            Arguments.of(null, 2020L, 2020L, "|fc=tagged", ""),
-            Arguments.of(null, null, null, "|fc=tagged,g:123", "|rtag=123"));
+            Arguments.of(new MinMulticastFlowControlSupplier(), ""),
+            Arguments.of(null, "|fc=min"),
+            Arguments.of(null, "|fc=min,g:/1"));
     }
 
     @ParameterizedTest
     @MethodSource("strategyConfigurations")
-    public void shouldSlowToTaggedWithMulticastFlowControlStrategy(
+    public void shouldSlowToMinMulticastFlowControlStrategy(
         final FlowControlSupplier flowControlSupplier,
-        final Long receiverTag,
-        final Long flowControlGroupReceiverTag,
-        final String publisherUriParams,
-        final String subscriptionBUriParams)
+        final String publisherUriParams)
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
             int numMessagesLeftToSend = numMessagesToSend;
@@ -138,20 +132,12 @@ public class TaggedFlowControlTest
             {
                 driverAContext.multicastFlowControlSupplier(flowControlSupplier);
             }
-            if (null != flowControlGroupReceiverTag)
-            {
-                driverAContext.flowControlGroupReceiverTag(flowControlGroupReceiverTag);
-            }
-            if (null != receiverTag)
-            {
-                driverBContext.receiverTag(receiverTag);
-            }
             driverAContext.flowControlReceiverGroupMinSize(1);
 
             launch();
 
             subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
-            subscriptionB = clientB.addSubscription(MULTICAST_URI + subscriptionBUriParams, STREAM_ID);
+            subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
             publication = clientA.addPublication(MULTICAST_URI + publisherUriParams, STREAM_ID);
 
             while (!subscriptionA.isConnected() || !subscriptionB.isConnected() || !publication.isConnected())
@@ -208,9 +194,9 @@ public class TaggedFlowControlTest
     }
 
     @Test
-    public void shouldRemoveDeadTaggedReceiverWithTaggedMulticastFlowControlStrategy()
+    public void shouldRemoveDeadTaggedReceiverWithMinMulticastFlowControlStrategy()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(200), () ->
         {
             final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
             int numMessagesLeftToSend = numMessagesToSend;
@@ -218,9 +204,7 @@ public class TaggedFlowControlTest
             boolean isBClosed = false;
 
             driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
-            driverAContext.multicastFlowControlSupplier(new TaggedMulticastFlowControlSupplier());
-            driverBContext.receiverTag(DEFAULT_RECEIVER_TAG);
-            driverBContext.flowControlGroupReceiverTag(DEFAULT_RECEIVER_TAG);
+            driverAContext.multicastFlowControlSupplier(new MinMulticastFlowControlSupplier());
 
             launch();
 
@@ -269,9 +253,8 @@ public class TaggedFlowControlTest
 
     @SuppressWarnings("methodlength")
     @Test
-    void shouldPreventConnectionUntilRequiredGroupSizeMatchTagIsMet()
+    void shouldPreventConnectionUntilGroupMinSizeIsMet()
     {
-        final Long receiverTag = 2701L;
         final Integer groupSize = 3;
 
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
@@ -279,22 +262,16 @@ public class TaggedFlowControlTest
             .endpoint("224.20.30.39:24326")
             .networkInterface("localhost");
 
-        final String uriWithReceiverTag = builder
-            .receiverTag(receiverTag)
-            .flowControl((String)null)
-            .build();
-
         final String uriPlain = builder
-            .receiverTag((Long)null)
             .flowControl((String)null)
             .build();
 
         final String uriWithTaggedFlowControl = builder
             .receiverTag((Long)null)
-            .taggedFlowControl(receiverTag, groupSize, null)
+            .minFlowControl(groupSize, null)
             .build();
 
-        assertTimeoutPreemptively(Duration.ofSeconds(20), () ->
+        assertTimeoutPreemptively(Duration.ofSeconds(200), () ->
         {
             driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
 
@@ -303,16 +280,10 @@ public class TaggedFlowControlTest
             TestMediaDriver driverC = null;
             Aeron clientC = null;
 
-            TestMediaDriver driverD = null;
-            Aeron clientD = null;
-
             Publication publication = null;
             Subscription subscription0 = null;
             Subscription subscription1 = null;
             Subscription subscription2 = null;
-            Subscription subscription3 = null;
-            Subscription subscription4 = null;
-            Subscription subscription5 = null;
 
             try
             {
@@ -329,42 +300,22 @@ public class TaggedFlowControlTest
                         .errorHandler(Throwable::printStackTrace)
                         .aeronDirectoryName(driverC.aeronDirectoryName()));
 
-                driverD = TestMediaDriver.launch(
-                    new MediaDriver.Context().publicationTermBufferLength(TERM_BUFFER_LENGTH)
-                        .aeronDirectoryName(ROOT_DIR + "D")
-                        .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
-                        .errorHandler(Throwable::printStackTrace)
-                        .threadingMode(ThreadingMode.SHARED),
-                    testWatcher);
-
-                clientD = Aeron.connect(
-                    new Aeron.Context()
-                        .errorHandler(Throwable::printStackTrace)
-                        .aeronDirectoryName(driverD.aeronDirectoryName()));
-
                 publication = clientA.addPublication(uriWithTaggedFlowControl, STREAM_ID);
 
-                Thread.sleep(100);
+                Thread.sleep(500);
                 assertFalse(publication.isConnected());
 
                 subscription0 = clientA.addSubscription(uriPlain, STREAM_ID);
 
-                Thread.sleep(100);
+                Thread.sleep(500);
                 assertFalse(publication.isConnected());
 
                 subscription1 = clientA.addSubscription(uriPlain, STREAM_ID);
+
+                Thread.sleep(500);
+                assertFalse(publication.isConnected());
+
                 subscription2 = clientA.addSubscription(uriPlain, STREAM_ID);
-
-                Thread.sleep(100);
-                assertFalse(publication.isConnected());
-
-                subscription3 = clientB.addSubscription(uriWithReceiverTag, STREAM_ID);
-
-                Thread.sleep(100);
-                assertFalse(publication.isConnected());
-
-                subscription4 = clientC.addSubscription(uriWithReceiverTag, STREAM_ID);
-                subscription5 = clientD.addSubscription(uriWithReceiverTag, STREAM_ID);
 
                 // Should now have 3 receivers and publication should eventually be connected.
                 while (!publication.isConnected())
@@ -373,8 +324,8 @@ public class TaggedFlowControlTest
                     Thread.sleep(1);
                 }
 
-                subscription5.close();
-                subscription5 = null;
+                subscription2.close();
+                subscription2 = null;
 
                 // Lost a receiver and publication should eventually be disconnected.
                 while (publication.isConnected())
@@ -383,7 +334,7 @@ public class TaggedFlowControlTest
                     Thread.sleep(1);
                 }
 
-                subscription5 = clientD.addSubscription(uriWithReceiverTag, STREAM_ID);
+                subscription2 = clientC.addSubscription(uriPlain, STREAM_ID);
 
                 // Aaaaaand reconnect.
                 while (!publication.isConnected())
@@ -396,9 +347,9 @@ public class TaggedFlowControlTest
             {
                 CloseHelper.closeAll(
                     publication,
-                    subscription0, subscription1, subscription2, subscription3, subscription4, subscription5,
-                    clientC, clientD,
-                    driverC, driverD
+                    subscription0, subscription1, subscription2,
+                    clientC,
+                    driverC
                 );
             }
         });

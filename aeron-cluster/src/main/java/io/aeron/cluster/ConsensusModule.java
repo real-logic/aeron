@@ -2495,7 +2495,7 @@ public class ConsensusModule implements AutoCloseable
          * cluster node.
          * @see io.aeron.cluster.service.Cluster.Role
          */
-        public Counter clusterNodeCounter()
+        public Counter clusterNodeRoleCounter()
         {
             return clusterNodeRole;
         }
@@ -2504,14 +2504,14 @@ public class ConsensusModule implements AutoCloseable
          * Set the counter for representing the current {@link io.aeron.cluster.service.Cluster.Role} of the
          * cluster node.
          *
-         * @param moduleRole the counter for representing the current {@link io.aeron.cluster.service.Cluster.Role}
-         *                   of the cluster node.
+         * @param nodeRole the counter for representing the current {@link io.aeron.cluster.service.Cluster.Role}
+         *                 of the cluster node.
          * @return this for a fluent API.
          * @see io.aeron.cluster.service.Cluster.Role
          */
-        public Context clusterNodeCounter(final Counter moduleRole)
+        public Context clusterNodeRoleCounter(final Counter nodeRole)
         {
-            this.clusterNodeRole = moduleRole;
+            this.clusterNodeRole = nodeRole;
             return this;
         }
 

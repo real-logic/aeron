@@ -81,7 +81,7 @@ class ConsensusModuleContextCloseTests
             .clusterMarkFile(markFile)
             .aeron(aeron)
             .moduleStateCounter(moduleState)
-            .clusterNodeCounter(clusterNodeRole)
+            .clusterNodeRoleCounter(clusterNodeRole)
             .commitPositionCounter(commitPosition)
             .controlToggleCounter(controlToggle)
             .snapshotCounter(snapshotCounter)

@@ -105,7 +105,7 @@ class TestNode implements AutoCloseable
 
     Cluster.Role role()
     {
-        return Cluster.Role.get((int)clusteredMediaDriver.consensusModule().context().clusterNodeCounter().get());
+        return Cluster.Role.get((int)clusteredMediaDriver.consensusModule().context().clusterNodeRoleCounter().get());
     }
 
     boolean isClosed()

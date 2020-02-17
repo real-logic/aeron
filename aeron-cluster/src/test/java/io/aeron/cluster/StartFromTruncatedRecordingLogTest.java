@@ -149,11 +149,8 @@ public class StartFromTruncatedRecordingLogTest
     @Test
     public void shouldBeAbleToStartClusterFromTruncatedRecordingLog()
     {
-        assertTimeoutPreemptively(ofSeconds(40), () ->
+        assertTimeoutPreemptively(ofSeconds(30), () ->
         {
-            stopAndStartClusterWithTruncationOfRecordingLog();
-            assertClusterIsFunctioningCorrectly();
-
             stopAndStartClusterWithTruncationOfRecordingLog();
             assertClusterIsFunctioningCorrectly();
 
@@ -169,13 +166,7 @@ public class StartFromTruncatedRecordingLogTest
 
     private void stopAndStartClusterWithTruncationOfRecordingLog() throws InterruptedException, IOException
     {
-        int leaderMemberId;
-        while (NULL_VALUE == (leaderMemberId = findLeaderId(NULL_VALUE)))
-        {
-            Thread.sleep(1000);
-            Tests.checkInterruptedStatus();
-        }
-
+        final int leaderMemberId = awaitLeaderMemberId();
         final int followerMemberIdA = (leaderMemberId + 1) >= MEMBER_COUNT ? 0 : (leaderMemberId + 1);
         final int followerMemberIdB = (followerMemberIdA + 1) >= MEMBER_COUNT ? 0 : (followerMemberIdA + 1);
 
@@ -185,8 +176,6 @@ public class StartFromTruncatedRecordingLogTest
         awaitSnapshotCounter(followerMemberIdB, 1);
 
         awaitNeutralCounter(leaderMemberId);
-        awaitNeutralCounter(followerMemberIdA);
-        awaitNeutralCounter(followerMemberIdB);
 
         shutdown(leaderMemberId);
         awaitSnapshotCounter(leaderMemberId, 2);
@@ -201,29 +190,27 @@ public class StartFromTruncatedRecordingLogTest
         truncateRecordingLogAndDeleteMarkFiles(followerMemberIdA);
         truncateRecordingLogAndDeleteMarkFiles(followerMemberIdB);
 
-        Thread.sleep(1000);
-
         startNode(leaderMemberId, false);
         startNode(followerMemberIdA, false);
         startNode(followerMemberIdB, false);
     }
 
-    private void assertClusterIsFunctioningCorrectly() throws InterruptedException
+    private int awaitLeaderMemberId() throws InterruptedException
     {
         int leaderMemberId;
-        while (NULL_VALUE == (leaderMemberId = findLeaderId(NULL_VALUE)))
+        while (NULL_VALUE == (leaderMemberId = findLeaderId()))
         {
-            Thread.sleep(1000);
+            Thread.sleep(100);
             Tests.checkInterruptedStatus();
         }
 
-        final int followerMemberIdA = (leaderMemberId + 1) >= MEMBER_COUNT ? 0 : (leaderMemberId + 1);
-        final int followerMemberIdB = (leaderMemberId + 1) >= MEMBER_COUNT ? 0 : (leaderMemberId + 1);
+        return leaderMemberId;
+    }
 
-        Thread.sleep(1000);
-
-        assertEquals(Cluster.Role.FOLLOWER, roleOf(followerMemberIdA));
-        assertEquals(Cluster.Role.FOLLOWER, roleOf(followerMemberIdB));
+    private void assertClusterIsFunctioningCorrectly() throws InterruptedException
+    {
+        awaitLeaderMemberId();
+        Thread.sleep(100);
 
         startClient();
 
@@ -538,21 +525,16 @@ public class StartFromTruncatedRecordingLogTest
         }
     }
 
-    private int findLeaderId(final int skipMemberId)
+    private int findLeaderId()
     {
         int leaderMemberId = NULL_VALUE;
 
         for (int i = 0; i < 3; i++)
         {
-            if (i == skipMemberId)
-            {
-                continue;
-            }
-
             final ClusteredMediaDriver driver = clusteredMediaDrivers[i];
 
             final Cluster.Role role = Cluster.Role.get(
-                (int)driver.consensusModule().context().clusterNodeCounter().get());
+                (int)driver.consensusModule().context().clusterNodeRoleCounter().get());
 
             if (Cluster.Role.LEADER == role)
             {
@@ -563,13 +545,6 @@ public class StartFromTruncatedRecordingLogTest
         return leaderMemberId;
     }
 
-    private Cluster.Role roleOf(final int index)
-    {
-        final ClusteredMediaDriver driver = clusteredMediaDrivers[index];
-
-        return Cluster.Role.get((int)driver.consensusModule().context().clusterNodeCounter().get());
-    }
-
     private void takeSnapshot(final int index)
     {
         final ClusteredMediaDriver driver = clusteredMediaDrivers[index];
@@ -577,6 +552,7 @@ public class StartFromTruncatedRecordingLogTest
         final AtomicCounter controlToggle = ClusterControl.findControlToggle(countersReader);
 
         assertNotNull(controlToggle);
+        awaitNeutralCounter(index);
         assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
     }
 

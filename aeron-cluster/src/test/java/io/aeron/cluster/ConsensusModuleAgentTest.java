@@ -61,7 +61,7 @@ public class ConsensusModuleAgentTest
         .moduleStateCounter(mock(Counter.class))
         .commitPositionCounter(mock(Counter.class))
         .controlToggleCounter(mock(Counter.class))
-        .clusterNodeCounter(mock(Counter.class))
+        .clusterNodeRoleCounter(mock(Counter.class))
         .timedOutClientCounter(mockTimedOutClientCounter)
         .idleStrategySupplier(NoOpIdleStrategy::new)
         .aeron(mockAeron)

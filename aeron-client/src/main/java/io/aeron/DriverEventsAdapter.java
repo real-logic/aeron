@@ -98,7 +98,7 @@ class DriverEventsAdapter implements MessageHandler
             {
                 errorResponse.wrap(buffer, index);
 
-                final int correlationId = (int)errorResponse.offendingCommandCorrelationId();
+                final long correlationId = errorResponse.offendingCommandCorrelationId();
                 final int errorCodeValue = errorResponse.errorCodeValue();
                 final ErrorCode errorCode = ErrorCode.get(errorCodeValue);
                 boolean notProcessed = true;
@@ -106,7 +106,7 @@ class DriverEventsAdapter implements MessageHandler
                 if (CHANNEL_ENDPOINT_ERROR == errorCode)
                 {
                     notProcessed = false;
-                    listener.onChannelEndpointError(correlationId, errorResponse.errorMessage());
+                    listener.onChannelEndpointError((int)correlationId, errorResponse.errorMessage());
                 }
                 else if (correlationId == activeCorrelationId)
                 {

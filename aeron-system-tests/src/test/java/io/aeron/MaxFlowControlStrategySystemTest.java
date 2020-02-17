@@ -15,7 +15,9 @@
  */
 package io.aeron;
 
-import io.aeron.driver.*;
+import io.aeron.driver.MaxMulticastFlowControlSupplier;
+import io.aeron.driver.MediaDriver;
+import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
@@ -39,7 +41,6 @@ import java.util.concurrent.TimeUnit;
 
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.*;
 
 public class MaxFlowControlStrategySystemTest

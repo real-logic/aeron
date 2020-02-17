@@ -121,7 +121,7 @@ public class MinMulticastFlowControl implements FlowControl
             minPosition = Math.min(minPosition, position + windowLength);
         }
 
-        return receivers.length < groupMinSize ?  senderLimit : Math.max(senderLimit, minPosition);
+        return receivers.length < groupMinSize ? senderLimit : Math.max(senderLimit, minPosition);
     }
 
     /**

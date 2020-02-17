@@ -27,7 +27,6 @@ import io.aeron.cluster.service.Cluster;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.RecoveryState;
 import io.aeron.exceptions.AeronException;
-import io.aeron.exceptions.TimeoutException;
 import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.security.Authenticator;
@@ -2531,7 +2530,7 @@ class ConsensusModuleAgent implements Agent
     {
         if (Thread.currentThread().isInterrupted())
         {
-            throw new TimeoutException("unexpected interrupt", AeronException.Category.ERROR);
+            throw new AgentTerminationException("unexpected interrupt");
         }
     }
 

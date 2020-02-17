@@ -19,6 +19,7 @@ import io.aeron.*;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.service.Cluster;
 import org.agrona.collections.Int2ObjectHashMap;
+import org.agrona.concurrent.AgentTerminationException;
 
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -233,6 +234,10 @@ public class Election implements AutoCloseable
                     workCount += followerReady(nowNs);
                     break;
             }
+        }
+        catch (final AgentTerminationException ex)
+        {
+            throw ex;
         }
         catch (final Exception ex)
         {

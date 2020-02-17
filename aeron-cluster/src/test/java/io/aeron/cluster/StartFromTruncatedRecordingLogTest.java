@@ -305,7 +305,6 @@ public class StartFromTruncatedRecordingLogTest
         return CommonContext.getAeronDirectoryName() + "-" + index + "-driver";
     }
 
-
     private void deleteFile(final File file)
     {
         if (file.exists())

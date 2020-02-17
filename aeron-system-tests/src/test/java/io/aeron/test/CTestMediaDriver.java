@@ -131,7 +131,7 @@ public final class CTestMediaDriver implements TestMediaDriver
         }
         pb.environment().put("AERON_FLOW_CONTROL_GROUP_RTAG", String.valueOf(context.flowControlGroupReceiverTag()));
         pb.environment().put(
-            "AERON_FLOW_CONTROL_GROUP_REQUIRED_SIZE", String.valueOf(context.flowControlGroupRequiredSize()));
+            "AERON_FLOW_CONTROL_RECEIVER_GROUP_MIN_SIZE", String.valueOf(context.flowControlReceiverGroupMinSize()));
         pb.environment().put("AERON_PRINT_CONFIGURATION", "true");
         pb.environment().put("AERON_EVENT_LOG", "0xFFFF");
 

@@ -619,10 +619,6 @@ void aeron_network_publication_on_status_message(
         AERON_PUT_ORDERED(publication->has_receivers, true);
     }
 
-    aeron_network_publication_update_connected_status(
-        publication,
-        aeron_network_publication_has_required_receivers(publication));
-
     aeron_counter_set_ordered(
         publication->snd_lmt_position.value_addr,
         publication->flow_control->on_status_message(
@@ -634,6 +630,10 @@ void aeron_network_publication_on_status_message(
             publication->initial_term_id,
             publication->position_bits_to_shift,
             time_ns));
+
+    aeron_network_publication_update_connected_status(
+        publication,
+        aeron_network_publication_has_required_receivers(publication));
 }
 
 void aeron_network_publication_on_rttm(

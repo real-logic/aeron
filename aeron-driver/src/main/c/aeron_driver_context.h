@@ -125,12 +125,11 @@ typedef struct aeron_driver_context_stct
     sm_receiver_tag;
     struct
     {
-        int64_t receiver_tag;                               /* aeron.flow.control.group.rtag = -1 */
-        int32_t required_size;                              /* aeron.flow.control.group.required.size = 0 */
+        int32_t receiver_group_min_size;                     /* aeron.flow.control.receiver.group.min.size = 0 */
+        uint64_t receiver_timeout_ns;                        /* aeron.flow.control.receiver.timeout */
+        int64_t group_receiver_tag;                          /* aeron.flow.control.group.rtag = -1 */
     }
-    flow_control_group;
-    uint64_t min_flow_control_timeout_ns;                   /* aeron.min.multicast.flow.control.receiver.timeout */
-    uint64_t tagged_flow_control_timeout_ns;                /* aeron.tagged.multicast.flow.control.receiver.timeout */
+    flow_control;
 
     aeron_mapped_file_t cnc_map;
     aeron_mapped_file_t loss_report;

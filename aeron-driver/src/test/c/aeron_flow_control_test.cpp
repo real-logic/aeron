@@ -251,8 +251,8 @@ TEST_F(FlowControlTest, shouldUseFallbackToTaggedStrategy)
     context->multicast_flow_control_supplier_func = aeron_tagged_flow_control_strategy_supplier;
     context->sm_receiver_tag.is_present = true;
     context->sm_receiver_tag.value = 1;
-    context->flow_control_group.receiver_tag = 1;
-    context->flow_control_group.required_size = 0;
+    context->flow_control.group_receiver_tag = 1;
+    context->flow_control.receiver_group_min_size = 0;
 
     ASSERT_EQ(0, aeron_default_multicast_flow_control_strategy_supplier(
         &strategy, context, channel,
@@ -445,8 +445,8 @@ TEST_P(ParameterisedSuccessfulOptionsParsingTest, shouldBeValid)
     ASSERT_EQ(std::get<2>(GetParam()), options.timeout_ns.value);
     ASSERT_EQ(std::get<3>(GetParam()), options.receiver_tag.is_present);
     ASSERT_EQ(std::get<4>(GetParam()), options.receiver_tag.value);
-    ASSERT_EQ(std::get<5>(GetParam()), options.required_group_size.is_present);
-    ASSERT_EQ(std::get<6>(GetParam()), options.required_group_size.value);
+    ASSERT_EQ(std::get<5>(GetParam()), options.group_min_size.is_present);
+    ASSERT_EQ(std::get<6>(GetParam()), options.group_min_size.value);
 }
 
 INSTANTIATE_TEST_SUITE_P(

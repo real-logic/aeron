@@ -80,7 +80,7 @@ typedef struct aeron_flow_control_tagged_options_stct
         bool is_present;
         int32_t value;
     }
-    required_group_size;
+    group_min_size;
 }
 aeron_flow_control_tagged_options_t;
 

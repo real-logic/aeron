@@ -217,8 +217,8 @@ int aeron_min_flow_control_strategy_supplier(
 typedef struct aeron_tagged_flow_control_strategy_state_stct
 {
     aeron_min_flow_control_strategy_state_t min_flow_control_state;
-    int64_t receiver_tag;
-    int32_t required_group_size;
+    int64_t group_receiver_tag;
+    int32_t group_min_size;
     aeron_distinct_error_log_t *error_log;
 }
 aeron_tagged_flow_control_strategy_state_t;
@@ -255,7 +255,7 @@ int64_t aeron_tagged_flow_control_strategy_on_idle(
         }
     }
 
-    return (int32_t)min_strategy_state->receivers.length < strategy_state->required_group_size ||
+    return (int32_t)min_strategy_state->receivers.length < strategy_state->group_min_size ||
         min_strategy_state->receivers.length == 0 ? snd_lmt : min_limit_position;
 }
 
@@ -295,7 +295,7 @@ int64_t aeron_tagged_flow_control_strategy_on_sm(
             "Received a status message for tagged flow control that did not have 0 or 8 bytes for the receiver_tag");
     }
 
-    const bool is_tagged = was_present && sm_receiver_tag == strategy_state->receiver_tag;
+    const bool is_tagged = was_present && sm_receiver_tag == strategy_state->group_receiver_tag;
 
     bool is_existing = false;
     int64_t min_position = INT64_MAX;
@@ -343,7 +343,7 @@ int64_t aeron_tagged_flow_control_strategy_on_sm(
         }
     }
 
-    if ((int32_t)strategy_state->min_flow_control_state.receivers.length < strategy_state->required_group_size)
+    if ((int32_t)strategy_state->min_flow_control_state.receivers.length < strategy_state->group_min_size)
     {
         return snd_lmt;
     }
@@ -374,7 +374,7 @@ bool aeron_tagged_flow_control_strategy_has_required_receivers(aeron_flow_contro
     aeron_tagged_flow_control_strategy_state_t *strategy_state =
         (aeron_tagged_flow_control_strategy_state_t *)strategy->state;
 
-    return strategy_state->required_group_size <= (int32_t)strategy_state->min_flow_control_state.receivers.length;
+    return strategy_state->group_min_size <= (int32_t)strategy_state->min_flow_control_state.receivers.length;
 }
 
 int aeron_tagged_flow_control_strategy_to_string(
@@ -390,9 +390,9 @@ int aeron_tagged_flow_control_strategy_to_string(
     return snprintf(
         buffer,
         buffer_len - 1,
-        "receiver_tag: %" PRId64 ", required_group_size: %" PRId32 ", receiver_count: %zu",
-        strategy_state->receiver_tag,
-        strategy_state->required_group_size,
+        "group_receiver_tag: %" PRId64 ", group_min_size: %" PRId32 ", receiver_count: %zu",
+        strategy_state->group_receiver_tag,
+        strategy_state->group_min_size,
         strategy_state->min_flow_control_state.receivers.length);
 }
 
@@ -431,10 +431,10 @@ int aeron_tagged_flow_control_strategy_supplier(
     state->min_flow_control_state.receivers.array = NULL;
     state->min_flow_control_state.receivers.capacity = 0;
     state->min_flow_control_state.receivers.length = 0;
-    state->receiver_tag = options.receiver_tag.is_present ?
+    state->group_receiver_tag = options.receiver_tag.is_present ?
         options.receiver_tag.value : context->flow_control.group_receiver_tag;
-    state->required_group_size = options.required_group_size.is_present ?
-        options.required_group_size.value : context->flow_control.receiver_group_min_size;
+    state->group_min_size = options.group_min_size.is_present ?
+        options.group_min_size.value : context->flow_control.receiver_group_min_size;
 
     state->error_log = context->error_log;
 

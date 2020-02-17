@@ -266,12 +266,12 @@ public class MinFlowControlSystemTest
             .flowControl((String)null)
             .build();
 
-        final String uriWithTaggedFlowControl = builder
+        final String uriWithMinFlowControl = builder
             .receiverTag((Long)null)
             .minFlowControl(groupSize, null)
             .build();
 
-        assertTimeoutPreemptively(Duration.ofSeconds(200), () ->
+        assertTimeoutPreemptively(Duration.ofSeconds(20), () ->
         {
             driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
 
@@ -300,22 +300,15 @@ public class MinFlowControlSystemTest
                         .errorHandler(Throwable::printStackTrace)
                         .aeronDirectoryName(driverC.aeronDirectoryName()));
 
-                publication = clientA.addPublication(uriWithTaggedFlowControl, STREAM_ID);
-
-                Thread.sleep(500);
-                assertFalse(publication.isConnected());
-
+                publication = clientA.addPublication(uriWithMinFlowControl, STREAM_ID);
                 subscription0 = clientA.addSubscription(uriPlain, STREAM_ID);
+                subscription1 = clientB.addSubscription(uriPlain, STREAM_ID);
 
+                // Sleep for a bit to ensure that we haven't become connected.
                 Thread.sleep(500);
                 assertFalse(publication.isConnected());
 
-                subscription1 = clientA.addSubscription(uriPlain, STREAM_ID);
-
-                Thread.sleep(500);
-                assertFalse(publication.isConnected());
-
-                subscription2 = clientA.addSubscription(uriPlain, STREAM_ID);
+                subscription2 = clientC.addSubscription(uriPlain, STREAM_ID);
 
                 // Should now have 3 receivers and publication should eventually be connected.
                 while (!publication.isConnected())

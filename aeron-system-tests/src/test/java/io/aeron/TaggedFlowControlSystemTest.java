@@ -344,23 +344,13 @@ public class TaggedFlowControlSystemTest
 
                 publication = clientA.addPublication(uriWithTaggedFlowControl, STREAM_ID);
 
-                Thread.sleep(100);
-                assertFalse(publication.isConnected());
-
                 subscription0 = clientA.addSubscription(uriPlain, STREAM_ID);
-
-                Thread.sleep(100);
-                assertFalse(publication.isConnected());
-
                 subscription1 = clientA.addSubscription(uriPlain, STREAM_ID);
                 subscription2 = clientA.addSubscription(uriPlain, STREAM_ID);
-
-                Thread.sleep(100);
-                assertFalse(publication.isConnected());
-
                 subscription3 = clientB.addSubscription(uriWithReceiverTag, STREAM_ID);
 
-                Thread.sleep(100);
+                // Sleep for a bit to ensure that we haven't become connected.
+                Thread.sleep(500);
                 assertFalse(publication.isConnected());
 
                 subscription4 = clientC.addSubscription(uriWithReceiverTag, STREAM_ID);

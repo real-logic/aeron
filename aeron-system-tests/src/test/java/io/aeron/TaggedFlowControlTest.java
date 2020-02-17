@@ -154,7 +154,7 @@ public class TaggedFlowControlTest
             subscriptionB = clientB.addSubscription(MULTICAST_URI + subscriptionBUriParams, STREAM_ID);
             publication = clientA.addPublication(MULTICAST_URI + publisherUriParams, STREAM_ID);
 
-            while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
+            while (!subscriptionA.isConnected() || !subscriptionB.isConnected() || !publication.isConnected())
             {
                 Thread.yield();
                 Tests.checkInterruptedStatus();
@@ -228,7 +228,7 @@ public class TaggedFlowControlTest
             subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
             publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
 
-            while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
+            while (!subscriptionA.isConnected() || !subscriptionB.isConnected() || !publication.isConnected())
             {
                 Thread.yield();
                 Tests.checkInterruptedStatus();

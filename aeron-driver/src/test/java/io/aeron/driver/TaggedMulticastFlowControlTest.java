@@ -59,7 +59,7 @@ class TaggedMulticastFlowControlTest
         flowControl.initialize(new MediaDriver.Context(), UdpChannel.parse(uri), 0, 0);
 
         assertEquals(receiverTag, flowControl.receiverTag());
-        assertEquals(groupSize, flowControl.requiredGroupSize());
+        assertEquals(groupSize, flowControl.groupMinSize());
         assertEquals(timeout, flowControl.receiverTimeoutNs());
     }
 
@@ -123,11 +123,11 @@ class TaggedMulticastFlowControlTest
     }
 
     private long onStatusMessage(
-        TaggedMulticastFlowControl flowControl,
-        long receiverId,
-        int termOffset,
-        long senderLimit,
-        Long receiverTag)
+        final TaggedMulticastFlowControl flowControl,
+        final long receiverId,
+        final int termOffset,
+        final long senderLimit,
+        final Long receiverTag)
     {
         final StatusMessageFlyweight statusMessageFlyweight = new StatusMessageFlyweight();
         statusMessageFlyweight.wrap(new byte[1024]);

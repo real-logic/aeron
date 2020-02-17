@@ -59,9 +59,9 @@ public class TaggedMulticastFlowControl implements FlowControl
     public static final byte[] PREFERRED_ASF_BYTES = BitUtil.fromHex(PREFERRED_ASF);
 
     private volatile MinMulticastFlowControl.Receiver[] receivers = EMPTY_RECEIVERS;
-    private int requiredGroupSize;
     private long receiverTimeoutNs;
-    private long receiverTag;
+    private int groupMinSize;
+    private long groupReceiverTag;
 
     /**
      * {@inheritDoc}
@@ -73,8 +73,8 @@ public class TaggedMulticastFlowControl implements FlowControl
         final int termBufferLength)
     {
         receiverTimeoutNs = context.flowControlReceiverTimeoutNs();
-        receiverTag = context.flowControlGroupReceiverTag();
-        requiredGroupSize = context.flowControlReceiverGroupMinSize();
+        groupReceiverTag = context.flowControlGroupReceiverTag();
+        groupMinSize = context.flowControlReceiverGroupMinSize();
 
         final String fcValue = udpChannel.channelUri().get(CommonContext.FLOW_CONTROL_PARAM_NAME);
 
@@ -88,19 +88,19 @@ public class TaggedMulticastFlowControl implements FlowControl
                 }
                 else if (arg.startsWith("g:"))
                 {
-                    final int requiredGroupSizeIndex = arg.indexOf('/');
+                    final int groupMinSizeIndex = arg.indexOf('/');
 
-                    if (2 != requiredGroupSizeIndex)
+                    if (2 != groupMinSizeIndex)
                     {
-                        final int lengthToParse = -1 == requiredGroupSizeIndex ?
-                            arg.length() - 2 : requiredGroupSizeIndex - 2;
-                        receiverTag = AsciiEncoding.parseLongAscii(arg, 2, lengthToParse);
+                        final int lengthToParse = -1 == groupMinSizeIndex ?
+                            arg.length() - 2 : groupMinSizeIndex - 2;
+                        groupReceiverTag = AsciiEncoding.parseLongAscii(arg, 2, lengthToParse);
                     }
 
-                    if (-1 != requiredGroupSizeIndex)
+                    if (-1 != groupMinSizeIndex)
                     {
-                        requiredGroupSize = AsciiEncoding.parseIntAscii(
-                            arg, requiredGroupSizeIndex + 1, arg.length() - (requiredGroupSizeIndex + 1));
+                        groupMinSize = AsciiEncoding.parseIntAscii(
+                            arg, groupMinSizeIndex + 1, arg.length() - (groupMinSizeIndex + 1));
                     }
                 }
             }
@@ -155,7 +155,7 @@ public class TaggedMulticastFlowControl implements FlowControl
             minPosition = Math.min(minPosition, lastPositionPlusWindow);
         }
 
-        if (receivers.length < requiredGroupSize)
+        if (receivers.length < groupMinSize)
         {
             return senderLimit;
         }
@@ -201,12 +201,12 @@ public class TaggedMulticastFlowControl implements FlowControl
             this.receivers = receivers;
         }
 
-        return receivers.length < requiredGroupSize || receivers.length == 0 ? senderLimit : minLimitPosition;
+        return receivers.length < groupMinSize || receivers.length == 0 ? senderLimit : minLimitPosition;
     }
 
     public boolean hasRequiredReceivers()
     {
-        return receivers.length >= requiredGroupSize;
+        return receivers.length >= groupMinSize;
     }
 
     private boolean isTagged(final StatusMessageFlyweight statusMessageFlyweight)
@@ -216,7 +216,7 @@ public class TaggedMulticastFlowControl implements FlowControl
 
         if (asfLength == SIZE_OF_LONG)
         {
-            if (statusMessageFlyweight.receiverTag() == receiverTag)
+            if (statusMessageFlyweight.receiverTag() == groupReceiverTag)
             {
                 result = true;
             }
@@ -240,7 +240,7 @@ public class TaggedMulticastFlowControl implements FlowControl
 
     long receiverTag()
     {
-        return receiverTag;
+        return groupReceiverTag;
     }
 
     long receiverTimeoutNs()
@@ -248,8 +248,8 @@ public class TaggedMulticastFlowControl implements FlowControl
         return receiverTimeoutNs;
     }
 
-    int requiredGroupSize()
+    int groupMinSize()
     {
-        return requiredGroupSize;
+        return groupMinSize;
     }
 }

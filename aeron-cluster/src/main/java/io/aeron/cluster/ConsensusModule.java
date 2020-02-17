@@ -1083,8 +1083,9 @@ public class ConsensusModule implements AutoCloseable
         private AtomicCounter errorCounter;
         private CountedErrorHandler countedErrorHandler;
 
-        private Counter moduleState;
-        private Counter clusterNodeRole;
+        private Counter electionStateCounter;
+        private Counter moduleStateCounter;
+        private Counter clusterNodeRoleCounter;
         private Counter commitPosition;
         private Counter controlToggle;
         private Counter snapshotCounter;
@@ -1216,9 +1217,19 @@ public class ConsensusModule implements AutoCloseable
                 }
             }
 
-            if (null == moduleState)
+            if (null == electionStateCounter)
             {
-                moduleState = aeron.addCounter(CONSENSUS_MODULE_STATE_TYPE_ID, "Consensus module state");
+                electionStateCounter = aeron.addCounter(ELECTION_STATE_TYPE_ID, "Election State");
+            }
+
+            if (null == moduleStateCounter)
+            {
+                moduleStateCounter = aeron.addCounter(CONSENSUS_MODULE_STATE_TYPE_ID, "Consensus module state");
+            }
+
+            if (null == clusterNodeRoleCounter)
+            {
+                clusterNodeRoleCounter = aeron.addCounter(Configuration.CLUSTER_NODE_ROLE_TYPE_ID, "Cluster node role");
             }
 
             if (null == commitPosition)
@@ -1246,11 +1257,6 @@ public class ConsensusModule implements AutoCloseable
             {
                 timedOutClientCounter = aeron.addCounter(
                     CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID, "Timed out cluster client count");
-            }
-
-            if (null == clusterNodeRole)
-            {
-                clusterNodeRole = aeron.addCounter(Configuration.CLUSTER_NODE_ROLE_TYPE_ID, "Cluster node role");
             }
 
             if (null == threadFactory)
@@ -2440,6 +2446,30 @@ public class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * Get the counter for the current state of an election
+         *
+         * @return the counter for the current state of an election.
+         * @see Election.State
+         */
+        public Counter electionStateCounter()
+        {
+            return electionStateCounter;
+        }
+
+        /**
+         * Set the counter for the current state of an election.
+         *
+         * @param electionStateCounter for the current state of an election.
+         * @return this for a fluent API.
+         * @see Election.State
+         */
+        public Context electionStateCounter(final Counter electionStateCounter)
+        {
+            this.electionStateCounter = electionStateCounter;
+            return this;
+        }
+
+        /**
          * Get the counter for the current state of the consensus module.
          *
          * @return the counter for the current state of the consensus module.
@@ -2447,7 +2477,7 @@ public class ConsensusModule implements AutoCloseable
          */
         public Counter moduleStateCounter()
         {
-            return moduleState;
+            return moduleStateCounter;
         }
 
         /**
@@ -2459,7 +2489,7 @@ public class ConsensusModule implements AutoCloseable
          */
         public Context moduleStateCounter(final Counter moduleState)
         {
-            this.moduleState = moduleState;
+            this.moduleStateCounter = moduleState;
             return this;
         }
 
@@ -2497,7 +2527,7 @@ public class ConsensusModule implements AutoCloseable
          */
         public Counter clusterNodeRoleCounter()
         {
-            return clusterNodeRole;
+            return clusterNodeRoleCounter;
         }
 
         /**
@@ -2511,7 +2541,7 @@ public class ConsensusModule implements AutoCloseable
          */
         public Context clusterNodeRoleCounter(final Counter nodeRole)
         {
-            this.clusterNodeRole = nodeRole;
+            this.clusterNodeRoleCounter = nodeRole;
             return this;
         }
 
@@ -2893,8 +2923,8 @@ public class ConsensusModule implements AutoCloseable
             else if (!aeron.isClosed())
             {
                 AeronCloseHelper.closeAll(
-                    moduleState,
-                    clusterNodeRole,
+                    moduleStateCounter,
+                    clusterNodeRoleCounter,
                     commitPosition,
                     controlToggle,
                     snapshotCounter,

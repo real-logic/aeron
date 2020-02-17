@@ -115,18 +115,7 @@ class TestNode implements AutoCloseable
 
     Election.State electionState()
     {
-        final MutableInteger electionStateValue = new MutableInteger(NULL_VALUE);
-
-        countersReader().forEach(
-            (counterId, typeId, keyBuffer, label) ->
-            {
-                if (typeId == Election.ELECTION_STATE_TYPE_ID)
-                {
-                    electionStateValue.value = (int)countersReader().getCounterValue(counterId);
-                }
-            });
-
-        return NULL_VALUE != electionStateValue.value ? Election.State.get(electionStateValue.value) : null;
+        return Election.State.get((int)clusteredMediaDriver.consensusModule().context().electionStateCounter().get());
     }
 
     long commitPosition()

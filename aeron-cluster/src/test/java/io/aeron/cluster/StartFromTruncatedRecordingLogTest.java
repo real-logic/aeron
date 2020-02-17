@@ -103,6 +103,12 @@ public class StartFromTruncatedRecordingLogTest
         {
             startNode(i, true);
         }
+
+        clientMediaDriver = MediaDriver.launch(
+            new MediaDriver.Context()
+                .threadingMode(ThreadingMode.SHARED)
+                .warnIfDirectoryExists(false)
+                .dirDeleteOnStart(true));
     }
 
     @AfterEach
@@ -170,6 +176,19 @@ public class StartFromTruncatedRecordingLogTest
         final int followerMemberIdA = (leaderMemberId + 1) >= MEMBER_COUNT ? 0 : (leaderMemberId + 1);
         final int followerMemberIdB = (followerMemberIdA + 1) >= MEMBER_COUNT ? 0 : (followerMemberIdA + 1);
 
+        final Counter electionStateFollowerA = clusteredMediaDrivers[followerMemberIdA]
+            .consensusModule().context().electionStateCounter();
+
+        final Counter electionStateFollowerB = clusteredMediaDrivers[followerMemberIdB]
+            .consensusModule().context().electionStateCounter();
+
+        while (electionStateFollowerA.get() != Election.State.CLOSED.code() &&
+            electionStateFollowerB.get() != Election.State.CLOSED.code())
+        {
+            Thread.sleep(100);
+            Tests.checkInterruptedStatus();
+        }
+
         takeSnapshot(leaderMemberId);
         awaitSnapshotCounter(leaderMemberId, 1);
         awaitSnapshotCounter(followerMemberIdA, 1);
@@ -209,8 +228,22 @@ public class StartFromTruncatedRecordingLogTest
 
     private void assertClusterIsFunctioningCorrectly() throws InterruptedException
     {
-        awaitLeaderMemberId();
-        Thread.sleep(100);
+        final int leaderMemberId = awaitLeaderMemberId();
+        final int followerMemberIdA = (leaderMemberId + 1) >= MEMBER_COUNT ? 0 : (leaderMemberId + 1);
+        final int followerMemberIdB = (followerMemberIdA + 1) >= MEMBER_COUNT ? 0 : (followerMemberIdA + 1);
+
+        final Counter electionStateFollowerA = clusteredMediaDrivers[followerMemberIdA]
+            .consensusModule().context().electionStateCounter();
+
+        final Counter electionStateFollowerB = clusteredMediaDrivers[followerMemberIdB]
+            .consensusModule().context().electionStateCounter();
+
+        while (electionStateFollowerA.get() != Election.State.CLOSED.code() &&
+            electionStateFollowerB.get() != Election.State.CLOSED.code())
+        {
+            Thread.sleep(100);
+            Tests.checkInterruptedStatus();
+        }
 
         startClient();
 
@@ -255,7 +288,8 @@ public class StartFromTruncatedRecordingLogTest
             }
         }
 
-        Files.copy(new File(baseDirName).toPath().resolve(RECORDING_LOG_FILE_NAME),
+        Files.copy(
+            new File(baseDirName).toPath().resolve(RECORDING_LOG_FILE_NAME),
             consensusModuleDataDir.toPath().resolve(RECORDING_LOG_FILE_NAME),
             StandardCopyOption.REPLACE_EXISTING);
 
@@ -401,23 +435,11 @@ public class StartFromTruncatedRecordingLogTest
             client.close();
         }
 
-        final String aeronDirName = CommonContext.getAeronDirectoryName();
-
-        if (clientMediaDriver == null)
-        {
-            clientMediaDriver = MediaDriver.launch(
-                new MediaDriver.Context()
-                    .threadingMode(ThreadingMode.SHARED)
-                    .aeronDirectoryName(aeronDirName)
-                    .warnIfDirectoryExists(false)
-                    .dirDeleteOnStart(true));
-        }
-
         client = AeronCluster.connect(
             new AeronCluster.Context()
                 .egressListener(egressMessageListener)
-                .aeronDirectoryName(aeronDirName)
-                .ingressChannel("aeron:udp")
+                .ingressChannel("aeron:udp?term-length=64k")
+                .egressChannel("aeron:udp?term-length=64k|endpoint=localhost:9020")
                 .clusterMemberEndpoints("0=localhost:20110,1=localhost:20111,2=localhost:20112"));
     }
 

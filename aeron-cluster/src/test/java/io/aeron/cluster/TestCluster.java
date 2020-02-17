@@ -595,7 +595,7 @@ public class TestCluster implements AutoCloseable
 
     void awaitNotInElection(final TestNode node)
     {
-        while (null != node.electionState())
+        while (Election.State.CLOSED != node.electionState())
         {
             Thread.yield();
             Tests.checkInterruptedStatus();
@@ -621,7 +621,7 @@ public class TestCluster implements AutoCloseable
                 continue;
             }
 
-            if (node.isLeader() && null == node.electionState())
+            if (node.isLeader() && Election.State.CLOSED == node.electionState())
             {
                 return node;
             }

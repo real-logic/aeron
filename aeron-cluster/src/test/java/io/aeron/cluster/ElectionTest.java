@@ -50,6 +50,7 @@ public class ElectionTest
         .recordingLog(recordingLog)
         .clusterClock(new TestClusterClock(TimeUnit.MILLISECONDS))
         .random(new Random())
+        .electionStateCounter(electionStateCounter)
         .clusterMarkFile(clusterMarkFile);
 
     @BeforeEach
@@ -177,7 +178,7 @@ public class ElectionTest
         election.doWork(t7);
         final InOrder inOrder = inOrder(consensusModuleAgent, electionStateCounter);
         inOrder.verify(consensusModuleAgent).electionComplete();
-        inOrder.verify(electionStateCounter).close();
+        inOrder.verify(electionStateCounter).setOrdered(Election.State.CLOSED.code());
     }
 
     @Test
@@ -235,7 +236,7 @@ public class ElectionTest
         inOrder.verify(memberStatusPublisher).appendPosition(
             clusterMembers[candidateId].publication(), candidateTermId, logPosition, followerMember.id());
         inOrder.verify(consensusModuleAgent).electionComplete();
-        inOrder.verify(electionStateCounter).close();
+        inOrder.verify(electionStateCounter).setOrdered(Election.State.CLOSED.code());
     }
 
     @Test

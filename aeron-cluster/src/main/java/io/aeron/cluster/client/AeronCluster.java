@@ -115,13 +115,23 @@ public final class AeronCluster implements AutoCloseable
             final AgentInvoker aeronClientInvoker = aeron.conductorAgentInvoker();
 
             AeronCluster aeronCluster;
+            int step = asyncConnect.step();
             while (null == (aeronCluster = asyncConnect.poll()))
             {
                 if (null != aeronClientInvoker)
                 {
                     aeronClientInvoker.invoke();
                 }
-                idleStrategy.idle();
+
+                if (step != asyncConnect.step())
+                {
+                    step = asyncConnect.step();
+                    idleStrategy.reset();
+                }
+                else
+                {
+                    idleStrategy.idle();
+                }
             }
 
             return aeronCluster;
@@ -134,8 +144,7 @@ public final class AeronCluster implements AutoCloseable
         {
             if (!ctx.ownsAeronClient())
             {
-                CloseHelper.close(subscription);
-                CloseHelper.close(asyncConnect);
+                CloseHelper.quietCloseAll(subscription, asyncConnect);
             }
 
             ctx.close();
@@ -1595,9 +1604,9 @@ public final class AeronCluster implements AutoCloseable
             {
                 step(3);
             }
-            else if (Publication.CLOSED == result)
+            else if (Publication.CLOSED == result || Publication.NOT_CONNECTED == result)
             {
-                throw new ClusterException("unexpected close from cluster");
+                throw new ClusterException("unexpected loss of connection to cluster");
             }
         }
 

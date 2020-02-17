@@ -78,11 +78,11 @@ class ClusterSession implements AutoCloseable
 
         if (CloseReason.NULL_VAL != closeReason)
         {
-            state = State.CLOSED;
+            state(State.CLOSED);
         }
         else
         {
-            state = State.OPEN;
+            state(State.OPEN);
         }
     }
 
@@ -90,7 +90,7 @@ class ClusterSession implements AutoCloseable
     {
         final Publication responsePublication = this.responsePublication;
         this.responsePublication = null;
-        state = State.CLOSED;
+        state(State.CLOSED);
         if (null != responsePublication)
         {
             responsePublication.close();
@@ -179,9 +179,10 @@ class ClusterSession implements AutoCloseable
         return state;
     }
 
-    void state(final State state)
+    void state(final State newState)
     {
-        this.state = state;
+        //System.out.println("ClusterSession " + id + " " + state + " -> " + newState);
+        this.state = newState;
     }
 
     void authenticate(final byte[] encodedPrincipal)
@@ -191,13 +192,13 @@ class ClusterSession implements AutoCloseable
             this.encodedPrincipal = encodedPrincipal;
         }
 
-        this.state = State.AUTHENTICATED;
+        state(State.AUTHENTICATED);
     }
 
     void open(final long openedLogPosition)
     {
         this.openedLogPosition = openedLogPosition;
-        this.state = State.OPEN;
+        state(State.OPEN);
         encodedPrincipal = null;
     }
 
@@ -214,7 +215,7 @@ class ClusterSession implements AutoCloseable
 
     void reject(final EventCode code, final String responseDetail)
     {
-        this.state = State.REJECTED;
+        state(State.REJECTED);
         this.eventCode = code;
         this.responseDetail = responseDetail;
     }

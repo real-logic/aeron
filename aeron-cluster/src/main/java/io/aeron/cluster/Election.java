@@ -31,7 +31,7 @@ import static io.aeron.cluster.ClusterMember.compareLog;
 /**
  * Election process to determine a new cluster leader and catch up followers.
  */
-public class Election implements AutoCloseable
+public class Election
 {
     /**
      * The type id of the {@link Counter} used for the election state.
@@ -57,7 +57,7 @@ public class Election implements AutoCloseable
         FOLLOWER_TRANSITION(11),
         FOLLOWER_READY(12),
 
-        CLOSE(13);
+        CLOSED(13);
 
         static final State[] STATES;
 
@@ -121,7 +121,6 @@ public class Election implements AutoCloseable
     private long logLeadershipTermId;
     private long candidateTermId = NULL_VALUE;
     private int logSessionId = CommonContext.NULL_SESSION_ID;
-    private final Counter stateCounter;
     private ClusterMember leaderMember = null;
     private State state = State.INIT;
     private Subscription logSubscription;
@@ -153,12 +152,8 @@ public class Election implements AutoCloseable
         this.ctx = ctx;
         this.consensusModuleAgent = consensusModuleAgent;
         this.random = ctx.random();
-        stateCounter = ctx.aeron().addCounter(ELECTION_STATE_TYPE_ID, "Election State");
-    }
 
-    public void close()
-    {
-        AeronCloseHelper.close(ctx.countedErrorHandler(), stateCounter);
+        ctx.electionStateCounter().setOrdered(State.INIT.code());
     }
 
     public ClusterMember leader()
@@ -244,11 +239,6 @@ public class Election implements AutoCloseable
             ctx.countedErrorHandler().onError(ex);
             logPosition = ctx.commitPositionCounter().get();
             state(State.INIT);
-        }
-
-        if (State.CLOSE == state)
-        {
-            close();
         }
 
         return workCount;
@@ -672,7 +662,7 @@ public class Election implements AutoCloseable
             if (consensusModuleAgent.electionComplete())
             {
                 consensusModuleAgent.updateMemberDetails(this);
-                state(State.CLOSE);
+                state(State.CLOSED);
             }
 
             workCount += 1;
@@ -842,7 +832,7 @@ public class Election implements AutoCloseable
             if (consensusModuleAgent.electionComplete())
             {
                 consensusModuleAgent.updateMemberDetails(this);
-                state(State.CLOSE);
+                state(State.CLOSED);
             }
         }
         else if (nowNs >= (timeOfLastStateChangeNs + ctx.leaderHeartbeatTimeoutNs()))
@@ -964,7 +954,7 @@ public class Election implements AutoCloseable
         }
 
         state = newState;
-        stateCounter.setOrdered(newState.code());
+        ctx.electionStateCounter().setOrdered(newState.code());
         timeOfLastStateChangeNs = nowNs;
     }
 

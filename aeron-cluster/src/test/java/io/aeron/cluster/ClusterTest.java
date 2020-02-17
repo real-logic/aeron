@@ -282,7 +282,7 @@ public class ClusterTest
                 Thread.sleep(5_000);
 
                 assertEquals(Cluster.Role.FOLLOWER, follower.role());
-                assertNull(follower.electionState());
+                assertEquals(Election.State.CLOSED, follower.electionState());
             }
         });
     }
@@ -301,7 +301,7 @@ public class ClusterTest
 
                 final TestNode follower = cluster.startStaticNode(originalLeader.index(), false);
 
-                while (follower.electionState() != null)
+                while (follower.electionState() != Election.State.CLOSED)
                 {
                     Thread.sleep(1000);
                 }
@@ -334,7 +334,7 @@ public class ClusterTest
                 Thread.sleep(5_000);
 
                 assertEquals(Cluster.Role.FOLLOWER, follower.role());
-                assertNull(follower.electionState());
+                assertEquals(Election.State.CLOSED, follower.electionState());
 
                 cluster.connectClient();
 
@@ -597,7 +597,7 @@ public class ClusterTest
                 assertEquals(0L, leader.errors());
                 assertEquals(0L, followerA.errors());
                 assertEquals(0L, followerB.errors());
-                assertNull(followerB.electionState());
+                assertEquals(Election.State.CLOSED, followerB.electionState());
             }
         });
     }
@@ -738,8 +738,8 @@ public class ClusterTest
                 assertEquals(0L, oldFollower1.errors());
                 assertEquals(0L, oldFollower2.errors());
 
-                assertNull(oldFollower1.electionState());
-                assertNull(oldFollower2.electionState());
+                assertEquals(Election.State.CLOSED, oldFollower1.electionState());
+                assertEquals(Election.State.CLOSED, oldFollower2.electionState());
             }
         });
     }
@@ -1014,7 +1014,7 @@ public class ClusterTest
             Thread.sleep(1_000);
 
             assertEquals(Cluster.Role.FOLLOWER, follower.role());
-            assertNull(follower.electionState());
+            assertEquals(Election.State.CLOSED, follower.electionState());
         }
     }
 

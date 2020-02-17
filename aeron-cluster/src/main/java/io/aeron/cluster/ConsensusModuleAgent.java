@@ -219,10 +219,10 @@ class ConsensusModuleAgent implements Agent
                 AeronCloseHelper.close(errorHandler, session);
             }
 
+            AeronCloseHelper.close(errorHandler, ingressAdapter);
             logPublisher.disconnect(errorHandler);
             ClusterMember.closeMemberPublications(errorHandler, clusterMembers);
             AeronCloseHelper.close(errorHandler, memberStatusAdapter);
-            AeronCloseHelper.close(errorHandler, ingressAdapter);
             AeronCloseHelper.close(errorHandler, serviceProxy);
             AeronCloseHelper.close(errorHandler, consensusModuleAdapter);
             AeronCloseHelper.close(errorHandler, archive);

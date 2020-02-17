@@ -55,6 +55,7 @@ typedef struct aeron_min_flow_control_strategy_state_stct
     receivers;
 
     int64_t receiver_timeout_ns;
+    uint32_t group_min_size;
 }
 aeron_min_flow_control_strategy_state_t;
 
@@ -89,7 +90,8 @@ int64_t aeron_min_flow_control_strategy_on_idle(
         }
     }
 
-    return strategy_state->receivers.length > 0 ? min_limit_position : snd_lmt;
+    return strategy_state->receivers.length < strategy_state->group_min_size || strategy_state->receivers.length == 0 ?
+        snd_lmt : min_limit_position;
 }
 
 
@@ -156,7 +158,8 @@ int64_t aeron_min_flow_control_strategy_on_sm(
         }
     }
 
-    return snd_lmt > min_position ? snd_lmt : min_position;
+    return strategy_state->receivers.length < strategy_state->group_min_size ? snd_lmt :
+        (snd_lmt > min_position ? snd_lmt : min_position);
 }
 
 int aeron_min_flow_control_strategy_fini(aeron_flow_control_strategy_t *strategy)
@@ -169,6 +172,14 @@ int aeron_min_flow_control_strategy_fini(aeron_flow_control_strategy_t *strategy
     aeron_free(strategy);
 
     return 0;
+}
+
+bool aeron_min_flow_control_strategy_has_required_receivers(aeron_flow_control_strategy_t *strategy)
+{
+    aeron_min_flow_control_strategy_state_t *strategy_state =
+        (aeron_min_flow_control_strategy_state_t *)strategy->state;
+
+    return strategy_state->group_min_size <= strategy_state->receivers.length;
 }
 
 int aeron_min_flow_control_strategy_supplier(
@@ -199,6 +210,7 @@ int aeron_min_flow_control_strategy_supplier(
     _strategy->on_idle = aeron_min_flow_control_strategy_on_idle;
     _strategy->on_status_message = aeron_min_flow_control_strategy_on_sm;
     _strategy->fini = aeron_min_flow_control_strategy_fini;
+    _strategy->has_required_receivers = aeron_min_flow_control_strategy_has_required_receivers;
 
     aeron_min_flow_control_strategy_state_t *state = (aeron_min_flow_control_strategy_state_t *)_strategy->state;
 
@@ -208,6 +220,8 @@ int aeron_min_flow_control_strategy_supplier(
 
     state->receiver_timeout_ns = options.timeout_ns.is_present ?
         options.timeout_ns.value : context->flow_control.receiver_timeout_ns;
+    state->group_min_size = options.group_min_size.is_present ?
+        options.group_min_size.value : context->flow_control.receiver_group_min_size;
 
     *strategy = _strategy;
 

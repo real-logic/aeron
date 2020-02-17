@@ -39,7 +39,6 @@ import static io.aeron.protocol.DataHeaderFlyweight.*;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.time.Duration.ofSeconds;
 import static java.util.Arrays.asList;
-import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ExclusivePublicationTest
@@ -56,7 +55,7 @@ public class ExclusivePublicationTest
     private static final int FRAGMENT_COUNT_LIMIT = 10;
     private static final int MESSAGE_LENGTH = 200;
 
-    private final UnsafeBuffer srcBuffer = new UnsafeBuffer(allocateDirectAligned(65 * 1024, 64));
+    private final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[65 * 1024]);
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Throwable::printStackTrace)

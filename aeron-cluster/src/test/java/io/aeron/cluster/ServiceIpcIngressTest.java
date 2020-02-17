@@ -26,7 +26,7 @@ public class ServiceIpcIngressTest
     @Test
     public void shouldEchoIpcMessages()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {

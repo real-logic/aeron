@@ -30,7 +30,7 @@ public class BackupTest
     @Test
     public void shouldBackupClusterNoSnapshotsAndEmptyLog()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(30), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -54,7 +54,7 @@ public class BackupTest
     @Test
     public void shouldBackupClusterNoSnapshotsAndNonEmptyLog()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(30), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -86,7 +86,7 @@ public class BackupTest
     @Test
     public void shouldBackupClusterNoSnapshotsAndThenSendMessages()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(30), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -118,7 +118,7 @@ public class BackupTest
     @Test
     public void shouldBackupClusterWithSnapshot()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(30), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -155,7 +155,7 @@ public class BackupTest
     @Test
     public void shouldBackupClusterWithSnapshotAndNonEmptyLog()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(30), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -200,7 +200,7 @@ public class BackupTest
     @Test
     public void shouldBackupClusterWithSnapshotThenSend()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(30), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -245,7 +245,7 @@ public class BackupTest
     @Test
     public void shouldBeAbleToGetTimeOfNextBackupQuery()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(30), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -264,7 +264,7 @@ public class BackupTest
     @Test
     public void shouldBackupClusterNoSnapshotsAndNonEmptyLogWithReQuery()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(30), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -306,7 +306,7 @@ public class BackupTest
     @Test
     public void shouldBackupClusterNoSnapshotsAndNonEmptyLogAfterFailure()
     {
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(40), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
@@ -342,7 +342,7 @@ public class BackupTest
     @Test
     public void shouldBackupClusterNoSnapshotsAndNonEmptyLogWithFailure()
     {
-        assertTimeoutPreemptively(ofSeconds(30), () ->
+        assertTimeoutPreemptively(ofSeconds(40), () ->
         {
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {

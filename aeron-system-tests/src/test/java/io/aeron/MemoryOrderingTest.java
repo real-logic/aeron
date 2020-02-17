@@ -66,7 +66,7 @@ public class MemoryOrderingTest
     @Test
     public void shouldReceiveMessagesInOrderWithFirstLongWordIntact() throws Exception
     {
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
             srcBuffer.setMemory(0, MESSAGE_LENGTH, (byte)7);
@@ -119,7 +119,7 @@ public class MemoryOrderingTest
     @Test
     public void shouldReceiveMessagesInOrderWithFirstLongWordIntactFromExclusivePublication() throws Exception
     {
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
             srcBuffer.setMemory(0, MESSAGE_LENGTH, (byte)7);

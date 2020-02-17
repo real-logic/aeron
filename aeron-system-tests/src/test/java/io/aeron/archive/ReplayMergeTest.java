@@ -19,7 +19,9 @@ import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ReplayMerge;
 import io.aeron.archive.status.RecordingPos;
-import io.aeron.driver.*;
+import io.aeron.driver.MediaDriver;
+import io.aeron.driver.MinMulticastFlowControl;
+import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.test.Tests;
@@ -142,7 +144,7 @@ public class ReplayMergeTest
     @Test
     public void shouldMergeFromReplayToLive()
     {
-        assertTimeoutPreemptively(ofSeconds(30), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final int initialMessageCount = MIN_MESSAGES_PER_TERM * 3;
             final int subsequentMessageCount = MIN_MESSAGES_PER_TERM * 3;

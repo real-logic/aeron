@@ -164,7 +164,7 @@ public class MultiDestinationCastTest
     @Test
     public void shouldSendToTwoPortsWithDynamic()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             final int numMessagesToSend = MESSAGES_PER_TERM * 3;
 
@@ -208,7 +208,7 @@ public class MultiDestinationCastTest
     @Test
     public void shouldSendToTwoPortsWithDynamicSingleDriver()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             final int numMessagesToSend = MESSAGES_PER_TERM * 3;
 

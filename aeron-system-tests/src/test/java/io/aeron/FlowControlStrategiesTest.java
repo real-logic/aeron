@@ -136,7 +136,7 @@ public class FlowControlStrategiesTest
     @Test
     public void shouldTimeoutImageWhenBehindForTooLongWithMaxMulticastFlowControlStrategy()
     {
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
 
@@ -209,7 +209,7 @@ public class FlowControlStrategiesTest
     @Test
     public void shouldSlowDownWhenBehindWithMinMulticastFlowControlStrategy()
     {
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
             int numMessagesLeftToSend = numMessagesToSend;
@@ -330,7 +330,7 @@ public class FlowControlStrategiesTest
     @Test
     public void shouldSlowToTaggedWithMulticastFlowControlStrategy()
     {
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
             int numMessagesLeftToSend = numMessagesToSend;
@@ -402,7 +402,7 @@ public class FlowControlStrategiesTest
     @Test
     public void shouldRemoveDeadTaggedReceiverWithTaggedMulticastFlowControlStrategy()
     {
-        assertTimeoutPreemptively(ofSeconds(200), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
             int numMessagesLeftToSend = numMessagesToSend;

@@ -7,7 +7,9 @@ import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.status.HeartbeatTimestamp;
-import io.aeron.test.*;
+import io.aeron.test.MediaDriverTestWatcher;
+import io.aeron.test.TestMediaDriver;
+import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
@@ -125,7 +127,7 @@ public class TaggedFlowControlTest
         final String publisherUriParams,
         final String subscriptionBUriParams)
     {
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
             int numMessagesLeftToSend = numMessagesToSend;
@@ -208,7 +210,7 @@ public class TaggedFlowControlTest
     @Test
     public void shouldRemoveDeadTaggedReceiverWithTaggedMulticastFlowControlStrategy()
     {
-        assertTimeoutPreemptively(ofSeconds(200), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
             int numMessagesLeftToSend = numMessagesToSend;

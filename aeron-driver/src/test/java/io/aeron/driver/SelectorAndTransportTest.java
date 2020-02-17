@@ -117,7 +117,7 @@ public class SelectorAndTransportTest
     @Test
     public void shouldHandleBasicSetupAndTearDown()
     {
-        assertTimeoutPreemptively(ofSeconds(1), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             receiveChannelEndpoint = new ReceiveChannelEndpoint(
                 RCV_DST, mockDispatcher, mockReceiveStatusIndicator, context);
@@ -135,7 +135,7 @@ public class SelectorAndTransportTest
     @Test
     public void shouldSendEmptyDataFrameUnicastFromSourceToReceiver()
     {
-        assertTimeoutPreemptively(ofSeconds(1), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final MutableInteger dataHeadersReceived = new MutableInteger(0);
 
@@ -188,7 +188,7 @@ public class SelectorAndTransportTest
     @Test
     public void shouldSendMultipleDataFramesPerDatagramUnicastFromSourceToReceiver()
     {
-        assertTimeoutPreemptively(ofSeconds(1), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final MutableInteger dataHeadersReceived = new MutableInteger(0);
 
@@ -254,7 +254,7 @@ public class SelectorAndTransportTest
     @Test
     public void shouldHandleSmFrameFromReceiverToSender()
     {
-        assertTimeoutPreemptively(ofSeconds(1), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final MutableInteger controlMessagesReceived = new MutableInteger(0);
 

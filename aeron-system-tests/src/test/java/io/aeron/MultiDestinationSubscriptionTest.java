@@ -194,7 +194,7 @@ public class MultiDestinationSubscriptionTest
     @Test
     public void shouldSpinUpAndShutdownWithDynamicMdc()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             launch();
 
@@ -335,7 +335,7 @@ public class MultiDestinationSubscriptionTest
     @Test
     public void shouldSendToSingleDestinationSubscriptionWithDynamicMdc()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
 

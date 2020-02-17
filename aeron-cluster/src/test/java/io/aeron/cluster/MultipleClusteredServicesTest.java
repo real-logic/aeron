@@ -72,7 +72,7 @@ public class MultipleClusteredServicesTest
     @Test
     public void testMultiService()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             final List<TestCluster.NodeContext> nodeContexts = new ArrayList<>();
             final List<TestCluster.ServiceContext> serviceContexts = new ArrayList<>();

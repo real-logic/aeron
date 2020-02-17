@@ -111,7 +111,7 @@ public class PubAndSubTest
     @MethodSource("channels")
     public void shouldReceivePublishedMessageViaPollFile(final String channel)
     {
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             launch(channel);
 
@@ -153,7 +153,7 @@ public class PubAndSubTest
     @MethodSource("channels")
     public void shouldContinueAfterBufferRollover(final String channel)
     {
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final int termBufferLength = 64 * 1024;
             final int numMessagesInTermBuffer = 64;
@@ -201,7 +201,7 @@ public class PubAndSubTest
     @MethodSource("channels")
     public void shouldContinueAfterRolloverWithMinimalPaddingHeader(final String channel)
     {
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final int termBufferLength = 64 * 1024;
             final int termBufferLengthMinusPaddingHeader = termBufferLength - HEADER_LENGTH;
@@ -364,7 +364,7 @@ public class PubAndSubTest
     {
         assumeFalse(IPC_URI.equals(channel));
 
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final int termBufferLength = 64 * 1024;
             final int numMessagesInTermBuffer = 64;
@@ -427,7 +427,7 @@ public class PubAndSubTest
     @MethodSource("channels")
     public void shouldContinueAfterBufferRolloverBatched(final String channel)
     {
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final int termBufferLength = 64 * 1024;
             final int numBatchesPerTerm = 4;
@@ -502,7 +502,7 @@ public class PubAndSubTest
     @MethodSource("channels")
     public void shouldContinueAfterBufferRolloverWithPadding(final String channel)
     {
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             /*
              * 65536 bytes in the buffer
@@ -555,7 +555,7 @@ public class PubAndSubTest
     @MethodSource("channels")
     public void shouldContinueAfterBufferRolloverWithPaddingBatched(final String channel)
     {
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             /*
              * 65536 bytes in the buffer
@@ -613,7 +613,7 @@ public class PubAndSubTest
     @MethodSource("channels")
     public void shouldReceiveOnlyAfterSendingUpToFlowControlLimit(final String channel)
     {
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             /*
              * The subscriber will flow control before an entire term buffer. So, send until can't send no 'more.
@@ -684,7 +684,7 @@ public class PubAndSubTest
         // Immediate re-subscription currently doesn't work in the C media driver
         assumeFalse(TestMediaDriver.shouldRunCMediaDriver());
 
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final int termBufferLength = 64 * 1024;
             final int numMessagesInTermBuffer = 64;
@@ -779,7 +779,7 @@ public class PubAndSubTest
     @MethodSource("channels")
     public void shouldFragmentExactMessageLengthsCorrectly(final String channel)
     {
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final int termBufferLength = 64 * 1024;
             final int numFragmentsPerMessage = 2;
@@ -830,7 +830,7 @@ public class PubAndSubTest
     @MethodSource("channels")
     public void shouldNoticeDroppedSubscriber(final String channel)
     {
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             launch(channel);
 

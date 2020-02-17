@@ -127,7 +127,7 @@ public class DriverLoggingAgentTest
     {
         before(enabledEvents, expectedEvents);
 
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             final String aeronDirectoryName = testDir.toPath().resolve("media").toString();
 

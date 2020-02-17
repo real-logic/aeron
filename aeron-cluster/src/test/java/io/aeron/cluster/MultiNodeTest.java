@@ -27,7 +27,7 @@ public class MultiNodeTest
     @Test
     public void shouldElectAppointedLeaderWithThreeNodesWithNoReplayNoSnapshot()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             final int appointedLeaderIndex = 1;
 
@@ -46,7 +46,7 @@ public class MultiNodeTest
     @Test
     public void shouldReplayWithAppointedLeaderWithThreeNodesWithNoSnapshot()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             final int appointedLeaderIndex = 1;
 
@@ -77,7 +77,7 @@ public class MultiNodeTest
     @Test
     public void shouldCatchUpWithAppointedLeaderWithThreeNodesWithNoSnapshot()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             final int appointedLeaderIndex = 1;
 

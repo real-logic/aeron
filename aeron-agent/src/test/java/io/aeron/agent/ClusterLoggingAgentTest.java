@@ -101,7 +101,7 @@ public class ClusterLoggingAgentTest
     {
         before(enabledEvents, expectedEvents.size());
 
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             final String aeronDirectoryName = testDir.toPath().resolve("media").toString();
 

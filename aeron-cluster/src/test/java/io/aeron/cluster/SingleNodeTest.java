@@ -27,7 +27,7 @@ public class SingleNodeTest
     @Test
     public void shouldStartCluster()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             try (TestCluster cluster = TestCluster.startSingleNodeStaticCluster())
             {
@@ -42,7 +42,7 @@ public class SingleNodeTest
     @Test
     public void shouldSendMessagesToCluster()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        assertTimeoutPreemptively(ofSeconds(20), () ->
         {
             try (TestCluster cluster = TestCluster.startSingleNodeStaticCluster())
             {

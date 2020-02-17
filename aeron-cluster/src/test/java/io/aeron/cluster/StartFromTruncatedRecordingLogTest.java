@@ -241,7 +241,7 @@ public class StartFromTruncatedRecordingLogTest
         while (electionStateFollowerA.get() != Election.State.CLOSED.code() &&
             electionStateFollowerB.get() != Election.State.CLOSED.code())
         {
-            Thread.sleep(100);
+            Thread.sleep(200);
             Tests.checkInterruptedStatus();
         }
 
@@ -430,10 +430,7 @@ public class StartFromTruncatedRecordingLogTest
 
     private void startClient()
     {
-        if (client != null)
-        {
-            client.close();
-        }
+        closeClient();
 
         client = AeronCluster.connect(
             new AeronCluster.Context()
@@ -441,6 +438,15 @@ public class StartFromTruncatedRecordingLogTest
                 .ingressChannel("aeron:udp?term-length=64k")
                 .egressChannel("aeron:udp?term-length=64k|endpoint=localhost:9020")
                 .clusterMemberEndpoints("0=localhost:20110,1=localhost:20111,2=localhost:20112"));
+    }
+
+    private void closeClient()
+    {
+        if (null != client)
+        {
+            client.close();
+            client = null;
+        }
     }
 
     private void sendMessages(final ExpandableArrayBuffer msgBuffer)

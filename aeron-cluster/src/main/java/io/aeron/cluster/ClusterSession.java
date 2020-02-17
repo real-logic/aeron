@@ -46,7 +46,7 @@ class ClusterSession implements AutoCloseable
     private final int responseStreamId;
     private final String responseChannel;
     private Publication responsePublication;
-    private State state = State.INIT;
+    private State state;
     private String responseDetail = null;
     private EventCode eventCode = null;
     private CloseReason closeReason = CloseReason.NULL_VAL;
@@ -57,6 +57,7 @@ class ClusterSession implements AutoCloseable
         this.id = sessionId;
         this.responseStreamId = responseStreamId;
         this.responseChannel = responseChannel;
+        state(State.INIT);
     }
 
     ClusterSession(

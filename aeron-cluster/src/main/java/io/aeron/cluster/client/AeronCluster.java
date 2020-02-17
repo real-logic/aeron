@@ -34,7 +34,6 @@ import org.agrona.concurrent.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
-import static java.lang.Math.max;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static org.agrona.SystemUtil.getDurationInNanos;
 
@@ -241,15 +240,14 @@ public final class AeronCluster implements AutoCloseable
      */
     public void close()
     {
-        final ErrorHandler errorHandler = ctx.errorHandler();
-
         if (null != publication && publication.isConnected())
         {
-            AeronCloseHelper.close(errorHandler, this::closeSession);
+            closeSession();
         }
 
         if (!ctx.ownsAeronClient())
         {
+            final ErrorHandler errorHandler = ctx.errorHandler();
             AeronCloseHelper.close(errorHandler, subscription);
             AeronCloseHelper.close(errorHandler, publication);
         }
@@ -711,8 +709,6 @@ public final class AeronCluster implements AutoCloseable
                 break;
             }
 
-            checkResult(result);
-
             if (--attempts <= 0)
             {
                 break;
@@ -731,16 +727,6 @@ public final class AeronCluster implements AutoCloseable
         else
         {
             return ctx.aeron().addPublication(channel, streamId);
-        }
-    }
-
-    private static void checkResult(final long result)
-    {
-        if (result == Publication.NOT_CONNECTED ||
-            result == Publication.CLOSED ||
-            result == Publication.MAX_POSITION_EXCEEDED)
-        {
-            throw new ClusterException("unexpected publication state: " + result);
         }
     }
 
@@ -1418,7 +1404,6 @@ public final class AeronCluster implements AutoCloseable
         private final EgressPoller egressPoller;
         private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
         private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
-        private final long[] stepTimestamps = new long[6];
         private Int2ObjectHashMap<MemberEndpoint> endpointByMemberIdMap;
         private Publication ingressPublication;
 
@@ -1431,7 +1416,6 @@ public final class AeronCluster implements AutoCloseable
             egressPoller = new EgressPoller(egressSubscription, FRAGMENT_LIMIT);
             nanoClock = ctx.aeron().context().nanoClock();
             this.deadlineNs = deadlineNs;
-            this.stepTimestamps[0] = nanoClock.nanoTime();
         }
 
         /**
@@ -1448,29 +1432,25 @@ public final class AeronCluster implements AutoCloseable
                 {
                     AeronCloseHelper.close(errorHandler, memberEndpoint::disconnect);
                 }
+
                 ctx.close();
             }
         }
 
         /**
-         * Indicates which step in the connect process has been reached.
+         * Indicates which step in the connect process has reached.
          *
-         * @return which step in the connect process has been reached.
+         * @return which step in the connect process has reached.
          */
         public int step()
         {
             return step;
         }
 
-        private void step(final int step)
+        private void step(final int newStep)
         {
-            if (step < stepTimestamps.length)
-            {
-                stepTimestamps[step] = nanoClock.nanoTime() - stepTimestamps[0];
-            }
-
-            //System.out.println(this.step + " -> " + step);
-            this.step = step;
+            //System.out.println("AeronCluster.AsyncConnect " + step + " -> " + newStep);
+            step = newStep;
         }
 
         /**
@@ -1528,17 +1508,7 @@ public final class AeronCluster implements AutoCloseable
 
             if (deadlineNs - nanoClock.nanoTime() < 0)
             {
-                final StringBuilder builder = new StringBuilder();
-                for (int i = 1; i < step; i++)
-                {
-                    builder.append(stepTimestamps[i]).append(',');
-                }
-                builder.setLength(max(builder.length() - 1, 0));
-
-                throw new TimeoutException(
-                    "connect timeout, step=" + step + ", ctx.messageTimeout=" + ctx.messageTimeoutNs() +
-                    ", time for each step (ns)=[" + builder + "]",
-                    AeronException.Category.ERROR);
+                throw new TimeoutException("connect timeout, step=" + step, AeronException.Category.ERROR);
             }
         }
 

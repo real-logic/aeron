@@ -273,6 +273,7 @@ public class ClusterTimerTest
                 .maxCatalogEntries(MAX_CATALOG_ENTRIES)
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .recordingEventsEnabled(false)
+                .shouldFreeBuffersOnClose(true)
                 .deleteArchiveOnStart(initialLaunch),
             new ConsensusModule.Context()
                 .errorHandler(ClusterTests.errorHandler(0))

@@ -889,7 +889,9 @@ public class TestCluster implements AutoCloseable
     public long countRecordingLogSnapshots(final TestNode node)
     {
         final RecordingLog recordingLog = new RecordingLog(node.consensusModule().context().clusterDir());
-        return recordingLog.entries().stream()
+        return recordingLog
+            .entries()
+            .stream()
             .filter((e) -> RecordingLog.ENTRY_TYPE_SNAPSHOT == e.type &&
                 ConsensusModule.Configuration.SERVICE_ID == e.serviceId)
             .count();
@@ -980,6 +982,7 @@ public class TestCluster implements AutoCloseable
             .recordingEventsEnabled(false)
             .localControlStreamId(100)
             .threadingMode(ArchiveThreadingMode.SHARED)
+            .shouldFreeBuffersOnClose(true)
             .deleteArchiveOnStart(cleanStart);
 
         context.aeronArchiveContext

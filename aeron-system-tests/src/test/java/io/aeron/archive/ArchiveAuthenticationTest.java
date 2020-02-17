@@ -363,6 +363,7 @@ public class ArchiveAuthenticationTest
                 .deleteArchiveOnStart(true)
                 .archiveDir(new File(SystemUtil.tmpDirName(), "archive"))
                 .fileSyncLevel(0)
+                .shouldFreeBuffersOnClose(true)
                 .authenticatorSupplier(authenticatorSupplier)
                 .threadingMode(ArchiveThreadingMode.SHARED));
     }

@@ -21,7 +21,6 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.nio.charset.Charset;
 import java.nio.file.Path;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -51,7 +50,7 @@ class ClusterToolTest
                     capturingPrintStream.resetAndGetPrintStream()));
 
                 assertThat(
-                    capturingPrintStream.flushAndGetContent(US_ASCII),
+                    capturingPrintStream.flushAndGetContent(),
                     containsString("SNAPSHOT applied successfully"));
 
                 assertEquals(initialSnapshotCount + 1, cluster.countRecordingLogSnapshots(leader));
@@ -63,7 +62,7 @@ class ClusterToolTest
                         capturingPrintStream.resetAndGetPrintStream()));
 
                     assertThat(
-                        capturingPrintStream.flushAndGetContent(US_ASCII),
+                        capturingPrintStream.flushAndGetContent(),
                         containsString("Current node is not the leader"));
                 }
             }
@@ -85,7 +84,7 @@ class ClusterToolTest
                     capturingPrintStream.resetAndGetPrintStream()));
 
                 assertThat(
-                    capturingPrintStream.flushAndGetContent(US_ASCII),
+                    capturingPrintStream.flushAndGetContent(),
                     containsString("SUSPEND applied successfully"));
 
                 assertFalse(ClusterTool.snapshot(
@@ -94,7 +93,7 @@ class ClusterToolTest
 
                 final String expectedMessage =
                     "Unable to SNAPSHOT as the state of the consensus module is SUSPENDED, but needs to be ACTIVE";
-                assertThat(capturingPrintStream.flushAndGetContent(US_ASCII), containsString(expectedMessage));
+                assertThat(capturingPrintStream.flushAndGetContent(), containsString(expectedMessage));
 
                 assertEquals(initialSnapshotCount, cluster.countRecordingLogSnapshots(leader));
             }
@@ -115,7 +114,7 @@ class ClusterToolTest
                     capturingPrintStream.resetAndGetPrintStream()));
 
                 assertThat(
-                    capturingPrintStream.flushAndGetContent(US_ASCII),
+                    capturingPrintStream.flushAndGetContent(),
                     containsString("SUSPEND applied successfully"));
 
                 assertTrue(ClusterTool.resume(
@@ -123,7 +122,7 @@ class ClusterToolTest
                     capturingPrintStream.resetAndGetPrintStream()));
 
                 assertThat(
-                    capturingPrintStream.flushAndGetContent(US_ASCII),
+                    capturingPrintStream.flushAndGetContent(),
                     containsString("RESUME applied successfully"));
             }
         });
@@ -134,7 +133,7 @@ class ClusterToolTest
     {
         assertFalse(ClusterTool.snapshot(emptyClusterDir.toFile(), capturingPrintStream.resetAndGetPrintStream()));
         assertThat(
-            capturingPrintStream.flushAndGetContent(US_ASCII),
+            capturingPrintStream.flushAndGetContent(),
             containsString("cluster-mark.dat does not exist"));
     }
 
@@ -149,10 +148,10 @@ class ClusterToolTest
             return printStream;
         }
 
-        String flushAndGetContent(final Charset charset)
+        String flushAndGetContent()
         {
             printStream.flush();
-            return new String(byteArrayOutputStream.toByteArray(), charset);
+            return new String(byteArrayOutputStream.toByteArray(), US_ASCII);
         }
     }
 }

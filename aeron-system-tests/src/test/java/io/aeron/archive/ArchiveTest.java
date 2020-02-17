@@ -147,6 +147,7 @@ public class ArchiveTest
                 .segmentFileLength(segmentFileLength)
                 .threadingMode(archiveThreadingMode)
                 .idleStrategySupplier(YieldingIdleStrategy::new)
+                .shouldFreeBuffersOnClose(true)
                 .errorCounter(driver.context().systemCounters().get(SystemCounterDescriptor.ERRORS))
                 .errorHandler(driver.context().errorHandler()));
 

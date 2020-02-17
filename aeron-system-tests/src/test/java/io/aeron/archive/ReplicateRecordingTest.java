@@ -91,6 +91,7 @@ public class ReplicateRecordingTest
                 .deleteArchiveOnStart(true)
                 .archiveDir(new File(SystemUtil.tmpDirName(), "src-archive"))
                 .fileSyncLevel(0)
+                .shouldFreeBuffersOnClose(true)
                 .threadingMode(ArchiveThreadingMode.SHARED));
 
         dstArchivingMediaDriver = ArchivingMediaDriver.launch(
@@ -112,6 +113,7 @@ public class ReplicateRecordingTest
                 .deleteArchiveOnStart(true)
                 .archiveDir(new File(SystemUtil.tmpDirName(), "dst-archive"))
                 .fileSyncLevel(0)
+                .shouldFreeBuffersOnClose(true)
                 .threadingMode(ArchiveThreadingMode.SHARED));
 
         srcAeron = Aeron.connect(

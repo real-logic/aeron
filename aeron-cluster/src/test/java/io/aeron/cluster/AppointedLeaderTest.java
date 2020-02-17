@@ -21,7 +21,6 @@ import org.junit.jupiter.api.Test;
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.*;
 
-
 public class AppointedLeaderTest
 {
     private static final int LEADER_ID = 1;

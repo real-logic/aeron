@@ -491,6 +491,7 @@ public class AuthenticationTest
                 .maxCatalogEntries(MAX_CATALOG_ENTRIES)
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .recordingEventsEnabled(false)
+                .shouldFreeBuffersOnClose(true)
                 .deleteArchiveOnStart(true),
             new ConsensusModule.Context()
                 .errorHandler(Throwable::printStackTrace)

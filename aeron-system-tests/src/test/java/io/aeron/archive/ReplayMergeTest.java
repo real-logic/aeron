@@ -113,6 +113,7 @@ public class ReplayMergeTest
                 .errorHandler(Throwable::printStackTrace)
                 .archiveDir(archiveDir)
                 .recordingEventsEnabled(false)
+                .shouldFreeBuffersOnClose(true)
                 .threadingMode(ArchiveThreadingMode.SHARED)
                 .deleteArchiveOnStart(true));
 

@@ -228,24 +228,10 @@ public class StartFromTruncatedRecordingLogTest
 
     private void assertClusterIsFunctioningCorrectly() throws InterruptedException
     {
-        final int leaderMemberId = awaitLeaderMemberId();
-        final int followerMemberIdA = (leaderMemberId + 1) >= MEMBER_COUNT ? 0 : (leaderMemberId + 1);
-        final int followerMemberIdB = (followerMemberIdA + 1) >= MEMBER_COUNT ? 0 : (followerMemberIdA + 1);
+        awaitLeaderMemberId();
 
-        final Counter electionStateFollowerA = clusteredMediaDrivers[followerMemberIdA]
-            .consensusModule().context().electionStateCounter();
-
-        final Counter electionStateFollowerB = clusteredMediaDrivers[followerMemberIdB]
-            .consensusModule().context().electionStateCounter();
-
-        while (electionStateFollowerA.get() != Election.State.CLOSED.code() &&
-            electionStateFollowerB.get() != Election.State.CLOSED.code())
-        {
-            Thread.sleep(200);
-            Tests.checkInterruptedStatus();
-        }
-
-        startClient();
+        Thread.sleep(1000); // TODO: find a better alternative to check for cluster ready.
+        connectClient();
 
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
         msgBuffer.putStringWithoutLengthAscii(0, MSG);
@@ -428,7 +414,7 @@ public class StartFromTruncatedRecordingLogTest
         clusteredMediaDrivers[index] = null;
     }
 
-    private void startClient()
+    private void connectClient()
     {
         closeClient();
 

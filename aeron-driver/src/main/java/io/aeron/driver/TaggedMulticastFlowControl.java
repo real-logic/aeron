@@ -155,8 +155,18 @@ public class TaggedMulticastFlowControl implements FlowControl
             minPosition = Math.min(minPosition, lastPositionPlusWindow);
         }
 
-        return receivers.length > 0 ?
-            Math.max(senderLimit, minPosition) : Math.max(senderLimit, lastPositionPlusWindow);
+        if (receivers.length < requiredGroupSize)
+        {
+            return senderLimit;
+        }
+        else if (receivers.length == 0)
+        {
+            return Math.max(senderLimit, lastPositionPlusWindow);
+        }
+        else
+        {
+            return Math.max(senderLimit, minPosition);
+        }
     }
 
     /**
@@ -191,7 +201,7 @@ public class TaggedMulticastFlowControl implements FlowControl
             this.receivers = receivers;
         }
 
-        return receivers.length > 0 ? minLimitPosition : senderLimit;
+        return receivers.length < requiredGroupSize || receivers.length == 0 ? senderLimit : minLimitPosition;
     }
 
     public boolean hasRequiredReceivers()

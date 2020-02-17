@@ -1,16 +1,19 @@
 package io.aeron;
 
 import io.aeron.driver.*;
+import io.aeron.driver.status.SenderLimit;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.status.HeartbeatTimestamp;
 import io.aeron.test.*;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -435,6 +438,40 @@ public class TaggedFlowControlTest
             {
                 Tests.checkInterruptedStatus();
                 Thread.sleep(1);
+            }
+        });
+    }
+
+    @Test
+    public void shouldHandleSenderLimitCorrectlyWithMinGroupSize()
+    {
+        final String publisherUri = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged,g:123/1";
+        final String groupSubscriberUri = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|rtag=123";
+        final String subscriberUri = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost";
+        assertTimeoutPreemptively(ofSeconds(10), () ->
+        {
+            driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
+
+            launch();
+
+            publication = clientA.addPublication(publisherUri, STREAM_ID);
+
+            final CountersReader countersReader = clientA.countersReader();
+
+            final int senderLimitCounterId = HeartbeatTimestamp.findCounterIdByRegistrationId(
+                countersReader, SenderLimit.SENDER_LIMIT_TYPE_ID, publication.registrationId);
+            final long currentSenderLimit = countersReader.getCounterValue(senderLimitCounterId);
+
+            subscriptionA = clientA.addSubscription(subscriberUri, STREAM_ID);
+
+            Tests.sleep(200);
+            assertEquals(currentSenderLimit, countersReader.getCounterValue(senderLimitCounterId));
+
+            subscriptionB = clientB.addSubscription(groupSubscriberUri, STREAM_ID);
+
+            while (currentSenderLimit == countersReader.getCounterValue(senderLimitCounterId))
+            {
+                Tests.sleep(1);
             }
         });
     }

@@ -17,14 +17,12 @@ package io.aeron.cluster;
 
 class ClusterTermination
 {
-    private final MemberStatusPublisher memberStatusPublisher;
     private long deadlineNs;
-    private boolean hasServiceTerminated = false;
+    private boolean haveServicesTerminated = false;
 
-    ClusterTermination(final MemberStatusPublisher memberStatusPublisher, final long deadlineNs)
+    ClusterTermination(final long deadlineNs)
     {
         this.deadlineNs = deadlineNs;
-        this.memberStatusPublisher = memberStatusPublisher;
     }
 
     void deadlineNs(final long deadlineNs)
@@ -34,7 +32,7 @@ class ClusterTermination
 
     boolean canTerminate(final ClusterMember[] members, final long terminationPosition, final long nowNs)
     {
-        if (hasServiceTerminated)
+        if (haveServicesTerminated)
         {
             return haveFollowersTerminated(members, terminationPosition) || nowNs >= deadlineNs;
         }
@@ -42,16 +40,20 @@ class ClusterTermination
         return false;
     }
 
-    void hasServiceTerminated(final boolean hasServiceTerminated)
+    void onServicesTerminated()
     {
-        this.hasServiceTerminated = hasServiceTerminated;
+        haveServicesTerminated = true;
     }
 
-    void terminationPosition(final ClusterMember[] members, final ClusterMember thisMember, final long position)
+    void terminationPosition(
+        final MemberStatusPublisher memberStatusPublisher,
+        final ClusterMember[] members,
+        final ClusterMember thisMember,
+        final long position)
     {
         for (final ClusterMember member : members)
         {
-            member.hasSentTerminationAck(false);
+            member.hasTerminated(false);
 
             if (member != thisMember)
             {
@@ -68,7 +70,7 @@ class ClusterTermination
         {
             final ClusterMember member = members[i];
 
-            if (!member.hasSentTerminationAck() && member.logPosition() < terminationPosition)
+            if (!member.hasTerminated() && member.logPosition() < terminationPosition)
             {
                 result = false;
                 break;

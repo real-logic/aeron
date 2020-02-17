@@ -36,7 +36,7 @@ public final class ClusterMember
     private boolean isBallotSent;
     private boolean isLeader;
     private boolean hasRequestedJoin;
-    private boolean hasSentTerminationAck;
+    private boolean hasTerminated;
     private int id;
     private long leadershipTermId = Aeron.NULL_VALUE;
     private long logPosition = NULL_POSITION;
@@ -91,7 +91,7 @@ public final class ClusterMember
         isBallotSent = false;
         isLeader = false;
         hasRequestedJoin = false;
-        hasSentTerminationAck = false;
+        hasTerminated = false;
         vote = null;
         candidateTermId = Aeron.NULL_VALUE;
         leadershipTermId = Aeron.NULL_VALUE;
@@ -165,25 +165,25 @@ public final class ClusterMember
     }
 
     /**
-     * Set if this member has sent a termination ack.
+     * Set if this member has terminated.
      *
-     * @param hasSentTerminationAck to the leader.
+     * @param hasTerminated in notification to the leader.
      * @return this for a fluent API.
      */
-    public ClusterMember hasSentTerminationAck(final boolean hasSentTerminationAck)
+    public ClusterMember hasTerminated(final boolean hasTerminated)
     {
-        this.hasSentTerminationAck = hasSentTerminationAck;
+        this.hasTerminated = hasTerminated;
         return this;
     }
 
     /**
-     * Has this member sent a termination ack?
+     * Has this member notified that it has terminated?
      *
-     * @return has this member sent a termination ack?
+     * @return has this member notified that it has terminated?
      */
-    public boolean hasSentTerminationAck()
+    public boolean hasTerminated()
     {
-        return hasSentTerminationAck;
+        return hasTerminated;
     }
 
     /**

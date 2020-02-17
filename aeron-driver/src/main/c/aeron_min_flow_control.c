@@ -92,61 +92,6 @@ int64_t aeron_min_flow_control_strategy_on_idle(
     return strategy_state->receivers.length > 0 ? min_limit_position : snd_lmt;
 }
 
-static int64_t aeron_tagged_flow_control_apply_position_update(
-    aeron_min_flow_control_strategy_state_t *strategy_state,
-    int64_t position,
-    int64_t window_length,
-    int64_t receiver_id,
-    int64_t snd_lmt,
-    int64_t now_ns,
-    bool is_tagged)
-{
-    bool is_existing = false;
-    int64_t min_position = INT64_MAX;
-
-    for (size_t i = 0; i < strategy_state->receivers.length; i++)
-    {
-        aeron_min_flow_control_strategy_receiver_t *receiver = &strategy_state->receivers.array[i];
-
-        if (is_tagged && receiver_id == receiver->receiver_id)
-        {
-            receiver->last_position = position > receiver->last_position ? position : receiver->last_position;
-            receiver->last_position_plus_window = position + window_length;
-            receiver->time_of_last_status_message = now_ns;
-            is_existing = true;
-        }
-
-        min_position = receiver->last_position_plus_window < min_position ?
-            receiver->last_position_plus_window : min_position;
-    }
-
-    if (is_tagged && !is_existing)
-    {
-        int ensure_capacity_result = 0;
-        AERON_ARRAY_ENSURE_CAPACITY(
-            ensure_capacity_result, strategy_state->receivers, aeron_min_flow_control_strategy_receiver_t);
-
-        if (ensure_capacity_result >= 0)
-        {
-            aeron_min_flow_control_strategy_receiver_t *receiver =
-                &strategy_state->receivers.array[strategy_state->receivers.length++];
-
-            receiver->last_position = position;
-            receiver->last_position_plus_window = position + window_length;
-            receiver->time_of_last_status_message = now_ns;
-            receiver->receiver_id = receiver_id;
-
-            min_position = (position + window_length) < min_position ? (position + window_length) : min_position;
-        }
-        else
-        {
-            min_position = 0 == strategy_state->receivers.length ? snd_lmt : min_position;
-        }
-    }
-
-    return snd_lmt > min_position ? snd_lmt : min_position;
-}
-
 
 int64_t aeron_min_flow_control_strategy_on_sm(
     void *state,
@@ -166,14 +111,52 @@ int64_t aeron_min_flow_control_strategy_on_sm(
         position_bits_to_shift,
         initial_term_id);
 
-    return aeron_tagged_flow_control_apply_position_update(
-        (aeron_min_flow_control_strategy_state_t *)state,
-        position,
-        status_message_header->receiver_window,
-        status_message_header->receiver_id,
-        snd_lmt,
-        now_ns,
-        true);
+    aeron_min_flow_control_strategy_state_t *strategy_state = (aeron_min_flow_control_strategy_state_t *)state;
+    bool is_existing = false;
+    int64_t min_position = INT64_MAX;
+
+    for (size_t i = 0; i < strategy_state->receivers.length; i++)
+    {
+        aeron_min_flow_control_strategy_receiver_t *receiver = &strategy_state->receivers.array[i];
+
+        if (status_message_header->receiver_id == receiver->receiver_id)
+        {
+            receiver->last_position = position > receiver->last_position ? position : receiver->last_position;
+            receiver->last_position_plus_window = position + status_message_header->receiver_window;
+            receiver->time_of_last_status_message = now_ns;
+            is_existing = true;
+        }
+
+        min_position = receiver->last_position_plus_window < min_position ?
+            receiver->last_position_plus_window : min_position;
+    }
+
+    if (!is_existing)
+    {
+        int ensure_capacity_result = 0;
+        AERON_ARRAY_ENSURE_CAPACITY(
+            ensure_capacity_result, strategy_state->receivers, aeron_min_flow_control_strategy_receiver_t);
+
+        if (ensure_capacity_result >= 0)
+        {
+            aeron_min_flow_control_strategy_receiver_t *receiver =
+                &strategy_state->receivers.array[strategy_state->receivers.length++];
+
+            receiver->last_position = position;
+            receiver->last_position_plus_window = position + status_message_header->receiver_window;
+            receiver->time_of_last_status_message = now_ns;
+            receiver->receiver_id = status_message_header->receiver_id;
+
+            min_position = (position + status_message_header->receiver_window) < min_position ?
+                (position + status_message_header->receiver_window) : min_position;
+        }
+        else
+        {
+            min_position = 0 == strategy_state->receivers.length ? snd_lmt : min_position;
+        }
+    }
+
+    return snd_lmt > min_position ? snd_lmt : min_position;
 }
 
 int aeron_min_flow_control_strategy_fini(aeron_flow_control_strategy_t *strategy)
@@ -247,15 +230,33 @@ int64_t aeron_tagged_flow_control_strategy_on_idle(
     int64_t snd_pos,
     bool is_end_of_stream)
 {
-    aeron_tagged_flow_control_strategy_state_t *strategy_state =
-        (aeron_tagged_flow_control_strategy_state_t *)state;
+    aeron_tagged_flow_control_strategy_state_t *strategy_state = (aeron_tagged_flow_control_strategy_state_t *)state;
+    aeron_min_flow_control_strategy_state_t *min_strategy_state = (aeron_min_flow_control_strategy_state_t *)state;
+    int64_t min_limit_position = INT64_MAX;
 
-    return aeron_min_flow_control_strategy_on_idle(
-        &strategy_state->min_flow_control_state,
-        now_ns,
-        snd_lmt,
-        snd_pos,
-        is_end_of_stream);
+    for (int last_index = (int) min_strategy_state->receivers.length - 1, i = last_index; i >= 0; i--)
+    {
+        aeron_min_flow_control_strategy_receiver_t *receiver = &min_strategy_state->receivers.array[i];
+
+        if ((receiver->time_of_last_status_message + min_strategy_state->receiver_timeout_ns) - now_ns < 0)
+        {
+            aeron_array_fast_unordered_remove(
+                (uint8_t *) min_strategy_state->receivers.array,
+                sizeof(aeron_min_flow_control_strategy_receiver_t),
+                (size_t)i,
+                (size_t)last_index);
+            last_index--;
+            min_strategy_state->receivers.length--;
+        }
+        else
+        {
+            min_limit_position = receiver->last_position_plus_window < min_limit_position ?
+                receiver->last_position_plus_window : min_limit_position;
+        }
+    }
+
+    return (int32_t)min_strategy_state->receivers.length < strategy_state->required_group_size ||
+        min_strategy_state->receivers.length == 0 ? snd_lmt : min_limit_position;
 }
 
 int64_t aeron_tagged_flow_control_strategy_on_sm(
@@ -281,8 +282,9 @@ int64_t aeron_tagged_flow_control_strategy_on_sm(
     const int64_t receiver_id = status_message_header->receiver_id;
 
     int64_t sm_receiver_tag;
-    int bytes_read = aeron_udp_protocol_sm_receiver_tag(status_message_header, &sm_receiver_tag);
-    bool was_present = bytes_read == sizeof(sm_receiver_tag);
+    const int bytes_read = aeron_udp_protocol_sm_receiver_tag(status_message_header, &sm_receiver_tag);
+    const bool was_present = bytes_read == sizeof(sm_receiver_tag);
+    int64_t position_plus_window = position + window_length;
 
     if (0 != bytes_read && !was_present)
     {
@@ -293,21 +295,66 @@ int64_t aeron_tagged_flow_control_strategy_on_sm(
             "Received a status message for tagged flow control that did not have 0 or 8 bytes for the receiver_tag");
     }
 
-    bool is_tagged = was_present && sm_receiver_tag == strategy_state->receiver_tag;
-    if (!is_tagged && 0 == strategy_state->min_flow_control_state.receivers.length)
+    const bool is_tagged = was_present && sm_receiver_tag == strategy_state->receiver_tag;
+
+    bool is_existing = false;
+    int64_t min_position = INT64_MAX;
+
+    for (size_t i = 0; i < strategy_state->min_flow_control_state.receivers.length; i++)
     {
-        int64_t position_plus_window = position + window_length;
-        return snd_lmt > position_plus_window ? snd_lmt : position_plus_window;
+        aeron_min_flow_control_strategy_receiver_t *receiver =
+            &strategy_state->min_flow_control_state.receivers.array[i];
+
+        if (is_tagged && receiver_id == receiver->receiver_id)
+        {
+            receiver->last_position = position > receiver->last_position ? position : receiver->last_position;
+            receiver->last_position_plus_window = position + window_length;
+            receiver->time_of_last_status_message = now_ns;
+            is_existing = true;
+        }
+
+        min_position = receiver->last_position_plus_window < min_position ?
+            receiver->last_position_plus_window : min_position;
     }
 
-    return aeron_tagged_flow_control_apply_position_update(
-        &strategy_state->min_flow_control_state,
-        position,
-        window_length,
-        receiver_id,
-        snd_lmt,
-        now_ns,
-        is_tagged);
+    if (is_tagged && !is_existing)
+    {
+        int ensure_capacity_result = 0;
+        AERON_ARRAY_ENSURE_CAPACITY(
+            ensure_capacity_result,
+            strategy_state->min_flow_control_state.receivers,
+            aeron_min_flow_control_strategy_receiver_t);
+
+        if (ensure_capacity_result >= 0)
+        {
+            aeron_min_flow_control_strategy_receiver_t *receiver =
+                &strategy_state->min_flow_control_state.receivers.array[strategy_state->min_flow_control_state.receivers.length++];
+
+            receiver->last_position = position;
+            receiver->last_position_plus_window = position + window_length;
+            receiver->time_of_last_status_message = now_ns;
+            receiver->receiver_id = receiver_id;
+
+            min_position = (position + window_length) < min_position ? (position + window_length) : min_position;
+        }
+        else
+        {
+            min_position = 0 == strategy_state->min_flow_control_state.receivers.length ? snd_lmt : min_position;
+        }
+    }
+
+    if ((int32_t)strategy_state->min_flow_control_state.receivers.length < strategy_state->required_group_size)
+    {
+        return snd_lmt;
+    }
+    else if (strategy_state->min_flow_control_state.receivers.length == 0)
+    {
+        return snd_lmt > position_plus_window ? snd_lmt : position_plus_window;
+    }
+    else
+    {
+        return snd_lmt > min_position ? snd_lmt : min_position;
+    }
 }
 
 int aeron_tagged_flow_control_strategy_fini(aeron_flow_control_strategy_t *strategy)

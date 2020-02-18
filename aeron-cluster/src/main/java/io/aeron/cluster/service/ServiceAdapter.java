@@ -17,10 +17,7 @@ package io.aeron.cluster.service;
 
 import io.aeron.Subscription;
 import io.aeron.cluster.client.ClusterException;
-import io.aeron.cluster.codecs.ElectionStartEventDecoder;
-import io.aeron.cluster.codecs.JoinLogDecoder;
-import io.aeron.cluster.codecs.MessageHeaderDecoder;
-import io.aeron.cluster.codecs.ServiceTerminationPositionDecoder;
+import io.aeron.cluster.codecs.*;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
@@ -80,6 +77,7 @@ final class ServiceAdapter implements FragmentHandler, AutoCloseable
                     joinLogDecoder.memberId(),
                     joinLogDecoder.logSessionId(),
                     joinLogDecoder.logStreamId(),
+                    joinLogDecoder.isStartup() == BooleanType.TRUE,
                     joinLogDecoder.logChannel());
                 break;
 

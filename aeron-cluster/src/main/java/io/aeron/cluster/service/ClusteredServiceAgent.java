@@ -316,13 +316,14 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         }
     }
 
-    public void onJoinLog(
+    void onJoinLog(
         final long leadershipTermId,
         final long logPosition,
         final long maxLogPosition,
         final int memberId,
         final int logSessionId,
         final int logStreamId,
+        final boolean isStartup,
         final String logChannel)
     {
         if (null != logAdapter && !logChannel.equals(this.logChannel))
@@ -339,15 +340,15 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
         roleChangePosition = NULL_POSITION;
         activeLogEvent = new ActiveLogEvent(
-            leadershipTermId, logPosition, maxLogPosition, memberId, logSessionId, logStreamId, logChannel);
+            leadershipTermId, logPosition, maxLogPosition, memberId, logSessionId, logStreamId, isStartup, logChannel);
     }
 
-    public void onServiceTerminationPosition(final long logPosition)
+    void onServiceTerminationPosition(final long logPosition)
     {
         terminationPosition = logPosition;
     }
 
-    public void onElectionStartEvent(final long logPosition)
+    void onElectionStartEvent(final long logPosition)
     {
         roleChangePosition = logPosition;
     }
@@ -699,6 +700,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             idle();
         }
 
+        final boolean isStartup = activeLogEvent.isStartup;
         final Image image = awaitImage(activeLogEvent.sessionId, logSubscription);
 
         sessionMessageHeaderEncoder.leadershipTermId(activeLogEvent.leadershipTermId);
@@ -714,7 +716,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         {
             if (Role.LEADER == role)
             {
-                if (ctx.isRespondingService())
+                if (ctx.isRespondingService() && !isStartup)
                 {
                     session.connect(aeron);
                 }

@@ -101,6 +101,7 @@ public class Election
     }
 
     private boolean isStartup;
+    private boolean isExtendedCanvass;
     private boolean shouldReplay;
     private final ClusterMember[] clusterMembers;
     private final ClusterMember thisMember;
@@ -141,6 +142,7 @@ public class Election
     {
         this.isStartup = isStartup;
         this.shouldReplay = isStartup;
+        this.isExtendedCanvass = isStartup;
         this.logPosition = logPosition;
         this.logLeadershipTermId = leadershipTermId;
         this.leadershipTermId = leadershipTermId;
@@ -503,7 +505,7 @@ public class Election
         }
 
         final long canvassDeadlineNs =
-            timeOfLastStateChangeNs + (isStartup ? ctx.startupCanvassTimeoutNs() : ctx.electionTimeoutNs());
+            timeOfLastStateChangeNs + (isExtendedCanvass ? ctx.startupCanvassTimeoutNs() : ctx.electionTimeoutNs());
 
         if (ClusterMember.isUnanimousCandidate(clusterMembers, thisMember) ||
             (ClusterMember.isQuorumCandidate(clusterMembers, thisMember) && nowNs >= canvassDeadlineNs))
@@ -634,7 +636,7 @@ public class Election
 
     private int leaderTransition(final long nowNs)
     {
-        consensusModuleAgent.becomeLeader(candidateTermId, logPosition, logSessionId);
+        consensusModuleAgent.becomeLeader(candidateTermId, logPosition, logSessionId, isStartup);
 
         final long recordingId = consensusModuleAgent.logRecordingId();
         final long timestamp = ctx.clusterClock().timeUnit().convert(nowNs, TimeUnit.NANOSECONDS);
@@ -723,7 +725,7 @@ public class Election
                 ctx.logChannel(), logSessionId, consensusModuleAgent.logSubscriptionTags());
 
             logSubscription = consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(logChannelUri.toString());
-            consensusModuleAgent.awaitServicesReady(logChannelUri, logSessionId, logPosition);
+            consensusModuleAgent.awaitServicesReady(logChannelUri, logSessionId, logPosition, isStartup);
 
             final String replayDestination = new ChannelUriStringBuilder()
                 .media(CommonContext.UDP_MEDIA)
@@ -790,7 +792,7 @@ public class Election
                 ctx.logChannel(), logSessionId, consensusModuleAgent.logSubscriptionTags());
 
             logSubscription = consensusModuleAgent.createAndRecordLogSubscriptionAsFollower(logChannelUri.toString());
-            consensusModuleAgent.awaitServicesReady(logChannelUri, logSessionId, logPosition);
+            consensusModuleAgent.awaitServicesReady(logChannelUri, logSessionId, logPosition, isStartup);
         }
 
         if (null == liveLogDestination)
@@ -921,7 +923,7 @@ public class Election
 
         if (State.CANVASS == state)
         {
-            isStartup = false;
+            isExtendedCanvass = false;
         }
 
         if (State.CANVASS == newState)

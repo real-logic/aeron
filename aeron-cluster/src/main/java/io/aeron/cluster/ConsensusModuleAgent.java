@@ -401,8 +401,7 @@ class ConsensusModuleAgent implements Agent
             final ClusterSession session = sessionByIdMap.get(clusterSessionId);
             if (null != session && session.state() == OPEN)
             {
-                final long now = clusterClock.time();
-                session.timeOfLastActivityNs(clusterTimeUnit.toNanos(now));
+                session.timeOfLastActivityNs(clusterTimeUnit.toNanos(clusterClock.time()));
             }
         }
     }
@@ -1335,7 +1334,8 @@ class ConsensusModuleAgent implements Agent
         return publication;
     }
 
-    void becomeLeader(final long leadershipTermId, final long logPosition, final int logSessionId)
+    void becomeLeader(
+        final long leadershipTermId, final long logPosition, final int logSessionId, final boolean isStartup)
     {
         updateLeadershipTermId(leadershipTermId);
 
@@ -1345,23 +1345,26 @@ class ConsensusModuleAgent implements Agent
 
         startLogRecording(channelUri.toString(), SourceLocation.LOCAL);
         createAppendPosition(logSessionId);
-        awaitServicesReady(channelUri, logSessionId, logPosition);
+        awaitServicesReady(channelUri, logSessionId, logPosition, isStartup);
 
-        for (final ClusterSession session : sessionByIdMap.values())
+        if (!isStartup)
         {
-            if (session.state() != CLOSED)
+            for (final ClusterSession session : sessionByIdMap.values())
             {
-                session.connect(aeron);
+                if (session.state() != CLOSED)
+                {
+                    session.connect(aeron);
+                }
             }
-        }
 
-        final long nowNs = clusterTimeUnit.toNanos(clusterClock.time());
-        for (final ClusterSession session : sessionByIdMap.values())
-        {
-            if (session.state() != CLOSED)
+            final long nowNs = clusterTimeUnit.toNanos(clusterClock.time());
+            for (final ClusterSession session : sessionByIdMap.values())
             {
-                session.timeOfLastActivityNs(nowNs);
-                session.hasNewLeaderEventPending(true);
+                if (session.state() != CLOSED)
+                {
+                    session.timeOfLastActivityNs(nowNs);
+                    session.hasNewLeaderEventPending(true);
+                }
             }
         }
     }
@@ -1474,12 +1477,21 @@ class ConsensusModuleAgent implements Agent
         }
     }
 
-    void awaitServicesReady(final ChannelUri logChannelUri, final int logSessionId, final long logPosition)
+    void awaitServicesReady(
+        final ChannelUri logChannelUri, final int logSessionId, final long logPosition, final boolean isStartup)
     {
         final String channel = Cluster.Role.LEADER == role && UDP_MEDIA.equals(logChannelUri.media()) ?
             logChannelUri.prefix(SPY_QUALIFIER).toString() : logChannelUri.toString();
+
         serviceProxy.joinLog(
-            leadershipTermId, logPosition, Long.MAX_VALUE, memberId, logSessionId, ctx.logStreamId(), channel);
+            leadershipTermId,
+            logPosition,
+            Long.MAX_VALUE,
+            memberId,
+            logSessionId,
+            ctx.logStreamId(),
+            isStartup,
+            channel);
 
         expectedAckPosition = logPosition;
         awaitServices(logPosition);
@@ -1527,7 +1539,8 @@ class ConsensusModuleAgent implements Agent
         final long logPosition,
         final long maxLogPosition)
     {
-        serviceProxy.joinLog(leadershipTermId, logPosition, maxLogPosition, memberId, logSessionId, streamId, channel);
+        serviceProxy.joinLog(
+            leadershipTermId, logPosition, maxLogPosition, memberId, logSessionId, streamId, true, channel);
         expectedAckPosition = logPosition;
         awaitServices(logPosition);
     }

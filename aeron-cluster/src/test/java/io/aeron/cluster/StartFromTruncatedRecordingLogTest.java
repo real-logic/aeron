@@ -51,9 +51,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -94,7 +91,6 @@ public class StartFromTruncatedRecordingLogTest
     private final MutableInteger responseCount = new MutableInteger();
     private final EgressListener egressMessageListener =
         (clusterSessionId, timestamp, buffer, offset, length, header) -> responseCount.value++;
-    private final ExecutorService executor = Executors.newFixedThreadPool(1);
 
     @BeforeEach
     public void before()
@@ -108,21 +104,15 @@ public class StartFromTruncatedRecordingLogTest
             new MediaDriver.Context()
                 .threadingMode(ThreadingMode.SHARED)
                 .warnIfDirectoryExists(false)
-                .dirDeleteOnStart(true));
+                .dirDeleteOnStart(true)
+                .dirDeleteOnShutdown(true));
     }
 
     @AfterEach
-    public void after() throws InterruptedException
+    public void after()
     {
-        executor.shutdownNow();
-
         CloseHelper.close(client);
         CloseHelper.close(clientMediaDriver);
-
-        if (null != clientMediaDriver)
-        {
-            clientMediaDriver.context().deleteAeronDirectory();
-        }
 
         for (final ClusteredServiceContainer container : containers)
         {
@@ -140,15 +130,9 @@ public class StartFromTruncatedRecordingLogTest
 
             if (null != driver)
             {
-                driver.mediaDriver().context().deleteAeronDirectory();
                 driver.consensusModule().context().deleteDirectory();
                 driver.archive().context().deleteArchiveDirectory();
             }
-        }
-
-        if (!executor.awaitTermination(5, TimeUnit.SECONDS))
-        {
-            System.out.println("warning: not all tasks completed promptly");
         }
     }
 
@@ -219,7 +203,7 @@ public class StartFromTruncatedRecordingLogTest
         int leaderMemberId;
         while (NULL_VALUE == (leaderMemberId = findLeaderId()))
         {
-            Thread.sleep(100);
+            Thread.sleep(200);
             Tests.checkInterruptedStatus();
         }
 
@@ -347,10 +331,6 @@ public class StartFromTruncatedRecordingLogTest
 
     private void startNode(final int index, final boolean cleanStart)
     {
-        if (null == echoServices[index])
-        {
-            echoServices[index] = new EchoService(latchOne, latchTwo);
-        }
         final String baseDirName = baseDirName(index);
         final String aeronDirName = aeronDirName(index);
 
@@ -369,6 +349,7 @@ public class StartFromTruncatedRecordingLogTest
                 .termBufferSparseFile(true)
                 .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
                 .errorHandler(ClusterTests.errorHandler(index))
+                .dirDeleteOnShutdown(true)
                 .dirDeleteOnStart(true),
             new Archive.Context()
                 .maxCatalogEntries(MAX_CATALOG_ENTRIES)
@@ -396,6 +377,11 @@ public class StartFromTruncatedRecordingLogTest
                 .archiveContext(archiveCtx.clone())
                 .deleteDirOnStart(cleanStart));
 
+        if (null == echoServices[index])
+        {
+            echoServices[index] = new EchoService(latchOne, latchTwo);
+        }
+
         containers[index] = ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()
                 .aeronDirectoryName(aeronDirName)
@@ -410,7 +396,6 @@ public class StartFromTruncatedRecordingLogTest
         containers[index].close();
         containers[index] = null;
         clusteredMediaDrivers[index].close();
-        clusteredMediaDrivers[index].mediaDriver().context().deleteAeronDirectory();
         clusteredMediaDrivers[index] = null;
     }
 

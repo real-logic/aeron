@@ -30,6 +30,7 @@ import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
 import org.agrona.PrintBufferUtil;
+import org.agrona.Strings;
 import org.agrona.concurrent.EpochClock;
 
 import java.io.File;
@@ -51,7 +52,8 @@ import static io.aeron.archive.ReplaySession.isInvalidHeader;
 import static io.aeron.archive.checksum.Checksums.newInstance;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.logbuffer.FrameDescriptor.*;
-import static io.aeron.logbuffer.LogBufferDescriptor.*;
+import static io.aeron.logbuffer.LogBufferDescriptor.computeTermIdFromPosition;
+import static io.aeron.logbuffer.LogBufferDescriptor.positionBitsToShift;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.protocol.DataHeaderFlyweight.SESSION_ID_FIELD_OFFSET;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_DATA;
@@ -172,7 +174,7 @@ public class ArchiveTool
                         System.out,
                         archiveDir,
                         EnumSet.of(APPLY_CHECKSUM),
-                        args[3],
+                        validateChecksumClass(args[3]),
                         ArchiveTool::truncateFileOnPageStraddle);
                 }
                 else
@@ -194,7 +196,7 @@ public class ArchiveTool
                         System.out,
                         archiveDir,
                         EnumSet.allOf(VerifyOption.class),
-                        args[4],
+                        validateChecksumClass(args[4]),
                         ArchiveTool::truncateFileOnPageStraddle);
                 }
                 else
@@ -204,7 +206,7 @@ public class ArchiveTool
                         archiveDir,
                         Long.parseLong(args[2]),
                         EnumSet.of(APPLY_CHECKSUM),
-                        args[4],
+                        validateChecksumClass(args[4]),
                         ArchiveTool::truncateFileOnPageStraddle);
                 }
             }
@@ -215,7 +217,7 @@ public class ArchiveTool
                     archiveDir,
                     Long.parseLong(args[2]),
                     EnumSet.allOf(VerifyOption.class),
-                    args[4],
+                    validateChecksumClass(args[5]),
                     ArchiveTool::truncateFileOnPageStraddle);
             }
         }
@@ -223,13 +225,13 @@ public class ArchiveTool
         {
             if (args.length == 3)
             {
-                checksum(System.out, archiveDir, false, args[2]);
+                checksum(System.out, archiveDir, false, validateChecksumClass(args[2]));
             }
             else
             {
                 if ("-a".equals(args[3]))
                 {
-                    checksum(System.out, archiveDir, true, args[2]);
+                    checksum(System.out, archiveDir, true, validateChecksumClass(args[2]));
                 }
                 else
                 {
@@ -238,7 +240,7 @@ public class ArchiveTool
                         archiveDir,
                         Long.parseLong(args[3]),
                         args.length > 4 && "-a".equals(args[4]),
-                        args[2]);
+                        validateChecksumClass(args[2]));
                 }
             }
         }
@@ -446,7 +448,7 @@ public class ArchiveTool
      * @param truncateFileOnPageStraddle action to perform if last fragment in the max segment file straddles the page
      *                                   boundary, i.e. if {@code true} the file will be truncated (last fragment
      *                                   will be deleted), if {@code false} the fragment if considered complete.
-     * @param checksumClassName          fully qualified class name of the {@link Checksum} implementation.
+     * @param checksumClassName          (optional) fully qualified class name of the {@link Checksum} implementation.
      */
     public static void verify(
         final PrintStream out,
@@ -455,7 +457,8 @@ public class ArchiveTool
         final String checksumClassName,
         final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
-        verify(out, archiveDir, options, newInstance(checksumClassName), INSTANCE, truncateFileOnPageStraddle);
+        final Checksum checksum = null == checksumClassName ? null : newInstance(checksumClassName);
+        verify(out, archiveDir, options, checksum, INSTANCE, truncateFileOnPageStraddle);
     }
 
     /**
@@ -598,6 +601,16 @@ public class ArchiveTool
     private static Catalog openCatalog(final File archiveDir, final EpochClock epochClock)
     {
         return new Catalog(archiveDir, epochClock, true, null);
+    }
+
+    private static String validateChecksumClass(final String checksumClassName)
+    {
+        final String className = null == checksumClassName ? null : checksumClassName.trim();
+        if (Strings.isEmpty(className))
+        {
+            throw new IllegalArgumentException("Checksum class name must be specified!");
+        }
+        return className;
     }
 
     private static CatalogEntryProcessor createVerifyEntryProcessor(

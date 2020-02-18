@@ -19,9 +19,10 @@ import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.EpochClock;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
 import java.io.File;
@@ -29,7 +30,11 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.List;
 
 import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_SUFFIX;
 import static io.aeron.archive.Archive.segmentFileName;
@@ -57,6 +62,7 @@ class ArchiveToolTests
     private static final int TERM_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int SEGMENT_LENGTH = TERM_LENGTH * 4;
     private static final int MTU_LENGTH = 1024;
+    private static Path validationDir;
 
     private long invalidRecording0;
     private long invalidRecording1;
@@ -85,6 +91,18 @@ class ArchiveToolTests
     private final EpochClock epochClock = () -> currentTimeMillis += 100;
     private final PrintStream out = mock(PrintStream.class);
     private File archiveDir;
+
+    @BeforeAll
+    static void beforeAll() throws IOException
+    {
+        validationDir = Files.createTempDirectory("validation-tests");
+    }
+
+    @AfterAll
+    static void afterAll() throws IOException
+    {
+        Files.deleteIfExists(validationDir);
+    }
 
     @SuppressWarnings("MethodLength")
     @BeforeEach
@@ -922,6 +940,55 @@ class ArchiveToolTests
                 0, 20, "ch2", "src2");
             assertRecording(catalog, validRecording6, VALID, 352, 960, 21, 500, 0, 6, "ch2", "src2");
         }
+    }
+
+    @ParameterizedTest
+    @MethodSource("verifyChecksumClassValidation")
+    void verifyWithChecksumFlagThrowsIllegalArgumentExceptionIfClassNameNotSpecified(final String[] args)
+    {
+        assertChecksumValidation(args);
+    }
+
+    @ParameterizedTest
+    @MethodSource("checksumClassValidation")
+    void checksumThrowsIllegalArgumentExceptionIfClassNameNotSpecified(final String[] args)
+    {
+        assertChecksumValidation(args);
+    }
+
+    @Test
+    void verifyWithoutChecksumFlagShouldNotVerifyChecksums()
+    {
+        main(new String[]{ archiveDir.getAbsolutePath(), "verify" });
+    }
+
+    private static List<Arguments> verifyChecksumClassValidation()
+    {
+        final String testDir = validationDir.toAbsolutePath().toString();
+        return Arrays.asList(
+            Arguments.of((Object)new String[]{ testDir, "verify", "-checksum", "\t" }),
+            Arguments.of((Object)new String[]{ testDir, "verify", "-a", "-checksum", " " }),
+            Arguments.of((Object)new String[]{ testDir, "verify", "42", "-checksum", "" }),
+            Arguments.of((Object)new String[]{ testDir, "verify", "42", "-a", "-checksum", "\r\n" })
+        );
+    }
+
+    private static List<Arguments> checksumClassValidation()
+    {
+        final String testDir = validationDir.toAbsolutePath().toString();
+        return Arrays.asList(
+            Arguments.of((Object)new String[]{ testDir, "checksum", "\n" }),
+            Arguments.of((Object)new String[]{ testDir, "checksum", "", "42" }),
+            Arguments.of((Object)new String[]{ testDir, "checksum", "\t ", "-a" }),
+            Arguments.of((Object)new String[]{ testDir, "checksum", " ", "42", "-a" })
+        );
+    }
+
+    private void assertChecksumValidation(final String[] args)
+    {
+        final IllegalArgumentException ex =
+            assertThrows(IllegalArgumentException.class, () -> main(args));
+        assertEquals("Checksum class name must be specified!", ex.getMessage());
     }
 
     @FunctionalInterface

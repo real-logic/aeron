@@ -125,6 +125,14 @@ public class TestCluster implements AutoCloseable
         this.appointedLeaderId = appointedLeaderId;
     }
 
+    public static void awaitElectionClosed(final TestNode follower) throws InterruptedException
+    {
+        while (follower.electionState() != Election.State.CLOSED)
+        {
+            Thread.sleep(10);
+        }
+    }
+
     public void close()
     {
         CloseHelper.closeAll(

@@ -20,6 +20,7 @@ import io.aeron.test.SlowTest;
 import org.junit.jupiter.api.Test;
 
 import static io.aeron.Aeron.NULL_VALUE;
+import static io.aeron.cluster.TestCluster.awaitElectionClosed;
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -53,11 +54,7 @@ public class DynamicMembershipTest
                 final TestNode leader = cluster.awaitLeader();
                 final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
-                while (dynamicMember.electionState() != Election.State.CLOSED)
-                {
-                    Thread.sleep(100);
-                }
-
+                awaitElectionClosed(dynamicMember);
                 assertEquals(Cluster.Role.FOLLOWER, dynamicMember.role());
 
                 final ClusterTool.ClusterMembership clusterMembership = leader.clusterMembership();
@@ -79,11 +76,7 @@ public class DynamicMembershipTest
                 final TestNode leader = cluster.awaitLeader();
                 final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
-                while (dynamicMember.electionState() != Election.State.CLOSED)
-                {
-                    Thread.sleep(100);
-                }
-
+                awaitElectionClosed(dynamicMember);
                 assertEquals(Cluster.Role.FOLLOWER, dynamicMember.role());
 
                 cluster.connectClient();
@@ -134,11 +127,7 @@ public class DynamicMembershipTest
 
                 final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
-                while (dynamicMember.electionState() != Election.State.CLOSED)
-                {
-                    Thread.sleep(100);
-                }
-
+                awaitElectionClosed(dynamicMember);
                 assertEquals(Cluster.Role.FOLLOWER, dynamicMember.role());
 
                 cluster.awaitSnapshotLoadedForService(dynamicMember);
@@ -167,11 +156,7 @@ public class DynamicMembershipTest
 
                 final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
-                while (dynamicMember.electionState() != Election.State.CLOSED)
-                {
-                    Thread.sleep(100);
-                }
-
+                awaitElectionClosed(dynamicMember);
                 assertEquals(Cluster.Role.FOLLOWER, dynamicMember.role());
 
                 cluster.awaitSnapshotLoadedForService(dynamicMember);
@@ -203,11 +188,7 @@ public class DynamicMembershipTest
 
                 final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
-                while (dynamicMember.electionState() != Election.State.CLOSED)
-                {
-                    Thread.sleep(100);
-                }
-
+                awaitElectionClosed(dynamicMember);
                 assertEquals(Cluster.Role.FOLLOWER, dynamicMember.role());
 
                 cluster.awaitSnapshotLoadedForService(dynamicMember);
@@ -279,10 +260,7 @@ public class DynamicMembershipTest
                 final TestNode initialLeader = cluster.awaitLeader();
                 final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
-                while (dynamicMember.electionState() != Election.State.CLOSED)
-                {
-                    Thread.sleep(100);
-                }
+                awaitElectionClosed(dynamicMember);
 
                 initialLeader.terminationExpected(true);
                 initialLeader.removeMember(initialLeader.index(), false);
@@ -310,11 +288,7 @@ public class DynamicMembershipTest
                 final TestNode initialLeader = cluster.awaitLeader();
                 final TestNode dynamicMember = cluster.startDynamicNode(1, true);
 
-                while (dynamicMember.electionState() != Election.State.CLOSED)
-                {
-                    Thread.sleep(100);
-                }
-
+                awaitElectionClosed(dynamicMember);
                 assertEquals(2, numberOfMembers(initialLeader.clusterMembership()));
             }
         });

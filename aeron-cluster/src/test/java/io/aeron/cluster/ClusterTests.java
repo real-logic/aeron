@@ -15,8 +15,10 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.Counter;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.exceptions.AeronException;
+import io.aeron.test.Tests;
 import org.agrona.ErrorHandler;
 import org.agrona.LangUtil;
 import org.agrona.SystemUtil;
@@ -101,6 +103,15 @@ class ClusterTests
         if (null != error)
         {
             LangUtil.rethrowUnchecked(error);
+        }
+    }
+
+    public static void awaitElectionState(final Counter electionStateCounter, final Election.State state)
+    {
+        while (electionStateCounter.get() != state.code())
+        {
+            Thread.yield();
+            Tests.checkInterruptedStatus();
         }
     }
 }

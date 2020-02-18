@@ -158,12 +158,8 @@ public class StartFromTruncatedRecordingLogTest
         final Counter electionStateFollowerB = clusteredMediaDrivers[followerMemberIdB]
             .consensusModule().context().electionStateCounter();
 
-        while (electionStateFollowerA.get() != Election.State.CLOSED.code() &&
-            electionStateFollowerB.get() != Election.State.CLOSED.code())
-        {
-            Thread.sleep(100);
-            Tests.checkInterruptedStatus();
-        }
+        ClusterTests.awaitElectionState(electionStateFollowerA, Election.State.CLOSED);
+        ClusterTests.awaitElectionState(electionStateFollowerB, Election.State.CLOSED);
 
         takeSnapshot(leaderMemberId);
         awaitSnapshotCounter(leaderMemberId, 1);
@@ -208,12 +204,7 @@ public class StartFromTruncatedRecordingLogTest
         final Counter electionStateCounter = clusteredMediaDrivers[leaderId]
             .consensusModule().context().electionStateCounter();
 
-        while (electionStateCounter.get() != Election.State.CLOSED.code())
-        {
-            Thread.yield();
-            Tests.checkInterruptedStatus();
-        }
-
+        ClusterTests.awaitElectionState(electionStateCounter, Election.State.CLOSED);
         connectClient();
 
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();

@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
 import static io.aeron.Aeron.NULL_VALUE;
+import static io.aeron.cluster.TestCluster.awaitElectionClosed;
 import static io.aeron.cluster.service.CommitPos.COMMIT_POSITION_TYPE_ID;
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.*;
@@ -50,10 +51,10 @@ public class ClusterTest
                 TestNode follower = cluster.followers().get(0);
 
                 cluster.stopNode(follower);
-                Thread.sleep(1_000);
-                follower = cluster.startStaticNode(follower.index(), false);
-                Thread.sleep(1_000);
 
+                follower = cluster.startStaticNode(follower.index(), false);
+
+                awaitElectionClosed(follower);
                 assertEquals(Cluster.Role.FOLLOWER, follower.role());
             }
         });
@@ -273,11 +274,7 @@ public class ClusterTest
 
                 final TestNode follower = cluster.startStaticNode(originalLeader.index(), false);
 
-                while (follower.electionState() != Election.State.CLOSED)
-                {
-                    Thread.sleep(100);
-                }
-
+                awaitElectionClosed(follower);
                 assertEquals(Cluster.Role.FOLLOWER, follower.role());
             }
         });
@@ -297,11 +294,7 @@ public class ClusterTest
 
                 final TestNode follower = cluster.startStaticNode(originalLeader.index(), false);
 
-                while (follower.electionState() != Election.State.CLOSED)
-                {
-                    Thread.sleep(100);
-                }
-
+                awaitElectionClosed(follower);
                 assertEquals(Cluster.Role.FOLLOWER, follower.role());
 
                 cluster.connectClient();
@@ -326,10 +319,7 @@ public class ClusterTest
                 cluster.awaitLeader(originalLeader.index());
 
                 final TestNode follower = cluster.startStaticNode(originalLeader.index(), false);
-                while (follower.electionState() != Election.State.CLOSED)
-                {
-                    Thread.sleep(100);
-                }
+                awaitElectionClosed(follower);
 
                 assertEquals(Cluster.Role.FOLLOWER, follower.role());
 
@@ -365,11 +355,7 @@ public class ClusterTest
 
                 follower = cluster.startStaticNode(follower.index(), true);
 
-                while (follower.electionState() != Election.State.CLOSED)
-                {
-                    Thread.sleep(100);
-                }
-
+                awaitElectionClosed(follower);
                 assertEquals(Cluster.Role.FOLLOWER, follower.role());
 
                 cluster.connectClient();
@@ -464,16 +450,11 @@ public class ClusterTest
                 cluster.stopNode(followerA);
                 cluster.stopNode(followerB);
 
-                Thread.sleep(5_000);
-
                 followerA = cluster.startStaticNode(followerA.index(), true);
                 followerB = cluster.startStaticNode(followerB.index(), true);
 
-                while (followerA.electionState() != Election.State.CLOSED ||
-                    followerB.electionState() != Election.State.CLOSED)
-                {
-                    Thread.sleep(100);
-                }
+                awaitElectionClosed(followerA);
+                awaitElectionClosed(followerB);
 
                 assertEquals(Cluster.Role.FOLLOWER, followerA.role());
                 assertEquals(Cluster.Role.FOLLOWER, followerB.role());
@@ -998,10 +979,7 @@ public class ClusterTest
 
             cluster.stopNode(follower);
 
-            while (leader.electionState() != Election.State.CLOSED)
-            {
-                Thread.sleep(100);
-            }
+            awaitElectionClosed(leader);
 
             cluster.connectClient();
             cluster.msgBuffer().putStringWithoutLengthAscii(0, message);
@@ -1010,10 +988,7 @@ public class ClusterTest
 
             follower = cluster.startStaticNode(follower.index(), false);
 
-            while (follower.electionState() != Election.State.CLOSED)
-            {
-                Thread.sleep(100);
-            }
+            awaitElectionClosed(follower);
 
             assertEquals(Cluster.Role.FOLLOWER, follower.role());
         }

@@ -100,7 +100,7 @@ class NameResolverCache implements AutoCloseable
 
     boolean hasNext()
     {
-        return iteratorIndex <= listOfEntries.size();
+        return (iteratorIndex + 1) < listOfEntries.size();
     }
 
     CacheEntry next()

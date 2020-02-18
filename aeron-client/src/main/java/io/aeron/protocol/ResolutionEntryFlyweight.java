@@ -44,7 +44,7 @@ public class ResolutionEntryFlyweight extends HeaderFlyweight
     public static final int RES_TYPE_FIELD_OFFSET = 0;
     public static final int RES_FLAGS_FIELD_OFFSET = 1;
     public static final int UDP_PORT_FIELD_OFFSET = 2;
-    public static final int AGE_IN_MSEC_FIELD_OFFSET = 4;
+    public static final int AGE_IN_MS_FIELD_OFFSET = 4;
     public static final int ADDRESS_FIELD_OFFSET = 8;
 
     public static final int MAX_NAME_LENGTH = 512;
@@ -96,15 +96,15 @@ public class ResolutionEntryFlyweight extends HeaderFlyweight
         return getShort(UDP_PORT_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
-    public ResolutionEntryFlyweight ageInMsec(final int ageInMsec)
+    public ResolutionEntryFlyweight ageInMs(final int ageInMsec)
     {
-        putInt(AGE_IN_MSEC_FIELD_OFFSET, ageInMsec, LITTLE_ENDIAN);
+        putInt(AGE_IN_MS_FIELD_OFFSET, ageInMsec, LITTLE_ENDIAN);
         return this;
     }
 
-    public int ageInMsec()
+    public int ageInMs()
     {
-        return getInt(AGE_IN_MSEC_FIELD_OFFSET, LITTLE_ENDIAN);
+        return getInt(AGE_IN_MS_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     public ResolutionEntryFlyweight putAddress(final byte[] addr)

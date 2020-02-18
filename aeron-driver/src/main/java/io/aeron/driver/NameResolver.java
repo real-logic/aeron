@@ -181,7 +181,7 @@ class NameResolver implements AutoCloseable, UdpNameResolutionTransport.UdpFrame
             .resType(resType)
             .flags(SELF_FLAG)
             .udpPort((short)localSocketAddress.getPort())
-            .ageInMsec(0)
+            .ageInMs(0)
             .putAddress(localAddress)
             .putName(localName);
 
@@ -228,7 +228,7 @@ class NameResolver implements AutoCloseable, UdpNameResolutionTransport.UdpFrame
                     .resType(entry.type)
                     .flags((short)0)
                     .udpPort((short)entry.port)
-                    .ageInMsec((int)(nowMs - entry.timeOfLastActivityMs))
+                    .ageInMs((int)(nowMs - entry.timeOfLastActivityMs))
                     .putAddress(entry.address)
                     .putName(entry.name);
 
@@ -299,7 +299,7 @@ class NameResolver implements AutoCloseable, UdpNameResolutionTransport.UdpFrame
         }
 
         final int nameLength = resolutionEntryFlyweight.getName(nameTempBuffer);
-        final long timeOfLastActivity = nowMs - resolutionEntryFlyweight.ageInMsec();
+        final long timeOfLastActivity = nowMs - resolutionEntryFlyweight.ageInMs();
         final short port = resolutionEntryFlyweight.udpPort();
 
         cache.addOrUpdateEntry(nameTempBuffer, nameLength, timeOfLastActivity, resType, addr, port);

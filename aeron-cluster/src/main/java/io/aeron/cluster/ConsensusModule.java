@@ -2925,6 +2925,7 @@ public class ConsensusModule implements AutoCloseable
                 AeronCloseHelper.closeAll(
                     moduleStateCounter,
                     clusterNodeRoleCounter,
+                    electionStateCounter,
                     commitPosition,
                     controlToggle,
                     snapshotCounter,

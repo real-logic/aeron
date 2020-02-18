@@ -38,7 +38,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.LongHashSet;
 import org.agrona.collections.MutableInteger;
-import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
@@ -50,8 +49,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -75,12 +72,6 @@ public class StartFromTruncatedRecordingLogTest
         "aeron:udp?term-length=64k|endpoint=localhost:8010";
     private static final String ARCHIVE_CONTROL_RESPONSE_CHANNEL =
         "aeron:udp?term-length=64k|endpoint=localhost:8020";
-
-    private final AtomicLong timeOffset = new AtomicLong();
-    private final EpochClock epochClock = () -> System.currentTimeMillis() + timeOffset.get();
-
-    private final CountDownLatch latchOne = new CountDownLatch(MEMBER_COUNT);
-    private final CountDownLatch latchTwo = new CountDownLatch(MEMBER_COUNT - 1);
 
     private final EchoService[] echoServices = new EchoService[MEMBER_COUNT];
     private final ClusteredMediaDriver[] clusteredMediaDrivers = new ClusteredMediaDriver[MEMBER_COUNT];
@@ -214,7 +205,7 @@ public class StartFromTruncatedRecordingLogTest
     {
         awaitLeaderMemberId();
 
-        Thread.sleep(1000); // TODO: find a better alternative to check for cluster ready.
+        Thread.sleep(500); // TODO: find a better alternative to check for cluster ready.
         connectClient();
 
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
@@ -366,7 +357,6 @@ public class StartFromTruncatedRecordingLogTest
                 .errorHandler(Throwable::printStackTrace)
                 .deleteArchiveOnStart(cleanStart),
             new ConsensusModule.Context()
-                .epochClock(epochClock)
                 .errorHandler(ClusterTests.errorHandler(index))
                 .clusterMemberId(index)
                 .clusterMembers(CLUSTER_MEMBERS)
@@ -379,7 +369,7 @@ public class StartFromTruncatedRecordingLogTest
 
         if (null == echoServices[index])
         {
-            echoServices[index] = new EchoService(latchOne, latchTwo);
+            echoServices[index] = new EchoService();
         }
 
         containers[index] = ClusteredServiceContainer.launch(
@@ -482,14 +472,6 @@ public class StartFromTruncatedRecordingLogTest
     static class EchoService extends StubClusteredService
     {
         private volatile int messageCount;
-        private final CountDownLatch latchOne;
-        private final CountDownLatch latchTwo;
-
-        EchoService(final CountDownLatch latchOne, final CountDownLatch latchTwo)
-        {
-            this.latchOne = latchOne;
-            this.latchTwo = latchTwo;
-        }
 
         int messageCount()
         {
@@ -511,16 +493,6 @@ public class StartFromTruncatedRecordingLogTest
             }
 
             ++messageCount;
-
-            if (messageCount == MESSAGE_COUNT)
-            {
-                latchOne.countDown();
-            }
-
-            if (messageCount == (MESSAGE_COUNT * 2))
-            {
-                latchTwo.countDown();
-            }
         }
     }
 

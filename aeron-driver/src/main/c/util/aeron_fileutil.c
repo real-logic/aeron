@@ -97,7 +97,7 @@ int aeron_unmap(aeron_mapped_file_t *mapped_file)
 {
     if (NULL != mapped_file->addr)
     {
-        return UnmapViewOfFile(mapped_file->addr) == true ? 0 : -1;
+        return UnmapViewOfFile(mapped_file->addr) ? 0 : -1;
     }
 
     return 0;
@@ -164,7 +164,8 @@ int aeron_delete_directory(const char* dir)
 
 int aeron_is_directory(const char* path)
 {
-    return GetFileAttributes(path) == FILE_ATTRIBUTE_DIRECTORY;
+    const DWORD attributes = GetFileAttributes(path);
+    return attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY);
 }
 
 #else

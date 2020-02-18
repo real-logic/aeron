@@ -199,9 +199,9 @@ class NameResolver implements AutoCloseable, UdpNameResolutionTransport.UdpFrame
 
     public void sendNeighborResolutions(final long nowMs)
     {
-        cache.resetIterator();
+        final NameResolverCache.Iterator iter = cache.resetIterator();
 
-        while (cache.hasNext())
+        while (iter.hasNext())
         {
             byteBuffer.clear();
 
@@ -213,13 +213,13 @@ class NameResolver implements AutoCloseable, UdpNameResolutionTransport.UdpFrame
                 .flags((short)0)
                 .version(HeaderFlyweight.CURRENT_VERSION);
 
-            while (cache.hasNext())
+            while (iter.hasNext())
             {
-                final NameResolverCache.CacheEntry entry = cache.next();
+                final NameResolverCache.CacheEntry entry = iter.next();
 
                 if (currentOffset + entryLengthRequired(entry.type, entry.name.length) > mtuLength)
                 {
-                    cache.rewindNext();
+                    iter.rewindNext();
                     break;
                 }
 

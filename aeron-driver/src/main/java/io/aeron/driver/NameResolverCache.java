@@ -27,7 +27,6 @@ class NameResolverCache implements AutoCloseable
 
     private final ArrayList<CacheEntry> listOfEntries = new ArrayList<>();
     private final long timeoutMs;
-    private int iteratorIndex = 0;
 
     NameResolverCache(final long timeoutMs)
     {
@@ -93,25 +92,36 @@ class NameResolverCache implements AutoCloseable
         return workCount;
     }
 
-    void resetIterator()
+    Iterator resetIterator()
     {
-        iteratorIndex = -1;
+        iterator.cache = this;
+        iterator.index = -1;
+
+        return iterator;
     }
 
-    boolean hasNext()
+    static class Iterator
     {
-        return (iteratorIndex + 1) < listOfEntries.size();
+        int index = -1;
+        NameResolverCache cache;
+
+        boolean hasNext()
+        {
+            return (index + 1) < cache.listOfEntries.size();
+        }
+
+        CacheEntry next()
+        {
+            return cache.listOfEntries.get(++index);
+        }
+
+        void rewindNext()
+        {
+            --index;
+        }
     }
 
-    CacheEntry next()
-    {
-        return listOfEntries.get(++iteratorIndex);
-    }
-
-    void rewindNext()
-    {
-        --iteratorIndex;
-    }
+    private final Iterator iterator = new Iterator();
 
     public static boolean byteSubsetEquals(final byte[] lhs, final byte[] rhs, final int length)
     {

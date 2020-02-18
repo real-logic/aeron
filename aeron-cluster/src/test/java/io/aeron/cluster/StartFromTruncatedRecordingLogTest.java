@@ -88,6 +88,7 @@ public class StartFromTruncatedRecordingLogTest
     {
         for (int i = 0; i < MEMBER_COUNT; i++)
         {
+            echoServices[i] = new EchoService();
             startNode(i, true);
         }
 
@@ -203,9 +204,16 @@ public class StartFromTruncatedRecordingLogTest
 
     private void assertClusterIsFunctioningCorrectly() throws InterruptedException
     {
-        awaitLeaderMemberId();
+        final int leaderId = awaitLeaderMemberId();
+        final Counter electionStateCounter = clusteredMediaDrivers[leaderId]
+            .consensusModule().context().electionStateCounter();
 
-        Thread.sleep(500); // TODO: find a better alternative to check for cluster ready.
+        while (electionStateCounter.get() != Election.State.CLOSED.code())
+        {
+            Thread.yield();
+            Tests.checkInterruptedStatus();
+        }
+
         connectClient();
 
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
@@ -366,11 +374,6 @@ public class StartFromTruncatedRecordingLogTest
                 .logChannel(memberSpecificPort(LOG_CHANNEL, index))
                 .archiveContext(archiveCtx.clone())
                 .deleteDirOnStart(cleanStart));
-
-        if (null == echoServices[index])
-        {
-            echoServices[index] = new EchoService();
-        }
 
         containers[index] = ClusteredServiceContainer.launch(
             new ClusteredServiceContainer.Context()

@@ -21,14 +21,14 @@ import org.agrona.collections.ArrayListUtil;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-class NameResolverCache implements AutoCloseable
+class DriverNameResolverCache implements AutoCloseable
 {
     private static final int INVALID_INDEX = -1;
 
     private final ArrayList<CacheEntry> listOfEntries = new ArrayList<>();
     private final long timeoutMs;
 
-    NameResolverCache(final long timeoutMs)
+    DriverNameResolverCache(final long timeoutMs)
     {
         this.timeoutMs = timeoutMs;
     }
@@ -103,7 +103,7 @@ class NameResolverCache implements AutoCloseable
     static class Iterator
     {
         int index = -1;
-        NameResolverCache cache;
+        DriverNameResolverCache cache;
 
         boolean hasNext()
         {

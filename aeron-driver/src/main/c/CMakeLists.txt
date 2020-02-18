@@ -156,7 +156,7 @@ SET(SOURCE
     aeron_driver_conductor_proxy.c
     aeron_driver_receiver_proxy.c
     aeron_flow_control.c
-    aeron_min_flow_control.c
+    aeron_tagged_flow_control.c
     aeron_data_packet_dispatcher.c
     aeron_publication_image.c
     aeron_congestion_control.c

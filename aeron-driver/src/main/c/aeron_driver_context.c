@@ -192,7 +192,7 @@ int32_t aeron_config_parse_int32(const char *name, const char *str, int32_t def,
     return result;
 }
 
-int32_t aeron_config_parse_int64(const char *name, const char *str, int64_t def, int64_t min, int64_t max)
+int64_t aeron_config_parse_int64(const char *name, const char *str, int64_t def, int64_t min, int64_t max)
 {
     int64_t result = def;
 

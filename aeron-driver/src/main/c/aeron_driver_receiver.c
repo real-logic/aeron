@@ -117,7 +117,7 @@ int aeron_driver_receiver_do_work(void *clientd)
     int64_t bytes_received = 0;
     int work_count = 0;
 
-    work_count += aeron_spsc_concurrent_array_queue_drain(
+    work_count += (int)aeron_spsc_concurrent_array_queue_drain(
         receiver->receiver_proxy.command_queue, aeron_driver_receiver_on_command, receiver, 10);
 
     for (size_t i = 0; i < AERON_DRIVER_RECEIVER_NUM_RECV_BUFFERS; i++)
@@ -146,7 +146,7 @@ int aeron_driver_receiver_do_work(void *clientd)
         AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver poller_poll: %s", aeron_errmsg());
     }
 
-    work_count = (bytes_received > 0) ? (int)bytes_received : 0;
+    work_count += bytes_received > 0 ? (int)bytes_received : 0;
 
     aeron_counter_add_ordered(receiver->total_bytes_received_counter, bytes_received);
 
@@ -162,7 +162,7 @@ int aeron_driver_receiver_do_work(void *clientd)
             AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver send SM: %s", aeron_errmsg());
         }
 
-        work_count += (send_sm_result < 0) ? 0 : send_sm_result;
+        work_count += send_sm_result < 0 ? 0 : send_sm_result;
 
         int send_nak_result = aeron_publication_image_send_pending_loss(image);
         if (send_nak_result < 0)
@@ -170,7 +170,7 @@ int aeron_driver_receiver_do_work(void *clientd)
             AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver send NAK: %s", aeron_errmsg());
         }
 
-        work_count += (send_nak_result < 0) ? 0 : send_nak_result;
+        work_count += send_nak_result < 0 ? 0 : send_nak_result;
 
         int initiate_rttm_result = aeron_publication_image_initiate_rttm(image, now_ns);
         if (send_nak_result < 0)
@@ -178,7 +178,7 @@ int aeron_driver_receiver_do_work(void *clientd)
             AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver send RTTM: %s", aeron_errmsg());
         }
 
-        work_count += (initiate_rttm_result < 0) ? 0 : initiate_rttm_result;
+        work_count += initiate_rttm_result < 0 ? 0 : initiate_rttm_result;
     }
 
     for (int last_index = (int)receiver->pending_setups.length - 1, i = last_index; i >= 0; i--)
@@ -217,6 +217,7 @@ int aeron_driver_receiver_do_work(void *clientd)
                 {
                     AERON_DRIVER_RECEIVER_ERROR(receiver, "receiver send periodic SM: %s", aeron_errmsg());
                 }
+
                 entry->time_of_status_message_ns = now_ns;
             }
         }

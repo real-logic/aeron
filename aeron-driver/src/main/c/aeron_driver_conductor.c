@@ -1803,7 +1803,7 @@ int aeron_driver_conductor_do_work(void *clientd)
 
     work_count += (int)aeron_mpsc_rb_read(
         &conductor->to_driver_commands, aeron_driver_conductor_on_command, conductor, 10);
-    work_count += aeron_mpsc_concurrent_array_queue_drain(
+    work_count += (int)aeron_mpsc_concurrent_array_queue_drain(
         conductor->conductor_proxy.command_queue, aeron_driver_conductor_on_command_queue, conductor, 10);
 
     if (now_ns >= (conductor->time_of_last_timeout_check_ns + (int64_t)conductor->context->timer_interval_ns))

@@ -20,6 +20,7 @@ import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.EpochClock;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -33,7 +34,6 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.List;
 
 import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_SUFFIX;
@@ -52,6 +52,8 @@ import static io.aeron.protocol.DataHeaderFlyweight.*;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static java.util.Collections.emptySet;
+import static java.util.EnumSet.allOf;
+import static java.util.EnumSet.of;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -680,7 +682,7 @@ class ArchiveToolTests
     void verifyRecordingValidRecordingValidateAllSegmentFiles()
     {
         verifyRecording(
-            out, archiveDir, validRecording3, EnumSet.of(VERIFY_ALL_SEGMENT_FILES), null, epochClock, (file) -> false);
+            out, archiveDir, validRecording3, of(VERIFY_ALL_SEGMENT_FILES), null, epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -693,7 +695,7 @@ class ArchiveToolTests
     void verifyRecordingInvalidRecordingValidateAllSegmentFiles()
     {
         verifyRecording(
-            out, archiveDir, validRecording4, EnumSet.of(VERIFY_ALL_SEGMENT_FILES), null, epochClock, (file) -> false);
+            out, archiveDir, validRecording4, of(VERIFY_ALL_SEGMENT_FILES), null, epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -729,7 +731,7 @@ class ArchiveToolTests
     void verifyRecordingValidRecordingPerformCRC()
     {
         verifyRecording(
-            out, archiveDir, validRecording6, EnumSet.of(APPLY_CHECKSUM), crc32(), epochClock, (file) -> false);
+            out, archiveDir, validRecording6, of(APPLY_CHECKSUM), crc32(), epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -741,7 +743,7 @@ class ArchiveToolTests
     void verifyRecordingInvalidRecordingPerformCRC()
     {
         verifyRecording(
-            out, archiveDir, validRecording3, EnumSet.of(APPLY_CHECKSUM), crc32(), epochClock, (file) -> false);
+            out, archiveDir, validRecording3, of(APPLY_CHECKSUM), crc32(), epochClock, (file) -> false);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -807,7 +809,7 @@ class ArchiveToolTests
     @Test
     void verifyAllOptionsTruncateFileOnPageStraddle()
     {
-        verify(out, archiveDir, EnumSet.allOf(VerifyOption.class), crc32(), epochClock, (file) -> true);
+        verify(out, archiveDir, allOf(VerifyOption.class), crc32(), epochClock, (file) -> true);
 
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
@@ -864,7 +866,7 @@ class ArchiveToolTests
         checksumRecording(out, archiveDir, validRecording3, false, crc32(), epochClock);
 
         verifyRecording(
-            out, archiveDir, validRecording3, EnumSet.of(APPLY_CHECKSUM), crc32(), epochClock, (file) -> false);
+            out, archiveDir, validRecording3, of(APPLY_CHECKSUM), crc32(), epochClock, (file) -> false);
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             assertRecording(catalog, validRecording3, VALID, 7 * TERM_LENGTH + 96, 11 * TERM_LENGTH + 320,
@@ -872,7 +874,7 @@ class ArchiveToolTests
         }
 
         verifyRecording(
-            out, archiveDir, validRecording3, EnumSet.allOf(VerifyOption.class), crc32(), epochClock, (file) -> false);
+            out, archiveDir, validRecording3, allOf(VerifyOption.class), crc32(), epochClock, (file) -> false);
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             assertRecording(catalog, validRecording3, INVALID, 7 * TERM_LENGTH + 96, 11 * TERM_LENGTH + 320,
@@ -886,7 +888,7 @@ class ArchiveToolTests
         checksumRecording(out, archiveDir, validRecording3, true, crc32(), epochClock);
 
         verifyRecording(
-            out, archiveDir, validRecording3, EnumSet.allOf(VerifyOption.class), crc32(), epochClock, (file) -> false);
+            out, archiveDir, validRecording3, allOf(VerifyOption.class), crc32(), epochClock, (file) -> false);
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             assertRecording(catalog, validRecording3, VALID, 7 * TERM_LENGTH + 96, 11 * TERM_LENGTH + 320,
@@ -899,7 +901,7 @@ class ArchiveToolTests
     {
         checksum(out, archiveDir, false, crc32(), epochClock);
 
-        verify(out, archiveDir, EnumSet.allOf(VerifyOption.class), crc32(), epochClock, (file) -> false);
+        verify(out, archiveDir, allOf(VerifyOption.class), crc32(), epochClock, (file) -> false);
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             assertRecording(catalog, validRecording0, VALID, 0, TERM_LENGTH + 64, 15, 100,
@@ -923,7 +925,7 @@ class ArchiveToolTests
     {
         checksum(out, archiveDir, true, crc32(), epochClock);
 
-        verify(out, archiveDir, EnumSet.allOf(VerifyOption.class), crc32(), epochClock, (file) -> false);
+        verify(out, archiveDir, allOf(VerifyOption.class), crc32(), epochClock, (file) -> false);
         try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
         {
             assertRecording(catalog, validRecording0, VALID, 0, TERM_LENGTH + 64, 15, 100,
@@ -946,20 +948,49 @@ class ArchiveToolTests
     @MethodSource("verifyChecksumClassValidation")
     void verifyWithChecksumFlagThrowsIllegalArgumentExceptionIfClassNameNotSpecified(final String[] args)
     {
-        assertChecksumValidation(args);
+        assertChecksumClassNameRequired(args);
     }
 
     @ParameterizedTest
     @MethodSource("checksumClassValidation")
     void checksumThrowsIllegalArgumentExceptionIfClassNameNotSpecified(final String[] args)
     {
-        assertChecksumValidation(args);
+        assertChecksumClassNameRequired(args);
     }
 
     @Test
-    void verifyWithoutChecksumFlagShouldNotVerifyChecksums()
+    void verifyWithoutChecksumClassNameShouldNotVerifyChecksums()
     {
-        main(new String[]{ archiveDir.getAbsolutePath(), "verify" });
+        verify(out, archiveDir, emptySet(), null, (file) -> true);
+
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            assertRecordingValidFlag(catalog, validRecording4, VALID);
+        }
+    }
+
+    @Test
+    void verifyRecordingWithoutChecksumClassNameShouldNotVerifyChecksums()
+    {
+        verifyRecording(out, archiveDir, validRecording4, emptySet(), null, (file) -> true);
+
+        try (Catalog catalog = openCatalogReadOnly(archiveDir, epochClock))
+        {
+            assertRecordingValidFlag(catalog, validRecording4, VALID);
+        }
+    }
+
+    @Test
+    void verifyThrowsIllegalArgumentExceptionIfApplyChecksumIsSetWithoutChecksumClassName()
+    {
+        assertChecksumClassNameValidation(() -> verify(out, archiveDir, of(APPLY_CHECKSUM), null, (file) -> true));
+    }
+
+    @Test
+    void verifyRecordingThrowsIllegalArgumentExceptionIfApplyChecksumIsSetWithoutChecksumClassName()
+    {
+        assertChecksumClassNameValidation(
+            () -> verifyRecording(out, archiveDir, validRecording4, of(APPLY_CHECKSUM), null, (file) -> true));
     }
 
     private static List<Arguments> verifyChecksumClassValidation()
@@ -984,11 +1015,18 @@ class ArchiveToolTests
         );
     }
 
-    private void assertChecksumValidation(final String[] args)
+    private void assertChecksumClassNameRequired(final String[] args)
     {
         final IllegalArgumentException ex =
             assertThrows(IllegalArgumentException.class, () -> main(args));
         assertEquals("Checksum class name must be specified!", ex.getMessage());
+    }
+
+    private void assertChecksumClassNameValidation(final Executable executable)
+    {
+        final IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, executable);
+        assertEquals("Checksum class name is required when " + APPLY_CHECKSUM + " option is specified!",
+            ex.getMessage());
     }
 
     @FunctionalInterface
@@ -1060,6 +1098,16 @@ class ArchiveToolTests
                 assertEquals(strippedChannel, descriptorDecoder.strippedChannel());
                 assertNotNull(descriptorDecoder.originalChannel());
                 assertEquals(sourceIdentity, descriptorDecoder.sourceIdentity());
+            }));
+    }
+
+    private void assertRecordingValidFlag(final Catalog catalog, final long recordingId, final byte valid)
+    {
+        assertTrue(catalog.forEntry(
+            recordingId,
+            (headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
+            {
+                assertEquals(valid, headerDecoder.valid());
             }));
     }
 }

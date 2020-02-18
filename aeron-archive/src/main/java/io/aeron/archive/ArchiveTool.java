@@ -225,13 +225,13 @@ public class ArchiveTool
         {
             if (args.length == 3)
             {
-                checksum(System.out, archiveDir, false, validateChecksumClass(args[2]));
+                checksum(System.out, archiveDir, false, args[2]);
             }
             else
             {
                 if ("-a".equals(args[3]))
                 {
-                    checksum(System.out, archiveDir, true, validateChecksumClass(args[2]));
+                    checksum(System.out, archiveDir, true, args[2]);
                 }
                 else
                 {
@@ -240,7 +240,7 @@ public class ArchiveTool
                         archiveDir,
                         Long.parseLong(args[3]),
                         args.length > 4 && "-a".equals(args[4]),
-                        validateChecksumClass(args[2]));
+                        args[2]);
                 }
             }
         }
@@ -457,7 +457,7 @@ public class ArchiveTool
         final String checksumClassName,
         final ActionConfirmation<File> truncateFileOnPageStraddle)
     {
-        final Checksum checksum = null == checksumClassName ? null : newInstance(checksumClassName);
+        final Checksum checksum = createChecksum(options, checksumClassName);
         verify(out, archiveDir, options, checksum, INSTANCE, truncateFileOnPageStraddle);
     }
 
@@ -473,7 +473,7 @@ public class ArchiveTool
      * @param truncateFileOnPageStraddle action to perform if last fragment in the max segment file straddles the page
      *                                   boundary, i.e. if {@code true} the file will be truncated (last fragment
      *                                   will be deleted), if {@code false} the fragment if considered complete.
-     * @param checksumClassName          fully qualified class name of the {@link Checksum} implementation.
+     * @param checksumClassName          (optional) fully qualified class name of the {@link Checksum} implementation.
      * @throws AeronException if there is no recording with {@code recordingId} in the archive
      */
     public static void verifyRecording(
@@ -489,7 +489,7 @@ public class ArchiveTool
             archiveDir,
             recordingId,
             options,
-            newInstance(checksumClassName),
+            createChecksum(options, checksumClassName),
             INSTANCE,
             truncateFileOnPageStraddle);
     }
@@ -505,7 +505,7 @@ public class ArchiveTool
     public static void checksum(
         final PrintStream out, final File archiveDir, final boolean allFiles, final String checksumClassName)
     {
-        checksum(out, archiveDir, allFiles, newInstance(checksumClassName), INSTANCE);
+        checksum(out, archiveDir, allFiles, newInstance(validateChecksumClass(checksumClassName)), INSTANCE);
     }
 
     /**
@@ -525,7 +525,8 @@ public class ArchiveTool
         final boolean allFiles,
         final String checksumClassName)
     {
-        checksumRecording(out, archiveDir, recordingId, allFiles, newInstance(checksumClassName), INSTANCE);
+        checksumRecording(
+            out, archiveDir, recordingId, allFiles, newInstance(validateChecksumClass(checksumClassName)), INSTANCE);
     }
 
     /**
@@ -611,6 +612,20 @@ public class ArchiveTool
             throw new IllegalArgumentException("Checksum class name must be specified!");
         }
         return className;
+    }
+
+    private static Checksum createChecksum(final Set<VerifyOption> options, final String checksumClassName)
+    {
+        if (null == checksumClassName)
+        {
+            if (options.contains(APPLY_CHECKSUM))
+            {
+                throw new IllegalArgumentException("Checksum class name is required when " + APPLY_CHECKSUM +
+                    " option is specified!");
+            }
+            return null;
+        }
+        return newInstance(checksumClassName);
     }
 
     private static CatalogEntryProcessor createVerifyEntryProcessor(

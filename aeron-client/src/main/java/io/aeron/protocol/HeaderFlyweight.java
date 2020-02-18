@@ -72,6 +72,10 @@ public class HeaderFlyweight extends UnsafeBuffer
      * header type RTT Measurement
      */
     public static final int HDR_TYPE_RTTM = 0x06;
+    /**
+     * header type RESOLUTION
+     */
+    public static final int HDR_TYPE_RES = 0x07;
 
     /**
      * header type EXT

@@ -62,7 +62,7 @@ int32_t aeron_loss_detector_scan(
     size_t position_bits_to_shift,
     int32_t initial_term_id);
 
-#define AERON_LOSS_DETECTOR_NAK_UNICAST_DELAY_NS (60 * 1000 * 1000L)
+#define AERON_LOSS_DETECTOR_NAK_UNICAST_DELAY_NS (60 * 1000 * 1000LL)
 
 inline int64_t aeron_loss_detector_nak_unicast_delay_generator(aeron_feedback_delay_generator_state_t *state)
 {

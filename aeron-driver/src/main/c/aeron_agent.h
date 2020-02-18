@@ -44,8 +44,8 @@ aeron_idle_strategy_t;
 
 #define AERON_IDLE_STRATEGY_BACKOFF_MAX_SPINS (10)
 #define AERON_IDLE_STRATEGY_BACKOFF_MAX_YIELDS (20)
-#define AERON_IDLE_STRATEGY_BACKOFF_MIN_PARK_PERIOD_NS (1000)
-#define AERON_IDLE_STRATEGY_BACKOFF_MAX_PARK_PERIOD_NS (1 * 1000 * 1000)
+#define AERON_IDLE_STRATEGY_BACKOFF_MIN_PARK_PERIOD_NS (1000LL)
+#define AERON_IDLE_STRATEGY_BACKOFF_MAX_PARK_PERIOD_NS (1 * 1000 * 1000LL)
 
 void aeron_idle_strategy_sleeping_idle(void *state, int work_count);
 void aeron_idle_strategy_yielding_idle(void *state, int work_count);

@@ -21,7 +21,6 @@
 #include "aeron_driver_common.h"
 #include "aeronmd.h"
 
-#define AERON_MAX_FLOW_CONTROL_STRATEGY_RECEIVER_TIMEOUT_NS (2 * 1000 * 1000 * 1000L)
 #define AERON_MAX_FLOW_CONTROL_STRAEGY_NAME "max"
 #define AERON_MIN_FLOW_CONTROL_STRAEGY_NAME "min"
 #define AERON_TAGGED_FLOW_CONTROL_STRAEGY_NAME "tagged"

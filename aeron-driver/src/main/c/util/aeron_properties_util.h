@@ -49,6 +49,6 @@ int aeron_properties_parse_line(
 
 int aeron_properties_setenv(const char *name, const char *value);
 
-#define AERON_HTTP_PROPERTIES_TIMEOUT_NS (10 * 1000 * 1000 * 1000L)
+#define AERON_HTTP_PROPERTIES_TIMEOUT_NS (10 * 1000 * 1000 * 1000LL)
 
 #endif //AERON_PROPERTIES_UTIL_H

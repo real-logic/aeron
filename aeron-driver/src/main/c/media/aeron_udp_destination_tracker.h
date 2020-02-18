@@ -21,8 +21,8 @@
 #include "util/aeron_clock.h"
 #include "aeron_udp_channel_transport.h"
 
-#define AERON_UDP_DESTINATION_TRACKER_DESTINATION_TIMEOUT_NS (5 * 1000 * 1000 * 1000L)
-#define AERON_UDP_DESTINATION_TRACKER_MANUAL_DESTINATION_TIMEOUT_NS (0L)
+#define AERON_UDP_DESTINATION_TRACKER_DESTINATION_TIMEOUT_NS (5 * 1000 * 1000 * 1000LL)
+#define AERON_UDP_DESTINATION_TRACKER_MANUAL_DESTINATION_TIMEOUT_NS (0LL)
 
 typedef struct aeron_udp_destination_entry_stct
 {

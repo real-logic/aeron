@@ -53,7 +53,10 @@ public class DynamicMembershipTest
                 final TestNode leader = cluster.awaitLeader();
                 final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
-                Thread.sleep(1000);
+                while (dynamicMember.electionState() != Election.State.CLOSED)
+                {
+                    Thread.sleep(100);
+                }
 
                 assertEquals(Cluster.Role.FOLLOWER, dynamicMember.role());
 
@@ -76,7 +79,10 @@ public class DynamicMembershipTest
                 final TestNode leader = cluster.awaitLeader();
                 final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
-                Thread.sleep(1000);
+                while (dynamicMember.electionState() != Election.State.CLOSED)
+                {
+                    Thread.sleep(100);
+                }
 
                 assertEquals(Cluster.Role.FOLLOWER, dynamicMember.role());
 
@@ -128,7 +134,10 @@ public class DynamicMembershipTest
 
                 final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
-                Thread.sleep(1000);
+                while (dynamicMember.electionState() != Election.State.CLOSED)
+                {
+                    Thread.sleep(100);
+                }
 
                 assertEquals(Cluster.Role.FOLLOWER, dynamicMember.role());
 
@@ -158,7 +167,10 @@ public class DynamicMembershipTest
 
                 final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
-                Thread.sleep(1000);
+                while (dynamicMember.electionState() != Election.State.CLOSED)
+                {
+                    Thread.sleep(100);
+                }
 
                 assertEquals(Cluster.Role.FOLLOWER, dynamicMember.role());
 
@@ -191,7 +203,10 @@ public class DynamicMembershipTest
 
                 final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
-                Thread.sleep(1000);
+                while (dynamicMember.electionState() != Election.State.CLOSED)
+                {
+                    Thread.sleep(100);
+                }
 
                 assertEquals(Cluster.Role.FOLLOWER, dynamicMember.role());
 
@@ -262,9 +277,12 @@ public class DynamicMembershipTest
             try (TestCluster cluster = TestCluster.startCluster(3, 1))
             {
                 final TestNode initialLeader = cluster.awaitLeader();
-                cluster.startDynamicNode(3, true);
+                final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
-                Thread.sleep(1000);
+                while (dynamicMember.electionState() != Election.State.CLOSED)
+                {
+                    Thread.sleep(100);
+                }
 
                 initialLeader.terminationExpected(true);
                 initialLeader.removeMember(initialLeader.index(), false);
@@ -290,9 +308,12 @@ public class DynamicMembershipTest
             try (TestCluster cluster = TestCluster.startCluster(1, 1))
             {
                 final TestNode initialLeader = cluster.awaitLeader();
-                cluster.startDynamicNode(1, true);
+                final TestNode dynamicMember = cluster.startDynamicNode(1, true);
 
-                Thread.sleep(1000);
+                while (dynamicMember.electionState() != Election.State.CLOSED)
+                {
+                    Thread.sleep(100);
+                }
 
                 assertEquals(2, numberOfMembers(initialLeader.clusterMembership()));
             }

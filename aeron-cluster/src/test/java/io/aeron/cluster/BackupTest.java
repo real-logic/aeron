@@ -255,7 +255,6 @@ public class BackupTest
                 cluster.awaitBackupState(ClusterBackup.State.BACKING_UP);
 
                 final long nowMs = backupNode.epochClock().time();
-
                 assertThat(backupNode.nextBackupQueryDeadlineMs(), greaterThan(nowMs));
             }
         });
@@ -289,7 +288,6 @@ public class BackupTest
                 cluster.awaitMessageCountForService(leader, 15);
 
                 final long nextLogPosition = leader.service().cluster().logPosition();
-
                 cluster.awaitBackupState(ClusterBackup.State.BACKING_UP);
                 cluster.awaitBackupLiveLogPosition(nextLogPosition);
 

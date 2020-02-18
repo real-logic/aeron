@@ -93,8 +93,6 @@ public class ClusterTest
                 cluster.stopNode(cluster.node(1));
                 cluster.stopNode(cluster.node(2));
 
-                Thread.sleep(1_000);
-
                 cluster.startStaticNode(0, false);
                 cluster.startStaticNode(1, false);
                 cluster.startStaticNode(2, false);
@@ -135,8 +133,6 @@ public class ClusterTest
                 cluster.stopNode(cluster.node(1));
                 cluster.stopNode(cluster.node(2));
 
-                Thread.sleep(1_000);
-
                 cluster.startStaticNode(0, false);
                 cluster.startStaticNode(1, false);
                 cluster.startStaticNode(2, false);
@@ -176,8 +172,6 @@ public class ClusterTest
                 cluster.stopNode(cluster.node(0));
                 cluster.stopNode(cluster.node(1));
                 cluster.stopNode(cluster.node(2));
-
-                Thread.sleep(1_000);
 
                 cluster.startStaticNode(0, false);
                 cluster.startStaticNode(1, false);
@@ -279,10 +273,12 @@ public class ClusterTest
 
                 final TestNode follower = cluster.startStaticNode(originalLeader.index(), false);
 
-                Thread.sleep(5_000);
+                while (follower.electionState() != Election.State.CLOSED)
+                {
+                    Thread.sleep(100);
+                }
 
                 assertEquals(Cluster.Role.FOLLOWER, follower.role());
-                assertEquals(Election.State.CLOSED, follower.electionState());
             }
         });
     }
@@ -303,7 +299,7 @@ public class ClusterTest
 
                 while (follower.electionState() != Election.State.CLOSED)
                 {
-                    Thread.sleep(1000);
+                    Thread.sleep(100);
                 }
 
                 assertEquals(Cluster.Role.FOLLOWER, follower.role());
@@ -330,11 +326,12 @@ public class ClusterTest
                 cluster.awaitLeader(originalLeader.index());
 
                 final TestNode follower = cluster.startStaticNode(originalLeader.index(), false);
-
-                Thread.sleep(5_000);
+                while (follower.electionState() != Election.State.CLOSED)
+                {
+                    Thread.sleep(100);
+                }
 
                 assertEquals(Cluster.Role.FOLLOWER, follower.role());
-                assertEquals(Election.State.CLOSED, follower.electionState());
 
                 cluster.connectClient();
 
@@ -368,7 +365,10 @@ public class ClusterTest
 
                 follower = cluster.startStaticNode(follower.index(), true);
 
-                Thread.sleep(1_000);
+                while (follower.electionState() != Election.State.CLOSED)
+                {
+                    Thread.sleep(100);
+                }
 
                 assertEquals(Cluster.Role.FOLLOWER, follower.role());
 
@@ -469,7 +469,11 @@ public class ClusterTest
                 followerA = cluster.startStaticNode(followerA.index(), true);
                 followerB = cluster.startStaticNode(followerB.index(), true);
 
-                Thread.sleep(1_000);
+                while (followerA.electionState() != Election.State.CLOSED ||
+                    followerB.electionState() != Election.State.CLOSED)
+                {
+                    Thread.sleep(100);
+                }
 
                 assertEquals(Cluster.Role.FOLLOWER, followerA.role());
                 assertEquals(Cluster.Role.FOLLOWER, followerB.role());
@@ -661,8 +665,6 @@ public class ClusterTest
                 cluster.stopNode(cluster.node(1));
                 cluster.stopNode(cluster.node(2));
 
-                Thread.sleep(1_000);
-
                 cluster.startStaticNode(0, false);
                 cluster.startStaticNode(1, false);
                 cluster.startStaticNode(2, true);
@@ -793,7 +795,6 @@ public class ClusterTest
                 cluster.stopNode(cluster.node(0));
                 cluster.stopNode(cluster.node(1));
                 cluster.stopNode(cluster.node(2));
-                Thread.sleep(1_000);
 
                 cluster.startStaticNode(0, false);
                 cluster.startStaticNode(1, false);
@@ -905,7 +906,6 @@ public class ClusterTest
                 cluster.stopNode(cluster.node(0));
                 cluster.stopNode(cluster.node(1));
                 cluster.stopNode(cluster.node(2));
-                Thread.sleep(1_000);
 
                 // Invalidate snapshot from leadershipTermId = 1
                 cluster.invalidateLatestSnapshots();
@@ -967,7 +967,6 @@ public class ClusterTest
                 cluster.stopNode(cluster.node(0));
                 cluster.stopNode(cluster.node(1));
                 cluster.stopNode(cluster.node(2));
-                Thread.sleep(1_000);
 
                 // Invalidate snapshot from leadershipTermId = 1
                 cluster.invalidateLatestSnapshots();
@@ -994,27 +993,29 @@ public class ClusterTest
     {
         try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
-            cluster.awaitLeader();
-
+            final TestNode leader = cluster.awaitLeader();
             TestNode follower = cluster.followers().get(0);
 
             cluster.stopNode(follower);
 
-            Thread.sleep(1_000);
+            while (leader.electionState() != Election.State.CLOSED)
+            {
+                Thread.sleep(100);
+            }
 
             cluster.connectClient();
             cluster.msgBuffer().putStringWithoutLengthAscii(0, message);
             cluster.sendMessage(message.length());
             cluster.awaitResponses(1);
 
-            Thread.sleep(1_000);
-
             follower = cluster.startStaticNode(follower.index(), false);
 
-            Thread.sleep(1_000);
+            while (follower.electionState() != Election.State.CLOSED)
+            {
+                Thread.sleep(100);
+            }
 
             assertEquals(Cluster.Role.FOLLOWER, follower.role());
-            assertEquals(Election.State.CLOSED, follower.electionState());
         }
     }
 

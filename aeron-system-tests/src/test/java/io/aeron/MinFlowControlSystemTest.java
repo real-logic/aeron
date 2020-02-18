@@ -1,6 +1,9 @@
 package io.aeron;
 
-import io.aeron.driver.*;
+import io.aeron.driver.FlowControlSupplier;
+import io.aeron.driver.MediaDriver;
+import io.aeron.driver.MinMulticastFlowControlSupplier;
+import io.aeron.driver.ThreadingMode;
 import io.aeron.driver.status.SenderLimit;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
@@ -24,12 +27,12 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.File;
-import java.nio.ByteOrder;
 import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import static io.aeron.FlowControlTests.waitForConnectionAndStatusMessages;
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -57,9 +60,6 @@ public class MinFlowControlSystemTest
     private Publication publication;
     private Subscription subscriptionA;
     private Subscription subscriptionB;
-
-    private static final long DEFAULT_RECEIVER_TAG = new UnsafeBuffer(TaggedMulticastFlowControl.PREFERRED_ASF_BYTES)
-        .getLong(0, ByteOrder.LITTLE_ENDIAN);
 
     private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
     private final FragmentHandler fragmentHandlerA = mock(FragmentHandler.class);
@@ -277,6 +277,8 @@ public class MinFlowControlSystemTest
 
             launch();
 
+            final CountersReader countersReader = clientA.countersReader();
+
             TestMediaDriver driverC = null;
             Aeron clientC = null;
 
@@ -304,8 +306,8 @@ public class MinFlowControlSystemTest
                 subscription0 = clientA.addSubscription(uriPlain, STREAM_ID);
                 subscription1 = clientB.addSubscription(uriPlain, STREAM_ID);
 
-                // Sleep for a bit to ensure that we haven't become connected.
-                Thread.sleep(500);
+                waitForConnectionAndStatusMessages(countersReader, subscription0, subscription1);
+
                 assertFalse(publication.isConnected());
 
                 subscription2 = clientC.addSubscription(uriPlain, STREAM_ID);
@@ -313,8 +315,7 @@ public class MinFlowControlSystemTest
                 // Should now have 3 receivers and publication should eventually be connected.
                 while (!publication.isConnected())
                 {
-                    Tests.checkInterruptedStatus();
-                    Thread.sleep(1);
+                    Tests.sleep(1);
                 }
 
                 subscription2.close();
@@ -323,8 +324,7 @@ public class MinFlowControlSystemTest
                 // Lost a receiver and publication should eventually be disconnected.
                 while (publication.isConnected())
                 {
-                    Tests.checkInterruptedStatus();
-                    Thread.sleep(1);
+                    Tests.sleep(1);
                 }
 
                 subscription2 = clientC.addSubscription(uriPlain, STREAM_ID);
@@ -332,8 +332,7 @@ public class MinFlowControlSystemTest
                 // Aaaaaand reconnect.
                 while (!publication.isConnected())
                 {
-                    Tests.checkInterruptedStatus();
-                    Thread.sleep(1);
+                    Tests.sleep(1);
                 }
             }
             finally
@@ -351,39 +350,44 @@ public class MinFlowControlSystemTest
     @Test
     void shouldPreventConnectionUntilAtLeastOneSubscriberConnectedWithRequiredGroupSizeZero()
     {
-        final Long receiverTag = 2701L;
         final Integer groupSize = 0;
 
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
             .media("udp")
-            .endpoint("224.20.30.39:24326")
+            .endpoint("224.20.30.41:24326")
             .networkInterface("localhost");
 
-        final String uriWithReceiverTag = builder
-            .receiverTag(receiverTag)
+        final String plainUri = builder
             .flowControl((String)null)
             .build();
 
-        final String uriWithTaggedFlowControl = builder
+        final String uriWithMinFlowControl = builder
             .receiverTag((Long)null)
-            .taggedFlowControl(receiverTag, groupSize, null)
+            .minFlowControl(groupSize, null)
             .build();
 
         assertTimeoutPreemptively(Duration.ofSeconds(20), () ->
         {
             launch();
 
-            publication = clientA.addPublication(uriWithTaggedFlowControl, STREAM_ID);
+            publication = clientA.addPublication(uriWithMinFlowControl, STREAM_ID);
+            final Publication otherPublication = clientA.addPublication(plainUri, STREAM_ID + 1);
 
-            Thread.sleep(100);
+            final Subscription otherSubscription = clientA.addSubscription(plainUri, STREAM_ID + 1);
+
+            while (!otherPublication.isConnected())
+            {
+                Tests.sleep(1);
+            }
+            // We know another publication on the same channel is connected
+
             assertFalse(publication.isConnected());
 
-            subscriptionA = clientA.addSubscription(uriWithReceiverTag, STREAM_ID);
+            subscriptionA = clientA.addSubscription(plainUri, STREAM_ID);
 
             while (!publication.isConnected())
             {
-                Tests.checkInterruptedStatus();
-                Thread.sleep(1);
+                Tests.sleep(1);
             }
         });
     }
@@ -410,7 +414,8 @@ public class MinFlowControlSystemTest
 
             subscriptionA = clientA.addSubscription(subscriberUri, STREAM_ID);
 
-            Tests.sleep(200);
+            waitForConnectionAndStatusMessages(countersReader, subscriptionA);
+
             assertEquals(currentSenderLimit, countersReader.getCounterValue(senderLimitCounterId));
 
             subscriptionB = clientB.addSubscription(groupSubscriberUri, STREAM_ID);

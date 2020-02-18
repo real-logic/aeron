@@ -41,7 +41,7 @@ public class MinMulticastFlowControl implements FlowControl
     public static final String FC_PARAM_VALUE = "min";
 
     static final Receiver[] EMPTY_RECEIVERS = new Receiver[0];
-    private Receiver[] receivers = EMPTY_RECEIVERS;
+    private volatile Receiver[] receivers = EMPTY_RECEIVERS;
     private long receiverTimeoutNs;
     private int groupMinSize;
 

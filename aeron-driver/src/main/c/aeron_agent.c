@@ -357,14 +357,18 @@ aeron_idle_strategy_func_t aeron_idle_strategy_load(
 aeron_agent_on_start_func_t aeron_agent_on_start_load(const char *name)
 {
     aeron_agent_on_start_func_t func = NULL;
+#if defined(AERON_COMPILER_GCC)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
+#endif
     if ((func = (aeron_agent_on_start_func_t)aeron_dlsym(RTLD_DEFAULT, name)) == NULL)
     {
         aeron_set_err(EINVAL, "could not find agent on_start func %s: dlsym - %s", name, aeron_dlerror());
         return NULL;
     }
+#if defined(AERON_COMPILER_GCC)
 #pragma GCC diagnostic pop
+#endif
 
     return func;
 }

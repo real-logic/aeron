@@ -54,7 +54,6 @@
 
     typedef HANDLE aeron_thread_t;
 
-    typedef SSIZE_T ssize_t;
     typedef INIT_ONCE AERON_INIT_ONCE;
 
     typedef DWORD pthread_attr_t;

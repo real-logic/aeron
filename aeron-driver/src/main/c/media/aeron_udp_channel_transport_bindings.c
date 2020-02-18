@@ -98,8 +98,10 @@ static aeron_udp_channel_interceptor_bindings_load_func_t *aeron_udp_channel_int
     }
     else
     {
+#if defined(AERON_COMPILER_GCC)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
+#endif
         if ((load_interceptor = (aeron_udp_channel_interceptor_bindings_load_func_t *)aeron_dlsym(
             RTLD_DEFAULT, interceptor_name)) == NULL)
         {
@@ -107,7 +109,9 @@ static aeron_udp_channel_interceptor_bindings_load_func_t *aeron_udp_channel_int
                 EINVAL, "could not find interceptor bindings %s: dlsym - %s", interceptor_name,
                 aeron_dlerror());
         }
+#if defined(AERON_COMPILER_GCC)
 #pragma GCC diagnostic pop
+#endif
     }
 
     return load_interceptor;
@@ -164,10 +168,14 @@ aeron_udp_channel_interceptor_bindings_t *aeron_udp_channel_interceptor_bindings
             return NULL;
         }
 
+#if defined(AERON_COMPILER_GCC)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
+#endif
         current_bindings->meta_info.source_symbol = (const void*)interceptor_load_func;
+#if defined(AERON_COMPILER_GCC)
 #pragma GCC diagnostic pop
+#endif
     }
 
     return current_bindings;
@@ -238,10 +246,14 @@ int aeron_udp_channel_data_paths_init(
             return -1;
         }
 
+#if defined(AERON_COMPILER_GCC)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
+#endif
         outgoing_transport_interceptor->interceptor_state = media_bindings;
+#if defined(AERON_COMPILER_GCC)
 #pragma GCC diagnostic pop
+#endif
 
         /* last interecptor calls sendmmsg_func/sendmsg_func from transport bindings */
         outgoing_transport_interceptor->outgoing_mmsg_func = aeron_udp_channel_outgoing_interceptor_mmsg_to_transport;
@@ -301,10 +313,14 @@ int aeron_udp_channel_data_paths_init(
             return -1;
         }
 
+#if defined(AERON_COMPILER_GCC)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
+#endif
         incoming_transport_interceptor->interceptor_state = (void *)recv_func;
+#if defined(AERON_COMPILER_GCC)
 #pragma GCC diagnostic pop
+#endif
         incoming_transport_interceptor->incoming_func = aeron_udp_channel_incoming_interceptor_to_endpoint;
         incoming_transport_interceptor->close_func = NULL;
         incoming_transport_interceptor->next_interceptor = NULL;

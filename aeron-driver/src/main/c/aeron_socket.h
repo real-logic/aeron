@@ -84,11 +84,15 @@ void aeron_net_init();
         void *ifa_data;             
     };
 
-    int getifaddrs(struct ifaddrs **__ifap);
-    void freeifaddrs(struct ifaddrs *__ifa);
+    int getifaddrs(struct ifaddrs **ifap);
+    void freeifaddrs(struct ifaddrs *ifa);
 
     typedef unsigned long int nfds_t;
+    typedef SSIZE_T ssize_t;
 
+    ssize_t recvmsg(aeron_fd_t fd, struct msghdr* msghdr, int flags);
+    ssize_t sendmsg(aeron_fd_t fd, struct msghdr* msghdr, int flags);
+    int poll(struct pollfd* fds, nfds_t nfds, int timeout);
 
 #else
 #error Unsupported platform!

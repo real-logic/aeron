@@ -21,7 +21,7 @@
 #include <sys/epoll.h>
 #elif defined(HAVE_POLL)
 #include <poll.h>
-#elif HAVE_WSAPOLL
+#elif defined(HAVE_WSAPOLL)
 #include "aeron_windows.h"
 #endif
 

@@ -20,6 +20,7 @@
 #include <limits.h>
 #include <ctype.h>
 #include <inttypes.h>
+#include <string.h>
 #include "util/aeron_parse_util.h"
 #include "util/aeron_error.h"
 

@@ -35,13 +35,13 @@ const char *aeron_dlinfo(const void *addr, char *buffer, size_t max_buffer_lengt
 #include <WinSock2.h> 
 #include <windows.h> 
 
-#define RTLD_DEFAULT -123    
-#define RTLD_NEXT -124
+#define RTLD_DEFAULT ((HMODULE)-123)
+#define RTLD_NEXT ((HMODULE)-124)
 
 void* aeron_dlsym(HMODULE module, LPCSTR name);
 HMODULE aeron_dlopen(LPCSTR filename);
 char* aeron_dlerror();
-const char *aeron_dlinfo(const void *addr);
+const char *aeron_dlinfo(const void* addr, char* buffer, size_t max_buffer_length);
 
 #else
 #error Unsupported platform!

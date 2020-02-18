@@ -295,10 +295,14 @@ inline void aeron_udp_channel_incoming_interceptor_to_endpoint(
     size_t length,
     struct sockaddr_storage *addr)
 {
+#if defined(AERON_COMPILER_GCC)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
+#endif
     aeron_udp_transport_recv_func_t func = (aeron_udp_transport_recv_func_t)interceptor_state;
+#if defined(AERON_COMPILER_GCC)
 #pragma GCC diagnostic pop
+#endif
 
     func(NULL, receiver_clientd, endpoint_clientd, buffer, length, addr);
 }

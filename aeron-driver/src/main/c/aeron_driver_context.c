@@ -89,7 +89,8 @@ inline static const char *tmp_dir()
 inline static bool has_file_separator_at_end(const char *path)
 {
 #if defined(_MSC_VER)
-    return path[strlen(path) - 1] == '\\';
+    const char last = path[strlen(path) - 1];
+    return last == '\\' || last == '/';
 #else
     return path[strlen(path) - 1] == '/';
 #endif

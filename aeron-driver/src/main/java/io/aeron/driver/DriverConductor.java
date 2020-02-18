@@ -99,6 +99,7 @@ public class DriverConductor implements Agent
     private final NetworkPublicationThreadLocals networkPublicationThreadLocals = new NetworkPublicationThreadLocals();
     private final MutableDirectBuffer tempBuffer;
     private final DataHeaderFlyweight defaultDataHeader = new DataHeaderFlyweight(createDefaultHeader(0, 0, 0));
+    private final NameResolver nameResolver;
 
     public DriverConductor(final Context ctx)
     {
@@ -119,6 +120,7 @@ public class DriverConductor implements Agent
         tempBuffer = ctx.tempBuffer();
 
         countersManager = ctx.countersManager();
+        nameResolver = DefaultNameResolver.INSTANCE;
 
         clientCommandAdapter = new ClientCommandAdapter(
             ctx.systemCounters().get(ERRORS),
@@ -376,7 +378,7 @@ public class DriverConductor implements Agent
         final long clientId,
         final boolean isExclusive)
     {
-        final UdpChannel udpChannel = UdpChannel.parse(channel);
+        final UdpChannel udpChannel = UdpChannel.parse(channel, nameResolver);
         final ChannelUri channelUri = udpChannel.channelUri();
         final PublicationParams params = getPublicationParams(ctx, channelUri, this, isExclusive, false);
         validateMtuForMaxMessage(params);
@@ -641,7 +643,7 @@ public class DriverConductor implements Agent
         sendChannelEndpoint.validateAllowsManualControl();
 
         final ChannelUri channelUri = ChannelUri.parse(destinationChannel);
-        final InetSocketAddress dstAddress = UdpChannel.destinationAddress(channelUri);
+        final InetSocketAddress dstAddress = UdpChannel.destinationAddress(channelUri, nameResolver);
         senderProxy.addDestination(sendChannelEndpoint, dstAddress);
         clientProxy.operationSucceeded(correlationId);
     }
@@ -669,7 +671,7 @@ public class DriverConductor implements Agent
         sendChannelEndpoint.validateAllowsManualControl();
 
         final ChannelUri channelUri = ChannelUri.parse(destinationChannel);
-        final InetSocketAddress dstAddress = UdpChannel.destinationAddress(channelUri);
+        final InetSocketAddress dstAddress = UdpChannel.destinationAddress(channelUri, nameResolver);
         senderProxy.removeDestination(sendChannelEndpoint, dstAddress);
         clientProxy.operationSucceeded(correlationId);
     }
@@ -677,7 +679,7 @@ public class DriverConductor implements Agent
     void onAddNetworkSubscription(
         final String channel, final int streamId, final long registrationId, final long clientId)
     {
-        final UdpChannel udpChannel = UdpChannel.parse(channel);
+        final UdpChannel udpChannel = UdpChannel.parse(channel, nameResolver);
         final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), ctx);
 
         checkForClashingSubscription(params, udpChannel, streamId);
@@ -747,7 +749,7 @@ public class DriverConductor implements Agent
 
     void onAddSpySubscription(final String channel, final int streamId, final long registrationId, final long clientId)
     {
-        final UdpChannel udpChannel = UdpChannel.parse(channel);
+        final UdpChannel udpChannel = UdpChannel.parse(channel, nameResolver);
         final AeronClient client = getOrAddClient(clientId);
         final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), ctx);
         final ArrayList<SubscriberPosition> subscriberPositions = new ArrayList<>();
@@ -908,7 +910,7 @@ public class DriverConductor implements Agent
 
         receiveChannelEndpoint.validateAllowsDestinationControl();
 
-        final UdpChannel udpChannel = UdpChannel.parse(destinationChannel);
+        final UdpChannel udpChannel = UdpChannel.parse(destinationChannel, nameResolver);
         final ReceiveDestinationTransport transport = new ReceiveDestinationTransport(udpChannel, ctx);
 
         receiverProxy.addDestination(receiveChannelEndpoint, transport);
@@ -937,7 +939,7 @@ public class DriverConductor implements Agent
 
         receiveChannelEndpoint.validateAllowsDestinationControl();
 
-        receiverProxy.removeDestination(receiveChannelEndpoint, UdpChannel.parse(destinationChannel));
+        receiverProxy.removeDestination(receiveChannelEndpoint, UdpChannel.parse(destinationChannel, nameResolver));
         clientProxy.operationSucceeded(correlationId);
     }
 

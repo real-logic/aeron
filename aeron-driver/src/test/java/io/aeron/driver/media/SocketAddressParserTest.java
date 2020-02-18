@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.media;
 
+import io.aeron.driver.DefaultNameResolver;
 import org.junit.jupiter.api.Test;
 
 import java.net.Inet6Address;
@@ -29,6 +30,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class SocketAddressParserTest
 {
+    final DefaultNameResolver resolver = DefaultNameResolver.INSTANCE;
+
     @Test
     public void shouldParseIpV4AddressAndPort() throws Exception
     {
@@ -44,43 +47,46 @@ public class SocketAddressParserTest
     @Test
     public void shouldRejectOnInvalidPort()
     {
-        assertThrows(IllegalArgumentException.class, () -> SocketAddressParser.parse("192.168.1.20:aa"));
+        assertThrows(IllegalArgumentException.class, () -> SocketAddressParser.parse("192.168.1.20:aa", resolver));
     }
 
     @Test
     public void shouldRejectOnInvalidPort2()
     {
-        assertThrows(IllegalArgumentException.class, () -> SocketAddressParser.parse("192.168.1.20::123"));
+        assertThrows(
+            IllegalArgumentException.class, () -> SocketAddressParser.parse("192.168.1.20::123", resolver));
     }
 
     @Test
     public void shouldRejectOnMissingPort()
     {
-        assertThrows(IllegalArgumentException.class, () -> SocketAddressParser.parse("192.168.1.20"));
+        assertThrows(IllegalArgumentException.class, () -> SocketAddressParser.parse("192.168.1.20", resolver));
     }
 
     @Test
     public void shouldRejectOnEmptyPort()
     {
-        assertThrows(IllegalArgumentException.class, () -> SocketAddressParser.parse("192.168.1.20:"));
+        assertThrows(IllegalArgumentException.class, () -> SocketAddressParser.parse("192.168.1.20:", resolver));
     }
 
     @Test
     public void shouldRejectOnEmptyIpV6Port()
     {
-        assertThrows(IllegalArgumentException.class, () -> SocketAddressParser.parse("[::1]:"));
+        assertThrows(IllegalArgumentException.class, () -> SocketAddressParser.parse("[::1]:", resolver));
     }
 
     @Test
     public void shouldRejectOnInvalidIpV6()
     {
-        assertThrows(IllegalArgumentException.class, () -> SocketAddressParser.parse("[FG07::789:1:0:0:3]:111"));
+        assertThrows(
+            IllegalArgumentException.class, () -> SocketAddressParser.parse("[FG07::789:1:0:0:3]:111", resolver));
     }
 
     @Test
     public void shouldRejectOnInvalidIpV6Scope()
     {
-        assertThrows(IllegalArgumentException.class, () -> SocketAddressParser.parse("[FC07::789:1:0:0:3%^]:111"));
+        assertThrows(
+            IllegalArgumentException.class, () -> SocketAddressParser.parse("[FC07::789:1:0:0:3%^]:111", resolver));
     }
 
     @Test
@@ -94,20 +100,20 @@ public class SocketAddressParserTest
     @Test
     public void shouldParseWithScope()
     {
-        final InetSocketAddress address = SocketAddressParser.parse("[::1%12~_.-34]:1234");
+        final InetSocketAddress address = SocketAddressParser.parse("[::1%12~_.-34]:1234", resolver);
         assertThat(address.getAddress(), instanceOf(Inet6Address.class));
     }
 
     private void assertCorrectParse(final String host, final int port) throws UnknownHostException
     {
-        final InetSocketAddress address = SocketAddressParser.parse(host + ":" + port);
+        final InetSocketAddress address = SocketAddressParser.parse(host + ":" + port, resolver);
         assertEquals(InetAddress.getByName(host), address.getAddress());
         assertEquals(port, address.getPort());
     }
 
     private void assertCorrectParseIpV6(final String host, final int port) throws UnknownHostException
     {
-        final InetSocketAddress address = SocketAddressParser.parse("[" + host + "]:" + port);
+        final InetSocketAddress address = SocketAddressParser.parse("[" + host + "]:" + port, resolver);
         assertEquals(InetAddress.getByName(host), address.getAddress());
         assertEquals(port, address.getPort());
     }

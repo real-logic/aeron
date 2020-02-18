@@ -17,6 +17,8 @@ package io.aeron.driver.media;
 
 import io.aeron.ChannelUri;
 import io.aeron.CommonContext;
+import io.aeron.driver.DefaultNameResolver;
+import io.aeron.driver.NameResolver;
 import io.aeron.driver.exceptions.InvalidChannelException;
 import org.agrona.BitUtil;
 
@@ -89,16 +91,29 @@ public final class UdpChannel
      * @return a new {@link UdpChannel} as the result of parsing.
      * @throws InvalidChannelException if an error occurs.
      */
-    @SuppressWarnings("MethodLength")
     public static UdpChannel parse(final String channelUriString)
+    {
+        return parse(channelUriString, DefaultNameResolver.INSTANCE);
+    }
+
+    /**
+     * Parse channel URI and create a {@link UdpChannel}.
+     *
+     * @param channelUriString to parse.
+     * @param nameResolver to use for resolving names
+     * @return a new {@link UdpChannel} as the result of parsing.
+     * @throws InvalidChannelException if an error occurs.
+     */
+    @SuppressWarnings("MethodLength")
+    public static UdpChannel parse(final String channelUriString, final NameResolver nameResolver)
     {
         try
         {
             final ChannelUri channelUri = ChannelUri.parse(channelUriString);
             validateConfiguration(channelUri);
 
-            InetSocketAddress endpointAddress = getEndpointAddress(channelUri);
-            final InetSocketAddress explicitControlAddress = getExplicitControlAddress(channelUri);
+            InetSocketAddress endpointAddress = getEndpointAddress(channelUri, nameResolver);
+            final InetSocketAddress explicitControlAddress = getExplicitControlAddress(channelUri, nameResolver);
 
             final String tagIdStr = channelUri.channelTag();
             final String controlMode = channelUri.get(CommonContext.MDC_CONTROL_MODE_PARAM_NAME);
@@ -491,14 +506,15 @@ public final class UdpChannel
      * Get the endpoint destination address from the URI.
      *
      * @param uri to check.
+     * @param nameResolver to use for resolution
      * @return endpoint address for URI.
      */
-    public static InetSocketAddress destinationAddress(final ChannelUri uri)
+    public static InetSocketAddress destinationAddress(final ChannelUri uri, final NameResolver nameResolver)
     {
         try
         {
             validateConfiguration(uri);
-            return getEndpointAddress(uri);
+            return getEndpointAddress(uri, nameResolver);
         }
         catch (final Exception ex)
         {
@@ -551,23 +567,23 @@ public final class UdpChannel
         return InterfaceSearchAddress.wildcard();
     }
 
-    private static InetSocketAddress getEndpointAddress(final ChannelUri uri)
+    private static InetSocketAddress getEndpointAddress(final ChannelUri uri, final NameResolver nameResolver)
     {
         final String endpointValue = uri.get(CommonContext.ENDPOINT_PARAM_NAME);
         if (null != endpointValue)
         {
-            return SocketAddressParser.parse(endpointValue);
+            return SocketAddressParser.parse(endpointValue, nameResolver);
         }
 
         return null;
     }
 
-    private static InetSocketAddress getExplicitControlAddress(final ChannelUri uri)
+    private static InetSocketAddress getExplicitControlAddress(final ChannelUri uri, final NameResolver nameResolver)
     {
         final String controlValue = uri.get(CommonContext.MDC_CONTROL_PARAM_NAME);
         if (null != controlValue)
         {
-            return SocketAddressParser.parse(controlValue);
+            return SocketAddressParser.parse(controlValue, nameResolver);
         }
 
         return null;

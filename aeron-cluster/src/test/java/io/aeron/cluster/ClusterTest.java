@@ -52,6 +52,8 @@ public class ClusterTest
 
                 cluster.stopNode(follower);
 
+                Thread.sleep(1_000); // wait until existing replay can be cleaned up by conductor.
+
                 follower = cluster.startStaticNode(follower.index(), false);
 
                 awaitElectionClosed(follower);
@@ -450,6 +452,8 @@ public class ClusterTest
                 cluster.stopNode(followerA);
                 cluster.stopNode(followerB);
 
+                Thread.sleep(1_000); // wait until existing replays can be cleaned up by conductor.
+
                 followerA = cluster.startStaticNode(followerA.index(), true);
                 followerB = cluster.startStaticNode(followerB.index(), true);
 
@@ -605,6 +609,8 @@ public class ClusterTest
                 final int messageCount = 10;
                 cluster.sendMessages(messageCount);
                 cluster.awaitResponses(messageCount);
+
+                Thread.sleep(1_000); // wait until existing replay can be cleaned up by conductor.
 
                 followerB = cluster.startStaticNode(followerB.index(), true);
                 cluster.awaitMessageCountForService(followerB, messageCount);
@@ -984,6 +990,8 @@ public class ClusterTest
             cluster.msgBuffer().putStringWithoutLengthAscii(0, message);
             cluster.sendMessage(message.length());
             cluster.awaitResponses(1);
+
+            Thread.sleep(1_000); // wait until existing replay can be cleaned up by conductor.
 
             follower = cluster.startStaticNode(follower.index(), false);
 

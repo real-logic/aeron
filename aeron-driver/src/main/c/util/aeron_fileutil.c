@@ -45,28 +45,6 @@
 
 static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, off_t offset)
 {
-    size_t length = mapping->length;
-    size_t len;
-    struct stat st;
-    const uint32_t l = offset & 0xFFFFFFFF;
-    const uint32_t h = (offset >> 32) & 0xFFFFFFFF;
-
-    if (!fstat(fd, &st))
-    {
-        len = (size_t)st.st_size;
-    }
-    else
-    {
-        fprintf(stderr, "mmap: could not determine file length");
-        close(fd);
-        return -1;
-    }
-
-    if (length + offset > len)
-    {
-        length = len - offset;
-    }
-
     HANDLE hmap = CreateFileMapping((HANDLE)_get_osfhandle(fd), 0, PAGE_READWRITE, 0, 0, 0);
 
     if (!hmap)
@@ -76,7 +54,7 @@ static int aeron_mmap(aeron_mapped_file_t *mapping, int fd, off_t offset)
         return -1;
     }
 
-    mapping->addr = MapViewOfFileEx(hmap, FILE_MAP_WRITE, h, l, length, NULL);
+    mapping->addr = MapViewOfFileEx(hmap, FILE_MAP_WRITE, 0, offset, mapping->length, NULL);
 
     if (!CloseHandle(hmap))
     {

@@ -195,6 +195,7 @@ elseif (CYGWIN)
 elseif (MSVC)
     add_definitions(-DWIN32)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+    add_definitions(-D_CRT_NONSTDC_NO_WARNINGS)
     add_definitions(-DNOMINMAX)
 
     if (${MSVC_VERSION} GREATER_EQUAL 1915)

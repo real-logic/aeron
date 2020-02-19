@@ -1,3 +1,19 @@
+/*
+ * Copyright 2014-2020 Real Logic Limited.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package io.aeron.samples.tutorial.cluster;
 
 import io.aeron.ExclusivePublication;
@@ -12,6 +28,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.MutableBoolean;
+import org.agrona.concurrent.IdleStrategy;
 
 import java.util.Objects;
 
@@ -37,12 +54,15 @@ public class BasicAuctionClusteredService implements ClusteredService
     private final Auction auction = new Auction();
     // end::state[]
     private Cluster cluster;
+    private IdleStrategy idleStrategy;
 
     // tag::start[]
     public void onStart(final Cluster cluster, final Image snapshotImage)
     {
-        this.cluster = cluster;     // <1>
-        if (null != snapshotImage)  // <2>
+        this.cluster = cluster;                      // <1>
+        this.idleStrategy = cluster.idleStrategy();  // <2>
+
+        if (null != snapshotImage)                   // <3>
         {
             loadSnapshot(cluster, snapshotImage);
         }
@@ -73,7 +93,7 @@ public class BasicAuctionClusteredService implements ClusteredService
 
             while (session.offer(egressMessageBuffer, 0, EGRESS_MESSAGE_LENGTH) < 0)   // <5>
             {
-                cluster.idle();                                                        // <6>
+                idleStrategy.idle();                                                   // <6>
             }
         }
     }
@@ -87,7 +107,7 @@ public class BasicAuctionClusteredService implements ClusteredService
 
         while (snapshotPublication.offer(snapshotBuffer, 0, SNAPSHOT_MESSAGE_LENGTH) < 0)  // <2>
         {
-            cluster.idle();
+            idleStrategy.idle();
         }
     }
     // end::takeSnapshot[]
@@ -116,7 +136,7 @@ public class BasicAuctionClusteredService implements ClusteredService
                 break;
             }
 
-            cluster.idle(fragmentsPolled);                                                     // <6>
+            idleStrategy.idle(fragmentsPolled);                                                // <6>
         }
 
         assert snapshotImage.isEndOfStream();                                                  // <7>

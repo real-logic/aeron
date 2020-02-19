@@ -1,3 +1,19 @@
+////
+* Copyright 2014-2020 Real Logic Limited.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+* https://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+////
+
 = Aeron Cluster Tutorial
 :sampleBaseDir: ../../..
 :sampleSourceDir: {sampleBaseDir}/src/main/java
@@ -173,9 +189,11 @@ are handled and how a snapshot is stored.
 include::{sampleSourceDir}/io/aeron/samples/tutorial/cluster/BasicAuctionClusteredService.java[tag=start]
 ----
 
-<1> Take a reference to the cluster, we will need this in the future.
+<1> Take a reference to the cluster, so that we can have access to features of the cluster within the other callbacks.
 
-<2> The snapshot can be null (this occurs the first time that the service is started).
+<2> Take a reference to the cluster's idle strategy.  This will be used anytime we enter a busy loop within service.
+
+<3> The snapshot can be null (this occurs the first time that the service is started).
 
 === Handling Messages
 
@@ -212,9 +230,9 @@ and not offer a response in that case.
 <5> Calling `offer` on the client session will send the response on the egress channel.  Make sure that the return value
 for `offer` is checked as it is a non-blocking call and not guaranteed to succeed.
 
-<6> When doing any busy loops within the clustered application use `Cluster::idle(int)` within the wait loop to allow
-the service to pause in a friendly manner.  It will take care of handling thread interrupts and ensure the node fails
-correctly.
+<6> When doing any busy loops within the clustered application use the Cluster's `IdleStrategy::idle(int)` within the
+wait loop to allow the service to pause in a friendly manner.  It will take care of handling thread interrupts and
+ensure the node fails correctly.
 
 === Storing State
 
@@ -236,7 +254,7 @@ include::{sampleSourceDir}/io/aeron/samples/tutorial/cluster/BasicAuctionCluster
 id and bid price.
 
 <2> Write the message to the publication, again we need to check the return from the `offer` call and use
-`Cluster::idle` inside of the busy wait loop.
+the Cluster's `IdleStrategy::idle` inside of the busy wait loop.
 
 === Loading State
 
@@ -263,8 +281,8 @@ of the data will come in a single message.
 
 <5> Once we've loaded all of the data for the application we can break out of the snapshot loading loop.
 
-<6> Again make sure we use `Cluster::idle` in the tight loops.  It could take time for the snapshot to be propagated to
-the service so the number of fragments can be zero.
+<6> Again make sure we use the Cluster's `IdleStrategy::idle` in the tight loops.  It could take time for the snapshot
+to be propagated to the service so the number of fragments can be zero.
 
 <7> It is also worthwhile having some sanity checks, these ensure that the snapshot store/load code and Aeron agree on
 where the end of the input data is.  We've used asserts, but other mechanisms, (e.g. log message, exceptions) could

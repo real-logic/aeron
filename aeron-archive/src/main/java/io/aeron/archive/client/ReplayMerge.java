@@ -516,10 +516,9 @@ public class ReplayMerge implements AutoCloseable
     private static boolean pollForResponse(final AeronArchive archive, final long correlationId)
     {
         final ControlResponsePoller poller = archive.controlResponsePoller();
-
         if (poller.poll() > 0 && poller.isPollComplete())
         {
-            if (poller.controlSessionId() == archive.controlSessionId() && poller.correlationId() == correlationId)
+            if (poller.controlSessionId() == archive.controlSessionId())
             {
                 if (poller.code() == ControlResponseCode.ERROR)
                 {
@@ -527,7 +526,7 @@ public class ReplayMerge implements AutoCloseable
                         ", error: " + poller.errorMessage(), (int)poller.relevantId());
                 }
 
-                return true;
+                return poller.correlationId() == correlationId;
             }
         }
 

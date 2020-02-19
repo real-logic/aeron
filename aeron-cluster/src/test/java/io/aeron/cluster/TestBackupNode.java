@@ -22,7 +22,7 @@ import org.agrona.CloseHelper;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.status.CountersReader;
 
-public class TestBackupNode
+public class TestBackupNode implements AutoCloseable
 {
     private final ClusterBackupMediaDriver clusterBackupMediaDriver;
     private boolean isClosed = false;

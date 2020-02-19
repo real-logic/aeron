@@ -17,6 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.cluster.service.Cluster;
 import io.aeron.test.SlowTest;
+import io.aeron.test.Tests;
 import org.junit.jupiter.api.Test;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -57,11 +58,10 @@ public class DynamicMembershipTest
                 awaitElectionClosed(dynamicMember);
                 assertEquals(Cluster.Role.FOLLOWER, dynamicMember.role());
 
-                final ClusterTool.ClusterMembership clusterMembership = leader.clusterMembership();
+                final ClusterTool.ClusterMembership clusterMembership = awaitMembershipSize(leader, 4);
 
                 assertEquals(leader.index(), clusterMembership.leaderMemberId);
                 assertEquals("", clusterMembership.passiveMembersStr);
-                assertEquals(4, numberOfMembers(clusterMembership));
             }
         });
     }
@@ -217,10 +217,8 @@ public class DynamicMembershipTest
                 cluster.awaitNodeTermination(follower);
                 cluster.stopNode(follower);
 
-                final ClusterTool.ClusterMembership clusterMembership = leader.clusterMembership();
-
+                final ClusterTool.ClusterMembership clusterMembership = awaitMembershipSize(leader, 2);
                 assertEquals(leader.index(), clusterMembership.leaderMemberId);
-                assertEquals(2, numberOfMembers(clusterMembership));
             }
         });
     }
@@ -241,11 +239,10 @@ public class DynamicMembershipTest
                 cluster.stopNode(initialLeader);
 
                 final TestNode newLeader = cluster.awaitLeader(initialLeader.index());
-                final ClusterTool.ClusterMembership clusterMembership = newLeader.clusterMembership();
+                final ClusterTool.ClusterMembership clusterMembership = awaitMembershipSize(newLeader, 2);
 
                 assertEquals(newLeader.index(), clusterMembership.leaderMemberId);
                 assertNotEquals(initialLeader.index(), clusterMembership.leaderMemberId);
-                assertEquals(2, numberOfMembers(clusterMembership));
             }
         });
     }
@@ -269,11 +266,10 @@ public class DynamicMembershipTest
                 cluster.stopNode(initialLeader);
 
                 final TestNode newLeader = cluster.awaitLeader(initialLeader.index());
-                final ClusterTool.ClusterMembership clusterMembership = newLeader.clusterMembership();
+                final ClusterTool.ClusterMembership clusterMembership = awaitMembershipSize(newLeader, 3);
 
                 assertEquals(newLeader.index(), clusterMembership.leaderMemberId);
                 assertNotEquals(initialLeader.index(), clusterMembership.leaderMemberId);
-                assertEquals(3, numberOfMembers(clusterMembership));
             }
         });
     }
@@ -289,13 +285,24 @@ public class DynamicMembershipTest
                 final TestNode dynamicMember = cluster.startDynamicNode(1, true);
 
                 awaitElectionClosed(dynamicMember);
-                assertEquals(2, numberOfMembers(initialLeader.clusterMembership()));
+                awaitMembershipSize(initialLeader, 2);
             }
         });
     }
 
-    private int numberOfMembers(final ClusterTool.ClusterMembership clusterMembership)
+    static ClusterTool.ClusterMembership awaitMembershipSize(final TestNode leader, final int size)
+        throws InterruptedException
     {
-        return clusterMembership.activeMembers.size();
+        while (true)
+        {
+            Thread.sleep(100);
+            Tests.checkInterruptedStatus();
+
+            final ClusterTool.ClusterMembership clusterMembership = leader.clusterMembership();
+            if (clusterMembership.activeMembers.size() == size)
+            {
+                return clusterMembership;
+            }
+        }
     }
 }

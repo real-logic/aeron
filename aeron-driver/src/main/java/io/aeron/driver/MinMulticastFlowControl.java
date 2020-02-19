@@ -101,6 +101,7 @@ public class MinMulticastFlowControl implements FlowControl
         final long receiverId = flyweight.receiverId();
         long minPosition = Long.MAX_VALUE;
         boolean isExisting = false;
+        Receiver[] receivers = this.receivers;
 
         for (final Receiver receiver : receivers)
         {
@@ -118,6 +119,7 @@ public class MinMulticastFlowControl implements FlowControl
         if (!isExisting)
         {
             receivers = add(receivers, new Receiver(position, position + windowLength, timeNs, receiverId));
+            this.receivers = receivers;
             minPosition = Math.min(minPosition, position + windowLength);
         }
 
@@ -131,6 +133,7 @@ public class MinMulticastFlowControl implements FlowControl
     {
         long minLimitPosition = Long.MAX_VALUE;
         int removed = 0;
+        Receiver[] receivers = this.receivers;
 
         for (int lastIndex = receivers.length - 1, i = lastIndex; i >= 0; i--)
         {
@@ -152,6 +155,7 @@ public class MinMulticastFlowControl implements FlowControl
         if (removed > 0)
         {
             receivers = truncateReceivers(receivers, removed);
+            this.receivers = receivers;
         }
 
         return receivers.length < groupMinSize || receivers.length == 0 ? senderLimit : minLimitPosition;

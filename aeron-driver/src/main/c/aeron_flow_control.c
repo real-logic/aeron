@@ -247,7 +247,7 @@ int aeron_default_multicast_flow_control_strategy_supplier(
 #define AERON_FLOW_CONTROL_NUMBER_BUFFER_LEN (64)
 
 int aeron_flow_control_parse_tagged_options(
-    const size_t options_length,
+    size_t options_length,
     const char *options,
     aeron_flow_control_tagged_options_t *flow_control_options)
 {

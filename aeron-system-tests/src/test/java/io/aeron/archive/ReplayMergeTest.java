@@ -61,7 +61,7 @@ public class ReplayMergeTest
         .tags("1," + PUBLICATION_TAG)
         .controlEndpoint(CONTROL_ENDPOINT)
         .controlMode(CommonContext.MDC_CONTROL_MODE_DYNAMIC)
-        .flowControl(MinMulticastFlowControl.FC_PARAM_VALUE)
+        .minFlowControl(null, "5s")
         .termLength(TERM_LENGTH);
 
     private ChannelUriStringBuilder recordingChannel = new ChannelUriStringBuilder()
@@ -84,7 +84,6 @@ public class ReplayMergeTest
 
     private final ChannelUriStringBuilder replayChannel = new ChannelUriStringBuilder()
         .media(CommonContext.UDP_MEDIA)
-        .minFlowControl(null, "5s")
         .isSessionIdTagged(true)
         .sessionId(PUBLICATION_TAG)
         .endpoint(REPLAY_ENDPOINT);

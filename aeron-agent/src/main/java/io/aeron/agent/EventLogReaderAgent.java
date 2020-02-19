@@ -20,6 +20,7 @@ import org.agrona.LangUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.MessageHandler;
+import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -39,13 +40,14 @@ import static org.agrona.BufferUtil.allocateDirectAligned;
  * Simple reader of {@link EventConfiguration#EVENT_RING_BUFFER} that appends to {@link System#out} by default
  * or to file if {@link #LOG_FILENAME_PROP_NAME} System property is set.
  */
-final class EventLogReaderAgent implements Agent, MessageHandler
+public final class EventLogReaderAgent implements Agent, MessageHandler
 {
     /**
      * Event Buffer length system property name. If not set then output will default to {@link System#out}.
      */
     public static final String LOG_FILENAME_PROP_NAME = "aeron.event.log.filename";
 
+    private final ManyToOneRingBuffer ringBuffer = EVENT_RING_BUFFER;
     private final StringBuilder builder = new StringBuilder();
     private ByteBuffer byteBuffer;
     private FileChannel fileChannel = null;
@@ -97,7 +99,7 @@ final class EventLogReaderAgent implements Agent, MessageHandler
 
     public int doWork()
     {
-        final int eventsRead = EVENT_RING_BUFFER.read(this, EVENT_READER_FRAME_LIMIT);
+        final int eventsRead = ringBuffer.read(this, EVENT_READER_FRAME_LIMIT);
         if (null != byteBuffer && byteBuffer.position() > 0)
         {
             writeBuffer(byteBuffer, fileChannel);

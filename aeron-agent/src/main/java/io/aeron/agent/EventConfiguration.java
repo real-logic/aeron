@@ -103,7 +103,7 @@ final class EventConfiguration
     /**
      * Event Buffer default length (in bytes).
      */
-    public static final int BUFFER_LENGTH_DEFAULT = 4 * 1024 * 1024;
+    public static final int BUFFER_LENGTH_DEFAULT = 8 * 1024 * 1024;
 
     /**
      * Maximum length of an event in bytes.
@@ -113,7 +113,7 @@ final class EventConfiguration
     /**
      * Iteration limit for event reader loop.
      */
-    public static final int EVENT_READER_FRAME_LIMIT = 16;
+    public static final int EVENT_READER_FRAME_LIMIT = 20;
 
     /**
      * Ring Buffer to use for logging that will be read by {@link EventLogAgent#READER_CLASSNAME_PROP_NAME}.
@@ -122,10 +122,8 @@ final class EventConfiguration
 
     static
     {
-        final int bufferLength = getSizeAsInt(BUFFER_LENGTH_PROP_NAME, BUFFER_LENGTH_DEFAULT) + TRAILER_LENGTH;
-
-        EVENT_RING_BUFFER = new ManyToOneRingBuffer(
-            new UnsafeBuffer(allocateDirectAligned(bufferLength, CACHE_LINE_LENGTH)));
+        EVENT_RING_BUFFER = new ManyToOneRingBuffer(new UnsafeBuffer(allocateDirectAligned(
+            getSizeAsInt(BUFFER_LENGTH_PROP_NAME, BUFFER_LENGTH_DEFAULT) + TRAILER_LENGTH, CACHE_LINE_LENGTH)));
     }
 
     public static final EnumSet<DriverEventCode> DRIVER_EVENT_CODES = EnumSet.noneOf(DriverEventCode.class);

@@ -54,6 +54,7 @@ public final class ClusterEventLogger
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
         final int index = ringBuffer.tryClaim(toEventCodeId(NEW_LEADERSHIP_TERM), encodedLength);
+
         if (index > 0)
         {
             try
@@ -84,6 +85,7 @@ public final class ClusterEventLogger
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
         final int index = ringBuffer.tryClaim(toEventCodeId(eventCode), encodedLength);
+
         if (index > 0)
         {
             try

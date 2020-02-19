@@ -32,7 +32,9 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
@@ -511,6 +513,7 @@ public class CommonContext implements Cloneable
         return checkDebugTimeout(driverTimeoutMs, TimeUnit.MILLISECONDS);
     }
 
+    private static final Map<String, Boolean> DEBUG_FIELDS_SEEN = new ConcurrentHashMap<>();
     /**
      * Override the supplied timeout with the debug value if it has been set and we are in debug mode.
      *
@@ -535,10 +538,13 @@ public class CommonContext implements Cloneable
             final StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
             final String methodName = stackTrace[2].getMethodName();
             final String className = stackTrace[2].getClassName();
-            final String message = "Using debug timeout [" + debugTimeout + "] for " + className + "." + methodName +
-                " replacing [" + timeout + "]";
-
-            System.out.println(message);
+            final String debugFieldName = className + "." + methodName;
+            if (null == DEBUG_FIELDS_SEEN.putIfAbsent(debugFieldName, true))
+            {
+                final String message = "Using debug timeout [" + debugTimeout + "] for " + debugFieldName +
+                    " replacing [" + timeout + "]";
+                System.out.println(message);
+            }
 
             return debugTimeout;
         }

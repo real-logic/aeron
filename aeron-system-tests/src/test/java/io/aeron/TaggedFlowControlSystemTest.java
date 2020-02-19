@@ -30,12 +30,13 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import static io.aeron.FlowControlTests.waitForConnectionAndStatusMessages;
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-public class TaggedFlowControlTest
+public class TaggedFlowControlSystemTest
 {
     private static final String MULTICAST_URI = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost";
     private static final int STREAM_ID = 1001;
@@ -344,33 +345,24 @@ public class TaggedFlowControlTest
 
                 publication = clientA.addPublication(uriWithTaggedFlowControl, STREAM_ID);
 
-                Thread.sleep(100);
-                assertFalse(publication.isConnected());
-
                 subscription0 = clientA.addSubscription(uriPlain, STREAM_ID);
-
-                Thread.sleep(100);
-                assertFalse(publication.isConnected());
-
                 subscription1 = clientA.addSubscription(uriPlain, STREAM_ID);
                 subscription2 = clientA.addSubscription(uriPlain, STREAM_ID);
-
-                Thread.sleep(100);
-                assertFalse(publication.isConnected());
-
                 subscription3 = clientB.addSubscription(uriWithReceiverTag, STREAM_ID);
+                subscription4 = clientC.addSubscription(uriWithReceiverTag, STREAM_ID);
 
-                Thread.sleep(100);
+                waitForConnectionAndStatusMessages(
+                    clientA.countersReader(),
+                    subscription0, subscription1, subscription2, subscription3, subscription4);
+
                 assertFalse(publication.isConnected());
 
-                subscription4 = clientC.addSubscription(uriWithReceiverTag, STREAM_ID);
                 subscription5 = clientD.addSubscription(uriWithReceiverTag, STREAM_ID);
 
                 // Should now have 3 receivers and publication should eventually be connected.
                 while (!publication.isConnected())
                 {
-                    Tests.checkInterruptedStatus();
-                    Thread.sleep(1);
+                    Tests.sleep(1);
                 }
 
                 subscription5.close();
@@ -379,8 +371,7 @@ public class TaggedFlowControlTest
                 // Lost a receiver and publication should eventually be disconnected.
                 while (publication.isConnected())
                 {
-                    Tests.checkInterruptedStatus();
-                    Thread.sleep(1);
+                    Tests.sleep(1);
                 }
 
                 subscription5 = clientD.addSubscription(uriWithReceiverTag, STREAM_ID);
@@ -388,8 +379,7 @@ public class TaggedFlowControlTest
                 // Aaaaaand reconnect.
                 while (!publication.isConnected())
                 {
-                    Tests.checkInterruptedStatus();
-                    Thread.sleep(1);
+                    Tests.sleep(1);
                 }
             }
             finally
@@ -412,8 +402,10 @@ public class TaggedFlowControlTest
 
         final ChannelUriStringBuilder builder = new ChannelUriStringBuilder()
             .media("udp")
-            .endpoint("224.20.30.39:24326")
+            .endpoint("224.20.30.41:24326")
             .networkInterface("localhost");
+
+        final String plainUri = builder.build();
 
         final String uriWithReceiverTag = builder
             .receiverTag(receiverTag)
@@ -430,16 +422,23 @@ public class TaggedFlowControlTest
             launch();
 
             publication = clientA.addPublication(uriWithTaggedFlowControl, STREAM_ID);
+            final Publication otherPublication = clientA.addPublication(plainUri, STREAM_ID + 1);
 
-            Thread.sleep(100);
+            final Subscription otherSubscription = clientA.addSubscription(plainUri, STREAM_ID + 1);
+
+            while (!otherPublication.isConnected())
+            {
+                Tests.sleep(1);
+            }
+            // We know another publication on the same channel is connected
+
             assertFalse(publication.isConnected());
 
             subscriptionA = clientA.addSubscription(uriWithReceiverTag, STREAM_ID);
 
             while (!publication.isConnected())
             {
-                Tests.checkInterruptedStatus();
-                Thread.sleep(1);
+                Tests.sleep(1);
             }
         });
     }
@@ -466,7 +465,8 @@ public class TaggedFlowControlTest
 
             subscriptionA = clientA.addSubscription(subscriberUri, STREAM_ID);
 
-            Tests.sleep(200);
+            waitForConnectionAndStatusMessages(countersReader, subscriptionA);
+
             assertEquals(currentSenderLimit, countersReader.getCounterValue(senderLimitCounterId));
 
             subscriptionB = clientB.addSubscription(groupSubscriberUri, STREAM_ID);

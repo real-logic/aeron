@@ -21,9 +21,9 @@
 #include "aeron_driver_common.h"
 #include "aeronmd.h"
 
-#define AERON_MAX_FLOW_CONTROL_STRAEGY_NAME "max"
-#define AERON_MIN_FLOW_CONTROL_STRAEGY_NAME "min"
-#define AERON_TAGGED_FLOW_CONTROL_STRAEGY_NAME "tagged"
+#define AERON_MAX_FLOW_CONTROL_STRATEGY_NAME "max"
+#define AERON_MIN_FLOW_CONTROL_STRATEGY_NAME "min"
+#define AERON_TAGGED_FLOW_CONTROL_STRATEGY_NAME "tagged"
 
 typedef int64_t (*aeron_flow_control_strategy_on_idle_func_t)(
     void *state,
@@ -143,7 +143,7 @@ typedef struct aeron_flow_control_strategy_supplier_func_table_entry_stct
 aeron_flow_control_strategy_supplier_func_table_entry_t;
 
 int aeron_flow_control_parse_tagged_options(
-    const size_t options_length,
+    size_t options_length,
     const char *options,
     aeron_flow_control_tagged_options_t *flow_control_options);
 

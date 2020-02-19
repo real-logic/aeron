@@ -194,18 +194,18 @@ int aeron_default_multicast_flow_control_strategy_supplier(
                 return -1;
             }
 
-            if (strlen(AERON_MAX_FLOW_CONTROL_STRAEGY_NAME) == strategy_name_length &&
-                0 == strncmp(AERON_MAX_FLOW_CONTROL_STRAEGY_NAME, strategy_name, strategy_name_length))
+            if (strlen(AERON_MAX_FLOW_CONTROL_STRATEGY_NAME) == strategy_name_length &&
+                0 == strncmp(AERON_MAX_FLOW_CONTROL_STRATEGY_NAME, strategy_name, strategy_name_length))
             {
                 flow_control_strategy_supplier_func = aeron_max_multicast_flow_control_strategy_supplier;
             }
-            else if (strlen(AERON_MIN_FLOW_CONTROL_STRAEGY_NAME) == strategy_name_length &&
-                0 == strncmp(AERON_MIN_FLOW_CONTROL_STRAEGY_NAME, strategy_name, strategy_name_length))
+            else if (strlen(AERON_MIN_FLOW_CONTROL_STRATEGY_NAME) == strategy_name_length &&
+                0 == strncmp(AERON_MIN_FLOW_CONTROL_STRATEGY_NAME, strategy_name, strategy_name_length))
             {
                 flow_control_strategy_supplier_func = aeron_min_flow_control_strategy_supplier;
             }
-            else if (strlen(AERON_TAGGED_FLOW_CONTROL_STRAEGY_NAME) == strategy_name_length &&
-                0 == strncmp(AERON_TAGGED_FLOW_CONTROL_STRAEGY_NAME, strategy_name, strategy_name_length))
+            else if (strlen(AERON_TAGGED_FLOW_CONTROL_STRATEGY_NAME) == strategy_name_length &&
+                0 == strncmp(AERON_TAGGED_FLOW_CONTROL_STRATEGY_NAME, strategy_name, strategy_name_length))
             {
                 flow_control_strategy_supplier_func = aeron_tagged_flow_control_strategy_supplier;
             }

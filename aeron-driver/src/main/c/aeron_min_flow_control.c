@@ -19,15 +19,11 @@
 #define _GNU_SOURCE
 #endif
 
-#include <stdlib.h>
 #include <errno.h>
 #include <inttypes.h>
 #include "protocol/aeron_udp_protocol.h"
 #include "concurrent/aeron_logbuffer_descriptor.h"
-#include "concurrent/aeron_thread.h"
-#include "util/aeron_error.h"
 #include "util/aeron_arrayutil.h"
-#include "util/aeron_parse_util.h"
 #include "aeron_flow_control.h"
 #include "aeron_alloc.h"
 #include "aeron_driver_context.h"
@@ -35,8 +31,6 @@
 #include "media/aeron_udp_channel.h"
 #include "uri/aeron_uri.h"
 #include "concurrent/aeron_atomic.h"
-
-
 
 typedef struct aeron_min_flow_control_strategy_receiver_stct
 {
@@ -84,7 +78,7 @@ int64_t aeron_min_flow_control_strategy_on_idle(
     aeron_min_flow_control_strategy_state_t *strategy_state = (aeron_min_flow_control_strategy_state_t *)state;
     int64_t min_limit_position = INT64_MAX;
 
-    for (int last_index = (int) strategy_state->receivers.length - 1, i = last_index; i >= 0; i--)
+    for (int last_index = (int)strategy_state->receivers.length - 1, i = last_index; i >= 0; i--)
     {
         aeron_min_flow_control_strategy_receiver_t *receiver = &strategy_state->receivers.array[i];
 
@@ -264,7 +258,7 @@ int64_t aeron_tagged_flow_control_strategy_on_idle(
     aeron_min_flow_control_strategy_state_t *min_strategy_state = (aeron_min_flow_control_strategy_state_t *)state;
     int64_t min_limit_position = INT64_MAX;
 
-    for (int last_index = (int) min_strategy_state->receivers.length - 1, i = last_index; i >= 0; i--)
+    for (int last_index = (int)min_strategy_state->receivers.length - 1, i = last_index; i >= 0; i--)
     {
         aeron_min_flow_control_strategy_receiver_t *receiver = &min_strategy_state->receivers.array[i];
 

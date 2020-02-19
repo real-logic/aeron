@@ -35,6 +35,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.util.concurrent.TimeUnit;
 
 import static io.aeron.archive.Common.*;
 import static io.aeron.archive.codecs.SourceLocation.REMOTE;
@@ -106,6 +107,7 @@ public class ReplayMergeTest
                 .publicationTermBufferLength(TERM_LENGTH)
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Throwable::printStackTrace)
+                .flowControlReceiverTimeoutNs(TimeUnit.SECONDS.toNanos(5))
                 .spiesSimulateConnection(false)
                 .dirDeleteOnShutdown(true)
                 .dirDeleteOnStart(true),

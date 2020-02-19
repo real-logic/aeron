@@ -84,6 +84,7 @@ public class ReplayMergeTest
 
     private final ChannelUriStringBuilder replayChannel = new ChannelUriStringBuilder()
         .media(CommonContext.UDP_MEDIA)
+        .minFlowControl(null, "5s")
         .isSessionIdTagged(true)
         .sessionId(PUBLICATION_TAG)
         .endpoint(REPLAY_ENDPOINT);
@@ -107,7 +108,6 @@ public class ReplayMergeTest
                 .publicationTermBufferLength(TERM_LENGTH)
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Throwable::printStackTrace)
-                .flowControlReceiverTimeoutNs(TimeUnit.SECONDS.toNanos(5))
                 .spiesSimulateConnection(false)
                 .dirDeleteOnShutdown(true)
                 .dirDeleteOnStart(true),

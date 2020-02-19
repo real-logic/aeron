@@ -579,10 +579,10 @@ public class ClusterTest
                     messageThread.join();
                 }
 
+                awaitElectionClosed(followerB);
                 assertEquals(0L, leader.errors());
                 assertEquals(0L, followerA.errors());
                 assertEquals(0L, followerB.errors());
-                assertEquals(Election.State.CLOSED, followerB.electionState());
             }
         });
     }
@@ -716,13 +716,12 @@ public class ClusterTest
                 final TestNode oldFollower2 = cluster.startStaticNode(followers.get(1).index(), true);
 
                 cluster.awaitLeader();
+                awaitElectionClosed(oldFollower1);
+                awaitElectionClosed(oldFollower2);
 
                 assertEquals(0L, oldLeader.errors());
                 assertEquals(0L, oldFollower1.errors());
                 assertEquals(0L, oldFollower2.errors());
-
-                assertEquals(Election.State.CLOSED, oldFollower1.electionState());
-                assertEquals(Election.State.CLOSED, oldFollower2.electionState());
             }
         });
     }

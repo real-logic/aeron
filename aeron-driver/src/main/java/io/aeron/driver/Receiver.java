@@ -30,6 +30,7 @@ import org.agrona.concurrent.status.AtomicCounter;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 
 import static io.aeron.driver.Configuration.PENDING_SETUPS_TIMEOUT_NS;
 import static io.aeron.driver.status.SystemCounterDescriptor.BYTES_RECEIVED;
@@ -39,6 +40,8 @@ import static io.aeron.driver.status.SystemCounterDescriptor.BYTES_RECEIVED;
  */
 public class Receiver implements Agent
 {
+    private static final long RE_RESOLUTION_CHECK_TIMEOUT = TimeUnit.SECONDS.toNanos(1);
+
     private final DataTransportPoller dataTransportPoller;
     private final OneToOneConcurrentArrayQueue<Runnable> commandQueue;
     private final AtomicCounter totalBytesReceived;
@@ -46,6 +49,8 @@ public class Receiver implements Agent
     private final ArrayList<PublicationImage> publicationImages = new ArrayList<>();
     private final ArrayList<PendingSetupMessageFromSource> pendingSetupMessages = new ArrayList<>();
     private final DriverConductorProxy conductorProxy;
+    private final long reResolutionCheckTimeoutNs;
+    private long reResolutionDeadlineNs;
 
     public Receiver(final MediaDriver.Context ctx)
     {
@@ -54,6 +59,8 @@ public class Receiver implements Agent
         totalBytesReceived = ctx.systemCounters().get(BYTES_RECEIVED);
         nanoClock = ctx.cachedNanoClock();
         conductorProxy = ctx.driverConductorProxy();
+        reResolutionCheckTimeoutNs = RE_RESOLUTION_CHECK_TIMEOUT;
+        reResolutionDeadlineNs = nanoClock.nanoTime() + reResolutionCheckTimeoutNs;
     }
 
     public void onClose()
@@ -91,6 +98,13 @@ public class Receiver implements Agent
         }
 
         checkPendingSetupMessages(nowNs);
+
+        if ((reResolutionDeadlineNs - nowNs) < 0)
+        {
+            dataTransportPoller.checkForReResolutions(nowNs, conductorProxy);
+
+            reResolutionDeadlineNs = nowNs + reResolutionCheckTimeoutNs;
+        }
 
         return workCount + bytesReceived;
     }
@@ -224,6 +238,23 @@ public class Receiver implements Agent
                 {
                     image.removeDestination(transportIndex);
                 }
+            }
+        }
+    }
+
+    public void onReResolve(
+        final ReceiveChannelEndpoint channelEndpoint, final UdpChannel channel, final InetSocketAddress newAddress)
+    {
+        final int transportIndex = channelEndpoint.hasDestinationControl() ?
+            channelEndpoint.destination(channel) : 0;
+
+        for (final PendingSetupMessageFromSource pending : this.pendingSetupMessages)
+        {
+            if (pending.channelEndpoint() == channelEndpoint &&
+                pending.isPeriodic() &&
+                pending.transportIndex() == transportIndex)
+            {
+                pending.controlAddress(newAddress);
             }
         }
     }

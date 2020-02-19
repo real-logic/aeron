@@ -17,6 +17,7 @@ package io.aeron.driver;
 
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.SendChannelEndpoint;
+import io.aeron.driver.media.UdpChannel;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.net.InetSocketAddress;
@@ -116,6 +117,22 @@ public class DriverConductorProxy
         else
         {
             offer(() -> driverConductor.onReResolveEndpoint(endpoint, channelEndpoint, address));
+        }
+    }
+
+    public void reResolveControl(
+        final String endpoint,
+        final UdpChannel udpChannel,
+        final ReceiveChannelEndpoint channelEndpoint,
+        final InetSocketAddress address)
+    {
+        if (notConcurrent())
+        {
+            driverConductor.onReResolveControl(endpoint, udpChannel, channelEndpoint, address);
+        }
+        else
+        {
+            offer(() -> driverConductor.onReResolveControl(endpoint, udpChannel, channelEndpoint, address));
         }
     }
 

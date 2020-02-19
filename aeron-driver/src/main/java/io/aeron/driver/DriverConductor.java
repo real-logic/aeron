@@ -317,6 +317,20 @@ public class DriverConductor implements Agent
         }
     }
 
+    void onReResolveControl(
+        final String endpoint,
+        final UdpChannel udpChannel,
+        final ReceiveChannelEndpoint channelEndpoint,
+        final InetSocketAddress address)
+    {
+        final InetSocketAddress newAddress = UdpChannel.resolve(endpoint, nameResolver);
+
+        if (!newAddress.isUnresolved() && !address.equals(newAddress))
+        {
+            receiverProxy.onReResolve(channelEndpoint, udpChannel, newAddress);
+        }
+    }
+
     void closeChannelEndpoints()
     {
         receiveChannelEndpointByChannelMap.values().forEach(UdpChannelTransport::close);

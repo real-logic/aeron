@@ -16,6 +16,8 @@
 package io.aeron.driver.media;
 
 import io.aeron.AeronCloseHelper;
+import io.aeron.CommonContext;
+import io.aeron.driver.DriverConductorProxy;
 import org.agrona.ErrorHandler;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.NanoClock;
@@ -108,6 +110,28 @@ final class MultiRcvDestination
         }
 
         return index;
+    }
+
+    void checkForReResolution(
+        final ReceiveChannelEndpoint channelEndpoint, final long nowNs, final DriverConductorProxy conductorProxy)
+    {
+        for (final ReceiveDestinationTransport transport : transports)
+        {
+            if (null != transport)
+            {
+                final UdpChannel udpChannel = transport.udpChannel();
+
+                if (udpChannel.hasExplicitControl() &&
+                    (transport.timeOfLastActivityNs() + destinationEndpointTimeoutNs) < nowNs)
+                {
+                    final String endpoint = udpChannel.channelUri().get(CommonContext.MDC_CONTROL_PARAM_NAME);
+                    final InetSocketAddress address = udpChannel.localControl();
+
+                    conductorProxy.reResolveControl(endpoint, udpChannel, channelEndpoint, address);
+                    transport.timeOfLastActivityNs(nowNs);
+                }
+            }
+        }
     }
 
     int sendToAll(

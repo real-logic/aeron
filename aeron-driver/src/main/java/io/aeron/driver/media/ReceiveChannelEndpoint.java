@@ -29,6 +29,7 @@ import org.agrona.AsciiEncoding;
 import org.agrona.collections.Hashing;
 import org.agrona.collections.Int2IntCounterMap;
 import org.agrona.collections.Long2LongCounterMap;
+import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 
@@ -63,9 +64,11 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     private final Int2IntCounterMap refCountByStreamIdMap = new Int2IntCounterMap(0);
     private final Long2LongCounterMap refCountByStreamIdAndSessionIdMap = new Long2LongCounterMap(0);
     private final MultiRcvDestination multiRcvDestination;
+    private final NanoClock nanoClock;
     private final Long receiverTag;
 
     private final long receiverId;
+    private long timeOfLastActivityNs;
 
     public ReceiveChannelEndpoint(
         final UdpChannel udpChannel,
@@ -88,6 +91,8 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         nakFlyweight = threadLocals.nakFlyweight();
         rttMeasurementBuffer = threadLocals.rttMeasurementBuffer();
         rttMeasurementFlyweight = threadLocals.rttMeasurementFlyweight();
+        nanoClock = context.cachedNanoClock();
+        timeOfLastActivityNs = nanoClock.nanoTime();
         receiverId = threadLocals.receiverId();
 
         final String receiverTagStr = udpChannel.channelUri().get(CommonContext.RECEIVER_TAG_PARAM_NAME);
@@ -389,6 +394,8 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         final InetSocketAddress srcAddress,
         final int transportIndex)
     {
+        updateTimeOfLastAcvitity(nanoClock.nanoTime(), transportIndex);
+
         return dispatcher.onDataPacket(this, header, buffer, length, srcAddress, transportIndex);
     }
 
@@ -399,6 +406,8 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         final InetSocketAddress srcAddress,
         final int transportIndex)
     {
+        updateTimeOfLastAcvitity(nanoClock.nanoTime(), transportIndex);
+
         dispatcher.onSetupMessage(this, header, srcAddress, transportIndex);
     }
 
@@ -412,6 +421,8 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         final long requestedReceiverId = header.receiverId();
         if (requestedReceiverId == receiverId || requestedReceiverId == 0)
         {
+            updateTimeOfLastAcvitity(nanoClock.nanoTime(), transportIndex);
+
             dispatcher.onRttMeasurement(this, header, srcAddress, transportIndex);
         }
     }
@@ -578,6 +589,22 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         return dispatcher.shouldElicitSetupMessage();
     }
 
+    public void checkForReResolution(final long nowNs, final DriverConductorProxy conductorProxy)
+    {
+        if (null != multiRcvDestination)
+        {
+            multiRcvDestination.checkForReResolution(this, nowNs, conductorProxy);
+        }
+        else if (udpChannel.hasExplicitControl() && nowNs > (timeOfLastActivityNs + DESTINATION_ADDRESS_TIMEOUT))
+        {
+            final String endpoint = udpChannel.channelUri().get(CommonContext.MDC_CONTROL_PARAM_NAME);
+            final InetSocketAddress address = udpChannel.localControl();
+
+            conductorProxy.reResolveControl(endpoint, udpChannel, this, address);
+            timeOfLastActivityNs = nowNs;
+        }
+    }
+
     protected void send(final ByteBuffer buffer, final int bytesToSend, final ImageConnection[] imageConnections)
     {
         final int bytesSent;
@@ -618,6 +645,20 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         if (bytesToSend != bytesSent)
         {
             shortSends.increment();
+        }
+    }
+
+    protected void updateTimeOfLastAcvitity(final long nowNs, final int transportIndex)
+    {
+        if (null == multiRcvDestination)
+        {
+            timeOfLastActivityNs = nowNs;
+        }
+        else
+        {
+            final ReceiveDestinationTransport transport = multiRcvDestination.transport(transportIndex);
+
+            transport.timeOfLastActivityNs(nowNs);
         }
     }
 }

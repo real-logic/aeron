@@ -161,7 +161,8 @@ public class ReceiverTest
 
         final MediaDriver.Context context = new MediaDriver.Context()
             .applicationSpecificFeedback(Configuration.applicationSpecificFeedback())
-            .systemCounters(mockSystemCounters);
+            .systemCounters(mockSystemCounters)
+            .cachedNanoClock(nanoClock);
 
         context.receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals(context));
 

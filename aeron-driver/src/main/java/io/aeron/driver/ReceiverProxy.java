@@ -20,6 +20,7 @@ import io.aeron.driver.media.ReceiveDestinationTransport;
 import io.aeron.driver.media.UdpChannel;
 import org.agrona.concurrent.status.AtomicCounter;
 
+import java.net.InetSocketAddress;
 import java.util.Queue;
 
 import static io.aeron.driver.ThreadingMode.INVOKER;
@@ -172,6 +173,19 @@ public class ReceiverProxy
         else
         {
             offer(() -> receiver.onRemoveDestination(channelEndpoint, udpChannel));
+        }
+    }
+
+    public void onReResolve(
+        final ReceiveChannelEndpoint channelEndpoint, final UdpChannel udpChannel, final InetSocketAddress newAddress)
+    {
+        if (notConcurrent())
+        {
+            receiver.onReResolve(channelEndpoint, udpChannel, newAddress);
+        }
+        else
+        {
+            offer(() -> receiver.onReResolve(channelEndpoint, udpChannel, newAddress));
         }
     }
 

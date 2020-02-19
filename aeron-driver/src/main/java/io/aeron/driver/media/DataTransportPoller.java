@@ -17,6 +17,7 @@ package io.aeron.driver.media;
 
 import io.aeron.AeronCloseHelper;
 import io.aeron.driver.Configuration;
+import io.aeron.driver.DriverConductorProxy;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.SetupFlyweight;
@@ -147,6 +148,14 @@ public class DataTransportPoller extends UdpTransportPoller
         if (index != ArrayUtil.UNKNOWN_INDEX)
         {
             channelAndTransports = ArrayUtil.remove(transports, index);
+        }
+    }
+
+    public void checkForReResolutions(final long nowNs, final DriverConductorProxy conductorProxy)
+    {
+        for (final ChannelAndTransport channelAndTransport : channelAndTransports)
+        {
+            channelAndTransport.channelEndpoint.checkForReResolution(nowNs, conductorProxy);
         }
     }
 

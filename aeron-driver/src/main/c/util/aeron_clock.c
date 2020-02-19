@@ -24,6 +24,7 @@
 #include "aeron_alloc.h"
 #include "util/aeron_bitutil.h"
 #include "concurrent/aeron_atomic.h"
+#include "aeron_windows.h"
 
 int64_t aeron_nano_clock()
 {

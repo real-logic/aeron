@@ -35,14 +35,18 @@ aeron_flow_control_strategy_supplier_func_t aeron_flow_control_strategy_supplier
 {
     aeron_flow_control_strategy_supplier_func_t func = NULL;
 
+#if defined(AERON_COMPILER_GCC)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
+#endif
     if ((func = (aeron_flow_control_strategy_supplier_func_t)aeron_dlsym(RTLD_DEFAULT, strategy_name)) == NULL)
     {
         aeron_set_err(EINVAL, "could not find flow control strategy %s: dlsym - %s", strategy_name, aeron_dlerror());
         return NULL;
     }
+#if defined(AERON_COMPILER_GCC)
 #pragma GCC diagnostic pop
+#endif
 
     return func;
 }

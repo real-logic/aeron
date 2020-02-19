@@ -33,16 +33,16 @@
     #define aeron_mutex_init pthread_mutex_init
     #define aeron_mutex_lock pthread_mutex_lock
     #define aeron_mutex_unlock pthread_mutex_unlock
-	#define aeron_thread_once pthread_once 
-	#define aeron_thread_attr_init pthread_attr_init 
-	#define aeron_thread_create pthread_create 
-	#define aeron_thread_set_name pthread_setname_np 
-	#define aeron_thread_self pthread_self 
-	#define aeron_thread_join pthread_join 
-	#define aeron_thread_key_create pthread_key_create 
-	#define aeron_thread_key_delete pthread_key_delete 
-	#define aeron_thread_get_specific pthread_getspecific 
-	#define aeron_thread_set_specific pthread_setspecific 
+    #define aeron_thread_once pthread_once
+    #define aeron_thread_attr_init pthread_attr_init
+    #define aeron_thread_create pthread_create
+    #define aeron_thread_set_name pthread_setname_np
+    #define aeron_thread_self pthread_self
+    #define aeron_thread_join pthread_join
+    #define aeron_thread_key_create pthread_key_create
+    #define aeron_thread_key_delete pthread_key_delete
+    #define aeron_thread_get_specific pthread_getspecific
+    #define aeron_thread_set_specific pthread_setspecific
 
 #elif defined(AERON_COMPILER_MSVC)
 
@@ -54,7 +54,6 @@
 
     typedef HANDLE aeron_thread_t;
 
-    typedef SSIZE_T ssize_t;
     typedef INIT_ONCE AERON_INIT_ONCE;
 
     typedef DWORD pthread_attr_t;

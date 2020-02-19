@@ -21,14 +21,15 @@
 
 #if defined(AERON_COMPILER_GCC)
 
-#define aeron_erand48 erand48 
-#define aeron_srand48 srand48 
+#define aeron_erand48 erand48
+#define aeron_srand48 srand48
 #define aeron_drand48 drand48
 #define aeron_strndup strndup
 
 #elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
 
 #include <basetsd.h>
+#include <stddef.h>
 
 double aeron_erand48(unsigned short xsubi[3]);
 void aeron_srand48(UINT64 aeron_nano_clock);
@@ -36,6 +37,7 @@ double aeron_drand48();
 int aeron_clock_gettime_monotonic(struct timespec *tp);
 int aeron_clock_gettime_realtime(struct timespec *tp);
 char *aeron_strndup(const char *value, size_t length);
+void localtime_r(const time_t* timep, struct tm* result);
 
 #endif
 

@@ -41,39 +41,11 @@ const char *aeron_dlinfo(const void *addr, char *buffer, size_t max_buffer_lengt
 #elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
 
 #include "aeron_flow_control.h"
+#include "aeron_congestion_control.h"
 #include "concurrent/aeron_counters_manager.h"
 #include "aeron_driver.h"
 
 #ifdef AERON_DRIVER
-int aeron_max_multicast_flow_control_strategy_supplier(
-    aeron_flow_control_strategy_t **strategy,
-    size_t channel_length,
-    const char *channel,
-    int32_t stream_id,
-    int64_t registration_id,
-    int32_t initial_term_id,
-    size_t term_buffer_capacity);
-
-int aeron_unicast_flow_control_strategy_supplier(
-    aeron_flow_control_strategy_t **strategy,
-    size_t channel_length,
-    const char *channel,
-    int32_t stream_id,
-    int64_t registration_id,
-    int32_t initial_term_id,
-    size_t term_buffer_capacity);
-
-int aeron_static_window_congestion_control_strategy_supplier(
-    aeron_congestion_control_strategy_t **strategy,
-    size_t channel_length,
-    const char *channel,
-    int32_t stream_id,
-    int32_t session_id,
-    int64_t registration_id,
-    int32_t term_length,
-    int32_t sender_mtu_length,
-    aeron_driver_context_t *context,
-    aeron_counters_manager_t *counters_manager);
 
 void* aeron_dlsym_fallback(LPCSTR name)
 {
@@ -119,20 +91,20 @@ HMODULE GetCurrentModule()
 
 void aeron_init_dlopen_support()
 {
-	if (modules == NULL)
-	{
-		modules = (HMODULE*)malloc(sizeof(HMODULE) * modules_capacity);
-		memset(modules, 0, sizeof(HMODULE) * modules_capacity);
-		modules[0] = GetCurrentModule();
-		modules_size = modules[0] != NULL;
-	}
+    if (modules == NULL)
+    {
+        modules = (HMODULE*)malloc(sizeof(HMODULE) * modules_capacity);
+        memset(modules, 0, sizeof(HMODULE) * modules_capacity);
+        modules[0] = GetCurrentModule();
+        modules_size = modules[0] != NULL;
+    }
 }
 
 void* aeron_dlsym(HMODULE module, LPCSTR name)
 {
     aeron_init_dlopen_support();
 
-    if (module == (HMODULE)RTLD_DEFAULT)
+    if (module == RTLD_DEFAULT)
     {
         for (size_t i = 1; i <= modules_size; i++)
         {
@@ -146,16 +118,16 @@ void* aeron_dlsym(HMODULE module, LPCSTR name)
         return aeron_dlsym_fallback(name);
     }
 
-    if (module == (HMODULE)RTLD_NEXT)
+    if (module == RTLD_NEXT)
     {
         BOOL firstFound = FALSE;
-		for (size_t i = 1; i <= modules_size; i++)
-		{
+        for (size_t i = 1; i <= modules_size; i++)
+        {
             void* res = aeron_dlsym(modules[modules_size - i], name);
-			if (res != NULL && firstFound)
-			{
+            if (res != NULL && firstFound)
+            {
                 return res;
-			}
+            }
 
             if (res != NULL && !firstFound)
             {
@@ -175,13 +147,13 @@ HMODULE aeron_dlopen(LPCSTR filename)
 
     HMODULE module = LoadLibraryA(filename);
 
-	if (modules_size == modules_capacity)
-	{
-		modules_capacity = modules_capacity * 2;
-		modules = (HMODULE*)realloc(modules, sizeof(HMODULE) * modules_capacity);
-	}
+    if (modules_size == modules_capacity)
+    {
+        modules_capacity = modules_capacity * 2;
+        modules = (HMODULE*)realloc(modules, sizeof(HMODULE) * modules_capacity);
+    }
 
-	modules[modules_size++] = module;
+    modules[modules_size++] = module;
 
     return module;
 }
@@ -204,9 +176,10 @@ char* aeron_dlerror()
     return messageBuffer;
 }
 
-const char *aeron_dlinfo(const void *addr)
+const char *aeron_dlinfo(const void *addr, char* buffer, size_t max_buffer_length)
 {
-    return "";
+    buffer[0] = '\0';
+    return buffer;
 }
 
 #else

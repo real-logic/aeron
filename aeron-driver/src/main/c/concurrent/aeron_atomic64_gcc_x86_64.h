@@ -64,16 +64,6 @@ do \
 } \
 while (false)
 
-#define AERON_CMPXCHG64(original, dst, expected, desired) \
-do \
-{ \
-    asm volatile( \
-        "lock; cmpxchgq %2, %1" \
-        : "=a"(original), "+m"(dst) \
-        : "q"(desired), "0"(expected)); \
-} \
-while (false)
-
 inline bool aeron_cmpxchg64(volatile int64_t* destination, int64_t expected, int64_t desired)
 {
     int64_t original;

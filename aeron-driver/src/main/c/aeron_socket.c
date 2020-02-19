@@ -56,7 +56,7 @@ void aeron_close_socket(int socket)
 
 #elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
 
-#if  _WIN32_WINNT < 0x0600
+#if _WIN32_WINNT < 0x0600
 #error Unsupported windows version
 #endif
 

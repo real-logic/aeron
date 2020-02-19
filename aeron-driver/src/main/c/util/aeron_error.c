@@ -159,7 +159,7 @@ void aeron_set_windows_error()
     const DWORD errorId = GetLastError();
     LPSTR messageBuffer = NULL;
 
-    FormatMessageA(
+    const DWORD result = FormatMessageA(
         FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
         NULL,
         errorId,
@@ -168,8 +168,14 @@ void aeron_set_windows_error()
         0,
         NULL);
 
-    aeron_set_err(errorId, messageBuffer);
-    free(messageBuffer);
+    if (result == 0)
+    {
+        aeron_set_err(errorId, "error code %d", errorId);
+        return;
+    }
+
+    aeron_set_err(errorId, "%s", messageBuffer);
+    LocalFree(messageBuffer);
 }
 
 bool aeron_error_dll_process_attach()
@@ -178,7 +184,7 @@ bool aeron_error_dll_process_attach()
     {
         return false;
     }
-	
+
     error_key = TlsAlloc();
     return error_key != TLS_OUT_OF_INDEXES;
 }
@@ -205,7 +211,7 @@ void aeron_error_dll_process_detach()
     {
         return;
     }
-	
+
     aeron_error_dll_thread_detach();
 
     aeron_thread_key_delete(error_key);

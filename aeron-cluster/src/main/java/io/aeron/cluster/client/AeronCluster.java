@@ -1398,6 +1398,8 @@ public final class AeronCluster implements AutoCloseable
         private long leadershipTermId;
         private int leaderMemberId;
         private int step = 0;
+        private int messageLength = 0;
+        private boolean isChallenged = false;
 
         private final Context ctx;
         private final NanoClock nanoClock;
@@ -1553,18 +1555,21 @@ public final class AeronCluster implements AutoCloseable
 
         private void prepareConnectRequest()
         {
-            if (Aeron.NULL_VALUE == correlationId)
+            if (Aeron.NULL_VALUE == correlationId || isChallenged)
             {
                 correlationId = ctx.aeron().nextCorrelationId();
                 final byte[] encodedCredentials = ctx.credentialsSupplier().encodedCredentials();
 
-                new SessionConnectRequestEncoder()
+                final SessionConnectRequestEncoder encoder = new SessionConnectRequestEncoder();
+                encoder
                     .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
                     .correlationId(correlationId)
                     .responseStreamId(ctx.egressStreamId())
                     .version(Configuration.PROTOCOL_SEMANTIC_VERSION)
                     .responseChannel(ctx.egressChannel())
                     .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
+
+                messageLength = MessageHeaderEncoder.ENCODED_LENGTH + encoder.encodedLength();
             }
 
             step(2);
@@ -1572,7 +1577,7 @@ public final class AeronCluster implements AutoCloseable
 
         private void sendMessage()
         {
-            final long result = ingressPublication.offer(buffer);
+            final long result = ingressPublication.offer(buffer, 0, messageLength);
             if (result > 0)
             {
                 step(3);
@@ -1591,6 +1596,7 @@ public final class AeronCluster implements AutoCloseable
             {
                 if (egressPoller.isChallenged())
                 {
+                    isChallenged = true;
                     clusterSessionId = egressPoller.clusterSessionId();
                     prepareChallengeResponse(ctx.credentialsSupplier().onChallenge(egressPoller.encodedChallenge()));
                     step(2);
@@ -1623,11 +1629,14 @@ public final class AeronCluster implements AutoCloseable
         {
             correlationId = ctx.aeron().nextCorrelationId();
 
-            new ChallengeResponseEncoder()
+            final ChallengeResponseEncoder encoder = new ChallengeResponseEncoder();
+            encoder
                 .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
                 .correlationId(correlationId)
                 .clusterSessionId(clusterSessionId)
                 .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
+
+            messageLength = MessageHeaderEncoder.ENCODED_LENGTH + encoder.encodedLength();
 
             step(2);
         }

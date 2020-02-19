@@ -79,6 +79,16 @@ public class RecordingSignalAdapter
         return subscription.controlledPoll(assembler, fragmentLimit);
     }
 
+    /**
+     * Indicate that poll was successful and a signal or control response was received.
+     *
+     * @return true if a signal or control response was received.
+     */
+    public boolean isDone()
+    {
+        return isDone;
+    }
+
     private ControlledFragmentHandler.Action onFragment(
         final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
@@ -113,6 +123,9 @@ public class RecordingSignalAdapter
                         controlResponseDecoder.relevantId(),
                         controlResponseDecoder.code(),
                         controlResponseDecoder.errorMessage());
+
+                    isDone = true;
+                    return BREAK;
                 }
                 break;
 

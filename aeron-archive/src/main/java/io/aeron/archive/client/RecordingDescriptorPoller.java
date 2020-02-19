@@ -225,4 +225,14 @@ public class RecordingDescriptorPoller implements ControlledFragmentHandler
 
         return Action.CONTINUE;
     }
+
+    public String toString()
+    {
+        return "RecordingDescriptorPoller{" +
+            "controlSessionId=" + controlSessionId +
+            ", correlationId=" + correlationId +
+            ", remainingRecordCount=" + remainingRecordCount +
+            ", isDispatchComplete=" + isDispatchComplete +
+            '}';
+    }
 }

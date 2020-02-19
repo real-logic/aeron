@@ -41,6 +41,10 @@ import static io.aeron.archive.Common.*;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 public class ReplicateRecordingTest
 {
@@ -172,6 +176,31 @@ public class ReplicateRecordingTest
             }
 
             fail("expected archive exception");
+        });
+    }
+
+    @Test
+    public void shouldThrowExceptionWhenSrcRecordingIdUnknown()
+    {
+        assertTimeoutPreemptively(ofSeconds(10), () ->
+        {
+            final long unknownId = 7L;
+            final ControlEventListener listener = mock(ControlEventListener.class);
+            final MutableLong dstRecordingId = new MutableLong();
+            final MutableReference<RecordingSignal> signalRef = new MutableReference<>();
+            final RecordingSignalAdapter adapter = newRecordingSignalAdapter(listener, signalRef, dstRecordingId);
+
+            final long replicationId = dstAeronArchive.replicate(
+                unknownId, NULL_VALUE, SRC_CONTROL_STREAM_ID, SRC_CONTROL_REQUEST_CHANNEL, null);
+
+            awaitSignalOrResponse(signalRef, adapter);
+
+            verify(listener).onResponse(
+                eq(dstAeronArchive.controlSessionId()),
+                eq(replicationId),
+                eq((long)ArchiveException.UNKNOWN_RECORDING),
+                eq(ControlResponseCode.ERROR),
+                anyString());
         });
     }
 
@@ -556,17 +585,10 @@ public class ReplicateRecordingTest
     }
 
     private RecordingSignalAdapter newRecordingSignalAdapter(
-        final MutableReference<RecordingSignal> signalRef, final MutableLong recordingIdRef)
+        final ControlEventListener listener,
+        final MutableReference<RecordingSignal> signalRef,
+        final MutableLong recordingIdRef)
     {
-        final ControlEventListener listener =
-            (controlSessionId, correlationId, relevantId, code, errorMessage) ->
-            {
-                if (code == ControlResponseCode.ERROR)
-                {
-                    fail(errorMessage + " " + code);
-                }
-            };
-
         final RecordingSignalConsumer consumer =
             (controlSessionId, correlationId, recordingId, subscriptionId, position, transitionType) ->
             {
@@ -578,5 +600,21 @@ public class ReplicateRecordingTest
         final long controlSessionId = dstAeronArchive.controlSessionId();
 
         return new RecordingSignalAdapter(controlSessionId, listener, consumer, subscription, FRAGMENT_LIMIT);
+    }
+
+    private RecordingSignalAdapter newRecordingSignalAdapter(
+        final MutableReference<RecordingSignal> signalRef,
+        final MutableLong recordingIdRef)
+    {
+        final ControlEventListener listener =
+            (controlSessionId, correlationId, relevantId, code, errorMessage) ->
+            {
+                if (code == ControlResponseCode.ERROR)
+                {
+                    throw new ArchiveException(errorMessage, (int)relevantId);
+                }
+            };
+
+        return newRecordingSignalAdapter(listener, signalRef, recordingIdRef);
     }
 }

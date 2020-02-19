@@ -225,7 +225,8 @@ public class ControlResponsePoller implements ControlledFragmentHandler
 
             return Action.BREAK;
         }
-        else if (messageHeaderDecoder.templateId() == ChallengeDecoder.TEMPLATE_ID)
+
+        if (messageHeaderDecoder.templateId() == ChallengeDecoder.TEMPLATE_ID)
         {
             challengeDecoder.wrap(
                 buffer,

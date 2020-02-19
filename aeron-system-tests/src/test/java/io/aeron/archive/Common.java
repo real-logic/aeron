@@ -142,4 +142,16 @@ class Common
         }
         while (signalRef.get() == null);
     }
+
+    static void awaitSignalOrResponse(
+        final MutableReference<RecordingSignal> signalRef, final RecordingSignalAdapter adapter)
+    {
+        signalRef.set(null);
+
+        do
+        {
+            pollForSignal(adapter);
+        }
+        while (signalRef.get() == null && !adapter.isDone());
+    }
 }

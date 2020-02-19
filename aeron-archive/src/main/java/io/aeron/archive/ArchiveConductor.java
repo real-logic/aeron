@@ -944,7 +944,6 @@ abstract class ArchiveConductor
 
         final long replicationId = aeron.nextCorrelationId();
         final ReplicationSession replicationSession = new ReplicationSession(
-            correlationId,
             srcRecordingId,
             dstRecordingId,
             channelTagId,

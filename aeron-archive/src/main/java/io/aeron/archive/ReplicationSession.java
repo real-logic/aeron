@@ -16,10 +16,7 @@
 package io.aeron.archive;
 
 import io.aeron.*;
-import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.client.ArchiveException;
-import io.aeron.archive.client.ControlResponsePoller;
-import io.aeron.archive.client.RecordingDescriptorConsumer;
+import io.aeron.archive.client.*;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.codecs.SourceLocation;
@@ -61,7 +58,6 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     private long srcRecordingPosition = NULL_POSITION;
     private long timeOfLastActionMs;
     private final long actionTimeoutMs;
-    private final long correlationId;
     private final long replicationId;
     private final long channelTagId;
     private final long subscriptionTagId;
@@ -89,7 +85,6 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     private State state = State.CONNECT;
 
     ReplicationSession(
-        final long correlationId,
         final long srcRecordingId,
         final long dstRecordingId,
         final long channelTagId,
@@ -104,7 +99,6 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         final ControlResponseProxy controlResponseProxy,
         final ControlSession controlSession)
     {
-        this.correlationId = correlationId;
         this.replicationId = replicationId;
         this.srcRecordingId = srcRecordingId;
         this.dstRecordingId = dstRecordingId;
@@ -211,9 +205,8 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         }
         catch (final Throwable ex)
         {
-            controlSession.sendErrorResponse(correlationId, ex.getMessage(), controlResponseProxy);
             state(State.DONE);
-            error(ex);
+            error(ex.getMessage(), ArchiveException.GENERIC);
             throw ex;
         }
 
@@ -270,9 +263,8 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             if (NULL_POSITION != stopPosition)
             {
                 state(State.DONE);
-                final ArchiveException ex = new ArchiveException("cannot live merge without active source recording");
-                error(ex);
-                throw ex;
+                error("cannot live merge without active source recording", ArchiveException.GENERIC);
+                return;
             }
 
             nextState = State.SRC_RECORDING_POSITION;
@@ -339,7 +331,15 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         }
         else
         {
-            final int fragments = srcArchive.recordingDescriptorPoller().poll();
+            final RecordingDescriptorPoller poller = srcArchive.recordingDescriptorPoller();
+            final int fragments = poller.poll();
+
+            if (poller.isDispatchComplete() && poller.remainingRecordCount() > 0)
+            {
+                error("unknown src recording id " + srcRecordingId, ArchiveException.UNKNOWN_RECORDING);
+                state(State.DONE);
+            }
+
             if (0 == fragments && epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))
             {
                 throw new TimeoutException("failed to fetch remote recording descriptor");
@@ -631,11 +631,11 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
         return false;
     }
 
-    private void error(final Throwable ex)
+    private void error(final String msg, final int errorCode)
     {
-        if (!controlSession.controlPublication().isConnected())
+        if (controlSession.controlPublication().isConnected())
         {
-            controlSession.sendErrorResponse(correlationId, ex.getMessage(), controlResponseProxy);
+            controlSession.sendErrorResponse(replicationId, errorCode, msg, controlResponseProxy);
         }
     }
 

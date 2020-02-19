@@ -657,11 +657,11 @@ Now that the cluster is up and running and we are able to send and receive messa
 additional tools that are available for Cluster and experiment with some of the failover functionality.
 
 First thing that we are interested in is which node of the three is the leader, with this information we can try to
-shutdown the client and see if our client is able to recover.
+shutdown the leader and see if our client is able to recover.
 
 [subs = "attributes+"]
 ----
-> java -cp <AERON_HOME>/build/libs/aeron-all-{aeronVersion}.jar \
+> java -cp <AERON_HOME>/aeron-all/build/libs/aeron-all-{aeronVersion}.jar \
   io.aeron.cluster.ClusterTool node0/consensus-module list-members
 ----
 
@@ -820,7 +820,8 @@ Firstly lets look at the recording log.
 
 [subs="attributes+"]
 ----
-> java -cp <AERON_HOME>/build/libs/aeron-all-{aeronVersion}.jar node0/consensus-module list-members
+> java -cp <AERON_HOME>/build/libs/aeron-all-{aeronVersion}.jar \
+  io.aeron.cluster.ClusterTool node0/consensus-module recording-log
 ----
 
 Which should show a recording log with a single entry:
@@ -833,8 +834,8 @@ We can trigger an snapshot on the master.  This is slightly different to using t
 `ClusterControl` needs the Aeron directory for the node's media driver.
 
 ----
-> java -cp ../../../aeron-all/build/libs/aeron-all-1.25.1-SNAPSHOT.jar \
-  -Daeron.dir=/dev/shm/aeron-mike-<leaderMemberId>-driver/ io.aeron.cluster.ClusterControl SNAPSHOT
+> java -cp ../../../aeron-all/build/libs/aeron-all-{aeronVersion}.jar \
+  io.aeron.cluster.ClusterTool node2/consensus-module snapshot
 ----
 
 The recording log will now have additional entries.

@@ -16,6 +16,9 @@
 package io.aeron.test;
 
 import org.agrona.LangUtil;
+import org.opentest4j.AssertionFailedError;
+
+import java.time.Duration;
 
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doAnswer;
@@ -67,5 +70,28 @@ public class Tests
             LangUtil.rethrowUnchecked(exception);
             return null;
         }).when(mock).close();
+    }
+
+    public static void runWithTimeout(final Duration duration, final Runnable r)
+    {
+        final long deadlineMs = System.currentTimeMillis() + duration.toMillis();
+        do
+        {
+            try
+            {
+                r.run();
+                Thread.yield();
+                Tests.checkInterruptedStatus();
+                return;
+            }
+            catch (final AssertionFailedError e)
+            {
+                if (System.currentTimeMillis() >= deadlineMs)
+                {
+                    throw e;
+                }
+            }
+        }
+        while (true);
     }
 }

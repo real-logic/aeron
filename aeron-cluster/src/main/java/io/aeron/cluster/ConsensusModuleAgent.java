@@ -1494,6 +1494,18 @@ class ConsensusModuleAgent implements Agent
             channel);
 
         expectedAckPosition = logPosition;
+
+        if (isStartup)
+        {
+            for (final ClusterSession session : sessionByIdMap.values())
+            {
+                if (session.state() == OPEN)
+                {
+                    session.close(CloseReason.TIMEOUT);
+                }
+            }
+        }
+
         awaitServices(logPosition);
     }
 

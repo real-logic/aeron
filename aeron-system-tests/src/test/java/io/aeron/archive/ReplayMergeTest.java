@@ -93,7 +93,7 @@ public class ReplayMergeTest
     private ArchivingMediaDriver archivingMediaDriver;
     private Aeron aeron;
     private AeronArchive aeronArchive;
-    private int messagesPublished;
+    private int messagesPublished = 0;
 
     @BeforeEach
     public void before()
@@ -135,7 +135,8 @@ public class ReplayMergeTest
     {
         if (received.get() != MIN_MESSAGES_PER_TERM * 6)
         {
-            System.out.println("received " + received.get() + "/" + (MIN_MESSAGES_PER_TERM * 6));
+            System.out.println(
+                "received " + received.get() + ", sent " + messagesPublished + ", total" + (MIN_MESSAGES_PER_TERM * 6));
         }
 
         CloseHelper.closeAll(aeronArchive, aeron, archivingMediaDriver);
@@ -173,6 +174,7 @@ public class ReplayMergeTest
                 final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
                 putMessages(publication, initialMessageCount, MESSAGE_PREFIX);
+                messagesPublished += initialMessageCount;
                 awaitPosition(counters, counterId, publication.position());
 
                 try (Subscription subscription = aeron.addSubscription(subscriptionChannel, STREAM_ID);
@@ -188,6 +190,7 @@ public class ReplayMergeTest
                     for (int i = initialMessageCount; i < totalMessageCount; i++)
                     {
                         putMessage(publication, i, MESSAGE_PREFIX);
+                        messagesPublished++;
 
                         if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
                         {

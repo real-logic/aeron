@@ -1393,7 +1393,7 @@ public final class AeronCluster implements AutoCloseable
     {
         private final Subscription egressSubscription;
         private final long deadlineNs;
-        private long correlationId;
+        private long correlationId = Aeron.NULL_VALUE;
         private long clusterSessionId;
         private long leadershipTermId;
         private int leaderMemberId;
@@ -1553,16 +1553,19 @@ public final class AeronCluster implements AutoCloseable
 
         private void prepareConnectRequest()
         {
-            correlationId = ctx.aeron().nextCorrelationId();
-            final byte[] encodedCredentials = ctx.credentialsSupplier().encodedCredentials();
+            if (Aeron.NULL_VALUE == correlationId)
+            {
+                correlationId = ctx.aeron().nextCorrelationId();
+                final byte[] encodedCredentials = ctx.credentialsSupplier().encodedCredentials();
 
-            new SessionConnectRequestEncoder()
-                .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
-                .correlationId(correlationId)
-                .responseStreamId(ctx.egressStreamId())
-                .version(Configuration.PROTOCOL_SEMANTIC_VERSION)
-                .responseChannel(ctx.egressChannel())
-                .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
+                new SessionConnectRequestEncoder()
+                    .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+                    .correlationId(correlationId)
+                    .responseStreamId(ctx.egressStreamId())
+                    .version(Configuration.PROTOCOL_SEMANTIC_VERSION)
+                    .responseChannel(ctx.egressChannel())
+                    .putEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
+            }
 
             step(2);
         }

@@ -200,11 +200,8 @@ public class StartFromTruncatedRecordingLogTest
 
     private void assertClusterIsFunctioningCorrectly() throws InterruptedException
     {
-        final int leaderId = awaitLeaderMemberId();
-        final Counter electionStateCounter = clusteredMediaDrivers[leaderId]
-            .consensusModule().context().electionStateCounter();
+        awaitLeaderMemberId();
 
-        ClusterTests.awaitElectionState(electionStateCounter, Election.State.CLOSED);
         connectClient();
 
         final ExpandableArrayBuffer msgBuffer = new ExpandableArrayBuffer();
@@ -498,10 +495,11 @@ public class StartFromTruncatedRecordingLogTest
         {
             final ClusteredMediaDriver driver = clusteredMediaDrivers[i];
 
+            final Counter electionStateCounter = driver.consensusModule().context().electionStateCounter();
             final Cluster.Role role = Cluster.Role.get(
                 (int)driver.consensusModule().context().clusterNodeRoleCounter().get());
 
-            if (Cluster.Role.LEADER == role)
+            if (Cluster.Role.LEADER == role && Election.State.CLOSED.code() == electionStateCounter.get())
             {
                 leaderMemberId = driver.consensusModule().context().clusterMemberId();
             }

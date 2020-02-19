@@ -19,15 +19,15 @@
 void aeron_nano_sleep(uint64_t nanoseconds)
 {
 #ifdef AERON_COMPILER_MSVC
-    HANDLE timer;
-    LARGE_INTEGER li;
-
-    if (!(timer = CreateWaitableTimer(NULL, TRUE, NULL)))
+    HANDLE timer = CreateWaitableTimer(NULL, TRUE, NULL);
+    if (!timer)
     {
         return;
     }
 
-    li.QuadPart = -nanoseconds;
+    LARGE_INTEGER li;
+    li.QuadPart = -(int64_t)(nanoseconds / 100);
+
     if (!SetWaitableTimer(timer, &li, 0, NULL, NULL, FALSE))
     {
         CloseHandle(timer);

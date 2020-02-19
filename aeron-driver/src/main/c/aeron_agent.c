@@ -418,11 +418,7 @@ static void *agent_main(void *arg)
 {
     aeron_agent_runner_t *runner = (aeron_agent_runner_t *)arg;
 
-#if defined(Darwin)
     aeron_thread_set_name(runner->role_name);
-#else
-    aeron_thread_set_name(aeron_thread_self(), runner->role_name);
-#endif
 
     if (NULL != runner->on_start)
     {

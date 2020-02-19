@@ -40,13 +40,17 @@
     #include <Windows.h>
 
     #define S_IRWXU 0
-    int mkdir(const char *path, int permission)
+    static int aeron_mkdir(const char *path, int permission)
     {
         return _mkdir(path);
     }
 
 #else
-#include <unistd.h>
+
+    #include <unistd.h>
+
+    #define aeron_mkdir mkdir
+
 #endif
 
 #include <inttypes.h>
@@ -281,7 +285,7 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_t *driver)
         }
     }
 
-    if (mkdir(driver->context->aeron_dir, S_IRWXU) != 0)
+    if (aeron_mkdir(driver->context->aeron_dir, S_IRWXU) != 0)
     {
         int errcode = errno;
         aeron_set_err(errcode, "mkdir %s: %s", driver->context->aeron_dir, strerror(errcode));
@@ -289,7 +293,7 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_t *driver)
     }
 
     snprintf(buffer, sizeof(buffer) - 1, "%s/%s", dirname, AERON_PUBLICATIONS_DIR);
-    if (mkdir(buffer, S_IRWXU) != 0)
+    if (aeron_mkdir(buffer, S_IRWXU) != 0)
     {
         int errcode = errno;
         aeron_set_err(errcode, "mkdir %s: %s", buffer, strerror(errcode));
@@ -297,7 +301,7 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_t *driver)
     }
 
     snprintf(buffer, sizeof(buffer) - 1, "%s/%s", dirname, AERON_IMAGES_DIR);
-    if (mkdir(buffer, S_IRWXU) != 0)
+    if (aeron_mkdir(buffer, S_IRWXU) != 0)
     {
         int errcode = errno;
         aeron_set_err(errcode, "mkdir %s: %s", buffer, strerror(errcode));

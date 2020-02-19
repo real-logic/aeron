@@ -15,6 +15,9 @@
  */
 package io.aeron.driver.media;
 
+import io.aeron.ChannelUri;
+import io.aeron.CommonContext;
+import io.aeron.driver.DriverConductorProxy;
 import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.concurrent.CachedNanoClock;
 
@@ -28,17 +31,28 @@ import static io.aeron.driver.media.UdpChannelTransport.sendError;
 
 abstract class MultiSndDestination
 {
+    static final Destination[] EMPTY_DESTINATIONS = new Destination[0];
+
     abstract int send(DatagramChannel channel, ByteBuffer buffer, SendChannelEndpoint channelEndpoint, int bytesToSend);
 
     void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress address)
     {
     }
 
-    void addDestination(final InetSocketAddress address)
+    void addDestination(final ChannelUri channelUri, final InetSocketAddress address)
     {
     }
 
-    void removeDestination(final InetSocketAddress address)
+    void removeDestination(final ChannelUri channelUri, final InetSocketAddress address)
+    {
+    }
+
+    void checkForReResolution(
+        final SendChannelEndpoint channelEndpoint, final long nowNs, final DriverConductorProxy conductorProxy)
+    {
+    }
+
+    void reResolveDestination(final String endpoint, final InetSocketAddress newAddress)
     {
     }
 
@@ -74,9 +88,41 @@ abstract class MultiSndDestination
 
 class ManualSndMultiDestination extends MultiSndDestination
 {
-    private static final InetSocketAddress[] EMPTY_DESTINATIONS = new InetSocketAddress[0];
+    private final long destinationTimeoutNs;
+    private final CachedNanoClock nanoClock;
+    private Destination[] destinations = EMPTY_DESTINATIONS;
 
-    private InetSocketAddress[] destinations = EMPTY_DESTINATIONS;
+    ManualSndMultiDestination(final CachedNanoClock nanoClock, final long timeout)
+    {
+        this.destinationTimeoutNs = timeout;
+        this.nanoClock = nanoClock;
+    }
+
+    void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress address)
+    {
+        final long receiverId = msg.receiverId();
+        final long nowNs = nanoClock.nanoTime();
+
+        for (final Destination destination : destinations)
+        {
+            if (destination.isReceiverIdValid &&
+                receiverId == destination.receiverId &&
+                address.getPort() == destination.port)
+            {
+                destination.timeOfLastActivityNs = nowNs;
+                break;
+            }
+            else if (!destination.isReceiverIdValid &&
+                address.getPort() == destination.port &&
+                address.getAddress().equals(destination.address.getAddress()))
+            {
+                destination.timeOfLastActivityNs = nowNs;
+                destination.receiverId = receiverId;
+                destination.isReceiverIdValid = true;
+                break;
+            }
+        }
+    }
 
     int send(
         final DatagramChannel channel,
@@ -87,32 +133,32 @@ class ManualSndMultiDestination extends MultiSndDestination
         final int position = buffer.position();
         int minBytesSent = bytesToSend;
 
-        for (final InetSocketAddress destination : destinations)
+        for (final Destination destination : destinations)
         {
             minBytesSent = Math.min(
-                minBytesSent, send(channel, buffer, channelEndpoint, bytesToSend, position, destination));
+                minBytesSent, send(channel, buffer, channelEndpoint, bytesToSend, position, destination.address));
         }
 
         return minBytesSent;
     }
 
-    void addDestination(final InetSocketAddress address)
+    void addDestination(final ChannelUri channelUri, final InetSocketAddress address)
     {
         final int length = destinations.length;
-        final InetSocketAddress[] newElements = new InetSocketAddress[length + 1];
+        final Destination[] newElements = new Destination[length + 1];
 
         System.arraycopy(destinations, 0, newElements, 0, length);
-        newElements[length] = address;
+        newElements[length] = new Destination(nanoClock.nanoTime(), channelUri, address);
         destinations = newElements;
     }
 
-    void removeDestination(final InetSocketAddress address)
+    void removeDestination(final ChannelUri channelUri, final InetSocketAddress address)
     {
         boolean found = false;
         int index = 0;
-        for (final InetSocketAddress destination : destinations)
+        for (final Destination destination : destinations)
         {
-            if (destination.equals(address))
+            if (destination.address.equals(address))
             {
                 found = true;
                 break;
@@ -123,7 +169,7 @@ class ManualSndMultiDestination extends MultiSndDestination
 
         if (found)
         {
-            final InetSocketAddress[] oldElements = destinations;
+            final Destination[] oldElements = destinations;
             final int length = oldElements.length;
             final int newLength = length - 1;
 
@@ -133,7 +179,7 @@ class ManualSndMultiDestination extends MultiSndDestination
             }
             else
             {
-                final InetSocketAddress[] newElements = new InetSocketAddress[newLength];
+                final Destination[] newElements = new Destination[newLength];
 
                 for (int i = 0, j = 0; i < length; i++)
                 {
@@ -147,12 +193,41 @@ class ManualSndMultiDestination extends MultiSndDestination
             }
         }
     }
+
+    void checkForReResolution(
+        final SendChannelEndpoint channelEndpoint, final long nowNs, final DriverConductorProxy conductorProxy)
+    {
+        for (final Destination destination : destinations)
+        {
+            if (!destination.address.getAddress().isMulticastAddress() &&
+                nowNs > (destination.timeOfLastActivityNs + destinationTimeoutNs))
+            {
+                final String endpoint = destination.channelUri.get(CommonContext.ENDPOINT_PARAM_NAME);
+                final InetSocketAddress address = destination.address;
+
+                conductorProxy.reResolveEndpoint(endpoint, channelEndpoint, address);
+                destination.timeOfLastActivityNs = nowNs;
+            }
+        }
+    }
+
+    void reResolveDestination(final String endpoint, final InetSocketAddress newAddress)
+    {
+        for (final Destination destination : destinations)
+        {
+            final String destinationEndpoint = destination.channelUri.get(CommonContext.ENDPOINT_PARAM_NAME);
+
+            if (endpoint.equals(destinationEndpoint))
+            {
+                destination.address = newAddress;
+                destination.port = newAddress.getPort();
+            }
+        }
+    }
 }
 
 class DynamicSndMultiDestination extends MultiSndDestination
 {
-    private static final Destination[] EMPTY_DESTINATIONS = new Destination[0];
-
     private final long destinationTimeoutNs;
     private final CachedNanoClock nanoClock;
     private Destination[] destinations = EMPTY_DESTINATIONS;
@@ -253,14 +328,28 @@ class DynamicSndMultiDestination extends MultiSndDestination
 final class Destination
 {
     long timeOfLastActivityNs;
-    final long receiverId;
-    final int port;
-    final InetSocketAddress address;
+    boolean isReceiverIdValid;
+    long receiverId;
+    int port;
+    InetSocketAddress address;
+    final ChannelUri channelUri;
 
     Destination(final long nowNs, final long receiverId, final InetSocketAddress address)
     {
         this.timeOfLastActivityNs = nowNs;
         this.receiverId = receiverId;
+        this.isReceiverIdValid = true;
+        this.channelUri = null;
+        this.address = address;
+        this.port = address.getPort();
+    }
+
+    Destination(final long nowMs, final ChannelUri channelUri, final InetSocketAddress address)
+    {
+        this.timeOfLastActivityNs = nowMs;
+        this.receiverId = 0;
+        this.isReceiverIdValid = false;
+        this.channelUri = channelUri;
         this.address = address;
         this.port = address.getPort();
     }

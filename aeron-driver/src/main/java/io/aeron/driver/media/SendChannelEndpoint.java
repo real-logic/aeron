@@ -15,6 +15,8 @@
  */
 package io.aeron.driver.media;
 
+import io.aeron.ChannelUri;
+import io.aeron.CommonContext;
 import io.aeron.ErrorCode;
 import io.aeron.driver.*;
 import io.aeron.exceptions.ControlProtocolException;
@@ -23,6 +25,7 @@ import io.aeron.protocol.NakFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.collections.BiInt2ObjectMap;
+import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 
@@ -44,12 +47,14 @@ public class SendChannelEndpoint extends UdpChannelTransport
 {
     private static final long DESTINATION_TIMEOUT = TimeUnit.SECONDS.toNanos(5);
 
+    private long timeOfLastSmNs;
     private int refCount = 0;
     private final BiInt2ObjectMap<NetworkPublication> publicationBySessionAndStreamId = new BiInt2ObjectMap<>();
     private final MultiSndDestination multiSndDestination;
     private final AtomicCounter statusMessagesReceived;
     private final AtomicCounter nakMessagesReceived;
     private final AtomicCounter statusIndicator;
+    private final NanoClock nanoClock;
 
     public SendChannelEndpoint(
         final UdpChannel udpChannel, final AtomicCounter statusIndicator, final MediaDriver.Context context)
@@ -64,11 +69,13 @@ public class SendChannelEndpoint extends UdpChannelTransport
         nakMessagesReceived = context.systemCounters().get(NAK_MESSAGES_RECEIVED);
         statusMessagesReceived = context.systemCounters().get(STATUS_MESSAGES_RECEIVED);
         this.statusIndicator = statusIndicator;
+        this.nanoClock = context.cachedNanoClock();
+        this.timeOfLastSmNs = nanoClock.nanoTime();
 
         MultiSndDestination multiSndDestination = null;
         if (udpChannel.isManualControlMode())
         {
-            multiSndDestination = new ManualSndMultiDestination();
+            multiSndDestination = new ManualSndMultiDestination(context.cachedNanoClock(), DESTINATION_TIMEOUT);
         }
         else if (udpChannel.isDynamicControlMode() || udpChannel.hasExplicitControl())
         {
@@ -212,6 +219,22 @@ public class SendChannelEndpoint extends UdpChannelTransport
         return bytesSent;
     }
 
+    public void checkForReResolution(final long nowNs, final DriverConductorProxy conductorProxy)
+    {
+        if (udpChannel.isManualControlMode())
+        {
+            multiSndDestination.checkForReResolution(this, nowNs, conductorProxy);
+        }
+        else if (!udpChannel.isMulticast() && nowNs > (timeOfLastSmNs + DESTINATION_TIMEOUT))
+        {
+            final String endpoint = udpChannel.channelUri().get(CommonContext.ENDPOINT_PARAM_NAME);
+            final InetSocketAddress address = udpChannel.remoteData();
+
+            conductorProxy.reResolveEndpoint(endpoint, this, address);
+            timeOfLastSmNs = nowNs;
+        }
+    }
+
     public void onStatusMessage(
         final StatusMessageFlyweight msg,
         final UnsafeBuffer buffer,
@@ -244,6 +267,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
                 publication.onStatusMessage(msg, srcAddress);
             }
 
+            timeOfLastSmNs = nanoClock.nanoTime();
             statusMessagesReceived.incrementOrdered();
         }
     }
@@ -285,13 +309,25 @@ public class SendChannelEndpoint extends UdpChannelTransport
         }
     }
 
-    public void addDestination(final InetSocketAddress address)
+    public void addDestination(final ChannelUri channelUri, final InetSocketAddress address)
     {
-        multiSndDestination.addDestination(address);
+        multiSndDestination.addDestination(channelUri, address);
     }
 
-    public void removeDestination(final InetSocketAddress address)
+    public void removeDestination(final ChannelUri channelUri, final InetSocketAddress address)
     {
-        multiSndDestination.removeDestination(address);
+        multiSndDestination.removeDestination(channelUri, address);
+    }
+
+    public void reResolve(final String endpoint, final InetSocketAddress newAddress)
+    {
+        if (null != multiSndDestination)
+        {
+            multiSndDestination.reResolveDestination(endpoint, newAddress);
+        }
+        else
+        {
+            updateEndpoint(newAddress, statusIndicator);
+        }
     }
 }

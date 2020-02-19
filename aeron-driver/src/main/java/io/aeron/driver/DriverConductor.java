@@ -306,6 +306,17 @@ public class DriverConductor implements Agent
         clientProxy.onError(statusIndicatorId, CHANNEL_ENDPOINT_ERROR, errorMessage);
     }
 
+    void onReResolveEndpoint(
+        final String endpoint, final SendChannelEndpoint channelEndpoint, final InetSocketAddress address)
+    {
+        final InetSocketAddress newAddress = UdpChannel.resolve(endpoint, nameResolver);
+
+        if (!newAddress.isUnresolved() && !address.equals(newAddress))
+        {
+            senderProxy.onReResolve(channelEndpoint, endpoint, newAddress);
+        }
+    }
+
     void closeChannelEndpoints()
     {
         receiveChannelEndpointByChannelMap.values().forEach(UdpChannelTransport::close);
@@ -644,7 +655,7 @@ public class DriverConductor implements Agent
 
         final ChannelUri channelUri = ChannelUri.parse(destinationChannel);
         final InetSocketAddress dstAddress = UdpChannel.destinationAddress(channelUri, nameResolver);
-        senderProxy.addDestination(sendChannelEndpoint, dstAddress);
+        senderProxy.addDestination(sendChannelEndpoint, channelUri, dstAddress);
         clientProxy.operationSucceeded(correlationId);
     }
 
@@ -672,7 +683,7 @@ public class DriverConductor implements Agent
 
         final ChannelUri channelUri = ChannelUri.parse(destinationChannel);
         final InetSocketAddress dstAddress = UdpChannel.destinationAddress(channelUri, nameResolver);
-        senderProxy.removeDestination(sendChannelEndpoint, dstAddress);
+        senderProxy.removeDestination(sendChannelEndpoint, channelUri, dstAddress);
         clientProxy.operationSucceeded(correlationId);
     }
 

@@ -15,6 +15,7 @@
  */
 package io.aeron.driver;
 
+import io.aeron.ChannelUri;
 import io.aeron.driver.media.ControlTransportPoller;
 import io.aeron.driver.media.SendChannelEndpoint;
 import org.agrona.collections.ArrayUtil;
@@ -24,6 +25,7 @@ import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.TimeUnit;
 
 import static io.aeron.driver.status.SystemCounterDescriptor.BYTES_SENT;
 
@@ -36,6 +38,7 @@ class SenderLhsPadding
 class SenderHotFields extends SenderLhsPadding
 {
     protected long controlPollDeadlineNs;
+    protected long reResolutionDeadlineNs;
     protected int dutyCycleCounter;
     protected int roundRobinIndex = 0;
 }
@@ -51,9 +54,12 @@ class SenderRhsPadding extends SenderHotFields
  */
 public class Sender extends SenderRhsPadding implements Agent
 {
+    private static final long RE_RESOLUTION_CHECK_TIMEOUT = TimeUnit.SECONDS.toNanos(1);
+
     private static final NetworkPublication[] EMPTY_PUBLICATIONS = new NetworkPublication[0];
 
     private final long statusMessageReadTimeoutNs;
+    private final long reResolutionCheckTimeoutNs;
     private final int dutyCycleRatio;
     private final ControlTransportPoller controlTransportPoller;
     private final OneToOneConcurrentArrayQueue<Runnable> commandQueue;
@@ -70,8 +76,10 @@ public class Sender extends SenderRhsPadding implements Agent
         this.totalBytesSent = ctx.systemCounters().get(BYTES_SENT);
         this.nanoClock = ctx.cachedNanoClock();
         this.statusMessageReadTimeoutNs = ctx.statusMessageTimeoutNs() >> 1;
+        this.reResolutionCheckTimeoutNs = RE_RESOLUTION_CHECK_TIMEOUT;
         this.dutyCycleRatio = ctx.sendToStatusMessagePollRatio();
         this.conductorProxy = ctx.driverConductorProxy();
+        this.reResolutionDeadlineNs = nanoClock.nanoTime() + reResolutionCheckTimeoutNs;
     }
 
     public void onClose()
@@ -92,6 +100,13 @@ public class Sender extends SenderRhsPadding implements Agent
 
             dutyCycleCounter = 0;
             controlPollDeadlineNs = nowNs + statusMessageReadTimeoutNs;
+        }
+
+        if ((reResolutionDeadlineNs - nowNs) < 0)
+        {
+            controlTransportPoller.checkForReResolutions(nowNs, conductorProxy);
+
+            reResolutionDeadlineNs = nowNs + reResolutionCheckTimeoutNs;
         }
 
         return workCount + bytesSent + bytesReceived;
@@ -127,14 +142,22 @@ public class Sender extends SenderRhsPadding implements Agent
         publication.senderRelease();
     }
 
-    public void onAddDestination(final SendChannelEndpoint channelEndpoint, final InetSocketAddress address)
+    public void onAddDestination(
+        final SendChannelEndpoint channelEndpoint, final ChannelUri channelUri, final InetSocketAddress address)
     {
-        channelEndpoint.addDestination(address);
+        channelEndpoint.addDestination(channelUri, address);
     }
 
-    public void onRemoveDestination(final SendChannelEndpoint channelEndpoint, final InetSocketAddress address)
+    public void onRemoveDestination(
+        final SendChannelEndpoint channelEndpoint, final ChannelUri channelUri, final InetSocketAddress address)
     {
-        channelEndpoint.removeDestination(address);
+        channelEndpoint.removeDestination(channelUri, address);
+    }
+
+    public void onReResolve(
+        final SendChannelEndpoint channelEndpoint, final String endpoint, final InetSocketAddress newAddress)
+    {
+        channelEndpoint.reResolve(endpoint, newAddress);
     }
 
     private int doSend(final long nowNs)

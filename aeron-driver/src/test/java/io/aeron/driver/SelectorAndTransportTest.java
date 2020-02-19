@@ -24,6 +24,7 @@ import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.BitUtil;
 import org.agrona.ErrorHandler;
 import org.agrona.collections.MutableInteger;
+import org.agrona.concurrent.CachedNanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.jupiter.api.AfterEach;
@@ -85,7 +86,8 @@ public class SelectorAndTransportTest
         context
             .applicationSpecificFeedback(Configuration.applicationSpecificFeedback())
             .systemCounters(mockSystemCounters)
-            .receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals(context));
+            .receiveChannelEndpointThreadLocals(new ReceiveChannelEndpointThreadLocals(context))
+            .cachedNanoClock(new CachedNanoClock());
     }
 
     @AfterEach

@@ -17,6 +17,7 @@ package io.aeron.driver.media;
 
 import io.aeron.AeronCloseHelper;
 import io.aeron.driver.Configuration;
+import io.aeron.driver.DriverConductorProxy;
 import io.aeron.protocol.NakFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
@@ -123,6 +124,14 @@ public class ControlTransportPoller extends UdpTransportPoller
     public void cancelRead(final SendChannelEndpoint transport)
     {
         transports = ArrayUtil.remove(transports, transport);
+    }
+
+    public void checkForReResolutions(final long nowNs, final DriverConductorProxy conductorProxy)
+    {
+        for (final SendChannelEndpoint transport : transports)
+        {
+            transport.checkForReResolution(nowNs, conductorProxy);
+        }
     }
 
     private int poll(final SendChannelEndpoint channelEndpoint)

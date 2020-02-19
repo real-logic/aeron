@@ -15,6 +15,7 @@
  */
 package io.aeron.driver;
 
+import io.aeron.ChannelUri;
 import io.aeron.driver.media.SendChannelEndpoint;
 import org.agrona.concurrent.status.AtomicCounter;
 
@@ -95,27 +96,42 @@ public class SenderProxy
         }
     }
 
-    public void addDestination(final SendChannelEndpoint channelEndpoint, final InetSocketAddress address)
+    public void addDestination(
+        final SendChannelEndpoint channelEndpoint, final ChannelUri channelUri, final InetSocketAddress address)
     {
         if (notConcurrent())
         {
-            sender.onAddDestination(channelEndpoint, address);
+            sender.onAddDestination(channelEndpoint, channelUri, address);
         }
         else
         {
-            offer(() -> sender.onAddDestination(channelEndpoint, address));
+            offer(() -> sender.onAddDestination(channelEndpoint, channelUri, address));
         }
     }
 
-    public void removeDestination(final SendChannelEndpoint channelEndpoint, final InetSocketAddress address)
+    public void removeDestination(
+        final SendChannelEndpoint channelEndpoint, final ChannelUri channelUri, final InetSocketAddress address)
     {
         if (notConcurrent())
         {
-            sender.onRemoveDestination(channelEndpoint, address);
+            sender.onRemoveDestination(channelEndpoint, channelUri, address);
         }
         else
         {
-            offer(() -> sender.onRemoveDestination(channelEndpoint, address));
+            offer(() -> sender.onRemoveDestination(channelEndpoint, channelUri, address));
+        }
+    }
+
+    public void onReResolve(
+        final SendChannelEndpoint channelEndpoint, final String endpoint, final InetSocketAddress newAddress)
+    {
+        if (notConcurrent())
+        {
+            sender.onReResolve(channelEndpoint, endpoint, newAddress);
+        }
+        else
+        {
+            offer(() -> sender.onReResolve(channelEndpoint, endpoint, newAddress));
         }
     }
 

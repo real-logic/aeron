@@ -546,6 +546,18 @@ public final class UdpChannel
         return builder.toString();
     }
 
+    /**
+     * Resolve and endpoint into a {@link InetSocketAddress}.
+     *
+     * @param endpoint to resolve
+     * @param nameResolver to be used for hostname.
+     * @return address for endpoint
+     */
+    public static InetSocketAddress resolve(final String endpoint, final NameResolver nameResolver)
+    {
+        return SocketAddressParser.parse(endpoint, nameResolver);
+    }
+
     private static InetSocketAddress getMulticastControlAddress(final InetSocketAddress endpointAddress)
         throws UnknownHostException
     {

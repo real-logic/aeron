@@ -52,7 +52,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
     protected SelectionKey selectionKey;
     protected final InetSocketAddress bindAddress;
     protected final InetSocketAddress endPointAddress;
-    protected final InetSocketAddress connectAddress;
+    protected InetSocketAddress connectAddress;
     protected DatagramChannel sendDatagramChannel;
     protected DatagramChannel receiveDatagramChannel;
     protected int multicastTtl = 0;
@@ -343,5 +343,41 @@ public abstract class UdpChannelTransport implements AutoCloseable
         }
 
         return address;
+    }
+
+    /**
+     * Endpoint has moved to a new address. Handle this.
+     *
+     * @param newAddress to send data to.
+     * @param statusIndicator for the channel
+     */
+    public void updateEndpoint(final InetSocketAddress newAddress, final AtomicCounter statusIndicator)
+    {
+        try
+        {
+            if (null != sendDatagramChannel)
+            {
+                sendDatagramChannel.disconnect();
+                sendDatagramChannel.connect(newAddress);
+                connectAddress = newAddress;
+
+                if (null != statusIndicator)
+                {
+                    statusIndicator.setOrdered(ChannelEndpointStatus.ACTIVE);
+                }
+            }
+        }
+        catch (final Exception ex)
+        {
+            if (null != statusIndicator)
+            {
+                statusIndicator.setOrdered(ChannelEndpointStatus.ERRORED);
+            }
+
+            throw new AeronException(
+                "re-resolve endpoint channel error - " + ex.getMessage() +
+                " (at " + ex.getStackTrace()[0].toString() + "): " +
+                udpChannel.originalUriString(), ex);
+        }
     }
 }

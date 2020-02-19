@@ -26,7 +26,7 @@ int aeron_udp_protocol_sm_receiver_tag(aeron_status_message_header_t *sm, int64_
         offsetof(aeron_status_message_optional_header_t, receiver_tag);
     const size_t receiver_tag_size = sizeof(*receiver_tag);
     const size_t frame_length_with_receiver_tag = receiver_tag_offset + receiver_tag_size;
-    
+
     if (sm->frame_header.frame_length == (int32_t)frame_length_with_receiver_tag)
     {
         const uint8_t *sm_ptr = (const uint8_t *)sm + receiver_tag_offset;

@@ -32,8 +32,8 @@ const char *aeron_dlinfo(const void *addr, char *buffer, size_t max_buffer_lengt
 
 #elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
 
-#include <WinSock2.h> 
-#include <windows.h> 
+#include <WinSock2.h>
+#include <windows.h>
 
 #define RTLD_DEFAULT ((HMODULE)-123)
 #define RTLD_NEXT ((HMODULE)-124)

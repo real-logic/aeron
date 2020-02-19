@@ -21,8 +21,8 @@
 
 #if defined(AERON_COMPILER_GCC)
 
-#define aeron_erand48 erand48 
-#define aeron_srand48 srand48 
+#define aeron_erand48 erand48
+#define aeron_srand48 srand48
 #define aeron_drand48 drand48
 #define aeron_strndup strndup
 

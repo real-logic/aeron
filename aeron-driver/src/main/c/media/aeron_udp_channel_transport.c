@@ -20,9 +20,9 @@
 #endif
 
 #include "util/aeron_platform.h"
-#if  defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
+#if defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
 #include <io.h>
-#else 
+#else
 #include <unistd.h>
 #endif
 
@@ -226,7 +226,7 @@ int aeron_udp_channel_transport_init(
     if(set_socket_non_blocking(transport->fd) < 0)
     {
         int errcode = errno;
-        
+
         aeron_set_err(errcode, "set_socket_non_blocking: %s", strerror(errcode));
         goto error;
     }

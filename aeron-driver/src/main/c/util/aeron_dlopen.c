@@ -91,13 +91,13 @@ HMODULE GetCurrentModule()
 
 void aeron_init_dlopen_support()
 {
-	if (modules == NULL)
-	{
-		modules = (HMODULE*)malloc(sizeof(HMODULE) * modules_capacity);
-		memset(modules, 0, sizeof(HMODULE) * modules_capacity);
-		modules[0] = GetCurrentModule();
-		modules_size = modules[0] != NULL;
-	}
+    if (modules == NULL)
+    {
+        modules = (HMODULE*)malloc(sizeof(HMODULE) * modules_capacity);
+        memset(modules, 0, sizeof(HMODULE) * modules_capacity);
+        modules[0] = GetCurrentModule();
+        modules_size = modules[0] != NULL;
+    }
 }
 
 void* aeron_dlsym(HMODULE module, LPCSTR name)
@@ -121,13 +121,13 @@ void* aeron_dlsym(HMODULE module, LPCSTR name)
     if (module == RTLD_NEXT)
     {
         BOOL firstFound = FALSE;
-		for (size_t i = 1; i <= modules_size; i++)
-		{
+        for (size_t i = 1; i <= modules_size; i++)
+        {
             void* res = aeron_dlsym(modules[modules_size - i], name);
-			if (res != NULL && firstFound)
-			{
+            if (res != NULL && firstFound)
+            {
                 return res;
-			}
+            }
 
             if (res != NULL && !firstFound)
             {
@@ -147,13 +147,13 @@ HMODULE aeron_dlopen(LPCSTR filename)
 
     HMODULE module = LoadLibraryA(filename);
 
-	if (modules_size == modules_capacity)
-	{
-		modules_capacity = modules_capacity * 2;
-		modules = (HMODULE*)realloc(modules, sizeof(HMODULE) * modules_capacity);
-	}
+    if (modules_size == modules_capacity)
+    {
+        modules_capacity = modules_capacity * 2;
+        modules = (HMODULE*)realloc(modules, sizeof(HMODULE) * modules_capacity);
+    }
 
-	modules[modules_size++] = module;
+    modules[modules_size++] = module;
 
     return module;
 }

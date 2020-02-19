@@ -48,29 +48,28 @@ void aeron_net_init();
         void* iov_base;
     };
 
-    // must match _WSAMSG 
+    // must match _WSAMSG
     struct msghdr {
         void* msg_name;
-        INT msg_namelen;		
-        struct iovec *msg_iov;	
-        ULONG msg_iovlen;		
+        INT msg_namelen;
+        struct iovec *msg_iov;
+        ULONG msg_iovlen;
         ULONG msg_controllen;
         void* msg_control;
-        ULONG msg_flags;		
+        ULONG msg_flags;
     };
 
     struct ifaddrs
     {
-        struct ifaddrs *ifa_next; 
-        char *ifa_name; 
+        struct ifaddrs *ifa_next;
+        char *ifa_name;
         unsigned int ifa_flags;
 
-        struct sockaddr *ifa_addr; 
-        struct sockaddr *ifa_netmask; 
+        struct sockaddr *ifa_addr;
+        struct sockaddr *ifa_netmask;
         union
         {
-         
-            struct sockaddr *ifu_broadaddr; 
+            struct sockaddr *ifu_broadaddr;
             struct sockaddr *ifu_dstaddr;
         } ifa_ifu;
 
@@ -81,7 +80,7 @@ void aeron_net_init();
         #  define ifa_dstaddr        ifa_ifu.ifu_dstaddr
         # endif
 
-        void *ifa_data;             
+        void *ifa_data;
     };
 
     int getifaddrs(struct ifaddrs **ifap);

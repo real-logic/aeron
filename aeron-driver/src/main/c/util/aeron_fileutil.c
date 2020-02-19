@@ -28,7 +28,7 @@
 #include "aeron_error.h"
 #include "aeron_fileutil.h"
 
-#if  defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
+#if defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
 #include <WinSock2.h>
 #include <windows.h>
 #include <stdint.h>
@@ -39,7 +39,7 @@
 #define PROT_WRITE 2
 #define MAP_FAILED ((void*)-1)
 
-#define MAP_SHARED	0x01
+#define MAP_SHARED 0x01
 #define S_IRUSR _S_IREAD
 #define S_IWUSR _S_IWRITE
 

@@ -168,13 +168,13 @@ void aeron_set_windows_error()
         0,
         NULL);
 
-	if (result == 0)
-	{
-		aeron_set_err(errorId, "error code %d", errorId);
+    if (result == 0)
+    {
+        aeron_set_err(errorId, "error code %d", errorId);
         return;
-	}
+    }
 
-	aeron_set_err(errorId, "%s", messageBuffer);
+    aeron_set_err(errorId, "%s", messageBuffer);
     LocalFree(messageBuffer);
 }
 
@@ -184,7 +184,7 @@ bool aeron_error_dll_process_attach()
     {
         return false;
     }
-	
+
     error_key = TlsAlloc();
     return error_key != TLS_OUT_OF_INDEXES;
 }
@@ -211,7 +211,7 @@ void aeron_error_dll_process_detach()
     {
         return;
     }
-	
+
     aeron_error_dll_thread_detach();
 
     aeron_thread_key_delete(error_key);

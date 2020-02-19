@@ -20,7 +20,6 @@ import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ReplayMerge;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
-import io.aeron.driver.MinMulticastFlowControl;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -35,7 +34,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
-import java.util.concurrent.TimeUnit;
 
 import static io.aeron.archive.Common.*;
 import static io.aeron.archive.codecs.SourceLocation.REMOTE;
@@ -95,6 +93,7 @@ public class ReplayMergeTest
     private ArchivingMediaDriver archivingMediaDriver;
     private Aeron aeron;
     private AeronArchive aeronArchive;
+    private int messagesPublished;
 
     @BeforeEach
     public void before()
@@ -173,7 +172,7 @@ public class ReplayMergeTest
                 final int counterId = awaitRecordingCounterId(counters, publication.sessionId());
                 final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
-                offerMessages(publication, initialMessageCount, MESSAGE_PREFIX);
+                putMessages(publication, initialMessageCount, MESSAGE_PREFIX);
                 awaitPosition(counters, counterId, publication.position());
 
                 try (Subscription subscription = aeron.addSubscription(subscriptionChannel, STREAM_ID);
@@ -188,7 +187,7 @@ public class ReplayMergeTest
                 {
                     for (int i = initialMessageCount; i < totalMessageCount; i++)
                     {
-                        offer(publication, i, MESSAGE_PREFIX);
+                        putMessage(publication, i, MESSAGE_PREFIX);
 
                         if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
                         {
@@ -239,7 +238,7 @@ public class ReplayMergeTest
         });
     }
 
-    private void offer(final Publication publication, final int index, final String prefix)
+    private void putMessage(final Publication publication, final int index, final String prefix)
     {
         final int length = buffer.putStringWithoutLengthAscii(0, prefix + index);
 
@@ -250,11 +249,11 @@ public class ReplayMergeTest
         }
     }
 
-    private void offerMessages(final Publication publication, final int count, final String prefix)
+    private void putMessages(final Publication publication, final int count, final String prefix)
     {
         for (int i = 0; i < count; i++)
         {
-            offer(publication, i, prefix);
+            putMessage(publication, i, prefix);
         }
     }
 }

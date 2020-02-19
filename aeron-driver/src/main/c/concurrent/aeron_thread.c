@@ -70,19 +70,32 @@ void aeron_thread_once(AERON_INIT_ONCE* s_init_once, void* callback)
     InitOnceExecuteOnce(s_init_once, aeron_thread_once_callback, callback, NULL);
 }
 
-void aeron_mutex_init(HANDLE* mutex, void* attr)
+int aeron_mutex_init(aeron_mutex_t* mutex, void* attr)
 {
     *mutex = CreateMutexA(NULL, FALSE, NULL);
+    return *mutex ? 0 : -1;
 }
 
-void aeron_mutex_lock(HANDLE* mutex)
+int aeron_mutex_lock(aeron_mutex_t* mutex)
 {
-    WaitForSingleObject(mutex, INFINITE);
+    return WaitForSingleObject(*mutex, INFINITE) == WAIT_OBJECT_0 ? 0 : EINVAL;
 }
 
-void aeron_mutex_unlock(HANDLE* mutex)
+int aeron_mutex_unlock(aeron_mutex_t* mutex)
 {
-    ReleaseMutex(mutex);
+    return ReleaseMutex(*mutex) ? 0 : EINVAL;
+}
+
+int aeron_mutex_destroy(aeron_mutex_t* mutex)
+{
+    if (*mutex)
+    {
+        CloseHandle(*mutex);
+        *mutex = 0;
+        return 0;
+    }
+
+    return EINVAL;
 }
 
 int aeron_thread_attr_init(pthread_attr_t* attr)
@@ -101,7 +114,7 @@ int aeron_thread_create(aeron_thread_t* thread, void* attr, void*(*callback)(voi
 {
     thread->callback = callback;
     thread->arg0 = arg0;
-	
+
     DWORD id;
     thread->handle = CreateThread(
         NULL,              // default security attributes
@@ -122,7 +135,7 @@ void aeron_thread_set_name(const char* role_name)
     {
         return;
     }
-	
+
     mbstowcs(buf, role_name, wn + 1);
     SetThreadDescription(GetCurrentThread(), buf);
 

@@ -21,6 +21,7 @@
 
 #include <stdint.h>
 
+void aeron_thread_set_name(const char* role_name);
 
 #if defined(AERON_COMPILER_GCC)
 
@@ -36,8 +37,6 @@
     #define aeron_thread_once pthread_once
     #define aeron_thread_attr_init pthread_attr_init
     #define aeron_thread_create pthread_create
-    #define aeron_thread_set_name pthread_setname_np
-    #define aeron_thread_self pthread_self
     #define aeron_thread_join pthread_join
     #define aeron_thread_key_create pthread_key_create
     #define aeron_thread_key_delete pthread_key_delete
@@ -52,7 +51,13 @@
 
     #define AERON_MUTEX HANDLE
 
-    typedef HANDLE aeron_thread_t;
+    typedef struct
+    {
+        HANDLE handle;
+        void* (*callback)(void*);
+        void* arg0;
+        void* result;
+    } aeron_thread_t;
 
     typedef INIT_ONCE AERON_INIT_ONCE;
 
@@ -73,11 +78,7 @@
 
     int aeron_thread_create(aeron_thread_t* thread, void* attr, void*(*callback)(void*), void* arg0);
 
-    void aeron_thread_set_name(aeron_thread_t self, const char* role_name);
-
-    aeron_thread_t aeron_thread_self();
-
-    DWORD aeron_thread_join(aeron_thread_t thread, void **value_ptr);
+    int aeron_thread_join(aeron_thread_t thread, void **value_ptr);
 
     int aeron_thread_key_create(pthread_key_t *key, void(*destr_function) (void *));
 

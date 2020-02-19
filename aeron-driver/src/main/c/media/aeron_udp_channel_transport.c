@@ -223,7 +223,7 @@ int aeron_udp_channel_transport_init(
     }
 
 
-    if(set_socket_non_blocking(transport->fd) < 0)
+    if (set_socket_non_blocking(transport->fd) < 0)
     {
         int errcode = errno;
 
@@ -316,6 +316,7 @@ int aeron_udp_channel_transport_recvmmsg(
             aeron_set_err(err, "recvmsg: %s", strerror(err));
             return -1;
         }
+
         if (0 == result)
         {
             break;

@@ -27,7 +27,7 @@ void aeron_net_init()
 {
 }
 
-int set_socket_non_blocking(aeron_fd_t fd)
+int set_socket_non_blocking(aeron_socket_t fd)
 {
     int flags;
     if ((flags = fcntl(fd, F_GETFL, 0)) < 0)
@@ -44,12 +44,12 @@ int set_socket_non_blocking(aeron_fd_t fd)
     return 0;
 }
 
-int aeron_socket(int domain, int type, int protocol)
+aeron_socket_t aeron_socket(int domain, int type, int protocol)
 {
     return socket(domain, type, protocol);
 }
 
-void aeron_close_socket(int socket)
+void aeron_close_socket(aeron_socket_t socket)
 {
     close(socket);
 }
@@ -76,7 +76,7 @@ void aeron_net_init()
     }
 }
 
-int set_socket_non_blocking(aeron_fd_t fd)
+int set_socket_non_blocking(aeron_socket_t fd)
 {
     u_long iMode = 1;
     int iResult = ioctlsocket(fd, FIONBIO, &iMode);
@@ -257,7 +257,7 @@ void freeifaddrs(struct ifaddrs *current)
 #include <iphlpapi.h>
 #include <stdio.h>
 
-ssize_t recvmsg(aeron_fd_t fd, struct msghdr* msghdr, int flags)
+ssize_t recvmsg(aeron_socket_t fd, struct msghdr* msghdr, int flags)
 {
     DWORD size = 0;
     const int result = WSARecvFrom(
@@ -285,7 +285,7 @@ ssize_t recvmsg(aeron_fd_t fd, struct msghdr* msghdr, int flags)
     return size;
 }
 
-ssize_t sendmsg(aeron_fd_t fd, struct msghdr* msghdr, int flags)
+ssize_t sendmsg(aeron_socket_t fd, struct msghdr* msghdr, int flags)
 {
     DWORD size = 0;
     const int result = WSASendTo(
@@ -318,13 +318,14 @@ int poll(struct pollfd* fds, nfds_t nfds, int timeout)
     return WSAPoll(fds, nfds, timeout);
 }
 
-int aeron_socket(int domain, int type, int protocol)
+aeron_socket_t aeron_socket(int domain, int type, int protocol)
 {
     aeron_net_init();
-    return socket(domain, type, protocol);
+    const SOCKET handle = socket(domain, type, protocol);
+    return handle != INVALID_SOCKET ? handle : -1;
 }
 
-void aeron_close_socket(int socket)
+void aeron_close_socket(aeron_socket_t socket)
 {
     closesocket(socket);
 }

@@ -20,12 +20,6 @@
 #include <util/aeron_platform.h>
 #include <stdint.h>
 
-typedef int aeron_fd_t;
-int set_socket_non_blocking(aeron_fd_t fd);
-int aeron_socket(int domain, int type, int protocol);
-void aeron_close_socket(int socket);
-void aeron_net_init();
-
 #if defined(AERON_COMPILER_GCC)
     #include <netinet/in.h>
     #include <sys/socket.h>
@@ -35,12 +29,17 @@ void aeron_net_init();
     #include <netdb.h>
     #include <ifaddrs.h>
 
+    typedef int aeron_socket_t;
+
 #elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
     #include <WinSock2.h>
     #include <windows.h>
     #include <Ws2ipdef.h>
     #include <WS2tcpip.h>
     #include <Iphlpapi.h>
+
+    // SOCKET is uint64_t but we need a signed type to match the Linux version
+    typedef int64_t aeron_socket_t;
 
     struct iovec
     {
@@ -89,12 +88,17 @@ void aeron_net_init();
     typedef unsigned long int nfds_t;
     typedef SSIZE_T ssize_t;
 
-    ssize_t recvmsg(aeron_fd_t fd, struct msghdr* msghdr, int flags);
-    ssize_t sendmsg(aeron_fd_t fd, struct msghdr* msghdr, int flags);
+    ssize_t recvmsg(aeron_socket_t fd, struct msghdr* msghdr, int flags);
+    ssize_t sendmsg(aeron_socket_t fd, struct msghdr* msghdr, int flags);
     int poll(struct pollfd* fds, nfds_t nfds, int timeout);
 
 #else
 #error Unsupported platform!
 #endif
+
+int set_socket_non_blocking(aeron_socket_t fd);
+aeron_socket_t aeron_socket(int domain, int type, int protocol);
+void aeron_close_socket(aeron_socket_t socket);
+void aeron_net_init();
 
 #endif //AERON_SOCKET_H

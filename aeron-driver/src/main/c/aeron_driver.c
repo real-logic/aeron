@@ -369,7 +369,8 @@ int aeron_driver_create_loss_report_file(aeron_driver_t *driver)
 
 int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *driver)
 {
-    int result = -1, probe_fd;
+    int result = -1;
+    aeron_socket_t probe_fd;
 
     if ((probe_fd = aeron_socket(AF_INET, SOCK_DGRAM, 0)) < 0)
     {

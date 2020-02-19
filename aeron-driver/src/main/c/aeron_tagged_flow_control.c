@@ -64,12 +64,12 @@ typedef struct aeron_tagged_flow_control_strategy_state_stct
 }
 aeron_tagged_flow_control_strategy_state_t;
 
-void aeron_min_flow_control_strategy_state_set_length(aeron_min_flow_control_strategy_state_t *state, size_t length)
+void aeron_min_flow_control_strategy_state_set_length(aeron_tagged_flow_control_strategy_state_t *state, size_t length)
 {
     AERON_PUT_VOLATILE(state->receivers.length, length);
 }
 
-size_t aeron_min_flow_control_strategy_state_get_length(aeron_min_flow_control_strategy_state_t *state)
+size_t aeron_min_flow_control_strategy_state_get_length(aeron_tagged_flow_control_strategy_state_t *state)
 {
     size_t length;
     AERON_GET_VOLATILE(length, state->receivers.length);
@@ -128,7 +128,7 @@ bool aeron_tagged_flow_control_strategy_has_required_receivers(aeron_flow_contro
     aeron_tagged_flow_control_strategy_state_t *strategy_state =
         (aeron_tagged_flow_control_strategy_state_t *)strategy->state;
 
-    return strategy_state->group_min_size <= (int32_t)strategy_state->receivers.length;
+    return strategy_state->group_min_size <= (int32_t)aeron_min_flow_control_strategy_state_get_length(strategy_state);
 }
 
 int64_t aeron_tagged_flow_control_strategy_handle_sm(
@@ -183,7 +183,8 @@ int64_t aeron_tagged_flow_control_strategy_handle_sm(
         if (ensure_capacity_result >= 0)
         {
             const size_t receivers_length = strategy_state->receivers.length;
-            aeron_min_flow_control_strategy_receiver_t *receiver = &strategy_state->receivers.array[receivers_length];
+            aeron_tagged_flow_control_strategy_receiver_t *receiver =
+                &strategy_state->receivers.array[receivers_length];
             aeron_min_flow_control_strategy_state_set_length(strategy_state, receivers_length + 1);
 
             receiver->last_position = position;
@@ -365,7 +366,7 @@ int aeron_tagged_flow_control_strategy_supplier(
 
     state->group_receiver_tag = options.receiver_tag.is_present ?
         options.receiver_tag.value : context->flow_control.group_receiver_tag;
-    state->min_flow_control_state.group_min_size = options.group_min_size.is_present ?
+    state->group_min_size = options.group_min_size.is_present ?
         options.group_min_size.value : context->flow_control.receiver_group_min_size;
 
     state->error_log = context->error_log;

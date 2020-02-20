@@ -69,7 +69,7 @@ typedef struct aeron_distinct_error_log_stct
     aeron_clock_func_t clock;
     aeron_resource_linger_func_t linger_resource;
     void *linger_resource_clientd;
-    AERON_MUTEX mutex;
+    aeron_mutex_t mutex;
 }
 aeron_distinct_error_log_t;
 

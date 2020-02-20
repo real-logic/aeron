@@ -76,6 +76,7 @@ void aeron_distinct_error_log_close(aeron_distinct_error_log_t *log)
     }
 
     aeron_free(log->observation_list);
+    aeron_mutex_destroy(&log->mutex);
 }
 
 static aeron_distinct_observation_t *aeron_distinct_error_log_find_observation(

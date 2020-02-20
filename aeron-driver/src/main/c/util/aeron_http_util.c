@@ -241,7 +241,7 @@ static char aeron_http_request_format[] =
 int aeron_http_retrieve(aeron_http_response_t **response, const char *url, int64_t timeout_ns)
 {
     aeron_http_parsed_url_t parsed_url;
-    int sock;
+    aeron_socket_t sock;
     aeron_http_response_t *_response = NULL;
 
     *response = NULL;

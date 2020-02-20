@@ -81,7 +81,7 @@ int aeron_properties_parse_line(
                 value_start = (int)i + 1;
 
                 /* trim back for whitespace after name */
-                for (size_t j = i - 1; j >= 0; j--)
+                for (int j = (int)i - 1; j >= 0; j--)
                 {
                     if (' ' != line[j] && '\t' != line[j])
                     {

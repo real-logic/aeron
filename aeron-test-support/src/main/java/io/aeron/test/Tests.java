@@ -16,7 +16,6 @@
 package io.aeron.test;
 
 import org.agrona.LangUtil;
-import org.opentest4j.AssertionFailedError;
 
 import java.time.Duration;
 import java.util.Objects;
@@ -95,7 +94,7 @@ public class Tests
     }
 
     private static final ThreadLocal<Timeout> TEST_TIMEOUT = new ThreadLocal<>();
-    private static class Timeout
+    private static final class Timeout
     {
         private final Duration duration;
         private final long deadlineNs;

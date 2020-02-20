@@ -32,6 +32,7 @@ import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.io.File;
 
@@ -98,6 +99,8 @@ public class ReplayMergeTest
     @BeforeEach
     public void before()
     {
+        Tests.withTimeout(ofSeconds(5));
+
         final File archiveDir = new File(SystemUtil.tmpDirName(), "archive");
 
         archivingMediaDriver = ArchivingMediaDriver.launch(
@@ -187,57 +190,42 @@ public class ReplayMergeTest
                     recordingId,
                     0))
             {
-                Tests.runWithTimeout(ofSeconds(10), () ->
+                for (int i = initialMessageCount; i < totalMessageCount; i++)
                 {
-                    for (int i = messagesPublished; i < totalMessageCount; i++)
+                    long position;
+                    while ((position = offerMessage(publication, i, MESSAGE_PREFIX)) <= 0)
                     {
-                        final long position = offerMessage(publication, i, MESSAGE_PREFIX);
-                        if (0 < position)
-                        {
-                            messagesPublished++;
-
-                            if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
-                            {
-                                Thread.yield();
-                                Tests.checkInterruptedStatus();
-                            }
-                        }
-                        else
-                        {
-                            // Could just break here, but this will give more information...
-                            fail("Publication rejected, error code: " + position);
-                        }
+                        Tests.yieldWait(
+                            "i (%d) < totalMessageCount (%d), lastPosition (%d)", i, totalMessageCount, position);
                     }
 
-                    assertEquals(messagesPublished, totalMessageCount);
-                });
+                    if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
+                    {
+                        Tests.yieldWait("i (%d) < totalMessageCount (%d)", i, totalMessageCount);
+                    }
+                }
 
-                Tests.runWithTimeout(ofSeconds(10), () ->
+                while (!replayMerge.isMerged())
                 {
                     if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
                     {
-                        if (replayMerge.hasFailed())
-                        {
-                            throw new RuntimeException("failed to merge"); // Force fast exit.
-                        }
-                    }
+                        assertFalse(replayMerge.hasFailed(), "failed to merge");
 
-                    assertTrue(replayMerge.isMerged());
-                });
+                        Tests.yieldWait("Replay did not merge");
+                    }
+                }
 
                 final Image image = replayMerge.image();
-                Tests.runWithTimeout(ofSeconds(10), () ->
+                while (received.get() < totalMessageCount)
                 {
                     if (0 == image.poll(fragmentHandler, FRAGMENT_LIMIT))
                     {
-                        if (image.isClosed())
-                        {
-                            throw new RuntimeException("image closed unexpectedly"); // Force fast exit
-                        }
-                    }
+                        assertFalse(replayMerge.hasFailed(), "image closed unexpectedly");
 
-                    assertEquals(received.get(), totalMessageCount);
-                });
+                        Tests.yieldWait(
+                            "received.get() (%d) < totalMessageCount (%d)", received.get(), totalMessageCount);
+                    }
+                }
 
                 assertTrue(replayMerge.isMerged());
                 assertTrue(replayMerge.isLiveAdded());
@@ -257,22 +245,17 @@ public class ReplayMergeTest
         return publication.offer(buffer, 0, length);
     }
 
-    private void putMessage(final Publication publication, final int index, final String prefix)
-    {
-        final int length = buffer.putStringWithoutLengthAscii(0, prefix + index);
-
-        while (publication.offer(buffer, 0, length) <= 0)
-        {
-            Thread.yield();
-            Tests.checkInterruptedStatus();
-        }
-    }
-
     private void putMessages(final Publication publication, final int count, final String prefix)
     {
         for (int i = 0; i < count; i++)
         {
-            putMessage(publication, i, prefix);
+            final int length = buffer.putStringWithoutLengthAscii(0, prefix + i);
+
+            while (publication.offer(buffer, 0, length) <= 0)
+            {
+                Thread.yield();
+                Tests.checkInterruptedStatus();
+            }
         }
     }
 }

@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include <memory.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <limits.h>
@@ -454,7 +453,7 @@ int aeron_parse_get_line(char *str, size_t max_length, const char *buffer)
         if ('\n' == buffer[i])
         {
             str[i + 1] = '\0';
-            return i + 1;
+            return (int)(i + 1);
         }
     }
 

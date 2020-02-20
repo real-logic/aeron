@@ -401,10 +401,11 @@ int aeron_network_publication_send_data(
             mmsghdr[i].msg_hdr.msg_controllen = 0;
             vlen++;
 
-            bytes_sent += available;
-            available_window -= available + padding;
-            term_offset += available + padding;
-            highest_pos += available + padding;
+            bytes_sent += (int)available;
+            int32_t total_available = (int32_t)(available + padding);
+            available_window -= total_available;
+            term_offset += total_available;
+            highest_pos += total_available;
         }
 
         if (available == 0 || term_length == (size_t)term_offset)

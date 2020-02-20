@@ -78,10 +78,10 @@ int aeron_properties_parse_line(
             if (':' == c || '=' == c)
             {
                 state->property_str[state->name_end] = '\0';
-                value_start = i + 1;
+                value_start = (int)i + 1;
 
                 /* trim back for whitespace after name */
-                for (int j = i - 1; j >= 0; j--)
+                for (size_t j = i - 1; j >= 0; j--)
                 {
                     if (' ' != line[j] && '\t' != line[j])
                     {

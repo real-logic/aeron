@@ -56,10 +56,10 @@ void aeron_udp_channel_interceptor_loss_incoming_delegate(
     size_t length,
     struct sockaddr_storage *addr)
 {
-    delegate_recv_state_t *state = (delegate_recv_state_t *)interceptor_state;
+    auto *state = (delegate_recv_state_t *)interceptor_state;
 
     state->messages_received++;
-    state->bytes_received += length;
+    state->bytes_received += (int)length;
 }
 
 TEST_F(UdpChannelTransportLossTest, shouldDiscardAllPacketsWithRateOfOne)

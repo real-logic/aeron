@@ -37,6 +37,5 @@ int aeron_udp_protocol_sm_receiver_tag(aeron_status_message_header_t *sm, int64_
 
     *receiver_tag = 0;
 
-    return (int)sm->frame_header.frame_length - receiver_tag_offset;
+    return (int)((size_t)sm->frame_header.frame_length - receiver_tag_offset);
 }
-

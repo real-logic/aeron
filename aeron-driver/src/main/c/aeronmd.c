@@ -61,11 +61,12 @@ int set_property(void *clientd, const char *name, const char *value)
 int main(int argc, char **argv)
 {
     int status = EXIT_FAILURE;
-    int opt;
     aeron_driver_context_t *context = NULL;
     aeron_driver_t *driver = NULL;
 
 #ifndef _MSC_VER
+    int opt;
+
     while ((opt = getopt(argc, argv, "D:v")) != -1)
     {
         switch (opt)

@@ -368,7 +368,8 @@ int aeron_http_retrieve(aeron_http_response_t **response, const char *url, int64
 
 int aeron_http_header_get(aeron_http_response_t *response, const char *header_name, char *line, size_t max_length)
 {
-    int line_result = 0, header_name_length = strlen(header_name);
+    int line_result = 0;
+    size_t header_name_length = strlen(header_name);
     size_t cursor = response->headers_offset;
 
     while (cursor < response->body_offset)

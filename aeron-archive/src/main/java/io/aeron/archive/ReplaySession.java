@@ -179,8 +179,6 @@ class ReplaySession implements Session, AutoCloseable
     {
         final CountedErrorHandler errorHandler = controlSession.archiveConductor().context().countedErrorHandler();
         AeronCloseHelper.close(errorHandler, fileChannel);
-        fileChannel = null;
-        segmentFile = null;
         AeronCloseHelper.close(errorHandler, publication);
     }
 

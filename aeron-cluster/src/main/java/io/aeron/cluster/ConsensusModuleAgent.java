@@ -2473,17 +2473,7 @@ class ConsensusModuleAgent implements Agent
                     handleMemberRemovals(commitPosition);
                 }
 
-                if (uncommittedServiceMessages > 0)
-                {
-                    pendingServiceMessageHeadOffset -= pendingServiceMessages.consume(
-                        leaderServiceSessionMessageSweeper, Integer.MAX_VALUE);
-                }
-
-                while (uncommittedTimers.peekLong() <= commitPosition)
-                {
-                    uncommittedTimers.pollLong();
-                    uncommittedTimers.pollLong();
-                }
+                removeAppendedEntriesPendingCommit(commitPosition);
 
                 workCount += 1;
             }
@@ -2505,6 +2495,21 @@ class ConsensusModuleAgent implements Agent
         }
 
         return workCount;
+    }
+
+    private void removeAppendedEntriesPendingCommit(final long commitPosition)
+    {
+        if (uncommittedServiceMessages > 0)
+        {
+            pendingServiceMessageHeadOffset -= pendingServiceMessages.consume(
+                leaderServiceSessionMessageSweeper, Integer.MAX_VALUE);
+        }
+
+        while (uncommittedTimers.peekLong() <= commitPosition)
+        {
+            uncommittedTimers.pollLong();
+            uncommittedTimers.pollLong();
+        }
     }
 
     private void enterElection(final long nowNs)

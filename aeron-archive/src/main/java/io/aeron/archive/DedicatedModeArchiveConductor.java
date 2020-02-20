@@ -15,7 +15,7 @@
  */
 package io.aeron.archive;
 
-import org.agrona.CloseHelper;
+import io.aeron.AeronCloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -64,23 +64,8 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
 
     protected void closeSessionWorkers()
     {
-        try
-        {
-            CloseHelper.close(recorderAgentRunner);
-        }
-        catch (final Exception ex)
-        {
-            errorHandler.onError(ex);
-        }
-
-        try
-        {
-            CloseHelper.close(replayerAgentRunner);
-        }
-        catch (final Exception ex)
-        {
-            errorHandler.onError(ex);
-        }
+        AeronCloseHelper.close(errorHandler, recorderAgentRunner);
+        AeronCloseHelper.close(errorHandler, replayerAgentRunner);
 
         while (processCloseQueue() > 0 || !closeQueue.isEmpty())
         {
@@ -180,7 +165,11 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         {
             while (!closeQueue.offer(session))
             {
-                errorCounter.increment();
+                if (!errorCounter.isClosed())
+                {
+                    errorCounter.increment();
+                }
+
                 Thread.yield();
                 if (Thread.currentThread().isInterrupted())
                 {
@@ -201,7 +190,11 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         {
             while (!sessionsQueue.offer(session))
             {
-                errorCounter.increment();
+                if (!errorCounter.isClosed())
+                {
+                    errorCounter.increment();
+                }
+
                 Thread.yield();
                 if (Thread.currentThread().isInterrupted())
                 {
@@ -276,7 +269,11 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         {
             while (!closeQueue.offer(session))
             {
-                errorCounter.increment();
+                if (!errorCounter.isClosed())
+                {
+                    errorCounter.increment();
+                }
+
                 Thread.yield();
                 if (Thread.currentThread().isInterrupted())
                 {
@@ -297,12 +294,16 @@ final class DedicatedModeArchiveConductor extends ArchiveConductor
         {
             while (!sessionsQueue.offer(session))
             {
+                if (!errorCounter.isClosed())
+                {
+                    errorCounter.increment();
+                }
+
+                Thread.yield();
                 if (Thread.currentThread().isInterrupted())
                 {
                     break;
                 }
-                errorCounter.increment();
-                Thread.yield();
             }
         }
     }

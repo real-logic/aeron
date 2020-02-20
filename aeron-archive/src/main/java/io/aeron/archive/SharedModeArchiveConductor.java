@@ -15,7 +15,7 @@
  */
 package io.aeron.archive;
 
-import org.agrona.CloseHelper;
+import io.aeron.AeronCloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.concurrent.AgentInvoker;
 
@@ -63,8 +63,8 @@ final class SharedModeArchiveConductor extends ArchiveConductor
 
     protected void closeSessionWorkers()
     {
-        CloseHelper.close(recorderAgentInvoker);
-        CloseHelper.close(replayerAgentInvoker);
+        AeronCloseHelper.close(ctx.countedErrorHandler(), recorderAgentInvoker);
+        AeronCloseHelper.close(ctx.countedErrorHandler(), replayerAgentInvoker);
     }
 
     class SharedModeRecorder extends SessionWorker<RecordingSession>

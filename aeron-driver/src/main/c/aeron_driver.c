@@ -244,7 +244,7 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_t *driver)
         if (driver->context->warn_if_dirs_exist)
         {
             log_func = aeron_log_func_stderr;
-            snprintf(buffer, sizeof(buffer) - 1, "WARNING: %s already exists", dirname);
+            snprintf(buffer, sizeof(buffer) - 1, "WARNING: %s exists", dirname);
             log_func(buffer);
         }
 

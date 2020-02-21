@@ -330,7 +330,7 @@ public final class MediaDriver implements AutoCloseable
         {
             if (ctx.warnIfDirectoryExists())
             {
-                System.err.println("WARNING: " + ctx.aeronDirectory() + " already exists.");
+                System.err.println("WARNING: " + ctx.aeronDirectory() + " exists");
             }
 
             if (!ctx.dirDeleteOnStart())

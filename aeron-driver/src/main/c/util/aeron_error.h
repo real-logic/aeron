@@ -29,11 +29,11 @@ aeron_per_thread_error_t;
 int aeron_errcode();
 const char *aeron_errmsg();
 void aeron_set_err(int errcode, const char *format, ...);
+void aeron_set_err_from_last_err_code(const char* format, ...);
 
 const char *aeron_error_code_str(int errcode);
 
 #if defined(AERON_COMPILER_MSVC)
-void aeron_set_windows_error();
 bool aeron_error_dll_process_attach();
 void aeron_error_dll_thread_detach();
 void aeron_error_dll_process_detach();

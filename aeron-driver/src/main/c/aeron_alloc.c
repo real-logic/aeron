@@ -20,6 +20,10 @@
 #include "util/aeron_bitutil.h"
 #include "aeron_alloc.h"
 
+#if defined(AERON_COMPILER_MSVC)
+#include <windows.h>
+#endif
+
 int aeron_alloc_no_err(void **ptr, size_t size)
 {
     *ptr = malloc(size);
@@ -41,6 +45,9 @@ int aeron_alloc(void **ptr, size_t size)
     if (NULL == *ptr)
     {
         errno = ENOMEM;
+#if defined(AERON_COMPILER_MSVC)
+        SetLastError(ERROR_OUTOFMEMORY);
+#endif
         return -1;
     }
 
@@ -54,6 +61,9 @@ int aeron_alloc_aligned(void **ptr, size_t *offset, size_t size, size_t alignmen
     if (!(AERON_IS_POWER_OF_TWO(alignment)))
     {
         errno = EINVAL;
+#if defined(AERON_COMPILER_MSVC)
+        SetLastError(ERROR_INCORRECT_SIZE);
+#endif
         return -1;
     }
 
@@ -83,6 +93,9 @@ int aeron_reallocf(void **ptr, size_t size)
         {
             free(*ptr);
             errno = ENOMEM;
+#if defined(AERON_COMPILER_MSVC)
+            SetLastError(ERROR_OUTOFMEMORY);
+#endif
             return -1;
         }
     }

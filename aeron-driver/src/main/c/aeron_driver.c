@@ -223,9 +223,7 @@ int aeron_report_existing_errors(aeron_mapped_file_t *cnc_map, const char *aeron
         }
         else
         {
-            int errcode = errno;
-
-            aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+            aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
             result = -1;
         }
     }
@@ -287,24 +285,21 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_t *driver)
 
     if (aeron_mkdir(driver->context->aeron_dir, S_IRWXU) != 0)
     {
-        int errcode = errno;
-        aeron_set_err(errcode, "mkdir %s: %s", driver->context->aeron_dir, strerror(errcode));
+        aeron_set_err_from_last_err_code("mkdir %s", driver->context->aeron_dir);
         return -1;
     }
 
     snprintf(buffer, sizeof(buffer) - 1, "%s/%s", dirname, AERON_PUBLICATIONS_DIR);
     if (aeron_mkdir(buffer, S_IRWXU) != 0)
     {
-        int errcode = errno;
-        aeron_set_err(errcode, "mkdir %s: %s", buffer, strerror(errcode));
+        aeron_set_err_from_last_err_code("mkdir %s", buffer);
         return -1;
     }
 
     snprintf(buffer, sizeof(buffer) - 1, "%s/%s", dirname, AERON_IMAGES_DIR);
     if (aeron_mkdir(buffer, S_IRWXU) != 0)
     {
-        int errcode = errno;
-        aeron_set_err(errcode, "mkdir %s: %s", buffer, strerror(errcode));
+        aeron_set_err_from_last_err_code("mkdir %s", buffer);
         return -1;
     }
 
@@ -378,9 +373,7 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
 
     if ((probe_fd = aeron_socket(AF_INET, SOCK_DGRAM, 0)) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "socket %s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+        aeron_set_err_from_last_err_code("socket %s:%d", __FILE__, __LINE__);
         goto cleanup;
     }
 
@@ -388,9 +381,7 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
     socklen_t len = sizeof(default_sndbuf);
     if (getsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF, &default_sndbuf, &len) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "getsockopt(SO_SNDBUF) %s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+        aeron_set_err_from_last_err_code("getsockopt(SO_SNDBUF) %s:%d", __FILE__, __LINE__);
         goto cleanup;
     }
 
@@ -398,9 +389,7 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
     len = sizeof(default_rcvbuf);
     if (getsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF, &default_sndbuf, &len) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "getsockopt(SO_RCVBUF) %s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+        aeron_set_err_from_last_err_code("getsockopt(SO_RCVBUF) %s:%d", __FILE__, __LINE__);
         goto cleanup;
     }
 
@@ -413,18 +402,14 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
 
         if (setsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF, &socket_sndbuf, sizeof(socket_sndbuf)) < 0)
         {
-            int errcode = errno;
-
-            aeron_set_err(errcode, "setsockopt(SO_SNDBUF) %s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+            aeron_set_err_from_last_err_code("setsockopt(SO_SNDBUF) %s:%d", __FILE__, __LINE__);
             goto cleanup;
         }
 
         len = sizeof(socket_sndbuf);
         if (getsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF, &socket_sndbuf, &len) < 0)
         {
-            int errcode = errno;
-
-            aeron_set_err(errcode, "getsockopt(SO_SNDBUF) %s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+            aeron_set_err_from_last_err_code("getsockopt(SO_SNDBUF) %s:%d", __FILE__, __LINE__);
             goto cleanup;
         }
 
@@ -447,18 +432,14 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
 
         if (setsockopt(probe_fd, SOL_SOCKET, SO_RCVBUF, &socket_rcvbuf, sizeof(socket_rcvbuf)) < 0)
         {
-            int errcode = errno;
-
-            aeron_set_err(errcode, "setsockopt(SO_RCVBUF) %s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+            aeron_set_err_from_last_err_code("setsockopt(SO_RCVBUF) %s:%d", __FILE__, __LINE__);
             goto cleanup;
         }
 
         len = sizeof(socket_rcvbuf);
         if (getsockopt(probe_fd, SOL_SOCKET, SO_RCVBUF, &socket_rcvbuf, &len) < 0)
         {
-            int errcode = errno;
-
-            aeron_set_err(errcode, "getsockopt(SO_RCVBUF) %s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+            aeron_set_err_from_last_err_code("getsockopt(SO_RCVBUF) %s:%d", __FILE__, __LINE__);
             goto cleanup;
         }
 
@@ -769,9 +750,7 @@ int aeron_driver_init(aeron_driver_t **driver, aeron_driver_context_t *context)
 
     if (aeron_alloc((void **)&_driver, sizeof(aeron_driver_t)) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
         goto error;
     }
 

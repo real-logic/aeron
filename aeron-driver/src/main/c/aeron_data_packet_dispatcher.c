@@ -27,18 +27,14 @@ int aeron_data_packet_dispatcher_init(
     if (aeron_int64_to_ptr_hash_map_init(
         &dispatcher->ignored_sessions_map, 16, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "could not init ignored_session_map: %s", strerror(errcode));
+        aeron_set_err_from_last_err_code("could not init ignored_session_map");
         return -1;
     }
 
     if (aeron_int64_to_ptr_hash_map_init(
         &dispatcher->session_by_stream_id_map, 16, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "could not init session_by_stream_id_map: %s", strerror(errcode));
+        aeron_set_err_from_last_err_code("could not init session_by_stream_id_map");
         return -1;
     }
 
@@ -75,9 +71,7 @@ int aeron_data_packet_dispatcher_add_subscription(aeron_data_packet_dispatcher_t
             aeron_int64_to_ptr_hash_map_init(session_map, 16, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR) < 0 ||
             aeron_int64_to_ptr_hash_map_put(&dispatcher->session_by_stream_id_map, stream_id, session_map) < 0)
         {
-            int errcode = errno;
-
-            aeron_set_err(errcode, "could not aeron_data_packet_dispatcher_add_subscription: %s", strerror(errcode));
+            aeron_set_err_from_last_err_code("could not aeron_data_packet_dispatcher_add_subscription");
             return -1;
         }
     }
@@ -108,9 +102,7 @@ int aeron_data_packet_dispatcher_add_publication_image(
     {
         if (aeron_int64_to_ptr_hash_map_put(session_map, image->session_id, image) < 0)
         {
-            int errcode = errno;
-
-            aeron_set_err(errcode, "could not aeron_data_packet_dispatcher_add_publication_image: %s", strerror(errcode));
+            aeron_set_err_from_last_err_code("could not aeron_data_packet_dispatcher_add_publication_image");
             return -1;
         }
 
@@ -147,9 +139,7 @@ int aeron_data_packet_dispatcher_remove_publication_image(
         aeron_int64_to_ptr_hash_map_compound_key(image->session_id, image->stream_id),
         &dispatcher->tokens.on_cool_down) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "could not aeron_data_packet_dispatcher_remove_publication_image: %s", strerror(errcode));
+        aeron_set_err_from_last_err_code("could not aeron_data_packet_dispatcher_remove_publication_image");
         return -1;
     }
 
@@ -218,9 +208,7 @@ int aeron_data_packet_dispatcher_on_setup(
                 aeron_int64_to_ptr_hash_map_compound_key(header->session_id, header->stream_id),
                 &dispatcher->tokens.init_in_progress) < 0)
             {
-                int errcode = errno;
-
-                aeron_set_err(errcode, "could not aeron_data_packet_dispatcher_on_setup: %s", strerror(errcode));
+                aeron_set_err_from_last_err_code("could not aeron_data_packet_dispatcher_on_setup");
                 return -1;
             }
 
@@ -295,9 +283,7 @@ int aeron_data_packet_dispatcher_elicit_setup_from_source(
         aeron_int64_to_ptr_hash_map_compound_key(session_id, stream_id),
         &dispatcher->tokens.pending_setup_frame) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "could not aeron_data_packet_dispatcher_remove_publication_image: %s", strerror(errcode));
+        aeron_set_err_from_last_err_code("could not aeron_data_packet_dispatcher_remove_publication_image");
         return -1;
     }
 

@@ -37,7 +37,7 @@ int aeron_udp_transport_poller_init(
 #if defined(HAVE_EPOLL)
     if ((poller->epoll_fd = epoll_create1(0)) < 0)
     {
-        aeron_set_err(errno, "epoll_create1: %s", strerror(errno));
+        aeron_set_err_from_last_err_code("epoll_create1");
         return -1;
     }
     poller->epoll_events = NULL;
@@ -93,7 +93,7 @@ int aeron_udp_transport_poller_add(aeron_udp_transport_poller_t *poller, aeron_u
     int result = epoll_ctl(poller->epoll_fd, EPOLL_CTL_ADD, transport->fd, &event);
     if (result < 0)
     {
-        aeron_set_err(errno, "epoll_ctl(EPOLL_CTL_ADD): %s", strerror(errno));
+        aeron_set_err_from_last_err_code("epoll_ctl(EPOLL_CTL_ADD)");
         return -1;
     }
 
@@ -154,7 +154,7 @@ int aeron_udp_transport_poller_remove(aeron_udp_transport_poller_t *poller, aero
         int result = epoll_ctl(poller->epoll_fd, EPOLL_CTL_DEL, transport->fd, &event);
         if (result < 0)
         {
-            aeron_set_err(errno, "epoll_ctl(EPOLL_CTL_DEL): %s", strerror(errno));
+            aeron_set_err_from_last_err_code("epoll_ctl(EPOLL_CTL_DEL)");
             return -1;
         }
 
@@ -210,7 +210,7 @@ int aeron_udp_transport_poller_poll(
                 return 0;
             }
 
-            aeron_set_err(err, "epoll_wait: %s", strerror(err));
+            aeron_set_err_from_last_err_code("epoll_wait");
             return -1;
         }
         else if (0 == result)
@@ -250,7 +250,7 @@ int aeron_udp_transport_poller_poll(
                 return 0;
             }
 
-            aeron_set_err(err, "poll: %s", strerror(err));
+            aeron_set_err_from_last_err_code("poll");
             return -1;
         }
         else if (0 == result)

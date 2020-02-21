@@ -241,9 +241,7 @@ int aeron_properties_file_load(const char *filename)
 
     if (!feof(fpin))
     {
-        int err_code = errno;
-
-        aeron_set_err(err_code, "error reading file: %s", strerror(err_code));
+        aeron_set_err_from_last_err_code("error reading file");
         goto cleanup;
     }
     else

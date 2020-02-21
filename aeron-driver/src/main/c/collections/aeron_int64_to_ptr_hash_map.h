@@ -21,6 +21,14 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <errno.h>
+
+#include "util/aeron_platform.h"
+
+#if defined(AERON_COMPILER_MSVC)
+#include <WinSock2.h>
+#include <windows.h>
+#endif
+
 #include "util/aeron_bitutil.h"
 #include "aeron_alloc.h"
 
@@ -136,6 +144,9 @@ inline int aeron_int64_to_ptr_hash_map_put(aeron_int64_to_ptr_hash_map_t *map, c
     if (NULL == value)
     {
         errno = EINVAL;
+#if defined(AERON_COMPILER_MSVC)
+        SetLastError(ERROR_BAD_ARGUMENTS);
+#endif
         return -1;
     }
 

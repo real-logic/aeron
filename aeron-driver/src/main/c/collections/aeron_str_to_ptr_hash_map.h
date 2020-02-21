@@ -21,6 +21,14 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <string.h>
+
+#include "util/aeron_platform.h"
+
+#if defined(AERON_COMPILER_MSVC)
+#include <WinSock2.h>
+#include <windows.h>
+#endif
+
 #include "aeron_alloc.h"
 #include "util/aeron_bitutil.h"
 #include "util/aeron_strutil.h"
@@ -74,17 +82,13 @@ inline int aeron_str_to_ptr_hash_map_init(
 
     if (aeron_alloc((void **)&map->keys, (capacity * sizeof(aeron_str_to_ptr_hash_map_key_t))) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
         return -1;
     }
 
     if (aeron_alloc((void **)&map->values, (capacity * sizeof(void *))) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
         return -1;
     }
 
@@ -114,17 +118,13 @@ inline int aeron_str_to_ptr_hash_map_rehash(aeron_str_to_ptr_hash_map_t *map, si
 
     if (aeron_alloc((void **)&tmp_keys, (new_capacity * sizeof(aeron_str_to_ptr_hash_map_key_t))) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
         return -1;
     }
 
     if (aeron_alloc((void **)&tmp_values, (new_capacity * sizeof(void *))) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
         return -1;
     }
 
@@ -164,6 +164,9 @@ inline int aeron_str_to_ptr_hash_map_put(aeron_str_to_ptr_hash_map_t *map, const
     if (NULL == value)
     {
         errno = EINVAL;
+#if defined(AERON_COMPILER_MSVC)
+        SetLastError(ERROR_BAD_ARGUMENTS);
+#endif
         return -1;
     }
 

@@ -100,6 +100,7 @@ class TestNode implements AutoCloseable
         {
             clusteredMediaDriver.consensusModule().context().deleteDirectory();
             clusteredMediaDriver.archive().context().deleteArchiveDirectory();
+            clusteredMediaDriver.mediaDriver().context().deleteAeronDirectory();
         }
     }
 

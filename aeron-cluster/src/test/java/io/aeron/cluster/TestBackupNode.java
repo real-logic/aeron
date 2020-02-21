@@ -55,6 +55,7 @@ public class TestBackupNode implements AutoCloseable
         {
             clusterBackupMediaDriver.clusterBackup().context().deleteDirectory();
             clusterBackupMediaDriver.archive().context().deleteArchiveDirectory();
+            clusterBackupMediaDriver.mediaDriver().context().deleteAeronDirectory();
         }
     }
 

@@ -142,6 +142,11 @@ public class TestCluster implements AutoCloseable
             () -> CloseHelper.closeAll(Stream.of(nodes).map(TestCluster::closeAndDeleteNode).collect(toList()))
         );
 
+        if (null != clientMediaDriver)
+        {
+            clientMediaDriver.context().deleteAeronDirectory();
+        }
+
         ClusterTests.failOnClusterError();
     }
 
@@ -296,7 +301,6 @@ public class TestCluster implements AutoCloseable
             .termBufferSparseFile(true)
             .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
             .errorHandler(ClusterTests.errorHandler(index))
-            .dirDeleteOnShutdown(true)
             .dirDeleteOnStart(true);
 
         context.archiveContext
@@ -357,7 +361,6 @@ public class TestCluster implements AutoCloseable
             .termBufferSparseFile(true)
             .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
             .errorHandler(ClusterTests.errorHandler(index))
-            .dirDeleteOnShutdown(true)
             .dirDeleteOnStart(true);
 
         context.archiveContext
@@ -421,7 +424,6 @@ public class TestCluster implements AutoCloseable
             .termBufferSparseFile(true)
             .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
             .errorHandler(ClusterTests.errorHandler(backupNodeIndex))
-            .dirDeleteOnShutdown(true)
             .dirDeleteOnStart(true);
 
         context.archiveContext
@@ -878,28 +880,22 @@ public class TestCluster implements AutoCloseable
         {
             if (null != node)
             {
-                final RecordingLog recordingLog = new RecordingLog(node.consensusModule().context().clusterDir());
-                assertTrue(recordingLog.invalidateLatestSnapshot());
+                try (RecordingLog recordingLog = new RecordingLog(node.consensusModule().context().clusterDir()))
+                {
+                    assertTrue(recordingLog.invalidateLatestSnapshot());
+                }
             }
         }
     }
 
     public long countRecordingLogSnapshots(final TestNode node)
     {
-        final RecordingLog recordingLog = new RecordingLog(node.consensusModule().context().clusterDir());
-        return recordingLog
+        return node.consensusModule().context().recordingLog()
             .entries()
             .stream()
             .filter((e) -> RecordingLog.ENTRY_TYPE_SNAPSHOT == e.type &&
                 ConsensusModule.Configuration.SERVICE_ID == e.serviceId)
             .count();
-    }
-
-    public void printRecordingLogEntries(final int nodeId)
-    {
-        final TestNode node = node(nodeId);
-        final RecordingLog recordingLog = new RecordingLog(node.consensusModule().context().clusterDir());
-        recordingLog.entries().forEach((e) -> System.out.println(node.index() + " - " + e));
     }
 
     static class ServiceContext
@@ -966,7 +962,6 @@ public class TestCluster implements AutoCloseable
             .termBufferSparseFile(true)
             .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
             .errorHandler(ClusterTests.errorHandler(index))
-            .dirDeleteOnShutdown(true)
             .dirDeleteOnStart(true);
 
         context.archiveContext

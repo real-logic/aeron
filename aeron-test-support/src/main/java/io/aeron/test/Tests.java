@@ -16,9 +16,9 @@
 package io.aeron.test;
 
 import org.agrona.LangUtil;
-import org.opentest4j.AssertionFailedError;
 
 import java.time.Duration;
+import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doAnswer;
@@ -72,26 +72,37 @@ public class Tests
         }).when(mock).close();
     }
 
-    public static void runWithTimeout(final Duration duration, final Runnable r)
+    public static void yieldWait(final String format, final Object... params)
     {
-        final long deadlineMs = System.currentTimeMillis() + duration.toMillis();
-        do
+        final Timeout timeout = Objects.requireNonNull(
+            TEST_TIMEOUT.get(),
+            "Timeout has not be initialized.  " +
+            "Make sure Tests.withTimeout(Duration) is called in your @BeforeEach method");
+
+        if (timeout.deadlineNs <= System.nanoTime())
         {
-            try
-            {
-                r.run();
-                Thread.yield();
-                Tests.checkInterruptedStatus();
-                return;
-            }
-            catch (final AssertionFailedError e)
-            {
-                if (System.currentTimeMillis() >= deadlineMs)
-                {
-                    throw e;
-                }
-            }
+            fail("[Timeout after " + timeout.duration + "] " + String.format(format, params));
         }
-        while (true);
+
+        Thread.yield();
+        checkInterruptedStatus();
+    }
+
+    public static void withTimeout(final Duration duration)
+    {
+        TEST_TIMEOUT.set(new Timeout(duration, System.nanoTime()));
+    }
+
+    private static final ThreadLocal<Timeout> TEST_TIMEOUT = new ThreadLocal<>();
+    private static final class Timeout
+    {
+        private final Duration duration;
+        private final long deadlineNs;
+
+        private Timeout(final Duration duration, final long startNs)
+        {
+            this.duration = duration;
+            this.deadlineNs = startNs + duration.toNanos();
+        }
     }
 }

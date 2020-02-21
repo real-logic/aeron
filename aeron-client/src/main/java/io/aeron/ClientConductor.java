@@ -1115,10 +1115,9 @@ class ClientConductor implements Agent, DriverEventsListener
             isTerminating = true;
             forceCloseResources();
 
-            final long serviceIntervalNs = nowNs - timeOfLastServiceNs;
-
             throw new ConductorServiceTimeoutException(
-                "service interval exceeded (ns): timeout=" + interServiceTimeoutNs + ", actual=" + serviceIntervalNs);
+                "service interval exceeded (ns): timeout=" + interServiceTimeoutNs +
+                ", actual=" + (nowNs - timeOfLastServiceNs));
         }
     }
 
@@ -1186,7 +1185,15 @@ class ClientConductor implements Agent, DriverEventsListener
             if ((resource.timeOfLastStateChange() + resourceLingerDurationNs) - nowNs < 0)
             {
                 ArrayListUtil.fastUnorderedRemove(lingeringResources, i, lastIndex--);
-                resource.delete();
+                try
+                {
+                    resource.delete();
+                }
+                catch (final Throwable throwable)
+                {
+                    handleError(throwable);
+                }
+
                 workCount += 1;
             }
         }

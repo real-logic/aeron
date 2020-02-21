@@ -149,9 +149,10 @@ public class ClusterLoggingAgentTest
             {
                 try (ClusteredServiceContainer ignore2 = ClusteredServiceContainer.launch(clusteredServiceCtx))
                 {
-                    assertFalse(Thread.interrupted());
+                    assertFalse(Thread.currentThread().isInterrupted());
                     latch.await();
-                    assertEquals(expectedEvents.stream().map(ClusterEventLogger::toEventCodeId).collect(toSet()),
+                    assertEquals(
+                        expectedEvents.stream().map(ClusterEventLogger::toEventCodeId).collect(toSet()),
                         LOGGED_EVENTS);
                 }
             }

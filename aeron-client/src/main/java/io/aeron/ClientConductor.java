@@ -136,6 +136,7 @@ class ClientConductor implements Agent, DriverEventsListener
 
                 for (int i = closeHandlers.size() - 1; i >= 0; i--)
                 {
+                    isInCallback = true;
                     try
                     {
                         closeHandlers.get(i).run();
@@ -143,6 +144,10 @@ class ClientConductor implements Agent, DriverEventsListener
                     catch (final Exception ex)
                     {
                         handleError(ex);
+                    }
+                    finally
+                    {
+                        isInCallback = false;
                     }
                 }
 
@@ -490,7 +495,12 @@ class ClientConductor implements Agent, DriverEventsListener
         clientLock.lock();
         try
         {
-            if (!publication.isClosed() && !isClosed)
+            if (isTerminating || isClosed)
+            {
+                return;
+            }
+
+            if (!publication.isClosed())
             {
                 ensureNotReentrant();
 
@@ -550,14 +560,21 @@ class ClientConductor implements Agent, DriverEventsListener
         clientLock.lock();
         try
         {
-            if (!subscription.isClosed() && !isClosed)
+            if (isTerminating || isClosed)
+            {
+                return;
+            }
+
+            if (!subscription.isClosed())
             {
                 ensureNotReentrant();
 
                 subscription.internalClose();
                 final long registrationId = subscription.registrationId();
-                resourceByRegIdMap.remove(registrationId);
-                awaitResponse(driverProxy.removeSubscription(registrationId));
+                if (subscription == resourceByRegIdMap.remove(registrationId))
+                {
+                    awaitResponse(driverProxy.removeSubscription(registrationId));
+                }
             }
         }
         finally
@@ -804,7 +821,7 @@ class ClientConductor implements Agent, DriverEventsListener
         clientLock.lock();
         try
         {
-            if (isClosed)
+            if (isTerminating || isClosed)
             {
                 return false;
             }
@@ -839,7 +856,7 @@ class ClientConductor implements Agent, DriverEventsListener
         clientLock.lock();
         try
         {
-            if (isClosed)
+            if (isTerminating || isClosed)
             {
                 return false;
             }
@@ -874,7 +891,7 @@ class ClientConductor implements Agent, DriverEventsListener
         clientLock.lock();
         try
         {
-            if (isClosed)
+            if (isTerminating || isClosed)
             {
                 return false;
             }
@@ -894,7 +911,7 @@ class ClientConductor implements Agent, DriverEventsListener
         clientLock.lock();
         try
         {
-            if (isClosed)
+            if (isTerminating || isClosed)
             {
                 return;
             }
@@ -902,7 +919,7 @@ class ClientConductor implements Agent, DriverEventsListener
             ensureNotReentrant();
 
             final long registrationId = counter.registrationId();
-            if (null != resourceByRegIdMap.remove(registrationId))
+            if (counter == resourceByRegIdMap.remove(registrationId))
             {
                 awaitResponse(driverProxy.removeCounter(registrationId));
             }
@@ -1118,7 +1135,7 @@ class ClientConductor implements Agent, DriverEventsListener
 
             throw new ConductorServiceTimeoutException(
                 "service interval exceeded (ns): timeout=" + interServiceTimeoutNs +
-                ", actual=" + (nowNs - timeOfLastServiceNs));
+                ", interval=" + (nowNs - timeOfLastServiceNs));
         }
     }
 

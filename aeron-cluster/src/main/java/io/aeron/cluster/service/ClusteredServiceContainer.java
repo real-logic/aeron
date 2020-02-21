@@ -649,8 +649,8 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
             if (null == errorCounter)
             {
-                errorCounter =
-                    aeron.addCounter(CLUSTERED_SERVICE_ERROR_COUNT_TYPE_ID, "Cluster errors - service " + serviceId);
+                errorCounter = aeron.addCounter(
+                    CLUSTERED_SERVICE_ERROR_COUNT_TYPE_ID, "Cluster errors - service " + serviceId);
             }
 
             if (null == countedErrorHandler)

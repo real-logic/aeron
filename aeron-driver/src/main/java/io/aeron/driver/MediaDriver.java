@@ -515,7 +515,8 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Free up resources but don't delete files in case they are required for debugging.
+         * Free up resources but don't delete files in case they are required for debugging unless
+         * {@link #dirDeleteOnShutdown()} is set.
          */
         public void close()
         {
@@ -525,20 +526,17 @@ public final class MediaDriver implements AutoCloseable
 
                 AeronCloseHelper.close(errorHandler, logFactory);
 
-                AeronCloseHelper.close(errorHandler, lossReport);
-
-                final MappedByteBuffer lossReportBuffer = this.lossReportBuffer;
-                this.lossReportBuffer = null;
-                IoUtil.unmap(lossReportBuffer);
-
+                systemCounters.get(ERRORS).close();
                 if (errorHandler instanceof AutoCloseable)
                 {
-                    CloseHelper.quietClose((AutoCloseable)errorHandler); // Ignore error to ensure the rest is closed
+                    CloseHelper.quietClose((AutoCloseable)errorHandler);
                 }
 
-                final MappedByteBuffer cncByteBuffer = this.cncByteBuffer;
-                this.cncByteBuffer = null;
+                IoUtil.unmap(lossReportBuffer);
+                this.lossReportBuffer = null;
+
                 IoUtil.unmap(cncByteBuffer);
+                this.cncByteBuffer = null;
 
                 if (dirDeleteOnShutdown && null != aeronDirectory())
                 {
@@ -570,11 +568,11 @@ public final class MediaDriver implements AutoCloseable
                 cncByteBuffer = mapNewFile(
                     cncFile(),
                     CncFileDescriptor.computeCncFileLength(
-                        conductorBufferLength +
-                            toClientsBufferLength +
-                            Configuration.countersMetadataBufferLength(counterValuesBufferLength) +
-                            counterValuesBufferLength +
-                            errorBufferLength,
+                    conductorBufferLength +
+                        toClientsBufferLength +
+                        Configuration.countersMetadataBufferLength(counterValuesBufferLength) +
+                        counterValuesBufferLength +
+                        errorBufferLength,
                         filePageSize));
 
                 cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);

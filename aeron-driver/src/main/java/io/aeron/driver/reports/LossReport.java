@@ -57,7 +57,7 @@ import static org.agrona.BitUtil.*;
  *  +---------------------------------------------------------------+
  * </pre>
  */
-public class LossReport implements AutoCloseable
+public class LossReport
 {
     /**
      * Alignment to be applied for each entry offset.
@@ -99,7 +99,6 @@ public class LossReport implements AutoCloseable
      */
     public static final int CHANNEL_OFFSET = STREAM_ID_OFFSET + SIZE_OF_INT;
 
-    private boolean isClosed;
     private int nextRecordOffset = 0;
     private final AtomicBuffer buffer;
 
@@ -113,21 +112,6 @@ public class LossReport implements AutoCloseable
     {
         buffer.verifyAlignment();
         this.buffer = buffer;
-    }
-
-    public void close()
-    {
-        isClosed = true;
-    }
-
-    /**
-     * Has {@link #close()} been invoked.
-     *
-     * @return true of {@link #close()} has been invoked.
-     */
-    public boolean isClosed()
-    {
-        return isClosed;
     }
 
     /**
@@ -151,11 +135,6 @@ public class LossReport implements AutoCloseable
         final String channel,
         final String source)
     {
-        if (isClosed)
-        {
-            return null;
-        }
-
         ReportEntry reportEntry = null;
 
         final int requiredCapacity =
@@ -180,7 +159,7 @@ public class LossReport implements AutoCloseable
 
             buffer.putLongOrdered(offset + OBSERVATION_COUNT_OFFSET, 1);
 
-            reportEntry = new ReportEntry(this, buffer, offset);
+            reportEntry = new ReportEntry(buffer, offset);
             nextRecordOffset += BitUtil.align(requiredCapacity, ENTRY_ALIGNMENT);
         }
 
@@ -193,13 +172,11 @@ public class LossReport implements AutoCloseable
      */
     public static class ReportEntry
     {
-        private final LossReport lossReport;
         private final AtomicBuffer buffer;
         private final int offset;
 
-        ReportEntry(final LossReport lossReport, final AtomicBuffer buffer, final int offset)
+        ReportEntry(final AtomicBuffer buffer, final int offset)
         {
-            this.lossReport = lossReport;
             this.buffer = buffer;
             this.offset = offset;
         }
@@ -212,12 +189,9 @@ public class LossReport implements AutoCloseable
          */
         public void recordObservation(final long bytesLost, final long timestampMs)
         {
-            if (!lossReport.isClosed())
-            {
-                buffer.putLong(offset + LAST_OBSERVATION_OFFSET, timestampMs);
-                buffer.getAndAddLong(offset + TOTAL_BYTES_LOST_OFFSET, bytesLost);
-                buffer.getAndAddLong(offset + OBSERVATION_COUNT_OFFSET, 1);
-            }
+            buffer.putLong(offset + LAST_OBSERVATION_OFFSET, timestampMs);
+            buffer.getAndAddLong(offset + TOTAL_BYTES_LOST_OFFSET, bytesLost);
+            buffer.getAndAddLong(offset + OBSERVATION_COUNT_OFFSET, 1);
         }
     }
 }

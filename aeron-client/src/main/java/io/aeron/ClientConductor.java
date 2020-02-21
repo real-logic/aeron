@@ -132,6 +132,11 @@ class ClientConductor implements Agent, DriverEventsListener
         {
             if (!isClosed)
             {
+                if (!aeron.isClosed())
+                {
+                    aeron.internalClose();
+                }
+
                 forceCloseResources();
 
                 for (int i = closeHandlers.size() - 1; i >= 0; i--)
@@ -155,7 +160,6 @@ class ClientConductor implements Agent, DriverEventsListener
                 {
                     if (isTerminating)
                     {
-                        aeron.internalClose();
                         Thread.sleep(IDLE_SLEEP_MS);
                     }
 

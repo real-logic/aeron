@@ -211,7 +211,7 @@ class ConsensusModuleAgent implements Agent
 
     public void onClose()
     {
-        if (!ctx.ownsAeronClient())
+        if (!ctx.ownsAeronClient() && !aeron.isClosed())
         {
             final CountedErrorHandler errorHandler = ctx.countedErrorHandler();
             for (final ClusterSession session : sessionByIdMap.values())

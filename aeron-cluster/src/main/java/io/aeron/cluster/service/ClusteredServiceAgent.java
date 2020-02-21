@@ -142,7 +142,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
                 }
             }
 
-            if (!ctx.ownsAeronClient())
+            if (!ctx.ownsAeronClient() && !aeron.isClosed())
             {
                 for (final ClientSession session : sessionByIdMap.values())
                 {
@@ -918,7 +918,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
 
     private boolean checkForClockTick()
     {
-        if (isAbort)
+        if (isAbort || aeron.isClosed())
         {
             throw new AgentTerminationException("unexpected Aeron close");
         }
@@ -936,7 +936,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
             if (null != aeronAgentInvoker)
             {
                 aeronAgentInvoker.invoke();
-                if (isAbort)
+                if (isAbort || aeron.isClosed())
                 {
                     throw new AgentTerminationException("unexpected Aeron close");
                 }

@@ -56,9 +56,7 @@ int aeron_driver_sender_init(
             context->mtu_length,
             AERON_CACHE_LINE_LENGTH) < 0)
         {
-            int errcode = errno;
-
-            aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+            aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
             return -1;
         }
 

@@ -47,9 +47,7 @@ int aeron_idle_strategy_sleeping_init_args(void **state, const char *env_var, co
 {
     if (aeron_alloc((void **)state, sizeof(uint64_t)) < 0)
     {
-        int err_code = errno;
-
-        aeron_set_err(err_code, "%s:%d: %s", __FILE__, __LINE__, strerror(err_code));
+        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
         return -1;
     }
 
@@ -168,9 +166,7 @@ int aeron_idle_strategy_backoff_state_init(
 {
     if (aeron_alloc((void **)state, sizeof(aeron_idle_strategy_backoff_state_t)) < 0)
     {
-        int err_code = errno;
-
-        aeron_set_err(err_code, "%s:%d: %s", __FILE__, __LINE__, strerror(err_code));
+        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
         return -1;
     }
 
@@ -399,9 +395,7 @@ int aeron_agent_init(
     runner->on_close = on_close;
     if (aeron_alloc((void **)&runner->role_name, role_name_length + 1) < 0)
     {
-        int err_code = errno;
-
-        aeron_set_err(err_code, "%s:%d: %s", __FILE__, __LINE__, strerror(err_code));
+        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
         return -1;
     }
     memcpy((char *)runner->role_name, role_name, role_name_length);

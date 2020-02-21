@@ -260,9 +260,7 @@ int aeron_http_retrieve(aeron_http_response_t **response, const char *url, int64
 
     if (connect(sock, (struct sockaddr *)&parsed_url.address, addr_len) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "http connect: %s", strerror(errcode));
+        aeron_set_err_from_last_err_code("http connect");
         goto error;
     }
 
@@ -273,25 +271,19 @@ int aeron_http_retrieve(aeron_http_response_t **response, const char *url, int64
 
     if (length < 0 || (sent_length = send(sock, request, (size_t)length, 0)) < length)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "http sent %" PRId64 "/%d bytes: %s", (uint64_t)sent_length, length, strerror(errcode));
+        aeron_set_err_from_last_err_code("http sent %" PRId64 "/%d bytes", (uint64_t)sent_length, length);
         goto error;
     }
 
     if (set_socket_non_blocking(sock) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "http set_socket_non_blocking: %s", strerror(errcode));
+        aeron_set_err_from_last_err_code("http set_socket_non_blocking");
         goto error;
     }
 
     if (aeron_alloc((void **)&_response, sizeof(aeron_http_response_t)) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "http alloc response: %s", strerror(errcode));
+        aeron_set_err_from_last_err_code("http alloc response");
         goto error;
     }
 
@@ -333,7 +325,7 @@ int aeron_http_retrieve(aeron_http_response_t **response, const char *url, int64
                 continue;
             }
 
-            aeron_set_err(errcode, "http recv: %s", strerror(errcode));
+            aeron_set_err_from_last_err_code("http recv");
             goto error;
         }
 

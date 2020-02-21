@@ -66,9 +66,7 @@ int aeron_receive_channel_endpoint_create(
 
     if (aeron_alloc((void **)&_endpoint, sizeof(aeron_receive_channel_endpoint_t)) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "could not allocate receive_channel_endpoint: %s", strerror(errcode));
+        aeron_set_err_from_last_err_code("could not allocate receive_channel_endpoint");
         return -1;
     }
 
@@ -81,9 +79,7 @@ int aeron_receive_channel_endpoint_create(
     if (aeron_int64_to_ptr_hash_map_init(
         &_endpoint->stream_id_to_refcnt_map, 16, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "could not init stream_id_to_refcnt_map: %s", strerror(errcode));
+        aeron_set_err_from_last_err_code("could not init stream_id_to_refcnt_map");
         return -1;
     }
 
@@ -431,18 +427,14 @@ int32_t aeron_receive_channel_endpoint_incref_to_stream(
 
         if (aeron_alloc((void **)&count, sizeof(aeron_stream_id_refcnt_t)) < 0)
         {
-            int errcode = errno;
-
-            aeron_set_err(errcode, "could not allocate aeron_stream_id_refcnt: %s", strerror(errcode));
+            aeron_set_err_from_last_err_code("could not allocate aeron_stream_id_refcnt");
             return -1;
         }
 
         count->refcnt = 0;
         if (aeron_int64_to_ptr_hash_map_put(&endpoint->stream_id_to_refcnt_map, stream_id, count) < 0)
         {
-            int errcode = errno;
-
-            aeron_set_err(errcode, "could not put aeron_stream_id_refcnt: %s", strerror(errcode));
+            aeron_set_err_from_last_err_code("could not put aeron_stream_id_refcnt");
             return -1;
         }
 

@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <memory.h>
+#include <errno.h>
 
 #include "concurrent/aeron_thread.h"
 #include "util/aeron_error.h"
@@ -86,7 +87,7 @@ const char *aeron_errmsg()
     return result;
 }
 
-void aeron_set_err(int errcode, const char *format, ...)
+static aeron_per_thread_error_t* get_required_error_state()
 {
     initialize_error();
     aeron_per_thread_error_t *error_state = aeron_thread_get_specific(error_key);
@@ -106,6 +107,13 @@ void aeron_set_err(int errcode, const char *format, ...)
         }
     }
 
+    return error_state;
+}
+
+void aeron_set_err(int errcode, const char *format, ...)
+{
+    aeron_per_thread_error_t *error_state = get_required_error_state();
+
     error_state->errcode = errcode;
     va_list args;
     char stack_message[sizeof(error_state->errmsg)];
@@ -114,6 +122,57 @@ void aeron_set_err(int errcode, const char *format, ...)
     vsnprintf(stack_message, sizeof(stack_message) - 1, format, args);
     va_end(args);
     strncpy(error_state->errmsg, stack_message, sizeof(error_state->errmsg));
+}
+
+void aeron_set_err_from_last_err_code(const char* format, ...)
+{
+#if defined(AERON_COMPILER_MSVC)
+    int errcode = GetLastError();
+#else
+    int errcode = errno;
+#endif
+
+    aeron_per_thread_error_t* error_state = get_required_error_state();
+
+    error_state->errcode = errcode;
+    va_list args;
+    char stack_message[sizeof(error_state->errmsg)];
+
+    va_start(args, format);
+    int written = vsnprintf(stack_message, sizeof(stack_message) - 1, format, args);
+    va_end(args);
+
+    if (written < 0)
+    {
+        error_state->errmsg[0] = '\0';
+        return;
+    }
+
+    strncpy(error_state->errmsg, stack_message, sizeof(error_state->errmsg));
+
+#if defined(AERON_COMPILER_MSVC)
+    const int length = FormatMessageA(
+        FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL,
+        errcode,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        stack_message,
+        sizeof(stack_message),
+        NULL);
+
+    if (length >= 2 && stack_message[length - 1] == '\n' && stack_message[length - 2] == '\r')
+    {
+        stack_message[length - 2] = '\0';
+    }
+    else if (!length)
+    {
+        snprintf(stack_message, sizeof(stack_message), "error %d", errcode);
+    }
+
+    snprintf(error_state->errmsg + written, sizeof(error_state->errmsg) - written, ": %s", stack_message);
+#else
+    snprintf(error_state->errmsg + written, sizeof(error_state->errmsg) - written, ": %s", strerror(errcode));
+#endif
 }
 
 const char *aeron_error_code_str(int errcode)
@@ -153,30 +212,6 @@ const char *aeron_error_code_str(int errcode)
 }
 
 #if defined(AERON_COMPILER_MSVC)
-
-void aeron_set_windows_error()
-{
-    const DWORD errorId = GetLastError();
-    LPSTR messageBuffer = NULL;
-
-    const DWORD result = FormatMessageA(
-        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL,
-        errorId,
-        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (LPSTR)&messageBuffer,
-        0,
-        NULL);
-
-    if (result == 0)
-    {
-        aeron_set_err(errorId, "error code %d", errorId);
-        return;
-    }
-
-    aeron_set_err(errorId, "%s", messageBuffer);
-    LocalFree(messageBuffer);
-}
 
 bool aeron_error_dll_process_attach()
 {

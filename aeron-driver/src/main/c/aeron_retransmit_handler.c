@@ -29,9 +29,7 @@ int aeron_retransmit_handler_init(
     if (aeron_int64_to_ptr_hash_map_init(
         &handler->active_retransmits_map, 8, AERON_INT64_TO_PTR_HASH_MAP_DEFAULT_LOAD_FACTOR) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "could not init retransmit handler map: %s", strerror(errcode));
+        aeron_set_err_from_last_err_code("could not init retransmit handler map");
         return -1;
     }
 
@@ -125,9 +123,7 @@ int aeron_retransmit_handler_on_nak(
 
             if (aeron_int64_to_ptr_hash_map_put(&handler->active_retransmits_map, key, action) < 0)
             {
-                int errcode = errno;
-
-                aeron_set_err(errcode, "could not put retransmit handler map: %s", strerror(errcode));
+                aeron_set_err_from_last_err_code("could not put retransmit handler map");
                 return -1;
             }
         }

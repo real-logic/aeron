@@ -45,9 +45,7 @@ int aeron_distinct_error_log_init(
 
     if (aeron_alloc((void **)&log->observation_list, sizeof(aeron_distinct_error_log_observation_list_t)) < 0)
     {
-        int errcode = errno;
-
-        aeron_set_err(errcode, "%s:%d: %s", __FILE__, __LINE__, strerror(errcode));
+        aeron_set_err_from_last_err_code("%s:%d", __FILE__, __LINE__);
         return -1;
     }
 
@@ -200,6 +198,9 @@ int aeron_distinct_error_log_record(
             aeron_format_date(buffer, sizeof(buffer), timestamp);
             fprintf(stderr, "%s - unrecordable error %d: %s %s\n", buffer, error_code, description, message);
             errno = ENOMEM;
+#if defined(AERON_COMPILER_MSVC)
+            SetLastError(ERROR_OUTOFMEMORY);
+#endif
             return -1;
         }
     }

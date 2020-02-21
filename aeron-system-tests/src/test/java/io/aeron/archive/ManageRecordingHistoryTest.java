@@ -91,7 +91,7 @@ public class ManageRecordingHistoryTest
         CloseHelper.close(aeron);
         CloseHelper.close(archivingMediaDriver);
 
-        archivingMediaDriver.archive().context().deleteArchiveDirectory();
+        archivingMediaDriver.archive().context().deleteDirectory();
     }
 
     @Test

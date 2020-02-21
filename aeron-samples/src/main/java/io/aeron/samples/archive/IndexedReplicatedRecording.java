@@ -173,8 +173,8 @@ public class IndexedReplicatedRecording implements AutoCloseable
             dstAeron,
             srcArchivingMediaDriver,
             dstArchivingMediaDriver,
-            () -> srcArchivingMediaDriver.archive().context().deleteArchiveDirectory(),
-            () -> dstArchivingMediaDriver.archive().context().deleteArchiveDirectory());
+            () -> srcArchivingMediaDriver.archive().context().deleteDirectory(),
+            () -> dstArchivingMediaDriver.archive().context().deleteDirectory());
     }
 
     public static void main(final String[] args) throws Exception

@@ -153,8 +153,8 @@ public class ReplicateRecordingTest
         CloseHelper.close(dstArchivingMediaDriver);
         CloseHelper.close(srcArchivingMediaDriver);
 
-        dstArchivingMediaDriver.archive().context().deleteArchiveDirectory();
-        srcArchivingMediaDriver.archive().context().deleteArchiveDirectory();
+        dstArchivingMediaDriver.archive().context().deleteDirectory();
+        srcArchivingMediaDriver.archive().context().deleteDirectory();
     }
 
     @Test

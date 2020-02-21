@@ -1761,8 +1761,19 @@ public class Archive implements AutoCloseable
 
         /**
          * Delete the archive directory if the {@link #archiveDir()} value is not null.
+         *
+         * Use {@link #deleteDirectory()} instead.
          */
+        @Deprecated
         public void deleteArchiveDirectory()
+        {
+            deleteDirectory();
+        }
+
+        /**
+         * Delete the archive directory if the {@link #archiveDir()} value is not null.
+         */
+        public void deleteDirectory()
         {
             if (null != archiveDir)
             {

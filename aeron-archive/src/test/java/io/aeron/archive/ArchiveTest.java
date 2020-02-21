@@ -160,7 +160,7 @@ public class ArchiveTest
         finally
         {
             executor.shutdownNow();
-            archiveCtx.deleteArchiveDirectory();
+            archiveCtx.deleteDirectory();
         }
     }
 
@@ -232,7 +232,7 @@ public class ArchiveTest
         }
         finally
         {
-            archiveCtxClone.deleteArchiveDirectory();
+            archiveCtxClone.deleteDirectory();
         }
     }
 
@@ -298,7 +298,7 @@ public class ArchiveTest
             }
             finally
             {
-                archiveCtx.deleteArchiveDirectory();
+                archiveCtx.deleteDirectory();
             }
         });
     }

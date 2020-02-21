@@ -123,7 +123,7 @@ public class StartFromTruncatedRecordingLogTest
             if (null != driver)
             {
                 driver.consensusModule().context().deleteDirectory();
-                driver.archive().context().deleteArchiveDirectory();
+                driver.archive().context().deleteDirectory();
             }
         }
     }

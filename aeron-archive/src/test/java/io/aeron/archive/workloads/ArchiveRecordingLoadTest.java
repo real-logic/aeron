@@ -131,7 +131,7 @@ public class ArchiveRecordingLoadTest
         CloseHelper.close(archive);
         CloseHelper.close(driver);
 
-        archive.context().deleteArchiveDirectory();
+        archive.context().deleteDirectory();
         driver.context().deleteAeronDirectory();
     }
 

@@ -94,7 +94,7 @@ public class ExtendRecordingTest
     public void after()
     {
         closeDownAndCleanMediaDriver();
-        archivingMediaDriver.archive().context().deleteArchiveDirectory();
+        archivingMediaDriver.archive().context().deleteDirectory();
     }
 
     @Test

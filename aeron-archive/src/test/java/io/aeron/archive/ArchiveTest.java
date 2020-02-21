@@ -30,12 +30,9 @@ import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.DirectBuffer;
-import org.agrona.ErrorHandler;
-import org.agrona.concurrent.CountedErrorHandler;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -43,10 +40,8 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.InOrder;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.TooManyListenersException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -58,7 +53,6 @@ import static io.aeron.archive.ArchiveThreadingMode.DEDICATED;
 import static io.aeron.archive.ArchiveThreadingMode.SHARED;
 import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
-import static io.aeron.test.Tests.throwOnClose;
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.params.provider.EnumSource.Mode.EXCLUDE;
@@ -307,50 +301,6 @@ public class ArchiveTest
                 archiveCtx.deleteArchiveDirectory();
             }
         });
-    }
-
-    @Test
-    void contextCloseErrorHandling() throws Exception
-    {
-        final CountedErrorHandler countedErrorHandler = mock(CountedErrorHandler.class);
-
-        final ErrorHandler errorHandler = mock(ErrorHandler.class, withSettings().extraInterfaces(AutoCloseable.class));
-        throwOnClose((AutoCloseable)errorHandler, new TooManyListenersException("error handler throws"));
-
-        final Catalog catalog = mock(Catalog.class);
-        final IndexOutOfBoundsException catalogException = new IndexOutOfBoundsException("catalog");
-        throwOnClose(catalog, catalogException);
-
-        final ArchiveMarkFile archiveMarkFile = mock(ArchiveMarkFile.class);
-        final IOException archiveMarkFileException = new IOException("file is gone");
-        throwOnClose(archiveMarkFile, archiveMarkFileException);
-
-        final AtomicCounter errorCounter = mock(AtomicCounter.class);
-        final AssertionError errorCounterException = new AssertionError("counter is dead");
-        throwOnClose(errorCounter, errorCounterException);
-
-        final Aeron aeron = mock(Aeron.class);
-        final CloneNotSupportedException aeronException = new CloneNotSupportedException("boom!");
-        throwOnClose(aeron, aeronException);
-
-        final Context context = new Context()
-            .countedErrorHandler(countedErrorHandler)
-            .errorHandler(errorHandler)
-            .catalog(catalog)
-            .archiveMarkFile(archiveMarkFile)
-            .errorCounter(errorCounter)
-            .aeron(aeron)
-            .ownsAeronClient(true);
-
-        final CloneNotSupportedException ex = assertThrows(CloneNotSupportedException.class, context::close);
-
-        assertSame(aeronException, ex);
-        final InOrder inOrder = inOrder(countedErrorHandler, errorHandler);
-        inOrder.verify(countedErrorHandler).onError(catalogException);
-        inOrder.verify(countedErrorHandler).onError(archiveMarkFileException);
-        inOrder.verify(errorHandler).onError(errorCounterException);
-        inOrder.verify((AutoCloseable)errorHandler).close();
-        inOrder.verifyNoMoreInteractions();
     }
 
     @Test

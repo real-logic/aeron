@@ -18,8 +18,7 @@ package io.aeron;
 import io.aeron.exceptions.*;
 import io.aeron.status.ChannelEndpointStatus;
 import io.aeron.status.HeartbeatTimestamp;
-import org.agrona.DirectBuffer;
-import org.agrona.ManagedResource;
+import org.agrona.*;
 import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.collections.LongHashSet;
@@ -133,12 +132,6 @@ class ClientConductor implements Agent, DriverEventsListener
         {
             if (!isClosed)
             {
-                isClosed = true;
-                if (isTerminating)
-                {
-                    aeron.internalClose();
-                }
-
                 forceCloseResources();
 
                 for (int i = closeHandlers.size() - 1; i >= 0; i--)
@@ -157,6 +150,7 @@ class ClientConductor implements Agent, DriverEventsListener
                 {
                     if (isTerminating)
                     {
+                        aeron.internalClose();
                         Thread.sleep(IDLE_SLEEP_MS);
                     }
 
@@ -169,7 +163,7 @@ class ClientConductor implements Agent, DriverEventsListener
 
                 for (int i = 0, size = lingeringResources.size(); i < size; i++)
                 {
-                    lingeringResources.get(i).delete();
+                    deleteResource(lingeringResources.get(i));
                 }
 
                 driverProxy.clientClose();
@@ -178,6 +172,7 @@ class ClientConductor implements Agent, DriverEventsListener
         }
         finally
         {
+            isClosed = true;
             clientLock.unlock();
         }
     }
@@ -1033,7 +1028,13 @@ class ClientConductor implements Agent, DriverEventsListener
 
             if (driverEventsAdapter.isInvalid())
             {
-                onClose();
+                isTerminating = true;
+                forceCloseResources();
+
+                if (!isClientApiCall(correlationId))
+                {
+                    throw new IllegalStateException("Driver events adapter is invalid");
+                }
             }
 
             if (isClientApiCall(correlationId))
@@ -1133,11 +1134,9 @@ class ClientConductor implements Agent, DriverEventsListener
                 isTerminating = true;
                 forceCloseResources();
 
-                final long keepAliveAgeMs = nowMs - lastKeepAliveMs;
-
                 throw new DriverTimeoutException(
                     "MediaDriver keepalive age exceeded (ms): timeout= " +
-                     driverTimeoutMs + ", actual=" + keepAliveAgeMs);
+                     driverTimeoutMs + ", age=" + (nowMs - lastKeepAliveMs));
             }
 
             final long clientId = driverProxy.clientId();
@@ -1185,14 +1184,7 @@ class ClientConductor implements Agent, DriverEventsListener
             if ((resource.timeOfLastStateChange() + resourceLingerDurationNs) - nowNs < 0)
             {
                 ArrayListUtil.fastUnorderedRemove(lingeringResources, i, lastIndex--);
-                try
-                {
-                    resource.delete();
-                }
-                catch (final Throwable throwable)
-                {
-                    handleError(throwable);
-                }
+                deleteResource(resource);
 
                 workCount += 1;
             }
@@ -1245,6 +1237,18 @@ class ClientConductor implements Agent, DriverEventsListener
             {
                 isInCallback = false;
             }
+        }
+    }
+
+    private void deleteResource(final ManagedResource resource)
+    {
+        try
+        {
+            resource.delete();
+        }
+        catch (final Throwable throwable)
+        {
+            handleError(throwable);
         }
     }
 }

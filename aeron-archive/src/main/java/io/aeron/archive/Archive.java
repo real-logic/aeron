@@ -2010,6 +2010,7 @@ public class Archive implements AutoCloseable
             {
                 replayBuffer = allocateBuffer();
             }
+
             return replayBuffer;
         }
 
@@ -2029,6 +2030,7 @@ public class Archive implements AutoCloseable
             {
                 recordChecksumBuffer = allocateBuffer();
             }
+
             return recordChecksumBuffer;
         }
 
@@ -2049,10 +2051,10 @@ public class Archive implements AutoCloseable
             AeronCloseHelper.close(countedErrorHandler, archiveDirChannel);
             archiveDirChannel = null;
 
-            AeronCloseHelper.close(errorHandler, errorCounter);
+            CloseHelper.quietClose(errorCounter);
             if (errorHandler instanceof AutoCloseable)
             {
-                CloseHelper.quietClose((AutoCloseable)errorHandler); // Ignore error to ensure the rest is closed
+                CloseHelper.quietClose((AutoCloseable)errorHandler);
             }
 
             if (ownsAeronClient)

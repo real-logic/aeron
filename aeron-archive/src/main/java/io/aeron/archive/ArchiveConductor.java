@@ -223,9 +223,9 @@ abstract class ArchiveConductor
     {
         try
         {
+            isAbort = true;
             replayer.abort();
             recorder.abort();
-            isAbort = true;
 
             ctx.errorCounter().close();
             ctx.abortLatch().await(AgentRunner.RETRY_CLOSE_TIMEOUT_MS * 3L, TimeUnit.MILLISECONDS);
@@ -272,8 +272,9 @@ abstract class ArchiveConductor
         {
             workCount += aeronAgentInvoker.invoke();
 
-            if (isAbort)
+            if (isAbort || aeronAgentInvoker.isClosed())
             {
+                isAbort = true;
                 throw new AgentTerminationException("unexpected Aeron close");
             }
         }
@@ -283,7 +284,19 @@ abstract class ArchiveConductor
 
     final int invokeDriverConductor()
     {
-        return null != driverAgentInvoker ? driverAgentInvoker.invoke() : 0;
+        int workCount = 0;
+
+        if (null != driverAgentInvoker)
+        {
+            workCount += driverAgentInvoker.invoke();
+
+            if (driverAgentInvoker.isClosed())
+            {
+                throw new AgentTerminationException("unexpected driver close");
+            }
+        }
+
+        return workCount;
     }
 
     Catalog catalog()

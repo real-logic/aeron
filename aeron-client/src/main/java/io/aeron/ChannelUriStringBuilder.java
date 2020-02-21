@@ -409,15 +409,15 @@ public class ChannelUriStringBuilder
      */
     public ChannelUriStringBuilder reliable(final ChannelUri channelUri)
     {
-        final String reliableStr = channelUri.get(RELIABLE_STREAM_PARAM_NAME);
-        if (null == reliableStr)
+        final String reliableValue = channelUri.get(RELIABLE_STREAM_PARAM_NAME);
+        if (null == reliableValue)
         {
             reliable = null;
             return this;
         }
         else
         {
-            return reliable(Boolean.valueOf(reliableStr));
+            return reliable(Boolean.valueOf(reliableValue));
         }
     }
 
@@ -460,15 +460,15 @@ public class ChannelUriStringBuilder
      */
     public ChannelUriStringBuilder ttl(final ChannelUri channelUri)
     {
-        final String ttlStr = channelUri.get(TTL_PARAM_NAME);
-        if (null == ttlStr)
+        final String ttlValue = channelUri.get(TTL_PARAM_NAME);
+        if (null == ttlValue)
         {
             ttl = null;
             return this;
         }
         else
         {
-            return ttl(Integer.valueOf(ttlStr));
+            return ttl(Integer.valueOf(ttlValue));
         }
     }
 
@@ -519,15 +519,15 @@ public class ChannelUriStringBuilder
      */
     public ChannelUriStringBuilder mtu(final ChannelUri channelUri)
     {
-        final String mtuStr = channelUri.get(MTU_LENGTH_PARAM_NAME);
-        if (null == mtuStr)
+        final String mtuValue = channelUri.get(MTU_LENGTH_PARAM_NAME);
+        if (null == mtuValue)
         {
             mtu = null;
             return this;
         }
         else
         {
-            final long value = parseSize(MTU_LENGTH_PARAM_NAME, mtuStr);
+            final long value = parseSize(MTU_LENGTH_PARAM_NAME, mtuValue);
             if (value > Integer.MAX_VALUE)
             {
                 throw new IllegalStateException(MTU_LENGTH_PARAM_NAME + " " + value + " > " + Integer.MAX_VALUE);
@@ -576,15 +576,15 @@ public class ChannelUriStringBuilder
      */
     public ChannelUriStringBuilder termLength(final ChannelUri channelUri)
     {
-        final String termLengthStr = channelUri.get(TERM_LENGTH_PARAM_NAME);
-        if (null == termLengthStr)
+        final String termLengthValue = channelUri.get(TERM_LENGTH_PARAM_NAME);
+        if (null == termLengthValue)
         {
             termLength = null;
             return this;
         }
         else
         {
-            final long value = parseSize(TERM_LENGTH_PARAM_NAME, termLengthStr);
+            final long value = parseSize(TERM_LENGTH_PARAM_NAME, termLengthValue);
             if (value > Integer.MAX_VALUE)
             {
                 throw new IllegalStateException(
@@ -628,15 +628,15 @@ public class ChannelUriStringBuilder
      */
     public ChannelUriStringBuilder initialTermId(final ChannelUri channelUri)
     {
-        final String termLengthStr = channelUri.get(INITIAL_TERM_ID_PARAM_NAME);
-        if (null == termLengthStr)
+        final String initialTermIdValue = channelUri.get(INITIAL_TERM_ID_PARAM_NAME);
+        if (null == initialTermIdValue)
         {
             initialTermId = null;
             return this;
         }
         else
         {
-            return initialTermId(Integer.valueOf(termLengthStr));
+            return initialTermId(Integer.valueOf(initialTermIdValue));
         }
     }
 
@@ -674,15 +674,15 @@ public class ChannelUriStringBuilder
      */
     public ChannelUriStringBuilder termId(final ChannelUri channelUri)
     {
-        final String termIdStr = channelUri.get(TERM_ID_PARAM_NAME);
-        if (null == termIdStr)
+        final String termIdValue = channelUri.get(TERM_ID_PARAM_NAME);
+        if (null == termIdValue)
         {
             termId = null;
             return this;
         }
         else
         {
-            return termId(Integer.valueOf(termIdStr));
+            return termId(Integer.valueOf(termIdValue));
         }
     }
 
@@ -733,15 +733,15 @@ public class ChannelUriStringBuilder
      */
     public ChannelUriStringBuilder termOffset(final ChannelUri channelUri)
     {
-        final String termOffsetStr = channelUri.get(TERM_OFFSET_PARAM_NAME);
-        if (null == termOffsetStr)
+        final String termOffsetValue = channelUri.get(TERM_OFFSET_PARAM_NAME);
+        if (null == termOffsetValue)
         {
             termOffset = null;
             return this;
         }
         else
         {
-            return termOffset(Integer.valueOf(termOffsetStr));
+            return termOffset(Integer.valueOf(termOffsetValue));
         }
     }
 
@@ -778,15 +778,15 @@ public class ChannelUriStringBuilder
      */
     public ChannelUriStringBuilder sessionId(final ChannelUri channelUri)
     {
-        final String sessionIdStr = channelUri.get(SESSION_ID_PARAM_NAME);
-        if (null == sessionIdStr)
+        final String sessionIdValue = channelUri.get(SESSION_ID_PARAM_NAME);
+        if (null == sessionIdValue)
         {
             sessionId = null;
             return this;
         }
         else
         {
-            return sessionId(Integer.valueOf(sessionIdStr));
+            return sessionId(Integer.valueOf(sessionIdValue));
         }
     }
 
@@ -829,15 +829,15 @@ public class ChannelUriStringBuilder
      */
     public ChannelUriStringBuilder linger(final ChannelUri channelUri)
     {
-        final String lingerStr = channelUri.get(LINGER_PARAM_NAME);
-        if (null == lingerStr)
+        final String lingerValue = channelUri.get(LINGER_PARAM_NAME);
+        if (null == lingerValue)
         {
             linger = null;
             return this;
         }
         else
         {
-            return linger(parseDuration(LINGER_PARAM_NAME, lingerStr));
+            return linger(parseDuration(LINGER_PARAM_NAME, lingerValue));
         }
     }
 
@@ -876,15 +876,15 @@ public class ChannelUriStringBuilder
      */
     public ChannelUriStringBuilder sparse(final ChannelUri channelUri)
     {
-        final String sparseStr = channelUri.get(SPARSE_PARAM_NAME);
-        if (null == sparseStr)
+        final String sparseValue = channelUri.get(SPARSE_PARAM_NAME);
+        if (null == sparseValue)
         {
             sparse = null;
             return this;
         }
         else
         {
-            return sparse(Boolean.valueOf(sparseStr));
+            return sparse(Boolean.valueOf(sparseValue));
         }
     }
 
@@ -921,15 +921,15 @@ public class ChannelUriStringBuilder
      */
     public ChannelUriStringBuilder eos(final ChannelUri channelUri)
     {
-        final String eosStr = channelUri.get(EOS_PARAM_NAME);
-        if (null == eosStr)
+        final String eosValue = channelUri.get(EOS_PARAM_NAME);
+        if (null == eosValue)
         {
             eos = null;
             return this;
         }
         else
         {
-            return eos(Boolean.valueOf(eosStr));
+            return eos(Boolean.valueOf(eosValue));
         }
     }
 
@@ -966,15 +966,15 @@ public class ChannelUriStringBuilder
      */
     public ChannelUriStringBuilder tether(final ChannelUri channelUri)
     {
-        final String tetherStr = channelUri.get(TETHER_PARAM_NAME);
-        if (null == tetherStr)
+        final String tetherValue = channelUri.get(TETHER_PARAM_NAME);
+        if (null == tetherValue)
         {
             tether = null;
             return this;
         }
         else
         {
-            return tether(Boolean.valueOf(tetherStr));
+            return tether(Boolean.valueOf(tetherValue));
         }
     }
 
@@ -1013,15 +1013,15 @@ public class ChannelUriStringBuilder
      */
     public ChannelUriStringBuilder group(final ChannelUri channelUri)
     {
-        final String groupStr = channelUri.get(GROUP_PARAM_NAME);
-        if (null == groupStr)
+        final String groupValue = channelUri.get(GROUP_PARAM_NAME);
+        if (null == groupValue)
         {
             group = null;
             return this;
         }
         else
         {
-            return group(Boolean.valueOf(groupStr));
+            return group(Boolean.valueOf(groupValue));
         }
     }
 
@@ -1190,72 +1190,70 @@ public class ChannelUriStringBuilder
     }
 
     /**
-     * Set the tagged flow control settings to be used on channel.  All specified values may be null and the default
+     * Set tagged flow control settings to be used on channel.  All specified values may be null and the default
      * specified in the MediaDriver.Context will be used instead.
      *
-     * @param receiverTag receiver tag for this channel.
-     * @param groupSize group size required to allow publications for this channel to be move to connected status.
-     * @param timeout timeout receivers, default is ns, but allows suffixing of time units (e.g. 100ms).
+     * @param receiverTag  receiver tag for this channel.
+     * @param minGroupSize group size required to allow publications for this channel to be move to connected status.
+     * @param timeout      timeout receivers, default is ns, but allows suffixing of time units (e.g. 5s).
      * @return this for fluent API.
      */
     public ChannelUriStringBuilder taggedFlowControl(
-        final Long receiverTag,
-        final Integer groupSize,
-        final String timeout)
+        final Long receiverTag, final Integer minGroupSize, final String timeout)
     {
-        String flowControlStr = "tagged";
+        String flowControlValue = "tagged";
 
-        if (null != receiverTag || null != groupSize)
+        if (null != receiverTag || null != minGroupSize)
         {
-            flowControlStr += ",g:";
+            flowControlValue += ",g:";
         }
+
         if (null != receiverTag)
         {
-            flowControlStr += receiverTag;
+            flowControlValue += receiverTag;
         }
-        if (null != groupSize)
+
+        if (null != minGroupSize)
         {
-            flowControlStr += "/";
-            flowControlStr += groupSize;
+            flowControlValue += "/";
+            flowControlValue += minGroupSize;
         }
 
         if (null != timeout)
         {
-            flowControlStr += ",t:";
-            flowControlStr += timeout;
+            flowControlValue += ",t:";
+            flowControlValue += timeout;
         }
 
-        return flowControl(flowControlStr);
+        return flowControl(flowControlValue);
     }
 
 
     /**
-     * Set the min flow control settings to be used on channel.  All specified values may be null and the default
+     * Set min flow control settings to be used on channel.  All specified values may be null and the default
      * specified in the MediaDriver.Context will be used instead.
      *
-     * @param groupSize group size required to allow publications for this channel to be move to connected status.
-     * @param timeout timeout receivers, default is ns, but allows suffixing of time units (e.g. 100ms).
+     * @param minGroupSize group size required to allow publications for this channel to be move to connected status.
+     * @param timeout      timeout receivers, default is ns, but allows suffixing of time units (e.g. 5s).
      * @return this for fluent API.
      */
-    public ChannelUriStringBuilder minFlowControl(
-        final Integer groupSize,
-        final String timeout)
+    public ChannelUriStringBuilder minFlowControl(final Integer minGroupSize, final String timeout)
     {
-        String flowControlStr = "min";
+        String flowControlValue = "min";
 
-        if (null != groupSize)
+        if (null != minGroupSize)
         {
-            flowControlStr += ",g:/";
-            flowControlStr += groupSize;
+            flowControlValue += ",g:/";
+            flowControlValue += minGroupSize;
         }
 
         if (null != timeout)
         {
-            flowControlStr += ",t:";
-            flowControlStr += timeout;
+            flowControlValue += ",t:";
+            flowControlValue += timeout;
         }
 
-        return flowControl(flowControlStr);
+        return flowControl(flowControlValue);
     }
 
     /**
@@ -1282,7 +1280,7 @@ public class ChannelUriStringBuilder
     }
 
     /**
-     * Set the receiver tag (rtag) to be sent in SMs on a channel.
+     * Set the receiver tag (rtag) to be sent in SMs.
      *
      * @param rtag to be sent in SMs
      * @return this for fluent API.
@@ -1303,22 +1301,22 @@ public class ChannelUriStringBuilder
      */
     public ChannelUriStringBuilder receiverTag(final ChannelUri channelUri)
     {
-        final String receiverTagStr = channelUri.get(RECEIVER_TAG_PARAM_NAME);
-        if (null == receiverTagStr)
+        final String receiverTagValue = channelUri.get(RECEIVER_TAG_PARAM_NAME);
+        if (null == receiverTagValue)
         {
             receiverTag = null;
             return this;
         }
         else
         {
-            return receiverTag(Long.valueOf(receiverTagStr));
+            return receiverTag(Long.valueOf(receiverTagValue));
         }
     }
 
     /**
-     * Get the receiver tag (rtag) to be sent in SMs on a channel.
+     * Get the receiver tag (rtag) to be sent in SMs.
      *
-     * @return receiver tag to be sent in SMs on a channel.
+     * @return receiver tag to be sent in SMs.
      * @see CommonContext#RECEIVER_TAG_PARAM_NAME
      */
     public Long receiverTag()
@@ -1348,15 +1346,15 @@ public class ChannelUriStringBuilder
      */
     public ChannelUriStringBuilder rejoin(final ChannelUri channelUri)
     {
-        final String rejoinStr = channelUri.get(REJOIN_PARAM_NAME);
-        if (null == rejoinStr)
+        final String rejoinValue = channelUri.get(REJOIN_PARAM_NAME);
+        if (null == rejoinValue)
         {
             rejoin = null;
             return this;
         }
         else
         {
-            return rejoin(Boolean.valueOf(rejoinStr));
+            return rejoin(Boolean.valueOf(rejoinValue));
         }
     }
 

@@ -72,7 +72,7 @@ public class Tests
         }).when(mock).close();
     }
 
-    public static void yieldWait(final String format, final Object... params)
+    public static void yieldingWait(final String format, final Object... params)
     {
         final Timeout timeout = Objects.requireNonNull(
             TEST_TIMEOUT.get(),

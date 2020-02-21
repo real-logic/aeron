@@ -175,7 +175,7 @@ public class ReplayMergeTest
             final int counterId = awaitRecordingCounterId(counters, publication.sessionId());
             final long recordingId = RecordingPos.getRecordingId(counters, counterId);
 
-            putMessages(publication, initialMessageCount, MESSAGE_PREFIX);
+            publishMessages(publication, initialMessageCount);
             messagesPublished += initialMessageCount;
             awaitPosition(counters, counterId, publication.position());
 
@@ -192,15 +192,15 @@ public class ReplayMergeTest
                 for (int i = initialMessageCount; i < totalMessageCount; i++)
                 {
                     long position;
-                    while ((position = offerMessage(publication, i, MESSAGE_PREFIX)) <= 0)
+                    while ((position = offerMessage(publication, i)) <= 0)
                     {
-                        Tests.yieldWait(
-                            "i (%d) < totalMessageCount (%d), lastPosition (%d)", i, totalMessageCount, position);
+                        Tests.yieldingWait(
+                            "i=%d < totalMessageCount=%d, lastPosition=%d", i, totalMessageCount, position);
                     }
 
                     if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
                     {
-                        Tests.yieldWait("i (%d) < totalMessageCount (%d)", i, totalMessageCount);
+                        Tests.yieldingWait("i=%d < totalMessageCount=%d", i, totalMessageCount);
                     }
                 }
 
@@ -210,7 +210,7 @@ public class ReplayMergeTest
                     {
                         assertFalse(replayMerge.hasFailed(), "failed to merge");
 
-                        Tests.yieldWait("Replay did not merge");
+                        Tests.yieldingWait("replay did not merge");
                     }
                 }
 
@@ -221,8 +221,8 @@ public class ReplayMergeTest
                     {
                         assertFalse(replayMerge.hasFailed(), "image closed unexpectedly");
 
-                        Tests.yieldWait(
-                            "received.get() (%d) < totalMessageCount (%d)", received.get(), totalMessageCount);
+                        Tests.yieldingWait(
+                            "received.get()=%d < totalMessageCount=%d", received.get(), totalMessageCount);
                     }
                 }
 
@@ -238,17 +238,17 @@ public class ReplayMergeTest
         }
     }
 
-    private long offerMessage(final Publication publication, final int index, final String prefix)
+    private long offerMessage(final Publication publication, final int index)
     {
-        final int length = buffer.putStringWithoutLengthAscii(0, prefix + index);
+        final int length = buffer.putStringWithoutLengthAscii(0, MESSAGE_PREFIX + index);
         return publication.offer(buffer, 0, length);
     }
 
-    private void putMessages(final Publication publication, final int count, final String prefix)
+    private void publishMessages(final Publication publication, final int count)
     {
         for (int i = 0; i < count; i++)
         {
-            final int length = buffer.putStringWithoutLengthAscii(0, prefix + i);
+            final int length = buffer.putStringWithoutLengthAscii(0, MESSAGE_PREFIX + i);
 
             while (publication.offer(buffer, 0, length) <= 0)
             {

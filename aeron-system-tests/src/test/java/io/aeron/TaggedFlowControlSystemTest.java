@@ -28,6 +28,7 @@ import java.nio.ByteOrder;
 import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static io.aeron.FlowControlTests.waitForConnectionAndStatusMessages;
@@ -119,6 +120,24 @@ public class TaggedFlowControlSystemTest
             Arguments.of(null, null, null, "|fc=tagged,g:123", "|rtag=123"));
     }
 
+    private static class State
+    {
+        private int numMessagesToSend;
+        private int numMessagesLeftToSend;
+        private int numFragmentsReadFromA;
+        private int numFragmentsReadFromB;
+
+        public String toString()
+        {
+            return "State{" +
+                   "numMessagesToSend=" + numMessagesToSend +
+                   ", numMessagesLeftToSend=" + numMessagesLeftToSend +
+                   ", numFragmentsReadFromA=" + numFragmentsReadFromA +
+                   ", numFragmentsReadFromB=" + numFragmentsReadFromB +
+                   '}';
+        }
+    }
+
     @ParameterizedTest
     @MethodSource("strategyConfigurations")
     public void shouldSlowToTaggedWithMulticastFlowControlStrategy(
@@ -128,144 +147,162 @@ public class TaggedFlowControlSystemTest
         final String publisherUriParams,
         final String subscriptionBUriParams)
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        Tests.withTimeout(ofSeconds(10));
+        final State state = new State();
+        state.numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
+        state.numMessagesLeftToSend = state.numMessagesToSend;
+        state.numFragmentsReadFromB = 0;
+
+        driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
+        if (null != flowControlSupplier)
         {
-            final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
-            int numMessagesLeftToSend = numMessagesToSend;
-            int numFragmentsFromB = 0;
+            driverAContext.multicastFlowControlSupplier(flowControlSupplier);
+        }
+        if (null != flowControlGroupReceiverTag)
+        {
+            driverAContext.flowControlGroupReceiverTag(flowControlGroupReceiverTag);
+        }
+        if (null != receiverTag)
+        {
+            driverBContext.receiverTag(receiverTag);
+        }
+        driverAContext.flowControlReceiverGroupMinSize(1);
 
-            driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
-            if (null != flowControlSupplier)
-            {
-                driverAContext.multicastFlowControlSupplier(flowControlSupplier);
-            }
-            if (null != flowControlGroupReceiverTag)
-            {
-                driverAContext.flowControlGroupReceiverTag(flowControlGroupReceiverTag);
-            }
-            if (null != receiverTag)
-            {
-                driverBContext.receiverTag(receiverTag);
-            }
-            driverAContext.flowControlReceiverGroupMinSize(1);
+        launch();
 
-            launch();
+        subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
+        subscriptionB = clientB.addSubscription(MULTICAST_URI + subscriptionBUriParams, STREAM_ID);
+        publication = clientA.addPublication(MULTICAST_URI + publisherUriParams, STREAM_ID);
 
-            subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
-            subscriptionB = clientB.addSubscription(MULTICAST_URI + subscriptionBUriParams, STREAM_ID);
-            publication = clientA.addPublication(MULTICAST_URI + publisherUriParams, STREAM_ID);
+        Tests.yieldingWait(subscriptionA::isConnected);
+        Tests.yieldingWait(subscriptionB::isConnected);
+        Tests.yieldingWait(publication::isConnected);
 
-            while (!subscriptionA.isConnected() || !subscriptionB.isConnected() || !publication.isConnected())
+        for (long i = 0; state.numFragmentsReadFromB < state.numMessagesToSend; i++)
+        {
+            if (state.numMessagesLeftToSend > 0)
             {
-                Thread.yield();
-                Tests.checkInterruptedStatus();
-            }
-
-            for (long i = 0; numFragmentsFromB < numMessagesToSend; i++)
-            {
-                if (numMessagesLeftToSend > 0)
+                final long result = publication.offer(buffer, 0, buffer.capacity());
+                if (result >= 0L)
                 {
-                    final long result = publication.offer(buffer, 0, buffer.capacity());
-                    if (result >= 0L)
-                    {
-                        numMessagesLeftToSend--;
-                    }
-                    else if (Publication.NOT_CONNECTED == result)
-                    {
-                        fail("Publication not connected, numMessagesLeftToSend=" + numMessagesLeftToSend);
-                    }
+                    state.numMessagesLeftToSend--;
                 }
-
-                Thread.yield();
-                Tests.checkInterruptedStatus();
-
-                // A keeps up
-                subscriptionA.poll(fragmentHandlerA, 10);
-
-                // B receives slowly
-                if ((i % 2) == 0)
+                else if (Publication.NOT_CONNECTED == result)
                 {
-                    final int bFragments = subscriptionB.poll(fragmentHandlerB, 1);
-                    if (0 == bFragments && !subscriptionB.isConnected())
-                    {
-                        if (subscriptionB.isClosed())
-                        {
-                            fail("Subscription B is closed, numFragmentsFromB=" + numFragmentsFromB);
-                        }
-
-                        fail("Subscription B not connected, numFragmentsFromB=" + numFragmentsFromB);
-                    }
-
-                    numFragmentsFromB += bFragments;
+                    fail("Publication not connected, numMessagesLeftToSend=" + state.numMessagesLeftToSend);
+                }
+                else
+                {
+                    Tests.yieldingWait(state::toString);
                 }
             }
 
-            verify(fragmentHandlerB, times(numMessagesToSend)).onFragment(
-                any(DirectBuffer.class),
-                anyInt(),
-                eq(MESSAGE_LENGTH),
-                any(Header.class));
-        });
+            Tests.yieldingWait(state::toString);
+
+            // A keeps up
+            pollWithTimeout(subscriptionA, fragmentHandlerA, 10, state::toString);
+
+            // B receives slowly
+            if ((i % 2) == 0)
+            {
+                final int bFragments = pollWithTimeout(subscriptionB, fragmentHandlerB, 1, state::toString);
+                if (0 == bFragments && !subscriptionB.isConnected())
+                {
+                    if (subscriptionB.isClosed())
+                    {
+                        fail("Subscription B is closed, numFragmentsFromB=" + state.numFragmentsReadFromB);
+                    }
+
+                    fail("Subscription B not connected, numFragmentsFromB=" + state.numFragmentsReadFromB);
+                }
+
+                state.numFragmentsReadFromB += bFragments;
+            }
+        }
+
+        verify(fragmentHandlerB, times(state.numMessagesToSend)).onFragment(
+            any(DirectBuffer.class),
+            anyInt(),
+            eq(MESSAGE_LENGTH),
+            any(Header.class));
     }
 
     @Test
     public void shouldRemoveDeadTaggedReceiverWithTaggedMulticastFlowControlStrategy()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        Tests.withTimeout(ofSeconds(10));
+        final State state = new State();
+        state.numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
+        state.numMessagesLeftToSend = state.numMessagesToSend;
+        state.numFragmentsReadFromA = 0;
+        state.numFragmentsReadFromB = 0;
+
+        boolean isBClosed = false;
+
+        driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
+        driverAContext.multicastFlowControlSupplier(new TaggedMulticastFlowControlSupplier());
+        driverBContext.receiverTag(DEFAULT_RECEIVER_TAG);
+        driverBContext.flowControlGroupReceiverTag(DEFAULT_RECEIVER_TAG);
+
+        launch();
+
+        subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
+        subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
+        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
+
+        Tests.yieldingWait(subscriptionA::isConnected);
+        Tests.yieldingWait(subscriptionB::isConnected);
+        Tests.yieldingWait(publication::isConnected);
+
+        while (state.numFragmentsReadFromA < state.numMessagesToSend)
         {
-            final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
-            int numMessagesLeftToSend = numMessagesToSend;
-            int numFragmentsReadFromA = 0, numFragmentsReadFromB = 0;
-            boolean isBClosed = false;
-
-            driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
-            driverAContext.multicastFlowControlSupplier(new TaggedMulticastFlowControlSupplier());
-            driverBContext.receiverTag(DEFAULT_RECEIVER_TAG);
-            driverBContext.flowControlGroupReceiverTag(DEFAULT_RECEIVER_TAG);
-
-            launch();
-
-            subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
-            subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
-            publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
-
-            while (!subscriptionA.isConnected() || !subscriptionB.isConnected() || !publication.isConnected())
+            if (state.numMessagesLeftToSend > 0)
             {
-                Thread.yield();
-                Tests.checkInterruptedStatus();
-            }
-
-            while (numFragmentsReadFromA < numMessagesToSend)
-            {
-                if (numMessagesLeftToSend > 0)
+                if (publication.offer(buffer, 0, buffer.capacity()) >= 0L)
                 {
-                    if (publication.offer(buffer, 0, buffer.capacity()) >= 0L)
-                    {
-                        numMessagesLeftToSend--;
-                    }
+                    state.numMessagesLeftToSend--;
                 }
-
-                // A keeps up
-                numFragmentsReadFromA += subscriptionA.poll(fragmentHandlerA, 10);
-
-                // B receives up to 1/8 of the messages, then stops
-                if (numFragmentsReadFromB < (numMessagesToSend / 8))
+                else
                 {
-                    numFragmentsReadFromB += subscriptionB.poll(fragmentHandlerB, 10);
-                }
-                else if (!isBClosed)
-                {
-                    subscriptionB.close();
-                    isBClosed = true;
+                    Tests.yieldingWait(state::toString);
                 }
             }
 
-            verify(fragmentHandlerA, times(numMessagesToSend)).onFragment(
-                any(DirectBuffer.class),
-                anyInt(),
-                eq(MESSAGE_LENGTH),
-                any(Header.class));
-        });
+            // A keeps up
+            state.numFragmentsReadFromA += pollWithTimeout(subscriptionA, fragmentHandlerA, 10, state::toString);
+
+            // B receives up to 1/8 of the messages, then stops
+            if (state.numFragmentsReadFromB < (state.numMessagesToSend / 8))
+            {
+                state.numFragmentsReadFromB += pollWithTimeout(
+                    subscriptionB, fragmentHandlerB, 10, state::toString);
+            }
+            else if (!isBClosed)
+            {
+                subscriptionB.close();
+                isBClosed = true;
+            }
+        }
+
+        verify(fragmentHandlerA, times(state.numMessagesToSend)).onFragment(
+            any(DirectBuffer.class),
+            anyInt(),
+            eq(MESSAGE_LENGTH),
+            any(Header.class));
+    }
+
+    private int pollWithTimeout(
+        final Subscription subscription,
+        final FragmentHandler fragmentHandler,
+        final int fragmentLimit,
+        final Supplier<String> message)
+    {
+        final int numFragments = subscription.poll(fragmentHandler, fragmentLimit);
+        if (0 == numFragments)
+        {
+            Tests.yieldingWait(message.get());
+        }
+        return numFragments;
     }
 
     @SuppressWarnings("methodlength")

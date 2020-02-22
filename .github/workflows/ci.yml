@@ -20,8 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ '8']
-#        java: [ '8', '11' ]
+        java: [ '8', '11' ]
         os: ['ubuntu-latest', 'windows-latest']
     steps:
       - name: Checkout code
@@ -42,17 +41,16 @@ jobs:
 #        uses: actions/setup-java@v1
 #        with:
 #          java-version: ${{ matrix.java }}
-#      - name: Build with Gradle
-#        run: ./gradlew
+      - name: Build with Gradle
+        run: ./gradlew
       - name: Package crash logs archive (Linux)
-#        if: failure()
         if: matrix.os == 'ubuntu-latest'
-        run: find . -name '*.yml' -exec zip crash-logs.zip '{}' +
+        run: find . -name 'hs_err*.log' -exec zip crash-logs.zip '{}' +
       - name: Upload crash logs
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v1
         with:
-          name: crash-logs-linux-java-${{ matrix.java }}
+          name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}
           path: crash-logs.zip
 #
 #  cpp-gcc-build:tld

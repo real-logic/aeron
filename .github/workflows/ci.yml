@@ -43,12 +43,15 @@ jobs:
           java-version: ${{ matrix.java }}
       - name: Build with Gradle
         run: ./gradlew
+      - id: get-crash-log-filenames
+#        if: failure()
+        run: echo "::set-output name=file::$(ls **/*.yml)"
       - name: Upload crash logs
         uses: actions/upload-artifact@v1
-        if: failure()
+#        if: failure()
         with:
-          name: crash-logs
-          path: '**/*.yml'
+          name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}
+          path: ${{ steps.get-crash-log-filenames.outputs.file }}
 
   cpp-gcc-build:
     name: C++ GCC ${{ matrix.version }}

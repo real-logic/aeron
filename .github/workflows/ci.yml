@@ -44,19 +44,28 @@ jobs:
 #          java-version: ${{ matrix.java }}
 #      - name: Build with Gradle
 #        run: ./gradlew
-      - name: Create crash logs archive (Linux)
+      - name: Package crash logs archive (Linux)
+        id: package_crash_logs_linux
 #        if: failure()
         if: matrix.os == 'ubuntu-latest'
         run: find . -name '*.yml' -exec zip crash-logs.zip '{}' +
-      - name: Create crash logs archive (Windows)
+      - name: Package crash logs archive (Windows)
+        id: package_crash_logs_win
 #        if: failure()
         if: matrix.os == 'windows-latest'
         run: echo 'How to find and zip files on Windows?'
-      - name: Upload crash logs
+      - name: Upload crash logs (Linux)
+        if: ${{ steps.package_crash_logs_linux.outputs.file }}
         uses: actions/upload-artifact@v1
         with:
-          name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}
-          path: crash-logs.zip
+          name: crash-logs-linux-java-${{ matrix.java }}
+          path: ${{ steps.package_crash_logs_linux.outputs.file }}
+      - name: Upload crash logs (Windows)
+        if: ${{ steps.package_crash_logs_win.outputs.file }}
+        uses: actions/upload-artifact@v1
+        with:
+          name: crash-logs-windows-java-${{ matrix.java }}
+          path: ${{ steps.package_crash_logs_win.outputs.file }}
 #
 #  cpp-gcc-build:tld
 #    name: C++ GCC ${{ matrix.version }}

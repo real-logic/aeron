@@ -74,7 +74,7 @@ public class Tests
         }).when(mock).close();
     }
 
-    public static void yieldingWait(BooleanSupplier isDone)
+    public static void yieldingWait(final BooleanSupplier isDone)
     {
 
         final Timeout timeout = Objects.requireNonNull(

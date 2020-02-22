@@ -28,6 +28,7 @@ import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.ExpandableArrayBuffer;
+import org.agrona.LangUtil;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
@@ -127,9 +128,9 @@ public class ArchiveCreator
 
     private static void checkInterruptedStatus()
     {
-        if (Thread.currentThread().isInterrupted())
+        if (Thread.interrupted())
         {
-            throw new IllegalStateException("interrupted");
+            LangUtil.rethrowUnchecked(new InterruptedException());
         }
     }
 

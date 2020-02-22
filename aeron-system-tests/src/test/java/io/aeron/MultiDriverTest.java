@@ -168,8 +168,8 @@ public class MultiDriverTest
             {
                 while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
                 {
-                    Tests.checkInterruptedStatus();
                     Thread.yield();
+                    Tests.checkInterruptedStatus();
                 }
 
                 final MutableInteger fragmentsRead = new MutableInteger();

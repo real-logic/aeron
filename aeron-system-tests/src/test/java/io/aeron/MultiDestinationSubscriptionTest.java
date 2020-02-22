@@ -531,8 +531,8 @@ public class MultiDestinationSubscriptionTest
             {
                 while (publicationB.offer(buffer, 0, buffer.capacity()) < 0L)
                 {
-                    Tests.checkInterruptedStatus();
                     Thread.yield();
+                    Tests.checkInterruptedStatus();
                 }
 
                 final MutableInteger fragmentsRead = new MutableInteger();

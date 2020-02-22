@@ -470,8 +470,8 @@ public class PubAndSubTest
 
             while (publication.offer(buffer, 0, messageLength) < 0L)
             {
-                Tests.checkInterruptedStatus();
                 Thread.yield();
+                Tests.checkInterruptedStatus();
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();

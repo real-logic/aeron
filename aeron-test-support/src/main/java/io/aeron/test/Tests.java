@@ -35,7 +35,7 @@ public class Tests
      */
     public static void checkInterruptedStatus()
     {
-        if (Thread.currentThread().isInterrupted())
+        if (Thread.interrupted())
         {
             fail("unexpected interrupt - test likely to have timed out");
         }

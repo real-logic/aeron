@@ -123,8 +123,8 @@ public class CounterTest
 
             while (null == readableCounter)
             {
-                Tests.checkInterruptedStatus();
                 Tests.sleep(1);
+                Tests.checkInterruptedStatus();
             }
 
             assertEquals(CountersReader.RECORD_ALLOCATED, readableCounter.state());

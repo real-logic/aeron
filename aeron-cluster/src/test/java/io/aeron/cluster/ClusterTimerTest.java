@@ -91,8 +91,8 @@ public class ClusterTimerTest
 
             while (triggeredTimersCounter.get() < 2)
             {
-                Tests.checkInterruptedStatus();
                 Thread.yield();
+                Tests.checkInterruptedStatus();
             }
 
             final CountersReader counters = aeronCluster.context().aeron().countersReader();

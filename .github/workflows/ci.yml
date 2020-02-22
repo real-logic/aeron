@@ -53,7 +53,6 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: echo 'How to find and zip files on Windows?'
       - name: Upload crash logs
-        if: crash-logs.zip
         uses: actions/upload-artifact@v1
         with:
           name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}

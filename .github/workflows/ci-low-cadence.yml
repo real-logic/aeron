@@ -37,4 +37,10 @@ jobs:
         with:
           java-version: ${{ matrix.java }}
       - name: Build and Run Slow Tests with Gradle
-        run: ./gradlew slowTest
+        run: ./gradlew slowTest copyCrashLogs
+      - name: Upload crash logs
+        if: failure()
+        uses: actions/upload-artifact@v1
+        with:
+          name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}
+          path: build/crash_logs

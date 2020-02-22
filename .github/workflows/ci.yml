@@ -50,7 +50,7 @@ jobs:
           name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}
           path: build/crash_logs
 
-  cpp-gcc-build:tld
+  cpp-gcc-build:
     name: C++ GCC ${{ matrix.version }}
     runs-on: ubuntu-latest
     strategy:

@@ -25,7 +25,7 @@ plugins {
     id 'io.freefair.javadoc-links' version '4.1.6' apply false
     id 'com.github.johnrengelman.shadow' version '5.2.0' apply false
     id 'biz.aQute.bnd.builder' version '5.0.0' apply false
-    id "com.github.ben-manes.versions" version "0.27.0"
+    id "com.github.ben-manes.versions" version "0.28.0"
 }
 
 defaultTasks 'clean', 'build'
@@ -38,7 +38,7 @@ def sbeVersion = '1.16.1'
 def checkstyleVersion = '8.28'
 def hamcrestVersion = '2.2'
 def junitVersion = '5.6.0'
-def mockitoVersion = '3.2.4'
+def mockitoVersion = '3.3.0'
 def byteBuddyVersion = '1.10.5'
 def hdrHistogramVersion = '2.1.12'
 

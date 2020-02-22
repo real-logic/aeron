@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ '8' ]
+        java: [ '8', '11' ]
         os: ['ubuntu-latest', 'windows-latest']
     steps:
       - name: Checkout code
@@ -49,139 +49,139 @@ jobs:
         with:
           name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}
           path: build/crash_logs
-#
-#  cpp-gcc-build:tld
-#    name: C++ GCC ${{ matrix.version }}
-#    runs-on: ubuntu-latest
-#    strategy:
-#      fail-fast: false
-#      matrix:
-#        version: [ '6', '7', '8', '9' ]
-#    env:
-#      CC: gcc-${{ matrix.version }}
-#      CXX: g++-${{ matrix.version }}
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v2
-#      - name: Cache Gradle dependencies
-#        uses: actions/cache@v1
-#        with:
-#          path: ~/.gradle/caches
-#          key: ${{ runner.os }}-gradle-caches-${{ hashFiles('**/*.gradle') }}
-#          restore-keys: |
-#            ${{ runner.os }}-gradle-caches-
-#      - name: Cache Gradle wrappers
-#        uses: actions/cache@v1
-#        with:
-#          path: ~/.gradle/wrapper
-#          key: ${{ runner.os }}-gradle-wrapper
-#      - name: Install compiler
-#        run: |
-#         sudo apt-get update
-#
-#         sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev
-#      - name: Build
-#        run: cppbuild/cppbuild --build-archive-api
-#
-#  cpp-clang-build:
-#    name: C++ Clang ${{ matrix.version }}
-#    runs-on: ubuntu-latest
-#    strategy:
-#      fail-fast: false
-#      matrix:
-#        version: [ '6.0', '7', '8', '9' ]
-#    env:
-#      CC: clang-${{ matrix.version }}
-#      CXX: clang++-${{ matrix.version }}
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v2
-#      - name: Cache Gradle dependencies
-#        uses: actions/cache@v1
-#        with:
-#          path: ~/.gradle/caches
-#          key: ${{ runner.os }}-gradle-caches-${{ hashFiles('**/*.gradle') }}
-#          restore-keys: |
-#            ${{ runner.os }}-gradle-caches-
-#      - name: Cache Gradle wrappers
-#        uses: actions/cache@v1
-#        with:
-#          path: ~/.gradle/wrapper
-#          key: ${{ runner.os }}-gradle-wrapper
-#      - name: Install compiler
-#        run: |
-#          sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-${{ matrix.version }} main"
-#
-#          sudo apt-get update
-#
-#          sudo apt-get install -y clang-${{ matrix.version }} libstdc++-7-dev libbsd-dev uuid-dev
-#      - name: Build
-#        run: cppbuild/cppbuild --build-archive-api
-#
-#  cpp-clang-debug-build:
-#    name: C++ Clang ${{ matrix.version }} debug build
-#    runs-on: ubuntu-latest
-#    strategy:
-#      fail-fast: false
-#      matrix:
-#        version: [ '7' ]
-#    env:
-#      CC: clang-${{ matrix.version }}
-#      CXX: clang++-${{ matrix.version }}
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v2
-#      - name: Cache Gradle dependencies
-#        uses: actions/cache@v1
-#        with:
-#          path: ~/.gradle/caches
-#          key: ${{ runner.os }}-gradle-caches-${{ hashFiles('**/*.gradle') }}
-#          restore-keys: |
-#            ${{ runner.os }}-gradle-caches-
-#      - name: Cache Gradle wrappers
-#        uses: actions/cache@v1
-#        with:
-#          path: ~/.gradle/wrapper
-#          key: ${{ runner.os }}-gradle-wrapper
-#      - name: Install compiler
-#        run: |
-#          sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-${{ matrix.version }} main"
-#
-#          sudo apt-get update
-#
-#          sudo apt-get install -y clang-${{ matrix.version }} libstdc++-7-dev libbsd-dev uuid-dev
-#      - name: Build
-#        run: cppbuild/cppbuild --debug-build --build-archive-api
-#
-#  cpp-clang-macos-build:
-#    name: C++ Xcode ${{ matrix.version }} (macOS)
-#    runs-on: macOS-latest
-#    strategy:
-#      fail-fast: false
-#      matrix:
-#        version: [ '11.2.1' ]
-#    env:
-#      CC: clang
-#      CXX: clang++
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v2
-#      - name: Install compiler
-#        run: |
-#          sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
-#      - name: Build
-#        run: cppbuild/cppbuild --build-archive-api
-#
-#  cpp-msvc-build:
-#    name: C++ MSVC (Windows)
-#    runs-on: windows-latest
-#    strategy:
-#      fail-fast: false
-#    env:
-#      CC: cl
-#      CXX: cl
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v2
-#      - name: Build
-#        run: cppbuild/cppbuild-vs.cmd --build-archive-api
+
+  cpp-gcc-build:tld
+    name: C++ GCC ${{ matrix.version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [ '6', '7', '8', '9' ]
+    env:
+      CC: gcc-${{ matrix.version }}
+      CXX: g++-${{ matrix.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v1
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-caches-${{ hashFiles('**/*.gradle') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-caches-
+      - name: Cache Gradle wrappers
+        uses: actions/cache@v1
+        with:
+          path: ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-wrapper
+      - name: Install compiler
+        run: |
+         sudo apt-get update
+
+         sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev
+      - name: Build
+        run: cppbuild/cppbuild --build-archive-api
+
+  cpp-clang-build:
+    name: C++ Clang ${{ matrix.version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [ '6.0', '7', '8', '9' ]
+    env:
+      CC: clang-${{ matrix.version }}
+      CXX: clang++-${{ matrix.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v1
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-caches-${{ hashFiles('**/*.gradle') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-caches-
+      - name: Cache Gradle wrappers
+        uses: actions/cache@v1
+        with:
+          path: ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-wrapper
+      - name: Install compiler
+        run: |
+          sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-${{ matrix.version }} main"
+
+          sudo apt-get update
+
+          sudo apt-get install -y clang-${{ matrix.version }} libstdc++-7-dev libbsd-dev uuid-dev
+      - name: Build
+        run: cppbuild/cppbuild --build-archive-api
+
+  cpp-clang-debug-build:
+    name: C++ Clang ${{ matrix.version }} debug build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [ '7' ]
+    env:
+      CC: clang-${{ matrix.version }}
+      CXX: clang++-${{ matrix.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v1
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-caches-${{ hashFiles('**/*.gradle') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-caches-
+      - name: Cache Gradle wrappers
+        uses: actions/cache@v1
+        with:
+          path: ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-wrapper
+      - name: Install compiler
+        run: |
+          sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-${{ matrix.version }} main"
+
+          sudo apt-get update
+
+          sudo apt-get install -y clang-${{ matrix.version }} libstdc++-7-dev libbsd-dev uuid-dev
+      - name: Build
+        run: cppbuild/cppbuild --debug-build --build-archive-api
+
+  cpp-clang-macos-build:
+    name: C++ Xcode ${{ matrix.version }} (macOS)
+    runs-on: macOS-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [ '11.2.1' ]
+    env:
+      CC: clang
+      CXX: clang++
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Install compiler
+        run: |
+          sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
+      - name: Build
+        run: cppbuild/cppbuild --build-archive-api
+
+  cpp-msvc-build:
+    name: C++ MSVC (Windows)
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+    env:
+      CC: cl
+      CXX: cl
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Build
+        run: cppbuild/cppbuild-vs.cmd --build-archive-api

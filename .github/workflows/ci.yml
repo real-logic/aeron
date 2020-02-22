@@ -26,29 +26,29 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Cache Gradle dependencies
-        uses: actions/cache@v1
-        with:
-          path: ~/.gradle/caches
-          key: ${{ runner.os }}-gradle-caches-${{ hashFiles('**/*.gradle') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-caches-
-      - name: Cache Gradle wrappers
-        uses: actions/cache@v1
-        with:
-          path: ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-wrapper
-      - name: Setup java
-        uses: actions/setup-java@v1
-        with:
-          java-version: ${{ matrix.java }}
-      - name: Build with Gradle
-        run: ./gradlew
+#      - name: Cache Gradle dependencies
+#        uses: actions/cache@v1
+#        with:
+#          path: ~/.gradle/caches
+#          key: ${{ runner.os }}-gradle-caches-${{ hashFiles('**/*.gradle') }}
+#          restore-keys: |
+#            ${{ runner.os }}-gradle-caches-
+#      - name: Cache Gradle wrappers
+#        uses: actions/cache@v1
+#        with:
+#          path: ~/.gradle/wrapper
+#          key: ${{ runner.os }}-gradle-wrapper
+#      - name: Setup java
+#        uses: actions/setup-java@v1
+#        with:
+#          java-version: ${{ matrix.java }}
+#      - name: Build with Gradle
+#        run: ./gradlew
       - name: Determine crash log file paths
         id: get-crash-log-filenames
 #        if: failure()
         run: |
-         find . -name '*.yml' -exec zip crash-logs.zip
+         find . -name '*.yml' -exec zip crash-logs.zip '{}' +
          echo "::set-output name=file::crash-logs.zip"
       - name: Upload crash logs
         uses: actions/upload-artifact@v1

@@ -43,6 +43,12 @@ jobs:
           java-version: ${{ matrix.java }}
       - name: Build with Gradle
         run: ./gradlew
+      - name: Upload crash logs
+        uses: actions/upload-artifact@v1
+        if: failure()
+        with:
+          name: crash-logs
+          path: '**/*.yml'
 
   cpp-gcc-build:
     name: C++ GCC ${{ matrix.version }}

@@ -48,8 +48,8 @@ jobs:
         id: get-crash-log-filenames
 #        if: failure()
         run: |
-          find . -name '*.yml' -exec zip crash-logs.zip
-          echo "::set-output name=file::crash-logs.zip"
+         find . -name '*.yml' -exec zip crash-logs.zip
+         echo "::set-output name=file::crash-logs.zip"
       - name: Upload crash logs
         if: ${{ steps.get-crash-log-filenames.outputs.file }} != null
         uses: actions/upload-artifact@v1

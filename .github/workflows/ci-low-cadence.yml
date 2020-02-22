@@ -43,6 +43,7 @@ jobs:
         if: failure()
         run: |
           ./gradlew copyCrashLogs
+
           echo "::set-output name=dir::build/crash_logs"
       - name: Upload crash logs
         if: steps.copy_crash_logs.outputs.dir == 'build/crash_logs'

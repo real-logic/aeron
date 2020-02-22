@@ -135,16 +135,22 @@ public class TestCluster implements AutoCloseable
 
     public void close()
     {
-        CloseHelper.closeAll(
-            client,
-            clientMediaDriver,
-            null != backupNode ? () -> backupNode.closeAndDelete() : null,
-            () -> CloseHelper.closeAll(Stream.of(nodes).map(TestCluster::closeAndDeleteNode).collect(toList()))
-        );
-
-        if (null != clientMediaDriver)
+        final boolean isInterrupted = Thread.interrupted();
+        try
         {
-            clientMediaDriver.context().deleteDirectory();
+            CloseHelper.closeAll(
+                client,
+                clientMediaDriver,
+                null != clientMediaDriver ? () -> clientMediaDriver.context().deleteDirectory() : null,
+                () -> CloseHelper.closeAll(Stream.of(nodes).map(TestCluster::closeAndDeleteNode).collect(toList())),
+                null != backupNode ? () -> backupNode.closeAndDelete() : null);
+        }
+        finally
+        {
+            if (isInterrupted)
+            {
+                Thread.currentThread().interrupt();
+            }
         }
 
         ClusterTests.failOnClusterError();

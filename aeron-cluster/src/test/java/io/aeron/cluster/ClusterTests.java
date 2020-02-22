@@ -16,7 +16,6 @@
 package io.aeron.cluster;
 
 import io.aeron.Counter;
-import io.aeron.cluster.client.ClusterException;
 import io.aeron.exceptions.AeronException;
 import io.aeron.test.Tests;
 import org.agrona.ErrorHandler;
@@ -61,16 +60,19 @@ class ClusterTests
         return
             (ex) ->
             {
-                if (ex instanceof ClusterException)
+                if (ex instanceof AeronException)
                 {
                     if (((AeronException)ex).category() == AeronException.Category.WARN)
                     {
+                        //final String message = ex.getMessage();
+                        //final String name = ex.getClass().getName();
+                        //System.err.println("Warning in node " + nodeId + " " + name + " : " + message);
                         return;
                     }
                 }
 
                 final Throwable error = CLUSTER_ERROR.get();
-                if (error == null)
+                if (null == error)
                 {
                     CLUSTER_ERROR.set(ex);
                 }

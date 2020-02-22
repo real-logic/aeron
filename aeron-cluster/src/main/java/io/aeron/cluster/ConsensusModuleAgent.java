@@ -1940,8 +1940,10 @@ class ConsensusModuleAgent implements Agent
             if (0 == count && logAdapter.isImageClosed())
             {
                 ctx.countedErrorHandler().onError(new ClusterException(
-                    "no leader connection: logPosition=" + logPosition() + " commitPosition=" + commitPosition.get() +
-                    " leadershipTermId=" + leadershipTermId + " leaderId=" + leaderMember.id(),
+                    "log disconnected from leader: logPosition=" + logPosition() +
+                    " commitPosition=" + commitPosition.get() +
+                    " leadershipTermId=" + leadershipTermId +
+                    " leaderId=" + leaderMember.id(),
                     AeronException.Category.WARN));
                 enterElection(nowNs);
                 return 1;

@@ -86,21 +86,63 @@ class TestNode implements AutoCloseable
 
     void closeAndDelete()
     {
-        if (!isClosed)
+        Throwable error = null;
+
+        try
         {
-            close();
+            if (!isClosed)
+            {
+                close();
+            }
+        }
+        catch (final Throwable t)
+        {
+            error = t;
         }
 
-        if (null != container)
+        try
         {
-            container.context().deleteDirectory();
+            if (null != container)
+            {
+                container.context().deleteDirectory();
+            }
+        }
+        catch (final Throwable t)
+        {
+            if (error == null)
+            {
+                error = t;
+            }
+            else
+            {
+                error.addSuppressed(t);
+            }
         }
 
-        if (null != clusteredMediaDriver)
+        try
         {
-            clusteredMediaDriver.consensusModule().context().deleteDirectory();
-            clusteredMediaDriver.archive().context().deleteDirectory();
-            clusteredMediaDriver.mediaDriver().context().deleteDirectory();
+            if (null != clusteredMediaDriver)
+            {
+                clusteredMediaDriver.consensusModule().context().deleteDirectory();
+                clusteredMediaDriver.archive().context().deleteDirectory();
+                clusteredMediaDriver.mediaDriver().context().deleteDirectory();
+            }
+        }
+        catch (final Throwable t)
+        {
+            if (error == null)
+            {
+                error = t;
+            }
+            else
+            {
+                error.addSuppressed(t);
+            }
+        }
+
+        if (null != error)
+        {
+            LangUtil.rethrowUnchecked(error);
         }
     }
 

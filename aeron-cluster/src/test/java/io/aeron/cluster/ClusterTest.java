@@ -15,9 +15,11 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.service.Cluster;
 import io.aeron.test.SlowTest;
 import io.aeron.test.Tests;
+import org.agrona.ExpandableArrayBuffer;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.YieldingIdleStrategy;
@@ -852,14 +854,13 @@ public class ClusterTest
     {
         assertTimeoutPreemptively(ofSeconds(40), () ->
         {
-            final int numMessages = 3;
-
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
                 // Leadership Term 0
                 final TestNode leader0 = cluster.awaitLeader();
                 cluster.connectClient();
 
+                final int numMessages = 3;
                 cluster.sendMessages(numMessages);
                 awaitMessageCountForAllServices(cluster, 3, numMessages);
 
@@ -878,7 +879,7 @@ public class ClusterTest
 
                 // Leadership Term 1
                 cluster.stopNode(leader0);
-                @SuppressWarnings("unused") final TestNode leader1 = cluster.awaitLeader(leader0.index());
+                cluster.awaitLeader(leader0.index());
                 cluster.startStaticNode(leader0.index(), false);
 
                 cluster.sendMessages(numMessages);
@@ -911,14 +912,13 @@ public class ClusterTest
     {
         assertTimeoutPreemptively(ofSeconds(50), () ->
         {
-            final int numMessages = 3;
-
             try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
             {
                 // Leadership Term 0
                 final TestNode leader0 = cluster.awaitLeader();
                 cluster.connectClient();
 
+                final int numMessages = 3;
                 cluster.sendMessages(numMessages);
                 awaitMessageCountForAllServices(cluster, 3, numMessages);
 
@@ -937,7 +937,7 @@ public class ClusterTest
 
                 // Leadership Term 2
                 cluster.stopNode(leader1);
-                @SuppressWarnings("unused") final TestNode leader2 = cluster.awaitLeader(leader1.index());
+                cluster.awaitLeader(leader1.index());
                 cluster.startStaticNode(leader1.index(), false);
 
                 cluster.sendMessages(numMessages);
@@ -996,7 +996,6 @@ public class ClusterTest
             follower = cluster.startStaticNode(follower.index(), false);
 
             awaitElectionClosed(follower);
-
             assertEquals(Cluster.Role.FOLLOWER, follower.role());
         }
     }
@@ -1023,16 +1022,18 @@ public class ClusterTest
             () ->
             {
                 final IdleStrategy idleStrategy = YieldingIdleStrategy.INSTANCE;
-                cluster.msgBuffer().putStringWithoutLengthAscii(0, MSG);
+                final AeronCluster client = cluster.client();
+                final ExpandableArrayBuffer msgBuffer = cluster.msgBuffer();
+                msgBuffer.putStringWithoutLengthAscii(0, MSG);
 
                 while (!Thread.interrupted())
                 {
-                    if (cluster.client().offer(cluster.msgBuffer(), 0, MSG.length()) < 0)
+                    if (client.offer(msgBuffer, 0, MSG.length()) < 0)
                     {
                         LockSupport.parkNanos(intervalNs);
                     }
 
-                    idleStrategy.idle(cluster.client().pollEgress());
+                    idleStrategy.idle(client.pollEgress());
                 }
             });
 

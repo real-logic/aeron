@@ -45,8 +45,8 @@ jobs:
           ./gradlew copyCrashLogs
           echo "::set-output name=dir::build/crash_logs"
       - name: Upload crash logs
-        if: {{ steps.copy_crash_logs.outputs.dir }}
+        if: ${{ steps.copy_crash_logs.outputs.dir }}
         uses: actions/upload-artifact@v1
         with:
           name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}
-          path: {{ steps.copy_crash_logs.outputs.dir }}
+          path: ${{ steps.copy_crash_logs.outputs.dir }}

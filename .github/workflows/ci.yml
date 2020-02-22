@@ -51,7 +51,6 @@ jobs:
          find . -name '*.yml' -exec zip crash-logs.zip
          echo "::set-output name=file::crash-logs.zip"
       - name: Upload crash logs
-        if: ${{ steps.get-crash-log-filenames.outputs.file }} != null
         uses: actions/upload-artifact@v1
         with:
           name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}

@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ '8', '11' ]
+        java: [ '8' ]
         os: ['ubuntu-latest', 'windows-latest']
     steps:
       - name: Checkout code
@@ -44,8 +44,10 @@ jobs:
 #      - name: Build with Gradle
 #        run: ./gradlew
       - name: Copy crash logs
+        if: failure()
         run: ./gradlew copyCrashLogs
       - name: Upload crash logs
+        if: success()
         uses: actions/upload-artifact@v1
         with:
           name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}

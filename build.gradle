@@ -806,7 +806,7 @@ task testReport(type: TestReport) {
 task copyCrashLogs(type: Copy) {
     from '.'
     include '**/hs_err*.log'
-    include '.gitignore'
+    include 'LICENSE'
     into 'build/crash_logs'
 
     includeEmptyDirs = false

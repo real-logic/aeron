@@ -42,13 +42,19 @@ jobs:
         with:
           java-version: ${{ matrix.java }}
       - name: Build with Gradle
-        run: ./gradlew build copyCrashLogs
-      - name: Upload crash logs
+        run: ./gradlew build
+      - name: Copy crash logs
+        id: copy_crash_logs
         if: failure()
+        run: |
+          ./gradlew copyCrashLogs
+          echo "::set-output name=dir::build/crash_logs"
+      - name: Upload crash logs
+        if: {{ steps.copy_crash_logs.outputs.dir }}
         uses: actions/upload-artifact@v1
         with:
           name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}
-          path: build/crash_logs
+          path: {{ steps.copy_crash_logs.outputs.dir }}
 
   cpp-gcc-build:
     name: C++ GCC ${{ matrix.version }}

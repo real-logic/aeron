@@ -19,6 +19,8 @@ import org.agrona.LangUtil;
 
 import java.time.Duration;
 import java.util.Objects;
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doAnswer;
@@ -70,6 +72,42 @@ public class Tests
             LangUtil.rethrowUnchecked(exception);
             return null;
         }).when(mock).close();
+    }
+
+    public static void yieldingWait(final BooleanSupplier isDone)
+    {
+
+        final Timeout timeout = Objects.requireNonNull(
+            TEST_TIMEOUT.get(),
+            "Timeout has not be initialized.  " +
+            "Make sure Tests.withTimeout(Duration) is called in your @BeforeEach method");
+
+        while (!isDone.getAsBoolean())
+        {
+            if (timeout.deadlineNs <= System.nanoTime())
+            {
+                fail("[Timeout after " + timeout.duration + "]");
+            }
+
+            Thread.yield();
+            checkInterruptedStatus();
+        }
+    }
+
+    public static void yieldingWait(final Supplier<String> messageSupplier)
+    {
+        final Timeout timeout = Objects.requireNonNull(
+            TEST_TIMEOUT.get(),
+            "Timeout has not be initialized.  " +
+            "Make sure Tests.withTimeout(Duration) is called in your @BeforeEach method");
+
+        if (timeout.deadlineNs <= System.nanoTime())
+        {
+            fail("[Timeout after " + timeout.duration + "] " + messageSupplier.get());
+        }
+
+        Thread.yield();
+        checkInterruptedStatus();
     }
 
     public static void yieldingWait(final String format, final Object... params)

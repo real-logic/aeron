@@ -644,6 +644,12 @@ public class Configuration
     public static final String FLOW_CONTROL_GROUP_RECEIVER_TAG_PROP_NAME = "aeron.flow.control.group.rtag";
 
     /**
+     * Default value for the receiver timeout used to determine if the receiver should still be monitored for
+     * flow control purposes.
+     */
+    public static final long FLOW_CONTROL_RECEIVER_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(2);
+
+    /**
      * Property name for default minimum group size used by flow control strategies to determine
      * connectivity.
      */
@@ -812,7 +818,7 @@ public class Configuration
     {
         return getDurationInNanos(
             FLOW_CONTROL_RECEIVER_TIMEOUT_PROP_NAME,
-            getDurationInNanos(MIN_FLOW_CONTROL_TIMEOUT_OLD_PROP_NAME, TimeUnit.SECONDS.toNanos(2)));
+            getDurationInNanos(MIN_FLOW_CONTROL_TIMEOUT_OLD_PROP_NAME, FLOW_CONTROL_RECEIVER_TIMEOUT_DEFAULT_NS));
     }
 
     /**

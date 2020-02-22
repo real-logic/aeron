@@ -126,6 +126,7 @@ public class TaggedFlowControlSystemTest
         private int numMessagesLeftToSend;
         private int numFragmentsReadFromA;
         private int numFragmentsReadFromB;
+        private boolean isBClosed = false;
 
         public String toString()
         {
@@ -134,6 +135,7 @@ public class TaggedFlowControlSystemTest
                    ", numMessagesLeftToSend=" + numMessagesLeftToSend +
                    ", numFragmentsReadFromA=" + numFragmentsReadFromA +
                    ", numFragmentsReadFromB=" + numFragmentsReadFromB +
+                   ", isBClosed=" + isBClosed +
                    '}';
         }
     }
@@ -236,19 +238,15 @@ public class TaggedFlowControlSystemTest
         state.numMessagesLeftToSend = state.numMessagesToSend;
         state.numFragmentsReadFromA = 0;
         state.numFragmentsReadFromB = 0;
-
-        boolean isBClosed = false;
+        state.isBClosed = false;
 
         driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
-        driverAContext.multicastFlowControlSupplier(new TaggedMulticastFlowControlSupplier());
-        driverBContext.receiverTag(DEFAULT_RECEIVER_TAG);
-        driverBContext.flowControlGroupReceiverTag(DEFAULT_RECEIVER_TAG);
 
         launch();
 
-        subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
-        subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
-        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
+        subscriptionA = clientA.addSubscription(MULTICAST_URI + "|rtag=123", STREAM_ID);
+        subscriptionB = clientB.addSubscription(MULTICAST_URI + "|rtag=123", STREAM_ID);
+        publication = clientA.addPublication(MULTICAST_URI + "|fc=tagged,g:123,t:1s", STREAM_ID);
 
         Tests.yieldingWait(subscriptionA::isConnected);
         Tests.yieldingWait(subscriptionB::isConnected);
@@ -258,13 +256,14 @@ public class TaggedFlowControlSystemTest
         {
             if (state.numMessagesLeftToSend > 0)
             {
-                if (publication.offer(buffer, 0, buffer.capacity()) >= 0L)
+                final long position = publication.offer(buffer, 0, buffer.capacity());
+                if (position >= 0L)
                 {
                     state.numMessagesLeftToSend--;
                 }
                 else
                 {
-                    Tests.yieldingWait(state::toString);
+                    Tests.yieldingWait("position: %d, state: %s", position, state);
                 }
             }
 
@@ -277,10 +276,10 @@ public class TaggedFlowControlSystemTest
                 state.numFragmentsReadFromB += pollWithTimeout(
                     subscriptionB, fragmentHandlerB, 10, state::toString);
             }
-            else if (!isBClosed)
+            else if (!state.isBClosed)
             {
                 subscriptionB.close();
-                isBClosed = true;
+                state.isBClosed = true;
             }
         }
 

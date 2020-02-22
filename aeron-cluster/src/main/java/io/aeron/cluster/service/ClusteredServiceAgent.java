@@ -928,8 +928,9 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
         {
             cachedTimeMs = nowMs;
 
-            if (Thread.currentThread().isInterrupted())
+            if (Thread.interrupted())
             {
+                isAbort = true;
                 throw new AgentTerminationException("unexpected interrupt - " + context().clusterDir());
             }
 
@@ -938,6 +939,7 @@ class ClusteredServiceAgent implements Agent, Cluster, IdleStrategy
                 aeronAgentInvoker.invoke();
                 if (isAbort || aeron.isClosed())
                 {
+                    isAbort = true;
                     throw new AgentTerminationException("unexpected Aeron close");
                 }
             }

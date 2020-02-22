@@ -18,6 +18,7 @@ package io.aeron.driver;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.media.UdpChannel;
+import org.agrona.concurrent.AgentTerminationException;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.net.InetSocketAddress;
@@ -151,9 +152,9 @@ public class DriverConductorProxy
             }
 
             Thread.yield();
-            if (Thread.currentThread().isInterrupted())
+            if (Thread.interrupted())
             {
-                break;
+                throw new AgentTerminationException("unexpected interrupt");
             }
         }
     }

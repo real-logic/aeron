@@ -1102,7 +1102,7 @@ class ClientConductor implements Agent, DriverEventsListener
                 return;
             }
 
-            if (Thread.currentThread().isInterrupted())
+            if (Thread.interrupted())
             {
                 isTerminating = true;
                 throw new AgentTerminationException("thread interrupted");

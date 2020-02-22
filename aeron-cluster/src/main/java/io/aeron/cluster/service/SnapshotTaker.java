@@ -110,7 +110,7 @@ public class SnapshotTaker
 
     protected static void checkInterruptedStatus()
     {
-        if (Thread.currentThread().isInterrupted())
+        if (Thread.interrupted())
         {
             throw new AgentTerminationException("unexpected interrupt during operation");
         }

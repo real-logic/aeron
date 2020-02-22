@@ -478,7 +478,7 @@ public class IndexedReplicatedRecording implements AutoCloseable
                 final int fragments = image.controlledPoll(this, FRAGMENT_LIMIT);
                 if (0 == fragments)
                 {
-                    if (Thread.currentThread().isInterrupted() || image.isClosed())
+                    if (Thread.interrupted() || image.isClosed())
                     {
                         return;
                     }

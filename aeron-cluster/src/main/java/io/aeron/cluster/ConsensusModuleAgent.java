@@ -2558,7 +2558,7 @@ class ConsensusModuleAgent implements Agent
 
     private static void checkInterruptedStatus()
     {
-        if (Thread.currentThread().isInterrupted())
+        if (Thread.interrupted())
         {
             throw new AgentTerminationException("unexpected interrupt");
         }

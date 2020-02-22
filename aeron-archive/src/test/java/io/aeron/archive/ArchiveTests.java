@@ -20,6 +20,7 @@ import io.aeron.archive.client.ControlResponseAdapter;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.TimeoutException;
+import io.aeron.test.Tests;
 import org.agrona.IoUtil;
 import org.agrona.SystemUtil;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -161,17 +162,13 @@ public class ArchiveTests
         final long deadlineNs = System.nanoTime() + TIMEOUT_NS;
         while (!conditionSupplier.getAsBoolean())
         {
-            if (Thread.currentThread().isInterrupted())
-            {
-                throw new IllegalStateException("unexpected interrupt in test");
-            }
-
             if ((deadlineNs - System.nanoTime()) <= 0)
             {
                 throw new TimeoutException(AeronException.Category.ERROR);
             }
 
             Thread.yield();
+            Tests.checkInterruptedStatus();
         }
     }
 

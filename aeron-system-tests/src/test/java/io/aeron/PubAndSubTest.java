@@ -640,8 +640,8 @@ public class PubAndSubTest
                         break;
                     }
 
-                    Tests.checkInterruptedStatus();
                     Thread.yield();
+                    Tests.checkInterruptedStatus();
                 }
 
                 if (offerFails > maxFails)

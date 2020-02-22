@@ -58,11 +58,11 @@ jobs:
         run: |
          echo 'How to find and zip files on Windows?'
       - name: Upload crash logs
-        if: ${{ steps.create_crash_log_arichive.outputs.file }}
+        if: crash-logs.zip
         uses: actions/upload-artifact@v1
         with:
           name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}
-          path: ${{ steps.create_crash_log_arichive.outputs.file }}
+          path: crash-logs.zip
 #
 #  cpp-gcc-build:tld
 #    name: C++ GCC ${{ matrix.version }}

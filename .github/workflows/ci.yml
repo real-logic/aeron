@@ -42,10 +42,10 @@ jobs:
         with:
           java-version: ${{ matrix.java }}
       - name: Build with Gradle
-        run: ./gradlew build
+        run: ./gradlew
       - name: Copy crash logs
         id: copy_crash_logs
-#        if: failure()
+        if: failure()
         run: |
           ./gradlew copyCrashLogs
 

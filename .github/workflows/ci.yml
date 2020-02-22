@@ -41,17 +41,15 @@ jobs:
 #        uses: actions/setup-java@v1
 #        with:
 #          java-version: ${{ matrix.java }}
-      - name: Build with Gradle
-        run: ./gradlew
-      - name: Package crash logs archive (Linux)
-        if: matrix.os == 'ubuntu-latest'
-        run: find . -name 'hs_err*.log' -exec zip crash-logs.zip '{}' +
+#      - name: Build with Gradle
+#        run: ./gradlew
+      - name: Copy crash logs
+        run: ./gradlew copyCrashLogs
       - name: Upload crash logs
-        if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v1
         with:
           name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}
-          path: crash-logs.zip
+          path: build/crash_logs
 #
 #  cpp-gcc-build:tld
 #    name: C++ GCC ${{ matrix.version }}

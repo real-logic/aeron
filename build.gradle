@@ -803,6 +803,14 @@ task testReport(type: TestReport) {
     reportOn subprojects*.test
 }
 
+task copyCrashLogs(type: Copy) {
+    from '.'
+    include '**/hs_err*.log'
+    into 'build/crash_logs'
+
+    includeEmptyDirs = false
+}
+
 wrapper {
     gradleVersion = '6.1.1'
     distributionType = 'ALL'

@@ -132,7 +132,7 @@ public class ArchiveRecordingLoadTest
         CloseHelper.close(driver);
 
         archive.context().deleteDirectory();
-        driver.context().deleteAeronDirectory();
+        driver.context().deleteDirectory();
     }
 
     @Test

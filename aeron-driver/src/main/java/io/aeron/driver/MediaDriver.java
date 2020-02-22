@@ -352,7 +352,7 @@ public final class MediaDriver implements AutoCloseable
                 }
             }
 
-            ctx.deleteAeronDirectory();
+            ctx.deleteDirectory();
         }
 
         IoUtil.ensureDirectoryExists(ctx.aeronDirectory(), "aeron");
@@ -540,7 +540,7 @@ public final class MediaDriver implements AutoCloseable
 
                 if (dirDeleteOnShutdown && null != aeronDirectory())
                 {
-                    deleteAeronDirectory();
+                    this.deleteDirectory();
                 }
 
                 super.close();
@@ -605,6 +605,15 @@ public final class MediaDriver implements AutoCloseable
             }
 
             return this;
+        }
+
+        /**
+         * Delete the directory used by the {@link MediaDriver} which delegates to
+         * {@link CommonContext#deleteAeronDirectory()}.
+         */
+        public void deleteDirectory()
+        {
+            super.deleteAeronDirectory();
         }
 
         /**

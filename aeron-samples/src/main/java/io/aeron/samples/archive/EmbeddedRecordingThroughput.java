@@ -106,7 +106,7 @@ public class EmbeddedRecordingThroughput implements AutoCloseable
             aeron,
             archivingMediaDriver,
             () -> archivingMediaDriver.archive().context().deleteDirectory(),
-            () -> archivingMediaDriver.mediaDriver().context().deleteAeronDirectory());
+            () -> archivingMediaDriver.mediaDriver().context().deleteDirectory());
     }
 
     public long streamMessagesForRecording()

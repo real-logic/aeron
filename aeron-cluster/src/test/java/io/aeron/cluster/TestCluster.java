@@ -111,7 +111,7 @@ public class TestCluster implements AutoCloseable
         if ((staticMemberCount + dynamicMemberCount + 1) >= 10)
         {
             throw new IllegalArgumentException(
-                "too many members memberCount=" + staticMemberCount + ": only support 9");
+                "too many members memberCount=" + staticMemberCount + ": max 9");
         }
 
         this.nodes = new TestNode[staticMemberCount + dynamicMemberCount + 1];
@@ -144,7 +144,7 @@ public class TestCluster implements AutoCloseable
 
         if (null != clientMediaDriver)
         {
-            clientMediaDriver.context().deleteAeronDirectory();
+            clientMediaDriver.context().deleteDirectory();
         }
 
         ClusterTests.failOnClusterError();

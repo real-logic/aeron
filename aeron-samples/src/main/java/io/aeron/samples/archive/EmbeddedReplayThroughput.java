@@ -126,7 +126,7 @@ public class EmbeddedReplayThroughput implements AutoCloseable
             aeron,
             archivingMediaDriver,
             () -> archivingMediaDriver.archive().context().deleteDirectory(),
-            () -> archivingMediaDriver.mediaDriver().context().deleteAeronDirectory());
+            () -> archivingMediaDriver.mediaDriver().context().deleteDirectory());
     }
 
     void onMessage(final DirectBuffer buffer, final int offset, final int length, final Header header)

@@ -18,7 +18,7 @@ package io.aeron.agent;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 public class ClusterEventCodeTest
 {
@@ -26,6 +26,6 @@ public class ClusterEventCodeTest
     @EnumSource(ClusterEventCode.class)
     void getCodeById(final ClusterEventCode code)
     {
-        assertNotSame(code, ClusterEventCode.get(code.id()));
+        assertSame(code, ClusterEventCode.get(code.id()));
     }
 }

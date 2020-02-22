@@ -16,14 +16,13 @@
 package io.aeron.driver;
 
 import io.aeron.driver.media.ReceiveChannelEndpoint;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.SetupFlyweight;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.InOrder;
 
 import java.net.InetSocketAddress;
 
@@ -75,8 +74,6 @@ public class DataPacketDispatcherTest
     @Test
     public void shouldElicitSetupMessageWhenDataArrivesForSubscriptionWithoutImage()
     {
-        Assertions.assertFalse(true);
-
         dispatcher.addSubscription(STREAM_ID);
         dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS, 0);
 

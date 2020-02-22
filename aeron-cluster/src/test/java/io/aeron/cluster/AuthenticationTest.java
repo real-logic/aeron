@@ -69,6 +69,7 @@ public class AuthenticationTest
         {
             clusteredMediaDriver.consensusModule().context().deleteDirectory();
             clusteredMediaDriver.archive().context().deleteDirectory();
+            clusteredMediaDriver.mediaDriver().context().deleteDirectory();
         }
     }
 
@@ -486,7 +487,7 @@ public class AuthenticationTest
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(ClusterTests.errorHandler(0))
                 .dirDeleteOnStart(true)
-                .dirDeleteOnShutdown(true),
+                .dirDeleteOnShutdown(false),
             new Archive.Context()
                 .maxCatalogEntries(MAX_CATALOG_ENTRIES)
                 .threadingMode(ArchiveThreadingMode.SHARED)

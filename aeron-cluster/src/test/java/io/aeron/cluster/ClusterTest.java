@@ -94,13 +94,9 @@ public class ClusterTest
                 cluster.awaitSnapshotCounter(cluster.node(1), 1);
                 cluster.awaitSnapshotCounter(cluster.node(2), 1);
 
-                cluster.stopNode(cluster.node(0));
-                cluster.stopNode(cluster.node(1));
-                cluster.stopNode(cluster.node(2));
+                cluster.stopAllNodes();
 
-                cluster.startStaticNode(0, false);
-                cluster.startStaticNode(1, false);
-                cluster.startStaticNode(2, false);
+                cluster.restartAllNodes(false);
 
                 cluster.awaitLeader();
                 assertEquals(2, cluster.followers().size());
@@ -134,13 +130,9 @@ public class ClusterTest
                 assertTrue(cluster.node(1).service().wasSnapshotTaken());
                 assertTrue(cluster.node(2).service().wasSnapshotTaken());
 
-                cluster.stopNode(cluster.node(0));
-                cluster.stopNode(cluster.node(1));
-                cluster.stopNode(cluster.node(2));
+                cluster.stopAllNodes();
 
-                cluster.startStaticNode(0, false);
-                cluster.startStaticNode(1, false);
-                cluster.startStaticNode(2, false);
+                cluster.restartAllNodes(false);
 
                 cluster.awaitLeader();
                 assertEquals(2, cluster.followers().size());
@@ -174,13 +166,9 @@ public class ClusterTest
                 assertFalse(cluster.node(1).service().wasSnapshotTaken());
                 assertFalse(cluster.node(2).service().wasSnapshotTaken());
 
-                cluster.stopNode(cluster.node(0));
-                cluster.stopNode(cluster.node(1));
-                cluster.stopNode(cluster.node(2));
+                cluster.stopAllNodes();
 
-                cluster.startStaticNode(0, false);
-                cluster.startStaticNode(1, false);
-                cluster.startStaticNode(2, false);
+                cluster.restartAllNodes(false);
 
                 cluster.awaitLeader();
                 assertEquals(2, cluster.followers().size());
@@ -650,9 +638,7 @@ public class ClusterTest
                 assertTrue(cluster.node(1).service().wasSnapshotTaken());
                 assertTrue(cluster.node(2).service().wasSnapshotTaken());
 
-                cluster.stopNode(cluster.node(0));
-                cluster.stopNode(cluster.node(1));
-                cluster.stopNode(cluster.node(2));
+                cluster.stopAllNodes();
 
                 cluster.startStaticNode(0, false);
                 cluster.startStaticNode(1, false);
@@ -715,9 +701,7 @@ public class ClusterTest
                 cluster.awaitNodeTermination(cluster.node(1));
                 cluster.awaitNodeTermination(cluster.node(2));
 
-                cluster.stopNode(cluster.node(0));
-                cluster.stopNode(cluster.node(1));
-                cluster.stopNode(cluster.node(2));
+                cluster.stopAllNodes();
 
                 final TestNode oldLeader = cluster.startStaticNode(leader.index(), false);
                 final TestNode oldFollower1 = cluster.startStaticNode(followers.get(0).index(), true);
@@ -780,9 +764,7 @@ public class ClusterTest
                 assertTrue(cluster.node(1).service().wasSnapshotTaken());
                 assertTrue(cluster.node(2).service().wasSnapshotTaken());
 
-                cluster.stopNode(cluster.node(0));
-                cluster.stopNode(cluster.node(1));
-                cluster.stopNode(cluster.node(2));
+                cluster.stopAllNodes();
 
                 cluster.startStaticNode(0, false);
                 cluster.startStaticNode(1, false);
@@ -890,17 +872,13 @@ public class ClusterTest
                 cluster.node(1).terminationExpected(true);
                 cluster.node(2).terminationExpected(true);
 
-                cluster.stopNode(cluster.node(0));
-                cluster.stopNode(cluster.node(1));
-                cluster.stopNode(cluster.node(2));
+                cluster.stopAllNodes();
 
                 // Invalidate snapshot from leadershipTermId = 1
                 cluster.invalidateLatestSnapshots();
 
                 // Start, should replay from snapshot in leadershipTerm = 0.
-                cluster.startStaticNode(0, false);
-                cluster.startStaticNode(1, false);
-                cluster.startStaticNode(2, false);
+                cluster.restartAllNodes(false);
 
                 cluster.awaitLeader();
             }
@@ -950,17 +928,13 @@ public class ClusterTest
                 cluster.node(1).terminationExpected(true);
                 cluster.node(2).terminationExpected(true);
 
-                cluster.stopNode(cluster.node(0));
-                cluster.stopNode(cluster.node(1));
-                cluster.stopNode(cluster.node(2));
+                cluster.stopAllNodes();
 
                 // Invalidate snapshot from leadershipTermId = 1
                 cluster.invalidateLatestSnapshots();
 
                 // Start, should replay from snapshot in leadershipTerm = 0.
-                cluster.startStaticNode(0, false);
-                cluster.startStaticNode(1, false);
-                cluster.startStaticNode(2, false);
+                cluster.restartAllNodes(false);
 
                 cluster.awaitLeader();
             }

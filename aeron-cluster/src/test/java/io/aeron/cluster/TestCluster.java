@@ -242,7 +242,7 @@ public class TestCluster implements AutoCloseable
             .termBufferSparseFile(true)
             .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
             .errorHandler(ClusterTests.errorHandler(index))
-            .dirDeleteOnShutdown(true)
+            .dirDeleteOnShutdown(false)
             .dirDeleteOnStart(true);
 
         context.archiveContext
@@ -307,7 +307,8 @@ public class TestCluster implements AutoCloseable
             .termBufferSparseFile(true)
             .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
             .errorHandler(ClusterTests.errorHandler(index))
-            .dirDeleteOnStart(true);
+            .dirDeleteOnStart(true)
+            .dirDeleteOnShutdown(false);
 
         context.archiveContext
             .maxCatalogEntries(MAX_CATALOG_ENTRIES)
@@ -367,7 +368,8 @@ public class TestCluster implements AutoCloseable
             .termBufferSparseFile(true)
             .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
             .errorHandler(ClusterTests.errorHandler(index))
-            .dirDeleteOnStart(true);
+            .dirDeleteOnStart(true)
+            .dirDeleteOnShutdown(false);
 
         context.archiveContext
             .maxCatalogEntries(MAX_CATALOG_ENTRIES)
@@ -536,7 +538,7 @@ public class TestCluster implements AutoCloseable
             new MediaDriver.Context()
                 .threadingMode(ThreadingMode.SHARED)
                 .dirDeleteOnStart(true)
-                .dirDeleteOnShutdown(true)
+                .dirDeleteOnShutdown(false)
                 .aeronDirectoryName(aeronDirName));
 
         client = AeronCluster.connect(
@@ -968,7 +970,8 @@ public class TestCluster implements AutoCloseable
             .termBufferSparseFile(true)
             .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
             .errorHandler(ClusterTests.errorHandler(index))
-            .dirDeleteOnStart(true);
+            .dirDeleteOnStart(true)
+            .dirDeleteOnShutdown(false);
 
         context.archiveContext
             .maxCatalogEntries(MAX_CATALOG_ENTRIES)

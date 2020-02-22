@@ -76,6 +76,7 @@ public class ClusterTimerTest
         {
             clusteredMediaDriver.consensusModule().context().deleteDirectory();
             clusteredMediaDriver.archive().context().deleteDirectory();
+            clusteredMediaDriver.mediaDriver().context().deleteDirectory();
         }
     }
 
@@ -267,7 +268,7 @@ public class ClusterTimerTest
                 .threadingMode(ThreadingMode.SHARED)
                 .termBufferSparseFile(true)
                 .errorHandler(ClusterTests.errorHandler(0))
-                .dirDeleteOnShutdown(true)
+                .dirDeleteOnShutdown(false)
                 .dirDeleteOnStart(true),
             new Archive.Context()
                 .maxCatalogEntries(MAX_CATALOG_ENTRIES)

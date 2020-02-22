@@ -107,7 +107,7 @@ public class MultipleClusteredServicesTest
             final MediaDriver clientMediaDriver = MediaDriver.launch(new MediaDriver.Context()
                 .threadingMode(ThreadingMode.SHARED)
                 .dirDeleteOnStart(true)
-                .dirDeleteOnShutdown(true)
+                .dirDeleteOnShutdown(false)
                 .aeronDirectoryName(aeronDirName));
 
             final AeronCluster client = AeronCluster.connect(new AeronCluster.Context()
@@ -143,6 +143,9 @@ public class MultipleClusteredServicesTest
                 CloseHelper.closeAll(client, clientMediaDriver);
                 clusteredServiceContainers.forEach(CloseHelper::close);
                 clusteredMediaDrivers.forEach(CloseHelper::close);
+
+                clientMediaDriver.context().deleteDirectory();
+                clusteredMediaDrivers.forEach((driver) -> driver.mediaDriver().context().deleteDirectory());
             }
         });
     }

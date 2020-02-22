@@ -97,7 +97,7 @@ public class StartFromTruncatedRecordingLogTest
                 .threadingMode(ThreadingMode.SHARED)
                 .warnIfDirectoryExists(false)
                 .dirDeleteOnStart(true)
-                .dirDeleteOnShutdown(true));
+                .dirDeleteOnShutdown(false));
     }
 
     @AfterEach
@@ -124,6 +124,7 @@ public class StartFromTruncatedRecordingLogTest
             {
                 driver.consensusModule().context().deleteDirectory();
                 driver.archive().context().deleteDirectory();
+                driver.mediaDriver().context().deleteDirectory();
             }
         }
     }
@@ -336,7 +337,7 @@ public class StartFromTruncatedRecordingLogTest
                 .termBufferSparseFile(true)
                 .multicastFlowControlSupplier(new MinMulticastFlowControlSupplier())
                 .errorHandler(ClusterTests.errorHandler(index))
-                .dirDeleteOnShutdown(true)
+                .dirDeleteOnShutdown(false)
                 .dirDeleteOnStart(true),
             new Archive.Context()
                 .maxCatalogEntries(MAX_CATALOG_ENTRIES)

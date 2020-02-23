@@ -571,7 +571,7 @@ public class TestCluster implements AutoCloseable
         client.pollEgress();
     }
 
-    void awaitResponses(final int messageCount)
+    void awaitResponseMessageCount(final int messageCount)
     {
         final EpochClock epochClock = client.context().aeron().context().epochClock();
         long deadlineMs = epochClock.time() + TimeUnit.SECONDS.toMillis(1);
@@ -733,7 +733,7 @@ public class TestCluster implements AutoCloseable
         assertTrue(ClusterControl.ToggleState.ABORT.toggle(controlToggle));
     }
 
-    void awaitSnapshotCounter(final TestNode node, final long value)
+    void awaitSnapshotCount(final TestNode node, final long value)
     {
         final Counter snapshotCounter = node.consensusModule().context().snapshotCounter();
         while (snapshotCounter.get() != value)
@@ -752,7 +752,7 @@ public class TestCluster implements AutoCloseable
         }
     }
 
-    void awaitMessageCountForService(final TestNode node, final int messageCount)
+    void awaitServiceMessageCount(final TestNode node, final int messageCount)
     {
         final EpochClock epochClock = client.context().aeron().context().epochClock();
         long deadlineMs = epochClock.time() + TimeUnit.SECONDS.toMillis(1);

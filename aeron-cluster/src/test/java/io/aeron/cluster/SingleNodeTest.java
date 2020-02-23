@@ -53,8 +53,8 @@ public class SingleNodeTest
 
                 cluster.connectClient();
                 cluster.sendMessages(10);
-                cluster.awaitResponses(10);
-                cluster.awaitMessageCountForService(leader, 10);
+                cluster.awaitResponseMessageCount(10);
+                cluster.awaitServiceMessageCount(leader, 10);
             }
         });
     }
@@ -70,14 +70,14 @@ public class SingleNodeTest
 
                 cluster.connectClient();
                 cluster.sendMessages(10);
-                cluster.awaitResponses(10);
-                cluster.awaitMessageCountForService(leader, 10);
+                cluster.awaitResponseMessageCount(10);
+                cluster.awaitServiceMessageCount(leader, 10);
 
                 cluster.stopNode(leader);
 
                 cluster.startStaticNode(0, false);
                 final TestNode newLeader = cluster.awaitLeader();
-                cluster.awaitMessageCountForService(newLeader, 10);
+                cluster.awaitServiceMessageCount(newLeader, 10);
             }
         });
     }

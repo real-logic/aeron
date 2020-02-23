@@ -60,16 +60,16 @@ public class MultiNodeTest
                 cluster.connectClient();
                 final int messageCount = 10;
                 cluster.sendMessages(messageCount);
-                cluster.awaitResponses(messageCount);
-                cluster.awaitMessageCountForService(leader, messageCount);
+                cluster.awaitResponseMessageCount(messageCount);
+                cluster.awaitServiceMessageCount(leader, messageCount);
 
                 cluster.stopAllNodes();
                 cluster.restartAllNodes(false);
 
                 leader = cluster.awaitLeader();
-                cluster.awaitMessageCountForService(leader, messageCount);
-                cluster.awaitMessageCountForService(cluster.node(0), messageCount);
-                cluster.awaitMessageCountForService(cluster.node(2), messageCount);
+                cluster.awaitServiceMessageCount(leader, messageCount);
+                cluster.awaitServiceMessageCount(cluster.node(0), messageCount);
+                cluster.awaitServiceMessageCount(cluster.node(2), messageCount);
             }
         });
     }
@@ -93,21 +93,21 @@ public class MultiNodeTest
                 final int postCatchupMessageCount = 10;
                 final int totalMessageCount = preCatchupMessageCount + postCatchupMessageCount;
                 cluster.sendMessages(preCatchupMessageCount);
-                cluster.awaitResponses(preCatchupMessageCount);
-                cluster.awaitMessageCountForService(leader, preCatchupMessageCount);
+                cluster.awaitResponseMessageCount(preCatchupMessageCount);
+                cluster.awaitServiceMessageCount(leader, preCatchupMessageCount);
 
                 cluster.stopNode(cluster.node(0));
 
                 cluster.sendMessages(postCatchupMessageCount);
-                cluster.awaitResponses(postCatchupMessageCount);
+                cluster.awaitResponseMessageCount(postCatchupMessageCount);
 
                 cluster.stopAllNodes();
                 cluster.restartAllNodes(false);
 
                 leader = cluster.awaitLeader();
-                cluster.awaitMessageCountForService(leader, totalMessageCount);
-                cluster.awaitMessageCountForService(cluster.node(0), totalMessageCount);
-                cluster.awaitMessageCountForService(cluster.node(2), totalMessageCount);
+                cluster.awaitServiceMessageCount(leader, totalMessageCount);
+                cluster.awaitServiceMessageCount(cluster.node(0), totalMessageCount);
+                cluster.awaitServiceMessageCount(cluster.node(2), totalMessageCount);
             }
         });
     }

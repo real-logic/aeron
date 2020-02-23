@@ -17,7 +17,6 @@ package io.aeron.cluster;
 
 import io.aeron.cluster.service.Cluster;
 import io.aeron.test.SlowTest;
-import io.aeron.test.Tests;
 import org.junit.jupiter.api.Test;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -82,9 +81,9 @@ public class DynamicMembershipTest
                 cluster.connectClient();
                 final int messageCount = 10;
                 cluster.sendMessages(messageCount);
-                cluster.awaitResponses(messageCount);
-                cluster.awaitMessageCountForService(leader, messageCount);
-                cluster.awaitMessageCountForService(dynamicMember, messageCount);
+                cluster.awaitResponseMessageCount(messageCount);
+                cluster.awaitServiceMessageCount(leader, messageCount);
+                cluster.awaitServiceMessageCount(dynamicMember, messageCount);
             }
         });
     }
@@ -101,12 +100,12 @@ public class DynamicMembershipTest
                 cluster.connectClient();
                 final int messageCount = 10;
                 cluster.sendMessages(messageCount);
-                cluster.awaitResponses(messageCount);
-                cluster.awaitMessageCountForService(leader, messageCount);
+                cluster.awaitResponseMessageCount(messageCount);
+                cluster.awaitServiceMessageCount(leader, messageCount);
 
                 final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
-                cluster.awaitMessageCountForService(dynamicMember, messageCount);
+                cluster.awaitServiceMessageCount(dynamicMember, messageCount);
             }
         });
     }
@@ -121,9 +120,9 @@ public class DynamicMembershipTest
                 final TestNode leader = cluster.awaitLeader();
 
                 cluster.takeSnapshot(leader);
-                cluster.awaitSnapshotCounter(cluster.node(0), 1);
-                cluster.awaitSnapshotCounter(cluster.node(1), 1);
-                cluster.awaitSnapshotCounter(cluster.node(2), 1);
+                cluster.awaitSnapshotCount(cluster.node(0), 1);
+                cluster.awaitSnapshotCount(cluster.node(1), 1);
+                cluster.awaitSnapshotCount(cluster.node(2), 1);
 
                 final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
@@ -147,12 +146,12 @@ public class DynamicMembershipTest
                 cluster.connectClient();
                 final int messageCount = 10;
                 cluster.sendMessages(messageCount);
-                cluster.awaitResponses(messageCount);
+                cluster.awaitResponseMessageCount(messageCount);
 
                 cluster.takeSnapshot(leader);
-                cluster.awaitSnapshotCounter(cluster.node(0), 1);
-                cluster.awaitSnapshotCounter(cluster.node(1), 1);
-                cluster.awaitSnapshotCounter(cluster.node(2), 1);
+                cluster.awaitSnapshotCount(cluster.node(0), 1);
+                cluster.awaitSnapshotCount(cluster.node(1), 1);
+                cluster.awaitSnapshotCount(cluster.node(2), 1);
 
                 final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
@@ -179,12 +178,12 @@ public class DynamicMembershipTest
                 final int postSnapshotMessageCount = 7;
                 final int totalMessageCount = preSnapshotMessageCount + postSnapshotMessageCount;
                 cluster.sendMessages(preSnapshotMessageCount);
-                cluster.awaitResponses(preSnapshotMessageCount);
+                cluster.awaitResponseMessageCount(preSnapshotMessageCount);
 
                 cluster.takeSnapshot(leader);
-                cluster.awaitSnapshotCounter(cluster.node(0), 1);
-                cluster.awaitSnapshotCounter(cluster.node(1), 1);
-                cluster.awaitSnapshotCounter(cluster.node(2), 1);
+                cluster.awaitSnapshotCount(cluster.node(0), 1);
+                cluster.awaitSnapshotCount(cluster.node(1), 1);
+                cluster.awaitSnapshotCount(cluster.node(2), 1);
 
                 final TestNode dynamicMember = cluster.startDynamicNode(3, true);
 
@@ -195,8 +194,8 @@ public class DynamicMembershipTest
                 assertEquals(preSnapshotMessageCount, dynamicMember.service().messageCount());
 
                 cluster.sendMessages(postSnapshotMessageCount);
-                cluster.awaitResponses(totalMessageCount);
-                cluster.awaitMessageCountForService(dynamicMember, totalMessageCount);
+                cluster.awaitResponseMessageCount(totalMessageCount);
+                cluster.awaitServiceMessageCount(dynamicMember, totalMessageCount);
             }
         });
     }
@@ -296,7 +295,6 @@ public class DynamicMembershipTest
         while (true)
         {
             Thread.sleep(100);
-            Tests.checkInterruptedStatus();
 
             final ClusterTool.ClusterMembership clusterMembership = leader.clusterMembership();
             if (clusterMembership.activeMembers.size() == size)

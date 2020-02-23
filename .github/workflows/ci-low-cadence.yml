@@ -45,6 +45,11 @@ jobs:
           echo "::set-output name=dir::build/crash_logs"
 
           ./gradlew copyCrashLogs
+      - name: Echo outputs.dir
+        run: echo "outputs.dir = ${{ steps.copy_crash_logs.outputs.dir }}"
+      - name: Print conditional
+        if: steps.copy_crash_logs.outputs.dir == 'build/crash_logs'
+        run: echo "it works!"
       - name: Upload crash logs
         if: steps.copy_crash_logs.outputs.dir == 'build/crash_logs'
         uses: actions/upload-artifact@v1

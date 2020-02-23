@@ -42,8 +42,6 @@ import static io.aeron.archive.Archive.segmentFileName;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.*;
-import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_DATA;
-import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
 import static java.lang.Math.min;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.nio.file.StandardOpenOption.READ;

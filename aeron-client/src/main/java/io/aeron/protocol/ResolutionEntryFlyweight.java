@@ -123,16 +123,16 @@ public class ResolutionEntryFlyweight extends HeaderFlyweight
         throw new IllegalStateException("unknown RES_TYPE=" + resType());
     }
 
-    public int getAddress(final byte[] addr)
+    public int getAddress(final byte[] address)
     {
         switch (resType())
         {
             case RES_TYPE_NAME_TO_IP4_MD:
-                getBytes(ADDRESS_FIELD_OFFSET, addr, 0, 4);
+                getBytes(ADDRESS_FIELD_OFFSET, address, 0, 4);
                 return 4;
 
             case RES_TYPE_NAME_TO_IP6_MD:
-                getBytes(ADDRESS_FIELD_OFFSET, addr, 0, 16);
+                getBytes(ADDRESS_FIELD_OFFSET, address, 0, 16);
                 return 16;
         }
 
@@ -201,10 +201,7 @@ public class ResolutionEntryFlyweight extends HeaderFlyweight
     {
         if (addressLength == ADDRESS_LENGTH_IP4)
         {
-            if (0 == address[0] && 0 == address[1] && 0 == address[2] && 0 == address[3])
-            {
-                return true;
-            }
+            return 0 == address[0] && 0 == address[1] && 0 == address[2] && 0 == address[3];
         }
 
         return false;

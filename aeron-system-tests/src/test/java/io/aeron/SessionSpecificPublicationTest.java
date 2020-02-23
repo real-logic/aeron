@@ -56,18 +56,18 @@ public class SessionSpecificPublicationTest
     private final ErrorHandler mockErrorHandler = mock(ErrorHandler.class);
     private final MediaDriver.Context mediaDriverContext = new MediaDriver.Context()
         .errorHandler(mockErrorHandler)
-        .dirDeleteOnShutdown(true)
+        .dirDeleteOnStart(true)
         .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
         .threadingMode(ThreadingMode.SHARED);
 
-    private final TestMediaDriver testMediaDriver = TestMediaDriver.launch(mediaDriverContext);
+    private final TestMediaDriver mediaDriver = TestMediaDriver.launch(mediaDriverContext);
     private final Aeron aeron = Aeron.connect();
 
     @AfterEach
     public void after()
     {
-        CloseHelper.close(aeron);
-        CloseHelper.close(testMediaDriver);
+        CloseHelper.closeAll(aeron, mediaDriver);
+        mediaDriver.context().deleteDirectory();
     }
 
     @ParameterizedTest
@@ -102,8 +102,7 @@ public class SessionSpecificPublicationTest
     @ParameterizedTest
     @MethodSource("data")
     public void shouldNotCreatePublicationsSharingSessionIdWithDifferentMtu(
-        final ChannelUriStringBuilder channelBuilder
-    )
+        final ChannelUriStringBuilder channelBuilder)
     {
         channelBuilder.sessionId(SESSION_ID_1);
 
@@ -120,8 +119,7 @@ public class SessionSpecificPublicationTest
     @ParameterizedTest
     @MethodSource("data")
     public void shouldNotCreatePublicationsSharingSessionIdWithDifferentTermLength(
-        final ChannelUriStringBuilder channelBuilder
-    )
+        final ChannelUriStringBuilder channelBuilder)
     {
         channelBuilder.sessionId(SESSION_ID_1);
 
@@ -141,8 +139,7 @@ public class SessionSpecificPublicationTest
     @ParameterizedTest
     @MethodSource("data")
     public void shouldNotCreateNonExclusivePublicationsWithDifferentSessionIdsForTheSameEndpoint(
-        final ChannelUriStringBuilder channelBuilder
-    )
+        final ChannelUriStringBuilder channelBuilder)
     {
         channelBuilder.endpoint(ENDPOINT);
 

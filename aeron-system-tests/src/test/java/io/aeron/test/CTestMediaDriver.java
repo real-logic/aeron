@@ -78,11 +78,8 @@ public final class CTestMediaDriver implements TestMediaDriver
             throw new RuntimeException("Interrupted while waiting for shutdown", e);
         }
 
-        if (context.dirDeleteOnShutdown())
-        {
-            final File aeronDirectory = new File(context.aeronDirectoryName());
-            IoUtil.delete(aeronDirectory, false);
-        }
+        final File aeronDirectory = new File(context.aeronDirectoryName());
+        IoUtil.delete(aeronDirectory, false);
     }
 
     private void terminateDriver()

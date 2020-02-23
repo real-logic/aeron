@@ -37,8 +37,20 @@ public class Tests
     {
         if (Thread.interrupted())
         {
-            fail("unexpected interrupt - test likely to have timed out");
+            unexpectedInterruptStackTrace();
+
+            fail("unexpected interrupt");
         }
+    }
+
+    public static void unexpectedInterruptStackTrace()
+    {
+        System.out.println("Unexpected interrupt - test likely to have timed out");
+        for (final StackTraceElement stackTraceElement : Thread.currentThread().getStackTrace())
+        {
+            System.out.println(stackTraceElement);
+        }
+        System.out.println();
     }
 
     /**
@@ -54,6 +66,7 @@ public class Tests
         }
         catch (final InterruptedException ex)
         {
+            unexpectedInterruptStackTrace();
             LangUtil.rethrowUnchecked(ex);
         }
     }
@@ -67,16 +80,16 @@ public class Tests
      */
     public static void throwOnClose(final AutoCloseable mock, final Throwable exception) throws Exception
     {
-        doAnswer((invocation) ->
-        {
-            LangUtil.rethrowUnchecked(exception);
-            return null;
-        }).when(mock).close();
+        doAnswer(
+            (invocation) ->
+            {
+                LangUtil.rethrowUnchecked(exception);
+                return null;
+            }).when(mock).close();
     }
 
     public static void yieldingWait(final BooleanSupplier isDone)
     {
-
         final Timeout timeout = Objects.requireNonNull(
             TEST_TIMEOUT.get(),
             "Timeout has not be initialized.  " +

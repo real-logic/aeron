@@ -125,11 +125,11 @@ public class TestCluster implements AutoCloseable
         this.appointedLeaderId = appointedLeaderId;
     }
 
-    public static void awaitElectionClosed(final TestNode follower) throws InterruptedException
+    public static void awaitElectionClosed(final TestNode follower)
     {
         while (follower.electionState() != Election.State.CLOSED)
         {
-            Thread.sleep(10);
+            Tests.sleep(10);
         }
     }
 
@@ -648,7 +648,7 @@ public class TestCluster implements AutoCloseable
         TestNode leaderNode;
         while (null == (leaderNode = findLeader(skipIndex)))
         {
-            Thread.sleep(1000);
+            Tests.sleep(1000);
             Tests.checkInterruptedStatus();
         }
 
@@ -675,13 +675,13 @@ public class TestCluster implements AutoCloseable
         return followers;
     }
 
-    void awaitBackupState(final ClusterBackup.State targetState) throws InterruptedException
+    void awaitBackupState(final ClusterBackup.State targetState)
     {
         if (null != backupNode)
         {
             while (backupNode.state() != targetState)
             {
-                Thread.sleep(100);
+                Tests.sleep(100);
                 Tests.checkInterruptedStatus();
             }
 
@@ -697,7 +697,7 @@ public class TestCluster implements AutoCloseable
         {
             while (backupNode.liveLogPosition() != position)
             {
-                Thread.sleep(100);
+                Tests.sleep(100);
                 Tests.checkInterruptedStatus();
             }
 

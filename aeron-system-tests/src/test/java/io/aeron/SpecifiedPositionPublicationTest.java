@@ -32,13 +32,13 @@ public class SpecifiedPositionPublicationTest
     public void shouldRejectSpecifiedPositionForConcurrentPublications()
     {
         final ErrorHandler mockErrorHandler = mock(ErrorHandler.class);
-        final MediaDriver.Context mediaDriverContext = new MediaDriver.Context()
+        final MediaDriver.Context context = new MediaDriver.Context()
             .errorHandler(mockErrorHandler)
-            .dirDeleteOnShutdown(true)
+            .dirDeleteOnStart(true)
             .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
             .threadingMode(ThreadingMode.SHARED);
 
-        try (TestMediaDriver ignore = TestMediaDriver.launch(mediaDriverContext);
+        try (TestMediaDriver ignore = TestMediaDriver.launch(context);
             Aeron aeron = Aeron.connect())
         {
             final String channel = new ChannelUriStringBuilder()
@@ -47,6 +47,10 @@ public class SpecifiedPositionPublicationTest
                 .build();
 
             assertThrows(RegistrationException.class, () -> aeron.addPublication(channel, 1001));
+        }
+        finally
+        {
+            context.deleteDirectory();
         }
     }
 }

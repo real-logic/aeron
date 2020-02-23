@@ -79,7 +79,7 @@ public class SpySimulatedConnectionTest
     {
         driverContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .errorHandler(Throwable::printStackTrace)
-            .dirDeleteOnShutdown(true)
+            .dirDeleteOnStart(true)
             .threadingMode(ThreadingMode.SHARED);
 
         driver = TestMediaDriver.launch(driverContext, watcher);
@@ -89,12 +89,8 @@ public class SpySimulatedConnectionTest
     @AfterEach
     public void after()
     {
-        CloseHelper.quietClose(publication);
-        CloseHelper.quietClose(subscription);
-        CloseHelper.quietClose(spy);
-
-        CloseHelper.quietClose(client);
-        CloseHelper.quietClose(driver);
+        CloseHelper.closeAll(client, driver);
+        driver.context().deleteDirectory();
     }
 
     @ParameterizedTest
@@ -293,13 +289,15 @@ public class SpySimulatedConnectionTest
             Tests.checkInterruptedStatus();
         }
 
-        while (spy.poll(mock(FragmentHandler.class), 1) == 0)
+        final FragmentHandler mockFragmentHandler = mock(FragmentHandler.class);
+
+        while (spy.poll(mockFragmentHandler, 1) == 0)
         {
             Thread.yield();
             Tests.checkInterruptedStatus();
         }
 
-        while (subscription.poll(mock(FragmentHandler.class), 1) == 0)
+        while (subscription.poll(mockFragmentHandler, 1) == 0)
         {
             Thread.yield();
             Tests.checkInterruptedStatus();

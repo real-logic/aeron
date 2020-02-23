@@ -57,7 +57,6 @@ public class FragmentedMessageTest
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
         .errorHandler(Throwable::printStackTrace)
-        .dirDeleteOnShutdown(true)
         .threadingMode(ThreadingMode.SHARED));
 
     private final Aeron aeron = Aeron.connect();
@@ -65,8 +64,8 @@ public class FragmentedMessageTest
     @AfterEach
     public void after()
     {
-        CloseHelper.close(aeron);
-        CloseHelper.close(driver);
+        CloseHelper.closeAll(aeron, driver);
+        driver.context().deleteDirectory();
     }
 
     @ParameterizedTest

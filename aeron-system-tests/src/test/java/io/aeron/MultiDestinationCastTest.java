@@ -108,11 +108,7 @@ public class MultiDestinationCastTest
     @AfterEach
     public void closeEverything()
     {
-        CloseHelper.close(clientB);
-        CloseHelper.close(clientA);
-        CloseHelper.close(driverB);
-        CloseHelper.close(driverA);
-
+        CloseHelper.closeAll(clientB, clientA, driverB, driverA);
         IoUtil.delete(new File(ROOT_DIR), true);
     }
 

@@ -194,7 +194,6 @@ subprojects {
             'aeron.use.windows.high.res.timer': 'true',
             'aeron.timer.interval': '10000000',
             'aeron.dir.delete.on.start': 'true',
-            'aeron.dir.delete.on.shutdown': 'true',
             'aeron.term.buffer.sparse.file': 'true',
             'aeron.perform.storage.checks': 'false')
 
@@ -736,10 +735,10 @@ project(':aeron-all') {
     shadowJar {
         archiveClassifier.set ''
         manifest.attributes(
-                'Implementation-Title': 'Aeron',
-                'Implementation-Version': "${aeronVersion}",
-                'Implementation-Vendor': 'Real Logic Limited',
-                'Automatic-Module-Name': 'io.aeron.all')
+            'Implementation-Title': 'Aeron',
+            'Implementation-Version': "${aeronVersion}",
+            'Implementation-Vendor': 'Real Logic Limited',
+            'Automatic-Module-Name': 'io.aeron.all')
         relocate 'org.HdrHistogram', 'io.aeron.shadow.org.HdrHistogram'
     }
 

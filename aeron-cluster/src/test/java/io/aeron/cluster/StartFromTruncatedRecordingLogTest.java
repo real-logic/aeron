@@ -147,7 +147,7 @@ public class StartFromTruncatedRecordingLogTest
         });
     }
 
-    private void stopAndStartClusterWithTruncationOfRecordingLog() throws InterruptedException, IOException
+    private void stopAndStartClusterWithTruncationOfRecordingLog() throws IOException
     {
         final int leaderMemberId = awaitLeaderMemberId();
         final int followerMemberIdA = (leaderMemberId + 1) >= MEMBER_COUNT ? 0 : (leaderMemberId + 1);
@@ -187,19 +187,19 @@ public class StartFromTruncatedRecordingLogTest
         startNode(followerMemberIdB, false);
     }
 
-    private int awaitLeaderMemberId() throws InterruptedException
+    private int awaitLeaderMemberId()
     {
         int leaderMemberId;
         while (NULL_VALUE == (leaderMemberId = findLeaderId()))
         {
-            Thread.sleep(200);
+            Tests.sleep(200);
             Tests.checkInterruptedStatus();
         }
 
         return leaderMemberId;
     }
 
-    private void assertClusterIsFunctioningCorrectly() throws InterruptedException
+    private void assertClusterIsFunctioningCorrectly()
     {
         awaitLeaderMemberId();
 

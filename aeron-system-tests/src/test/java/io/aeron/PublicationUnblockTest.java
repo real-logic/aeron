@@ -52,7 +52,6 @@ public class PublicationUnblockTest
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .threadingMode(ThreadingMode.SHARED)
         .errorHandler(Throwable::printStackTrace)
-        .dirDeleteOnShutdown(true)
         .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
         .clientLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(400))
         .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(10))
@@ -64,8 +63,8 @@ public class PublicationUnblockTest
     @AfterEach
     public void after()
     {
-        CloseHelper.close(aeron);
-        CloseHelper.close(driver);
+        CloseHelper.closeAll(aeron, driver);
+        driver.context().deleteDirectory();
     }
 
     @ParameterizedTest

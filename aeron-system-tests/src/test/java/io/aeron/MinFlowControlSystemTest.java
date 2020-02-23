@@ -329,7 +329,6 @@ public class MinFlowControlSystemTest
 
                 subscription2 = clientC.addSubscription(uriPlain, STREAM_ID);
 
-                // Aaaaaand reconnect.
                 while (!publication.isConnected())
                 {
                     Tests.sleep(1);
@@ -373,7 +372,7 @@ public class MinFlowControlSystemTest
             publication = clientA.addPublication(uriWithMinFlowControl, STREAM_ID);
             final Publication otherPublication = clientA.addPublication(plainUri, STREAM_ID + 1);
 
-            final Subscription otherSubscription = clientA.addSubscription(plainUri, STREAM_ID + 1);
+            clientA.addSubscription(plainUri, STREAM_ID + 1);
 
             while (!otherPublication.isConnected())
             {
@@ -398,6 +397,7 @@ public class MinFlowControlSystemTest
         final String publisherUri = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|fc=tagged,g:123/1";
         final String groupSubscriberUri = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost|rtag=123";
         final String subscriberUri = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost";
+
         assertTimeoutPreemptively(ofSeconds(10), () ->
         {
             driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));

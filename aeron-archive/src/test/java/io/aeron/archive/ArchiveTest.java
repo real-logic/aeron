@@ -124,7 +124,6 @@ public class ArchiveTest
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .errorHandler(Throwable::printStackTrace)
             .clientLivenessTimeoutNs(connectTimeoutNs)
-            .dirDeleteOnShutdown(true)
             .dirDeleteOnStart(true)
             .publicationUnblockTimeoutNs(connectTimeoutNs * 2)
             .threadingMode(ThreadingMode.SHARED);
@@ -161,6 +160,7 @@ public class ArchiveTest
         {
             executor.shutdownNow();
             archiveCtx.deleteDirectory();
+            driverCtx.deleteDirectory();
         }
     }
 
@@ -169,7 +169,6 @@ public class ArchiveTest
     {
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .dirDeleteOnStart(true)
-            .dirDeleteOnShutdown(true)
             .threadingMode(ThreadingMode.SHARED);
         final Context archiveCtx = new Context().threadingMode(SHARED);
 
@@ -224,7 +223,8 @@ public class ArchiveTest
         }
 
         final Context archiveCtxClone = archiveCtx.clone();
-        try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(driverCtx.clone(), archiveCtxClone);
+        final MediaDriver.Context driverCtxClone = driverCtx.clone();
+        try (ArchivingMediaDriver ignore = ArchivingMediaDriver.launch(driverCtxClone, archiveCtxClone);
             AeronArchive archive = AeronArchive.connect())
         {
             assertEquals(initialPosition, archive.getStartPosition(recordingId));
@@ -233,6 +233,7 @@ public class ArchiveTest
         finally
         {
             archiveCtxClone.deleteDirectory();
+            driverCtxClone.deleteDirectory();
         }
     }
 
@@ -260,7 +261,6 @@ public class ArchiveTest
 
             final MediaDriver.Context driverCtx = new MediaDriver.Context()
                 .dirDeleteOnStart(true)
-                .dirDeleteOnShutdown(true)
                 .threadingMode(ThreadingMode.SHARED);
             final Context archiveCtx = new Context().threadingMode(SHARED);
 
@@ -299,6 +299,7 @@ public class ArchiveTest
             finally
             {
                 archiveCtx.deleteDirectory();
+                driverCtx.deleteDirectory();
             }
         });
     }

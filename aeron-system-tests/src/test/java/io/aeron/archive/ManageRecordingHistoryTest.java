@@ -66,7 +66,6 @@ public class ManageRecordingHistoryTest
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Throwable::printStackTrace)
                 .spiesSimulateConnection(true)
-                .dirDeleteOnShutdown(true)
                 .dirDeleteOnStart(true),
             new Archive.Context()
                 .maxCatalogEntries(Common.MAX_CATALOG_ENTRIES)
@@ -87,11 +86,10 @@ public class ManageRecordingHistoryTest
     @AfterEach
     public void after()
     {
-        CloseHelper.close(aeronArchive);
-        CloseHelper.close(aeron);
-        CloseHelper.close(archivingMediaDriver);
+        CloseHelper.closeAll(aeronArchive, aeron, archivingMediaDriver);
 
         archivingMediaDriver.archive().context().deleteDirectory();
+        archivingMediaDriver.mediaDriver().context().deleteDirectory();
     }
 
     @Test

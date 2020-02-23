@@ -105,7 +105,7 @@ public class TaggedFlowControlSystemTest
     @AfterEach
     public void after()
     {
-        CloseHelper.quietCloseAll(clientB, clientA, driverB, driverA);
+        CloseHelper.closeAll(clientB, clientA, driverB, driverA);
         IoUtil.delete(new File(ROOT_DIR), true);
     }
 

@@ -63,13 +63,13 @@ public class StopStartSecondSubscriberTest
     {
         driverOne = MediaDriver.launchEmbedded(
             new MediaDriver.Context()
-                .dirDeleteOnShutdown(true)
+                .dirDeleteOnStart(true)
                 .errorHandler(Throwable::printStackTrace)
                 .termBufferSparseFile(true));
 
         driverTwo = MediaDriver.launchEmbedded(
             new MediaDriver.Context()
-                .dirDeleteOnShutdown(true)
+                .dirDeleteOnStart(true)
                 .errorHandler(Throwable::printStackTrace)
                 .termBufferSparseFile(true));
 
@@ -87,13 +87,16 @@ public class StopStartSecondSubscriberTest
     @AfterEach
     public void after()
     {
-        CloseHelper.close(subscriberOne);
-        CloseHelper.close(publisherOne);
-        CloseHelper.close(subscriberTwo);
-        CloseHelper.close(publisherTwo);
+        CloseHelper.closeAll(
+            subscriberOne,
+            publisherOne,
+            subscriberTwo,
+            publisherTwo,
+            driverOne,
+            driverTwo);
 
-        CloseHelper.close(driverOne);
-        CloseHelper.close(driverTwo);
+        driverOne.context().deleteDirectory();
+        driverTwo.context().deleteDirectory();
     }
 
     @Test

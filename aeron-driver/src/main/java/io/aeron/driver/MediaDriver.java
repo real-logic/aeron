@@ -613,7 +613,10 @@ public final class MediaDriver implements AutoCloseable
          */
         public void deleteDirectory()
         {
-            super.deleteAeronDirectory();
+            if (null != aeronDirectory())
+            {
+                super.deleteAeronDirectory();
+            }
         }
 
         /**

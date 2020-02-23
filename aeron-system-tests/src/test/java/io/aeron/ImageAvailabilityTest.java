@@ -46,7 +46,6 @@ public class ImageAvailabilityTest
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Throwable::printStackTrace)
-        .dirDeleteOnShutdown(true)
         .dirDeleteOnStart(true)
         .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(20))
         .threadingMode(ThreadingMode.SHARED));
@@ -58,8 +57,8 @@ public class ImageAvailabilityTest
     @AfterEach
     public void after()
     {
-        CloseHelper.close(aeron);
-        CloseHelper.close(driver);
+        CloseHelper.closeAll(aeron, driver);
+        driver.context().deleteDirectory();
     }
 
     @ParameterizedTest
@@ -76,8 +75,8 @@ public class ImageAvailabilityTest
             final String spyChannel = channel.contains("ipc") ? channel : CommonContext.SPY_PREFIX + channel;
 
             try (Subscription subOne = aeron.addSubscription(channel, STREAM_ID, availableHandler, unavailableHandler);
-                Subscription subTwo = aeron
-                    .addSubscription(spyChannel, STREAM_ID, availableHandler, unavailableHandler);
+                Subscription subTwo = aeron.addSubscription(
+                    spyChannel, STREAM_ID, availableHandler, unavailableHandler);
                 Publication publication = aeron.addPublication(channel, STREAM_ID))
             {
                 while (!subOne.isConnected() || !subTwo.isConnected() || !publication.isConnected())
@@ -136,15 +135,15 @@ public class ImageAvailabilityTest
 
             try (Aeron aeronTwo = Aeron.connect(ctx);
                 Subscription subOne = aeron.addSubscription(channel, STREAM_ID, availableHandler, unavailableHandler);
-                Subscription subTwo = aeron
-                    .addSubscription(spyChannel, STREAM_ID, availableHandler, unavailableHandler);
+                Subscription subTwo = aeron.addSubscription(
+                    spyChannel, STREAM_ID, availableHandler, unavailableHandler);
                 Publication publication = aeronTwo.addPublication(channel, STREAM_ID))
             {
                 while (!subOne.isConnected() || !subTwo.isConnected() || !publication.isConnected())
                 {
-                    aeron.conductorAgentInvoker().invoke();
                     Thread.yield();
                     Tests.checkInterruptedStatus();
+                    aeron.conductorAgentInvoker().invoke();
                 }
 
                 final Image image = subOne.imageAtIndex(0);

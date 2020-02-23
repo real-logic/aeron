@@ -134,7 +134,6 @@ public class ArchiveTest
                 .sharedIdleStrategy(YieldingIdleStrategy.INSTANCE)
                 .spiesSimulateConnection(true)
                 .errorHandler(Throwable::printStackTrace)
-                .dirDeleteOnShutdown(true)
                 .dirDeleteOnStart(true));
 
         archive = Archive.launch(
@@ -169,11 +168,10 @@ public class ArchiveTest
             progressTracker.interrupt();
         }
 
-        CloseHelper.close(client);
-        CloseHelper.close(archive);
-        CloseHelper.close(driver);
+        CloseHelper.closeAll(client, archive, driver);
 
         archive.context().deleteDirectory();
+        driver.context().deleteDirectory();
     }
 
     @ParameterizedTest

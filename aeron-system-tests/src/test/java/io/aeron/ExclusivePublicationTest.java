@@ -59,7 +59,6 @@ public class ExclusivePublicationTest
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Throwable::printStackTrace)
-        .dirDeleteOnShutdown(true)
         .threadingMode(ThreadingMode.SHARED));
 
     private final Aeron aeron = Aeron.connect();
@@ -68,6 +67,7 @@ public class ExclusivePublicationTest
     public void after()
     {
         CloseHelper.closeAll(aeron, driver);
+        driver.context().deleteDirectory();
     }
 
     @ParameterizedTest

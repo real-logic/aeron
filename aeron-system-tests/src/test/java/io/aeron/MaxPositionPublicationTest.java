@@ -42,7 +42,6 @@ public class MaxPositionPublicationTest
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Throwable::printStackTrace)
         .dirDeleteOnStart(true)
-        .dirDeleteOnShutdown(true)
         .threadingMode(ThreadingMode.SHARED));
 
     private final Aeron aeron = Aeron.connect();
@@ -50,8 +49,8 @@ public class MaxPositionPublicationTest
     @AfterEach
     public void after()
     {
-        CloseHelper.close(aeron);
-        CloseHelper.close(driver);
+        CloseHelper.closeAll(aeron, driver);
+        driver.context().deleteDirectory();
     }
 
     @Test

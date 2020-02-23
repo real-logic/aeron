@@ -16,6 +16,7 @@
 package io.aeron.driver;
 
 import io.aeron.CommonContext;
+import io.aeron.test.Tests;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -49,6 +50,7 @@ public class TerminateDriverTest
                 while (!hasTerminated.get())
                 {
                     Thread.yield();
+                    Tests.checkInterruptedStatus();
                 }
             }
 
@@ -80,6 +82,7 @@ public class TerminateDriverTest
                 while (!hasCalledTerminationValidator.get())
                 {
                     Thread.yield();
+                    Tests.checkInterruptedStatus();
                 }
             }
 

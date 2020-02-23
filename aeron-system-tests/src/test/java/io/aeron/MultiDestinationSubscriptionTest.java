@@ -112,15 +112,7 @@ public class MultiDestinationSubscriptionTest
     @AfterEach
     public void closeEverything()
     {
-        CloseHelper.close(publicationA);
-        CloseHelper.close(publicationB);
-        CloseHelper.close(subscription);
-        CloseHelper.close(copySubscription);
-        CloseHelper.close(clientA);
-        CloseHelper.close(driverA);
-        CloseHelper.close(clientB);
-        CloseHelper.close(driverB);
-
+        CloseHelper.closeAll(clientA, clientB, driverA, driverB);
         IoUtil.delete(new File(ROOT_DIR), true);
     }
 

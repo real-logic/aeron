@@ -58,12 +58,12 @@ public class MediaDriverTestWatcher implements TestWatcher, DriverOutputConsumer
         outputFilesByAeronDirectoryName.put(aeronDirectoryName, new StdOutputFiles(stdoutFile, stderrFile));
     }
 
-    private static final class StdOutputFiles
+    static final class StdOutputFiles
     {
         private final File stderr;
         private final File stdout;
 
-        private StdOutputFiles(final File stdout, final File stderr)
+        StdOutputFiles(final File stdout, final File stderr)
         {
             this.stderr = stderr;
             this.stdout = stdout;

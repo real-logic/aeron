@@ -62,7 +62,6 @@ public class PongTest
         driver = TestMediaDriver.launch(
             new MediaDriver.Context()
                 .errorHandler(Throwable::printStackTrace)
-                .dirDeleteOnShutdown(true)
                 .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
                 .threadingMode(ThreadingMode.SHARED));
 
@@ -79,9 +78,8 @@ public class PongTest
     @AfterEach
     public void after()
     {
-        CloseHelper.close(pongClient);
-        CloseHelper.close(pingClient);
-        CloseHelper.close(driver);
+        CloseHelper.closeAll(pongClient, pingClient, driver);
+        driver.context().deleteDirectory();
     }
 
     @Test

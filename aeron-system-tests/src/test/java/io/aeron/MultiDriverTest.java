@@ -21,8 +21,7 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.test.Tests;
-import org.agrona.IoUtil;
-import org.agrona.SystemUtil;
+import org.agrona.*;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
@@ -94,15 +93,7 @@ public class MultiDriverTest
     @AfterEach
     public void after()
     {
-        publication.close();
-        subscriptionA.close();
-        subscriptionB.close();
-
-        clientB.close();
-        clientA.close();
-        driverB.close();
-        driverA.close();
-
+        CloseHelper.closeAll(clientA, clientB, driverA, driverB);
         IoUtil.delete(new File(ROOT_DIR), true);
     }
 

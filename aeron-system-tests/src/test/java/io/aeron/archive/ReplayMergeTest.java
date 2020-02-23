@@ -109,7 +109,6 @@ public class ReplayMergeTest
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Throwable::printStackTrace)
                 .spiesSimulateConnection(false)
-                .dirDeleteOnShutdown(true)
                 .dirDeleteOnStart(true),
             new Archive.Context()
                 .maxCatalogEntries(MAX_CATALOG_ENTRIES)
@@ -143,6 +142,9 @@ public class ReplayMergeTest
         }
 
         CloseHelper.closeAll(aeronArchive, aeron, archivingMediaDriver);
+
+        archivingMediaDriver.archive().context().deleteDirectory();
+        archivingMediaDriver.mediaDriver().context().deleteDirectory();
     }
 
     @SuppressWarnings("methodlength")

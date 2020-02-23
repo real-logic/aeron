@@ -70,6 +70,7 @@ public class ArchiveAuthenticationTest
         CloseHelper.close(archivingMediaDriver);
 
         archivingMediaDriver.archive().context().deleteDirectory();
+        archivingMediaDriver.mediaDriver().context().deleteDirectory();
     }
 
     @Test
@@ -355,7 +356,6 @@ public class ArchiveAuthenticationTest
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Throwable::printStackTrace)
                 .spiesSimulateConnection(false)
-                .dirDeleteOnShutdown(true)
                 .dirDeleteOnStart(true),
             new Archive.Context()
                 .maxCatalogEntries(Common.MAX_CATALOG_ENTRIES)

@@ -68,7 +68,6 @@ public class GapFillLossTest
                 .errorHandler(Throwable::printStackTrace)
                 .threadingMode(ThreadingMode.SHARED)
                 .dirDeleteOnStart(true)
-                .dirDeleteOnShutdown(true)
                 .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH);
 
             final LossGenerator noLossGenerator =
@@ -106,6 +105,10 @@ public class GapFillLossTest
 
                 verifyLossOccurredForStream(ctx.aeronDirectoryName(), STREAM_ID);
                 assertThat(subscriber.messageCount, lessThan(NUM_MESSAGES));
+            }
+            finally
+            {
+                ctx.deleteDirectory();
             }
         });
     }

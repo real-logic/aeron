@@ -57,7 +57,7 @@ public class SpySubscriptionTest
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Throwable::printStackTrace)
-        .dirDeleteOnShutdown(true)
+        .dirDeleteOnStart(true)
         .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
         .threadingMode(ThreadingMode.SHARED));
 
@@ -66,8 +66,8 @@ public class SpySubscriptionTest
     @AfterEach
     public void after()
     {
-        CloseHelper.close(aeron);
-        CloseHelper.close(driver);
+        CloseHelper.closeAll(aeron, driver);
+        driver.context().deleteDirectory();
     }
 
     @ParameterizedTest

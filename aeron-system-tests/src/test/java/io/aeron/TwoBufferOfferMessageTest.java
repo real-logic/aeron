@@ -38,7 +38,7 @@ public class TwoBufferOfferMessageTest
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Throwable::printStackTrace)
-        .dirDeleteOnShutdown(true)
+        .dirDeleteOnStart(true)
         .threadingMode(ThreadingMode.SHARED));
 
     private final Aeron aeron = Aeron.connect();
@@ -46,8 +46,8 @@ public class TwoBufferOfferMessageTest
     @AfterEach
     public void after()
     {
-        CloseHelper.close(aeron);
-        CloseHelper.close(driver);
+        CloseHelper.closeAll(aeron, driver);
+        driver.context().deleteDirectory();
     }
 
     @Test

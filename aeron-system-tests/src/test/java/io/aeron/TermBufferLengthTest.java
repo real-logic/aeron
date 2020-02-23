@@ -38,7 +38,7 @@ public class TermBufferLengthTest
     {
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .errorHandler(Throwable::printStackTrace)
-            .dirDeleteOnShutdown(true)
+            .dirDeleteOnStart(true)
             .publicationTermBufferLength(TEST_TERM_LENGTH * 2)
             .ipcTermBufferLength(TEST_TERM_LENGTH * 2);
 
@@ -47,6 +47,10 @@ public class TermBufferLengthTest
             Publication publication = aeron.addPublication(channel, STREAM_ID))
         {
             assertEquals(TEST_TERM_LENGTH, publication.termBufferLength());
+        }
+        finally
+        {
+            ctx.deleteDirectory();
         }
     }
 }

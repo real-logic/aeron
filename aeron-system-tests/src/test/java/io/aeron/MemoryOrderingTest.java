@@ -50,7 +50,7 @@ public class MemoryOrderingTest
 
     private final TestMediaDriver driver = TestMediaDriver.launch(new MediaDriver.Context()
         .errorHandler(Throwable::printStackTrace)
-        .dirDeleteOnShutdown(true)
+        .dirDeleteOnStart(true)
         .threadingMode(ThreadingMode.SHARED)
         .publicationTermBufferLength(TERM_BUFFER_LENGTH));
 
@@ -59,8 +59,8 @@ public class MemoryOrderingTest
     @AfterEach
     public void after()
     {
-        CloseHelper.close(aeron);
-        CloseHelper.close(driver);
+        CloseHelper.closeAll(aeron, driver);
+        driver.context().deleteDirectory();
     }
 
     @Test

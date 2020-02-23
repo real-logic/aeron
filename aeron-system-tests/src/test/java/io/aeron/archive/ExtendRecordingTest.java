@@ -93,8 +93,9 @@ public class ExtendRecordingTest
     @AfterEach
     public void after()
     {
-        closeDownAndCleanMediaDriver();
+        CloseHelper.closeAll(aeronArchive, aeron, archivingMediaDriver);
         archivingMediaDriver.archive().context().deleteDirectory();
+        archivingMediaDriver.mediaDriver().context().deleteDirectory();
     }
 
     @Test
@@ -252,13 +253,6 @@ public class ExtendRecordingTest
         assertEquals(startIndex + count, received.get());
     }
 
-    private void closeDownAndCleanMediaDriver()
-    {
-        CloseHelper.close(aeronArchive);
-        CloseHelper.close(aeron);
-        CloseHelper.close(archivingMediaDriver);
-    }
-
     private void launchAeronAndArchive()
     {
         final String aeronDirectoryName = CommonContext.generateRandomDirName();
@@ -275,7 +269,6 @@ public class ExtendRecordingTest
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Throwable::printStackTrace)
                 .spiesSimulateConnection(false)
-                .dirDeleteOnShutdown(true)
                 .dirDeleteOnStart(true),
             new Archive.Context()
                 .maxCatalogEntries(MAX_CATALOG_ENTRIES)

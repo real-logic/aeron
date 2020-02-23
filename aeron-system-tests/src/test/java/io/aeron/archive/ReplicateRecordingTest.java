@@ -83,7 +83,6 @@ public class ReplicateRecordingTest
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Throwable::printStackTrace)
                 .spiesSimulateConnection(true)
-                .dirDeleteOnShutdown(true)
                 .dirDeleteOnStart(true),
             new Archive.Context()
                 .maxCatalogEntries(MAX_CATALOG_ENTRIES)
@@ -105,7 +104,6 @@ public class ReplicateRecordingTest
                 .threadingMode(ThreadingMode.SHARED)
                 .errorHandler(Throwable::printStackTrace)
                 .spiesSimulateConnection(true)
-                .dirDeleteOnShutdown(true)
                 .dirDeleteOnStart(true),
             new Archive.Context()
                 .maxCatalogEntries(MAX_CATALOG_ENTRIES)
@@ -146,15 +144,18 @@ public class ReplicateRecordingTest
     @AfterEach
     public void after()
     {
-        CloseHelper.close(srcAeronArchive);
-        CloseHelper.close(dstAeronArchive);
-        CloseHelper.close(srcAeron);
-        CloseHelper.close(dstAeron);
-        CloseHelper.close(dstArchivingMediaDriver);
-        CloseHelper.close(srcArchivingMediaDriver);
+        CloseHelper.closeAll(
+            srcAeronArchive,
+            dstAeronArchive,
+            srcAeron,
+            dstAeron,
+            dstArchivingMediaDriver,
+            srcArchivingMediaDriver);
 
         dstArchivingMediaDriver.archive().context().deleteDirectory();
+        dstArchivingMediaDriver.mediaDriver().context().deleteDirectory();
         srcArchivingMediaDriver.archive().context().deleteDirectory();
+        srcArchivingMediaDriver.mediaDriver().context().deleteDirectory();
     }
 
     @Test

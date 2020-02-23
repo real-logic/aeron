@@ -35,13 +35,13 @@ import static org.mockito.Mockito.verify;
 public class ReentrantClientTest
 {
     private final TestMediaDriver mediaDriver = TestMediaDriver.launch(new MediaDriver.Context()
-        .dirDeleteOnShutdown(true)
         .dirDeleteOnStart(true));
 
     @AfterEach
     public void after()
     {
         CloseHelper.close(mediaDriver);
+        mediaDriver.context().deleteDirectory();
     }
 
     @Test

@@ -54,7 +54,6 @@ public class CounterTest
 
         driver = TestMediaDriver.launch(
             new MediaDriver.Context()
-                .dirDeleteOnShutdown(true)
                 .errorHandler(Throwable::printStackTrace)
                 .threadingMode(ThreadingMode.SHARED));
 
@@ -72,10 +71,9 @@ public class CounterTest
     @AfterEach
     public void after()
     {
-        CloseHelper.quietClose(clientB);
-        CloseHelper.quietClose(clientA);
+        CloseHelper.closeAll(clientA, clientB, driver);
 
-        CloseHelper.close(driver);
+        driver.context().deleteDirectory();
     }
 
     @Test
@@ -124,7 +122,6 @@ public class CounterTest
             while (null == readableCounter)
             {
                 Tests.sleep(1);
-                Tests.checkInterruptedStatus();
             }
 
             assertEquals(CountersReader.RECORD_ALLOCATED, readableCounter.state());
@@ -155,7 +152,6 @@ public class CounterTest
             while (null == readableCounter)
             {
                 Tests.sleep(1);
-                Tests.checkInterruptedStatus();
             }
 
             assertFalse(readableCounter.isClosed());
@@ -166,7 +162,6 @@ public class CounterTest
             while (!readableCounter.isClosed())
             {
                 Tests.sleep(1);
-                Tests.checkInterruptedStatus();
             }
         });
     }

@@ -17,6 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.cluster.service.Cluster;
 import io.aeron.test.SlowTest;
+import io.aeron.test.Tests;
 import org.junit.jupiter.api.Test;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -290,11 +291,10 @@ public class DynamicMembershipTest
     }
 
     static ClusterTool.ClusterMembership awaitMembershipSize(final TestNode leader, final int size)
-        throws InterruptedException
     {
         while (true)
         {
-            Thread.sleep(100);
+            Tests.sleep(100);
 
             final ClusterTool.ClusterMembership clusterMembership = leader.clusterMembership();
             if (clusterMembership.activeMembers.size() == size)

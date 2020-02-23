@@ -38,7 +38,6 @@ public class Tests
         if (Thread.interrupted())
         {
             unexpectedInterruptStackTrace();
-
             fail("unexpected interrupt");
         }
     }

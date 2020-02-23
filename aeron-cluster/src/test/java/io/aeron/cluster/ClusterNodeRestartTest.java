@@ -38,7 +38,6 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.PrintStream;
@@ -51,8 +50,7 @@ import static java.time.Duration.ofSeconds;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class ClusterNodeRestartTest
 {
@@ -76,6 +74,7 @@ public class ClusterNodeRestartTest
     public void before()
     {
         when(mockSnapshotCounter.incrementOrdered()).thenAnswer((inv) -> snapshotCount.getAndIncrement());
+        when(mockSnapshotCounter.increment()).thenAnswer((inv) -> snapshotCount.getAndIncrement());
 
         launchClusteredMediaDriver(true);
     }
@@ -83,9 +82,7 @@ public class ClusterNodeRestartTest
     @AfterEach
     public void after()
     {
-        CloseHelper.close(aeronCluster);
-        CloseHelper.close(container);
-        CloseHelper.close(clusteredMediaDriver);
+        CloseHelper.closeAll(aeronCluster, container, clusteredMediaDriver);
 
         if (null != clusteredMediaDriver)
         {
@@ -378,7 +375,6 @@ public class ClusterNodeRestartTest
         });
     }
 
-    @Disabled
     @Test
     public void shouldRestartServiceTwiceWithInvalidSnapshotAndFurtherLog()
     {
@@ -412,11 +408,13 @@ public class ClusterNodeRestartTest
             assertTrue(ClusterTool.invalidateLatestSnapshot(
                 mockOut, clusteredMediaDriver.consensusModule().context().clusterDir()));
 
+            verify(mockOut).println(" invalidate latest snapshot: true");
+
             serviceMsgCounter.set(0);
             launchClusteredMediaDriver(false);
             launchService(serviceMsgCounter);
 
-            TestCluster.awaitCount(serviceMsgCounter, 1);
+            TestCluster.awaitCount(serviceMsgCounter, 4);
 
             assertEquals("4", serviceState.get());
 
@@ -490,15 +488,13 @@ public class ClusterNodeRestartTest
                         counterValue = buffer.getInt(offset);
                         offset += SIZE_OF_INT;
 
-                        final String s = buffer.getStringAscii(offset);
-
-                        serviceState.set(s);
+                        serviceState.set(buffer.getStringAscii(offset));
                     };
 
                     while (true)
                     {
                         final int fragments = snapshotImage.poll(fragmentHandler, 1);
-                        if (fragments == 1)
+                        if (fragments == 1 || snapshotImage.isEndOfStream())
                         {
                             break;
                         }
@@ -528,7 +524,10 @@ public class ClusterNodeRestartTest
                     final long correlationId = serviceCorrelationId(nextCorrelationId++);
                     final long deadlineMs = timestamp + buffer.getLong(offset + TIMER_MESSAGE_DELAY_OFFSET);
 
-                    assertTrue(cluster.scheduleTimer(correlationId, deadlineMs));
+                    while (!cluster.scheduleTimer(correlationId, deadlineMs))
+                    {
+                        idleStrategy.idle();
+                    }
                 }
             }
 
@@ -591,7 +590,7 @@ public class ClusterNodeRestartTest
                     while (true)
                     {
                         final int fragments = snapshotImage.poll(fragmentHandler, 1);
-                        if (fragments == 1)
+                        if (fragments == 1 || snapshotImage.isEndOfStream())
                         {
                             break;
                         }
@@ -607,7 +606,10 @@ public class ClusterNodeRestartTest
 
                 buffer.putInt(0, triggeredTimersCounter.get());
 
-                snapshotPublication.offer(buffer, 0, SIZE_OF_INT);
+                while (snapshotPublication.offer(buffer, 0, SIZE_OF_INT) < 0)
+                {
+                    idleStrategy.idle();
+                }
             }
 
             private void scheduleNext(final long correlationId, final long deadlineMs)
@@ -636,14 +638,12 @@ public class ClusterNodeRestartTest
 
     private void forceCloseForRestart()
     {
-        aeronCluster.close();
-        container.close();
-        clusteredMediaDriver.consensusModule().close();
-        clusteredMediaDriver.close();
+        CloseHelper.closeAll(aeronCluster, container, clusteredMediaDriver);
     }
 
     private void connectClient()
     {
+        CloseHelper.close(aeronCluster);
         aeronCluster = null;
         aeronCluster = connectToCluster();
     }
@@ -658,7 +658,6 @@ public class ClusterNodeRestartTest
                 .threadingMode(ThreadingMode.SHARED)
                 .termBufferSparseFile(true)
                 .errorHandler(ClusterTests.errorHandler(0))
-                .dirDeleteOnShutdown(false)
                 .dirDeleteOnStart(true),
             new Archive.Context()
                 .maxCatalogEntries(MAX_CATALOG_ENTRIES)

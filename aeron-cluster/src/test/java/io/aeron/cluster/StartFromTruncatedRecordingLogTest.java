@@ -96,15 +96,14 @@ public class StartFromTruncatedRecordingLogTest
             new MediaDriver.Context()
                 .threadingMode(ThreadingMode.SHARED)
                 .warnIfDirectoryExists(false)
-                .dirDeleteOnStart(true)
-                .dirDeleteOnShutdown(false));
+                .dirDeleteOnStart(true));
     }
 
     @AfterEach
     public void after()
     {
-        CloseHelper.close(client);
-        CloseHelper.close(clientMediaDriver);
+        CloseHelper.closeAll(client, clientMediaDriver);
+        clientMediaDriver.context().deleteDirectory();
 
         for (final ClusteredServiceContainer container : containers)
         {

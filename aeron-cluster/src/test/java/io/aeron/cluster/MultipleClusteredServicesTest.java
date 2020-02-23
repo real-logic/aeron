@@ -31,15 +31,15 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class MultipleClusteredServicesTest
 {
-    final AtomicInteger serviceAMessageCount = new AtomicInteger(0);
-    final AtomicInteger serviceBMessageCount = new AtomicInteger(0);
+    final AtomicLong serviceAMessageCount = new AtomicLong(0);
+    final AtomicLong serviceBMessageCount = new AtomicLong(0);
 
     final class ServiceA extends TestNode.TestService
     {
@@ -107,7 +107,6 @@ public class MultipleClusteredServicesTest
             final MediaDriver clientMediaDriver = MediaDriver.launch(new MediaDriver.Context()
                 .threadingMode(ThreadingMode.SHARED)
                 .dirDeleteOnStart(true)
-                .dirDeleteOnShutdown(false)
                 .aeronDirectoryName(aeronDirName));
 
             final AeronCluster client = AeronCluster.connect(new AeronCluster.Context()
@@ -125,18 +124,8 @@ public class MultipleClusteredServicesTest
                     Tests.checkInterruptStatus();
                 }
 
-                // Comment out the while loop to see more failures.
-                while (serviceAMessageCount.get() < 3)
-                {
-                    Thread.yield();
-                    Tests.checkInterruptStatus();
-                }
-
-                while (serviceBMessageCount.get() < 3)
-                {
-                    Thread.yield();
-                    Tests.checkInterruptStatus();
-                }
+                TestCluster.awaitCount(serviceAMessageCount, 3);
+                TestCluster.awaitCount(serviceBMessageCount, 3);
             }
             finally
             {

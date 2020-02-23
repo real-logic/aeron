@@ -54,7 +54,6 @@ public class ClusterNodeTest
                 .threadingMode(ThreadingMode.SHARED)
                 .termBufferSparseFile(true)
                 .errorHandler(ClusterTests.errorHandler(0))
-                .dirDeleteOnShutdown(false)
                 .dirDeleteOnStart(true),
             new Archive.Context()
                 .maxCatalogEntries(MAX_CATALOG_ENTRIES)
@@ -71,9 +70,7 @@ public class ClusterNodeTest
     @AfterEach
     public void after()
     {
-        CloseHelper.close(aeronCluster);
-        CloseHelper.close(container);
-        CloseHelper.close(clusteredMediaDriver);
+        CloseHelper.closeAll(aeronCluster, container, clusteredMediaDriver);
 
         if (null != clusteredMediaDriver)
         {
@@ -103,11 +100,12 @@ public class ClusterNodeTest
 
             final MutableInteger messageCount = new MutableInteger();
 
-            final EgressListener listener = (clusterSessionId, timestamp, buffer, offset, length, header) ->
-            {
-                assertEquals(msg, buffer.getStringWithoutLengthAscii(offset, length));
-                messageCount.value += 1;
-            };
+            final EgressListener listener =
+                (clusterSessionId, timestamp, buffer, offset, length, header) ->
+                {
+                    assertEquals(msg, buffer.getStringWithoutLengthAscii(offset, length));
+                    messageCount.value += 1;
+                };
 
             container = launchEchoService();
             aeronCluster = connectToCluster(listener);
@@ -130,11 +128,12 @@ public class ClusterNodeTest
 
             final MutableInteger messageCount = new MutableInteger();
 
-            final EgressListener listener = (clusterSessionId, timestamp, buffer, offset, length, header) ->
-            {
-                assertEquals(msg, buffer.getStringWithoutLengthAscii(offset, length));
-                messageCount.value += 1;
-            };
+            final EgressListener listener =
+                (clusterSessionId, timestamp, buffer, offset, length, header) ->
+                {
+                    assertEquals(msg, buffer.getStringWithoutLengthAscii(offset, length));
+                    messageCount.value += 1;
+                };
 
             container = launchEchoService();
             aeronCluster = connectToCluster(listener);
@@ -149,6 +148,11 @@ public class ClusterNodeTest
                     final int offset = bufferClaim.offset() + AeronCluster.SESSION_HEADER_LENGTH;
                     bufferClaim.buffer().putBytes(offset, msgBuffer, 0, msg.length());
                     bufferClaim.commit();
+                }
+                else
+                {
+                    Thread.yield();
+                    Tests.checkInterruptStatus();
                 }
             }
             while (publicationResult < 0);
@@ -171,12 +175,13 @@ public class ClusterNodeTest
 
             final MutableInteger messageCount = new MutableInteger();
 
-            final EgressListener listener = (clusterSessionId, timestamp, buffer, offset, length, header) ->
-            {
-                final String expected = msg + "-scheduled";
-                assertEquals(expected, buffer.getStringWithoutLengthAscii(offset, length));
-                messageCount.value += 1;
-            };
+            final EgressListener listener =
+                (clusterSessionId, timestamp, buffer, offset, length, header) ->
+                {
+                    final String expected = msg + "-scheduled";
+                    assertEquals(expected, buffer.getStringWithoutLengthAscii(offset, length));
+                    messageCount.value += 1;
+                };
 
             container = launchTimedService();
             aeronCluster = connectToCluster(listener);
@@ -199,11 +204,12 @@ public class ClusterNodeTest
 
             final MutableInteger messageCount = new MutableInteger();
 
-            final EgressListener listener = (clusterSessionId, timestamp, buffer, offset, length, header) ->
-            {
-                assertEquals(msg, buffer.getStringWithoutLengthAscii(offset, length));
-                messageCount.value += 1;
-            };
+            final EgressListener listener =
+                (clusterSessionId, timestamp, buffer, offset, length, header) ->
+                {
+                    assertEquals(msg, buffer.getStringWithoutLengthAscii(offset, length));
+                    messageCount.value += 1;
+                };
 
             container = launchServiceMessageIngressService();
             aeronCluster = connectToCluster(listener);

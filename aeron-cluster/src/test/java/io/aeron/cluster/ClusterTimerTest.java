@@ -68,9 +68,7 @@ public class ClusterTimerTest
     @AfterEach
     public void after()
     {
-        CloseHelper.close(aeronCluster);
-        CloseHelper.close(container);
-        CloseHelper.close(clusteredMediaDriver);
+        CloseHelper.closeAll(aeronCluster, container, clusteredMediaDriver);
 
         if (null != clusteredMediaDriver)
         {
@@ -187,7 +185,7 @@ public class ClusterTimerTest
                     while (true)
                     {
                         final int fragments = snapshotImage.poll(fragmentHandler, 1);
-                        if (fragments == 1)
+                        if (fragments == 1 || snapshotImage.isEndOfStream())
                         {
                             break;
                         }
@@ -246,10 +244,7 @@ public class ClusterTimerTest
 
     private void forceCloseForRestart()
     {
-        aeronCluster.close();
-        container.close();
-        clusteredMediaDriver.consensusModule().close();
-        clusteredMediaDriver.close();
+        CloseHelper.closeAll(aeronCluster, container, clusteredMediaDriver);
     }
 
     private void connectClient()
@@ -268,7 +263,6 @@ public class ClusterTimerTest
                 .threadingMode(ThreadingMode.SHARED)
                 .termBufferSparseFile(true)
                 .errorHandler(ClusterTests.errorHandler(0))
-                .dirDeleteOnShutdown(false)
                 .dirDeleteOnStart(true),
             new Archive.Context()
                 .maxCatalogEntries(MAX_CATALOG_ENTRIES)

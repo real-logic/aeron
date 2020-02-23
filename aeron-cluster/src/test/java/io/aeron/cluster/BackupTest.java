@@ -281,7 +281,7 @@ public class BackupTest
                 cluster.awaitBackupState(ClusterBackup.State.BACKING_UP);
                 cluster.awaitBackupLiveLogPosition(logPosition);
 
-                backupNode.nextBackupQueryDeadlineMs(0);
+                assertTrue(backupNode.nextBackupQueryDeadlineMs(0));
 
                 cluster.sendMessages(5);
                 cluster.awaitResponseMessageCount(15);

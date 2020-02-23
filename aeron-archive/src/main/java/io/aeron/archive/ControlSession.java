@@ -690,15 +690,13 @@ class ControlSession implements Session
                     ERROR,
                     invalidVersionMessage,
                     this);
-
-                workCount += 1;
             }
             else
             {
                 authenticator.onConnectedSession(controlSessionProxy.controlSession(this), nowMs);
-
-                workCount += 1;
             }
+
+            workCount += 1;
         }
 
         return workCount;
@@ -716,7 +714,6 @@ class ControlSession implements Session
         else
         {
             authenticator.onChallengedSession(controlSessionProxy.controlSession(this), nowMs);
-
             workCount += 1;
         }
 

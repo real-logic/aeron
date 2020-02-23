@@ -96,7 +96,7 @@ public class GapFillLossTest
                     while ((position = publication.offer(srcBuffer)) < 0L)
                     {
                         Thread.yield();
-                        Tests.checkInterruptedStatus();
+                        Tests.checkInterruptStatus();
                     }
                 }
 
@@ -128,7 +128,7 @@ public class GapFillLossTest
             while (!subscription.isConnected())
             {
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
 
             final Image image = subscription.imageAtIndex(0);
@@ -138,7 +138,7 @@ public class GapFillLossTest
                 final int fragments = subscription.poll(this, FRAGMENT_COUNT_LIMIT);
                 if (0 == fragments)
                 {
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                     if (subscription.isClosed())
                     {
                         return;

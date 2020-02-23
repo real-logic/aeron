@@ -122,20 +122,20 @@ public class MultipleClusteredServicesTest
                 while (client.offer(buffer, 0, 100) < 0)
                 {
                     Thread.yield();
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                 }
 
                 // Comment out the while loop to see more failures.
                 while (serviceAMessageCount.get() < 3)
                 {
                     Thread.yield();
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                 }
 
                 while (serviceBMessageCount.get() < 3)
                 {
                     Thread.yield();
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                 }
             }
             finally

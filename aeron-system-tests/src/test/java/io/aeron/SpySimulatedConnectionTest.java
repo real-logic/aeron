@@ -107,7 +107,7 @@ public class SpySimulatedConnectionTest
             while (!spy.isConnected())
             {
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
 
             assertFalse(publication.isConnected());
@@ -135,7 +135,7 @@ public class SpySimulatedConnectionTest
             while (!spy.isConnected() || !publication.isConnected())
             {
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
 
             for (int i = 0; i < messagesToSend; i++)
@@ -143,7 +143,7 @@ public class SpySimulatedConnectionTest
                 while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
                 {
                     Thread.yield();
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                 }
 
                 final MutableInteger fragmentsRead = new MutableInteger();
@@ -201,7 +201,7 @@ public class SpySimulatedConnectionTest
                 }
 
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
 
                 fragmentsFromSpy += spy.poll(fragmentHandlerSpy, 10);
 
@@ -252,7 +252,7 @@ public class SpySimulatedConnectionTest
                     }
                     else
                     {
-                        Tests.checkInterruptedStatus();
+                        Tests.checkInterruptStatus();
                     }
                 }
 
@@ -279,14 +279,14 @@ public class SpySimulatedConnectionTest
         while (!spy.isConnected() || !subscription.isConnected() || !publication.isConnected())
         {
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
         }
 
         // send initial message to ensure connectivity
         while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
         {
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
         }
 
         final FragmentHandler mockFragmentHandler = mock(FragmentHandler.class);
@@ -294,13 +294,13 @@ public class SpySimulatedConnectionTest
         while (spy.poll(mockFragmentHandler, 1) == 0)
         {
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
         }
 
         while (subscription.poll(mockFragmentHandler, 1) == 0)
         {
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
         }
     }
 }

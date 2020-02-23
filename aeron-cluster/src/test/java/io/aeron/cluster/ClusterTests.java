@@ -113,7 +113,7 @@ class ClusterTests
         while (electionStateCounter.get() != state.code())
         {
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
         }
     }
 }

@@ -132,7 +132,7 @@ public class TwoBufferOfferMessageTest
         while (publication.offer(bufferOne, 0, bufferOne.capacity(), bufferTwo, 0, bufferTwo.capacity()) < 0L)
         {
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
         }
     }
 
@@ -147,7 +147,7 @@ public class TwoBufferOfferMessageTest
             if (fragments == 0)
             {
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
         }
     }

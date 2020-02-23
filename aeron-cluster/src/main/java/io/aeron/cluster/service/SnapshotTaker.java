@@ -108,7 +108,7 @@ public class SnapshotTaker
         }
     }
 
-    protected static void checkInterruptedStatus()
+    protected static void checkInterruptStatus()
     {
         if (Thread.interrupted())
         {
@@ -129,7 +129,7 @@ public class SnapshotTaker
     protected void checkResultAndIdle(final long result)
     {
         checkResult(result);
-        checkInterruptedStatus();
+        checkInterruptStatus();
         invokeAgentClient();
         idleStrategy.idle();
     }

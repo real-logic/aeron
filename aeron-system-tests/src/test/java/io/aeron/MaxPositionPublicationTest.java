@@ -75,7 +75,7 @@ public class MaxPositionPublicationTest
                 while (!subscription.isConnected())
                 {
                     Thread.yield();
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                 }
 
                 assertEquals(lastMessagePosition, publication.position());
@@ -85,7 +85,7 @@ public class MaxPositionPublicationTest
                 while (resultingPosition < 0)
                 {
                     Thread.yield();
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                     resultingPosition = publication.offer(srcBuffer, 0, MESSAGE_LENGTH);
                 }
 

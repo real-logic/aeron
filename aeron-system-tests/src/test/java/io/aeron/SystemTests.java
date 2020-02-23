@@ -42,7 +42,7 @@ public class SystemTests
 
         do
         {
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
             iterationConsumer.accept(i);
             nowNs = System.nanoTime();
         }

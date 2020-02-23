@@ -176,7 +176,7 @@ public class ClusterNodeRestartTest
             while (null == serviceState.get())
             {
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
 
             assertEquals("0", serviceState.get());
@@ -218,7 +218,7 @@ public class ClusterNodeRestartTest
             while (null == serviceState.get())
             {
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
 
             assertEquals("3", serviceState.get());
@@ -290,7 +290,7 @@ public class ClusterNodeRestartTest
                 while (controlToggle.get() != ClusterControl.ToggleState.NEUTRAL.code())
                 {
                     Tests.sleep(1);
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                 }
             }
 
@@ -358,7 +358,7 @@ public class ClusterNodeRestartTest
             while (triggeredTimersCounter.get() < 2)
             {
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
 
             forceCloseForRestart();
@@ -371,7 +371,7 @@ public class ClusterNodeRestartTest
             while (triggeredTimersCounter.get() <= triggeredSinceStart)
             {
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
 
             ClusterTests.failOnClusterError();
@@ -465,7 +465,7 @@ public class ClusterNodeRestartTest
 
             checkResult(result);
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
         }
     }
 

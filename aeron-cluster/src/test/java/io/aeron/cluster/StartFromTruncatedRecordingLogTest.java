@@ -193,7 +193,7 @@ public class StartFromTruncatedRecordingLogTest
         while (NULL_VALUE == (leaderMemberId = findLeaderId()))
         {
             Tests.sleep(200);
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
         }
 
         return leaderMemberId;
@@ -409,7 +409,7 @@ public class StartFromTruncatedRecordingLogTest
             while (client.offer(msgBuffer, 0, MSG.length()) < 0)
             {
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
                 client.pollEgress();
             }
 
@@ -422,7 +422,7 @@ public class StartFromTruncatedRecordingLogTest
         while (responseCount.get() < messageCount)
         {
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
             client.pollEgress();
         }
 
@@ -431,7 +431,7 @@ public class StartFromTruncatedRecordingLogTest
             while (echoServices[i].messageCount() < messageCount)
             {
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
         }
     }
@@ -544,7 +544,7 @@ public class StartFromTruncatedRecordingLogTest
         while (ClusterControl.ToggleState.get(controlToggle) != ClusterControl.ToggleState.NEUTRAL)
         {
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
         }
     }
 
@@ -556,7 +556,7 @@ public class StartFromTruncatedRecordingLogTest
         while (snapshotCounter.get() != value)
         {
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
         }
     }
 }

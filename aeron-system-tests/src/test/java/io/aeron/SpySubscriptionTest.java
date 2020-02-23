@@ -93,7 +93,7 @@ public class SpySubscriptionTest
                     while (publication.offer(srcBuffer, i * PAYLOAD_LENGTH, PAYLOAD_LENGTH) < 0L)
                     {
                         Thread.yield();
-                        Tests.checkInterruptedStatus();
+                        Tests.checkInterruptStatus();
                     }
                 }
 
@@ -101,7 +101,7 @@ public class SpySubscriptionTest
                 int numSpyFragments = 0;
                 do
                 {
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
 
                     numFragments += subscription.poll(fragmentHandlerSub, FRAGMENT_COUNT_LIMIT);
                     numSpyFragments += spy.poll(fragmentHandlerSpy, FRAGMENT_COUNT_LIMIT);

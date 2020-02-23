@@ -89,7 +89,7 @@ public class SessionSpecificSubscriptionTest
                     subscriptionWildcard.imageCount() != 2)
                 {
                     Thread.yield();
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                 }
 
                 for (int i = 0; i < EXPECTED_NUMBER_OF_MESSAGES; i++)
@@ -101,7 +101,7 @@ public class SessionSpecificSubscriptionTest
                 int numFragments = 0;
                 do
                 {
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                     numFragments += subscriptionOne.poll(handlerSessionIdOne, FRAGMENT_COUNT_LIMIT);
                 }
                 while (numFragments < EXPECTED_NUMBER_OF_MESSAGES);
@@ -109,7 +109,7 @@ public class SessionSpecificSubscriptionTest
                 numFragments = 0;
                 do
                 {
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                     numFragments += subscriptionTwo.poll(handlerSessionIdTwo, FRAGMENT_COUNT_LIMIT);
                 }
                 while (numFragments < EXPECTED_NUMBER_OF_MESSAGES);
@@ -117,7 +117,7 @@ public class SessionSpecificSubscriptionTest
                 numFragments = 0;
                 do
                 {
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                     numFragments += subscriptionWildcard.poll(mockFragmentHandler, FRAGMENT_COUNT_LIMIT);
                 }
                 while (numFragments < (EXPECTED_NUMBER_OF_MESSAGES * 2));
@@ -136,7 +136,7 @@ public class SessionSpecificSubscriptionTest
             while (!publication.isConnected())
             {
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
 
             assertEquals(1, subscription.imageCount());
@@ -149,7 +149,7 @@ public class SessionSpecificSubscriptionTest
             int numFragments = 0;
             do
             {
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
                 numFragments += subscription.poll(handlerSessionIdOne, FRAGMENT_COUNT_LIMIT);
             }
             while (numFragments < EXPECTED_NUMBER_OF_MESSAGES);
@@ -164,7 +164,7 @@ public class SessionSpecificSubscriptionTest
         while (publication.offer(buffer, 0, MESSAGE_LENGTH) < 0L)
         {
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
         }
     }
 }

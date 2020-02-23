@@ -255,7 +255,7 @@ public class ReplayMergeTest
             while (publication.offer(buffer, 0, length) <= 0)
             {
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
         }
     }

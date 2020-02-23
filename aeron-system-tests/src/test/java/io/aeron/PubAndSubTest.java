@@ -170,7 +170,7 @@ public class PubAndSubTest
                 while (publication.offer(buffer, 0, messageLength) < 0L)
                 {
                     Thread.yield();
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                 }
 
                 final MutableInteger fragmentsRead = new MutableInteger();
@@ -221,7 +221,7 @@ public class PubAndSubTest
                 while (publication.offer(buffer, 0, messageLength) < 0L)
                 {
                     Thread.yield();
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                 }
 
                 final MutableInteger fragmentsRead = new MutableInteger();
@@ -246,7 +246,7 @@ public class PubAndSubTest
                 while (publication.offer(buffer, 0, messageLength) < 0L)
                 {
                     Thread.yield();
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                 }
             }
 
@@ -254,14 +254,14 @@ public class PubAndSubTest
             while (publication.offer(buffer, 0, lastMessageLength) < 0L)
             {
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
 
             // no roll over
             while (publication.offer(buffer, 0, messageLength) < 0L)
             {
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();
@@ -330,7 +330,7 @@ public class PubAndSubTest
                 while (publication.offer(buffer, 0, messageLength) < 0L)
                 {
                     Thread.yield();
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                 }
 
                 final MutableInteger mutableInteger = new MutableInteger();
@@ -393,7 +393,7 @@ public class PubAndSubTest
                     while (publication.offer(buffer, 0, messageLength) < 0L)
                     {
                         Thread.yield();
-                        Tests.checkInterruptedStatus();
+                        Tests.checkInterruptStatus();
                     }
                 }
 
@@ -448,7 +448,7 @@ public class PubAndSubTest
                     while (publication.offer(buffer, 0, messageLength) < 0L)
                     {
                         Thread.yield();
-                        Tests.checkInterruptedStatus();
+                        Tests.checkInterruptStatus();
                     }
                 }
 
@@ -472,7 +472,7 @@ public class PubAndSubTest
             while (publication.offer(buffer, 0, messageLength) < 0L)
             {
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();
@@ -524,7 +524,7 @@ public class PubAndSubTest
                 while (publication.offer(buffer, 0, messageLength) < 0L)
                 {
                     Thread.yield();
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                 }
 
                 final MutableInteger fragmentsRead = new MutableInteger();
@@ -581,7 +581,7 @@ public class PubAndSubTest
                     while (publication.offer(buffer, 0, messageLength) < 0L)
                     {
                         Thread.yield();
-                        Tests.checkInterruptedStatus();
+                        Tests.checkInterruptStatus();
                     }
                 }
 
@@ -642,7 +642,7 @@ public class PubAndSubTest
                     }
 
                     Thread.yield();
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                 }
 
                 if (offerFails > maxFails)
@@ -700,7 +700,7 @@ public class PubAndSubTest
             while (!subscription.isConnected())
             {
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
 
             for (int i = 0; i < numMessagesToSendStageOne; i++)
@@ -708,7 +708,7 @@ public class PubAndSubTest
                 while (publication.offer(buffer, 0, messageLength) < 0L)
                 {
                     Thread.yield();
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                 }
 
                 final MutableInteger fragmentsRead = new MutableInteger();
@@ -736,7 +736,7 @@ public class PubAndSubTest
             while (!subscription.isConnected())
             {
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
 
             assertEquals(publication.position(), subscription.imageAtIndex(0).position());
@@ -746,7 +746,7 @@ public class PubAndSubTest
                 while (publication.offer(buffer, 0, messageLength) < 0L)
                 {
                     Thread.yield();
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                 }
 
                 final MutableInteger fragmentsRead = new MutableInteger();
@@ -799,7 +799,7 @@ public class PubAndSubTest
                 while (publication.offer(buffer, 0, messageLength) < 0L)
                 {
                     Thread.yield();
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                 }
             }
 
@@ -838,7 +838,7 @@ public class PubAndSubTest
             while (!publication.isConnected())
             {
                 Thread.sleep(1);
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
 
             subscription.close();
@@ -846,7 +846,7 @@ public class PubAndSubTest
             while (publication.isConnected())
             {
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
         });
     }
@@ -858,7 +858,7 @@ public class PubAndSubTest
         while (publication.offer(buffer, 0, SIZE_OF_INT) < 0L)
         {
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
         }
     }
 }

@@ -127,7 +127,7 @@ public class MultiDestinationCastTest
             while (subscriptionA.hasNoImages() || subscriptionB.hasNoImages() || subscriptionC.hasNoImages())
             {
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
         });
     }
@@ -150,7 +150,7 @@ public class MultiDestinationCastTest
             while (subscriptionA.hasNoImages() || subscriptionB.hasNoImages() || subscriptionC.hasNoImages())
             {
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
 
             assertFalse(clientA.isCommandActive(correlationId));
@@ -174,7 +174,7 @@ public class MultiDestinationCastTest
             while (subscriptionA.hasNoImages() || subscriptionB.hasNoImages() || subscriptionC.hasNoImages())
             {
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
 
             for (int i = 0; i < numMessagesToSend; i++)
@@ -182,7 +182,7 @@ public class MultiDestinationCastTest
                 while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
                 {
                     Thread.yield();
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                 }
 
                 final MutableInteger fragmentsRead = new MutableInteger();
@@ -218,7 +218,7 @@ public class MultiDestinationCastTest
             while (!subscriptionA.isConnected() || !subscriptionB.isConnected() || !subscriptionC.isConnected())
             {
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
 
             for (int i = 0; i < numMessagesToSend; i++)
@@ -226,7 +226,7 @@ public class MultiDestinationCastTest
                 while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
                 {
                     Thread.yield();
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                 }
 
                 final MutableInteger fragmentsRead = new MutableInteger();
@@ -264,7 +264,7 @@ public class MultiDestinationCastTest
             while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
             {
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
 
             for (int i = 0; i < numMessagesToSend; i++)
@@ -272,7 +272,7 @@ public class MultiDestinationCastTest
                 while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
                 {
                     Thread.yield();
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                 }
 
                 final MutableInteger fragmentsRead = new MutableInteger();
@@ -312,7 +312,7 @@ public class MultiDestinationCastTest
             while (!subscriptionA.isConnected() || !subscriptionB.isConnected())
             {
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
 
             for (int i = 0; i < numMessagesToSend; i++)
@@ -320,7 +320,7 @@ public class MultiDestinationCastTest
                 while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
                 {
                     Thread.yield();
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                 }
 
                 final MutableInteger fragmentsRead = new MutableInteger();
@@ -373,7 +373,7 @@ public class MultiDestinationCastTest
             while (!subscriptionA.isConnected())
             {
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
 
             for (int i = 0; i < numMessagesToSend; i++)
@@ -381,7 +381,7 @@ public class MultiDestinationCastTest
                 while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
                 {
                     Thread.yield();
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                 }
 
                 final MutableInteger fragmentsRead = new MutableInteger();

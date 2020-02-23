@@ -96,7 +96,7 @@ public class MemoryOrderingTest
                         }
 
                         idleStrategy.idle();
-                        Tests.checkInterruptedStatus();
+                        Tests.checkInterruptStatus();
                     }
 
                     if (i % BURST_LENGTH == 0)
@@ -149,7 +149,7 @@ public class MemoryOrderingTest
                         }
 
                         idleStrategy.idle();
-                        Tests.checkInterruptedStatus();
+                        Tests.checkInterruptStatus();
                     }
 
                     if (i % BURST_LENGTH == 0)

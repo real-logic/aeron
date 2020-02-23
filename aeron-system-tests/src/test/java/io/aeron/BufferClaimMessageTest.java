@@ -83,7 +83,7 @@ public class BufferClaimMessageTest
                 while (publication.tryClaim(MESSAGE_LENGTH, bufferClaim) < 0L)
                 {
                     Thread.yield();
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                 }
 
                 publishMessage(srcBuffer, publication);
@@ -98,7 +98,7 @@ public class BufferClaimMessageTest
                     if (0 == fragments)
                     {
                         Thread.yield();
-                        Tests.checkInterruptedStatus();
+                        Tests.checkInterruptStatus();
                     }
 
                     numFragments += fragments;
@@ -124,7 +124,7 @@ public class BufferClaimMessageTest
                 while (publication.tryClaim(MESSAGE_LENGTH, bufferClaim) < 0L)
                 {
                     Thread.yield();
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                 }
 
                 final long reservedValue = System.currentTimeMillis();
@@ -147,7 +147,7 @@ public class BufferClaimMessageTest
                     if (0 == fragments)
                     {
                         Thread.yield();
-                        Tests.checkInterruptedStatus();
+                        Tests.checkInterruptStatus();
                     }
                 }
             }
@@ -159,7 +159,7 @@ public class BufferClaimMessageTest
         while (publication.offer(srcBuffer, 0, MESSAGE_LENGTH) < 0L)
         {
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
         }
     }
 }

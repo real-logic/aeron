@@ -536,7 +536,7 @@ public class ClusterTest
                 while (leader.service().roleChangedTo() == Cluster.Role.LEADER)
                 {
                     Thread.yield();
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                 }
 
                 assertEquals(Cluster.Role.FOLLOWER, leader.service().roleChangedTo());

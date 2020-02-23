@@ -168,7 +168,7 @@ public class ArchiveTests
             }
 
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
         }
     }
 

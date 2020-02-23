@@ -90,7 +90,7 @@ public class PongTest
         while (pingPublication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
         }
 
         final MutableInteger fragmentsRead = new MutableInteger();
@@ -133,7 +133,7 @@ public class PongTest
         while (pingPublication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
         }
 
         final MutableInteger fragmentsRead = new MutableInteger();
@@ -168,7 +168,7 @@ public class PongTest
         while (pingPublication.isConnected())
         {
             Thread.sleep(100);
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
         }
 
         // restart Pong side
@@ -180,7 +180,7 @@ public class PongTest
         while (pingPublication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
         {
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
         }
 
         SystemTests.executeUntil(
@@ -218,7 +218,7 @@ public class PongTest
         while (pongPublication.offer(buffer, offset, length) < 0L)
         {
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
         }
     }
 }

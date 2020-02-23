@@ -143,7 +143,7 @@ public class MinFlowControlSystemTest
             while (!subscriptionA.isConnected() || !subscriptionB.isConnected() || !publication.isConnected())
             {
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
 
             for (long i = 0; numFragmentsFromB < numMessagesToSend; i++)
@@ -162,7 +162,7 @@ public class MinFlowControlSystemTest
                 }
 
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
 
                 // A keeps up
                 subscriptionA.poll(fragmentHandlerA, 10);
@@ -215,7 +215,7 @@ public class MinFlowControlSystemTest
             while (!subscriptionA.isConnected() || !subscriptionB.isConnected() || !publication.isConnected())
             {
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
 
             while (numFragmentsReadFromA < numMessagesToSend)

@@ -345,7 +345,7 @@ public class ArchiveTest
             if (recordingEventsAdapter.poll() == 0)
             {
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
         }
 
@@ -389,7 +389,7 @@ public class ArchiveTest
             if (recordingEventsAdapter.poll() == 0)
             {
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
         }
 
@@ -481,7 +481,7 @@ public class ArchiveTest
             if (controlResponseAdapter.poll() == 0)
             {
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
         }
     }
@@ -560,7 +560,7 @@ public class ArchiveTest
                 }
 
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
         }
 
@@ -610,7 +610,7 @@ public class ArchiveTest
                 if (0 == fragments)
                 {
                     Thread.yield();
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                 }
             }
 
@@ -629,7 +629,7 @@ public class ArchiveTest
         while (catalog.stopPosition(recordingId) != stopPosition)
         {
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
         }
 
         try (RecordingReader recordingReader = new RecordingReader(
@@ -641,7 +641,7 @@ public class ArchiveTest
             while (!recordingReader.isDone())
             {
                 recordingReader.poll(this::validateRecordingFragment, messageCount);
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
         }
 
@@ -710,7 +710,7 @@ public class ArchiveTest
                         if (recordingEventsAdapter.poll() == 0)
                         {
                             Tests.sleep(1);
-                            Tests.checkInterruptedStatus();
+                            Tests.checkInterruptStatus();
                         }
                     }
                 }
@@ -781,7 +781,7 @@ public class ArchiveTest
                         if (0 == fragments)
                         {
                             Thread.yield();
-                            Tests.checkInterruptedStatus();
+                            Tests.checkInterruptStatus();
                         }
                     }
                 }

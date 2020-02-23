@@ -126,7 +126,7 @@ public class MaxFlowControlStrategySystemTest
             while (!subscriptionA.isConnected() || !subscriptionB.isConnected() || !publication.isConnected())
             {
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
         });
     }
@@ -150,7 +150,7 @@ public class MaxFlowControlStrategySystemTest
             while (!subscriptionA.isConnected() || !subscriptionB.isConnected() || !publication.isConnected())
             {
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
 
             for (int i = 0; i < numMessagesToSend; i++)
@@ -158,7 +158,7 @@ public class MaxFlowControlStrategySystemTest
                 while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
                 {
                     Thread.yield();
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                 }
 
                 // A keeps up

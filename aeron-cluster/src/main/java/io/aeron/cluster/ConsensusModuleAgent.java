@@ -2536,7 +2536,7 @@ class ConsensusModuleAgent implements Agent
 
     private void idle()
     {
-        checkInterruptedStatus();
+        checkInterruptStatus();
         aeronClientInvoker.invoke();
         if (aeron.isClosed())
         {
@@ -2548,7 +2548,7 @@ class ConsensusModuleAgent implements Agent
 
     private void idle(final int workCount)
     {
-        checkInterruptedStatus();
+        checkInterruptStatus();
         aeronClientInvoker.invoke();
         if (aeron.isClosed())
         {
@@ -2558,7 +2558,7 @@ class ConsensusModuleAgent implements Agent
         idleStrategy.idle(workCount);
     }
 
-    private static void checkInterruptedStatus()
+    private static void checkInterruptStatus()
     {
         if (Thread.interrupted())
         {

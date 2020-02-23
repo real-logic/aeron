@@ -171,7 +171,7 @@ public class TestCluster implements AutoCloseable
         while (counter.get() < value)
         {
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
         }
     }
 
@@ -564,7 +564,7 @@ public class TestCluster implements AutoCloseable
         while (client.offer(msgBuffer, 0, messageLength) < 0)
         {
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
             client.pollEgress();
         }
 
@@ -579,7 +579,7 @@ public class TestCluster implements AutoCloseable
         while (responseCount.get() < messageCount)
         {
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
             client.pollEgress();
 
             final long nowMs = epochClock.time();
@@ -596,7 +596,7 @@ public class TestCluster implements AutoCloseable
         while (newLeaderEvent.get() < count)
         {
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
             client.pollEgress();
         }
     }
@@ -606,7 +606,7 @@ public class TestCluster implements AutoCloseable
         while (Election.State.CLOSED != node.electionState())
         {
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
         }
     }
 
@@ -615,7 +615,7 @@ public class TestCluster implements AutoCloseable
         while (node.commitPosition() != logPosition)
         {
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
         }
     }
 
@@ -649,7 +649,7 @@ public class TestCluster implements AutoCloseable
         while (null == (leaderNode = findLeader(skipIndex)))
         {
             Tests.sleep(1000);
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
         }
 
         return leaderNode;
@@ -682,7 +682,7 @@ public class TestCluster implements AutoCloseable
             while (backupNode.state() != targetState)
             {
                 Tests.sleep(100);
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
 
             return;
@@ -698,7 +698,7 @@ public class TestCluster implements AutoCloseable
             while (backupNode.liveLogPosition() != position)
             {
                 Tests.sleep(100);
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
 
             return;
@@ -739,7 +739,7 @@ public class TestCluster implements AutoCloseable
         while (snapshotCounter.get() != value)
         {
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
         }
     }
 
@@ -748,7 +748,7 @@ public class TestCluster implements AutoCloseable
         while (!node.hasMemberTerminated() || !node.hasServiceTerminated())
         {
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
         }
     }
 
@@ -760,7 +760,7 @@ public class TestCluster implements AutoCloseable
         while (node.service().messageCount() < messageCount)
         {
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
 
             final long nowMs = epochClock.time();
             if (nowMs > deadlineMs)
@@ -776,7 +776,7 @@ public class TestCluster implements AutoCloseable
         while (!node.service().wasSnapshotLoaded())
         {
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
         }
     }
 
@@ -787,7 +787,7 @@ public class TestCluster implements AutoCloseable
         while (controlToggle.get() != ClusterControl.ToggleState.NEUTRAL.code())
         {
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
         }
     }
 

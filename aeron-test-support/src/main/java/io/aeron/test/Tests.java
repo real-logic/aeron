@@ -33,7 +33,7 @@ public class Tests
      * This is useful for terminating tests stuck in a loop on timeout otherwise JUnit will proceed to the next test
      * and leave the thread spinning and consuming CPU resource.
      */
-    public static void checkInterruptedStatus()
+    public static void checkInterruptStatus()
     {
         if (Thread.interrupted())
         {
@@ -103,7 +103,7 @@ public class Tests
             }
 
             Thread.yield();
-            checkInterruptedStatus();
+            checkInterruptStatus();
         }
     }
 
@@ -120,7 +120,7 @@ public class Tests
         }
 
         Thread.yield();
-        checkInterruptedStatus();
+        checkInterruptStatus();
     }
 
     public static void yieldingWait(final String format, final Object... params)
@@ -136,7 +136,7 @@ public class Tests
         }
 
         Thread.yield();
-        checkInterruptedStatus();
+        checkInterruptStatus();
     }
 
     public static void withTimeout(final Duration duration)

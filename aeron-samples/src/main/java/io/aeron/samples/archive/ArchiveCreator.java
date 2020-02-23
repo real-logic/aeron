@@ -126,7 +126,7 @@ public class ArchiveCreator
         }
     }
 
-    private static void checkInterruptedStatus()
+    private static void checkInterruptStatus()
     {
         if (Thread.interrupted())
         {
@@ -140,7 +140,7 @@ public class ArchiveCreator
         while (NULL_VALUE == (counterId = RecordingPos.findCounterIdBySession(counters, sessionId)))
         {
             Thread.yield();
-            checkInterruptedStatus();
+            checkInterruptStatus();
         }
 
         return counterId;
@@ -157,7 +157,7 @@ public class ArchiveCreator
             while (publication.offer(buffer, 0, length) <= 0)
             {
                 Thread.yield();
-                checkInterruptedStatus();
+                checkInterruptStatus();
             }
         }
     }
@@ -172,7 +172,7 @@ public class ArchiveCreator
             }
 
             Thread.yield();
-            checkInterruptedStatus();
+            checkInterruptStatus();
         }
     }
 }

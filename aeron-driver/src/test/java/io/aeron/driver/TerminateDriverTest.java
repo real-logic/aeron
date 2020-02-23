@@ -50,7 +50,7 @@ public class TerminateDriverTest
                 while (!hasTerminated.get())
                 {
                     Thread.yield();
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                 }
             }
 
@@ -82,7 +82,7 @@ public class TerminateDriverTest
                 while (!hasCalledTerminationValidator.get())
                 {
                     Thread.yield();
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                 }
             }
 

@@ -266,7 +266,7 @@ public class ExclusivePublicationTest
         while (subscription.imageCount() < imageCount)
         {
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
         }
     }
 
@@ -275,7 +275,7 @@ public class ExclusivePublicationTest
         while (publication.offer(srcBuffer, 0, MESSAGE_LENGTH) < 0L)
         {
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
         }
     }
 
@@ -285,7 +285,7 @@ public class ExclusivePublicationTest
         if (0 == fragmentsRead)
         {
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
         }
 
         return fragmentsRead;

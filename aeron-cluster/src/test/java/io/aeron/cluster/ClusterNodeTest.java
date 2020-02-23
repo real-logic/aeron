@@ -220,7 +220,7 @@ public class ClusterNodeTest
         while (aeronCluster.offer(msgBuffer, 0, msg.length()) < 0)
         {
             Thread.yield();
-            Tests.checkInterruptedStatus();
+            Tests.checkInterruptStatus();
         }
     }
 
@@ -231,7 +231,7 @@ public class ClusterNodeTest
             if (aeronCluster.pollEgress() <= 0)
             {
                 Thread.yield();
-                Tests.checkInterruptedStatus();
+                Tests.checkInterruptStatus();
             }
         }
     }

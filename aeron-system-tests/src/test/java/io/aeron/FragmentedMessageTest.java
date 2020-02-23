@@ -91,7 +91,7 @@ public class FragmentedMessageTest
                 while (publication.offer(srcBuffer, offset, srcBuffer.capacity()) < 0L)
                 {
                     Thread.yield();
-                    Tests.checkInterruptedStatus();
+                    Tests.checkInterruptStatus();
                 }
 
                 final int expectedFragmentsBecauseOfHeader = 5;
@@ -102,7 +102,7 @@ public class FragmentedMessageTest
                     if (0 == fragments)
                     {
                         Thread.yield();
-                        Tests.checkInterruptedStatus();
+                        Tests.checkInterruptStatus();
                     }
                     numFragments += fragments;
                 }

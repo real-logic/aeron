@@ -18,6 +18,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -142,6 +143,7 @@ public class TaggedFlowControlSystemTest
 
     @ParameterizedTest
     @MethodSource("strategyConfigurations")
+    @Timeout(10)
     public void shouldSlowToTaggedWithMulticastFlowControlStrategy(
         final FlowControlSupplier flowControlSupplier,
         final Long receiverTag,
@@ -149,7 +151,6 @@ public class TaggedFlowControlSystemTest
         final String publisherUriParams,
         final String subscriptionBUriParams)
     {
-        Tests.withTimeout(ofSeconds(10));
         final State state = new State();
         state.numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
         state.numMessagesLeftToSend = state.numMessagesToSend;
@@ -176,9 +177,9 @@ public class TaggedFlowControlSystemTest
         subscriptionB = clientB.addSubscription(MULTICAST_URI + subscriptionBUriParams, STREAM_ID);
         publication = clientA.addPublication(MULTICAST_URI + publisherUriParams, STREAM_ID);
 
-        Tests.yieldingWait(subscriptionA::isConnected);
-        Tests.yieldingWait(subscriptionB::isConnected);
-        Tests.yieldingWait(publication::isConnected);
+        Tests.yieldUntilDone(subscriptionA::isConnected);
+        Tests.yieldUntilDone(subscriptionB::isConnected);
+        Tests.yieldUntilDone(publication::isConnected);
 
         for (long i = 0; state.numFragmentsReadFromB < state.numMessagesToSend; i++)
         {
@@ -230,9 +231,9 @@ public class TaggedFlowControlSystemTest
     }
 
     @Test
+    @Timeout(10)
     public void shouldRemoveDeadTaggedReceiverWithTaggedMulticastFlowControlStrategy()
     {
-        Tests.withTimeout(ofSeconds(10));
         final State state = new State();
         state.numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
         state.numMessagesLeftToSend = state.numMessagesToSend;
@@ -248,9 +249,9 @@ public class TaggedFlowControlSystemTest
         subscriptionB = clientB.addSubscription(MULTICAST_URI + "|rtag=123", STREAM_ID);
         publication = clientA.addPublication(MULTICAST_URI + "|fc=tagged,g:123,t:1s", STREAM_ID);
 
-        Tests.yieldingWait(subscriptionA::isConnected);
-        Tests.yieldingWait(subscriptionB::isConnected);
-        Tests.yieldingWait(publication::isConnected);
+        Tests.yieldUntilDone(subscriptionA::isConnected);
+        Tests.yieldUntilDone(subscriptionB::isConnected);
+        Tests.yieldUntilDone(publication::isConnected);
 
         while (state.numFragmentsReadFromA < state.numMessagesToSend)
         {
@@ -299,7 +300,7 @@ public class TaggedFlowControlSystemTest
         final int numFragments = subscription.poll(fragmentHandler, fragmentLimit);
         if (0 == numFragments)
         {
-            Tests.yieldingWait(message.get());
+            Tests.yieldingWait(message);
         }
         return numFragments;
     }

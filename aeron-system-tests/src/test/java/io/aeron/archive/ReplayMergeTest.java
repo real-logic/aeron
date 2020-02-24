@@ -32,12 +32,12 @@ import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.io.File;
 
 import static io.aeron.archive.Common.*;
 import static io.aeron.archive.codecs.SourceLocation.REMOTE;
-import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ReplayMergeTest
@@ -98,8 +98,6 @@ public class ReplayMergeTest
     @BeforeEach
     public void before()
     {
-        Tests.withTimeout(ofSeconds(5));
-
         final File archiveDir = new File(SystemUtil.tmpDirName(), "archive");
 
         archivingMediaDriver = ArchivingMediaDriver.launch(
@@ -149,6 +147,7 @@ public class ReplayMergeTest
 
     @SuppressWarnings("methodlength")
     @Test
+    @Timeout(5)
     public void shouldMergeFromReplayToLive()
     {
         final int initialMessageCount = MIN_MESSAGES_PER_TERM * 3;

@@ -17,8 +17,6 @@ package io.aeron.test;
 
 import org.agrona.LangUtil;
 
-import java.time.Duration;
-import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
@@ -37,16 +35,59 @@ public class Tests
     {
         if (Thread.interrupted())
         {
-            unexpectedInterruptStackTrace();
+            unexpectedInterruptStackTrace(null);
             fail("unexpected interrupt");
         }
     }
 
-    public static void unexpectedInterruptStackTrace()
+    /**
+     * Check if the interrupt flag has been set on the current thread and fail the test if it has.
+     * <p>
+     * This is useful for terminating tests stuck in a loop on timeout otherwise JUnit will proceed to the next test
+     * and leave the thread spinning and consuming CPU resource.
+     *
+     * @param messageSupplier additional context information to include in the failure message
+     */
+    public static void checkInterruptStatus(final Supplier<String> messageSupplier)
+    {
+        if (Thread.interrupted())
+        {
+            final String message = messageSupplier.get();
+            unexpectedInterruptStackTrace(message);
+            fail("unexpected interrupt - " + message);
+        }
+    }
+
+    /**
+     * Check if the interrupt flag has been set on the current thread and fail the test if it has.
+     * <p>
+     * This is useful for terminating tests stuck in a loop on timeout otherwise JUnit will proceed to the next test
+     * and leave the thread spinning and consuming CPU resource.
+     *
+     * @param format A format string, {@link java.util.Formatter} to use as additional context information in the
+     *               failure message
+     * @param args arguments to the format string
+     */
+    public static void checkInterruptStatus(final String format, final Object... args)
+    {
+        if (Thread.interrupted())
+        {
+            final String message = String.format(format, args);
+            unexpectedInterruptStackTrace(message);
+            fail("unexpected interrupt - " + message);
+        }
+    }
+
+    public static void unexpectedInterruptStackTrace(final String message)
     {
         final StringBuilder sb = new StringBuilder();
 
         sb.append("*** unexpected interrupt - test likely to have timed out%n");
+
+        if (null != message)
+        {
+            sb.append("  ").append(message).append("%n");
+        }
 
         final StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
         for (int i = 1, length = stackTraceElements.length; i < length; i++)
@@ -71,7 +112,7 @@ public class Tests
         }
         catch (final InterruptedException ex)
         {
-            unexpectedInterruptStackTrace();
+            unexpectedInterruptStackTrace(null);
             LangUtil.rethrowUnchecked(ex);
         }
     }
@@ -93,20 +134,10 @@ public class Tests
             }).when(mock).close();
     }
 
-    public static void yieldingWait(final BooleanSupplier isDone)
+    public static void yieldUntilDone(final BooleanSupplier isDone)
     {
-        final Timeout timeout = Objects.requireNonNull(
-            TEST_TIMEOUT.get(),
-            "Timeout has not be initialized.  " +
-            "Make sure Tests.withTimeout(Duration) is called in your @BeforeEach method");
-
         while (!isDone.getAsBoolean())
         {
-            if (timeout.deadlineNs <= System.nanoTime())
-            {
-                fail("[Timeout after " + timeout.duration + "]");
-            }
-
             Thread.yield();
             checkInterruptStatus();
         }
@@ -114,51 +145,13 @@ public class Tests
 
     public static void yieldingWait(final Supplier<String> messageSupplier)
     {
-        final Timeout timeout = Objects.requireNonNull(
-            TEST_TIMEOUT.get(),
-            "Timeout has not be initialized.  " +
-            "Make sure Tests.withTimeout(Duration) is called in your @BeforeEach method");
-
-        if (timeout.deadlineNs <= System.nanoTime())
-        {
-            fail("[Timeout after " + timeout.duration + "] " + messageSupplier.get());
-        }
-
         Thread.yield();
-        checkInterruptStatus();
+        checkInterruptStatus(messageSupplier);
     }
 
     public static void yieldingWait(final String format, final Object... params)
     {
-        final Timeout timeout = Objects.requireNonNull(
-            TEST_TIMEOUT.get(),
-            "Timeout has not be initialized.  " +
-            "Make sure Tests.withTimeout(Duration) is called in your @BeforeEach method");
-
-        if (timeout.deadlineNs <= System.nanoTime())
-        {
-            fail("[Timeout after " + timeout.duration + "] " + String.format(format, params));
-        }
-
         Thread.yield();
-        checkInterruptStatus();
-    }
-
-    public static void withTimeout(final Duration duration)
-    {
-        TEST_TIMEOUT.set(new Timeout(duration, System.nanoTime()));
-    }
-
-    private static final ThreadLocal<Timeout> TEST_TIMEOUT = new ThreadLocal<>();
-    private static final class Timeout
-    {
-        private final Duration duration;
-        private final long deadlineNs;
-
-        private Timeout(final Duration duration, final long startNs)
-        {
-            this.duration = duration;
-            this.deadlineNs = startNs + duration.toNanos();
-        }
+        checkInterruptStatus(format, params);
     }
 }

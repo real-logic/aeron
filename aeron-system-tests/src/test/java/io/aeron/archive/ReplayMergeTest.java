@@ -263,7 +263,7 @@ public class ReplayMergeTest
                 "publication position: %d, current position: %d, time since last change: %.6f ms",
                 position, currentPosition, (System.nanoTime() - initialTimestampNs) / 1_000_000.0);
         }
-        while (currentPosition == counters.getCounterValue(counterId));
+        while (currentPosition == counters.getCounterValue(counterId) && currentPosition < position);
     }
 
     private long offerMessage(final Publication publication, final int index)

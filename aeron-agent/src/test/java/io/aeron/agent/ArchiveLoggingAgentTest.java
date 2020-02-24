@@ -95,6 +95,7 @@ public class ArchiveLoggingAgentTest
             final MediaDriver.Context mediaDriverCtx = new MediaDriver.Context()
                 .errorHandler(Throwable::printStackTrace)
                 .aeronDirectoryName(aeronDirectoryName)
+                .dirDeleteOnStart(true)
                 .threadingMode(ThreadingMode.SHARED);
 
             final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context()
@@ -109,6 +110,7 @@ public class ArchiveLoggingAgentTest
                 .aeronDirectoryName(aeronDirectoryName)
                 .errorHandler(Throwable::printStackTrace)
                 .archiveDir(new File(testDir, "archive"))
+                .deleteArchiveOnStart(true)
                 .controlChannel(aeronArchiveContext.controlRequestChannel())
                 .controlStreamId(aeronArchiveContext.controlRequestStreamId())
                 .localControlStreamId(aeronArchiveContext.controlRequestStreamId())
@@ -132,6 +134,7 @@ public class ArchiveLoggingAgentTest
         AgentTests.beforeAgent();
 
         latch = new CountDownLatch(expectedEvents.size());
+        LOGGED_EVENTS.clear();
         WAIT_LIST.addAll(expectedEvents.stream().map(ArchiveEventLogger::toEventCodeId).collect(toSet()));
 
         testDir = Paths.get(IoUtil.tmpDirName(), "archive-test").toFile();

@@ -15,15 +15,16 @@
  */
 package io.aeron.agent;
 
+import io.aeron.Counter;
 import io.aeron.archive.Archive;
 import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.cluster.ClusteredMediaDriver;
-import io.aeron.cluster.ConsensusModule;
+import io.aeron.cluster.*;
 import io.aeron.cluster.service.ClusteredService;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.test.Tests;
 import org.agrona.IoUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.Agent;
@@ -61,8 +62,6 @@ public class ClusterLoggingAgentTest
     {
         AgentTests.afterAgent();
 
-        LOGGED_EVENTS.clear();
-
         if (testDir != null && testDir.exists())
         {
             IoUtil.delete(testDir, false);
@@ -78,17 +77,13 @@ public class ClusterLoggingAgentTest
     @Test
     public void logRoleChange()
     {
-        // FIXME: ELECTION_STATE_CHANGE is only added to ensure clean termination of the cluster
-        testClusterEventsLogging(ROLE_CHANGE.name() + "," + ELECTION_STATE_CHANGE.name(),
-            EnumSet.of(ROLE_CHANGE, ELECTION_STATE_CHANGE));
+        testClusterEventsLogging(ROLE_CHANGE.name(), EnumSet.of(ROLE_CHANGE));
     }
 
     @Test
     public void logStateChange()
     {
-        // FIXME: ELECTION_STATE_CHANGE is only added to ensure clean termination of the cluster
-        testClusterEventsLogging(STATE_CHANGE.name() + "," + ELECTION_STATE_CHANGE.name(),
-            EnumSet.of(STATE_CHANGE, ELECTION_STATE_CHANGE));
+        testClusterEventsLogging(STATE_CHANGE.name(), EnumSet.of(STATE_CHANGE));
     }
 
     @Test
@@ -108,6 +103,7 @@ public class ClusterLoggingAgentTest
             final Context mediaDriverCtx = new Context()
                 .errorHandler(Throwable::printStackTrace)
                 .aeronDirectoryName(aeronDirectoryName)
+                .dirDeleteOnStart(true)
                 .threadingMode(ThreadingMode.SHARED);
 
             final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context()
@@ -122,6 +118,7 @@ public class ClusterLoggingAgentTest
                 .aeronDirectoryName(aeronDirectoryName)
                 .errorHandler(Throwable::printStackTrace)
                 .archiveDir(new File(testDir, "archive"))
+                .deleteArchiveOnStart(true)
                 .controlChannel(aeronArchiveContext.controlRequestChannel())
                 .controlStreamId(aeronArchiveContext.controlRequestStreamId())
                 .localControlStreamId(aeronArchiveContext.controlRequestStreamId())
@@ -144,16 +141,25 @@ public class ClusterLoggingAgentTest
                 .clusterDir(new File(testDir, "service"))
                 .clusteredService(mock(ClusteredService.class));
 
-            try (ClusteredMediaDriver ignore1 = ClusteredMediaDriver.launch(
+            try (ClusteredMediaDriver clusteredMediaDriver = ClusteredMediaDriver.launch(
                 mediaDriverCtx, archiveCtx, consensusModuleCtx))
             {
                 try (ClusteredServiceContainer ignore2 = ClusteredServiceContainer.launch(clusteredServiceCtx))
                 {
-                    assertFalse(Thread.currentThread().isInterrupted());
                     latch.await();
-                    assertEquals(
-                        expectedEvents.stream().map(ClusterEventLogger::toEventCodeId).collect(toSet()),
-                        LOGGED_EVENTS);
+
+                    final Counter counter = clusteredMediaDriver.consensusModule().context().electionStateCounter();
+                    while (counter.get() != Election.State.CLOSED.code())
+                    {
+                        Thread.yield();
+                        Tests.checkInterruptStatus();
+                    }
+
+                    final Set<Integer> expected = expectedEvents
+                        .stream()
+                        .map(ClusterEventLogger::toEventCodeId)
+                        .collect(toSet());
+                    assertEquals(expected, LOGGED_EVENTS);
                 }
             }
         });
@@ -165,6 +171,7 @@ public class ClusterLoggingAgentTest
         System.setProperty(EventConfiguration.ENABLED_CLUSTER_EVENT_CODES_PROP_NAME, enabledEvents);
         AgentTests.beforeAgent();
 
+        LOGGED_EVENTS.clear();
         latch = new CountDownLatch(expectedEvents);
 
         testDir = new File(IoUtil.tmpDirName(), "cluster-test");
@@ -210,7 +217,7 @@ public class ClusterLoggingAgentTest
             else if (toEventCodeId(ELECTION_STATE_CHANGE) == msgTypeId)
             {
                 final String stateChange = buffer.getStringAscii(offset);
-                if (stateChange.contains("CLOSE"))
+                if (stateChange.contains("CLOSED"))
                 {
                     latch.countDown();
                 }

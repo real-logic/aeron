@@ -704,20 +704,16 @@ class ControlSession implements Session
 
     private int waitForChallengeResponse(final long nowMs)
     {
-        int workCount = 0;
-
         if (hasNoActivity(nowMs))
         {
             state(State.INACTIVE);
-            workCount += 1;
         }
         else
         {
             authenticator.onChallengedSession(controlSessionProxy.controlSession(this), nowMs);
-            workCount += 1;
         }
 
-        return workCount;
+        return 1;
     }
 
     private int waitForRequest(final long nowMs)

@@ -199,6 +199,7 @@ public class ReplayMergeTest
                         Tests.yieldingWait(
                             "i=%d < totalMessageCount=%d, lastPosition=%d", i, totalMessageCount, position);
                     }
+                    messagesPublished++;
 
                     if (0 == replayMerge.poll(fragmentHandler, FRAGMENT_LIMIT))
                     {
@@ -252,10 +253,10 @@ public class ReplayMergeTest
         {
             final int length = buffer.putStringWithoutLengthAscii(0, MESSAGE_PREFIX + i);
 
-            while (publication.offer(buffer, 0, length) <= 0)
+            long position;
+            while ((position = publication.offer(buffer, 0, length)) <= 0)
             {
-                Thread.yield();
-                Tests.checkInterruptStatus();
+                Tests.yieldingWait("i=%d < count=%d, lastPosition=%d", i, count, position);
             }
         }
     }

@@ -20,8 +20,8 @@ import io.aeron.ChannelUriStringBuilder;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.archive.Archive;
-import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.ArchiveTests;
+import io.aeron.archive.ArchiveThreadingMode;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.RecordingEventsPoller;
 import io.aeron.archive.codecs.RecordingProgressDecoder;
@@ -40,10 +40,7 @@ import org.agrona.SystemUtil;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.extension.TestWatcher;
 
@@ -55,7 +52,6 @@ import java.util.concurrent.TimeUnit;
 import static io.aeron.archive.ArchiveTests.await;
 import static io.aeron.archive.ArchiveTests.printf;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static java.time.Duration.ofSeconds;
 import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -151,45 +147,43 @@ public class ArchiveReplayLoadTest
     }
 
     @Test
+    @Timeout(TEST_DURATION_SEC * 2000)
     public void replay() throws InterruptedException
     {
-        assertTimeoutPreemptively(ofSeconds(TEST_DURATION_SEC * 2000), () ->
+        final String channel = archive.context().recordingEventsChannel();
+        final int streamId = archive.context().recordingEventsStreamId();
+
+        try (Publication publication = aeron.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
+            Subscription recordingEvents = aeron.addSubscription(channel, streamId))
         {
-            final String channel = archive.context().recordingEventsChannel();
-            final int streamId = archive.context().recordingEventsStreamId();
+            await(recordingEvents::isConnected);
+            aeronArchive.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, SourceLocation.LOCAL);
 
-            try (Publication publication = aeron.addPublication(PUBLISH_URI, PUBLISH_STREAM_ID);
-                Subscription recordingEvents = aeron.addSubscription(channel, streamId))
-            {
-                await(recordingEvents::isConnected);
-                aeronArchive.startRecording(PUBLISH_URI, PUBLISH_STREAM_ID, SourceLocation.LOCAL);
+            await(publication::isConnected);
 
-                await(publication::isConnected);
+            final CountDownLatch recordingStopped = prepAndSendMessages(recordingEvents, publication);
 
-                final CountDownLatch recordingStopped = prepAndSendMessages(recordingEvents, publication);
+            assertNull(trackerError);
 
-                assertNull(trackerError);
+            recordingStopped.await();
+            aeronArchive.stopRecording(PUBLISH_URI, PUBLISH_STREAM_ID);
 
-                recordingStopped.await();
-                aeronArchive.stopRecording(PUBLISH_URI, PUBLISH_STREAM_ID);
+            assertNull(trackerError);
+            assertNotEquals(-1L, recordingId);
+            assertEquals(expectedRecordingLength, recordedLength);
+        }
 
-                assertNull(trackerError);
-                assertNotEquals(-1L, recordingId);
-                assertEquals(expectedRecordingLength, recordedLength);
-            }
+        final long deadlineMs = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(TEST_DURATION_SEC);
+        int i = 0;
 
-            final long deadlineMs = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(TEST_DURATION_SEC);
-            int i = 0;
+        while (System.currentTimeMillis() < deadlineMs)
+        {
+            final long start = System.currentTimeMillis();
+            replay(i);
 
-            while (System.currentTimeMillis() < deadlineMs)
-            {
-                final long start = System.currentTimeMillis();
-                replay(i);
-
-                printScore(++i, System.currentTimeMillis() - start);
-                Thread.sleep(100);
-            }
-        });
+            printScore(++i, System.currentTimeMillis() - start);
+            Thread.sleep(100);
+        }
     }
 
     private void printScore(final int i, final long time)

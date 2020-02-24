@@ -32,16 +32,17 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.mockito.ArgumentCaptor;
 
 import java.io.File;
 import java.util.UUID;
 
-import static java.time.Duration.ofSeconds;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.any;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 public class ChannelEndpointStatusTest
@@ -126,44 +127,40 @@ public class ChannelEndpointStatusTest
     }
 
     @Test
+    @Timeout(10)
     public void shouldErrorBadUri()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
-            assertThrows(RegistrationException.class, () -> clientA.addSubscription("bad uri", STREAM_ID)));
+        assertThrows(RegistrationException.class, () -> clientA.addSubscription("bad uri", STREAM_ID));
     }
 
     @Test
+    @Timeout(10)
     public void shouldBeAbleToQueryChannelStatusForSubscription()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        final Subscription subscription = clientA.addSubscription(URI, STREAM_ID);
+
+        while (subscription.channelStatus() == ChannelEndpointStatus.INITIALIZING)
         {
-            final Subscription subscription = clientA.addSubscription(URI, STREAM_ID);
+            Thread.yield();
+            Tests.checkInterruptStatus();
+        }
 
-            while (subscription.channelStatus() == ChannelEndpointStatus.INITIALIZING)
-            {
-                Thread.yield();
-                Tests.checkInterruptStatus();
-            }
-
-            assertThat(subscription.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
-        });
+        assertThat(subscription.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
     }
 
     @Test
+    @Timeout(10)
     public void shouldBeAbleToQueryChannelStatusForPublication()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        final Publication publication = clientA.addPublication(URI, STREAM_ID);
+
+        while (publication.channelStatus() == ChannelEndpointStatus.INITIALIZING)
         {
-            final Publication publication = clientA.addPublication(URI, STREAM_ID);
+            Thread.yield();
+            Tests.checkInterruptStatus();
+        }
 
-            while (publication.channelStatus() == ChannelEndpointStatus.INITIALIZING)
-            {
-                Thread.yield();
-                Tests.checkInterruptStatus();
-            }
-
-            assertThat(publication.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
-        });
+        assertThat(publication.channelStatus(), is(ChannelEndpointStatus.ACTIVE));
     }
 
     @Test

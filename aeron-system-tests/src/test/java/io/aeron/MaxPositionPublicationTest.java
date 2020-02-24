@@ -24,13 +24,12 @@ import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.nio.ByteBuffer;
 
 import static io.aeron.Publication.MAX_POSITION_EXCEEDED;
-import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class MaxPositionPublicationTest
 {
@@ -54,46 +53,44 @@ public class MaxPositionPublicationTest
     }
 
     @Test
+    @Timeout(10)
     public void shouldPublishFromExclusivePublication()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        final int initialTermId = -777;
+        final int termLength = 64 * 1024;
+        final long maxPosition = termLength * (Integer.MAX_VALUE + 1L);
+        final long lastMessagePosition = maxPosition - (MESSAGE_LENGTH + DataHeaderFlyweight.HEADER_LENGTH);
+
+        final String channelUri = new ChannelUriStringBuilder()
+            .initialPosition(lastMessagePosition, initialTermId, termLength)
+            .media("ipc")
+            .validate()
+            .build();
+
+        try (Subscription subscription = aeron.addSubscription(channelUri, STREAM_ID);
+            ExclusivePublication publication = aeron.addExclusivePublication(channelUri, STREAM_ID))
         {
-            final int initialTermId = -777;
-            final int termLength = 64 * 1024;
-            final long maxPosition = termLength * (Integer.MAX_VALUE + 1L);
-            final long lastMessagePosition = maxPosition - (MESSAGE_LENGTH + DataHeaderFlyweight.HEADER_LENGTH);
-
-            final String channelUri = new ChannelUriStringBuilder()
-                .initialPosition(lastMessagePosition, initialTermId, termLength)
-                .media("ipc")
-                .validate()
-                .build();
-
-            try (Subscription subscription = aeron.addSubscription(channelUri, STREAM_ID);
-                ExclusivePublication publication = aeron.addExclusivePublication(channelUri, STREAM_ID))
+            while (!subscription.isConnected())
             {
-                while (!subscription.isConnected())
-                {
-                    Thread.yield();
-                    Tests.checkInterruptStatus();
-                }
-
-                assertEquals(lastMessagePosition, publication.position());
-                assertEquals(lastMessagePosition, subscription.imageAtIndex(0).joinPosition());
-
-                long resultingPosition = publication.offer(srcBuffer, 0, MESSAGE_LENGTH);
-                while (resultingPosition < 0)
-                {
-                    Thread.yield();
-                    Tests.checkInterruptStatus();
-                    resultingPosition = publication.offer(srcBuffer, 0, MESSAGE_LENGTH);
-                }
-
-                assertEquals(maxPosition, publication.maxPossiblePosition());
-                assertEquals(publication.maxPossiblePosition(), resultingPosition);
-                assertEquals(MAX_POSITION_EXCEEDED, publication.offer(srcBuffer, 0, MESSAGE_LENGTH));
-                assertEquals(MAX_POSITION_EXCEEDED, publication.offer(srcBuffer, 0, MESSAGE_LENGTH));
+                Thread.yield();
+                Tests.checkInterruptStatus();
             }
-        });
+
+            assertEquals(lastMessagePosition, publication.position());
+            assertEquals(lastMessagePosition, subscription.imageAtIndex(0).joinPosition());
+
+            long resultingPosition = publication.offer(srcBuffer, 0, MESSAGE_LENGTH);
+            while (resultingPosition < 0)
+            {
+                Thread.yield();
+                Tests.checkInterruptStatus();
+                resultingPosition = publication.offer(srcBuffer, 0, MESSAGE_LENGTH);
+            }
+
+            assertEquals(maxPosition, publication.maxPossiblePosition());
+            assertEquals(publication.maxPossiblePosition(), resultingPosition);
+            assertEquals(MAX_POSITION_EXCEEDED, publication.offer(srcBuffer, 0, MESSAGE_LENGTH));
+            assertEquals(MAX_POSITION_EXCEEDED, publication.offer(srcBuffer, 0, MESSAGE_LENGTH));
+        }
     }
 }

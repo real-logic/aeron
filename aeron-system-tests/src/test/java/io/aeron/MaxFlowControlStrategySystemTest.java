@@ -33,14 +33,13 @@ import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import static java.time.Duration.ofSeconds;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.mockito.Mockito.*;
 
 public class MaxFlowControlStrategySystemTest
@@ -113,94 +112,90 @@ public class MaxFlowControlStrategySystemTest
     }
 
     @Test
+    @Timeout(10)
     public void shouldSpinUpAndShutdown()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        launch();
+
+        subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
+        subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
+        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
+
+        while (!subscriptionA.isConnected() || !subscriptionB.isConnected() || !publication.isConnected())
         {
-            launch();
-
-            subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
-            subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
-            publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
-
-            while (!subscriptionA.isConnected() || !subscriptionB.isConnected() || !publication.isConnected())
-            {
-                Thread.yield();
-                Tests.checkInterruptStatus();
-            }
-        });
+            Thread.yield();
+            Tests.checkInterruptStatus();
+        }
     }
 
     @Test
+    @Timeout(10)
     public void shouldTimeoutImageWhenBehindForTooLongWithMaxMulticastFlowControlStrategy()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
+
+        driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
+        driverAContext.multicastFlowControlSupplier(new MaxMulticastFlowControlSupplier());
+
+        launch();
+
+        subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
+        subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
+        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
+
+        while (!subscriptionA.isConnected() || !subscriptionB.isConnected() || !publication.isConnected())
         {
-            final int numMessagesToSend = NUM_MESSAGES_PER_TERM * 3;
+            Thread.yield();
+            Tests.checkInterruptStatus();
+        }
 
-            driverBContext.imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
-            driverAContext.multicastFlowControlSupplier(new MaxMulticastFlowControlSupplier());
-
-            launch();
-
-            subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
-            subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
-            publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
-
-            while (!subscriptionA.isConnected() || !subscriptionB.isConnected() || !publication.isConnected())
+        for (int i = 0; i < numMessagesToSend; i++)
+        {
+            while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
             {
                 Thread.yield();
                 Tests.checkInterruptStatus();
             }
 
-            for (int i = 0; i < numMessagesToSend; i++)
-            {
-                while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
+            // A keeps up
+            final MutableInteger fragmentsRead = new MutableInteger();
+            SystemTests.executeUntil(
+                () -> fragmentsRead.get() > 0,
+                (j) ->
                 {
+                    fragmentsRead.value += subscriptionA.poll(fragmentHandlerA, 10);
                     Thread.yield();
-                    Tests.checkInterruptStatus();
-                }
+                },
+                Integer.MAX_VALUE,
+                TimeUnit.MILLISECONDS.toNanos(500));
 
-                // A keeps up
-                final MutableInteger fragmentsRead = new MutableInteger();
+            fragmentsRead.set(0);
+
+            // B receives slowly and eventually can't keep up
+            if (i % 10 == 0)
+            {
                 SystemTests.executeUntil(
                     () -> fragmentsRead.get() > 0,
                     (j) ->
                     {
-                        fragmentsRead.value += subscriptionA.poll(fragmentHandlerA, 10);
+                        fragmentsRead.value += subscriptionB.poll(fragmentHandlerB, 1);
                         Thread.yield();
                     },
                     Integer.MAX_VALUE,
                     TimeUnit.MILLISECONDS.toNanos(500));
-
-                fragmentsRead.set(0);
-
-                // B receives slowly and eventually can't keep up
-                if (i % 10 == 0)
-                {
-                    SystemTests.executeUntil(
-                        () -> fragmentsRead.get() > 0,
-                        (j) ->
-                        {
-                            fragmentsRead.value += subscriptionB.poll(fragmentHandlerB, 1);
-                            Thread.yield();
-                        },
-                        Integer.MAX_VALUE,
-                        TimeUnit.MILLISECONDS.toNanos(500));
-                }
             }
+        }
 
-            verify(fragmentHandlerA, times(numMessagesToSend)).onFragment(
-                any(DirectBuffer.class),
-                anyInt(),
-                eq(MESSAGE_LENGTH),
-                any(Header.class));
+        verify(fragmentHandlerA, times(numMessagesToSend)).onFragment(
+            any(DirectBuffer.class),
+            anyInt(),
+            eq(MESSAGE_LENGTH),
+            any(Header.class));
 
-            verify(fragmentHandlerB, atMost(numMessagesToSend - 1)).onFragment(
-                any(DirectBuffer.class),
-                anyInt(),
-                eq(MESSAGE_LENGTH),
-                any(Header.class));
-        });
+        verify(fragmentHandlerB, atMost(numMessagesToSend - 1)).onFragment(
+            any(DirectBuffer.class),
+            anyInt(),
+            eq(MESSAGE_LENGTH),
+            any(Header.class));
     }
 }

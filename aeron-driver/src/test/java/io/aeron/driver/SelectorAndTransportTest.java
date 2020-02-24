@@ -30,13 +30,12 @@ import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.mockito.Mockito.*;
 
 public class SelectorAndTransportTest
@@ -117,190 +116,182 @@ public class SelectorAndTransportTest
     }
 
     @Test
+    @Timeout(10)
     public void shouldHandleBasicSetupAndTearDown()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
-        {
-            receiveChannelEndpoint = new ReceiveChannelEndpoint(
-                RCV_DST, mockDispatcher, mockReceiveStatusIndicator, context);
-            sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockSendStatusIndicator, context);
+        receiveChannelEndpoint = new ReceiveChannelEndpoint(
+            RCV_DST, mockDispatcher, mockReceiveStatusIndicator, context);
+        sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockSendStatusIndicator, context);
 
-            receiveChannelEndpoint.openDatagramChannel(mockReceiveStatusIndicator);
-            receiveChannelEndpoint.registerForRead(dataTransportPoller);
-            sendChannelEndpoint.openDatagramChannel(mockSendStatusIndicator);
-            sendChannelEndpoint.registerForRead(controlTransportPoller);
+        receiveChannelEndpoint.openDatagramChannel(mockReceiveStatusIndicator);
+        receiveChannelEndpoint.registerForRead(dataTransportPoller);
+        sendChannelEndpoint.openDatagramChannel(mockSendStatusIndicator);
+        sendChannelEndpoint.registerForRead(controlTransportPoller);
 
-            processLoop(dataTransportPoller, 5);
-        });
+        processLoop(dataTransportPoller, 5);
     }
 
     @Test
+    @Timeout(10)
     public void shouldSendEmptyDataFrameUnicastFromSourceToReceiver()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
-        {
-            final MutableInteger dataHeadersReceived = new MutableInteger(0);
+        final MutableInteger dataHeadersReceived = new MutableInteger(0);
 
-            doAnswer(
-                (invocation) ->
-                {
-                    dataHeadersReceived.value++;
-                    return null;
-                })
-                .when(mockDispatcher).onDataPacket(
-                any(ReceiveChannelEndpoint.class),
-                any(DataHeaderFlyweight.class),
-                any(UnsafeBuffer.class),
-                anyInt(),
-                any(InetSocketAddress.class),
-                anyInt());
-
-            receiveChannelEndpoint = new ReceiveChannelEndpoint(
-                RCV_DST, mockDispatcher, mockReceiveStatusIndicator, context);
-            sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockSendStatusIndicator, context);
-
-            receiveChannelEndpoint.openDatagramChannel(mockReceiveStatusIndicator);
-            receiveChannelEndpoint.registerForRead(dataTransportPoller);
-            sendChannelEndpoint.openDatagramChannel(mockSendStatusIndicator);
-            sendChannelEndpoint.registerForRead(controlTransportPoller);
-
-            encodeDataHeader.wrap(buffer);
-            encodeDataHeader
-                .version(HeaderFlyweight.CURRENT_VERSION)
-                .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
-                .headerType(HeaderFlyweight.HDR_TYPE_DATA)
-                .frameLength(FRAME_LENGTH);
-            encodeDataHeader
-                .sessionId(SESSION_ID)
-                .streamId(STREAM_ID)
-                .termId(TERM_ID);
-            byteBuffer.position(0).limit(FRAME_LENGTH);
-
-            processLoop(dataTransportPoller, 5);
-            sendChannelEndpoint.send(byteBuffer);
-            while (dataHeadersReceived.get() < 1)
+        doAnswer(
+            (invocation) ->
             {
-                processLoop(dataTransportPoller, 1);
-            }
+                dataHeadersReceived.value++;
+                return null;
+            })
+            .when(mockDispatcher).onDataPacket(
+            any(ReceiveChannelEndpoint.class),
+            any(DataHeaderFlyweight.class),
+            any(UnsafeBuffer.class),
+            anyInt(),
+            any(InetSocketAddress.class),
+            anyInt());
 
-            assertEquals(1, dataHeadersReceived.get());
-        });
+        receiveChannelEndpoint = new ReceiveChannelEndpoint(
+            RCV_DST, mockDispatcher, mockReceiveStatusIndicator, context);
+        sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockSendStatusIndicator, context);
+
+        receiveChannelEndpoint.openDatagramChannel(mockReceiveStatusIndicator);
+        receiveChannelEndpoint.registerForRead(dataTransportPoller);
+        sendChannelEndpoint.openDatagramChannel(mockSendStatusIndicator);
+        sendChannelEndpoint.registerForRead(controlTransportPoller);
+
+        encodeDataHeader.wrap(buffer);
+        encodeDataHeader
+            .version(HeaderFlyweight.CURRENT_VERSION)
+            .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
+            .headerType(HeaderFlyweight.HDR_TYPE_DATA)
+            .frameLength(FRAME_LENGTH);
+        encodeDataHeader
+            .sessionId(SESSION_ID)
+            .streamId(STREAM_ID)
+            .termId(TERM_ID);
+        byteBuffer.position(0).limit(FRAME_LENGTH);
+
+        processLoop(dataTransportPoller, 5);
+        sendChannelEndpoint.send(byteBuffer);
+        while (dataHeadersReceived.get() < 1)
+        {
+            processLoop(dataTransportPoller, 1);
+        }
+
+        assertEquals(1, dataHeadersReceived.get());
     }
 
     @Test
+    @Timeout(10)
     public void shouldSendMultipleDataFramesPerDatagramUnicastFromSourceToReceiver()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
-        {
-            final MutableInteger dataHeadersReceived = new MutableInteger(0);
+        final MutableInteger dataHeadersReceived = new MutableInteger(0);
 
-            doAnswer(
-                (invocation) ->
-                {
-                    dataHeadersReceived.value++;
-                    return null;
-                })
-                .when(mockDispatcher).onDataPacket(
-                any(ReceiveChannelEndpoint.class),
-                any(DataHeaderFlyweight.class),
-                any(UnsafeBuffer.class),
-                anyInt(),
-                any(InetSocketAddress.class),
-                anyInt());
-
-            receiveChannelEndpoint = new ReceiveChannelEndpoint(
-                RCV_DST, mockDispatcher, mockReceiveStatusIndicator, context);
-            sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockSendStatusIndicator, context);
-
-            receiveChannelEndpoint.openDatagramChannel(mockReceiveStatusIndicator);
-            receiveChannelEndpoint.registerForRead(dataTransportPoller);
-            sendChannelEndpoint.openDatagramChannel(mockSendStatusIndicator);
-            sendChannelEndpoint.registerForRead(controlTransportPoller);
-
-            encodeDataHeader.wrap(buffer);
-            encodeDataHeader
-                .version(HeaderFlyweight.CURRENT_VERSION)
-                .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
-                .headerType(HeaderFlyweight.HDR_TYPE_DATA)
-                .frameLength(FRAME_LENGTH);
-            encodeDataHeader
-                .sessionId(SESSION_ID)
-                .streamId(STREAM_ID)
-                .termId(TERM_ID);
-
-            final int alignedFrameLength = BitUtil.align(FRAME_LENGTH, FrameDescriptor.FRAME_ALIGNMENT);
-            encodeDataHeader.wrap(buffer, alignedFrameLength, buffer.capacity() - alignedFrameLength);
-            encodeDataHeader
-                .version(HeaderFlyweight.CURRENT_VERSION)
-                .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
-                .headerType(HeaderFlyweight.HDR_TYPE_DATA)
-                .frameLength(24);
-            encodeDataHeader
-                .sessionId(SESSION_ID)
-                .streamId(STREAM_ID)
-                .termId(TERM_ID);
-
-            byteBuffer.position(0).limit(2 * alignedFrameLength);
-
-            processLoop(dataTransportPoller, 5);
-            sendChannelEndpoint.send(byteBuffer);
-            while (dataHeadersReceived.get() < 1)
+        doAnswer(
+            (invocation) ->
             {
-                processLoop(dataTransportPoller, 1);
-            }
+                dataHeadersReceived.value++;
+                return null;
+            })
+            .when(mockDispatcher).onDataPacket(
+            any(ReceiveChannelEndpoint.class),
+            any(DataHeaderFlyweight.class),
+            any(UnsafeBuffer.class),
+            anyInt(),
+            any(InetSocketAddress.class),
+            anyInt());
 
-            assertEquals(1, dataHeadersReceived.get());
-        });
+        receiveChannelEndpoint = new ReceiveChannelEndpoint(
+            RCV_DST, mockDispatcher, mockReceiveStatusIndicator, context);
+        sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockSendStatusIndicator, context);
+
+        receiveChannelEndpoint.openDatagramChannel(mockReceiveStatusIndicator);
+        receiveChannelEndpoint.registerForRead(dataTransportPoller);
+        sendChannelEndpoint.openDatagramChannel(mockSendStatusIndicator);
+        sendChannelEndpoint.registerForRead(controlTransportPoller);
+
+        encodeDataHeader.wrap(buffer);
+        encodeDataHeader
+            .version(HeaderFlyweight.CURRENT_VERSION)
+            .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
+            .headerType(HeaderFlyweight.HDR_TYPE_DATA)
+            .frameLength(FRAME_LENGTH);
+        encodeDataHeader
+            .sessionId(SESSION_ID)
+            .streamId(STREAM_ID)
+            .termId(TERM_ID);
+
+        final int alignedFrameLength = BitUtil.align(FRAME_LENGTH, FrameDescriptor.FRAME_ALIGNMENT);
+        encodeDataHeader.wrap(buffer, alignedFrameLength, buffer.capacity() - alignedFrameLength);
+        encodeDataHeader
+            .version(HeaderFlyweight.CURRENT_VERSION)
+            .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
+            .headerType(HeaderFlyweight.HDR_TYPE_DATA)
+            .frameLength(24);
+        encodeDataHeader
+            .sessionId(SESSION_ID)
+            .streamId(STREAM_ID)
+            .termId(TERM_ID);
+
+        byteBuffer.position(0).limit(2 * alignedFrameLength);
+
+        processLoop(dataTransportPoller, 5);
+        sendChannelEndpoint.send(byteBuffer);
+        while (dataHeadersReceived.get() < 1)
+        {
+            processLoop(dataTransportPoller, 1);
+        }
+
+        assertEquals(1, dataHeadersReceived.get());
     }
 
     @Test
+    @Timeout(10)
     public void shouldHandleSmFrameFromReceiverToSender()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
-        {
-            final MutableInteger controlMessagesReceived = new MutableInteger(0);
+        final MutableInteger controlMessagesReceived = new MutableInteger(0);
 
-            doAnswer(
-                (invocation) ->
-                {
-                    controlMessagesReceived.value++;
-                    return null;
-                })
-                .when(mockPublication).onStatusMessage(any(), any());
-
-            receiveChannelEndpoint = new ReceiveChannelEndpoint(
-                RCV_DST, mockDispatcher, mockReceiveStatusIndicator, context);
-            sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockSendStatusIndicator, context);
-            sendChannelEndpoint.registerForSend(mockPublication);
-
-            receiveChannelEndpoint.openDatagramChannel(mockReceiveStatusIndicator);
-            receiveChannelEndpoint.registerForRead(dataTransportPoller);
-            sendChannelEndpoint.openDatagramChannel(mockSendStatusIndicator);
-            sendChannelEndpoint.registerForRead(controlTransportPoller);
-
-            statusMessage.wrap(buffer);
-            statusMessage
-                .streamId(STREAM_ID)
-                .sessionId(SESSION_ID)
-                .consumptionTermId(TERM_ID)
-                .receiverWindowLength(1000)
-                .consumptionTermOffset(0)
-                .version(HeaderFlyweight.CURRENT_VERSION)
-                .flags((short)0)
-                .headerType(HeaderFlyweight.HDR_TYPE_SM)
-                .frameLength(StatusMessageFlyweight.HEADER_LENGTH);
-            byteBuffer.position(0).limit(statusMessage.frameLength());
-
-            processLoop(dataTransportPoller, 5);
-            receiveChannelEndpoint.sendTo(byteBuffer, rcvRemoteAddress);
-
-            while (controlMessagesReceived.get() < 1)
+        doAnswer(
+            (invocation) ->
             {
-                processLoop(controlTransportPoller, 1);
-            }
+                controlMessagesReceived.value++;
+                return null;
+            })
+            .when(mockPublication).onStatusMessage(any(), any());
 
-            verify(mockStatusMessagesReceivedCounter, times(1)).incrementOrdered();
-        });
+        receiveChannelEndpoint = new ReceiveChannelEndpoint(
+            RCV_DST, mockDispatcher, mockReceiveStatusIndicator, context);
+        sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockSendStatusIndicator, context);
+        sendChannelEndpoint.registerForSend(mockPublication);
+
+        receiveChannelEndpoint.openDatagramChannel(mockReceiveStatusIndicator);
+        receiveChannelEndpoint.registerForRead(dataTransportPoller);
+        sendChannelEndpoint.openDatagramChannel(mockSendStatusIndicator);
+        sendChannelEndpoint.registerForRead(controlTransportPoller);
+
+        statusMessage.wrap(buffer);
+        statusMessage
+            .streamId(STREAM_ID)
+            .sessionId(SESSION_ID)
+            .consumptionTermId(TERM_ID)
+            .receiverWindowLength(1000)
+            .consumptionTermOffset(0)
+            .version(HeaderFlyweight.CURRENT_VERSION)
+            .flags((short)0)
+            .headerType(HeaderFlyweight.HDR_TYPE_SM)
+            .frameLength(StatusMessageFlyweight.HEADER_LENGTH);
+        byteBuffer.position(0).limit(statusMessage.frameLength());
+
+        processLoop(dataTransportPoller, 5);
+        receiveChannelEndpoint.sendTo(byteBuffer, rcvRemoteAddress);
+
+        while (controlMessagesReceived.get() < 1)
+        {
+            processLoop(controlTransportPoller, 1);
+        }
+
+        verify(mockStatusMessagesReceivedCounter, times(1)).incrementOrdered();
     }
 
     private void processLoop(final UdpTransportPoller transportPoller, final int iterations)

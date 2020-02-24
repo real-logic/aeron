@@ -35,13 +35,14 @@ import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static java.time.Duration.ofSeconds;
 import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -79,85 +80,81 @@ public class ClusterTimerTest
     }
 
     @Test
+    @Timeout(10)
     public void shouldRestartServiceWithTimerFromSnapshotWithFurtherLog()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        final AtomicLong triggeredTimersCounter = new AtomicLong();
+
+        launchReschedulingService(triggeredTimersCounter);
+        connectClient();
+
+        while (triggeredTimersCounter.get() < 2)
         {
-            final AtomicLong triggeredTimersCounter = new AtomicLong();
+            Thread.yield();
+            Tests.checkInterruptStatus();
+        }
 
-            launchReschedulingService(triggeredTimersCounter);
-            connectClient();
+        final CountersReader counters = aeronCluster.context().aeron().countersReader();
+        final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters);
+        assertNotNull(controlToggle);
+        assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
 
-            while (triggeredTimersCounter.get() < 2)
-            {
-                Thread.yield();
-                Tests.checkInterruptStatus();
-            }
+        TestCluster.awaitCount(snapshotCount, 1);
+        TestCluster.awaitCount(triggeredTimersCounter, 4);
 
-            final CountersReader counters = aeronCluster.context().aeron().countersReader();
-            final AtomicCounter controlToggle = ClusterControl.findControlToggle(counters);
-            assertNotNull(controlToggle);
-            assertTrue(ClusterControl.ToggleState.SNAPSHOT.toggle(controlToggle));
+        forceCloseForRestart();
+        triggeredTimersCounter.set(0);
 
-            TestCluster.awaitCount(snapshotCount, 1);
-            TestCluster.awaitCount(triggeredTimersCounter, 4);
+        launchClusteredMediaDriver(false);
+        launchReschedulingService(triggeredTimersCounter);
+        connectClient();
 
-            forceCloseForRestart();
-            triggeredTimersCounter.set(0);
+        TestCluster.awaitCount(triggeredTimersCounter, 2 + 4);
 
-            launchClusteredMediaDriver(false);
-            launchReschedulingService(triggeredTimersCounter);
-            connectClient();
+        forceCloseForRestart();
+        final long triggeredSinceStart = triggeredTimersCounter.getAndSet(0);
 
-            TestCluster.awaitCount(triggeredTimersCounter, 2 + 4);
+        triggeredTimersCounter.set(0);
 
-            forceCloseForRestart();
-            final long triggeredSinceStart = triggeredTimersCounter.getAndSet(0);
+        launchClusteredMediaDriver(false);
+        launchReschedulingService(triggeredTimersCounter);
+        connectClient();
 
-            triggeredTimersCounter.set(0);
+        TestCluster.awaitCount(triggeredTimersCounter, triggeredSinceStart + 4);
 
-            launchClusteredMediaDriver(false);
-            launchReschedulingService(triggeredTimersCounter);
-            connectClient();
-
-            TestCluster.awaitCount(triggeredTimersCounter, triggeredSinceStart + 4);
-
-            ClusterTests.failOnClusterError();
-        });
+        ClusterTests.failOnClusterError();
     }
 
     @Test
+    @Timeout(10)
     public void shouldTriggerRescheduledTimerAfterReplay()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
-        {
-            final AtomicLong triggeredTimersCounter = new AtomicLong();
+        final AtomicLong triggeredTimersCounter = new AtomicLong();
 
-            launchReschedulingService(triggeredTimersCounter);
-            connectClient();
+        launchReschedulingService(triggeredTimersCounter);
+        connectClient();
 
-            TestCluster.awaitCount(triggeredTimersCounter, 2);
+        TestCluster.awaitCount(triggeredTimersCounter, 2);
 
-            forceCloseForRestart();
+        forceCloseForRestart();
 
-            long triggeredSinceStart = triggeredTimersCounter.getAndSet(0);
+        long triggeredSinceStart = triggeredTimersCounter.getAndSet(0);
 
-            launchClusteredMediaDriver(false);
-            launchReschedulingService(triggeredTimersCounter);
+        launchClusteredMediaDriver(false);
+        launchReschedulingService(triggeredTimersCounter);
 
-            TestCluster.awaitCount(triggeredTimersCounter, triggeredSinceStart + 2);
+        TestCluster.awaitCount(triggeredTimersCounter, triggeredSinceStart + 2);
 
-            forceCloseForRestart();
+        forceCloseForRestart();
 
-            triggeredSinceStart = triggeredTimersCounter.getAndSet(0);
+        triggeredSinceStart = triggeredTimersCounter.getAndSet(0);
 
-            launchClusteredMediaDriver(false);
-            launchReschedulingService(triggeredTimersCounter);
+        launchClusteredMediaDriver(false);
+        launchReschedulingService(triggeredTimersCounter);
 
-            TestCluster.awaitCount(triggeredTimersCounter, triggeredSinceStart + 4);
+        TestCluster.awaitCount(triggeredTimersCounter, triggeredSinceStart + 4);
 
-            ClusterTests.failOnClusterError();
-        });
+        ClusterTests.failOnClusterError();
     }
 
     private void launchReschedulingService(final AtomicLong triggeredTimersCounter)

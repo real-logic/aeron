@@ -16,35 +16,32 @@
 package io.aeron.cluster;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import static io.aeron.Aeron.NULL_VALUE;
-import static java.time.Duration.ofSeconds;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class ServiceIpcIngressTest
 {
     @Test
-    public void shouldEchoIpcMessages()
+    @Timeout(20)
+    public void shouldEchoIpcMessages() throws InterruptedException
     {
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
         {
-            try (TestCluster cluster = TestCluster.startThreeNodeStaticCluster(NULL_VALUE))
+            cluster.awaitLeader();
+            cluster.connectClient();
+
+            final int messageCount = 10;
+            for (int i = 0; i < messageCount; i++)
             {
-                cluster.awaitLeader();
-                cluster.connectClient();
-
-                final int messageCount = 10;
-                for (int i = 0; i < messageCount; i++)
-                {
-                    cluster.msgBuffer().putStringWithoutLengthAscii(0, TestMessages.ECHO_IPC_INGRESS);
-                    cluster.sendMessage(TestMessages.ECHO_IPC_INGRESS.length());
-                }
-
-                cluster.awaitResponseMessageCount(messageCount);
-                cluster.awaitServiceMessageCount(cluster.node(0), messageCount);
-                cluster.awaitServiceMessageCount(cluster.node(1), messageCount);
-                cluster.awaitServiceMessageCount(cluster.node(2), messageCount);
+                cluster.msgBuffer().putStringWithoutLengthAscii(0, TestMessages.ECHO_IPC_INGRESS);
+                cluster.sendMessage(TestMessages.ECHO_IPC_INGRESS.length());
             }
-        });
+
+            cluster.awaitResponseMessageCount(messageCount);
+            cluster.awaitServiceMessageCount(cluster.node(0), messageCount);
+            cluster.awaitServiceMessageCount(cluster.node(1), messageCount);
+            cluster.awaitServiceMessageCount(cluster.node(2), messageCount);
+        }
     }
 }

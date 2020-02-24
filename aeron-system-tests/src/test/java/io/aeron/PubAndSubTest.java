@@ -33,12 +33,14 @@ import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 
+import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -46,10 +48,10 @@ import java.util.concurrent.TimeUnit;
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static io.aeron.test.LossReportTestUtil.verifyLossOccurredForStream;
-import static java.time.Duration.ofSeconds;
 import static java.util.Arrays.asList;
 import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.mockito.Mockito.*;
 
@@ -110,154 +112,60 @@ public class PubAndSubTest
 
     @ParameterizedTest
     @MethodSource("channels")
+    @Timeout(10)
     public void shouldReceivePublishedMessageViaPollFile(final String channel)
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
-        {
-            launch(channel);
+        launch(channel);
 
-            publishMessage();
+        publishMessage();
 
-            final MutableLong bytesRead = new MutableLong();
-            SystemTests.executeUntil(
-                () -> bytesRead.value > 0,
-                (i) ->
+        final MutableLong bytesRead = new MutableLong();
+        SystemTests.executeUntil(
+            () -> bytesRead.value > 0,
+            (i) ->
+            {
+                final long bytes = subscription.rawPoll(rawBlockHandler, Integer.MAX_VALUE);
+                if (0 == bytes)
                 {
-                    final long bytes = subscription.rawPoll(rawBlockHandler, Integer.MAX_VALUE);
-                    if (0 == bytes)
-                    {
-                        Thread.yield();
-                    }
-                    bytesRead.value += bytes;
-                },
-                Integer.MAX_VALUE,
-                TimeUnit.MILLISECONDS.toNanos(9900));
+                    Thread.yield();
+                }
+                bytesRead.value += bytes;
+            },
+            Integer.MAX_VALUE,
+            TimeUnit.MILLISECONDS.toNanos(9900));
 
-            final long expectedOffset = 0L;
-            final int expectedLength = BitUtil.align(HEADER_LENGTH + SIZE_OF_INT, FRAME_ALIGNMENT);
+        final long expectedOffset = 0L;
+        final int expectedLength = BitUtil.align(HEADER_LENGTH + SIZE_OF_INT, FRAME_ALIGNMENT);
 
-            final ArgumentCaptor<FileChannel> channelArgumentCaptor = ArgumentCaptor.forClass(FileChannel.class);
-            verify(rawBlockHandler).onBlock(
-                channelArgumentCaptor.capture(),
-                eq(expectedOffset),
-                any(UnsafeBuffer.class),
-                eq((int)expectedOffset),
-                eq(expectedLength),
-                anyInt(),
-                anyInt());
+        final ArgumentCaptor<FileChannel> channelArgumentCaptor = ArgumentCaptor.forClass(FileChannel.class);
+        verify(rawBlockHandler).onBlock(
+            channelArgumentCaptor.capture(),
+            eq(expectedOffset),
+            any(UnsafeBuffer.class),
+            eq((int)expectedOffset),
+            eq(expectedLength),
+            anyInt(),
+            anyInt());
 
-            assertTrue(channelArgumentCaptor.getValue().isOpen(), "File Channel is closed");
-        });
+        assertTrue(channelArgumentCaptor.getValue().isOpen(), "File Channel is closed");
     }
 
     @ParameterizedTest
     @MethodSource("channels")
+    @Timeout(10)
     public void shouldContinueAfterBufferRollover(final String channel)
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        final int termBufferLength = 64 * 1024;
+        final int numMessagesInTermBuffer = 64;
+        final int messageLength = (termBufferLength / numMessagesInTermBuffer) - HEADER_LENGTH;
+        final int numMessagesToSend = numMessagesInTermBuffer + 1;
+
+        context.publicationTermBufferLength(termBufferLength);
+
+        launch(channel);
+
+        for (int i = 0; i < numMessagesToSend; i++)
         {
-            final int termBufferLength = 64 * 1024;
-            final int numMessagesInTermBuffer = 64;
-            final int messageLength = (termBufferLength / numMessagesInTermBuffer) - HEADER_LENGTH;
-            final int numMessagesToSend = numMessagesInTermBuffer + 1;
-
-            context.publicationTermBufferLength(termBufferLength);
-
-            launch(channel);
-
-            for (int i = 0; i < numMessagesToSend; i++)
-            {
-                while (publication.offer(buffer, 0, messageLength) < 0L)
-                {
-                    Thread.yield();
-                    Tests.checkInterruptStatus();
-                }
-
-                final MutableInteger fragmentsRead = new MutableInteger();
-
-                SystemTests.executeUntil(
-                    () -> fragmentsRead.value > 0,
-                    (j) ->
-                    {
-                        final int fragments = subscription.poll(fragmentHandler, 10);
-                        if (0 == fragments)
-                        {
-                            Thread.yield();
-                        }
-                        fragmentsRead.value += fragments;
-                    },
-                    Integer.MAX_VALUE,
-                    TimeUnit.MILLISECONDS.toNanos(500));
-            }
-
-            verify(fragmentHandler, times(numMessagesToSend)).onFragment(
-                any(DirectBuffer.class),
-                anyInt(),
-                eq(messageLength),
-                any(Header.class));
-        });
-    }
-
-    @ParameterizedTest
-    @MethodSource("channels")
-    public void shouldContinueAfterRolloverWithMinimalPaddingHeader(final String channel)
-    {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
-        {
-            final int termBufferLength = 64 * 1024;
-            final int termBufferLengthMinusPaddingHeader = termBufferLength - HEADER_LENGTH;
-            final int num1kMessagesInTermBuffer = 63;
-            final int lastMessageLength =
-                termBufferLengthMinusPaddingHeader - (num1kMessagesInTermBuffer * 1024) - HEADER_LENGTH;
-            final int messageLength = 1024 - HEADER_LENGTH;
-
-            context.publicationTermBufferLength(termBufferLength);
-
-            launch(channel);
-
-            // lock step reception until we get to within 8 messages of the end
-            for (int i = 0; i < num1kMessagesInTermBuffer - 7; i++)
-            {
-                while (publication.offer(buffer, 0, messageLength) < 0L)
-                {
-                    Thread.yield();
-                    Tests.checkInterruptStatus();
-                }
-
-                final MutableInteger fragmentsRead = new MutableInteger();
-
-                SystemTests.executeUntil(
-                    () -> fragmentsRead.value > 0,
-                    (j) ->
-                    {
-                        final int fragments = subscription.poll(fragmentHandler, 10);
-                        if (0 == fragments)
-                        {
-                            Thread.yield();
-                        }
-                        fragmentsRead.value += fragments;
-                    },
-                    Integer.MAX_VALUE,
-                    TimeUnit.MILLISECONDS.toNanos(500));
-            }
-
-            for (int i = 7; i > 0; i--)
-            {
-                while (publication.offer(buffer, 0, messageLength) < 0L)
-                {
-                    Thread.yield();
-                    Tests.checkInterruptStatus();
-                }
-            }
-
-            // small enough to leave room for padding that is just a header
-            while (publication.offer(buffer, 0, lastMessageLength) < 0L)
-            {
-                Thread.yield();
-                Tests.checkInterruptStatus();
-            }
-
-            // no roll over
             while (publication.offer(buffer, 0, messageLength) < 0L)
             {
                 Thread.yield();
@@ -267,7 +175,7 @@ public class PubAndSubTest
             final MutableInteger fragmentsRead = new MutableInteger();
 
             SystemTests.executeUntil(
-                () -> fragmentsRead.value == 9,
+                () -> fragmentsRead.value > 0,
                 (j) ->
                 {
                     final int fragments = subscription.poll(fragmentHandler, 10);
@@ -279,196 +187,507 @@ public class PubAndSubTest
                 },
                 Integer.MAX_VALUE,
                 TimeUnit.MILLISECONDS.toNanos(500));
+        }
 
-            final InOrder inOrder = inOrder(fragmentHandler);
-
-            inOrder.verify(fragmentHandler, times(num1kMessagesInTermBuffer)).onFragment(
-                any(DirectBuffer.class),
-                anyInt(),
-                eq(messageLength),
-                any(Header.class));
-            inOrder.verify(fragmentHandler, times(1)).onFragment(
-                any(DirectBuffer.class),
-                anyInt(),
-                eq(lastMessageLength),
-                any(Header.class));
-            inOrder.verify(fragmentHandler, times(1)).onFragment(
-                any(DirectBuffer.class),
-                anyInt(),
-                eq(messageLength),
-                any(Header.class));
-        });
+        verify(fragmentHandler, times(numMessagesToSend)).onFragment(
+            any(DirectBuffer.class),
+            anyInt(),
+            eq(messageLength),
+            any(Header.class));
     }
 
     @ParameterizedTest
     @MethodSource("channels")
-    public void shouldReceivePublishedMessageOneForOneWithDataLoss(final String channel)
+    @Timeout(10)
+    public void shouldContinueAfterRolloverWithMinimalPaddingHeader(final String channel)
+    {
+        final int termBufferLength = 64 * 1024;
+        final int termBufferLengthMinusPaddingHeader = termBufferLength - HEADER_LENGTH;
+        final int num1kMessagesInTermBuffer = 63;
+        final int lastMessageLength =
+            termBufferLengthMinusPaddingHeader - (num1kMessagesInTermBuffer * 1024) - HEADER_LENGTH;
+        final int messageLength = 1024 - HEADER_LENGTH;
+
+        context.publicationTermBufferLength(termBufferLength);
+
+        launch(channel);
+
+        // lock step reception until we get to within 8 messages of the end
+        for (int i = 0; i < num1kMessagesInTermBuffer - 7; i++)
+        {
+            while (publication.offer(buffer, 0, messageLength) < 0L)
+            {
+                Thread.yield();
+                Tests.checkInterruptStatus();
+            }
+
+            final MutableInteger fragmentsRead = new MutableInteger();
+
+            SystemTests.executeUntil(
+                () -> fragmentsRead.value > 0,
+                (j) ->
+                {
+                    final int fragments = subscription.poll(fragmentHandler, 10);
+                    if (0 == fragments)
+                    {
+                        Thread.yield();
+                    }
+                    fragmentsRead.value += fragments;
+                },
+                Integer.MAX_VALUE,
+                TimeUnit.MILLISECONDS.toNanos(500));
+        }
+
+        for (int i = 7; i > 0; i--)
+        {
+            while (publication.offer(buffer, 0, messageLength) < 0L)
+            {
+                Thread.yield();
+                Tests.checkInterruptStatus();
+            }
+        }
+
+        // small enough to leave room for padding that is just a header
+        while (publication.offer(buffer, 0, lastMessageLength) < 0L)
+        {
+            Thread.yield();
+            Tests.checkInterruptStatus();
+        }
+
+        // no roll over
+        while (publication.offer(buffer, 0, messageLength) < 0L)
+        {
+            Thread.yield();
+            Tests.checkInterruptStatus();
+        }
+
+        final MutableInteger fragmentsRead = new MutableInteger();
+
+        SystemTests.executeUntil(
+            () -> fragmentsRead.value == 9,
+            (j) ->
+            {
+                final int fragments = subscription.poll(fragmentHandler, 10);
+                if (0 == fragments)
+                {
+                    Thread.yield();
+                }
+                fragmentsRead.value += fragments;
+            },
+            Integer.MAX_VALUE,
+            TimeUnit.MILLISECONDS.toNanos(500));
+
+        final InOrder inOrder = inOrder(fragmentHandler);
+
+        inOrder.verify(fragmentHandler, times(num1kMessagesInTermBuffer)).onFragment(
+            any(DirectBuffer.class),
+            anyInt(),
+            eq(messageLength),
+            any(Header.class));
+        inOrder.verify(fragmentHandler, times(1)).onFragment(
+            any(DirectBuffer.class),
+            anyInt(),
+            eq(lastMessageLength),
+            any(Header.class));
+        inOrder.verify(fragmentHandler, times(1)).onFragment(
+            any(DirectBuffer.class),
+            anyInt(),
+            eq(messageLength),
+            any(Header.class));
+    }
+
+    @ParameterizedTest
+    @MethodSource("channels")
+    @Timeout(20)
+    public void shouldReceivePublishedMessageOneForOneWithDataLoss(final String channel) throws IOException
     {
         assumeFalse(IPC_URI.equals(channel));
 
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        final int termBufferLength = 64 * 1024;
+        final int numMessagesInTermBuffer = 64;
+        final int messageLength = (termBufferLength / numMessagesInTermBuffer) - HEADER_LENGTH;
+        final int numMessagesToSend = 2 * numMessagesInTermBuffer;
+
+        final LossGenerator noLossGenerator =
+            DebugChannelEndpointConfiguration.lossGeneratorSupplier(0, 0);
+
+        context.publicationTermBufferLength(termBufferLength);
+
+        context.sendChannelEndpointSupplier((udpChannel, statusIndicator, context) -> new DebugSendChannelEndpoint(
+            udpChannel, statusIndicator, context, noLossGenerator, noLossGenerator));
+
+        TestMediaDriver.enableLossGenerationOnReceive(context, 0.1, 0xcafebabeL, true, false);
+
+        launch(channel);
+
+        for (int i = 0; i < numMessagesToSend; i++)
         {
-            final int termBufferLength = 64 * 1024;
-            final int numMessagesInTermBuffer = 64;
-            final int messageLength = (termBufferLength / numMessagesInTermBuffer) - HEADER_LENGTH;
-            final int numMessagesToSend = 2 * numMessagesInTermBuffer;
+            while (publication.offer(buffer, 0, messageLength) < 0L)
+            {
+                Thread.yield();
+                Tests.checkInterruptStatus();
+            }
 
-            final LossGenerator noLossGenerator =
-                DebugChannelEndpointConfiguration.lossGeneratorSupplier(0, 0);
+            final MutableInteger mutableInteger = new MutableInteger();
+            SystemTests.executeUntil(
+                () -> mutableInteger.value > 0,
+                (j) ->
+                {
+                    final int fragments = subscription.poll(fragmentHandler, 10);
+                    if (0 == fragments)
+                    {
+                        Thread.yield();
+                    }
+                    mutableInteger.value += fragments;
+                },
+                Integer.MAX_VALUE,
+                TimeUnit.MILLISECONDS.toNanos(900));
+        }
 
-            context.publicationTermBufferLength(termBufferLength);
+        verify(fragmentHandler, times(numMessagesToSend)).onFragment(
+            any(DirectBuffer.class),
+            anyInt(),
+            eq(messageLength),
+            any(Header.class));
 
-            context.sendChannelEndpointSupplier((udpChannel, statusIndicator, context) -> new DebugSendChannelEndpoint(
-                udpChannel, statusIndicator, context, noLossGenerator, noLossGenerator));
+        verifyLossOccurredForStream(context.aeronDirectoryName(), STREAM_ID);
+    }
 
-            TestMediaDriver.enableLossGenerationOnReceive(context, 0.1, 0xcafebabeL, true, false);
+    @ParameterizedTest
+    @MethodSource("channels")
+    @Timeout(10)
+    public void shouldReceivePublishedMessageBatchedWithDataLoss(final String channel) throws IOException
+    {
+        assumeFalse(IPC_URI.equals(channel));
 
-            launch(channel);
+        final int termBufferLength = 64 * 1024;
+        final int numMessagesInTermBuffer = 64;
+        final int messageLength = (termBufferLength / numMessagesInTermBuffer) - HEADER_LENGTH;
+        final int numMessagesToSend = 2 * numMessagesInTermBuffer;
+        final int numBatches = 4;
+        final int numMessagesPerBatch = numMessagesToSend / numBatches;
 
-            for (int i = 0; i < numMessagesToSend; i++)
+        final LossGenerator noLossGenerator =
+            DebugChannelEndpointConfiguration.lossGeneratorSupplier(0, 0);
+
+        context.publicationTermBufferLength(termBufferLength);
+
+        context.sendChannelEndpointSupplier((udpChannel, statusIndicator, context) -> new DebugSendChannelEndpoint(
+            udpChannel, statusIndicator, context, noLossGenerator, noLossGenerator));
+
+        TestMediaDriver.enableLossGenerationOnReceive(context, 0.1, 0xcafebabeL, true, false);
+
+        launch(channel);
+
+        for (int i = 0; i < numBatches; i++)
+        {
+            for (int j = 0; j < numMessagesPerBatch; j++)
             {
                 while (publication.offer(buffer, 0, messageLength) < 0L)
                 {
                     Thread.yield();
                     Tests.checkInterruptStatus();
                 }
-
-                final MutableInteger mutableInteger = new MutableInteger();
-                SystemTests.executeUntil(
-                    () -> mutableInteger.value > 0,
-                    (j) ->
-                    {
-                        final int fragments = subscription.poll(fragmentHandler, 10);
-                        if (0 == fragments)
-                        {
-                            Thread.yield();
-                        }
-                        mutableInteger.value += fragments;
-                    },
-                    Integer.MAX_VALUE,
-                    TimeUnit.MILLISECONDS.toNanos(900));
             }
 
-            verify(fragmentHandler, times(numMessagesToSend)).onFragment(
-                any(DirectBuffer.class),
-                anyInt(),
-                eq(messageLength),
-                any(Header.class));
+            final MutableInteger fragmentsRead = new MutableInteger();
 
-            verifyLossOccurredForStream(context.aeronDirectoryName(), STREAM_ID);
-        });
-    }
-
-    @ParameterizedTest
-    @MethodSource("channels")
-    public void shouldReceivePublishedMessageBatchedWithDataLoss(final String channel)
-    {
-        assumeFalse(IPC_URI.equals(channel));
-
-        assertTimeoutPreemptively(ofSeconds(10), () ->
-        {
-            final int termBufferLength = 64 * 1024;
-            final int numMessagesInTermBuffer = 64;
-            final int messageLength = (termBufferLength / numMessagesInTermBuffer) - HEADER_LENGTH;
-            final int numMessagesToSend = 2 * numMessagesInTermBuffer;
-            final int numBatches = 4;
-            final int numMessagesPerBatch = numMessagesToSend / numBatches;
-
-            final LossGenerator noLossGenerator =
-                DebugChannelEndpointConfiguration.lossGeneratorSupplier(0, 0);
-
-            context.publicationTermBufferLength(termBufferLength);
-
-            context.sendChannelEndpointSupplier((udpChannel, statusIndicator, context) -> new DebugSendChannelEndpoint(
-                udpChannel, statusIndicator, context, noLossGenerator, noLossGenerator));
-
-            TestMediaDriver.enableLossGenerationOnReceive(context, 0.1, 0xcafebabeL, true, false);
-
-            launch(channel);
-
-            for (int i = 0; i < numBatches; i++)
-            {
-                for (int j = 0; j < numMessagesPerBatch; j++)
+            SystemTests.executeUntil(
+                () -> fragmentsRead.value >= numMessagesPerBatch,
+                (j) ->
                 {
-                    while (publication.offer(buffer, 0, messageLength) < 0L)
+                    final int fragments = subscription.poll(fragmentHandler, 10);
+                    if (0 == fragments)
                     {
                         Thread.yield();
-                        Tests.checkInterruptStatus();
                     }
-                }
+                    fragmentsRead.value += fragments;
+                },
+                Integer.MAX_VALUE,
+                TimeUnit.MILLISECONDS.toNanos(900));
+        }
 
-                final MutableInteger fragmentsRead = new MutableInteger();
+        verify(fragmentHandler, times(numMessagesToSend)).onFragment(
+            any(DirectBuffer.class),
+            anyInt(),
+            eq(messageLength),
+            any(Header.class));
 
-                SystemTests.executeUntil(
-                    () -> fragmentsRead.value >= numMessagesPerBatch,
-                    (j) ->
-                    {
-                        final int fragments = subscription.poll(fragmentHandler, 10);
-                        if (0 == fragments)
-                        {
-                            Thread.yield();
-                        }
-                        fragmentsRead.value += fragments;
-                    },
-                    Integer.MAX_VALUE,
-                    TimeUnit.MILLISECONDS.toNanos(900));
-            }
-
-            verify(fragmentHandler, times(numMessagesToSend)).onFragment(
-                any(DirectBuffer.class),
-                anyInt(),
-                eq(messageLength),
-                any(Header.class));
-
-            verifyLossOccurredForStream(context.aeronDirectoryName(), STREAM_ID);
-        });
+        verifyLossOccurredForStream(context.aeronDirectoryName(), STREAM_ID);
     }
 
     @ParameterizedTest
     @MethodSource("channels")
+    @Timeout(10)
     public void shouldContinueAfterBufferRolloverBatched(final String channel)
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        final int termBufferLength = 64 * 1024;
+        final int numBatchesPerTerm = 4;
+        final int numMessagesPerBatch = 16;
+        final int numMessagesInTermBuffer = numMessagesPerBatch * numBatchesPerTerm;
+        final int messageLength = (termBufferLength / numMessagesInTermBuffer) - HEADER_LENGTH;
+        final int numMessagesToSend = numMessagesInTermBuffer + 1;
+
+        context.publicationTermBufferLength(termBufferLength);
+
+        launch(channel);
+
+        for (int i = 0; i < numBatchesPerTerm; i++)
         {
-            final int termBufferLength = 64 * 1024;
-            final int numBatchesPerTerm = 4;
-            final int numMessagesPerBatch = 16;
-            final int numMessagesInTermBuffer = numMessagesPerBatch * numBatchesPerTerm;
-            final int messageLength = (termBufferLength / numMessagesInTermBuffer) - HEADER_LENGTH;
-            final int numMessagesToSend = numMessagesInTermBuffer + 1;
-
-            context.publicationTermBufferLength(termBufferLength);
-
-            launch(channel);
-
-            for (int i = 0; i < numBatchesPerTerm; i++)
+            for (int j = 0; j < numMessagesPerBatch; j++)
             {
-                for (int j = 0; j < numMessagesPerBatch; j++)
+                while (publication.offer(buffer, 0, messageLength) < 0L)
                 {
-                    while (publication.offer(buffer, 0, messageLength) < 0L)
-                    {
-                        Thread.yield();
-                        Tests.checkInterruptStatus();
-                    }
+                    Thread.yield();
+                    Tests.checkInterruptStatus();
                 }
-
-                final MutableInteger fragmentsRead = new MutableInteger();
-
-                SystemTests.executeUntil(
-                    () -> fragmentsRead.value >= numMessagesPerBatch,
-                    (j) ->
-                    {
-                        final int fragments = subscription.poll(fragmentHandler, 10);
-                        if (0 == fragments)
-                        {
-                            Thread.yield();
-                        }
-                        fragmentsRead.value += fragments;
-                    },
-                    Integer.MAX_VALUE,
-                    TimeUnit.MILLISECONDS.toNanos(900));
             }
 
+            final MutableInteger fragmentsRead = new MutableInteger();
+
+            SystemTests.executeUntil(
+                () -> fragmentsRead.value >= numMessagesPerBatch,
+                (j) ->
+                {
+                    final int fragments = subscription.poll(fragmentHandler, 10);
+                    if (0 == fragments)
+                    {
+                        Thread.yield();
+                    }
+                    fragmentsRead.value += fragments;
+                },
+                Integer.MAX_VALUE,
+                TimeUnit.MILLISECONDS.toNanos(900));
+        }
+
+        while (publication.offer(buffer, 0, messageLength) < 0L)
+        {
+            Thread.yield();
+            Tests.checkInterruptStatus();
+        }
+
+        final MutableInteger fragmentsRead = new MutableInteger();
+
+        SystemTests.executeUntil(
+            () -> fragmentsRead.value > 0,
+            (j) ->
+            {
+                final int fragments = subscription.poll(fragmentHandler, 10);
+                if (0 == fragments)
+                {
+                    Thread.yield();
+                }
+                fragmentsRead.value += fragments;
+            },
+            Integer.MAX_VALUE,
+            TimeUnit.MILLISECONDS.toNanos(900));
+
+        verify(fragmentHandler, times(numMessagesToSend)).onFragment(
+            any(DirectBuffer.class),
+            anyInt(),
+            eq(messageLength),
+            any(Header.class));
+    }
+
+    @ParameterizedTest
+    @MethodSource("channels")
+    @Timeout(10)
+    public void shouldContinueAfterBufferRolloverWithPadding(final String channel)
+    {
+        /*
+         * 65536 bytes in the buffer
+         * 63 * 1032 = 65016
+         * 65536 - 65016 = 520 bytes padding at the end
+         * so, sending 64 messages causes last to overflow
+         */
+        final int termBufferLength = 64 * 1024;
+        final int messageLength = 1032 - HEADER_LENGTH;
+        final int numMessagesToSend = 64;
+
+        context.publicationTermBufferLength(termBufferLength);
+
+        launch(channel);
+
+        for (int i = 0; i < numMessagesToSend; i++)
+        {
+            while (publication.offer(buffer, 0, messageLength) < 0L)
+            {
+                Thread.yield();
+                Tests.checkInterruptStatus();
+            }
+
+            final MutableInteger fragmentsRead = new MutableInteger();
+
+            SystemTests.executeUntil(
+                () -> fragmentsRead.value > 0,
+                (j) ->
+                {
+                    final int fragments = subscription.poll(fragmentHandler, 10);
+                    if (0 == fragments)
+                    {
+                        Thread.yield();
+                    }
+                    fragmentsRead.value += fragments;
+                },
+                Integer.MAX_VALUE,
+                TimeUnit.MILLISECONDS.toNanos(500));
+        }
+
+        verify(fragmentHandler, times(numMessagesToSend)).onFragment(
+            any(DirectBuffer.class),
+            anyInt(),
+            eq(messageLength),
+            any(Header.class));
+    }
+
+    @ParameterizedTest
+    @MethodSource("channels")
+    @Timeout(10)
+    public void shouldContinueAfterBufferRolloverWithPaddingBatched(final String channel)
+    {
+        /*
+         * 65536 bytes in the buffer
+         * 63 * 1032 = 65016
+         * 65536 - 65016 = 520 bytes padding at the end
+         * so, sending 64 messages causes last to overflow
+         */
+        final int termBufferLength = 64 * 1024;
+        final int messageLength = 1032 - HEADER_LENGTH;
+        final int numMessagesToSend = 64;
+        final int numBatchesPerTerm = 4;
+        final int numMessagesPerBatch = numMessagesToSend / numBatchesPerTerm;
+
+        context.publicationTermBufferLength(termBufferLength);
+
+        launch(channel);
+
+        for (int i = 0; i < numBatchesPerTerm; i++)
+        {
+            for (int j = 0; j < numMessagesPerBatch; j++)
+            {
+                while (publication.offer(buffer, 0, messageLength) < 0L)
+                {
+                    Thread.yield();
+                    Tests.checkInterruptStatus();
+                }
+            }
+
+            final MutableInteger fragmentsRead = new MutableInteger();
+
+            SystemTests.executeUntil(
+                () -> fragmentsRead.value >= numMessagesPerBatch,
+                (j) ->
+                {
+                    final int fragments = subscription.poll(fragmentHandler, 10);
+                    if (0 == fragments)
+                    {
+                        Thread.yield();
+                    }
+                    fragmentsRead.value += fragments;
+                },
+                Integer.MAX_VALUE,
+                TimeUnit.MILLISECONDS.toNanos(900));
+        }
+
+        verify(fragmentHandler, times(numMessagesToSend)).onFragment(
+            any(DirectBuffer.class),
+            anyInt(),
+            eq(messageLength),
+            any(Header.class));
+    }
+
+    @ParameterizedTest
+    @MethodSource("channels")
+    @Timeout(10)
+    public void shouldReceiveOnlyAfterSendingUpToFlowControlLimit(final String channel)
+    {
+        /*
+         * The subscriber will flow control before an entire term buffer. So, send until can't send no 'more.
+         * Then start up subscriber to drain.
+         */
+        final int termBufferLength = 64 * 1024;
+        final int numMessagesPerTerm = 64;
+        final int messageLength = (termBufferLength / numMessagesPerTerm) - HEADER_LENGTH;
+        final int maxFails = 10000;
+        int messagesSent = 0;
+
+        context.publicationTermBufferLength(termBufferLength);
+
+        launch(channel);
+
+        for (int i = 0; i < numMessagesPerTerm; i++)
+        {
+            int offerFails = 0;
+
+            while (publication.offer(buffer, 0, messageLength) < 0L)
+            {
+                if (++offerFails > maxFails)
+                {
+                    break;
+                }
+
+                Thread.yield();
+                Tests.checkInterruptStatus();
+            }
+
+            if (offerFails > maxFails)
+            {
+                break;
+            }
+
+            messagesSent++;
+        }
+
+        final MutableInteger fragmentsRead = new MutableInteger();
+        final int messagesToReceive = messagesSent;
+
+        SystemTests.executeUntil(
+            () -> fragmentsRead.value >= messagesToReceive,
+            (j) ->
+            {
+                final int fragments = subscription.poll(fragmentHandler, 10);
+                if (0 == fragments)
+                {
+                    Thread.yield();
+                }
+                fragmentsRead.value += fragments;
+            },
+            Integer.MAX_VALUE,
+            TimeUnit.MILLISECONDS.toNanos(500));
+
+        verify(fragmentHandler, times(messagesToReceive)).onFragment(
+            any(DirectBuffer.class),
+            anyInt(),
+            eq(messageLength),
+            any(Header.class));
+    }
+
+    @ParameterizedTest
+    @MethodSource("channels")
+    @Timeout(10)
+    public void shouldReceivePublishedMessageOneForOneWithReSubscription(final String channel)
+    {
+        // Immediate re-subscription currently doesn't work in the C media driver
+        assumeFalse(TestMediaDriver.shouldRunCMediaDriver());
+
+        final int termBufferLength = 64 * 1024;
+        final int numMessagesInTermBuffer = 64;
+        final int messageLength = (termBufferLength / numMessagesInTermBuffer) - HEADER_LENGTH;
+        final int numMessagesToSendStageOne = numMessagesInTermBuffer / 2;
+        final int numMessagesToSendStageTwo = numMessagesInTermBuffer;
+
+        context.publicationTermBufferLength(termBufferLength);
+
+        launch(channel);
+
+        while (!subscription.isConnected())
+        {
+            Thread.yield();
+            Tests.checkInterruptStatus();
+        }
+
+        for (int i = 0; i < numMessagesToSendStageOne; i++)
+        {
             while (publication.offer(buffer, 0, messageLength) < 0L)
             {
                 Thread.yield();
@@ -490,174 +709,33 @@ public class PubAndSubTest
                 },
                 Integer.MAX_VALUE,
                 TimeUnit.MILLISECONDS.toNanos(900));
+        }
 
-            verify(fragmentHandler, times(numMessagesToSend)).onFragment(
-                any(DirectBuffer.class),
-                anyInt(),
-                eq(messageLength),
-                any(Header.class));
-        });
-    }
+        assertEquals(publication.position(), subscription.imageAtIndex(0).position());
 
-    @ParameterizedTest
-    @MethodSource("channels")
-    public void shouldContinueAfterBufferRolloverWithPadding(final String channel)
-    {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        subscription.close();
+        subscription = subscribingClient.addSubscription(channel, STREAM_ID);
+
+        while (!subscription.isConnected())
         {
-            /*
-             * 65536 bytes in the buffer
-             * 63 * 1032 = 65016
-             * 65536 - 65016 = 520 bytes padding at the end
-             * so, sending 64 messages causes last to overflow
-             */
-            final int termBufferLength = 64 * 1024;
-            final int messageLength = 1032 - HEADER_LENGTH;
-            final int numMessagesToSend = 64;
+            Thread.yield();
+            Tests.checkInterruptStatus();
+        }
 
-            context.publicationTermBufferLength(termBufferLength);
+        assertEquals(publication.position(), subscription.imageAtIndex(0).position());
 
-            launch(channel);
-
-            for (int i = 0; i < numMessagesToSend; i++)
-            {
-                while (publication.offer(buffer, 0, messageLength) < 0L)
-                {
-                    Thread.yield();
-                    Tests.checkInterruptStatus();
-                }
-
-                final MutableInteger fragmentsRead = new MutableInteger();
-
-                SystemTests.executeUntil(
-                    () -> fragmentsRead.value > 0,
-                    (j) ->
-                    {
-                        final int fragments = subscription.poll(fragmentHandler, 10);
-                        if (0 == fragments)
-                        {
-                            Thread.yield();
-                        }
-                        fragmentsRead.value += fragments;
-                    },
-                    Integer.MAX_VALUE,
-                    TimeUnit.MILLISECONDS.toNanos(500));
-            }
-
-            verify(fragmentHandler, times(numMessagesToSend)).onFragment(
-                any(DirectBuffer.class),
-                anyInt(),
-                eq(messageLength),
-                any(Header.class));
-        });
-    }
-
-    @ParameterizedTest
-    @MethodSource("channels")
-    public void shouldContinueAfterBufferRolloverWithPaddingBatched(final String channel)
-    {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        for (int i = 0; i < numMessagesToSendStageTwo; i++)
         {
-            /*
-             * 65536 bytes in the buffer
-             * 63 * 1032 = 65016
-             * 65536 - 65016 = 520 bytes padding at the end
-             * so, sending 64 messages causes last to overflow
-             */
-            final int termBufferLength = 64 * 1024;
-            final int messageLength = 1032 - HEADER_LENGTH;
-            final int numMessagesToSend = 64;
-            final int numBatchesPerTerm = 4;
-            final int numMessagesPerBatch = numMessagesToSend / numBatchesPerTerm;
-
-            context.publicationTermBufferLength(termBufferLength);
-
-            launch(channel);
-
-            for (int i = 0; i < numBatchesPerTerm; i++)
+            while (publication.offer(buffer, 0, messageLength) < 0L)
             {
-                for (int j = 0; j < numMessagesPerBatch; j++)
-                {
-                    while (publication.offer(buffer, 0, messageLength) < 0L)
-                    {
-                        Thread.yield();
-                        Tests.checkInterruptStatus();
-                    }
-                }
-
-                final MutableInteger fragmentsRead = new MutableInteger();
-
-                SystemTests.executeUntil(
-                    () -> fragmentsRead.value >= numMessagesPerBatch,
-                    (j) ->
-                    {
-                        final int fragments = subscription.poll(fragmentHandler, 10);
-                        if (0 == fragments)
-                        {
-                            Thread.yield();
-                        }
-                        fragmentsRead.value += fragments;
-                    },
-                    Integer.MAX_VALUE,
-                    TimeUnit.MILLISECONDS.toNanos(900));
-            }
-
-            verify(fragmentHandler, times(numMessagesToSend)).onFragment(
-                any(DirectBuffer.class),
-                anyInt(),
-                eq(messageLength),
-                any(Header.class));
-        });
-    }
-
-    @ParameterizedTest
-    @MethodSource("channels")
-    public void shouldReceiveOnlyAfterSendingUpToFlowControlLimit(final String channel)
-    {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
-        {
-            /*
-             * The subscriber will flow control before an entire term buffer. So, send until can't send no 'more.
-             * Then start up subscriber to drain.
-             */
-            final int termBufferLength = 64 * 1024;
-            final int numMessagesPerTerm = 64;
-            final int messageLength = (termBufferLength / numMessagesPerTerm) - HEADER_LENGTH;
-            final int maxFails = 10000;
-            int messagesSent = 0;
-
-            context.publicationTermBufferLength(termBufferLength);
-
-            launch(channel);
-
-            for (int i = 0; i < numMessagesPerTerm; i++)
-            {
-                int offerFails = 0;
-
-                while (publication.offer(buffer, 0, messageLength) < 0L)
-                {
-                    if (++offerFails > maxFails)
-                    {
-                        break;
-                    }
-
-                    Thread.yield();
-                    Tests.checkInterruptStatus();
-                }
-
-                if (offerFails > maxFails)
-                {
-                    break;
-                }
-
-                messagesSent++;
+                Thread.yield();
+                Tests.checkInterruptStatus();
             }
 
             final MutableInteger fragmentsRead = new MutableInteger();
-            final int messagesToReceive = messagesSent;
 
             SystemTests.executeUntil(
-                () -> fragmentsRead.value >= messagesToReceive,
+                () -> fragmentsRead.value > 0,
                 (j) ->
                 {
                     final int fragments = subscription.poll(fragmentHandler, 10);
@@ -668,187 +746,87 @@ public class PubAndSubTest
                     fragmentsRead.value += fragments;
                 },
                 Integer.MAX_VALUE,
-                TimeUnit.MILLISECONDS.toNanos(500));
+                TimeUnit.MILLISECONDS.toNanos(900));
+        }
 
-            verify(fragmentHandler, times(messagesToReceive)).onFragment(
-                any(DirectBuffer.class),
-                anyInt(),
-                eq(messageLength),
-                any(Header.class));
-        });
+        assertEquals(publication.position(), subscription.imageAtIndex(0).position());
+
+        verify(fragmentHandler, times(numMessagesToSendStageOne + numMessagesToSendStageTwo)).onFragment(
+            any(DirectBuffer.class),
+            anyInt(),
+            eq(messageLength),
+            any(Header.class));
     }
 
     @ParameterizedTest
     @MethodSource("channels")
-    public void shouldReceivePublishedMessageOneForOneWithReSubscription(final String channel)
-    {
-        // Immediate re-subscription currently doesn't work in the C media driver
-        assumeFalse(TestMediaDriver.shouldRunCMediaDriver());
-
-        assertTimeoutPreemptively(ofSeconds(10), () ->
-        {
-            final int termBufferLength = 64 * 1024;
-            final int numMessagesInTermBuffer = 64;
-            final int messageLength = (termBufferLength / numMessagesInTermBuffer) - HEADER_LENGTH;
-            final int numMessagesToSendStageOne = numMessagesInTermBuffer / 2;
-            final int numMessagesToSendStageTwo = numMessagesInTermBuffer;
-
-            context.publicationTermBufferLength(termBufferLength);
-
-            launch(channel);
-
-            while (!subscription.isConnected())
-            {
-                Thread.yield();
-                Tests.checkInterruptStatus();
-            }
-
-            for (int i = 0; i < numMessagesToSendStageOne; i++)
-            {
-                while (publication.offer(buffer, 0, messageLength) < 0L)
-                {
-                    Thread.yield();
-                    Tests.checkInterruptStatus();
-                }
-
-                final MutableInteger fragmentsRead = new MutableInteger();
-
-                SystemTests.executeUntil(
-                    () -> fragmentsRead.value > 0,
-                    (j) ->
-                    {
-                        final int fragments = subscription.poll(fragmentHandler, 10);
-                        if (0 == fragments)
-                        {
-                            Thread.yield();
-                        }
-                        fragmentsRead.value += fragments;
-                    },
-                    Integer.MAX_VALUE,
-                    TimeUnit.MILLISECONDS.toNanos(900));
-            }
-
-            assertEquals(publication.position(), subscription.imageAtIndex(0).position());
-
-            subscription.close();
-            subscription = subscribingClient.addSubscription(channel, STREAM_ID);
-
-            while (!subscription.isConnected())
-            {
-                Thread.yield();
-                Tests.checkInterruptStatus();
-            }
-
-            assertEquals(publication.position(), subscription.imageAtIndex(0).position());
-
-            for (int i = 0; i < numMessagesToSendStageTwo; i++)
-            {
-                while (publication.offer(buffer, 0, messageLength) < 0L)
-                {
-                    Thread.yield();
-                    Tests.checkInterruptStatus();
-                }
-
-                final MutableInteger fragmentsRead = new MutableInteger();
-
-                SystemTests.executeUntil(
-                    () -> fragmentsRead.value > 0,
-                    (j) ->
-                    {
-                        final int fragments = subscription.poll(fragmentHandler, 10);
-                        if (0 == fragments)
-                        {
-                            Thread.yield();
-                        }
-                        fragmentsRead.value += fragments;
-                    },
-                    Integer.MAX_VALUE,
-                    TimeUnit.MILLISECONDS.toNanos(900));
-            }
-
-            assertEquals(publication.position(), subscription.imageAtIndex(0).position());
-
-            verify(fragmentHandler, times(numMessagesToSendStageOne + numMessagesToSendStageTwo)).onFragment(
-                any(DirectBuffer.class),
-                anyInt(),
-                eq(messageLength),
-                any(Header.class));
-        });
-    }
-
-    @ParameterizedTest
-    @MethodSource("channels")
+    @Timeout(10)
     public void shouldFragmentExactMessageLengthsCorrectly(final String channel)
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        final int termBufferLength = 64 * 1024;
+        final int numFragmentsPerMessage = 2;
+        final int mtuLength = context.mtuLength();
+        final int frameLength = mtuLength - HEADER_LENGTH;
+        final int messageLength = frameLength * numFragmentsPerMessage;
+        final int numMessagesToSend = 2;
+        final int numFramesToExpect = numMessagesToSend * numFragmentsPerMessage;
+
+        context.publicationTermBufferLength(termBufferLength);
+
+        launch(channel);
+
+        for (int i = 0; i < numMessagesToSend; i++)
         {
-            final int termBufferLength = 64 * 1024;
-            final int numFragmentsPerMessage = 2;
-            final int mtuLength = context.mtuLength();
-            final int frameLength = mtuLength - HEADER_LENGTH;
-            final int messageLength = frameLength * numFragmentsPerMessage;
-            final int numMessagesToSend = 2;
-            final int numFramesToExpect = numMessagesToSend * numFragmentsPerMessage;
-
-            context.publicationTermBufferLength(termBufferLength);
-
-            launch(channel);
-
-            for (int i = 0; i < numMessagesToSend; i++)
-            {
-                while (publication.offer(buffer, 0, messageLength) < 0L)
-                {
-                    Thread.yield();
-                    Tests.checkInterruptStatus();
-                }
-            }
-
-            final MutableInteger fragmentsRead = new MutableInteger();
-
-            SystemTests.executeUntil(
-                () -> fragmentsRead.value > numFramesToExpect,
-                (j) ->
-                {
-                    final int fragments = subscription.poll(fragmentHandler, 10);
-                    if (0 == fragments)
-                    {
-                        Thread.yield();
-                    }
-                    fragmentsRead.value += fragments;
-                },
-                Integer.MAX_VALUE,
-                TimeUnit.MILLISECONDS.toNanos(500));
-
-            verify(fragmentHandler, times(numFramesToExpect)).onFragment(
-                any(DirectBuffer.class),
-                anyInt(),
-                eq(frameLength),
-                any(Header.class));
-        });
-    }
-
-    @ParameterizedTest
-    @MethodSource("channels")
-    public void shouldNoticeDroppedSubscriber(final String channel)
-    {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
-        {
-            launch(channel);
-
-            while (!publication.isConnected())
-            {
-                Thread.sleep(1);
-                Tests.checkInterruptStatus();
-            }
-
-            subscription.close();
-
-            while (publication.isConnected())
+            while (publication.offer(buffer, 0, messageLength) < 0L)
             {
                 Thread.yield();
                 Tests.checkInterruptStatus();
             }
-        });
+        }
+
+        final MutableInteger fragmentsRead = new MutableInteger();
+
+        SystemTests.executeUntil(
+            () -> fragmentsRead.value > numFramesToExpect,
+            (j) ->
+            {
+                final int fragments = subscription.poll(fragmentHandler, 10);
+                if (0 == fragments)
+                {
+                    Thread.yield();
+                }
+                fragmentsRead.value += fragments;
+            },
+            Integer.MAX_VALUE,
+            TimeUnit.MILLISECONDS.toNanos(500));
+
+        verify(fragmentHandler, times(numFramesToExpect)).onFragment(
+            any(DirectBuffer.class),
+            anyInt(),
+            eq(frameLength),
+            any(Header.class));
+    }
+
+    @ParameterizedTest
+    @MethodSource("channels")
+    @Timeout(10)
+    public void shouldNoticeDroppedSubscriber(final String channel)
+    {
+        launch(channel);
+
+        while (!publication.isConnected())
+        {
+            Tests.sleep(1);
+            Tests.checkInterruptStatus();
+        }
+
+        subscription.close();
+
+        while (publication.isConnected())
+        {
+            Thread.yield();
+            Tests.checkInterruptStatus();
+        }
     }
 
     private void publishMessage()

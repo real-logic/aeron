@@ -17,68 +17,61 @@ package io.aeron.cluster;
 
 import io.aeron.cluster.service.Cluster;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
-import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class SingleNodeTest
 {
     @Test
-    public void shouldStartCluster()
+    @Timeout(20)
+    public void shouldStartCluster() throws InterruptedException
     {
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        try (TestCluster cluster = TestCluster.startSingleNodeStaticCluster())
         {
-            try (TestCluster cluster = TestCluster.startSingleNodeStaticCluster())
-            {
-                final TestNode leader = cluster.awaitLeader();
+            final TestNode leader = cluster.awaitLeader();
 
-                assertEquals(0, leader.index());
-                assertEquals(Cluster.Role.LEADER, leader.role());
-            }
-        });
+            assertEquals(0, leader.index());
+            assertEquals(Cluster.Role.LEADER, leader.role());
+        }
     }
 
     @Test
-    public void shouldSendMessagesToCluster()
+    @Timeout(20)
+    public void shouldSendMessagesToCluster() throws InterruptedException
     {
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        try (TestCluster cluster = TestCluster.startSingleNodeStaticCluster())
         {
-            try (TestCluster cluster = TestCluster.startSingleNodeStaticCluster())
-            {
-                final TestNode leader = cluster.awaitLeader();
+            final TestNode leader = cluster.awaitLeader();
 
-                assertEquals(0, leader.index());
-                assertEquals(Cluster.Role.LEADER, leader.role());
+            assertEquals(0, leader.index());
+            assertEquals(Cluster.Role.LEADER, leader.role());
 
-                cluster.connectClient();
-                cluster.sendMessages(10);
-                cluster.awaitResponseMessageCount(10);
-                cluster.awaitServiceMessageCount(leader, 10);
-            }
-        });
+            cluster.connectClient();
+            cluster.sendMessages(10);
+            cluster.awaitResponseMessageCount(10);
+            cluster.awaitServiceMessageCount(leader, 10);
+        }
     }
 
     @Test
-    public void shouldReplayLog()
+    @Timeout(20)
+    public void shouldReplayLog() throws InterruptedException
     {
-        assertTimeoutPreemptively(ofSeconds(20), () ->
+        try (TestCluster cluster = TestCluster.startSingleNodeStaticCluster())
         {
-            try (TestCluster cluster = TestCluster.startSingleNodeStaticCluster())
-            {
-                final TestNode leader = cluster.awaitLeader();
+            final TestNode leader = cluster.awaitLeader();
 
-                cluster.connectClient();
-                cluster.sendMessages(10);
-                cluster.awaitResponseMessageCount(10);
-                cluster.awaitServiceMessageCount(leader, 10);
+            cluster.connectClient();
+            cluster.sendMessages(10);
+            cluster.awaitResponseMessageCount(10);
+            cluster.awaitServiceMessageCount(leader, 10);
 
-                cluster.stopNode(leader);
+            cluster.stopNode(leader);
 
-                cluster.startStaticNode(0, false);
-                final TestNode newLeader = cluster.awaitLeader();
-                cluster.awaitServiceMessageCount(newLeader, 10);
-            }
-        });
+            cluster.startStaticNode(0, false);
+            final TestNode newLeader = cluster.awaitLeader();
+            cluster.awaitServiceMessageCount(newLeader, 10);
+        }
     }
 }

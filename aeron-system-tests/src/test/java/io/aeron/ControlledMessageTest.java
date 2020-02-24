@@ -27,10 +27,9 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
-import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class ControlledMessageTest
 {
@@ -54,51 +53,49 @@ public class ControlledMessageTest
     }
 
     @Test
+    @Timeout(10)
     public void shouldReceivePublishedMessage()
     {
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        try (Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID);
+            Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
         {
-            try (Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID);
-                Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
+            final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[PAYLOAD_LENGTH * 4]);
+
+            for (int i = 0; i < 4; i++)
             {
-                final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[PAYLOAD_LENGTH * 4]);
+                srcBuffer.setMemory(i * PAYLOAD_LENGTH, PAYLOAD_LENGTH, (byte)(65 + i));
+            }
 
-                for (int i = 0; i < 4; i++)
+            for (int i = 0; i < 4; i++)
+            {
+                while (publication.offer(srcBuffer, i * PAYLOAD_LENGTH, PAYLOAD_LENGTH) < 0L)
                 {
-                    srcBuffer.setMemory(i * PAYLOAD_LENGTH, PAYLOAD_LENGTH, (byte)(65 + i));
-                }
-
-                for (int i = 0; i < 4; i++)
-                {
-                    while (publication.offer(srcBuffer, i * PAYLOAD_LENGTH, PAYLOAD_LENGTH) < 0L)
-                    {
-                        Thread.yield();
-                        Tests.checkInterruptStatus();
-                    }
-                }
-
-                final FragmentCollector fragmentCollector = new FragmentCollector();
-                int numFragments = 0;
-                do
-                {
-                    final int fragments = subscription.controlledPoll(fragmentCollector, FRAGMENT_COUNT_LIMIT);
-                    if (0 == fragments)
-                    {
-                        Thread.yield();
-                        Tests.checkInterruptStatus();
-                    }
-                    numFragments += fragments;
-                }
-                while (numFragments < 4);
-
-                final UnsafeBuffer collectedBuffer = fragmentCollector.collectedBuffer();
-
-                for (int i = 0; i < srcBuffer.capacity(); i++)
-                {
-                    assertEquals(srcBuffer.getByte(i), collectedBuffer.getByte(i), "same at i=" + i);
+                    Thread.yield();
+                    Tests.checkInterruptStatus();
                 }
             }
-        });
+
+            final FragmentCollector fragmentCollector = new FragmentCollector();
+            int numFragments = 0;
+            do
+            {
+                final int fragments = subscription.controlledPoll(fragmentCollector, FRAGMENT_COUNT_LIMIT);
+                if (0 == fragments)
+                {
+                    Thread.yield();
+                    Tests.checkInterruptStatus();
+                }
+                numFragments += fragments;
+            }
+            while (numFragments < 4);
+
+            final UnsafeBuffer collectedBuffer = fragmentCollector.collectedBuffer();
+
+            for (int i = 0; i < srcBuffer.capacity(); i++)
+            {
+                assertEquals(srcBuffer.getByte(i), collectedBuffer.getByte(i), "same at i=" + i);
+            }
+        }
     }
 
     static class FragmentCollector implements ControlledFragmentHandler

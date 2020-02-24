@@ -27,6 +27,7 @@ import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.MessageHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.io.File;
 import java.nio.file.Paths;
@@ -38,10 +39,8 @@ import java.util.concurrent.CountDownLatch;
 import static io.aeron.agent.ArchiveEventCode.*;
 import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
-import static java.time.Duration.ofSeconds;
 import static java.util.Collections.synchronizedSet;
 import static java.util.stream.Collectors.toSet;
-import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class ArchiveLoggingAgentTest
 {
@@ -66,65 +65,66 @@ public class ArchiveLoggingAgentTest
     }
 
     @Test
-    public void logAll()
+    @Timeout(10)
+    public void logAll() throws InterruptedException
     {
         testArchiveLogging("all", EnumSet.of(CMD_OUT_RESPONSE, CMD_IN_AUTH_CONNECT, CMD_IN_KEEP_ALIVE));
     }
 
     @Test
-    public void logControlSessionDemuxerOnFragment()
+    @Timeout(10)
+    public void logControlSessionDemuxerOnFragment() throws InterruptedException
     {
         testArchiveLogging(CMD_IN_KEEP_ALIVE.name() + "," + CMD_IN_AUTH_CONNECT.id(),
             EnumSet.of(CMD_IN_AUTH_CONNECT, CMD_IN_KEEP_ALIVE));
     }
 
     @Test
-    public void logControlResponseProxySendResponseHook()
+    @Timeout(10)
+    public void logControlResponseProxySendResponseHook() throws InterruptedException
     {
         testArchiveLogging(CMD_OUT_RESPONSE.name(), EnumSet.of(CMD_OUT_RESPONSE));
     }
 
-    private void testArchiveLogging(final String enabledEvents, final EnumSet<ArchiveEventCode> expectedEvents)
+    private void testArchiveLogging(
+        final String enabledEvents, final EnumSet<ArchiveEventCode> expectedEvents) throws InterruptedException
     {
         before(enabledEvents, expectedEvents);
 
-        assertTimeoutPreemptively(ofSeconds(10), () ->
+        final String aeronDirectoryName = testDir.toPath().resolve("media").toString();
+
+        final MediaDriver.Context mediaDriverCtx = new MediaDriver.Context()
+            .errorHandler(Throwable::printStackTrace)
+            .aeronDirectoryName(aeronDirectoryName)
+            .dirDeleteOnStart(true)
+            .threadingMode(ThreadingMode.SHARED);
+
+        final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context()
+            .aeronDirectoryName(aeronDirectoryName)
+            .controlRequestChannel("aeron:udp?term-length=64k|endpoint=localhost:8010")
+            .controlRequestStreamId(100)
+            .controlResponseChannel("aeron:udp?term-length=64k|endpoint=localhost:8020")
+            .controlResponseStreamId(101)
+            .recordingEventsChannel("aeron:udp?control-mode=dynamic|control=localhost:8030");
+
+        final Archive.Context archiveCtx = new Archive.Context()
+            .aeronDirectoryName(aeronDirectoryName)
+            .errorHandler(Throwable::printStackTrace)
+            .archiveDir(new File(testDir, "archive"))
+            .deleteArchiveOnStart(true)
+            .controlChannel(aeronArchiveContext.controlRequestChannel())
+            .controlStreamId(aeronArchiveContext.controlRequestStreamId())
+            .localControlStreamId(aeronArchiveContext.controlRequestStreamId())
+            .recordingEventsChannel(aeronArchiveContext.recordingEventsChannel())
+            .threadingMode(ArchiveThreadingMode.SHARED);
+
+        try (ArchivingMediaDriver ignore1 = ArchivingMediaDriver.launch(mediaDriverCtx, archiveCtx))
         {
-            final String aeronDirectoryName = testDir.toPath().resolve("media").toString();
-
-            final MediaDriver.Context mediaDriverCtx = new MediaDriver.Context()
-                .errorHandler(Throwable::printStackTrace)
-                .aeronDirectoryName(aeronDirectoryName)
-                .dirDeleteOnStart(true)
-                .threadingMode(ThreadingMode.SHARED);
-
-            final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context()
-                .aeronDirectoryName(aeronDirectoryName)
-                .controlRequestChannel("aeron:udp?term-length=64k|endpoint=localhost:8010")
-                .controlRequestStreamId(100)
-                .controlResponseChannel("aeron:udp?term-length=64k|endpoint=localhost:8020")
-                .controlResponseStreamId(101)
-                .recordingEventsChannel("aeron:udp?control-mode=dynamic|control=localhost:8030");
-
-            final Archive.Context archiveCtx = new Archive.Context()
-                .aeronDirectoryName(aeronDirectoryName)
-                .errorHandler(Throwable::printStackTrace)
-                .archiveDir(new File(testDir, "archive"))
-                .deleteArchiveOnStart(true)
-                .controlChannel(aeronArchiveContext.controlRequestChannel())
-                .controlStreamId(aeronArchiveContext.controlRequestStreamId())
-                .localControlStreamId(aeronArchiveContext.controlRequestStreamId())
-                .recordingEventsChannel(aeronArchiveContext.recordingEventsChannel())
-                .threadingMode(ArchiveThreadingMode.SHARED);
-
-            try (ArchivingMediaDriver ignore1 = ArchivingMediaDriver.launch(mediaDriverCtx, archiveCtx))
+            try (AeronArchive ignore2 = AeronArchive.connect(aeronArchiveContext))
             {
-                try (AeronArchive ignore2 = AeronArchive.connect(aeronArchiveContext))
-                {
-                    latch.await();
-                }
+                latch.await();
             }
-        });
+        }
     }
 
     private void before(final String enabledEvents, final EnumSet<ArchiveEventCode> expectedEvents)

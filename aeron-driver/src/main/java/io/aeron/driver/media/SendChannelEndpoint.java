@@ -225,7 +225,9 @@ public class SendChannelEndpoint extends UdpChannelTransport
         {
             multiSndDestination.checkForReResolution(this, nowNs, conductorProxy);
         }
-        else if (!udpChannel.isMulticast() && nowNs > (timeOfLastSmNs + DESTINATION_TIMEOUT))
+        else if (!udpChannel.isMulticast() &&
+            !udpChannel.isDynamicControlMode() &&
+            nowNs > (timeOfLastSmNs + DESTINATION_TIMEOUT))
         {
             final String endpoint = udpChannel.channelUri().get(CommonContext.ENDPOINT_PARAM_NAME);
             final InetSocketAddress address = udpChannel.remoteData();

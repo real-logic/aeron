@@ -146,7 +146,7 @@ public final class AeronCluster implements AutoCloseable
                 CloseHelper.quietCloseAll(subscription, asyncConnect);
             }
 
-            ctx.close();
+            CloseHelper.quietClose(ctx::close);
 
             throw ex;
         }

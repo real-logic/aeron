@@ -24,6 +24,7 @@ import io.aeron.driver.exceptions.ActiveDriverException;
 import io.aeron.driver.media.*;
 import io.aeron.driver.reports.LossReport;
 import io.aeron.driver.status.SystemCounters;
+import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.*;
 import org.agrona.concurrent.*;
@@ -97,7 +98,6 @@ public final class MediaDriver implements AutoCloseable
         try (MediaDriver ignore = MediaDriver.launch(ctx))
         {
             barrier.await();
-
             System.out.println("Shutdown Driver...");
         }
     }
@@ -109,70 +109,86 @@ public final class MediaDriver implements AutoCloseable
      */
     private MediaDriver(final Context ctx)
     {
-        this.ctx = ctx;
-
         ctx.concludeAeronDirectory();
 
         ensureDirectoryIsRecreated(ctx);
         validateSocketBufferLengths(ctx);
 
-        ctx.conclude();
-
-        final DriverConductor conductor = new DriverConductor(ctx);
-        final Receiver receiver = new Receiver(ctx);
-        final Sender sender = new Sender(ctx);
-
-        ctx.receiverProxy().receiver(receiver);
-        ctx.senderProxy().sender(sender);
-        ctx.driverConductorProxy().driverConductor(conductor);
-
-        final AtomicCounter errorCounter = ctx.systemCounters().get(ERRORS);
-        final ErrorHandler errorHandler = ctx.errorHandler();
-
-        switch (ctx.threadingMode())
+        try
         {
-            case INVOKER:
-                sharedInvoker = new AgentInvoker(
-                    errorHandler, errorCounter, new CompositeAgent(sender, receiver, conductor));
-                sharedRunner = null;
-                sharedNetworkRunner = null;
-                conductorRunner = null;
-                receiverRunner = null;
-                senderRunner = null;
-                break;
+            ctx.conclude();
+            this.ctx = ctx;
 
-            case SHARED:
-                sharedRunner = new AgentRunner(
-                    ctx.sharedIdleStrategy(),
-                    errorHandler,
-                    errorCounter,
-                    new CompositeAgent(sender, receiver, conductor));
-                sharedNetworkRunner = null;
-                conductorRunner = null;
-                receiverRunner = null;
-                senderRunner = null;
-                sharedInvoker = null;
-                break;
+            final DriverConductor conductor = new DriverConductor(ctx);
+            final Receiver receiver = new Receiver(ctx);
+            final Sender sender = new Sender(ctx);
 
-            case SHARED_NETWORK:
-                sharedNetworkRunner = new AgentRunner(
-                    ctx.sharedNetworkIdleStrategy(), errorHandler, errorCounter, new CompositeAgent(sender, receiver));
-                conductorRunner = new AgentRunner(ctx.conductorIdleStrategy(), errorHandler, errorCounter, conductor);
-                sharedRunner = null;
-                receiverRunner = null;
-                senderRunner = null;
-                sharedInvoker = null;
-                break;
+            ctx.receiverProxy().receiver(receiver);
+            ctx.senderProxy().sender(sender);
+            ctx.driverConductorProxy().driverConductor(conductor);
 
-            default:
-            case DEDICATED:
-                senderRunner = new AgentRunner(ctx.senderIdleStrategy(), errorHandler, errorCounter, sender);
-                receiverRunner = new AgentRunner(ctx.receiverIdleStrategy(), errorHandler, errorCounter, receiver);
-                conductorRunner = new AgentRunner(ctx.conductorIdleStrategy(), errorHandler, errorCounter, conductor);
-                sharedNetworkRunner = null;
-                sharedRunner = null;
-                sharedInvoker = null;
-                break;
+            final AtomicCounter errorCounter = ctx.systemCounters().get(ERRORS);
+            final ErrorHandler errorHandler = ctx.errorHandler();
+
+            switch (ctx.threadingMode())
+            {
+                case INVOKER:
+                    sharedInvoker = new AgentInvoker(
+                        errorHandler, errorCounter, new CompositeAgent(sender, receiver, conductor));
+                    sharedRunner = null;
+                    sharedNetworkRunner = null;
+                    conductorRunner = null;
+                    receiverRunner = null;
+                    senderRunner = null;
+                    break;
+
+                case SHARED:
+                    sharedRunner = new AgentRunner(
+                        ctx.sharedIdleStrategy(),
+                        errorHandler,
+                        errorCounter,
+                        new CompositeAgent(sender, receiver, conductor));
+                    sharedNetworkRunner = null;
+                    conductorRunner = null;
+                    receiverRunner = null;
+                    senderRunner = null;
+                    sharedInvoker = null;
+                    break;
+
+                case SHARED_NETWORK:
+                    sharedNetworkRunner = new AgentRunner(
+                        ctx.sharedNetworkIdleStrategy(),
+                        errorHandler,
+                        errorCounter,
+                        new CompositeAgent(sender, receiver));
+                    conductorRunner = new AgentRunner(
+                        ctx.conductorIdleStrategy(), errorHandler, errorCounter, conductor);
+                    sharedRunner = null;
+                    receiverRunner = null;
+                    senderRunner = null;
+                    sharedInvoker = null;
+                    break;
+
+                default:
+                case DEDICATED:
+                    senderRunner = new AgentRunner(ctx.senderIdleStrategy(), errorHandler, errorCounter, sender);
+                    receiverRunner = new AgentRunner(ctx.receiverIdleStrategy(), errorHandler, errorCounter, receiver);
+                    conductorRunner = new AgentRunner(
+                        ctx.conductorIdleStrategy(), errorHandler, errorCounter, conductor);
+                    sharedNetworkRunner = null;
+                    sharedRunner = null;
+                    sharedInvoker = null;
+                    break;
+            }
+        }
+        catch (final ConcurrentConcludeException ex)
+        {
+            throw ex;
+        }
+        catch (final Throwable ex)
+        {
+            CloseHelper.quietClose(ctx::close);
+            throw ex;
         }
     }
 

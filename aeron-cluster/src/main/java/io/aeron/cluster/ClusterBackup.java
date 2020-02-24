@@ -23,6 +23,7 @@ import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.ClusteredServiceContainer;
 import io.aeron.exceptions.ConcurrentConcludeException;
+import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.*;
@@ -125,30 +126,34 @@ public final class ClusterBackup implements AutoCloseable
 
     private ClusterBackup(final ClusterBackup.Context ctx)
     {
-        this.ctx = ctx;
-
         try
         {
             ctx.conclude();
+            this.ctx = ctx;
+
+            final ClusterBackupAgent clusterBackupAgent = new ClusterBackupAgent(ctx);
+
+            if (ctx.useAgentInvoker())
+            {
+                clusterBackupAgentRunner = null;
+                clusterBackupAgentInvoker = new AgentInvoker(
+                    ctx.errorHandler(), ctx.errorCounter(), clusterBackupAgent);
+            }
+            else
+            {
+                clusterBackupAgentRunner = new AgentRunner(
+                    ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), clusterBackupAgent);
+                clusterBackupAgentInvoker = null;
+            }
+        }
+        catch (final ConcurrentConcludeException ex)
+        {
+            throw ex;
         }
         catch (final Throwable ex)
         {
-            ctx.close();
+            CloseHelper.quietClose(ctx::close);
             throw ex;
-        }
-
-        final ClusterBackupAgent clusterBackupAgent = new ClusterBackupAgent(ctx);
-
-        if (ctx.useAgentInvoker())
-        {
-            clusterBackupAgentRunner = null;
-            clusterBackupAgentInvoker = new AgentInvoker(ctx.errorHandler(), ctx.errorCounter(), clusterBackupAgent);
-        }
-        else
-        {
-            clusterBackupAgentRunner = new AgentRunner(
-                ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), clusterBackupAgent);
-            clusterBackupAgentInvoker = null;
         }
     }
 

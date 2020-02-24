@@ -207,11 +207,17 @@ public class ConsensusModule implements AutoCloseable
 
     ConsensusModule(final Context ctx)
     {
-        this.ctx = ctx;
-
         try
         {
             ctx.conclude();
+            this.ctx = ctx;
+
+            final ConsensusModuleAgent conductor = new ConsensusModuleAgent(ctx);
+            conductorRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), conductor);
+        }
+        catch (final ConcurrentConcludeException ex)
+        {
+            throw ex;
         }
         catch (final Throwable ex)
         {
@@ -220,12 +226,9 @@ public class ConsensusModule implements AutoCloseable
                 ctx.markFile.signalFailedStart();
             }
 
-            ctx.close();
+            CloseHelper.quietClose(ctx::close);
             throw ex;
         }
-
-        final ConsensusModuleAgent conductor = new ConsensusModuleAgent(ctx);
-        conductorRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), conductor);
     }
 
     private ConsensusModule start()

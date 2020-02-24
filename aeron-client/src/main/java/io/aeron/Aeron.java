@@ -20,9 +20,7 @@ import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.exceptions.ConfigurationException;
 import io.aeron.exceptions.DriverTimeoutException;
 import io.aeron.logbuffer.FragmentHandler;
-import org.agrona.DirectBuffer;
-import org.agrona.ErrorHandler;
-import org.agrona.IoUtil;
+import org.agrona.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.broadcast.BroadcastReceiver;
 import org.agrona.concurrent.broadcast.CopyBroadcastReceiver;
@@ -80,22 +78,34 @@ public class Aeron implements AutoCloseable
 
     Aeron(final Context ctx)
     {
-        ctx.conclude();
-
-        this.ctx = ctx;
-        clientId = ctx.clientId();
-        commandBuffer = ctx.toDriverBuffer();
-        conductor = new ClientConductor(ctx, this);
-
-        if (ctx.useConductorAgentInvoker())
+        try
         {
-            conductorInvoker = new AgentInvoker(ctx.errorHandler(), null, conductor);
-            conductorRunner = null;
+            ctx.conclude();
+
+            this.ctx = ctx;
+            clientId = ctx.clientId();
+            commandBuffer = ctx.toDriverBuffer();
+            conductor = new ClientConductor(ctx, this);
+
+            if (ctx.useConductorAgentInvoker())
+            {
+                conductorInvoker = new AgentInvoker(ctx.errorHandler(), null, conductor);
+                conductorRunner = null;
+            }
+            else
+            {
+                conductorInvoker = null;
+                conductorRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), null, conductor);
+            }
         }
-        else
+        catch (final ConcurrentConcludeException ex)
         {
-            conductorInvoker = null;
-            conductorRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), null, conductor);
+            throw ex;
+        }
+        catch (final Throwable ex)
+        {
+            CloseHelper.quietClose(ctx::close);
+            throw ex;
         }
     }
 

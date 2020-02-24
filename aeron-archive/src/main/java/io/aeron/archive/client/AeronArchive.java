@@ -233,8 +233,7 @@ public class AeronArchive implements AutoCloseable
                 CloseHelper.quietClose(publication);
             }
 
-            CloseHelper.quietClose(asyncConnect);
-            ctx.close();
+            CloseHelper.quietCloseAll(asyncConnect, ctx::close);
 
             throw ex;
         }

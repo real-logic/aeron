@@ -53,7 +53,6 @@ public class ClusterBackupMediaDriver implements AutoCloseable
         try (ClusterBackupMediaDriver driver = launch())
         {
             driver.clusterBackup().context().shutdownSignalBarrier().await();
-
             System.out.println("Shutdown ClusterBackupMediaDriver...");
         }
     }

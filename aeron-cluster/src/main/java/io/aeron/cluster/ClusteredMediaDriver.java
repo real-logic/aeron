@@ -53,7 +53,6 @@ public class ClusteredMediaDriver implements AutoCloseable
         try (ClusteredMediaDriver driver = launch())
         {
             driver.consensusModule().context().shutdownSignalBarrier().await();
-
             System.out.println("Shutdown ClusteredMediaDriver...");
         }
     }

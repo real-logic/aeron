@@ -66,22 +66,35 @@ public class Archive implements AutoCloseable
 
     Archive(final Context ctx)
     {
-        this.ctx = ctx;
-        ctx.conclude();
-
-        final ArchiveConductor conductor = DEDICATED == ctx.threadingMode() ?
-            new DedicatedModeArchiveConductor(ctx) :
-            new SharedModeArchiveConductor(ctx);
-
-        if (ArchiveThreadingMode.INVOKER == ctx.threadingMode())
+        try
         {
-            conductorInvoker = new AgentInvoker(ctx.errorHandler(), ctx.errorCounter(), conductor);
-            conductorRunner = null;
+            ctx.conclude();
+            this.ctx = ctx;
+
+            final ArchiveConductor conductor = DEDICATED == ctx.threadingMode() ?
+                new DedicatedModeArchiveConductor(ctx) :
+                new SharedModeArchiveConductor(ctx);
+
+            if (ArchiveThreadingMode.INVOKER == ctx.threadingMode())
+            {
+                conductorInvoker = new AgentInvoker(ctx.errorHandler(), ctx.errorCounter(), conductor);
+                conductorRunner = null;
+            }
+            else
+            {
+                conductorInvoker = null;
+                conductorRunner = new AgentRunner(
+                    ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), conductor);
+            }
         }
-        else
+        catch (final ConcurrentConcludeException ex)
         {
-            conductorInvoker = null;
-            conductorRunner = new AgentRunner(ctx.idleStrategy(), ctx.errorHandler(), ctx.errorCounter(), conductor);
+            throw ex;
+        }
+        catch (final Throwable ex)
+        {
+            CloseHelper.quietClose(ctx::close);
+            throw ex;
         }
     }
 
@@ -98,7 +111,6 @@ public class Archive implements AutoCloseable
         try (Archive ignore = launch())
         {
             new ShutdownSignalBarrier().await();
-
             System.out.println("Shutdown Archive...");
         }
     }

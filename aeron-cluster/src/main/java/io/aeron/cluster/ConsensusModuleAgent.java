@@ -1910,7 +1910,7 @@ class ConsensusModuleAgent implements Agent
                 if (nowNs >= (timeOfLastLogUpdateNs + leaderHeartbeatTimeoutNs))
                 {
                     ctx.countedErrorHandler().onError(new ClusterException(
-                        "heartbeat timeout from leader", AeronException.Category.WARN));
+                        "leader heartbeat timeout", AeronException.Category.WARN));
                     enterElection(nowNs);
                     workCount += 1;
                 }

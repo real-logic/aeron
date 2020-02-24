@@ -174,12 +174,12 @@ public class ReplayMergeTest
             aeronArchive.startRecording(recordingChannel, STREAM_ID, REMOTE);
 
             final CountersReader counters = aeron.countersReader();
-            final int counterId = awaitRecordingCounterId(counters, publication.sessionId());
-            final long recordingId = RecordingPos.getRecordingId(counters, counterId);
+            final int recordingCounterId = awaitRecordingCounterId(counters, publication.sessionId());
+            final long recordingId = RecordingPos.getRecordingId(counters, recordingCounterId);
 
             publishMessages(publication, initialMessageCount);
             messagesPublished += initialMessageCount;
-            awaitPosition(counters, counterId, publication.position());
+            awaitPosition(counters, recordingCounterId, publication.position());
 
             try (Subscription subscription = aeron.addSubscription(subscriptionChannel, STREAM_ID);
                 ReplayMerge replayMerge = new ReplayMerge(
@@ -196,8 +196,15 @@ public class ReplayMergeTest
                     long position;
                     while ((position = offerMessage(publication, i)) <= 0)
                     {
-                        Tests.yieldingWait(
-                            "i=%d < totalMessageCount=%d, lastPosition=%d", i, totalMessageCount, position);
+                        if (Publication.BACK_PRESSURED == position)
+                        {
+                            awaitPositionChange(counters, recordingCounterId, publication.position());
+                        }
+                        else
+                        {
+                            Tests.yieldingWait(
+                                "i=%d < totalMessageCount=%d, lastPosition=%d", i, totalMessageCount, position);
+                        }
                     }
                     messagesPublished++;
 
@@ -239,6 +246,24 @@ public class ReplayMergeTest
                 aeronArchive.stopRecording(recordingChannel, STREAM_ID);
             }
         }
+    }
+
+    static void awaitPositionChange(final CountersReader counters, final int counterId, final long position)
+    {
+        if (counters.getCounterState(counterId) != CountersReader.RECORD_ALLOCATED)
+        {
+            throw new IllegalStateException("count not active: " + counterId);
+        }
+
+        final long initialTimestampNs = System.nanoTime();
+        final long currentPosition = counters.getCounterValue(counterId);
+        do
+        {
+            Tests.yieldingWait(
+                "publication position: %d, current position: %d, time since last change: %.6f ms",
+                position, currentPosition, (System.nanoTime() - initialTimestampNs) / 1_000_000.0);
+        }
+        while (currentPosition == counters.getCounterValue(counterId));
     }
 
     private long offerMessage(final Publication publication, final int index)

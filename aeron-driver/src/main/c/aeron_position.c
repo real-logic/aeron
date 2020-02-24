@@ -68,7 +68,7 @@ int32_t aeron_stream_counter_allocate(
             .registration_id = registration_id,
             .session_id = session_id,
             .stream_id = stream_id,
-            .channel_length = channel_length
+            .channel_length = (int32_t)channel_length
         };
 
     strncpy(layout.channel, channel, sizeof(layout.channel) - 1);
@@ -213,7 +213,7 @@ int32_t aeron_channel_endpoint_status_allocate(
     int label_length = snprintf(label, sizeof(label), "%s: %.*s", name, (int)channel_length, channel);
     aeron_channel_endpoint_status_key_layout_t layout =
         {
-            .channel_length = channel_length
+            .channel_length = (int32_t)channel_length
         };
 
     strncpy(layout.channel, channel, sizeof(layout.channel) - 1);

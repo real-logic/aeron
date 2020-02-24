@@ -166,7 +166,7 @@ void aeron_flow_control_extract_strategy_name_length(
     size_t *strategy_length)
 {
     const char *next_option = (const char *)memchr(options, ',', options_length);
-    *strategy_length = NULL == next_option ? options_length : labs(next_option - options);
+    *strategy_length = NULL == next_option ? options_length : labs((long)(next_option - options));
 }
 
 int aeron_default_multicast_flow_control_strategy_supplier(

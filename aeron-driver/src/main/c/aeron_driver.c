@@ -379,7 +379,7 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
 
     size_t default_sndbuf = 0;
     socklen_t len = sizeof(default_sndbuf);
-    if (getsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF, &default_sndbuf, &len) < 0)
+    if (aeron_getsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF, &default_sndbuf, &len) < 0)
     {
         aeron_set_err_from_last_err_code("getsockopt(SO_SNDBUF) %s:%d", __FILE__, __LINE__);
         goto cleanup;
@@ -387,7 +387,7 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
 
     size_t default_rcvbuf = 0;
     len = sizeof(default_rcvbuf);
-    if (getsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF, &default_sndbuf, &len) < 0)
+    if (aeron_getsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF, &default_sndbuf, &len) < 0)
     {
         aeron_set_err_from_last_err_code("getsockopt(SO_RCVBUF) %s:%d", __FILE__, __LINE__);
         goto cleanup;
@@ -400,14 +400,14 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
     {
         size_t socket_sndbuf = driver->context->socket_sndbuf;
 
-        if (setsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF, &socket_sndbuf, sizeof(socket_sndbuf)) < 0)
+        if (aeron_setsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF, &socket_sndbuf, sizeof(socket_sndbuf)) < 0)
         {
             aeron_set_err_from_last_err_code("setsockopt(SO_SNDBUF) %s:%d", __FILE__, __LINE__);
             goto cleanup;
         }
 
         len = sizeof(socket_sndbuf);
-        if (getsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF, &socket_sndbuf, &len) < 0)
+        if (aeron_getsockopt(probe_fd, SOL_SOCKET, SO_SNDBUF, &socket_sndbuf, &len) < 0)
         {
             aeron_set_err_from_last_err_code("getsockopt(SO_SNDBUF) %s:%d", __FILE__, __LINE__);
             goto cleanup;
@@ -430,14 +430,14 @@ int aeron_driver_validate_sufficient_socket_buffer_lengths(aeron_driver_t *drive
     {
         size_t socket_rcvbuf = driver->context->socket_rcvbuf;
 
-        if (setsockopt(probe_fd, SOL_SOCKET, SO_RCVBUF, &socket_rcvbuf, sizeof(socket_rcvbuf)) < 0)
+        if (aeron_setsockopt(probe_fd, SOL_SOCKET, SO_RCVBUF, &socket_rcvbuf, sizeof(socket_rcvbuf)) < 0)
         {
             aeron_set_err_from_last_err_code("setsockopt(SO_RCVBUF) %s:%d", __FILE__, __LINE__);
             goto cleanup;
         }
 
         len = sizeof(socket_rcvbuf);
-        if (getsockopt(probe_fd, SOL_SOCKET, SO_RCVBUF, &socket_rcvbuf, &len) < 0)
+        if (aeron_getsockopt(probe_fd, SOL_SOCKET, SO_RCVBUF, &socket_rcvbuf, &len) < 0)
         {
             aeron_set_err_from_last_err_code("getsockopt(SO_RCVBUF) %s:%d", __FILE__, __LINE__);
             goto cleanup;

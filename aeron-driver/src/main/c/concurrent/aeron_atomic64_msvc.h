@@ -82,7 +82,7 @@ inline bool aeron_cmpxchgu64(volatile uint64_t* destination, uint64_t expected, 
 
 inline bool aeron_cmpxchg32(volatile int32_t* destination, int32_t expected, int32_t desired)
 {
-    uint32_t original = _InterlockedCompareExchange(
+    int32_t original = _InterlockedCompareExchange(
         (long volatile*)destination, (long)desired, (long)expected);
 
     return original == expected;
@@ -99,7 +99,10 @@ inline void aeron_acquire()
 /* storeFence */
 inline void aeron_release()
 {
+#pragma warning(push)
+#pragma warning(disable: 4189) // 'dummy': local variable is initialized but not referenced
     volatile int64_t dummy = 0;
+#pragma warning(pop)
 }
 
 #define AERON_CMPXCHG32(original, dst, expected, desired) \

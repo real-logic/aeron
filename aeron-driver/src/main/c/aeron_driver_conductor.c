@@ -900,8 +900,8 @@ aeron_ipc_publication_t *aeron_driver_conductor_get_or_add_ipc_publication(
                 {
                     int64_t position = aeron_logbuffer_compute_position(
                         params->term_id,
-                        params->term_offset,
-                        (size_t)aeron_number_of_trailing_zeroes(params->term_length),
+                        (int32_t)params->term_offset,
+                        (size_t)aeron_number_of_trailing_zeroes((int32_t)params->term_length),
                         initial_term_id);
 
                     aeron_counter_set_ordered(pub_pos_position.value_addr, position);
@@ -1081,8 +1081,8 @@ aeron_network_publication_t *aeron_driver_conductor_get_or_add_network_publicati
                 {
                     int64_t position = aeron_logbuffer_compute_position(
                         params->term_id,
-                        params->term_offset,
-                        (size_t)aeron_number_of_trailing_zeroes(params->term_length),
+                        (int32_t)params->term_offset,
+                        (size_t)aeron_number_of_trailing_zeroes((int32_t)params->term_length),
                         initial_term_id);
 
                     aeron_counter_set_ordered(pub_pos_position.value_addr, position);
@@ -2018,7 +2018,7 @@ int aeron_driver_conductor_link_subscribable(
 
 void aeron_driver_conductor_unlink_subscribable(aeron_subscription_link_t *link, aeron_subscribable_t *subscribable)
 {
-    for (int last_index = link->subscribable_list.length - 1, i = last_index; i >= 0; i--)
+    for (int last_index = (int32_t)link->subscribable_list.length - 1, i = last_index; i >= 0; i--)
     {
         if (subscribable == link->subscribable_list.array[i].subscribable)
         {

@@ -238,7 +238,6 @@ public abstract class AbstractMinMulticastFlowControl implements FlowControl
 
     static class Receiver
     {
-
         long lastPosition;
         long lastPositionPlusWindow;
         long timeOfLastStatusMessageNs;

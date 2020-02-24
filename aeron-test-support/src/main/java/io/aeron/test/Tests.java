@@ -44,12 +44,18 @@ public class Tests
 
     public static void unexpectedInterruptStackTrace()
     {
-        System.out.println("Unexpected interrupt - test likely to have timed out");
-        for (final StackTraceElement stackTraceElement : Thread.currentThread().getStackTrace())
+        final StringBuilder sb = new StringBuilder();
+
+        sb.append("*** unexpected interrupt - test likely to have timed out%n");
+
+        final StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
+        for (int i = 1, length = stackTraceElements.length; i < length; i++)
         {
-            System.out.println(stackTraceElement);
+            sb.append(stackTraceElements[i]).append("%n");
         }
-        System.out.println();
+
+        System.out.format(sb.toString());
+        System.out.flush();
     }
 
     /**
